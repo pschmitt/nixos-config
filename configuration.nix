@@ -505,6 +505,7 @@ in
     bind # dig
     curl
     dua # ncdu on steroids
+    etcher
     file
     fping
     gobject-introspection
@@ -521,17 +522,19 @@ in
     nodejs
     pamixer
     pciutils # lspci
-    polkit_gnome
     pinentry
     pinentry-curses
     pinentry-gnome
+    polkit_gnome
     procps # coreutils' uptime does not have the -s flag
+    pstree
     ripgrep
-    tree
     tailscale
     tmux
-    yq-go
+    tree
     wget
+    xorg.xhost
+    yq-go
 
     # apps
     firefox
@@ -547,6 +550,7 @@ in
     # (python3.withPackages(python-packages))
     (python311.withPackages (python-packages))
     rustc
+    openssl
 
     (vim_configurable.customize {
       name = "vim";
