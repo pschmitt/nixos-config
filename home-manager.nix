@@ -61,6 +61,8 @@ in
         openvpn
         openconnect
         zoom-us
+        taskwarrior
+        timewarrior
 
         # Media
         ffmpeg-full
