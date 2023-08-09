@@ -505,7 +505,6 @@ in
     bind # dig
     curl
     dua # ncdu on steroids
-    etcher
     file
     fping
     gobject-introspection
@@ -539,6 +538,7 @@ in
     # apps
     firefox
     kitty
+    usbimager # etcher alternative
 
     # devel
     cargo
