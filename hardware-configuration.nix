@@ -16,7 +16,7 @@
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
       fsType = "btrfs";
-      options = [ "subvol=@root" ];
+      options = [ "subvol=@root" "compress=zstd" ];
     };
 
   boot.initrd.luks.devices."encrypted".device = "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
@@ -29,13 +29,13 @@
   fileSystems."/home" =
     { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
       fsType = "btrfs";
-      options = [ "subvol=@home" ];
+      options = [ "subvol=@home" "compress=zstd" ];
     };
 
   fileSystems."/nix" =
     { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
       fsType = "btrfs";
-      options = [ "subvol=@nix" ];
+      options = [ "subvol=@nix" "compress=zstd" "noatime" ];
     };
 
   swapDevices = [ ];
