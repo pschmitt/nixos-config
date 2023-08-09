@@ -11,7 +11,10 @@ let
   flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
 
   hyprland-flake = (import flake-compat {
-    src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
+    # master
+    # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
+    # release
+    src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
   }).defaultNix;
 
   waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
