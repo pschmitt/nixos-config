@@ -24,10 +24,6 @@ let
     SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
   });
 
-  waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
-    mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
-  });
-
   python-packages = ps:
     with ps; [
       dbus-python

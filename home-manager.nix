@@ -7,9 +7,6 @@ let
     (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
     # reuse the current configuration
     { config = config.nixpkgs.config; };
-  waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
-    mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
-  });
 in
 {
   imports = [ (import "${home-manager}/nixos") ];
@@ -93,7 +90,7 @@ in
         swappy
         swayidle
         unstable.wl-clip-persist
-        waybar-hyprland
+        unstable.waybar-hyprland
         wl-clipboard
         wlogout
         wlr-randr
