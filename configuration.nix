@@ -455,6 +455,7 @@ in
   programs.hyprland = {
     enable = true;
     # comment out line below to use the regular (non-flake) Hyprland version
+    # package = pkgs.hyprland;
     package = hyprland-flake.packages.${pkgs.system}.hyprland;
   };
 
@@ -524,7 +525,7 @@ in
     polkit_gnome
     procps # coreutils' uptime does not have the -s flag
     pstree
-    pulseaudio  # pactl + pacmd
+    pulseaudio # pactl + pacmd
     ripgrep
     tailscale
     tmux
