@@ -535,6 +535,7 @@ in
 
     # apps
     firefox
+    google-chrome
     kitty
     usbimager # etcher alternative
 
