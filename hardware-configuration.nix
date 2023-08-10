@@ -6,6 +6,24 @@
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
+  # Attempt to fix keyboard in initrd on x13
+  # kernelParams = [ "i8042.notimeout=1" "i8042.dumbkbd=1" "i8042.reset=1" "i8042.direct=1" ];
+  # boot.initrd.availableKernelModules = ["i8042"];
+  # boot.initrd.kernelModules = ["i8042"];
+
+  # https://bugs.launchpad.net/ubuntu/+source/linux-source-2.6.17/+bug/76881
+  boot.kernelParams = [ "i8042.probe_defer=1" ];
+  # DIRTYFIX Force reload i8042 module after boot
+  # systemd.services.fix-keyboard = {
+  #   wantedBy = [ "multi-user.target" ];
+  #   description = "Fix keyboard by reloading i8042";
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #     ExecStartPre- = "${pkgs.kmod}/bin/rmmod i8042";
+  #     ExecStart = "${pkgs.kmod}/bin/modprobe i8042";
+  #   };
+  # };
+
   boot.initrd.availableKernelModules =
     [ "nvme" "ehci_pci" "xhci_pci" "uas" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
