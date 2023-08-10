@@ -19,6 +19,11 @@ let
       "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
   }).defaultNix;
 
+  # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
+  regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
+    SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
+  });
+
   waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
     mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
   });
@@ -226,16 +231,14 @@ in
     #     wayland = true;  # aint that the default?
     #   };
     # };
-
-    # NOTE This only works for x11 ie. it creates xsession files
-    # displayManager.session = [ { manage = "desktop";
-    #     name = "xterm";
-    #     start = ''
-    #       ${pkgs.xterm}/bin/xterm -ls &
-    #       waitPID=$!
-    #     '';
-    #   }
-    # ];
+    displayManager.session = [{
+      manage = "desktop";
+      name = "hyprland-wrapped";
+      start = ''
+        /home/pschmitt/.config/hypr/bin/hyprland-wrapped.sh &
+        waitPID=$!
+      '';
+    }];
   };
 
   # https://nixos.wiki/wiki/Greetd
@@ -261,6 +264,7 @@ in
 
   programs.regreet = {
     enable = true;
+    package = regreet-override;
     settings = {
       # background = {
       #   path = "xxx";
