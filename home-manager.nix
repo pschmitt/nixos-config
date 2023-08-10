@@ -1,9 +1,10 @@
 { config, pkgs, ... }:
 let
   # home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/master.tar.gz";
-  home-manager = builtins.fetchTarball "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz";
+  home-manager = builtins.fetchTarball
+    "https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz";
   unstable = import
-    (builtins.fetchTarball https://github.com/nixos/nixpkgs/tarball/master)
+    (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
     # reuse the current configuration
     { config = config.nixpkgs.config; };
   waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
@@ -11,16 +12,14 @@ let
   });
 in
 {
-  imports = [
-    (import "${home-manager}/nixos")
-  ];
+  imports = [ (import "${home-manager}/nixos") ];
 
   home-manager = {
     useUserPackages = true;
     useGlobalPkgs = true;
 
     users.pschmitt = {
-      /* The home.stateVersion option does not have a default and must be set */
+      # The home.stateVersion option does not have a default and must be set
       home.stateVersion = "23.05";
       home.packages = with pkgs; [
         home-manager
@@ -120,7 +119,8 @@ in
       home.file = {
         ".face" = {
           enable = true;
-          source = builtins.fetchurl ("https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96");
+          source = builtins.fetchurl
+            ("https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96");
         };
       };
 
@@ -146,9 +146,7 @@ in
 
         # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
         gtk3 = {
-          extraConfig = {
-            gtk-application-prefer-dark-theme = 1;
-          };
+          extraConfig = { gtk-application-prefer-dark-theme = 1; };
           bookmarks = [
             "file:///tmp tmp"
             "file:///home/pschmitt/devel/private devel-p"
@@ -163,11 +161,7 @@ in
           ];
         };
 
-        gtk4 = {
-          extraConfig = {
-            gtk-application-prefer-dark-theme = 1;
-          };
-        };
+        gtk4 = { extraConfig = { gtk-application-prefer-dark-theme = 1; }; };
       };
 
       qt = {
@@ -180,14 +174,10 @@ in
       };
 
       dconf.settings = {
-        "org/gnome/desktop/interface" = {
-          color-scheme = "prefer-dark";
-        };
+        "org/gnome/desktop/interface" = { color-scheme = "prefer-dark"; };
       };
 
-      programs.home-manager = {
-        enable = true;
-      };
+      programs.home-manager = { enable = true; };
 
       programs.neovim = {
         enable = true;
