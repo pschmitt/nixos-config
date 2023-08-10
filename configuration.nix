@@ -269,7 +269,7 @@ in
       GTK = {
         application_prefer_dark_theme = true;
         cursor_theme_name = "Adwaita";
-        font_name = "Ubuntu Sans 16";
+        font_name = "Noto Sans 16";
         icon_theme_name = "Adwaita";
         theme_name = "Adwaita";
       };
