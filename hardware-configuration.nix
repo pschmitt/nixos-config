@@ -4,39 +4,39 @@
 { config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports =
-    [ (modulesPath + "/installer/scan/not-detected.nix")
-    ];
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
 
-  boot.initrd.availableKernelModules = [ "nvme" "ehci_pci" "xhci_pci" "uas" "sd_mod" "rtsx_pci_sdmmc" ];
+  boot.initrd.availableKernelModules =
+    [ "nvme" "ehci_pci" "xhci_pci" "uas" "sd_mod" "rtsx_pci_sdmmc" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" =
-    { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-      fsType = "btrfs";
-      options = [ "subvol=@root" "compress=zstd" ];
-    };
+  fileSystems."/" = {
+    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+    fsType = "btrfs";
+    options = [ "subvol=@root" "compress=zstd" ];
+  };
 
-  boot.initrd.luks.devices."encrypted".device = "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
+  boot.initrd.luks.devices."encrypted".device =
+    "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
 
-  fileSystems."/boot" =
-    { device = "/dev/disk/by-uuid/5FDA-8CAF";
-      fsType = "vfat";
-    };
+  fileSystems."/boot" = {
+    device = "/dev/disk/by-uuid/5FDA-8CAF";
+    fsType = "vfat";
+  };
 
-  fileSystems."/home" =
-    { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-      fsType = "btrfs";
-      options = [ "subvol=@home" "compress=zstd" ];
-    };
+  fileSystems."/home" = {
+    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+    fsType = "btrfs";
+    options = [ "subvol=@home" "compress=zstd" ];
+  };
 
-  fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-      fsType = "btrfs";
-      options = [ "subvol=@nix" "compress=zstd" "noatime" ];
-    };
+  fileSystems."/nix" = {
+    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+    fsType = "btrfs";
+    options = [ "subvol=@nix" "compress=zstd" "noatime" ];
+  };
 
   swapDevices = [ ];
 
@@ -50,5 +50,6 @@
   # networking.interfaces.wlp3s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.cpu.amd.updateMicrocode =
+    lib.mkDefault config.hardware.enableRedistributableFirmware;
 }
