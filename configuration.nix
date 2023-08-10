@@ -89,11 +89,6 @@ in
     kernel.sysctl = { "kernel.sysrq" = 1; };
 
     kernelPackages = pkgs.linuxPackages_latest;
-    # Attempt to fix keyboard in initrd on x13
-    # kernelParams = [ "i8042.notimeout=1" "i8042.dumbkbd=1" "i8042.reset=1" "i8042.direct=1" ];
-    # initrd.availableKernelModules = ["i8042"];
-    # initrd.kernelModules = ["i8042"];
-
     extraModulePackages = [ pkgs.linuxPackages_latest.v4l2loopback ];
     # Explicitly load i8042 to attempt to fix the x13 keyboard in initrd
     kernelModules = [ "v4l2loopback" ];
@@ -114,17 +109,6 @@ in
     # };
 
     tmp = { useTmpfs = true; };
-  };
-
-  # DIRTYFIX Force reload i8042 module on boot
-  systemd.services.fix-keyboard = {
-    wantedBy = [ "multi-user.target" ];
-    description = "Fix keyboard by reloading i8042";
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStartPre- = "${pkgs.kmod}/bin/rmmod i8042";
-      ExecStart = "${pkgs.kmod}/bin/modprobe i8042";
-    };
   };
 
   # Configure network proxy if necessary
