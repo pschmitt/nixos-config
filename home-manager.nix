@@ -50,6 +50,7 @@ in
         shellcheck
         niv
         nixpkgs-fmt
+        rnix-lsp
         nixfmt
         openssl
         # openssl_1_1
