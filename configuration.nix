@@ -484,6 +484,7 @@ in
     MOZ_USE_XINPUT2 = "1";
   };
 
+  # Make ZSH respect XDG
   environment.etc = {
     "zshenv.local" = {
       text = ''
@@ -519,12 +520,12 @@ in
     nodejs
     pamixer
     pciutils # lspci
-    pinentry
     pinentry-curses
     pinentry-gnome
     polkit_gnome
     procps # coreutils' uptime does not have the -s flag
     pstree
+    pulseaudio  # pactl + pacmd
     ripgrep
     tailscale
     tmux
