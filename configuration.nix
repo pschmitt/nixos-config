@@ -78,8 +78,6 @@ in
         mpv-unwrapped =
           super.mpv-unwrapped.override { ffmpeg_5 = ffmpeg_5-full; };
       })
-
-      })
     ];
   };
 
