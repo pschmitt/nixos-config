@@ -103,15 +103,15 @@ in
           extraConfig = { gtk-application-prefer-dark-theme = 1; };
           bookmarks = [
             "file:///tmp tmp"
-            "file:///home/pschmitt/devel/private devel-p"
-            "file:///home/pschmitt/devel/work devel-w"
-            "file:///home/pschmitt/Documents"
-            "file:///home/pschmitt/Downloads"
-            "file:///home/pschmitt/Music"
-            "file:///home/pschmitt/Public"
-            "file:///home/pschmitt/Pictures"
-            "file:///home/pschmitt/Templates"
-            "file:///home/pschmitt/Videos"
+            "file://${config.users.users.pschmitt.home}/devel/private devel-p"
+            "file://${config.users.users.pschmitt.home}/devel/work devel-w"
+            "file://${config.users.users.pschmitt.home}/Documents"
+            "file://${config.users.users.pschmitt.home}/Downloads"
+            "file://${config.users.users.pschmitt.home}/Music"
+            "file://${config.users.users.pschmitt.home}/Public"
+            "file://${config.users.users.pschmitt.home}/Pictures"
+            "file://${config.users.users.pschmitt.home}/Templates"
+            "file://${config.users.users.pschmitt.home}/Videos"
           ];
         };
 
@@ -163,7 +163,7 @@ in
                 }];
 
                 icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-                definedAliases = [ "@np" ];
+                definedAliases = [ "nixp" ];
               };
 
               "Nix Options" = {
@@ -176,14 +176,14 @@ in
                 }];
 
                 icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-                definedAliases = [ "nix" ];
+                definedAliases = [ "nixo" ];
               };
 
               "NixOS Wiki" = {
                 urls = [{ template = "https://nixos.wiki/index.php?search={searchTerms}"; }];
                 iconUpdateURL = "https://nixos.wiki/favicon.png";
                 updateInterval = 24 * 60 * 60 * 1000; # every day
-                definedAliases = [ "@nw" ];
+                definedAliases = [ "nixw" ];
               };
 
               "Bing".metaData.hidden = true;
@@ -192,19 +192,6 @@ in
           };
         };
       };
-
-      # programs.hyprland = {
-      #   enable = true;
-      # };
-
-      # programs.obs-studio = {
-      #   enable = true;
-      #   plugins = [];
-      # };
-
-      # services = {
-      #   mako.enable = true;
-      # };
     };
   };
 }
