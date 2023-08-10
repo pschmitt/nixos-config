@@ -67,50 +67,6 @@ in
         obs-studio
         v4l-utils
         vlc
-
-        # Hyprland
-        cliphist
-        lemonade
-        foot
-        gnome.eog
-        gnome.nautilus
-        gnome.seahorse
-        gnome.sushi
-        grim
-        gtklock
-        gtklock-playerctl-module
-        gtklock-userinfo-module
-        hyprpaper
-        libnotify
-        mako
-        networkmanagerapplet
-        pavucontrol
-        slurp
-        playerctl
-        swappy
-        swayidle
-        unstable.wl-clip-persist
-        unstable.waybar-hyprland
-        wl-clipboard
-        wlogout
-        wlr-randr
-        wofi
-        wofi-emoji
-        ydotool
-
-        # Theming
-        adwaita-qt
-        adwaita-qt6
-        bibata-cursors
-        colloid-gtk-theme
-        colloid-icon-theme
-        colloid-kde
-        glib # gsettings
-        gnome.adwaita-icon-theme
-        gnome.gnome-themes-extra
-        libadwaita
-        lxappearance
-        qt5ct
       ];
 
       # AccountService profile picture
