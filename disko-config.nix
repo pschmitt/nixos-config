@@ -11,14 +11,12 @@
               label = "EFI";
               name = "ESP";
               size = "512M";
-              type = "EF00" ;
+              type = "EF00";
               content = {
                 type = "filesystem";
                 format = "vfat";
                 mountpoint = "/boot";
-                mountOptions = [
-                  "defaults"
-                ];
+                mountOptions = [ "defaults" ];
               };
             };
             luks = {
