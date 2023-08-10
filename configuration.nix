@@ -581,6 +581,8 @@ in
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
   # Also, removing ~/.config/fontconfig might help in case emojis are all fucked up and shit
+  # The last time around the following command fixed emojis in pango apps:
+  # rm -rf ~/.cache/fontconfig ~/.config/fontconfig; sudo fc-cache --really-force -v; fc-cache --really-force -v
   fonts = {
     fonts = with pkgs; [
       # (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
