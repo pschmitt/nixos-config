@@ -5,50 +5,51 @@
 { config, pkgs, ... }:
 let
   unstable = import
-    (builtins.fetchTarball https://github.com/nixos/nixpkgs/tarball/master)
+    (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
     # reuse the current configuration
     { config = config.nixpkgs.config; };
-  flake-compat = builtins.fetchTarball "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
+  flake-compat = builtins.fetchTarball
+    "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
 
   hyprland-flake = (import flake-compat {
     # master
     # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
     # release
-    src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
+    src = builtins.fetchTarball
+      "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
   }).defaultNix;
 
   waybar-hyprland = pkgs.waybar.overrideAttrs (oldAttrs: {
     mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
   });
 
-  python-packages = ps: with ps; [
-    dbus-python
-    black
-    flake8
-    gst-python
-    ipython
-    isort
-    pip
-    pipx
-    pygobject3
-    pynvim
-    requests
-    rich
-  ];
+  python-packages = ps:
+    with ps; [
+      dbus-python
+      black
+      flake8
+      gst-python
+      ipython
+      isort
+      pip
+      pipx
+      pygobject3
+      pynvim
+      requests
+      rich
+    ];
 
 in
 {
-  imports =
-    [
-      # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      # ./flakes/hyprland.nix
-      ./home-manager.nix
-      # sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
-      # $ sudo nix-channel --update
-      # <home-manager/nixos>
-      # ./modules/hacompanion.nix
-    ];
+  imports = [
+    # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+    ./home-manager.nix
+    # sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
+    # $ sudo nix-channel --update
+    # <home-manager/nixos>
+    # ./modules/hacompanion.nix
+  ];
 
   nix = {
     package = pkgs.nixFlakes;
@@ -62,8 +63,9 @@ in
       experimental-features = [ "nix-command" "flakes" ];
       # Hyprland flake
       substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
-      # sandbox = false;
+      trusted-public-keys = [
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      ];
     };
   };
 
@@ -73,9 +75,10 @@ in
 
     overlays = with pkgs; [
       (self: super: {
-        mpv-unwrapped = super.mpv-unwrapped.override {
-          ffmpeg_5 = ffmpeg_5-full;
-        };
+        mpv-unwrapped =
+          super.mpv-unwrapped.override { ffmpeg_5 = ffmpeg_5-full; };
+      })
+
       })
     ];
   };
@@ -96,9 +99,7 @@ in
   };
 
   boot = {
-    kernel.sysctl = {
-      "kernel.sysrq" = 1;
-    };
+    kernel.sysctl = { "kernel.sysrq" = 1; };
 
     kernelPackages = pkgs.linuxPackages_latest;
     # Attempt to fix keyboard in initrd on x13
@@ -125,19 +126,17 @@ in
     #   "/crypto_keyfile.bin" = null;
     # };
 
-    tmp = {
-      useTmpfs = true;
-    };
+    tmp = { useTmpfs = true; };
   };
 
   # DIRTYFIX Force reload i8042 module on boot
   systemd.services.fix-keyboard = {
     wantedBy = [ "multi-user.target" ];
-    description = ''Fix keyboard by reloading i8042'';
+    description = "Fix keyboard by reloading i8042";
     serviceConfig = {
       Type = "oneshot";
-      ExecStartPre- = ''${pkgs.kmod}/bin/rmmod i8042'';
-      ExecStart = ''${pkgs.kmod}/bin/modprobe i8042'';
+      ExecStartPre- = "${pkgs.kmod}/bin/rmmod i8042";
+      ExecStart = "${pkgs.kmod}/bin/modprobe i8042";
     };
   };
 
@@ -249,12 +248,14 @@ in
       initial_session = {
         # command = "${pkgs.hyprland}/bin/Hyprland";
         # command = "${hyprland-flake.packages.${pkgs.system}.hyprland}/bin/Hyprland";
-        command = "${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh";
+        command =
+          "${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh";
         user = "pschmitt";
       };
       default_session = {
         # command = "/nix/store/pv33drl44ry54dvi0d0rnva3ybwgid5r-dbus-1.14.8/bin/dbus-run-session /nix/store/jccwacv61ifyblaqz37wnlq7b2q82ax3-cage-0.1.4/bin/cage -s -- /nix/store/d9x7bvhvlyqnz6331mv0lsl2mya4c433-regreet-0.1.0/bin/regreet"
-        command = "${pkgs.dbus}/bin/dbus-run-session ${pkgs.cage}/bin/cage -s -- ${pkgs.greetd.regreet}/bin/regreet";
+        command =
+          "${pkgs.dbus}/bin/dbus-run-session ${pkgs.cage}/bin/cage -s -- ${pkgs.greetd.regreet}/bin/regreet";
         user = "greeter";
       };
     };
@@ -299,9 +300,7 @@ in
   # systemd.services."getty@tty1".enable = false;
   # systemd.services."autovt@tty1".enable = false;
 
-  services.udev.packages = [
-    pkgs.android-udev-rules
-  ];
+  services.udev.packages = [ pkgs.android-udev-rules ];
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -330,7 +329,8 @@ in
       after = [ "graphical-session.target" ];
       serviceConfig = {
         Type = "simple";
-        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+        ExecStart =
+          "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
         Restart = "on-failure";
         RestartSec = 1;
         TimeoutStopSec = 10;
@@ -351,10 +351,8 @@ in
     portal = {
       enable = true;
       xdgOpenUsePortal = true;
-      extraPortals = [
-        pkgs.xdg-desktop-portal
-        pkgs.xdg-desktop-portal-hyprland
-      ];
+      extraPortals =
+        [ pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-hyprland ];
     };
   };
 
@@ -406,10 +404,8 @@ in
     ];
     packages = with pkgs; [ ];
     openssh.authorizedKeys.keys =
-      let
-        authorizedKeys = builtins.fetchurl "https://github.com/pschmitt.keys";
-      in
-      pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
+      let authorizedKeys = builtins.fetchurl "https://github.com/pschmitt.keys";
+      in pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
     shell = pkgs.zsh;
   };
 
@@ -466,10 +462,10 @@ in
 
   systemd.user.targets.hyprland-session = {
     description = "Hyprland compositor session";
-    documentation = ["man:systemd.special(7)"];
-    bindsTo = ["graphical-session.target"];
-    wants = ["graphical-session-pre.target"];
-    after = ["graphical-session-pre.target"];
+    documentation = [ "man:systemd.special(7)" ];
+    bindsTo = [ "graphical-session.target" ];
+    wants = [ "graphical-session-pre.target" ];
+    after = [ "graphical-session-pre.target" ];
   };
 
   programs.adb.enable = true;
@@ -670,9 +666,7 @@ in
     settings.PermitRootLogin = "yes";
   };
 
-  services.tailscale = {
-    enable = true;
-  };
+  services.tailscale = { enable = true; };
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
