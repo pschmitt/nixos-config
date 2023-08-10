@@ -11,14 +11,6 @@ let
   flake-compat = builtins.fetchTarball
     "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
 
-  hyprland-flake = (import flake-compat {
-    # master
-    # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
-    # release
-    src = builtins.fetchTarball
-      "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
-  }).defaultNix;
-
   # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
   regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
     SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
@@ -46,6 +38,7 @@ in
     # Include the results of the hardware scan.
     ./hardware-configuration.nix
     ./home-manager.nix
+    ./hyprland.nix
     # sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
     # $ sudo nix-channel --update
     # <home-manager/nixos>
@@ -62,11 +55,6 @@ in
     settings = {
       allowed-users = [ "pschmitt" ];
       experimental-features = [ "nix-command" "flakes" ];
-      # Hyprland flake
-      substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      ];
     };
   };
 
@@ -214,27 +202,6 @@ in
     xkbVariant = "";
     # Enable touchpad support (enabled default in most desktopManager).
     libinput.enable = true;
-
-    # Enable the GNOME Desktop Environment.
-    # desktopManager.gnome.enable = false;
-    # displayManager = {
-    #   autoLogin = {
-    #     enable = true;
-    #     user = "pschmitt";
-    #   };
-    #   gdm = {
-    #     enable = false;
-    #     wayland = true;  # aint that the default?
-    #   };
-    # };
-    displayManager.session = [{
-      manage = "desktop";
-      name = "hyprland-wrapped";
-      start = ''
-        /home/pschmitt/.config/hypr/bin/hyprland-wrapped.sh &
-        waitPID=$!
-      '';
-    }];
   };
 
   # https://nixos.wiki/wiki/Greetd
@@ -280,14 +247,6 @@ in
     };
   };
 
-  # This only works for greetd (without regreet)
-  # environment.etc."greetd/environments".text = ''
-  #   Hyprland
-  #   sway
-  #   zsh
-  #   ${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh
-  # '';
-
   # Below is required for some weird reason when using greetd with autologin
   users.groups.pschmitt = { };
 
@@ -317,7 +276,6 @@ in
     gnome-keyring.enable = true;
     rygel.enable = true;
   };
-  programs.dconf.enable = true;
 
   systemd = {
     user.services.polkit-gnome-authentication-agent-1 = {
@@ -343,25 +301,8 @@ in
   services.gvfs.enable = true;
   services.tumbler.enable = true;
 
-  # XDG Portals
-  xdg = {
-    autostart.enable = true;
-    portal = {
-      enable = true;
-      xdgOpenUsePortal = true;
-      extraPortals =
-        [ pkgs.xdg-desktop-portal pkgs.xdg-desktop-portal-hyprland ];
-    };
-  };
-
-  # Enable gtk lock pam auth
-  security.pam.services.gtklock = { };
-
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
-
-  # Enable polkit (pkexex)
-  security.polkit.enable = true;
 
   # Enable sound with pipewire.
   sound.enable = true;
@@ -451,37 +392,12 @@ in
     preferencesStatus = "user";
   };
 
-  # Hyprland
-  programs.hyprland = {
-    enable = true;
-    # comment out line below to use the regular (non-flake) Hyprland version
-    # package = pkgs.hyprland;
-    package = hyprland-flake.packages.${pkgs.system}.hyprland;
-  };
-
-  systemd.user.targets.hyprland-session = {
-    description = "Hyprland compositor session";
-    documentation = [ "man:systemd.special(7)" ];
-    bindsTo = [ "graphical-session.target" ];
-    wants = [ "graphical-session-pre.target" ];
-    after = [ "graphical-session-pre.target" ];
-  };
-
   programs.adb.enable = true;
 
   virtualisation.docker = {
     enable = true;
     storageDriver = "btrfs";
     package = unstable.docker_24;
-  };
-
-  environment.sessionVariables = rec {
-    # GTK_THEME = "Adwaita:dark";
-    # Setting MOZ_ENABLE_WAYLAND will lead to a fullscreen sharing indicator
-    # when screensharing
-    # https://bugzilla.mozilla.org/show_bug.cgi?id=1628431
-    # MOZ_ENABLE_WAYLAND = "1";
-    MOZ_USE_XINPUT2 = "1";
   };
 
   # Make ZSH respect XDG
@@ -531,7 +447,6 @@ in
     tmux
     tree
     wget
-    xorg.xhost
     yq-go
 
     # apps
@@ -565,19 +480,6 @@ in
         set backspace=indent,eol,start
       '';
     })
-
-    # Experiment
-    # (writeTextFile {
-    #   name = "hyprland-wrapped.desktop";
-    #   destination = "/share/wayland-sessions/hyprland-wrapped.desktop";
-    #   text = ''
-    #     [Desktop Entry]
-    #     Name=Hyprland (wrapped)
-    #     Comment=Hyprland (wrapped)
-    #     Exec=${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh
-    #     Type=Application
-    #   '';
-    # })
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
