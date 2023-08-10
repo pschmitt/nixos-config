@@ -476,7 +476,10 @@ in
 
   environment.sessionVariables = rec {
     # GTK_THEME = "Adwaita:dark";
-    MOZ_ENABLE_WAYLAND = "1";
+    # Setting MOZ_ENABLE_WAYLAND will lead to a fullscreen sharing indicator
+    # when screensharing
+    # https://bugzilla.mozilla.org/show_bug.cgi?id=1628431
+    # MOZ_ENABLE_WAYLAND = "1";
     MOZ_USE_XINPUT2 = "1";
   };
 
