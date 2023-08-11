@@ -49,6 +49,7 @@ in
         nixpkgs-fmt
         rnix-lsp
         nixfmt
+        nix-index
         openssl
         # openssl_1_1
 
@@ -67,6 +68,13 @@ in
         obs-studio
         v4l-utils
         vlc
+
+        # NOTE Installing gtklock with home manager has the nice side-effect
+        # that it creates nice symlinks in
+        # /etc/profiles/per-user/pschmitt/lib/gtklock/
+        gtklock
+        gtklock-playerctl-module
+        gtklock-userinfo-module
       ];
 
       # AccountService profile picture
