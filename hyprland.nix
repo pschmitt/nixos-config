@@ -19,6 +19,14 @@ let
       "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
   }).defaultNix;
 
+  xdph-flake = (import flake-compat {
+    # master
+    # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
+    # release
+    src = builtins.fetchTarball
+      "https://github.com/hyprwm/xdg-desktop-portal-hyprland/tarball/master";
+  }).defaultNix;
+
 in
 {
   nix.settings = {
@@ -187,8 +195,9 @@ in
       enable = true; # also set by programs.hyprland.enable = true;
       xdgOpenUsePortal = true;
       extraPortals = with pkgs; [
+        xdph-flake.packages.${pkgs.system}.xdg-desktop-portal-hyprland
         # xdg-desktop-portal-gtk
-        unstable.xdg-desktop-portal-hyprland
+        # unstable.xdg-desktop-portal-hyprland
       ]; # also set by programs.hyprland.enable = true;
     };
   };
