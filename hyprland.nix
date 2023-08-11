@@ -111,8 +111,8 @@ in
   hardware.opengl.enable = true;
 
   programs = {
-    dconf.enable = true;
-    xwayland.enable = true;
+    dconf.enable = true; # also set by programs.hyprland.enable = true;
+    xwayland.enable = true; # also set by programs.hyprland.enable = true;
 
     # # Hyprland
     # # Using NixOS 23.05's programs.hyprland results in xdph 0.3.0 being used
@@ -132,7 +132,10 @@ in
 
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
-      libinput.enable = true;
+      libinput.enable = true; # also set by programs.hyprland.enable = true;
+      displayManager.sessionPackages = [
+        hyprland-flake.packages.${pkgs.system}.hyprland
+      ]; # also set by programs.hyprland.enable = true;
       displayManager.session = [{
         manage = "desktop";
         name = "hyprland-wrapped";
@@ -145,7 +148,7 @@ in
   };
 
   security = {
-    polkit.enable = true;
+    polkit.enable = true; # also set by programs.hyprland.enable = true;
     # Enable gtk lock pam auth
     pam.services.gtklock = { };
   };
@@ -178,12 +181,12 @@ in
   xdg = {
     autostart.enable = true;
     portal = {
-      enable = true;
+      enable = true; # also set by programs.hyprland.enable = true;
       xdgOpenUsePortal = true;
       extraPortals = with pkgs; [
         # xdg-desktop-portal-gtk
         unstable.xdg-desktop-portal-hyprland
-      ];
+      ]; # also set by programs.hyprland.enable = true;
     };
   };
 }
