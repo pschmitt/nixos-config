@@ -411,6 +411,7 @@ in
     htop
     jq
     killall
+    libinput # libinput debug-events
     libsecret # secret-tool
     lm_sensors
     mediainfo
