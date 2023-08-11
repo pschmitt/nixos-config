@@ -64,6 +64,7 @@ in
 
         # Media
         ffmpeg-full
+        fx_cast_bridge
         mpv-unwrapped
         obs-studio
         v4l-utils
