@@ -234,13 +234,6 @@ in
   # Below is required for some weird reason when using greetd with autologin
   users.groups.pschmitt = { };
 
-  # Below is required for gtklock-userinfo-module
-  services.accounts-daemon.enable = true;
-
-  # Workaround for GNOME autologin: https://github.com/NixOS/nixpkgs/issues/103746#issuecomment-945091229
-  # systemd.services."getty@tty1".enable = false;
-  # systemd.services."autovt@tty1".enable = false;
-
   services.udev.packages = [ pkgs.android-udev-rules ];
 
   # Enable CUPS to print documents.
