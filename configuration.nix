@@ -325,6 +325,12 @@ in
     shell = pkgs.zsh;
   };
 
+  # temporary hack until official lingering support is added to `users.users`
+  # https://github.com/NixOS/nixpkgs/issues/3702
+  systemd.tmpfiles.rules = [
+    "f /var/lib/systemd/linger/pschmitt"
+  ];
+
   programs.zsh.enable = true;
   environment.shells = with pkgs; [ zsh ];
 
