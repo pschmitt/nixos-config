@@ -127,6 +127,9 @@ in
   };
 
   services = {
+    # Required by gtklock-userinfo-module
+    accounts-daemon.enable = true;
+
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true;
