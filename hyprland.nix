@@ -53,6 +53,8 @@ in
     gnome.seahorse
     gnome.sushi
     grim
+    # NOTE gtklock is also installed with home-manager so that we get reliable
+    # symlinks in /etc/profiles/per-user/pschmitt/lib/gtklock/
     gtklock
     gtklock-playerctl-module
     gtklock-userinfo-module
