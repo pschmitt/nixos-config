@@ -355,6 +355,8 @@ in
     };
   };
 
+  programs.adb.enable = true;
+
   programs.firefox = {
     enable = true;
     preferences = {
@@ -368,8 +370,6 @@ in
     };
     preferencesStatus = "user";
   };
-
-  programs.adb.enable = true;
 
   virtualisation.docker = {
     enable = true;
@@ -548,7 +548,7 @@ in
     # require public key authentication for better security
     settings.PasswordAuthentication = true;
     settings.KbdInteractiveAuthentication = true;
-    settings.PermitRootLogin = "yes";
+    settings.PermitRootLogin = "prohibit-password";
   };
 
   services.tailscale = { enable = true; };
