@@ -46,6 +46,7 @@ in
     xorg.xhost
     kitty # default terminal (the one used by the default config)
 
+    brightnessctl
     cliphist
     foot
     gnome.eog
