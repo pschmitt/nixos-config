@@ -44,6 +44,7 @@ in
 
         # devel
         android-tools
+        ansible
         shellcheck
         niv
         nixpkgs-fmt
