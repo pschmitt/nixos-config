@@ -419,6 +419,7 @@ in
     nmap
     nodejs
     pamixer
+    pavucontrol
     pciutils # lspci
     pinentry-curses
     pinentry-gnome
@@ -430,6 +431,7 @@ in
     tailscale
     tmux
     tree
+    unzip
     wget
     yq-go
 
@@ -437,6 +439,7 @@ in
     firefox
     google-chrome
     kitty
+    mullvad-vpn
     usbimager # etcher alternative
 
     # devel
