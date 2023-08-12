@@ -196,6 +196,13 @@ in
                 definedAliases = [ "nixw" ];
               };
 
+              "ArchWiki" = {
+                urls = [{ template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}"; }];
+                iconUpdateURL = "https://wiki.archlinux.org/favicon.ico";
+                updateInterval = 24 * 60 * 60 * 1000; # every day
+                definedAliases = [ "aw" ];
+              };
+
               "Bing".metaData.hidden = true;
               "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
 
