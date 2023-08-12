@@ -197,7 +197,14 @@ in
               };
 
               "Bing".metaData.hidden = true;
-              "Google".metaData.alias = "@g"; # builtin engines only support specifying one additional alias
+              "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
+
+              "YouTube" = {
+                urls = [{ template = "https://www.youtube.com/results?search_query={searchTerms}"; }];
+                iconUpdateURL = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
+                updateInterval = 24 * 60 * 60 * 1000; # every day
+                definedAliases = [ "y" ];
+              };
             };
           };
         };
