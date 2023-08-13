@@ -44,7 +44,7 @@ in
 
         # devel
         android-tools
-        ansible
+        # ansible
         shellcheck
         niv
         nixpkgs-fmt
@@ -211,6 +211,13 @@ in
                 iconUpdateURL = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
                 updateInterval = 24 * 60 * 60 * 1000; # every day
                 definedAliases = [ "y" ];
+              };
+
+              "GMail" = {
+                urls = [{ template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; }];
+                iconUpdateURL = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
+                updateInterval = 24 * 60 * 60 * 1000; # every day
+                definedAliases = [ "gm" ];
               };
             };
           };
