@@ -18,7 +18,9 @@ let
 
   python-packages = ps:
     with ps; [
+      # ansible
       dbus-python
+      dnspython
       black
       flake8
       gst-python
@@ -428,6 +430,7 @@ in
     pstree
     pulseaudio # pactl + pacmd
     ripgrep
+    socat
     tailscale
     tmux
     tree
@@ -436,6 +439,7 @@ in
     yq-go
 
     # apps
+    audacity
     firefox
     google-chrome
     kitty
