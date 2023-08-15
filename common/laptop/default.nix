@@ -424,6 +424,7 @@ in
     pstree
     pulseaudio # pactl + pacmd
     ripgrep
+    sshpass
     socat
     tailscale
     tmux
