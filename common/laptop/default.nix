@@ -8,8 +8,6 @@ let
     (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
     # reuse the current configuration
     { config = config.nixpkgs.config; };
-  flake-compat = builtins.fetchTarball
-    "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
 
   # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
   regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
@@ -37,14 +35,9 @@ let
 in
 {
   imports = [
-    # Include the results of the hardware scan.
-    ./hardware-configuration.nix
-    ./home-manager.nix
+    # ./hardware-configuration.nix
+    ../../home-manager
     ./hyprland.nix
-    # sudo nix-channel --add https://github.com/nix-community/home-manager/archive/release-23.05.tar.gz home-manager
-    # $ sudo nix-channel --update
-    # <home-manager/nixos>
-    # ./modules/hacompanion.nix
   ];
 
   nix = {
@@ -57,6 +50,7 @@ in
     settings = {
       allowed-users = [ "pschmitt" ];
       experimental-features = [ "nix-command" "flakes" ];
+      auto-optimise-store = true;
     };
   };
 
@@ -136,7 +130,7 @@ in
 
   # FIXME Disable wait-online services, this somehow results in NM not being started at all.
   # systemd.network.wait-online.enable = false;
-  # systemd.services.NetworkManager-wait-online.enable = false;
+  systemd.services.NetworkManager-wait-online.enable = false;
 
   services.resolved = {
     enable = true;
@@ -454,6 +448,7 @@ in
     neovim
     pkg-config
     # (python3.withPackages(python-packages))
+    # (python310.withPackages(python-packages))
     (python311.withPackages (python-packages))
     rustc
     openssl
