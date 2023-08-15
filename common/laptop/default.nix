@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ inputs, lib, config, pkgs, ... }:
 let
   unstable = import
     (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
@@ -41,7 +41,17 @@ in
   ];
 
   nix = {
-    package = pkgs.nixFlakes;
+    # package = pkgs.nixFlakes;
+
+    # This will add each flake input as a registry
+    # To make nix3 commands consistent with your flake
+    registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
+
+    # This will additionally add your inputs to the system's legacy channels
+    # Making legacy nix commands consistent as well, awesome!
+    nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config
+.nix.registry;
+
     gc = {
       automatic = true;
       dates = "weekly";
