@@ -37,6 +37,7 @@ in
   imports = [
     # ./hardware-configuration.nix
     ../../home-manager
+    ./btrfs.nix
     ./hyprland.nix
   ];
 
