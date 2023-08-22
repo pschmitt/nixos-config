@@ -94,8 +94,10 @@
   home.file = {
     ".face" = {
       enable = true;
-      source = builtins.fetchurl
-        ("https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96");
+      source = builtins.fetchurl {
+        url = "https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96";
+        sha256 = "1kg0x188q1g2mph13cs3sm4ybj3wsliq2yjz5qcw4qs8ka77l78p";
+      };
     };
   };
 

@@ -59,7 +59,7 @@ in
     };
     settings = {
       allowed-users = [ "pschmitt" ];
-      experimental-features = [ "nix-command" "flakes" ];
+      # experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
     };
   };
@@ -76,25 +76,7 @@ in
     ];
   };
 
-  system = {
-    # This value determines the NixOS release from which the default
-    # settings for stateful data, like file locations and database versions
-    # on your system were taken. It‘s perfectly fine and recommended to leave
-    # this value at the release version of the first install of this system.
-    # Before changing this value read the documentation for this option
-    # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-    stateVersion = "23.05"; # Did you read the comment?
-
-    autoUpgrade = {
-      enable = true;
-      channel = "https://nixos.org/channels/nixos-23.05";
-    };
-  };
-
   boot = {
-    kernel.sysctl = { "kernel.sysrq" = 1; };
-
-    kernelPackages = pkgs.linuxPackages_latest;
     extraModulePackages = [ pkgs.linuxPackages_latest.v4l2loopback ];
     # Explicitly load i8042 to attempt to fix the x13 keyboard in initrd
     kernelModules = [ "v4l2loopback" ];
@@ -298,26 +280,6 @@ in
   # Enable flatpak
   services.flatpak.enable = true;
 
-  # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.pschmitt = {
-    isNormalUser = true;
-    description = "Philipp Schmitt";
-    extraGroups = [
-      "adbusers"
-      "docker"
-      "mlocate"
-      "networkmanager"
-      "pschmitt"
-      "video"
-      "wheel"
-    ];
-    packages = with pkgs; [ ];
-    openssh.authorizedKeys.keys =
-      let authorizedKeys = builtins.fetchurl "https://github.com/pschmitt.keys";
-      in pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
-    shell = pkgs.zsh;
-  };
-
   # temporary hack until official lingering support is added to `users.users`
   # https://github.com/NixOS/nixpkgs/issues/3702
   systemd.tmpfiles.rules = [
@@ -368,22 +330,6 @@ in
       "browser.fixup.domainsuffixwhitelist.lan" = true;
     };
     preferencesStatus = "user";
-  };
-
-  virtualisation.docker = {
-    enable = true;
-    storageDriver = "btrfs";
-    package = unstable.docker_24;
-  };
-
-  # Make ZSH respect XDG
-  environment.etc = {
-    "zshenv.local" = {
-      text = ''
-        export ZDOTDIR="$HOME/.config/zsh"
-      '';
-      mode = "0644";
-    };
   };
 
   # Some programs need SUID wrappers, can be configured further or are
@@ -497,54 +443,6 @@ in
       #   emoji = ["Noto Color Emoji"];
       # };
     };
-  };
-
-  # FIXME This seems to break Hyprland (flake)
-  programs.nix-ld = {
-    enable = true;
-    # libraries = [];
-  };
-
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  programs.gnupg.agent = {
-    enable = true;
-    pinentryFlavor = "gnome3";
-    enableSSHSupport = true;
-  };
-
-  programs.tmux = {
-    enable = true;
-    clock24 = true;
-    newSession = true;
-    terminal = "tmux-direct";
-    aggressiveResize = true;
-    # Set prefix to C-a
-    shortcut = "a";
-    keyMode = "vi";
-    # extraConfig = ''
-    #   set-option -g mouse on
-    #   '';
-    plugins = with pkgs; [
-      tmuxPlugins.sensible
-      tmuxPlugins.pain-control
-      tmuxPlugins.onedark-theme
-      tmuxPlugins.mode-indicator
-      tmuxPlugins.fuzzback # prefix-?
-    ];
-  };
-
-  programs.npm = {
-    enable = true;
-    package = pkgs.nodePackages_latest.npm;
-    # FIXME This does not seem to be enough to override the dirs npm uses
-    # We might need to write this to /usr/etc/npmrc as the Arch Wiki suggests:
-    # https://wiki.archlinux.org/title/XDG_Base_Directory
-    npmrc = ''
-      prefix=''${XDG_DATA_HOME}/npm
-      cache=''${XDG_CACHE_HOME}/npm
-      init-module=''${XDG_CONFIG_HOME}/npm/config/npm-init.js'
-    '';
   };
 
   # List services that you want to enable:

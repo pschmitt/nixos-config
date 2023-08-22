@@ -4,10 +4,10 @@
 
 { config, pkgs, ... }:
 let
-  unstable = import
-    (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
-    # reuse the current configuration
-    { config = config.nixpkgs.config; };
+  # unstable = import
+  #   (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
+  #   # reuse the current configuration
+  #   { config = config.nixpkgs.config; };
   flake-compat = builtins.fetchTarball
     "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
 
@@ -76,7 +76,7 @@ in
     slurp
     swappy
     swayidle
-    unstable.waybar-hyprland
+    unstable.waybar
     unstable.wl-clip-persist
     wl-clipboard
     wlogout
