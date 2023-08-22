@@ -7,7 +7,7 @@
 
     ./hardware-configuration.nix
 
-    # ../../common/global
+    ../../common/global
     ../../common/laptop
   ];
 
