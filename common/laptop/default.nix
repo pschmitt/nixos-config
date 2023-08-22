@@ -4,11 +4,6 @@
 
 { inputs, lib, config, pkgs, ... }:
 let
-  unstable = import
-    (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
-    # reuse the current configuration
-    { config = config.nixpkgs.config; };
-
   # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
   regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
     SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
