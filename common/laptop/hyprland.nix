@@ -2,32 +2,8 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
-let
-  # unstable = import
-  #   (builtins.fetchTarball "https://github.com/nixos/nixpkgs/tarball/master")
-  #   # reuse the current configuration
-  #   { config = config.nixpkgs.config; };
-  flake-compat = builtins.fetchTarball
-    "https://github.com/edolstra/flake-compat/archive/master.tar.gz";
+{ inputs, config, pkgs, ... }:
 
-  hyprland-flake = (import flake-compat {
-    # master
-    # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
-    # release
-    src = builtins.fetchTarball
-      "https://github.com/hyprwm/Hyprland/releases/download/v0.28.0/source-v0.28.0.tar.gz";
-  }).defaultNix;
-
-  xdph-flake = (import flake-compat {
-    # master
-    # src = builtins.fetchTarball "https://github.com/hyprwm/Hyprland/archive/master.tar.gz";
-    # release
-    src = builtins.fetchTarball
-      "https://github.com/hyprwm/xdg-desktop-portal-hyprland/tarball/master";
-  }).defaultNix;
-
-in
 {
   nix.settings = {
     # Hyprland flake
@@ -48,7 +24,7 @@ in
 
   environment.systemPackages = with pkgs; [
     # Hyprland
-    hyprland-flake.packages.${pkgs.system}.hyprland
+    inputs.hyprland.packages.${pkgs.system}.hyprland
 
     polkit_gnome
     xorg.xhost
@@ -145,7 +121,7 @@ in
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
       displayManager.sessionPackages = [
-        hyprland-flake.packages.${pkgs.system}.hyprland
+        inputs.hyprland.packages.${pkgs.system}.hyprland
       ]; # also set by programs.hyprland.enable = true;
       displayManager.session = [{
         manage = "desktop";
@@ -195,7 +171,7 @@ in
       enable = true; # also set by programs.hyprland.enable = true;
       xdgOpenUsePortal = true;
       extraPortals = with pkgs; [
-        xdph-flake.packages.${pkgs.system}.xdg-desktop-portal-hyprland
+        inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland
         # xdg-desktop-portal-gtk
         # unstable.xdg-desktop-portal-hyprland
       ]; # also set by programs.hyprland.enable = true;
