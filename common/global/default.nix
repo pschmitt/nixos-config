@@ -58,6 +58,7 @@
     extraGroups = [
       "adbusers"
       "docker"
+      "input"  # for ydotool
       "mlocate"
       "networkmanager"
       "pschmitt"
