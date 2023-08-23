@@ -69,6 +69,61 @@ in
     # Enable all MagicSysRq keys
     kernel.sysctl = { "kernel.sysrq" = 1; };
     kernelPackages = pkgs.linuxPackages_latest;
+    tmp = { useTmpfs = true; };
+
+    # Bootloader.
+    loader.systemd-boot.enable = true;
+    loader.efi.canTouchEfiVariables = true;
+
+    # Setup keyfile
+    # initrd.secrets = {
+    #   "/crypto_keyfile.bin" = null;
+    # };
+  };
+
+  # Set your time zone.
+  time.timeZone = "Europe/Berlin";
+
+  # Select internationalisation properties.
+  i18n.defaultLocale = "en_US.UTF-8";
+
+  i18n.extraLocaleSettings = {
+    LC_ADDRESS = "de_DE.UTF-8";
+    LC_IDENTIFICATION = "de_DE.UTF-8";
+    LC_MEASUREMENT = "de_DE.UTF-8";
+    LC_MONETARY = "de_DE.UTF-8";
+    LC_NAME = "de_DE.UTF-8";
+    LC_NUMERIC = "de_DE.UTF-8";
+    LC_PAPER = "de_DE.UTF-8";
+    LC_TELEPHONE = "de_DE.UTF-8";
+    LC_TIME = "de_DE.UTF-8";
+  };
+
+  # Configure console keymap
+  console.keyMap = "de";
+
+  # Enable networking
+  networking = {
+    networkmanager = {
+      enable = true;
+      dns = "systemd-resolved";
+    };
+  };
+
+  # FIXME Disable wait-online services, this somehow results in NM not being started at all.
+  # systemd.network.wait-online.enable = false;
+  # systemd.services.NetworkManager-wait-online.enable = false;
+
+  services.resolved = {
+    enable = true;
+    dnssec = "true";
+    llmnr = "true";
+    # domains = [ "~." ];
+    fallbackDns = [ "1.1.1.1#one.one.one.one" "1.0.0.1#one.one.one.one" ];
+    extraConfig = ''
+      DNSOverTLS=opportunistic
+      MulticastDNS=yes
+    '';
   };
 
   environment.systemPackages = with pkgs; [
@@ -155,6 +210,22 @@ in
     shell = pkgs.zsh;
   };
 
+  # Disable password prompts for wheel users when sudo'ing
+  security.sudo.wheelNeedsPassword = false;
+
+  # firmware updates
+  services.fwupd.enable = true;
+
+  # Enable flatpak
+  services.flatpak.enable = true;
+
+  # mlocate
+  services.locate = {
+    enable = true;
+    locate = pkgs.plocate;
+    interval = "daily";
+    localuser = null; # scan as root
+  };
 
   # This setups a SSH server. Very important if you're setting up a headless system.
   # Feel free to remove if you don't need it.
@@ -165,6 +236,8 @@ in
     # Use keys only. Remove if you want to SSH using password (not recommended)
     # passwordAuthentication = false;
   };
+
+  services.tailscale = { enable = true; };
 
   virtualisation.docker = {
     enable = true;
@@ -219,6 +292,35 @@ in
     '';
   };
 
+  programs.neovim = {
+    enable = true;
+    defaultEditor = true;
+    viAlias = false;
+    vimAlias = true;
+    configure = {
+      extraConfig = ''
+        set nocompatible
+        filetype plugin indent on
+        syntax on
+        set modeline
+        set autoindent expandtab smarttab
+        set mouse=a
+        scriptencoding utf-8
+        set backspace=indent,eol,start
+        set number
+        set listchars=tab:→\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
+      '';
+      # packages.myVimPackage = with pkgs.vimPlugins; {
+      #   # loaded on launch
+      #   start = [ fugitive ];
+      #   # manually loadable by calling `:packadd $plugin-name`
+      #   opt = [ ];
+      # };
+    };
+  };
+
+  programs.zsh.enable = true;
+  environment.shells = with pkgs; [ zsh ];
   # Make ZSH respect XDG
   environment.etc = {
     "zshenv.local" = {

@@ -9,23 +9,6 @@ let
     SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
   });
 
-  python-packages = ps:
-    with ps; [
-      # ansible
-      dbus-python
-      dnspython
-      black
-      flake8
-      gst-python
-      ipython
-      isort
-      pip
-      pipx
-      pygobject3
-      pynvim
-      requests
-      rich
-    ];
 
 in
 {
@@ -81,41 +64,6 @@ in
       # https://github.com/umlaeute/v4l2loopback
       options v4l2loopback video_nr=10 exclusive_caps=1 card_label="OBS Virtual Camera"
     '';
-
-    # Bootloader.
-    loader.systemd-boot.enable = true;
-    loader.efi.canTouchEfiVariables = true;
-
-    # Setup keyfile
-    # initrd.secrets = {
-    #   "/crypto_keyfile.bin" = null;
-    # };
-
-    tmp = { useTmpfs = true; };
-  };
-
-  # Enable networking
-  networking = {
-    networkmanager = {
-      enable = true;
-      dns = "systemd-resolved";
-    };
-  };
-
-  # FIXME Disable wait-online services, this somehow results in NM not being started at all.
-  # systemd.network.wait-online.enable = false;
-  # systemd.services.NetworkManager-wait-online.enable = false;
-
-  services.resolved = {
-    enable = true;
-    dnssec = "true";
-    llmnr = "true";
-    # domains = [ "~." ];
-    fallbackDns = [ "1.1.1.1#one.one.one.one" "1.0.0.1#one.one.one.one" ];
-    extraConfig = ''
-      DNSOverTLS=opportunistic
-      MulticastDNS=yes
-    '';
   };
 
   hardware.bluetooth = {
@@ -127,27 +75,6 @@ in
     # };
   };
   services.blueman.enable = true;
-
-  # Set your time zone.
-  time.timeZone = "Europe/Berlin";
-
-  # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "de_DE.UTF-8";
-    LC_IDENTIFICATION = "de_DE.UTF-8";
-    LC_MEASUREMENT = "de_DE.UTF-8";
-    LC_MONETARY = "de_DE.UTF-8";
-    LC_NAME = "de_DE.UTF-8";
-    LC_NUMERIC = "de_DE.UTF-8";
-    LC_PAPER = "de_DE.UTF-8";
-    LC_TELEPHONE = "de_DE.UTF-8";
-    LC_TIME = "de_DE.UTF-8";
-  };
-
-  # Configure console keymap
-  console.keyMap = "de";
 
   services.xserver = {
     # Enable the X11 windowing system.
@@ -209,14 +136,6 @@ in
   # Enable CUPS to print documents.
   services.printing.enable = true;
 
-  # mlocate
-  services.locate = {
-    enable = true;
-    locate = pkgs.plocate;
-    interval = "daily";
-    localuser = null; # scan as root
-  };
-
   # enable sushi and keyring
   services.gnome = {
     sushi.enable = true;
@@ -248,9 +167,6 @@ in
   services.gvfs.enable = true;
   services.tumbler.enable = true;
 
-  # Disable password prompts for wheel users when sudo'ing
-  security.sudo.wheelNeedsPassword = false;
-
   # Enable sound with pipewire.
   sound.enable = true;
   hardware.pulseaudio.enable = false;
@@ -269,47 +185,11 @@ in
     #media-session.enable = true;
   };
 
-  # firmware updates
-  services.fwupd.enable = true;
-
-  # Enable flatpak
-  services.flatpak.enable = true;
-
   # temporary hack until official lingering support is added to `users.users`
   # https://github.com/NixOS/nixpkgs/issues/3702
   systemd.tmpfiles.rules = [
     "f /var/lib/systemd/linger/pschmitt"
   ];
-
-  programs.zsh.enable = true;
-  environment.shells = with pkgs; [ zsh ];
-
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = false;
-    vimAlias = true;
-    configure = {
-      extraConfig = ''
-        set nocompatible
-        filetype plugin indent on
-        syntax on
-        set modeline
-        set autoindent expandtab smarttab
-        set mouse=a
-        scriptencoding utf-8
-        set backspace=indent,eol,start
-        set number
-        set listchars=tab:→\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
-      '';
-      # packages.myVimPackage = with pkgs.vimPlugins; {
-      #   # loaded on launch
-      #   start = [ fugitive ];
-      #   # manually loadable by calling `:packadd $plugin-name`
-      #   opt = [ ];
-      # };
-    };
-  };
 
   programs.adb.enable = true;
 
