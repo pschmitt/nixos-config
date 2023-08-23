@@ -331,80 +331,29 @@ in
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    # core
-    acpi
-    bc
-    bind # dig
-    curl
-    dua # ncdu on steroids
-    file
-    fping
     gobject-introspection
-    gparted
     gtk3 # gtk-update-icon-cache
-    htop
-    jq
-    killall
     libinput # libinput debug-events
     libsecret # secret-tool
-    lm_sensors
-    mediainfo
-    ncpamixer
-    nmap
-    nodejs
-    pamixer
-    pavucontrol
-    pciutils # lspci
     pinentry-curses
     pinentry-gnome
     polkit_gnome
-    procps # coreutils' uptime does not have the -s flag
-    pstree
+    tesseract
+
+    # media
+    ncpamixer
+    pamixer
+    pavucontrol
     pulseaudio # pactl + pacmd
-    ripgrep
-    sshpass
-    socat
-    tailscale
-    tmux
-    tree
-    unzip
-    wget
-    yq-go
 
     # apps
     audacity
     firefox
     google-chrome
+    gparted
     kitty
     mullvad-vpn
     usbimager # etcher alternative
-
-    # devel
-    cargo
-    gcc
-    gnumake
-    go
-    neovim
-    pkg-config
-    # (python3.withPackages(python-packages))
-    # (python310.withPackages(python-packages))
-    (python311.withPackages (python-packages))
-    rustc
-    openssl
-
-    (vim_configurable.customize {
-      name = "vim";
-      vimrcConfig.customRC = ''
-        set nocompatible
-        filetype plugin indent on
-        syntax on
-        set modeline
-        set autoindent expandtab smarttab
-        set mouse=a
-        scriptencoding utf-8
-        set backspace=indent,eol,start
-      '';
-    })
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root

@@ -1,7 +1,27 @@
 # This is your system's configuration file.
 # Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
 
-{ inputs, outputs, lib, config, pkgs, ... }: {
+{ inputs, outputs, lib, config, pkgs, ... }:
+let
+  python-packages = ps:
+    with ps; [
+      # ansible
+      dbus-python
+      dnspython
+      black
+      flake8
+      gst-python
+      ipython
+      isort
+      pip
+      pipx
+      pygobject3
+      pynvim
+      requests
+      rich
+    ];
+in
+{
 
   nixpkgs = {
     # You can add overlays here
@@ -51,6 +71,64 @@
     kernelPackages = pkgs.linuxPackages_latest;
   };
 
+  environment.systemPackages = with pkgs; [
+    # core
+    acpi
+    bc
+    bind # dig
+    curl
+    dua # ncdu on steroids
+    file
+    fping
+    htop
+    jq
+    killall
+    lm_sensors
+    mediainfo
+    nmap
+    pciutils # lspci
+    pinentry-curses
+    procps # coreutils' uptime does not have the -s flag
+    pstree
+    ripgrep
+    sshpass
+    socat
+    tailscale
+    tmux
+    tree
+    unzip
+    wget
+    yq-go
+
+    # devel
+    cargo
+    gcc
+    gnumake
+    go
+    neovim
+    nodejs
+    pkg-config
+    # (python3.withPackages(python-packages))
+    # (python310.withPackages(python-packages))
+    (python311.withPackages (python-packages))
+    rustc
+    openssl
+
+    (vim_configurable.customize {
+      name = "vim";
+      vimrcConfig.customRC = ''
+        set nocompatible
+        filetype plugin indent on
+        syntax on
+        set modeline
+        set autoindent expandtab smarttab
+        set mouse=a
+        scriptencoding utf-8
+        set backspace=indent,eol,start
+      '';
+    })
+  ];
+
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.pschmitt = {
     isNormalUser = true;
@@ -58,7 +136,7 @@
     extraGroups = [
       "adbusers"
       "docker"
-      "input"  # for ydotool
+      "input" # for ydotool
       "mlocate"
       "networkmanager"
       "pschmitt"
@@ -67,11 +145,13 @@
     ];
     packages = with pkgs; [ ];
     openssh.authorizedKeys.keys =
-      let authorizedKeys = builtins.fetchurl {
-        url = "https://github.com/pschmitt.keys";
-        sha256 = "0s2ix9lmhv5vc6av3jymhkkm41dbq7acbjqryb5l1lsmax159fh8";
-      };
-      in pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
+      let
+        authorizedKeys = builtins.fetchurl {
+          url = "https://github.com/pschmitt.keys";
+          sha256 = "0s2ix9lmhv5vc6av3jymhkkm41dbq7acbjqryb5l1lsmax159fh8";
+        };
+      in
+      pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
     shell = pkgs.zsh;
   };
 
