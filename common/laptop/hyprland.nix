@@ -59,6 +59,7 @@
     wlr-randr
     wofi
     wofi-emoji
+    wlrctl
     wtype
     ydotool
 
@@ -174,7 +175,7 @@
         inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland
         # xdg-desktop-portal-gtk
         # unstable.xdg-desktop-portal-hyprland
-      ]; # also set by programs.hyprland.enable = true;
+      ];
     };
   };
 }
