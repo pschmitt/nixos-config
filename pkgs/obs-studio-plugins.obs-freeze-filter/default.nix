@@ -2,17 +2,12 @@
 , lib
 , fetchFromGitHub
 , cmake
-, pkg-config
 , obs-studio
-, libuiohook
 , qtbase
-, xorg
-, libxkbcommon
-, libxkbfile
 }:
 
 stdenv.mkDerivation rec {
-  pname = "freeze-filter";
+  pname = "obs-freeze-filter";
   version = "0.3.3";
   src = fetchFromGitHub {
     owner = "exeldro";
@@ -22,21 +17,11 @@ stdenv.mkDerivation rec {
     fetchSubmodules = true;
   };
 
-  nativeBuildInputs = [ cmake pkg-config ];
+  # nativeBuildInputs = [ cmake pkg-config ];
+  nativeBuildInputs = [ cmake ];
   buildInputs = [
     obs-studio
-    libuiohook
     qtbase
-    xorg.libX11
-    xorg.libXau
-    xorg.libXdmcp
-    xorg.libXtst
-    xorg.libXext
-    xorg.libXi
-    xorg.libXt
-    xorg.libXinerama
-    libxkbcommon
-    libxkbfile
   ];
 
   postInstall = ''
