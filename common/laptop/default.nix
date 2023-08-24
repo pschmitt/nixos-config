@@ -221,6 +221,7 @@ in
     tesseract
 
     # media
+    imagemagick
     ncpamixer
     pamixer
     pavucontrol
