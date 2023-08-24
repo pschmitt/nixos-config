@@ -6,6 +6,9 @@
 
   home-manager = {
     extraSpecialArgs = { inherit inputs; };
+    useGlobalPkgs = true;
+    useUserPackages = true;
+
     users = {
       # Import your home-manager configuration
       pschmitt = import ./home.nix;

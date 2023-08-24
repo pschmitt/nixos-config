@@ -5,28 +5,6 @@
     # ./nvim.nix
   ];
 
-  nixpkgs = {
-    # You can add overlays here
-    overlays = [
-      # If you want to use overlays exported from other flakes:
-      # neovim-nightly-overlay.overlays.default
-
-      # Or define it inline, for example:
-      # (final: prev: {
-      #   hi = final.hello.overrideAttrs (oldAttrs: {
-      #     patches = [ ./change-hello-to-hi.patch ];
-      #   });
-      # })
-    ];
-    # Configure your nixpkgs instance
-    config = {
-      # Disable if you don't want unfree packages
-      allowUnfree = true;
-      # Workaround for https://github.com/nix-community/home-manager/issues/2942
-      allowUnfreePredicate = (_: true);
-    };
-  };
-
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = "23.05";
   home.packages = with pkgs; [
@@ -78,9 +56,13 @@
     ffmpeg-full
     fx_cast_bridge
     mpv-unwrapped
-    obs-studio
     v4l-utils
     vlc
+
+    # OBS Plugins
+    obs-studio
+    unstable.obs-studio-plugins.obs-text-pthread
+    obs-studio-plugins.freeze-filter
 
     # NOTE Installing gtklock with home manager has the nice side-effect
     # that it creates nice symlinks in
@@ -98,6 +80,17 @@
         url = "https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96";
         sha256 = "1kg0x188q1g2mph13cs3sm4ybj3wsliq2yjz5qcw4qs8ka77l78p";
       };
+    };
+
+    # OBS Studio plugins
+    ".config/obs-studio/plugins/freeze-filter/bin/64bit/freeze-filter.so" = {
+      enable = true;
+      source = "${pkgs.obs-studio-plugins.freeze-filter}/lib/obs-plugins/64bit/freeze-filter.so";
+    };
+    ".config/obs-studio/plugins/freeze-filter/data" = {
+      enable = true;
+      recursive = true;
+      source = "${pkgs.obs-studio-plugins.freeze-filter}/share/obs/data/obs-plugins/freeze-filter";
     };
   };
 
