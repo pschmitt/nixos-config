@@ -9,6 +9,7 @@
 
     ../../common/global
     ../../common/laptop
+    ../../common/sshfs
   ];
 
 
