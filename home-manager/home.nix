@@ -51,6 +51,8 @@
     zoom-us
     taskwarrior
     timewarrior
+    terraform
+    vault
 
     # Media
     ffmpeg-full
