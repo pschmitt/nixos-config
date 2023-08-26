@@ -69,6 +69,7 @@ in
     # OBS Plugins
     (wrapOBS {
       plugins = with obs-studio-plugins; [
+        unstable.obs-studio-plugins.droidcam-obs
         unstable.obs-studio-plugins.obs-text-pthread
         obs-freeze-filter
         obs-replay-source
