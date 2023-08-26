@@ -1,4 +1,9 @@
-{ inputs, lib, config, pkgs, ... }: {
+{ inputs, lib, config, pkgs, ... }:
+let
+  username = builtins.baseNameOf config.home.homeDirectory;
+
+in
+{
   # You can import other home-manager modules here
   imports = [
     # You can also split up your configuration and import pieces of it here:
@@ -7,6 +12,7 @@
 
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = "23.05";
+
   home.packages = with pkgs; [
     home-manager
     # nwg-displays
@@ -113,24 +119,15 @@
       extraConfig = { gtk-application-prefer-dark-theme = 1; };
       bookmarks = [
         "file:///tmp tmp"
-        # "file://${config.users.users.pschmitt.home}/devel/private devel-p"
-        # "file://${config.users.users.pschmitt.home}/devel/work devel-w"
-        # "file://${config.users.users.pschmitt.home}/Documents"
-        # "file://${config.users.users.pschmitt.home}/Downloads"
-        # "file://${config.users.users.pschmitt.home}/Music"
-        # "file://${config.users.users.pschmitt.home}/Public"
-        # "file://${config.users.users.pschmitt.home}/Pictures"
-        # "file://${config.users.users.pschmitt.home}/Templates"
-        # "file://${config.users.users.pschmitt.home}/Videos"
-        "file:///home/pschmitt/devel/private devel-p"
-        "file:///home/pschmitt/devel/work devel-w"
-        "file:///home/pschmitt/Documents"
-        "file:///home/pschmitt/Downloads"
-        "file:///home/pschmitt/Music"
-        "file:///home/pschmitt/Public"
-        "file:///home/pschmitt/Pictures"
-        "file:///home/pschmitt/Templates"
-        "file:///home/pschmitt/Videos"
+        "file://${username}/devel/private devel-p"
+        "file://${username}/devel/work devel-w"
+        "file://${username}/Documents"
+        "file://${username}/Downloads"
+        "file://${username}/Music"
+        "file://${username}/Public"
+        "file://${username}/Pictures"
+        "file://${username}/Templates"
+        "file://${username}/Videos"
       ];
     };
 
