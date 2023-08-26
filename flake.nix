@@ -12,6 +12,8 @@
     home-manager.url = "github:nix-community/home-manager/release-23.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    agenix.url = "github:ryantm/agenix";
+
     hyprland.url = "github:hyprwm/Hyprland/v0.28.0";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
@@ -45,7 +47,7 @@
       overlays = import ./overlays { inherit inputs; };
       # Reusable nixos modules you might want to export
       # These are usually stuff you would upstream into nixpkgs
-      # nixosModules = import ./modules/nixos;
+      nixosModules = import ./modules/nixos;
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
       # homeManagerModules = import ./modules/home-manager;
