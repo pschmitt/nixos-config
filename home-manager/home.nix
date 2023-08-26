@@ -45,14 +45,13 @@
 
     # Work
     kubectl
-    vault
-    openvpn
     openconnect
-    zoom-us
+    openvpn
     taskwarrior
-    timewarrior
     terraform
+    timewarrior
     vault
+    zoom-us
 
     # Media
     ffmpeg-full
