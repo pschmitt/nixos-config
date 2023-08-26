@@ -28,4 +28,8 @@
       # allowedUDPPorts = [ ... ];
     };
   };
+
+  # FIXME This works but is annoying since it seems to trigger
+  # gtklock very often, and the login process is password + fingerprint
+  # services.fprintd.enable = true;
 }
