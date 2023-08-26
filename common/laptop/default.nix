@@ -272,6 +272,10 @@ in
   };
 
   # List services that you want to enable:
+  services.avahi = {
+    enable = true;
+    nssmdns = true;
+  };
 
   # Enable the OpenSSH daemon.
   services.openssh = {
