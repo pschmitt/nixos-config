@@ -22,7 +22,6 @@ let
     ];
 in
 {
-
   nixpkgs = {
     # You can add overlays here
     overlays = [
@@ -127,6 +126,9 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    # nix
+    inputs.agenix.packages.${system}.default
+
     # core
     acpi
     bc
