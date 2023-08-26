@@ -1,7 +1,7 @@
 { inputs, lib, config, pkgs, ... }: {
   services.snapper = {
     snapshotRootOnBoot = false;
-    snapshotInterval = "1h";
+    snapshotInterval = "hourly";
     cleanupInterval = "1d";
 
     configs = {
