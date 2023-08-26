@@ -195,6 +195,7 @@ in
 
   programs.firefox = {
     enable = true;
+    nativeMessagingHosts.fxCast = true;
     preferences = {
       # Enable custom css (userChrome.css)
       "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
