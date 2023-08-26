@@ -1,6 +1,6 @@
 { inputs, lib, config, pkgs, ... }:
 let
-  username = builtins.baseNameOf config.home.homeDirectory;
+  username = "/home/pschmitt";
 
 in
 {
