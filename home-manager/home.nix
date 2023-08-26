@@ -60,10 +60,13 @@
     vlc
 
     # OBS Plugins
-    obs-studio
-    unstable.obs-studio-plugins.obs-text-pthread
-    obs-studio-plugins.obs-freeze-filter
-    obs-studio-plugins.obs-replay-source
+    (wrapOBS {
+      plugins = with obs-studio-plugins; [
+        unstable.obs-studio-plugins.obs-text-pthread
+        obs-freeze-filter
+        obs-replay-source
+      ];
+    })
 
     # NOTE Installing gtklock with home manager has the nice side-effect
     # that it creates nice symlinks in
@@ -81,37 +84,6 @@
         url = "https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96";
         sha256 = "1kg0x188q1g2mph13cs3sm4ybj3wsliq2yjz5qcw4qs8ka77l78p";
       };
-    };
-
-    # OBS Studio plugins
-    ".config/obs-studio/plugins/obs-text-pthread/bin/64bit/obs-text-pthread.so" = {
-      enable = true;
-      source = "${pkgs.unstable.obs-studio-plugins.obs-text-pthread}/lib/obs-plugins/obs-text-pthread.so";
-    };
-    ".config/obs-studio/plugins/obs-text-pthread/data" = {
-      enable = true;
-      recursive = true;
-      source = "${pkgs.unstable.obs-studio-plugins.obs-text-pthread}/share/obs/obs-plugins/obs-text-pthread";
-    };
-
-    ".config/obs-studio/plugins/freeze-filter/bin/64bit/freeze-filter.so" = {
-      enable = true;
-      source = "${pkgs.obs-studio-plugins.obs-freeze-filter}/lib/obs-plugins/freeze-filter.so";
-    };
-    ".config/obs-studio/plugins/freeze-filter/data" = {
-      enable = true;
-      recursive = true;
-      source = "${pkgs.obs-studio-plugins.obs-freeze-filter}/share/obs/data/obs-plugins/freeze-filter";
-    };
-
-    ".config/obs-studio/plugins/replay-source/bin/64bit/replay-source.so" = {
-      enable = true;
-      source = "${pkgs.obs-studio-plugins.obs-replay-source}/lib/obs-plugins/replay-source.so";
-    };
-    ".config/obs-studio/plugins/replay-source/data" = {
-      enable = true;
-      recursive = true;
-      source = "${pkgs.obs-studio-plugins.obs-replay-source}/share/obs/data/obs-plugins/replay-source";
     };
   };
 
