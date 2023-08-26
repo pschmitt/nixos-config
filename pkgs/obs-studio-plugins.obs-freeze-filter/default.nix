@@ -12,12 +12,11 @@ stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "exeldro";
     repo = "obs-freeze-filter";
-    rev = "${version}";
+    rev = version;
     sha256 = "sha256-CaHBTfdk8VFjmiclG61elj35glQafgz5B4ENo+7J35o=";
     fetchSubmodules = true;
   };
 
-  # nativeBuildInputs = [ cmake pkg-config ];
   nativeBuildInputs = [ cmake ];
   buildInputs = [
     obs-studio
@@ -25,10 +24,10 @@ stdenv.mkDerivation rec {
   ];
 
   postInstall = ''
-    mkdir -p $out/lib $out/share
-    mv $out/obs-plugins/64bit $out/lib/obs-plugins
-    rm -rf $out/obs-plugins
-    mv $out/data $out/share/obs
+    rm -rf "$out/share"
+    mkdir -p "$out/share/obs"
+    mv "$out/data/obs-plugins" "$out/share/obs"
+    rm -rf "$out/obs-plugins" "$out/data"
   '';
 
   dontWrapQtApps = true;
@@ -38,7 +37,5 @@ stdenv.mkDerivation rec {
     homepage = "https://github.com/exeldro/obs-freeze-filter";
     license = licenses.gpl2;
     platforms = platforms.linux;
-    # never built on aarch64-linux since first introduction in nixpkgs
-    broken = stdenv.isLinux && stdenv.isAarch64;
   };
 }
