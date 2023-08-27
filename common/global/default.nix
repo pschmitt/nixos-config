@@ -142,14 +142,15 @@ in
     killall
     lm_sensors
     mediainfo
+    nethogs
     nmap
     pciutils # lspci
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     pstree
     ripgrep
-    sshpass
     socat
+    sshpass
     tailscale
     tmux
     tree
