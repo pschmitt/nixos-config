@@ -31,6 +31,7 @@ in
     # gui
     gimp
     nextcloud-client
+    unstable.signal-desktop
 
     # virtualization
     quickemu
@@ -52,6 +53,7 @@ in
     # Work
     kubectl
     openconnect
+    openstackclient
     openvpn
     taskwarrior
     terraform

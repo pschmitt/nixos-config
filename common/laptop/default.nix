@@ -236,6 +236,7 @@ in
     kitty
     mullvad-vpn
     usbimager # etcher alternative
+    virt-manager
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
