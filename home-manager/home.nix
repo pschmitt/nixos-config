@@ -74,7 +74,7 @@ in
       plugins = with obs-studio-plugins; [
         unstable.obs-studio-plugins.droidcam-obs
         unstable.obs-studio-plugins.obs-text-pthread
-        obs-freeze-filter
+        master.obs-studio-plugins.obs-freeze-filter
         obs-replay-source
       ];
     })
