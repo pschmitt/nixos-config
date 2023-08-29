@@ -44,6 +44,7 @@ in
     shellcheck
     niv
     nixpkgs-fmt
+    nixos-generators
     rnix-lsp
     nixfmt
     nix-index
