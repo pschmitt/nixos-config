@@ -206,7 +206,7 @@ in
       let
         authorizedKeys = builtins.fetchurl {
           url = "https://github.com/pschmitt.keys";
-          sha256 = "0s2ix9lmhv5vc6av3jymhkkm41dbq7acbjqryb5l1lsmax159fh8";
+          sha256 = "0kzafzw0bmpghrrm3fgsdrr6bl21p4ydgdvv4lwkszhpmb0rr4ys";
         };
       in
       pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
