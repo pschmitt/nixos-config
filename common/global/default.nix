@@ -222,6 +222,16 @@ in
   # Enable flatpak
   services.flatpak.enable = true;
 
+  # flathub
+  # https://discourse.nixos.org/t/confusion-about-proper-way-to-setup-flathub/29806/12
+  system.userActivationScripts = {
+    flathub = {
+      text = ''
+        ${pkgs.flatpak}/bin/flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        '';
+    };
+  };
+
   # mlocate
   services.locate = {
     enable = true;
