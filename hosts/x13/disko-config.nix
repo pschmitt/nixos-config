@@ -46,6 +46,8 @@
                       mountpoint = "/home";
                       mountOptions = [ "compress=zstd" "noatime" ];
                     };
+                    # Snapper
+                    "/home/.snapshots" = { };
                     "@nix" = {
                       mountpoint = "/nix";
                       mountOptions = [ "compress=zstd" "noatime" ];
