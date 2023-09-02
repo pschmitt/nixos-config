@@ -54,6 +54,7 @@
     swayidle
     unstable.waybar
     unstable.wl-clip-persist
+    wayvnc
     wl-clipboard
     wlogout
     wlr-randr
