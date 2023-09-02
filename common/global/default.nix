@@ -347,6 +347,15 @@ in
 
   hardware.enableAllFirmware = true;
 
+  security.wrappers = {
+    fping = {
+      source = "${pkgs.fping}/bin/fping";
+      setuid = true;
+      owner = "root";
+      group = "root";
+    };
+  };
+
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system = {
     stateVersion = "23.05";
