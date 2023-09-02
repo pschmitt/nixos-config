@@ -148,6 +148,7 @@ in
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     pstree
+    pwgen
     ripgrep
     socat
     sshpass
