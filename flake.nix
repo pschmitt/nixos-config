@@ -15,7 +15,7 @@
 
     agenix.url = "github:ryantm/agenix";
 
-    hyprland.url = "github:hyprwm/Hyprland/v0.28.0";
+    hyprland.url = "github:hyprwm/Hyprland/v0.29.1";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
 
