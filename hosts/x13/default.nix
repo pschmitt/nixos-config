@@ -10,6 +10,7 @@
     ../../common/global
     ../../common/laptop
     ../../common/sshfs
+    ../../common/work
   ];
 
 
