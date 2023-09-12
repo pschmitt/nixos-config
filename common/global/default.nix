@@ -3,23 +3,30 @@
 
 { inputs, outputs, lib, config, pkgs, ... }:
 let
-  python-packages = ps:
-    with ps; [
-      # ansible
-      dbus-python
-      dnspython
-      black
-      flake8
-      gst-python
-      ipython
-      isort
-      pip
-      pipx
-      pygobject3
-      pynvim
-      requests
-      rich
-    ];
+  python-packages = ps: with ps; [
+    # ansible
+    dbus-python
+    dnspython
+    black
+    flake8
+    gst-python
+    ipython
+    isort
+    pip
+    pipx
+    pygobject3
+    pynvim
+    requests
+    rich
+  ];
+
+  authorizedKeysContent = builtins.readFile (builtins.fetchurl {
+    url = "https://github.com/pschmitt.keys";
+    sha256 = "0kzafzw0bmpghrrm3fgsdrr6bl21p4ydgdvv4lwkszhpmb0rr4ys";
+  });
+
+  authorizedKeys = pkgs.lib.filter (key: key != "") (pkgs.lib.splitString "\n" authorizedKeysContent);
+
 in
 {
   nixpkgs = {
@@ -204,14 +211,7 @@ in
       "wheel"
     ];
     packages = with pkgs; [ ];
-    openssh.authorizedKeys.keys =
-      let
-        authorizedKeys = builtins.fetchurl {
-          url = "https://github.com/pschmitt.keys";
-          sha256 = "0kzafzw0bmpghrrm3fgsdrr6bl21p4ydgdvv4lwkszhpmb0rr4ys";
-        };
-      in
-      pkgs.lib.splitString "\n" (builtins.readFile authorizedKeys);
+    openssh.authorizedKeys.keys = authorizedKeys;
     shell = pkgs.zsh;
   };
 
