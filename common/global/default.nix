@@ -113,6 +113,7 @@ in
     networkmanager = {
       enable = true;
       dns = "systemd-resolved";
+      enableFccUnlock = true;
     };
   };
 
