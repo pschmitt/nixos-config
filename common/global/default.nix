@@ -145,6 +145,7 @@ in
     nethogs
     nmap
     pciutils # lspci
+    usbutils # lsusb
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     pstree
