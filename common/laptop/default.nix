@@ -214,6 +214,7 @@ in
   environment.systemPackages = with pkgs; [
     gobject-introspection
     gtk3 # gtk-update-icon-cache
+    iw
     libinput # libinput debug-events
     libsecret # secret-tool
     pinentry-curses
