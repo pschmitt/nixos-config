@@ -239,6 +239,8 @@ in
     mullvad-vpn
     usbimager # etcher alternative
     virt-manager
+
+    intel-gpu-tools
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
