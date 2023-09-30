@@ -4,6 +4,7 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
+    # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";  # unstable by default
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
@@ -19,7 +20,7 @@
     agenix.url = "github:ryantm/agenix";
 
     hyprland.url = "github:hyprwm/Hyprland/v0.30.0";
-    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
+    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.1.0";
   };
 
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
