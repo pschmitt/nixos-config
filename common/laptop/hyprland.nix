@@ -97,7 +97,8 @@
     # })
   ];
 
-  fonts.enableDefaultFonts = true;
+  # fonts.enableDefaultFonts = true;   # stable
+  fonts.enableDefaultPackages = true;  # unstable
 
   hardware.opengl.enable = true;
 
