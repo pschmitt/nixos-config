@@ -1,12 +1,11 @@
 { pkgs, inputs, ... }: {
   imports = [
     inputs.hardware.nixosModules.common-cpu-intel
-    # Uncomment to completely disable the NVIDIA GPU
-    # inputs.hardware.nixosModules.common-gpu-nvidia-disable
     inputs.hardware.nixosModules.common-pc-ssd
     inputs.hardware.nixosModules.common-pc-laptop-acpi_call
 
     ./hardware-configuration.nix
+    ./nvidia.nix
 
     ../../common/global
     ../../common/laptop
@@ -14,16 +13,6 @@
     ../../common/work
   ];
 
-  # https://discourse.nixos.org/t/nixos-using-integrated-gpu-for-display-and-external-gpu-for-compute-a-guide/12345
-  boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
-  boot.extraModulePackages = with pkgs; [
-    linuxPackages_latest.nvidia_x11
-  ];
-
-  environment.systemPackages = with pkgs; [
-    linuxPackages_latest.nvidia_x11
-    deckmaster
-  ];
 
   # FIXME MIPI Camera
   # hardware.ipu6 = {
