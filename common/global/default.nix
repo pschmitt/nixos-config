@@ -266,6 +266,8 @@ in
     # libraries = [];
   };
 
+  programs.command-not-found.enable = false;
+
   # started in user sessions.
   # programs.mtr.enable = true;
   programs.gnupg.agent = {
