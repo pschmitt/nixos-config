@@ -229,6 +229,7 @@ in
     pamixer
     pavucontrol
     pulseaudio # pactl + pacmd
+    deckmaster
 
     # apps
     audacity
@@ -248,7 +249,8 @@ in
   # The last time around the following command fixed emojis in pango apps:
   # rm -rf ~/.cache/fontconfig ~/.config/fontconfig; sudo fc-cache --really-force -v; fc-cache --really-force -v
   fonts = {
-    fonts = with pkgs; [
+    fonts = with pkgs; [  # deprecated in unstable
+    # packages = with pkgs; [  # new opt name (unstable)
       # (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       # dejavu_fonts
       # noto-fonts-cjk
@@ -261,7 +263,8 @@ in
       ubuntu_font_family
     ];
     fontDir.enable = true;
-    enableDefaultFonts = true;
+    enableDefaultFonts = true;  # deprecated in unstable
+    # enableDefaultPackages = true;  # new option name (unstable)
     enableGhostscriptFonts = true;
     fontconfig = {
       enable = true;
