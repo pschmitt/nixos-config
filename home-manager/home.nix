@@ -69,16 +69,6 @@ in
     v4l-utils
     vlc
 
-    # OBS Plugins
-    (wrapOBS {
-      plugins = with obs-studio-plugins; [
-        unstable.obs-studio-plugins.droidcam-obs
-        unstable.obs-studio-plugins.obs-text-pthread
-        master.obs-studio-plugins.obs-freeze-filter
-        obs-replay-source
-      ];
-    })
-
     # NOTE Installing gtklock with home manager has the nice side-effect
     # that it creates nice symlinks in
     # /etc/profiles/per-user/pschmitt/lib/gtklock/
@@ -232,5 +222,16 @@ in
         };
       };
     };
+  };
+
+  programs.obs-studio = {
+    enable = true;
+    package = pkgs.unstable.obs-studio;
+    plugins = with pkgs; [
+      unstable.obs-studio-plugins.droidcam-obs
+      unstable.obs-studio-plugins.obs-text-pthread
+      unstable.obs-studio-plugins.obs-freeze-filter
+      # obs-studio-plugins.obs-replay-source # https://github.com/NixOS/nixpkgs/pull/252191
+    ];
   };
 }
