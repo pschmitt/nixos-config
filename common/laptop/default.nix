@@ -195,6 +195,7 @@ in
 
   programs.firefox = {
     enable = true;
+    package = pkgs.unstable.firefox;
     nativeMessagingHosts.fxCast = true;
     preferences = {
       # Enable custom css (userChrome.css)
