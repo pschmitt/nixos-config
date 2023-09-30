@@ -15,7 +15,7 @@
 
     agenix.url = "github:ryantm/agenix";
 
-    hyprland.url = "github:hyprwm/Hyprland/v0.29.1";
+    hyprland.url = "github:hyprwm/Hyprland/v0.30.0";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
 
@@ -60,6 +60,11 @@
           specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
           # > Our main nixos configuration file <
           modules = [ ./hosts/x13 ];
+        };
+        ge2 = nixpkgs.lib.nixosSystem {
+          specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
+          # > Our main nixos configuration file <
+          modules = [ ./hosts/ge2 ];
         };
       };
     };
