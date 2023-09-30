@@ -179,7 +179,7 @@ in
     # (python3.withPackages(python-packages))
     # (python310.withPackages(python-packages))
     (python311.withPackages (python-packages))
-    rustc
+    unstable.rustc
     openssl
 
     (vim_configurable.customize {
