@@ -242,6 +242,7 @@ in
     virt-manager
 
     intel-gpu-tools
+    piper  # gui for libratbag
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
@@ -295,6 +296,15 @@ in
   };
 
   services.tailscale = { enable = true; };
+
+  # Logitech mouse settings
+  services.ratbagd.enable = true;
+  services.udev.extraRules = ''
+    ACTION=="bind", SUBSYSTEM=="hid", ENV{HID_NAME}=="MX Master 3S", \
+    RUN+="${pkgs.libratbag}/bin/ratbagctl 'MX Master 3S' dpi set 3000"
+    ACTION=="bind", SUBSYSTEM=="hid", ENV{HID_NAME}=="MX Vertical", \
+    RUN+="${pkgs.libratbag}/bin/ratbagctl 'MX Vertical' dpi set 3000"
+  '';
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
