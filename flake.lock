@@ -172,6 +172,26 @@
         "type": "github"
       }
     },
+    "nix-index-database": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1695526222,
+        "narHash": "sha256-/NwZz3QcVplrfiDKk1thYg1EIHLSNucVHNUi2uwO3RI=",
+        "owner": "nix-community",
+        "repo": "nix-index-database",
+        "rev": "25d6369c232bbea1ec1f90226fd17982e7a0a647",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nix-index-database",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1677676435,
@@ -190,11 +210,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1696025512,
-        "narHash": "sha256-0P7MtavXnFI/EudKQ6fVJUi0cZCMquJDfJ4cQnLJDHg=",
+        "lastModified": 1696072632,
+        "narHash": "sha256-1OptCtmN9TKjORwetaf7q17QSm5Mm3c33GeI3rPmepg=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "dbc3a520dfbd8de368141473cb66c445cb38ffca",
+        "rev": "e14dd9c00cfa2690820b86410834130586f8cbf4",
         "type": "github"
       },
       "original": {
@@ -274,6 +294,7 @@
         "hardware": "hardware",
         "home-manager": "home-manager_2",
         "hyprland": "hyprland",
+        "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-unstable": "nixpkgs-unstable",
@@ -365,15 +386,16 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1695763382,
-        "narHash": "sha256-G2SdRhukdycVhxXlLkNvR6+NTqU1OiWqvPwVUhLd0e0=",
+        "lastModified": 1695057057,
+        "narHash": "sha256-K1cqx+NP4lxPwRVPLEeSUfagaMI3m5hdYvQe7sZr7BU=",
         "owner": "hyprwm",
         "repo": "xdg-desktop-portal-hyprland",
-        "rev": "f9461b0b7d3071347390feee534638555ff76c7d",
+        "rev": "ccdb6a489930fb04717c46a291f915920991888f",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
+        "ref": "v1.1.0",
         "repo": "xdg-desktop-portal-hyprland",
         "type": "github"
       }
