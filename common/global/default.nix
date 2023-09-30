@@ -113,7 +113,7 @@ in
     networkmanager = {
       enable = true;
       dns = "systemd-resolved";
-      enableFccUnlock = true;
+      # enableFccUnlock = true;  # deprecated
     };
   };
 
@@ -231,7 +231,7 @@ in
     flathub = {
       text = ''
         ${pkgs.flatpak}/bin/flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-        '';
+      '';
     };
   };
 
