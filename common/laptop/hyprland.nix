@@ -48,6 +48,7 @@
     libnotify
     mako
     networkmanagerapplet
+    nwg-displays
     playerctl
     slurp
     swappy
@@ -61,6 +62,7 @@
     wofi
     wofi-emoji
     wlrctl
+    wdisplays
     wtype
     ydotool
 
