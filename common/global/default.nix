@@ -29,6 +29,8 @@ let
 
 in
 {
+  imports = [ ./printer.nix ];
+
   nixpkgs = {
     # You can add overlays here
     overlays = [
