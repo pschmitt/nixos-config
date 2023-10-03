@@ -34,6 +34,7 @@
     cliphist
     foot
     gnome.eog
+    gnome.evince
     gnome.nautilus
     gnome.seahorse
     gnome.sushi
