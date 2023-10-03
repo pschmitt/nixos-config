@@ -133,9 +133,6 @@ in
 
   services.udev.packages = [ pkgs.android-udev-rules ];
 
-  # Enable CUPS to print documents.
-  services.printing.enable = true;
-
   # enable sushi and keyring
   services.gnome = {
     sushi.enable = true;
