@@ -53,6 +53,7 @@ in
 
     # Work
     kubectl
+    kubernetes-helm
     stern
     openconnect
     openstackclient
