@@ -54,6 +54,7 @@ in
     # Work
     kubectl
     kubernetes-helm
+    glab
     stern
     openconnect
     openstackclient
