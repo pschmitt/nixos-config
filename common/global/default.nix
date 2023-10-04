@@ -257,10 +257,19 @@ in
 
   services.tailscale = { enable = true; };
 
-  virtualisation.docker = {
-    enable = true;
-    storageDriver = "btrfs";
-    package = pkgs.unstable.docker_24;
+  virtualisation = {
+    podman = {
+      enable = true;
+      dockerCompat = false;
+      defaultNetwork.settings = {
+        dns_enabled = true;
+      };
+    };
+    docker = {
+      enable = true;
+      storageDriver = "btrfs";
+      package = pkgs.unstable.docker_24;
+    };
   };
 
   programs.nix-ld = {
