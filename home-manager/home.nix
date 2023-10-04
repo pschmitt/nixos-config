@@ -53,6 +53,7 @@ in
 
     # Work
     kubectl
+    stern
     openconnect
     openstackclient
     openvpn
