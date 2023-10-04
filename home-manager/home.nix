@@ -1,6 +1,6 @@
 { inputs, lib, config, pkgs, ... }:
 let
-  username = "/home/pschmitt";
+  homedir = "/home/pschmitt";
 
 in
 {
@@ -114,15 +114,15 @@ in
       extraConfig = { gtk-application-prefer-dark-theme = 1; };
       bookmarks = [
         "file:///tmp tmp"
-        "file://${username}/devel/private devel-p"
-        "file://${username}/devel/work devel-w"
-        "file://${username}/Documents"
-        "file://${username}/Downloads"
-        "file://${username}/Music"
-        "file://${username}/Public"
-        "file://${username}/Pictures"
-        "file://${username}/Templates"
-        "file://${username}/Videos"
+        "file://${homedir}/devel/private devel-p"
+        "file://${homedir}/devel/work devel-w"
+        "file://${homedir}/Documents"
+        "file://${homedir}/Downloads"
+        "file://${homedir}/Music"
+        "file://${homedir}/Public"
+        "file://${homedir}/Pictures"
+        "file://${homedir}/Templates"
+        "file://${homedir}/Videos"
       ];
     };
 
