@@ -177,6 +177,7 @@ in
     go
     neovim
     nodejs
+    podman-compose
     pkg-config
     # (python3.withPackages(python-packages))
     # (python310.withPackages(python-packages))
