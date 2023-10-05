@@ -24,6 +24,7 @@
 
   environment.systemPackages = with pkgs; [
     # Hyprland
+    # inputs.hyprland.packages.${pkgs.system}.hyprland-nvidia
     inputs.hyprland.packages.${pkgs.system}.hyprland
 
     polkit_gnome
@@ -127,6 +128,7 @@
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
       displayManager.sessionPackages = [
+        # inputs.hyprland.packages.${pkgs.system}.hyprland-nvidia
         inputs.hyprland.packages.${pkgs.system}.hyprland
       ]; # also set by programs.hyprland.enable = true;
       displayManager.session = [{
