@@ -17,6 +17,7 @@ in
     ../../home-manager
     ./btrfs.nix
     ./hyprland.nix
+    ./libvirt.nix
   ];
 
   nix = {
