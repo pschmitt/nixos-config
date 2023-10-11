@@ -208,6 +208,7 @@ in
       "adbusers"
       "docker"
       "input" # for ydotool
+      "libvirtd"
       "mlocate"
       "networkmanager"
       "pschmitt"
