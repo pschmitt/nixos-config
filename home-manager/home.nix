@@ -54,16 +54,22 @@ in
     # Work
     kubectl
     kubernetes-helm
-    glab
+    cmctl
+    openldap
     stern
+    glab
+    lego
     openconnect
-    openstackclient
+    # openstackclient
     openvpn
     taskwarrior
     terraform
     timewarrior
     vault
     zoom-us
+    thunderbird
+    onlyoffice-bin
+    ytt
 
     # Media
     ffmpeg-full
