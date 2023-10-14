@@ -220,6 +220,8 @@ in
     shell = pkgs.zsh;
   };
 
+  users.users.root.openssh.authorizedKeys.keys = authorizedKeys;
+
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
 
