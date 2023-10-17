@@ -61,15 +61,16 @@ in
     lego
     openconnect
     # openstackclient
+    onlyoffice-bin
     openvpn
+    rclone
     taskwarrior
     terraform
+    thunderbird
     timewarrior
     vault
-    zoom-us
-    thunderbird
-    onlyoffice-bin
     ytt
+    zoom-us
 
     # Media
     ffmpeg-full
