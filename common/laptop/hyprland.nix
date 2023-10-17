@@ -52,6 +52,7 @@
     networkmanagerapplet
     nwg-displays
     playerctl
+    remmina
     slurp
     swappy
     swayidle
