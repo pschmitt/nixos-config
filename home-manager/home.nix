@@ -59,6 +59,10 @@ in
     stern
     glab
     lego
+    acme-sh
+    lefthook
+    skopeo
+    s3cmd
     openconnect
     # openstackclient
     onlyoffice-bin
