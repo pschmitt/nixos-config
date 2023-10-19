@@ -52,22 +52,22 @@ in
     # openssl_1_1
 
     # Work
+    acme-sh
+    cmctl
+    glab
     kubectl
     kubernetes-helm
-    cmctl
-    openldap
-    stern
-    glab
-    lego
-    acme-sh
     lefthook
-    skopeo
-    s3cmd
-    openconnect
-    # openstackclient
+    lego
     onlyoffice-bin
+    openconnect
+    openldap
+    # openstackclient  # does not include designate sadly
     openvpn
     rclone
+    s3cmd
+    skopeo
+    stern
     taskwarrior
     terraform
     thunderbird
