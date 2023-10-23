@@ -244,7 +244,7 @@ in
   # mlocate
   services.locate = {
     enable = true;
-    locate = pkgs.plocate;
+    package = pkgs.plocate;
     interval = "daily";
     localuser = null; # scan as root
   };
