@@ -20,8 +20,10 @@ in
 
     # cli
     age
+    atuin
     bitwarden-cli
     bat
+    direnv
     fd
     fzf
     neofetch
@@ -59,6 +61,9 @@ in
     kubernetes-helm
     lefthook
     lego
+    httptunnel
+    chisel
+    corkscrew
     onlyoffice-bin
     openconnect
     openldap
