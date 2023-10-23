@@ -240,7 +240,7 @@ in
     virt-manager
 
     intel-gpu-tools
-    piper  # gui for libratbag
+    piper # gui for libratbag
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
@@ -249,7 +249,8 @@ in
   # rm -rf ~/.cache/fontconfig ~/.config/fontconfig; sudo fc-cache --really-force -v; fc-cache --really-force -v
   fonts = {
     # fonts = with pkgs; [  # deprecated in unstable
-    packages = with pkgs; [  # new opt name (unstable)
+    packages = with pkgs; [
+      # new opt name (unstable)
       # (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       # dejavu_fonts
       # noto-fonts-cjk
@@ -263,7 +264,7 @@ in
     ];
     fontDir.enable = true;
     # enableDefaultFonts = true;  # deprecated in unstable
-    enableDefaultPackages = true;  # new option name (unstable)
+    enableDefaultPackages = true; # new option name (unstable)
     enableGhostscriptFonts = true;
     fontconfig = {
       enable = true;
