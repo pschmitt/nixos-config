@@ -42,6 +42,8 @@ in
 
     # devel
     android-tools
+    codespell
+    brotab
     # ansible
     shellcheck
     niv
