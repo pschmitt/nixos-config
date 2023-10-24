@@ -153,6 +153,7 @@ in
     lm_sensors
     mediainfo
     nethogs
+    ookla-speedtest
     nmap
     pciutils # lspci
     usbutils # lsusb
