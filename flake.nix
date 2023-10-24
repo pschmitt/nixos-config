@@ -20,7 +20,7 @@
 
     agenix.url = "github:ryantm/agenix";
 
-    hyprland.url = "github:hyprwm/Hyprland/v0.30.0";
+    hyprland.url = "github:hyprwm/Hyprland/v0.31.0";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.3";
     # hyprland.url = "github:hyprwm/Hyprland";
     # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
