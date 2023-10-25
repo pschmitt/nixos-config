@@ -241,6 +241,10 @@ in
 
     intel-gpu-tools
     piper # gui for libratbag
+
+    # audio
+    helvum
+    qpwgraph
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
