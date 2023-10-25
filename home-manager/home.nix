@@ -24,6 +24,7 @@ in
     bitwarden-cli
     bat
     direnv
+    jc
     fd
     fzf
     neofetch
@@ -167,6 +168,7 @@ in
   programs.neovim = {
     enable = true;
     extraPackages = with pkgs; [
+      vimPlugins.nvim-treesitter.withAllGrammars
       shellcheck
       shfmt
 
