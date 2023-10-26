@@ -80,6 +80,7 @@ in
     terraform
     thunderbird
     timewarrior
+    vendir
     vault
     ytt
     zoom-us
