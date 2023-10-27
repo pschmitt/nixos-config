@@ -4,9 +4,11 @@
   inputs = {
     # Nixpkgs
     # nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";  # unstable by default
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable"; # unstable by default
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
+
+    nur.url = "github:nix-community/NUR";
 
     hardware.url = "github:nixos/nixos-hardware";
 
@@ -26,7 +28,7 @@
     # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nur, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -68,6 +70,7 @@
           # > Our main nixos configuration file <
           modules = [
             inputs.nix-index-database.nixosModules.nix-index
+            nur.nixosModules.nur
             ./hosts/x13
           ];
         };
@@ -76,6 +79,7 @@
           # > Our main nixos configuration file <
           modules = [
             inputs.nix-index-database.nixosModules.nix-index
+            nur.nixosModules.nur
             ./hosts/ge2
           ];
         };

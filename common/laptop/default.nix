@@ -245,6 +245,14 @@ in
     # audio
     helvum
     qpwgraph
+
+    # Video Download Helper Companion App
+    # NOTE this isn't perfect yet since the native messaging hosts is not
+    # installed
+    # https://github.com/WolfangAukang/nur-packages/issues/9
+    # Workaround:
+    # /nix/store/jwnivfkpx4lb3xab6h4lv2d37xljsvj7-vdhcoapp-1.6.3/share/vdhcoapp/net.downloadhelper.coapp install --user
+    config.nur.repos.wolfangaukang.vdhcoapp
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
