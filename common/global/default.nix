@@ -147,6 +147,7 @@ in
     dua # ncdu on steroids
     file
     fping
+    fx
     htop
     jq
     killall
