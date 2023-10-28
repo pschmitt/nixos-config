@@ -23,7 +23,9 @@
     agenix.url = "github:ryantm/agenix";
 
     hyprland.url = "github:hyprwm/Hyprland/v0.31.0";
+    hyprland.inputs.nixpkgs.follows = "nixpkgs";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.3";
+    xdph.inputs.nixpkgs.follows = "nixpkgs";
     # hyprland.url = "github:hyprwm/Hyprland";
     # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
