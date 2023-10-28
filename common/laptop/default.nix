@@ -194,7 +194,10 @@ in
   programs.firefox = {
     enable = true;
     package = pkgs.unstable.firefox;
-    nativeMessagingHosts.fxCast = true;
+    nativeMessagingHosts.packages = with pkgs; [
+      fx-cast-bridge
+      config.nur.repos.wolfangaukang.vdhcoapp
+    ];
     preferences = {
       # Enable custom css (userChrome.css)
       "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
@@ -252,6 +255,7 @@ in
     # https://github.com/WolfangAukang/nur-packages/issues/9
     # Workaround:
     # /nix/store/jwnivfkpx4lb3xab6h4lv2d37xljsvj7-vdhcoapp-1.6.3/share/vdhcoapp/net.downloadhelper.coapp install --user
+    fx-cast-bridge
     config.nur.repos.wolfangaukang.vdhcoapp
   ];
 

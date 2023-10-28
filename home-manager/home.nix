@@ -87,7 +87,6 @@ in
 
     # Media
     ffmpeg-full
-    fx_cast_bridge
     mpv-unwrapped
     v4l-utils
     vlc
