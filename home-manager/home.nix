@@ -1,8 +1,5 @@
 { inputs, lib, config, pkgs, ... }:
-let
-  homedir = "/home/pschmitt";
 
-in
 {
   # You can import other home-manager modules here
   imports = [
@@ -135,15 +132,15 @@ in
       extraConfig = { gtk-application-prefer-dark-theme = 1; };
       bookmarks = [
         "file:///tmp tmp"
-        "file://${homedir}/devel/private devel-p"
-        "file://${homedir}/devel/work devel-w"
-        "file://${homedir}/Documents"
-        "file://${homedir}/Downloads"
-        "file://${homedir}/Music"
-        "file://${homedir}/Public"
-        "file://${homedir}/Pictures"
-        "file://${homedir}/Templates"
-        "file://${homedir}/Videos"
+        "file://${config.home.homeDirectory}/devel/private devel-p"
+        "file://${config.home.homeDirectory}/devel/work devel-w"
+        "file://${config.home.homeDirectory}/Documents"
+        "file://${config.home.homeDirectory}/Downloads"
+        "file://${config.home.homeDirectory}/Music"
+        "file://${config.home.homeDirectory}/Public"
+        "file://${config.home.homeDirectory}/Pictures"
+        "file://${config.home.homeDirectory}/Templates"
+        "file://${config.home.homeDirectory}/Videos"
       ];
     };
 
