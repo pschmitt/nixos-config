@@ -12,6 +12,9 @@
 
     hardware.url = "github:nixos/nixos-hardware";
 
+    # flake-registry.url = "github:NixOS/flake-registry";
+    # flake-registry.flake = false;
+
     # Home manager
     # home-manager.url = "github:nix-community/home-manager/release-23.05";
     home-manager.url = "github:nix-community/home-manager";
