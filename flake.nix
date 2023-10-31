@@ -74,6 +74,7 @@
           specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
           # > Our main nixos configuration file <
           modules = [
+            ./modules/custom.nix
             inputs.nix-index-database.nixosModules.nix-index
             nur.nixosModules.nur
             ./hosts/x13
@@ -83,6 +84,7 @@
           specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
           # > Our main nixos configuration file <
           modules = [
+            ./modules/custom.nix
             inputs.nix-index-database.nixosModules.nix-index
             nur.nixosModules.nur
             ./hosts/ge2
