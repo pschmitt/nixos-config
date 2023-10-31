@@ -18,6 +18,7 @@ in
     ./btrfs.nix
     ./hyprland.nix
     ./libvirt.nix
+    ./hacompanion.nix
   ];
 
   nix = {
@@ -183,6 +184,16 @@ in
     #media-session.enable = true;
   };
 
+  # Disable automatic profile selection (headset)
+  # https://wiki.archlinux.org/title/PipeWire#Automatic_profile_selection
+  # https://pipewire.pages.freedesktop.org/wireplumber/configuration/bluetooth.html
+  # FIXME This crashes wireplumber
+  # environment.etc = {
+  #   "wireplumber/bluetooth.lua.d/51-bluez-config.lua".text = ''
+  #     bluetooth_policy.policy["media-role.use-headset-profile"] = false
+  #   '';
+  # };
+
   # Enable lingering
   users.users.pschmitt.linger = true;
 
@@ -192,6 +203,7 @@ in
     enable = true;
     package = pkgs.unstable.firefox;
     nativeMessagingHosts.packages = with pkgs; [
+      # brotab
       fx-cast-bridge
       config.nur.repos.wolfangaukang.vdhcoapp
     ];
