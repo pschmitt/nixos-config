@@ -9,10 +9,7 @@
     path = with pkgs; [
       "/home/pschmitt"
       "/run/current-system/sw"
-      # alsa-utils
-      # inputs.hyprland.packages.${pkgs.system}.hyprland
-      # lm_sensors
-      # zsh
+      "/etc/profiles/per-user/pschmitt"
     ];
 
     serviceConfig = {
