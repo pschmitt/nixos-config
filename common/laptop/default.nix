@@ -183,11 +183,8 @@ in
     #media-session.enable = true;
   };
 
-  # temporary hack until official lingering support is added to `users.users`
-  # https://github.com/NixOS/nixpkgs/issues/3702
-  systemd.tmpfiles.rules = [
-    "f /var/lib/systemd/linger/pschmitt"
-  ];
+  # Enable lingering
+  users.users.pschmitt.linger = true;
 
   programs.adb.enable = true;
 
