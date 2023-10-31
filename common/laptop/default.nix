@@ -19,6 +19,8 @@ in
     ./hyprland.nix
     ./libvirt.nix
     ./hacompanion.nix
+    ./soundboard.nix
+    ./gec-vpn.nix
   ];
 
   nix = {
