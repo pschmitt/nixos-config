@@ -33,7 +33,7 @@
     # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
 
-  outputs = { self, nixpkgs, home-manager, nur, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, agenix, nur, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -77,6 +77,7 @@
             ./modules/custom.nix
             inputs.nix-index-database.nixosModules.nix-index
             nur.nixosModules.nur
+            agenix.nixosModules.default
             ./hosts/x13
           ];
         };
@@ -87,6 +88,7 @@
             ./modules/custom.nix
             inputs.nix-index-database.nixosModules.nix-index
             nur.nixosModules.nur
+            agenix.nixosModules.default
             ./hosts/ge2
           ];
         };
