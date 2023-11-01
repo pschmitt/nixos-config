@@ -1,9 +1,4 @@
-{ inputs, lib, config, pkgs, ... }:
-
-let username = "pschmitt";
-
-in
-{
+{ inputs, lib, config, pkgs, ... }: {
   environment.systemPackages = with pkgs; [ hacompanion ];
 
   systemd.services.hacompanion = {
@@ -12,14 +7,14 @@ in
     documentation = [ "https://github.com/tobias-kuendig/hacompanion" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = [
-      "/home/${username}"
+      "${config.custom.homeDirectory}"
       "/run/current-system/sw"
-      "/etc/profiles/per-user/${username}"
+      "/etc/profiles/per-user/${config.custom.username}"
     ];
 
     serviceConfig = {
-      User = "${username}";
-      EnvironmentFile = "/home/${username}/.config/hacompanion/secrets";
+      User = "${config.custom.username}";
+      EnvironmentFile = "${config.custom.homeDirectory}/.config/hacompanion/secrets";
       ExecStart = "${pkgs.hacompanion}/bin/hacompanion -config ~/.config/hacompanion/hacompanion.toml";
       Restart = "always";
       RestartSec = 5;
