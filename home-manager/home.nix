@@ -75,6 +75,8 @@
     stern
     taskwarrior
     terraform
+    terragrunt
+    opentofu
     thunderbird
     timewarrior
     vendir
