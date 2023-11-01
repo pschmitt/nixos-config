@@ -14,7 +14,7 @@
     ];
 
     serviceConfig = {
-      ExecStart = "${config.custom.homeDirectory}/bin/zhj gec::openconnect";
+      ExecStart = "${config.custom.homeDirectory}/bin/zhj gec::openvpn";
     };
 
     wantedBy = [ "default.target" ];
