@@ -79,6 +79,7 @@
     opentofu
     thunderbird
     timewarrior
+    timewarrior-jirapush
     vendir
     vault
     ytt
