@@ -28,7 +28,7 @@ in
         --env-file ${config_file} \\
         ${container_image}:${container_tag}";
       ExecStartPost = "-${config.custom.homeDirectory}/bin/zhj 'sleep 10 && jcal reload'";
-      execstop = "${pkgs.podman}/bin/podman stop ${container_name}";
+      ExecStop = "${pkgs.podman}/bin/podman stop ${container_name}";
       Restart = "always";
       RestartSec = "30";
       TimeoutStartSec = "0";
