@@ -9,6 +9,7 @@ in
 {
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
   obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
+  flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
 }
