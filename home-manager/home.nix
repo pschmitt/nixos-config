@@ -5,6 +5,7 @@
   imports = [
     # You can also split up your configuration and import pieces of it here:
     # ./nvim.nix
+    ./work.nix
   ];
 
   # The home.stateVersion option does not have a default and must be set
@@ -53,44 +54,13 @@
     openssl
     # openssl_1_1
 
-    # Work
-    acme-sh
-    cmctl
-    glab
-    kubectl
-    kubernetes-helm
-    lefthook
-    lego
-    httptunnel
-    chisel
-    corkscrew
-    onlyoffice-bin
-    openconnect
-    openldap
-    # openstackclient  # does not include designate sadly
-    openvpn
-    rclone
-    s3cmd
-    skopeo
-    stern
-    taskwarrior
-    terraform
-    terragrunt
-    opentofu
-    thunderbird
-    timewarrior
-    timewarrior-jirapush
-    vendir
-    vault
-    ytt
-    zoom-us
-
     # Media
     ffmpeg-full
     mpv-unwrapped
     v4l-utils
     vlc
 
+    # FIXME This should be part of hyprland.nix
     # NOTE Installing gtklock with home manager has the nice side-effect
     # that it creates nice symlinks in
     # /etc/profiles/per-user/pschmitt/lib/gtklock/
