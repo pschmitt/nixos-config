@@ -1,4 +1,4 @@
-{ pkgss, inputs, pkgs, config, ... }:
+{ pkgs, inputs, config, ... }:
 let
   container_image = "ghcr.io/pschmitt/jcalapi";
   container_tag = "latest";
