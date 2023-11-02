@@ -43,6 +43,7 @@
     android-tools
     codespell
     brotab
+    flarectl
     # ansible
     shellcheck
     niv
