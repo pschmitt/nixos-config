@@ -57,7 +57,7 @@
 
     # Media
     ffmpeg-full
-    mpv-unwrapped
+    mpv
     v4l-utils
     vlc
 
