@@ -3,6 +3,7 @@
   imports = [
     ./deckmaster.nix
     ./jcalapi.nix
-    ./vpn.nix
+    ./vpn/openvpn.nix
+    ./vpn/openconnect.nix
   ];
 }
