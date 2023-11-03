@@ -153,6 +153,7 @@ in
     killall
     lm_sensors
     mediainfo
+    moreutils # ts among others
     nethogs
     ookla-speedtest
     nmap
