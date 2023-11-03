@@ -9,4 +9,6 @@
       onShutdown = "shutdown";
     };
   };
+
+  system.nssDatabases.hosts = [ "libvirt" "libvirt_guest" ];
 }
