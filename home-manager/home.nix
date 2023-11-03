@@ -34,6 +34,9 @@
     nextcloud-client
     unstable.signal-desktop
 
+    # iot
+    mosquitto
+
     # virtualization
     quickemu
     quickgui
