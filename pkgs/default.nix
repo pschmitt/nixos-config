@@ -7,9 +7,9 @@ let
   libcaption = pkgs.callPackage ./libcaption { };
 in
 {
-  obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
-  obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
   flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
+  obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
+  obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
 }

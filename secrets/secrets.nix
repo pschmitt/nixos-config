@@ -7,6 +7,7 @@ let
 in
 {
   "secret.age".publicKeys = [ authorizedKeys ];
+  "gec-vpn/username.age".publicKeys = [ authorizedKeys ];
   "gec-vpn/gec-ca.pem.age".publicKeys = [ authorizedKeys ];
   "gec-vpn/gec-cert.pem.age".publicKeys = [ authorizedKeys ];
   "gec-vpn/gec-key.pem.age".publicKeys = [ authorizedKeys ];

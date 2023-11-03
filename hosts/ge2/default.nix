@@ -6,6 +6,7 @@
 
     ./hardware-configuration.nix
     ./nvidia.nix
+    ./luks-remote.nix
 
     ../../common/global
     ../../common/laptop
@@ -34,5 +35,14 @@
       # allowedTCPPorts = [ ... ];
       # allowedUDPPorts = [ ... ];
     };
+
+    # # FIXME DIRTYFIX for task sync
+    # # We have a weird resolution bug:
+    # # $ ping -c 2 oAci-02.heimat.dev
+    # # 👆 fails to resolve
+    # extraHosts =
+    #   ''
+    #   45.94.108.232 test.keycloak-dev.sre.gec.io
+    #   '';
   };
 }
