@@ -21,6 +21,7 @@ in
     ./hacompanion.nix
     ./soundboard.nix
     ./gec-vpn.nix
+    ./fx-cast.nix
   ];
 
   nix = {
@@ -197,10 +198,12 @@ in
   programs.firefox = {
     enable = true;
     package = pkgs.unstable.firefox;
+    # FIXME This does not seem to work.
+    # See home-manager/home.nix for the dirty but working solution.
     nativeMessagingHosts.packages = with pkgs; [
-      # brotab
-      fx-cast-bridge
+      brotab
       config.nur.repos.wolfangaukang.vdhcoapp
+      tridactyl-native
     ];
     preferences = {
       # Enable custom css (userChrome.css)
@@ -252,15 +255,6 @@ in
     # audio
     helvum
     qpwgraph
-
-    # Video Download Helper Companion App
-    # NOTE this isn't perfect yet since the native messaging hosts is not
-    # installed
-    # https://github.com/WolfangAukang/nur-packages/issues/9
-    # Workaround:
-    # /nix/store/jwnivfkpx4lb3xab6h4lv2d37xljsvj7-vdhcoapp-1.6.3/share/vdhcoapp/net.downloadhelper.coapp install --user
-    fx-cast-bridge
-    config.nur.repos.wolfangaukang.vdhcoapp
   ];
 
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
