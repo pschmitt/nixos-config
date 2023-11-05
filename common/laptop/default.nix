@@ -21,7 +21,6 @@ in
     ./hacompanion.nix
     ./soundboard.nix
     ./gec-vpn.nix
-    ./fx-cast.nix
   ];
 
   nix = {
