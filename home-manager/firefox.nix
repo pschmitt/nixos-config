@@ -19,6 +19,7 @@
         bypass-paywalls-clean
         consent-o-matic
         don-t-fuck-with-paste
+        firefox-translations
         foxyproxy-standard
         french-dictionary
         header-editor
