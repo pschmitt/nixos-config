@@ -12,6 +12,29 @@
     #   fx-cast-bridge
     # ];
     profiles.default = {
+      extensions = with config.nur.repos.rycee.firefox-addons; [
+        # https://nur.nix-community.org/repos/rycee/
+        auto-tab-discard
+        bitwarden
+        bypass-paywalls-clean
+        consent-o-matic
+        don-t-fuck-with-paste
+        foxyproxy-standard
+        french-dictionary
+        header-editor
+        istilldontcareaboutcookies
+        languagetool
+        link-cleaner
+        multi-account-containers
+        refined-github
+        re-enable-right-click
+        sidebery
+        sponsorblock
+        tridactyl
+        ublock-origin
+        video-downloadhelper
+        zoom-redirector
+      ];
       search = {
         force = true;
         engines = {
