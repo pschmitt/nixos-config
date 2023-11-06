@@ -138,6 +138,7 @@ in
   environment.systemPackages = with pkgs; [
     # nix
     inputs.agenix.packages.${system}.default
+    nix-prefetch-git
 
     # core
     acpi
