@@ -2,16 +2,16 @@
 
 buildGoModule rec {
   pname = "hacompanion";
-  version = "1.0.8"; # You might want to replace this with the actual version.
+  version = "1.0.9";
 
   src = fetchFromGitHub {
     owner = "tobias-kuendig";
     repo = pname;
     rev = "v${version}";
-    sha256 = "sha256-rEkVxoTekVgUeLHa5iD5hutHdiLX67B96FBALE1IH9I="; # This needs to be the actual hash value for the src
+    sha256 = "sha256-UAJNvN/FN7DNWFdv45zUmn6WpSpnhnau/rMeo2LytaQ=";
   };
 
-  vendorSha256 = "sha256-ZZ8nxN+zUeFhSXyoHLMgzeFllnIkKdoVnbVK5KjrLEQ="; # This needs to be the actual hash value for the vendor directory
+  vendorSha256 = "sha256-ZZ8nxN+zUeFhSXyoHLMgzeFllnIkKdoVnbVK5KjrLEQ=";
 
   # If the Go application has any build flags or environment variables, set them here.
   # buildFlagsArray = [ "-ldflags=-X main.Version=${version}" ];
