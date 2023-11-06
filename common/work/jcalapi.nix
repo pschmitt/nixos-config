@@ -15,6 +15,11 @@ in
     description = "Local JSON API for calendar events";
     documentation = [ "https://github.com/pschmitt/jcalapi" ];
     after = [ "NetworkManager-wait-online.service" ];
+    path = with pkgs; [
+      "/run/wrappers"  # required for newuidmap
+      podman
+      systemd
+    ];
     serviceConfig = {
       ExecStartPre = [
         "${pkgs.podman}/bin/podman pull ${container_image}:${container_tag}"
