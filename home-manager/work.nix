@@ -16,7 +16,7 @@
     onlyoffice-bin
     openconnect
     openldap
-    openstackclientpp  # does not include designate sadly
+    openstackclient-with-designate
     openvpn
     rclone
     s3cmd
