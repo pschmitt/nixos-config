@@ -42,7 +42,7 @@
     wantedBy = [ "default.target" ];
   };
 
-  systemd.user.timers.soundboard-tagesschau-timer = {
+  systemd.user.timers.soundboard-tagesschau = {
     enable = true;
     description = "Play Tagesschau Jingle at 10:00 AM";
 
