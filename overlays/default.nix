@@ -8,7 +8,7 @@
   # You can change versions, add patches, set compilation flags, anything really.
   # https://nixos.wiki/wiki/Overlays
   modifications = final: prev: {
-    openstackclientpp = prev.openstackclient.overrideAttrs (oldAttrs: rec {
+    openstackclient-with-designate = prev.openstackclient.overrideAttrs (oldAttrs: rec {
       propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [ final.python3Packages.designateclient ];
     });
 
@@ -16,6 +16,10 @@
       designateclient = prev.python3Packages.buildPythonPackage rec {
         pname = "python-designateclient";
         version = "5.3.0";
+        # NOTE tests require hacking>=3.0.1,<3.1.0
+        # and in nixpks there's only 6.0.1
+        # https://github.com/openstack/python-designateclient/blob/master/test-requirements.txt
+        doCheck = false;
 
         src = prev.fetchPypi {
           inherit pname version;
@@ -23,23 +27,18 @@
         };
 
         propagatedBuildInputs = with prev.python3Packages; [
-          pbr
           pip
-          debtcollector
+
+          # https://github.com/openstack/python-designateclient/blob/master/requirements.txt
+          jsonschema
+          osc-lib
+          oslo-serialization
+          oslo-utils
+          pbr
+          keystoneauth1
           requests
           stevedore
-          keystoneauth1
-          oslo-utils
-          oslo-serialization
-          osc-lib
-          jsonschema
-          tzdata
-          tempest
-          pkgs.reno
-          requests-mock
-          oslotest
-          coverage
-          hacking
+          debtcollector
         ];
 
         meta = {
