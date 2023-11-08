@@ -237,6 +237,7 @@ in
     pavucontrol
     pulseaudio # pactl + pacmd
     deckmaster
+    yt-dlp
 
     # apps
     audacity
