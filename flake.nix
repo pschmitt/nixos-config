@@ -43,6 +43,19 @@
         "aarch64-darwin"
         "x86_64-darwin"
       ];
+
+      commonModules = [
+        ./modules/custom.nix
+        inputs.nix-index-database.nixosModules.nix-index
+        nur.nixosModules.nur
+        agenix.nixosModules.default
+      ];
+
+      nixosSystemFor = system: hostname: nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs outputs; };
+        modules = commonModules ++ [ ./hosts/${hostname} ];
+      };
     in
     rec {
       # Your custom packages
@@ -70,28 +83,8 @@
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
       nixosConfigurations = {
-        x13 = nixpkgs.lib.nixosSystem {
-          specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
-          # > Our main nixos configuration file <
-          modules = [
-            ./modules/custom.nix
-            inputs.nix-index-database.nixosModules.nix-index
-            nur.nixosModules.nur
-            agenix.nixosModules.default
-            ./hosts/x13
-          ];
-        };
-        ge2 = nixpkgs.lib.nixosSystem {
-          specialArgs = { inherit inputs outputs; }; # Pass flake inputs to our config
-          # > Our main nixos configuration file <
-          modules = [
-            ./modules/custom.nix
-            inputs.nix-index-database.nixosModules.nix-index
-            nur.nixosModules.nur
-            agenix.nixosModules.default
-            ./hosts/ge2
-          ];
-        };
+        x13 = nixosSystemFor "x86_64-linux" "x13";
+        ge2 = nixosSystemFor "x86_64-linux" "ge2";
       };
     };
 }
