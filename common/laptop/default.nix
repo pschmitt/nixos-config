@@ -238,6 +238,7 @@ in
     pulseaudio # pactl + pacmd
     deckmaster
     yt-dlp
+    (sox.override { enableLame = true; enableAMR = true; })
 
     # apps
     audacity
