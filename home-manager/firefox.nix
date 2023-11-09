@@ -17,11 +17,13 @@
         auto-tab-discard
         bitwarden
         bypass-paywalls-clean
+        brotab
         consent-o-matic
         don-t-fuck-with-paste
         firefox-translations
         foxyproxy-standard
         french-dictionary
+        fx_cast
         header-editor
         istilldontcareaboutcookies
         languagetool
