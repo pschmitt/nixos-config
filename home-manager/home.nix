@@ -30,6 +30,7 @@
     direnv
     jc
     fd
+    jsonrepair
     fzf
     neofetch
     sops
