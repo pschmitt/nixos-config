@@ -8,6 +8,7 @@
     glab
     kubectl
     kubernetes-helm
+    ldifj
     lefthook
     lego
     httptunnel

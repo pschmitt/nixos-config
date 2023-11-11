@@ -11,6 +11,7 @@ in
   flarectl = pkgs.callPackage ./flarectl { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   hacompanion = pkgs.callPackage ./hacompanion { };
+  ldifj = pkgs.callPackage ./ldifj { };
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
   obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
