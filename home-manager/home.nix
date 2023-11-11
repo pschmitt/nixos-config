@@ -3,6 +3,7 @@
   imports = [
     inputs.nur.hmModules.nur
     ./firefox.nix
+    ./nvim.nix
     ./obs-studio.nix
     ./work.nix
   ];
@@ -14,6 +15,8 @@
 
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = "23.05";
+
+  programs.home-manager = { enable = true; };
 
   home.packages = with pkgs; [
     home-manager
@@ -139,22 +142,5 @@
 
   dconf.settings = {
     "org/gnome/desktop/interface" = { color-scheme = "prefer-dark"; };
-  };
-
-  programs.home-manager = { enable = true; };
-
-  programs.neovim = {
-    enable = true;
-    extraPackages = with pkgs; [
-      vimPlugins.nvim-treesitter.withAllGrammars
-      shellcheck
-      shfmt
-
-      # nix
-      nixpkgs-fmt
-    ];
-
-    viAlias = false;
-    vimAlias = true;
   };
 }
