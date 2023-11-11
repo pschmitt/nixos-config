@@ -1,12 +1,10 @@
 { inputs, lib, config, pkgs, ... }:
 {
-  # You can import other home-manager modules here
   imports = [
-    # You can also split up your configuration and import pieces of it here:
-    # ./nvim.nix
-    ./firefox.nix
-    ./work.nix
     inputs.nur.hmModules.nur
+    ./firefox.nix
+    ./obs-studio.nix
+    ./work.nix
   ];
 
   # FIXME Do we need that for anything?
@@ -158,16 +156,5 @@
 
     viAlias = false;
     vimAlias = true;
-  };
-
-  programs.obs-studio = {
-    enable = true;
-    package = pkgs.unstable.obs-studio;
-    plugins = with pkgs; [
-      unstable.obs-studio-plugins.droidcam-obs
-      unstable.obs-studio-plugins.obs-text-pthread
-      unstable.obs-studio-plugins.obs-freeze-filter
-      # obs-studio-plugins.obs-replay-source # https://github.com/NixOS/nixpkgs/pull/252191
-    ];
   };
 }
