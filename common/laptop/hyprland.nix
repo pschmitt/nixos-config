@@ -43,8 +43,7 @@
     chayang # gradually dim screen
     (pkgs.stdenv.mkDerivation {
       name = "gtklock-with-modules";
-      src = pkgs.writeScript "gtklock-with-modules" ''
-        #!/usr/bin/env sh
+      src = pkgs.writeShellScript "gtklock-with-modules" ''
         ${pkgs.gtklock}/bin/gtklock --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so "$@"
       '';
 
