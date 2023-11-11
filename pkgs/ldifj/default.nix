@@ -1,9 +1,9 @@
 { lib
-, python3Packages
+, python3
 , fetchPypi
 }:
 
-python3Packages.buildPythonApplication rec {
+python3.pkgs.buildPythonApplication rec {
   pname = "ldifj";
   version = "0.1.1";
   pyproject = true;
@@ -14,21 +14,24 @@ python3Packages.buildPythonApplication rec {
   };
 
   nativeBuildInputs = [
-    python3Packages.setuptools
-    python3Packages.setuptools-scm
-    python3Packages.wheel
+    python3.pkgs.setuptools
+    python3.pkgs.setuptools-scm
+    python3.pkgs.wheel
   ];
 
-  propagatedBuildInputs = [
-    python3Packages.python-ldap
-    python3Packages.rich
-    python3Packages.rich-argparse
+  propagatedBuildInputs = with python3.pkgs; [
+    python-ldap
+    rich
+    rich-argparse
   ];
+
+  pythonImportsCheck = [ "ldifj" ];
 
   meta = with lib; {
-    description = "Convert LDIF to JSON";
-    homepage = "https://github.com/pschmitt/ldifj";
-    license = licenses.gpl3;
+    description = "LDAP LDIF to JSON";
+    homepage = "https://pypi.org/project/ldifj/";
+    license = licenses.gpl3Only;
     maintainers = with maintainers; [ pschmitt ];
+    mainProgram = "ldifj";
   };
 }
