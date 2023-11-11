@@ -27,13 +27,13 @@
     # cli
     age
     atuin
-    bitwarden-cli
     bat
+    bitwarden-cli
     direnv
-    jc
     fd
-    jsonrepair
     fzf
+    jc
+    jsonrepair
     neofetch
     sops
     yadm
@@ -47,24 +47,23 @@
     mosquitto
 
     # virtualization
+    distrobox
     quickemu
     quickgui
-    distrobox
 
     # devel
     android-tools
+    # ansible
     codespell
     flarectl
-    # ansible
-    shellcheck
     niv
-    nixpkgs-fmt
-    nixos-generators
-    rnix-lsp
-    nixfmt
     nix-index
+    nixfmt
+    nixos-generators
+    nixpkgs-fmt
     openssl
-    # openssl_1_1
+    rnix-lsp
+    shellcheck
 
     # Media
     ffmpeg-full
@@ -112,3 +111,4 @@
     };
   };
 }
+    # openssl_1_1
