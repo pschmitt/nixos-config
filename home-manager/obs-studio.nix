@@ -13,4 +13,11 @@
       # obs-studio-plugins.obs-replay-source # https://github.com/NixOS/nixpkgs/pull/252191
     ];
   };
+
+  home.file.".config/obs-studio/scripts/bounce.lua".source = (
+    builtins.fetchurl {
+      url = "https://raw.githubusercontent.com/pschmitt/obs-bounce/follow-item-visibility/bounce.lua";
+      sha256 = "sha256-vZr+GLLI0hkYZuuiXVBaR+pK8ZRG+qZowJUXTxAPrvE=";
+    }
+  );
 }
