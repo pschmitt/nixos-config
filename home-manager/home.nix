@@ -56,14 +56,17 @@
     # ansible
     codespell
     flarectl
+    openssl
+    shellcheck
+
+    # nix
     niv
     nix-index
+    nix-init
     nixfmt
     nixos-generators
     nixpkgs-fmt
-    openssl
     rnix-lsp
-    shellcheck
 
     # Media
     ffmpeg-full
