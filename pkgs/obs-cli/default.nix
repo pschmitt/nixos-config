@@ -31,10 +31,13 @@ python3Packages.buildPythonApplication rec {
     rich
   ];
 
+  pythonImportsCheck = [ "obs_cli" ];
+
   meta = with lib; {
-    description = "CLI for controlling OBS Studio ";
+    description = "CLI for controlling OBS Studio";
     homepage = "https://github.com/pschmitt/obs-cli";
-    license = licenses.gpl3;
+    license = licenses.gpl3Only;
     maintainers = with maintainers; [ pschmitt ];
+    mainProgram = "obs-cli";
   };
 }
