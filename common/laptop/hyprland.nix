@@ -40,11 +40,22 @@
     gnome.seahorse
     gnome.sushi
     grim
-    # NOTE gtklock is also installed with home-manager so that we get reliable
-    # symlinks in /etc/profiles/per-user/pschmitt/lib/gtklock/
-    gtklock
-    gtklock-playerctl-module
-    gtklock-userinfo-module
+    chayang # gradually dim screen
+    (pkgs.stdenv.mkDerivation {
+      name = "gtklock-with-modules";
+      src = pkgs.writeScript "gtklock-with-modules" ''
+        #!/usr/bin/env sh
+        ${pkgs.gtklock}/bin/gtklock --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so "$@"
+      '';
+
+      phases = [ "installPhase" ];
+
+      installPhase = ''
+        mkdir -p $out/bin
+        cp $src $out/bin/gtklock-with-modules
+        chmod +x $out/bin/gtklock-with-modules
+      '';
+    })
     hyprpaper
     lemonade
     libnotify
