@@ -142,6 +142,7 @@ in
 
     # core
     acpi
+    autossh
     bc
     bind # dig
     curl
