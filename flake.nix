@@ -25,9 +25,9 @@
 
     agenix.url = "github:ryantm/agenix";
 
-    hyprland.url = "github:hyprwm/Hyprland/v0.31.0";
+    hyprland.url = "github:hyprwm/Hyprland/v0.32.3";
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
-    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.3";
+    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.4";
     xdph.inputs.nixpkgs.follows = "nixpkgs";
     # hyprland.url = "github:hyprwm/Hyprland";
     # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
@@ -64,6 +64,7 @@
         let pkgs = nixpkgs.legacyPackages.${system};
         in import ./pkgs { inherit pkgs; }
       );
+
       # Devshell for bootstrapping
       # Acessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forAllSystems (system:
@@ -73,9 +74,11 @@
 
       # Your custom packages and modifications, exported as overlays
       overlays = import ./overlays { inherit inputs; };
+
       # Reusable nixos modules you might want to export
       # These are usually stuff you would upstream into nixpkgs
       nixosModules = import ./modules/nixos;
+
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
       # homeManagerModules = import ./modules/home-manager;
