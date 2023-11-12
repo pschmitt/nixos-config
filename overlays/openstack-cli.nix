@@ -1,7 +1,7 @@
 { final, prev }:
 
 {
-  openstackclient-with-designate = prev.openstackclient.overrideAttrs (oldAttrs: rec {
+  openstackclient = prev.openstackclient.overrideAttrs (oldAttrs: rec {
     propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [ final.python3Packages.designateclient ];
   });
 

@@ -17,7 +17,7 @@
     onlyoffice-bin
     openconnect
     openldap
-    openstackclient-with-designate
+    openstackclient
     openvpn
     rclone
     s3cmd
