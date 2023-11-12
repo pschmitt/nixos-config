@@ -84,8 +84,8 @@
     adwaita-qt
     adwaita-qt6
     bibata-cursors
-    colloid-gtk-theme
-    colloid-icon-theme
+    (colloid-gtk-theme.override { themeVariants = [ "all" ]; colorVariants = [ "dark" "light" "standard" ]; tweaks = [ "normal" "nord" ]; })
+    (colloid-icon-theme.override { schemeVariants = [ "all" ]; colorVariants = [ "all" ]; })
     colloid-kde
     glib # gsettings
     gnome.adwaita-icon-theme
@@ -112,7 +112,7 @@
   ];
 
   # fonts.enableDefaultFonts = true;   # stable
-  fonts.enableDefaultPackages = true;  # unstable
+  fonts.enableDefaultPackages = true; # unstable
 
   hardware.opengl.enable = true;
 
