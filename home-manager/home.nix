@@ -2,6 +2,7 @@
 {
   imports = [
     inputs.nur.hmModules.nur
+    ./bitwarden.nix
     ./firefox.nix
     ./nvim.nix
     ./obs-studio.nix
@@ -28,7 +29,6 @@
     age
     atuin
     bat
-    bitwarden-cli
     direnv
     fd
     fzf
@@ -106,4 +106,3 @@
     };
   };
 }
-    # openssl_1_1
