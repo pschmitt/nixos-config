@@ -7,10 +7,10 @@
   # This one contains whatever you want to overlay
   # You can change versions, add patches, set compilation flags, anything really.
   # https://nixos.wiki/wiki/Overlays
-  modifications = final: prev: (import ./openstack-cli.nix { inherit final prev; }) // {
-    # ... any additional modifications can go here ...
-  };
-
+  modifications = final: prev:
+    (import ./openstack-cli.nix { inherit final prev; }) //
+    (import ./brotab.nix { inherit final prev; }) //
+    { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
   unstable-packages = final: _prev: {
@@ -25,4 +25,3 @@
     };
   };
 }
-
