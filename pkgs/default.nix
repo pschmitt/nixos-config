@@ -8,7 +8,6 @@ let
   obsws-python = pkgs.python3Packages.callPackage ./obsws-python { };
 in
 {
-  brotab = pkgs.callPackage ./brotab { };
   flarectl = pkgs.callPackage ./flarectl { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   hacompanion = pkgs.callPackage ./hacompanion { };
