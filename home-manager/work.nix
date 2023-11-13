@@ -4,6 +4,7 @@
   home.packages = with pkgs; [
     # Work
     acme-sh
+    argocd-vault-plugin
     cmctl
     glab
     kubectl
