@@ -11,8 +11,6 @@ pkgs.stdenv.mkDerivation rec {
 
   installPhase = ''
     mkdir -p $out/share/fonts/truetype $out/share/fonts/opentype extracted
-    # DEBUG
-    ls -la ${src}
     unzip -o $src -d extracted
     find extracted -iname '*.ttf' -exec mv {} $out/share/fonts/truetype \;
     find extracted -iname '*.otf' -exec mv {} $out/share/fonts/opentype \;
