@@ -258,13 +258,6 @@ in
     qpwgraph
   ];
 
-  age = {
-    secrets.comic-code = {
-      file = /etc/nixos/secrets/ComicCode.tar.gz.age;
-    };
-    identityPaths = [ config.custom.sshKey ];
-  };
-
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
   # Also, removing ~/.config/fontconfig might help in case emojis are all fucked up and shit
   # The last time around the following command fixed emojis in pango apps:
@@ -276,16 +269,13 @@ in
       # (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       # dejavu_fonts
       # noto-fonts-cjk
-      # comic-code
-      (comic-code.override {
-        pkgSource = config.age.secrets.comic-code.path;
-      })
       fira-code
       fira-code-symbols
       liberation_ttf
+      nerdfonts
       noto-fonts
       noto-fonts-emoji
-      nerdfonts
+      proprietary-fonts
       ubuntu_font_family
     ];
     fontDir.enable = true;
