@@ -29,16 +29,21 @@ age_encrypt_for_github_user () {
     return 1
   fi
 
-  age -R - $@ <<< "$keys"
+  age -R - "$@" <<< "$keys"
 }
 
 encrypt_fonts() {
   local outdir="${1:-$OUTDIR}"
+  local zip_file="${outdir}/fonts.zip"
+  local age_file="${zip_file}.age"
 
-  rm -f fonts.zip fonts.zip.age
+  rm -f "$zip_file" "$age_file"
 
-  zip -r -j fonts.zip "${outdir}"/*
-  age_encrypt_for_github_user -o fonts.zip.age fonts.zip
+  echo "🗄️ Creating ZIP achive ${zip_file}" >&2
+  zip -r -j "$zip_file" "${outdir}"/*
+
+  echo "🔑 Encrypting archive to ${age_file}" >&2
+  age_encrypt_for_github_user -o "$age_file" "$zip_file"
 }
 
 find_fontdirs() {
@@ -51,7 +56,7 @@ find_fontdirs() {
 patch_fonts() {
   local srcdirs=("$@")
   local extra_args=(--complete)
-  local dir
+  local dir rc=0
 
   for dir in "${srcdirs[@]}"
   do
@@ -59,11 +64,15 @@ patch_fonts() {
 
     docker run --pull always --rm \
       --name nerd-fonts-patcher \
-      -v "${dir}:/in:ro" \
+      -v "${dir}:/in:Z" \
       -v "${OUTDIR}:/out:Z" \
       nerdfonts/patcher \
       "${extra_args[@]}"
+
+    [[ "$?" -ne 0 ]] && rc=1
   done
+
+  return "$rc"
 }
 
 kill_container() {
@@ -76,7 +85,7 @@ then
   while [[ -n "$*" ]]
   do
     case "$1" in
-      --help|-h|-?)
+      --help|-h)
         usage
         exit 0
         ;;
@@ -105,19 +114,19 @@ then
 
   set -- "${ARGS[@]}"
 
+  OUTDIR="${OUTDIR:-$PWD}/out"
+  FONT_ARCHIVES=("$@")
+
   if [[ -n "$EXIT" ]]
   then
     kill_container
   fi
-
-  OUTDIR="${OUTDIR:-$PWD}/out"
 
   if [[ -n "$CLEAR_OUTDIR" ]]
   then
     sudo rm -rf "$OUTDIR"
   fi
 
-  FONT_ARCHIVES=("$@")
   SRCROOT="$(mktemp -d)"
   trap 'rm -rf "$SRCROOT"' EXIT
 
