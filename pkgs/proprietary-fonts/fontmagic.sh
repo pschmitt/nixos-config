@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "Usage: $0 [--outdir DIR] ARCHIVE [ARCHIVE...]"
+  echo "Usage: $0 [--outdir DIR] [--encrypt] [--stop] [--clear] ARCHIVE [ARCHIVE...]"
 }
 
 extract_archive() {
@@ -23,9 +23,9 @@ age_encrypt_for_github_user () {
   local gh_user=pschmitt
   local keys
 
-  if ! keys=$(curl -fsSL https://github.com/${gh_user}.keys)
+  if ! keys=$(curl -fsSL "https://github.com/${gh_user}.keys")
   then
-    echo "Failed to fetch SSH keys for user ${gh_user} from GitHub" >&2
+    echo "Failed to fetch SSH keys for GitHub user ${gh_user}" >&2
     return 1
   fi
 
@@ -60,7 +60,7 @@ patch_fonts() {
 
   for dir in "${srcdirs[@]}"
   do
-    echo "Patching fonts in ${dir}..." >&2
+    echo "Patching fonts in '${dir}'..." >&2
 
     docker run --pull always --rm \
       --name nerd-fonts-patcher \
