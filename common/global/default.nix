@@ -172,6 +172,8 @@ in
     tmux
     tree
     unzip
+    p7zip
+    zip
     wget
     yq-go
 
