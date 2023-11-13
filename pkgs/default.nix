@@ -8,9 +8,10 @@ let
   obsws-python = pkgs.python3Packages.callPackage ./obsws-python { };
 in
 {
+  comic-code = pkgs.callPackage ./comic-code { pkgSource = ""; };
   flarectl = pkgs.callPackage ./flarectl { };
-  jsonrepair = pkgs.callPackage ./jsonrepair { };
   hacompanion = pkgs.callPackage ./hacompanion { };
+  jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-cli { inherit obsws-python; };
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
