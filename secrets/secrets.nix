@@ -7,4 +7,5 @@ let
 in
 {
   "secret.age".publicKeys = [ authorizedKeys ];
+  "ComicCode.tar.gz.age".publicKeys = [ authorizedKeys ];
 }
