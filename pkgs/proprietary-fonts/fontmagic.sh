@@ -49,9 +49,10 @@ encrypt_fonts() {
 
 find_fontdirs() {
   local dir="${1:-$PWD}"
+  local outdir="${OUTDIR:-${PWD}/out}"
 
   find "$dir" -type f \( -iname "*.ttf" -o -iname "*.otf" \) \
-    -exec dirname {} \; | sort -u | grep -v "$OUTDIR"
+    -exec dirname {} \; | sort -u | grep -v -- "$outdir"
 }
 
 patch_fonts() {
