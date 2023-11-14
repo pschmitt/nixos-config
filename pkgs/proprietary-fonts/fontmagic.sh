@@ -12,6 +12,7 @@ extract_archive() {
 extract_archives() {
   local archives=("$@")
 
+  local a
   for a in "${archives[@]}"
   do
     echo "Extracting fonts from ${a}..." >&2
