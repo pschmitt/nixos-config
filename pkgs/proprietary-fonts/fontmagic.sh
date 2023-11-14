@@ -185,7 +185,7 @@ then
   if [[ -z "$ACTION" ]]
   then
     {
-      echo "Missing action"
+      echo_error "🔴 Missing action"
       usage
       exit 2
     }>&2
