@@ -7,6 +7,7 @@ usage() {
   echo "   patch ARCHIVE [ARCHIVE...]"
   echo "   archive [OUTDIR]"
   echo "   encrypt [OUTDIR]"
+  echo "   decrypt FILE"
   echo "   fetch"
 }
 
@@ -103,7 +104,7 @@ find_fontdirs() {
 patch_fonts() {
   local srcdirs=("$@")
   local outdir="${OUTDIR:-${PWD}/out}"
-  local extra_args=(--complete --makegroups 5)
+  local extra_args=(--complete --makegroups 2)
   local dir rc=0
 
   for dir in "${srcdirs[@]}"
