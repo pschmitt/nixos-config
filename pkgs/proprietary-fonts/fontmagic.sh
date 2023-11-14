@@ -159,7 +159,7 @@ then
         OUTDIR="$2"
         shift 2
         ;;
-      --clear|-c|--force|-f)
+      --clear|--clean|-c|--force|-f)
         CLEAR_OUTDIR=1
         shift
         ;;
