@@ -33,7 +33,7 @@ age_encrypt_for_github_user () {
 }
 
 encrypt_fonts() {
-  local outdir="${1:-$OUTDIR}"
+  local outdir="${1:-${OUTDIR:-${PWD}/out}}"
   local zip_file="${outdir}/fonts.zip"
   local age_file="${zip_file}.age"
 
@@ -55,7 +55,8 @@ find_fontdirs() {
 
 patch_fonts() {
   local srcdirs=("$@")
-  local extra_args=(--complete)
+  local outdir="${OUTDIR:-${PWD}/out}"
+  local extra_args=(--complete --adjust-line-height)
   local dir rc=0
 
   for dir in "${srcdirs[@]}"
@@ -63,25 +64,34 @@ patch_fonts() {
     echo "Patching fonts in '${dir}'..." >&2
 
     docker run --pull always --rm \
-      --name nerd-fonts-patcher \
       -v "${dir}:/in:Z" \
-      -v "${OUTDIR}:/out:Z" \
+      -v "${outdir}:/out:Z" \
       nerdfonts/patcher \
-      "${extra_args[@]}"
+      "${extra_args[@]}" &
 
     [[ "$?" -ne 0 ]] && rc=1
   done
 
+  wait
   return "$rc"
 }
 
+copy_original_fonts() {
+  local srcdirs=("$@")
+  local outdir="${OUTDIR:-${PWD}/out}"
+
+  find "${srcdirs[@]}" \( -iname "*.ttf" -o -iname "*.otf" \) \
+    -exec cp -v --no-clobber {} "$outdir" \;
+}
+
 kill_container() {
-  docker rm -f nerd-fonts-patcher
+  docker ps | awk '/nerdfonts/ { print $1 }' | xargs docker rm -f
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   ARGS=()
+
   while [[ -n "$*" ]]
   do
     case "$1" in
@@ -134,6 +144,7 @@ then
 
   mapfile -t SRCDIRS < <(find_fontdirs "$SRCROOT")
 
+  copy_original_fonts "${SRCDIRS[@]}"
   patch_fonts "${SRCDIRS[@]}"
   RC="$?"
 
