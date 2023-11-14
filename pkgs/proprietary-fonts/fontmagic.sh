@@ -231,7 +231,7 @@ then
       then
         sudo chown -R "$USER" "$OUTDIR"
       else
-        echo_error "Patching failed"
+        echo_error "🔴 Patching failed"
         sudo rmdir "$OUTDIR" 2>/dev/null
         exit "$RC"
       fi
