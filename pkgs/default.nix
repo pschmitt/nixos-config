@@ -20,5 +20,6 @@ in
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { inherit font-resizer; };
+  MonoLisa = pkgs.callPackage ./fonts/MonoLisa { };
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
 }
