@@ -276,6 +276,7 @@ in
 
       # proprietary fonts
       ComicCode
+      MonoLisa
       MonoLisa-Custom
     ];
     fontDir.enable = true;
