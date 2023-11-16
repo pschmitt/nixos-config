@@ -273,6 +273,8 @@ in
       noto-fonts
       noto-fonts-emoji
       ubuntu_font_family
+      font-awesome
+      font-awesome_5
 
       # proprietary fonts
       ComicCode
