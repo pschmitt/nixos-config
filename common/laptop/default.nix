@@ -263,10 +263,7 @@ in
   # The last time around the following command fixed emojis in pango apps:
   # rm -rf ~/.cache/fontconfig ~/.config/fontconfig; sudo fc-cache --really-force -v; fc-cache --really-force -v
   fonts = {
-    # fonts = with pkgs; [  # deprecated in unstable
     packages = with pkgs; [
-      # new opt name (unstable)
-      # (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       # dejavu_fonts
       # noto-fonts-cjk
       fira-code
@@ -275,8 +272,11 @@ in
       nerdfonts
       noto-fonts
       noto-fonts-emoji
-      proprietary-fonts
       ubuntu_font_family
+
+      # proprietary fonts
+      ComicCode
+      MonoLisa-Custom
     ];
     fontDir.enable = true;
     # enableDefaultFonts = true;  # deprecated in unstable
