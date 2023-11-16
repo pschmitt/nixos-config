@@ -37,6 +37,8 @@
     foot
     gnome.eog
     gnome.evince
+    gnome.gnome-font-viewer
+    gnome.file-roller
     gnome.nautilus
     gnome.seahorse
     gnome.sushi
