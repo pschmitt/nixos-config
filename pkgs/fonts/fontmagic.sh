@@ -171,6 +171,14 @@ then
         EXIT=1
         shift
         ;;
+      # --ignore|-i)
+      #   FONT_IGNORE="$2"
+      #   shift 2
+      #   ;;
+      # --only|--include)
+      #   FONT_INCLUDE="$2"
+      #   shift 2
+      #   ;;
       *)
         ARGS+=("$1")
         shift
