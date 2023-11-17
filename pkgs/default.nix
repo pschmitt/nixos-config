@@ -19,7 +19,10 @@ in
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
 
   # Fonts
-  ComicCode = pkgs.callPackage ./fonts/ComicCode { inherit font-resizer; };
+  ComicCode = pkgs.callPackage ./fonts/ComicCode { };
+  ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
   MonoLisa = pkgs.callPackage ./fonts/MonoLisa { };
+  MonoLisaNF = pkgs.callPackage ./fonts/MonoLisaNF { };
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
+  MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 }
