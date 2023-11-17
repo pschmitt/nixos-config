@@ -5,7 +5,7 @@
 }:
 
 stdenvNoCC.mkDerivation rec {
-  pname = "MonoLisa-Custom";
+  pname = "MonoLisaNF";
   version = "1.808";
 
   src = ../src/MonoLisa-Plus-Custom-1.808.zip;
@@ -17,8 +17,15 @@ stdenvNoCC.mkDerivation rec {
   phases = [ "buildPhase" ];
 
   buildPhase = ''
-    mkdir -p $out/share/fonts/truetype
-    unzip -j $src -d $out/share/fonts/truetype
+    mkdir -p $out/share/fonts/opentype extracted
+    unzip -j $src -d extracted
+
+    for f in extracted/*
+    do
+      # patch font
+      nerd-font-patcher $f --complete --no-progressbars \
+        --outputdir $out/share/fonts/opentype
+    done
   '';
 
   meta = with lib; {
