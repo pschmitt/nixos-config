@@ -26,7 +26,7 @@ stdenvNoCC.mkDerivation rec {
     for f in extracted/*
     do
       # only patch regular fonts
-      if [[ "$f" != *Regular* && "$f" != *Demo* ]]
+      if [[ "$f" != *Regular* || "$f" != *Demo* ]]
       then
         continue
       fi
