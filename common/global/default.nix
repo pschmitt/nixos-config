@@ -29,7 +29,7 @@ let
 
 in
 {
-  imports = [ ./printer.nix ];
+  imports = [ ./appimage.nix ./printer.nix ];
 
   nixpkgs = {
     # You can add overlays here
