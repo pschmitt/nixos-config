@@ -12,7 +12,7 @@ buildGoModule rec {
   };
 
   subPackages = [ "cmd/flarectl" ];
-  vendorSha256 = "sha256-gQxHJNPLVcnilMIv4drDCcQ8QJCyuZ6vejsuo0elIPw=";
+  vendorHash = "sha256-gQxHJNPLVcnilMIv4drDCcQ8QJCyuZ6vejsuo0elIPw=";
 
   # FIXME Why aren't these working?
   # Below works...
