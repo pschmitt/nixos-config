@@ -1,17 +1,27 @@
 { inputs, lib, config, pkgs, ... }:
 
 {
+  # Theming
   gtk = {
     enable = true;
     theme = {
-      name = "Adwaita-dark";
-      package = pkgs.gnome.gnome-themes-extra;
+      # name = "Adwaita-dark";
+      # package = pkgs.gnome.gnome-themes-extra;
+      name = "Colloid-Dark-Nord";
+      package = (pkgs.colloid-gtk-theme.override {
+        themeVariants = [ "all" ];
+        colorVariants = [ "dark" "light" "standard" ];
+        tweaks = [ "normal" "nord" ];
+      });
     };
 
     iconTheme = {
       name = "Colloid-nord-dark";
       # Colloid-nord-dark is not technically part of colloid-icon-theme
-      # package = pkgs.colloid-icon-theme;
+      package = (pkgs.colloid-icon-theme.override {
+        schemeVariants = [ "all" ];
+        colorVariants = [ "all" ];
+      });
     };
 
     font = {
