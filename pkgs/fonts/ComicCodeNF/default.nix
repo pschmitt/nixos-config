@@ -27,7 +27,7 @@ stdenvNoCC.mkDerivation rec {
     do
       # only patch regular fonts
       case "$f" in
-        *Demo*|*Ligatures*)
+        *Demo*)
           continue
         ;;
       esac
@@ -35,7 +35,6 @@ stdenvNoCC.mkDerivation rec {
       # patch font
       nerd-font-patcher \
         --complete \
-        --careful \
         --no-progressbars \
         --outputdir "$out/share/fonts/opentype" \
         "$f" # || true  # /r/SomeOfYouMayDie
