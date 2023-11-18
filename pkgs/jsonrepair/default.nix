@@ -23,5 +23,6 @@ buildNpmPackage rec {
     homepage = "https://josdejong.github.io/jsonrepair/";
     license = licenses.isc;
     maintainers = with maintainers; [ pschmitt ];
+    mainProgram = "jsonrepair";
   };
 }

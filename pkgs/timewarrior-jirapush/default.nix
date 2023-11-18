@@ -21,5 +21,6 @@ rustPlatform.buildRustPackage rec {
     homepage = "https://gitlab.com/FoxAmes/timewarrior-jirapush";
     license = licenses.mit;
     maintainers = [ maintainers.pschmitt ];
+    mainProgram = "jirapush";
   };
 }
