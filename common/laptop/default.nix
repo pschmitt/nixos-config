@@ -278,8 +278,10 @@ in
 
       # proprietary fonts
       ComicCode
+      ComicCodeNF
       MonoLisa
       MonoLisa-Custom
+      MonoLisa-CustomNF
     ];
     fontDir.enable = true;
     # enableDefaultFonts = true;  # deprecated in unstable
