@@ -29,5 +29,6 @@ buildGoModule rec {
     license = licenses.bsd3;
     maintainers = [ maintainers.pschmitt ];
     platforms = platforms.unix;
+    mainProgram = "flarectl";
   };
 }
