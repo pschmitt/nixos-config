@@ -26,10 +26,11 @@ stdenvNoCC.mkDerivation rec {
     for f in extracted/*
     do
       # only patch regular fonts
-      if [[ "$f" != *Regular* || "$f" != *Demo* ]]
-      then
-        continue
-      fi
+      case "$f" in
+        *Demo*|*Ligatures*)
+          continue
+        ;;
+      esac
 
       # patch font
       nerd-font-patcher \
