@@ -46,9 +46,9 @@
 
       commonModules = [
         ./modules/custom.nix
+        agenix.nixosModules.default
         inputs.nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
-        agenix.nixosModules.default
       ];
 
       nixosSystemFor = system: hostname: nixpkgs.lib.nixosSystem {
