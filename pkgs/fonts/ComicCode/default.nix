@@ -20,6 +20,8 @@ stdenvNoCC.mkDerivation rec {
   buildPhase = ''
     mkdir -p $out/share/fonts/opentype
     unzip -j $src '*.otf' -d $out/share/fonts/opentype
+    # remove demo fonts
+    rm -f $out/share/fonts/opentype/*Demo*
   '';
 
   meta = with lib; {
