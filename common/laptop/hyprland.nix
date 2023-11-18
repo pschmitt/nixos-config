@@ -69,8 +69,8 @@
     slurp
     swappy
     swayidle
-    unstable.waybar
-    unstable.wl-clip-persist
+    waybar
+    wl-clip-persist
     wayvnc
     wl-clipboard
     wlogout
@@ -81,20 +81,6 @@
     wdisplays
     wtype
     ydotool
-
-    # Theming
-    adwaita-qt
-    adwaita-qt6
-    bibata-cursors
-    (colloid-gtk-theme.override { themeVariants = [ "all" ]; colorVariants = [ "dark" "light" "standard" ]; tweaks = [ "normal" "nord" ]; })
-    (colloid-icon-theme.override { schemeVariants = [ "all" ]; colorVariants = [ "all" ]; })
-    colloid-kde
-    glib # gsettings
-    gnome.adwaita-icon-theme
-    gnome.gnome-themes-extra
-    libadwaita
-    lxappearance
-    qt5ct
 
     # NOTE We could use the below fake package to write the wayland-session file
     # We'd PROBABLY (lol) only need to add it to:
@@ -113,8 +99,7 @@
     # })
   ];
 
-  # fonts.enableDefaultFonts = true;   # stable
-  fonts.enableDefaultPackages = true; # unstable
+  fonts.enableDefaultPackages = true;
 
   hardware.opengl.enable = true;
 
