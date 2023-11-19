@@ -10,6 +10,7 @@
     flat-remix-icon-theme
     tela-icon-theme
     tela-circle-icon-theme
+    papirus-icon-theme
     (pkgs.colloid-gtk-theme.override {
       themeVariants = [ "all" ];
       colorVariants = [ "dark" "light" "standard" ];
@@ -36,8 +37,8 @@
     };
 
     iconTheme = {
-      name = "Tela-purple-dark";
-      package = pkgs.tela-icon-theme;
+      name = "Papirus-Dark";
+      package = pkgs.papirus-icon-theme;
     };
 
     font = {
