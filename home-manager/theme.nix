@@ -1,6 +1,26 @@
 { inputs, lib, config, pkgs, ... }:
 
 {
+  home.packages = with pkgs; [
+    # icon-library
+    arc-icon-theme
+    numix-icon-theme
+    numix-icon-theme-circle
+    numix-icon-theme-square
+    flat-remix-icon-theme
+    tela-icon-theme
+    tela-circle-icon-theme
+    (pkgs.colloid-gtk-theme.override {
+      themeVariants = [ "all" ];
+      colorVariants = [ "dark" "light" "standard" ];
+      tweaks = [ "normal" "nord" ];
+    })
+    (pkgs.colloid-icon-theme.override {
+      schemeVariants = [ "all" ];
+      colorVariants = [ "all" ];
+    })
+  ];
+
   # Theming
   gtk = {
     enable = true;
@@ -16,12 +36,8 @@
     };
 
     iconTheme = {
-      name = "Colloid-nord-dark";
-      # Colloid-nord-dark is not technically part of colloid-icon-theme
-      package = (pkgs.colloid-icon-theme.override {
-        schemeVariants = [ "all" ];
-        colorVariants = [ "all" ];
-      });
+      name = "Tela-purple-dark";
+      package = pkgs.tela-icon-theme;
     };
 
     font = {
