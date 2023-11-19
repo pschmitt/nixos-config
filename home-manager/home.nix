@@ -35,6 +35,7 @@
     jc
     jsonrepair
     neofetch
+    rich-cli
     sops
     yadm
 
