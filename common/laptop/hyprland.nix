@@ -4,6 +4,15 @@
 
 { inputs, config, pkgs, ... }:
 
+let
+  # hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland-nvidia;
+  # hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  hyprlandPkg = pkgs.hyprland;
+
+  # xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  xdphPkg = pkgs.xdg-desktop-portal-hyprland;
+
+in
 {
   nix.settings = {
     # Hyprland flake
@@ -24,8 +33,7 @@
 
   environment.systemPackages = with pkgs; [
     # Hyprland
-    # inputs.hyprland.packages.${pkgs.system}.hyprland-nvidia
-    inputs.hyprland.packages.${pkgs.system}.hyprland
+    hyprlandPkg
 
     polkit_gnome
     xorg.xhost
@@ -127,12 +135,13 @@
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
       displayManager.sessionPackages = [
-        # inputs.hyprland.packages.${pkgs.system}.hyprland-nvidia
-        inputs.hyprland.packages.${pkgs.system}.hyprland
+        hyprlandPkg
       ]; # also set by programs.hyprland.enable = true;
       displayManager.session = [{
         manage = "desktop";
         name = "hyprland-wrapped";
+        # FIXME Do we even still need this? The wrapper does not do all
+        # that much anymore...
         start = ''
           /home/pschmitt/.config/hypr/bin/hyprland-wrapped.sh &
           waitPID=$!
@@ -177,11 +186,7 @@
     portal = {
       enable = true; # also set by programs.hyprland.enable = true;
       xdgOpenUsePortal = true;
-      extraPortals = with pkgs; [
-        inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland
-        # xdg-desktop-portal-gtk
-        # unstable.xdg-desktop-portal-hyprland
-      ];
+      extraPortals = [ xdphPkg ];
     };
   };
 }
