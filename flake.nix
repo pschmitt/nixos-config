@@ -14,6 +14,7 @@
 
     # flake-registry.url = "github:NixOS/flake-registry";
     # flake-registry.flake = false;
+    # flake-utils.url = "github:numtide/flake-utils";
 
     # Home manager
     # home-manager.url = "github:nix-community/home-manager/release-23.05";
@@ -29,8 +30,6 @@
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.4";
     xdph.inputs.nixpkgs.follows = "nixpkgs";
-    # hyprland.url = "github:hyprwm/Hyprland";
-    # xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland";
   };
 
   outputs = { self, nixpkgs, home-manager, agenix, nur, ... }@inputs:
