@@ -373,16 +373,16 @@
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1699048835,
-        "narHash": "sha256-IKcRTKzlcDsbD5xydRNc9s4c4KjcQHaZgOc5kWPOAtU=",
+        "lastModified": 1700508250,
+        "narHash": "sha256-X4o/mifI7Nhu0UKYlxx53wIC+gYDo3pVM9L2u3PE2bE=",
         "owner": "hyprwm",
         "repo": "xdg-desktop-portal-hyprland",
-        "rev": "081b36add935e5c099ae82d6a4db4f3740aad711",
+        "rev": "eb120ff25265ecacd0fc13d7dab12131b60d0f47",
         "type": "github"
       },
       "original": {
         "owner": "hyprwm",
-        "ref": "v1.2.4",
+        "ref": "v1.2.5",
         "repo": "xdg-desktop-portal-hyprland",
         "type": "github"
       }

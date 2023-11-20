@@ -28,7 +28,7 @@
 
     hyprland.url = "github:hyprwm/Hyprland/v0.32.3";
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
-    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.4";
+    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.5";
     xdph.inputs.nixpkgs.follows = "nixpkgs";
   };
 
