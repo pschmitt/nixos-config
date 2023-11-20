@@ -55,7 +55,10 @@ in
     (pkgs.stdenv.mkDerivation {
       name = "gtklock-with-modules";
       src = pkgs.writeShellScript "gtklock-with-modules" ''
-        ${pkgs.gtklock}/bin/gtklock --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so "$@"
+        ${pkgs.gtklock}/bin/gtklock \
+          --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so \
+          --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so \
+          "$@"
       '';
 
       phases = [ "installPhase" ];
@@ -78,15 +81,15 @@ in
     swappy
     swayidle
     waybar
-    wl-clip-persist
     wayvnc
+    wdisplays
+    wl-clip-persist
     wl-clipboard
     wlogout
     wlr-randr
+    wlrctl
     wofi
     wofi-emoji
-    wlrctl
-    wdisplays
     wtype
     ydotool
 
