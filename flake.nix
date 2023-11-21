@@ -30,6 +30,9 @@
     hyprland.inputs.nixpkgs.follows = "nixpkgs";
     xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.5";
     xdph.inputs.nixpkgs.follows = "nixpkgs";
+
+    nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
+    nixpkgs-wayland.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { self, nixpkgs, home-manager, agenix, nur, ... }@inputs:
