@@ -151,6 +151,7 @@ in
     fping
     fx
     htop
+    hwatch
     jq
     killall
     lm_sensors
