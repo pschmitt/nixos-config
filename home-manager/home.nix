@@ -91,7 +91,6 @@
     enable = true;
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
-      extraConfig = { gtk-application-prefer-dark-theme = 1; };
       bookmarks = [
         "file:///tmp tmp"
         "file://${config.home.homeDirectory}/devel/private devel-p"
