@@ -1,26 +1,59 @@
 { inputs, lib, config, pkgs, ... }:
 
+let
+  theme = "Colloid-Dark-Nord";
+  themePkg = (pkgs.colloid-gtk-theme.override {
+    themeVariants = [ "all" ];
+    colorVariants = [ "dark" "light" "standard" ];
+    tweaks = [ "normal" "nord" ];
+  });
+
+  iconTheme = "Papirus-Dark";
+  iconThemePkg = pkgs.papirus-icon-theme;
+
+  font = "Noto Sans 10";
+  fontPkg = pkgs.noto-fonts;
+
+  cursorTheme = "Bibata-Modern-Ice";
+  cursorThemePkg = pkgs.bibata-cursors;
+in
+
 {
-  home.packages = with pkgs; [
-    # icon-library
-    arc-icon-theme
-    numix-icon-theme
-    numix-icon-theme-circle
-    numix-icon-theme-square
-    flat-remix-icon-theme
-    tela-icon-theme
-    tela-circle-icon-theme
-    papirus-icon-theme
-    (pkgs.colloid-gtk-theme.override {
-      themeVariants = [ "all" ];
-      colorVariants = [ "dark" "light" "standard" ];
-      tweaks = [ "normal" "nord" ];
-    })
-    (pkgs.colloid-icon-theme.override {
-      schemeVariants = [ "all" ];
-      colorVariants = [ "all" ];
-    })
-  ];
+  home.packages = with pkgs;
+    [
+      # icon-library
+      arc-icon-theme
+      numix-icon-theme
+      numix-icon-theme-circle
+      numix-icon-theme-square
+      flat-remix-icon-theme
+      tela-icon-theme
+      tela-circle-icon-theme
+      papirus-icon-theme
+      gnome.gnome-themes-extra
+      themePkg
+      iconThemePkg
+      (pkgs.colloid-icon-theme.override {
+        schemeVariants = [ "all" ];
+        colorVariants = [ "all" ];
+      })
+      # gsettings wrapper
+      (pkgs.writeTextFile {
+        name = "gsettings";
+        destination = "/bin/gsettings";
+        executable = true;
+        text =
+          let
+            schema = pkgs.gsettings-desktop-schemas;
+            datadir = "${schema}/share/gsettings-schemas/${schema.name}";
+            bin = pkgs.glib;
+          in
+          ''
+            export XDG_DATA_DIRS=${datadir}:$XDG_DATA_DIRS
+            ${bin}/bin/gsettings "$@"
+          '';
+      })
+    ];
 
   # Theming
   gtk = {
@@ -28,35 +61,35 @@
     theme = {
       # name = "Adwaita-dark";
       # package = pkgs.gnome.gnome-themes-extra;
-      name = "Colloid-Dark-Nord";
-      package = (pkgs.colloid-gtk-theme.override {
-        themeVariants = [ "all" ];
-        colorVariants = [ "dark" "light" "standard" ];
-        tweaks = [ "normal" "nord" ];
-      });
+      name = theme;
+      package = themePkg;
     };
 
     iconTheme = {
-      name = "Papirus-Dark";
-      package = pkgs.papirus-icon-theme;
+      name = iconTheme;
+      package = iconThemePkg;
     };
 
     font = {
-      name = "Noto Sans 10";
-      package = pkgs.noto-fonts;
+      name = font;
+      package = fontPkg;
     };
 
     cursorTheme = {
-      name = "Bibata-Modern-Ice";
-      package = pkgs.bibata-cursors;
+      name = cursorTheme;
+      package = cursorThemePkg;
     };
 
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
-      extraConfig = { gtk-application-prefer-dark-theme = 1; };
+      # FIXME Should this be "true" or "1"?
+      extraConfig = { gtk-application-prefer-dark-theme = true; };
     };
 
-    gtk4 = { extraConfig = { gtk-application-prefer-dark-theme = 1; }; };
+    # FIXME Should this be "true" or "1"?
+    gtk4 = {
+      extraConfig = { gtk-application-prefer-dark-theme = true; };
+    };
   };
 
   qt = {
@@ -69,6 +102,11 @@
   };
 
   dconf.settings = {
-    "org/gnome/desktop/interface" = { color-scheme = "prefer-dark"; };
+    "org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+      # FIXME This isn't really necessary. The idea here was to try to force
+      # nautilus to use the default gtk theme, but this seems to have no effect
+      # gtk-theme = theme;
+    };
   };
 }
