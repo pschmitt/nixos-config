@@ -6,7 +6,7 @@
 
     ./hardware-configuration.nix
     ./nvidia.nix
-    ./luks-remote.nix
+    # ./luks-remote.nix
 
     ../../common/global
     ../../common/laptop
