@@ -1,12 +1,10 @@
 { inputs, lib, config, pkgs, ... }:
 
 {
-  home.packages = with pkgs; [ obs-cli ];
-
   programs.neovim = {
     enable = true;
     extraPackages = with pkgs; [
-      vimPlugins.nvim-treesitter.withAllGrammars
+      # vimPlugins.nvim-treesitter.withAllGrammars
       shellcheck
       shfmt
 
