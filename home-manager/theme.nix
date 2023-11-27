@@ -1,15 +1,22 @@
 { inputs, lib, config, pkgs, ... }:
 
 let
-  theme = "Colloid-Dark-Nord";
-  themePkg = (pkgs.colloid-gtk-theme.override {
+  colloidIconPkg = (pkgs.colloid-icon-theme.override {
+    schemeVariants = [ "all" ];
+    colorVariants = [ "all" ];
+  });
+
+  colloidThemePkg = (pkgs.colloid-gtk-theme.override {
     themeVariants = [ "all" ];
     colorVariants = [ "dark" "light" "standard" ];
     tweaks = [ "normal" "nord" ];
   });
 
-  iconTheme = "Papirus-Dark";
-  iconThemePkg = pkgs.papirus-icon-theme;
+  theme = "Colloid-Dark-Nord";
+  themePkg = colloidThemePkg;
+
+  iconTheme = "Tela-circle";
+  iconThemePkg = pkgs.tela-circle-icon-theme;
 
   font = "Noto Sans 10";
   fontPkg = pkgs.noto-fonts;
@@ -19,41 +26,38 @@ let
 in
 
 {
-  home.packages = with pkgs;
-    [
-      # icon-library
-      arc-icon-theme
-      numix-icon-theme
-      numix-icon-theme-circle
-      numix-icon-theme-square
-      flat-remix-icon-theme
-      tela-icon-theme
-      tela-circle-icon-theme
-      papirus-icon-theme
-      gnome.gnome-themes-extra
-      themePkg
-      iconThemePkg
-      (pkgs.colloid-icon-theme.override {
-        schemeVariants = [ "all" ];
-        colorVariants = [ "all" ];
-      })
-      # gsettings wrapper
-      (pkgs.writeTextFile {
-        name = "gsettings";
-        destination = "/bin/gsettings";
-        executable = true;
-        text =
-          let
-            schema = pkgs.gsettings-desktop-schemas;
-            datadir = "${schema}/share/gsettings-schemas/${schema.name}";
-            bin = pkgs.glib;
-          in
-          ''
-            export XDG_DATA_DIRS=${datadir}:$XDG_DATA_DIRS
-            ${bin}/bin/gsettings "$@"
-          '';
-      })
-    ];
+  home.packages = with pkgs; [
+    # icon-library
+    arc-icon-theme
+    colloidIconPkg
+    colloidThemePkg
+    flat-remix-icon-theme
+    gnome.gnome-themes-extra
+    numix-icon-theme
+    numix-icon-theme-circle
+    numix-icon-theme-square
+    paper-icon-theme
+    papirus-icon-theme
+    tela-circle-icon-theme
+    tela-icon-theme
+
+    # gsettings wrapper
+    (pkgs.writeTextFile {
+      name = "gsettings";
+      destination = "/bin/gsettings";
+      executable = true;
+      text =
+        let
+          schema = pkgs.gsettings-desktop-schemas;
+          datadir = "${schema}/share/gsettings-schemas/${schema.name}";
+          bin = pkgs.glib;
+        in
+        ''
+          export XDG_DATA_DIRS=${datadir}:$XDG_DATA_DIRS
+          ${bin}/bin/gsettings "$@"
+        '';
+    })
+  ];
 
   # Theming
   gtk = {
@@ -83,12 +87,12 @@ in
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
       # FIXME Should this be "true" or "1"?
-      extraConfig = { gtk-application-prefer-dark-theme = true; };
+      extraConfig = { gtk-application-prefer-dark-theme = "1"; };
     };
 
     # FIXME Should this be "true" or "1"?
     gtk4 = {
-      extraConfig = { gtk-application-prefer-dark-theme = true; };
+      extraConfig = { gtk-application-prefer-dark-theme = "1"; };
     };
   };
 
@@ -104,7 +108,7 @@ in
   dconf.settings = {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
-      # FIXME This isn't really necessary. The idea here was to try to force
+      # FIXME Below isn't really necessary. The idea here was to try to force
       # nautilus to use the default gtk theme, but this seems to have no effect
       # gtk-theme = theme;
     };
