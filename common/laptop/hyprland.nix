@@ -190,6 +190,14 @@ in
       enable = true; # also set by programs.hyprland.enable = true;
       xdgOpenUsePortal = true;
       extraPortals = [ xdphPkg ];
+      # https://www.reddit.com/r/NixOS/comments/184hbt6/changes_to_xdgportals/
+      # NOTE If you simply want to keep the behaviour in < 1.17, which uses the first
+      # portal implementation found in lexicographical order, use the following:
+      # xdg.portal.config.common.default = "*";
+      config.common.default = "*";
+      # FIXME xdph does not ship any share/xdg-desktop-portal/*.conf file
+      # but share/xdg-desktop-portal/portals/hyprland.portal
+      # configPackages = [ xdphPkg ];
     };
   };
 }
