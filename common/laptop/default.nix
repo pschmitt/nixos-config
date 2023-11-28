@@ -4,11 +4,6 @@
 
 { inputs, lib, config, pkgs, ... }:
 let
-  # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
-  regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
-    SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
-  });
-
 
 in
 {
@@ -81,52 +76,6 @@ in
     # Enable touchpad support (enabled default in most desktopManager).
     libinput.enable = true;
   };
-
-  # https://nixos.wiki/wiki/Greetd
-  services.greetd = {
-    enable = true;
-    restart = false; # Restart greetd when it crashes
-    settings = rec {
-      initial_session = {
-        # command = "${pkgs.hyprland}/bin/Hyprland";
-        # command = "${hyprland-flake.packages.${pkgs.system}.hyprland}/bin/Hyprland";
-        command =
-          "${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh";
-        user = "pschmitt";
-      };
-      default_session = {
-        # command = "/nix/store/pv33drl44ry54dvi0d0rnva3ybwgid5r-dbus-1.14.8/bin/dbus-run-session /nix/store/jccwacv61ifyblaqz37wnlq7b2q82ax3-cage-0.1.4/bin/cage -s -- /nix/store/d9x7bvhvlyqnz6331mv0lsl2mya4c433-regreet-0.1.0/bin/regreet"
-        command =
-          "${pkgs.dbus}/bin/dbus-run-session ${pkgs.cage}/bin/cage -s -- ${pkgs.greetd.regreet}/bin/regreet";
-        user = "greeter";
-      };
-    };
-  };
-
-  programs.regreet = {
-    enable = true;
-    package = regreet-override;
-    settings = {
-      # background = {
-      #   path = "xxx";
-      #   fit = "Contain";
-      # };
-      GTK = {
-        application_prefer_dark_theme = true;
-        cursor_theme_name = "Adwaita";
-        font_name = "Noto Sans 16";
-        icon_theme_name = "Adwaita";
-        theme_name = "Adwaita";
-      };
-      commands = {
-        reboot = [ "systemctl" "reboot" ];
-        poweroff = [ "systemctl" "poweroff" ];
-      };
-    };
-  };
-
-  # Below is required for some weird reason when using greetd with autologin
-  users.groups.pschmitt = { };
 
   services.udev.packages = [ pkgs.android-udev-rules ];
 
