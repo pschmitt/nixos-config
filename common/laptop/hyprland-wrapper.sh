@@ -20,6 +20,9 @@ export HYPRLAND_SESSION_WRAPPER="$0"
 # systemctl --user start graphical-session.target
 # trap "systemctl --user stop graphical-session.target" EXIT INT TERM
 
+PATH="$($HOME/bin/zhj path::export --value-only)"
+export PATH
+
 GTK_THEME=$($HOME/bin/zhj theme::current)
 export GTK_THEME
 
