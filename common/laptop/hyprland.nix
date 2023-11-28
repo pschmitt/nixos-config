@@ -50,6 +50,7 @@ in
     polkit_gnome
     xorg.xhost
     kitty # default terminal (the one used by the default config)
+    wezterm
 
     alacritty
     brightnessctl
