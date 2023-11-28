@@ -70,6 +70,7 @@ in
       '';
     })
     hyprpaper
+    kanshi
     lemonade
     libnotify
     mako
