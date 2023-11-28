@@ -23,7 +23,8 @@ in {
   # https://releases.nixos.org/nix-dev/2016-September/021768.html
   fileSystems."/mnt/hass" = {
     fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass-fnuc.schmitt.co.beta.tailscale.net:/config";
+    # NOTE We cannot use /config here since it is a symlink to /homeassistant
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass-fnuc.schmitt.co.beta.tailscale.net:/homeassistant";
     options = opts;
   };
 
