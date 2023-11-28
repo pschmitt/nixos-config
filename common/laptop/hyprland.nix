@@ -12,8 +12,19 @@ let
   xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
 
+  hyprland-wrapper = (pkgs.writeTextFile {
+    name = "hyprland-wrapper";
+    destination = "/bin/hyprland-wrapper";
+    executable = true;
+    text = builtins.readFile ./hyprland-wrapper.sh;
+  });
+
 in
 {
+  imports = [
+    (import ./greetd.nix { inherit config pkgs hyprlandPkg hyprland-wrapper; })
+  ];
+
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
@@ -34,6 +45,7 @@ in
   environment.systemPackages = with pkgs; [
     # Hyprland
     hyprlandPkg
+    hyprland-wrapper
 
     polkit_gnome
     xorg.xhost
@@ -96,7 +108,7 @@ in
 
     # NOTE We could use the below fake package to write the wayland-session file
     # We'd PROBABLY (lol) only need to add it to:
-    # services.xserver.displayManager.sessionPackages sessionPackages
+    # services.xserver.displayManager.sessionPackage
     #
     # (writeTextFile {
     #   name = "hyprland-wrapped.desktop";
@@ -120,14 +132,10 @@ in
     xwayland.enable = true; # also set by programs.hyprland.enable = true;
 
     # # Hyprland
-    # # Using NixOS 23.05's programs.hyprland results in xdph 0.3.0 being used
     # hyprland = {
     #   enable = true;
-    #   # comment out line below to use the regular (non-flake) Hyprland version
-    #   # package = pkgs.hyprland;
-    #   package = hyprland-flake.packages.${pkgs.system}.hyprland;
-    #   # NOTE portalPackage is an unstable *option*
-    #   # portalPackage = unstable.xdg-desktop-portal-hyprland;
+    #   package = hyprlandPkg;
+    #   portalPackage = xdphPkg;
     # };
   };
 
@@ -138,18 +146,14 @@ in
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
-      displayManager.sessionPackages = [
-        hyprlandPkg
-      ]; # also set by programs.hyprland.enable = true;
+      # below is also set by programs.hyprland.enable = true;
+      displayManager.sessionPackages = [ hyprlandPkg ];
       displayManager.session = [{
         manage = "desktop";
-        name = "hyprland-wrapped";
+        name = "hyprland-wrapper";
         # FIXME Do we even still need this? The wrapper does not do all
         # that much anymore...
-        start = ''
-          /home/pschmitt/.config/hypr/bin/hyprland-wrapped.sh &
-          waitPID=$!
-        '';
+        start = builtins.readFile ./hyprland-wrapper.sh;
       }];
     };
   };
