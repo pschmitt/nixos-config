@@ -108,7 +108,6 @@ in
     wlr-randr
     wlrctl
     wofi
-    wofi-emoji
     wtype
     ydotool
 
