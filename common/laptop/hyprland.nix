@@ -49,14 +49,16 @@ in
 
     polkit_gnome
     xorg.xhost
-    kitty # default terminal (the one used by the default config)
-    wezterm
-    wezterm-nightly
 
     alacritty
+    foot
+    kitty
+    # wezterm
+    wezterm-bin
+    wezterm-nightly
+
     brightnessctl
     cliphist
-    foot
     gnome.eog
     gnome.evince
     gnome.gnome-font-viewer
