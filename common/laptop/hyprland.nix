@@ -55,9 +55,9 @@ in
     alacritty
     foot
     kitty
-    # wezterm
-    wezterm-bin
-    # wezterm-nightly
+    # wezterm  # og package, from upstream nixpkgs
+    # wezterm-bin
+    wezterm-nightly
 
     brightnessctl
     cliphist

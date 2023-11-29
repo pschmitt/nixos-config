@@ -18,8 +18,9 @@ in
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
   obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
-  wezterm-bin = pkgs.callPackage ./wezterm-bin { };
-  wezterm-nightly = pkgs.callPackage ./wezterm-nightly { };
+  wezterm-bin = pkgs.callPackage ./wezterm/wezterm-bin { };
+  wezterm-nightly = pkgs.callPackage ./wezterm/wezterm-nightly { };
+  wezterm-nightly-appimage = pkgs.callPackage ./wezterm/wezterm-nightly-appimage { };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
