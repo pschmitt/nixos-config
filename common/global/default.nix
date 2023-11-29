@@ -360,7 +360,11 @@ in
     };
   };
 
-  programs.zsh.enable = true;
+  programs.zsh = {
+    enable = true;
+    vteIntegration = true;
+  };
+
   environment.shells = with pkgs; [ zsh ];
   # Make ZSH respect XDG
   environment.etc = {
