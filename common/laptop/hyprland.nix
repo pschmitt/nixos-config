@@ -57,7 +57,7 @@ in
     kitty
     # wezterm
     wezterm-bin
-    wezterm-nightly
+    # wezterm-nightly
 
     brightnessctl
     cliphist
