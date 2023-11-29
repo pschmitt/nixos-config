@@ -25,6 +25,8 @@ in
     (import ./greetd.nix { inherit config pkgs hyprlandPkg hyprland-wrapper; })
   ];
 
+  # inherit (import ./greetd.nix { inherit pkgs hyprlandPkg hyprland-wrapper; });
+
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
