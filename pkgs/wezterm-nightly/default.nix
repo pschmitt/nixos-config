@@ -6,7 +6,7 @@ appimageTools.wrapType2 {
 
   src = fetchurl {
     url = "https://github.com/wez/wezterm/releases/download/nightly/WezTerm-nightly-Ubuntu20.04.AppImage";
-    hash = "sha256-MqchYMF6HBLnbiK8bTuQxUTn89/fzSB5q8Mu54hiTYM=";
+    hash = "sha256-GwOkvgONFm6aild8Qd2y/6Fdn2v+lgUAnCHt1JQTu2I=";
 
   };
 
