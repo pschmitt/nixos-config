@@ -51,23 +51,8 @@ in
 
     polkit_gnome
     xorg.xhost
-
-    alacritty
-    foot
-    kitty
-    # wezterm  # og package, from upstream nixpkgs
-    # wezterm-bin
-    wezterm-nightly
-
     brightnessctl
     cliphist
-    gnome.eog
-    gnome.evince
-    gnome.gnome-font-viewer
-    gnome.file-roller
-    gnome.nautilus
-    gnome.seahorse
-    gnome.sushi
     grim
     chayang # gradually dim screen
     (pkgs.stdenv.mkDerivation {
@@ -89,27 +74,18 @@ in
     })
     hyprpaper
     kanshi
-    lemonade
     libnotify
     mako
     networkmanagerapplet
-    nwg-displays
     playerctl
-    remmina
     slurp
     swappy
     swayidle
     waybar
-    wayvnc
-    wdisplays
     wl-clip-persist
     wl-clipboard
     wlogout
-    wlr-randr
-    wlrctl
     wofi
-    wtype
-    ydotool
 
     # NOTE We could use the below fake package to write the wayland-session file
     # We'd PROBABLY (lol) only need to add it to:
