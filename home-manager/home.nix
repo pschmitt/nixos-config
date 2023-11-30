@@ -42,7 +42,10 @@
     # gui
     gimp
     nextcloud-client
-    unstable.signal-desktop
+
+    # chat
+    element-desktop
+    signal-desktop
 
     # iot
     mosquitto
