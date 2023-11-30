@@ -289,6 +289,18 @@ in
     # libraries = [];
   };
 
+  # Do not attempt to murder the laptop when running nixos rebuild
+  nix = {
+    daemonCPUSchedPolicy = "idle";
+    daemonIOSchedClass = "idle";
+  };
+  # Do not use /tmp (50% RAM tmpfs) for builds
+  systemd.services.nix-daemon.environment.TMPDIR = "/nix/tmp";
+  # Create /nix/tmp and clean it up every 48 hours (2 days)
+  systemd.tmpfiles.rules = [
+    "d /nix/tmp 0755 root root 2d"
+  ];
+
   programs.command-not-found.enable = false;
 
   # started in user sessions.
