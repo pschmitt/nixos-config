@@ -8,7 +8,7 @@
     ./hardware-configuration.nix
 
     ../../common/global
-    ../../common/laptop
+    ../../common/gui
     ../../common/sshfs
     ../../common/work
   ];
