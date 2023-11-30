@@ -159,6 +159,7 @@ in
     moreutils # ts among others
     nethogs
     ookla-speedtest
+    ncdu
     nmap
     pciutils # lspci
     usbutils # lsusb
