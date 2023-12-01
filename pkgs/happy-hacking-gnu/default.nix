@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
     homepage = "https://gitlab.com/dom/happy-hacking-gnu";
     license = licenses.unlicense;
     maintainers = with maintainers; [ pschmitt ];
-    mainProgram = "happy-hacking-gnu";
+    mainProgram = "hhg";
     platforms = platforms.all;
   };
 }
