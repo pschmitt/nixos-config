@@ -35,7 +35,7 @@
     nixpkgs-wayland.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, agenix, nur, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, nix-index-database, agenix, nur, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -49,8 +49,9 @@
       commonModules = [
         ./modules/custom.nix
         agenix.nixosModules.default
-        inputs.nix-index-database.nixosModules.nix-index
+        nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
+        ./home-manager
       ];
 
       nixosSystemFor = system: hostname: nixpkgs.lib.nixosSystem {
