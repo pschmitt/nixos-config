@@ -9,7 +9,6 @@ in
 {
   imports = [
     # ./hardware-configuration.nix
-    ../../home-manager
     ./apps.nix
     ./btrfs.nix
     ./hyprland.nix
