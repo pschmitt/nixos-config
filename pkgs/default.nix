@@ -12,6 +12,7 @@ in
   distrobox = pkgs.callPackage ./distrobox { };
   flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
+  happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-cli { inherit obsws-python; };
