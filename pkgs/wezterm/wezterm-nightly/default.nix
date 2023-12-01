@@ -27,6 +27,7 @@
 rustPlatform.buildRustPackage rec {
   pname = "wezterm";
   # Date of the commit and commit sha
+  # gh api repos/wez/wezterm/commits --jq '.[0] | "\(.commit.committer.date | strptime("%Y-%m-%dT%H:%M:%S%z") | strftime("%Y%m%d"))-\(.sha[0:6])"'
   version = "20231128-90ca11";
 
   # FIXME The tests fail with:
@@ -37,6 +38,7 @@ rustPlatform.buildRustPackage rec {
   src = fetchFromGitHub {
     owner = "wez";
     repo = "wezterm";
+    # git ls-remote --heads https://github.com/wez/wezterm main | awk '{ print $1 }'
     rev = "90ca1117bc68e3644b1763460e17cf4b6ffbf1c3";
     hash = "sha256-h0L+D8OOilaVPizLqVj2wYzPfrcpqVNwni79I0ebsms=";
     fetchSubmodules = true;
