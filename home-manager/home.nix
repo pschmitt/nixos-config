@@ -2,6 +2,7 @@
 {
   imports = [
     inputs.nur.hmModules.nur
+    inputs.nix-index-database.hmModules.nix-index
     ./bitwarden.nix
     ./firefox.nix
     ./nvim.nix
@@ -18,7 +19,9 @@
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = "23.11";
 
-  programs.home-manager = { enable = true; };
+  programs.home-manager.enable = true;
+
+  programs.nix-index-database.comma.enable = true;
 
   home.packages = with pkgs; [
     home-manager
@@ -64,8 +67,8 @@
     shellcheck
 
     # nix
+    alejandra
     niv
-    nix-index
     nix-init
     nixfmt
     nixos-generators
