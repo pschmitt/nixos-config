@@ -3,8 +3,8 @@
 
   inputs = {
     # Nixpkgs
-    # nixpkgs.url = "github:nixos/nixpkgs/nixos-23.05";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable"; # unstable by default
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
@@ -12,27 +12,45 @@
 
     hardware.url = "github:nixos/nixos-hardware";
 
-    # flake-registry.url = "github:NixOS/flake-registry";
-    # flake-registry.flake = false;
-    # flake-utils.url = "github:numtide/flake-utils";
+    # flake-registry = {
+    #   url = "github:NixOS/flake-registry";
+    #   flake = false;
+    # };
+    # flake-utils = {
+    #   url = "github:numtide/flake-utils";
+    # };
 
     # Home manager
-    # home-manager.url = "github:nix-community/home-manager/release-23.05";
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      # url = "github:nix-community/home-manager/release-23.11";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    nix-index-database.url = "github:nix-community/nix-index-database";
-    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    agenix.url = "github:ryantm/agenix";
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    hyprland.url = "github:hyprwm/Hyprland/v0.32.3";
-    hyprland.inputs.nixpkgs.follows = "nixpkgs";
-    xdph.url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.5";
-    xdph.inputs.nixpkgs.follows = "nixpkgs";
+    hyprland = {
+      url = "github:hyprwm/Hyprland/v0.32.3";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
-    nixpkgs-wayland.url = "github:nix-community/nixpkgs-wayland";
-    nixpkgs-wayland.inputs.nixpkgs.follows = "nixpkgs";
+    xdph = {
+      url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.2.5";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixpkgs-wayland = {
+      url = "github:nix-community/nixpkgs-wayland";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, nix-index-database, agenix, nur, ... }@inputs:
