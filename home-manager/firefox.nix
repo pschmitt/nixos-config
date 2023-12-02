@@ -84,6 +84,13 @@
           "Bing".metaData.hidden = true;
           "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
 
+          "GitHub" = {
+            urls = [{ template = "https://github.com/search?q={searchTerms}"; }];
+            iconUpdateURL = "https://github.com/fluidicon.png";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "gh" ];
+          };
+
           "YouTube" = {
             urls = [{ template = "https://www.youtube.com/results?search_query={searchTerms}"; }];
             iconUpdateURL = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
