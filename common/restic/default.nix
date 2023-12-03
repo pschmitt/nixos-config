@@ -29,7 +29,7 @@ in
       };
       pruneOpts = [
         "--keep-last 5"
-        "--keep-within 2w"
+        "--keep-within 14d"
         "--keep-daily 1"
         "--keep-weekly 1"
         "--keep-monthly 1"
