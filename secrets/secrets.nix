@@ -7,5 +7,12 @@ let
 in
 {
   "secret.age".publicKeys = [ authorizedKeys ];
-  "ComicCode.tar.gz.age".publicKeys = [ authorizedKeys ];
+
+  "ge2/restic-repository.age".publicKeys = [ authorizedKeys ];
+  "ge2/restic-password.age".publicKeys = [ authorizedKeys ];
+  "ge2/restic-env.age".publicKeys = [ authorizedKeys ];
+
+  "x13/restic-password.age".publicKeys = [ authorizedKeys ];
+  "x13/restic-repository.age".publicKeys = [ authorizedKeys ];
+  "x13/restic-env.age".publicKeys = [ authorizedKeys ];
 }

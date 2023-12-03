@@ -10,6 +10,7 @@
 
     ../../common/global
     ../../common/gui
+    ../../common/restic
     ../../common/sshfs
     ../../common/work
   ];
