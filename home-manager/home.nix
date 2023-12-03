@@ -9,6 +9,7 @@
     ./obs-studio.nix
     ./theme.nix
     ./work.nix
+    ./zsh.nix
   ];
 
   # FIXME Do we need that for anything?
