@@ -160,12 +160,12 @@ in
     lm_sensors
     mediainfo
     moreutils # ts among others
-    nethogs
-    ookla-speedtest
     ncdu
+    nethogs
     nmap
+    ookla-speedtest
+    p7zip
     pciutils # lspci
-    usbutils # lsusb
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     pstree
@@ -176,11 +176,12 @@ in
     tailscale
     tmux
     tree
+    ugrep
     unzip
-    p7zip
-    zip
+    usbutils # lsusb
     wget
     yq-go
+    zip
 
     # devel
     cargo
