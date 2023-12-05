@@ -272,7 +272,10 @@ in
     # passwordAuthentication = false;
   };
 
-  services.tailscale = { enable = true; };
+  services.tailscale = {
+    enable = true;
+    openFirewall = true;
+  };
 
   virtualisation = {
     podman = {
