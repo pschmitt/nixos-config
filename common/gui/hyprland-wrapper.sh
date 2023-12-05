@@ -26,5 +26,5 @@ export PATH
 GTK_THEME=$($HOME/bin/zhj theme::current)
 export GTK_THEME
 
-systemd-run --user --scope --collect --quiet --unit="hyprland" \
+exec systemd-run --user --scope --collect --quiet --unit="hyprland" \
   systemd-cat --identifier="hyprland" Hyprland "$@"
