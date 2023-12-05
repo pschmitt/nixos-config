@@ -2,7 +2,6 @@
   imports = [
     inputs.hardware.nixosModules.common-cpu-intel
     inputs.hardware.nixosModules.common-pc-ssd
-    inputs.hardware.nixosModules.common-pc-laptop-acpi_call
 
     ./hardware-configuration.nix
     ./nvidia.nix
@@ -10,6 +9,7 @@
 
     ../../common/global
     ../../common/gui
+    ../../common/laptop
     ../../common/restic
     ../../common/sshfs
     ../../common/work
