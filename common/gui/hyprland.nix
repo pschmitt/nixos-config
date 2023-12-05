@@ -5,8 +5,8 @@
 { inputs, config, pkgs, ... }:
 
 let
-  hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
-  # hyprlandPkg = pkgs.hyprland;
+  # hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  hyprlandPkg = pkgs.hyprland;
 
   xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
