@@ -19,31 +19,8 @@ in
       };
       # default_session = initial_session;
       default_session = {
-        command =
-          "${pkgs.dbus}/bin/dbus-run-session ${pkgs.cage}/bin/cage -s -- ${pkgs.greetd.regreet}/bin/regreet";
+        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd ${hyprland-wrapper}/bin/hyprland-wrapper";
         user = "greeter";
-      };
-    };
-  };
-
-  programs.regreet = {
-    enable = true;
-    package = regreet-override;
-    settings = {
-      # background = {
-      #   path = "xxx";
-      #   fit = "Contain";
-      # };
-      GTK = {
-        application_prefer_dark_theme = true;
-        cursor_theme_name = "Adwaita";
-        font_name = "Noto Sans 16";
-        icon_theme_name = "Adwaita";
-        theme_name = "Adwaita";
-      };
-      commands = {
-        reboot = [ "systemctl" "reboot" ];
-        poweroff = [ "systemctl" "poweroff" ];
       };
     };
   };
