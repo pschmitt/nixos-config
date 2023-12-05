@@ -48,8 +48,15 @@ in
     hyprlandPkg
     hyprland-wrapper
 
+    # services
     polkit_gnome
     xorg.xhost
+
+    # Notifications
+    libnotify # notify-send
+    mako
+
+    # Misc
     brightnessctl
     cliphist
     grim
@@ -71,20 +78,21 @@ in
         chmod +x $out/bin/gtklock-with-modules
       '';
     })
-    hyprpaper
+    hyprpaper  # wallpaper
     kanshi
-    libnotify
-    mako
-    networkmanagerapplet
-    playerctl
     slurp
     swappy
     swayidle
-    waybar
     wl-clip-persist
     wl-clipboard
     wlogout
     wofi
+
+    # waybar
+    networkmanagerapplet
+    playerctl
+    waybar
+    wttrbar
 
     # NOTE We could use the below fake package to write the wayland-session file
     # We'd PROBABLY (lol) only need to add it to:
