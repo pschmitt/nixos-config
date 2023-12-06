@@ -20,11 +20,16 @@ export HYPRLAND_SESSION_WRAPPER="$0"
 # systemctl --user start graphical-session.target
 # trap "systemctl --user stop graphical-session.target" EXIT INT TERM
 
-PATH="$($HOME/bin/zhj path::export --value-only)"
+PATH="$("$HOME/bin/zhj" path::export --value-only)"
 export PATH
 
-GTK_THEME=$($HOME/bin/zhj theme::current)
+GTK_THEME="$("$HOME/bin/zhj" theme::current)"
 export GTK_THEME
+
+# Set XDG_CACHE_HOME so that crash reports land in there
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_DATA_HOME="$HOME/.local/share"
 
 exec systemd-run --user --scope --collect --quiet --unit="hyprland" \
   systemd-cat --identifier="hyprland" Hyprland "$@"
