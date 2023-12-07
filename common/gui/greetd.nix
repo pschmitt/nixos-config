@@ -1,4 +1,4 @@
-{ config, pkgs, hyprlandPkg, hyprland-wrapper, ... }:
+{ lib, config, pkgs, hyprlandPkg, hyprland-wrapper, ... }:
 let
   # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
   regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
@@ -19,7 +19,13 @@ in
       };
       # default_session = initial_session;
       default_session = {
-        command = "${pkgs.greetd.tuigreet}/bin/tuigreet --time --cmd ${hyprland-wrapper}/bin/hyprland-wrapper";
+        command = lib.concatStringsSep " " [
+          "${pkgs.greetd.tuigreet}/bin/tuigreet"
+          "--time"
+          "--remember"
+          "--sessions ${config.services.xserver.displayManager.sessionData.desktops}/share/wayland-sessions:${config.services.xserver.displayManager.sessionData.desktops}/share/xsessions"
+          "--cmd ${hyprland-wrapper}/bin/hyprland-wrapper"
+        ];
         user = "greeter";
       };
     };

@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ inputs, config, pkgs, ... }:
+{ lib, inputs, config, pkgs, ... }:
 
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
@@ -21,7 +21,7 @@ let
 in
 {
   imports = [
-    (import ./greetd.nix { inherit config pkgs hyprlandPkg hyprland-wrapper; })
+    (import ./greetd.nix { inherit lib config pkgs hyprlandPkg hyprland-wrapper; })
   ];
 
   # inherit (import ./greetd.nix { inherit pkgs hyprlandPkg hyprland-wrapper; });
