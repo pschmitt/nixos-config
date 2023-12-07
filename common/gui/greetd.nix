@@ -1,17 +1,9 @@
-{ lib, config, pkgs, hyprlandPkg, hyprland-wrapper, ... }:
-let
-  # https://www.reddit.com/r/NixOS/comments/14rhsnu/regreet_greeter_for_greetd_doesnt_show_a_session/
-  regreet-override = pkgs.greetd.regreet.overrideAttrs (final: prev: {
-    SESSION_DIRS = "${config.services.xserver.displayManager.sessionData.desktops}/share";
-  });
-
-in
-{
+{ lib, config, pkgs, hyprlandPkg, hyprland-wrapper, ... }: {
   # https://nixos.wiki/wiki/Greetd
   services.greetd = {
     enable = true;
-    restart = false; # Restart greetd when it crashes
-    settings = rec {
+    restart = false; # Disabled b/c of autologin
+    settings = {
       initial_session = {
         # command = "${hyprlandPkg}/bin/Hyprland";
         command = "${hyprland-wrapper}/bin/hyprland-wrapper";
@@ -30,6 +22,18 @@ in
       };
     };
   };
+
+  # https://github.com/sjcobb2022/nixos-config/blob/main/hosts%2Fcommon%2Foptional%2Fgreetd.nix#L25-L26
+  # systemd.services.greetd.serviceConfig = {
+  #   Type = "idle";
+  #   StandardInput = "tty";
+  #   StandardOutput = "tty";
+  #   StandardError = "journal"; # Without this errors will spam on screen
+  #   # Without these bootlogs will spam on screen
+  #   TTYReset = true;
+  #   TTYVHangup = true;
+  #   TTYVTDisallocate = true;
+  # };
 
   # Below is required for some weird reason when using greetd with autologin
   users.groups.pschmitt = { };
