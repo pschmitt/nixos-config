@@ -9,7 +9,7 @@ in
       restic-password.file = ../../secrets/${hostname}/restic-password.age;
       restic-env.file = ../../secrets/${hostname}/restic-env.age;
     };
-    identityPaths = [ "${config.custom.sshKey}" ];
+    # identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 
   services.restic.backups = {
