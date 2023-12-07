@@ -31,5 +31,9 @@ export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_DATA_HOME="$HOME/.local/share"
 
-exec systemd-run --user --scope --collect --quiet --unit="hyprland" \
-  systemd-cat --identifier="hyprland" Hyprland "$@"
+# FIXME Below has strange effects. Hyprland often does not start at all and has
+# some serious trouble when exiting
+# exec systemd-run --user --scope --collect --quiet --unit="hyprland" \
+#   systemd-cat --identifier="hyprland" Hyprland "$@"
+
+systemd-cat --identifier="hyprland" Hyprland
