@@ -24,16 +24,16 @@
   };
 
   # https://github.com/sjcobb2022/nixos-config/blob/main/hosts%2Fcommon%2Foptional%2Fgreetd.nix#L25-L26
-  # systemd.services.greetd.serviceConfig = {
-  #   Type = "idle";
-  #   StandardInput = "tty";
-  #   StandardOutput = "tty";
-  #   StandardError = "journal"; # Without this errors will spam on screen
-  #   # Without these bootlogs will spam on screen
-  #   TTYReset = true;
-  #   TTYVHangup = true;
-  #   TTYVTDisallocate = true;
-  # };
+  systemd.services.greetd.serviceConfig = {
+    Type = "idle";
+    StandardInput = "tty";
+    StandardOutput = "tty";
+    StandardError = "journal"; # Without this errors will spam on screen
+    # Without these bootlogs will spam on screen
+    TTYReset = true;
+    TTYVHangup = true;
+    TTYVTDisallocate = true;
+  };
 
   # Below is required for some weird reason when using greetd with autologin
   users.groups.pschmitt = { };
