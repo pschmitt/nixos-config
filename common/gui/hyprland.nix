@@ -34,7 +34,7 @@ in
     ];
   };
 
-  environment.sessionVariables = rec {
+  environment.sessionVariables = {
     # GTK_THEME = "Adwaita:dark";
     # Setting MOZ_ENABLE_WAYLAND will lead to a fullscreen sharing indicator
     # when screensharing
