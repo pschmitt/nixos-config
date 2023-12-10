@@ -10,6 +10,7 @@
   modifications = final: prev:
     (import ./openstack-cli.nix { inherit final prev; }) //
     (import ./brotab.nix { inherit final prev; }) //
+    (import ./tmux.nix { inherit final prev; }) //
     { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
