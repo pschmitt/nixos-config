@@ -10,6 +10,7 @@
     ../../common/gui
     ../../common/laptop
     ../../common/restic
+    ../../common/snek
     ../../common/sshfs
     ../../common/work
   ];
