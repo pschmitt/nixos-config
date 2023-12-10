@@ -1,4 +1,4 @@
-{ inputs, config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -26,6 +26,9 @@
     wdisplays
     wlr-randr
     wlrctl
+
+    # input emulation
+    dotool
     wtype
     ydotool
   ];
