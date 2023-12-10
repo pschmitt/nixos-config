@@ -48,19 +48,13 @@ in
     hyprlandPkg
     hyprland-wrapper
 
-    # services
-    polkit_gnome
-    xorg.xhost
-
     # Notifications
     libnotify # notify-send
     mako
 
-    # Misc
-    brightnessctl
-    cliphist
-    grim
+    # lock
     chayang # gradually dim screen
+    swayidle
     (pkgs.stdenv.mkDerivation {
       name = "gtklock-with-modules";
       src = pkgs.writeShellScript "gtklock-with-modules" ''
@@ -80,21 +74,34 @@ in
     })
     # swaylock
     swaylock-effects
-    hyprpaper  # wallpaper
-    kanshi
-    slurp
-    swappy
-    swayidle
-    wl-clip-persist
-    wl-clipboard
-    wlogout
-    wofi
 
     # waybar
     networkmanagerapplet
     playerctl
     waybar
     wttrbar
+
+    # screenshots
+    grim
+    slurp
+    swappy
+
+    # clipboard
+    cliphist
+    wl-clip-persist
+    wl-clipboard
+
+    # services
+    polkit_gnome
+    xorg.xhost
+
+    # tools
+    brightnessctl
+    hyprpaper  # wallpaper
+    hyprpicker-git
+    kanshi
+    wlogout
+    wofi
 
     # NOTE We could use the below fake package to write the wayland-session file
     # We'd PROBABLY (lol) only need to add it to:
