@@ -78,6 +78,8 @@ in
         chmod +x $out/bin/gtklock-with-modules
       '';
     })
+    # swaylock
+    swaylock-effects
     hyprpaper  # wallpaper
     kanshi
     slurp
@@ -150,6 +152,7 @@ in
     polkit.enable = true; # also set by programs.hyprland.enable = true;
     # Enable gtk lock pam auth
     pam.services.gtklock = { };
+    pam.services.swaylock = { };
   };
 
   systemd = {
