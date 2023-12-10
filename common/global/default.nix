@@ -220,7 +220,8 @@ in
     extraGroups = [
       "adbusers"
       "docker"
-      "input" # for ydotool
+      "input"
+      "uinput" # for ydotool
       "libvirtd"
       "mlocate"
       "networkmanager"
@@ -228,7 +229,6 @@ in
       "video"
       "wheel"
     ];
-    packages = with pkgs; [ ];
     openssh.authorizedKeys.keys = authorizedKeys;
     shell = pkgs.zsh;
   };

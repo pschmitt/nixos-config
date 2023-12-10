@@ -1,12 +1,4 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
-{ inputs, lib, config, pkgs, ... }:
-let
-
-in
-{
+{ inputs, lib, config, pkgs, ... }: {
   imports = [
     # ./hardware-configuration.nix
     ./apps.nix
@@ -77,6 +69,7 @@ in
     libinput.enable = true;
   };
 
+  hardware.uinput.enable = true;
   services.udev.packages = [ pkgs.android-udev-rules ];
 
   # enable sushi and keyring
