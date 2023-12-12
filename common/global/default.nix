@@ -168,7 +168,7 @@ in
     pciutils # lspci
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
-    pstree
+    psmisc # pstree, killall, fuser
     pwgen
     ripgrep
     socat
