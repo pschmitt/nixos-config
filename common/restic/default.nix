@@ -35,6 +35,9 @@ in
         "--keep-weekly 1"
         "--keep-monthly 1"
         "--keep-yearly 10"
+        "--keep-tag do-not-delete"
+        "--keep-tag keep-forever"
+        "--keep-tag forever"
       ];
       initialize = false;
       createWrapper = true;
