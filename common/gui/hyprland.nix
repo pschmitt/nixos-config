@@ -85,6 +85,7 @@ in
     grim
     slurp
     swappy
+    wf-recorder
 
     # clipboard
     cliphist
