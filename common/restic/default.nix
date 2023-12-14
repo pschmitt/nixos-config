@@ -19,6 +19,7 @@ in
       repositoryFile = config.age.secrets.restic-repository.path;
 
       paths = [
+        "/etc/nixos"
         "${config.custom.homeDirectory}/devel"
         "${config.custom.homeDirectory}/Documents"
         "${config.custom.homeDirectory}/Pictures"
