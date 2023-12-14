@@ -54,24 +54,13 @@ in
 
     # lock
     chayang # gradually dim screen
-    swayidle
-    (pkgs.stdenv.mkDerivation {
-      name = "gtklock-with-modules";
-      src = pkgs.writeShellScript "gtklock-with-modules" ''
+    (pkgs.writeShellScriptBin "gtklock-with-modules" ''
         ${pkgs.gtklock}/bin/gtklock \
           --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so \
           --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so \
           "$@"
-      '';
-
-      phases = [ "installPhase" ];
-
-      installPhase = ''
-        mkdir -p $out/bin
-        cp $src $out/bin/gtklock-with-modules
-        chmod +x $out/bin/gtklock-with-modules
-      '';
-    })
+    '')
+    swayidle
     # swaylock
     swaylock-effects
 
