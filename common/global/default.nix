@@ -265,14 +265,12 @@ in
     localuser = null; # scan as root
   };
 
-  # This setups a SSH server. Very important if you're setting up a headless system.
-  # Feel free to remove if you don't need it.
+  # OpenSSH server
   services.openssh = {
     enable = true;
-    # Forbid root login through SSH.
-    # permitRootLogin = "no";
-    # Use keys only. Remove if you want to SSH using password (not recommended)
-    # passwordAuthentication = false;
+    settings.PasswordAuthentication = true;
+    settings.KbdInteractiveAuthentication = true;
+    settings.PermitRootLogin = "prohibit-password";
   };
 
   services.tailscale = {
@@ -417,5 +415,12 @@ in
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
     # };
+  };
+
+  # List services that you want to enable:
+  services.avahi = {
+    enable = true;
+    # nssmdns4 = true;
+    nssmdns = true;
   };
 }
