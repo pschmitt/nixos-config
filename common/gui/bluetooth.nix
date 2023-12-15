@@ -14,8 +14,7 @@
   # the udev check that runs on build time and verifies actively if all the
   # referenced scripts/path exist
   services.udev.extraRules = ''
-    # ACTION=="add", SUBSYSTEM=="input", ATTR{name}=="Jabra Elite 8 Active (AVRCP)", \
-    ACTION=="add", ATTR{id/vendor}=="0067", ATTR{id/product}=="2e47", \
+    ACTION=="add", SUBSYSTEM=="input", ATTR{name}=="Jabra Elite 8 Active (AVRCP)", \
     RUN+="${pkgs.zsh}/bin/zsh -c \"/home/pschmitt/bin/udev.sh bluetooth j2\""
   '';
 
