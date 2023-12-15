@@ -29,7 +29,7 @@
             sha256 = "082ck5qhyswbinif0b0rb0n26i6m5rkvx6plhdsili3dyx5l7dqc";
           });
         in
-        lib.filter (key: key != "") (lib.splitString "\n" authorizedKeysContent);
+        lib.splitString "\n" authorizedKeysContent;
       description = "Main SSH authorized keys file";
     };
   };
