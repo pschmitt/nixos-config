@@ -29,7 +29,7 @@
       options = "--delete-older-than 10d";
     };
     settings = {
-      allowed-users = [ "pschmitt" ];
+      allowed-users = [ config.custom.username ];
       # experimental-features = [ "nix-command" "flakes" ];
       auto-optimise-store = true;
     };
