@@ -55,10 +55,10 @@ in
     # lock
     chayang # gradually dim screen
     (pkgs.writeShellScriptBin "gtklock-with-modules" ''
-        ${pkgs.gtklock}/bin/gtklock \
-          --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so \
-          --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so \
-          "$@"
+      ${pkgs.gtklock}/bin/gtklock \
+        --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so \
+        --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so \
+        "$@"
     '')
     swayidle
     # swaylock
@@ -87,7 +87,7 @@ in
 
     # tools
     brightnessctl
-    hyprpaper  # wallpaper
+    hyprpaper # wallpaper
     hyprpicker-git
     kanshi
     wlogout
@@ -193,6 +193,12 @@ in
       # configPackages = [ xdphPkg ];
     };
   };
+
+  # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
+  # https://nixos.wiki/wiki/Sway
+  security.pam.loginLmits = [
+    { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
+  ];
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
