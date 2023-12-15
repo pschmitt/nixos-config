@@ -196,7 +196,7 @@ in
 
   # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
   # https://nixos.wiki/wiki/Sway
-  security.pam.loginLmits = [
+  security.pam.loginLimits = [
     { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
   ];
 }
