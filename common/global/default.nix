@@ -20,13 +20,6 @@ let
     rich
   ];
 
-  authorizedKeysContent = builtins.readFile (builtins.fetchurl {
-    url = "https://github.com/pschmitt.keys";
-    sha256 = "082ck5qhyswbinif0b0rb0n26i6m5rkvx6plhdsili3dyx5l7dqc";
-  });
-
-  authorizedKeys = pkgs.lib.filter (key: key != "") (pkgs.lib.splitString "\n" authorizedKeysContent);
-
 in
 {
   imports = [
@@ -229,14 +222,14 @@ in
       "video"
       "wheel"
     ];
-    openssh.authorizedKeys.keys = authorizedKeys ++ [
+    openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
       # hass-fnuc
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7"
     ];
     shell = pkgs.zsh;
   };
 
-  users.users.root.openssh.authorizedKeys.keys = authorizedKeys;
+  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
 
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
