@@ -9,6 +9,7 @@
     ./soundboard.nix
     ./gec-vpn.nix
     ./logitech-mouse.nix
+    ./bluetooth.nix
   ];
 
   nix = {
@@ -50,16 +51,6 @@
       options v4l2loopback video_nr=10 exclusive_caps=1 card_label="OBS Virtual Camera"
     '';
   };
-
-  hardware.bluetooth = {
-    enable = true;
-    # settings = {
-    #   General = {
-    #     Enable = "Source,Sink,Media,Socket";
-    #   };
-    # };
-  };
-  services.blueman.enable = true;
 
   services.xserver = {
     # Enable the X11 windowing system.
@@ -121,16 +112,6 @@
     # no need to redefine it in your config for now)
     #media-session.enable = true;
   };
-
-  # Disable automatic profile selection (headset)
-  # https://wiki.archlinux.org/title/PipeWire#Automatic_profile_selection
-  # https://pipewire.pages.freedesktop.org/wireplumber/configuration/bluetooth.html
-  # FIXME This crashes wireplumber
-  # environment.etc = {
-  #   "wireplumber/bluetooth.lua.d/51-bluez-config.lua".text = ''
-  #     bluetooth_policy.policy["media-role.use-headset-profile"] = false
-  #   '';
-  # };
 
   # Enable lingering
   users.users.pschmitt.linger = true;
