@@ -13,6 +13,10 @@ export XDG_SESSION_CLASS=user
 export XDG_SESSION_DESKTOP=Hyprland
 export XDG_SESSION_TYPE=wayland
 
+# Fix cursor not showing up on some outputs
+# https://www.reddit.com/r/NixOS/comments/105f4e0/invisible_cursor_on_hyprland/
+export WLR_NO_HARDWARE_CURSORS=1
+
 export HYPRLAND_SESSION_WRAPPER="$0"
 
 # NOTE Below will result in an error shown on startup
