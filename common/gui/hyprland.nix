@@ -118,7 +118,7 @@ in
     dconf.enable = true; # also set by programs.hyprland.enable = true;
     xwayland.enable = true; # also set by programs.hyprland.enable = true;
 
-    # # Hyprland
+    # Hyprland
     # hyprland = {
     #   enable = true;
     #   package = hyprlandPkg;
@@ -149,6 +149,11 @@ in
     # Enable gtk lock pam auth
     pam.services.gtklock = { };
     pam.services.swaylock = { };
+    # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
+    # https://nixos.wiki/wiki/Sway
+    pam.loginLimits = [
+      { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
+    ];
   };
 
   systemd = {
@@ -178,12 +183,5 @@ in
       # configPackages = [ xdphPkg ];
     };
   };
-
-  # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
-  # https://nixos.wiki/wiki/Sway
-  security.pam.loginLimits = [
-    { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
-  ];
 }
-
 # vim: set ft=nix et ts=2 sw=2 :
