@@ -3,7 +3,7 @@
 
   home.packages = with pkgs; [
     brotab
-    fx-cast-bridge
+    # fx-cast-bridge
   ];
 
   programs.firefox = {
@@ -17,13 +17,13 @@
         auto-tab-discard
         bitwarden
         brotab
-        bypass-paywalls-clean
+        # bypass-paywalls-clean
         consent-o-matic
         don-t-fuck-with-paste
         firefox-translations
         foxyproxy-standard
         french-dictionary
-        fx_cast
+        # fx_cast
         header-editor
         istilldontcareaboutcookies
         languagetool
@@ -113,23 +113,23 @@
   # native messaging hosts.
   # programs.firefox.nativeMessagingHosts.packages doesn't work!
   home.file.".mozilla/native-messaging-hosts/brotab_mediator.json".source = "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
-  home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source = "${pkgs.fx_cast_bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
+  # home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source = "${pkgs.fx_cast_bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
   home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${config.nur.repos.wolfangaukang.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
-  systemd.user.services.fx-cast = {
-    Unit = {
-      Description = "fx-cast-bridge";
-      Documentation = "https://hensm.github.io/fx_cast/";
-    };
+  # systemd.user.services.fx-cast = {
+  #   Unit = {
+  #     Description = "fx-cast-bridge";
+  #     Documentation = "https://hensm.github.io/fx_cast/";
+  #   };
 
-    Service = {
-      ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
-    };
+  #   Service = {
+  #     ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
+  #   };
 
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
-  };
+  #   Install = {
+  #     WantedBy = [ "default.target" ];
+  #   };
+  # };
 
 }
