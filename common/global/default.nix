@@ -420,7 +420,6 @@ in
   # List services that you want to enable:
   services.avahi = {
     enable = true;
-    # nssmdns4 = true;
-    nssmdns = true;
+    nssmdns4 = true;
   };
 }
