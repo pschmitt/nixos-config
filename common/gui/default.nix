@@ -2,14 +2,15 @@
   imports = [
     # ./hardware-configuration.nix
     ./apps.nix
+    ./bluetooth.nix
     ./btrfs.nix
+    ./gec-vpn.nix
+    ./hacompanion.nix
     ./hyprland.nix
     ./libvirt.nix
-    ./hacompanion.nix
-    ./soundboard.nix
-    ./gec-vpn.nix
     ./logitech-mouse.nix
-    ./bluetooth.nix
+    ./soundboard.nix
+    ./theme.nix
   ];
 
   nix = {
