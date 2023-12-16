@@ -12,6 +12,8 @@ in
     # identityPaths = [ "/etc/ssh/ssh_host_ed25519_key" ];
   };
 
+  environment.systemPackages = [ pkgs.restic ];
+
   services.restic.backups = {
     "main" = {
       environmentFile = config.age.secrets.restic-env.path;
