@@ -96,12 +96,15 @@ in
     };
   };
 
+  # FIXME qt is a mess on NixOS, for qtct to work even remotely one needs to
+  # install qt5ct as a system package (see ./common/gui/theme.nix)
   qt = {
     enable = true;
-    platformTheme = "gnome";
+    platformTheme = "qtct";
     style = {
+      # name = "adwaita-dark";
+      # package = pkgs.adwaita-qt6;
       name = "adwaita-dark";
-      package = pkgs.adwaita-qt6;
     };
   };
 
