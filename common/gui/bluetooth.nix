@@ -1,21 +1,22 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   hardware.bluetooth = {
     enable = true;
-    # settings = {
-    #   General = {
-    #     Enable = "Source,Sink,Media,Socket";
-    #   };
-    # };
   };
 
-  services.blueman.enable = true;
+  # Blueman more or less breaks a2dp profile selection
+  # services.blueman.enable = true;
 
-  # NOTE The bash wrapping here makes not sense but is sadly required to pass
-  # the udev check that runs on build time and verifies actively if all the
-  # referenced scripts/path exist
+  environment.systemPackages = with pkgs; [ udev-custom-callback ];
+
+  # FIXME This should be part of the udev-custom-callback package
+  # But how can we possibly self-reference the script path in the udev rule
+  # from the package itself? If we ever fix this then we can uncomment the
+  # line below:
+  # services.udev.packages = [ pkgs.udev-custom-bt-rules ];
   services.udev.extraRules = ''
-    ACTION=="add", SUBSYSTEM=="input", ATTR{name}=="Jabra Elite 8 Active (AVRCP)", \
-    RUN+="${pkgs.zsh}/bin/zsh -c \"/home/pschmitt/bin/udev.sh bluetooth j2\""
+    ACTION=="add", SUBSYSTEM=="input", ENV{ID_BUS}=="bluetooth" \
+    RUN+="${pkgs.udev-custom-callback}/bin/udev-custom-callback.sh '%p'"
   '';
 
   # Disable automatic profile selection (headset)

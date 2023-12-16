@@ -1,0 +1,2 @@
+ACTION=="add", SUBSYSTEM=="input", ATTR{name}=="Jabra Elite 8 Active (AVRCP)", \
+RUN+="udev-custom.sh bluetooth %E{NAME}"
