@@ -1,4 +1,4 @@
-{ inputs, lib, config, pkgs, ... }:
+{ inputs, lib, config, osConfig, pkgs, ... }:
 {
   imports = [
     inputs.nur.hmModules.nur
@@ -113,5 +113,5 @@
     };
   };
 
-  services.mpris-proxy.enable = true;
+  services.mpris-proxy.enable = osConfig.hardware.bluetooth.enable;
 }
