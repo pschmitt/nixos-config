@@ -3,11 +3,11 @@
 
   home.packages = with pkgs; [
     brotab
-    # fx-cast-bridge
   ];
 
   programs.firefox = {
     enable = true;
+    # FIXME fx_cast_bridge is broken (2023.12.16)
     # nativeMessagingHosts.packages = with pkgs; [
     #   fx-cast-bridge
     # ];
@@ -23,6 +23,7 @@
         firefox-translations
         foxyproxy-standard
         french-dictionary
+        # FIXME fx_cast_bridge is broken (2023.12.16)
         # fx_cast
         header-editor
         istilldontcareaboutcookies
@@ -117,6 +118,7 @@
   home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${config.nur.repos.wolfangaukang.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
+  # FIXME fx_cast_bridge is broken (2023.12.16)
   # systemd.user.services.fx-cast = {
   #   Unit = {
   #     Description = "fx-cast-bridge";
@@ -131,5 +133,4 @@
   #     WantedBy = [ "default.target" ];
   #   };
   # };
-
 }
