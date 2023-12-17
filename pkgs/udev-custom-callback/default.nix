@@ -8,7 +8,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "udev-custom-callback";
-  version = "0.2";
+  version = "0.3";
 
   src = ./udev-custom-callback.sh;
   # rules = ./99-custom-bluetooth.rules;

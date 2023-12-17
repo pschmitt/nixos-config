@@ -32,16 +32,32 @@ then
       "exec systemd-cat --identifier=udev-custom-callback $0 $*"
   fi
 
-  UDEV_DEVICE_PATH="$1"
+  UDEV_ACTION="$1"
+  UDEV_DEVICE_PATH="$2"
+  # FIXME Below only works for connected devices (ie it won't work when 
+  # UDEV_ACTION is "remove")
   udev-export-device-info "$UDEV_DEVICE_PATH"
 
   case "$ID_BUS" in
     bluetooth)
-      zhj "bt::setup-headset-udev --notify '$NAME'"
+      case "$UDEV_ACTION" in
+        add)
+          zhj "bt::setup-headset-udev --notify '$NAME'"
+          exit 0
+          ;;
+        remove)
+          zhj "bt::disconnect-headset-udev --notify '$NAME'"
+          exit 0
+          ;;
+        *)
+          echo "Unknown action: $UDEV_ACTION" >&2
+          exit 1
+          ;;
+      esac
       ;;
     *)
       echo "Unknown ID_BUS value: $ID_BUS" >&2
-      exit 2
+      exit 1
       ;;
   esac
 fi
