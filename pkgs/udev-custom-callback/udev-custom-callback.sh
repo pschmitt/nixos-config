@@ -25,7 +25,7 @@ then
   TARGET_USER="${TARGET_USER:-pschmitt}"
 
   # Restart the script as the target user if necessary
-  if [[ ${USER:-(id -n -u)} != "$TARGET_USER" ]]
+  if [[ ${USER:-$(id -n -u)} != "$TARGET_USER" ]]
   then
     echo "Re-executing as $TARGET_USER" >&2
     exec su "$TARGET_USER" -c \
