@@ -22,7 +22,7 @@ udev-export-device-info() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  TARGET_USER="pschmitt"
+  TARGET_USER="${TARGET_USER:-pschmitt}"
 
   # Restart the script as the target user if necessary
   if [[ ${USER:-(id -n -u)} != "$TARGET_USER" ]]
