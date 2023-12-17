@@ -6,7 +6,8 @@ udev-export-device-info() {
   local devpath="$1"
   local info
   info="$(udevadm info --no-pager --export -p "$devpath" | \
-    awk -F '.: ' '/=/ && !/PATH=/ { print "export " $2 }')"
+    awk -F ': ' '/=.+/ { print "export " $2 }' | \
+    grep -vE '^export (PATH=|[0-9]+)')"
 
   eval "$info"
 }
@@ -28,7 +29,7 @@ then
 
   case "$ID_BUS" in
     bluetooth)
-      zhj "bt::setup-headset --notify '$NAME'"
+      zhj "bt::setup-headset-udev --notify '$NAME'"
       ;;
     *)
       echo "Unknown ID_BUS value: $ID_BUS" >&2
