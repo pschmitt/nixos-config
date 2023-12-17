@@ -16,7 +16,9 @@
   # services.udev.packages = [ pkgs.udev-custom-bt-rules ];
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="input", ENV{ID_BUS}=="bluetooth" \
-    RUN+="${pkgs.udev-custom-callback}/bin/udev-custom-callback.sh '%p'"
+    RUN+="${pkgs.udev-custom-callback}/bin/udev-custom-callback.sh add '%p'"
+    ACTION=="remove", SUBSYSTEM=="input", ENV{ID_BUS}=="bluetooth" \
+    RUN+="${pkgs.udev-custom-callback}/bin/udev-custom-callback.sh remove '%p'"
   '';
 
   # Disable automatic profile selection (headset)
