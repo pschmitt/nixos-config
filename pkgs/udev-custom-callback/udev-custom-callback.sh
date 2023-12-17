@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
 
+# DEBUG
 # set -x
 
 udev-export-device-info() {
   local devpath="$1"
   local info
-  info="$(udevadm info --no-pager --export -p "$devpath" | \
-    awk -F ': ' '/=.+/ { print "export " $2 }' | \
+  info="$(udevadm info --no-pager --export --path="$devpath" | \
+    awk -F ': ' '/=.+/ {
+      if ($2 ~ /^.*=".*"$/) {
+          print "export " $2
+      } else {
+          gsub(/=/, "=\"", $2);
+          print "export " $2 "\""
+      }
+    }' | \
     grep -vE '^export (PATH=|[0-9]+)')"
 
   eval "$info"
@@ -21,7 +29,7 @@ then
   then
     echo "Re-executing as $TARGET_USER" >&2
     exec su "$TARGET_USER" -c \
-      "systemd-cat --identifier=udev-custom-callback $0 $*"
+      "exec systemd-cat --identifier=udev-custom-callback $0 $*"
   fi
 
   UDEV_DEVICE_PATH="$1"
