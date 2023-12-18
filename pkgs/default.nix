@@ -9,6 +9,7 @@ let
   obsws-python = pkgs.python3Packages.callPackage ./obsws-python { };
 in
 {
+  bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
   distrobox = pkgs.callPackage ./distrobox { };
   flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
