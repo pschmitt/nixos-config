@@ -1,7 +1,5 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 {
-  home.packages = [ pkgs.bluez-headset-callback ];
-
   systemd.user.services.bluez-headset-callback = {
     Unit = {
       Description = "Bluez Headset Callback";
