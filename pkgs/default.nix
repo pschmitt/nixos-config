@@ -16,6 +16,7 @@ in
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
+  lan-mouse = pkgs.callPackage ./lan-mouse { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-cli { inherit obsws-python; };
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
   obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
