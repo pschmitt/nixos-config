@@ -8,6 +8,7 @@
     # wezterm  # og package, from upstream nixpkgs
     # wezterm-bin
     wezterm-nightly
+    lan-mouse
 
     # files and docs
     gnome.eog
