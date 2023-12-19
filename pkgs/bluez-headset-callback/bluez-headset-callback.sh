@@ -5,7 +5,7 @@ add_to_path() {
 
   if ! grep -q "$dir" <<< "$PATH"
   then
-    export PATH="${PATH}:${dir}"
+    export PATH="${dir}:${PATH}"
   fi
 }
 
@@ -24,7 +24,7 @@ bt_connected() {
     jq -er '.' <<< "$data"
   fi
 
-  zhj -x "bt::setup-headset --notify '$mac_addr'"
+  zhj "bt::setup-headset --notify '$mac_addr'"
 }
 
 bt_disconnected() {
@@ -42,30 +42,8 @@ bt_disconnected() {
 }
 
 event_type() {
-  local type
-  type="$(jq -er '.type' <<< "$data")"
-  if [[ "$type" != "signal" ]]
-  then
-    echo "Ignored event type: $type" >&2
-    return 1
-  fi
-
-  local member
-  member="$(jq -er '.member' <<< "$data")"
-  if [[ "$member" != "PropertiesChanged" ]]
-  then
-    echo "Ignored member: $member" >&2
-    return 1
-  fi
-
-  local payload endpoint
+  local payload
   payload="$(jq -er '.payload.data | to_entries' <<< "$data")"
-  endpoint="$(jq -er '.[0].value' <<< "$payload")"
-  if [[ "$endpoint" != "org.bluez.Device1" ]]
-  then
-    echo "Ignored endpoint: $endpoint" >&2
-    return 1
-  fi
 
   local property
   property="$(jq -er '.[1].value | keys[0]' <<< "$payload")"
@@ -112,14 +90,24 @@ process_msg() {
   ) &
 }
 
-
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   # Add $HOME/bin to PATH (for zhj)
   add_to_path "${HOME}/bin"
+  # Add /run/wrappers/bin to PATH (for sudo)
+  add_to_path "/run/wrappers/bin"
 
-  sudo busctl monitor org.bluez --json=short \
-    --match="type='signal',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged',arg0='org.bluez.Device1'" |
+  DBUS_FILTER_TYPE="signal"
+  DBUS_FILTER_INTERFACE="org.freedesktop.DBus.Properties"
+  DBUS_FILTER_MEMBER="PropertiesChanged"
+  DBUS_FILTER_ARG0="org.bluez.Device1"
+
+  DBUS_FILTER="type='${DBUS_FILTER_TYPE}',\
+    interface='${DBUS_FILTER_INTERFACE}',\
+    member='${DBUS_FILTER_MEMBER}',\
+    arg0='${DBUS_FILTER_ARG0}'"
+
+  sudo busctl monitor --system --json=short --match="$DBUS_FILTER" |
   while IFS= read -r LINE
   do
     process_msg "$LINE"
