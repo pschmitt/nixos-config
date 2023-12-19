@@ -69,6 +69,7 @@
 
     # nix
     alejandra
+    cachix
     niv
     nix-init
     nixfmt
