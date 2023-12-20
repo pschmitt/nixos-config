@@ -51,9 +51,14 @@
       url = "github:nix-community/nixpkgs-wayland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    flatpaks = {
+      url = "github:GermanBread/declarative-flatpak/stable";
+      # NOTE Do *not* override nixpkgs, it is not supported
+    };
   };
 
-  outputs = { self, nixpkgs, home-manager, nix-index-database, agenix, nur, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [

@@ -9,9 +9,11 @@
     useGlobalPkgs = true;
     useUserPackages = true;
 
-    users = {
-      # Import your home-manager configuration
-      pschmitt = import ./home.nix;
+    users.pschmitt = {
+      imports = [
+        inputs.flatpaks.homeManagerModules.default
+        ./home.nix
+      ];
     };
   };
 }
