@@ -26,6 +26,7 @@ in
         "${config.custom.homeDirectory}/Documents"
         "${config.custom.homeDirectory}/Pictures"
         "${config.custom.homeDirectory}/.config/obs-studio"
+        "${config.custom.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
       ];
       timerConfig = {
         OnCalendar = "12:30:00";
