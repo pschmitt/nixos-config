@@ -72,6 +72,7 @@
       commonModules = [
         ./modules/custom.nix
         agenix.nixosModules.default
+        flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         ./home-manager
@@ -83,7 +84,7 @@
         modules = commonModules ++ [ ./hosts/${hostname} ];
       };
     in
-    rec {
+    {
       # Your custom packages
       # Acessible through 'nix build', 'nix shell', etc
       packages = forAllSystems (system:
