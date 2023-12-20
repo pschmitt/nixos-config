@@ -25,7 +25,8 @@
     skopeo
     stern
     taskwarrior
-    terraform
+    # terraform # 1.6+
+    pkgs.terraform-157.terraform
     terragrunt
     opentofu
     thunderbird
