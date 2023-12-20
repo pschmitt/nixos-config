@@ -8,6 +8,9 @@
     cmctl
     glab
     kubectl
+    (writeShellScriptBin "kubectl-1.23" ''
+      ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
+    '')
     kubernetes-helm
     ldifj
     lefthook
@@ -26,11 +29,9 @@
     stern
     taskwarrior
     # terraform # 1.6+
-    (terraform.overrideAttrs (oldAttrs: {
-      postInstall = oldAttrs.postInstall + ''
-        mv $out/bin/terraform $out/bin/terraform-unfree
-      '';
-    }))
+    (writeShellScriptBin "terraform-unfree" ''
+      ${pkgs.terraform}/bin/terraform "$@"
+    '')
     pkgs.terraform-157.terraform
     terragrunt
     opentofu
