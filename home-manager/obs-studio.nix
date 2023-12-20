@@ -43,16 +43,17 @@ in
     packages = [
       # NOTE The "//" are here cause we omitted the cpu arch
       "flathub:app/com.obsproject.Studio//stable"
+      "flathub:runtime/com.obsproject.Studio.Plugin.DroidCam//stable"
     ];
   };
 
   # TODO Install obs plugins into ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins
-  # IMPORTANT: This would require to build them with GLIBC 2.32
+  # IMPORTANT: This would require to build them with GLIBC 2.32 (or 2.35 which
+  # is what ldd --version reports in the flatpak)
   # - obs-text-pthread (optional, it is broken in flatpak obs)
   # - obs-text-pango
   # - freeze-filter
   # - replay-source
-  # - droidcam-obs
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = (
     builtins.fetchurl {
