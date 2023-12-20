@@ -17,12 +17,15 @@ in
 {
   home.packages = [
     pkgs.obs-cli
+    (pkgs.writeShellScriptBin "obs-studio" ''
+      ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio "$@"
+    '')
   ]
   ++ lib.optional enableNvidiaOffload obs-nvidia
   ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
 
   programs.obs-studio = {
-    enable = true;
+    enable = false;
     package = pkgs.unstable.obs-studio;
     plugins = with pkgs; [
       unstable.obs-studio-plugins.droidcam-obs
@@ -31,6 +34,25 @@ in
       # obs-studio-plugins.obs-replay-source # https://github.com/NixOS/nixpkgs/pull/252191
     ];
   };
+
+  services.flatpak = {
+    remotes = {
+      "flathub" = "https://dl.flathub.org/repo/flathub.flatpakrepo";
+      "flathub-beta" = "https://dl.flathub.org/beta-repo/flathub-beta.flatpakrepo";
+    };
+    packages = [
+      # NOTE The "//" are here cause we omitted the cpu arch
+      "flathub:app/com.obsproject.Studio//stable"
+    ];
+  };
+
+  # TODO Install obs plugins into ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins
+  # IMPORTANT: This would require to build them with GLIBC 2.32
+  # - obs-text-pthread (optional, it is broken in flatpak obs)
+  # - obs-text-pango
+  # - freeze-filter
+  # - replay-source
+  # - droidcam-obs
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = (
     builtins.fetchurl {
