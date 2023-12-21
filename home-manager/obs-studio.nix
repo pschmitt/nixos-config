@@ -1,4 +1,4 @@
-{ inputs, lib, osConfig, config, pkgs, ... }:
+{ lib, osConfig, pkgs, ... }:
 
 let
   enableNvidiaOffload = osConfig.hardware.nvidia.prime.offload.enable;

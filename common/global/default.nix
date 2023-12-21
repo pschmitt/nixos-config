@@ -217,7 +217,7 @@ in
       "adbusers"
       "docker"
       "input"
-      "uinput" # for ydotool
+      "uinput" # for *dotool
       "libvirtd"
       "mlocate"
       "networkmanager"
