@@ -53,7 +53,6 @@ in
       "flathub:app/com.github.tchx84.Flatseal//stable" # obs requires a few permission tweaks
       "flathub:app/com.obsproject.Studio//stable"
       "flathub:runtime/com.obsproject.Studio.Plugin.DroidCam//stable"
-      "flathub:runtime/com.obsproject.Studio.Plugin.NDI//stable"
     ];
     overrides = {
       "com.obsproject.Studio" = {
