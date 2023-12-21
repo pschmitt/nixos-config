@@ -50,10 +50,19 @@ in
     };
     packages = [
       # NOTE The "//" are here cause we omitted the cpu arch
-      "flathub:app/com.github.tchx84.Flatseal//stable"  # obs requires a few permission tweaks
+      "flathub:app/com.github.tchx84.Flatseal//stable" # obs requires a few permission tweaks
       "flathub:app/com.obsproject.Studio//stable"
       "flathub:runtime/com.obsproject.Studio.Plugin.DroidCam//stable"
+      "flathub:runtime/com.obsproject.Studio.Plugin.NDI//stable"
     ];
+    overrides = {
+      "com.obsproject.Studio" = {
+        filesystems = [
+          "/nix:ro"
+          "/run/current-system/sw/bin:ro"
+        ];
+      };
+    };
   };
 
   # TODO Install obs plugins into ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins
