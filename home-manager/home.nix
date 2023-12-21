@@ -4,6 +4,7 @@
     inputs.nur.hmModules.nur
     inputs.nix-index-database.hmModules.nix-index
     ./bitwarden.nix
+    ./dotool.nix
     ./firefox.nix
     ./nvim.nix
     ./obs-studio.nix
