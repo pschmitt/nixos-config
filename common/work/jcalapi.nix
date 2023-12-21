@@ -1,4 +1,4 @@
-{ pkgs, inputs, config, ... }:
+{ pkgs, config, ... }:
 let
   container_image = "ghcr.io/pschmitt/jcalapi";
   container_tag = "latest";
@@ -16,7 +16,7 @@ in
     documentation = [ "https://github.com/pschmitt/jcalapi" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = with pkgs; [
-      "/run/wrappers"  # required for newuidmap
+      "/run/wrappers" # required for newuidmap
       podman
       systemd
     ];
@@ -40,5 +40,4 @@ in
     };
     wantedBy = [ "default.target" ];
   };
-
 }
