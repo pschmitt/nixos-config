@@ -20,6 +20,14 @@ in
     (pkgs.writeShellScriptBin "obs-studio" ''
       ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio "$@"
     '')
+    (pkgs.writeShellScriptBin "obs-studio-custom" ''
+      ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio \
+        --minimize-to-tray \
+        --startvirtualcam \
+        --scene "Joining soon" \
+        --disable-shutdown-check \
+        "$@"
+    '')
   ]
   ++ lib.optional enableNvidiaOffload obs-nvidia
   ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
