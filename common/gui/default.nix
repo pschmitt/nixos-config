@@ -98,13 +98,15 @@
   };
 
   # Enable lingering
+  systemd.tmpfiles.rules = [
+    "f /var/lib/systemd/linger/pschmitt"
+  ];
   users.users.pschmitt.linger = true;
 
   programs.adb.enable = true;
 
   programs.firefox = {
     enable = true;
-    package = pkgs.unstable.firefox;
     # FIXME This does not seem to work.
     # See home-manager/home.nix for the dirty but working solution.
     nativeMessagingHosts.packages = with pkgs; [
