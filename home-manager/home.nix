@@ -6,8 +6,8 @@
     ./bitwarden.nix
     ./dotool.nix
     ./firefox.nix
+    ./media.nix
     ./nvim.nix
-    ./obs-studio.nix
     ./theme.nix
     ./work.nix
     ./zsh.nix
@@ -78,11 +78,6 @@
     nixpkgs-fmt
     rnix-lsp
 
-    # Media
-    ffmpeg-full
-    mpv
-    v4l-utils
-    vlc
   ];
 
   # AccountService profile picture
