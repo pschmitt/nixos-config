@@ -1,4 +1,4 @@
-{ lib, pkgs, stdenvNoCC, fetchurl }:
+{ lib, pkgs, stdenvNoCC }:
 
 stdenvNoCC.mkDerivation rec {
   pname = "ComicCode";
