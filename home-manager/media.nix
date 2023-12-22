@@ -7,12 +7,8 @@
     # Media
     ffmpeg-full
     mpv
+    ustreamer
     v4l-utils
     vlc
-
-    ustreamer
-    (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
-      ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
-    '')
   ];
 }
