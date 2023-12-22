@@ -18,6 +18,10 @@ in
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-cli { inherit obsws-python; };
+  obs-studio-plugins-flatpak.obs-text-pango-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-text-pango-bin { };
+  obs-studio-plugins-flatpak.obs-text-pthread-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-text-pthread-bin { };
+  obs-studio-plugins-flatpak.obs-freeze-filter-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-freeze-filter-bin { };
+  obs-studio-plugins-flatpak.obs-replay-source-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-replay-source-bin { };
   obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
   obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
