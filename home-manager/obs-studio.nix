@@ -70,7 +70,7 @@ in
   # - freeze-filter
   # - replay-source
 
-  # WARNING The directory names DO matter. The freeze-filter for instance will 
+  # WARNING The directory names DO matter. The freeze-filter for instance will
   # not load if the directory is named obs-freeze-filter.
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/text-pango" = {
     source = "${pkgs.obs-studio-plugins-flatpak.obs-text-pango-bin}/obs-plugins/obs-text-pango";
