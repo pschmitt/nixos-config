@@ -28,6 +28,9 @@ in
         --disable-shutdown-check \
         "$@"
     '')
+    (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
+      ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
+    '')
   ]
   ++ lib.optional enableNvidiaOffload obs-nvidia
   ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
