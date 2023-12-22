@@ -1,4 +1,4 @@
-{ config, lib, outputs, pkgs, ... }:
+{ config, inputs, lib, outputs, pkgs, ... }:
 {
   nix = {
     # This will add each flake input as a registry
