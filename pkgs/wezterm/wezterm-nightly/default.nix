@@ -1,6 +1,7 @@
 { lib
 , rustPlatform
 , fetchFromGitHub
+, installShellFiles
 , pkg-config
 , cairo
 , libGL
@@ -8,6 +9,7 @@
 , libxkbcommon
 , ncurses
 , openssl
+, perl
 , sqlite
 , vulkan-loader
 , zlib
@@ -28,7 +30,7 @@ rustPlatform.buildRustPackage rec {
   pname = "wezterm";
   # Date of the commit and commit sha
   # gh api repos/wez/wezterm/commits --jq '.[0] | "\(.commit.committer.date | strptime("%Y-%m-%dT%H:%M:%S%z") | strftime("%Y%m%d"))-\(.sha[0:6])"'
-  version = "20231128-90ca11";
+  version = "20231222-84ae00c";
 
   # FIXME The tests fail with:
   # wezterm> test result: FAILED. 0 passed; 37 failed; 0 ignored; 0 measured;  0 filtered out; finished in 0.01s
@@ -39,8 +41,8 @@ rustPlatform.buildRustPackage rec {
     owner = "wez";
     repo = "wezterm";
     # git ls-remote --heads https://github.com/wez/wezterm main | awk '{ print $1 }'
-    rev = "90ca1117bc68e3644b1763460e17cf4b6ffbf1c3";
-    hash = "sha256-h0L+D8OOilaVPizLqVj2wYzPfrcpqVNwni79I0ebsms=";
+    rev = "84ae00c868e711cf97b2bfe885892428f1131a1d";
+    hash = "sha256-Sx5NtapMe+CtSlW9mfxUHhzF+n9tV2j/St6pku26Rj0=";
     fetchSubmodules = true;
   };
 
@@ -53,8 +55,9 @@ rustPlatform.buildRustPackage rec {
   };
 
   nativeBuildInputs = [
+    installShellFiles
     pkg-config
-  ];
+  ] ++ lib.optional stdenv.isDarwin perl;
 
   buildInputs = [
     cairo
@@ -109,15 +112,10 @@ rustPlatform.buildRustPackage rec {
 
     install -Dm644 assets/shell-integration/wezterm.sh -t $out/etc/profile.d
 
-    # FIXME installShellCompletion is missing at build time...
-    # > installing
-    # > Executing cargoInstallHook
-    # > /nix/store/wr08yanv2bjrphhi5aai12hf2qz5kvic-stdenv-linux/setup: line 122: installShellCompletion: command not found
-    # > /nix/store/wr08yanv2bjrphhi5aai12hf2qz5kvic-stdenv-linux/setup: line 131: pop_var_context: head of shell_variables not a function context
-    # installShellCompletion --cmd wezterm \
-    #   --bash assets/shell-completion/bash \
-    #   --fish assets/shell-completion/fish \
-    #   --zsh assets/shell-completion/zsh
+    installShellCompletion --cmd wezterm \
+      --bash assets/shell-completion/bash \
+      --fish assets/shell-completion/fish \
+      --zsh assets/shell-completion/zsh
 
     install -Dm644 assets/wezterm-nautilus.py -t $out/share/nautilus-python/extensions
   '';
