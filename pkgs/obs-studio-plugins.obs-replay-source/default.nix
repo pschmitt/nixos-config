@@ -18,6 +18,9 @@ stdenv.mkDerivation rec {
     fetchSubmodules = true;
   };
 
+  # obs development headers depend on uthash but they are not in the output
+  env.NIX_CFLAGS_COMPILE = "-I${obs-studio.src}/deps/uthash";
+
   nativeBuildInputs = [ cmake ];
   buildInputs = [
     libcaption
