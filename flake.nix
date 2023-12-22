@@ -56,6 +56,11 @@
       url = "github:GermanBread/declarative-flatpak/stable";
       # NOTE Do *not* override nixpkgs, it is not supported
     };
+
+    neovim = {
+      url = "github:neovim/neovim?dir=contrib";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = { self, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, ... }@inputs:

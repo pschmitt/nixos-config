@@ -1,8 +1,10 @@
-{ inputs, lib, config, pkgs, ... }:
+{ inputs, pkgs, ... }:
 
 {
   programs.neovim = {
     enable = true;
+    package = inputs.neovim.packages.${pkgs.system}.neovim; # inputs.neovim.pkgs.neovim;
+
     extraPackages = with pkgs; [
       # vimPlugins.nvim-treesitter.withAllGrammars
       shellcheck
