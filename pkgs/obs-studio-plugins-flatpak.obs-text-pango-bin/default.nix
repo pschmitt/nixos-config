@@ -1,4 +1,4 @@
-{ lib, pkgs, stdenvNoCC, fetchzip }:
+{ lib, stdenvNoCC, fetchzip }:
 
 stdenvNoCC.mkDerivation {
   pname = "obs-text-pango-bin";
