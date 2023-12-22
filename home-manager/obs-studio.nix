@@ -63,13 +63,6 @@ in
     };
   };
 
-  # TODO Install obs plugins into ~/.var/app/com.obsproject.Studio/config/obs-studio/plugins
-  # IMPORTANT: This would require to build them with GLIBC 2.32 (or 2.35 which
-  # is what ldd --version reports in the flatpak)
-  # - obs-text-pthread
-  # - freeze-filter
-  # - replay-source
-
   # WARNING The directory names DO matter. The freeze-filter for instance will
   # not load if the directory is named obs-freeze-filter.
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/text-pango" = {
