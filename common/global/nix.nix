@@ -14,6 +14,8 @@
       experimental-features = "nix-command flakes";
       # Deduplicate and optimize nix store
       auto-optimise-store = true;
+
+      # allowed-users = [ config.custom.username ];
       trusted-users = [ "root" config.custom.username ];
 
       substituters = [ "https://hyprland.cachix.org" ];
