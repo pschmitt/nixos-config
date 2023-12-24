@@ -15,21 +15,21 @@
 , xorg
 }:
 
-rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage {
   pname = "lan-mouse";
-  version = "latest";
+  version = "latest-cdd3a3";
 
   src = fetchFromGitHub {
     owner = "feschber";
     repo = "lan-mouse";
-    rev = version;
-    hash = "sha256-FCU7Lcc51doQL2v1H0kpwRcJgO+oeWhrqrFHUcV5N1Y=";
+    rev = "cdd3a3b818e2a9401699ba4d2e8d453041b29494";
+    hash = "sha256-J5b3pjoDP2hMvD5TIJT6A2Ox3XtdZ13AQd4ltJ0/gQI=";
   };
 
   cargoLock = {
     lockFile = ./Cargo.lock;
     outputHashes = {
-      "reis-0.1.0" = "sha256-ZSoxtZLV8ricsZKNgFBEQ39D9hfl28jniXRmn7Ik3bo=";
+      "reis-0.1.0" = "sha256-iV5nX3LI58jZE+2Z0YYOAELO++Ta+GUkRQZMZ94Np0E=";
     };
   };
 
