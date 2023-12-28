@@ -1,5 +1,16 @@
 { config, inputs, lib, outputs, pkgs, ... }:
 {
+  age = {
+    secrets = {
+      nix-netrc.file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
+    };
+  };
+
+  environment.etc."nix/netrc" = {
+    user = "root";
+    source = config.age.secrets.nix-netrc.path;
+  };
+
   nix = {
     # This will add each flake input as a registry
     # To make nix3 commands consistent with your flake
@@ -18,16 +29,26 @@
       trusted-users = [ "root" "@wheel" ];
 
       substituters = [
-        "https://cache.nixos.org"
+        # NOTE cache.nixos.org is enabled by default, adding it here only
+        # duplicates it
+        # "https://cache.nixos.org"
         "https://hyprland.cachix.org"
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
+        "https://nix.rofl-01.heimat.dev/pschmitt"
       ];
+
+      # attic auth (nix.rofl-01.heimat.dev)
+      netrc-file = "/etc/nix/netrc";
+
       trusted-public-keys = [
-        "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+        # NOTE cache.nixos.org is enabled by default, adding it here only
+        # duplicates it
+        # "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "pschmitt-nixos-config.cachix.org-1:cE7rK+O+QCIEewMOOk3C7JYOhSXxqgLzNpm+tdSMkMk="
+        "pschmitt:kKBIIQAJtCX5e0hfYWds4S+3wQAMPtX4PUEkpW2qqOs="
       ];
     };
 
