@@ -9,17 +9,14 @@
 
 stdenv.mkDerivation rec {
   pname = "obs-replay-source";
-  version = "1.6.12";
+  version = "1.6.13";
   src = fetchFromGitHub {
     owner = "exeldro";
     repo = "obs-replay-source";
     rev = "${version}";
-    sha256 = "sha256-MzugH6r/jY5Kg7GIR8/o1BN36FenBzMnqrPUceJmbPs=";
+    sha256 = "sha256-i64rpIVnUplA9AKZtR3xeByeawca7B00kGmEcKi7DWQ=";
     fetchSubmodules = true;
   };
-
-  # obs development headers depend on uthash but they are not in the output
-  env.NIX_CFLAGS_COMPILE = "-I${obs-studio.src}/deps/uthash";
 
   nativeBuildInputs = [ cmake ];
   buildInputs = [
