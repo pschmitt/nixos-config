@@ -2,11 +2,11 @@
 
 stdenvNoCC.mkDerivation {
   pname = "obs-replay-source-bin";
-  version = "1.6.2";
+  version = "1.6.13";
 
   src = fetchurl {
-    url = "https://obsproject.com/forum/resources/replay-source.686/version/4903/download?file=94066";
-    sha256 = "sha256-eIoHVD5czfHUzeSlC8Yude7QF0HwTIUc/VZImHxAots=";
+    url = "https://obsproject.com/forum/resources/replay-source.686/version/5371/download?file=100470";
+    sha256 = "sha256-iIA2g1gMx7gaPmhqjpxfzg1bp8R8yEJmee1Y6oC2veE=";
   };
 
   nativeBuildInputs = with pkgs; [
