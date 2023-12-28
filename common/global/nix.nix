@@ -2,7 +2,13 @@
 {
   age = {
     secrets = {
-      nix-netrc.file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
+      nix-netrc = {
+        file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
+        owner = "root";
+        # FIXME is nixbld the right group?
+        group = "nixbld";
+        mode = "0440";
+      };
     };
   };
 
