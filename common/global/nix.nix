@@ -1,5 +1,9 @@
 { config, inputs, lib, outputs, pkgs, ... }:
 {
+  imports = [
+    ./nix-remote-build.nix
+  ];
+
   age = {
     secrets = {
       nix-netrc = {
