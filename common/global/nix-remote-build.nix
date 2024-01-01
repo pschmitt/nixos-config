@@ -1,0 +1,28 @@
+{ config, ... }:
+
+let
+  hostname = config.networking.hostName;
+in
+{
+  age = {
+    secrets = {
+      ssh-privkey.file = ../../secrets/${hostname}/nix-ssh-key-rofl-01.age;
+      # ssh-pubkey.file = ../../secrets/${hostname}/nix-ssh-key-rofl-01.pub.age;
+    };
+  };
+
+  nix = {
+    distributedBuilds = true;
+    buildMachines = [
+      {
+        hostName = "rofl-01";
+        sshUser = "ubuntu";
+        sshKey = config.age.secrets.ssh-privkey.path;
+        systems = [ "x86_64-linux" ];
+        maxJobs = 4;
+        speedFactor = 2;
+        supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" ];
+      }
+    ];
+  };
+}

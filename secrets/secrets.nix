@@ -24,11 +24,15 @@ in
   "secret.age".publicKeys = recipients;
 
   "ge2/nix-netrc.age".publicKeys = recipients;
+  "ge2/nix-ssh-key-rofl-01.age".publicKeys = recipients;
+  "ge2/nix-ssh-key-rofl-01.pub.age".publicKeys = recipients;
   "ge2/restic-repository.age".publicKeys = recipients;
   "ge2/restic-password.age".publicKeys = recipients;
   "ge2/restic-env.age".publicKeys = recipients;
 
   "x13/nix-netrc.age".publicKeys = recipients;
+  "x13/nix-ssh-key-rofl-01.age".publicKeys = recipients;
+  "x13/nix-ssh-key-rofl-01.pub.age".publicKeys = recipients;
   "x13/restic-password.age".publicKeys = recipients;
   "x13/restic-repository.age".publicKeys = recipients;
   "x13/restic-env.age".publicKeys = recipients;
