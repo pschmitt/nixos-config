@@ -16,5 +16,7 @@
 
     viAlias = false;
     vimAlias = true;
+
+    extraLuaPackages = ps: [ ps.magick ];
   };
 }
