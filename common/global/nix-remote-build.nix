@@ -26,5 +26,9 @@ in
         supportedFeatures = [ "nixos-test" "benchmark" "big-parallel" ];
       }
     ];
+    # optional, useful when the builder has a faster internet connection than yours
+    extraOptions = ''
+      builders-use-substitutes = true
+    '';
   };
 }
