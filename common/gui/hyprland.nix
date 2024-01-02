@@ -90,6 +90,7 @@ in
     hyprpaper # wallpaper
     hyprpicker-git
     kanshi
+    shikane # kanshi alternative, rust
     wlogout
     wofi
 
