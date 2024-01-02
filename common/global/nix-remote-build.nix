@@ -16,6 +16,7 @@ in
     buildMachines = [
       {
         hostName = "rofl-01";
+        protocol = "ssh-ng";
         sshUser = "ubuntu";
         sshKey = config.age.secrets.ssh-privkey.path;
         publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUwrcTVrZ1o5TVRmYnpvbnE1MGZMTmRrV3UxZmlyVlJKaU5iSzhBUDJpekggcm9vdEByb2ZsaW5zdGFuY2UtMDEK";
