@@ -30,7 +30,7 @@ rustPlatform.buildRustPackage rec {
   pname = "wezterm";
   # Date of the commit and commit sha
   # gh api repos/wez/wezterm/commits --jq '.[0] | "\(.commit.committer.date | strptime("%Y-%m-%dT%H:%M:%S%z") | strftime("%Y%m%d"))-\(.sha[0:6])"'
-  version = "20231222-84ae00c";
+  version = "20231228-ff2743";
 
   # FIXME The tests fail with:
   # wezterm> test result: FAILED. 0 passed; 37 failed; 0 ignored; 0 measured;  0 filtered out; finished in 0.01s
@@ -41,8 +41,8 @@ rustPlatform.buildRustPackage rec {
     owner = "wez";
     repo = "wezterm";
     # git ls-remote --heads https://github.com/wez/wezterm main | awk '{ print $1 }'
-    rev = "84ae00c868e711cf97b2bfe885892428f1131a1d";
-    hash = "sha256-Sx5NtapMe+CtSlW9mfxUHhzF+n9tV2j/St6pku26Rj0=";
+    rev = "ff2743748c238e5cdd6e7cb4ed19517d08dd511f";
+    hash = "sha256-oogmLKoldUoAsLsDa+MmepWjVu/cuE8YjXrf+QyQ1Jo=";
     fetchSubmodules = true;
   };
 
