@@ -39,6 +39,7 @@
     timewarrior
     timewarrior-jirapush
     vendir
+    velero
     vault
     ytt
     zoom-us
