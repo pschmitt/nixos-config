@@ -7,6 +7,7 @@
     ./dotool.nix
     ./firefox.nix
     ./media.nix
+    ./neomutt.nix
     ./nvim.nix
     ./theme.nix
     ./work.nix
