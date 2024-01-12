@@ -13,7 +13,14 @@ let
     installPhase = ''
       mkdir -p $out/certs $out/details
 
-      awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
+      # NOTE Below supports multiple remotes, but our network guys just can't be
+      # arsed to fix the ovpn config file, the udp endpoint leads to a
+      # succesful connection - but the traffic is relayed properly
+      # awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
+      #  sed 's#, $##' > "$out/details/remote"
+
+      # Grab the first TCP endpoint and call it a day
+      awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
         sed 's#, $##' > "$out/details/remote"
 
       awk '/^cipher / { print $2 }' $src \
