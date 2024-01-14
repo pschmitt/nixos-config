@@ -13,6 +13,7 @@
     Service = {
       Type = "oneshot";
       Environment = "PATH=$PATH:${lib.makeBinPath [
+        pkgs.bash
         pkgs.zsh
         pkgs.bitwarden-cli
       ] }";
