@@ -1,4 +1,4 @@
-{ inputs, lib, config, nur, pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   home.packages = with pkgs; [
     bitwarden
