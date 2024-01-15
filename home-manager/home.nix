@@ -8,6 +8,7 @@
     ./firefox.nix
     ./media.nix
     ./mail.nix
+    ./networking.nix
     ./nvim.nix
     ./theme.nix
     ./work.nix
