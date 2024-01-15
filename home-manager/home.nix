@@ -12,6 +12,7 @@
     ./theme.nix
     ./work.nix
     ./zsh.nix
+    ./zellij.nix
   ]  ++ lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix;
 
   # FIXME Do we need that for anything?
