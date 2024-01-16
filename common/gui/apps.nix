@@ -18,6 +18,7 @@
     gnome.nautilus
     gnome.seahorse
     gnome.sushi
+    imv # image viewer
 
     # wayland
     lemonade
