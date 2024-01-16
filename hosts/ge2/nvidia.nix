@@ -1,5 +1,5 @@
 # https://nixos.wiki/wiki/Nvidia
-{ pkgs, config, inputs, ... }: {
+{ config, ... }: {
   imports = [
     # Uncomment to completely disable the NVIDIA GPU
     # inputs.hardware.nixosModules.common-gpu-nvidia-disable
