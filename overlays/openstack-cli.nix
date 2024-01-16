@@ -8,7 +8,7 @@
   python3Packages = prev.python3Packages // {
     designateclient = prev.python3Packages.buildPythonPackage rec {
       pname = "python-designateclient";
-      version = "5.3.0";
+      version = "6.0.0";
       # NOTE tests require hacking>=3.0.1,<3.1.0
       # and in nixpks there's only 6.0.1
       # https://github.com/openstack/python-designateclient/blob/master/test-requirements.txt
@@ -16,7 +16,7 @@
 
       src = prev.fetchPypi {
         inherit pname version;
-        sha256 = "sha256-7nroQeq/8cw4ncRYI4c2btV0o1PEaxapb7QRJT1GmEQ=";
+        sha256 = "sha256-Uj67/6h006cQ38mcRuf+9x6NCjWug48kVRL4dQ3FdPQ=";
       };
 
       propagatedBuildInputs = with prev.python3Packages; [
