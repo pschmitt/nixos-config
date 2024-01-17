@@ -1,8 +1,9 @@
 { pkgs, ... }: {
-  home.packages = [
-    pkgs.iftop
-    pkgs.nethogs
-    pkgs.tcpdump
-    pkgs.wireshark
+  home.packages = with pkgs; [
+    iftop
+    nethogs
+    tcpdump
+    traceroute
+    wireshark
   ];
 }
