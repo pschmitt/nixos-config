@@ -312,6 +312,9 @@ in
     };
   };
 
+  # create a wireshark wrapper
+  programs.wireshark.enable = true;
+
   programs.zsh = {
     enable = true;
     vteIntegration = true;
