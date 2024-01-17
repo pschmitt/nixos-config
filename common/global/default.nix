@@ -1,7 +1,7 @@
 # This is your system's configuration file.
 # Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
 
-{ inputs, outputs, lib, config, pkgs, ... }:
+{ config, pkgs, ... }:
 let
   python-packages = ps: with ps; [
     # ansible
@@ -169,13 +169,14 @@ in
       "adbusers"
       "docker"
       "input"
-      "uinput" # for *dotool
       "libvirtd"
       "mlocate"
       "networkmanager"
       "pschmitt"
+      "uinput" # for *dotool
       "video"
       "wheel"
+      "wireshark"
     ];
     openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
       # hass-fnuc
