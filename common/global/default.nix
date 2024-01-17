@@ -31,7 +31,11 @@ in
   boot = {
     # Enable all MagicSysRq keys
     kernel.sysctl = { "kernel.sysrq" = 1; };
-    kernelPackages = pkgs.linuxPackages_latest;
+    # FIXME We are stuck on 6.6 because of an nvidia-open issue (it does not
+    # build on 6.7)
+    # https://github.com/NixOS/nixpkgs/issues/280427
+    # https://github.com/NVIDIA/open-gpu-kernel-modules/pull/589
+    kernelPackages = pkgs.linuxPackages_6_6;
     tmp = { useTmpfs = true; };
 
     # Bootloader.

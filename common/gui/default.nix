@@ -14,7 +14,7 @@
   ];
 
   boot = {
-    extraModulePackages = [ pkgs.linuxPackages_latest.v4l2loopback ];
+    extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
     # Explicitly load i8042 to attempt to fix the x13 keyboard in initrd
     kernelModules = [ "v4l2loopback" ];
     extraModprobeConfig = ''
