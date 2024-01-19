@@ -34,6 +34,12 @@ in {
     options = opts;
   };
 
+  fileSystems."/mnt/wrt1900ac" = {
+    fsType = "fuse";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@wrt1900ac.schmitt.co.beta.tailscale.net:/";
+    options = opts;
+  };
+
   fileSystems."/mnt/rofl" = {
     fsType = "fuse";
     device = "${pkgs.sshfs-fuse}/bin/sshfs#ubuntu@rofl-01.schmitt.co.beta.tailscale.net:/mnt/data";
