@@ -4,7 +4,8 @@
     ./deckmaster.nix
     ./jcalapi.nix
     ./vpn/schuler-vpn.nix
+    ./vpn/netbird.nix
+    # ./vpn/openconnect.nix
     ./vpn/openvpn.nix
-    ./vpn/openconnect.nix
   ];
 }
