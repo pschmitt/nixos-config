@@ -57,6 +57,7 @@
 
     # iot
     mosquitto
+    net-snmp
 
     # virtualization
     distrobox
