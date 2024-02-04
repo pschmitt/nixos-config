@@ -28,8 +28,10 @@
   services.xserver = {
     # Enable the X11 windowing system.
     enable = true;
-    layout = "de";
-    xkbVariant = "";
+    xkb = {
+      layout = "de";
+      variant = "";
+    };
     # Enable touchpad support (enabled default in most desktopManager).
     libinput.enable = true;
   };
