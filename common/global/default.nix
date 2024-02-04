@@ -135,6 +135,10 @@ in
     yq-go
     zip
 
+    # mkfs
+    exfatprogs
+    xfsprogs
+
     # devel
     cargo
     gcc
