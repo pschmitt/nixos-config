@@ -441,6 +441,7 @@
         "dir": "contrib",
         "owner": "neovim",
         "repo": "neovim",
+        "rev": "c8a27bae3faeaca137e5f67b1b052ce0f0225b36",
         "type": "github"
       }
     },
