@@ -12,6 +12,9 @@
 
       # nix
       nixpkgs-fmt
+
+      # lsp
+      ruff-lsp
     ];
 
     viAlias = false;
