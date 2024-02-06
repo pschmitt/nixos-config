@@ -5,9 +5,9 @@
     alacritty
     foot
     kitty
-    # wezterm  # og package, from upstream nixpkgs
+    wezterm  # og package, from upstream nixpkgs
     # wezterm-bin
-    wezterm-nightly
+    # wezterm-nightly
     lan-mouse
 
     # files and docs
