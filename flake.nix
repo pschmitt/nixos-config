@@ -38,7 +38,12 @@
     };
 
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.35.0";
+      # Last good commit
+      # https://github.com/hyprwm/Hyprland/issues/4667
+      # url = "github:hyprwm/Hyprland/0be36cd02d20617010ac3efff198fe7df0d6d07a";
+      # First bad commit
+      # url = "github:hyprwm/Hyprland/37b76cd1caed209e20e0e353671abf6ba4346b42";
+      url = "github:hyprwm/Hyprland/0be36cd02d20617010ac3efff198fe7df0d6d07a";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
