@@ -91,6 +91,7 @@ in
     hyprpicker-git
     kanshi
     shikane # kanshi alternative, rust
+    wev
     wlogout
     wofi
 
