@@ -2,8 +2,8 @@
 
 {
   tmux = prev.tmux.overrideAttrs (oldAttrs: {
-    pname = "tmux-git";
-    version = "4266d3";
+    pname = "tmux";
+    version = "9ae69c3";
 
     patches = [ ];
 
@@ -19,8 +19,8 @@
     src = prev.fetchFromGitHub {
       owner = "tmux";
       repo = "tmux";
-      rev = "4266d3efc89cdf7d1af907677361caa24b58c9eb";
-      sha256 = "sha256-LliON7p1KyVucCu61sPKihYxtXsAKCvAvRBvNgoV0/g=";
+      rev = "9ae69c3795ab5ef6b4d760f6398cd9281151f632";
+      sha256 = "sha256-RX3RZ0Mcyda7C7im1r4QgUxTnp95nfpGgQ2HRxr0s64=";
     };
   });
 }
