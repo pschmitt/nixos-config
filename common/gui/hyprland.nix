@@ -137,10 +137,10 @@ in
       logEvents = true;
       lidEventCommands = ''
         # NOTE We want to expand the args here, so we don't quote "$@"
-        /run/wrappers/bin/sudo -u pschmitt ~pschmitt/bin/acpid-lid.sh $@
+        /run/wrappers/bin/sudo -u ${config.custom.username} \
+          ${config.custom.homeDirectory}/.config/hypr/bin/lid-event.sh $@
       '';
     };
-
 
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
