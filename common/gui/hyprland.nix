@@ -132,6 +132,16 @@ in
     # Required by gtklock-userinfo-module
     accounts-daemon.enable = true;
 
+    acpid = {
+      enable = true;
+      logEvents = true;
+      lidEventCommands = ''
+        # NOTE We want to expand the args here, so we don't quote "$@"
+        /run/wrappers/bin/sudo -u pschmitt ~pschmitt/bin/acpid-lid.sh $@
+      '';
+    };
+
+
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
