@@ -37,4 +37,7 @@
 
   # Below is required for some weird reason when using greetd with autologin
   users.groups.pschmitt = { };
+
+  # unlock gnome keyring automatically with greetd
+  security.pam.services.greetd.enableGnomeKeyring = true;
 }
