@@ -29,6 +29,7 @@ in
   wezterm-bin = pkgs.callPackage ./wezterm/wezterm-bin { };
   wezterm-nightly = pkgs.callPackage ./wezterm/wezterm-nightly { };
   wezterm-nightly-appimage = pkgs.callPackage ./wezterm/wezterm-nightly-appimage { };
+  wl-kbptr = pkgs.callPackage ./wl-kbptr { };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
