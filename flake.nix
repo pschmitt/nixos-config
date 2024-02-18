@@ -43,7 +43,8 @@
       # url = "github:hyprwm/Hyprland/0be36cd02d20617010ac3efff198fe7df0d6d07a";
       # First bad commit
       # url = "github:hyprwm/Hyprland/37b76cd1caed209e20e0e353671abf6ba4346b42";
-      url = "github:hyprwm/Hyprland/v0.35.0";
+      # url = "github:hyprwm/Hyprland/v0.35.0";
+      url = "github:rszyma/Hyprland/b36a2009d2f400e0564af8cf6c5ec0d8e80523b5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
