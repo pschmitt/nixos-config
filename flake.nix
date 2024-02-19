@@ -38,7 +38,15 @@
     };
 
     hyprland = {
+      # Main
       url = "github:hyprwm/Hyprland";
+
+      # Git bisect
+      # Commit before the YEN/RO breakage
+      # url = "github:hyprwm/Hyprland/0be36cd02d20617010ac3efff198fe7df0d6d07a";
+
+      # YEN/RO fix
+      # url = "github:hyprwm/Hyprland/b36a2009d2f400e0564af8cf6c5ec0d8e80523b5";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
