@@ -161,6 +161,7 @@ in
     # Enable gtk lock pam auth
     pam.services.gtklock = { };
     pam.services.swaylock = { };
+    pam.services.hyprlock = { };
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
     # https://nixos.wiki/wiki/Sway
     pam.loginLimits = [
