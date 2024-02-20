@@ -19,6 +19,7 @@
     gnome.seahorse
     gnome.sushi
     imv # image viewer
+    zathura
 
     # wayland
     lemonade
