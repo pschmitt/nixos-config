@@ -50,6 +50,20 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # FIXME Remove this once hypridle is available in nixpkgs
+    # https://github.com/NixOS/nixpkgs/pull/289630
+    hypridle = {
+      url = "github:hyprwm/hypridle/v0.1.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # FIXME Remove this once hyprlang 0.4.0 is available in nixpkgs
+    # https://github.com/NixOS/nixpkgs/pull/289630
+    hyprlang = {
+      url = "github:hyprwm/hyprlang/v0.4.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     xdph = {
       url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.3.1";
       inputs.nixpkgs.follows = "nixpkgs";
