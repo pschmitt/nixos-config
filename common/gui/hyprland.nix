@@ -18,6 +18,10 @@ let
     hyprlang = inputs.hyprlang.packages.${pkgs.system}.hyprlang;
   });
 
+  hyprlockPkg = (inputs.hyprlock.packages.${pkgs.system}.hyprlock.override {
+    hyprlang = inputs.hyprlang.packages.${pkgs.system}.hyprlang;
+  });
+
   hyprland-wrapper = (pkgs.writeTextFile {
     name = "hyprland-wrapper";
     destination = "/bin/hyprland-wrapper";
@@ -71,6 +75,7 @@ in
     # swaylock
     swaylock-effects
     hypridlePkg
+    hyprlockPkg
 
     # waybar
     networkmanagerapplet

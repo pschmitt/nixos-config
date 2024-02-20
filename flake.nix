@@ -57,6 +57,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # FIXME Remove this once hyprlock is available in nixpkgs
+    hyprlock = {
+      url = "github:hyprwm/hyprlock";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # FIXME Remove this once hyprlang 0.4.0 is available in nixpkgs
     # https://github.com/NixOS/nixpkgs/pull/289630
     hyprlang = {
