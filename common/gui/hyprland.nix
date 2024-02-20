@@ -11,6 +11,13 @@ let
   xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
 
+  # hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
+  # FIXME Remove this override once hyprlang 0.4 is available in nixpkgs
+  # https://github.com/NixOS/nixpkgs/pull/289630
+  hypridlePkg = (inputs.hypridle.packages.${pkgs.system}.hypridle.override {
+    hyprlang = inputs.hyprlang.packages.${pkgs.system}.hyprlang;
+  });
+
   hyprland-wrapper = (pkgs.writeTextFile {
     name = "hyprland-wrapper";
     destination = "/bin/hyprland-wrapper";
@@ -63,6 +70,7 @@ in
     swayidle
     # swaylock
     swaylock-effects
+    hypridlePkg
 
     # waybar
     networkmanagerapplet
