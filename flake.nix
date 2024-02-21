@@ -39,14 +39,16 @@
 
     hyprland = {
       # main branch
-      url = "github:hyprwm/Hyprland";
+      # url = "github:hyprwm/Hyprland";
 
-      # Git bisect
-      # Commit before the YEN/RO breakage
-      # url = "github:hyprwm/Hyprland/0be36cd02d20617010ac3efff198fe7df0d6d07a";
+      # previous release
+      # url = "github:hyprwm/Hyprland/v0.34.0";
 
-      # YEN/RO fix
-      # url = "github:hyprwm/Hyprland/b36a2009d2f400e0564af8cf6c5ec0d8e80523b5";
+      # Git bisect: screen sharing issue
+      # good
+      url = "github:hyprwm/Hyprland/fae47ef462d1d7969afe001070839391ba6dbaa8";
+      # bad
+      # url = "github:hyprwm/Hyprland/301b48b74087cc59753ffa144b215540e6f82831";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
