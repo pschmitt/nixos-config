@@ -38,7 +38,7 @@
     };
 
     hyprland = {
-      # Main
+      # main branch
       url = "github:hyprwm/Hyprland";
 
       # Git bisect
