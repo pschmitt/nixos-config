@@ -39,16 +39,15 @@
 
     hyprland = {
       # main branch
-      # url = "github:hyprwm/Hyprland";
+      url = "github:hyprwm/Hyprland";
+      # good (window screen sharing) - newer
+      # url = "github:hyprwm/Hyprland/8c3613632a6ccebf9fb797ec756ecfce99514eec";
+      # good (window screen sharing)
+      # url = "github:hyprwm/Hyprland/94aeb06d6ba14d403c46b52d1d2e397acb5906a4";
 
       # previous release
       # url = "github:hyprwm/Hyprland/v0.34.0";
 
-      # Git bisect: screen sharing issue
-      # good
-      url = "github:hyprwm/Hyprland/fae47ef462d1d7969afe001070839391ba6dbaa8";
-      # bad
-      # url = "github:hyprwm/Hyprland/301b48b74087cc59753ffa144b215540e6f82831";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -73,7 +72,8 @@
     };
 
     xdph = {
-      url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.3.1";
+      # url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.3.1";
+      url = "github:hyprwm/xdg-desktop-portal-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
