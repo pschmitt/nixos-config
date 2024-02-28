@@ -39,28 +39,24 @@
 
     hyprland = {
       # main branch
-      url = "github:hyprwm/Hyprland";
+      url = "github:hyprwm/Hyprland/v0.36.0";
       # good (window screen sharing) - newer
       # url = "github:hyprwm/Hyprland/8c3613632a6ccebf9fb797ec756ecfce99514eec";
       # good (window screen sharing)
       # url = "github:hyprwm/Hyprland/94aeb06d6ba14d403c46b52d1d2e397acb5906a4";
-
-      # previous release
-      # url = "github:hyprwm/Hyprland/v0.34.0";
+      # good (window screen sharing)
+      # url "github:hyprwm/Hyprland/dfcfb92ec611345848f3840d34d66b8501e6367c";
 
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # FIXME Remove this once hypridle is available in nixpkgs
-    # https://github.com/NixOS/nixpkgs/pull/289630
     hypridle = {
       url = "github:hyprwm/hypridle/v0.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # FIXME Remove this once hyprlock is available in nixpkgs
     hyprlock = {
-      url = "github:hyprwm/hyprlock";
+      url = "github:hyprwm/hyprlock/v0.1.0";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
