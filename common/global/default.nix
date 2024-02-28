@@ -24,6 +24,7 @@ in
 {
   imports = [
     ./appimage.nix
+    ./atd.nix
     ./nix.nix
     ./printer.nix
   ];
