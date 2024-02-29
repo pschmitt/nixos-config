@@ -43,7 +43,7 @@
     };
 
     hypridle = {
-      url = "github:hyprwm/hypridle/v0.1.0";
+      url = "github:hyprwm/hypridle/v0.1.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
