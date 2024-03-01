@@ -1,28 +1,22 @@
 { config, ... }:
 
 {
-  environment.etc = {
-    "pipewire/pipewire.conf.d/99-soundboard.conf" = {
-      text = ''
-        # https://gitlab.freedesktop.org/pipewire/pipewire/-/wikis/Virtual-devices
-        context.objects = [{
-          factory = adapter
-          args = {
-            factory.name     = support.null-audio-sink
-            media.class      = Audio/Sink
-            node.name        = "soundboard-sink"
-            node.description = "Soundboard Sink"
-            adapter.auto-port-config = {
-              mode = dsp
-              monitor = true
-              position = preserve
-            }
-          }
-        }]
-
-        # vim: set ft=conf
-      '';
-      mode = "0644";
+  services.pipewire.extraConfig.pipewire = {
+    "99-soundboard" = {
+      context.objects = [{
+        factory = "adapter";
+        args = {
+          factory.name = "support.null-audio-sink";
+          media.class = "Audio/Sink";
+          node.name = "soundboard-sink";
+          node.description = "Soundboard Sink";
+          adapter.auto-port-config = {
+            mode = "dsp";
+            monitor = true;
+            position = "preserve";
+          };
+        };
+      }];
     };
   };
 
