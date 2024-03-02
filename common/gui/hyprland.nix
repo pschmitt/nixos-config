@@ -8,26 +8,18 @@ let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
   # hyprlandPkg = pkgs.hyprland;
 
-  xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
-  # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
-
-  # hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
-  # FIXME Remove this override once hyprlang 0.4 is available in nixpkgs
-  # https://github.com/NixOS/nixpkgs/pull/289630
-  hypridlePkg = (inputs.hypridle.packages.${pkgs.system}.hypridle.override {
-    hyprlang = inputs.hyprlang.packages.${pkgs.system}.hyprlang;
-  });
-
-  hyprlockPkg = (inputs.hyprlock.packages.${pkgs.system}.hyprlock.override {
-    hyprlang = inputs.hyprlang.packages.${pkgs.system}.hyprlang;
-  });
-
   hyprland-wrapper = (pkgs.writeTextFile {
     name = "hyprland-wrapper";
     destination = "/bin/hyprland-wrapper";
     executable = true;
     text = builtins.readFile ./hyprland-wrapper.sh;
   });
+
+  xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
+
+  hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
+  hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
 
 in
 {
