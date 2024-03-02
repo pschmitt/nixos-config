@@ -18,10 +18,11 @@
 
 
   # FIXME MIPI Camera
-  # hardware.ipu6 = {
-  #   enable = true;
-  #   platform = "ipu6ep";
-  # };
+  hardware.ipu6 = {
+    enable = true;
+    # NOTE ipu6ep is for Raptor Lake
+    platform = "ipu6ep";
+  };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
