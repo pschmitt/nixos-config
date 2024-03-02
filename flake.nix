@@ -43,24 +43,16 @@
     };
 
     hypridle = {
-      url = "github:hyprwm/hypridle/v0.1.1";
+      url = "github:hyprwm/hypridle";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hyprlock = {
-      url = "github:hyprwm/hyprlock/v0.1.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # FIXME Remove this once hyprlang 0.4.0 is available in nixpkgs
-    # https://github.com/NixOS/nixpkgs/pull/289630
-    hyprlang = {
-      url = "github:hyprwm/hyprlang/v0.4.0";
+      url = "github:hyprwm/hyprlock";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     xdph = {
-      # url = "github:hyprwm/xdg-desktop-portal-hyprland/v1.3.1";
       url = "github:hyprwm/xdg-desktop-portal-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
