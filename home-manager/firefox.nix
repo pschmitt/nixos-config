@@ -114,6 +114,9 @@
   home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${config.nur.repos.wolfangaukang.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
+  # BroTab for Google Chrome
+  home.file.".config/google-chrome/NativeMessagingHosts/brotab_mediator.json".source = "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
+
   systemd.user.services.fx-cast = {
     Unit = {
       Description = "fx-cast-bridge";
