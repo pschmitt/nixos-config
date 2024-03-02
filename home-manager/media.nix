@@ -1,4 +1,11 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+let
+  mpvPkg = pkgs.mpv.override {
+    scripts = [ pkgs.mpvScripts.mpris ];
+  };
+
+in
+{
   imports = [
     ./obs-studio.nix
   ];
@@ -6,7 +13,7 @@
   home.packages = with pkgs; [
     # Media
     ffmpeg-full
-    mpv
+    mpvPkg
     ustreamer
     v4l-utils
     vlc
