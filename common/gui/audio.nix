@@ -1,4 +1,4 @@
-{ ... }: {
+{ pkgs, ... }: {
   imports = [
     ./soundboard.nix
   ];
@@ -15,4 +15,19 @@
     pulse.enable = true;
     jack.enable = true;
   };
+
+  environment.systemPackages = with pkgs; [
+    ncpamixer
+    pamixer
+    pavucontrol
+    pulseaudio # pactl + pacmd
+
+    # apps
+    audacity
+    (sox.override { enableLame = true; enableAMR = true; })
+
+    # patching
+    helvum
+    qpwgraph
+  ];
 }
