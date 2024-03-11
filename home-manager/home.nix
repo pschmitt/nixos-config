@@ -80,8 +80,6 @@
     nixfmt
     nixos-generators
     nixpkgs-fmt
-    rnix-lsp
-
   ];
 
   # AccountService profile picture
