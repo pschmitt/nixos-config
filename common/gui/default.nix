@@ -92,7 +92,7 @@
     libinput # libinput debug-events
     libsecret # secret-tool
     pinentry-curses
-    pinentry-gnome
+    pinentry-gnome3
     tesseract
 
     # media
