@@ -11,6 +11,7 @@
       shfmt
 
       # nix
+      nil
       nixpkgs-fmt
 
       # lsp
