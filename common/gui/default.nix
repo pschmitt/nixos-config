@@ -104,7 +104,6 @@
     firefox
     google-chrome
     gparted
-    kitty
     mullvad-vpn
     usbimager # etcher alternative
     virt-manager
