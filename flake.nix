@@ -62,6 +62,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    wezterm = {
+      url = "github:wez/wezterm?dir=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flatpaks = {
       url = "github:GermanBread/declarative-flatpak/stable";
       # NOTE Do *not* override nixpkgs, it is not supported
