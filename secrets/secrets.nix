@@ -3,7 +3,8 @@ let
 
   authorizedKeysContent = lib.strings.fileContents(builtins.fetchurl {
     url = "https://github.com/pschmitt.keys";
-    sha256 = "0qcixq2zsh6p4xzxmjdl7bh13wyyv479sxhb0g2qg0qa6wg6qa49";
+    # sha256 = "0qcixq2zsh6p4xzxmjdl7bh13wyyv479sxhb0g2qg0qa6wg6qa49";
+    shw256 = "082ck5qhyswbinif0b0rb0n26i6m5rkvx6plhdsili3dyx5l7dqc";
   });
 
   authorizedKeys = lib.filter (key: key != "") (lib.splitString "\n" authorizedKeysContent);
