@@ -36,10 +36,10 @@ in
     # build on 6.7)
     # https://github.com/NixOS/nixpkgs/issues/280427
     # https://github.com/NVIDIA/open-gpu-kernel-modules/pull/589
-    kernelPackages = pkgs.linuxPackages_6_7;
+    kernelPackages = pkgs.linuxPackages_6_8;
     tmp = { useTmpfs = true; };
 
-    # Bootloader.
+    # Bootloader
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
 
