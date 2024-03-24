@@ -1,4 +1,18 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+
+let
+  isCI = builtins.getEnv "CI" != "";
+  # Only install proprietary fonts if not in CI
+  conditionalPackages = pkgs: if isCI then [ ] else with pkgs; [
+    ComicCode
+    ComicCodeNF
+    MonoLisa
+    MonoLisa-Custom
+    MonoLisa-CustomNF
+  ];
+in
+
+{
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
   # Also, removing ~/.config/fontconfig might help in case emojis are all fucked up and shit
   # The last time around the following command fixed emojis in pango apps:
@@ -16,14 +30,7 @@
       ubuntu_font_family
       font-awesome
       font-awesome_5
-
-      # proprietary fonts
-      ComicCode
-      ComicCodeNF
-      MonoLisa
-      MonoLisa-Custom
-      MonoLisa-CustomNF
-    ];
+    ] ++ (conditionalPackages pkgs);
     fontDir.enable = true;
     # enableDefaultFonts = true;  # deprecated in unstable
     enableDefaultPackages = true; # new option name (unstable)
