@@ -1,9 +1,9 @@
 { pkgs, ... }:
 
 let
-  isCI = builtins.getEnv "CI" != "";
+  isGarnix = builtins.getEnv "GARNIX" != "";
   # Only install proprietary fonts if not in CI
-  conditionalPackages = pkgs: if isCI then [ ] else with pkgs; [
+  conditionalPackages = pkgs: if isGarnix then [ ] else with pkgs; [
     ComicCode
     ComicCodeNF
     MonoLisa
