@@ -1,7 +1,8 @@
 { pkgs, ... }:
 
 let
-  isGarnix = builtins.getEnv "GARNIX" != "";
+  # FIXME Is there any env var that GARNIX sets?
+  isGarnix = builtins.getEnv "NOT_GARNIX" == "";
   # Only install proprietary fonts if not in CI
   conditionalPackages = pkgs: if isGarnix then [ ] else with pkgs; [
     ComicCode
