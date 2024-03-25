@@ -13,7 +13,10 @@ let
     ipython
     isort
     pip
-    pipx
+    # FIXME Remove the override once https://github.com/NixOS/nixpkgs/pull/298528 is merge
+    (pipx.overrideAttrs (old: {
+      disabledTests = old.disabledTests ++ [ "test_skip_maintenance" ];
+    }))
     pygobject3
     pynvim
     requests
