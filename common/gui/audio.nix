@@ -24,7 +24,7 @@
 
     # apps
     audacity
-    (sox.override { enableLame = true; enableAMR = true; })
+    (sox.override { enableLame = true; enableAMR = false; })
 
     # patching
     helvum
