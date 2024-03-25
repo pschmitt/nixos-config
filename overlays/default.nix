@@ -11,6 +11,11 @@
     (import ./brotab.nix { inherit final prev; }) //
     (import ./hyprpicker.nix { inherit final prev; }) //
     (import ./openstack-cli.nix { inherit final prev; }) //
+    # FIXME Remove this overlay once this is fixed in nixpkgs
+    # The issue is that the source of amrnb ie.
+    # http://www.penguin.cz/~utx/ftp/amr/amrnb-11.0.0.0.tar.bz2
+    # is unreachable
+    (import ./amrnb.nix { inherit final prev; }) //
     # (import ./tmux.nix { inherit final prev; }) //
     { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
