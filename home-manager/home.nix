@@ -4,8 +4,8 @@
     inputs.nur.hmModules.nur
     inputs.nix-index-database.hmModules.nix-index
     ./bitwarden.nix
+    ./browser.nix
     ./dotool.nix
-    ./firefox.nix
     ./media.nix
     ./mail.nix
     ./networking.nix
