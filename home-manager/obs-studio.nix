@@ -83,7 +83,7 @@ in
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = (
     builtins.fetchurl {
-      url = "https://raw.githubusercontent.com/pschmitt/obs-bounce/follow-item-visibility/bounce.lua";
+      url = "https://raw.githubusercontent.com/pschmitt/obs-bounce/4a01d2096a3ffa886d6bbfb97c27301065e33f55/bounce.lua";
       sha256 = "1w1ks5nf4icgbqmbcp8cvmv30426srhcspjad3gmkiin6vxz42ny";
     }
   );
