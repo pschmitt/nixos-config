@@ -3,6 +3,7 @@
     # ./hardware-configuration.nix
     ./apps.nix
     ./audio.nix
+    ./browser.nix
     ./bluetooth.nix
     ./btrfs.nix
     ./fonts.nix
@@ -62,27 +63,6 @@
 
   programs.adb.enable = true;
 
-  programs.firefox = {
-    enable = true;
-    # FIXME This does not seem to work.
-    # See home-manager/home.nix for the dirty but working solution.
-    nativeMessagingHosts.packages = with pkgs; [
-      brotab
-      config.nur.repos.wolfangaukang.vdhcoapp
-      tridactyl-native
-    ];
-    preferences = {
-      # Enable custom css (userChrome.css)
-      "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
-      # Hide share indicator
-      "privacy.webrtc.legacyGlobalIndicator" = false;
-      "privacy.webrtc.hideGlobalIndicator" = true;
-      # Prevent Firefox from Googling .lan addresses and opening them directly
-      "browser.fixup.domainsuffixwhitelist.lan" = true;
-    };
-    preferencesStatus = "user";
-  };
-
   # Some programs need SUID wrappers, can be configured further or are
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -102,8 +82,6 @@
     yt-dlp
 
     # apps
-    firefox
-    google-chrome
     gparted
     mullvad-vpn
     usbimager # etcher alternative
