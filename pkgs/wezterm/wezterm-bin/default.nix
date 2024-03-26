@@ -60,7 +60,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://github.com/wez/wezterm/releases/download/nightly/wezterm-nightly.Ubuntu22.04.tar.xz";
-    sha256 = "sha256-WP9iMQl0vELaSX92+F5sPiUmlfoy/IqlklIJSXok3bU=";
+    sha256 = "sha256-Jde/TwY93/bNtlGmD23uXVfdDXhUAiCYSdi4c0yu1vY=";
   };
 
   terminfoSrc = fetchurl {
