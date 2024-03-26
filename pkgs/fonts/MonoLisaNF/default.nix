@@ -1,16 +1,16 @@
 { lib
 , pkgs
 , stdenvNoCC
-, python3Packages
 }:
 
-stdenvNoCC.mkDerivation rec {
+stdenvNoCC.mkDerivation {
   pname = "MonoLisaNF";
   version = "1.808";
 
   src = ../src/MonoLisa-Plus-Custom-1.808.zip;
 
   nativeBuildInputs = with pkgs; [
+    nerd-font-patcher
     unzip
   ];
 
