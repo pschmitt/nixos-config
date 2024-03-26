@@ -1,0 +1,20 @@
+name: "Build proprietary fonts"
+on:
+  workflow_dispatch: # allows manual triggering
+  push:
+  schedule:
+    - cron: '30 0 * * *' # 00:30 every day
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - name: nix build
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          /srv/ci/nix-build-proprietary-fonts.sh
