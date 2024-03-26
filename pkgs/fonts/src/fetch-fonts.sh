@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-REMOTE_HOST=r
+REMOTE_HOST=rofl-01
 REMOTE_PATH=/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts
 
 list_fonts() {
@@ -16,7 +16,12 @@ fetch_fonts() {
 
   for font in $(list_fonts)
   do
-    scp "${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
+    if [[ "$HOSTNAME" == "$REMOTE_HOST" ]]
+    then
+      cp "${REMOTE_PATH}/${font}" "$font"
+    else
+      scp "${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
+    fi
   done
 
   check_fonts
