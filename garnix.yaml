@@ -1,7 +1,7 @@
 builds:
   exclude:
-  - "packages.*.ComicCode.*"
-  - "packages.*.MonoLisa.*"
+  - "packages.*.ComicCode*"
+  - "packages.*.MonoLisa*"
   - "packages.*.obs-studio-plugins"
   - "packages.*.obs-studio-plugins-flatpak"
   include:
