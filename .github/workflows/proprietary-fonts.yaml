@@ -17,4 +17,4 @@ jobs:
         username: ${{ secrets.SSH_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         script: |
-          /srv/ci/nix-build-proprietary-fonts.sh "$GITHUB_SHA"
+          /srv/ci/nix-build-proprietary-fonts.sh "${{ github.sha }}"
