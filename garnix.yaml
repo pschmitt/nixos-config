@@ -8,7 +8,6 @@ builds:
   - "packages.*.MonoLisa-CustomNF"
   - "packages.*.obs-studio-plugins"
   - "packages.*.obs-studio-plugins-flatpak"
-  - "packages.*.obs-studio-plugins-flatpak\\.obs-freeze-filter-bin"
   include:
   - '*.x86_64-linux.*'
   - defaultPackage.x86_64-linux
