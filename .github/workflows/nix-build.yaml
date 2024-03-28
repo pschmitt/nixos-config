@@ -1,0 +1,44 @@
+name: Nix build
+
+on: [push, pull_request]
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Generate package list
+        id: set-matrix
+        run: |
+          PACKAGES=$(nix flake show --json | jq -cer '.packages["x86_64-linux"] | keys')
+          # TODO Skip proprietary packages
+          # nix eval --impure '.#obs-cli.meta.license.free' | grep -q 'true'
+          echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
+        shell: bash
+
+  build:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build package
+        run: nix build .#packages.x86_64-linux.${{ matrix.pkg }}
+
