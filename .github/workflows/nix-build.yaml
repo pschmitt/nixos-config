@@ -26,6 +26,7 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         pkg: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
     steps:
