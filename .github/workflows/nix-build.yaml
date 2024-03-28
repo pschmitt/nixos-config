@@ -17,7 +17,7 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
-          echo "::set-output name=matrix::$(nix flake show --json | jq -er '.packages["x86_64-linux"] | keys | map({package: .}) | {include: .}')"
+          echo "::set-output name=matrix::$(nix flake show --json | jq -er '{pkg: [.packages["x86_64-linux"] | keys[]]}')"
         shell: bash
 
   build:
@@ -35,5 +35,5 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Build package
-        run: nix build .#packages.x86_64-linux.${{ matrix.package }}
+        run: nix build .#packages.x86_64-linux.${{ matrix.pkg }}
 
