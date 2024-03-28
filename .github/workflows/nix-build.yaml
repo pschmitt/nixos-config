@@ -17,7 +17,7 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
-          PACKAGES=$(nix flake show --json | jq -cer '{pkg: [.packages["x86_64-linux"] | keys[]]})
+          PACKAGES=$(nix flake show --json | jq -cer '.packages["x86_64-linux"] | keys[]')
           echo "MATRIX=$PACKAGES" >> $GITHUB_ENV
           echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
@@ -26,7 +26,8 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
-      matrix: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
+      matrix:
+        pkg: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
