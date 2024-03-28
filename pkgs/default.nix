@@ -5,8 +5,8 @@
 
 let
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
-  libcaption = pkgs.callPackage ./libcaption { };
-  obsws-python = pkgs.python3Packages.callPackage ./obsws-python { };
+  # libcaption = pkgs.callPackage ./libcaption { };
+  obsws-python = pkgs.python3Packages.callPackage ./obs-studio/obsws-python { };
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
@@ -17,13 +17,13 @@ in
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
-  obs-cli = pkgs.python3Packages.callPackage ./obs-cli { inherit obsws-python; };
-  obs-studio-plugins-flatpak.obs-text-pango-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-text-pango-bin { };
-  obs-studio-plugins-flatpak.obs-text-pthread-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-text-pthread-bin { };
-  obs-studio-plugins-flatpak.obs-freeze-filter-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-freeze-filter-bin { };
-  obs-studio-plugins-flatpak.obs-replay-source-bin = pkgs.qt6Packages.callPackage ./obs-studio-plugins-flatpak.obs-replay-source-bin { };
-  obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-freeze-filter { };
-  obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio-plugins.obs-replay-source { inherit libcaption; };
+  obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix { inherit obsws-python; };
+  obs-studio-plugins-flatpak-obs-text-pango-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-text-pango-bin { };
+  obs-studio-plugins-flatpak-obs-text-pthread-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-text-pthread-bin { };
+  obs-studio-plugins-flatpak-obs-freeze-filter-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-freeze-filter-bin { };
+  obs-studio-plugins-flatpak-obs-replay-source-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-replay-source-bin { };
+  # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
+  # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
   wezterm-bin = pkgs.callPackage ./wezterm/wezterm-bin { };

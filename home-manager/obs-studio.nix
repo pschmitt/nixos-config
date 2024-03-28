@@ -69,16 +69,16 @@ in
   # WARNING The directory names DO matter. The freeze-filter for instance will
   # not load if the directory is named obs-freeze-filter.
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/text-pango" = {
-    source = "${pkgs.obs-studio-plugins-flatpak.obs-text-pango-bin}/obs-plugins/obs-text-pango";
+    source = "${pkgs.obs-studio-plugins-flatpak-obs-text-pango-bin}/obs-plugins/obs-text-pango";
   };
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/obs-text-pthread" = {
-    source = "${pkgs.obs-studio-plugins-flatpak.obs-text-pthread-bin}/obs-plugins/obs-text-pthread";
+    source = "${pkgs.obs-studio-plugins-flatpak-obs-text-pthread-bin}/obs-plugins/obs-text-pthread";
   };
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/freeze-filter" = {
-    source = "${pkgs.obs-studio-plugins-flatpak.obs-freeze-filter-bin}/obs-plugins/obs-freeze-filter";
+    source = "${pkgs.obs-studio-plugins-flatpak-obs-freeze-filter-bin}/obs-plugins/obs-freeze-filter";
   };
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/replay-source" = {
-    source = "${pkgs.obs-studio-plugins-flatpak.obs-replay-source-bin}/obs-plugins/obs-replay-source";
+    source = "${pkgs.obs-studio-plugins-flatpak-obs-replay-source-bin}/obs-plugins/obs-replay-source";
   };
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = (
