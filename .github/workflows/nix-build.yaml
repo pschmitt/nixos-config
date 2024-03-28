@@ -33,7 +33,7 @@ jobs:
           JSON_PACKAGES=$(printf '%s\n' "${PACKAGES[@]}" | jq -Rcn '[inputs]')
           JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
 
-          echo "all_packages=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
+          # echo "all_packages=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
           echo "packages=$JSON_PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
