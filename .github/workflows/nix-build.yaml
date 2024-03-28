@@ -18,7 +18,6 @@ jobs:
         id: set-matrix
         run: |
           PACKAGES=$(nix flake show --json | jq -cer '.packages["x86_64-linux"] | keys')
-          echo "MATRIX=$PACKAGES" >> $GITHUB_ENV
           echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
