@@ -17,6 +17,7 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
+          set -x
           mapfile -t ALL_PACKAGES < <(nix flake show --json | \
             jq -er '.packages["x86_64-linux"] | keys[]')
           PACKAGES=()
