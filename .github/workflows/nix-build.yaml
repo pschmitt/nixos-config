@@ -18,6 +18,8 @@ jobs:
         id: set-matrix
         run: |
           PACKAGES=$(nix flake show --json | jq -cer '.packages["x86_64-linux"] | keys')
+          # TODO Skip proprietary packages
+          # nix eval --impure '.#obs-cli.meta.license.free' | grep -q 'true'
           echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
