@@ -34,7 +34,7 @@ jobs:
           JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
 
           # echo "all_packages=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
-          echo "packages=$JSON_PACKAGES" >> $GITHUB_OUTPUT
+          echo "matrix=$JSON_PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
   build:
@@ -43,7 +43,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.packages) }}
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
