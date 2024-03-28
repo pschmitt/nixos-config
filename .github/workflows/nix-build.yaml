@@ -17,7 +17,7 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
-          PACKAGES=$(nix flake show --json | jq -er '{include: [.packages["x86_64-linux"] | keys[] | {pkg: .}]}')
+          PACKAGES=$(nix flake show --json | jq -er '{pkg: [.packages["x86_64-linux"] | keys[]]})
           echo "MATRIX=$PACKAGES" >> $GITHUB_ENV
           echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
