@@ -1,0 +1,39 @@
+name: Nix build
+
+on: [push, pull_request]
+
+jobs:
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Generate package list
+        id: set-matrix
+        run: |
+          echo "::set-output name=matrix::$(nix flake show --json | jq -er '.packages["x86_64-linux"] | keys | map({package: .}) | {include: .}')"
+        shell: bash
+
+  build:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build package
+        run: nix build .#packages.x86_64-linux.${{ matrix.package }}
+
