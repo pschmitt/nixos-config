@@ -9,7 +9,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -17,7 +17,9 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
-          echo "::set-output name=matrix::$(nix flake show --json | jq -er '{pkg: [.packages["x86_64-linux"] | keys[]]}')"
+          PACKAGES=$(nix flake show --json | jq -er '{include: [.packages["x86_64-linux"] | keys[] | {pkg: .}]}')
+          echo "MATRIX=$PACKAGES" >> $GITHUB_ENV
+          echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
   build:
@@ -27,7 +29,7 @@ jobs:
       matrix: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
