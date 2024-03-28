@@ -17,10 +17,23 @@ jobs:
       - name: Generate package list
         id: set-matrix
         run: |
-          PACKAGES=$(nix flake show --json | jq -cer '.packages["x86_64-linux"] | keys')
-          # TODO Skip proprietary packages
-          # nix eval --impure '.#obs-cli.meta.license.free' | grep -q 'true'
-          echo "matrix=$PACKAGES" >> $GITHUB_OUTPUT
+          mapfile -t ALL_PACKAGES < <(nix flake show --json | \
+            jq -er '.packages["x86_64-linux"] | keys[]')
+          PACKAGES=()
+          for p in "${ALL_PACKAGES[@]}"
+          do
+            # Skip proprietary packages
+            if nix eval --impure ".#${p}.meta.license.free" | grep -q 'true'
+            then
+              PACKAGES+=("$p")
+            fi
+          done
+
+          JSON_PACKAGES=$(printf '%s\n' "${PACKAGES[@]}" | jq -Rcn '[inputs]')
+          JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
+
+          echo "all_packages=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
+          echo "packages=$JSON_PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
   build:
@@ -29,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: ${{fromJson(needs.setup-matrix.outputs.matrix)}}
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.packages) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
