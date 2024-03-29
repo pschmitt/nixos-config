@@ -8,7 +8,7 @@ PKGS_NONFREE=()
 for p in "${PKGS[@]}"
 do
   # Skip proprietary packages
-  if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free'
+  if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free' >/dev/null
   then
     PKGS_FREE+=("$p")
   else
