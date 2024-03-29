@@ -1,6 +1,8 @@
 name: Nix build
 
-on: [push, pull_request]
+on:
+  push:
+  workflow_dispatch: # allows manual triggering
 
 jobs:
   setup-matrix:
