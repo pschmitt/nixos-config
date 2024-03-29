@@ -49,7 +49,7 @@ jobs:
                 free: $pkgs_free,
                 nonfree: $pkgs_nonfree
                 all: $pkgs
-              }
+              },
               hosts: $hosts
             }
           ')
