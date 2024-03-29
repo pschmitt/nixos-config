@@ -76,6 +76,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           request_pty: true
+          command_timeout: 4h
           script: |
             script='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
             chmod +x "$script"
