@@ -16,6 +16,7 @@ jobs:
 
       - name: Generate package list
         id: set-matrix
+        shell: bash
         run: |
           set -x
           mapfile -t ALL_PACKAGES < <(nix flake show --json | \
@@ -45,7 +46,6 @@ jobs:
             }
           ')
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-        shell: bash
 
   build-pkgs:
     needs: setup-matrix
@@ -53,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix.pkgs) }}
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
