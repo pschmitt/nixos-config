@@ -80,11 +80,11 @@ jobs:
           request_pty: true
           command_timeout: 4h
           script: |
-            script='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
-            chmod +x "$script"
-            "$script" '${{ matrix.pkg }}'
+            SCRIPT='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
+            trap 'rm -rf "$SCRIPT"' EXIT
+            chmod +x "$SCRIPT"
+            "$SCRIPT" '${{ matrix.pkg }}'
             RC="$?"
-            rm -rf "$script"
             exit "$RC"
 
   build-hosts:
