@@ -46,7 +46,7 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
-      RANDOM_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+      RUN_ID: -${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     strategy:
       fail-fast: false
       matrix:
@@ -58,7 +58,7 @@ jobs:
       - name: Rename build script
         run: |-
           cp -a .github/workflows/nix-build-nonfree.sh \
-            nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+            nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh
 
       - name: copy build script
         uses: appleboy/scp-action@v0.1.7
@@ -66,7 +66,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+          source: nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh
           target: /tmp
 
       - name: nix build
@@ -76,9 +76,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            script=/tmp/nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+            script='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
             chmod +x "$script"
-            "$script"
+            "$script" '${{ matrix.pkg }}'
             rm -rf "$script"
 
   build-hosts:
