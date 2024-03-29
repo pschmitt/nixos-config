@@ -34,16 +34,25 @@ jobs:
           JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
 
           # echo "matrix=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
-          echo "matrix=$JSON_PACKAGES" >> $GITHUB_OUTPUT
+          MATRIX=$(jq -cn \
+            --argjson hosts "$JSON_NIXOS_CONFIGS" \
+            --argjson pkgs "$JSON_PACKAGES" \
+          '
+            {
+              pkgs: $pkgs,
+              hosts: $hosts
+            }
+          ')
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
         shell: bash
 
-  build:
+  build-pkgs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix.pkgs) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
