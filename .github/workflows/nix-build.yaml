@@ -24,7 +24,7 @@ jobs:
           for p in "${ALL_PACKAGES[@]}"
           do
             # Skip proprietary packages
-            if nix eval --impure ".#${p}.meta.license.free" | grep -q 'true'
+            if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free'
             then
               PACKAGES+=("$p")
             fi
@@ -33,7 +33,7 @@ jobs:
           JSON_PACKAGES=$(printf '%s\n' "${PACKAGES[@]}" | jq -Rcn '[inputs]')
           JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
 
-          # echo "all_packages=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
+          # echo "matrix=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
           echo "matrix=$JSON_PACKAGES" >> $GITHUB_OUTPUT
         shell: bash
 
