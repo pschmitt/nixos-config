@@ -5,7 +5,7 @@
 
 buildGoModule rec {
   pname = "hacompanion";
-  version = "1.0.11";
+  version = "1.0.12";
 
   src = fetchFromGitHub {
     owner = "tobias-kuendig";
