@@ -46,7 +46,7 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
-      RUN_ID: -${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      RUN_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
     strategy:
       fail-fast: false
       matrix:
