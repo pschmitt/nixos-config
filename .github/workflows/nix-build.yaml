@@ -42,6 +42,40 @@ jobs:
           nix build --print-build-logs \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
+  build-pkgs-nonfree:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    env:
+      RANDOM_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: copy build script
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "./.github/workflows/nix-build-nonfree.sh"
+          target: /tmp/nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+
+      - name: nix build
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            script=/tmp/nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+            chmod +x "$script"
+            "$script"
+            rm -rf "$script"
+
   build-hosts:
     needs: setup-matrix
     runs-on: ubuntu-latest
