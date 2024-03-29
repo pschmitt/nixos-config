@@ -32,6 +32,7 @@ jobs:
 
           JSON_PACKAGES=$(printf '%s\n' "${PACKAGES[@]}" | jq -Rcn '[inputs]')
           JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
+          JSON_NIXOS_CONFIGS=$(nix flake show --json | jq -c '.nixosConfigurations | keys')
 
           # echo "matrix=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
           MATRIX=$(jq -cn \
