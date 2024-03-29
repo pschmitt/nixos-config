@@ -55,14 +55,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Rename build script
+        run: |-
+          cp -a .github/workflows/nix-build-nonfree.sh \
+            nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+
       - name: copy build script
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "./.github/workflows/nix-build-nonfree.sh"
-          target: /tmp/nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+          source: nix-build-nonfree-${{ env.RANDOM_ID }}.sh
+          target: /tmp
 
       - name: nix build
         uses: appleboy/ssh-action@v1.0.3
