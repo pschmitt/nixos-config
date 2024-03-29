@@ -18,35 +18,38 @@ jobs:
         id: set-matrix
         shell: bash
         run: |
-          set -x
-          mapfile -t ALL_PKGS < <(nix flake show --json | \
+          mapfile -t PKGS < <(nix flake show --json | \
             jq -er '.packages["x86_64-linux"] | keys[]')
-          PKGS=()
-          NONFREE_PKGS=()
-          for p in "${ALL_PKGS[@]}"
+          PKGS_FREE=()
+          PKGS_NONFREE=()
+          for p in "${PKGS[@]}"
           do
             # Skip proprietary packages
             if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free'
             then
-              PKGS+=("$p")
+              PKGS_FREE+=("$p")
             else
-              NONFREE_PKGS+=("$p")
+              PKGS_NONFREE+=("$p")
             fi
           done
 
           JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
-          JSON_NONFREE_PKGS=$(printf '%s\n' "${PROPRIETARY_PKGS[@]}" | jq -Rcn '[inputs]')
-          JSON_ALL_PKGS=$(printf '%s\n' "${ALL_PKGS[@]}" | jq -Rcn '[inputs]')
+          JSON_PKGS_FREE=$(printf '%s\n' "${PKGS_FREE[@]}" | jq -Rcn '[inputs]')
+          JSON_PKGS_NONFREE=$(printf '%s\n' "${PKGS_NONFREE[@]}" | jq -Rcn '[inputs]')
           JSON_NIXOS_CONFIGS=$(nix flake show --json | jq -c '.nixosConfigurations | keys')
 
           MATRIX=$(jq -cn \
             --argjson hosts "$JSON_NIXOS_CONFIGS" \
-            --argjson pkgs_nonfree "$JSON_NONFREE_PKGS" \
             --argjson pkgs "$JSON_PKGS" \
+            --argjson pkgs_nonfree "$JSON_PKGS_NONFREE" \
+            --argjson pkgs_free "$JSON_PKGS_FREE" \
           '
             {
-              pkgs: $pkgs,
-              pkgs_nonfree: $pkgs_nonfree,
+              pkgs: {
+                free: $pkgs_free,
+                nonfree: $pkgs_nonfree
+                all: $pkgs_all
+              }
               hosts: $hosts
             }
           ')
@@ -58,7 +61,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs }}
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.free }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
