@@ -19,29 +19,34 @@ jobs:
         shell: bash
         run: |
           set -x
-          mapfile -t ALL_PACKAGES < <(nix flake show --json | \
+          mapfile -t ALL_PKGS < <(nix flake show --json | \
             jq -er '.packages["x86_64-linux"] | keys[]')
-          PACKAGES=()
-          for p in "${ALL_PACKAGES[@]}"
+          PKGS=()
+          NONFREE_PKGS=()
+          for p in "${ALL_PKGS[@]}"
           do
             # Skip proprietary packages
             if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free'
             then
-              PACKAGES+=("$p")
+              PKGS+=("$p")
+            else
+              NONFREE_PKGS+=("$p")
             fi
           done
 
-          JSON_PACKAGES=$(printf '%s\n' "${PACKAGES[@]}" | jq -Rcn '[inputs]')
-          JSON_ALL_PACKAGES=$(printf '%s\n' "${ALL_PACKAGES[@]}" | jq -Rcn '[inputs]')
+          JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
+          JSON_NONFREE_PKGS=$(printf '%s\n' "${PROPRIETARY_PKGS[@]}" | jq -Rcn '[inputs]')
+          JSON_ALL_PKGS=$(printf '%s\n' "${ALL_PKGS[@]}" | jq -Rcn '[inputs]')
           JSON_NIXOS_CONFIGS=$(nix flake show --json | jq -c '.nixosConfigurations | keys')
 
-          # echo "matrix=$JSON_ALL_PACKAGES" >> $GITHUB_OUTPUT
           MATRIX=$(jq -cn \
             --argjson hosts "$JSON_NIXOS_CONFIGS" \
-            --argjson pkgs "$JSON_PACKAGES" \
+            --argjson pkgs_nonfree "$JSON_NONFREE_PKGS" \
+            --argjson pkgs "$JSON_PKGS" \
           '
             {
               pkgs: $pkgs,
+              pkgs_nonfree: $pkgs_nonfree,
               hosts: $hosts
             }
           ')
