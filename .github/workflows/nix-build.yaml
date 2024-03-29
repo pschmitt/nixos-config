@@ -18,11 +18,11 @@ jobs:
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Generate package list
+      - name: Generate build matrix
         id: set-matrix
         shell: bash
         run: |
-          echo "matrix=$(${GITHUB_ACTION_PATH}/nix-flake-show.sh)" \
+          echo "matrix=$(${{ github.action_path }}/nix-flake-show.sh)" \
             >> $GITHUB_OUTPUT
 
   build-pkgs-free:
