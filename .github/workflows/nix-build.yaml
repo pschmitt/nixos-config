@@ -22,7 +22,7 @@ jobs:
         id: set-matrix
         shell: bash
         run: |
-          echo "matrix=$(./.github/workflows/nix-flake-show.sh)" \
+          echo "matrix=$(${GITHUB_ACTION_PATH}/nix-flake-show.sh)" \
             >> $GITHUB_OUTPUT
 
   build-pkgs-free:
