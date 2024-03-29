@@ -80,7 +80,9 @@ jobs:
             script='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
             chmod +x "$script"
             "$script" '${{ matrix.pkg }}'
+            RC="$?"
             rm -rf "$script"
+            exit "$RC"
 
   build-hosts:
     needs: setup-matrix
