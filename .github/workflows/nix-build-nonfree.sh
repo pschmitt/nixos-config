@@ -83,14 +83,17 @@ then
         CI=1
         shift
         ;;
+      --ref*|--commit*)
+        GIT_REF="$2"
+        shift 2
+        ;;
       *)
         break
         ;;
     esac
   done
 
-  GIT_REF="$1"
-  PKG="$2"
+  PKG="$1"
 
   if [[ -n "$CI" ]]
   then
