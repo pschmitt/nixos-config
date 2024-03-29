@@ -68,3 +68,23 @@ jobs:
           nix build --print-build-logs \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
+  build-hosts:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build nixosConfiguration
+        run: |-
+           nix build --print-build-logs \
+             '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
