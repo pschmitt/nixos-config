@@ -58,7 +58,12 @@ build_pkg() {
   "${repo}/pkgs/fonts/src/fetch-fonts.sh" || return 1
   git -C "$repo" add --intent-to-add --all --force
 
-  NIXPKGS_ALLOW_UNFREE=1 nix build --impure --print-build-logs ".#${pkg}"
+  if ! NIXPKGS_ALLOW_UNFREE=1 nix build --impure --print-build-logs ".#${pkg}"
+  then
+    return 1
+  fi
+
+  tree result/
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
