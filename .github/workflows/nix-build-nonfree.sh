@@ -78,6 +78,9 @@ then
         CI=1
         shift
         ;;
+      *)
+        break
+        ;;
     esac
   done
 
