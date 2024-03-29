@@ -48,14 +48,14 @@ jobs:
               pkgs: {
                 free: $pkgs_free,
                 nonfree: $pkgs_nonfree
-                all: $pkgs_all
+                all: $pkgs
               }
               hosts: $hosts
             }
           ')
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
 
-  build-pkgs:
+  build-pkgs-free:
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
