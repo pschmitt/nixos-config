@@ -22,7 +22,7 @@ jobs:
         id: set-matrix
         shell: bash
         run: |
-          echo "matrix=$(./.github/workflows/nix-flake-show.sh)" \
+          echo "matrix=$(./.github/workflows/scripts/nix-flake-show.sh)" \
             >> $GITHUB_OUTPUT
 
   build-pkgs-free:
@@ -61,7 +61,7 @@ jobs:
 
       - name: Rename build script
         run: |-
-          cp -a .github/workflows/nix-build-nonfree.sh \
+          cp -a .github/workflows/scripts/nix-build-nonfree.sh \
             nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh
 
       - name: copy build script
