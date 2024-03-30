@@ -73,6 +73,10 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
+      # NOTE You might want to disable magic-nix-cache-action since it will
+      # technically redistribute our proprietary packages (by putting them in
+      # the GitHub Actions cache). Luckily this should is not available outside
+      # of GH Actions run from within this repo.
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Setup SSH Keys
@@ -96,8 +100,8 @@ jobs:
           git add --intent-to-add --force .
 
       - name: Build package
+        # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
         run: |-
-          # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
           nix build --print-build-logs --builders "$NIX_BUILDER" --impure \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
