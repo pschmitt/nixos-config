@@ -9,6 +9,12 @@
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
     nur.url = "github:nix-community/NUR";
+    # FIXME The NUR entry for nix-agordoj (vdhcoapp) is broken, it points to a
+    # non-existent commit
+    nix-agordoj = {
+      url = "git+https://codeberg.org/wolfangaukang/nix-agordoj";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     hardware.url = "github:nixos/nixos-hardware";
 
