@@ -111,7 +111,10 @@
   # programs.firefox.nativeMessagingHosts.packages doesn't work!
   home.file.".mozilla/native-messaging-hosts/brotab_mediator.json".source = "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
   home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source = "${pkgs.fx-cast-bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
-  home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${config.nur.repos.wolfangaukang.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
+  # FIXME the vdhcoapp 2.0.19 nixpkg does not ship with a static native
+  # messaging manifest, instead it is relying on the user running:
+  # $ vdhcoapp install
+  # home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${inputs.nix-agordoj.packages.${pkgs.system}.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
   # BroTab for Google Chrome
