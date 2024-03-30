@@ -66,35 +66,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Rename build script
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build package
         run: |-
-          cp -a .github/workflows/scripts/nix-build-nonfree.sh \
-            nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh
+          SSH_PRIVATE_KEY="${HOME}/.ssh/id_ed25519"
+          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_PRIVATE_KEY"
+          chmod 400 "$SSH_PRIVATE_KEY"
+          trap "rm -f '${SSH_PRIVATE_KEY}'" EXIT
+          ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
 
-      - name: copy build script
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh
-          target: /tmp
-
-      - name: nix build
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          request_pty: true
-          command_timeout: 4h
-          script: |
-            SCRIPT='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
-            trap 'rm -rf "$SCRIPT"' EXIT
-            chmod +x "$SCRIPT"
-            "$SCRIPT" --ci --ref '${{ github.sha }}' '${{ matrix.pkg }}'
-            RC="$?"
-            exit "$RC"
+          NIX_BUILDER="ssh://{{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${SSH_PRIVATE_KEY}"
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts:
     needs: setup-matrix
