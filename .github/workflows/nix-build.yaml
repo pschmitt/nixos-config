@@ -4,6 +4,11 @@ on:
   push:
   workflow_dispatch: # allows manual triggering
 
+env:
+  nix-conf: |-
+    substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-cache.heimat.dev https://nix-community.cachix.org
+    trusted-public-keys = cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.heimat.dev:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
+
 jobs:
   setup-matrix:
     runs-on: ubuntu-latest
@@ -38,6 +43,8 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
@@ -107,6 +114,8 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
