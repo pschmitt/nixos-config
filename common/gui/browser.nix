@@ -1,4 +1,4 @@
-{ config, pkgs, ... }: {
+{ inputs, pkgs, ... }: {
 
   programs.firefox = {
     enable = true;
@@ -6,7 +6,7 @@
     # See home-manager/home.nix for the dirty but working solution.
     nativeMessagingHosts.packages = with pkgs; [
       brotab
-      config.nur.repos.wolfangaukang.vdhcoapp
+      # inputs.nix-agordoj.packages.${pkgs.system}.vdhcoapp
       tridactyl-native
     ];
     preferences = {
