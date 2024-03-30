@@ -57,7 +57,8 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
-      RUN_ID: ${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+      NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${{ env.HOME }}/.ssh/id_ed25519"
+      SSH_PRIVATE_KEY_PATH: "${{ env.HOME }}/.ssh/id_ed25519"
     strategy:
       fail-fast: false
       matrix:
@@ -73,15 +74,21 @@ jobs:
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
-      - name: Build package
+      - name: Setup SSH
         run: |-
           SSH_PRIVATE_KEY="${HOME}/.ssh/id_ed25519"
-          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_PRIVATE_KEY"
-          chmod 400 "$SSH_PRIVATE_KEY"
-          trap "rm -f '${SSH_PRIVATE_KEY}'" EXIT
+          printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_PRIVATE_KEY_PATH"
+          chmod 400 "$SSH_PRIVATE_KEY_PATH"
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
+          eval "$(ssh-agent)"
+          ssh-add "$SSH_PRIVATE_KEY_PATH"
 
-          NIX_BUILDER="ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${SSH_PRIVATE_KEY}"
+      - name: Fetch sources
+        run: |-
+          ./pkgs/fonts/src/fetch-fonts.sh
+
+      - name: Build package
+        run: |-
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
