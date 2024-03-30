@@ -89,11 +89,15 @@ jobs:
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
 
-      - name: Fetch sources
-        run: |-
-          ./pkgs/fonts/src/fetch-fonts.sh \
-            --remote-user "${{ secrets.SSH_USERNAME }}" \
-            --remote-host "${{ secrets.SSH_HOST }}"
+      - uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          shell: bash
+          command: |-
+            ./pkgs/fonts/src/fetch-fonts.sh \
+              --remote-user "${{ secrets.SSH_USERNAME }}" \
+              --remote-host "${{ secrets.SSH_HOST }}"
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
         run: |-
