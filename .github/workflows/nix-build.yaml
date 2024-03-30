@@ -91,9 +91,9 @@ jobs:
             --remote-user "${{ secrets.SSH_USERNAME }}" \
             --remote-host "${{ secrets.SSH_HOST }}"
 
-      - name: Trick flake by git adding all files
+      - name: Trick flake by git adding all files (ignoring .gitignore)
         run: |-
-          git add --intent-to-add .
+          git add --intent-to-add --force .
 
       - name: Build package
         run: |-
