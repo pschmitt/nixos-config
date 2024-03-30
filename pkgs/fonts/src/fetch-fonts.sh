@@ -17,7 +17,7 @@ fetch_fonts() {
 
   for font in $(list_fonts)
   do
-    if [[ "$HOSTNAME" == "$REMOTE_HOST" ]]
+    if [[ "${HOSTNAME:-$(hostname)}" == "$REMOTE_HOST" ]]
     then
       cp "${REMOTE_PATH}/${font}" "$font"
     else
