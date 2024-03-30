@@ -86,7 +86,9 @@ jobs:
 
       - name: Fetch sources
         run: |-
-          ./pkgs/fonts/src/fetch-fonts.sh --remote-host "${{ secrets.SSH_HOST }}"
+          ./pkgs/fonts/src/fetch-fonts.sh \
+            --remote-user "${{ secrets.SSH_USERNAME }}" \
+            --remote-host "${{ secrets.SSH_HOST }}"
 
       - name: Build package
         run: |-

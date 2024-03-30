@@ -21,7 +21,7 @@ fetch_fonts() {
     then
       cp "${REMOTE_PATH}/${font}" "$font"
     else
-      scp "${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
+      scp "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
     fi
   done
 
@@ -30,6 +30,7 @@ fetch_fonts() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+  REMOTE_USER=${REMOTE_USER:-ubuntu}
   REMOTE_HOST=${REMOTE_HOST:-rofl-01}
   REMOTE_PATH=${REMOTE_PATH:-/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts}
 
@@ -39,6 +40,10 @@ then
       -h|--help)
         usage
         exit 0
+        ;;
+      --user*|--remote-user*|-u)
+        REMOTE_USER="$2"
+        shift 2
         ;;
       --host|--hostname|--remote-host*|-H)
         REMOTE_HOST="$2"
