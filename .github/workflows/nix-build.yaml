@@ -57,8 +57,8 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
-      NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${{ env.HOME }}/.ssh/id_ed25519"
-      SSH_PRIVATE_KEY_PATH: "${{ env.HOME }}/.ssh/id_ed25519"
+      NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
+      SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
       fail-fast: false
       matrix:
@@ -76,7 +76,7 @@ jobs:
 
       - name: Setup SSH
         run: |-
-          SSH_PRIVATE_KEY="${HOME}/.ssh/id_ed25519"
+          mkdir -p "${HOME}/.ssh"
           printf '%s' "${{ secrets.SSH_PRIVATE_KEY }}" > "$SSH_PRIVATE_KEY_PATH"
           chmod 400 "$SSH_PRIVATE_KEY_PATH"
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
