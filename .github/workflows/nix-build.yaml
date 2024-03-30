@@ -106,7 +106,10 @@ jobs:
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts:
-    needs: setup-matrix
+    needs:
+      - setup-matrix
+      - build-pkgs-free
+      - build-pkgs-nonfree
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
