@@ -81,7 +81,7 @@ jobs:
           trap "rm -f '${SSH_PRIVATE_KEY}'" EXIT
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
 
-          NIX_BUILDER="ssh://{{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${SSH_PRIVATE_KEY}"
+          NIX_BUILDER="ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=${SSH_PRIVATE_KEY}"
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
