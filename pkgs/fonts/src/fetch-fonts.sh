@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-REMOTE_HOST=rofl-01
-REMOTE_PATH=/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts
+usage() {
+  echo "Usage: $0 [--host HOSTNAME] [--remote-path PATH]"
+}
 
 list_fonts() {
   awk '{ print $2 }' ./sha256sum.txt
@@ -16,11 +17,11 @@ fetch_fonts() {
 
   for font in $(list_fonts)
   do
-    if [[ "$HOSTNAME" == "$REMOTE_HOST" ]]
+    if [[ "${HOSTNAME:-$(hostname)}" == "$REMOTE_HOST" ]]
     then
       cp "${REMOTE_PATH}/${font}" "$font"
     else
-      scp "${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
+      scp "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
     fi
   done
 
@@ -29,6 +30,35 @@ fetch_fonts() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+  REMOTE_USER=${REMOTE_USER:-ubuntu}
+  REMOTE_HOST=${REMOTE_HOST:-rofl-01}
+  REMOTE_PATH=${REMOTE_PATH:-/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts}
+
+  while [[ -n "$*" ]]
+  do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      --user*|--remote-user*|-u)
+        REMOTE_USER="$2"
+        shift 2
+        ;;
+      --host|--hostname|--remote-host*|-H)
+        REMOTE_HOST="$2"
+        shift 2
+        ;;
+      --remote-path|-p)
+        REMOTE_PATH="$2"
+        shift 2
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
   if check_fonts --quiet --status 2>/dev/null
