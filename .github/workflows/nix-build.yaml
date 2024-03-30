@@ -85,7 +85,7 @@ jobs:
             SCRIPT='/tmp/nix-build-nonfree-${{ env.RUN_ID }}-${{ matrix.pkg }}.sh'
             trap 'rm -rf "$SCRIPT"' EXIT
             chmod +x "$SCRIPT"
-            "$SCRIPT" --ref '${{ github.sha }}' '${{ matrix.pkg }}'
+            "$SCRIPT" --ci --ref '${{ github.sha }}' '${{ matrix.pkg }}'
             RC="$?"
             exit "$RC"
 
