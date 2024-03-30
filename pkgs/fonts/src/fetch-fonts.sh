@@ -40,7 +40,7 @@ then
         usage
         exit 0
         ;;
-      --host|--hostname|--remote-host|-H)
+      --host|--hostname|--remote-host*|-H)
         REMOTE_HOST="$2"
         shift 2
         ;;
