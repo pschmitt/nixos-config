@@ -58,6 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
+      NIXPKGS_ALLOW_UNFREE: 1
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
       fail-fast: false
@@ -92,7 +93,8 @@ jobs:
 
       - name: Build package
         run: |-
-          nix build --print-build-logs --builders "$NIX_BUILDER" \
+          # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
+          nix build --print-build-logs --builders "$NIX_BUILDER" --impure \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts:
