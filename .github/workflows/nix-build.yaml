@@ -91,6 +91,10 @@ jobs:
             --remote-user "${{ secrets.SSH_USERNAME }}" \
             --remote-host "${{ secrets.SSH_HOST }}"
 
+      - name: Trick flake by git adding all files
+        run: |-
+          git add --intent-to-add .
+
       - name: Build package
         run: |-
           # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
