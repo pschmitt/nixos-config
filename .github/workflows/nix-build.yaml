@@ -89,7 +89,8 @@ jobs:
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
 
-      - uses: nick-fields/retry@v3
+      - name: Fetch proprietary fonts (nixpkg src)
+        uses: nick-fields/retry@v3
         with:
           timeout_minutes: 5
           max_attempts: 3
