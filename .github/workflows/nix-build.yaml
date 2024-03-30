@@ -48,6 +48,16 @@ jobs:
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Setup SSH Keys
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Setup known_hosts
+        run: |-
+          ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
+
       - name: Build package
         run: |-
           nix build --print-build-logs \
@@ -135,6 +145,16 @@ jobs:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Setup SSH Keys
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Setup known_hosts
+        run: |-
+          ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
 
       - name: Build nixosConfiguration
         run: |-
