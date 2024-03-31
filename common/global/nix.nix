@@ -46,7 +46,7 @@
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
         "https://cache.garnix.io"
-        "ssh://pschmitt@rofl-01.heimat.dev"
+        "ssh://pschmitt@rofl-01.heimat.dev?ssh-key=${config.custom.sshKey}"
         "https://nix-cache.heimat.dev"
       ];
 
