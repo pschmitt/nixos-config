@@ -5,6 +5,7 @@
     # Work
     acme-sh
     argocd-vault-plugin
+    azure-cli
     cmctl
     glab
     kubectl
