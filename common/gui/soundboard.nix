@@ -36,10 +36,10 @@
 
   systemd.user.timers.soundboard-tagesschau = {
     enable = true;
-    description = "Play Tagesschau Jingle at 10:00 AM";
+    description = "Play Tagesschau Jingle at 10:30 AM";
 
     timerConfig = {
-      OnCalendar = "10:00";
+      OnCalendar = "10:30";
       Persistent = true;
     };
 
