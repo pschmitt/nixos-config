@@ -77,7 +77,7 @@
     cachix
     niv
     nix-init
-    nixfmt
+    nixfmt-rfc-style
     nixos-generators
     nixpkgs-fmt
   ];
