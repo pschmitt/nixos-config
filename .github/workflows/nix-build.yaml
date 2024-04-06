@@ -119,6 +119,7 @@ jobs:
         run: |-
           nix build --print-build-logs --builders "$NIX_BUILDER" --impure \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
+          tree result
 
   build-hosts:
     needs:
