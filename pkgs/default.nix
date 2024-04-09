@@ -38,4 +38,7 @@ in
   MonoLisaNF = pkgs.callPackage ./fonts/MonoLisaNF { };
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
+
+  # Lab
+  pyghmi = pkgs.callPackage ./pyghmi { };
 }
