@@ -28,6 +28,7 @@
     s3cmd
     skopeo
     stern
+    sqlfluff
     taskwarrior
     # terraform # 1.6+
     (writeShellScriptBin "terraform-unfree" ''
