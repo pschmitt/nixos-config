@@ -3,7 +3,7 @@ let
   container_image = "ghcr.io/pschmitt/jcalapi";
   container_tag = "latest";
   container_name = "jcalapi";
-  config_file = "${config.custom.homeDirectory}/devel/private/calendar-events/jcalapi/.envrc-secrets";
+  config_file = "${config.custom.homeDirectory}/.config/jcalapi/envrc.secret";
 in
 {
   environment.systemPackages = with pkgs; [
@@ -31,6 +31,7 @@ in
         --net=host \\
         --env TZ='Europe/Berlin' \\
         --env-file ${config_file} \\
+        --volume ${config.custom.homeDirectory}/.config/jcalapi:/config:Z \\
         ${container_image}:${container_tag}";
       ExecStartPost = "-${config.custom.homeDirectory}/bin/zhj 'sleep 10 && jcal reload'";
       ExecStop = "${pkgs.podman}/bin/podman stop ${container_name}";
