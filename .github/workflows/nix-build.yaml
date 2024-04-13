@@ -126,6 +126,7 @@ jobs:
       - setup-matrix
       - build-pkgs-free
       - build-pkgs-nonfree
+    if: ${{ always() && success('setup-matrix') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
