@@ -5,6 +5,7 @@
     inputs.nix-index-database.hmModules.nix-index
     ./bitwarden.nix
     ./browser.nix
+    ./devel.nix
     ./dotool.nix
     ./media.nix
     ./mail.nix
