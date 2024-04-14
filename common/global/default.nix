@@ -206,6 +206,8 @@ in
   services.fwupd.enable = true;
 
   # Enable flatpak
+  xdg.portal.enable = true; # required for flatpak
+  xdg.portal.xdgOpenUsePortal = true; # fix xdg-open
   services.flatpak = {
     enable = true;
     remotes = {
