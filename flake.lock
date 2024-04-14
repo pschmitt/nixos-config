@@ -111,6 +111,26 @@
         "type": "github"
       }
     },
+    "disko": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1712947906,
+        "narHash": "sha256-T0eT2lMbcK7RLelkx0qx4SiFpOS/0dt0aSfLB+WsGV8=",
+        "owner": "nix-community",
+        "repo": "disko",
+        "rev": "8d4ae698eaac8bd717e23507da2ca8b345bec4b5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "disko",
+        "type": "github"
+      }
+    },
     "dotfiles": {
       "flake": false,
       "locked": {
@@ -1311,6 +1331,7 @@
       "inputs": {
         "agenix": "agenix",
         "attic": "attic",
+        "disko": "disko",
         "flatpaks": "flatpaks",
         "hardware": "hardware",
         "home-manager": "home-manager_2",

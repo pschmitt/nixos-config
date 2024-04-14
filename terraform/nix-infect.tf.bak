@@ -1,0 +1,64 @@
+terraform {
+  required_providers {
+    openstack = {
+      source  = "terraform-provider-openstack/openstack"
+      version = "~> 1.44"
+    }
+  }
+}
+
+provider "openstack" {
+  cloud = "internal-employee-pschmitt"
+}
+
+variable "public_ssh_key" {
+  description = "Public SSH key"
+  type        = string
+  default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEOsodZo47l6by834BZ52mEI14gIs7GRxpRRAnocWlA2 pschmitt@x13"
+
+}
+
+resource "openstack_blockstorage_volume_v3" "boot_volume" {
+  name        = "nixos-boot-volume"
+  size        = 50 # GB
+  image_id    = "Ubuntu 22.04 Jammy Jellyfish - Latest"
+  description = "Boot volume for NixOS VM"
+}
+
+resource "openstack_compute_instance_v2" "nixos_vm" {
+  name = "nixos-vm"
+  # image_name  = "Ubuntu 22.04 Jammy Jellyfish - Latest"
+  block_device {
+    uuid                  = openstack_blockstorage_volume_v3.boot_volume.id
+    source_type           = "volume"
+    destination_type      = "volume"
+    boot_index            = 0
+    delete_on_termination = true
+  }
+
+  flavor_name = "m1.small"
+  # key_pair        = "your_keypair_name"
+  security_groups = ["default"]
+
+  user_data = <<-EOF
+  #cloud-config
+  users:
+    - name: ubuntu
+      sudo: ALL=(ALL) NOPASSWD:ALL
+      ssh-authorized-keys:
+        - ${var.public_ssh_key}
+
+  package_update: true
+  package_upgrade: true
+  packages:
+    - git
+    - curl
+
+  runcmd:
+    - curl -L https://github.com/elitak/nixos-infect/raw/master/nixos-infect | bash -s --
+  EOF
+
+  network {
+    name = "roflnet"
+  }
+}

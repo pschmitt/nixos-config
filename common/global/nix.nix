@@ -1,25 +1,25 @@
 { config, inputs, lib, outputs, pkgs, ... }:
 {
   imports = [
-    ./nix-remote-build.nix
+    # ./nix-remote-build.nix
   ];
 
-  age = {
-    secrets = {
-      nix-netrc = {
-        file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
-        owner = "root";
-        # FIXME is nixbld the right group?
-        group = "nixbld";
-        mode = "0440";
-      };
-    };
-  };
-
-  environment.etc."nix/netrc" = {
-    user = "root";
-    source = config.age.secrets.nix-netrc.path;
-  };
+  # NOTE Below is for setting up auth for attic
+  # age = {
+  #   secrets = {
+  #     nix-netrc = {
+  #       file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
+  #       owner = "root";
+  #       # FIXME is nixbld the right group?
+  #       group = "nixbld";
+  #       mode = "0440";
+  #     };
+  #   };
+  # };
+  # environment.etc."nix/netrc" = {
+  #   user = "root";
+  #   source = config.age.secrets.nix-netrc.path;
+  # };
 
   nix = {
     # This will add each flake input as a registry
