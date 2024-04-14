@@ -20,7 +20,7 @@ resource "openstack_compute_instance_v2" "nixos_anywhere_vm" {
   name            = "nixos-anywhere"
   flavor_name     = "m1.small"
   key_pair        = openstack_compute_keypair_v2.keypair.name
-  security_groups = ["default"]
+  security_groups = ["default", "yolo"]
 
   block_device {
     uuid                  = openstack_blockstorage_volume_v3.boot_volume.id
