@@ -8,6 +8,11 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nur.url = "github:nix-community/NUR";
     # FIXME The NUR entry for nix-agordoj (vdhcoapp) is broken, it points to a
     # non-existent commit
@@ -95,7 +100,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, ... }@inputs:
+  outputs = { self, disko, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -107,12 +112,13 @@
       ];
 
       commonModules = [
-        ./modules/custom.nix
         agenix.nixosModules.default
         flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         ./home-manager
+        ./modules/custom.nix
+        disko.nixosModules.disko
       ];
 
       nixosSystemFor = system: hostname: nixpkgs.lib.nixosSystem {
@@ -152,6 +158,7 @@
       nixosConfigurations = {
         x13 = nixosSystemFor "x86_64-linux" "x13";
         ge2 = nixosSystemFor "x86_64-linux" "ge2";
+        nixos-optimist = nixosSystemFor "x86_64-linux" "nixos-optimist";
       };
 
       # FIXME Why doesn't this work? The import never happens

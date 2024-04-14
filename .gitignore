@@ -1,2 +1,6 @@
 result
 pkgs/fonts/src/*.zip
+*.tfstate
+*.tfstate.backup
+.terraform*
+.terraform.lock.hcl

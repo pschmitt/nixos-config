@@ -79,6 +79,7 @@
     niv
     nix-init
     nixfmt-rfc-style
+    nixos-anywhere
     nixos-generators
     nixpkgs-fmt
   ];
