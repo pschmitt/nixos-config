@@ -100,6 +100,7 @@ in
     autossh
     bc
     bind # dig
+    cryptsetup
     curl
     dua # ncdu on steroids
     file
