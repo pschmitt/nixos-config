@@ -12,6 +12,7 @@
     ./hyprland.nix
     ./libvirt.nix
     ./logitech-mouse.nix
+    ./printer.nix
     ./theme.nix
   ];
 
