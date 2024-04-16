@@ -15,7 +15,7 @@
           "${pkgs.greetd.tuigreet}/bin/tuigreet"
           "--time"
           "--remember"
-          "--sessions ${config.services.xserver.displayManager.sessionData.desktops}/share/wayland-sessions:${config.services.xserver.displayManager.sessionData.desktops}/share/xsessions"
+          "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions:${config.services.displayManager.sessionData.desktops}/share/xsessions"
           "--cmd ${hyprland-wrapper}/bin/hyprland-wrapper"
         ];
         user = "greeter";
