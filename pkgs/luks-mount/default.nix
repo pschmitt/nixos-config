@@ -2,7 +2,7 @@
 , stdenv
 , fetchFromGitHub
 , makeWrapper
-, yq
+, yq-go
 }:
 
 stdenv.mkDerivation {
@@ -23,7 +23,7 @@ stdenv.mkDerivation {
     cp $src/luks-mount.sh $out/bin/luks-mount
     chmod +x $out/bin/luks-mount
     # Assuming you might need to wrap the script to include dependencies:
-    wrapProgram $out/bin/luks-mount --prefix PATH : ${lib.makeBinPath [ yq ]}
+    wrapProgram $out/bin/luks-mount --prefix PATH : ${lib.makeBinPath [ yq-go ]}
   '';
 
   meta = with lib; {
