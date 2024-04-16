@@ -10,3 +10,5 @@ terraform {
 provider "openstack" {
   cloud = "internal-employee-pschmitt"
 }
+
+# vim: set ft=terraform
