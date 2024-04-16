@@ -1,6 +1,3 @@
-# This is your system's configuration file.
-# Use this to configure your system environment (it replaces /etc/nixos/configuration.nix)
-
 { config, pkgs, ... }:
 let
   python-packages = ps: with ps; [
@@ -25,27 +22,16 @@ in
   imports = [
     ./appimage.nix
     ./atd.nix
+    ./bootloader.nix
+    ./network.nix
     ./nix.nix
   ];
 
   boot = {
     # Enable all MagicSysRq keys
     kernel.sysctl = { "kernel.sysrq" = 1; };
-    # FIXME We are stuck on 6.6 because of an nvidia-open issue (it does not
-    # build on 6.7)
-    # https://github.com/NixOS/nixpkgs/issues/280427
-    # https://github.com/NVIDIA/open-gpu-kernel-modules/pull/589
-    kernelPackages = pkgs.linuxPackages_6_8;
+    kernelPackages = pkgs.linuxPackages_latest;
     tmp = { useTmpfs = true; };
-
-    # Bootloader
-    loader.systemd-boot.enable = true;
-    loader.efi.canTouchEfiVariables = true;
-
-    # Setup keyfile
-    # initrd.secrets = {
-    #   "/crypto_keyfile.bin" = null;
-    # };
   };
 
   # Set your time zone.
@@ -69,31 +55,6 @@ in
   # Configure console keymap
   console.keyMap = "de";
 
-  # Enable networking
-  networking = {
-    networkmanager = {
-      enable = true;
-      dns = "systemd-resolved";
-      # enableFccUnlock = true;  # deprecated
-    };
-  };
-
-  # FIXME Disable wait-online services, this somehow results in NM not being started at all.
-  # systemd.network.wait-online.enable = false;
-  # systemd.services.NetworkManager-wait-online.enable = false;
-
-  services.resolved = {
-    enable = true;
-    dnssec = "false";
-    llmnr = "true";
-    # domains = [ "~." ];
-    fallbackDns = [ "1.1.1.1#one.one.one.one" "1.0.0.1#one.one.one.one" ];
-    extraConfig = ''
-      DNSOverTLS=opportunistic
-      MulticastDNS=yes
-    '';
-  };
-
   environment.systemPackages = with pkgs; [
     # core
     acpi
@@ -111,6 +72,7 @@ in
     jq
     killall
     lm_sensors
+    luks-mount
     mediainfo
     moreutils # ts among others
     ncdu
@@ -347,11 +309,5 @@ in
       owner = "root";
       group = "root";
     };
-  };
-
-  # List services that you want to enable:
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
   };
 }
