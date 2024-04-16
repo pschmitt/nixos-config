@@ -17,12 +17,12 @@ let
       # arsed to fix the ovpn config file, the udp endpoint leads to a
       # succesful connection - but the traffic is relayed properly
       # https://gec-chat.slack.com/archives/C3PBP7JQ3/p1705064366061199
-      # awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
-      #  sed 's#, $##' > "$out/details/remote"
+      awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
+       sed 's#, $##' > "$out/details/remote"
 
       # Grab the first TCP endpoint and call it a day
-      awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
-        sed 's#, $##' > "$out/details/remote"
+      # awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
+      #   sed 's#, $##' > "$out/details/remote"
 
       awk '/^cipher / { print $2 }' $src \
         > "$out/details/cipher"
