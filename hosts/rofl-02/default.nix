@@ -14,7 +14,7 @@
 
   # Enable networking
   networking = {
-    hostName = "nixos-optimist"; # Define your hostname.
+    hostName = "rofl-02";
     # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
     # Disable the firewall altogether.
     firewall = {
