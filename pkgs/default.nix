@@ -17,6 +17,7 @@ in
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
+  luks-mount = pkgs.callPackage ./luks-mount { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix { inherit obsws-python; };
   obs-studio-plugins-flatpak-obs-text-pango-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-text-pango-bin { };
   obs-studio-plugins-flatpak-obs-text-pthread-bin = pkgs.qt6Packages.callPackage ./obs-studio/plugins/flatpak/obs-text-pthread-bin { };
