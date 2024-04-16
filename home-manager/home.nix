@@ -4,18 +4,21 @@
     inputs.nur.hmModules.nur
     inputs.nix-index-database.hmModules.nix-index
     ./bitwarden.nix
-    ./browser.nix
     ./devel.nix
-    ./dotool.nix
-    ./media.nix
     ./mail.nix
     ./networking.nix
     ./nvim.nix
-    ./theme.nix
     ./work.nix
     ./zsh.nix
     ./zellij.nix
-  ]  ++ lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix;
+  ]
+  ++ lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix
+  ++ lib.optional (osConfig.services.xserver.enable) [
+    ./browser.nix
+    ./dotool.nix
+    ./media.nix
+    ./theme.nix
+  ];
 
   # FIXME Do we need that for anything?
   # nixpkgs.overlays = [
