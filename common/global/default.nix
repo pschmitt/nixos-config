@@ -208,7 +208,6 @@ in
     docker = {
       enable = true;
       storageDriver = "btrfs";
-      package = pkgs.unstable.docker_24;
     };
   };
 
