@@ -147,11 +147,12 @@ in
       '';
     };
 
+    # below is also set by programs.hyprland.enable = true;
+    displayManager.sessionPackages = [ hyprlandPkg ];
+
     xserver = {
       # Enable touchpad support (enabled by default in most desktopManager).
       libinput.enable = true; # also set by programs.hyprland.enable = true;
-      # below is also set by programs.hyprland.enable = true;
-      displayManager.sessionPackages = [ hyprlandPkg ];
       displayManager.session = [{
         manage = "desktop";
         name = "hyprland-wrapper";
