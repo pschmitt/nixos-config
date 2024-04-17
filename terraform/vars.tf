@@ -4,7 +4,7 @@ variable "availability_zone" {
   default     = "es1"
 }
 
-variable provider_network_id {
+variable "provider_network_id" {
   description = "Network ID of the provider network"
   type        = string
   default     = "54258498-a513-47da-9369-1a644e4be692"
