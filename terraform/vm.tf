@@ -3,11 +3,11 @@ resource "openstack_compute_keypair_v2" "keypair" {
   public_key = var.public_ssh_key
 }
 
-resource "openstack_blockstorage_volume_v3" "boot_volume" {
-  name              = "nixos-anywhere-boot-volume"
+resource "openstack_blockstorage_volume_v3" "rofl_02_boot_volume" {
+  name              = "rofl-02-boot-volume"
   size              = 150 # GiB
   image_id          = var.nixos_anywhere_image
-  description       = "Boot volume for NixOS VM"
+  description       = "Boot volume for NixOS VM (rofl-02)"
   availability_zone = var.availability_zone
 }
 
@@ -19,7 +19,7 @@ resource "openstack_compute_instance_v2" "rofl-02" {
   # security_groups   = ["default", openstack_networking_secgroup_v2.secgroup_ssh.name]
 
   block_device {
-    uuid                  = openstack_blockstorage_volume_v3.boot_volume.id
+    uuid                  = openstack_blockstorage_volume_v3.rofl_02_boot_volume.id
     source_type           = "volume"
     destination_type      = "volume"
     boot_index            = 0
@@ -28,16 +28,39 @@ resource "openstack_compute_instance_v2" "rofl-02" {
 
   network {
     # uuid = openstack_networking_network_v2.roflnet.id
-    port = openstack_networking_port_v2.roflport.id
+    port = openstack_networking_port_v2.rofl_02_port.id
   }
 }
 
-resource "openstack_networking_port_secgroup_associate_v2" "secgroup_assoc" {
-  port_id = openstack_networking_port_v2.roflport.id
+resource "openstack_networking_port_v2" "rofl_02_port" {
+  name           = "roflport"
+  network_id     = openstack_networking_network_v2.roflnet.id
+  admin_state_up = true
+  fixed_ip {
+    subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
+  }
+}
+
+resource "openstack_networking_port_secgroup_associate_v2" "rofl_02_secgroup_assoc" {
+  port_id = openstack_networking_port_v2.rofl_02_port.id
   security_group_ids = [
     openstack_networking_secgroup_v2.secgroup_ssh.id,
     openstack_networking_secgroup_v2.secgroup_http.id
   ]
+}
+
+resource "openstack_networking_floatingip_v2" "rofl_02_fip" {
+  pool = "provider"
+}
+
+resource "openstack_networking_floatingip_associate_v2" "rofl_02_fip_associate" {
+  floating_ip = openstack_networking_floatingip_v2.rofl_02_fip.address
+  port_id     = openstack_networking_port_v2.rofl_02_port.id
+}
+
+output "rofl_02_fip" {
+  value       = openstack_networking_floatingip_v2.rofl_02_fip.address
+  description = "Floating IP address of rofl-02"
 }
 
 # vim: set ft=terraform
