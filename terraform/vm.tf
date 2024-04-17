@@ -3,12 +3,6 @@ resource "openstack_compute_keypair_v2" "keypair" {
   public_key = var.public_ssh_key
 }
 
-resource "openstack_networking_port_v2" "roflport" {
-  name           = "roflport"
-  network_id     = openstack_networking_network_v2.roflnet.id
-  admin_state_up = "true"
-}
-
 resource "openstack_blockstorage_volume_v3" "boot_volume" {
   name              = "nixos-anywhere-boot-volume"
   size              = 150 # GiB
