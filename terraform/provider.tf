@@ -1,5 +1,10 @@
 terraform {
   required_providers {
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
+
     openstack = {
       source  = "terraform-provider-openstack/openstack"
       version = "~> 1.44"

@@ -5,4 +5,23 @@
   boot.initrd.availableKernelModules = [ "ata_piix" "uhci_hcd" "xen_blkfront" "vmw_pvscsi" ];
   boot.initrd.kernelModules = [ "nvme" ];
   # fileSystems."/" = { device = "/dev/sda1"; fsType = "btrfs"; };
+  fileSystems."/" = {
+    # device = "/dev/sda1";  # set by disko
+    fsType = "btrfs";
+    options = [ "subvol=@root" "compress=zstd" ];
+  };
+  fileSystems."/home" =
+    {
+      fsType = "btrfs";
+      options = [ "subvol=@home" ];
+    };
+
+  fileSystems."/nix" =
+    {
+      fsType = "btrfs";
+      options = [ "subvol=@nix" ];
+    };
+
+  # NOTE This is set by disko already
+  # boot.initrd.luks.devices."encrypted".device = "/dev/sda1";
 }

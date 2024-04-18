@@ -5,7 +5,8 @@
       if configOptions.useBIOS then {
         grub = {
           enable = true;
-          efiSupport = true;
+          # efiSupport = true;
+          device = "nodev";
         };
       } else {
         systemd-boot.enable = true;
