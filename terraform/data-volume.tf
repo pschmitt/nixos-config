@@ -1,7 +1,8 @@
 resource "openstack_blockstorage_volume_v3" "data_volume" {
-  name              = "roflvolume-01"
+  name              = "roflvol-02"
   size              = 4096 # GiB
   availability_zone = var.availability_zone
+  snapshot_id       = "f54c4fef-77c1-4b6e-8129-9faf66aa6062"
 
   lifecycle {
     prevent_destroy = true
