@@ -1,4 +1,6 @@
 { config, ... }: {
+  boot.loader.grub.enableCryptodisk = true;
+
   boot.kernelParams = [ "ip=dhcp" ];
   boot.initrd = {
     enable = true;
