@@ -1,24 +1,27 @@
 { inputs, lib, config, osConfig, pkgs, ... }:
 {
-  imports = [
-    inputs.nur.hmModules.nur
-    inputs.nix-index-database.hmModules.nix-index
-    ./bitwarden.nix
-    ./devel.nix
-    ./mail.nix
-    ./networking.nix
-    ./nvim.nix
-    ./work.nix
-    ./zsh.nix
-    ./zellij.nix
-  ]
-  ++ lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix
-  ++ lib.optional (osConfig.services.xserver.enable) [
-    ./browser.nix
-    ./dotool.nix
-    ./media.nix
-    ./theme.nix
-  ];
+  imports =
+    lib.concatLists [
+      [
+        inputs.nur.hmModules.nur
+        inputs.nix-index-database.hmModules.nix-index
+        ./bitwarden.nix
+        ./devel.nix
+        ./mail.nix
+        ./networking.nix
+        ./nvim.nix
+        ./work.nix
+        ./zsh.nix
+        ./zellij.nix
+      ]
+      (lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix)
+      (lib.optionals (osConfig.services.xserver.enable) [
+        ./browser.nix
+        ./dotool.nix
+        ./media.nix
+        ./theme.nix
+      ])
+    ];
 
   # FIXME Do we need that for anything?
   # nixpkgs.overlays = [
