@@ -1,4 +1,11 @@
-{ inputs, lib, config, pkgs, ... }:
+{ lib, osConfig, pkgs, ... }:
+let
+  # Conditional packages based on xserver.enabled
+  guiPackages = lib.optional osConfig.services.xserver.enable [
+    pkgs.zoom-us
+    pkgs.onlyoffice-bin
+  ];
+in
 
 {
   home.packages = with pkgs; [
@@ -19,7 +26,6 @@
     httptunnel
     chisel
     corkscrew
-    onlyoffice-bin
     openconnect
     openldap
     openstackclient
@@ -44,6 +50,5 @@
     velero
     vault
     ytt
-    zoom-us
-  ];
+  ] ++ guiPackages ;
 }
