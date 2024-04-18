@@ -7,12 +7,11 @@
       content = {
         type = "gpt";
         partitions = {
-          # mbr, bios
           boot = {
             name = "boot";
             size = "1M";
             # size = "512M";
-            type = "EF02";
+            type = "EF02"; # mbr, bios
             # content = {
             #   type = "filesystem";
             #   format = "ext4";
@@ -35,15 +34,10 @@
               type = "luks";
               name = "encrypted";
               extraOpenArgs = [ "--allow-discards" ];
-              # if you want to use the key for interactive login be sure there
-              # is no trailing newline.
-              # for example use `echo -n "password" > /tmp/secret.key`
-              # keyFile = "/tmp/secret.key"; # Interactive
               settings = {
                 keyFile = "/tmp/disk-1.key";
                 fallbackToPassword = true;
               };
-              # settings.keyFile = "/tmp/secret.key";
               # additionalKeyFiles = ["/tmp/additionalSecret.key"];
               content = {
                 type = "btrfs";

@@ -5,8 +5,10 @@
       if configOptions.useBIOS then {
         grub = {
           enable = true;
+          enableCryptodisk = true;
           # efiSupport = true;
-          device = "nodev";
+          # FIXME Should we set this?!
+          # device = "nodev";
         };
       } else {
         systemd-boot.enable = true;
