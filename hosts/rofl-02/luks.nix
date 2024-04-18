@@ -1,11 +1,11 @@
 { config, ... }: {
-  boot.loader.grub.enableCryptodisk = true;
+  # boot.loader.grub.enableCryptodisk = true;
 
   boot.kernelParams = [ "ip=dhcp" ];
   boot.initrd = {
     enable = true;
     # availableKernelModules = [ "r8169" ];
-    systemd.users.root.shell = "/bin/cryptsetup-askpass";
+    # systemd.users.root.shell = "/bin/cryptsetup-askpass";
     network = {
       enable = true;
       flushBeforeStage2 = true;

@@ -39,6 +39,9 @@ resource "openstack_networking_port_v2" "rofl_02_port" {
   fixed_ip {
     subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
   }
+  fixed_ip {
+    subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
+  }
 }
 
 resource "openstack_networking_port_secgroup_associate_v2" "rofl_02_secgroup_assoc" {

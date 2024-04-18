@@ -18,27 +18,26 @@
             #   mountpoint = "/boot";
             # };
           };
-          # esp = {
-          #   name = "ESP";
-          #   size = "512M";
-          #   type = "EF00";
-          #   content = {
-          #     type = "filesystem";
-          #     format = "vfat";
-          #     mountpoint = "/boot/efi";
-          #   };
-          # };
+          esp = {
+            name = "ESP";
+            size = "512M";
+            type = "EF00";
+            content = {
+              type = "filesystem";
+              format = "vfat";
+              mountpoint = "/boot";
+            };
+          };
           luks = {
             size = "100%";
             content = {
               type = "luks";
               name = "encrypted";
-              extraOpenArgs = [ "--allow-discards" ];
               settings = {
                 keyFile = "/tmp/disk-1.key";
                 fallbackToPassword = true;
+                allowDiscards = true;
               };
-              # additionalKeyFiles = ["/tmp/additionalSecret.key"];
               content = {
                 type = "btrfs";
                 extraArgs = [ "-f" ];
