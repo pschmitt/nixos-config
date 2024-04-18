@@ -18,10 +18,10 @@
 #   disk_encryption_key_scripts = [
 #     {
 #       path   = "/tmp/disk-1.key",
-#       script = "${path.module}/decrypt-luks-passphrase.sh"
+#       script = "${path.module}/scripts/decrypt-luks-passphrase.sh"
 #     }
 #   ]
-#   extra_files_script = "${path.module}/decrypt-ssh-secrets.sh"
+#   extra_files_script = "${path.module}/scripts/decrypt-ssh-secrets.sh"
 # }
 
 module "deploy" {
@@ -40,10 +40,10 @@ module "deploy" {
   disk_encryption_key_scripts = [
     {
       path   = "/tmp/disk-1.key",
-      script = "${path.module}/decrypt-luks-passphrase.sh"
+      script = "${path.module}/scripts/decrypt-luks-passphrase.sh"
     }
   ]
-  extra_files_script = "${path.module}/decrypt-ssh-secrets.sh"
+  extra_files_script = "${path.module}/scripts/decrypt-ssh-secrets.sh"
 }
 
 # vim: set ft=terraform
