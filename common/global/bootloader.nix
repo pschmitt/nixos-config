@@ -5,7 +5,7 @@
       if configOptions.useBIOS then {
         grub = {
           enable = true;
-          efiSupport = true;
+          # efiSupport = true;
         };
       } else {
         systemd-boot.enable = true;
