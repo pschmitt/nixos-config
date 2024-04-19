@@ -18,7 +18,7 @@ resource "openstack_compute_instance_v2" "rofl-03" {
     source_type           = "volume"
     destination_type      = "volume"
     boot_index            = 0
-    delete_on_termination = false
+    delete_on_termination = true
   }
 
   network {
@@ -28,16 +28,17 @@ resource "openstack_compute_instance_v2" "rofl-03" {
 
 resource "openstack_networking_port_v2" "rofl_03_port" {
   name           = "rofl-03-port"
-  network_id     = openstack_networking_network_v2.roflnet.id
+  # network_id     = openstack_networking_network_v2.roflnet.id
+  network_id     = openstack_networking_network_v2.better_rofl_net.id
   admin_state_up = true
 
   fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
+    subnet_id = openstack_networking_subnet_v2.better_rofl_subnet_v4.id
   }
 
-  fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
-  }
+  # fixed_ip {
+  #   subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
+  # }
 }
 
 resource "openstack_networking_port_secgroup_associate_v2" "rofl_03_secgroup_assoc" {
