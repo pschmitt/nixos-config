@@ -134,6 +134,7 @@ in
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.pschmitt = {
+    uid = 1000;
     isNormalUser = true;
     description = "Philipp Schmitt";
     extraGroups = [
