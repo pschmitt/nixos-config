@@ -9,9 +9,6 @@
     ../../misc/github-actions.nix
   ];
 
-  xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-  xdg.portal.config.common.default = "*";
-
   # Write logs to console
   boot.kernelParams = [
     "console=ttyS0,115200"
