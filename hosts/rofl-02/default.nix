@@ -26,4 +26,11 @@
       # allowedUDPPorts = [ ... ];
     };
   };
+
+  services.harmonia = {
+    enable = true;
+    settings = {
+      bind = "100.85.145.107:5000";
+    };
+  };
 }
