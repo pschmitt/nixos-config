@@ -5,8 +5,9 @@
     ./luks-data.nix
     ./hardware-configuration.nix
     ../../common/global
+
     ../../misc/git-clone-nixos-config.nix
-    ./github-actions.nix
+    ../../misc/github-actions.nix
   ];
 
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
