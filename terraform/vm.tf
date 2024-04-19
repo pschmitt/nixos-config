@@ -23,11 +23,10 @@ resource "openstack_compute_instance_v2" "rofl-02" {
     source_type           = "volume"
     destination_type      = "volume"
     boot_index            = 0
-    delete_on_termination = true
+    delete_on_termination = false
   }
 
   network {
-    # uuid = openstack_networking_network_v2.roflnet.id
     port = openstack_networking_port_v2.rofl_02_port.id
   }
 }
@@ -36,9 +35,11 @@ resource "openstack_networking_port_v2" "rofl_02_port" {
   name           = "roflport"
   network_id     = openstack_networking_network_v2.roflnet.id
   admin_state_up = true
+
   fixed_ip {
     subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
   }
+
   fixed_ip {
     subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
   }
@@ -59,11 +60,6 @@ resource "openstack_networking_floatingip_v2" "rofl_02_fip" {
 resource "openstack_networking_floatingip_associate_v2" "rofl_02_fip_associate" {
   floating_ip = openstack_networking_floatingip_v2.rofl_02_fip.address
   port_id     = openstack_networking_port_v2.rofl_02_port.id
-}
-
-output "rofl_02_fip" {
-  value       = openstack_networking_floatingip_v2.rofl_02_fip.address
-  description = "Floating IP address of rofl-02"
 }
 
 # vim: set ft=terraform
