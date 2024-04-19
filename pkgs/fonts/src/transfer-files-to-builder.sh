@@ -3,7 +3,7 @@
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  TARGET_USER="${TARGET_USER:-${USER}}"
+  TARGET_USER="${TARGET_USER:-github-actions}"
   TARGET_HOST="${TARGET_HOST:-rofl-03.heimat.dev}"
 
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
