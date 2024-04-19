@@ -28,6 +28,18 @@
     '';
   };
 
+  # Enable flatpak
+  xdg.portal.enable = true; # required for flatpak
+  xdg.portal.xdgOpenUsePortal = true; # fix xdg-open
+  services.flatpak = {
+    enable = true;
+    remotes = {
+      "flathub" = "https://dl.flathub.org/repo/flathub.flatpakrepo";
+      "flathub-beta" = "https://dl.flathub.org/beta-repo/flathub-beta.flatpakrepo";
+    };
+    packages = [ ];
+  };
+
   services.xserver = {
     # Enable the X11 windowing system.
     enable = true;
