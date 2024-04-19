@@ -2,9 +2,9 @@
   imports = [
     ./disk-config.nix
     ./luks-root.nix
-    ./luks-data.nix
     ./hardware-configuration.nix
     ../../common/global
+
     ./github-actions.nix
   ];
 
@@ -19,7 +19,7 @@
 
   # Enable networking
   networking = {
-    hostName = "rofl-02";
+    hostName = "rofl-03";
     # Disable the firewall altogether.
     firewall = {
       enable = false;
