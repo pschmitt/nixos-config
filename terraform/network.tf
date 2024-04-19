@@ -10,6 +10,12 @@ resource "openstack_networking_subnet_v2" "roflsubnet_v4" {
   ip_version = 4
 }
 
+resource "openstack_networking_addressscope_v2" "bgpv6" {
+  name       = "bgpv6"
+  ip_version = 6
+  shared     = true
+}
+
 resource "openstack_networking_subnetpool_v2" "customer_ipv6" {
   name             = "customer-ipv6"
   prefixes         = ["2a00:c320:1000::/48"]
@@ -18,21 +24,14 @@ resource "openstack_networking_subnetpool_v2" "customer_ipv6" {
   shared           = true
 }
 
-resource "openstack_networking_addressscope_v2" "bgpv6" {
-  name       = "bgpv6"
-  ip_version = 6
-  shared     = true
-}
-
 resource "openstack_networking_subnet_v2" "roflsubnet_v6" {
   name          = "roflsubnet-v6"
   network_id    = openstack_networking_network_v2.roflnet.id
   subnetpool_id = openstack_networking_subnetpool_v2.customer_ipv6.id
   ip_version    = 6
-  # ipv6_address_mode = "slaac" # or dhcpv6-stateful, dhcpv6-stateless
-  # ipv6_ra_mode      = "slaac" # or dhcpv6-stateful, dhcpv6-stateless
-  ipv6_address_mode = "dhcpv6-stateful"
-  ipv6_ra_mode      = "dhcpv6-stateful"
+  # options: slaac dhcpv6-stateful dhcpv6-stateless
+  ipv6_address_mode = "dhcpv6-stateless"
+  ipv6_ra_mode      = "dhcpv6-stateless"
 }
 
 resource "openstack_networking_router_v2" "roflrouter" {
