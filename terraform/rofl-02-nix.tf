@@ -7,7 +7,7 @@ module "nix-rofl-02" {
   install_user           = var.nixos_anywhere_ssh_user
   instance_id            = openstack_compute_instance_v2.rofl-02.id
   extra_environment = {
-    TARGET_HOST = "rofl-03"
+    TARGET_HOST = "rofl-02"
   }
   debug_logging = true
   disk_encryption_key_scripts = [
