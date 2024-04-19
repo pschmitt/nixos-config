@@ -46,4 +46,11 @@ in
   "rofl-02/ssh_host_rsa_key.pub.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+
+  "rofl-03/luks-passphrase-root.age".publicKeys = recipients;
+  "rofl-03/luks-passphrase-data.age".publicKeys = recipients;
+  "rofl-03/ssh_host_rsa_key.age".publicKeys = recipients;
+  "rofl-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "rofl-03/ssh_host_ed25519_key.age".publicKeys = recipients;
+  "rofl-03/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
 }

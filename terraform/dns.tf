@@ -15,3 +15,11 @@ resource "cloudflare_record" "rofl-02" {
   type    = "A"
   ttl     = 3600
 }
+
+resource "cloudflare_record" "rofl-03" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "rofl-03"
+  value   = openstack_networking_floatingip_v2.rofl_03_fip.address
+  type    = "A"
+  ttl     = 3600
+}

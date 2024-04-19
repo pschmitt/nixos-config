@@ -159,6 +159,7 @@
         x13 = nixosSystemFor "x86_64-linux" "x13" { useBIOS = false; };
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { useBIOS = false; };
         rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { useBIOS = true; };
+        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { useBIOS = true; };
       };
 
       # FIXME Why doesn't this work? The import never happens

@@ -30,9 +30,9 @@ fetch_fonts() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  REMOTE_USER=${REMOTE_USER:-ubuntu}
-  REMOTE_HOST=${REMOTE_HOST:-rofl-01}
-  REMOTE_PATH=${REMOTE_PATH:-/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts}
+  REMOTE_USER=${REMOTE_USER:-github-actions}
+  REMOTE_HOST=${REMOTE_HOST:-rofl-02}
+  REMOTE_PATH=${REMOTE_PATH:-/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts}
 
   while [[ -n "$*" ]]
   do
