@@ -4,6 +4,10 @@ resource "openstack_blockstorage_volume_v3" "rofl_02_boot_volume" {
   image_id          = var.nixos_anywhere_image
   description       = "Boot volume for NixOS VM (rofl-02)"
   availability_zone = var.availability_zone
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "openstack_compute_instance_v2" "rofl-02" {
@@ -35,9 +39,9 @@ resource "openstack_networking_port_v2" "rofl_02_port" {
     subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
   }
 
-  fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
-  }
+  # fixed_ip {
+  #   subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
+  # }
 }
 
 resource "openstack_networking_port_secgroup_associate_v2" "rofl_02_secgroup_assoc" {
