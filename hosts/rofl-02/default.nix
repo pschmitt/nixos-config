@@ -5,6 +5,7 @@
     ./luks-data.nix
     ./hardware-configuration.nix
     ../../common/global
+    ../../misc/git-clone-nixos-config.nix
     ./github-actions.nix
   ];
 
