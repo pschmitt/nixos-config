@@ -3,8 +3,8 @@ resource "cloudflare_account" "me" {
 }
 
 resource "cloudflare_zone" "heimat_dev" {
-  zone = "heimat.dev"
-  plan = "free"
+  zone       = "heimat.dev"
+  plan       = "free"
   account_id = cloudflare_account.me.id
 }
 
