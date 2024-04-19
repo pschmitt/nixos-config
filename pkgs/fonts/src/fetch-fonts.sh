@@ -63,7 +63,7 @@ then
 
   if check_fonts --quiet --status 2>/dev/null
   then
-    echo -e "\e[32m✅All font archives present and accounted for"
+    echo -e "\e[32m✅All font archives present and accounted for\e[0m"
     exit 0
   fi
 
