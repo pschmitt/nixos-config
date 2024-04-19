@@ -1,5 +1,7 @@
 TODO
 
-- write to Openstack console!
+- write boot logs to Openstack console!
 - IPv6 connectivity
-- Encrypt SSH host keys
+- Restic backups (local)
+- Restic backups (remote)
+- Rclone bisync
