@@ -7,6 +7,14 @@ resource "cloudflare_zone" "heimat_dev" {
   plan       = "free"
   account_id = cloudflare_account.me.id
 }
+resource "cloudflare_record" "wildcard-rofl-01" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "*.rofl-01"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
 
 resource "cloudflare_record" "rofl-02" {
   zone_id = cloudflare_zone.heimat_dev.id
