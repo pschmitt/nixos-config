@@ -1,7 +1,7 @@
 { lib, osConfig, pkgs, ... }:
 let
   # Conditional packages based on xserver.enabled
-  guiPackages = lib.optional osConfig.services.xserver.enable [
+  guiPackages = lib.optionals osConfig.services.xserver.enable [
     pkgs.zoom-us
     pkgs.onlyoffice-bin
   ];
