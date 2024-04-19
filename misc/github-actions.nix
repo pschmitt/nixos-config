@@ -1,7 +1,7 @@
 { config, ... }:
 {
-
   users.users.github-actions = {
+    uid = 10001;
     isNormalUser = true;
     description = "Github Actions";
     extraGroups = [

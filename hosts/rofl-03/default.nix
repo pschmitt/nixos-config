@@ -5,7 +5,8 @@
     ./hardware-configuration.nix
     ../../common/global
 
-    ./github-actions.nix
+    ../../misc/git-clone-nixos-config.nix
+    ../../misc/github-actions.nix
   ];
 
   xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
