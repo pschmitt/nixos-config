@@ -1,8 +1,3 @@
-resource "openstack_compute_keypair_v2" "keypair" {
-  name       = "nixos-anywhere"
-  public_key = var.public_ssh_key
-}
-
 resource "openstack_blockstorage_volume_v3" "rofl_02_boot_volume" {
   name              = "rofl-02-boot-volume"
   size              = 150 # GiB
