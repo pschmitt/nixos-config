@@ -1,7 +1,7 @@
 let
   lib = import <nixpkgs/lib>;
 
-  authorizedKeysContent = lib.strings.fileContents(builtins.fetchurl {
+  authorizedKeysContent = lib.strings.fileContents (builtins.fetchurl {
     url = "https://github.com/pschmitt.keys";
     sha256 = "0qcixq2zsh6p4xzxmjdl7bh13wyyv479sxhb0g2qg0qa6wg6qa49";
   });
@@ -15,6 +15,9 @@ let
     # x13
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDOqfxGLVsNU2P6JjzoLQnyxVCMXPUY62tAp0IoL0TDwK5kae3MMyg0dMZjIPybLMtpTCsBGwaKKFtJgGXUea9XxSVFJN7uvL2/UN4aIFs7Ef4u2JoHjcDS4A7E0TrZlT85ejamiduDbSMdh9tSWjUAXT4PTqxUWQfxWwni4vL6Rr0Jw6TmvBcsMv6zwFDG3ImA6gNUyfIFnXaLo/7WDHecDW05aKT213a3oQTOgJWMOHQtgEUYruSmencdjSkDx2BpS9fzZA7nRMm3A+fCoNlsD9EE8yw36K5AU4cD5sQ3dzPIEV7rqKZWh08mhaKMmuRiRmJMNGsOXsyt8M2bvPWTymqKbFGF3FShZjdExGj281UA3ax+rmXq+Jxr1RJj6OSjVQKrFu74NCB/LoNAcCThbtswgdoJGaXZVWdfAjLup69FFw8y1nLhpCUjEORUCdYyabkIIezh+Mj8RGmtV0rNgHnrukp8w4D2ACa9vY8Z2naccAWvOrlfDfamsrLkAMc="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII/PReiXvGknx3dHACrDg0ApbI7X57JhHaSAbHbKPfff"
+    # rofl-02
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCn9xUKTdw83a9eiUAh4QNBBawp+FDfDfklbQms+8Y2B7r4PejtNELZRLPdcalAsqVJh8hS3G8i/7jzeLQXVkwJfUCgnM+19FIpvyBGoTvLxRfq5rpt2aaLo7i0g/C/9uo2I0do2kRETdODxHqng18DY2WzyaM84qlG9Xjv5NwVAK/Io7080tWc2QF5CzFA2E6j5EUPCmT4xsQdAUW5S3G7374RoPVOIEYeaf0P4tAcezktVRE3uUloQPMAYL6ty8hUaQY+aB5ZoTPJ4c+er4N2foGhrvZcmZSMzCnGpuR5A22pC7+z2G4wE++ppkc6bBbWWah+5xfuaSqxiYmFxaF/yyrXVYy41/uNLCYiIpZjvSw59CXMRUIx6O7fHD8MOg0DtZx+HTMA9ItyCSM9NexrBeol36THzOjHkYNkvwJ6ws/jhtcOjmzcbRgE2ysWjcQqlmnreEQgP1dfh3VUHyPWoDbclM/VX0vLy2tQ18YjNxx8c0aejVlLki30+o6ld/0="
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHj1bwykYI4tC4kt3Rd4QAOV2D1srlcQ14NLB9w3JBXp"
   ];
 
   recipients = authorizedKeys ++ hostKeys;
@@ -38,6 +41,7 @@ in
   "x13/restic-env.age".publicKeys = recipients;
 
   "rofl-02/luks-passphrase-root.age".publicKeys = recipients;
+  "rofl-02/luks-passphrase-data.age".publicKeys = recipients;
   "rofl-02/ssh_host_rsa_key.age".publicKeys = recipients;
   "rofl-02/ssh_host_rsa_key.pub.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.age".publicKeys = recipients;
