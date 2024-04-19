@@ -1,0 +1,7 @@
+module "rofl-02" {
+  source = "./rofl-02"
+}
+
+module "rofl-03" {
+  source = "./rofl-03"
+}
