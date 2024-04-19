@@ -7,6 +7,7 @@ on:
   pull_request:
     paths:
       - 'terraform/**.tf'
+  workflow_dispatch: # allows manual triggering
 
 jobs:
   fmt:
