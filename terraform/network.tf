@@ -10,29 +10,15 @@ resource "openstack_networking_subnet_v2" "roflsubnet_v4" {
   ip_version = 4
 }
 
-resource "openstack_networking_addressscope_v2" "bgpv6" {
-  name       = "bgpv6"
-  ip_version = 6
-  shared     = true
-}
-
-resource "openstack_networking_subnetpool_v2" "customer_ipv6" {
-  name             = "customer-ipv6"
-  prefixes         = ["2a00:c320:1000::/48"]
-  address_scope_id = openstack_networking_addressscope_v2.bgpv6.id
-  is_default       = true
-  shared           = true
-}
-
-resource "openstack_networking_subnet_v2" "roflsubnet_v6" {
-  name          = "roflsubnet-v6"
-  network_id    = openstack_networking_network_v2.roflnet.id
-  subnetpool_id = openstack_networking_subnetpool_v2.customer_ipv6.id
-  ip_version    = 6
-  # options: slaac dhcpv6-stateful dhcpv6-stateless
-  ipv6_address_mode = "dhcpv6-stateless"
-  ipv6_ra_mode      = "dhcpv6-stateless"
-}
+# resource "openstack_networking_subnet_v2" "roflsubnet_v6" {
+#   name          = "roflsubnet-v6"
+#   network_id    = openstack_networking_network_v2.roflnet.id
+#   subnetpool_id = openstack_networking_subnetpool_v2.customer_ipv6.id
+#   ip_version    = 6
+#   # options: slaac dhcpv6-stateful dhcpv6-stateless
+#   ipv6_address_mode = "slaac"
+#   ipv6_ra_mode      = "slaac"
+# }
 
 resource "openstack_networking_router_v2" "roflrouter" {
   name                = "roflrouter"
@@ -40,9 +26,14 @@ resource "openstack_networking_router_v2" "roflrouter" {
   external_network_id = var.provider_network_id
 }
 
-resource "openstack_networking_router_interface_v2" "router_interface" {
+resource "openstack_networking_router_interface_v2" "router_interface_v4" {
   router_id = openstack_networking_router_v2.roflrouter.id
   subnet_id = openstack_networking_subnet_v2.roflsubnet_v4.id
 }
+
+# resource "openstack_networking_router_interface_v2" "router_interface_v6" {
+#   router_id = openstack_networking_router_v2.roflrouter.id
+#   subnet_id = openstack_networking_subnet_v2.roflsubnet_v6.id
+# }
 
 # vim: set ft=terraform
