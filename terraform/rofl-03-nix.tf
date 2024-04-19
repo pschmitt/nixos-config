@@ -1,5 +1,5 @@
 module "nix-rofl-03" {
-  # depends_on             = [local_file.nixos_vars]
+  depends_on             = [openstack_compute_instance_v2.rofl-03]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
   nixos_system_attr      = "..#nixosConfigurations.rofl-03.config.system.build.toplevel"
   nixos_partitioner_attr = "..#nixosConfigurations.rofl-03.config.system.build.diskoScript"
