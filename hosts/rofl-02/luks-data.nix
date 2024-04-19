@@ -14,4 +14,8 @@ in
     device = "/dev/mapper/data";
     fsType = "btrfs";
   };
+
+  systemd.tmpfiles.rules = [
+    "L+ /srv - - - - /mnt/data/srv"
+  ];
 }
