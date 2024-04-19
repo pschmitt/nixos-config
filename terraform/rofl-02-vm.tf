@@ -27,7 +27,7 @@ resource "openstack_compute_instance_v2" "rofl-02" {
 }
 
 resource "openstack_networking_port_v2" "rofl_02_port" {
-  name           = "roflport"
+  name           = "rofl-02-port"
   network_id     = openstack_networking_network_v2.roflnet.id
   admin_state_up = true
 
