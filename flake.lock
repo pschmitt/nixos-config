@@ -1274,6 +1274,7 @@
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",
         "nur": "nur_2",
+        "srvos": "srvos",
         "wezterm": "wezterm",
         "xdph": "xdph_2",
         "zjstatus": "zjstatus"
@@ -1374,6 +1375,26 @@
       "original": {
         "owner": "Mic92",
         "repo": "sops-nix",
+        "type": "github"
+      }
+    },
+    "srvos": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1713533513,
+        "narHash": "sha256-nv5GmWaGryyZU8ihQIYLZWasqaXTZKGTjsypG0TRw9Q=",
+        "owner": "nix-community",
+        "repo": "srvos",
+        "rev": "d8945920cb8e98dc737d1fc2d42607f5916c34cf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "srvos",
         "type": "github"
       }
     },
