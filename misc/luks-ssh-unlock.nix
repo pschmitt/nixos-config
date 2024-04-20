@@ -2,8 +2,8 @@
   boot.kernelParams = [ "ip=dhcp" ];
   boot.initrd = {
     enable = true;
+    systemd.enable = true;
     # availableKernelModules = [ "r8169" ];
-    # systemd.users.root.shell = "/bin/cryptsetup-askpass";
     network = {
       enable = true;
       flushBeforeStage2 = true;
