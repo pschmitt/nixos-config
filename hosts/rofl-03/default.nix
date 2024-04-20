@@ -16,7 +16,7 @@
     "console=tty1"
   ];
 
-  config.custom.useBIOS = true;
+  custom.useBIOS = true;
 
   # Enable networking
   networking = {
