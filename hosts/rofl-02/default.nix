@@ -1,22 +1,11 @@
 { pkgs, ... }: {
   imports = [
-    ./luks-data.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../common/global
+    ../../server
 
-    ../../misc/luks-ssh-unlock.nix
-    ../../misc/git-clone-nixos-config.nix
-    ../../misc/users/github-actions.nix
-    ../../misc/users/nix-remote-builder.nix
-  ];
-
-  custom.useBIOS = true;
-
-  # Write logs to console
-  boot.kernelParams = [
-    "console=ttyS0,115200"
-    "console=tty1"
+    ./luks-data.nix
   ];
 
   # Enable networking
