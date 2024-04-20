@@ -2,6 +2,7 @@
   boot.kernelParams = [ "ip=dhcp" ];
   boot.initrd = {
     enable = true;
+    # NOTE the command to unlock is systemd-tty-ask-password-agent
     systemd.enable = true;
     # availableKernelModules = [ "r8169" ];
     network = {
