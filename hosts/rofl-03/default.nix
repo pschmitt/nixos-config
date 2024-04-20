@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, config, ... }: {
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
@@ -28,4 +28,8 @@
       # allowedUDPPorts = [ ... ];
     };
   };
+
+  environment.systemPackages = with pkgs; [
+    git
+  ];
 }
