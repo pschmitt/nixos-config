@@ -1,11 +1,11 @@
 { pkgs, ... }: {
   imports = [
-    ./luks-root.nix
     ./luks-data.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../common/global
 
+    ../../misc/luks-ssh-unlock.nix
     ../../misc/git-clone-nixos-config.nix
     ../../misc/users/github-actions.nix
     ../../misc/users/nix-remote-builder.nix
