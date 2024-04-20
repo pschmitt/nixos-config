@@ -1,8 +1,8 @@
 { pkgs, ... }: {
   imports = [
-    ./disk-config.nix
     ./luks-root.nix
     ./luks-data.nix
+    ./disk-config.nix
     ./hardware-configuration.nix
     ../../common/global
 
@@ -10,6 +10,8 @@
     ../../misc/users/github-actions.nix
     ../../misc/users/nix-remote-builder.nix
   ];
+
+  # custom.useBIOS = true;
 
   # Write logs to console
   boot.kernelParams = [
