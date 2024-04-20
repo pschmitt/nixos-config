@@ -1,6 +1,5 @@
 { pkgs, config, ... }: {
   imports = [
-    ./hardware-configuration.nix
     ../common/global
 
     ../misc/luks-ssh-unlock.nix

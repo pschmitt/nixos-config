@@ -2,7 +2,6 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
-    ../../common/global
     ../../server
 
     ./luks-data.nix
