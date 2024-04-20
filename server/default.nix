@@ -18,9 +18,10 @@
   custom.useBIOS = true;
 
   # Write logs to console
+  # https://github.com/nix-community/srvos/blob/main/nixos/common/serial.nix
   boot.kernelParams = [
+    "console=tty0"
     "console=ttyS0,115200"
-    "console=tty1"
   ];
 
   boot.kernel.sysctl = {
