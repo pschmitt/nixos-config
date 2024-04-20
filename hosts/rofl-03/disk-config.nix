@@ -29,7 +29,9 @@
               name = "encrypted";
               settings = {
                 keyFile = "/tmp/disk-1.key";
-                fallbackToPassword = true;
+                # NOTE fallbackToPassword is implied when enabling systemd
+                # in initrd
+                # fallbackToPassword = true;
                 allowDiscards = true;
               };
               content = {
