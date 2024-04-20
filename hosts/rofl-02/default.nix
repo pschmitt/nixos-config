@@ -7,7 +7,7 @@
     ../../common/global
 
     ../../misc/git-clone-nixos-config.nix
-    ../../misc/github-actions.nix
+    ../../misc/users/github-actions.nix
   ];
 
   # Write logs to console
