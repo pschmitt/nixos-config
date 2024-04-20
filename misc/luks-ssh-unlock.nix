@@ -1,13 +1,18 @@
-{ config, ... }: {
-  boot.kernelParams = [ "ip=dhcp" ];
+{ config, lib, ... }: {
+  networking.useDHCP = lib.mkDefault true;
+
   boot.initrd = {
     enable = true;
     # NOTE the command to unlock is systemd-tty-ask-password-agent
-    systemd.enable = true;
+    systemd = {
+      enable = true;
+      # network.enable = true;
+      emergencyAccess = true;
+    };
     # availableKernelModules = [ "r8169" ];
     network = {
       enable = true;
-      flushBeforeStage2 = true;
+      flushBeforeStage2 = lib.mkDefault false;
       ssh = {
         enable = true;
         port = 22;
@@ -19,4 +24,5 @@
       };
     };
   };
+
 }
