@@ -1,5 +1,7 @@
 { config, ... }:
 {
+  # See also:
+  # https://github.com/nix-community/srvos/blob/main/nixos/roles/nix-remote-builder.nix
   users.users.nix-remote-builder = {
     uid = 10034;
     isNormalUser = true;
