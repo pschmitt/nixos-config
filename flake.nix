@@ -113,12 +113,12 @@
 
       commonModules = [
         agenix.nixosModules.default
+        disko.nixosModules.disko
         flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         ./home-manager
         ./modules/custom.nix
-        disko.nixosModules.disko
       ];
 
       nixosSystemFor = system: hostname: configOptions: nixpkgs.lib.nixosSystem {
