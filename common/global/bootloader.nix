@@ -1,8 +1,8 @@
-{ configOptions, ... }:
+{ config, ... }:
 {
   boot = {
     loader =
-      if configOptions.useBIOS then {
+      if config.custom.useBIOS then {
         grub = {
           enable = true;
           configurationLimit = 10;
