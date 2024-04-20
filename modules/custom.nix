@@ -32,5 +32,11 @@
         lib.splitString "\n" authorizedKeysContent;
       description = "Main SSH authorized keys file";
     };
+
+    custom.useBIOS = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Use BIOS instead of UEFI";
+    };
   };
 }

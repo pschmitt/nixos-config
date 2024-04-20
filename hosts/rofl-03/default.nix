@@ -16,6 +16,8 @@
     "console=tty1"
   ];
 
+  config.custom.useBIOS = true;
+
   # Enable networking
   networking = {
     hostName = "rofl-03";
