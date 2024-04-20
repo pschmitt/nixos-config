@@ -98,9 +98,14 @@
       url = "github:dj95/zjstatus";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    srvos = {
+      url = "github:nix-community/srvos";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, disko, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, ... }@inputs:
+  outputs = { self, disko, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, srvos, ... }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -125,7 +130,12 @@
           inherit system;
           specialArgs = { inherit inputs outputs configOptions; };
           modules = commonModules ++
-            nixpkgs.lib.optional (configOptions.includeHomeManager or true) ./home-manager ++
+            nixpkgs.lib.optionals (!(configOptions.server or false)) [
+              ./home-manager
+            ] ++
+            nixpkgs.lib.optionals (configOptions.server or true) [
+              srvos.nixosModules.mixins-terminfo
+            ] ++
             [ ./hosts/${hostname} ];
         };
     in
@@ -160,8 +170,12 @@
       nixosConfigurations = {
         x13 = nixosSystemFor "x86_64-linux" "x13" { };
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { };
-        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { };
+        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" {
+          server = true;
+          includeHomeManager = false;
+        };
         rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
+          server = true;
           includeHomeManager = false;
         };
       };
