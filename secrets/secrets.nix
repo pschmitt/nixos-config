@@ -18,6 +18,7 @@ let
     # rofl-02
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCn9xUKTdw83a9eiUAh4QNBBawp+FDfDfklbQms+8Y2B7r4PejtNELZRLPdcalAsqVJh8hS3G8i/7jzeLQXVkwJfUCgnM+19FIpvyBGoTvLxRfq5rpt2aaLo7i0g/C/9uo2I0do2kRETdODxHqng18DY2WzyaM84qlG9Xjv5NwVAK/Io7080tWc2QF5CzFA2E6j5EUPCmT4xsQdAUW5S3G7374RoPVOIEYeaf0P4tAcezktVRE3uUloQPMAYL6ty8hUaQY+aB5ZoTPJ4c+er4N2foGhrvZcmZSMzCnGpuR5A22pC7+z2G4wE++ppkc6bBbWWah+5xfuaSqxiYmFxaF/yyrXVYy41/uNLCYiIpZjvSw59CXMRUIx6O7fHD8MOg0DtZx+HTMA9ItyCSM9NexrBeol36THzOjHkYNkvwJ6ws/jhtcOjmzcbRgE2ysWjcQqlmnreEQgP1dfh3VUHyPWoDbclM/VX0vLy2tQ18YjNxx8c0aejVlLki30+o6ld/0="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHj1bwykYI4tC4kt3Rd4QAOV2D1srlcQ14NLB9w3JBXp"
+    # rofl-03
   ];
 
   recipients = authorizedKeys ++ hostKeys;
@@ -26,16 +27,15 @@ in
 {
   "secret.age".publicKeys = recipients;
 
+  "ssh-key-nix-remote-builder.age".publicKeys = recipients;
+  "ssh-key-nix-remote-builder.pub.age".publicKeys = recipients;
+
   "ge2/nix-netrc.age".publicKeys = recipients;
-  "ge2/nix-ssh-key-rofl-01.age".publicKeys = recipients;
-  "ge2/nix-ssh-key-rofl-01.pub.age".publicKeys = recipients;
   "ge2/restic-repository.age".publicKeys = recipients;
   "ge2/restic-password.age".publicKeys = recipients;
   "ge2/restic-env.age".publicKeys = recipients;
 
   "x13/nix-netrc.age".publicKeys = recipients;
-  "x13/nix-ssh-key-rofl-01.age".publicKeys = recipients;
-  "x13/nix-ssh-key-rofl-01.pub.age".publicKeys = recipients;
   "x13/restic-password.age".publicKeys = recipients;
   "x13/restic-repository.age".publicKeys = recipients;
   "x13/restic-env.age".publicKeys = recipients;
