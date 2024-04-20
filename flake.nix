@@ -129,14 +129,14 @@
         nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = { inherit inputs outputs configOptions; };
-          modules = commonModules ++
+          modules = commonModules ++ [ ./hosts/${hostname} ] ++
             nixpkgs.lib.optionals (!(configOptions.server or false)) [
               ./home-manager
             ] ++
             nixpkgs.lib.optionals (configOptions.server or true) [
               srvos.nixosModules.mixins-terminfo
-            ] ++
-            [ ./hosts/${hostname} ];
+            ];
+
         };
     in
     {
@@ -172,11 +172,9 @@
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { };
         rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" {
           server = true;
-          includeHomeManager = false;
         };
         rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
           server = true;
-          includeHomeManager = false;
         };
       };
 
