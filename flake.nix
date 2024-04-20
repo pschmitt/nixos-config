@@ -117,15 +117,17 @@
         flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
-        ./home-manager
         ./modules/custom.nix
       ];
 
-      nixosSystemFor = system: hostname: configOptions: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs outputs configOptions; };
-        modules = commonModules ++ [ ./hosts/${hostname} ];
-      };
+      nixosSystemFor = system: hostname: configOptions:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs outputs configOptions; };
+          modules = commonModules ++
+            nixpkgs.lib.optional (configOptions.includeHomeManager or true) ./home-manager ++
+            [ ./hosts/${hostname} ];
+        };
     in
     {
       # Your custom packages
@@ -156,10 +158,12 @@
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
       nixosConfigurations = {
-        x13 = nixosSystemFor "x86_64-linux" "x13" { useBIOS = false; };
-        ge2 = nixosSystemFor "x86_64-linux" "ge2" { useBIOS = false; };
-        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { useBIOS = true; };
-        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { useBIOS = true; };
+        x13 = nixosSystemFor "x86_64-linux" "x13" { };
+        ge2 = nixosSystemFor "x86_64-linux" "ge2" { };
+        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { };
+        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
+          includeHomeManager = false;
+        };
       };
 
       # FIXME Why doesn't this work? The import never happens
