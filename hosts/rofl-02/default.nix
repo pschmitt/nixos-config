@@ -11,7 +11,7 @@
     ../../misc/users/nix-remote-builder.nix
   ];
 
-  # custom.useBIOS = true;
+  custom.useBIOS = true;
 
   # Write logs to console
   boot.kernelParams = [
