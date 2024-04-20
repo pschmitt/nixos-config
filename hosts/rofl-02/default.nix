@@ -8,6 +8,7 @@
 
     ../../misc/git-clone-nixos-config.nix
     ../../misc/users/github-actions.nix
+    ../../misc/users/nix-remote-builder.nix
   ];
 
   # Write logs to console
