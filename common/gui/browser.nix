@@ -24,6 +24,7 @@
   environment.systemPackages = with pkgs; [
     firefox
     google-chrome
+    inputs.nix-agordoj.packages.${pkgs.system}.vdhcoapp
   ];
 }
 

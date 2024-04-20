@@ -3,20 +3,8 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../common/global
-
-    ../../misc/luks-ssh-unlock.nix
-    ../../misc/git-clone-nixos-config.nix
-    ../../misc/users/github-actions.nix
-    ../../misc/users/nix-remote-builder.nix
+    ../../server
   ];
-
-  # Write logs to console
-  boot.kernelParams = [
-    "console=ttyS0,115200"
-    "console=tty1"
-  ];
-
-  custom.useBIOS = true;
 
   # Enable networking
   networking = {
@@ -29,7 +17,4 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    git
-  ];
 }
