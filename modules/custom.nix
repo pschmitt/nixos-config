@@ -33,6 +33,12 @@
       description = "Main SSH authorized keys file";
     };
 
+    custom.server = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether or not this is a server";
+    };
+
     custom.useBIOS = lib.mkOption {
       type = lib.types.bool;
       default = false;

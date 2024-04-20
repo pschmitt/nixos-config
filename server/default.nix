@@ -1,4 +1,5 @@
-{ pkgs, config, ... }: {
+# See also: https://github.com/nix-community/srvos
+{ pkgs, lib, ... }: {
   imports = [
     ../common/global
 
@@ -13,6 +14,7 @@
     ../misc/users/nix-remote-builder.nix
   ];
 
+  custom.server = true;
   custom.useBIOS = true;
 
   # Write logs to console
@@ -21,7 +23,19 @@
     "console=tty1"
   ];
 
+  boot.kernel.sysctl = {
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+  };
+
+  networking.useNetworkd = lib.mkDefault true;
+
   environment.systemPackages = with pkgs; [
-    git
+    curl
+    dnsutils
+    gitMinimal
+    htop
+    jq
+    tmux
   ];
 }
