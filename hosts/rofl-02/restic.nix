@@ -43,4 +43,3 @@ in
   systemd.services = lib.mapAttrs' (name: cfg: lib.nameValuePair name (createService name cfg.path)) services;
   systemd.timers = lib.mapAttrs' (name: cfg: lib.nameValuePair (name) (createTimer name cfg.time)) services;
 }
-
