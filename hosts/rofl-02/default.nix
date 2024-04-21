@@ -24,4 +24,16 @@
       bind = "100.85.145.107:5000";
     };
   };
+
+  systemd.services.docker-compose-bulk-up = {
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" "docker.service" "mnt-data.mount" ];
+    requires = [ "docker.service" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk up -d";
+    };
+  };
 }
