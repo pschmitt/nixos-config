@@ -7,7 +7,7 @@
     ./luks-data.nix
     ./rclone-bisync.nix
     ./restic.nix
-    ./scp-fonts-to-rofl-03.nix
+    ./rsync-fonts-to-rofl-03.nix
   ];
 
   # Enable networking
