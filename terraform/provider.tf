@@ -5,6 +5,11 @@ terraform {
       version = "~> 4.0"
     }
 
+    oci = {
+      source  = "oracle/oci"
+      version = "5.38.0"
+    }
+
     openstack = {
       source  = "terraform-provider-openstack/openstack"
       version = "~> 1.44"
@@ -12,6 +17,7 @@ terraform {
   }
 
   backend "s3" {
+    # NOTE We cannot use vars here :(
     bucket                      = "terraform-state-heimat-dev"
     key                         = "nixos-config.tfstate"
     region                      = "eu-central-2"
@@ -23,8 +29,23 @@ terraform {
   }
 }
 
-provider "openstack" {
-  cloud = "internal-employee-pschmitt"
+provider "cloudflare" {
+  # See terraform.tfvars.sops.json
+  email   = var.cloudflare_email
+  api_key = var.cloudflare_api_key
 }
 
-# vim: set ft=terraform
+provider "oci" {
+  # See terraform.tfvars.sops.json
+  region           = var.oci_region
+  tenancy_ocid     = var.oci_tenancy_ocid
+  user_ocid        = var.oci_user_ocid
+  fingerprint      = var.oci_fingerprint
+  private_key_path = var.oci_private_key_path
+}
+
+provider "openstack" {
+  cloud = var.openstack_cloud
+}
+
+# vim: set ft=terraform :

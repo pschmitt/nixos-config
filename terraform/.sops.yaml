@@ -1,0 +1,15 @@
+creation_rules:
+  - path_regex: terraform.tfvars.sops.json
+    # NOTE To update the recipients:
+    # for e in "${(@f)$(curl -fsSL https://github.com/pschmitt.keys)}"; do
+    #   ssh-to-age <<< $e
+    # done | awk '{if (NR > 1) print prev ","; prev=$0} END {if (NR > 0) print $0}'
+    age: >-
+      age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe,
+      age1q329a7ew7uxny07vtev3xcvdzzsxd8r3vrftxkm547gcs0w6lf3qnlslck,
+      age1wc6tqte6ez47ejv2jf07ewnw4z9q9nns2n8xpqphmrckcedzuddscghcpd,
+      age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc,
+      age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn,
+      age1a2hm2le8zv976w63nd7lwmfm7r4eckdandysp2hx7rphljus8q6qxtnufx,
+      age17rl4f347jmnv86cy6pyfd8hu02jj7974jmnq8jrmjz0uj7ecpupstuahy5,
+      age1efl2xnt3767ajnu9xgl9zjycx5exggg6rgv53lj84sefeaqcgplqcrmlzj

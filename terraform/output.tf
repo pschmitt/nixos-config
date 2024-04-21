@@ -18,4 +18,9 @@ output "rofl_03_fip" {
   description = "Floating IP address of rofl-03"
 }
 
+output "oci_03_public_ip" {
+  value       = oci_core_instance.oci_03.public_ip
+  description = "Public IP address of oci-03"
+}
+
 # vim: set ft=terraform

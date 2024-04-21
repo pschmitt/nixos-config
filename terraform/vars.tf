@@ -1,3 +1,39 @@
+# FIXME We can't use vars in the provider.backend block
+# variable "s3_bucket" {
+#   description = "S3 bucket name"
+#   type        = string
+# }
+#
+# variable "s3_key" {
+#   description = "S3 key"
+#   type        = string
+# }
+#
+# variable "s3_region" {
+#   description = "S3 region"
+#   type        = string
+# }
+#
+# variable "s3_endpoint" {
+#   description = "S3 endpoint"
+#   type        = string
+# }
+
+variable "cloudflare_email" {
+  description = "Cloudflare email (CLOUDFLARE_EMAIL)"
+  type        = string
+}
+
+variable "cloudflare_api_key" {
+  description = "Cloudflare API key (CLOUDFLARE_API_KEY)"
+  type        = string
+}
+
+variable "openstack_cloud" {
+  description = "Openstack cloud name (OS_CLOUD)"
+  type        = string
+}
+
 variable "availability_zone" {
   description = "Availability zone for the VM"
   type        = string
@@ -26,6 +62,37 @@ variable "nixos_anywhere_image" {
   description = "Base image to use for provisionning the VM"
   type        = string
   default     = "Ubuntu 22.04 Jammy Jellyfish - Latest"
+}
+
+variable "oci_region" {
+  description = "OCI region to use"
+  type        = string
+  default     = "eu-frankfurt-1"
+}
+
+variable "oci_compartment_ocid" {
+  description = "OCI compartment OCID"
+  type        = string
+}
+
+variable "oci_tenancy_ocid" {
+  description = "OCI tenancy OCID"
+  type        = string
+}
+
+variable "oci_user_ocid" {
+  description = "OCI user OCID"
+  type        = string
+}
+
+variable "oci_fingerprint" {
+  description = "OCI user fingerprint"
+  type        = string
+}
+
+variable "oci_private_key_path" {
+  description = "Path to the OCI private key"
+  type        = string
 }
 
 # vim: set ft=terraform
