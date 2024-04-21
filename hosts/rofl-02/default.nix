@@ -5,6 +5,7 @@
     ../../server
 
     ./luks-data.nix
+    ./rclone-bisync.nix
   ];
 
   # Enable networking
@@ -26,9 +27,9 @@
   };
 
   systemd.services.docker-compose-bulk-up = {
-    wantedBy = [ "multi-user.target" ];
     after = [ "network.target" "docker.service" "mnt-data.mount" ];
-    requires = [ "docker.service" ];
+    requires = [ "docker.service" "mnt-data.mount" ];
+    wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
       Type = "oneshot";
