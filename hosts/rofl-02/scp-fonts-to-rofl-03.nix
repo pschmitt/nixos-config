@@ -10,8 +10,8 @@
           -i /etc/ssh/ssh_host_ed25519_key \
           -o UserKnownHostsFile=/dev/null \
           -o StrictHostKeyChecking=no \
-          "$SOURCE_DIR/"* \
-          "$REMOTE_USER@$REMOTE_USER:$DEST_DIR/"
+          "$${SOURCE_DIR}/"* \
+          "$${REMOTE_USER}@$${REMOTE_USER}:$${DEST_DIR}/"
       '';
       Environment = [
         "SOURCE_DIR=/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts"
