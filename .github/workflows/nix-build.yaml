@@ -239,5 +239,5 @@ jobs:
 
       - name: Build nixosConfiguration
         run: |-
-          nix build --print-build-logs \
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
