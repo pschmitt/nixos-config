@@ -123,7 +123,7 @@ jobs:
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
 
-  build-hosts:
+  build-hosts-x86_64:
     needs:
       - setup-matrix
       - build-pkgs-free
@@ -133,7 +133,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts }}
+        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.x64_64 }}
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
@@ -159,6 +159,51 @@ jobs:
       - name: Setup known_hosts
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
+
+      - name: Build nixosConfiguration
+        run: |-
+          nix build --print-build-logs \
+            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+
+  build-hosts-aarch64:
+    needs:
+      - setup-matrix
+      - build-pkgs-free
+      - build-pkgs-nonfree
+    if: ${{ always() && success('setup-matrix') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64 }}
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Setup SSH Keys
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Setup known_hosts
+        run: |-
+          ssh-keyscan "${{ secrets.SSH_HOST }}" >> "${HOME}/.ssh/known_hosts"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Build nixosConfiguration
         run: |-

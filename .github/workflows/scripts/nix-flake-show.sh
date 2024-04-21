@@ -19,10 +19,14 @@ done
 JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_FREE=$(printf '%s\n' "${PKGS_FREE[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_NONFREE=$(printf '%s\n' "${PKGS_NONFREE[@]}" | jq -Rcn '[inputs]')
-JSON_NIXOS_CONFIGS=$(jq -c '.nixosConfigurations | keys' <<< "$NIX_FLAKE_SHOW")
+# FIXME We should determine the target architecture by evaluating the flake and
+# not hardcode it based on the hostname
+JSON_NIXOS_CONFIGS_X86_64=$(jq -c '[.nixosConfigurations | keys[] | select(. | test("^oci-") | not)]' <<< "$NIX_FLAKE_SHOW")
+JSON_NIXOS_CONFIGS_AARCH64=$(jq -c '[.nixosConfigurations | keys[] | select(. | test("^oci-"))]' <<< "$NIX_FLAKE_SHOW")
 
 jq -cn \
-  --argjson hosts "$JSON_NIXOS_CONFIGS" \
+  --argjson hosts_x86_64 "$JSON_NIXOS_CONFIGS_X86_64" \
+  --argjson hosts_aarch64 "$JSON_NIXOS_CONFIGS_AARCH64" \
   --argjson pkgs "$JSON_PKGS" \
   --argjson pkgs_nonfree "$JSON_PKGS_NONFREE" \
   --argjson pkgs_free "$JSON_PKGS_FREE" \
@@ -33,6 +37,9 @@ jq -cn \
       nonfree: $pkgs_nonfree,
       all: $pkgs
     },
-    hosts: $hosts
+    hosts: {
+      x86_64: $hosts_x86_64,
+      aarch64: $hosts_aarch64
+    }
   }
 '
