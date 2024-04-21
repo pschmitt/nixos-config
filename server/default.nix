@@ -15,7 +15,7 @@
   ];
 
   custom.server = true;
-  custom.useBIOS = true;
+  custom.useBIOS = lib.mkDefault true;
 
   # Write logs to console
   # https://github.com/nix-community/srvos/blob/main/nixos/common/serial.nix
