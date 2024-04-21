@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  systemd.services.scpToGitHubActions = {
+  systemd.services.scp-fonts-to-rolf-03 = {
     description = "SCP files to github-actions@rofl-03.heimat.dev";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
