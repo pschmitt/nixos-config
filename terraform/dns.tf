@@ -1,5 +1,5 @@
 resource "cloudflare_account" "me" {
-  name = "philipp@schmitt.co"
+  name = var.cloudflare_email
 }
 
 resource "cloudflare_zone" "heimat_dev" {
@@ -43,6 +43,23 @@ resource "cloudflare_record" "rofl-03" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "rofl-03"
   value   = openstack_networking_floatingip_v2.rofl_03_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
+
+resource "cloudflare_record" "oci-03" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "oci-03"
+  value   = oci_core_instance.oci_03.public_ip
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "wildcard-oci-03" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "*.oci-03"
+  value   = oci_core_instance.oci_03.public_ip
   type    = "A"
   ttl     = 3600
 }
