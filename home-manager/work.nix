@@ -26,6 +26,7 @@ in
     httptunnel
     chisel
     corkscrew
+    oci-cli
     openconnect
     openldap
     openstackclient
