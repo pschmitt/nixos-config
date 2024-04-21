@@ -10,7 +10,7 @@ variable "provider_network_id" {
   default     = "54258498-a513-47da-9369-1a644e4be692"
 }
 
-variable "public_ssh_key" {
+variable "ssh_public_key" {
   description = "Public SSH key for accessing the VM"
   type        = string
   default     = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
