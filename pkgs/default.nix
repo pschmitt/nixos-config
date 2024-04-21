@@ -11,6 +11,7 @@ in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
   distrobox = pkgs.callPackage ./distrobox { };
+  docker-compose-bulk = pkgs.callPackage ./docker-compose-bulk { };
   flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
