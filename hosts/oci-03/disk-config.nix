@@ -2,7 +2,7 @@
 {
   disko.devices = {
     disk.system = {
-      device = lib.mkDefault "/dev/disk/by-label/cloudimg-rootfs";
+      device = lib.mkDefault "/dev/sda";
       type = "disk";
       content = {
         type = "gpt";
