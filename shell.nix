@@ -5,6 +5,14 @@
   default = pkgs.mkShell {
     # Enable experimental features without having to specify the argument
     NIX_CONFIG = "experimental-features = nix-command flakes";
-    nativeBuildInputs = with pkgs; [ nix home-manager git terraform ];
+    nativeBuildInputs = with pkgs; [
+      age
+      git
+      home-manager
+      nix
+      ssh-to-age
+      sops
+      terraform
+    ];
   };
 }
