@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  systemd.services.scp-fonts-to-rolf-03 = {
+  systemd.services.scp-fonts-to-rofl-03 = {
     description = "SCP font files to github-actions@rofl-03.heimat.dev";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
@@ -23,11 +23,11 @@
       RestartSec = 30;
     };
   };
-  systemd.timers.scp-fonts-to-rolf-03 = {
+  systemd.timers.scp-fonts-to-rofl-03 = {
     description = "Timer for SCP to github-actions@rofl-03.heimat.dev";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "hourly:0/2"; # Every 2 hours
+      OnCalendar = "hourly";
       Persistent = true; # Ensures missed tasks are run on boot
     };
   };
