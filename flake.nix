@@ -176,6 +176,9 @@
         rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
           server = true;
         };
+        oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
+          server = true;
+        };
       };
 
       # FIXME Why doesn't this work? The import never happens
