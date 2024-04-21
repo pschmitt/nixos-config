@@ -33,6 +33,7 @@
 
   environment.systemPackages = with pkgs; [
     curl
+    docker-compose-bulk
     dnsutils
     gitMinimal
     htop
