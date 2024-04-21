@@ -11,11 +11,11 @@ resource "oci_core_instance" "oci_03" {
 
   source_details {
     source_type = "image"
-    source_id   = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaa7xlh7c3l2xtrn53n5ezp2thnac3hgjo6biolfxisk3l4igfl3xba"
+    source_id   = data.oci_core_image.ubuntu-2204-minimal-aarch64-202402180.image_id
   }
 
   create_vnic_details {
-    subnet_id = "ocid1.subnet.oc1.eu-frankfurt-1.aaaaaaaa7xnnk577h5pdqvzks7rtcnfvkr4cwxcwoiqyfwrhokpe73pbnpka"
+    subnet_id = oci_core_subnet.oci_subnet_01.id
   }
 
   metadata = {
