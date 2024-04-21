@@ -58,12 +58,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
 
-      - name: Setup SSH Keys
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Setup known_hosts
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" | \
@@ -106,12 +100,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
 
-      - name: Setup SSH Keys
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Setup known_hosts
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" | \
@@ -126,7 +114,8 @@ jobs:
           command: |-
             ./pkgs/fonts/src/fetch-fonts.sh \
               --remote-user "${{ secrets.SSH_USERNAME }}" \
-              --remote-host "${{ secrets.SSH_HOST }}"
+              --remote-host "${{ secrets.SSH_HOST }}" \
+              --identity-file "${HOME}/.ssh/id_ed25519"
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
         run: |-
@@ -173,12 +162,6 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
 
-      - name: Setup SSH Keys
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Setup known_hosts
         run: |-
           ssh-keyscan "${{ secrets.SSH_HOST }}" | \
@@ -222,12 +205,6 @@ jobs:
           KEY_PATH="${HOME}/.ssh/id_ed25519"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
-
-      - name: Setup SSH Keys
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: |
-            ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Setup known_hosts
         run: |-
