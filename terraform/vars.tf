@@ -70,8 +70,8 @@ variable "oci_region" {
   default     = "eu-frankfurt-1"
 }
 
-variable "oci_compartment_ocid" {
-  description = "OCI compartment OCID"
+variable "oci_compartment_id" {
+  description = "OCI compartment ID"
   type        = string
 }
 
