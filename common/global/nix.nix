@@ -21,6 +21,8 @@
   #   source = config.age.secrets.nix-netrc.path;
   # };
 
+  boot.binfmt.emulatedSystems = if builtins.currentSystem != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
+
   nix = {
     # This will add each flake input as a registry
     # To make nix3 commands consistent with your flake
