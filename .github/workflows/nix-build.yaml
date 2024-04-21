@@ -5,10 +5,11 @@ on:
   workflow_dispatch: # allows manual triggering
 
 env:
+  NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
     # substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} https://nix-cache.heimat.dev https://nix-community.cachix.org
-    substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-community.cachix.org
+    substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-community.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519
     trusted-public-keys = cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.heimat.dev:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs=
 
 jobs:
@@ -50,6 +51,13 @@ jobs:
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
+
       - name: Setup SSH Keys
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -70,7 +78,6 @@ jobs:
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
-      NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
       NIXPKGS_ALLOW_UNFREE: 1
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
@@ -91,6 +98,13 @@ jobs:
       # the GitHub Actions cache). Luckily this should is not available outside
       # of GH Actions run from within this repo.
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
 
       - name: Setup SSH Keys
         uses: webfactory/ssh-agent@v0.9.0
@@ -152,6 +166,13 @@ jobs:
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
 
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
+
       - name: Setup SSH Keys
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -194,6 +215,13 @@ jobs:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
 
       - name: Setup SSH Keys
         uses: webfactory/ssh-agent@v0.9.0
