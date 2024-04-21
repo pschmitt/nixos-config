@@ -1,7 +1,7 @@
 resource "oci_core_instance" "oci_03" {
   display_name        = "oci-03"
   availability_domain = "WMjr:EU-FRANKFURT-1-AD-1"
-  compartment_id      = "ocid1.tenancy.oc1..aaaaaaaaamdd4nyggaaoebwgzv4id5ebhj4ginlxcfk4z26gr3kgmp75oanq"
+  compartment_id      = var.oci_compartment_id
 
   shape = "VM.Standard.A1.Flex"
   shape_config {
