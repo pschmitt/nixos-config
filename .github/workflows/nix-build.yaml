@@ -139,7 +139,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.x64_64 }}
+        host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.amd64 }}
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main

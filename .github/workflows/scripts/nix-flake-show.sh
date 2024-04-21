@@ -38,7 +38,7 @@ jq -cn \
       all: $pkgs
     },
     hosts: {
-      x86_64: $hosts_x86_64,
+      amd64: $hosts_x86_64,
       aarch64: $hosts_aarch64
     }
   }
