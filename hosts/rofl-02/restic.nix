@@ -5,7 +5,12 @@ let
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash ${scriptPath}";
-      Environment = "PATH=${lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.docker ]}";
+      Environment = "PATH=${lib.makeBinPath [
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.docker
+        pkgs.nettools
+      ]}";
     };
   };
 
