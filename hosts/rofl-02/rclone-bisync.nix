@@ -1,10 +1,11 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   systemd.services.rclone-bisync = {
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash /mnt/data/srv/rclone/bin/rclone-bisync.sh";
+      Environment = "PATH=${lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.docker ]}";
     };
   };
 
@@ -12,6 +13,7 @@
     serviceConfig = {
       Type = "oneshot";
       ExecStart = "${pkgs.bash}/bin/bash /mnt/data/srv/rclone/bin/rclone-bisync.sh --resync";
+      Environment = "PATH=${lib.makeBinPath [ pkgs.bash pkgs.coreutils pkgs.docker ]}";
     };
   };
 
