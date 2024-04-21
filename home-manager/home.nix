@@ -52,6 +52,7 @@
     neofetch
     rich-cli
     sops
+    ssh-to-age
     yadm
 
     # gui
