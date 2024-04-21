@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+
+usage() {
+  echo "Usage: $(basename "$0") ACTION"
+}
+
+find_compose_files() {
+  local compose_files
+  mapfile -t compose_files < <(find -L /srv -maxdepth 2 -iname docker-compose.yaml)
+
+  # Output all docker-compose files if NO_IGNORE is set
+  if [[ -n "$NO_IGNORE" ]]
+  then
+    printf "%s\n" "${compose_files[@]}" | sort -u
+    return
+  fi
+
+  # Filter out docker-compose files in directories with ONESHOT or IGNORE files
+  local -a target_compose_files
+  local file dir
+  for file in "${compose_files[@]}"
+  do
+    dir="$(dirname "$file")"
+    if [[ ! -e "${dir}/ONESHOT" && ! -e "${dir}/IGNORE" ]]
+    then
+      target_compose_files+=("$file")
+    fi
+  done
+
+  printf "%s\n" "${target_compose_files[@]}" | sort -u
+}
+
+compose_bulk() {
+  local compose_files
+  mapfile -t compose_files < <(find_compose_files)
+
+  local file
+  for file in "${compose_files[@]}"
+  do
+    echo -e "\e[34m🚀 Running 'docker compose -f \"$file\" $*'\e[0m"
+    docker compose -f "$file" "$@"
+  done
+}
+
+check_compose_service() {
+  local compose_file="$1"
+  local compose_dir
+  compose_dir="$(dirname "$compose_file")"
+
+  local svc_name
+  svc_name="$(basename "${compose_dir}")"
+
+  if [[ -e "${compose_dir}/ONESHOT" ]]
+  then
+    echo "🤷 Service $svc_name ignored (ONESHOT)"
+    return 0
+  fi
+
+  local all_svc running_svc
+  mapfile -t all_svc < <(docker-compose -f "$compose_file" ps --services)
+  mapfile -t running_svc < <(docker-compose -f "$compose_file" ps --services --filter "status=running")
+
+  local diff_svc
+  diff_svc="$(echo "${all_svc[@]}" "${running_svc[@]}" | \
+    tr ' ' '\n' | sort | uniq -u)"
+
+  if [[ -n "$diff_svc" ]]
+  then
+    {
+      echo "❌ Service $svc_name is not running"
+      echo "   Offline services:"
+      # shellcheck disable=SC2001
+      sed 's/^/   - /' <<< "${diff_svc#$'\n'}"
+      echo
+    } >&2
+
+    return 3
+  fi
+
+  echo "✅ Service $svc_name is running"
+  return 0
+}
+
+healthcheck() {
+  local file compose_files
+  mapfile -t compose_files < <(find_compose_files | grep -- "${*:-.}")
+  local rc=0
+
+  for file in "${compose_files[@]}"
+  do
+    if ! check_compose_service "$file"
+    then
+      rc=3
+    fi
+  done
+
+  return "$rc"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  set -e
+
+  ACTION=()
+
+  if [[ -z "$1" ]]
+  then
+    {
+      echo "Missing action."
+      usage
+      exit 2
+    } >&2
+  fi
+
+  case "$1" in
+    help|h|-h|--help)
+      usage
+      exit 0
+      ;;
+    status|state|st|check)
+      shift
+      healthcheck "$@"
+      exit "$?"
+      ;;
+    update)
+      compose_bulk pull || true
+      ACTION=(up --force-recreate -d)
+      ;;
+    recreate)
+      ACTION=(up --force-recreate -d)
+      ;;
+    start)
+      ACTION=(up -d)
+      ;;
+    *)
+      ACTION=("$@")
+      ;;
+  esac
+
+  compose_bulk "${ACTION[@]}"
+fi
