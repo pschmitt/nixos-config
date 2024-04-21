@@ -6,6 +6,7 @@
 
     ./luks-data.nix
     ./rclone-bisync.nix
+    ./restic.nix
   ];
 
   # Enable networking
