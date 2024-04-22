@@ -3,6 +3,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
+    ../../server/oci.nix
   ];
 
   custom.useBIOS = false;
