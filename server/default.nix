@@ -7,11 +7,6 @@
     ../misc/git-clone-nixos-config.nix
     ../misc/users/github-actions.nix
     ../misc/users/nix-remote-builder.nix
-
-    ../misc/git-clone-nixos-config.nix
-    ../misc/luks-ssh-unlock.nix
-    ../misc/users/github-actions.nix
-    ../misc/users/nix-remote-builder.nix
   ];
 
   custom.server = true;
