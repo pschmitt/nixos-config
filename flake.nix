@@ -103,9 +103,26 @@
       url = "github:nix-community/srvos";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-snapd = {
+      url = "github:io12/nix-snapd";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, disko, nixpkgs, home-manager, flatpaks, nix-index-database, agenix, nur, srvos, ... }@inputs:
+  outputs =
+    { self
+    , agenix
+    , disko
+    , flatpaks
+    , home-manager
+    , nix-index-database
+    , nix-snapd
+    , nixpkgs
+    , nur
+    , srvos
+    , ...
+    }@inputs:
     let
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
@@ -135,6 +152,9 @@
             ] ++
             nixpkgs.lib.optionals (configOptions.server or true) [
               srvos.nixosModules.mixins-terminfo
+            ] ++
+            nixpkgs.lib.optionals (configOptions.snapd or false) [
+              nix-snapd.nixosModules.default
             ];
 
         };
