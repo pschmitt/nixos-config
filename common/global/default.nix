@@ -25,6 +25,7 @@ in
     ./bootloader.nix
     ./network.nix
     ./nix.nix
+    ./tailscale.nix
   ];
 
   boot = {
@@ -179,11 +180,6 @@ in
     settings.PasswordAuthentication = true;
     settings.KbdInteractiveAuthentication = true;
     settings.PermitRootLogin = "prohibit-password";
-  };
-
-  services.tailscale = {
-    enable = true;
-    openFirewall = true;
   };
 
   virtualisation = {
