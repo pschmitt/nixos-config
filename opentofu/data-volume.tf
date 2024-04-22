@@ -19,6 +19,10 @@ resource "oci_core_volume" "oci_03_data" {
   compartment_id      = var.oci_compartment_id
   display_name        = "oci-03-data"
   size_in_gbs         = 50
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "oci_core_volume_attachment" "oci_03_volume_attachment" {
