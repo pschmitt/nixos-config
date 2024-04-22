@@ -10,9 +10,9 @@
       git
       home-manager
       nix
+      opentofu
       ssh-to-age
       sops
-      terraform
     ];
   };
 }
