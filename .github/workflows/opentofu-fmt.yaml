@@ -1,0 +1,27 @@
+name: OpenTofu Format Check
+
+on:
+  push:
+    paths:
+      - 'opentofu/**.tf'
+  pull_request:
+    paths:
+      - 'opentofu/**.tf'
+  workflow_dispatch: # allows manual triggering
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - uses: opentofu/setup-opentofu@v1
+      with:
+        tofu_version: 1.6.2
+
+    - name: Check OpenTofu files
+      run: tofu fmt -check -recursive
+      working-directory: ./opentofu
+
