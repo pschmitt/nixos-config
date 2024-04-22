@@ -1,23 +1,24 @@
 # FIXME We can't use vars in the provider.backend block
-# variable "s3_bucket" {
-#   description = "S3 bucket name"
-#   type        = string
-# }
-#
-# variable "s3_key" {
-#   description = "S3 key"
-#   type        = string
-# }
-#
-# variable "s3_region" {
-#   description = "S3 region"
-#   type        = string
-# }
-#
-# variable "s3_endpoint" {
-#   description = "S3 endpoint"
-#   type        = string
-# }
+# The s3_xxx vars are kinda useless for now.
+variable "s3_bucket" {
+  description = "S3 bucket name"
+  type        = string
+}
+
+variable "s3_key" {
+  description = "S3 key"
+  type        = string
+}
+
+variable "s3_region" {
+  description = "S3 region"
+  type        = string
+}
+
+variable "s3_endpoint" {
+  description = "S3 endpoint"
+  type        = string
+}
 
 variable "cloudflare_email" {
   description = "Cloudflare email (CLOUDFLARE_EMAIL)"
