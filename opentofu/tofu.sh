@@ -21,7 +21,7 @@ sops_decrypt() {
 cleanup() {
   if [[ -z "$KEEP_TFVARS" ]]
   then
-    rm -vf "${TD_DIR:-$PWD}/tofu.tfvars.json"
+    rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json"
   fi
 
   git -C "$NIXOS_CONFIG_DIR" reset --mixed &>/dev/null
