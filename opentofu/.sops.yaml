@@ -1,5 +1,5 @@
 creation_rules:
-  - path_regex: terraform.tfvars.sops.json
+  - path_regex: .*.tfvars.sops.json
     # NOTE To update the recipients:
     # for e in "${(@f)$(curl -fsSL https://github.com/pschmitt.keys)}"; do
     #   ssh-to-age <<< $e
