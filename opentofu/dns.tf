@@ -7,6 +7,13 @@ resource "cloudflare_zone" "heimat_dev" {
   plan       = "free"
   account_id = cloudflare_account.me.id
 }
+
+resource "cloudflare_zone" "pschmitt_dev" {
+  zone       = "pschmitt.dev"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
 resource "cloudflare_record" "wildcard-rofl-01" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "*.rofl-01"
@@ -63,3 +70,32 @@ resource "cloudflare_record" "wildcard-oci-03" {
   type    = "A"
   ttl     = 3600
 }
+
+resource "cloudflare_record" "mail-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "mail"
+  # TODO Changeme
+  value   = "130.61.215.245"
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "wilcard-pschmitt-dev" {
+  zone_id = cloudflare_zone.pschmitt_dev.id
+  name    = "*"
+  # TODO Changeme
+  value   = "130.61.215.245"
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "mail-pschmitt-dev" {
+  zone_id = cloudflare_zone.pschmitt_dev.id
+  name    = "mail"
+  # TODO Changeme
+  value   = "130.61.215.245"
+  type    = "A"
+  ttl     = 3600
+}
+
+
