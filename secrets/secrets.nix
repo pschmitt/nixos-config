@@ -8,6 +8,7 @@ let
 
   authorizedKeys = lib.filter (key: key != "") (lib.splitString "\n" authorizedKeysContent);
 
+  # ssh-keyscan HOST 2>/dev/null | sed -r 's#[^ ]* +(.+)#"\1"#'
   hostKeys = [
     # ge2
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHxUgJAJlondg55FtQ1ez73QEiS3MR7u40K2+2SsJVQe"
@@ -19,6 +20,11 @@ let
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCn9xUKTdw83a9eiUAh4QNBBawp+FDfDfklbQms+8Y2B7r4PejtNELZRLPdcalAsqVJh8hS3G8i/7jzeLQXVkwJfUCgnM+19FIpvyBGoTvLxRfq5rpt2aaLo7i0g/C/9uo2I0do2kRETdODxHqng18DY2WzyaM84qlG9Xjv5NwVAK/Io7080tWc2QF5CzFA2E6j5EUPCmT4xsQdAUW5S3G7374RoPVOIEYeaf0P4tAcezktVRE3uUloQPMAYL6ty8hUaQY+aB5ZoTPJ4c+er4N2foGhrvZcmZSMzCnGpuR5A22pC7+z2G4wE++ppkc6bBbWWah+5xfuaSqxiYmFxaF/yyrXVYy41/uNLCYiIpZjvSw59CXMRUIx6O7fHD8MOg0DtZx+HTMA9ItyCSM9NexrBeol36THzOjHkYNkvwJ6ws/jhtcOjmzcbRgE2ysWjcQqlmnreEQgP1dfh3VUHyPWoDbclM/VX0vLy2tQ18YjNxx8c0aejVlLki30+o6ld/0="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHj1bwykYI4tC4kt3Rd4QAOV2D1srlcQ14NLB9w3JBXp"
     # rofl-03
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC2+NpD/TdP9/Itq46RmocRplaLVx1AIWri4M95+39jfllUzWjy+S2zVG6/xpw7iynKOzQG7tNU4QGeYiCNhqhGDBGB9O1urAuBLbizisJvRC3aQwg6+9fPFmtcpjgHjCyvJcV7dP/90KG1n2ABElxzqpVXpd/Le1i2cHplsbA6gY61NKmmxkG+Bni1mz6nf1a4xu7iWuoWFFjbV57ElbRoP5DM9TOAgP4lwcMdrtB1Bzpu+eLD3/to88iFrCBilkADlSPfITi4rUAAX3bzfAeWOHPyibXBTRmH8jEEYQnI3sVmT72zKz5jUoH3ZP0D8r7v8bcRKCUyQrJeejsGmCIRKr8FR00aLvsA3g4zuM1jBXN4lSfgTuyps4/9YcnrR2Lofd/IAKdVb89VEENrLE7kqPCGf7sdgRH76yYvz0q03IzJqCQ96qPfuRbmi0Nb6PHLU8u5WpcKugq/YwhMBqgjntIMkQmb+aSEAwiTjTpgg2l4sJ06iXCMWmvvFmNoPWk="
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL/m+pD+TsSHJxSHUHoymHvqevFrqOmfABj7Ac1hS3TQ"
+    # oci-03
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDynCgmEqPJkcnQtSCyZveZDM2nBiT232h+Pr9jt6pk/tH41jTFtRzGtimglUZlyoPmdXsgxmqID21yaYiXjPNbsGRXzdQXhp6GSnkY/VLtuwVlGC3SbAnhck6696AJPNpwIePTvrhjS1KSH3bugDRbjzH2EbUXmsKwqU37CL+oQAEwGzZYYQc7YNfAxGWtNUchRDIuKDZoUsTMydcNCm4Z/pZozDzAVZcJj9zWAse9VlHYnjla/gmXFoZjAciSyTbL3TGxWkTQ6//aoJJ++qF5jM3Lj5LfItinVAfyWsNf/8l6zHYZVO+pAcHD+nUHdf86/GSrMksl1xVY/6Ya9q1dwnPvy0PJqRk6vVU/fEw2sc41EV7+2NADV8nxOOZWY1uAHjaX3623KnTI4DaoNBG3GzNuMLA4RTluBEYISTQi7RC0gv+Xx5OmB1WK1VRXQz55/Stmz1RRa3cUx3iKPVdjIDzySAZT6Ez7M9U8252mJ6E6+Tfi4qmuail3BkpVqic="
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFD3RzcAixrG9tfq0qlpvQky3ViwA+4PJyhkQZ1iNj+G"
   ];
 
   recipients = authorizedKeys ++ hostKeys;
