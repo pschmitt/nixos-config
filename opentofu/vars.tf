@@ -8,6 +8,17 @@ variable "s3_bucket" {
 variable "s3_key" {
   description = "S3 key"
   type        = string
+  default     = "terraform.tfstate"
+}
+
+variable "s3_access_key_id" {
+  description = "S3 key"
+  type        = string
+}
+
+variable "s3_secret_access_key" {
+  description = "S3 key"
+  type        = string
 }
 
 variable "s3_region" {
