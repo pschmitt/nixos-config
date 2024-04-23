@@ -4,6 +4,8 @@
     ./hardware-configuration.nix
     ../../server
     ../../server/oci.nix
+
+    ../../common/mail
   ];
 
   custom.useBIOS = false;
