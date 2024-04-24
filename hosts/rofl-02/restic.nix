@@ -2,16 +2,13 @@
 
 let
   createService = name: scriptPath: {
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash ${scriptPath}";
-      Environment = "PATH=${lib.makeBinPath [
+    path = [
         pkgs.bash
         pkgs.coreutils
         pkgs.docker
         pkgs.nettools
-      ]}";
-    };
+    ];
+    script = "${scriptPath}";
   };
 
   createTimer = name: time: {
