@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+# For Oracle Cloud Infrastructure persistent device naming
+# Author: Oracle
+
+# Script to create symlinks in devices that is based on LUN IDs.
+# Link vda always points to the root device.
+# This script works only for iSCSI attachments
+
+# If the number of parameters being sent to this script is not equal to 1,
+# we throw an error. We expect the kernel device name like "sda", "sdb" etc.
+if [ "$#" -ne 1 ]; then
+    echo "Unexpected number of inputs ($@). Usage: cmd <device>" >&2
+    exit 1
+fi
+
+if [[ "$DEVPATH" = *"virtio"* ]]; then
+    # Using ID_PATH to retrieve the LU #
+    # ID_PATH is virtio-pci-0000:00:04.0-scsi-0:0:2:12
+    # With the substitution, we would be able to get 12 which is the LUN number.
+    LUN=$(echo "$ID_PATH" | sed 's/.*://')
+else
+    # Using DEVPATH to retrieve the LUN #
+    # DEVPATH is /devices/platform/host5/session3/target5:0:0/5:0:0:12/block/sdc
+    # With first substitution, the string becomes 12/block/sdc
+    # With second substitution, the string becomes 12/
+    # With third substitution, the last character is removed and we are able to retrieve
+    # the LUN number which is 12.
+    LUN=$(echo "$DEVPATH" | sed 's/.*://' | sed 's/\([/]\).*/\1/' | sed s'/.$//')
+fi
+
+if [ x"$LUN" = "x" ]; then
+    echo "Unable to determine LUN for $DEVPATH" >&2
+    exit 1
+fi
+
+# We can use ID_PATH to figure out iSCSI boot volumes
+# ID_PATH is ip-169.254.0.2:3260-iscsi-iqn.2015-02.oracle.boot:uefi-lun-1
+# After the substitution, we get uefi-lun-1
+BOOTLUN=${ID_PATH//.*://}
+#BOOTLUN=$(echo "$ID_PATH" |sed 's/.*://')
+# iSCSI boot volumes are recognized with uefi-lun-1
+if [[ "$BOOTLUN" = *"uefi-lun-1"* ]]; then
+    echo "$1" | sed 's#sd[a-z]*[a-z]#oracleoci/oraclevda#g'
+    exit 0
+fi
+
+# In case of PV Boot volume, the ID_PATH is virtio-pci-0000:00:04.0-scsi-0:0:0:1
+# By applying the substitution, we get the LUN number as 1 
+# 1 is special case reserved for boot volumes.
+if [ "$BOOTLUN" = "1" ]; then
+    echo "$1" | sed 's#sd[a-z]*[a-z]#oracleoci/oraclevda#g'
+    exit 0
+fi
+
+# Test to ensure $LUN is a number
+re='^[0-9]+$'
+if ! [[ "$LUN" =~ $re ]] ; then
+    echo "LUN ($LUN) is not a number" >&2
+    exit 1
+fi
+
+# We allow a maximum device name to be vdzz - corresponding to LUN=702 (26 + (26 * 26))
+if [ "$LUN" -gt "702" ]; then
+    echo "LUN value ($LUN) exceeds maximum range" >&2
+    exit 1
+fi
+
+# We don't allow the LUN # to be less than 1
+if [ "$LUN" -le "0" ]; then
+    echo "LUN value ($LUN) lower than one" >&2
+    exit 1
+fi
+
+# Converts a number to ASCII char
+chr() {
+    printf \\$(printf '%03o' "$1")
+}
+
+# Construct a one- or two-letter suffix using the LUN ID.
+# 2 means vdb, 3 means vdc and so on
+# 27 means vdaa and so on.
+LETTER1=$((LUN/26))
+LETTER2=$(((LUN - (LETTER1 * 26)) % 26))
+
+if [ "$LETTER2" -eq 0 ]; then
+    LETTER2='z'
+      if [ "$LETTER1" -eq 1 ]; then
+            LETTER1=''
+      else
+            LETTER1=$(chr $((LETTER1 + 95)))
+      fi
+else
+    LETTER2=$(chr $((LETTER2 + 96)))
+    if [ "$LETTER1" -eq 0 ]; then
+            LETTER1=''
+      else
+            LETTER1=$(chr $((LETTER1 + 96)))
+      fi
+fi
+
+# Suffix is one or two letters and depends on value of LUN number
+# in the range [1:702] inclusive
+SUFFIX="$LETTER1$LETTER2"
+
+echo "$1" | sed "s#sd[a-z]*[a-z]#oracleoci/oraclevd$SUFFIX#g"
+exit 0
