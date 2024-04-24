@@ -4,7 +4,6 @@ let
   snapPkg = inputs.nix-snapd.packages.${pkgs.system}.default;
 in
 {
-
   boot.kernelParams = [
     "nvme.shutdown_timeout=10"
     "nvme_core.shutdown_timeout=10"
