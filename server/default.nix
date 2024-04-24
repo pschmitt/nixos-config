@@ -2,6 +2,7 @@
 { pkgs, lib, ... }: {
   imports = [
     ../common/global
+    ../common/mail
 
     ../misc/luks-ssh-unlock.nix
     ../misc/git-clone-nixos-config.nix
