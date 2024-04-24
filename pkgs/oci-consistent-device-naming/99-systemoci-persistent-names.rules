@@ -1,0 +1,19 @@
+# CLOUD_IMG: This file was created/modified by the Cloud Image build process
+# For Oracle Cloud Infrastructure persistent device naming
+# Author: Oracle
+
+# This is a udev rules file that demonstrates how to get
+# udev to set the symbolic link to the kernel block device name by reading the 
+# customized LUN number.
+
+# This udev rule supports only iSCSI devices.
+# TODO: support PV and iSCSI devices.
+
+# We use DEVPATH and ID_PATH variables to determine the LUN#
+# The conversion from LUN# to friendly device name is simple-
+# The format is /dev/oracleoci/oraclevdxx
+# 2 becomes /dev/oracleoci/oraclevdb, 3 becomes /dev/oracleoci/oraclevdc and so on.
+# The boot volumes are provided the device name of /dev/oracleoci/oraclevda.
+
+KERNEL=="sd*", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", PROGRAM="/usr/local/sbin/oci_udev_persistent_naming %k", SYMLINK+="%c"
+KERNEL=="sd*", SUBSYSTEM=="block", ENV{DEVTYPE}=="partition", PROGRAM="/usr/local/sbin/oci_udev_persistent_naming %k", SYMLINK+="%c"
