@@ -18,6 +18,7 @@ fssh() {
 main() {
   set -u -o pipefail
 
+  local remote_user="${REMOTE_USER:-}"
   local remote_host="${REMOTE_HOST:-}"
   local criteria="${CRITERIA:-by-id}"
   local ssh_args=()
@@ -37,6 +38,10 @@ main() {
         remote_host="$2"
         shift 2
         ;;
+      -u|--user|--remote-user)
+        remote_user="$2"
+        shift 2
+        ;;
       --)
         shift
         break
@@ -48,7 +53,7 @@ main() {
       esac
   done
 
-  local target_device="${1:-/dev/disk/by-label/cloudimg-rootfs}"
+  local target_device="${1:-${TARGET_DEVICE:-/dev/disk/by-label/cloudimg-rootfs}}"
 
   if [[ -z "$target_device" ]]
   then
@@ -61,7 +66,7 @@ main() {
   if [[ -n "$remote_host" ]]
   then
     # shellcheck disable=SC2029
-    partition_path=$(fssh "${ssh_args[@]}" "$remote_host" "readlink -e '$target_device'")
+    partition_path=$(fssh "${ssh_args[@]}" "${remote_user}@${remote_host}" "readlink -e '$target_device'")
   else
     partition_path=$(readlink -e "$target_device")
   fi
@@ -78,7 +83,8 @@ main() {
   local symlinks
   if [[ -n "$remote_host" ]]
   then
-    symlinks=$(fssh "${ssh_args[@]}" "$remote_host" "find /dev/disk -type l -exec test {} -ef '$device_path' \; -print")
+    symlinks=$(fssh "${ssh_args[@]}" "${remote_user}@${remote_host}" \
+      "find /dev/disk -type l -exec test {} -ef '$device_path' \; -print")
   else
     symlinks=$(find /dev/disk -type l -exec test {} -ef "$device_path" \; -print)
   fi

@@ -105,7 +105,8 @@
     };
 
     nix-snapd = {
-      url = "github:io12/nix-snapd";
+      # url = "github:io12/nix-snapd";
+      url = "/etc/nixos/nix-snapd.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
@@ -198,6 +199,11 @@
         };
         oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
           server = true;
+          snapd = true;
+        };
+        oci-04 = nixosSystemFor "aarch64-linux" "oci-04" {
+          server = true;
+          snapd = true;
         };
       };
 

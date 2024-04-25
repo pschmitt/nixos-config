@@ -32,3 +32,11 @@ do
   age --decrypt --identity "$AGE_IDENTITY_FILE" \
     "${AGENIX_DIR}/${TARGET_HOST}/${FILE}.age" > "./etc/ssh/$FILE"
 done
+
+# Determine disk path on the remote host
+# CWD="$PWD"
+# DISK_PATH_FILE="../hosts/${TARGET_HOST}/disk-path"
+mkdir -p /tmp
+DISK_PATH_FILE="./disk-path"
+/etc/nixos/absolute-disk-path.sh > "$DISK_PATH_FILE"
+# git  add --intent-to-add "$DISK_PATH_FILE"
