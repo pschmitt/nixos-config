@@ -33,6 +33,8 @@ in
 {
   "secret.age".publicKeys = recipients;
   "tailscale-auth-key.age".publicKeys = recipients;
+  "netbird-netbird-io-setup-key.age".publicKeys = recipients;
+  "netbird-wiit-setup-key.age".publicKeys = recipients;
 
   "ssh-key-nix-remote-builder.age".publicKeys = recipients;
   "ssh-key-nix-remote-builder.pub.age".publicKeys = recipients;

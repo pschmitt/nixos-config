@@ -20,13 +20,12 @@ let
 in
 {
   imports = [
+    ../network
     ./appimage.nix
     ./atd.nix
     ./bootloader.nix
-    ./network.nix
     ./nix.nix
     ./pschmitt.nix
-    ./tailscale.nix
   ];
 
   boot = {
