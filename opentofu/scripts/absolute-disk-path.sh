@@ -52,7 +52,7 @@ main() {
 
   if [[ -z "$target_device" ]]
   then
-    echo "No target device specified" >&2
+    echo -e "\e[31mNo target device specified.\e[0m" >&2
     usage
     exit 2
   fi
@@ -68,7 +68,7 @@ main() {
 
   if [[ -z "$partition_path" ]]
   then
-    echo "No device found for $target_device" >&2
+    echo -e "\e[31mNo device found for $target_device\e[0m" >&2
     exit 1
   fi
 
