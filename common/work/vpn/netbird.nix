@@ -19,12 +19,6 @@ in
   services.netbird = {
     enable = true;
     tunnels = {
-      netbird-io = {
-        port = 51820;
-        environment = {
-          NB_MANAGEMENT_URL = "https://api.netbird.io";
-        };
-      };
       wiit = {
         port = 51821;
         environment = {
@@ -38,12 +32,4 @@ in
   };
 
   environment.systemPackages = netbirdScripts;
-
-  # mask netbird-wt0 service
-  systemd.services.netbird-wt0.enable = false;
-
-  # Starting netbird before tailscaled ensures that (tailscale) hosts
-  # resolution works as expected.
-  # systemd.services.netbird-wt0.after = [ "tailscaled.service" ];
-  # systemd.services.tailscaled.before = [ "netbird-wt0.service" ];
 }
