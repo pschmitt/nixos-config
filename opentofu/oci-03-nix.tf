@@ -6,10 +6,10 @@ module "nix-oci-03" {
   target_host            = oci_core_instance.oci_03.public_ip
   install_user           = var.nixos_anywhere_ssh_user
   instance_id            = oci_core_instance.oci_03.id
+  debug_logging          = true
   extra_environment = {
     TARGET_HOST = "oci-03"
   }
-  debug_logging = true
   disk_encryption_key_scripts = [
     {
       path   = "/tmp/disk-1.key",
