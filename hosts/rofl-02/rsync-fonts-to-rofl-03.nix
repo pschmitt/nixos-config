@@ -3,9 +3,12 @@
     description = "Rsync font files to github-actions@rofl-03.heimat.dev";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
+    path = with pkgs ; [
+      openssh
+      rsync
+    ];
     script = ''
-      export PATH=${pkgs.openssh}/bin:$PATH
-      exec ${pkgs.rsync}/bin/rsync -avz -e "ssh -i ''${IDENTITY_FILE} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
+      exec rsync -avz -e "ssh -i ''${IDENTITY_FILE} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" \
         "''${SOURCE_DIR}/" \
         "''${REMOTE_USER}@''${REMOTE_HOST}:''${DEST_DIR}/"
     '';
