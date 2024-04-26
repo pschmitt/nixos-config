@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+set -x
+
+echo "$(date -Iseconds) running $0 $*" >> /tmp/debug
+notify-send "Running $0 $*"
+
 AGENIX_DIR=/etc/nixos/secrets
 AGE_IDENTITY_FILE=/home/pschmitt/.ssh/id_ed25519
 TARGET_HOST="${TARGET_HOST:-rofl-02}"
@@ -34,9 +39,9 @@ do
 done
 
 # Determine disk path on the remote host
-# CWD="$PWD"
-# DISK_PATH_FILE="../hosts/${TARGET_HOST}/disk-path"
-mkdir -p /tmp
-DISK_PATH_FILE="./disk-path"
-/etc/nixos/absolute-disk-path.sh > "$DISK_PATH_FILE"
-# git  add --intent-to-add "$DISK_PATH_FILE"
+DISK_PATH_FILE="/etc/nixos/hosts/${TARGET_HOST}/disk-path"
+# mkdir -p tmp
+# DISK_PATH_FILE="./disk-path"
+/etc/nixos/tofu/scripts/absolute-disk-path.sh > "$DISK_PATH_FILE"
+/etc/nixos/tofu/scripts/absolute-disk-path.sh > /tmp/disk-path
+git -C /etc/nixos add --intent-to-add "$DISK_PATH_FILE"

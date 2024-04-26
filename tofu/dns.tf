@@ -63,6 +63,14 @@ resource "cloudflare_record" "oci-03" {
   ttl     = 3600
 }
 
+# resource "cloudflare_record" "oci-04" {
+#   zone_id = cloudflare_zone.heimat_dev.id
+#   name    = "oci-04"
+#   value   = oci_core_instance.oci_04.public_ip
+#   type    = "A"
+#   ttl     = 3600
+# }
+
 resource "cloudflare_record" "wildcard-oci-03" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "*.oci-03"
