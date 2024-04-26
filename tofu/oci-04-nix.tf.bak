@@ -7,6 +7,7 @@ module "nix-oci-04" {
   install_user           = var.nixos_anywhere_ssh_user
   instance_id            = oci_core_instance.oci_04.id
   debug_logging          = true
+
   extra_environment = {
     TARGET_HOST = "oci-04"
     REMOTE_HOST = oci_core_instance.oci_04.public_ip
@@ -16,6 +17,10 @@ module "nix-oci-04" {
     {
       path   = "/tmp/disk-1.key",
       script = "${path.module}/scripts/decrypt-luks-passphrase.sh"
+    },
+    {
+      path   = "/tmp/disk-path",
+      script = "${path.module}/scripts/absolute-disk-path.sh"
     }
   ]
   extra_files_script = "${path.module}/scripts/decrypt-ssh-secrets.sh"

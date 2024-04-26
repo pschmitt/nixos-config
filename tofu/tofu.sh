@@ -25,10 +25,17 @@ cleanup() {
   fi
 
   git -C "$NIXOS_CONFIG_DIR" reset --mixed &>/dev/null
+  # rm -rf "$NIXOS_CONFIG_TMP_DIR"
 }
 
 trap 'cleanup' EXIT
+
 sops_decrypt || exit 1
-git -C "$NIXOS_CONFIG_DIR" add --intent-to-add .
+git -C "$NIXOS_CONFIG_DIR" add --intent-to-add &>/dev/null
+# NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || exit 3
+# pushd "$NIXOS_CONFIG_TMP_DIR" || exit 9
 
 tofu -chdir="${TF_DIR}" "$@"
+# RC=$?
+# echo "NIXOS_CONFIG_TMP_DIR: $NIXOS_CONFIG_TMP_DIR" >&2
+# exit "$RC"
