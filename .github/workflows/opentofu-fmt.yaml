@@ -4,9 +4,13 @@ on:
   push:
     paths:
       - 'opentofu/**.tf'
+      - 'terraform/**.tf'
+      - 'tofu/**.tf'
   pull_request:
     paths:
       - 'opentofu/**.tf'
+      - 'terraform/**.tf'
+      - 'tofu/**.tf'
   workflow_dispatch: # allows manual triggering
 
 jobs:
@@ -23,5 +27,5 @@ jobs:
 
     - name: Check OpenTofu files
       run: tofu fmt -check -recursive
-      working-directory: ./opentofu
+      working-directory: ./tofu
 
