@@ -4,6 +4,7 @@
 , autoPatchelfHook
 , coreutils
 , curl
+, cacert
 , makeWrapper
 }:
 
@@ -23,13 +24,20 @@ stdenv.mkDerivation rec {
     sha256 = "${checksum}";
   };
 
-  buildInputs = [ autoPatchelfHook makeWrapper ];
+  buildInputs = [ autoPatchelfHook makeWrapper cacert ];
 
   installPhase = ''
     mkdir -p $out
     cp -r ./* $out
+
     ln -sfv $out/upgrade/upgrade $out/bin/mmonit-upgrade
+    # M/Monit tries to write to this pidfile on startup
     ln -sfv /var/lib/mmonit/mmonit.pid $out/logs/mmonit.pid
+
+    # FIXME Disabling these 2 settings is an ugly hack and also does not fix the
+    # M/Monit license fetching issue at startup
+    # --replace-fail 'SelfSignedCertificate allow="false"' 'SelfSignedCertificate allow="true"' \
+    # --replace-fail '<HostnameVerification enable="true"' '<HostnameVerification enable="false"'
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite:///var/lib/mmonit/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="/var/lib/mmonit/logs"' \
@@ -39,9 +47,17 @@ stdenv.mkDerivation rec {
     mkdir -p $out/lib/systemd/system
 
     # Wrapper to handle DB copy and startup
-    # FIXME The license.xml retrieval should be handled by the service itself
+    # FIXME The license.xml retrieval should be handled by mmonit directly,
     # but it fails with:
     # IOException: SSL connect error [88.99.240.67] error:0A000086:SSL routines::certificate verify failed
+    #
+    # The following does not seem to work:
+    # --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
+    # --set OPENSSLDIR "${cacert}/etc/ssl" \
+    #
+    # This workaround allows M/Monit to start but does not fix the underlying
+    # issue
+    # --run "test -f /var/lib/mmonit/license.xml || curl -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --add-flags "-i" \
