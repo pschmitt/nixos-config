@@ -10,6 +10,12 @@ stdenv.mkDerivation {
   pname = "oracle-cloud-agent";
   version = "1.38.0";
 
+  # NOTE the Oracle Cloud Agent is available from the Oracle Linux yum repo
+  # But this is not a public repo, so we have to download the RPMs manually
+  # To get the URLs you can run $ yumdownloader --urls oracle-cloud-agent
+  # from an OCI machine where the Oracle Linux yum repo is configured
+  # https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
+  # https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm
   src =
     if stdenv.isAarch64 then
       ./src/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
@@ -47,8 +53,6 @@ stdenv.mkDerivation {
   '';
 
   postInstall = ''
-    # mkdir -p $out/lib
-    # mv $out/etc/systemd $out/lib/systemd
     install -D -m0444 -t $out/lib/systemd/system \
       $out/etc/systemd/system/oracle-cloud-agent.service
     # /var contains a whole directory structure, but no files
@@ -58,7 +62,7 @@ stdenv.mkDerivation {
 
   meta = with lib; {
     description = "Oracle Cloud Agent";
-    homepage = "https://www.oracle.com/cloud/";
+    homepage = "https://docs.cloud.oracle.com/iaas/";
     license = licenses.upl;
     platforms = [ "aarch64-linux" "x86_64-linux" ];
   };
