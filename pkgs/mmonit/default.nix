@@ -52,8 +52,8 @@ stdenv.mkDerivation rec {
     # IOException: SSL connect error [88.99.240.67] error:0A000086:SSL routines::certificate verify failed
     #
     # The following does not seem to work:
-    # --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
-    # --set OPENSSLDIR "${cacert}/etc/ssl" \
+    # --set SSL_CERT_FILE "''${cacert}/etc/ssl/certs/ca-bundle.crt" \
+    # --set OPENSSLDIR "''${cacert}/etc/ssl" \
     #
     # This workaround allows M/Monit to start but does not fix the underlying
     # issue
