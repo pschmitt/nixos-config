@@ -36,6 +36,7 @@ in
   "netbird-netbird-io-setup-key.age".publicKeys = recipients;
   "netbird-wiit-setup-key.age".publicKeys = recipients;
 
+  "mmonit-monit-config.age".publicKeys = recipients;
   "mmonit-license.age".publicKeys = recipients;
 
   "ssh-key-nix-remote-builder.age".publicKeys = recipients;
