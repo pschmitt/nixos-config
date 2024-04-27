@@ -61,7 +61,7 @@ stdenv.mkDerivation rec {
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --run "mkdir -p /var/lib/mmonit/logs" \
-      --run "test -f /var/lib/mmonit/conf || ln -sfv $out/conf /var/lib/mmonit/conf" \
+      --run "if ! test -f /var/lib/mmonit/conf || test -L /var/lib/mmonit/conf; then ln -sfv $out/conf /var/lib/mmonit/conf; fi" \
       --run "test -f /var/lib/mmonit/mmonit.db || cp -v $out/db/mmonit.db /var/lib/mmonit/mmonit.db" \
       --run "if ! test -f /var/lib/mmonit/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml /var/lib/mmonit/license.xml; fi" \
       --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
