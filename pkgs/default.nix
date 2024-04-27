@@ -19,6 +19,7 @@ in
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
   luks-mount = pkgs.callPackage ./luks-mount { };
+  mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix { inherit obsws-python; };
