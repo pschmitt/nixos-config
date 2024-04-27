@@ -23,13 +23,33 @@ in
   # https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/configuringntpservice.htm#Configuring_the_Oracle_Cloud_Infrastructure_NTP_Service_for_an_Instance
   networking.timeServers = [ "169.254.169.254" ];
 
-  services.snap.enable = true;
-  systemd.services.snap-install-oracle-cloud-agent = {
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network-online.target" "snapd.service" ];
-    requires = [ "network-online.target" "snapd.service" ];
-    script = "${snapPkg}/bin/snap install oracle-cloud-agent --classic";
+  environment.systemPackages = with pkgs; [
+    oracle-cloud-agent
+  ];
+  environment.etc.oracle-cloud-agent = {
+    enable = true;
+    source = "${pkgs.oracle-cloud-agent}/etc/oracle-cloud-agent";
   };
+  systemd.packages = [ pkgs.oracle-cloud-agent ];
+  users.users.oracle-cloud-agent = {
+    uid = 10920;
+    isSystemUser = true;
+    home = "/var/lib/oracle-cloud-agent";
+    createHome = true; # TODO we might want to use tmpfiles.d instead
+    group = "oracle-cloud-agent";
+  };
+
+  users.groups.oracle-cloud-agent = {
+    gid = 10920;
+  };
+
+  # services.snap.enable = true;
+  # systemd.services.snap-install-oracle-cloud-agent = {
+  #   wantedBy = [ "multi-user.target" ];
+  #   after = [ "network-online.target" "snapd.service" ];
+  #   requires = [ "network-online.target" "snapd.service" ];
+  #   script = "${snapPkg}/bin/snap install oracle-cloud-agent --classic";
+  # };
 
   # TODO Add the udev rules from ./99-systemoci-persistent-names.rules
   services.udev.path = [ pkgs.oci-consistent-device-naming ];
