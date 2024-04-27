@@ -42,9 +42,6 @@ in
   users.groups.oracle-cloud-agent = { };
 
   systemd.tmpfiles.rules = [
-    # "d /var/lib/oracle-cloud-agent 0755 oracle-cloud-agent oracle-cloud-agent 10d"
-    # Below is required for the gomon plugin
-    # "d /var/lib/oracle-cloud-agent/tmp 0755 oracle-cloud-agent oracle-cloud-agent 10d"
     "d /var/log/oracle-cloud-agent 0755 oracle-cloud-agent oracle-cloud-agent 1d"
   ];
 
