@@ -8,6 +8,12 @@
       description = "Main user's username.";
     };
 
+    custom.email = lib.mkOption {
+      type = lib.types.str;
+      default = "philipp@schmitt.co";
+      description = "Main user email address.";
+    };
+
     custom.homeDirectory = lib.mkOption {
       type = lib.types.str;
       default = "/home/pschmitt";
