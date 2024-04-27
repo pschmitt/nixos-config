@@ -60,21 +60,24 @@ stdenv.mkDerivation rec {
     # --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
-      --add-flags "-i" \
       --run "mkdir -p /var/lib/mmonit/logs" \
       --run "test -f /var/lib/mmonit/mmonit.db || cp -v $out/db/mmonit.db /var/lib/mmonit/mmonit.db" \
       --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
 
-    # Systemd service
+    # systemd service - https://mmonit.com/wiki/MMonit/Setup
     cat > $out/lib/systemd/system/mmonit.service <<EOF
     [Unit]
-    Description=M/Monit service
+    Description = Easy, proactive monitoring of Unix systems, network and cloud services
+    Documentation= https://mmonit.com/documentation/
     After=network.target
 
     [Service]
     Type=simple
-    ExecStart=$out/bin/mmonit.wrapped
-    Restart=always
+    KillMode=process
+    ExecStart=$out/bin/mmonit.wrapped start -i
+    ExecStop=$out/bin/mmonit.wrapped stop
+    PIDFile=/var/lib/mmonit/logs/mmonit.pid
+    Restart=on-abnormal
 
     [Install]
     WantedBy=multi-user.target
@@ -83,7 +86,7 @@ stdenv.mkDerivation rec {
 
   meta = {
     homepage = "https://mmonit.com/";
-    description = "Monitoring system";
+    description = "Easy, proactive monitoring of Unix systems, network and cloud services";
     license = lib.licenses.unfree;
     maintainers = with lib.maintainers; [ pschmitt ];
     platforms = [ "aarch64-linux" "x86_64-linux" ];
