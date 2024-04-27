@@ -57,13 +57,13 @@ stdenv.mkDerivation rec {
     #
     # This workaround allows M/Monit to start but does not fix the underlying
     # issue
-    # --run "test -f /var/lib/mmonit/license.xml || curl -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
+    # --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --add-flags "-i" \
       --run "mkdir -p /var/lib/mmonit/logs" \
       --run "test -f /var/lib/mmonit/mmonit.db || cp -v $out/db/mmonit.db /var/lib/mmonit/mmonit.db" \
-      --run "test -f /var/lib/mmonit/license.xml || curl -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
+      --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
 
     # Systemd service
     cat > $out/lib/systemd/system/mmonit.service <<EOF
