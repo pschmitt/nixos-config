@@ -26,10 +26,6 @@ let
       path = "/mnt/data/bin/autorestic backup --all --verbose --ci";
       time = "06:00";
     };
-    "autorestic-remote-oci-02" = {
-      path = "/srv/autorestic-remote/autorestic-remote.sh oci-02";
-      time = "15:00";
-    };
     "autorestic-remote-turris" = {
       path = "/srv/autorestic-remote/autorestic-remote.sh turris";
       time = "03:00";
