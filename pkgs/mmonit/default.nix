@@ -1,11 +1,10 @@
-{ lib
-, stdenv
-, fetchurl
-, autoPatchelfHook
+{ autoPatchelfHook
 , coreutils
 , curl
-, cacert
+, fetchurl
+, lib
 , makeWrapper
+, stdenv
 }:
 
 stdenv.mkDerivation rec {
@@ -24,7 +23,7 @@ stdenv.mkDerivation rec {
     sha256 = "${checksum}";
   };
 
-  buildInputs = [ autoPatchelfHook makeWrapper cacert ];
+  buildInputs = [ autoPatchelfHook makeWrapper ];
 
   installPhase = ''
     mkdir -p $out
@@ -41,7 +40,8 @@ stdenv.mkDerivation rec {
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite:///var/lib/mmonit/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="/var/lib/mmonit/logs"' \
-      --replace-fail '<License file="license.xml"' '<License file="/var/lib/mmonit/license.xml"'
+      --replace-fail '<License file="license.xml"' '<License file="/var/lib/mmonit/license.xml"' \
+      --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="8080"'
 
     # Create systemd service
     mkdir -p $out/lib/systemd/system
@@ -61,7 +61,9 @@ stdenv.mkDerivation rec {
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --run "mkdir -p /var/lib/mmonit/logs" \
+      --run "test -f /var/lib/mmonit/conf || ln -sfv $out/conf /var/lib/mmonit/conf" \
       --run "test -f /var/lib/mmonit/mmonit.db || cp -v $out/db/mmonit.db /var/lib/mmonit/mmonit.db" \
+      --run "if ! test -f /var/lib/mmonit/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml /var/lib/mmonit/license.xml; fi" \
       --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
 
     # systemd service - https://mmonit.com/wiki/MMonit/Setup

@@ -5,7 +5,7 @@
     ../../server
     ../../server/oci.nix
 
-    ../../common/mail
+    ../../misc/mmonit.nix
   ];
 
   custom.useBIOS = false;
