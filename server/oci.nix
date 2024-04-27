@@ -23,25 +23,30 @@ in
   # https://docs.oracle.com/en-us/iaas/Content/Compute/Tasks/configuringntpservice.htm#Configuring_the_Oracle_Cloud_Infrastructure_NTP_Service_for_an_Instance
   networking.timeServers = [ "169.254.169.254" ];
 
-  environment.systemPackages = with pkgs; [
-    oracle-cloud-agent
-  ];
+  # oracle-cloud-agent aka oca
+  # environment.systemPackages = with pkgs; [
+  #   oracle-cloud-agent
+  # ];
   environment.etc.oracle-cloud-agent = {
     enable = true;
     source = "${pkgs.oracle-cloud-agent}/etc/oracle-cloud-agent";
   };
   systemd.packages = [ pkgs.oracle-cloud-agent ];
   users.users.oracle-cloud-agent = {
-    uid = 10920;
     isSystemUser = true;
     home = "/var/lib/oracle-cloud-agent";
-    createHome = true; # TODO we might want to use tmpfiles.d instead
+    createHome = true;
     group = "oracle-cloud-agent";
   };
 
-  users.groups.oracle-cloud-agent = {
-    gid = 10920;
-  };
+  users.groups.oracle-cloud-agent = { };
+
+  systemd.tmpfiles.rules = [
+    # "d /var/lib/oracle-cloud-agent 0755 oracle-cloud-agent oracle-cloud-agent 10d"
+    # Below is required for the gomon plugin
+    # "d /var/lib/oracle-cloud-agent/tmp 0755 oracle-cloud-agent oracle-cloud-agent 10d"
+    "d /var/log/oracle-cloud-agent 0755 oracle-cloud-agent oracle-cloud-agent 1d"
+  ];
 
   # services.snap.enable = true;
   # systemd.services.snap-install-oracle-cloud-agent = {

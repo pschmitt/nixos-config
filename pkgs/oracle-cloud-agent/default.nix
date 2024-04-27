@@ -1,12 +1,14 @@
-{ stdenv
+{ autoPatchelfHook
+, coreutils
+, gawk
 , lib
 , rpmextract
-, autoPatchelfHook
+, stdenv
 }:
 
 stdenv.mkDerivation {
   pname = "oracle-cloud-agent";
-  version = "1.0.0";
+  version = "1.38.0";
 
   src =
     if stdenv.isAarch64 then
@@ -16,14 +18,14 @@ stdenv.mkDerivation {
     else
       throw "Unsupported platform";
 
-  buildInputs = [ rpmextract autoPatchelfHook ];
+  buildInputs = [ autoPatchelfHook gawk rpmextract ];
 
   unpackPhase = ''
     mkdir -p $out
+    pushd $out
     install -D -m0444 $src $out/oca.rpm
     # NOTE we have to ignore errors here, as cpio tries to set permissions it is not allowed to
     # oracle-cloud-agent> /nix/store/57ciiffh69j5q1l2h6cc7f5rm9n97lms-cpio-2.15/bin/cpio: ./var/log/oracle-cloud-agent/plugins/osms: Cannot change mode to rwxrwsr-x: Operation not permitted
-    pushd $out
     rpmextract $out/oca.rpm || true
     rm $out/oca.rpm
   '';
@@ -32,19 +34,23 @@ stdenv.mkDerivation {
     # FIXME None of these shebang fixes seems to work
     # mapfile -t SCRIPTS < <(find $out -type f -exec grep -IlE "^#!/" {} \;)
     # patchShebangs "''${SCRIPTS[@]}"
-    # patchShebangs --host $out/usr/bin/ocatools/diagnostic \
+    # patchShebangs $out/usr/bin/ocatools/diagnostic \
     #   $out/usr/libexec/oracle-cloud-agent/plugins/oci-jms/oci-jms \
     #   $out/usr/sbin/osms
 
     mapfile -t FILES < <(find $out -type f -exec grep -Il /usr/libexec {} \;)
     substituteInPlace "''${FILES[@]}" \
       --replace-fail '/usr/libexec' "$out/usr/libexec"
+
+    sed -i '/^ExecStart=/i ExecStartPre=${coreutils}/bin/mkdir -p /var/lib/oracle-cloud-agent/tmp' \
+      $out/etc/systemd/system/oracle-cloud-agent.service
   '';
 
   postInstall = ''
     # mkdir -p $out/lib
     # mv $out/etc/systemd $out/lib/systemd
-    install -D -m0444 -t $out/lib/systemd/system $out/etc/systemd/system/oracle-cloud-agent.service
+    install -D -m0444 -t $out/lib/systemd/system \
+      $out/etc/systemd/system/oracle-cloud-agent.service
     # /var contains a whole directory structure, but no files
     # /usr/lib holds usr/lib/python3.9/site-packages/dnf-plugins/osmsplugin.py
     rm -rf $out/var $out/etc/systemd $out/etc/yum $out/usr/lib
