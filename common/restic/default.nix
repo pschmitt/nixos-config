@@ -42,5 +42,9 @@ in
     initialize = true;
     createWrapper = true;
     exclude = [ ];
+    backupCleanupCommand = ''
+      ${pkgs.coreutils}/bin/mkdir -p /var/lib/restic
+      ${pkgs.coreutils}/bin/date +%s > /var/lib/restic/last-backup
+    '';
   };
 }
