@@ -23,6 +23,7 @@ in
           key = mkOption {
             type = types.path;
             description = "SSH key path for authentication.";
+            default = "/etc/ssh/ssh_host_ed25519_key";
           };
           port = mkOption {
             type = types.int;
