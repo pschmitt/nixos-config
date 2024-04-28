@@ -5,6 +5,7 @@
 , lib
 , makeWrapper
 , stdenv
+, port ? 8080
 }:
 
 stdenv.mkDerivation rec {
@@ -43,7 +44,7 @@ stdenv.mkDerivation rec {
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonit_home}/db/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonit_home}/logs"' \
       --replace-fail '<License file="license.xml"' '<License file="${mmonit_home}/license.xml"' \
-      --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="8080"'
+      --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="${toString port}"'
 
     # Create systemd service
     mkdir -p $out/lib/systemd/system
