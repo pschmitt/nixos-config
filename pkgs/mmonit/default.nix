@@ -66,7 +66,7 @@ stdenv.mkDerivation rec {
       --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
       --run "mkdir -p /var/lib/mmonit/logs" \
       --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
-      --run "test -f ${mmonitHome}/db/mmonit.db || cp -v $out/db/mmonit.db ${mmonitHome}/db/mmonit.db" \
+      --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
       --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi" \
       --run "test -f ${mmonitHome}/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o ${mmonitHome}/license.xml"
 
