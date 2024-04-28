@@ -9,7 +9,8 @@
     ../misc/users/github-actions.nix
     ../misc/users/nix-remote-builder.nix
 
-    ../misc/monit.nix
+    ./monit.nix
+    ./restic.nix
   ];
 
   custom.server = true;
