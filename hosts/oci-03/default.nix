@@ -6,6 +6,7 @@
     ../../server/oci.nix
 
     ../../misc/mmonit.nix
+    ../../common/restic
   ];
 
   custom.useBIOS = false;
