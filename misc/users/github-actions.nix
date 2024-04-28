@@ -1,7 +1,7 @@
 { config, ... }:
 {
   users.users.github-actions = {
-    isNormalUser = false;
+    isSystemUser = true;
     description = "Github Actions";
     extraGroups = [
       "docker"
