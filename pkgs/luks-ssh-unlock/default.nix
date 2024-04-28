@@ -4,6 +4,8 @@
 , makeWrapper
 , curl
 , jq
+, gnugrep
+, netcat-gnu
 , openssh
 }:
 
@@ -27,7 +29,9 @@ stdenv.mkDerivation rec {
 
     wrapProgram $out/bin/luks-ssh-unlock --prefix PATH : ${lib.makeBinPath [
       curl
+      gnugrep
       jq
+      netcat-gnu
       openssh
     ]}
   '';
