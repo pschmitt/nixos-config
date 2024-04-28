@@ -99,6 +99,9 @@ jobs:
           ssh-keyscan "${{ secrets.SSH_HOST }}" | \
             sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - name: Build package (aarch64-linux)
         run: |-
           nix build --print-build-logs --builders "$NIX_BUILDER" \
