@@ -141,6 +141,7 @@
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         ./modules/custom.nix
+        ./modules/luks-ssh-unlock.nix
       ];
 
       nixosSystemFor = system: hostname: configOptions:
