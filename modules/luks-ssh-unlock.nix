@@ -18,6 +18,7 @@ in
           username = mkOption {
             type = types.str;
             description = "SSH username for the target machine.";
+            default = "root";
           };
           key = mkOption {
             type = types.path;
@@ -41,10 +42,17 @@ in
           type = mkOption {
             type = types.str;
             description = "Type of LUKS operation.";
+            default = "dracut";
           };
           passphrase = mkOption {
             type = types.str;
+            default = "";
             description = "Passphrase for LUKS.";
+          };
+          passphraseFile = mkOption {
+            type = types.path;
+            description = "Path to the file containing the passphrase for LUKS.";
+            default = "";
           };
           debug = mkOption {
             type = types.bool;
@@ -78,7 +86,7 @@ in
           };
           sleep_interval = mkOption {
             type = types.int;
-            default = 10;
+            default = 15;
             description = "Time to wait between attempts.";
           };
           healthcheck = mkOption {
@@ -120,7 +128,7 @@ in
 
     # Define environment files
     environment.etc = mapAttrs'
-      (name: instance: nameValuePair "luks-ssh-unlock-${name}.env" {
+      (name: instance: nameValuePair "luks-ssh-unlock/${name}.env" {
         text = with instance; ''
           DEBUG=${optionalString (debug == true) "1"}
           SSH_HOSTNAME=${hostname}
@@ -134,6 +142,7 @@ in
           SSH_JUMPHOST_PORT=${optionalString (jumphost != null) (toString jumphost.port)}
           SSH_JUMPHOST_KEY=${optionalString (jumphost != null) jumphost.key}
           LUKS_PASSWORD=${passphrase}
+          LUKS_PASSWORD_FILE=${passphraseFile}
           LUKS_TYPE=${type}
           SLEEP_INTERVAL=${toString sleep_interval}
           ${optionalString (instance.healthcheck.enable) ''
@@ -152,7 +161,7 @@ in
         after = [ "network.target" ];
         serviceConfig = {
           Type = "simple";
-          EnvironmentFile = "/etc/luks-ssh-unlock-${name}.env";
+          EnvironmentFile = "/etc/luks-ssh-unlock/${name}.env";
           ExecStart = "${pkgs.luks-ssh-unlock}/bin/luks-ssh-unlock";
         };
       })
