@@ -31,7 +31,7 @@ jobs:
         id: set-matrix
         shell: bash
         run: |
-          echo "matrix=$(./.github/workflows/scripts/nix-flake-show.sh)" \
+          echo "matrix=$(./.github/workflows/scripts/nix-gh-build-matrix.sh)" \
             >> $GITHUB_OUTPUT
 
   build-pkgs-free:
@@ -68,6 +68,48 @@ jobs:
         run: |-
           nix build --print-build-logs \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
+
+  build-pkgs-oci:
+    needs: setup-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
+
+      - name: Setup known_hosts
+        run: |-
+          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+
+      - name: Build package (aarch64-linux)
+        run: |-
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#packages.aarch64-linux.${{ matrix.pkg }}'
+          tree result
+
+      - name: Build package (x86_64-linux)
+        run: |-
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+          tree result
 
   build-pkgs-nonfree:
     needs: setup-matrix
