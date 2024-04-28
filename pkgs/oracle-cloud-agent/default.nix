@@ -1,12 +1,13 @@
 { autoPatchelfHook
 , coreutils
+, fetchurl
 , gawk
 , lib
 , rpmextract
 , stdenv
 }:
 
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "oracle-cloud-agent";
   version = "1.38.0";
 
@@ -14,15 +15,35 @@ stdenv.mkDerivation {
   # But this is not a public repo, so we have to download the RPMs manually
   # To get the URLs you can run $ yumdownloader --urls oracle-cloud-agent
   # from an OCI machine where the Oracle Linux yum repo is configured
-  # https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
-  # https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm
-  src =
+  # Building this package directly on an OCI machine should work out of the box
+  url =
     if stdenv.isAarch64 then
-      ./src/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
+      "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm"
     else if stdenv.isx86_64 then
-      ./src/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm
+     "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm"
     else
       throw "Unsupported platform";
+
+  checksum =
+    if stdenv.isAarch64 then
+      "sha256-KNmDgbBp4G0HGkfohK0hpTcvb0JDSNIcUHoStKncq28="
+    else if stdenv.isx86_64 then
+     "sha256-9XN/7vkT+33YYRG1fCtfoNsef4x9086QP0AoD9PlUQ8="
+    else
+      throw "Unsupported platform";
+
+  src = fetchurl {
+    url = "${url}";
+    sha256 = "${checksum}";
+  };
+  # Manually downloaded RPMs
+  # src =
+  #   if stdenv.isAarch64 then
+  #     ./src/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
+  #   else if stdenv.isx86_64 then
+  #     ./src/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm
+  #   else
+  #     throw "Unsupported platform";
 
   buildInputs = [ autoPatchelfHook gawk rpmextract ];
 
