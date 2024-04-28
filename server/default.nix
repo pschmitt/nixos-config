@@ -4,7 +4,7 @@
     ../common/global
     ../common/mail
 
-    ../misc/luks-ssh-unlock.nix
+    ../misc/initrd-luks-ssh-unlock.nix
     ../misc/git-clone-nixos-config.nix
     ../misc/users/github-actions.nix
     ../misc/users/nix-remote-builder.nix
