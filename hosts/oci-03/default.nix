@@ -5,7 +5,7 @@
     ../../server
     ../../server/oci.nix
 
-    ../../misc/mmonit.nix
+    ../../server/mmonit.nix
     ../../common/restic
   ];
 
