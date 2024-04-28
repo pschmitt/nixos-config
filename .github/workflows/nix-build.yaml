@@ -103,11 +103,12 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Netbird Connect
-        id: netbird
-        uses: Alemiz112/netbird-connect-action@v1
-        with:
-          setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
+      # FIXME GH Actions refuses to load this, probably b/c it's a pre-release
+      # - name: Netbird Connect
+      #   id: netbird
+      #   uses: Alemiz112/netbird-connect-action@v1
+      #   with:
+      #     setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
 
       - name: Build package (aarch64-linux)
         run: |-
