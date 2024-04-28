@@ -8,6 +8,12 @@
       description = "Main user's username.";
     };
 
+    custom.fullName = lib.mkOption {
+      type = lib.types.str;
+      default = "Philipp Schmitt";
+      description = "Main user's full name.";
+    };
+
     custom.email = lib.mkOption {
       type = lib.types.str;
       default = "philipp@schmitt.co";
