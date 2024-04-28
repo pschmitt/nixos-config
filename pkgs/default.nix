@@ -19,6 +19,7 @@ in
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
   luks-mount = pkgs.callPackage ./luks-mount { };
+  luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
