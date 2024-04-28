@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   hostname = config.networking.hostName;
 in
@@ -16,7 +16,7 @@ in
     passwordFile = config.age.secrets.restic-password.path;
     repositoryFile = config.age.secrets.restic-repository.path;
 
-    paths = [
+    paths = lib.mkDefault [
       "/etc/nixos"
       "${config.custom.homeDirectory}/devel"
       "${config.custom.homeDirectory}/Documents"
