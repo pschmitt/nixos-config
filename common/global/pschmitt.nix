@@ -1,19 +1,15 @@
 { pkgs, config, ... }: {
   # TODO Define password with agenix
-  users.users.pschmitt = {
+  users.users."${config.custom.username}" = {
     uid = 1000;
     isNormalUser = true;
-    description = "Philipp Schmitt";
+    description = config.custom.fullName;
+    group = config.custom.username;
     extraGroups = [
-      "adbusers"
       "docker"
-      "input"
       "libvirtd"
       "mlocate"
-      "networkmanager"
-      "pschmitt"
-      "uinput" # for *dotool
-      "video"
+      "users"
       "wheel"
       "wireshark"
     ];
@@ -23,4 +19,7 @@
     ];
     shell = if config.custom.server then pkgs.bash else pkgs.zsh;
   };
+
+  # Below is required for some reason when using greetd with autologin
+  users.groups."${config.custom.username}" = { };
 }
