@@ -116,22 +116,12 @@ jobs:
 
       - name: Build package (aarch64-linux)
         run: |-
-          mkdir -p ~/.config/nixpkgs/overlays
-          cat > ~/.config/nixpkgs/overlays/prefer-remote-fetch.nix <<EOF
-            self: super: super.prefer-remote-fetch self super
-          EOF
-
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#packages.aarch64-linux.${{ matrix.pkg }}'
           tree result
 
       - name: Build package (x86_64-linux)
         run: |-
-          mkdir -p ~/.config/nixpkgs/overlays
-          cat > ~/.config/nixpkgs/overlays/prefer-remote-fetch.nix <<EOF
-            self: super: super.prefer-remote-fetch self super
-          EOF
-
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
