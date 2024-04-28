@@ -5,6 +5,7 @@
   users.users.nix-remote-builder = {
     isSystemUser = true;
     description = "User for remote builds (see common/global/nix-remote-build.nix)";
+    group = "nix-remote-builder";
     extraGroups = [
       "wheel"
     ];
@@ -12,4 +13,6 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder"
     ];
   };
+
+  users.groups.nix-remote-builder = { };
 }
