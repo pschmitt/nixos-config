@@ -997,16 +997,17 @@
         ]
       },
       "locked": {
-        "dirtyRev": "860dbf04c3c69998b75ae9ae38a196a3bb9e2b8c-dirty",
-        "dirtyShortRev": "860dbf0-dirty",
-        "lastModified": 1714026830,
-        "narHash": "sha256-n7E+D5p3c1szN1l69vgKuC5qzOVfzzs5EvNM4drp3oU=",
-        "type": "git",
-        "url": "file:///etc/nixos/nix-snapd.git"
+        "lastModified": 1713928921,
+        "narHash": "sha256-RrNs/pgFft0CYXLigcOoev9tHrVctjYNUDDrO6wFgY8=",
+        "owner": "io12",
+        "repo": "nix-snapd",
+        "rev": "0ee5fe527ee34fed9f1fb5748478a1d3230716e3",
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///etc/nixos/nix-snapd.git"
+        "owner": "io12",
+        "repo": "nix-snapd",
+        "type": "github"
       }
     },
     "nixgl": {
