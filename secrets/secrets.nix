@@ -71,6 +71,9 @@ in
 
   "oci-03/luks-passphrase-root.age".publicKeys = recipients;
   "oci-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
+  "oci-03/restic-repository.age".publicKeys = recipients;
+  "oci-03/restic-password.age".publicKeys = recipients;
+  "oci-03/restic-env.age".publicKeys = recipients;
   "oci-03/msmtp-password-gmail.age".publicKeys = recipients;
   "oci-03/ssh_host_rsa_key.age".publicKeys = recipients;
   "oci-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
