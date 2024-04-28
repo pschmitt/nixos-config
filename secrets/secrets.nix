@@ -56,6 +56,9 @@ in
   "rofl-02/luks-passphrase-data.age".publicKeys = recipients;
   "rofl-02/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "rofl-02/msmtp-password-gmail.age".publicKeys = recipients;
+  "rofl-02/restic-repository.age".publicKeys = recipients;
+  "rofl-02/restic-password.age".publicKeys = recipients;
+  "rofl-02/restic-env.age".publicKeys = recipients;
   "rofl-02/ssh_host_rsa_key.age".publicKeys = recipients;
   "rofl-02/ssh_host_rsa_key.pub.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.age".publicKeys = recipients;
@@ -64,6 +67,9 @@ in
   "rofl-03/luks-passphrase-root.age".publicKeys = recipients;
   "rofl-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "rofl-03/msmtp-password-gmail.age".publicKeys = recipients;
+  "rofl-03/restic-repository.age".publicKeys = recipients;
+  "rofl-03/restic-password.age".publicKeys = recipients;
+  "rofl-03/restic-env.age".publicKeys = recipients;
   "rofl-03/ssh_host_rsa_key.age".publicKeys = recipients;
   "rofl-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
   "rofl-03/ssh_host_ed25519_key.age".publicKeys = recipients;
@@ -83,6 +89,9 @@ in
   "oci-04/luks-passphrase-root.age".publicKeys = recipients;
   "oci-04/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "oci-04/msmtp-password-gmail.age".publicKeys = recipients;
+  "oci-04/restic-repository.age".publicKeys = recipients;
+  "oci-04/restic-password.age".publicKeys = recipients;
+  "oci-04/restic-env.age".publicKeys = recipients;
   "oci-04/ssh_host_rsa_key.age".publicKeys = recipients;
   "oci-04/ssh_host_rsa_key.pub.age".publicKeys = recipients;
   "oci-04/ssh_host_ed25519_key.age".publicKeys = recipients;
