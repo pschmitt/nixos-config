@@ -3,6 +3,7 @@
   users.users.github-actions = {
     isSystemUser = true;
     description = "Github Actions";
+    group = "github-actions";
     extraGroups = [
       "docker"
       "wheel"
@@ -15,4 +16,6 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHj1bwykYI4tC4kt3Rd4QAOV2D1srlcQ14NLB9w3JBXp root@rofl-02"
     ];
   };
+
+  users.groups.github-actions = { };
 }
