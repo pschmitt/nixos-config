@@ -1,5 +1,6 @@
 { autoPatchelfHook
 , coreutils
+, cacert
 , curl
 , fetchurl
 , lib
@@ -62,11 +63,12 @@ stdenv.mkDerivation rec {
     # --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
+      --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
       --run "mkdir -p /var/lib/mmonit/logs" \
-      --run "if ! test -f ${mmonitHome}/conf || test -L $mmonitHome/conf; then rm -f $mmonitHome/conf; ln -sfv $out/conf $mmonitHome/conf; fi" \
-      --run "test -f ${mmonitHome}/db/mmonit.db || cp -v $out/db/mmonit.db $mmonitHome/db/mmonit.db" \
-      --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml $mmonitHome/license.xml; fi" \
-      --run "test -f ${mmonitHome}/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o $mmonitHome/license.xml"
+      --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
+      --run "test -f ${mmonitHome}/db/mmonit.db || cp -v $out/db/mmonit.db ${mmonitHome}/db/mmonit.db" \
+      --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi" \
+      --run "test -f ${mmonitHome}/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o ${mmonitHome}/license.xml"
 
     # systemd service - https://mmonit.com/wiki/MMonit/Setup
     cat > $out/lib/systemd/system/mmonit.service <<EOF
