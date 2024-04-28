@@ -14,7 +14,10 @@ check_fonts() {
 
 fetch_fonts() {
   local font
-  local extra_args=()
+  local extra_args=(
+    -o UserKnownHostsFile=/dev/null
+    -o StrictHostKeyChecking=no
+  )
   if [[ -n "$SSH_IDENTITY_FILE" ]]
   then
     extra_args+=(-i "$SSH_IDENTITY_FILE")
