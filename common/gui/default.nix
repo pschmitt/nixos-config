@@ -77,7 +77,16 @@
   systemd.tmpfiles.rules = [
     "f /var/lib/systemd/linger/pschmitt"
   ];
-  users.users.pschmitt.linger = true;
+  users.users."${config.custom.username}" = {
+    linger = true;
+
+    extraGroups = [
+      "adbusers"
+      "input"  # do we need this?
+      "uinput" # for dotool
+      "video"  # do we need this?
+    ];
+  };
 
   programs.adb.enable = true;
 
