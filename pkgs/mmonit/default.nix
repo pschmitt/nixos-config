@@ -25,6 +25,8 @@ stdenv.mkDerivation rec {
 
   buildInputs = [ autoPatchelfHook makeWrapper ];
 
+  mmonit_home = "/var/lib/mmonit";
+
   installPhase = ''
     mkdir -p $out
     cp -r ./* $out
@@ -38,9 +40,9 @@ stdenv.mkDerivation rec {
     # --replace-fail 'SelfSignedCertificate allow="false"' 'SelfSignedCertificate allow="true"' \
     # --replace-fail '<HostnameVerification enable="true"' '<HostnameVerification enable="false"'
     substituteInPlace $out/conf/server.xml \
-      --replace-fail 'sqlite:///db/mmonit.db' 'sqlite:///var/lib/mmonit/mmonit.db' \
-      --replace-fail 'Logger directory="logs"' 'Logger directory="/var/lib/mmonit/logs"' \
-      --replace-fail '<License file="license.xml"' '<License file="/var/lib/mmonit/license.xml"' \
+      --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonit_home}/db/mmonit.db' \
+      --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonit_home}/logs"' \
+      --replace-fail '<License file="license.xml"' '<License file="${mmonit_home}/license.xml"' \
       --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="8080"'
 
     # Create systemd service
@@ -61,10 +63,10 @@ stdenv.mkDerivation rec {
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --run "mkdir -p /var/lib/mmonit/logs" \
-      --run "if ! test -f /var/lib/mmonit/conf || test -L /var/lib/mmonit/conf; then rm -f /var/lib/mmonit/conf; ln -sfv $out/conf /var/lib/mmonit/conf; fi" \
-      --run "test -f /var/lib/mmonit/mmonit.db || cp -v $out/db/mmonit.db /var/lib/mmonit/mmonit.db" \
-      --run "if ! test -f /var/lib/mmonit/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml /var/lib/mmonit/license.xml; fi" \
-      --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
+      --run "if ! test -f $mmonit_home/conf || test -L $mmonit_home/conf; then rm -f $mmonit_home/conf; ln -sfv $out/conf $mmonit_home/conf; fi" \
+      --run "test -f $mmonit_home/db/mmonit.db || cp -v $out/db/mmonit.db $mmonit_home/db/mmonit.db" \
+      --run "if ! test -f $mmonit_home/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml $mmonit_home/license.xml; fi" \
+      --run "test -f $mmonit_home/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o $mmonit_home/license.xml"
 
     # systemd service - https://mmonit.com/wiki/MMonit/Setup
     cat > $out/lib/systemd/system/mmonit.service <<EOF
