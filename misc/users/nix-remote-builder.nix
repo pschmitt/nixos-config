@@ -3,7 +3,7 @@
   # See also:
   # https://github.com/nix-community/srvos/blob/main/nixos/roles/nix-remote-builder.nix
   users.users.nix-remote-builder = {
-    isNormalUser = false;
+    isSystemUser = true;
     description = "User for remote builds (see common/global/nix-remote-build.nix)";
     extraGroups = [
       "wheel"
