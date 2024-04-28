@@ -111,7 +111,7 @@ jobs:
 
       - name: Build package (aarch64-linux)
         run: |-
-          mkdir ~/.config/nixpkgs/overlays
+          mkdir -p ~/.config/nixpkgs/overlays
           cat > ~/.config/nixpkgs/overlays/prefer-remote-fetch.nix <<EOF
             self: super: super.prefer-remote-fetch self super
           EOF
@@ -122,7 +122,7 @@ jobs:
 
       - name: Build package (x86_64-linux)
         run: |-
-          mkdir ~/.config/nixpkgs/overlays
+          mkdir -p ~/.config/nixpkgs/overlays
           cat > ~/.config/nixpkgs/overlays/prefer-remote-fetch.nix <<EOF
             self: super: super.prefer-remote-fetch self super
           EOF
