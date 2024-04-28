@@ -28,6 +28,16 @@ in
             default = 22;
             description = "SSH port for the target machine.";
           };
+          forceIpv4 = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Force IPv4 for SSH connection.";
+          };
+          forceIpv6 = mkOption {
+            type = types.bool;
+            default = false;
+            description = "Force IPv6 for SSH connection.";
+          };
           type = mkOption {
             type = types.str;
             description = "Type of LUKS operation.";
@@ -85,6 +95,11 @@ in
                   description = "Remote hostname to run the command on.";
                   default = "";
                 };
+                remote_username = mkOption {
+                  type = types.str;
+                  description = "Remote username for the remote healthcheck command.";
+                  default = "";
+                };
                 remote_cmd = mkOption {
                   type = types.str;
                   description = "Remote command to verify the status.";
@@ -112,6 +127,8 @@ in
           SSH_USER=${username}
           SSH_KEY=${key}
           SSH_PORT=${toString port}
+          SSH_FORCE_IPV4=${optionalString (forceIpv4 == true) "1"}
+          SSH_FORCE_IPV6=${optionalString (forceIpv6 == true) "1"}
           SSH_JUMPHOST=${optionalString (jumphost != null) jumphost.hostname}
           SSH_JUMPHOST_USERNAME=${optionalString (jumphost != null) jumphost.username}
           SSH_JUMPHOST_PORT=${optionalString (jumphost != null) (toString jumphost.port)}
@@ -122,6 +139,7 @@ in
           ${optionalString (instance.healthcheck.enable) ''
             HEALTHCHECK_PORT=${toString healthcheck.port}
             HEALTHCHECK_REMOTE_HOSTNAME="${optionalString (healthcheck.remote_hostname != "") healthcheck.remote_hostname}"
+            HEALTHCHECK_REMOTE_USERNAME="${optionalString (healthcheck.remote_username != "") healthcheck.remote_username}"
             HEALTHCHECK_REMOTE_CMD="${healthcheck.remote_cmd}"
           ''}
         '';
