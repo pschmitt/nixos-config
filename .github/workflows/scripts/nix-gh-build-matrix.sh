@@ -5,8 +5,18 @@ mapfile -t PKGS < <(jq -er '.packages["x86_64-linux"] | keys[]' <<< "$NIX_FLAKE_
 
 PKGS_FREE=()
 PKGS_NONFREE=()
+PKGS_OCI=()
 for p in "${PKGS[@]}"
 do
+  # Special snowflakes
+  case "$p" in
+    oracle-cloud-agent)
+      # Oracle Cloud Agent's RPM can only be fetched from OCI servers
+      PKGS_OCI+=("$p")
+      continue
+      ;;
+  esac
+
   # Skip proprietary packages
   if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free' >/dev/null
   then
@@ -19,6 +29,7 @@ done
 JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_FREE=$(printf '%s\n' "${PKGS_FREE[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_NONFREE=$(printf '%s\n' "${PKGS_NONFREE[@]}" | jq -Rcn '[inputs]')
+JSON_PKGS_OCI=$(printf '%s\n' "${PKGS_OCI[@]}" | jq -Rcn '[inputs]')
 # FIXME We should determine the target architecture by evaluating the flake and
 # not hardcode it based on the hostname
 JSON_NIXOS_CONFIGS_X86_64=$(jq -c '[.nixosConfigurations | keys[] | select(. | test("^oci-") | not)]' <<< "$NIX_FLAKE_SHOW")
@@ -30,11 +41,13 @@ jq -cn \
   --argjson pkgs "$JSON_PKGS" \
   --argjson pkgs_nonfree "$JSON_PKGS_NONFREE" \
   --argjson pkgs_free "$JSON_PKGS_FREE" \
+  --argjson pkgs_oci "$JSON_PKGS_OCI" \
 '
   {
     pkgs: {
       free: $pkgs_free,
       nonfree: $pkgs_nonfree,
+      oci: $pkgs_oci,
       all: $pkgs
     },
     hosts: {
