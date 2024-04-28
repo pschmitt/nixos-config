@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ config, pkgs, ... }: {
   # Define the systemd service
   systemd.services."git-clone-nixos-config" = {
     # Make sure the service waits for networking to be up
@@ -14,6 +14,7 @@
         if [[ -z "$(ls -A /etc/nixos)" ]]
         then
           ${pkgs.git}/bin/git clone https://github.com/pschmitt/nixos-config /etc/nixos
+          ${pkgs.coreutils}/bin/chown -R ${config.custom.username} /etc/nixos
         fi
       ''}/bin/git-clone-nixos-config";
     };
