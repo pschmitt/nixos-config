@@ -105,8 +105,8 @@
     };
 
     nix-snapd = {
-      # url = "github:io12/nix-snapd";
-      url = "/etc/nixos/nix-snapd.git";
+      url = "github:io12/nix-snapd";
+      # url = "/etc/nixos/nix-snapd.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
