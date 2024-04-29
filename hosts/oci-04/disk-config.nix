@@ -1,7 +1,8 @@
 { ... }:
 let
   # Reading the contents of a file into a variable
-  mainDisk = builtins.readFile /tmp/disk-path;
+  mainDisk = builtins.readFile ./disk-path;
+  # mainDisk = builtins.readFile /tmp/disk-path;
 in
 {
   disko.devices = {
