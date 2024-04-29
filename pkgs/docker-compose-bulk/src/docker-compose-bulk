@@ -6,16 +6,16 @@ usage() {
 
 find_compose_files() {
   local compose_files
-  mapfile -t compose_files < <(find -L /srv -maxdepth 2 -iname docker-compose.yaml)
+  mapfile -t compose_files < <(find -L /srv -maxdepth 2 -iname docker compose.yaml)
 
-  # Output all docker-compose files if NO_IGNORE is set
+  # Output all docker compose files if NO_IGNORE is set
   if [[ -n "$NO_IGNORE" ]]
   then
     printf "%s\n" "${compose_files[@]}" | sort -u
     return
   fi
 
-  # Filter out docker-compose files in directories with ONESHOT or IGNORE files
+  # Filter out docker compose files in directories with ONESHOT or IGNORE files
   local -a target_compose_files
   local file dir
   for file in "${compose_files[@]}"
@@ -57,8 +57,8 @@ check_compose_service() {
   fi
 
   local all_svc running_svc
-  mapfile -t all_svc < <(docker-compose -f "$compose_file" ps --services)
-  mapfile -t running_svc < <(docker-compose -f "$compose_file" ps --services --filter "status=running")
+  mapfile -t all_svc < <(docker compose -f "$compose_file" ps --services)
+  mapfile -t running_svc < <(docker compose -f "$compose_file" ps --services --filter "status=running")
 
   local diff_svc
   diff_svc="$(echo "${all_svc[@]}" "${running_svc[@]}" | \
