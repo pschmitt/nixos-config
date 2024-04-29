@@ -83,27 +83,27 @@ resource "cloudflare_record" "mail-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "mail"
   # TODO Changeme
-  value   = "130.61.215.245"
-  type    = "A"
-  ttl     = 3600
+  value = "130.61.215.245"
+  type  = "A"
+  ttl   = 3600
 }
 
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
   # TODO Changeme
-  value   = "130.61.215.245"
-  type    = "A"
-  ttl     = 3600
+  value = "130.61.215.245"
+  type  = "A"
+  ttl   = 3600
 }
 
 resource "cloudflare_record" "mail-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "mail"
   # TODO Changeme
-  value   = "130.61.215.245"
-  type    = "A"
-  ttl     = 3600
+  value = "130.61.215.245"
+  type  = "A"
+  ttl   = 3600
 }
 
 
