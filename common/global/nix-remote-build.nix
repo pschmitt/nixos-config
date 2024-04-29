@@ -14,7 +14,7 @@
         protocol = "ssh-ng";
         sshUser = "nix-remote-builder";
         sshKey = config.custom.sshKey;
-        # base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
+        # ssh rofl-02.heimat.dev base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
         publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUhqMWJ3eWtZSTR0QzRrdDNSZDRRQU9WMkQxc3JsY1ExNE5MQjl3M0pCWHAgcHNjaG1pdHRAZ2UyCg==";
         systems = [ "x86_64-linux" ];
         maxJobs = 2;
@@ -26,7 +26,7 @@
         protocol = "ssh-ng";
         sshUser = "nix-remote-builder";
         sshKey = config.custom.sshKey;
-        # base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
+        # ssh rofl-03.heimat.dev base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
         publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUwvbStwRCtUc1NISnhTSFVIb3ltSHZxZXZGcnFPbWZBQmo3QWMxaFMzVFEgcm9vdEByb2ZsLTAzCg==";
         systems = [ "aarch64-linux" "x86_64-linux" ];
         maxJobs = 8;
