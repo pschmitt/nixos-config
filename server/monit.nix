@@ -1,7 +1,14 @@
 { lib, config, pkgs, ... }:
 # Inspired by https://github.com/dschrempf/blog/blob/7d88061796fb790f0d5b984b62629a68e6882c99/hugo/content/Linux/2024-02-14-Monitoring-a-home-server.md
 let
-  allowedIps = [ "127.0.0.1" "130.61.39.206" "10.0.0.0/8" "100.64.0.0/10" ];
+  allowList = [
+    "mmonit.heimat.dev"
+    "mmonit.oci-03.heimat.dev"
+    "localhost"
+    "127.0.0.1"
+    "10.0.0.0/8"
+    "100.64.0.0/10"
+  ];
 
   resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
     NOW=$(${pkgs.coreutils}/bin/date +%s)
@@ -25,24 +32,67 @@ let
     include /etc/monit/conf.d/*
 
     set httpd port 2812
-      allow localhost ${lib.strings.concatMapStringsSep " " (ip: "allow " + ip) allowedIps}'';
+      ${lib.strings.concatMapStringsSep " " (ip: "allow " + ip) allowList}'';
 
   monitSystem = ''
     check system $HOST
-      if loadavg (15min) > 4 for 5 times within 15 cycles then alert
+      if loadavg (15min) per core > 1 for 5 times within 15 cycles then alert
       if memory usage > 80% for 4 cycles then alert'';
 
   monitFilesystem = fs: ''
     check filesystem "filesystem ${fs}" with path ${fs}
-        if space usage > 90% then alert'';
+      group storage
+      if space usage > 85% then alert'';
   mountPoints = lib.mapAttrsToList (name: fs: fs.mountPoint) config.fileSystems;
   monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
 
   monitRestic = ''
     check program "restic backup status" with path "${resticLastBackup}"
-       every 1 cycles
-       if status > 0 then alert
-       group storage'';
+      group storage
+      every 5 cycles
+      if status > 0 then alert'';
+
+  monitTailscale = ''
+    check network tailscale with interface tailscale0
+      group "network"
+      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
+      if link down then restart
+      if 5 restarts within 10 cycles then alert
+
+    check host tailscale-magicdns with address 100.100.100.100
+      group "network"
+      depends on "tailscale"
+      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
+      if failed ping for 2 cycles then restart
+      if 3 restarts within 10 cycles then alert
+  '';
+
+  monitNetbird = ''
+    check network netbird with interface netbird-io
+      group "network"
+      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
+      if link down then restart
+      if 5 restarts within 10 cycles then alert
+  '';
+
+  monitNetwork = lib.strings.concatStringsSep "\n" [
+    # monitNetworkNic
+    monitTailscale
+    monitNetbird
+  ];
+
+  renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
+    MONIT_CONF_DIR=/etc/monit/conf.d
+    mkdir -p "$MONIT_CONF_DIR"
+
+    MAIN_NIC=$(${pkgs.iproute2}/bin/ip --json route | \
+      ${pkgs.jq}/bin/jq -r '[[.[] | select(.dst == "default")] | sort_by(.metric)[] | .dev][0]')
+    cat > "$MONIT_CONF_DIR/network" <<EOF
+    check network main-nic with interface $MAIN_NIC
+      group "network"
+      if link down then alert
+    EOF
+  '';
 in
 {
   age.secrets.mmonit-monit-config.file = ../secrets/mmonit-monit-config.age;
@@ -54,7 +104,14 @@ in
       monitGeneral
       monitSystem
       monitFilesystems
+      monitNetwork
       monitRestic
     ];
+  };
+
+  systemd.services.monit = {
+    serviceConfig = {
+      ExecStartPre = "${renderMonitConfig}";
+    };
   };
 }
