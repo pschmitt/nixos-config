@@ -8,6 +8,8 @@
     ./rclone-bisync.nix
     ./restic.nix
     ./rsync-fonts-to-rofl-03.nix
+
+    ./monit.nix
   ];
 
   # Enable networking
