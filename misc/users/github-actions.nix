@@ -5,6 +5,8 @@
     description = "Github Actions";
     group = "github-actions";
     shell = pkgs.bash;
+    home = "/var/lib/github-actions";
+    createHome = true;
     extraGroups = [
       "docker"
       "wheel"
