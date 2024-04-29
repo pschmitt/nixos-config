@@ -1,8 +1,8 @@
-{ lib, pkgs, ... }:
+{ lib, config, pkgs, ... }:
 let
   mullvadExpiration = pkgs.writeShellScript "mullvad-expiration" ''
-    echo "TODO"
-    exit 0
+  export PATH=${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.curl pkgs.jq ]}
+  ${builtins.readFile ./mullvad-expiration.sh}
   '';
 
   githubLastBackup = pkgs.writeShellScript "github-last-backup" ''
@@ -66,7 +66,7 @@ let
       if failed port 443 protocol https then restart
       if 5 restarts within 10 cycles then alert
 
-    check program mullvad with path "${mullvadExpiration} --warning 7 {{ mullvad_account }}"
+    check program mullvad with path "${mullvadExpiration} --warning 7 ${config.age.secrets.mullvad-account.path}"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
@@ -106,6 +106,8 @@ let
   '';
 in
 {
+  age.secrets.mullvad-account.file = ../../secrets/mullvad-account.age;
+
   services.monit.config = lib.mkAfter monitExtraConfig;
   systemd.services.monit.preStart = lib.mkAfter "${renderMonitConfig}";
 }
