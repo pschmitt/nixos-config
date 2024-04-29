@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   # See also:
   # https://github.com/nix-community/srvos/blob/main/nixos/roles/nix-remote-builder.nix
@@ -6,6 +6,7 @@
     isSystemUser = true;
     description = "User for remote builds (see common/global/nix-remote-build.nix)";
     group = "nix-remote-builder";
+    shell = pkgs.bash;
     extraGroups = [
       "wheel"
     ];
@@ -15,4 +16,5 @@
   };
 
   users.groups.nix-remote-builder = { };
+  nix.settings.trusted-users = [ "nix-remote-builder" ];
 }
