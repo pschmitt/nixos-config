@@ -1,8 +1,8 @@
 { lib, config, pkgs, ... }:
 let
   mullvadExpiration = pkgs.writeShellScript "mullvad-expiration" ''
-  export PATH=${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.curl pkgs.jq ]}
-  ${builtins.readFile ./mullvad-expiration.sh}
+    export PATH=${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.curl pkgs.jq ]}
+    ${builtins.readFile ./mullvad-expiration.sh}
   '';
 
   githubLastBackup = pkgs.writeShellScript "github-last-backup" ''
@@ -41,6 +41,15 @@ let
     fi
   '';
 
+  generateHostCheck = params: ''
+    check host ${params.service} with address ${params.address}
+      group piracy
+      depends on "docker compose services"
+      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${params.compose_yaml or params.service}/docker-compose.yaml up -d --force-recreate"
+      if failed port 443 protocol https then restart
+      if 5 restarts within 10 cycles then alert
+  '';
+
   monitExtraConfig = ''
     check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
       group docker
@@ -59,50 +68,16 @@ let
       every 2 cycles
       if status > 0 then alert
 
-    check host jellyfin with address media.heimat.dev
-      group piracy
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/jellyfin/docker-compose.yaml up -d --force-recreate"
-      if failed port 443 protocol https then restart
-      if 5 restarts within 10 cycles then alert
-
     check program mullvad with path "${mullvadExpiration} --warning 7 ${config.age.secrets.mullvad-account.path}"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
 
-    check host nextcloud with address c.heimat.dev
-      group web
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/nextcloud/docker-compose.yaml up -d --force-recreate"
-      if failed port 443 protocol https then restart
-      if 5 restarts within 10 cycles then alert
-
-    check host radarr with address radarr.heimat.dev
-      group piracy
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart radarr"
-      if failed port 443 protocol https then restart
-      if 5 restarts within 10 cycles then alert
-
-    check host sonarr with address sonarr.heimat.dev
-      group piracy
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart sonarr"
-      if failed port 443 protocol https then restart
-      if 5 restarts within 10 cycles then alert
-
-    check host transmission with address to.heimat.dev
-      group piracy
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart transmission"
-
-      if failed
-        port 443
-        protocol https
-        status = 401
-      then restart
-      if 5 restarts within 10 cycles then alert
+    ${generateHostCheck { service = "jellyfin"; address = "media.heimat.dev"; }}
+    ${generateHostCheck { service = "nextcloud"; address = "c.heimat.dev"; }};
+    ${generateHostCheck { service = "radarr"; address = "radarr.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck { service = "sonarr"; address = "sonarr.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck { service = "transmission"; address = "to.heimat.dev"; compose_yaml = "piracy"; }}
   '';
 in
 {
