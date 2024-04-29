@@ -42,11 +42,15 @@ let
   '';
 
   generateHostCheck = params: ''
-    check host ${params.service} with address ${params.address}
+    check host ${params.svc} with address ${params.addr}
       group piracy
       depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${params.compose_yaml or params.service}/docker-compose.yaml up -d --force-recreate"
-      if failed port 443 protocol https then restart
+      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${params.compose_yaml or params.svc}/docker-compose.yaml up -d --force-recreate ${params.svc}"
+      if failed
+        port 443
+        protocol https
+        ${if params.svc == "transmission" then "status 401" else ""}
+      then restart
       if 5 restarts within 10 cycles then alert
   '';
 
@@ -68,16 +72,16 @@ let
       every 2 cycles
       if status > 0 then alert
 
-    check program mullvad with path "${mullvadExpiration} --warning 7 ${config.age.secrets.mullvad-account.path}"
+    check program mullvad with path "${mullvadExpiration} --warning 15 ${config.age.secrets.mullvad-account.path}"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
 
-    ${generateHostCheck { service = "jellyfin"; address = "media.heimat.dev"; }}
-    ${generateHostCheck { service = "nextcloud"; address = "c.heimat.dev"; }};
-    ${generateHostCheck { service = "radarr"; address = "radarr.heimat.dev"; compose_yaml = "piracy"; }}
-    ${generateHostCheck { service = "sonarr"; address = "sonarr.heimat.dev"; compose_yaml = "piracy"; }}
-    ${generateHostCheck { service = "transmission"; address = "to.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck { svc = "jellyfin"; addr = "media.heimat.dev"; }}
+    ${generateHostCheck { svc = "nextcloud"; addr = "c.heimat.dev"; }};
+    ${generateHostCheck { svc = "radarr"; addr = "radarr.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck { svc = "sonarr"; addr = "sonarr.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck { svc = "transmission"; addr = "to.heimat.dev"; compose_yaml = "piracy"; }}
   '';
 in
 {
