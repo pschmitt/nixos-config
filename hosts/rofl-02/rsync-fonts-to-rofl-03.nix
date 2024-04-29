@@ -15,7 +15,7 @@
     serviceConfig = {
       Type = "simple";
       Environment = [
-        "SOURCE_DIR=/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Fonts"
+        "SOURCE_DIR=/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Blobs/Fonts"
         "DEST_DIR=src"
         "REMOTE_USER=github-actions"
         "REMOTE_HOST=rofl-03.heimat.dev"
