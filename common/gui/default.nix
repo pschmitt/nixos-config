@@ -47,11 +47,11 @@
       layout = "de";
       variant = "";
     };
-    # Enable touchpad support (enabled default in most desktopManager).
-    libinput.enable = true;
   };
 
   hardware.uinput.enable = true;
+  # Enable touchpad support (enabled default in most desktopManager).
+  services.libinput.enable = true;
   services.udev.packages = [ pkgs.android-udev-rules ];
 
   # enable sushi and keyring
