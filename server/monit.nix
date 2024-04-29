@@ -11,18 +11,20 @@ let
   ];
 
   resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
-    NOW=$(${pkgs.coreutils}/bin/date +%s)
+    THRESHOLD=''${1:-86400}
+    NOW=$(${pkgs.coreutils}/bin/date '+%s')
+
     LAST_BACKUP=$(/run/current-system/sw/bin/restic-main snapshots --json | \
       ${pkgs.jq}/bin/jq -r '.[-1].time' | \
       ${pkgs.findutils}/bin/xargs -I {} ${pkgs.coreutils}/bin/date -d '{}' '+%s')
 
-    THRESHOLD=''${1:-86400}
     if [[ $((NOW - LAST_BACKUP)) -gt $THRESHOLD ]]
     then
-      echo "Last backup was more than $THRESHOLD ago"
+      echo "🚨 Last backup was more than $THRESHOLD ago"
       exit 1
     else
-      echo -e "Last backup was less than $THRESHOLD ago\n$(date -d "@$LAST_BACKUP")"
+      echo -e "✅ Last backup was less than $THRESHOLD ago"
+      echo -e "📅 $(date -d "@$LAST_BACKUP")"
       exit 0
     fi
   '';
@@ -76,7 +78,6 @@ let
   '';
 
   monitNetwork = lib.strings.concatStringsSep "\n" [
-    # monitNetworkNic
     monitTailscale
     monitNetbird
   ];
@@ -86,12 +87,20 @@ let
     mkdir -p "$MONIT_CONF_DIR"
 
     MAIN_NIC=$(${pkgs.iproute2}/bin/ip --json route | \
-      ${pkgs.jq}/bin/jq -r '[[.[] | select(.dst == "default")] | sort_by(.metric)[] | .dev][0]')
-    cat > "$MONIT_CONF_DIR/network" <<EOF
+      ${pkgs.jq}/bin/jq -r '
+        [[.[] | select(.dst == "default")] | sort_by(.metric)[] | .dev][0]
+      ')
+
+    if [[ -z "$MAIN_NIC" ]]
+    then
+      echo "ERROR: failed to determine main network interface" >&2
+    else
+      cat > "$MONIT_CONF_DIR/network" <<EOF
     check network main-nic with interface $MAIN_NIC
       group "network"
       if link down then alert
     EOF
+    fi
   '';
 in
 {
@@ -109,9 +118,5 @@ in
     ];
   };
 
-  systemd.services.monit = {
-    serviceConfig = {
-      ExecStartPre = "${renderMonitConfig}";
-    };
-  };
+  systemd.services.monit.preStart = "${renderMonitConfig}";
 }
