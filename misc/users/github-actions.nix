@@ -1,9 +1,10 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   users.users.github-actions = {
     isSystemUser = true;
     description = "Github Actions";
     group = "github-actions";
+    shell = pkgs.bash;
     extraGroups = [
       "docker"
       "wheel"
@@ -18,4 +19,5 @@
   };
 
   users.groups.github-actions = { };
+  nix.settings.trusted-users = [ "github-actions" ];
 }
