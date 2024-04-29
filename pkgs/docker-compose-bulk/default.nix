@@ -13,8 +13,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "docker-compose-bulk";
-    rev = "6e8d1856eed21d3a39df5c49d7b2f37a50c05247";
-    hash = "sha256-vDWe2N+NEEH/c9D8fvfZ1e8lVRmGTrLpSyF16PwAF0I=";
+    rev = "f7be883bd7673bbb029c4a4e4a4893042a597a50";
+    hash = "sha256-vXvKFkoBuBHabGfIyZl1c95f0AAnW3oCK0BbsH4oUHc=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
