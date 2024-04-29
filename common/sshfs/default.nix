@@ -40,9 +40,9 @@ in {
     options = opts;
   };
 
-  fileSystems."/mnt/rofl" = {
+  fileSystems."/mnt/rofl-02" = {
     fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#ubuntu@rofl-01.schmitt.co.beta.tailscale.net:/mnt/data";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-02.schmitt.co.beta.tailscale.net:/mnt/data";
     options = opts;
   };
 }
