@@ -8,11 +8,21 @@ usage() {
 }
 
 fssh() {
-  ssh \
+  if ! ssh \
     -o ControlMaster=no \
     -o UserKnownHostsFile=/dev/null \
     -o StrictHostKeyChecking=no \
     "$@"
+  then
+    # Retry once
+    echo "Retrying in 30 seconds..." >&2
+    sleep 30
+    ssh \
+      -o ControlMaster=no \
+      -o UserKnownHostsFile=/dev/null \
+      -o StrictHostKeyChecking=no \
+      "$@"
+  fi
 }
 
 # findmnt-root() {
@@ -22,6 +32,7 @@ fssh() {
 main() {
   set -u -o pipefail
 
+  local remote_user="${REMOTE_USER:-root}"
   local remote_host="${REMOTE_HOST:-}"
   local criteria="${CRITERIA:-by-id}"
   local ssh_args=()
@@ -39,6 +50,10 @@ main() {
         ;;
       -H|--host|-r|--remote-host)
         remote_host="$2"
+        shift 2
+        ;;
+      -u|--user|--remote-user|--username)
+        remote_user="$2"
         shift 2
         ;;
       --)
@@ -65,7 +80,7 @@ main() {
   if [[ -n "$remote_host" ]]
   then
     # shellcheck disable=SC2029
-    partition_path=$(fssh "${ssh_args[@]}" "$remote_host" "readlink -e '$target_device'")
+    partition_path=$(fssh -l "$remote_user" "${ssh_args[@]}" "$remote_host" "readlink -e '$target_device'")
   else
     partition_path=$(readlink -e "$target_device")
   fi
@@ -82,7 +97,7 @@ main() {
   local symlinks
   if [[ -n "$remote_host" ]]
   then
-    symlinks=$(fssh "${ssh_args[@]}" "$remote_host" "find /dev/disk -type l -exec test {} -ef '$device_path' \; -print")
+    symlinks=$(fssh -l "$remote_user" "${ssh_args[@]}" "$remote_host" "find /dev/disk -type l -exec test {} -ef '$device_path' \; -print")
   else
     symlinks=$(find /dev/disk -type l -exec test {} -ef "$device_path" \; -print)
   fi
