@@ -3,7 +3,6 @@
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
 NIXOS_CONFIG_DIR="/etc/nixos"
-TF_DIR="${NIXOS_CONFIG_DIR}/opentofu"
 SSH_IDENTITY_FILE="${HOME}/.ssh/id_ed25519"
 
 sops_decrypt() {
@@ -35,7 +34,7 @@ git -C "$NIXOS_CONFIG_DIR" add --intent-to-add &>/dev/null
 # NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || exit 3
 # pushd "$NIXOS_CONFIG_TMP_DIR" || exit 9
 
-tofu -chdir="${TF_DIR}" "$@"
+tofu "$@"
 # RC=$?
 # echo "NIXOS_CONFIG_TMP_DIR: $NIXOS_CONFIG_TMP_DIR" >&2
 # exit "$RC"
