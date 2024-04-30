@@ -22,5 +22,5 @@ echo "Resolved disk path ($DISK_PATH_CRITERIA) for $DISK on $REMOTE_HOST to $DIS
 
 DISK_PATH_FILE=$(readlink -m "../../hosts/$TARGET_HOST/disk-path")
 echo -n "$DISK_PATH" | tr -d '\n' > "$DISK_PATH_FILE"
-# git add --intent-to-add "$DISK_PATH_FILE"
-git add "$DISK_PATH_FILE"
+# NOTE We need to git add here, otherwise nix will not pick up the file
+git add --intent-to-add "$DISK_PATH_FILE"
