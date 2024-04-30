@@ -206,6 +206,15 @@
           server = true;
           snapd = true;
         };
+        iso = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./modules/custom.nix
+            ./iso.nix
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+          ];
+        };
       };
 
       # FIXME Why doesn't this work? The import never happens
