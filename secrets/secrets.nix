@@ -27,76 +27,88 @@ let
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFD3RzcAixrG9tfq0qlpvQky3ViwA+4PJyhkQZ1iNj+G"
     # oci-04
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINV9A30ogk+ycIZRu0D7BadF2+oW1upg2dsk6q+JN4mv root@oci-04"
+    # lrz
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGMRoAq4Vh4benZeqOHl5eDPHNvMM5owOFvbDTSgcpcU root@lrz"
   ];
 
   recipients = authorizedKeys ++ hostKeys;
 
 in
 {
-  "secret.age".publicKeys = recipients;
-  "tailscale-auth-key.age".publicKeys = recipients;
   "mullvad-account.age".publicKeys = recipients;
   "netbird-netbird-io-setup-key.age".publicKeys = recipients;
   "netbird-wiit-setup-key.age".publicKeys = recipients;
+  "secret.age".publicKeys = recipients;
+  "tailscale-auth-key.age".publicKeys = recipients;
 
-  "mmonit-monit-config.age".publicKeys = recipients;
   "mmonit-license.age".publicKeys = recipients;
+  "mmonit-monit-config.age".publicKeys = recipients;
 
   "ssh-key-nix-remote-builder.age".publicKeys = recipients;
   "ssh-key-nix-remote-builder.pub.age".publicKeys = recipients;
 
   "ge2/nix-netrc.age".publicKeys = recipients;
-  "ge2/restic-repository.age".publicKeys = recipients;
-  "ge2/restic-password.age".publicKeys = recipients;
   "ge2/restic-env.age".publicKeys = recipients;
+  "ge2/restic-password.age".publicKeys = recipients;
+  "ge2/restic-repository.age".publicKeys = recipients;
 
   "x13/nix-netrc.age".publicKeys = recipients;
+  "x13/restic-env.age".publicKeys = recipients;
   "x13/restic-password.age".publicKeys = recipients;
   "x13/restic-repository.age".publicKeys = recipients;
-  "x13/restic-env.age".publicKeys = recipients;
 
-  "rofl-02/luks-passphrase-root.age".publicKeys = recipients;
+  "lrz/restic-env.age".publicKeys = recipients;
+  "lrz/restic-password.age".publicKeys = recipients;
+  "lrz/restic-repository.age".publicKeys = recipients;
+  "lrz/ssh_host_ed25519_key.age".publicKeys = recipients;
+  "lrz/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "lrz/ssh_host_rsa_key.age".publicKeys = recipients;
+  "lrz/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "lrz/msmtp-password-gmail.age".publicKeys = recipients;
+  "lrz/msmtp-password-heimat-dev.age".publicKeys = recipients;
+
   "rofl-02/luks-passphrase-data.age".publicKeys = recipients;
-  "rofl-02/msmtp-password-heimat-dev.age".publicKeys = recipients;
+  "rofl-02/luks-passphrase-root.age".publicKeys = recipients;
   "rofl-02/msmtp-password-gmail.age".publicKeys = recipients;
-  "rofl-02/restic-repository.age".publicKeys = recipients;
-  "rofl-02/restic-password.age".publicKeys = recipients;
+  "rofl-02/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "rofl-02/restic-env.age".publicKeys = recipients;
-  "rofl-02/ssh_host_rsa_key.age".publicKeys = recipients;
-  "rofl-02/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "rofl-02/restic-password.age".publicKeys = recipients;
+  "rofl-02/restic-repository.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.age".publicKeys = recipients;
   "rofl-02/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "rofl-02/ssh_host_rsa_key.age".publicKeys = recipients;
+  "rofl-02/ssh_host_rsa_key.pub.age".publicKeys = recipients;
 
   "rofl-03/luks-passphrase-root.age".publicKeys = recipients;
-  "rofl-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "rofl-03/msmtp-password-gmail.age".publicKeys = recipients;
-  "rofl-03/restic-repository.age".publicKeys = recipients;
-  "rofl-03/restic-password.age".publicKeys = recipients;
+  "rofl-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "rofl-03/restic-env.age".publicKeys = recipients;
-  "rofl-03/ssh_host_rsa_key.age".publicKeys = recipients;
-  "rofl-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "rofl-03/restic-password.age".publicKeys = recipients;
+  "rofl-03/restic-repository.age".publicKeys = recipients;
   "rofl-03/ssh_host_ed25519_key.age".publicKeys = recipients;
   "rofl-03/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "rofl-03/ssh_host_rsa_key.age".publicKeys = recipients;
+  "rofl-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
 
   "oci-03/luks-passphrase-root.age".publicKeys = recipients;
-  "oci-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
-  "oci-03/restic-repository.age".publicKeys = recipients;
-  "oci-03/restic-password.age".publicKeys = recipients;
-  "oci-03/restic-env.age".publicKeys = recipients;
   "oci-03/msmtp-password-gmail.age".publicKeys = recipients;
-  "oci-03/ssh_host_rsa_key.age".publicKeys = recipients;
-  "oci-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "oci-03/msmtp-password-heimat-dev.age".publicKeys = recipients;
+  "oci-03/restic-env.age".publicKeys = recipients;
+  "oci-03/restic-password.age".publicKeys = recipients;
+  "oci-03/restic-repository.age".publicKeys = recipients;
   "oci-03/ssh_host_ed25519_key.age".publicKeys = recipients;
   "oci-03/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "oci-03/ssh_host_rsa_key.age".publicKeys = recipients;
+  "oci-03/ssh_host_rsa_key.pub.age".publicKeys = recipients;
 
   "oci-04/luks-passphrase-root.age".publicKeys = recipients;
-  "oci-04/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "oci-04/msmtp-password-gmail.age".publicKeys = recipients;
-  "oci-04/restic-repository.age".publicKeys = recipients;
-  "oci-04/restic-password.age".publicKeys = recipients;
+  "oci-04/msmtp-password-heimat-dev.age".publicKeys = recipients;
   "oci-04/restic-env.age".publicKeys = recipients;
-  "oci-04/ssh_host_rsa_key.age".publicKeys = recipients;
-  "oci-04/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+  "oci-04/restic-password.age".publicKeys = recipients;
+  "oci-04/restic-repository.age".publicKeys = recipients;
   "oci-04/ssh_host_ed25519_key.age".publicKeys = recipients;
   "oci-04/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "oci-04/ssh_host_rsa_key.age".publicKeys = recipients;
+  "oci-04/ssh_host_rsa_key.pub.age".publicKeys = recipients;
 }
