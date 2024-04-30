@@ -95,7 +95,7 @@ let
     then
       echo "WARNING: failed to determine main network interface. Trying to find the first physical nic." >&2
       MAIN_NIC=$(${pkgs.iproute2}/bin/ip -j link show | \
-        ${pkgs.jq}/bin/jq '
+        ${pkgs.jq}/bin/jq -er '
           [.[] | select(.link_type == "ether" and (.ifname | test("docker") | not))][0].ifname
         ')
     fi
