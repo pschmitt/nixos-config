@@ -101,7 +101,7 @@ let
     fi
 
     if [[ -z "$MAIN_NIC" || "$MAIN_NIC" == "null" ]]
-    else
+    then
       echo "ERROR: failed to determine main network interface" >&2
       exit 0
     fi
