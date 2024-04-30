@@ -16,7 +16,7 @@
       ssh = {
         enable = true;
         port = 22;
-        authorizedKeys = config.users.users.pschmitt.openssh.authorizedKeys.keys;
+        authorizedKeys = config.custom.authorizedKeys;
         hostKeys = [
           "/etc/ssh/ssh_host_rsa_key"
           "/etc/ssh/ssh_host_ed25519_key"
