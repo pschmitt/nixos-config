@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
-echo "$(date -Iseconds) running $0 $*" >> /tmp/debug
-notify-send "Running $0 $*"
-
 AGENIX_DIR=/etc/nixos/secrets
 AGE_IDENTITY_FILE=/home/pschmitt/.ssh/id_ed25519
 TARGET_HOST="${TARGET_HOST:-rofl-02}"
