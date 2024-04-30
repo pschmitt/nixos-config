@@ -57,7 +57,7 @@ in
   "x13/restic-password.age".publicKeys = recipients;
   "x13/restic-repository.age".publicKeys = recipients;
 
-  "lrz/luks-passphrase-data.age".publicKeys = recipients;
+  "lrz/luks-passphrase-root.age".publicKeys = recipients;
   "lrz/restic-env.age".publicKeys = recipients;
   "lrz/restic-password.age".publicKeys = recipients;
   "lrz/restic-repository.age".publicKeys = recipients;
