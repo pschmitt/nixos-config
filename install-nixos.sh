@@ -37,7 +37,7 @@ decrypt-ssh-host-keys() {
 
 decrypt-luks-passphrase() {
   local target_host="$1"
-  local secret_file="./secrets/${target_host}/luks-passphrase-data.age"
+  local secret_file="./secrets/${target_host}/luks-passphrase-root.age"
   decrypt "$secret_file"
 }
 
