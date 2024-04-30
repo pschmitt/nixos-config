@@ -36,6 +36,8 @@ stdenv.mkDerivation rec {
     # M/Monit tries to write to this pidfile on startup
     ln -sfv /var/lib/mmonit/mmonit.pid $out/logs/mmonit.pid
 
+    # Patch default server configuration
+    # https://mmonit.com/documentation/mmonit_manual.pdf#page=67
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonitHome}/db/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonitHome}/logs"' \
