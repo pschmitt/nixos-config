@@ -4,6 +4,10 @@ usage() {
   echo "Usage: $(basename "$0") [--age-file AGE_FILE] [--ssh-target root@nixos] TARGET_HOST"
 }
 
+echo_info() {
+  echo -e "ℹ️\e[1;34m$*\e[0m"
+}
+
 decrypt() {
   local secret_file="$1"
   local identity_file="${2:-${AGE_IDENTITY_FILE:-${HOME}/.ssh/id_ed25519}}"
@@ -107,8 +111,10 @@ main() {
   decrypt-luks-passphrase "$target_host" > "$luks_passphrase_file"
   decrypt-ssh-host-keys "$target_host" "$extra_files_dir"
 
+  echo_info "Decrypted secrets:"
   tree "$tmpdir"
 
+  echo_info "Installing NixOS system $target_host on $ssh_target"
   install-host \
     "$target_host" \
     "$ssh_target" \
