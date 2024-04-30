@@ -1,5 +1,20 @@
 { lib, ... }:
 {
+  fileSystems."/" = {
+    fsType = "btrfs";
+    options = [ "subvol=@root" "compress=zstd" ];
+  };
+
+  fileSystems."/home" = {
+    fsType = "btrfs";
+    options = [ "subvol=@home" "compress=zstd" ];
+  };
+
+  fileSystems."/nix" = {
+    fsType = "btrfs";
+    options = [ "subvol=@nix" "compress=zstd" ];
+  };
+
   disko.devices = {
     disk.system = {
       device = lib.mkDefault "/dev/nvme0n1";
