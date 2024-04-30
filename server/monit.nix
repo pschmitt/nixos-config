@@ -91,7 +91,7 @@ let
         [[.[] | select(.dst == "default")] | sort_by(.metric)[] | .dev][0]
       ')
 
-    if [[ -z "$MAIN_NIC" ]]
+    if [[ -z "$MAIN_NIC" || "$MAIN_NIC" == "null" ]]
     then
       echo "ERROR: failed to determine main network interface" >&2
     else
