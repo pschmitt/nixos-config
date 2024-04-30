@@ -15,6 +15,7 @@ let
     if [[ $((NOW - LAST_BACKUP)) -gt $THRESHOLD ]]
     then
       echo "🚨 Last backup was more than $THRESHOLD ago"
+      echo -e "📅 $(date -d "@$LAST_BACKUP")"
       exit 1
     else
       echo -e "✅ Last backup was less than $THRESHOLD ago"
