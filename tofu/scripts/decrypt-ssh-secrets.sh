@@ -37,11 +37,3 @@ do
   age --decrypt --identity "$AGE_IDENTITY_FILE" \
     "${AGENIX_DIR}/${TARGET_HOST}/${FILE}.age" > "./etc/ssh/$FILE"
 done
-
-# Determine disk path on the remote host
-DISK_PATH_FILE="/etc/nixos/hosts/${TARGET_HOST}/disk-path"
-# mkdir -p tmp
-# DISK_PATH_FILE="./disk-path"
-/etc/nixos/tofu/scripts/absolute-disk-path.sh > "$DISK_PATH_FILE"
-/etc/nixos/tofu/scripts/absolute-disk-path.sh > /tmp/disk-path
-git -C /etc/nixos add --intent-to-add "$DISK_PATH_FILE"
