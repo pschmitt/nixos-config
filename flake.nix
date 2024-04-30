@@ -192,6 +192,9 @@
       nixosConfigurations = {
         x13 = nixosSystemFor "x86_64-linux" "x13" { };
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { };
+        lrz = nixosSystemFor "x86_64-linux" "lrz" {
+          server = true;
+        };
         rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" {
           server = true;
         };
