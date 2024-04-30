@@ -2,11 +2,12 @@ resource "null_resource" "disko-disk-id-oci-04" {
   depends_on = [oci_core_instance.oci_04]
 
   provisioner "local-exec" {
-    command = "${path.module}/scripts/absolute-disk-path.sh > /etc/nixos/hosts/oci-04/disk-path"
+    command = "${path.module}/scripts/disko-disk-path.sh"
     environment = {
       TARGET_HOST = "oci-04"
       REMOTE_HOST = oci_core_instance.oci_04.public_ip
       REMOTE_USER = var.nixos_anywhere_ssh_user
+      DISK_PATH_CRITERIA = "wwn"
     }
   }
 }
