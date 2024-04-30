@@ -36,39 +36,27 @@ stdenv.mkDerivation rec {
     # M/Monit tries to write to this pidfile on startup
     ln -sfv /var/lib/mmonit/mmonit.pid $out/logs/mmonit.pid
 
-    # FIXME Disabling these 2 settings is an ugly hack and also does not fix the
-    # M/Monit license fetching issue at startup
-    # --replace-fail 'SelfSignedCertificate allow="false"' 'SelfSignedCertificate allow="true"' \
-    # --replace-fail '<HostnameVerification enable="true"' '<HostnameVerification enable="false"'
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonitHome}/db/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonitHome}/logs"' \
       --replace-fail '<License file="license.xml"' '<License file="${mmonitHome}/license.xml"' \
-      --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="${toString port}"'
+      --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="${toString port}"' \
+      --replace-fail '<CACertificatePath path="/path/to/ca/certs" />' '--><CACertificatePath path="${cacert}/etc/ssl/certs/ca-bundle.crt" /><!--'
 
     # Create systemd service
     mkdir -p $out/lib/systemd/system
 
     # Wrapper to handle DB copy and startup
-    # FIXME The license.xml retrieval should be handled by mmonit directly,
-    # but it fails with:
-    # IOException: SSL connect error [88.99.240.67] error:0A000086:SSL routines::certificate verify failed
-    #
-    # The following does not seem to work:
-    # --set SSL_CERT_FILE "''${cacert}/etc/ssl/certs/ca-bundle.crt" \
-    # --set OPENSSLDIR "''${cacert}/etc/ssl" \
-    #
-    # This workaround allows M/Monit to start but does not fix the underlying
-    # issue
-    # --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
+    # FIXME The trial license retrieval should be done by M/Monit itself but it
+    # fails to verify the SSL certificate. It does seem to ignore the
+    # CACert setting from the config...
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
-      --set SSL_CERT_FILE "${cacert}/etc/ssl/certs/ca-bundle.crt" \
-      --run "mkdir -p /var/lib/mmonit/logs" \
+      --run "mkdir -p ${mmonitHome}/logs" \
       --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
       --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
       --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi" \
-      --run "test -f ${mmonitHome}/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o ${mmonitHome}/license.xml"
+      --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
 
     # systemd service - https://mmonit.com/wiki/MMonit/Setup
     cat > $out/lib/systemd/system/mmonit.service <<EOF
