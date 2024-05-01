@@ -23,22 +23,26 @@ mmonit_latest_version() {
 	#   tail -n 1
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
 	MMONIT_VERSION="$(mmonit_version)"
 
-	if [[ -z "$MMONIT_VERSION" ]]; then
+	if [[ -z "$MMONIT_VERSION" ]]
+  then
 		echo "Failed to determine the currently installed version of mmonit" >&2
 		exit 1
 	fi
 
 	LATEST_MMONIT_VERSION="$(mmonit_latest_version)"
 
-	if [[ -z "${LATEST_MMONIT_VERSION}" ]]; then
+	if [[ -z "${LATEST_MMONIT_VERSION}" ]]
+  then
 		echo "Failed to determine the latest version of mmonit" >&2
 		exit 1
 	fi
 
-	if [[ "${MMONIT_VERSION}" == "${LATEST_MMONIT_VERSION}" ]]; then
+	if [[ "${MMONIT_VERSION}" == "${LATEST_MMONIT_VERSION}" ]]
+  then
 		echo "mmonit is up to date ($MMONIT_VERSION)"
 		exit 0
 	else
