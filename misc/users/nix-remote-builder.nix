@@ -11,7 +11,7 @@
       "wheel"
     ];
     openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
     ];
   };
 
