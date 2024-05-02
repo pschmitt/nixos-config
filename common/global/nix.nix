@@ -48,8 +48,8 @@
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
         "https://cache.garnix.io"
-        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${config.custom.sshKey}"
-        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${config.custom.sshKey}"
+        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${config.age.secrets.ssh-privkey-nix-remote-builder.path}"
+        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${config.age.secrets.ssh-privkey-nix-remote-builder.path}"
         # "https://nix-cache.heimat.dev"
       ];
 
