@@ -2,19 +2,23 @@
 
 let
   # List of instance names
-  instanceNames = [ "oci-03" "rofl-02" "rofl-03" ];
+  instanceNames = [ "fnuc" ];
 
   # Define a function to create an instance with common defaults
   createInstance = name: {
     type = "dracut";
-    hostname = "${name}.heimat.dev";
-    key = "/home/pschmitt/.ssh/id_ed25519";
+    hostname = "${name}.lan";
     passphraseFile = config.age.secrets.${"passphrase-" + name}.path;
+    forceIpv4 = true;
     sleepInterval = 30;
+
+    jumpHost = {
+      hostname = "turris-ts.heimat.dev";
+    };
 
     healthcheck = {
       enable = true;
-      command = "mount | grep encrypted";
+      command = "mount | grep luks";
     };
   };
 
