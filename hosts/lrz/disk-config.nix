@@ -1,6 +1,12 @@
 { lib, ... }:
 {
+  fileSystems."/boot" = {
+    fsType = "vfat";
+    options = [ "defaults" "fmask=0077" ];
+  };
+
   fileSystems."/" = {
+    # device = "/dev/sda1";  # set by disko
     fsType = "btrfs";
     options = [ "subvol=@root" "compress=zstd" ];
   };
@@ -22,11 +28,11 @@
       content = {
         type = "gpt";
         partitions = {
-          boot = {
-            name = "boot";
-            size = "1M";
-            type = "EF02"; # mbr, bios
-          };
+          # boot = {
+          #   name = "boot";
+          #   size = "1M";
+          #   type = "EF02"; # mbr, bios
+          # };
           esp = {
             label = "EFI";
             name = "ESP";
