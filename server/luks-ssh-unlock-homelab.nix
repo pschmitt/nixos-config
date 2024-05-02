@@ -13,7 +13,9 @@ let
     sleepInterval = 30;
 
     jumpHost = {
-      hostname = "turris-ts.heimat.dev";
+      # hostname = "turris-ts.heimat.dev";
+      # hostname = "100.76.194.3";
+      hostname = "turris.netbird.cloud";
     };
 
     healthcheck = {
