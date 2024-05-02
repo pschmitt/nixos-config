@@ -7,6 +7,8 @@
 
     ../../server/mmonit.nix
     ../../common/restic
+
+    ./monit.nix
   ];
 
   custom.useBIOS = false;

@@ -1,9 +1,8 @@
-{ pkgs, config, ... }: {
+{ ... }: {
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
-    ./monit.nix
   ];
 
   # Enable networking
