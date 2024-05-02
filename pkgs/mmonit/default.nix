@@ -74,6 +74,7 @@ stdenv.mkDerivation rec {
     ExecStop=$out/bin/mmonit.wrapped stop
     PIDFile=/var/lib/mmonit/logs/mmonit.pid
     Restart=on-abnormal
+    RestartSec=30
 
     [Install]
     WantedBy=multi-user.target
