@@ -1,7 +1,13 @@
 { lib, pkgs, ... }:
 let
   mmonitVersionCheck = pkgs.writeShellScript "mmonit-version-check" ''
-    export PATH=${pkgs.lib.makeBinPath [ pkgs.mmonit pkgs.curl pkgs.gnugrep pkgs.jq ]}
+    export PATH=${pkgs.lib.makeBinPath [
+      pkgs.curl
+      pkgs.gnugrep
+      pkgs.jq
+      pkgs.mmonit
+      pkgs.procps
+    ]}
     ${builtins.readFile ./mmonit-version-check.sh}
   '';
 
