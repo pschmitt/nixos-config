@@ -97,9 +97,9 @@ in
               options = {
                 enable = mkEnableOption "Healthcheck on/off.";
                 port = mkOption {
-                  type = types.int;
-                  default = 80;
+                  type = types.nullOr types.int;
                   description = "Health check port.";
+                  default = null;
                 };
                 hostname = mkOption {
                   type = types.str;
@@ -140,16 +140,16 @@ in
           SSH_PORT=${toString port}
           SSH_FORCE_IPV4=${optionalString (forceIpv4 == true) "1"}
           SSH_FORCE_IPV6=${optionalString (forceIpv6 == true) "1"}
-          SSH_JUMPHOST=${optionalString (jumpHost != null) jumpHost.hostname}
-          SSH_JUMPHOST_USERNAME=${optionalString (jumpHost != null) jumpHost.username}
-          SSH_JUMPHOST_PORT=${optionalString (jumpHost != null) (toString jumpHost.port)}
-          SSH_JUMPHOST_KEY=${optionalString (jumpHost != null) jumpHost.key}
+          SSH_JUMPHOST=${optionalString (jumpHost.hostname != null) jumpHost.hostname}
+          SSH_JUMPHOST_USERNAME=${optionalString (jumpHost.username != null) jumpHost.username}
+          SSH_JUMPHOST_PORT=${optionalString (jumpHost.port != null) (toString jumpHost.port)}
+          SSH_JUMPHOST_KEY=${optionalString (jumpHost.key != null) jumpHost.key}
           LUKS_PASSWORD=${passphrase}
           LUKS_PASSWORD_FILE=${passphraseFile}
           LUKS_TYPE=${type}
           SLEEP_INTERVAL=${toString sleepInterval}
           ${optionalString (instance.healthcheck.enable) ''
-            HEALTHCHECK_PORT=${toString healthcheck.port}
+            HEALTHCHECK_PORT=${optionalString (healthcheck.port != null) (toString healthcheck.port)}
             HEALTHCHECK_REMOTE_HOSTNAME="${optionalString (healthcheck.hostname != "") healthcheck.hostname}"
             HEALTHCHECK_REMOTE_USERNAME="${optionalString (healthcheck.username != "") healthcheck.username}"
             HEALTHCHECK_REMOTE_CMD="${healthcheck.command}"
