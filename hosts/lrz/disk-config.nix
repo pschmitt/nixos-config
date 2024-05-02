@@ -28,6 +28,7 @@
             type = "EF02"; # mbr, bios
           };
           esp = {
+            label = "EFI";
             name = "ESP";
             size = "512M";
             type = "EF00";
@@ -35,6 +36,7 @@
               type = "filesystem";
               format = "vfat";
               mountpoint = "/boot";
+              mountOptions = [ "defaults" "umask=0077" ];
             };
           };
           luks = {
