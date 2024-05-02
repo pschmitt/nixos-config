@@ -60,7 +60,7 @@ in
             default = false;
             description = "Enable debug mode.";
           };
-          jumphost = mkOption {
+          jumpHost = mkOption {
             type = types.nullOr (types.submodule {
               options = {
                 hostname = mkOption {
@@ -70,10 +70,12 @@ in
                 username = mkOption {
                   type = types.str;
                   description = "Jumphost SSH username.";
+                  default = "root";
                 };
                 key = mkOption {
                   type = types.path;
                   description = "Jumphost SSH key path.";
+                  default = "/etc/ssh/ssh_host_ed25519_key";
                 };
                 port = mkOption {
                   type = types.int;
@@ -85,7 +87,7 @@ in
             default = null;
             description = "Optional jumphost configuration.";
           };
-          sleep_interval = mkOption {
+          sleepInterval = mkOption {
             type = types.int;
             default = 15;
             description = "Time to wait between attempts.";
@@ -99,17 +101,17 @@ in
                   default = 80;
                   description = "Health check port.";
                 };
-                remote_hostname = mkOption {
+                hostname = mkOption {
                   type = types.str;
                   description = "Remote hostname to run the command on.";
                   default = "";
                 };
-                remote_username = mkOption {
+                username = mkOption {
                   type = types.str;
                   description = "Remote username for the remote healthcheck command.";
                   default = "";
                 };
-                remote_cmd = mkOption {
+                command = mkOption {
                   type = types.str;
                   description = "Remote command to verify the status.";
                   default = "";
@@ -138,19 +140,19 @@ in
           SSH_PORT=${toString port}
           SSH_FORCE_IPV4=${optionalString (forceIpv4 == true) "1"}
           SSH_FORCE_IPV6=${optionalString (forceIpv6 == true) "1"}
-          SSH_JUMPHOST=${optionalString (jumphost != null) jumphost.hostname}
-          SSH_JUMPHOST_USERNAME=${optionalString (jumphost != null) jumphost.username}
-          SSH_JUMPHOST_PORT=${optionalString (jumphost != null) (toString jumphost.port)}
-          SSH_JUMPHOST_KEY=${optionalString (jumphost != null) jumphost.key}
+          SSH_JUMPHOST=${optionalString (jumpHost != null) jumpHost.hostname}
+          SSH_JUMPHOST_USERNAME=${optionalString (jumpHost != null) jumpHost.username}
+          SSH_JUMPHOST_PORT=${optionalString (jumpHost != null) (toString jumpHost.port)}
+          SSH_JUMPHOST_KEY=${optionalString (jumpHost != null) jumpHost.key}
           LUKS_PASSWORD=${passphrase}
           LUKS_PASSWORD_FILE=${passphraseFile}
           LUKS_TYPE=${type}
-          SLEEP_INTERVAL=${toString sleep_interval}
+          SLEEP_INTERVAL=${toString sleepInterval}
           ${optionalString (instance.healthcheck.enable) ''
             HEALTHCHECK_PORT=${toString healthcheck.port}
-            HEALTHCHECK_REMOTE_HOSTNAME="${optionalString (healthcheck.remote_hostname != "") healthcheck.remote_hostname}"
-            HEALTHCHECK_REMOTE_USERNAME="${optionalString (healthcheck.remote_username != "") healthcheck.remote_username}"
-            HEALTHCHECK_REMOTE_CMD="${healthcheck.remote_cmd}"
+            HEALTHCHECK_REMOTE_HOSTNAME="${optionalString (healthcheck.hostname != "") healthcheck.hostname}"
+            HEALTHCHECK_REMOTE_USERNAME="${optionalString (healthcheck.username != "") healthcheck.username}"
+            HEALTHCHECK_REMOTE_CMD="${healthcheck.command}"
           ''}
         '';
       })
