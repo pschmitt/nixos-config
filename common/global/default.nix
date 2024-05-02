@@ -26,6 +26,7 @@ in
     ./bootloader.nix
     ./nix.nix
     ./pschmitt.nix
+    ./ssh.nix
   ];
 
   boot = {

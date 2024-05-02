@@ -16,8 +16,9 @@
         protocol = "ssh-ng";
         sshUser = "nix-remote-builder";
         sshKey = config.age.secrets.ssh-privkey-nix-remote-builder.path;
+        # NOTE we rely on the public keys being setup by programs.ssh.knownHosts
         # ssh rofl-02.heimat.dev base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
-        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUhqMWJ3eWtZSTR0QzRrdDNSZDRRQU9WMkQxc3JsY1ExNE5MQjl3M0pCWHAgcHNjaG1pdHRAZ2UyCg==";
+        # publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUhqMWJ3eWtZSTR0QzRrdDNSZDRRQU9WMkQxc3JsY1ExNE5MQjl3M0pCWHAgcHNjaG1pdHRAZ2UyCg==";
         systems = [ "x86_64-linux" ];
         maxJobs = 2;
         speedFactor = 1;
@@ -28,8 +29,9 @@
         protocol = "ssh-ng";
         sshUser = "nix-remote-builder";
         sshKey = config.age.secrets.ssh-privkey-nix-remote-builder.path;
+        # NOTE we rely on the public keys being setup by programs.ssh.knownHosts
         # ssh rofl-03.heimat.dev base64 -w0 /etc/ssh/ssh_host_ed25519_key.pub
-        publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUwvbStwRCtUc1NISnhTSFVIb3ltSHZxZXZGcnFPbWZBQmo3QWMxaFMzVFEgcm9vdEByb2ZsLTAzCg==";
+        # publicHostKey = "c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUwvbStwRCtUc1NISnhTSFVIb3ltSHZxZXZGcnFPbWZBQmo3QWMxaFMzVFEgcm9vdEByb2ZsLTAzCg==";
         systems = [ "aarch64-linux" "x86_64-linux" ];
         maxJobs = 14;
         speedFactor = 3;
