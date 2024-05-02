@@ -14,6 +14,8 @@
       nil
       nixpkgs-fmt
 
+      luajit
+
       # lsp
       ruff-lsp
     ];
