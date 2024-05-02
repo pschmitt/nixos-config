@@ -18,10 +18,10 @@ let
       every 120 cycles  # every 2 hours
       if status != 0 then alert
 
-    check program "M/Monit service" with path "${pkgs.systemd}/bin/systemctl --quiet is-active mmonit"
+    check program "M/Monit service" with path "${pkgs.systemd}/bin/systemctl --quiet is-active mmonit.service"
       group monit
-      every 1
-      restart program = ${pkgs.systemd}/bin/systemctl restart mmonit
+      every 1 cycles
+      restart program = "${pkgs.systemd}/bin/systemctl restart mmonit"
       if status != 0 then restart
       if status != 0 for 5 cycles then alert
   '';
