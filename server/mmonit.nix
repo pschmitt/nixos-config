@@ -1,6 +1,7 @@
 { config, lib, pkgs, ... }: {
   environment.systemPackages = with pkgs; [ mmonit ];
   systemd.packages = [ pkgs.mmonit ];
+  systemd.services.mmonit.enable = true;
 
   users.users.mmonit = {
     isSystemUser = true;
