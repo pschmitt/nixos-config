@@ -6,6 +6,7 @@
   ];
 
   custom.useBIOS = false;
+  # boot.kernelParams = [ "ip=dhcp" ];
 
   # Enable networking
   networking = {

@@ -23,10 +23,10 @@
     "console=ttyS0,115200"
   ];
 
-  boot.kernel.sysctl = {
-    "net.core.default_qdisc" = "fq";
-    "net.ipv4.tcp_congestion_control" = "bbr";
-  };
+  # boot.kernel.sysctl = {
+  #   "net.core.default_qdisc" = "fq";
+  #   "net.ipv4.tcp_congestion_control" = "bbr";
+  # };
 
   networking.useNetworkd = lib.mkDefault true;
 
