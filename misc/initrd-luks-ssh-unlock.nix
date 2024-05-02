@@ -18,18 +18,13 @@
         port = 22;
         authorizedKeys = config.custom.authorizedKeys;
         # authorizedKeys = with lib; concatLists (mapAttrsToList (name: user: if elem "wheel" user.extraGroups then user.openssh.authorizedKeys.keys else [ ]) config.users.users);
-        # hostKeys = [
-        #   "/etc/ssh/ssh_host_rsa_key"
-        #   "/etc/ssh/ssh_host_ed25519_key"
-        # ];
-        ignoreEmptyHostKeys = true;
+        hostKeys = [
+          "/etc/ssh/ssh_host_rsa_key"
+          "/etc/ssh/ssh_host_ed25519_key"
+        ];
+        # ignoreEmptyHostKeys = true;
       };
     };
-
-    # secrets = {
-    #   "/etc/ssh/ssh_host_ed25519_key" = "/etc/ssh/ssh_host_ed25519_key";
-    #   "/etc/ssh/ssh_host_rsa_key" = "/etc/ssh/ssh_host_rsa_key";
-    # };
   };
 
 }
