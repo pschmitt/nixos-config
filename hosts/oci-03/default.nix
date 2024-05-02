@@ -9,6 +9,7 @@
     ../../common/restic
 
     ./monit.nix
+    ./restic.nix
   ];
 
   custom.useBIOS = false;
