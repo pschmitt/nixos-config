@@ -11,6 +11,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    htop
     rsync # required for nixos-anywhere
   ];
 }
