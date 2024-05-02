@@ -30,13 +30,21 @@ decrypt-ssh-host-keys() {
   mkdir -p "$dest"
 
   local file key_type secret_file
+  local umask_bak
+  umask_bak=$(umask)
   for key_type in rsa ed25519
   do
     file="ssh_host_${key_type}_key"
     secret_file="./secrets/${target_host}/${file}"
+
+    umask 0177
     decrypt "${secret_file}.age" > "${dest}/${file}"
+    umask 0133
     decrypt "${secret_file}.pub.age" > "${dest}/${file}.pub"
   done
+
+  # Restore umask
+  umask "$umask_bak"
 }
 
 decrypt-luks-passphrase() {
