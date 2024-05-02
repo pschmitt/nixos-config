@@ -13,10 +13,17 @@ let
   '';
 
   monitExtraConfig = ''
-    check program M/Monit with path "${mmonitVersionCheck}"
+    check program "M/Monit version" with path "${mmonitVersionCheck}"
       group monit
       every 120 cycles  # every 2 hours
       if status != 0 then alert
+
+    check program "M/Monit service" with path "${pkgs.systemd}/bin/systemctl --quiet is-active mmonit"
+      group monit
+      every 1
+      restart program = ${pkgs.systemd}/bin/systemctl restart mmonit
+      if status != 0 then restart
+      if status != 0 for 5 cycles then alert
   '';
 in
 {
