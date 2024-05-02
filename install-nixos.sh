@@ -37,8 +37,11 @@ decrypt-ssh-host-keys() {
     file="ssh_host_${key_type}_key"
     secret_file="./secrets/${target_host}/${file}"
 
+    # Private key
     umask 0177
     decrypt "${secret_file}.age" > "${dest}/${file}"
+
+    # Public key
     umask 0133
     decrypt "${secret_file}.pub.age" > "${dest}/${file}.pub"
   done
