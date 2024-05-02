@@ -212,7 +212,7 @@
           system = "x86_64-linux";
           modules = [
             ./modules/custom.nix
-            ./iso.nix
+            ./hosts/iso
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
             "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
           ];
