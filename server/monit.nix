@@ -129,5 +129,9 @@ in
     ];
   };
 
+  systemd.services.monit.after = [
+    "tailscaled.service"
+    "netbird-netbird-io.service"
+  ];
   systemd.services.monit.preStart = "${renderMonitConfig}";
 }
