@@ -58,7 +58,7 @@
     vimAlias = true;
     configure = {
       packages.myVimPackage = with pkgs.vimPlugins; {
-        start = [ vim-oscyank ];
+        start = [ onedarkpro-nvim vim-oscyank ];
       };
       customRC = ''
         set nocompatible
@@ -68,6 +68,9 @@
         set backspace=indent,eol,start
         set number
         set listchars=tab:→\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
+
+        " theme
+        colorscheme onedark_vivid
 
         " enable modeline support
         set modeline
