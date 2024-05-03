@@ -1,7 +1,9 @@
 { config, lib, pkgs, ... }: {
   environment.systemPackages = with pkgs; [ mmonit ];
   systemd.packages = [ pkgs.mmonit ];
+  # FIXME The eternal NixOS question: how to enable a systemd service?!
   systemd.services.mmonit.enable = true;
+  systemd.services.mmonit.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
 
   users.users.mmonit = {
     isSystemUser = true;
