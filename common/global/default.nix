@@ -24,6 +24,7 @@ in
     ./appimage.nix
     ./atd.nix
     ./bootloader.nix
+    ./dotfiles.nix
     ./nix.nix
     ./pschmitt.nix
     ./ssh.nix
@@ -35,6 +36,8 @@ in
     kernelPackages = pkgs.linuxPackages_latest;
     tmp = { useTmpfs = true; };
   };
+
+  hardware.enableAllFirmware = true;
 
   # Set your time zone.
   time.timeZone = "Europe/Berlin";
@@ -109,7 +112,6 @@ in
     gcc
     gnumake
     go
-    neovim
     nodejs
     podman-compose
     pkg-config
@@ -118,20 +120,6 @@ in
     (python311.withPackages (python-packages))
     unstable.rustc
     openssl
-
-    (vim_configurable.customize {
-      name = "vim";
-      vimrcConfig.customRC = ''
-        set nocompatible
-        filetype plugin indent on
-        syntax on
-        set modeline
-        set autoindent expandtab smarttab
-        set mouse=a
-        scriptencoding utf-8
-        set backspace=indent,eol,start
-      '';
-    })
   ];
 
   users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
@@ -180,88 +168,6 @@ in
     enableSSHSupport = true;
   };
 
-  programs.tmux = {
-    enable = true;
-    clock24 = true;
-    newSession = true;
-    terminal = "tmux-direct";
-    aggressiveResize = true;
-    # Set prefix to C-a
-    shortcut = "a";
-    keyMode = "vi";
-    # extraConfig = ''
-    #   set-option -g mouse on
-    # '';
-    plugins = with pkgs; [
-      tmuxPlugins.sensible
-      tmuxPlugins.pain-control
-      tmuxPlugins.catppuccin
-      tmuxPlugins.mode-indicator
-      tmuxPlugins.fuzzback # prefix-?
-    ];
-  };
-
-  programs.npm = {
-    enable = true;
-    package = pkgs.nodePackages_latest.npm;
-    # FIXME This does not seem to be enough to override the dirs npm uses
-    # We might need to write this to /usr/etc/npmrc as the Arch Wiki suggests:
-    # https://wiki.archlinux.org/title/XDG_Base_Directory
-    npmrc = ''
-      prefix=''${XDG_DATA_HOME}/npm
-      cache=''${XDG_CACHE_HOME}/npm
-      init-module=''${XDG_CONFIG_HOME}/npm/config/npm-init.js'
-    '';
-  };
-
-  programs.neovim = {
-    enable = true;
-    defaultEditor = true;
-    viAlias = false;
-    vimAlias = true;
-    configure = {
-      extraConfig = ''
-        set nocompatible
-        filetype plugin indent on
-        syntax on
-        set modeline
-        set autoindent expandtab smarttab
-        set mouse=a
-        scriptencoding utf-8
-        set backspace=indent,eol,start
-        set number
-        set listchars=tab:→\ ,space:·,nbsp:␣,trail:•,eol:¶,precedes:«,extends:»
-      '';
-      # packages.myVimPackage = with pkgs.vimPlugins; {
-      #   # loaded on launch
-      #   start = [ fugitive ];
-      #   # manually loadable by calling `:packadd $plugin-name`
-      #   opt = [ ];
-      # };
-    };
-  };
-
-  # create a wireshark wrapper
-  programs.wireshark.enable = true;
-
-  programs.zsh = {
-    enable = true;
-    vteIntegration = true;
-  };
-
-  environment.shells = with pkgs; [ zsh ];
-  # Make ZSH respect XDG
-  environment.etc = {
-    "zshenv.local" = {
-      text = ''
-        export ZDOTDIR="$HOME/.config/zsh"
-      '';
-      mode = "0644";
-    };
-  };
-
-  hardware.enableAllFirmware = true;
-
   security.wrappers = {
     fping = {
       source = "${pkgs.fping}/bin/fping";
@@ -270,4 +176,7 @@ in
       group = "root";
     };
   };
+
+  # create a wireshark wrapper
+  programs.wireshark.enable = true;
 }
