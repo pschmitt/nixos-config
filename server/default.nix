@@ -9,6 +9,7 @@
     ../misc/users/github-actions.nix
     ../misc/users/nix-remote-builder.nix
 
+    ./dotfiles.nix
     ./monit.nix
     ./restic.nix
   ];
