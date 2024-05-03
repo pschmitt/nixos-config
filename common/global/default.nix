@@ -191,11 +191,11 @@ in
     keyMode = "vi";
     # extraConfig = ''
     #   set-option -g mouse on
-    #   '';
+    # '';
     plugins = with pkgs; [
       tmuxPlugins.sensible
       tmuxPlugins.pain-control
-      tmuxPlugins.onedark-theme
+      tmuxPlugins.catppuccin
       tmuxPlugins.mode-indicator
       tmuxPlugins.fuzzback # prefix-?
     ];
