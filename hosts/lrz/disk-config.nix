@@ -1,23 +1,18 @@
 { lib, ... }:
 {
-  fileSystems."/boot" = {
-    fsType = "vfat";
-    options = [ "defaults" "fmask=0077" ];
-  };
+  # fileSystems."/boot" = {
+  #   # options = [ "defaults" "fmask=0077" ];
+  # };
 
   fileSystems."/" = {
-    # device = "/dev/sda1";  # set by disko
-    fsType = "btrfs";
     options = [ "subvol=@root" "compress=zstd" ];
   };
 
   fileSystems."/home" = {
-    fsType = "btrfs";
     options = [ "subvol=@home" "compress=zstd" ];
   };
 
   fileSystems."/nix" = {
-    fsType = "btrfs";
     options = [ "subvol=@nix" "compress=zstd" ];
   };
 
@@ -34,8 +29,8 @@
           #   type = "EF02"; # mbr, bios
           # };
           esp = {
-            label = "EFI";
-            name = "ESP";
+            # label = "EFI";
+            # name = "ESP";
             size = "512M";
             type = "EF00";
             content = {
