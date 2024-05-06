@@ -100,9 +100,6 @@
         " 4 spaces for python files
         autocmd FileType python setlocal et ts=4 sts=4 sw=4
 
-        " 4 spaces for python files
-        autocmd FileType python setlocal et ts=4 sts=4 sw=4
-
         " https://github.com/ojroques/vim-oscyank#advanced-usage
         let g:oscyank_silent = 1
         if (!has('nvim') && !has('clipboard_working'))
