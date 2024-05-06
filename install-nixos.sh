@@ -19,7 +19,7 @@ decrypt() {
     return 1
   fi
 
-  echo -n "$secret"
+  echo "$secret"
 }
 
 decrypt-ssh-host-keys() {
@@ -37,6 +37,8 @@ decrypt-ssh-host-keys() {
     file="ssh_host_${key_type}_key"
     secret_file="./secrets/${target_host}/${file}"
 
+    # NOTE It is crucial that the ssh host keys end with a LF (newline).
+    # sshd will fail to start otherwise.
     # Private key
     umask 0177
     decrypt "${secret_file}.age" > "${dest}/${file}"
@@ -53,7 +55,7 @@ decrypt-ssh-host-keys() {
 decrypt-luks-passphrase() {
   local target_host="$1"
   local secret_file="./secrets/${target_host}/luks-passphrase-root.age"
-  decrypt "$secret_file"
+  decrypt "$secret_file" | tr -d '\n'
 }
 
 install-host() {
@@ -65,8 +67,8 @@ install-host() {
 
   # TODO We could try to determine the remote host's luks passphrase file
   # from the disko config instead of hardcoding it to /tmp/disk-1.key
-  # nix run github:nix-community/nixos-anywhere -- \
-  nixos-anywhere \
+  # nixos-anywhere \
+  nix run github:nix-community/nixos-anywhere -- \
     --flake ".#${target_host}" \
     --disk-encryption-keys /tmp/disk-1.key "$luks_passphrase_file" \
     --extra-files "$extra_files_dir" \

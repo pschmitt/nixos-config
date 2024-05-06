@@ -1,19 +1,24 @@
 { lib, ... }:
 {
   # fileSystems."/boot" = {
+  #   fsType = "vfat";
   #   # options = [ "defaults" "fmask=0077" ];
   # };
 
   fileSystems."/" = {
-    options = [ "subvol=@root" "compress=zstd" ];
+    # device = "/dev/sda1";  # set by disko
+    fsType = "btrfs";
+    options = [ "subvol=@root" "compress=zstd" "noatime" ];
   };
 
   fileSystems."/home" = {
-    options = [ "subvol=@home" "compress=zstd" ];
+    fsType = "btrfs";
+    options = [ "subvol=@home" "compress=zstd" "noatime" ];
   };
 
   fileSystems."/nix" = {
-    options = [ "subvol=@nix" "compress=zstd" ];
+    fsType = "btrfs";
+    options = [ "subvol=@nix" "compress=zstd" "noatime" ];
   };
 
   disko.devices = {
@@ -23,14 +28,14 @@
       content = {
         type = "gpt";
         partitions = {
-          # boot = {
-          #   name = "boot";
-          #   size = "1M";
-          #   type = "EF02"; # mbr, bios
-          # };
+          boot = {
+            name = "boot";
+            size = "1M";
+            type = "EF02"; # mbr, bios
+          };
           esp = {
-            # label = "EFI";
-            # name = "ESP";
+            label = "EFI";
+            name = "ESP";
             size = "512M";
             type = "EF00";
             content = {
