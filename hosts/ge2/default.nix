@@ -14,6 +14,8 @@
     ../../common/snek
     ../../common/sshfs
     ../../common/work
+
+    ../../misc/nfs-client.nix
   ];
 
 
