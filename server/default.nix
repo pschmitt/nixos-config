@@ -1,5 +1,5 @@
 # See also: https://github.com/nix-community/srvos
-{ pkgs, lib, ... }: {
+{ config, lib, pkgs, ... }: {
   imports = [
     ../common/global
     ../common/mail
@@ -19,10 +19,13 @@
 
   # Write logs to console
   # https://github.com/nix-community/srvos/blob/main/nixos/common/serial.nix
-  boot.kernelParams = [
-    "console=tty0"
-    "console=ttyS0,115200"
-  ];
+  boot.kernelParams =
+    if config.custom.kvmGuest
+    then [
+      "console=tty0"
+      "console=ttyS0,115200"
+    ]
+    else [ ];
 
   # boot.kernel.sysctl = {
   #   "net.core.default_qdisc" = "fq";

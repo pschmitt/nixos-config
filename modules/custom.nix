@@ -56,5 +56,11 @@
       default = false;
       description = "Use BIOS instead of UEFI";
     };
+
+    custom.kvmGuest = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether this is cloud-based server";
+    };
   };
 }
