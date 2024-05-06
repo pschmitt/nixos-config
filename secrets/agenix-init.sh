@@ -50,6 +50,7 @@ gen_ssh_key() {
 gen_ssh_host_keys() {
   local target_host="$1"
 
+  local rc=0
   local key_type tmpfile secret
   local pubkeyfile privkeyfile
   for key_type in rsa ed25519
@@ -60,23 +61,56 @@ gen_ssh_host_keys() {
 
     if [[ -e "$privkeyfile" || -e "$pubkeyfile" ]] && [[ -z "$FORCE" ]]
     then
-      echo_warning "$secret already exists. Use --force to overwrite"
-      echo_warning "--force overwrites *ALL* secrets for $target_host"
+      if [[ -n "$CHECK" ]]
+      then
+        if [[ -e "$privkeyfile" ]]
+        then
+          echo_success "$key_type private key exists at $privkeyfile"
+        else
+          rc=1
+          echo_error "Missing $key_type private key at $privkeyfile"
+        fi
+        if [[ -e "$pubkeyfile" ]]
+        then
+          echo_success "$key_type public key exists at $pubkeyfile"
+        else
+          echo_error "Missing $key_type publicate key at $pubkeyfile"
+          rc=1
+        fi
+
+        continue
+      else
+        echo_warning "$secret already exists. Use --force to overwrite"
+        echo_warning "--force overwrites *ALL* secrets for $target_host"
+      fi
       return 1
     fi
 
     tmpfile="$(mktemp --dry-run)"
     ssh-keygen -t "$key_type" -N "" -C "root@${target_host}" -f "$tmpfile" &>/dev/null
 
-    agenix -e "$privkeyfile" <"$tmpfile"
-    echo_success "Generated SSH $key_type private key $privkeyfile"
+    if ! agenix -e "$privkeyfile" <"$tmpfile"
+    then
+      rc=1
+      echo_error "Failed to save $privkeyfile"
+    else
+      echo_success "Generated SSH $key_type private key $privkeyfile"
+    fi
 
-    agenix -e "$pubkeyfile" <"${tmpfile}.pub"
-    echo_success "Generated SSH $key_type public key $pubkeyfile"
+    if ! agenix -e "$pubkeyfile" <"${tmpfile}.pub"
+    then
+      rc=1
+      echo_error "Failed to save $pubkeyfile"
+    else
+      echo_success "Generated SSH $key_type public key $pubkeyfile"
+    fi
+
+    # Display public key
     echo_info "$(cat "${tmpfile}.pub")"
-
     rm -f "$tmpfile" "${tmpfile}.pub"
   done
+
+  return "$rc"
 }
 
 gen_luks_passphrase() {
