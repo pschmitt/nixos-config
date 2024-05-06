@@ -20,4 +20,6 @@ in
     ${exportPath} ${nfsNetwork}(rw,fsid=0,no_subtree_check)
     ${lib.concatStringsSep "\n" (map (dir: "${exportPath}/${dir} ${nfsNetwork}(${exportOptions})") subDirs)}
   '';
+
+  networking.firewall.allowedTCPPorts = [ 2049 ];
 }
