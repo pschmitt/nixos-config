@@ -10,6 +10,7 @@
     ./rsync-fonts-to-rofl-03.nix
 
     ./monit.nix
+    ./nfs.nix
     ../../server/luks-ssh-unlock-homelab.nix
   ];
 
