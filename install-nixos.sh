@@ -5,7 +5,7 @@ usage() {
 }
 
 echo_info() {
-  echo -e "ℹ️\e[1;34m$*\e[0m"
+  echo -e "🔵 \e[1;34m$*\e[0m"
 }
 
 decrypt() {
