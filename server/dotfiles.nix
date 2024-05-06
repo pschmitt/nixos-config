@@ -55,6 +55,7 @@ in
 
     alias sc-status="sudo systemctl status"
     alias sc-start="sudo systemctl start"
+    alias sc-restart="sudo systemctl restart"
     alias sc-stop="sudo systemctl stop"
     alias sc-enable="sudo systemctl enable"
     alias sc-disable="sudo systemctl disable"
