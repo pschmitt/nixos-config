@@ -4,6 +4,8 @@
     ./hardware-configuration.nix
     ../../server
     ../../misc/nfs-client.nix
+
+    ./tdarr.nix
   ];
 
   # Enable networking
