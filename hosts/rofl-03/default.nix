@@ -3,7 +3,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
-    ./nfs.nix
+    ../../misc/nfs-client.nix
   ];
 
   # Enable networking
