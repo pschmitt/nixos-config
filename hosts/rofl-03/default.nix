@@ -3,7 +3,9 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
+
     ../../misc/nfs-client.nix
+    ../../misc/tdarr.nix
   ];
 
   # Enable networking
