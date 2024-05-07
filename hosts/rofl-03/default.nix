@@ -6,6 +6,7 @@
 
     ../../misc/nfs-client.nix
     ../../misc/tdarr.nix
+    ../../misc/miner.nix
   ];
 
   # Enable networking
