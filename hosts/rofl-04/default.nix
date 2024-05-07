@@ -5,6 +5,7 @@
     ../../server
 
     ../../misc/nfs-client.nix
+    ../../misc/miner.nix
     ../../misc/tdarr.nix
   ];
 
