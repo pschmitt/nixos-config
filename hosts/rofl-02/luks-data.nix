@@ -9,6 +9,7 @@
   fileSystems."/mnt/data" = {
     device = "/dev/mapper/data";
     fsType = "btrfs";
+    options = [ "compress=zstd" "noatime" ];
   };
 
   systemd.tmpfiles.rules = [
