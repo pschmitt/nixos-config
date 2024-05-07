@@ -43,6 +43,7 @@ in
   "netbird-wiit-setup-key.age".publicKeys = recipients;
   "secret.age".publicKeys = recipients;
   "tailscale-auth-key.age".publicKeys = recipients;
+  "wallets.age".publicKeys = recipients;
 
   "mmonit-license.age".publicKeys = recipients;
   "mmonit-monit-config.age".publicKeys = recipients;
