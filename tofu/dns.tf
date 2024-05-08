@@ -62,6 +62,14 @@ resource "cloudflare_record" "rofl-04" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "rofl-05" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "rofl-05"
+  value   = openstack_networking_floatingip_v2.rofl_05_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
 resource "cloudflare_record" "oci-03" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "oci-03"
