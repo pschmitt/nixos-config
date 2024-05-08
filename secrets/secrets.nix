@@ -25,6 +25,9 @@ let
     # rofl-04
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC0FHaVoCo14CG22CEAabj2SYxAbQl/QxXOAAxLeKtiGfpvM9lTPYqT82os++JqlWrDw2qyxpm3YkyBt+OQx8iWKJJIGYrSJ0aHvjfkkCIQFkgp1/Q/Ur77dBP5IpiOal9D7Elc3bSMmpbAzNBfLn5CLjxjdd0DeMZV1ovbiO80DLDLbHaxlh5R4d6n21lqMVvct1CxDyhqZP6dF7+5wiZDE9MuMyyYqlZlm1G2ui0M1ujDkERQuoL9s1mfhVZ6P6eORvPBOyxjOFYjjMCXXMFse9Pesf22GezYaAEhyLH/fpPCyr3x6AaKT+ucpvVNRw8tpY941Yu+ehuvcqqlcio6q7Coi/AgAvvj6xORYpMif1A0sI/cts8hgRYyH0ckzxZrCC8j8XaT8GJOEePui4h/IMxkBoC9r2kiUWzfioKctAjQGvJrMQljbSaDn1OY2tHxrhMDGJJ4eX2UzxYkG0cExzRs9lm+fZjKTAbFt6TbGxQ5ZBSAqC2xZ9w9+x/C4o8= root@rofl-04"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIoRaaTPSj+0h8FGwtWk9tXTfb3638Ft+AL0dcbN91/o root@rofl-04"
+    # rofl-05
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCD74Bi4fOfhrwi3vsgY5Z4g4iQlKB4usKQaZwSqbapBmxq5H84mli5fg/hi8FA+IJzVDzXDo1YSVATPemJ1cG88o/2qt4/hanej8/4kz+LHWE0qkmW/tlFGPwIP6WIQpmmUYFt/YUn0b5Cz9MGez9ibQuaDlkjr+a1yzvdqWCibT4Rbojxag2yVAVP9wFrHDze/FYyTA7re16RbrESuad8bf4c6RjCHaBAvO5K3nLas75yxy0aiC6ax7+TuNXnAvFdmhBH+UjMGP460waV0wFFLXUM13VF4gBfNnmbxxuUOtG+RL54WmUvXtbq/tjUqE0VdJLEBViwEXgWEY8EoqZrMKFzyiKFzz/87QPoeeLCYtYfObzs4ZC7UP1lsuKa506URWtWwgHIf2N93HVfvKBKD8niOPV6XrC4b1aZk/6Lu1pXz7EDFDvl/W8enLQhB9gEmVmxjAG7fThFQHUflUfxa9Mo9K9+kpgTx1K6flt5GkQIR97R22ZBzWXdYavda6s= root@rofl-05"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA1Ab8AhdwJLeT2ySUXRE1FNB0Ez8srtOAC+MvjRXNqF root@rofl-05"
     # oci-03
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDynCgmEqPJkcnQtSCyZveZDM2nBiT232h+Pr9jt6pk/tH41jTFtRzGtimglUZlyoPmdXsgxmqID21yaYiXjPNbsGRXzdQXhp6GSnkY/VLtuwVlGC3SbAnhck6696AJPNpwIePTvrhjS1KSH3bugDRbjzH2EbUXmsKwqU37CL+oQAEwGzZYYQc7YNfAxGWtNUchRDIuKDZoUsTMydcNCm4Z/pZozDzAVZcJj9zWAse9VlHYnjla/gmXFoZjAciSyTbL3TGxWkTQ6//aoJJ++qF5jM3Lj5LfItinVAfyWsNf/8l6zHYZVO+pAcHD+nUHdf86/GSrMksl1xVY/6Ya9q1dwnPvy0PJqRk6vVU/fEw2sc41EV7+2NADV8nxOOZWY1uAHjaX3623KnTI4DaoNBG3GzNuMLA4RTluBEYISTQi7RC0gv+Xx5OmB1WK1VRXQz55/Stmz1RRa3cUx3iKPVdjIDzySAZT6Ez7M9U8252mJ6E6+Tfi4qmuail3BkpVqic="
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFD3RzcAixrG9tfq0qlpvQky3ViwA+4PJyhkQZ1iNj+G"
@@ -107,6 +110,17 @@ in
   "rofl-04/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
   "rofl-04/ssh_host_rsa_key.age".publicKeys = recipients;
   "rofl-04/ssh_host_rsa_key.pub.age".publicKeys = recipients;
+
+  "rofl-05/luks-passphrase-root.age".publicKeys = recipients;
+  "rofl-05/msmtp-password-gmail.age".publicKeys = recipients;
+  "rofl-05/msmtp-password-heimat-dev.age".publicKeys = recipients;
+  "rofl-05/restic-env.age".publicKeys = recipients;
+  "rofl-05/restic-password.age".publicKeys = recipients;
+  "rofl-05/restic-repository.age".publicKeys = recipients;
+  "rofl-05/ssh_host_ed25519_key.age".publicKeys = recipients;
+  "rofl-05/ssh_host_ed25519_key.pub.age".publicKeys = recipients;
+  "rofl-05/ssh_host_rsa_key.age".publicKeys = recipients;
+  "rofl-05/ssh_host_rsa_key.pub.age".publicKeys = recipients;
 
   "oci-03/luks-passphrase-root.age".publicKeys = recipients;
   "oci-03/msmtp-password-gmail.age".publicKeys = recipients;
