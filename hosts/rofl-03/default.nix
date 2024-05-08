@@ -9,6 +9,8 @@
     ../../misc/miner.nix
   ];
 
+  custom.promptColor = "yellow";
+
   # Enable networking
   networking = {
     hostName = "rofl-03";
