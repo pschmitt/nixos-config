@@ -36,6 +36,10 @@
       tmuxPlugins.mode-indicator
       tmuxPlugins.fuzzback # prefix-?
     ];
+    extraConfig = ''
+      unbind S
+      bind S split-window -v
+    '';
   };
 
   programs.npm = {
