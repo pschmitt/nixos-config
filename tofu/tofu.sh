@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
-
-NIXOS_CONFIG_DIR="/etc/nixos"
-SSH_IDENTITY_FILE="${HOME}/.ssh/id_ed25519"
+echo_info() {
+  echo -e "\033[0;34mINF\033[0m $*" >&2
+}
 
 sops_decrypt() {
   local dest="${TF_DIR:-${PWD}}"
@@ -23,18 +22,59 @@ cleanup() {
     rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json"
   fi
 
-  git -C "$NIXOS_CONFIG_DIR" reset --mixed &>/dev/null
-  # rm -rf "$NIXOS_CONFIG_TMP_DIR"
+  if [[ -n "$CLONE_CONFIG" ]]
+  then
+    echo_info "Cleaning up config in $NIXOS_CONFIG_TMP_DIR..."
+    rm -rf "$NIXOS_CONFIG_TMP_DIR"
+  else
+    echo_info "Resetting git state in $NIXOS_CONFIG_DIR..."
+    git -C "$NIXOS_CONFIG_DIR" reset --mixed &>/dev/null
+  fi
 }
 
-trap 'cleanup' EXIT
+main() {
+  cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
-sops_decrypt || exit 1
-git -C "$NIXOS_CONFIG_DIR" add --intent-to-add &>/dev/null
-# NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || exit 3
-# pushd "$NIXOS_CONFIG_TMP_DIR" || exit 9
+  NIXOS_CONFIG_DIR="${NIXOS_CONFIG_DIR:-/etc/nixos}"
+  TOFU_DIR="${TOFU_DIR:-${NIXOS_CONFIG_DIR}/tofu}"
+  SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-${HOME}/.ssh/id_ed25519}"
 
-tofu "$@"
-# RC=$?
-# echo "NIXOS_CONFIG_TMP_DIR: $NIXOS_CONFIG_TMP_DIR" >&2
-# exit "$RC"
+  while [[ $# -gt 0 ]]
+  do
+    case "$1" in
+      -k|--keep-tfvars)
+        KEEP_TFVARS=1
+        shift
+        ;;
+      -c|--clone*)
+        CLONE_CONFIG=1
+        shift
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  sops_decrypt || exit 1
+
+  if [[ -n "$CLONE_CONFIG" ]]
+  then
+    echo_info "Cloning nixos config..."
+    NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || exit 3
+    echo_info "NIXOS_CONFIG_TMP_DIR: $NIXOS_CONFIG_TMP_DIR"
+    TOFU_DIR="${NIXOS_CONFIG_TMP_DIR}/tofu"
+  else
+    echo_info "Adding all files in $NIXOS_CONFIG_DIR to git..."
+    git -C "$NIXOS_CONFIG_DIR" add --intent-to-add . &>/dev/null
+  fi
+
+  trap 'cleanup' EXIT
+
+  tofu -chdir="${TOFU_DIR}" "$@"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
