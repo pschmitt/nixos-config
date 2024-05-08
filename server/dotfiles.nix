@@ -1,4 +1,4 @@
-{ pkgs, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   bashCompleteAliases = pkgs.fetchurl {
     url = "https://github.com/cykerway/complete-alias/raw/1.18.0/complete_alias";
@@ -6,7 +6,38 @@ let
   };
 in
 {
-  programs.bash.vteIntegration = true;
+  programs.bash = {
+    vteIntegration = true;
+    interactiveShellInit = ''
+      source ${bashCompleteAliases}
+    '';
+  };
+
+  programs.starship = {
+    enable = true;
+    presets = [ "nerd-font-symbols" ];
+    settings = {
+      add_newline = false;
+      # Single line prompt
+      line_break.disabled = true;
+
+      username = {
+        style_user = "bold green";
+        format = "[$user]($style)";
+      };
+      hostname = {
+        format = "@[$hostname]($style) ";
+        style = "bold dimmed ${config.custom.promptColor}";
+      };
+      directory = {
+        style = "bold dimmed green";
+      };
+      character = {
+        success_symbol = "[»](bold green)";
+        error_symbol = "[✗](bold red)";
+      };
+    };
+  };
 
   programs.tmux.extraConfig = ''
     set -g mouse on
@@ -71,10 +102,6 @@ in
     alias scu-enable-now="sudo systemctl --user enable --now"
     alias scu-disable-now="sudo systemctl --user disable --now"
     alias scu-cat="sudo systemctl --user cat"
-  '';
-
-  programs.bash.interactiveShellInit = ''
-    source ${bashCompleteAliases}
   '';
 
   # NOTE This must be put *after* all the aliases were defined.
