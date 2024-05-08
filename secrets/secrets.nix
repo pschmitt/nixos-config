@@ -103,22 +103,12 @@ in
   "rofl-03/ssh_host_rsa_key.pub.age".publicKeys = pschmitt ++ rofl-03;
 
   "rofl-04/luks-passphrase-root.age".publicKeys = pschmitt;
-  "rofl-04/msmtp-password-gmail.age".publicKeys = pschmitt ++ rofl-04;
-  "rofl-04/msmtp-password-heimat-dev.age".publicKeys = pschmitt ++ rofl-04;
-  "rofl-04/restic-env.age".publicKeys = pschmitt ++ rofl-04;
-  "rofl-04/restic-password.age".publicKeys = pschmitt ++ rofl-04;
-  "rofl-04/restic-repository.age".publicKeys = pschmitt ++ rofl-04;
   "rofl-04/ssh_host_ed25519_key.age".publicKeys = pschmitt ++ rofl-04;
   "rofl-04/ssh_host_ed25519_key.pub.age".publicKeys = pschmitt ++ rofl-04;
   "rofl-04/ssh_host_rsa_key.age".publicKeys = pschmitt ++ rofl-04;
   "rofl-04/ssh_host_rsa_key.pub.age".publicKeys = pschmitt ++ rofl-04;
 
   "rofl-05/luks-passphrase-root.age".publicKeys = pschmitt;
-  "rofl-05/msmtp-password-gmail.age".publicKeys = pschmitt ++ rofl-05;
-  "rofl-05/msmtp-password-heimat-dev.age".publicKeys = pschmitt ++ rofl-05;
-  "rofl-05/restic-env.age".publicKeys = pschmitt ++ rofl-05;
-  "rofl-05/restic-password.age".publicKeys = pschmitt ++ rofl-05;
-  "rofl-05/restic-repository.age".publicKeys = pschmitt ++ rofl-05;
   "rofl-05/ssh_host_ed25519_key.age".publicKeys = pschmitt ++ rofl-05;
   "rofl-05/ssh_host_ed25519_key.pub.age".publicKeys = pschmitt ++ rofl-05;
   "rofl-05/ssh_host_rsa_key.age".publicKeys = pschmitt ++ rofl-05;
