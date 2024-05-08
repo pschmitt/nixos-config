@@ -25,6 +25,8 @@
     };
   };
 
+  custom.promptColor = "208"; # orange
+
   services.harmonia = {
     enable = true;
     settings = {

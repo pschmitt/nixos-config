@@ -45,6 +45,12 @@
       description = "Main SSH authorized keys file";
     };
 
+    custom.promptColor = lib.mkOption {
+      type = lib.types.str;
+      default = "white";
+      description = "Main user's prompt color";
+    };
+
     custom.server = lib.mkOption {
       type = lib.types.bool;
       default = false;
