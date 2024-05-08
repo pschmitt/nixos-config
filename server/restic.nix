@@ -1,8 +1,10 @@
 { config, lib, ... }: {
   imports = [ ../common/restic ];
 
-  services.restic.backups.main.paths = lib.mkForce [
-    "/etc"
-    "${config.custom.homeDirectory}"
-  ];
+  config = lib.mkIf (!config.custom.cattle) {
+    services.restic.backups.main.paths = lib.mkForce [
+      "/etc"
+      "${config.custom.homeDirectory}"
+    ];
+  };
 }

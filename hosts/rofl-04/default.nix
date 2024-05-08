@@ -9,6 +9,8 @@
     ../../misc/tdarr.nix
   ];
 
+  custom.cattle = true;
+
   # Enable networking
   networking = {
     hostName = "rofl-04";
