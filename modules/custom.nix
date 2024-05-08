@@ -68,5 +68,11 @@
       default = true;
       description = "Whether this is cloud-based server";
     };
+
+    custom.cattle = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether this is a cattle/throw-away server";
+    };
   };
 }

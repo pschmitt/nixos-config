@@ -120,23 +120,26 @@ let
   '';
 in
 {
-  age.secrets.mmonit-monit-config.file = ../secrets/mmonit-monit-config.age;
-  environment.etc."monit/conf.d/mmonit".source = "${config.age.secrets.mmonit-monit-config.path}";
+  config = lib.mkIf (!config.custom.cattle) {
+    age.secrets.mmonit-monit-config.file = ../secrets/mmonit-monit-config.age;
+    environment.etc."monit/conf.d/mmonit".source = "${config.age.secrets.mmonit-monit-config.path}";
 
-  services.monit = {
-    enable = true;
-    config = lib.strings.concatStringsSep "\n" [
-      monitGeneral
-      monitSystem
-      monitFilesystems
-      monitNetwork
-      monitRestic
+    services.monit = {
+      # Do not enable monit if cattle if this is a cattle server
+      enable = true;
+      config = lib.strings.concatStringsSep "\n" [
+        monitGeneral
+        monitSystem
+        monitFilesystems
+        monitNetwork
+        monitRestic
+      ];
+    };
+
+    systemd.services.monit.after = [
+      "tailscaled.service"
+      "netbird-netbird-io.service"
     ];
+    systemd.services.monit.preStart = "${renderMonitConfig}";
   };
-
-  systemd.services.monit.after = [
-    "tailscaled.service"
-    "netbird-netbird-io.service"
-  ];
-  systemd.services.monit.preStart = "${renderMonitConfig}";
 }
