@@ -222,6 +222,9 @@ main() {
     echo_info "Storing secret \e[34m$secret\e[0m - value: \e[36m$value\e[0m" >&2
     agenix -e "$secret" <<< "$value"
   done
+
+  # Force a rekey (our host might need access to shared secrets)
+  agenix --rekey
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
