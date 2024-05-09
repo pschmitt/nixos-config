@@ -9,10 +9,11 @@ sops_decrypt() {
   local age_key
   age_key=$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")
 
+  unset SOPS_AGE_KEY_FILE
   # FIXME naming the file tofu.tfvars.json does not work
   # only terraform.tfvars.json works
   # https://opentofu.org/docs/language/values/variables/#variable-definitions-tfvars-files
-  SOPS_AGE_KEY_FILE="" SOPS_AGE_KEY="$age_key" \
+  SOPS_AGE_KEY="$age_key" \
     sops -d "${dest}/terraform.tfvars.sops.json" \
     > "${dest}/terraform.tfvars.json"
 }
