@@ -4,6 +4,7 @@
 , curl
 , fetchurl
 , gawk
+, gnused
 , lib
 , makeWrapper
 , stdenv
@@ -52,7 +53,7 @@ stdenv.mkDerivation rec {
     # Create systemd service
     mkdir -p $out/lib/systemd/system
 
-    # Wrapper to handle DB copy and startup
+    # Wrapper to handle DB initial copy and license
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --run "mkdir -p ${mmonitHome}/logs" \
@@ -69,13 +70,13 @@ stdenv.mkDerivation rec {
 
     cat > $out/bin/mmonit-upgrade <<EOF
     #!/usr/bin/env sh
-    export PATH=${lib.makeBinPath [ coreutils gawk systemd ]}
+    export PATH=${lib.makeBinPath [ coreutils gawk gnused systemd ]}
 
     systemctl stop mmonit
 
     MMONIT_NEW_HOME="${mmonitHome}/upgrade/mmonit.new"
     MMONIT_OLD_HOME="${mmonitHome}/upgrade/mmonit.old"
-    DB_BACKUP_DIR="${mmonitHome}/upgrade/db.pre-upgrade.bak"
+    DB_BACKUP_DIR="${mmonitHome}/upgrade/backups/db-${version}"
 
     # populate the new install dir
     rm -rf "\''${MMONIT_NEW_HOME}"
