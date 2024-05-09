@@ -7,6 +7,7 @@
 , lib
 , makeWrapper
 , stdenv
+, systemd
 , port ? 8080
 , mmonitHome ? "/var/lib/mmonit"
 }:
@@ -69,26 +70,37 @@ stdenv.mkDerivation rec {
 
     cat > $out/bin/mmonit-upgrade <<EOF
     #!/usr/bin/env sh
-    export PATH=${lib.makeBinPath [ coreutils gawk ]}
+    export PATH=${lib.makeBinPath [ coreutils gawk systemd ]}
+
+    systemctl stop mmonit
 
     MMONIT_NEW_HOME=${mmonitHome}/upgrade/mmonit.new
     MMONIT_OLD_HOME=${mmonitHome}/upgrade/mmonit.old
-    mkdir -p "\''${MMONIT_OLD_HOME}"
+    DB_BACKUP_DIR="${mmonitHome}/upgrade/db.pre-upgrade.bak"
+
+    # populate the new install dir
+    rm -rf "\''${MMONIT_NEW_HOME}"
     cp -a "$out" "\''${MMONIT_NEW_HOME}"
 
-    cp -a "${mmonitHome}/db" "${mmonitHome}/db.bak"
-    cp -a "${mmonitHome}/db" "\''${MMONIT_OLD_HOME}/db"
-    mkdir -p "\''${MMONIT_OLD_HOME}/conf"
-    ln -sf "$out/conf/server.xml.orig" "\''${MMONIT_OLD_HOME}/conf/server.xml"
-    ln -sf "${mmonitHome}/license.xml" "\''${MMONIT_OLD_HOME}/conf/license.xml"
+    mkdir -p "\''${MMONIT_OLD_HOME}/db" "\''${MMONIT_OLD_HOME}/conf" \
+      "\''${DB_BACKUP_DIR}"
+
+    # backup db
+    cp -vaL "${mmonitHome}"/db/mmonit.* "\''${DB_BACKUP_DIR}"
+    # copy relevant data files to fake old install dir
+    cp -vaL "${mmonitHome}"/db/mmonit.* "\''${MMONIT_OLD_HOME}/db"
+    # ln -sfv "$out/conf/server.xml.orig" "\''${MMONIT_OLD_HOME}/conf/server.xml"
+    ln -sfv "${mmonitHome}/license.xml" "\''${MMONIT_OLD_HOME}/conf/license.xml"
+
     if ! "\''${MMONIT_NEW_HOME}/upgrade/upgrade" -d -p "\''${MMONIT_OLD_HOME}"
     then
       echo "Upgrade failed"
       exit 1
     fi
+
     echo "Upgrade successful"
     cp -a "\''${MMONIT_NEW_HOME}/db/mmonit.db" "${mmonitHome}/db/mmonit.db"
-    rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
+    # rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
     EOF
     chmod +x $out/bin/mmonit-upgrade
 
