@@ -72,7 +72,11 @@ stdenv.mkDerivation rec {
     #!/usr/bin/env sh
     export PATH=${lib.makeBinPath [ coreutils gawk gnused systemd ]}
 
-    systemctl stop mmonit
+    if systemctl is-active -q mmonit.service >/dev/null 2>&1
+    then
+      SERVICE_IS_ACTIVE=1
+      systemctl stop mmonit.service
+    fi
 
     MMONIT_NEW_HOME="${mmonitHome}/upgrade/mmonit.new"
     MMONIT_OLD_HOME="${mmonitHome}/upgrade/mmonit.old"
@@ -105,6 +109,11 @@ stdenv.mkDerivation rec {
     fi
 
     echo "Upgrade successful"
+
+    if [[ -n "$SERVICE_IS_ACTIVE" ]]
+    then
+      systemctl start mmonit.service
+    fi
     EOF
     chmod +x $out/bin/mmonit-upgrade
 
