@@ -7,12 +7,13 @@ echo_info() {
 sops_decrypt() {
   local dest="${TF_DIR:-${PWD}}"
   local age_key
-  age_key=$(ssh-to-age -private-key < "$SSH_IDENTITY_FILE")
+  age_key=$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")
 
   # FIXME naming the file tofu.tfvars.json does not work
   # only terraform.tfvars.json works
   # https://opentofu.org/docs/language/values/variables/#variable-definitions-tfvars-files
-  SOPS_AGE_KEY="$age_key" sops -d "${dest}/terraform.tfvars.sops.json" \
+  SOPS_AGE_KEY_FILE="" SOPS_AGE_KEY="$age_key" \
+    sops -d "${dest}/terraform.tfvars.sops.json" \
     > "${dest}/terraform.tfvars.json"
 }
 
@@ -57,6 +58,10 @@ main() {
   done
 
   sops_decrypt || exit 1
+  # shellcheck disable=SC2155
+  export AWS_ACCESS_KEY_ID=$(jq -er '.s3_access_key_id' terraform.tfvars.json)
+  # shellcheck disable=SC2155
+  export AWS_SECRET_ACCESS_KEY=$(jq -er '.s3_secret_access_key' terraform.tfvars.json)
 
   if [[ -n "$CLONE_CONFIG" ]]
   then
