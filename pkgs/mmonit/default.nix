@@ -42,7 +42,6 @@ stdenv.mkDerivation rec {
 
     # Patch default server configuration
     # https://mmonit.com/documentation/mmonit_manual.pdf#page=67
-    cp $out/conf/server.xml $out/conf/server.xml.orig
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonitHome}/db/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonitHome}/logs"' \
@@ -74,19 +73,29 @@ stdenv.mkDerivation rec {
 
     systemctl stop mmonit
 
-    MMONIT_NEW_HOME=${mmonitHome}/upgrade/mmonit.new
-    MMONIT_OLD_HOME=${mmonitHome}/upgrade/mmonit.old
+    MMONIT_NEW_HOME="${mmonitHome}/upgrade/mmonit.new"
+    MMONIT_OLD_HOME="${mmonitHome}/upgrade/mmonit.old"
     DB_BACKUP_DIR="${mmonitHome}/upgrade/db.pre-upgrade.bak"
 
     # populate the new install dir
     rm -rf "\''${MMONIT_NEW_HOME}"
     cp -a "$out" "\''${MMONIT_NEW_HOME}"
+    trap 'rm -rf "\''${MMONIT_NEW_HOME}" "\''${MMONIT_OLD_HOME}"' EXIT
 
     mkdir -p "\''${MMONIT_OLD_HOME}/db" "\''${MMONIT_OLD_HOME}/conf" \
       "\''${DB_BACKUP_DIR}"
 
     # backup db
     cp -vaL "${mmonitHome}"/db/mmonit.* "\''${DB_BACKUP_DIR}"
+    echo "Backed up db to \''${DB_BACKUP_DIR}"
+
+    # copy database files to old install dir
+    cp -vaL "${mmonitHome}"/db/mmonit.* "\''${MMONIT_OLD_HOME}/db"
+
+    # Update config to target local db file
+    sed 's#sqlite://${mmonitHome}/db/mmonit.db#sqlite:///db/mmonit.db#g' \
+      $out/conf/server.xml > "\''${MMONIT_OLD_HOME}/conf/server.xml"
+    ln -sfv "${mmonitHome}/license.xml" "\''${MMONIT_OLD_HOME}/conf/license.xml"
 
     if ! "\''${MMONIT_NEW_HOME}/upgrade/upgrade" -d -p "\''${MMONIT_OLD_HOME}"
     then
@@ -95,7 +104,6 @@ stdenv.mkDerivation rec {
     fi
 
     echo "Upgrade successful"
-    rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
     EOF
     chmod +x $out/bin/mmonit-upgrade
 
