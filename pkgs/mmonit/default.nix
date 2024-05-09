@@ -87,10 +87,6 @@ stdenv.mkDerivation rec {
 
     # backup db
     cp -vaL "${mmonitHome}"/db/mmonit.* "\''${DB_BACKUP_DIR}"
-    # copy relevant data files to fake old install dir
-    cp -vaL "${mmonitHome}"/db/mmonit.* "\''${MMONIT_OLD_HOME}/db"
-    # ln -sfv "$out/conf/server.xml.orig" "\''${MMONIT_OLD_HOME}/conf/server.xml"
-    ln -sfv "${mmonitHome}/license.xml" "\''${MMONIT_OLD_HOME}/conf/license.xml"
 
     if ! "\''${MMONIT_NEW_HOME}/upgrade/upgrade" -d -p "\''${MMONIT_OLD_HOME}"
     then
@@ -99,8 +95,7 @@ stdenv.mkDerivation rec {
     fi
 
     echo "Upgrade successful"
-    cp -a "\''${MMONIT_NEW_HOME}/db/mmonit.db" "${mmonitHome}/db/mmonit.db"
-    # rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
+    rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
     EOF
     chmod +x $out/bin/mmonit-upgrade
 
