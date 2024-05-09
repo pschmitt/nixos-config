@@ -8,6 +8,7 @@ in
 {
   programs.bash = {
     vteIntegration = true;
+    blesh.enable = true;
     interactiveShellInit = ''
       source ${bashCompleteAliases}
     '';
