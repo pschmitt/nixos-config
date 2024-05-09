@@ -3,6 +3,7 @@
 , cacert
 , curl
 , fetchurl
+, gawk
 , lib
 , makeWrapper
 , stdenv
@@ -10,16 +11,17 @@
 , mmonitHome ? "/var/lib/mmonit"
 }:
 
+
 stdenv.mkDerivation rec {
   pname = "mmonit";
-  version = "4.2.1";
+  version = "4.2.2";
 
   arch = if stdenv.isAarch64 then "arm64" else "x64";
   checksum =
     if stdenv.isAarch64 then
-      "sha256-InB7zaUiFJj4kbuKOcJ/AQBhrYzSAmhanP7/f3OpH7A="
+      "sha256-ZSIWzvTqFetw7WlVSHrP+d8MISObKO791s5MbnkFWHI="
     else
-      "sha256-aKJBEgENTXZ6cRfoAMjFY7w+BDHRHEMC1rTyRvAT+Fw=";
+      "sha256-DJUMAplcllqeWGQslRNrkWEh7dFfIbJ0PB5En/t01Mc=";
 
   src = fetchurl {
     url = "https://mmonit.com/dist/${pname}-${version}-linux-${arch}.tar.gz";
@@ -31,13 +33,55 @@ stdenv.mkDerivation rec {
   installPhase = ''
     mkdir -p $out
     cp -r ./* $out
+    mv $out/db $out/db.og
+    ln -sfv ${mmonitHome}/db $out/db
 
-    ln -sfv $out/upgrade/upgrade $out/bin/mmonit-upgrade
     # M/Monit tries to write to this pidfile on startup
     ln -sfv /var/lib/mmonit/mmonit.pid $out/logs/mmonit.pid
 
+    substituteInPlace $out/upgrade/script/data.sh \
+      --replace-fail '/bin/echo' '${coreutils}/bin/echo' \
+      --replace-fail 'cp ' '${coreutils}/bin/cp ' \
+      --replace-fail 'mv ' '${coreutils}/bin/mv ' \
+      --replace-fail 'awk ' '${gawk}/bin/awk'
+
+    # ln -sfv $out/upgrade/upgrade $out/bin/mmonit-upgrade
+    cat > $out/bin/mmonit-upgrade <<EOF
+    #!/usr/bin/env sh
+    export PATH=${lib.makeBinPath [ coreutils gawk ]}
+
+    MMONIT_NEW_HOME=${mmonitHome}/upgrade/mmonit.new
+    MMONIT_OLD_HOME=${mmonitHome}/upgrade/mmonit.old
+    mkdir -p "\''${MMONIT_OLD_HOME}"
+    cp -a "$out" "\''${MMONIT_NEW_HOME}"
+
+    cp -a "${mmonitHome}/db" "${mmonitHome}/db.bak"
+    cp -a "${mmonitHome}/db" "\''${MMONIT_OLD_HOME}/db"
+    mkdir -p "\''${MMONIT_OLD_HOME}/conf"
+    ln -sf "$out/conf/server.xml.orig" "\''${MMONIT_OLD_HOME}/conf/server.xml"
+    ln -sf "${mmonitHome}/license.xml" "\''${MMONIT_OLD_HOME}/conf/license.xml"
+    if ! "\''${MMONIT_NEW_HOME}/upgrade/upgrade" -d -p "\''${MMONIT_OLD_HOME}"
+    then
+      echo "Upgrade failed"
+      exit 1
+    fi
+    echo "Upgrade successful"
+    cp -a "\''${MMONIT_NEW_HOME}/db/mmonit.db" "${mmonitHome}/db/mmonit.db"
+    rm -rf "\''${MMONIT_OLD_HOME}" "\''${MMONIT_NEW_HOME}"
+    EOF
+    chmod +x $out/bin/mmonit-upgrade
+
+    # mkShellScriptBin
+    # makeWrapper $out/upgrade/upgrade $out/bin/mmonit-upgrade \
+    #   --prefix PATH : ${lib.makeBinPath [ coreutils gawk ]} \
+    #   --run "mkdir -p $MMONIT_OLD_HOME" \
+    #   --run "cp -a ${mmonitHome}/db ${mmonitHome}/db.bak" \
+    #   --run "cp -a ${mmonitHome}/db $MMONIT_OLD_HOME/db" \
+    #   --run "ln -sf ${mmonitHome}/conf/server.xml.orig $MMONIT_OLD_HOME/conf/server.xml" \
+
     # Patch default server configuration
     # https://mmonit.com/documentation/mmonit_manual.pdf#page=67
+    cp $out/conf/server.xml $out/conf/server.xml.orig
     substituteInPlace $out/conf/server.xml \
       --replace-fail 'sqlite:///db/mmonit.db' 'sqlite://${mmonitHome}/db/mmonit.db' \
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonitHome}/logs"' \
@@ -49,16 +93,12 @@ stdenv.mkDerivation rec {
     mkdir -p $out/lib/systemd/system
 
     # Wrapper to handle DB copy and startup
-    # FIXME The trial license retrieval should be done by M/Monit itself but it
-    # fails to verify the SSL certificate. It does seem to ignore the
-    # CACert setting from the config...
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
       --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
       --run "mkdir -p ${mmonitHome}/logs" \
       --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
-      --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
-      --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi" \
-      --run "test -f /var/lib/mmonit/license.xml || curl -fsSL -X POST https://mmonit.com/api/services/license/trial -o /var/lib/mmonit/license.xml"
+      --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db.og/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
+      --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi"
 
     # systemd service - https://mmonit.com/wiki/MMonit/Setup
     cat > $out/lib/systemd/system/mmonit.service <<EOF
