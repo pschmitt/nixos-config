@@ -32,8 +32,7 @@
   #   "net.ipv4.tcp_congestion_control" = "bbr";
   # };
 
-  networking.useNetworkd = lib.mkDefault
-    true;
+  networking.useNetworkd = lib.mkDefault true;
 
   programs.nix-index-database.comma.enable = true;
 
