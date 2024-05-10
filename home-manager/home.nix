@@ -49,7 +49,8 @@
     jc
     jsonrepair
     neofetch
-    rich-cli
+    # rich-cli fails to build as of 2024-05-10 (rich-rst's test fail)
+    # rich-cli
     sops
     ssh-to-age
     yadm
