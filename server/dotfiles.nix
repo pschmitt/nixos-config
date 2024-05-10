@@ -31,15 +31,17 @@ in
       line_break.disabled = true;
 
       username = {
+        style_root = "bold red";
         style_user = "bold green";
         format = "[$user]($style)";
       };
       hostname = {
-        format = "@[$hostname]($style) ";
-        style = "bold dimmed ${config.custom.promptColor}";
+        format = "[@$hostname]($style) ";
+        ssh_only = false;
+        style = "bold ${config.custom.promptColor}";
       };
       directory = {
-        style = "bold dimmed green";
+        style = "bold green";
       };
       character = {
         success_symbol = "[»](bold green)";
