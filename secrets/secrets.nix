@@ -51,7 +51,7 @@ in
   "wallets.age".publicKeys = everyone;
 
   "mmonit-license.age".publicKeys = pschmitt ++ oci-03;
-  "mmonit-monit-config.age".publicKeys = everyone;
+  "monit-config.age".publicKeys = everyone;
 
   "ssh-key-nix-remote-builder.age".publicKeys = everyone;
   "ssh-key-nix-remote-builder.pub.age".publicKeys = everyone;
