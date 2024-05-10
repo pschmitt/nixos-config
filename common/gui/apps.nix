@@ -1,13 +1,13 @@
-{ pkgs, ... }:
-
+{ inputs, pkgs, ... }:
+let
+  weztermPkg = inputs.wezterm.packages.${pkgs.system}.default;
+in
 {
   environment.systemPackages = with pkgs; [
     alacritty
     foot
     kitty
-    wezterm  # og package, from upstream nixpkgs
-    # wezterm-bin
-    # wezterm-nightly
+    weztermPkg
     lan-mouse
 
     # files and docs
