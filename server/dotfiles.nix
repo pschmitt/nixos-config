@@ -8,11 +8,19 @@ in
 {
   programs.bash = {
     vteIntegration = true;
-    blesh.enable = true;
+    blesh.enable = false; # disable blesh, we want a custom RC file
     interactiveShellInit = ''
       source ${bashCompleteAliases}
+      source ${pkgs.blesh}/share/blesh/ble.sh --rcfile /etc/bleshrc
     '';
   };
+
+  environment.etc.bleshrc.text = ''
+    # Disable error exit marker like "[ble: exit %d]"
+    bleopt exec_errexit_mark=
+    # Disable elapsed-time marker like "[ble: elapsed 1.203s (CPU 0.4%)]"
+    bleopt exec_elapsed_mark=
+  '';
 
   programs.starship = {
     enable = true;
