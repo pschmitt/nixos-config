@@ -35,6 +35,8 @@
   networking.useNetworkd = lib.mkDefault
     true;
 
+  programs.nix-index-database.comma.enable = true;
+
   environment.systemPackages = with pkgs; [
     curl
     docker-compose-bulk
