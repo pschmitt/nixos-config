@@ -8,7 +8,7 @@ resource "openstack_blockstorage_volume_v3" "rofl_04_boot_volume" {
 
 resource "openstack_compute_instance_v2" "rofl-04" {
   name              = "rofl-04"
-  flavor_name       = "m1.xlarge"
+  flavor_name       = "s1.2xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair.name
   availability_zone = var.availability_zone
   # security_groups   = ["default", openstack_networking_secgroup_v2.secgroup_ssh.name]
