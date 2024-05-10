@@ -1,9 +1,5 @@
 { config, inputs, lib, outputs, pkgs, ... }:
 {
-  imports = [
-    ./nix-remote-build.nix
-  ];
-
   # NOTE Below is for setting up auth for attic
   # age = {
   #   secrets = {
