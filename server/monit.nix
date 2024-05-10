@@ -1,15 +1,6 @@
 { lib, config, pkgs, ... }:
 # Inspired by https://github.com/dschrempf/blog/blob/7d88061796fb790f0d5b984b62629a68e6882c99/hugo/content/Linux/2024-02-14-Monitoring-a-home-server.md
 let
-  allowList = [
-    "mmonit.heimat.dev"
-    "mmonit.oci-03.heimat.dev"
-    "localhost"
-    "127.0.0.1"
-    "10.0.0.0/8"
-    "100.64.0.0/10"
-  ];
-
   resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
     THRESHOLD=''${1:-86400}
     NOW=$(${pkgs.coreutils}/bin/date '+%s')
@@ -33,9 +24,7 @@ let
   monitGeneral = ''
     set daemon 60
     include /etc/monit/conf.d/*
-
-    set httpd port 2812
-      ${lib.strings.concatMapStringsSep " " (ip: "allow " + ip) allowList}'';
+  '';
 
   monitSystem = ''
     check system $HOST
