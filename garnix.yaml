@@ -8,6 +8,8 @@ builds:
   - "packages.*.MonoLisa-CustomNF"
   - "packages.*.obs-studio-plugins"
   - "packages.*.obs-studio-plugins-flatpak"
+  - "packages.*.mmonit"
+  - "packages.*.oracle-cloud-agent"
   include:
   - '*.x86_64-linux.*'
   - defaultPackage.x86_64-linux
