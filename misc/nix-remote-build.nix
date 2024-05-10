@@ -3,7 +3,7 @@
     secrets = {
       # ssh-pubkey-rofl-02.file = ../../secrets/rofl-02/ssh_host_ed25519_key.age;
       # ssh-pubkey-rofl-03.file = ../../secrets/rofl-03/ssh_host_ed25519_key.age;
-      ssh-privkey-nix-remote-builder.file = ../../secrets/ssh-key-nix-remote-builder.age;
+      ssh-privkey-nix-remote-builder.file = ../secrets/ssh-key-nix-remote-builder.age;
       # ssh-pubkey.file = ../../secrets/ssh-key-nix-remote-builder.pub.age;
     };
   };
