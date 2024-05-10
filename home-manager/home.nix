@@ -96,6 +96,9 @@
     ".face" = {
       enable = true;
       source = builtins.fetchurl {
+        # NOTE setting the extension to .png is required for hyprlock to detect
+        # the filetype correctly
+        # https://github.com/hyprwm/hyprlock/issues/317
         name = "face.png";
         url = "https://www.gravatar.com/avatar/8635e7a28259cb6da1c6a3c96c75b425.png?size=96";
         sha256 = "1kg0x188q1g2mph13cs3sm4ybj3wsliq2yjz5qcw4qs8ka77l78p";
