@@ -1,6 +1,4 @@
 { config, ... }: {
-  age.secrets.ssh-privkey-nix-remote-builder.file = ../secrets/ssh-key-nix-remote-builder.age;
-
   nix = {
     distributedBuilds = true;
     buildMachines = [
