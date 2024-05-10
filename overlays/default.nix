@@ -13,7 +13,6 @@
     (import ./openstack-cli.nix { inherit final prev; }) //
     (import ./libratbag.nix { inherit final prev; }) //
     (import ./piper.nix { inherit final prev; }) //
-    (import ./waybar.nix { inherit final prev; }) //
     # FIXME Remove this overlay once this is fixed in nixpkgs
     # The issue is that the source of amrnb ie.
     # http://www.penguin.cz/~utx/ftp/amr/amrnb-11.0.0.0.tar.bz2
