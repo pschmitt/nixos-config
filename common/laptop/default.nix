@@ -5,5 +5,5 @@
     ../../misc/nix-remote-build.nix
   ];
 
-  services.logind.lidSwitchExternalPower = "ignore";
+  # services.logind.lidSwitchExternalPower = "ignore";
 }
