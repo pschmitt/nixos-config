@@ -10,7 +10,6 @@ let
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
-  distrobox = pkgs.callPackage ./distrobox { };
   docker-compose-bulk = pkgs.callPackage ./docker-compose-bulk { };
   flarectl = pkgs.callPackage ./flarectl { };
   hacompanion = pkgs.callPackage ./hacompanion { };
@@ -32,9 +31,6 @@ in
   # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
-  # wezterm-bin = pkgs.callPackage ./wezterm/wezterm-bin { };
-  # wezterm-nightly = pkgs.callPackage ./wezterm/wezterm-nightly { };
-  # wezterm-nightly-appimage = pkgs.callPackage ./wezterm/wezterm-nightly-appimage { };
   wl-kbptr = pkgs.callPackage ./wl-kbptr { };
 
   # Fonts
