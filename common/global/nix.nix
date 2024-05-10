@@ -16,7 +16,7 @@
   #   user = "root";
   #   source = config.age.secrets.nix-netrc.path;
   # };
-  age.secrets.ssh-privkey-nix-remote-builder.file = ../secrets/ssh-key-nix-remote-builder.age;
+  age.secrets.ssh-privkey-nix-remote-builder.file = ../../secrets/ssh-key-nix-remote-builder.age;
 
   boot.binfmt.emulatedSystems = if pkgs.system != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
 
