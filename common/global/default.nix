@@ -95,6 +95,7 @@ in
     sshpass
     tailscale
     tmux
+    tmux-slay
     tree
     ugrep
     unzip
