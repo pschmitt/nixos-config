@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }: {
+{ inputs, lib, ... }: {
   imports = [
     inputs.hardware.nixosModules.common-cpu-intel
     inputs.hardware.nixosModules.common-pc-ssd
@@ -30,6 +30,8 @@
   # networking.proxy.default = "http://user:password@proxy:port/";
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
+  services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+
   # Enable networking
   networking = {
     hostName = "ge2"; # Define your hostname.
@@ -40,14 +42,5 @@
       # allowedTCPPorts = [ ... ];
       # allowedUDPPorts = [ ... ];
     };
-
-    # # FIXME DIRTYFIX for task sync
-    # # We have a weird resolution bug:
-    # # $ ping -c 2 oAci-02.heimat.dev
-    # # 👆 fails to resolve
-    # extraHosts =
-    #   ''
-    #   45.94.108.232 test.keycloak-dev.sre.gec.io
-    #   '';
   };
 }
