@@ -127,6 +127,14 @@ resource "cloudflare_record" "mail-pschmitt-dev" {
   ttl   = 3600
 }
 
+resource "cloudflare_record" "wildcard-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "*"
+  value   = "130.61.215.245"
+  type    = "A"
+  ttl     = 3600
+}
+
 resource "cloudflare_record" "r01-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "r01"
