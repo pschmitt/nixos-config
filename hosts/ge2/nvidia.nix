@@ -64,4 +64,7 @@
       nvidiaBusId = "PCI:1:0:0";
     };
   };
+
+  virtualisation.docker.enableNvidia = true;
+  virtualisation.podman.enableNvidia = true;
 }
