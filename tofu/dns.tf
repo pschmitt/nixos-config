@@ -2,6 +2,12 @@ resource "cloudflare_account" "me" {
   name = var.cloudflare_email
 }
 
+resource "cloudflare_zone" "brkn_lol" {
+  zone       = "brkn.lol"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
 resource "cloudflare_zone" "heimat_dev" {
   zone       = "heimat.dev"
   plan       = "free"
@@ -121,4 +127,42 @@ resource "cloudflare_record" "mail-pschmitt-dev" {
   ttl   = 3600
 }
 
+resource "cloudflare_record" "r01-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "r01"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  type    = "A"
+  ttl     = 3600
+}
 
+resource "cloudflare_record" "r02-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "r02"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "r03-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "r03"
+  value   = openstack_networking_floatingip_v2.rofl_03_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "r04-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "r04"
+  value   = openstack_networking_floatingip_v2.rofl_04_fip.address
+  type    = "A"
+  ttl     = 4600
+}
+
+resource "cloudflare_record" "r05-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "r05"
+  value   = openstack_networking_floatingip_v2.rofl_05_fip.address
+  type    = "A"
+  ttl     = 5600
+}
