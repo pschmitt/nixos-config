@@ -130,7 +130,22 @@ resource "cloudflare_record" "mail-pschmitt-dev" {
 resource "cloudflare_record" "wildcard-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "*"
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "o01-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "o01"
   value   = "130.61.215.245"
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "o03-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "o03"
+  value   = oci_core_instance.oci_03.public_ip
   type    = "A"
   ttl     = 3600
 }
