@@ -1,4 +1,4 @@
-{ config, ... }: {
+{ config, lib, ... }: {
   services.xmrig = {
     enable = true;
     settings = {
@@ -10,7 +10,7 @@
         enabled = true;
         priority = 1;
         # 25% of $nproc threads
-        max-threads-hint = 25;
+        max-threads-hint = lib.mkDefault 25;
       };
       pools = [
         {
