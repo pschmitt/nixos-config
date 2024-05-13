@@ -10,7 +10,7 @@
   ];
 
   custom.cattle = true;
-  services.xmrig.settings.cpu.max-threads-hint = 75;
+  services.xmrig.settings.cpu.max-threads-hint = lib.mkForce 75;
 
   # Enable networking
   networking = {
