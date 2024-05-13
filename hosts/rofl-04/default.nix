@@ -1,4 +1,4 @@
-{ ... }: {
+{ lib, ... }: {
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
@@ -10,6 +10,7 @@
   ];
 
   custom.cattle = true;
+  services.xmrig.settings.cpu.max-threads-hint = lib.mkForce 75;
 
   # Enable networking
   networking = {
