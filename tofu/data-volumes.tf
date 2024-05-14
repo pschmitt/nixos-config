@@ -17,7 +17,7 @@ resource "openstack_compute_volume_attach_v2" "va_data" {
 resource "oci_core_volume" "oci_01_data" {
   availability_domain = oci_core_instance.oci_01.availability_domain
   compartment_id      = var.oci_compartment_id
-  display_name        = "data-01"
+  display_name        = "oci-01-data"
   size_in_gbs         = 50
 
   lifecycle {
