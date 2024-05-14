@@ -8,11 +8,11 @@ in
 {
   programs.bash = {
     vteIntegration = true;
-    blesh.enable = false; # disable blesh, we want a custom RC file
-    interactiveShellInit = ''
-      source ${bashCompleteAliases}
-      (( UID )) && source ${pkgs.blesh}/share/blesh/ble.sh --rcfile /etc/bleshrc
-    '';
+    # blesh.enable = false; # disable ble.sh, we want a custom RC file
+    # interactiveShellInit = ''
+    #   source ${bashCompleteAliases}
+    #   (( UID )) && source ${pkgs.blesh}/share/blesh/ble.sh --rcfile /etc/bleshrc
+    # '';
   };
 
   environment.etc.bleshrc.text = ''
@@ -65,6 +65,7 @@ in
     alias cdr='cd "$(git rev-parse --show-toplevel)"'
     alias gst="git status"
     alias gl="git pull"
+    alias gll="git pull --rebase --autostash"
 
     if command -v monit &>/dev/null
     then
