@@ -40,7 +40,6 @@ resource "oci_core_volume_attachment" "oci_01_volume_attachment" {
   attachment_type = "paravirtualized"
   instance_id     = oci_core_instance.oci_01.id
   volume_id       = oci_core_volume.oci_01_data.id
-  device          = "/dev/oracleoci/oraclevda"
 
   lifecycle {
     prevent_destroy = true
