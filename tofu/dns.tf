@@ -103,28 +103,25 @@ resource "cloudflare_record" "wildcard-oci-03" {
 resource "cloudflare_record" "mail-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "mail"
-  # TODO Changeme
-  value = "130.61.215.245"
-  type  = "A"
-  ttl   = 3600
+  value   = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  ttl     = 3600
 }
 
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
-  # TODO Changeme
-  value = "130.61.215.245"
-  type  = "A"
-  ttl   = 3600
+  value   = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  ttl     = 3600
 }
 
 resource "cloudflare_record" "mail-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "mail"
-  # TODO Changeme
-  value = "130.61.215.245"
-  type  = "A"
-  ttl   = 3600
+  value   = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  ttl     = 3600
 }
 
 resource "cloudflare_record" "wildcard-lol" {
@@ -137,7 +134,7 @@ resource "cloudflare_record" "wildcard-lol" {
 resource "cloudflare_record" "o01-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "o01"
-  value   = "130.61.215.245"
+  value   = oci_core_instance.oci_01.public_ip
   type    = "A"
   ttl     = 3600
 }
