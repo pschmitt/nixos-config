@@ -11,6 +11,7 @@ in
   home.packages = with pkgs; [
     # Work
     acme-sh
+    argocd
     argocd-vault-plugin
     azure-cli
     cmctl
