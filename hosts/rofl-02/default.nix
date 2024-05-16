@@ -45,4 +45,8 @@
       ExecStart = "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk up -d";
     };
   };
+
+  environment.systemPackages = with pkgs; [
+    yt-dlp
+  ];
 }
