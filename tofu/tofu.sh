@@ -5,7 +5,7 @@ echo_info() {
 }
 
 sops_decrypt() {
-  local dest="${TF_DIR:-${PWD}}"
+  local dest="${TOFU_DIR:-${PWD}}"
   local age_key
   age_key=$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")
 
@@ -19,7 +19,7 @@ sops_decrypt() {
 }
 
 cleanup() {
-  if [[ -z "$KEEP_TFVARS" ]]
+  if [[ -z "$KEEP_SECRETS" ]]
   then
     rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json"
   fi
@@ -44,10 +44,14 @@ main() {
   while [[ $# -gt 0 ]]
   do
     case "$1" in
-      -k|--keep-tfvars)
-        KEEP_TFVARS=1
+      -k|--keep-secrets|--keep-tfvars)
+        KEEP_SECRETS=1
         shift
         ;;
+      # -d|--dirty*)
+      #   DIRTY=1
+      #   shift
+      #   ;;
       -c|--clone*)
         CLONE_CONFIG=1
         shift
