@@ -22,6 +22,13 @@ in
       wiit = {
         port = 51821;
         environment = {
+          NB_MANAGEMENT_URL = "https://nb.gec.io";
+          NB_ALLOW_SSH = "false";
+        };
+      };
+      wiit-ooe = {
+        port = 51822;
+        environment = {
           NB_MANAGEMENT_URL = "https://netbird-api.ooe.gecgo.net";
           # TODO Does this work?
           # https://docs.netbird.io/how-to/cli#environment-variables
