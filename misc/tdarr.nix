@@ -13,6 +13,7 @@
         "tdarr-transcode_cache:/temp"
         "/mnt/data/videos:/media"
       ];
+      autoStart = true;
       environment = {
         TZ = "Europe/Berlin";
         PUID = "1000";
@@ -23,7 +24,10 @@
         serverPort = "8266";
         inContainer = "true";
         ffmpegVersion = "6";
+        NVIDIA_DRIVER_CAPABILITIES = "all";
+        NVIDIA_VISIBLE_DEVICES = "all";
       };
+      extraOptions = [ "--gpus=all" ];
     };
   };
 }
