@@ -9,7 +9,7 @@
 
 stdenv.mkDerivation rec {
   pname = "oracle-cloud-agent";
-  version = "1.38.0";
+  version = "1.40.0";
 
   # NOTE the Oracle Cloud Agent is available from the Oracle Linux yum repo
   # But this is not a public repo, so we have to download the RPMs manually
@@ -18,17 +18,17 @@ stdenv.mkDerivation rec {
   # Building this package directly on an OCI machine should work out of the box
   url =
     if stdenv.isAarch64 then
-      "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm"
+      "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.40.0-26.el9.aarch64.rpm"
     else if stdenv.isx86_64 then
-     "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm"
+     "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.40.0-11632.el9.x86_64.rpm"
     else
       throw "Unsupported platform";
 
   checksum =
     if stdenv.isAarch64 then
-      "sha256-KNmDgbBp4G0HGkfohK0hpTcvb0JDSNIcUHoStKncq28="
+      "sha256-Td3V0IHuwjFCheEVDxGDLP6mUfLSbGcXBuhJ+webjHY="
     else if stdenv.isx86_64 then
-     "sha256-9XN/7vkT+33YYRG1fCtfoNsef4x9086QP0AoD9PlUQ8="
+     "sha256-sKcaFl80uVzutix6tHIUjQDGHQELAO1EggNpoSB0/30="
     else
       throw "Unsupported platform";
 
