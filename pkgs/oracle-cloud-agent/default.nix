@@ -16,6 +16,8 @@ stdenv.mkDerivation rec {
   # To get the URLs you can run $ yumdownloader --urls oracle-cloud-agent
   # from an OCI machine where the Oracle Linux yum repo is configured
   # Building this package directly on an OCI machine should work out of the box
+  # Addendum: there's wrapper next to this file (./get-download-urls.sh) that
+  # should output the URLs
   url =
     if stdenv.isAarch64 then
       "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.40.0-26.el9.aarch64.rpm"
