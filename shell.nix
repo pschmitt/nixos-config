@@ -13,6 +13,7 @@
       opentofu
       ssh-to-age
       sops
+      yq-go
     ];
   };
 }
