@@ -77,7 +77,7 @@
 
     custom.sopsFile= lib.mkOption {
       type = lib.types.path;
-      default = ../secrets/${config.networking.hostName}/secrets.sops.yaml;
+      default = ../hosts/${config.networking.hostName}/secrets.sops.yaml;
       description = "Host-specific SOPS configuration file";
     };
   };
