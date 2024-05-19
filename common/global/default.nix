@@ -27,6 +27,7 @@ in
     ./dotfiles.nix
     ./nix.nix
     ./pschmitt.nix
+    ./sops.nix
     ./ssh.nix
   ];
 
