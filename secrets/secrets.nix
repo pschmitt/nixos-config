@@ -60,11 +60,13 @@ in
   "ge2/restic-env.age".publicKeys = pschmitt ++ ge2;
   "ge2/restic-password.age".publicKeys = pschmitt ++ ge2;
   "ge2/restic-repository.age".publicKeys = pschmitt ++ ge2;
+  "ge2/ssh_host_ed25519_key.pub.age".publicKeys = pschmitt ++ ge2;
 
   "x13/nix-netrc.age".publicKeys = pschmitt ++ x13;
   "x13/restic-env.age".publicKeys = pschmitt ++ x13;
   "x13/restic-password.age".publicKeys = pschmitt ++ x13;
   "x13/restic-repository.age".publicKeys = pschmitt ++ x13;
+  "x13/ssh_host_ed25519_key.pub.age".publicKeys = pschmitt ++ x13;
 
   # "fnuc/luks-passphrase-root.age".publicKeys = everyone;
 

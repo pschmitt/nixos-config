@@ -2,6 +2,7 @@
 {
   imports = lib.concatLists [
     [
+      inputs.sops-nix.homeManagerModules.sops
       inputs.nur.hmModules.nur
       inputs.nix-index-database.hmModules.nix-index
       ./bitwarden.nix

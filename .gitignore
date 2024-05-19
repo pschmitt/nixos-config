@@ -5,3 +5,4 @@ pkgs/fonts/src/*.zip
 .terraform*
 .terraform.lock.hcl
 terraform/etc
+*.bak

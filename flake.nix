@@ -48,6 +48,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     hyprland = {
       url = "github:hyprwm/Hyprland/v0.40.0";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -120,6 +125,7 @@
     , nix-snapd
     , nixpkgs
     , nur
+    , sops-nix
     , srvos
     , ...
     }@inputs:
@@ -139,6 +145,7 @@
         flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
+        sops-nix.nixosModules.sops
         ./modules/custom.nix
         ./modules/luks-ssh-unlock.nix
       ];
