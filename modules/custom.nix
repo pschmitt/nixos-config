@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, config, ... }:
 
 {
   options = {
@@ -73,6 +73,12 @@
       type = lib.types.bool;
       default = false;
       description = "Whether this is a cattle/throw-away server";
+    };
+
+    custom.sopsFile= lib.mkOption {
+      type = lib.types.path;
+      default = ../secrets/${config.networking.hostName}/secrets.sops.yaml;
+      description = "Host-specific SOPS configuration file";
     };
   };
 }
