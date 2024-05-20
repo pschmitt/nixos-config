@@ -113,6 +113,11 @@
       # url = "/etc/nixos/nix-snapd.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    pre-commit-hooks = {
+      url = "github:cachix/pre-commit-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -175,11 +180,27 @@
         in import ./pkgs { inherit pkgs; }
       );
 
+      checks = forAllSystems (system: {
+        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            nixpkgs-fmt.enable = true;
+            pre-commit-hook-ensure-sops = {
+              enable = true;
+              files = ".+\.sops.yaml$";
+            };
+          };
+        };
+      });
+
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forAllSystems (system:
-        let pkgs = nixpkgs.legacyPackages.${system};
-        in import ./shell.nix { inherit pkgs; }
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          checks = self.checks.${system};
+        in
+        import ./shell.nix { inherit pkgs checks; }
       );
 
       # Your custom packages and modifications, exported as overlays
