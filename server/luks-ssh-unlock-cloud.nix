@@ -2,7 +2,7 @@
 
 let
   # List of instance names
-  instanceNames = [ "oci-03" "rofl-02" "rofl-03" ];
+  instanceNames = [ "oci-03" "rofl-02" "rofl-03" "rofl-04" "rofl-05" ];
 
   # Define a function to create an instance with common defaults
   createInstance = name: {
