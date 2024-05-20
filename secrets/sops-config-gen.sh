@@ -7,6 +7,7 @@ github_age_keys() {
   curl -fsSL "$url" | grep ed25519 | xargs -I {} sh -c 'ssh-to-age <<< "{}"'
 }
 
+# shellcheck disable=2120
 github_age_keys_yaml() {
   local gh_keys hosts
   mapfile -t gh_keys < <(github_age_keys "$@")
@@ -22,7 +23,7 @@ nix_host_configs() {
   # NOTE we could inspect the flake but there is not easy way to filter out
   # non-physical hosts such as "iso" or "pxe"
   find ./hosts -mindepth 2 -maxdepth 2 -iname "hardware-configuration.nix" \
-    -exec sh -c 'basename $(dirname {})' \; | sort -u
+    -exec sh -c 'i="$1"; basename "$(dirname "$i")"' shell {} \; | sort -u
 }
 
 host_pubkey() {
@@ -41,7 +42,8 @@ sops_config_gen() {
   mapfile -t hosts < <(nix_host_configs)
   gh_keys=$(github_age_keys_yaml)
 
-  local sops_config=$(gh_keys="$gh_keys" yq -n '
+  local sops_config
+  sops_config=$(gh_keys="$gh_keys" yq -n '
     {
       "creation_rules": [
         {
@@ -87,7 +89,8 @@ sops_config_gen() {
 
 main() {
   set -e
-  cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+  # go to the root of the repo
+  cd "$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)" || exit 9
 
   GITHUB_USERNAME="${GITHUB_USERNAME:-$(whoami)}"
 
