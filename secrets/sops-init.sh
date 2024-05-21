@@ -21,22 +21,24 @@ echo_error() {
   echo -e "\e[1m\e[31mERR\e[0m $*" >&2
 }
 
-gen_ssh_host_keys() {
-  local target_host="$1" yaml
+gen_ssh_keys() {
+  local key="$1" comment="$2"
+  local yaml
   local privkey pubkey
   local key_type tmpfile
 
   for key_type in rsa ed25519
   do
     tmpfile="$(mktemp --dry-run)"
-    ssh-keygen -t "$key_type" -N "" -C "root@${target_host}" -f "$tmpfile" &>/dev/null
+    ssh-keygen -t "$key_type" -N "" -C "$comment" -f "$tmpfile" &>/dev/null
 
     privkey=$(cat "$tmpfile")
     pubkey=$(cat "${tmpfile}.pub")
 
-    yaml=$(pubkey="$pubkey" privkey="$privkey" key_type="$key_type" yq -er '
-      .ssh.host_keys[strenv(key_type)].privkey = strenv(privkey) |
-      .ssh.host_keys[strenv(key_type)].pubkey = strenv(pubkey)
+    yaml=$(pubkey="$pubkey" privkey="$privkey" key="$key" key_type="$key_type" \
+      yq -er '
+      .ssh.[strenv(key)][strenv(key_type)].privkey = strenv(privkey) |
+      .ssh.[strenv(key)][strenv(key_type)].pubkey = strenv(pubkey)
     ' <<< "$yaml")
 
     # Display public key
@@ -45,6 +47,21 @@ gen_ssh_host_keys() {
   done
 
   echo "$yaml"
+}
+
+gen_ssh_host_keys() {
+  local target_host="$1"
+
+  local yaml host_keys initrd_host_keys
+  host_keys=$(gen_ssh_keys "host_keys" "root@$target_host")
+  initrd_host_keys=$(gen_ssh_keys "initrd_host_keys" "root@initrd-${target_host}")
+
+  # shellcheck disable=SC2016
+  {
+    echo "$host_keys"
+    echo "---"
+    echo "$initrd_host_keys"
+  } | yq eval-all '. as $item ireduce ({}; . * $item )'
 }
 
 gen_luks_passphrase() {
