@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
-AGENIX_DIR=/etc/nixos/secrets
-AGE_IDENTITY_FILE=/home/pschmitt/.ssh/id_ed25519
-TARGET_HOST="${TARGET_HOST:-rofl-02}"
+TARGET_HOST="${TARGET_HOST:-}"
 
-mkdir -p etc/ssh var/lib/secrets
+if [[ -z "$TARGET_HOST" ]]
+then
+  echo "Missing TARGET_HOST env var"
+  exit 2
+fi
+
+mkdir -p etc/ssh
 
 # TODO ?
 # umask 0177
@@ -13,22 +17,36 @@ mkdir -p etc/ssh var/lib/secrets
 # restore umask
 # umask 0022
 
-SSH_HOST_KEYS=(
-  ssh_host_rsa_key
-  ssh_host_rsa_key.pub
-  ssh_host_ed25519_key
-  ssh_host_ed25519_key.pub
-)
+# agenix
+# AGENIX_DIR=/etc/nixos/secrets
+# AGE_IDENTITY_FILE=/home/pschmitt/.ssh/id_ed25519
+# SSH_HOST_KEYS=(
+#   ssh_host_rsa_key
+#   ssh_host_rsa_key.pub
+#   ssh_host_ed25519_key
+#   ssh_host_ed25519_key.pub
+# )
+#
+# for FILE in "${SSH_HOST_KEYS[@]}"
+# do
+#   if [[ "$FILE" == *.pub ]]
+#   then
+#     umask 0133
+#   else
+#     umask 0177
+#   fi
+#
+#   age --decrypt --identity "$AGE_IDENTITY_FILE" \
+#     "${AGENIX_DIR}/${TARGET_HOST}/${FILE}.age" > "./etc/ssh/$FILE"
+# done
 
-for FILE in "${SSH_HOST_KEYS[@]}"
-do
-  if [[ "$FILE" == *.pub ]]
-  then
-    umask 0133
-  else
-    umask 0177
-  fi
+# sops
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+SOPS_FILE="$(readlink -e "${SCRIPT_DIR}/../../hosts/${TARGET_HOST}/secrets.sops.yaml")"
 
-  age --decrypt --identity "$AGE_IDENTITY_FILE" \
-    "${AGENIX_DIR}/${TARGET_HOST}/${FILE}.age" > "./etc/ssh/$FILE"
-done
+umask 0133
+sops -d --extract '["ssh"]["host_keys"]["rsa"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_rsa_key.pub
+sops -d --extract '["ssh"]["host_keys"]["ed25519"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_ed25519_key.pub
+umask 0177
+sops -d --extract '["ssh"]["host_keys"]["ed25519"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_ed25519_key
+sops -d --extract '["ssh"]["host_keys"]["rsa"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_rsa_key
