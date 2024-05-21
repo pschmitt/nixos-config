@@ -20,6 +20,10 @@ do
       SSH_ARGS+=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
       shift
       ;;
+    --dryrun|--dry-run|-k)
+      DRY_RUN=1
+      shift
+      ;;
     *)
       break
       ;;
@@ -40,13 +44,28 @@ SSH_HOST="${SSH_HOST:-${TARGET_HOST}.${DOMAIN}}"
 SSH_ARGS+=("$@")
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+
+# agenix
 # NOTE agenix won't let you use "./xxxx"
-if ! PASSPHRASE=$(agenix -d "${TARGET_HOST}/luks-passphrase-root.age") || \
+# if ! PASSPHRASE=$(agenix -d "${TARGET_HOST}/luks-passphrase-root.age") || \
+#    [[ -z "$PASSPHRASE" ]]
+# then
+#   echo "Failed to get passphrase for ${TARGET_HOST}" >&2
+#   exit 1
+# fi
+
+# sops
+if ! PASSPHRASE=$(sops --decrypt --extract '["luks"]["root"]' "../hosts/${TARGET_HOST}/luks.sops.yaml") || \
    [[ -z "$PASSPHRASE" ]]
 then
   echo "Failed to get passphrase for ${TARGET_HOST}" >&2
   exit 1
 fi
 
-ssh "${SSH_ARGS[@]}" -l "$SSH_USER" "$SSH_HOST" \
-  systemd-tty-ask-password-agent <<<"$PASSPHRASE"
+if [[ -n "$DRY_RUN" ]]
+then
+  echo "DRY RUN: Would unlock LUKS on ${TARGET_HOST} with passphrase: '${PASSPHRASE}'"
+else
+  ssh "${SSH_ARGS[@]}" -l "$SSH_USER" "$SSH_HOST" \
+    systemd-tty-ask-password-agent <<<"$PASSPHRASE"
+fi
