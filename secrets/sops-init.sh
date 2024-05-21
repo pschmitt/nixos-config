@@ -54,6 +54,11 @@ gen_dummy_secret() {
   echo -n "changeme"
 }
 
+luks_passphrase_yaml() {
+  passph="$(gen_luks_passphrase)" \
+    yq -ner '.luks.root = strenv(passph)'
+}
+
 main() {
   FORCE="${FORCE:-}"
   CHECK="${CHECK:-}"
@@ -96,12 +101,26 @@ main() {
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
   SOPS_FILE="../hosts/${target_host}/secrets.sops.yaml"
+  SOPS_LUKS_FILE="../hosts/${target_host}/luks.sops.yaml"
 
-  if [[ -e "$SOPS_FILE" ]] && [[ -z "$FORCE" ]]
+  if [[ -e "$SOPS_FILE" && -z "$FORCE" ]]
   then
     echo_warning "sops file $SOPS_FILE already exists"
     exit 1
   fi
+
+  if [[ -e "$SOPS_LUKS_FILE" && -z "$FORCE" ]]
+  then
+    echo_warning "sops file $SOPS_LUKS_FILE already exists"
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$SOPS_FILE")"
+
+  # Create LUKS passphrase
+  sops --encrypt --input-type yaml \
+    <(luks_passphrase_yaml) \
+    > "$SOPS_LUKS_FILE"
 
   local cleartext
   cleartext=$(gen_ssh_host_keys "$target_host")
@@ -111,8 +130,6 @@ main() {
     .mail.gmail = "changeme" |
     .mail.heimat-dev = "changeme"
     ' <<< "$cleartext")
-
-  mkdir -p "$(dirname "$SOPS_FILE")"
 
   # TODO --filename-override is not supported in sops 3.8.1
   # shellcheck disable=SC2094
