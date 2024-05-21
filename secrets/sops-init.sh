@@ -23,6 +23,7 @@ echo_error() {
 
 gen_ssh_host_keys() {
   local target_host="$1" yaml
+  local privkey pubkey
   local key_type tmpfile
 
   for key_type in rsa ed25519
