@@ -60,7 +60,7 @@ sops_config_gen() {
     host_age_key=$(host_age_key "$host")
     creation_rules=$(host="$host" host_age_key="$host_age_key" gh_keys="$gh_keys" \
     yq -ern '{
-      "path_regex": "hosts/" + strenv(host) + "/.*",
+      "path_regex": "hosts/" + strenv(host) + "/secrets.sops.yaml",
       "key_groups": [
         {
           "age": [
