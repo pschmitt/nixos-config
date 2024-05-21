@@ -106,6 +106,12 @@ main() {
   local cleartext
   cleartext=$(gen_ssh_host_keys "$target_host")
 
+  # Append dummy secrets
+  cleartext=$(yq -er '
+    .mail.gmail = "changeme" |
+    .mail.heimat-dev = "changeme"
+    ' <<< "$cleartext")
+
   mkdir -p "$(dirname "$SOPS_FILE")"
 
   # TODO --filename-override is not supported in sops 3.8.1
@@ -115,8 +121,6 @@ main() {
   #   <(echo "$cleartext") \
   #   > "$SOPS_FILE"
 
-  # echo "$cleartext" > "$SOPS_FILE"
-  # sops --encrypt -i "$SOPS_FILE"
   sops --encrypt --input-type yaml \
     <(echo "$cleartext") \
     > "$SOPS_FILE"
