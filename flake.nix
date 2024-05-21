@@ -89,7 +89,7 @@
     };
 
     neovim = {
-      url = "github:neovim/neovim/efaf37a2b9450d56acbf48a44c3c791d00d70199?dir=contrib";
+      url = "github:neovim/neovim/v0.10.0?dir=contrib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
