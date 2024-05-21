@@ -22,15 +22,20 @@ github_age_keys_yaml() {
 nix_host_configs() {
   # NOTE we could inspect the flake but there is not easy way to filter out
   # non-physical hosts such as "iso" or "pxe"
-  find ./hosts -mindepth 2 -maxdepth 2 -iname "hardware-configuration.nix" \
+  find ./hosts -mindepth 2 -maxdepth 2 -iname "secrets.sops.yaml" \
     -exec sh -c 'i="$1"; basename "$(dirname "$i")"' shell {} \; | sort -u
 }
 
 host_pubkey() {
   local host="$1"
-  # TODO this needs to be read from the sops file once the migration is done
-  age --decrypt --identity ~/.ssh/id_ed25519 \
-    ./secrets/"${host}"/ssh_host_ed25519_key.pub.age
+
+  # agenix
+  # age --decrypt --identity ~/.ssh/id_ed25519 \
+  #   ./secrets/"${host}"/ssh_host_ed25519_key.pub.age
+
+  # sops
+  sops --decrypt --extract '["ssh"]["host_keys"]["ed25519"]["pubkey"]' \
+    "./hosts/${host}/secrets.sops.yaml"
 }
 
 host_age_key() {
