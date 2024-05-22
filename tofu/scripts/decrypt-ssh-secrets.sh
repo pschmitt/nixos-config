@@ -47,6 +47,10 @@ SOPS_FILE="$(readlink -e "${SCRIPT_DIR}/../../hosts/${TARGET_HOST}/secrets.sops.
 umask 0133
 sops -d --extract '["ssh"]["host_keys"]["rsa"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_rsa_key.pub
 sops -d --extract '["ssh"]["host_keys"]["ed25519"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_ed25519_key.pub
+sops -d --extract '["ssh"]["initrd_host_keys"]["rsa"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/initrd-ssh_host_rsa_key.pub
+sops -d --extract '["ssh"]["initrd_host_keys"]["ed25519"]["pubkey"]' "$SOPS_FILE" > ./etc/ssh/initrd-ssh_host_ed25519_key.pub
 umask 0177
 sops -d --extract '["ssh"]["host_keys"]["ed25519"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_ed25519_key
 sops -d --extract '["ssh"]["host_keys"]["rsa"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/ssh_host_rsa_key
+sops -d --extract '["ssh"]["initrd_host_keys"]["ed25519"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/initrd-ssh_host_ed25519_key
+sops -d --extract '["ssh"]["initrd_host_keys"]["rsa"]["privkey"]' "$SOPS_FILE" > ./etc/ssh/initrd-ssh_host_rsa_key
