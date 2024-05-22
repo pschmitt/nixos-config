@@ -1,24 +1,24 @@
 { config, lib, ... }: {
   networking.useDHCP = lib.mkDefault true;
 
-  sops.secrets = {
-    "ssh/initrd_host_keys/ed25519/privkey" = {
-      sopsFile = config.custom.sopsFile;
-      path = "/etc/ssh/initrd/ssh_host_ed25519_key";
-    };
-    "ssh/initrd_host_keys/rsa/privkey" = {
-      sopsFile = config.custom.sopsFile;
-      path = "/etc/ssh/initrd/ssh_host_rsa_key";
-    };
-    "ssh/initrd_host_keys/ed25519/pubkey" = {
-      sopsFile = config.custom.sopsFile;
-      path = "/etc/ssh/initrd/ssh_host_ed25519_key.pub";
-    };
-    "ssh/initrd_host_keys/rsa/pubkey" = {
-      sopsFile = config.custom.sopsFile;
-      path = "/etc/ssh/initrd/ssh_host_rsa_key.pub";
-    };
-  };
+  # sops.secrets = {
+  #   "ssh/initrd_host_keys/ed25519/privkey" = {
+  #     sopsFile = config.custom.sopsFile;
+  #     path = "/etc/ssh/initrd/ssh_host_ed25519_key";
+  #   };
+  #   "ssh/initrd_host_keys/rsa/privkey" = {
+  #     sopsFile = config.custom.sopsFile;
+  #     path = "/etc/ssh/initrd/ssh_host_rsa_key";
+  #   };
+  #   "ssh/initrd_host_keys/ed25519/pubkey" = {
+  #     sopsFile = config.custom.sopsFile;
+  #     path = "/etc/ssh/initrd/ssh_host_ed25519_key.pub";
+  #   };
+  #   "ssh/initrd_host_keys/rsa/pubkey" = {
+  #     sopsFile = config.custom.sopsFile;
+  #     path = "/etc/ssh/initrd/ssh_host_rsa_key.pub";
+  #   };
+  # };
 
   boot.initrd = {
     enable = true;
@@ -38,10 +38,13 @@
         authorizedKeys = config.custom.authorizedKeys;
         # authorizedKeys = with lib; concatLists (mapAttrsToList (name: user: if elem "wheel" user.extraGroups then user.openssh.authorizedKeys.keys else [ ]) config.users.users);
         hostKeys = [
-          "/etc/ssh/ssh_host_rsa_key"
-          "/etc/ssh/ssh_host_ed25519_key"
+          "/etc/ssh/initrd/ssh_host_rsa_key"
+          "/etc/ssh/initrd/ssh_host_ed25519_key"
+          # NOTE sops-nix does *not* support initrd secrets
+          # "/run/secrets/ssh/initrd_host_keys/ed25519/privkey"
+          # "/run/secrets/ssh/initrd_host_keys/rsa/privkey"
         ];
-        # ignoreEmptyHostKeys = true;
+        # ignoreEmptyHostKeys = false;
       };
     };
   };
