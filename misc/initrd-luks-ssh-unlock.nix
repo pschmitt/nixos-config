@@ -1,6 +1,25 @@
 { config, lib, ... }: {
   networking.useDHCP = lib.mkDefault true;
 
+  sops.secrets = {
+    "ssh/initrd_host_keys/ed25519/privkey" = {
+      sopsFile = config.custom.sopsFile;
+      path = "/etc/ssh/initrd/ssh_host_ed25519_key";
+    };
+    "ssh/initrd_host_keys/rsa/privkey" = {
+      sopsFile = config.custom.sopsFile;
+      path = "/etc/ssh/initrd/ssh_host_rsa_key";
+    };
+    "ssh/initrd_host_keys/ed25519/pubkey" = {
+      sopsFile = config.custom.sopsFile;
+      path = "/etc/ssh/initrd/ssh_host_ed25519_key.pub";
+    };
+    "ssh/initrd_host_keys/rsa/pubkey" = {
+      sopsFile = config.custom.sopsFile;
+      path = "/etc/ssh/initrd/ssh_host_rsa_key.pub";
+    };
+  };
+
   boot.initrd = {
     enable = true;
     # NOTE the command to unlock is systemd-tty-ask-password-agent
