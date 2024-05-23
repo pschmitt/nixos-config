@@ -14,12 +14,11 @@
   users.groups.mmonit = { };
 
   # license
-  age.secrets.mmonit-license.file = ../secrets/mmonit-license.age;
   sops.secrets."mmonit/license" = {
-      sopsFile = config.custom.sopsFile;
-    };
+    sopsFile = config.custom.sopsFile;
+  };
 
-  environment.etc."mmonit/license.xml".source = "${config.age.secrets.mmonit-license.path}";
+  environment.etc."mmonit/license.xml".source = "${config.sops.secrets."mmonit/license".path}";
 
   services.restic.backups.main.paths = lib.mkAfter (config.services.restic.backups.main.paths ++ [
     "/var/lib/mmonit"

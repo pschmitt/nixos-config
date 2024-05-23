@@ -1,22 +1,6 @@
 { config, inputs, lib, outputs, pkgs, ... }:
 {
-  # NOTE Below is for setting up auth for attic
-  # age = {
-  #   secrets = {
-  #     nix-netrc = {
-  #       file = ../../secrets/${config.networking.hostName}/nix-netrc.age;
-  #       owner = "root";
-  #       # FIXME is nixbld the right group?
-  #       group = "nixbld";
-  #       mode = "0440";
-  #     };
-  #   };
-  # };
-  # environment.etc."nix/netrc" = {
-  #   user = "root";
-  #   source = config.age.secrets.nix-netrc.path;
-  # };
-  age.secrets.ssh-privkey-nix-remote-builder.file = ../../secrets/ssh-key-nix-remote-builder.age;
+  sops.secrets."ssh/nix-remote-builder/privkey" = { };
 
   boot.binfmt.emulatedSystems = if pkgs.system != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
 
@@ -45,8 +29,8 @@
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
         "https://cache.garnix.io"
-        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${config.age.secrets.ssh-privkey-nix-remote-builder.path}"
-        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${config.age.secrets.ssh-privkey-nix-remote-builder.path}"
+        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
         # "https://nix-cache.heimat.dev"
       ];
 

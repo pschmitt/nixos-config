@@ -1,7 +1,11 @@
 { config, lib, ... }: {
   config = lib.mkIf (!config.custom.cattle) {
-    age.secrets.msmtp-password-heimat-dev.file = ../../secrets/${config.networking.hostName}/msmtp-password-heimat-dev.age;
-    age.secrets.msmtp-password-gmail.file = ../../secrets/${config.networking.hostName}/msmtp-password-gmail.age;
+    sops.secrets."mail/heimat-dev" = {
+      sopsFile = config.custom.sopsFile;
+    };
+    sops.secrets."mail/gmail" = {
+      sopsFile = config.custom.sopsFile;
+    };
 
     programs.msmtp = {
       enable = true;
@@ -19,7 +23,7 @@
           tls_certcheck = false;
           from = "${config.networking.hostName}@heimat.dev";
           user = "${config.networking.hostName}@heimat.dev";
-          passwordeval = "cat ${config.age.secrets.msmtp-password-heimat-dev.path}";
+          passwordeval = "cat ${config.sops.secrets."mail/heimat-dev".path}";
         };
         gmail = {
           host = "smtp.gmail.com";
@@ -27,7 +31,7 @@
           tls_starttls = false;
           from = "${config.networking.hostName}";
           user = "philipp@schmitt.co";
-          passwordeval = "cat ${config.age.secrets.msmtp-password-gmail.path}";
+          passwordeval = "cat ${config.sops.secrets."mail/gmail".path}";
         };
       };
     };

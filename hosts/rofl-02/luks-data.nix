@@ -1,9 +1,9 @@
 { config, ... }: {
   # Data volume
-  age.secrets.luks-key-data.file = ../../secrets/${config.networking.hostName}/luks-passphrase-data.age;
+  sops.secrets."luks/data" = { sopsFile = config.custom.sopsFile; };
 
   environment.etc.crypttab.text = ''
-    data UUID=371fa9e9-38f4-4022-bc96-227821c5eea7 ${config.age.secrets.luks-key-data.path}
+    data UUID=371fa9e9-38f4-4022-bc96-227821c5eea7 ${config.sops.secrets."luks/data".path}
   '';
 
   fileSystems."/mnt/data" = {
