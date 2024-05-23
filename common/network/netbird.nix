@@ -33,7 +33,9 @@ in
   # mask netbird-wt0 service
   systemd.services.netbird-wt0.enable = false;
 
-  sops.secrets."netbird/setup-keys/netbird-io" = { };
+  sops.secrets.netbird-setup-key = {
+    key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
+  };
 
   systemd.services.netbird-netbird-io-autoconnect = {
     after = [ "netbird-netbird-io.service" ];
@@ -59,7 +61,7 @@ in
       # More info: https://docs.netbird.io/how-to/register-machines-using-setup-keys
       if netbird-netbird-io status | grep -q 'NeedsLogin'
       then
-        SETUP_KEY=$(cat ${config.sops.secrets."netbird/setup-keys/netbird-io".path})
+        SETUP_KEY=$(cat ${config.sops.secrets.netbird-setup-key.path})
         netbird-netbird-io up --setup-key "$SETUP_KEY"
       fi
     '';

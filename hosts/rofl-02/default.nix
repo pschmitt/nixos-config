@@ -3,6 +3,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
+    ../../server/optimist.nix
 
     ./luks-data.nix
     ./rclone-bisync.nix
