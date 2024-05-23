@@ -9,10 +9,11 @@ in
   programs.bash = {
     vteIntegration = true;
     # blesh.enable = false; # disable ble.sh, we want a custom RC file
-    # interactiveShellInit = ''
-    #   source ${bashCompleteAliases}
-    #   (( UID )) && source ${pkgs.blesh}/share/blesh/ble.sh --rcfile /etc/bleshrc
-    # '';
+    interactiveShellInit = ''
+      source ${bashCompleteAliases}
+      # blesh is disabled
+      # (( UID )) && source ${pkgs.blesh}/share/blesh/ble.sh --rcfile /etc/bleshrc
+    '';
   };
 
   environment.etc.bleshrc.text = ''
