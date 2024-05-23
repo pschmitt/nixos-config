@@ -75,10 +75,17 @@
       description = "Whether this is a cattle/throw-away server";
     };
 
-    custom.sopsFile= lib.mkOption {
+    custom.sopsFile = lib.mkOption {
       type = lib.types.path;
       default = ../hosts/${config.networking.hostName}/secrets.sops.yaml;
       description = "Host-specific SOPS configuration file";
     };
+
+    custom.netbirdSetupKey = lib.mkOption {
+      type = lib.types.str;
+      default = "default";
+      description = "Netbird setup key name";
+    };
   };
 }
+
