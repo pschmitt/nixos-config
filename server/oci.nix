@@ -1,9 +1,11 @@
 # https://github.com/NixOS/nixpkgs/pull/119856/
-{ inputs, pkgs, ... }:
+{ inputs, lib, pkgs, ... }:
 let
   snapPkg = inputs.nix-snapd.packages.${pkgs.system}.default;
 in
 {
+  custom.netbirdSetupKey = lib.mkForce "oci";
+
   boot.kernelParams = [
     "nvme.shutdown_timeout=10"
     "nvme_core.shutdown_timeout=10"

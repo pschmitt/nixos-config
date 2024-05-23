@@ -3,6 +3,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
+    ../../server/optimist.nix
 
     ../../misc/nfs-client.nix
     ../../misc/tdarr.nix
