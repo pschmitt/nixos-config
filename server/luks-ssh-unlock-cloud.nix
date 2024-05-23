@@ -9,7 +9,7 @@ let
     type = "dracut";
     hostname = "${name}.heimat.dev";
     key = "/home/pschmitt/.ssh/id_ed25519";
-    passphraseFile = config.age.secrets.${"passphrase-" + name}.path;
+    passphraseFile = config.sops.secrets.${"luks/" + name}.path;
     sleepInterval = 30;
 
     healthcheck = {
@@ -18,19 +18,19 @@ let
     };
   };
 
-  # Helper to define age secrets for each instance
-  defineAgeSecrets = lib.listToAttrs (lib.lists.map
+  # Helper to define sops secrets for each instance
+  defineSopsSecrets = lib.listToAttrs (lib.lists.map
     (name:
       {
-        name = "passphrase-${name}";
-        value = { file = ../secrets/${name}/luks-passphrase-root.age; };
+        name = "luks/${name}";
+        value = { sopsFile = config.custom.sopsFile; };
       })
     instanceNames);
 
 in
 {
-  # Define age secrets using the helper function
-  age.secrets = defineAgeSecrets;
+  # Define sops secrets using the helper function
+  sops.secrets = defineSopsSecrets;
 
   services.luks-ssh-unlocker = {
     enable = true;
