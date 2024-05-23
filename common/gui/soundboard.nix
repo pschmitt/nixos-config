@@ -2,25 +2,29 @@
 
 {
   services.pipewire.extraConfig.pipewire."99-soundboard" = {
-    context.objects = [{
-      factory = "adapter";
-      args = {
-        factory.name = "support.null-audio-sink";
-        media.class = "Audio/Sink";
-        node.name = "soundboard-sink";
-        node.description = "Soundboard Sink";
-        adapter.auto-port-config = {
-          mode = "dsp";
-          monitor = true;
-          position = "preserve";
+    context.objects = [
+      {
+        factory = "adapter";
+        args = {
+          factory.name = "support.null-audio-sink";
+          media.class = "Audio/Sink";
+          node.name = "soundboard-sink";
+          node.description = "Soundboard Sink";
+          adapter.auto-port-config = {
+            mode = "dsp";
+            monitor = true;
+            position = "preserve";
+          };
         };
-      };
-    }];
+      }
+    ];
   };
 
   systemd.user.services.soundboard-tagesschau = {
     description = "Play Tagesschau Jingle";
-    documentation = [ "file://${config.custom.homeDirectory}/.config/zsh/plugins/local/soundboard.zsh" ];
+    documentation = [
+      "file://${config.custom.homeDirectory}/.config/zsh/plugins/local/soundboard.zsh"
+    ];
     path = [
       "${config.custom.homeDirectory}"
       "/run/current-system/sw"

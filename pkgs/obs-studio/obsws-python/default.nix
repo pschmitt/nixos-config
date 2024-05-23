@@ -1,14 +1,13 @@
-{ lib
-, buildPythonPackage
-, fetchPypi
-
-# build-system
-, hatchling
-
-# dependencies
-, tomli
-, websocket-client
- }:
+{
+  lib,
+  buildPythonPackage,
+  fetchPypi,
+  # build-system
+  hatchling,
+  # dependencies
+  tomli,
+  websocket-client,
+}:
 
 buildPythonPackage rec {
   pname = "obsws-python";
@@ -21,9 +20,7 @@ buildPythonPackage rec {
     hash = "sha256-cR1gnZ5FxZ76SD9GlHSIhv142ejsqs/Bp8wV1A1kfdw=";
   };
 
-  nativeBuildInputs = [
-    hatchling
-  ];
+  nativeBuildInputs = [ hatchling ];
 
   propagatedBuildInputs = [
     tomli

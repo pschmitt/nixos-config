@@ -1,9 +1,13 @@
-{ inputs, lib, config, pkgs, ... }:
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 {
-  environment.systemPackages = with pkgs; [
-    openconnect
-  ];
+  environment.systemPackages = with pkgs; [ openconnect ];
 
   systemd.user.services.gec-vpn = {
     description = "GEC VPN";

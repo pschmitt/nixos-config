@@ -1,4 +1,8 @@
-{ lib, stdenv, bash }:
+{
+  lib,
+  stdenv,
+  bash,
+}:
 
 stdenv.mkDerivation {
   pname = "oci-udev-persistent-naming";

@@ -6,7 +6,9 @@
         if [[ -o interactive && -o login ]]
         then
           # command-not-found integration
-          source ${inputs.nix-index-database.packages.${pkgs.system}.nix-index-with-db}/etc/profile.d/command-not-found.sh
+          source ${
+            inputs.nix-index-database.packages.${pkgs.system}.nix-index-with-db
+          }/etc/profile.d/command-not-found.sh
 
           # DEPRECATED: Use wezterm.sh instead
           # source ${pkgs.vte}/etc/profile.d/vte.sh

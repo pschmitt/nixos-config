@@ -1,7 +1,18 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 let
   mullvadExpiration = pkgs.writeShellScript "mullvad-expiration" ''
-    export PATH=${pkgs.lib.makeBinPath [ pkgs.coreutils pkgs.curl pkgs.jq ]}
+    export PATH=${
+      pkgs.lib.makeBinPath [
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.jq
+      ]
+    }
     ${builtins.readFile ./mullvad-expiration.sh}
   '';
 
@@ -46,7 +57,9 @@ let
     check host ${params.svc} with address ${params.addr}
       group piracy
       depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${params.compose_yaml or params.svc}/docker-compose.yaml up -d --force-recreate ${params.svc}"
+      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${
+        params.compose_yaml or params.svc
+      }/docker-compose.yaml up -d --force-recreate ${params.svc}"
       if failed
         port 443
         protocol https
@@ -73,20 +86,44 @@ let
       every 2 cycles
       if status > 0 then alert
 
-    check program mullvad with path "${mullvadExpiration} --warning 15 ${config.sops.secrets."mullvad/account".path}"
+    check program mullvad with path "${mullvadExpiration} --warning 15 ${
+      config.sops.secrets."mullvad/account".path
+    }"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
 
-    ${generateHostCheck { svc = "jellyfin"; addr = "media.heimat.dev"; }}
-    ${generateHostCheck { svc = "nextcloud"; addr = "c.heimat.dev"; }};
-    ${generateHostCheck { svc = "radarr"; addr = "radarr.heimat.dev"; compose_yaml = "piracy"; }}
-    ${generateHostCheck { svc = "sonarr"; addr = "sonarr.heimat.dev"; compose_yaml = "piracy"; }}
-    ${generateHostCheck { svc = "transmission"; addr = "to.heimat.dev"; compose_yaml = "piracy"; }}
+    ${generateHostCheck {
+      svc = "jellyfin";
+      addr = "media.heimat.dev";
+    }}
+    ${
+      generateHostCheck {
+        svc = "nextcloud";
+        addr = "c.heimat.dev";
+      }
+    };
+    ${generateHostCheck {
+      svc = "radarr";
+      addr = "radarr.heimat.dev";
+      compose_yaml = "piracy";
+    }}
+    ${generateHostCheck {
+      svc = "sonarr";
+      addr = "sonarr.heimat.dev";
+      compose_yaml = "piracy";
+    }}
+    ${generateHostCheck {
+      svc = "transmission";
+      addr = "to.heimat.dev";
+      compose_yaml = "piracy";
+    }}
   '';
 in
 {
-  sops.secrets."mullvad/account" = { sopsFile = config.custom.sopsFile; };
+  sops.secrets."mullvad/account" = {
+    sopsFile = config.custom.sopsFile;
+  };
 
   services.monit.config = lib.mkAfter monitExtraConfig;
   systemd.services.monit.preStart = lib.mkAfter "${renderMonitConfig}";

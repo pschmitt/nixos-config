@@ -1,20 +1,27 @@
-{ inputs, outputs, lib, config, pkgs, ... }:
+{
+  inputs,
+  outputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 let
   opts = [
-      "noauto"
-      "_netdev"
-      "allow_other"
-      "reconnect"
-      "follow_symlinks"
-      "x-systemd.automount"
-      # "x-gvfs-hide"
-      "IdentityFile=${config.custom.homeDirectory}/.ssh/id_ed25519"
-      "StrictHostKeyChecking=no"
-      "UserKnownHostsFile=/dev/null"
-      "ServerAliveInterval=10"
-    ];
-
-in {
+    "noauto"
+    "_netdev"
+    "allow_other"
+    "reconnect"
+    "follow_symlinks"
+    "x-systemd.automount"
+    # "x-gvfs-hide"
+    "IdentityFile=${config.custom.homeDirectory}/.ssh/id_ed25519"
+    "StrictHostKeyChecking=no"
+    "UserKnownHostsFile=/dev/null"
+    "ServerAliveInterval=10"
+  ];
+in
+{
   # NOTE Arch Linux equivalent /etc/fstab entry:
   # root@hass-fnuc.lan:/config  /mnt/hass-fnuc   fuse.sshfs    defaults,_netdev,noauto,x-systemd.automount,allow_other,reconnect,UserKnownHostsFile=/dev/null,StrictHostKeyChecking=no,IdentityFile=/home/pschmitt/.ssh/id_ed25519    0  0
 

@@ -1,7 +1,8 @@
-{ lib
-, pkgs
-, stdenvNoCC
-, python3Packages
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+  python3Packages,
 }:
 
 stdenvNoCC.mkDerivation rec {
@@ -10,9 +11,7 @@ stdenvNoCC.mkDerivation rec {
 
   src = ../src/MonoLisa-Plus-Custom-1.808.zip;
 
-  nativeBuildInputs = with pkgs; [
-    unzip
-  ];
+  nativeBuildInputs = with pkgs; [ unzip ];
 
   phases = [ "buildPhase" ];
 

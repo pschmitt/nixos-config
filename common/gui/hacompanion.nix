@@ -1,4 +1,11 @@
-{ inputs, lib, config, pkgs, ... }: {
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+{
   environment.systemPackages = with pkgs; [ hacompanion ];
 
   systemd.services.hacompanion = {

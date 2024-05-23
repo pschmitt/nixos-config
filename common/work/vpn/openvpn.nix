@@ -1,4 +1,9 @@
-{ pkgs, inputs, config, ... }:
+{
+  pkgs,
+  inputs,
+  config,
+  ...
+}:
 
 let
   ovpnConfig = pkgs.fetchurl {
@@ -9,7 +14,7 @@ let
   extractOvpnDetails = pkgs.stdenv.mkDerivation {
     name = "extract-ovpn-details";
     src = ovpnConfig;
-    phases = ["installPhase"];
+    phases = [ "installPhase" ];
     installPhase = ''
       mkdir -p $out/certs $out/details
 
@@ -45,11 +50,9 @@ let
   remoteCertTls = builtins.readFile "${extractOvpnDetails}/details/remote-cert-tls";
   renegSeconds = builtins.readFile "${extractOvpnDetails}/details/reneg-sec";
   username = "p.schmitt_admin";
-
-in {
-  environment.systemPackages = with pkgs; [
-    openvpn
-  ];
+in
+{
+  environment.systemPackages = with pkgs; [ openvpn ];
 
   environment.etc =
     let
@@ -89,7 +92,6 @@ in {
 
         proxy = { };
       };
-
     in
     {
       "NetworkManager/system-connections/${conn_openvpn.name}" = {
@@ -113,4 +115,3 @@ in {
       };
     };
 }
-

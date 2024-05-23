@@ -1,4 +1,11 @@
-{ inputs, lib, config, osConfig, pkgs, ... }:
+{
+  inputs,
+  lib,
+  config,
+  osConfig,
+  pkgs,
+  ...
+}:
 {
   imports = lib.concatLists [
     [

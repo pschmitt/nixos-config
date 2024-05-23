@@ -1,10 +1,21 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets = {
-      "restic/env" = { sopsFile = config.custom.sopsFile; };
-      "restic/password" = { sopsFile = config.custom.sopsFile; };
-      "restic/repository" = { sopsFile = config.custom.sopsFile; };
+      "restic/env" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "restic/password" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "restic/repository" = {
+        sopsFile = config.custom.sopsFile;
+      };
     };
 
     environment.systemPackages = [ pkgs.restic ];

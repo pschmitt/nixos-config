@@ -121,18 +121,19 @@
   };
 
   outputs =
-    { self
-    , agenix
-    , disko
-    , flatpaks
-    , home-manager
-    , nix-index-database
-    , nix-snapd
-    , nixpkgs
-    , nur
-    , sops-nix
-    , srvos
-    , ...
+    {
+      self,
+      agenix,
+      disko,
+      flatpaks,
+      home-manager,
+      nix-index-database,
+      nix-snapd,
+      nixpkgs,
+      nur,
+      sops-nix,
+      srvos,
+      ...
     }@inputs:
     let
       inherit (self) outputs;
@@ -155,47 +156,59 @@
         ./modules/luks-ssh-unlock.nix
       ];
 
-      nixosSystemFor = system: hostname: configOptions:
+      nixosSystemFor =
+        system: hostname: configOptions:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs outputs configOptions; };
-          modules = commonModules ++ [ ./hosts/${hostname} ] ++
-            nixpkgs.lib.optionals (!(configOptions.server or false)) [
-              ./home-manager
-            ] ++
-            nixpkgs.lib.optionals (configOptions.server or true) [
-              srvos.nixosModules.mixins-terminfo
-            ] ++
-            nixpkgs.lib.optionals (configOptions.snapd or false) [
-              nix-snapd.nixosModules.default
-            ];
-
+          specialArgs = {
+            inherit inputs outputs configOptions;
+          };
+          modules =
+            commonModules
+            ++ [ ./hosts/${hostname} ]
+            ++ nixpkgs.lib.optionals (!(configOptions.server or false)) [ ./home-manager ]
+            ++ nixpkgs.lib.optionals (configOptions.server or true) [ srvos.nixosModules.mixins-terminfo ]
+            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ nix-snapd.nixosModules.default ];
         };
     in
     {
       # Your custom packages
       # Accessible through 'nix build', 'nix shell', etc
-      packages = forAllSystems (system:
-        let pkgs = nixpkgs.legacyPackages.${system};
-        in import ./pkgs { inherit pkgs; }
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        import ./pkgs { inherit pkgs; }
       );
 
-      checks = forAllSystems (system: {
-        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
-          src = ./.;
-          hooks = {
-            nixpkgs-fmt.enable = true;
-            pre-commit-hook-ensure-sops = {
-              enable = true;
-              files = ".+\.sops.yaml$";
+      checks = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              nixfmt = {
+                enable = true;
+                package = pkgs.nixfmt-rfc-style;
+              };
+              statix.enable = false;
+              pre-commit-hook-ensure-sops = {
+                enable = true;
+                files = ".+.sops.yaml$";
+              };
             };
           };
-        };
-      });
+        }
+      );
 
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
           checks = self.checks.${system};
@@ -219,21 +232,11 @@
       nixosConfigurations = {
         x13 = nixosSystemFor "x86_64-linux" "x13" { };
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { };
-        lrz = nixosSystemFor "x86_64-linux" "lrz" {
-          server = true;
-        };
-        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" {
-          server = true;
-        };
-        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
-          server = true;
-        };
-        rofl-04 = nixosSystemFor "x86_64-linux" "rofl-04" {
-          server = true;
-        };
-        rofl-05 = nixosSystemFor "x86_64-linux" "rofl-05" {
-          server = true;
-        };
+        lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
+        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { server = true; };
+        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { server = true; };
+        rofl-04 = nixosSystemFor "x86_64-linux" "rofl-04" { server = true; };
+        rofl-05 = nixosSystemFor "x86_64-linux" "rofl-05" { server = true; };
         oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
           server = true;
           snapd = true;

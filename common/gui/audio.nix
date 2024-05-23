@@ -1,7 +1,6 @@
-{ pkgs, ... }: {
-  imports = [
-    ./soundboard.nix
-  ];
+{ pkgs, ... }:
+{
+  imports = [ ./soundboard.nix ];
 
   # Enable sound with pipewire.
   # https://nixos.wiki/wiki/PipeWire
@@ -26,7 +25,10 @@
 
     # apps
     audacity
-    (sox.override { enableLame = true; enableAMR = false; })
+    (sox.override {
+      enableLame = true;
+      enableAMR = false;
+    })
 
     # patching
     helvum

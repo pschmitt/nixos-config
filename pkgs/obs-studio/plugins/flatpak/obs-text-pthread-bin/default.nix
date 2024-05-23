@@ -1,4 +1,9 @@
-{ lib, pkgs, stdenvNoCC, fetchurl }:
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+  fetchurl,
+}:
 
 stdenvNoCC.mkDerivation {
   pname = "obs-text-pthread-bin";

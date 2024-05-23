@@ -1,4 +1,10 @@
-{ lib, fetchFromGitLab, rustPlatform, pkg-config, openssl }:
+{
+  lib,
+  fetchFromGitLab,
+  rustPlatform,
+  pkg-config,
+  openssl,
+}:
 
 rustPlatform.buildRustPackage rec {
   pname = "timewarrior-jirapush";
@@ -11,7 +17,10 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-y19qmXXyIV2KUsTNa16gkw7OcqPQy4d1nxFB6WSn8jY=";
   };
 
-  nativeBuildInputs = [ pkg-config openssl ];
+  nativeBuildInputs = [
+    pkg-config
+    openssl
+  ];
   buildInputs = [ openssl ];
 
   cargoHash = "sha256-jKIrnvDvSxmC1/Lno1LBgR9MQIKHsqF0gpo0dqHa7eI=";

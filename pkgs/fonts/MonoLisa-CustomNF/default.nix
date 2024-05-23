@@ -1,7 +1,8 @@
-{ lib
-, pkgs
-, stdenvNoCC
-, python3Packages
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+  python3Packages,
 }:
 
 stdenvNoCC.mkDerivation rec {

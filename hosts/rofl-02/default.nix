@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
@@ -36,8 +37,15 @@
   };
 
   systemd.services.docker-compose-bulk-up = {
-    after = [ "network.target" "docker.service" "mnt-data.mount" ];
-    requires = [ "docker.service" "mnt-data.mount" ];
+    after = [
+      "network.target"
+      "docker.service"
+      "mnt-data.mount"
+    ];
+    requires = [
+      "docker.service"
+      "mnt-data.mount"
+    ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -47,7 +55,5 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    yt-dlp
-  ];
+  environment.systemPackages = with pkgs; [ yt-dlp ];
 }

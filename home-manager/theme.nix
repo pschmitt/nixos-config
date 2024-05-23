@@ -1,16 +1,33 @@
-{ inputs, lib, config, pkgs, ... }:
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 let
-  colloidIconPkg = (pkgs.colloid-icon-theme.override {
-    schemeVariants = [ "all" ];
-    colorVariants = [ "all" ];
-  });
+  colloidIconPkg = (
+    pkgs.colloid-icon-theme.override {
+      schemeVariants = [ "all" ];
+      colorVariants = [ "all" ];
+    }
+  );
 
-  colloidThemePkg = (pkgs.colloid-gtk-theme.override {
-    themeVariants = [ "all" ];
-    colorVariants = [ "dark" "light" "standard" ];
-    tweaks = [ "normal" "nord" ];
-  });
+  colloidThemePkg = (
+    pkgs.colloid-gtk-theme.override {
+      themeVariants = [ "all" ];
+      colorVariants = [
+        "dark"
+        "light"
+        "standard"
+      ];
+      tweaks = [
+        "normal"
+        "nord"
+      ];
+    }
+  );
 
   theme = "Colloid-Dark-Nord";
   themePkg = colloidThemePkg;
@@ -24,7 +41,6 @@ let
   cursorTheme = "Bibata-Modern-Ice";
   cursorThemePkg = pkgs.bibata-cursors;
 in
-
 {
   home.packages = with pkgs; [
     # icon-library
@@ -87,12 +103,16 @@ in
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
       # FIXME Should this be "true" or "1"?
-      extraConfig = { gtk-application-prefer-dark-theme = "1"; };
+      extraConfig = {
+        gtk-application-prefer-dark-theme = "1";
+      };
     };
 
     # FIXME Should this be "true" or "1"?
     gtk4 = {
-      extraConfig = { gtk-application-prefer-dark-theme = "1"; };
+      extraConfig = {
+        gtk-application-prefer-dark-theme = "1";
+      };
     };
   };
 

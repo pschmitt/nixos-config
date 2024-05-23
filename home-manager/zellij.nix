@@ -1,4 +1,5 @@
-{ inputs, pkgs, ... }: {
+{ inputs, pkgs, ... }:
+{
   home.packages = [
     pkgs.zellij
     inputs.zjstatus.packages.${pkgs.system}.default

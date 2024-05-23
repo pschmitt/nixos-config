@@ -3,10 +3,10 @@
 let
   createService = name: scriptPath: {
     path = [
-        pkgs.bash
-        pkgs.coreutils
-        pkgs.docker
-        pkgs.nettools
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.docker
+      pkgs.nettools
     ];
     script = "${scriptPath}";
   };
@@ -35,9 +35,12 @@ let
       time = "04:00";
     };
   };
-
 in
 {
-  systemd.services = lib.mapAttrs' (name: cfg: lib.nameValuePair name (createService name cfg.path)) services;
-  systemd.timers = lib.mapAttrs' (name: cfg: lib.nameValuePair (name) (createTimer name cfg.time)) services;
+  systemd.services = lib.mapAttrs' (
+    name: cfg: lib.nameValuePair name (createService name cfg.path)
+  ) services;
+  systemd.timers = lib.mapAttrs' (
+    name: cfg: lib.nameValuePair (name) (createTimer name cfg.time)
+  ) services;
 }

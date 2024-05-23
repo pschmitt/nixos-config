@@ -1,10 +1,11 @@
-{ autoPatchelfHook
-, coreutils
-, fetchurl
-, gawk
-, lib
-, rpmextract
-, stdenv
+{
+  autoPatchelfHook,
+  coreutils,
+  fetchurl,
+  gawk,
+  lib,
+  rpmextract,
+  stdenv,
 }:
 
 stdenv.mkDerivation rec {
@@ -22,7 +23,7 @@ stdenv.mkDerivation rec {
     if stdenv.isAarch64 then
       "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.40.0-26.el9.aarch64.rpm"
     else if stdenv.isx86_64 then
-     "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.40.0-11632.el9.x86_64.rpm"
+      "https://oci-yum.brkn.lol/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.40.0-11632.el9.x86_64.rpm"
     else
       throw "Unsupported platform";
 
@@ -30,7 +31,7 @@ stdenv.mkDerivation rec {
     if stdenv.isAarch64 then
       "sha256-Td3V0IHuwjFCheEVDxGDLP6mUfLSbGcXBuhJ+webjHY="
     else if stdenv.isx86_64 then
-     "sha256-sKcaFl80uVzutix6tHIUjQDGHQELAO1EggNpoSB0/30="
+      "sha256-sKcaFl80uVzutix6tHIUjQDGHQELAO1EggNpoSB0/30="
     else
       throw "Unsupported platform";
 
@@ -47,7 +48,11 @@ stdenv.mkDerivation rec {
   #   else
   #     throw "Unsupported platform";
 
-  buildInputs = [ autoPatchelfHook gawk rpmextract ];
+  buildInputs = [
+    autoPatchelfHook
+    gawk
+    rpmextract
+  ];
 
   unpackPhase = ''
     mkdir -p $out
@@ -87,6 +92,9 @@ stdenv.mkDerivation rec {
     description = "Oracle Cloud Agent";
     homepage = "https://docs.cloud.oracle.com/iaas/";
     license = licenses.upl;
-    platforms = [ "aarch64-linux" "x86_64-linux" ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
   };
 }

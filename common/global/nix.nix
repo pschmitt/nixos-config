@@ -1,4 +1,11 @@
-{ config, inputs, lib, outputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  outputs,
+  pkgs,
+  ...
+}:
 {
   sops.secrets."ssh/nix-remote-builder/privkey" = { };
 
@@ -19,7 +26,10 @@
       # Deduplicate and optimize nix store
       auto-optimise-store = true;
 
-      trusted-users = [ "root" "@wheel" ];
+      trusted-users = [
+        "root"
+        "@wheel"
+      ];
 
       substituters = [
         # NOTE cache.nixos.org is enabled by default, adding it here only
@@ -29,8 +39,12 @@
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
         "https://cache.garnix.io"
-        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
-        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
+          config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        }"
+        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
+          config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        }"
         # "https://nix-cache.heimat.dev"
       ];
 
@@ -78,9 +92,7 @@
       # Disable if you don't want unfree packages
       allowUnfree = true;
 
-      permittedInsecurePackages = [
-        "freeimage-unstable-2021-11-01"
-      ];
+      permittedInsecurePackages = [ "freeimage-unstable-2021-11-01" ];
     };
   };
 
@@ -92,9 +104,7 @@
   # Do not use /tmp (50% RAM tmpfs) for builds
   systemd.services.nix-daemon.environment.TMPDIR = "/nix/tmp";
   # Create /nix/tmp and clean it up every 48 hours (2 days)
-  systemd.tmpfiles.rules = [
-    "d /nix/tmp 0755 root root 2d"
-  ];
+  systemd.tmpfiles.rules = [ "d /nix/tmp 0755 root root 2d" ];
 
   programs.command-not-found.enable = false;
 

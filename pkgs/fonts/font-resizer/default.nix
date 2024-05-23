@@ -1,12 +1,13 @@
-{ lib
-, python3Packages
-, fetchFromGitHub
-# build
-, setuptools
-, setuptools-scm
-, wheel
-# deps
-, fontforge
+{
+  lib,
+  python3Packages,
+  fetchFromGitHub,
+  # build
+  setuptools,
+  setuptools-scm,
+  wheel,
+  # deps
+  fontforge,
 }:
 
 python3Packages.buildPythonApplication rec {
@@ -27,9 +28,7 @@ python3Packages.buildPythonApplication rec {
     wheel
   ];
 
-  propagatedBuildInputs = [
-    python3Packages.fontforge
-  ];
+  propagatedBuildInputs = [ python3Packages.fontforge ];
 
   pythonImportsCheck = [ "font_resizer" ];
 

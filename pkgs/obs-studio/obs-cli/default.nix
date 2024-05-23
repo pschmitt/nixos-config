@@ -1,13 +1,14 @@
-{ lib
-, python3Packages
-, fetchPypi
-# build
-, setuptools
-, setuptools-scm
-, wheel
-# deps
-, obsws-python
-, rich
+{
+  lib,
+  python3Packages,
+  fetchPypi,
+  # build
+  setuptools,
+  setuptools-scm,
+  wheel,
+  # deps
+  obsws-python,
+  rich,
 }:
 
 python3Packages.buildPythonApplication rec {

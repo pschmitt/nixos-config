@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   bashCompleteAliases = pkgs.fetchurl {
     url = "https://github.com/cykerway/complete-alias/raw/1.18.0/complete_alias";

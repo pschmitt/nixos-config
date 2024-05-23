@@ -1,18 +1,18 @@
-{ autoPatchelfHook
-, coreutils
-, cacert
-, curl
-, fetchurl
-, gawk
-, gnused
-, lib
-, makeWrapper
-, stdenv
-, systemd
-, port ? 8080
-, mmonitHome ? "/var/lib/mmonit"
+{
+  autoPatchelfHook,
+  coreutils,
+  cacert,
+  curl,
+  fetchurl,
+  gawk,
+  gnused,
+  lib,
+  makeWrapper,
+  stdenv,
+  systemd,
+  port ? 8080,
+  mmonitHome ? "/var/lib/mmonit",
 }:
-
 
 stdenv.mkDerivation rec {
   pname = "mmonit";
@@ -30,7 +30,10 @@ stdenv.mkDerivation rec {
     sha256 = "${checksum}";
   };
 
-  buildInputs = [ autoPatchelfHook makeWrapper ];
+  buildInputs = [
+    autoPatchelfHook
+    makeWrapper
+  ];
 
   installPhase = ''
     mkdir -p $out
@@ -55,7 +58,12 @@ stdenv.mkDerivation rec {
 
     # Wrapper to handle DB initial copy and license
     makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
-      --prefix PATH : ${lib.makeBinPath [ curl coreutils ]} \
+      --prefix PATH : ${
+        lib.makeBinPath [
+          curl
+          coreutils
+        ]
+      } \
       --run "mkdir -p ${mmonitHome}/logs" \
       --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
       --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db.og/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
@@ -70,7 +78,14 @@ stdenv.mkDerivation rec {
 
     cat > $out/bin/mmonit-upgrade <<EOF
     #!/usr/bin/env sh
-    export PATH=${lib.makeBinPath [ coreutils gawk gnused systemd ]}
+    export PATH=${
+      lib.makeBinPath [
+        coreutils
+        gawk
+        gnused
+        systemd
+      ]
+    }
 
     if systemctl is-active -q mmonit.service >/dev/null 2>&1
     then
@@ -143,7 +158,10 @@ stdenv.mkDerivation rec {
     description = "Easy, proactive monitoring of Unix systems, network and cloud services";
     license = lib.licenses.unfree;
     maintainers = with lib.maintainers; [ pschmitt ];
-    platforms = [ "aarch64-linux" "x86_64-linux" ];
+    platforms = [
+      "aarch64-linux"
+      "x86_64-linux"
+    ];
     mainProgram = "mmonit";
   };
 }

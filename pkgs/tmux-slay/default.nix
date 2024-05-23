@@ -1,11 +1,12 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, makeWrapper
-, gawk
-, gnugrep
-, gnused
-, tmux
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  makeWrapper,
+  gawk,
+  gnugrep,
+  gnused,
+  tmux,
 }:
 
 stdenv.mkDerivation rec {
@@ -25,12 +26,14 @@ stdenv.mkDerivation rec {
     mkdir -p $out/bin
     cp $src/tmux-slay $out/bin/tmux-slay
 
-    wrapProgram $out/bin/tmux-slay --prefix PATH : ${lib.makeBinPath [
-      gawk
-      gnugrep
-      gnused
-      tmux
-    ]}
+    wrapProgram $out/bin/tmux-slay --prefix PATH : ${
+      lib.makeBinPath [
+        gawk
+        gnugrep
+        gnused
+        tmux
+      ]
+    }
   '';
 
   meta = with lib; {

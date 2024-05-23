@@ -1,4 +1,8 @@
-{ lib, pkgs, stdenvNoCC }:
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+}:
 
 stdenvNoCC.mkDerivation rec {
   pname = "ComicCode";
@@ -11,9 +15,7 @@ stdenvNoCC.mkDerivation rec {
   # };
   src = ../src/ILT-220422-478c9f6.zip;
 
-  nativeBuildInputs = with pkgs; [
-    unzip
-  ];
+  nativeBuildInputs = with pkgs; [ unzip ];
 
   phases = [ "buildPhase" ];
 

@@ -1,4 +1,8 @@
-{ lib, buildGoModule, fetchFromGitHub }:
+{
+  lib,
+  buildGoModule,
+  fetchFromGitHub,
+}:
 
 buildGoModule rec {
   pname = "flarectl";
@@ -18,7 +22,8 @@ buildGoModule rec {
   # Below works...
   # go build -ldflags "-s -w -X main.version=nooo" ./cmd/flarectl
   ldFlags = [
-    "-s" "-w"
+    "-s"
+    "-w"
     "-X main.version=${version}"
     "-X main.revision=${src.rev}"
   ];

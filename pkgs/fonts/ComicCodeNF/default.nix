@@ -1,4 +1,10 @@
-{ lib, pkgs, stdenvNoCC, fetchurl, font-resizer }:
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+  fetchurl,
+  font-resizer,
+}:
 
 stdenvNoCC.mkDerivation rec {
   pname = "ComicCodeNF";

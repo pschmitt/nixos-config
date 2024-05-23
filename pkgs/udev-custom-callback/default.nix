@@ -1,9 +1,10 @@
-{ lib
-, makeWrapper
-, stdenvNoCC
-, bash
-, shadow
-, systemd
+{
+  lib,
+  makeWrapper,
+  stdenvNoCC,
+  bash,
+  shadow,
+  systemd,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -16,18 +17,24 @@ stdenvNoCC.mkDerivation {
   phases = [ "installPhase" ];
 
   nativeBuildInputs = [ makeWrapper ];
-  buildInputs = [ bash shadow systemd ];
+  buildInputs = [
+    bash
+    shadow
+    systemd
+  ];
 
   installPhase = ''
     install -Dm 755 $src $out/bin/udev-custom-callback.sh
     # install -D $rules $out/lib/udev/rules.d/99-custom-bluetooth.rules
 
     wrapProgram $out/bin/udev-custom-callback.sh \
-      --prefix PATH : "${lib.makeBinPath [
-        bash
-        shadow.su
-        systemd
-      ]}"
+      --prefix PATH : "${
+        lib.makeBinPath [
+          bash
+          shadow.su
+          systemd
+        ]
+      }"
   '';
 
   meta = with lib; {

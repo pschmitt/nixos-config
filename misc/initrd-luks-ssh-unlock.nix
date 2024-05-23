@@ -1,4 +1,5 @@
-{ config, lib, ... }: {
+{ config, lib, ... }:
+{
   networking.useDHCP = lib.mkDefault true;
 
   # sops.secrets = {
@@ -51,5 +52,4 @@
       };
     };
   };
-
 }

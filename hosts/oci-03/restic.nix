@@ -1,5 +1,4 @@
-{ lib, ... }: {
-  services.restic.backups.main.paths = lib.mkForce [
-    "/var/lib/mmonit"
-  ];
+{ lib, ... }:
+{
+  services.restic.backups.main.paths = lib.mkForce [ "/var/lib/mmonit" ];
 }

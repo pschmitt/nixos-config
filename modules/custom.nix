@@ -36,10 +36,12 @@
       type = lib.types.listOf lib.types.str;
       default =
         let
-          authorizedKeysContent = lib.strings.fileContents (builtins.fetchurl {
-            url = "https://github.com/pschmitt.keys";
-            sha256 = "0qcixq2zsh6p4xzxmjdl7bh13wyyv479sxhb0g2qg0qa6wg6qa49";
-          });
+          authorizedKeysContent = lib.strings.fileContents (
+            builtins.fetchurl {
+              url = "https://github.com/pschmitt.keys";
+              sha256 = "0qcixq2zsh6p4xzxmjdl7bh13wyyv479sxhb0g2qg0qa6wg6qa49";
+            }
+          );
         in
         lib.splitString "\n" authorizedKeysContent;
       description = "Main SSH authorized keys file";
@@ -88,4 +90,3 @@
     };
   };
 }
-

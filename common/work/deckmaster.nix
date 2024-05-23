@@ -1,4 +1,10 @@
-{ pkgss, inputs, pkgs, config, ... }:
+{
+  pkgss,
+  inputs,
+  pkgs,
+  config,
+  ...
+}:
 let
   container_image = "ghcr.io/pschmitt/jcalapi";
   container_tag = "latest";
@@ -6,9 +12,7 @@ let
   config_file = "${config.custom.homeDirectory}/devel/private/calendar-events/jcalapi/.envrc-secrets";
 in
 {
-  environment.systemPackages = with pkgs; [
-    deckmaster
-  ];
+  environment.systemPackages = with pkgs; [ deckmaster ];
 
   systemd.user.services.deckmaster = {
     enable = true;
@@ -26,5 +30,4 @@ in
     };
     wantedBy = [ "default.target" ];
   };
-
 }

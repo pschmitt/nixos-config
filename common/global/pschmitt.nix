@@ -1,4 +1,5 @@
-{ pkgs, config, ... }: {
+{ pkgs, config, ... }:
+{
   # TODO Define password with agenix
   users.users."${config.custom.username}" = {
     uid = 1000;
