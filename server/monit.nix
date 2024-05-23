@@ -110,8 +110,8 @@ let
 in
 {
   config = lib.mkIf (!config.custom.cattle) {
-    age.secrets.monit-config.file = ../secrets/monit-config.age;
-    environment.etc."monit/conf.d/secret-config".source = "${config.age.secrets.monit-config.path}";
+    sops.secrets."monit/config" = { };
+    environment.etc."monit/conf.d/secret-config".source = "${config.sops.secrets."monit/config".path}";
 
     services.monit = {
       # Do not enable monit if cattle if this is a cattle server

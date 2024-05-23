@@ -72,18 +72,4 @@
       publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDynCgmEqPJkcnQtSCyZveZDM2nBiT232h+Pr9jt6pk/tH41jTFtRzGtimglUZlyoPmdXsgxmqID21yaYiXjPNbsGRXzdQXhp6GSnkY/VLtuwVlGC3SbAnhck6696AJPNpwIePTvrhjS1KSH3bugDRbjzH2EbUXmsKwqU37CL+oQAEwGzZYYQc7YNfAxGWtNUchRDIuKDZoUsTMydcNCm4Z/pZozDzAVZcJj9zWAse9VlHYnjla/gmXFoZjAciSyTbL3TGxWkTQ6//aoJJ++qF5jM3Lj5LfItinVAfyWsNf/8l6zHYZVO+pAcHD+nUHdf86/GSrMksl1xVY/6Ya9q1dwnPvy0PJqRk6vVU/fEw2sc41EV7+2NADV8nxOOZWY1uAHjaX3623KnTI4DaoNBG3GzNuMLA4RTluBEYISTQi7RC0gv+Xx5OmB1WK1VRXQz55/Stmz1RRa3cUx3iKPVdjIDzySAZT6Ez7M9U8252mJ6E6+Tfi4qmuail3BkpVqic=";
     };
   };
-
-  # age-secrets = {
-  #   ssh-pubkey-ed25519-rofl-02.file = ../../secrets/rofl-02/ssh_host_ed25519_key.pub.age;
-  #   ssh-pubkey-ed25519-rofl-03.file = ../../secrets/rofl-03/ssh_host_ed25519_key.pub.age;
-  #   ssh-pubkey-rsa-rofl-02.file = ../../secrets/rofl-02/ssh_host_rsa_key.pub.age;
-  #   ssh-pubkey-rsa-rofl-03.file = ../../secrets/rofl-03/ssh_host_rsa_key.pub.age;
-  # };
-
-  # programs.ssh.knownHostsFiles = [
-  #   (pkgs.writeText "rofl.keys")
-  #   ''
-  #   rofl-02.heimat.dev
-  #   ''
-  # ];
 }

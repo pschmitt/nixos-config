@@ -33,9 +33,9 @@
     };
   };
 
-  age.secrets.wallets.file = ../secrets/wallets.age;
+  sops.secrets."xmrig/env" = { };
 
   systemd.services.xmrig.serviceConfig = {
-    EnvironmentFile = config.age.secrets.wallets.path;
+    EnvironmentFile = config.sops.secrets."xmrig/env".path;
   };
 }

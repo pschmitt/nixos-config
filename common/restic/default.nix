@@ -1,21 +1,18 @@
 { config, lib, pkgs, ... }:
-let
-  hostname = config.networking.hostName;
-in
 {
   config = lib.mkIf (!config.custom.cattle) {
-    age.secrets = {
-      restic-env.file = ../../secrets/${hostname}/restic-env.age;
-      restic-password.file = ../../secrets/${hostname}/restic-password.age;
-      restic-repository.file = ../../secrets/${hostname}/restic-repository.age;
+    sops.secrets = {
+      "restic/env" = { sopsFile = config.custom.sopsFile; };
+      "restic/password" = { sopsFile = config.custom.sopsFile; };
+      "restic/repository" = { sopsFile = config.custom.sopsFile; };
     };
 
     environment.systemPackages = [ pkgs.restic ];
 
     services.restic.backups.main = {
-      environmentFile = config.age.secrets.restic-env.path;
-      passwordFile = config.age.secrets.restic-password.path;
-      repositoryFile = config.age.secrets.restic-repository.path;
+      environmentFile = config.sops.secrets."restic/env".path;
+      passwordFile = config.sops.secrets."restic/password".path;
+      repositoryFile = config.sops.secrets."restic/repository".path;
 
       paths = lib.mkDefault [
         "/etc/nixos"

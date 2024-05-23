@@ -73,7 +73,7 @@ let
       every 2 cycles
       if status > 0 then alert
 
-    check program mullvad with path "${mullvadExpiration} --warning 15 ${config.age.secrets.mullvad-account.path}"
+    check program mullvad with path "${mullvadExpiration} --warning 15 ${config.sops.secrets."mullvad/account".path}"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
@@ -86,7 +86,7 @@ let
   '';
 in
 {
-  age.secrets.mullvad-account.file = ../../secrets/mullvad-account.age;
+  sops.secrets."mullvad/account" = { sopsFile = config.custom.sopsFile; };
 
   services.monit.config = lib.mkAfter monitExtraConfig;
   systemd.services.monit.preStart = lib.mkAfter "${renderMonitConfig}";
