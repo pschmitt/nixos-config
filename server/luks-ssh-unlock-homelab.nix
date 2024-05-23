@@ -8,7 +8,7 @@ let
   createInstance = name: {
     type = "dracut";
     hostname = "${name}.lan";
-    passphraseFile = config.age.secrets.${"passphrase-" + name}.path;
+    passphraseFile = config.sops.secrets.${"luks/" + name}.path;
     forceIpv4 = true;
     sleepInterval = 30;
 
@@ -25,18 +25,18 @@ let
   };
 
   # Helper to define age secrets for each instance
-  defineAgeSecrets = lib.listToAttrs (lib.lists.map
+  defineSopsSecrets = lib.listToAttrs (lib.lists.map
     (name:
       {
-        name = "passphrase-${name}";
-        value = { file = ../secrets/${name}/luks-passphrase-root.age; };
+        name = "luks/${name}";
+        value = { sopsFile = config.custom.sopsFile; };
       })
     instanceNames);
 
 in
 {
   # Define age secrets using the helper function
-  age.secrets = defineAgeSecrets;
+  sops.secrets = defineSopsSecrets;
 
   services.luks-ssh-unlocker = {
     enable = true;
