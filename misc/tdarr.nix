@@ -1,4 +1,5 @@
-{ config, ... }: {
+{ config, ... }:
+{
 
   config.virtualisation.oci-containers.containers = {
     tdarr = {

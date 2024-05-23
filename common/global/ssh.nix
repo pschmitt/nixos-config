@@ -1,4 +1,5 @@
-{ ... }: {
+{ ... }:
+{
 
   # https://github.com/nix-community/srvos/blob/main/nixos/common/well-known-hosts.nix
   # Avoid TOFU MITM with github by providing their public key here.

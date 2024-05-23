@@ -2,8 +2,8 @@
 let
   # Reading the contents of a file into a variable
   mainDisk = builtins.readFile ./disk-path;
-  # mainDisk = builtins.readFile /tmp/disk-path;
 in
+# mainDisk = builtins.readFile /tmp/disk-path;
 {
   disko.devices = {
     disk.system = {
@@ -45,15 +45,24 @@ in
                 subvolumes = {
                   "@root" = {
                     mountpoint = "/";
-                    mountOptions = [ "compress=zstd" "noatime" ];
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                    ];
                   };
                   "@home" = {
                     mountpoint = "/home";
-                    mountOptions = [ "compress=zstd" "noatime" ];
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                    ];
                   };
                   "@nix" = {
                     mountpoint = "/nix";
-                    mountOptions = [ "compress=zstd" "noatime" ];
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                    ];
                   };
                 };
               };

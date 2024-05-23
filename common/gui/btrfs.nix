@@ -1,4 +1,11 @@
-{ inputs, lib, config, pkgs, ... }: {
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
+{
   services.snapper = {
     snapshotRootOnBoot = false;
     snapshotInterval = "hourly";
@@ -15,7 +22,5 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    snapper-gui
-  ];
+  environment.systemPackages = with pkgs; [ snapper-gui ];
 }

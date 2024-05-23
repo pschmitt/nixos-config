@@ -1,4 +1,10 @@
-{ pkgs, lib, config, ... }: {
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
+{
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
@@ -21,5 +27,4 @@
       # allowedUDPPorts = [ ... ];
     };
   };
-
 }

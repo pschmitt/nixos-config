@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
 
   environment.systemPackages = with pkgs; [
     neovim
@@ -62,7 +63,10 @@
     vimAlias = true;
     configure = {
       packages.myVimPackage = with pkgs.vimPlugins; {
-        start = [ onedarkpro-nvim vim-oscyank ];
+        start = [
+          onedarkpro-nvim
+          vim-oscyank
+        ];
       };
       customRC = ''
         set nocompatible

@@ -1,5 +1,10 @@
 # https://github.com/NixOS/nixpkgs/pull/119856/
-{ inputs, lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
   snapPkg = inputs.nix-snapd.packages.${pkgs.system}.default;
 in

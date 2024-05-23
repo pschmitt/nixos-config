@@ -1,4 +1,10 @@
-{ config, lib, pkgs, ... }: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+{
   environment.systemPackages = with pkgs; [ mmonit ];
   systemd.packages = [ pkgs.mmonit ];
   # FIXME The eternal NixOS question: how to enable a systemd service?!
@@ -20,9 +26,9 @@
 
   environment.etc."mmonit/license.xml".source = "${config.sops.secrets."mmonit/license".path}";
 
-  services.restic.backups.main.paths = lib.mkAfter (config.services.restic.backups.main.paths ++ [
-    "/var/lib/mmonit"
-  ]);
+  services.restic.backups.main.paths = lib.mkAfter (
+    config.services.restic.backups.main.paths ++ [ "/var/lib/mmonit" ]
+  );
 
   services.nginx = {
     enable = true;

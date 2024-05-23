@@ -1,4 +1,12 @@
-{ lib, config, pkgs, hyprlandPkg, hyprland-wrapper, ... }: {
+{
+  lib,
+  config,
+  pkgs,
+  hyprlandPkg,
+  hyprland-wrapper,
+  ...
+}:
+{
   # https://nixos.wiki/wiki/Greetd
   services.greetd = {
     enable = true;

@@ -25,14 +25,14 @@ let
   };
 
   # Helper to define sops secrets for each instance
-  defineSopsSecrets = lib.listToAttrs (lib.lists.map
-    (name:
-      {
-        name = "luks/${name}";
-        value = { sopsFile = config.custom.sopsFile; };
-      })
-    instanceNames);
-
+  defineSopsSecrets = lib.listToAttrs (
+    lib.lists.map (name: {
+      name = "luks/${name}";
+      value = {
+        sopsFile = config.custom.sopsFile;
+      };
+    }) instanceNames
+  );
 in
 {
   # Define sops secrets using the helper function
@@ -40,10 +40,11 @@ in
 
   services.luks-ssh-unlocker = {
     enable = true;
-    instances = lib.listToAttrs (lib.lists.map
-      (name:
-        { name = name; value = createInstance name; })
-      instanceNames);
+    instances = lib.listToAttrs (
+      lib.lists.map (name: {
+        name = name;
+        value = createInstance name;
+      }) instanceNames
+    );
   };
 }
-

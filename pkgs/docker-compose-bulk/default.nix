@@ -1,9 +1,10 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, makeWrapper
-, bash
-, docker
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  makeWrapper,
+  bash,
+  docker,
 }:
 
 stdenv.mkDerivation {
@@ -24,7 +25,12 @@ stdenv.mkDerivation {
     cp $src/docker-compose-bulk $out/bin/docker-compose-bulk
     chmod +x $out/bin/docker-compose-bulk
     # Assuming you might need to wrap the script to include dependencies:
-    wrapProgram $out/bin/docker-compose-bulk --prefix PATH : ${lib.makeBinPath [ bash docker ]}
+    wrapProgram $out/bin/docker-compose-bulk --prefix PATH : ${
+      lib.makeBinPath [
+        bash
+        docker
+      ]
+    }
   '';
 
   meta = with lib; {

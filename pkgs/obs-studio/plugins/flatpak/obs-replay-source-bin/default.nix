@@ -1,4 +1,9 @@
-{ lib, pkgs, stdenvNoCC, fetchurl }:
+{
+  lib,
+  pkgs,
+  stdenvNoCC,
+  fetchurl,
+}:
 
 stdenvNoCC.mkDerivation {
   pname = "obs-replay-source-bin";
@@ -9,9 +14,7 @@ stdenvNoCC.mkDerivation {
     sha256 = "sha256-iIA2g1gMx7gaPmhqjpxfzg1bp8R8yEJmee1Y6oC2veE=";
   };
 
-  nativeBuildInputs = with pkgs; [
-    unzip
-  ];
+  nativeBuildInputs = with pkgs; [ unzip ];
 
   phases = [ "buildPhase" ];
 

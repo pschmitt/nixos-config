@@ -1,8 +1,6 @@
 { lib, pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    dotool
-  ];
+  home.packages = with pkgs; [ dotool ];
 
   systemd.user.services.dotoold = {
     Unit = {
@@ -13,10 +11,12 @@
     Service = {
       Environment = [
         "DOTOOL_XKB_LAYOUT=de"
-        "PATH=$PATH:${lib.makeBinPath [
-          pkgs.coreutils
-          pkgs.procps
-        ] }"
+        "PATH=$PATH:${
+          lib.makeBinPath [
+            pkgs.coreutils
+            pkgs.procps
+          ]
+        }"
       ];
       ExecStart = "${pkgs.dotool}/bin/dotoold";
       Restart = "always";

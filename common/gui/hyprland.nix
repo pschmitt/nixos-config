@@ -2,29 +2,44 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ lib, inputs, config, pkgs, ... }:
+{
+  lib,
+  inputs,
+  config,
+  pkgs,
+  ...
+}:
 
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
   # hyprlandPkg = pkgs.hyprland;
 
-  hyprland-wrapper = (pkgs.writeTextFile {
-    name = "hyprland-wrapper";
-    destination = "/bin/hyprland-wrapper";
-    executable = true;
-    text = builtins.readFile ./hyprland-wrapper.sh;
-  });
+  hyprland-wrapper = (
+    pkgs.writeTextFile {
+      name = "hyprland-wrapper";
+      destination = "/bin/hyprland-wrapper";
+      executable = true;
+      text = builtins.readFile ./hyprland-wrapper.sh;
+    }
+  );
 
   xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
 
   hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
   hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
-
 in
 {
   imports = [
-    (import ./greetd.nix { inherit lib config pkgs hyprlandPkg hyprland-wrapper; })
+    (import ./greetd.nix {
+      inherit
+        lib
+        config
+        pkgs
+        hyprlandPkg
+        hyprland-wrapper
+        ;
+    })
   ];
 
   # inherit (import ./greetd.nix { inherit pkgs hyprlandPkg hyprland-wrapper; });
@@ -32,9 +47,7 @@ in
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
-    trusted-public-keys = [
-      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-    ];
+    trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
   };
 
   environment.sessionVariables = {
@@ -151,13 +164,15 @@ in
     displayManager.sessionPackages = [ hyprlandPkg ];
 
     xserver = {
-      displayManager.session = [{
-        manage = "desktop";
-        name = "hyprland-wrapper";
-        # FIXME Do we even still need this? The wrapper does not do all
-        # that much anymore...
-        start = builtins.readFile ./hyprland-wrapper.sh;
-      }];
+      displayManager.session = [
+        {
+          manage = "desktop";
+          name = "hyprland-wrapper";
+          # FIXME Do we even still need this? The wrapper does not do all
+          # that much anymore...
+          start = builtins.readFile ./hyprland-wrapper.sh;
+        }
+      ];
     };
   };
 
@@ -169,7 +184,12 @@ in
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
     # https://nixos.wiki/wiki/Sway
     pam.loginLimits = [
-      { domain = "@users"; item = "rtprio"; type = "-"; value = 1; }
+      {
+        domain = "@users";
+        item = "rtprio";
+        type = "-";
+        value = 1;
+      }
     ];
   };
 

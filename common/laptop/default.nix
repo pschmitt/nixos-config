@@ -1,4 +1,5 @@
-{ inputs, lib, ... }: {
+{ inputs, lib, ... }:
+{
   imports = [
     inputs.hardware.nixosModules.common-pc-laptop-acpi_call
     ./network.nix

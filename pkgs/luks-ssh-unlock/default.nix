@@ -1,12 +1,13 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, makeWrapper
-, curl
-, jq
-, gnugrep
-, netcat-gnu
-, openssh
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  makeWrapper,
+  curl,
+  jq,
+  gnugrep,
+  netcat-gnu,
+  openssh,
 }:
 
 stdenv.mkDerivation rec {
@@ -27,13 +28,15 @@ stdenv.mkDerivation rec {
     cp $src/luks-ssh-unlock.sh $out/bin/luks-ssh-unlock
     chmod +x $out/bin/luks-ssh-unlock
 
-    wrapProgram $out/bin/luks-ssh-unlock --prefix PATH : ${lib.makeBinPath [
-      curl
-      gnugrep
-      jq
-      netcat-gnu
-      openssh
-    ]}
+    wrapProgram $out/bin/luks-ssh-unlock --prefix PATH : ${
+      lib.makeBinPath [
+        curl
+        gnugrep
+        jq
+        netcat-gnu
+        openssh
+      ]
+    }
   '';
 
   meta = with lib; {
