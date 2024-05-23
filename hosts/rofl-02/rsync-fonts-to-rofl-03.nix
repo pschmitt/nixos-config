@@ -1,9 +1,10 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   systemd.services.rsync-fonts-to-rofl-03 = {
     description = "Rsync font files to github-actions@rofl-03.heimat.dev";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
-    path = with pkgs ; [
+    path = with pkgs; [
       openssh
       rsync
     ];

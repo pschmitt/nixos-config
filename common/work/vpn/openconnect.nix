@@ -1,14 +1,16 @@
-{ pkgs, inputs, config, ... }:
+{
+  pkgs,
+  inputs,
+  config,
+  ...
+}:
 let
   username = "p.schmitt_admin";
   remote = "mgmt-vpn.gec.io";
-
 in
 {
 
-  environment.systemPackages = with pkgs; [
-    openconnect
-  ];
+  environment.systemPackages = with pkgs; [ openconnect ];
 
   environment.etc =
     let
@@ -54,8 +56,6 @@ in
           method = "auto";
         };
       };
-
-
     in
     {
       "NetworkManager/system-connections/${conn_openconnect.name}" = {

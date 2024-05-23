@@ -1,22 +1,22 @@
 { config, pkgs, ... }:
 let
-  python-packages = ps: with ps; [
-    # ansible
-    dbus-python
-    dnspython
-    black
-    flake8
-    gst-python
-    ipython
-    isort
-    pip
-    pipx
-    pygobject3
-    pynvim
-    requests
-    rich
-  ];
-
+  python-packages =
+    ps: with ps; [
+      # ansible
+      dbus-python
+      dnspython
+      black
+      flake8
+      gst-python
+      ipython
+      isort
+      pip
+      pipx
+      pygobject3
+      pynvim
+      requests
+      rich
+    ];
 in
 {
   imports = [
@@ -33,9 +33,13 @@ in
 
   boot = {
     # Enable all MagicSysRq keys
-    kernel.sysctl = { "kernel.sysrq" = 1; };
+    kernel.sysctl = {
+      "kernel.sysrq" = 1;
+    };
     kernelPackages = pkgs.linuxPackages_latest;
-    tmp = { useTmpfs = true; };
+    tmp = {
+      useTmpfs = true;
+    };
   };
 
   hardware.enableAllFirmware = true;

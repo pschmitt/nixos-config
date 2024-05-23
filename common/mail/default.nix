@@ -1,4 +1,5 @@
-{ config, lib, ... }: {
+{ config, lib, ... }:
+{
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets."mail/heimat-dev" = {
       sopsFile = config.custom.sopsFile;

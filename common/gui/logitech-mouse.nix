@@ -1,4 +1,5 @@
-{ pkgs, ... }: {
+{ pkgs, ... }:
+{
   # Logitech mouse settings
   services.ratbagd.enable = true;
 

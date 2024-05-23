@@ -1,7 +1,11 @@
 # Shell for bootstrapping flake-enabled nix and home-manager
 # You can enter it through 'nix develop' or (legacy) 'nix-shell'
 
-{ pkgs ? (import ./nixpkgs.nix) { }, checks }: {
+{
+  pkgs ? (import ./nixpkgs.nix) { },
+  checks,
+}:
+{
   default = pkgs.mkShell {
     inherit (checks.pre-commit-check) shellHook;
     buildInputs = checks.pre-commit-check.enabledPackages;

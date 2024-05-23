@@ -6,9 +6,7 @@ let
   config_file = "${config.custom.homeDirectory}/.config/jcalapi/envrc.secret";
 in
 {
-  environment.systemPackages = with pkgs; [
-    podman
-  ];
+  environment.systemPackages = with pkgs; [ podman ];
 
   systemd.user.services.jcalapi = {
     enable = true;
@@ -26,13 +24,14 @@ in
         "-${pkgs.podman}/bin/podman kill ${container_name}"
         "-${pkgs.podman}/bin/podman rm --force ${container_name}"
       ];
-      ExecStart = "${pkgs.podman}/bin/podman run --tty --rm \\
-        --name ${container_name} \\
-        --net=host \\
-        --env TZ='Europe/Berlin' \\
-        --env-file ${config_file} \\
-        --volume ${config.custom.homeDirectory}/.config/jcalapi:/config:Z \\
-        ${container_image}:${container_tag}";
+      ExecStart = ''
+        ${pkgs.podman}/bin/podman run --tty --rm \
+                --name ${container_name} \
+                --net=host \
+                --env TZ='Europe/Berlin' \
+                --env-file ${config_file} \
+                --volume ${config.custom.homeDirectory}/.config/jcalapi:/config:Z \
+                ${container_image}:${container_tag}'';
       ExecStartPost = "-${config.custom.homeDirectory}/bin/zhj 'sleep 10 && jcal reload'";
       ExecStop = "${pkgs.podman}/bin/podman stop ${container_name}";
       Restart = "always";

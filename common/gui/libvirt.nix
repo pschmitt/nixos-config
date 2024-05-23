@@ -1,4 +1,9 @@
-{ inputs, config, pkgs, ... }:
+{
+  inputs,
+  config,
+  pkgs,
+  ...
+}:
 
 {
   virtualisation = {
@@ -10,5 +15,8 @@
     };
   };
 
-  system.nssDatabases.hosts = [ "libvirt" "libvirt_guest" ];
+  system.nssDatabases.hosts = [
+    "libvirt"
+    "libvirt_guest"
+  ];
 }

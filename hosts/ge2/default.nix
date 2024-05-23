@@ -1,4 +1,5 @@
-{ inputs, lib, ... }: {
+{ inputs, lib, ... }:
+{
   imports = [
     inputs.hardware.nixosModules.common-cpu-intel
     inputs.hardware.nixosModules.common-pc-ssd
@@ -17,7 +18,6 @@
 
     ../../misc/nfs-client.nix
   ];
-
 
   # FIXME MIPI Camera
   # hardware.ipu6 = {

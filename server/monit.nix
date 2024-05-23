@@ -1,4 +1,9 @@
-{ lib, config, pkgs, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 # Inspired by https://github.com/dschrempf/blog/blob/7d88061796fb790f0d5b984b62629a68e6882c99/hugo/content/Linux/2024-02-14-Monitoring-a-home-server.md
 let
   resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
@@ -36,10 +41,9 @@ let
       group storage
       if space usage > 85% then alert'';
   # Below will exclude NFS and bind mounts
-  nonNFSFileSystems = lib.filterAttrs
-    (name: fs: fs.fsType != "nfs" &&
-      !lib.elem "bind" (fs.options or [ ]))
-    config.fileSystems;
+  nonNFSFileSystems = lib.filterAttrs (
+    name: fs: fs.fsType != "nfs" && !lib.elem "bind" (fs.options or [ ])
+  ) config.fileSystems;
   mountPoints = lib.mapAttrsToList (name: fs: fs.mountPoint) nonNFSFileSystems;
   monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
 

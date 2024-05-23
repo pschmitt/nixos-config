@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 with lib;
 
@@ -9,119 +14,123 @@ in
   options.services.luks-ssh-unlocker = {
     enable = mkEnableOption "LUKS SSH Unlocker Service";
     instances = mkOption {
-      type = types.attrsOf (types.submodule ({
-        options = {
-          hostname = mkOption {
-            type = types.str;
-            description = "Hostname of the target machine.";
-          };
-          username = mkOption {
-            type = types.str;
-            description = "SSH username for the target machine.";
-            default = "root";
-          };
-          key = mkOption {
-            type = types.path;
-            description = "SSH key path for authentication.";
-            default = "/etc/ssh/ssh_host_ed25519_key";
-          };
-          port = mkOption {
-            type = types.int;
-            default = 22;
-            description = "SSH port for the target machine.";
-          };
-          forceIpv4 = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Force IPv4 for SSH connection.";
-          };
-          forceIpv6 = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Force IPv6 for SSH connection.";
-          };
-          type = mkOption {
-            type = types.str;
-            description = "Type of LUKS operation.";
-            default = "dracut";
-          };
-          passphrase = mkOption {
-            type = types.str;
-            default = "";
-            description = "Passphrase for LUKS.";
-          };
-          passphraseFile = mkOption {
-            type = types.path;
-            description = "Path to the file containing the passphrase for LUKS.";
-            default = "";
-          };
-          debug = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Enable debug mode.";
-          };
-          jumpHost = mkOption {
-            type = types.nullOr (types.submodule {
-              options = {
-                hostname = mkOption {
-                  type = types.str;
-                  description = "Jumphost hostname.";
-                };
-                username = mkOption {
-                  type = types.str;
-                  description = "Jumphost SSH username.";
-                  default = "root";
-                };
-                key = mkOption {
-                  type = types.path;
-                  description = "Jumphost SSH key path.";
-                  default = "/etc/ssh/ssh_host_ed25519_key";
-                };
-                port = mkOption {
-                  type = types.int;
-                  default = 22;
-                  description = "Jumphost SSH port.";
-                };
-              };
-            });
-            default = null;
-            description = "Optional jumphost configuration.";
-          };
-          sleepInterval = mkOption {
-            type = types.int;
-            default = 15;
-            description = "Time to wait between attempts.";
-          };
-          healthcheck = mkOption {
-            type = types.submodule {
-              options = {
-                enable = mkEnableOption "Healthcheck on/off.";
-                port = mkOption {
-                  type = types.nullOr types.int;
-                  description = "Health check port.";
-                  default = null;
-                };
-                hostname = mkOption {
-                  type = types.str;
-                  description = "Remote hostname to run the command on.";
-                  default = "";
-                };
-                username = mkOption {
-                  type = types.str;
-                  description = "Remote username for the remote healthcheck command.";
-                  default = "";
-                };
-                command = mkOption {
-                  type = types.str;
-                  description = "Remote command to verify the status.";
-                  default = "";
-                };
-              };
+      type = types.attrsOf (
+        types.submodule ({
+          options = {
+            hostname = mkOption {
+              type = types.str;
+              description = "Hostname of the target machine.";
             };
-            description = "Health check configuration.";
+            username = mkOption {
+              type = types.str;
+              description = "SSH username for the target machine.";
+              default = "root";
+            };
+            key = mkOption {
+              type = types.path;
+              description = "SSH key path for authentication.";
+              default = "/etc/ssh/ssh_host_ed25519_key";
+            };
+            port = mkOption {
+              type = types.int;
+              default = 22;
+              description = "SSH port for the target machine.";
+            };
+            forceIpv4 = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Force IPv4 for SSH connection.";
+            };
+            forceIpv6 = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Force IPv6 for SSH connection.";
+            };
+            type = mkOption {
+              type = types.str;
+              description = "Type of LUKS operation.";
+              default = "dracut";
+            };
+            passphrase = mkOption {
+              type = types.str;
+              default = "";
+              description = "Passphrase for LUKS.";
+            };
+            passphraseFile = mkOption {
+              type = types.path;
+              description = "Path to the file containing the passphrase for LUKS.";
+              default = "";
+            };
+            debug = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Enable debug mode.";
+            };
+            jumpHost = mkOption {
+              type = types.nullOr (
+                types.submodule {
+                  options = {
+                    hostname = mkOption {
+                      type = types.str;
+                      description = "Jumphost hostname.";
+                    };
+                    username = mkOption {
+                      type = types.str;
+                      description = "Jumphost SSH username.";
+                      default = "root";
+                    };
+                    key = mkOption {
+                      type = types.path;
+                      description = "Jumphost SSH key path.";
+                      default = "/etc/ssh/ssh_host_ed25519_key";
+                    };
+                    port = mkOption {
+                      type = types.int;
+                      default = 22;
+                      description = "Jumphost SSH port.";
+                    };
+                  };
+                }
+              );
+              default = null;
+              description = "Optional jumphost configuration.";
+            };
+            sleepInterval = mkOption {
+              type = types.int;
+              default = 15;
+              description = "Time to wait between attempts.";
+            };
+            healthcheck = mkOption {
+              type = types.submodule {
+                options = {
+                  enable = mkEnableOption "Healthcheck on/off.";
+                  port = mkOption {
+                    type = types.nullOr types.int;
+                    description = "Health check port.";
+                    default = null;
+                  };
+                  hostname = mkOption {
+                    type = types.str;
+                    description = "Remote hostname to run the command on.";
+                    default = "";
+                  };
+                  username = mkOption {
+                    type = types.str;
+                    description = "Remote username for the remote healthcheck command.";
+                    default = "";
+                  };
+                  command = mkOption {
+                    type = types.str;
+                    description = "Remote command to verify the status.";
+                    default = "";
+                  };
+                };
+              };
+              description = "Health check configuration.";
+            };
           };
-        };
-      }));
+        })
+      );
       description = "Configuration for multiple LUKS SSH Unlocker instances.";
     };
   };
@@ -130,8 +139,9 @@ in
     environment.systemPackages = [ pkgs.luks-ssh-unlock ];
 
     # Define environment files
-    environment.etc = mapAttrs'
-      (name: instance: nameValuePair "luks-ssh-unlock/${name}.env" {
+    environment.etc = mapAttrs' (
+      name: instance:
+      nameValuePair "luks-ssh-unlock/${name}.env" {
         text = with instance; ''
           DEBUG=${optionalString (debug == true) "1"}
           SSH_HOSTNAME=${hostname}
@@ -155,11 +165,12 @@ in
             HEALTHCHECK_REMOTE_CMD="${healthcheck.command}"
           ''}
         '';
-      })
-      cfg.instances;
+      }
+    ) cfg.instances;
 
-    systemd.services = mapAttrs'
-      (name: instance: nameValuePair "luks-ssh-unlock-${name}" {
+    systemd.services = mapAttrs' (
+      name: instance:
+      nameValuePair "luks-ssh-unlock-${name}" {
         wantedBy = [ "multi-user.target" ];
         after = [ "network.target" ];
         serviceConfig = {
@@ -167,8 +178,7 @@ in
           EnvironmentFile = "/etc/luks-ssh-unlock/${name}.env";
           ExecStart = "${pkgs.luks-ssh-unlock}/bin/luks-ssh-unlock";
         };
-      })
-      cfg.instances;
+      }
+    ) cfg.instances;
   };
 }
-

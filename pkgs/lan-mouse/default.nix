@@ -1,18 +1,19 @@
-{ lib
-, rustPlatform
-, fetchFromGitHub
-, pkg-config
-, wrapGAppsHook4
-, cairo
-, gdk-pixbuf
-, glib
-, gtk4
-, libadwaita
-, pango
-, stdenv
-, darwin
-, wayland
-, xorg
+{
+  lib,
+  rustPlatform,
+  fetchFromGitHub,
+  pkg-config,
+  wrapGAppsHook4,
+  cairo,
+  gdk-pixbuf,
+  glib,
+  gtk4,
+  libadwaita,
+  pango,
+  stdenv,
+  darwin,
+  wayland,
+  xorg,
 }:
 
 rustPlatform.buildRustPackage {
@@ -38,20 +39,21 @@ rustPlatform.buildRustPackage {
     wrapGAppsHook4
   ];
 
-  buildInputs = [
-    cairo
-    gdk-pixbuf
-    glib
-    gtk4
-    libadwaita
-    pango
-  ] ++ lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.CoreGraphics
-  ] ++ lib.optionals stdenv.isLinux [
-    wayland
-    xorg.libX11
-    xorg.libXtst
-  ];
+  buildInputs =
+    [
+      cairo
+      gdk-pixbuf
+      glib
+      gtk4
+      libadwaita
+      pango
+    ]
+    ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.CoreGraphics ]
+    ++ lib.optionals stdenv.isLinux [
+      wayland
+      xorg.libX11
+      xorg.libXtst
+    ];
 
   meta = with lib; {
     description = "Mouse & keyboard sharing via LAN";

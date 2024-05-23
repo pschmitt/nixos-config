@@ -1,4 +1,5 @@
-{ config, lib, ... }: {
+{ config, lib, ... }:
+{
   services.xmrig = {
     enable = true;
     settings = {
@@ -16,7 +17,7 @@
         {
           url = "pool.hashvault.pro:443";
           # NOTE yes, this looks weird, and yes this works.
-          user = ''''${HASHVAULT_USER}'';
+          user = "\${HASHVAULT_USER}";
           pass = config.networking.hostName;
           keepalive = true;
           tls = true;
@@ -24,7 +25,7 @@
         {
           url = "xmrpool.eu:9999";
           # NOTE yes, this looks weird, and yes this works.
-          user = ''''${XMRPOOL_USER}'';
+          user = "\${XMRPOOL_USER}";
           pass = config.networking.hostName;
           keepalive = true;
           tls = true;

@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+{
   # Define the systemd service
   systemd.services."git-clone-nixos-config" = {
     # Make sure the service waits for networking to be up

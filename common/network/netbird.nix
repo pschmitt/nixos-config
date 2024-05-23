@@ -1,9 +1,17 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
-  createNetbirdScript = tunnelName: tunnelConfig:
+  createNetbirdScript =
+    tunnelName: tunnelConfig:
     pkgs.writeShellScriptBin "netbird-${tunnelName}" ''
       # Set environment variables
-      ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: value: "export ${name}=\"${value}\"") tunnelConfig.environment)}
+      ${lib.concatStringsSep "\n" (
+        lib.mapAttrsToList (name: value: ''export ${name}="${value}"'') tunnelConfig.environment
+      )}
 
       # Run netbird
       # TODO Stupidly prepending sudo to the command doesn't work and just
@@ -13,7 +21,6 @@ let
     '';
 
   netbirdScripts = lib.mapAttrsToList createNetbirdScript config.services.netbird.tunnels;
-
 in
 {
   services.netbird = {

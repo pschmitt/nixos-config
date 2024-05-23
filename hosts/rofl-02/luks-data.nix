@@ -1,4 +1,5 @@
-{ config, ... }: {
+{ config, ... }:
+{
   # Data volume
 
   # FIXME sops-nix decrypts too late, so we *might* need to use age for now
@@ -17,7 +18,10 @@
     device = "/dev/mapper/data";
     # mountPoint = "/mnt/data";
     fsType = "btrfs";
-    options = [ "compress=zstd" "noatime" ];
+    options = [
+      "compress=zstd"
+      "noatime"
+    ];
 
     neededForBoot = false;
 
@@ -28,7 +32,5 @@
     # };
   };
 
-  systemd.tmpfiles.rules = [
-    "L+ /srv - - - - /mnt/data/srv"
-  ];
+  systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
 }

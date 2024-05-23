@@ -1,4 +1,9 @@
-{ lib, osConfig, pkgs, ... }:
+{
+  lib,
+  osConfig,
+  pkgs,
+  ...
+}:
 
 let
   enableNvidiaOffload = osConfig.hardware.nvidia.prime.offload.enable;
@@ -13,27 +18,27 @@ let
         "$@"
   '';
 in
-
 {
-  home.packages = [
-    pkgs.obs-cli
-    (pkgs.writeShellScriptBin "obs-studio" ''
-      ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio "$@"
-    '')
-    (pkgs.writeShellScriptBin "obs-studio-custom" ''
-      ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio \
-        --minimize-to-tray \
-        --startvirtualcam \
-        --scene "Joining soon" \
-        --disable-shutdown-check \
-        "$@"
-    '')
-    (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
-      ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
-    '')
-  ]
-  ++ lib.optional enableNvidiaOffload obs-nvidia
-  ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
+  home.packages =
+    [
+      pkgs.obs-cli
+      (pkgs.writeShellScriptBin "obs-studio" ''
+        ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio "$@"
+      '')
+      (pkgs.writeShellScriptBin "obs-studio-custom" ''
+        ${pkgs.flatpak}/bin/flatpak run com.obsproject.Studio \
+          --minimize-to-tray \
+          --startvirtualcam \
+          --scene "Joining soon" \
+          --disable-shutdown-check \
+          "$@"
+      '')
+      (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
+        ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
+      '')
+    ]
+    ++ lib.optional enableNvidiaOffload obs-nvidia
+    ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
 
   programs.obs-studio = {
     enable = false;

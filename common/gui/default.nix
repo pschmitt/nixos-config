@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+{
   imports = [
     # ./hardware-configuration.nix
     ./apps.nix
@@ -74,17 +75,15 @@
   services.tumbler.enable = true;
 
   # Enable lingering
-  systemd.tmpfiles.rules = [
-    "f /var/lib/systemd/linger/pschmitt"
-  ];
+  systemd.tmpfiles.rules = [ "f /var/lib/systemd/linger/pschmitt" ];
   users.users."${config.custom.username}" = {
     linger = true;
 
     extraGroups = [
       "adbusers"
-      "input"  # do we need this?
+      "input" # do we need this?
       "uinput" # for dotool
-      "video"  # do we need this?
+      "video" # do we need this?
     ];
   };
 

@@ -1,9 +1,7 @@
 { config, pkgs, ... }:
 {
 
-  home.packages = with pkgs; [
-    brotab
-  ];
+  home.packages = with pkgs; [ brotab ];
 
   programs.firefox = {
     enable = true;
@@ -39,40 +37,60 @@
         force = true;
         engines = {
           "Nix Packages" = {
-            urls = [{
-              template = "https://search.nixos.org/packages";
-              params = [
-                { name = "type"; value = "packages"; }
-                { name = "query"; value = "{searchTerms}"; }
-              ];
-            }];
+            urls = [
+              {
+                template = "https://search.nixos.org/packages";
+                params = [
+                  {
+                    name = "type";
+                    value = "packages";
+                  }
+                  {
+                    name = "query";
+                    value = "{searchTerms}";
+                  }
+                ];
+              }
+            ];
 
             icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
             definedAliases = [ "nixp" ];
           };
 
           "Nix Options" = {
-            urls = [{
-              template = "https://search.nixos.org/options";
-              params = [
-                { name = "type"; value = "options"; }
-                { name = "query"; value = "{searchTerms}"; }
-              ];
-            }];
+            urls = [
+              {
+                template = "https://search.nixos.org/options";
+                params = [
+                  {
+                    name = "type";
+                    value = "options";
+                  }
+                  {
+                    name = "query";
+                    value = "{searchTerms}";
+                  }
+                ];
+              }
+            ];
 
             icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
             definedAliases = [ "nixopt" ];
           };
 
           "NixOS Wiki" = {
-            urls = [{ template = "https://nixos.wiki/index.php?search={searchTerms}"; }];
+            urls = [ { template = "https://nixos.wiki/index.php?search={searchTerms}"; } ];
             iconUpdateURL = "https://nixos.wiki/favicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "nixw" ];
           };
 
           "ArchWiki" = {
-            urls = [{ template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}"; }];
+            urls = [
+              {
+                template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}";
+              }
+            ];
             iconUpdateURL = "https://wiki.archlinux.org/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "aw" ];
@@ -82,21 +100,21 @@
           "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
 
           "GitHub" = {
-            urls = [{ template = "https://github.com/search?q={searchTerms}"; }];
+            urls = [ { template = "https://github.com/search?q={searchTerms}"; } ];
             iconUpdateURL = "https://github.com/fluidicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gh" ];
           };
 
           "YouTube" = {
-            urls = [{ template = "https://www.youtube.com/results?search_query={searchTerms}"; }];
+            urls = [ { template = "https://www.youtube.com/results?search_query={searchTerms}"; } ];
             iconUpdateURL = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "y" ];
           };
 
           "GMail" = {
-            urls = [{ template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; }];
+            urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
             iconUpdateURL = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gm" ];

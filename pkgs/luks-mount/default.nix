@@ -1,8 +1,9 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, makeWrapper
-, yq-go
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  makeWrapper,
+  yq-go,
 }:
 
 stdenv.mkDerivation {
