@@ -24,7 +24,7 @@ let
     };
   };
 
-  # Helper to define age secrets for each instance
+  # Helper to define sops secrets for each instance
   defineSopsSecrets = lib.listToAttrs (lib.lists.map
     (name:
       {
@@ -35,7 +35,7 @@ let
 
 in
 {
-  # Define age secrets using the helper function
+  # Define sops secrets using the helper function
   sops.secrets = defineSopsSecrets;
 
   services.luks-ssh-unlocker = {
