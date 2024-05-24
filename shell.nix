@@ -13,13 +13,20 @@
     # Enable experimental features without having to specify the argument
     NIX_CONFIG = "experimental-features = nix-command flakes";
     nativeBuildInputs = with pkgs; [
+      # secrets
       age
+      ssh-to-age
+      sops
+
       git
       home-manager
       nix
+
+      # lint
+      nixfmt-rfc-style
+      statix
+
       opentofu
-      ssh-to-age
-      sops
       yq-go
     ];
   };
