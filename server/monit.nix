@@ -57,7 +57,7 @@ let
     check network tailscale with interface tailscale0
       group "network"
       restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
-      if link down then restart
+      if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
 
     check host tailscale-magicdns with address 100.100.100.100
@@ -72,7 +72,7 @@ let
     check network netbird with interface netbird-io
       group "network"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
-      if link down then restart
+      if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
   '';
 
