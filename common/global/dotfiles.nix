@@ -1,8 +1,7 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 {
 
   environment.systemPackages = with pkgs; [
-    neovim
     (vim_configurable.customize {
       name = "vim";
       vimrcConfig.customRC = ''
@@ -58,9 +57,12 @@
 
   programs.neovim = {
     enable = true;
+    package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.default;
+
     defaultEditor = true;
     viAlias = false;
     vimAlias = true;
+
     configure = {
       packages.myVimPackage = with pkgs.vimPlugins; {
         start = [

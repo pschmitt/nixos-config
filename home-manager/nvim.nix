@@ -3,7 +3,7 @@
 {
   programs.neovim = {
     enable = true;
-    package = inputs.neovim.packages.${pkgs.system}.neovim; # inputs.neovim.pkgs.neovim;
+    package = inputs.neovim-nightly-overlay.packages.${pkgs.system}.neovim;
 
     extraPackages = with pkgs; [
       # vimPlugins.nvim-treesitter.withAllGrammars
