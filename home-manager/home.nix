@@ -19,7 +19,7 @@
       ./nvim.nix
       ./work.nix
       ./zsh.nix
-      ./zellij.nix
+      # ./zellij.nix
     ]
     (lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix)
     (lib.optionals (osConfig.services.xserver.enable) [
@@ -36,7 +36,7 @@
   # ];
 
   # The home.stateVersion option does not have a default and must be set
-  home.stateVersion = "24.05";
+  home.stateVersion = osConfig.system.stateVersion;
 
   programs.home-manager.enable = true;
 

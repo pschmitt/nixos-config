@@ -88,8 +88,8 @@
       # NOTE Do *not* override nixpkgs, it is not supported
     };
 
-    neovim = {
-      url = "github:neovim/neovim/v0.10.0?dir=contrib";
+    neovim-nightly-overlay = {
+      url = "github:nix-community/neovim-nightly-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -98,10 +98,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    zjstatus = {
-      url = "github:dj95/zjstatus";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # zjstatus = {
+    #   url = "github:dj95/zjstatus";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
 
     srvos = {
       url = "github:nix-community/srvos";

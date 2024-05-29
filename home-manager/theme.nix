@@ -7,6 +7,7 @@
 }:
 
 let
+  # https://github.com/NixOS/nixpkgs/blob/master/pkgs/data/icons/colloid-icon-theme/default.nix
   colloidIconPkg = (
     pkgs.colloid-icon-theme.override {
       schemeVariants = [ "all" ];
@@ -14,6 +15,7 @@ let
     }
   );
 
+  # https://github.com/NixOS/nixpkgs/blob/master/pkgs/data/themes/colloid-gtk-theme/default.nix
   colloidThemePkg = (
     pkgs.colloid-gtk-theme.override {
       themeVariants = [ "all" ];
@@ -25,6 +27,10 @@ let
       tweaks = [
         "normal"
         "nord"
+      ];
+      sizeVariants = [
+        "standard"
+        "compact"
       ];
     }
   );
