@@ -9,6 +9,7 @@
     ../../misc/nfs-client.nix
     ../../misc/tdarr.nix
     ../../misc/miner.nix
+    ../../misc/harmonia.nix
   ];
 
   custom.promptColor = "yellow";
