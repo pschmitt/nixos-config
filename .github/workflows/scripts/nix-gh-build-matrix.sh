@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+nix_host_architecture() {
+  local host="$1"
+  nix eval --raw ".#nixosConfigurations.${host}.config.nixpkgs.system"
+}
+
 NIX_FLAKE_SHOW=$(nix flake show --json)
 mapfile -t PKGS < <(jq -er '.packages["x86_64-linux"] | keys[]' <<< "$NIX_FLAKE_SHOW")
 
@@ -26,14 +31,29 @@ do
   fi
 done
 
+for h in $(jq -r '.nixosConfigurations | keys[]' <<< "$NIX_FLAKE_SHOW")
+do
+  case "$(nix_host_architecture "$h")" in
+    x86_64-linux)
+      JSON_NIXOS_CONFIGS_X86_64=$(jq -cn \
+        --argjson arr "${JSON_NIXOS_CONFIGS_X86_64:-[]}" \
+        --arg h "$h" \
+        '$arr + [$h]')
+      ;;
+    aarch64-linux)
+      JSON_NIXOS_CONFIGS_AARCH64=$(jq -cn \
+        --argjson arr "${JSON_NIXOS_CONFIGS_AARCH64:-[]}" \
+        --arg h "$h" \
+        '$arr + [$h]')
+      ;;
+  esac
+done
+
+
 JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_FREE=$(printf '%s\n' "${PKGS_FREE[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_NONFREE=$(printf '%s\n' "${PKGS_NONFREE[@]}" | jq -Rcn '[inputs]')
 JSON_PKGS_OCI=$(printf '%s\n' "${PKGS_OCI[@]}" | jq -Rcn '[inputs]')
-# FIXME We should determine the target architecture by evaluating the flake and
-# not hardcode it based on the hostname
-JSON_NIXOS_CONFIGS_X86_64=$(jq -c '[.nixosConfigurations | keys[] | select(. | test("^oci-") | not)]' <<< "$NIX_FLAKE_SHOW")
-JSON_NIXOS_CONFIGS_AARCH64=$(jq -c '[.nixosConfigurations | keys[] | select(. | test("^oci-"))]' <<< "$NIX_FLAKE_SHOW")
 
 jq -cn \
   --argjson hosts_x86_64 "$JSON_NIXOS_CONFIGS_X86_64" \

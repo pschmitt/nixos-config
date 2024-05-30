@@ -9,6 +9,7 @@ let
   snapPkg = inputs.nix-snapd.packages.${pkgs.system}.default;
 in
 {
+  nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   custom.netbirdSetupKey = lib.mkForce "oci";
 
   boot.kernelParams = [
