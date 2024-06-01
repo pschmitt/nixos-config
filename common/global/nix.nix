@@ -39,17 +39,19 @@
         "https://nix-community.cachix.org"
         "https://pschmitt-nixos-config.cachix.org"
         "https://cache.garnix.io"
-        "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
-          config.sops.secrets."ssh/nix-remote-builder/privkey".path
-        }"
-        "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
-          config.sops.secrets."ssh/nix-remote-builder/privkey".path
-        }"
+        # "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
+        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        # }"
+        # "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
+        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        # }"
         # "https://nix-cache.heimat.dev"
+        "https://cache.rofl-02.nb.brkn.lol"
+        "https://cache.rofl-03.nb.brkn.lol"
       ];
 
       # attic auth (nix.rofl-01.heimat.dev)
-      netrc-file = "/etc/nix/netrc";
+      # netrc-file = "/etc/nix/netrc";
 
       trusted-public-keys = [
         # NOTE cache.nixos.org is enabled by default, adding it here only
@@ -60,6 +62,8 @@
         "pschmitt-nixos-config.cachix.org-1:cE7rK+O+QCIEewMOOk3C7JYOhSXxqgLzNpm+tdSMkMk="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         "nix-cache.heimat.dev:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM="
+        "rofl-02:OjuEw7+xiIgDDHLLoRHY6h4CQpl0Ie96qyjeJyQRJ38="
+        "rofl-03:p25y1GufWGd6aWpimb8j6F0obxn3jwYCj7sCCXgp7A0="
       ];
     };
 
