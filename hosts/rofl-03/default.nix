@@ -9,6 +9,7 @@
     ../../misc/nfs-client.nix
     ../../misc/tdarr.nix
     ../../misc/miner.nix
+    ../../misc/http.nix
     ../../misc/harmonia.nix
   ];
 

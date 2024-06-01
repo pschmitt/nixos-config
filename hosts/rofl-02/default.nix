@@ -14,6 +14,9 @@
     ./monit.nix
     ./nfs-server.nix
     ../../server/luks-ssh-unlock-homelab.nix
+
+    ../../misc/http.nix
+    ../../misc/harmonia.nix
   ];
 
   # Enable networking
@@ -28,13 +31,6 @@
   };
 
   custom.promptColor = "208"; # orange
-
-  services.harmonia = {
-    enable = true;
-    settings = {
-      bind = "100.85.145.107:5000";
-    };
-  };
 
   systemd.services.docker-compose-bulk-up = {
     after = [
