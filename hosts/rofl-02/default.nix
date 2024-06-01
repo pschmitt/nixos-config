@@ -17,6 +17,10 @@
 
     ../../misc/http.nix
     ../../misc/harmonia.nix
+
+    ./jellyfin.nix
+
+    ./jellyfin.nix
   ];
 
   # Enable networking
