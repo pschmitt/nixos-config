@@ -28,6 +28,22 @@ resource "cloudflare_record" "wildcard-heimat-dev" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "rofl-01-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "rofl-01"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "wildcard-rofl-01-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "*.rofl-01"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  type    = "A"
+  ttl     = 3600
+}
+
 # resource "cloudflare_record" "oci-04" {
 #   zone_id = cloudflare_zone.heimat_dev.id
 #   name    = "oci-04"
