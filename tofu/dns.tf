@@ -20,66 +20,10 @@ resource "cloudflare_zone" "pschmitt_dev" {
   account_id = cloudflare_account.me.id
 }
 
-resource "cloudflare_record" "wildcard-rofl-01" {
+resource "cloudflare_record" "wildcard-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*.rofl-01"
-  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "wildcard-rofl-02" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*.rofl-02"
-  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "wildcard-rofl-03" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*.rofl-03"
-  value   = openstack_networking_floatingip_v2.rofl_03_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "rofl-02" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "rofl-02"
-  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "rofl-03" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "rofl-03"
-  value   = openstack_networking_floatingip_v2.rofl_03_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "rofl-04" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "rofl-04"
-  value   = openstack_networking_floatingip_v2.rofl_04_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "rofl-05" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "rofl-05"
-  value   = openstack_networking_floatingip_v2.rofl_05_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "oci-03" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "oci-03"
-  value   = oci_core_instance.oci_03.public_ip
+  name    = "*"
+  value   = oci_core_instance.oci_01.public_ip
   type    = "A"
   ttl     = 3600
 }
@@ -91,14 +35,6 @@ resource "cloudflare_record" "oci-03" {
 #   type    = "A"
 #   ttl     = 3600
 # }
-
-resource "cloudflare_record" "wildcard-oci-03" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*.oci-03"
-  value   = oci_core_instance.oci_03.public_ip
-  type    = "A"
-  ttl     = 3600
-}
 
 resource "cloudflare_record" "mail-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
@@ -129,60 +65,5 @@ resource "cloudflare_record" "wildcard-lol" {
   name    = "*"
   type    = "A"
   ttl     = 3600
-}
-
-resource "cloudflare_record" "o01-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "o01"
   value   = oci_core_instance.oci_01.public_ip
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "o03-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "o03"
-  value   = oci_core_instance.oci_03.public_ip
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "r01-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "r01"
-  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "r02-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "r02"
-  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "r03-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "r03"
-  value   = openstack_networking_floatingip_v2.rofl_03_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "r04-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "r04"
-  value   = openstack_networking_floatingip_v2.rofl_04_fip.address
-  type    = "A"
-  ttl     = 4600
-}
-
-resource "cloudflare_record" "r05-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "r05"
-  value   = openstack_networking_floatingip_v2.rofl_05_fip.address
-  type    = "A"
-  ttl     = 5600
 }
