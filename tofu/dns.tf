@@ -60,6 +60,14 @@ resource "cloudflare_record" "mail-heimat-dev" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "mmonit-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "mmonit"
+  type    = "CNAME"
+  ttl     = 3600
+  value   = "mmonit.oci-03.heimat.dev"
+}
+
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
@@ -83,3 +91,4 @@ resource "cloudflare_record" "wildcard-lol" {
   ttl     = 3600
   value   = oci_core_instance.oci_01.public_ip
 }
+
