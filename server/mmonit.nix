@@ -37,20 +37,27 @@
     recommendedProxySettings = true;
     recommendedTlsSettings = true;
 
-    virtualHosts."mmonit.oci-03.heimat.dev" = {
-      enableACME = true;
-      forceSSL = true;
+    virtualHosts =
+      let
+        commonConfig = {
+          enableACME = true;
+          forceSSL = true;
 
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:8080/";
-        index = "index.csp";
-        proxyWebsockets = true;
-        extraConfig = ''
-          # Avoid redirections to the wrong port (ie. 8080)
-          proxy_set_header X-Forwarded-Port $server_port;
-        '';
+          locations."/" = {
+            proxyPass = "http://127.0.0.1:8080/";
+            index = "index.csp";
+            proxyWebsockets = true;
+            extraConfig = ''
+              # Avoid redirections to the wrong port (ie. 8080)
+              proxy_set_header X-Forwarded-Port $server_port;
+            '';
+          };
+        };
+      in
+      {
+        "mmonit.oci-03.heimat.dev" = commonConfig;
+        "mmonit.heimat.dev" = commonConfig;
       };
-    };
   };
 
   security.acme = {
