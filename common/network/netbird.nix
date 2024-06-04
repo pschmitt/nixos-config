@@ -23,6 +23,15 @@ let
   netbirdScripts = lib.mapAttrsToList createNetbirdScript config.services.netbird.tunnels;
 in
 {
+  sops = {
+    secrets.netbird-setup-key = {
+      key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
+    };
+    templates.netbird-auth.content = ''
+      NB_SETUP_KEY=${config.sops.placeholder.netbird-setup-key}
+    '';
+  };
+
   services.netbird = {
     enable = true;
     tunnels = {
@@ -30,47 +39,41 @@ in
         port = 51820;
         environment = {
           NB_MANAGEMENT_URL = "https://api.netbird.io";
+          # Below won't work
+          # You will end up with NB_SETUP_KEY=<SOPS:xxxx:PLACEHOLDER>
+          # NB_SETUP_KEY = "${config.sops.placeholder.netbird-setup-key}";
         };
       };
     };
   };
 
-  environment.systemPackages = netbirdScripts;
-
   # mask netbird-wt0 service
   systemd.services.netbird-wt0.enable = false;
 
-  sops.secrets.netbird-setup-key = {
-    key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
-  };
-
-  systemd.services.netbird-netbird-io-autoconnect = {
-    after = [ "netbird-netbird-io.service" ];
-    wants = [ "netbird-netbird-io.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-    };
-    path = netbirdScripts ++ [ pkgs.jq ];
-    script = ''
-      # NOTE When not connected/authorized, the status command will return:
-      # Daemon status: NeedsLogin
-      #
-      # Run UP command to log in with SSO (interactive login):
-      #
-      #  netbird up
-      #
-      # If you are running a self-hosted version and no SSO provider has been configured in your Management Server,
-      # you can use a setup-key:
-      #
-      #  netbird up --management-url <YOUR_MANAGEMENT_URL> --setup-key <YOUR_SETUP_KEY>
-      #
-      # More info: https://docs.netbird.io/how-to/register-machines-using-setup-keys
-      if netbird-netbird-io status | grep -q 'NeedsLogin'
+  systemd.services.netbird-netbird-io = {
+    postStart = ''
+      export PATH=${
+        pkgs.lib.makeBinPath (
+          netbirdScripts
+          ++ [
+            pkgs.coreutils
+            pkgs.gnugrep
+          ]
+        )
+      }
+      # sleep 5
+      if netbird-netbird-io status | \
+        grep -q 'NeedsLogin'
       then
         SETUP_KEY=$(cat ${config.sops.secrets.netbird-setup-key.path})
         netbird-netbird-io up --setup-key "$SETUP_KEY"
       fi
     '';
+
+    # FIXME Below does not seem to be working... The NB_SETUP_KEY is correctly
+    # set but netbird seems to just ignore it.
+    serviceConfig.EnvironmentFile = config.sops.templates."netbird-auth".path;
   };
+
+  environment.systemPackages = netbirdScripts;
 }
