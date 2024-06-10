@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  config.virtualisation.oci-containers.containers = {
+  virtualisation.oci-containers.containers = {
     tdarr = {
       image = "ghcr.io/haveagitgat/tdarr_node:2.19.01";
       volumes = [
