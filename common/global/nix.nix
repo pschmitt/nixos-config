@@ -7,11 +7,24 @@
   ...
 }:
 {
-  sops.secrets."ssh/nix-remote-builder/privkey" = { };
+  sops = {
+    secrets = {
+      "ssh/nix-remote-builder/privkey" = { };
+      "nix/github_token" = { };
+    };
+    templates.nix-access-token-github.content = ''
+      access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
+    '';
+  };
 
   boot.binfmt.emulatedSystems = if pkgs.system != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
 
   nix = {
+    # GitHub access token
+    extraOptions = ''
+      !include ${config.sops.templates.nix-access-token-github.path}
+    '';
+
     # This will add each flake input as a registry
     # To make nix3 commands consistent with your flake
     registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
