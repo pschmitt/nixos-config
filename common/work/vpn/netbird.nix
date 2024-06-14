@@ -33,15 +33,6 @@ in
           NB_ALLOW_SSH = "false";
         };
       };
-      wiit-ooe = {
-        port = 51822;
-        environment = {
-          NB_MANAGEMENT_URL = "https://netbird-api.ooe.gecgo.net";
-          # TODO Does this work?
-          # https://docs.netbird.io/how-to/cli#environment-variables
-          NB_ALLOW_SSH = "false";
-        };
-      };
     };
   };
 
