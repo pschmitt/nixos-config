@@ -7,7 +7,6 @@
     ./hardware-configuration.nix
     ./nvidia.nix
     # ./luks-remote.nix
-    ./tailscale.nix
 
     ../../common/global
     ../../common/gui
