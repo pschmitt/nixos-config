@@ -15,4 +15,10 @@
   custom.netbirdSetupKey = lib.mkForce "laptop";
 
   users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
+
+  services.tailscale.extraUpFlags = [
+    "--accept-routes"
+    "--advertise-exit-node"
+    "--operator=${config.custom.username}"
+  ];
 }
