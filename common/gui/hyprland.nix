@@ -106,7 +106,7 @@ in
     # tools
     brightnessctl
     hyprpaper # wallpaper
-    hyprpicker-git
+    hyprpicker
     kanshi
     shikane # kanshi alternative, rust
     wev
@@ -132,7 +132,7 @@ in
 
   fonts.enableDefaultPackages = true;
 
-  hardware.opengl.enable = true;
+  hardware.graphics.enable = lib.mkForce true;
 
   programs = {
     dconf.enable = true; # also set by programs.hyprland.enable = true;
