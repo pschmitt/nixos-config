@@ -132,7 +132,7 @@
   # FIXME the vdhcoapp 2.0.19 nixpkg does not ship with a static native
   # messaging manifest, instead it is relying on the user running:
   # $ vdhcoapp install
-  # home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${inputs.nix-agordoj.packages.${pkgs.system}.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
+  # home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${pkgs.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
   # BroTab for Google Chrome
