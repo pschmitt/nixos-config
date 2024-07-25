@@ -11,13 +11,13 @@ in
     lan-mouse
 
     # files and docs
-    gnome.eog
-    gnome.evince
-    gnome.gnome-font-viewer
-    gnome.file-roller
-    gnome.nautilus
-    gnome.seahorse
-    gnome.sushi
+    eog
+    evince
+    gnome-font-viewer
+    file-roller
+    nautilus
+    seahorse
+    sushi
     imv # image viewer
     zathura
 
