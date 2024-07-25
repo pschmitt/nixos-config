@@ -4,7 +4,7 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable"; # unstable by default
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-24.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
@@ -49,7 +49,8 @@
     hyprland = {
       type = "git";
       url = "https://github.com/hyprwm/Hyprland";
-      # ref = "v0.41.1";
+      # v0.41.2
+      rev = "918d8340afd652b011b937d29d5eea0be08467f5";
       submodules = true;
       inputs.nixpkgs.follows = "nixpkgs";
     };
