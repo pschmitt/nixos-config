@@ -1,10 +1,4 @@
-{
-  inputs,
-  lib,
-  config,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 
 let
   # https://github.com/NixOS/nixpkgs/blob/master/pkgs/data/icons/colloid-icon-theme/default.nix
@@ -54,7 +48,7 @@ in
     colloidIconPkg
     colloidThemePkg
     flat-remix-icon-theme
-    gnome.gnome-themes-extra
+    gnome-themes-extra
     numix-icon-theme
     numix-icon-theme-circle
     numix-icon-theme-square
