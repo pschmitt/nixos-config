@@ -27,7 +27,8 @@ in
         ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
       '')
       kubernetes-helm
-      ldifj
+      # FIXME ldifj is broken with python 3.12
+      # ldifj
       lefthook
       lego
       httptunnel
