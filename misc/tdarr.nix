@@ -1,8 +1,17 @@
 { config, ... }:
 {
+  sops = {
+    secrets.tdarr-api-key = {
+      key = "tdarr/api-key";
+    };
+    templates.tdarr-api-key.content = ''
+      apiKey=${config.sops.placeholder.tdarr-api-key}
+    '';
+  };
+
   virtualisation.oci-containers.containers = {
     tdarr = {
-      image = "ghcr.io/haveagitgat/tdarr_node:2.19.01";
+      image = "ghcr.io/haveagitgat/tdarr_node:2.23.01";
       volumes = [
         # NOTE podman will *not* create these directories on the host
         # "/srv/tdarr/config/tdarr:/app/configs"
@@ -14,6 +23,7 @@
         "/mnt/data/videos:/media"
       ];
       autoStart = true;
+      environmentFiles = [ config.sops.templates."tdarr-api-key".path ];
       environment =
         {
           TZ = "Europe/Berlin";
