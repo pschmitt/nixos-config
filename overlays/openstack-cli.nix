@@ -2,15 +2,17 @@
 
 {
   openstackclient = prev.openstackclient.overrideAttrs (oldAttrs: {
-    propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [ final.python3Packages.designateclient ];
+    propagatedBuildInputs = oldAttrs.propagatedBuildInputs ++ [
+      final.python311Packages.designateclient
+    ];
     # As of 2024-01-16 the checks fail (due to py3.11?)
     doCheck = false;
     checkPhase = "";
     doInstallCheck = false;
   });
 
-  python3Packages = prev.python3Packages // {
-    designateclient = prev.python3Packages.buildPythonPackage rec {
+  python311Packages = prev.python311Packages // {
+    designateclient = prev.python311Packages.buildPythonPackage rec {
       pname = "python-designateclient";
       version = "6.0.0";
       # NOTE tests require hacking>=3.0.1,<3.1.0
@@ -23,7 +25,7 @@
         sha256 = "sha256-Uj67/6h006cQ38mcRuf+9x6NCjWug48kVRL4dQ3FdPQ=";
       };
 
-      propagatedBuildInputs = with prev.python3Packages; [
+      propagatedBuildInputs = with prev.python311Packages; [
         pip
 
         # https://github.com/openstack/python-designateclient/blob/master/requirements.txt
