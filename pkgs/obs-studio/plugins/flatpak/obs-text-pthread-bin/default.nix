@@ -7,11 +7,11 @@
 
 stdenvNoCC.mkDerivation {
   pname = "obs-text-pthread-bin";
-  version = "2.0.2";
+  version = "2.0.4";
 
   src = fetchurl {
-    url = "https://github.com/norihiro/obs-text-pthread/releases/download/2.0.2/obs-text-pthread-2.0.2-obs28-ubuntu-20.04-x86_64.deb";
-    sha256 = "sha256-N1E5DZ7wrYKN+aut/vjzvf6s6LA64OeSYYruIe5jkXU=";
+    url = "https://github.com/norihiro/obs-text-pthread/releases/download/2.0.4/obs-text-pthread-2.0.4-obs28-ubuntu-20.04-x86_64.deb";
+    sha256 = "sha256-lAdinjBuJcTaaJOh9PD2d549Xlzg1mTXrSfxci8R+jI=";
   };
 
   phases = [ "buildPhase" ];
