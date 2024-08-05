@@ -7,11 +7,13 @@
 
 stdenvNoCC.mkDerivation {
   pname = "obs-replay-source-bin";
-  version = "1.6.13";
+  version = "1.8.0";
 
+  # To fetch the right url visit the url below:
+  # https://obsproject.com/forum/resources/replay-source.686/download
   src = fetchurl {
-    url = "https://obsproject.com/forum/resources/replay-source.686/version/5371/download?file=100470";
-    sha256 = "sha256-iIA2g1gMx7gaPmhqjpxfzg1bp8R8yEJmee1Y6oC2veE=";
+    url = "https://obsproject.com/forum/resources/replay-source.686/version/5778/download?file=106473";
+    sha256 = "sha256-sEtSjlmEMZkjYmDlzFCT30mw0QWErLTgy+HVkc0OuL8=";
   };
 
   nativeBuildInputs = with pkgs; [ unzip ];
@@ -34,6 +36,6 @@ stdenvNoCC.mkDerivation {
     homepage = "https://github.com/exeldro/obs-replay-source";
     description = "Replay source for OBS studio";
     license = licenses.gpl2Only;
-    platforms = platforms.all;
+    platforms = platforms.linux;
   };
 }
