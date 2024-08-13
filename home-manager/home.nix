@@ -13,6 +13,7 @@
       inputs.nur.hmModules.nur
       inputs.nix-index-database.hmModules.nix-index
       ./bitwarden.nix
+      ./crypto.nix
       ./devel.nix
       ./mail.nix
       ./networking.nix
