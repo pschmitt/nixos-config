@@ -81,7 +81,8 @@
     };
 
     flatpaks = {
-      url = "github:GermanBread/declarative-flatpak/stable";
+      # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
+      url = "github:GermanBread/declarative-flatpak/stable-v3";
       # NOTE Do *not* override nixpkgs, it is not supported
     };
 
