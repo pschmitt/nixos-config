@@ -1,7 +1,7 @@
 { ... }:
 
 let
-  serverAddress = "rofl-02.netbird.cloud:/export";
+  serverAddress = "rofl-02.brkn.lol:/export";
   mounts = [
     "backups"
     "books"
