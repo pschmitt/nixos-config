@@ -19,6 +19,7 @@
     ../../misc/harmonia.nix
 
     ./jellyfin.nix
+    ./podsync.nix
   ];
 
   # Enable networking
