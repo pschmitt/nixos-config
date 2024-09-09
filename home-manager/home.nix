@@ -78,7 +78,7 @@
     # virtualization
     distrobox
     quickemu
-    quickgui
+    # quickgui # fails to build as of 09.09.2024
 
     # devel
     android-tools
