@@ -44,7 +44,7 @@ in
       skopeo
       stern
       sqlfluff
-      taskwarrior
+      taskwarrior3
       # terraform # 1.6+
       (writeShellScriptBin "terraform-unfree" ''
         ${pkgs.terraform}/bin/terraform "$@"
