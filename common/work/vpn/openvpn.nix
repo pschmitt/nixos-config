@@ -99,7 +99,7 @@ in
 
   environment.etc =
     let
-      conn_openvpn = (pkgs.formats.ini { }).generate "gec-vpn-openvpn.nmconnection" {
+      gecOpenVPNConnection = (pkgs.formats.ini { }).generate "gec-vpn-openvpn.nmconnection" {
         connection = {
           id = "GEC VPN (OpenVPN)";
           type = "vpn";
@@ -136,7 +136,7 @@ in
         proxy = { };
       };
 
-      wiitConnOpenVPN = (pkgs.formats.ini { }).generate "wiit-vpn-openvpn.nmconnection" {
+      wiitOpenVPNConnection = (pkgs.formats.ini { }).generate "wiit-vpn-openvpn.nmconnection" {
         connection = {
           id = "WIIT VPN (OpenVPN)";
           type = "vpn";
@@ -176,8 +176,8 @@ in
       };
     in
     {
-      "NetworkManager/system-connections/${conn_openvpn.name}" = {
-        source = conn_openvpn;
+      "NetworkManager/system-connections/${gecOpenVPNConnection.name}" = {
+        source = gecOpenVPNConnection;
         mode = "0600";
       };
 
@@ -197,8 +197,8 @@ in
       };
 
       # WIIT
-      "NetworkManager/system-connections/${wiitConnOpenVPN.name}" = {
-        source = wiitConnOpenVPN;
+      "NetworkManager/system-connections/${wiitOpenVPNConnection.name}" = {
+        source = wiitOpenVPNConnection;
         mode = "0600";
       };
 
