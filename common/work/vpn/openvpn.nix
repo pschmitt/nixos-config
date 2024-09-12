@@ -89,6 +89,9 @@ in
           cert = "/etc/NetworkManager/certs/gec-cert.pem";
           key = "/etc/NetworkManager/certs/gec-key.pem";
 
+          dev = "gec-ovpn";
+          dev-type = "tun";
+
           cipher = gecCipher;
           remote = gecRemote;
           remote-cert-tls = gecRemoteCertTls;
@@ -126,16 +129,20 @@ in
           cert = "/etc/NetworkManager/certs/wiit-cert.pem";
           key = "/etc/NetworkManager/certs/wiit-key.pem";
 
+          dev = "wiit-ovpn";
+          dev-type = "tun";
+
           cipher = wiitCipher;
           remote = wiitRemote;
           remote-cert-tls = wiitRemoteCertTls;
           reneg-seconds = wiitRenegSeconds;
           username = wiitUsername;
 
+          push-peer-info = "yes";
           # FIXME We need to make NetworkManager set the OpenVPN following
           # option for the VPN to work: "setenv UV_IP4_TABLE FRA"
           # https://gitlab.gnome.org/GNOME/NetworkManager-openvpn/-/merge_requests/80
-          push-peer-info = "yes";
+          # setenv = "UV_IP4_TABLE=FRA";
 
           connection-type = "password-tls";
           password-flags = 1;
