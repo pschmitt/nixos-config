@@ -139,7 +139,7 @@ in
           username = wiitUsername;
 
           push-peer-info = "yes";
-          # FIXME We need to make NetworkManager set the OpenVPN following
+          # FIXME We need to make NetworkManager set the following OpenVPN
           # option for the VPN to work: "setenv UV_IP4_TABLE FRA"
           # https://gitlab.gnome.org/GNOME/NetworkManager-openvpn/-/merge_requests/80
           # setenv = "UV_IP4_TABLE=FRA";
