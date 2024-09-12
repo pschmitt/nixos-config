@@ -1,7 +1,7 @@
 { pkgs, ... }:
 
 let
-  ovpnConfig = pkgs.fetchurl {
+  gecOvpnConfig = pkgs.fetchurl {
     url = "https://mgmt-vpn.gec.io/gec.ovpn";
     sha256 = "sha256-PIWDHcoc5fv0vYRaBpJXXUV31wxua1nm5u6pWw3Kp3g=";
   };
@@ -11,87 +11,64 @@ let
     sha256 = "sha256-FaR5/ziamaoAyOWWsgb60sd279547GxoI44u+TOHjFI=";
   };
 
-  extractOvpnDetails = pkgs.stdenv.mkDerivation {
-    name = "extract-ovpn-details";
-    src = ovpnConfig;
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out/certs $out/details
+  extractOvpnDetails =
+    { name, src }:
+    pkgs.stdenv.mkDerivation {
+      inherit name;
+      inherit src;
+      phases = [ "installPhase" ];
+      installPhase = ''
+        mkdir -p $out/certs $out/details
 
-      # NOTE Below supports multiple remotes, but our network guys just can't be
-      # arsed to fix the ovpn config file, the udp endpoint leads to a
-      # succesful connection - but the traffic is relayed properly
-      # https://gec-chat.slack.com/archives/C3PBP7JQ3/p1705064366061199
-      awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
-       sed 's#, $##' > "$out/details/remote"
+        # Use all remotes
+        awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
+         sed 's#, $##' > "$out/details/remote"
 
-      # Grab the first TCP endpoint and call it a day
-      # awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
-      #   sed 's#, $##' > "$out/details/remote"
+        # NOTE Below supports multiple remotes, but our network guys just can't be
+        # arsed to fix the ovpn config file, the udp endpoint leads to a
+        # succesful connection - but the traffic is relayed properly
+        # https://gec-chat.slack.com/archives/C3PBP7JQ3/p1705064366061199
+        # Grab the first TCP endpoint and call it a day
+        # awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
+        #   sed 's#, $##' > "$out/details/remote"
 
-      awk '/^cipher / { print $2 }' $src \
-        > "$out/details/cipher"
-      awk '/^remote-cert-tls / { print $2 }' $src \
-        > "$out/details/remote-cert-tls"
-      awk '/^reneg-sec / { print $2 }' $src \
-        > "$out/details/reneg-sec"
+        awk '/^cipher / { print $2 }' $src \
+          > "$out/details/cipher"
+        awk '/^remote-cert-tls / { print $2 }' $src \
+          > "$out/details/remote-cert-tls"
+        awk '/^reneg-sec / { print $2 }' $src \
+          > "$out/details/reneg-sec"
 
-      awk '/<ca>/{flag=1; next} /<\/ca>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/ca.pem"
-      awk '/<cert>/{flag=1; next} /<\/cert>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/cert.pem"
-      awk '/<key>/{flag=1; next} /<\/key>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/key.pem"
-    '';
-  };
-
-  extractWiitOvpnDetails = pkgs.stdenv.mkDerivation {
-    name = "extract-wiit-ovpn-details";
-    src = wiitOvpnConfig;
-    phases = [ "installPhase" ];
-    installPhase = ''
-      mkdir -p $out/certs $out/details
-
-      # NOTE Below supports multiple remotes, but our network guys just can't be
-      # arsed to fix the ovpn config file, the udp endpoint leads to a
-      # succesful connection - but the traffic is relayed properly
-      # https://gec-chat.slack.com/archives/C3PBP7JQ3/p1705064366061199
-      awk 'BEGIN {ORS=", "} /remote /{ print $2 ":" $3 ":" $4 }' $src | \
-       sed 's#, $##' > "$out/details/remote"
-
-      # Grab the first TCP endpoint and call it a day
-      # awk '/^remote / && !/udp/ { print $2 ":" $3 ":" $4; exit }' $src | \
-      #   sed 's#, $##' > "$out/details/remote"
-
-      awk '/^cipher / { print $2 }' $src \
-        > "$out/details/cipher"
-      awk '/^remote-cert-tls / { print $2 }' $src \
-        > "$out/details/remote-cert-tls"
-      awk '/^reneg-sec / { print $2 }' $src \
-        > "$out/details/reneg-sec"
-
-      awk '/<ca>/{flag=1; next} /<\/ca>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/ca.pem"
-      awk '/<cert>/{flag=1; next} /<\/cert>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/cert.pem"
-      awk '/<key>/{flag=1; next} /<\/key>/{flag=0} flag {print $0}' $src \
-        > "$out/certs/key.pem"
-    '';
-  };
+        awk '/<ca>/{flag=1; next} /<\/ca>/{flag=0} flag {print $0}' $src \
+          > "$out/certs/ca.pem"
+        awk '/<cert>/{flag=1; next} /<\/cert>/{flag=0} flag {print $0}' $src \
+          > "$out/certs/cert.pem"
+        awk '/<key>/{flag=1; next} /<\/key>/{flag=0} flag {print $0}' $src \
+          > "$out/certs/key.pem"
+      '';
+    };
 
   # GEC
-  gecCipher = builtins.readFile "${extractOvpnDetails}/details/cipher";
-  gecRemote = builtins.readFile "${extractOvpnDetails}/details/remote";
-  gecRemoteCertTls = builtins.readFile "${extractOvpnDetails}/details/remote-cert-tls";
-  gecRenegSeconds = builtins.readFile "${extractOvpnDetails}/details/reneg-sec";
+  gecOpenVPNDetails = extractOvpnDetails {
+    name = "gec-openvpn-details";
+    src = gecOvpnConfig;
+  };
+  gecCipher = builtins.readFile "${gecOpenVPNDetails}/details/cipher";
+  gecRemote = builtins.readFile "${gecOpenVPNDetails}/details/remote";
+  gecRemoteCertTls = builtins.readFile "${gecOpenVPNDetails}/details/remote-cert-tls";
+  gecRenegSeconds = builtins.readFile "${gecOpenVPNDetails}/details/reneg-sec";
 
   gecUsername = "p.schmitt_admin";
 
   # WIIT
-  wiitCipher = builtins.readFile "${extractWiitOvpnDetails}/details/cipher";
-  wiitRemote = builtins.readFile "${extractWiitOvpnDetails}/details/remote";
-  wiitRemoteCertTls = builtins.readFile "${extractWiitOvpnDetails}/details/remote-cert-tls";
-  wiitRenegSeconds = builtins.readFile "${extractWiitOvpnDetails}/details/reneg-sec";
+  wiitOpenVPNDetails = extractOvpnDetails {
+    name = "wiit-openvpn-details";
+    src = wiitOvpnConfig;
+  };
+  wiitCipher = builtins.readFile "${wiitOpenVPNDetails}/details/cipher";
+  wiitRemote = builtins.readFile "${wiitOpenVPNDetails}/details/remote";
+  wiitRemoteCertTls = builtins.readFile "${wiitOpenVPNDetails}/details/remote-cert-tls";
+  wiitRenegSeconds = builtins.readFile "${wiitOpenVPNDetails}/details/reneg-sec";
   wiitUsername = "philipp.schmitt";
 in
 {
@@ -155,7 +132,10 @@ in
           reneg-seconds = wiitRenegSeconds;
           username = wiitUsername;
 
-          push-peer-info = true;
+          # FIXME We need to make NetworkManager set the OpenVPN following
+          # option for the VPN to work: "setenv UV_IP4_TABLE FRA"
+          # https://gitlab.gnome.org/GNOME/NetworkManager-openvpn/-/merge_requests/80
+          push-peer-info = "yes";
 
           connection-type = "password-tls";
           password-flags = 1;
@@ -182,17 +162,17 @@ in
       };
 
       "NetworkManager/certs/gec-ca.pem" = {
-        source = "${extractOvpnDetails}/certs/ca.pem";
+        source = "${gecOpenVPNDetails}/certs/ca.pem";
         mode = "0600";
       };
 
       "NetworkManager/certs/gec-cert.pem" = {
-        source = "${extractOvpnDetails}/certs/cert.pem";
+        source = "${gecOpenVPNDetails}/certs/cert.pem";
         mode = "0600";
       };
 
       "NetworkManager/certs/gec-key.pem" = {
-        source = "${extractOvpnDetails}/certs/key.pem";
+        source = "${gecOpenVPNDetails}/certs/key.pem";
         mode = "0600";
       };
 
@@ -203,17 +183,17 @@ in
       };
 
       "NetworkManager/certs/wiit-ca.pem" = {
-        source = "${extractWiitOvpnDetails}/certs/ca.pem";
+        source = "${wiitOpenVPNDetails}/certs/ca.pem";
         mode = "0600";
       };
 
       "NetworkManager/certs/wiit-cert.pem" = {
-        source = "${extractWiitOvpnDetails}/certs/cert.pem";
+        source = "${wiitOpenVPNDetails}/certs/cert.pem";
         mode = "0600";
       };
 
       "NetworkManager/certs/wiit-key.pem" = {
-        source = "${extractWiitOvpnDetails}/certs/key.pem";
+        source = "${wiitOpenVPNDetails}/certs/key.pem";
         mode = "0600";
       };
     };
