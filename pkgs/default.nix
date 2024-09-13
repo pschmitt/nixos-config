@@ -44,7 +44,6 @@ in
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   tmux-slay = pkgs.callPackage ./tmux-slay { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
-  wl-kbptr = pkgs.callPackage ./wl-kbptr { };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
