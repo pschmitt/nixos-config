@@ -17,8 +17,10 @@
 
     ../../misc/http.nix
     ../../misc/harmonia.nix
+    # ../../misc/echo.nix
 
     ./jellyfin.nix
+    ./paperless-ngx.nix
     ./podsync.nix
   ];
 
