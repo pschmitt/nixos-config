@@ -44,24 +44,26 @@
         "@wheel"
       ];
 
-      substituters = [
-        # NOTE cache.nixos.org is enabled by default, adding it here only
-        # duplicates it
-        # "https://cache.nixos.org"
-        "https://hyprland.cachix.org"
-        "https://nix-community.cachix.org"
-        "https://pschmitt-nixos-config.cachix.org"
-        "https://cache.garnix.io"
-        # "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
-        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-        # }"
-        # "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
-        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-        # }"
-        # "https://nix-cache.heimat.dev"
-        "https://cache.rofl-02.nb.brkn.lol"
-        "https://cache.rofl-03.nb.brkn.lol"
-      ];
+      substituters =
+        [
+          # NOTE cache.nixos.org is enabled by default, adding it here only
+          # duplicates it
+          # "https://cache.nixos.org"
+          "https://hyprland.cachix.org"
+          "https://nix-community.cachix.org"
+          "https://pschmitt-nixos-config.cachix.org"
+          "https://cache.garnix.io"
+          # "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
+          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+          # }"
+          # "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
+          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+          # }"
+          # "https://nix-cache.heimat.dev"
+        ]
+        # don't use local http cache on the same host
+        ++ lib.optionals (config.networking.hostName != "rofl-02") [ "https://cache.rofl-02.nb.brkn.lol" ]
+        ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.nb.brkn.lol" ];
 
       # attic auth (nix.rofl-01.heimat.dev)
       # netrc-file = "/etc/nix/netrc";
