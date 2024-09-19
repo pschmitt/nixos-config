@@ -65,8 +65,7 @@ in
       if netbird-netbird-io status | \
         grep -q 'NeedsLogin'
       then
-        SETUP_KEY=$(cat ${config.sops.secrets.netbird-setup-key.path})
-        netbird-netbird-io up --setup-key "$SETUP_KEY"
+        netbird-netbird-io up --setup-key-file "${config.sops.secrets.netbird-setup-key.path}"
       fi
     '';
 
