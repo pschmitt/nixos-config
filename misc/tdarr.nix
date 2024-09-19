@@ -11,7 +11,7 @@
 
   virtualisation.oci-containers.containers = {
     tdarr = {
-      image = "ghcr.io/haveagitgat/tdarr_node:2.23.01";
+      image = "ghcr.io/haveagitgat/tdarr_node:2.25.01";
       volumes = [
         # NOTE podman will *not* create these directories on the host
         # "/srv/tdarr/config/tdarr:/app/configs"
