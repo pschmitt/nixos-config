@@ -13,6 +13,26 @@
     "git.sr.ht".hostNames = [ "git.sr.ht" ];
     "git.sr.ht".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
 
+    fnuc-ed25519 = {
+      hostNames = [
+        "fnuc.heimat.dev"
+        "fnuc-ts.heimat.dev"
+        "fnuc.snake-eagle.ts.net"
+        "fnuc.netbird.cloud"
+      ];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMUasZ5NmpBE1LDa/sdD4F9dhlB4DpCUY0g2kQpSCmfo";
+    };
+
+    fnuc-rsa = {
+      hostNames = [
+        "fnuc.heimat.dev"
+        "fnuc-ts.heimat.dev"
+        "fnuc.snake-eagle.ts.net"
+        "fnuc.netbird.cloud"
+      ];
+      publicKey = "fnuc ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCxPqTGClmwptv+dPHd0NBFmpp4WjVP8/D1r3rFu6d/JDQ6/hk5PWqu+dGrNLh5FLamNXRK5LWG2LDftCGC2lAcTWzFqIt9PDT019vj/idpBpZd/PQOwnQ03YED1IsPH+KVHjp9PG/VkNL1m2FdHciCvz9bh/U5DFvAiCzhCGgNB2JdGvEL3gi9TXTQx95vMNCc0bvEF1KNZV+VGhxIwdTT2Y/CKtcjkZUc+ERa/jhZ3mmdMSvubvMyKfrpQ3GO9PNEb1To0OybjcgmbpuJpXbAAtnyJIxurSm+Mwx1KAxVtoi/40Fp2MDuLjN2R96iqRpLjihwxaBZN/J3Slc4BIkWYB6EhI6vPTHS5ZaanrnmFQw/HzQnNKegZMr8oilj1iw+IpTC78mIvGQXQdHfxPWAbTebTgeYTDOFLZWA0LUfqLHX6Z72o4thm1UBSYa3Hs+IOsBSVNuwMBpvdxcGzJoTN7WFj4XLtxqIIc3Epe4yuyZCwgwLHAqvBJZkYmVPYb8=";
+    };
+
     rofl-02-ed25519 = {
       hostNames = [
         "rofl-02.heimat.dev"
