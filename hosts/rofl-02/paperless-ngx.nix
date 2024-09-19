@@ -16,9 +16,9 @@ in
     address = "127.0.0.1";
     port = 28981;
 
-    dataDir = "/srv/paperless-ngx/data";
-    mediaDir = "/srv/paperless-ngx/data/media";
-    consumptionDir = "/srv/paperless-ngx/data/consume";
+    dataDir = "/mnt/data/srv/paperless-ngx/data";
+    mediaDir = "/mnt/data/srv/paperless-ngx/data/media";
+    consumptionDir = "/mnt/data/srv/paperless-ngx/data/consume";
     consumptionDirIsPublic = false;
 
     # https://docs.paperless-ngx.com/configuration/
