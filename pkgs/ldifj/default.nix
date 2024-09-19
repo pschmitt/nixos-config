@@ -1,10 +1,10 @@
 {
   lib,
-  python3,
+  python311,
   fetchPypi,
 }:
 
-python3.pkgs.buildPythonApplication rec {
+python311.pkgs.buildPythonApplication rec {
   pname = "ldifj";
   version = "0.1.1";
   pyproject = true;
@@ -15,12 +15,12 @@ python3.pkgs.buildPythonApplication rec {
   };
 
   nativeBuildInputs = [
-    python3.pkgs.setuptools
-    python3.pkgs.setuptools-scm
-    python3.pkgs.wheel
+    python311.pkgs.setuptools
+    python311.pkgs.setuptools-scm
+    python311.pkgs.wheel
   ];
 
-  propagatedBuildInputs = with python3.pkgs; [
+  propagatedBuildInputs = with python311.pkgs; [
     python-ldap
     rich
     # FIXME the argparse check fails as of 2024.04.25
