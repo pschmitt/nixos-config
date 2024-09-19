@@ -1,11 +1,4 @@
-{
-  inputs,
-  outputs,
-  lib,
-  config,
-  pkgs,
-  ...
-}:
+{ config, pkgs, ... }:
 let
   opts = [
     "noauto"
@@ -20,6 +13,10 @@ let
     "UserKnownHostsFile=/dev/null"
     "ServerAliveInterval=10"
   ];
+
+  # tsDomain = "snake-eagle.ts.net";
+  netbirdDomain = "netbird.cloud";
+  vpnDomain = netbirdDomain;
 in
 {
   # NOTE Arch Linux equivalent /etc/fstab entry:
@@ -28,28 +25,34 @@ in
   programs.fuse.userAllowOther = true;
 
   # https://releases.nixos.org/nix-dev/2016-September/021768.html
+  fileSystems."/mnt/fnuc" = {
+    fsType = "fuse";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@fnuc.${vpnDomain}:/";
+    options = opts;
+  };
+
   fileSystems."/mnt/hass" = {
     fsType = "fuse";
     # NOTE We cannot use /config here since it is a symlink to /homeassistant
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass-fnuc.schmitt.co.beta.tailscale.net:/homeassistant";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
     options = opts;
   };
 
   fileSystems."/mnt/turris" = {
     fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.schmitt.co.beta.tailscale.net:/";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
     options = opts;
   };
 
-  fileSystems."/mnt/wrt1900ac" = {
-    fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@wrt1900ac.schmitt.co.beta.tailscale.net:/";
-    options = opts;
-  };
+  # fileSystems."/mnt/wrt1900ac" = {
+  #   fsType = "fuse";
+  #   device = "${pkgs.sshfs-fuse}/bin/sshfs#root@wrt1900ac.${vpnDomain}:/";
+  #   options = opts;
+  # };
 
   fileSystems."/mnt/rofl-02" = {
     fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-02.schmitt.co.beta.tailscale.net:/mnt/data";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-02.${vpnDomain}:/mnt/data";
     options = opts;
   };
 }
