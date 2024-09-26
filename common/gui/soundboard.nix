@@ -32,7 +32,10 @@
     ];
 
     serviceConfig = {
-      ExecStart = "${config.custom.homeDirectory}/bin/zhj 'zoom::in-home-room && soundboard::play tagesschau || echo not in zoom >&2'";
+      # FIXME Ideally we would determine if we are currently attending the
+      # Daily Meeting but MSTeams isn't giving out too much information via
+      # the URL/title of the meeting...
+      ExecStart = "${config.custom.homeDirectory}/bin/zhj 'teams::in-a-meeting && soundboard::play tagesschau || echo not in zoom >&2'";
     };
 
     wantedBy = [ "default.target" ];
