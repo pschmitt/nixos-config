@@ -7,6 +7,7 @@
     description = config.custom.fullName;
     group = config.custom.username;
     extraGroups = [
+      "cdrom"
       "docker"
       "libvirtd"
       "mlocate"
