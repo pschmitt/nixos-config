@@ -22,6 +22,7 @@
     ./jellyfin.nix
     ./paperless-ngx.nix
     ./podsync.nix
+    ./immich.nix
   ];
 
   # Enable networking
