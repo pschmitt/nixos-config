@@ -116,6 +116,54 @@ resource "cloudflare_record" "media-brkn-lol" {
   value   = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
+resource "cloudflare_record" "jelly-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "jelly"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "jelly-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "jelly"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "jellyfin-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "jellyfin"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "jellyfin-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "jellyfin"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "tv-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "tv"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "tv-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "tv"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
