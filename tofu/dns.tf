@@ -68,6 +68,54 @@ resource "cloudflare_record" "mmonit-heimat-dev" {
   value   = "mmonit.oci-03.heimat.dev"
 }
 
+resource "cloudflare_record" "immich-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "immich"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "immich-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "immich"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "img-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "img"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "img-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "img"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "media-heimat-dev" {
+  zone_id = cloudflare_zone.heimat_dev.id
+  name    = "media"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
+resource "cloudflare_record" "media-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "media"
+  type    = "A"
+  ttl     = 3600
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+}
+
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
