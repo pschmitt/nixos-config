@@ -77,7 +77,7 @@ in
     description = "Run immich-face-to-album for Anika";
     serviceConfig = {
       EnvironmentFile = "${config.sops.templates."immich-face-to-album-anika".path}";
-      ExecStart = "${pkgs.immich-face-to-album} --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
+      ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
     };
     wantedBy = [ "multi-user.target" ];
   };
