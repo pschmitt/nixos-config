@@ -78,6 +78,7 @@ in
     serviceConfig = {
       # TODO Switch to LoadCredential once we figured out a simple way
       # to have the credentials read from the files.
+      # See https://dee.underscore.world/blog/systemd-credentials-nixos-containers/
       # We might need to wrap the service in a shell script that reads these
       # script = ''
       #    API_KEY=$(cat $API_KEY_FILE) # or cat $CREDENTIALS_DIRECTORY/api_key
