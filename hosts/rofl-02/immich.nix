@@ -66,11 +66,14 @@ in
   sops.secrets."immich/immich-face-to-album/albums/anika" = {
     sopsFile = config.custom.sopsFile;
   };
-  sops.templates."immich-face-to-album-anika".content = ''
-    API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
-    FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/anika"}"
-    ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/anika"}"
-  '';
+  sops.templates."immich-face-to-album-anika" = {
+    content = ''
+      API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
+      FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/anika"}"
+      ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/anika"}"
+    '';
+    owner = "${config.services.immich.user}";
+  };
 
   # Define the systemd service
   systemd.services.immich-face-to-album-anika = {
@@ -98,6 +101,7 @@ in
       # };
       EnvironmentFile = "${config.sops.templates."immich-face-to-album-anika".path}";
       ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
+      User = "${config.services.immich.user}";
     };
     wantedBy = [ "multi-user.target" ];
   };
