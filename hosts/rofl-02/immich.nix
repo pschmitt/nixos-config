@@ -69,7 +69,7 @@ in
   sops.templates."immich-face-to-album-anika".content = ''
     API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
     FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/anika"}"
-    ALBUM="${config.sops.placeholder."immich/immich-album-to-album/albums/anika"}"
+    ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/anika"}"
   '';
 
   # Define the systemd service
