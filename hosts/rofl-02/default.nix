@@ -23,6 +23,7 @@
     ./paperless-ngx.nix
     ./podsync.nix
     ./immich.nix
+    ./docker-compose-netbird-ip-fix.nix
   ];
 
   # Enable networking
