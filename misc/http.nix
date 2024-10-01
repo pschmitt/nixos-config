@@ -10,6 +10,7 @@
     defaults = {
       email = config.custom.email;
       dnsProvider = "cloudflare";
+      dnsResolver = "1.1.1.1:53";
       # FIXME we have to forcefully set webroot to null, otherwise a nixpkgs
       # assert will fail
       webroot = null;
