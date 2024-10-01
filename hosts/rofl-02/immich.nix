@@ -74,6 +74,20 @@ in
     '';
     owner = "${config.services.immich.user}";
   };
+  sops.secrets."immich/immich-face-to-album/faces/maya" = {
+    sopsFile = config.custom.sopsFile;
+  };
+  sops.secrets."immich/immich-face-to-album/albums/maya" = {
+    sopsFile = config.custom.sopsFile;
+  };
+  sops.templates."immich-face-to-album-maya" = {
+    content = ''
+      API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
+      FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/maya"}"
+      ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/maya"}"
+    '';
+    owner = "${config.services.immich.user}";
+  };
 
   # Define the systemd service
   systemd.services.immich-face-to-album-anika = {
@@ -106,8 +120,27 @@ in
     wantedBy = [ "multi-user.target" ];
   };
 
+  systemd.services.immich-face-to-album-maya = {
+    description = "Run immich-face-to-album for Maya";
+    serviceConfig = {
+      EnvironmentFile = "${config.sops.templates."immich-face-to-album-maya".path}";
+      ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
+      User = "${config.services.immich.user}";
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
+
   # Define the systemd timer
   systemd.timers.immich-face-to-album-anika = {
+    description = "Run immich-face-to-album every hour";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+  };
+
+  systemd.timers.immich-face-to-album-maya = {
     description = "Run immich-face-to-album every hour";
     wantedBy = [ "timers.target" ];
     timerConfig = {
