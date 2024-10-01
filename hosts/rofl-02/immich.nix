@@ -132,7 +132,7 @@ in
 
   # Define the systemd timer
   systemd.timers.immich-face-to-album-anika = {
-    description = "Run immich-face-to-album every hour";
+    description = "Run immich-face-to-album regularly";
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
@@ -141,7 +141,7 @@ in
   };
 
   systemd.timers.immich-face-to-album-maya = {
-    description = "Run immich-face-to-album every hour";
+    description = "Run immich-face-to-album regularly";
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
