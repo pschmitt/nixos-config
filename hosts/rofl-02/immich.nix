@@ -116,6 +116,7 @@ in
       EnvironmentFile = "${config.sops.templates."immich-face-to-album-anika".path}";
       ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
       User = "${config.services.immich.user}";
+      Type = "oneshot";
     };
     wantedBy = [ "multi-user.target" ];
   };
@@ -126,6 +127,7 @@ in
       EnvironmentFile = "${config.sops.templates."immich-face-to-album-maya".path}";
       ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
       User = "${config.services.immich.user}";
+      Type = "oneshot";
     };
     wantedBy = [ "multi-user.target" ];
   };
