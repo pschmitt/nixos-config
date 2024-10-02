@@ -41,7 +41,7 @@ in
             acmeRoot = null;
             forceSSL = true;
             locations."/" = {
-              proxyPass = "http://127.0.0.1:${toString config.services.immich.port}";
+              proxyPass = "http://${config.services.immich.host}:${toString config.services.immich.port}";
               recommendedProxySettings = true;
               proxyWebsockets = true;
               # Allow uploading large files
