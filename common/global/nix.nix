@@ -63,7 +63,8 @@
         ]
         # don't use local http cache on the same host
         ++ lib.optionals (config.networking.hostName != "rofl-02") [ "https://cache.rofl-02.nb.brkn.lol" ]
-        ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.nb.brkn.lol" ];
+        # FIXME rofl-03 has some issues with netbird
+        # ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.nb.brkn.lol" ];
 
       # attic auth (nix.rofl-01.heimat.dev)
       # netrc-file = "/etc/nix/netrc";
