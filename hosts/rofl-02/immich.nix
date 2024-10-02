@@ -48,6 +48,8 @@ in
               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               proxy_set_header Upgrade $http_upgrade;
               proxy_set_header Connection $connection_upgrade;
+              # https://immich.app/docs/FAQ/#why-are-only-photos-and-not-videos-being-uploaded-to-immich
+              client_max_body_size 50000M;
             '';
           };
         }) hostnames
