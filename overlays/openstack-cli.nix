@@ -14,7 +14,7 @@
   python311Packages = prev.python311Packages // {
     designateclient = prev.python311Packages.buildPythonPackage rec {
       pname = "python-designateclient";
-      version = "6.0.0";
+      version = "6.1.0";
       # NOTE tests require hacking>=3.0.1,<3.1.0
       # and in nixpks there's only 6.0.1
       # https://github.com/openstack/python-designateclient/blob/master/test-requirements.txt
@@ -22,7 +22,7 @@
 
       src = prev.fetchPypi {
         inherit pname version;
-        sha256 = "sha256-Uj67/6h006cQ38mcRuf+9x6NCjWug48kVRL4dQ3FdPQ=";
+        hash = "sha256-GtwqB0sw2ELPl4f1MxDDeUkZW/TjTaOYTlY1t7ikaJw=";
       };
 
       propagatedBuildInputs = with prev.python311Packages; [
