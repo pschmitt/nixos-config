@@ -35,6 +35,8 @@
       ];
       search = {
         force = true;
+
+        # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
         engines = {
           "Nix Packages" = {
             urls = [
@@ -83,6 +85,23 @@
             iconUpdateURL = "https://nixos.wiki/favicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "nixw" ];
+          };
+
+          "Nixpkgs PRs" = {
+            urls = [
+              {
+                template = "https://github.com/NixOS/nixpkgs/pulls";
+                params = [
+                  {
+                    name = "q";
+                    value = "{searchTerms}";
+                  }
+                ];
+              }
+            ];
+
+            icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
+            definedAliases = [ "npr" ];
           };
 
           "ArchWiki" = {
