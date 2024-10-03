@@ -20,6 +20,81 @@ let
       "${subdomain}.${config.networking.hostName}.${domain}"
     ]) subdomains
   ) domains;
+
+  # immich-face-to-album
+  names = [
+    "anika"
+    "maya"
+  ];
+
+  # Function to generate configurations per name
+  generateConfigs = name: {
+    sopsSecrets = {
+      "immich/immich-face-to-album/faces/${name}" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "immich/immich-face-to-album/albums/${name}" = {
+        sopsFile = config.custom.sopsFile;
+      };
+    };
+
+    sopsTemplates = {
+      "immich-face-to-album-${name}" = {
+        content = ''
+          API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
+          FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/${name}"}"
+          ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/${name}"}"
+        '';
+        owner = config.services.immich.user;
+      };
+    };
+
+    systemdServices = {
+      "immich-face-to-album-${name}" = {
+        description = "Run immich-face-to-album for ${lib.toUpper name}";
+        serviceConfig = {
+          EnvironmentFile = config.sops.templates."immich-face-to-album-${name}".path;
+          ExecStart = ''
+            ${pkgs.immich-face-to-album}/bin/immich-face-to-album \
+            --server http://${config.services.immich.host}:${toString config.services.immich.port} \
+            --key "$API_KEY" \
+            --face "$FACE" \
+            --album "$ALBUM"
+          '';
+          User = config.services.immich.user;
+          Type = "oneshot";
+        };
+        wantedBy = [ "multi-user.target" ];
+      };
+    };
+
+    systemdTimers = {
+      "immich-face-to-album-${name}" = {
+        description = "Run immich-face-to-album regularly for ${lib.toUpper name}";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "hourly";
+          Persistent = true;
+        };
+      };
+    };
+  };
+
+  # Generate configurations for all names
+  perNameConfigs = map generateConfigs names;
+
+  # Combine configurations
+  combinedSopsSecrets = lib.foldl' (acc: cfg: acc // cfg.sopsSecrets) {
+    "immich/immich-face-to-album/apiKey" = {
+      sopsFile = config.custom.sopsFile;
+    };
+  } perNameConfigs;
+
+  combinedSopsTemplates = lib.foldl' (acc: cfg: acc // cfg.sopsTemplates) { } perNameConfigs;
+
+  combinedSystemdServices = lib.foldl' (acc: cfg: acc // cfg.systemdServices) { } perNameConfigs;
+
+  combinedSystemdTimers = lib.foldl' (acc: cfg: acc // cfg.systemdTimers) { } perNameConfigs;
 in
 {
   services.immich = {
@@ -59,97 +134,9 @@ in
       virtualHosts = virtualHosts;
     };
 
-  sops.secrets."immich/immich-face-to-album/apiKey" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."immich/immich-face-to-album/faces/anika" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."immich/immich-face-to-album/albums/anika" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.templates."immich-face-to-album-anika" = {
-    content = ''
-      API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
-      FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/anika"}"
-      ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/anika"}"
-    '';
-    owner = "${config.services.immich.user}";
-  };
-  sops.secrets."immich/immich-face-to-album/faces/maya" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."immich/immich-face-to-album/albums/maya" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.templates."immich-face-to-album-maya" = {
-    content = ''
-      API_KEY="${config.sops.placeholder."immich/immich-face-to-album/apiKey"}"
-      FACE="${config.sops.placeholder."immich/immich-face-to-album/faces/maya"}"
-      ALBUM="${config.sops.placeholder."immich/immich-face-to-album/albums/maya"}"
-    '';
-    owner = "${config.services.immich.user}";
-  };
-
-  # Define the systemd service
-  systemd.services.immich-face-to-album-anika = {
-    description = "Run immich-face-to-album for Anika";
-    serviceConfig = {
-      # TODO Switch to LoadCredential once we figured out a simple way
-      # to have the credentials read from the files.
-      # See https://dee.underscore.world/blog/systemd-credentials-nixos-containers/
-      # We might need to wrap the service in a shell script that reads these
-      # script = ''
-      #    API_KEY=$(cat $API_KEY_FILE) # or cat $CREDENTIALS_DIRECTORY/api_key
-      #    ALBUM=$(cat $ALBUM_FILE)
-      #    FACE=$(cat $FACE_FILE)
-      #    exec ${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM
-      # '';
-      # LoadCredential = [
-      #  "api_key:${config.sops.secrets."immich/immich-face-to-album/apiKey".path}"
-      #  "face:${config.sops.secrets."immich/immich-face-to-album/faces/anika".path}"
-      #  "album:${config.sops.secrets."immich/immich-face-to-album/albums/anika".path}"
-      #  ];
-      # Environment = {
-      #   "API_KEY_FILE=%d/api_key"
-      #   "FACE_FILE=%d/face"
-      #   "ALBUM_FILE=%d/album"
-      # };
-      EnvironmentFile = "${config.sops.templates."immich-face-to-album-anika".path}";
-      ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
-      User = "${config.services.immich.user}";
-      Type = "oneshot";
-    };
-    wantedBy = [ "multi-user.target" ];
-  };
-
-  systemd.services.immich-face-to-album-maya = {
-    description = "Run immich-face-to-album for Maya";
-    serviceConfig = {
-      EnvironmentFile = "${config.sops.templates."immich-face-to-album-maya".path}";
-      ExecStart = "${pkgs.immich-face-to-album}/bin/immich-face-to-album --server http://localhost:${toString config.services.immich.port} --key $API_KEY --face $FACE --album $ALBUM";
-      User = "${config.services.immich.user}";
-      Type = "oneshot";
-    };
-    wantedBy = [ "multi-user.target" ];
-  };
-
-  # Define the systemd timer
-  systemd.timers.immich-face-to-album-anika = {
-    description = "Run immich-face-to-album regularly";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-    };
-  };
-
-  systemd.timers.immich-face-to-album-maya = {
-    description = "Run immich-face-to-album regularly";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      Persistent = true;
-    };
-  };
+  # immich-face-to-album
+  sops.secrets = combinedSopsSecrets;
+  sops.templates = combinedSopsTemplates;
+  systemd.services = combinedSystemdServices;
+  systemd.timers = combinedSystemdTimers;
 }
