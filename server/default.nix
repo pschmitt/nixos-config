@@ -50,7 +50,7 @@
     gitMinimal
     htop
     jq
-    tmux
+    tmux-34.tmux
     tmux-slay
   ];
 }
