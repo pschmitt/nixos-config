@@ -39,9 +39,8 @@ in
       chisel
       corkscrew
       oci-cli
-      openconnect
       openldap
-      openstackclient
+      openstackclient-full
       openvpn
       rclone
       s3cmd
