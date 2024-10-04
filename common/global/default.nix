@@ -99,7 +99,7 @@ in
     socat
     sshpass
     tailscale
-    tmux
+    tmux-34.tmux
     tmux-slay
     tree
     ugrep
