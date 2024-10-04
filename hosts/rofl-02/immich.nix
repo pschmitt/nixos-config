@@ -66,7 +66,6 @@ let
           User = config.services.immich.user;
           Type = "oneshot";
         };
-        wantedBy = [ "multi-user.target" ];
       };
     };
 
