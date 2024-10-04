@@ -12,15 +12,8 @@
     (import ./brotab.nix { inherit final prev; })
     // (import ./libratbag.nix { inherit final prev; })
     // (import ./piper.nix { inherit final prev; })
-    //
-      # FIXME Remove this overlay once this is fixed in nixpkgs
-      # The issue is that the source of amrnb ie.
-      # http://www.penguin.cz/~utx/ftp/amr/amrnb-11.0.0.0.tar.bz2
-      # is unreachable
-      # (import ./amrnb.nix { inherit final prev; }) //
-      # (import ./tmux.nix { inherit final prev; }) //
-      {
-      }; # Continue merging additional overlays as needed
+    # // (import ./tmux.nix { inherit final prev; })
+    // { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
   unstable-packages = final: _prev: {
@@ -36,20 +29,25 @@
   };
 
   old-packages = final: prev: {
-    terraform-157 = import (builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/4ab8a3de296914f3b631121e9ce3884f1d34e1e5.tar.gz";
-      sha256 = "sha256:095mc0mlag8m9n9zmln482a32nmbkr4aa319f2cswyfrln9j41cr";
+    # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
+    kubectl-121 = import (builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/05ae01fcea6c7d270cc15374b0a806b09f548a9a.tar.gz";
+      sha256 = "sha256:1c629ncdqdd1y5h8b3pm3cn2sa0gyinlam4jncbrp1m7pvsr02ji";
     }) { system = final.system; };
 
-    # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
     kubectl-123 = import (builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/611bf8f183e6360c2a215fa70dfd659943a9857f.tar.gz";
       sha256 = "sha256:1rhrajxywl1kaa3pfpadkpzv963nq2p4a2y4vjzq0wkba21inr9k";
     }) { system = final.system; };
 
-    kubectl-121 = import (builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/05ae01fcea6c7d270cc15374b0a806b09f548a9a.tar.gz";
-      sha256 = "sha256:1c629ncdqdd1y5h8b3pm3cn2sa0gyinlam4jncbrp1m7pvsr02ji";
+    terraform-157 = import (builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/4ab8a3de296914f3b631121e9ce3884f1d34e1e5.tar.gz";
+      sha256 = "sha256:095mc0mlag8m9n9zmln482a32nmbkr4aa319f2cswyfrln9j41cr";
+    }) { system = final.system; };
+
+    tmux-34 = import (builtins.fetchTarball {
+      url = "https://github.com/NixOS/nixpkgs/archive/05bbf675397d5366259409139039af8077d695ce.tar.gz";
+      sha256 = "sha256:1r26vjqmzgphfnby5lkfihz6i3y70hq84bpkwd43qjjvgxkcyki0";
     }) { system = final.system; };
   };
 }
