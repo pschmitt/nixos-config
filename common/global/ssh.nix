@@ -15,6 +15,8 @@
 
     fnuc-ed25519 = {
       hostNames = [
+        "fnuc.brkn.lol"
+        "fnuc.nb.brkn.lol"
         "fnuc.heimat.dev"
         "fnuc-ts.heimat.dev"
         "fnuc.snake-eagle.ts.net"
@@ -25,6 +27,8 @@
 
     fnuc-rsa = {
       hostNames = [
+        "fnuc.brkn.lol"
+        "fnuc.nb.brkn.lol"
         "fnuc.heimat.dev"
         "fnuc-ts.heimat.dev"
         "fnuc.snake-eagle.ts.net"
@@ -35,6 +39,8 @@
 
     rofl-02-ed25519 = {
       hostNames = [
+        "rofl-02.brkn.lol"
+        "rofl-02.nb.brkn.lol"
         "rofl-02.heimat.dev"
         "rofl-02-ts.heimat.dev"
         "rofl-02.snake-eagle.ts.net"
@@ -45,6 +51,8 @@
 
     rofl-02-rsa = {
       hostNames = [
+        "rofl-02.brkn.lol"
+        "rofl-02.nb.brkn.lol"
         "rofl-02.heimat.dev"
         "rofl-02-ts.heimat.dev"
         "rofl-02.snake-eagle.ts.net"
@@ -55,6 +63,8 @@
 
     rofl-03-ed25519 = {
       hostNames = [
+        "rofl-03.brkn.lol"
+        "rofl-03.nb.brkn.lol"
         "rofl-03.heimat.dev"
         "rofl-03-ts.heimat.dev"
         "rofl-03.snake-eagle.ts.net"
@@ -65,6 +75,8 @@
 
     rofl-03-rsa = {
       hostNames = [
+        "rofl-03.brkn.lol"
+        "rofl-03.nb.brkn.lol"
         "rofl-03.heimat.dev"
         "rofl-03-ts.heimat.dev"
         "rofl-03.snake-eagle.ts.net"
@@ -75,6 +87,8 @@
 
     oci-03-ed25519 = {
       hostNames = [
+        "oci-03.brkn.lol"
+        "oci-03.nb.brkn.lol"
         "oci-03.heimat.dev"
         "oci-03-ts.heimat.dev"
         "oci-03.snake-eagle.ts.net"
@@ -85,6 +99,8 @@
 
     oci-03-rsa = {
       hostNames = [
+        "oci-03.brkn.lol"
+        "oci-03.nb.brkn.lol"
         "oci-03.heimat.dev"
         "oci-03-ts.heimat.dev"
         "oci-03.snake-eagle.ts.net"
