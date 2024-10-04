@@ -52,6 +52,8 @@ let
     systemdServices = {
       "immich-face-to-album-${name}" = {
         description = "Run immich-face-to-album for ${lib.toUpper name}";
+        after = [ "immich-server.service" ];
+        requires = [ "immich-server.service" ];
         serviceConfig = {
           EnvironmentFile = config.sops.templates."immich-face-to-album-${name}".path;
           ExecStart = ''
