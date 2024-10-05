@@ -101,3 +101,59 @@ resource "cloudflare_record" "srv-autodiscover" {
   }
 }
 
+resource "cloudflare_record" "srv-imaps" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_imaps._tcp"
+  ttl     = 3600
+
+  data {
+    service  = "_imaps"
+    proto    = "_tcp"
+    name     = "imaps-srv"
+    priority = 0
+    weight   = 0
+    port     = 993
+    target   = "mail.${each.key}"
+  }
+}
+
+resource "cloudflare_record" "srv-pop3s" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_pop3s._tcp"
+  ttl     = 3600
+
+  data {
+    service  = "_pop3s"
+    proto    = "_tcp"
+    name     = "pop3s-srv"
+    priority = 0
+    weight   = 0
+    port     = 995
+    target   = "mail.${each.key}"
+  }
+}
+
+resource "cloudflare_record" "srv-submission" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_submission._tcp"
+  ttl     = 3600
+
+  data {
+    service  = "_submission"
+    proto    = "_tcp"
+    name     = "submission-srv"
+    priority = 0
+    weight   = 0
+    port     = 587
+    target   = "mail.${each.key}"
+  }
+}
