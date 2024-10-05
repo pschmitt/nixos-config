@@ -189,10 +189,7 @@
           pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
             src = ./.;
             hooks = {
-              nixfmt = {
-                enable = true;
-                package = pkgs.nixfmt-rfc-style;
-              };
+              nixfmt-rfc-style.enable = true;
               statix.enable = false;
               pre-commit-hook-ensure-sops = {
                 enable = true;
