@@ -21,6 +21,12 @@ data "cloudflare_zone" "zones" {
   name     = each.key
 }
 
+variable "dns_email_comment" {
+  description = "Comment to add to all the mail DNS records"
+  type        = string
+  default     = "mail"
+}
+
 resource "cloudflare_record" "mx" {
   for_each = data.cloudflare_zone.zones
 
@@ -30,6 +36,7 @@ resource "cloudflare_record" "mx" {
   ttl      = 3600
   value    = "mail.${each.key}"
   priority = 10
+  comment  = var.dns_email_comment
 }
 
 resource "cloudflare_record" "mail" {
@@ -40,6 +47,7 @@ resource "cloudflare_record" "mail" {
   value   = oci_core_instance.oci_01.public_ip
   type    = "A"
   ttl     = 3600
+  comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "spf" {
@@ -50,6 +58,7 @@ resource "cloudflare_record" "spf" {
   name    = "@"
   value   = "v=spf1 a:mail.${each.key} -all"
   ttl     = 3600
+  comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "dmarc" {
@@ -60,6 +69,7 @@ resource "cloudflare_record" "dmarc" {
   name    = "_dmarc"
   value   = "v=DMARC1; p=none"
   ttl     = 3600
+  comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "dkim" {
@@ -70,6 +80,7 @@ resource "cloudflare_record" "dkim" {
   name    = "mail._domainkey"
   value   = var.domains[each.key].dkim_public_key
   ttl     = 3600
+  comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "mailconf" {
@@ -80,6 +91,7 @@ resource "cloudflare_record" "mailconf" {
   name    = "@"
   value   = "mailconf=https://autoconfig.${each.key}/mail/config-v1.1.xml"
   ttl     = 3600
+  comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "srv-autodiscover" {
@@ -89,6 +101,7 @@ resource "cloudflare_record" "srv-autodiscover" {
   type    = "SRV"
   name    = "_autodiscover._tcp"
   ttl     = 3600
+  comment = var.dns_email_comment
 
   data {
     service  = "_autodiscover"
@@ -108,6 +121,7 @@ resource "cloudflare_record" "srv-imaps" {
   type    = "SRV"
   name    = "_imaps._tcp"
   ttl     = 3600
+  comment = var.dns_email_comment
 
   data {
     service  = "_imaps"
@@ -127,6 +141,7 @@ resource "cloudflare_record" "srv-pop3s" {
   type    = "SRV"
   name    = "_pop3s._tcp"
   ttl     = 3600
+  comment = var.dns_email_comment
 
   data {
     service  = "_pop3s"
@@ -146,6 +161,7 @@ resource "cloudflare_record" "srv-submission" {
   type    = "SRV"
   name    = "_submission._tcp"
   ttl     = 3600
+  comment = var.dns_email_comment
 
   data {
     service  = "_submission"
