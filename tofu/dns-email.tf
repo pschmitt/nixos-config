@@ -87,10 +87,10 @@ resource "cloudflare_record" "srv-autodiscover" {
 
   zone_id = each.value.id
   type    = "SRV"
-  name    = "_autodiscover._tcp2"
+  name    = "_autodiscover._tcp"
   ttl     = 3600
 
-  data = {
+  data {
     service  = "_autodiscover"
     proto    = "_tcp"
     name     = "autodiscover-srv"
