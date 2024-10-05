@@ -52,14 +52,6 @@ resource "cloudflare_record" "wildcard-rofl-01-heimat-dev" {
 #   ttl     = 3600
 # }
 
-resource "cloudflare_record" "mail-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "mail"
-  value   = oci_core_instance.oci_01.public_ip
-  type    = "A"
-  ttl     = 3600
-}
-
 resource "cloudflare_record" "mmonit-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "mmonit"
