@@ -71,3 +71,33 @@ resource "cloudflare_record" "dkim" {
   value   = var.domains[each.key].dkim_public_key
   ttl     = 3600
 }
+
+resource "cloudflare_record" "mailconf" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "TXT"
+  name    = "@"
+  value   = "mailconf=https://autoconfig.${each.key}/mail/config-v1.1.xml"
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "srv-autodiscover" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_autodiscover._tcp2"
+  ttl     = 3600
+
+  data = {
+    service  = "_autodiscover"
+    proto    = "_tcp"
+    name     = "autodiscover-srv"
+    priority = 0
+    weight   = 0
+    port     = 443
+    target   = "mail.${each.key}"
+  }
+}
+
