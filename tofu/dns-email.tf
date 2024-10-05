@@ -24,11 +24,12 @@ data "cloudflare_zone" "zones" {
 resource "cloudflare_record" "mx" {
   for_each = data.cloudflare_zone.zones
 
-  zone_id = each.value.id
-  name    = "@"
-  type    = "MX"
-  ttl     = 3600
-  value   = "mail.${each.key}"
+  zone_id  = each.value.id
+  name     = "@"
+  type     = "MX"
+  ttl      = 3600
+  value    = "mail.${each.key}"
+  priority = 10
 }
 
 resource "cloudflare_record" "mail" {
