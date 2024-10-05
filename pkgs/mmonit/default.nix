@@ -21,7 +21,7 @@ stdenv.mkDerivation rec {
   arch = if stdenv.isAarch64 then "arm64" else "x64";
   checksum =
     if stdenv.isAarch64 then
-      "sha256-/+Kl2jsweg+WAytJLE1gsV0qpmrPHKgrDPzZEQ8h9is="
+      "sha256-o79n/cT5O2Z/hTWrGePsXSwPrl0PSOYPq+8TQkwguaI="
     else
       "sha256-uXrOEZwcZfw/4/byyhaYwdc/TNJOQU2fVOSzDemZq6g=";
 
