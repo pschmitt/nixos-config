@@ -76,23 +76,6 @@ resource "cloudflare_record" "immich-heimat-dev" {
   value   = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
-resource "cloudflare_record" "mx-brkn-lol" {
-  zone_id  = cloudflare_zone.brkn_lol.id
-  name     = "@"
-  type     = "MX"
-  ttl      = 3600
-  value    = "mail.brkn.lol"
-  priority = 10
-}
-
-resource "cloudflare_record" "mail-brkn-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "mail"
-  type    = "A"
-  ttl     = 3600
-  value   = oci_core_instance.oci_01.public_ip
-}
-
 resource "cloudflare_record" "immich-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "immich"
@@ -184,14 +167,6 @@ resource "cloudflare_record" "tv-brkn-lol" {
 resource "cloudflare_record" "wilcard-pschmitt-dev" {
   zone_id = cloudflare_zone.pschmitt_dev.id
   name    = "*"
-  value   = oci_core_instance.oci_01.public_ip
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "mail-pschmitt-dev" {
-  zone_id = cloudflare_zone.pschmitt_dev.id
-  name    = "mail"
   value   = oci_core_instance.oci_01.public_ip
   type    = "A"
   ttl     = 3600
