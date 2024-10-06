@@ -18,6 +18,7 @@
     ../../misc/harmonia.nix
     ../../misc/http.nix
     ./archivebox.nix
+    ./email.nix
     ./immich.nix
     ./jellyfin.nix
     ./monit.nix
