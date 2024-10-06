@@ -9,7 +9,7 @@
     };
 
     programs.msmtp = {
-      enable = true;
+      enable = !config.mailserver.enable;
       setSendmail = true;
       defaults = {
         auth = true;
