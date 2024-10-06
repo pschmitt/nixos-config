@@ -113,6 +113,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    simple-nixos-mailserver = {
+      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -130,6 +135,7 @@
       nix-snapd,
       nixpkgs,
       nur,
+      simple-nixos-mailserver,
       sops-nix,
       srvos,
       ...
@@ -166,7 +172,10 @@
             commonModules
             ++ [ ./hosts/${hostname} ]
             ++ nixpkgs.lib.optionals (!(configOptions.server or false)) [ ./home-manager ]
-            ++ nixpkgs.lib.optionals (configOptions.server or true) [ srvos.nixosModules.mixins-terminfo ]
+            ++ nixpkgs.lib.optionals (configOptions.server or true) [
+              simple-nixos-mailserver.nixosModule
+              srvos.nixosModules.mixins-terminfo
+            ]
             ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ nix-snapd.nixosModules.default ];
         };
     in
