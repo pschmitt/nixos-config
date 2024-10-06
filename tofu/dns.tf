@@ -164,10 +164,19 @@ resource "cloudflare_record" "wilcard-pschmitt-dev" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "wildcard-lol" {
+resource "cloudflare_record" "wildcard-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "*"
   type    = "A"
   ttl     = 3600
-  value   = oci_core_instance.oci_01.public_ip
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
+
+resource "cloudflare_record" "webmail-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  type    = "A"
+  name    = "webmail"
+  value   = openstack_networking_floatingip_v2.rofl_02_fip.address
+  ttl     = 3600
+}
+
