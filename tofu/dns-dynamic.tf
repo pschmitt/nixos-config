@@ -1,6 +1,10 @@
 locals {
   dns_entries = [
     {
+      hostname = "oci-01",
+      value    = oci_core_instance.oci_01.public_ip
+    },
+    {
       hostname = "oci-03",
       value    = oci_core_instance.oci_03.public_ip
     },
