@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
 
   sops.secrets."email/p@brkn.lol" = {
@@ -34,7 +34,7 @@
     configureNginx = true;
     hostName = "webmail.brkn.lol";
     extraConfig = ''
-      $config['smtp_server'] = "tls://${config.mailserver.fqdn}";
+      $config['smtp_host'] = "tls://${config.mailserver.fqdn}";
       $config['smtp_user'] = "%u";
       $config['smtp_pass'] = "%p";
     '';
