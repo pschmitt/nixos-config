@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 {
 
   sops.secrets."email/p@brkn.lol" = {
