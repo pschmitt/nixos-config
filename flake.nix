@@ -49,8 +49,9 @@
     hyprland = {
       type = "git";
       url = "https://github.com/hyprwm/Hyprland";
-      # v0.43.0
-      rev = "0f594732b063a90d44df8c5d402d658f27471dfe";
+      # https://github.com/hyprwm/Hyprland/releases
+      # v0.44.0
+      rev = "0c7a7e2d569eeed9d6025f3eef4ea0690d90845d";
       submodules = true;
       inputs.nixpkgs.follows = "nixpkgs";
     };
@@ -180,25 +181,19 @@
         import ./pkgs { inherit pkgs; }
       );
 
-      checks = forAllSystems (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        {
-          pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
-            src = ./.;
-            hooks = {
-              nixfmt-rfc-style.enable = true;
-              statix.enable = false;
-              pre-commit-hook-ensure-sops = {
-                enable = true;
-                files = ".+.sops.yaml$";
-              };
+      checks = forAllSystems (system: {
+        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+          src = ./.;
+          hooks = {
+            nixfmt-rfc-style.enable = true;
+            statix.enable = false;
+            pre-commit-hook-ensure-sops = {
+              enable = true;
+              files = ".+.sops.yaml$";
             };
           };
-        }
-      );
+        };
+      });
 
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
