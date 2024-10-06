@@ -9,21 +9,21 @@
     ./luks-data.nix
     ./rclone-bisync.nix
     ./restic.nix
-    ./rsync-fonts-to-rofl-03.nix
 
-    ./monit.nix
-    ./nfs-server.nix
+    ./rsync-fonts-to-rofl-03.nix
+    ./docker-compose-netbird-ip-fix.nix
     ../../server/luks-ssh-unlock-homelab.nix
 
-    ../../misc/http.nix
+    # services
     ../../misc/harmonia.nix
-    # ../../misc/echo.nix
-
+    ../../misc/http.nix
+    ./archivebox.nix
+    ./immich.nix
     ./jellyfin.nix
+    ./monit.nix
+    ./nfs-server.nix
     ./paperless-ngx.nix
     ./podsync.nix
-    ./immich.nix
-    ./docker-compose-netbird-ip-fix.nix
   ];
 
   # Enable networking
