@@ -34,9 +34,17 @@
     configureNginx = true;
     hostName = "webmail.brkn.lol";
     extraConfig = ''
-      $config['smtp_host'] = "tls://${config.mailserver.fqdn}";
+      $config['smtp_host'] = "tls://${config.mailserver.fqdn}:587";
       $config['smtp_user'] = "%u";
       $config['smtp_pass'] = "%p";
+
+      $config['imap_host'] = "tls://${config.mailserver.fqdn}:143";
+      // $config['imap_host'] = "tls://localhost:143";
+      // $config['imap_conn_options'] = [
+      //   'ssl' => [
+      //     'verify_peer'  => false,
+      //   ],
+      // ];
     '';
   };
 }
