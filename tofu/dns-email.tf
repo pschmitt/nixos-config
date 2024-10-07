@@ -120,7 +120,8 @@ resource "cloudflare_record" "srv-autodiscover" {
     priority = 0
     weight   = 0
     port     = 443
-    target   = "mail.${each.key}"
+    # target   = "mail.${each.key}"
+    target  = var.main_mail_domain
   }
 }
 
@@ -140,7 +141,8 @@ resource "cloudflare_record" "srv-imaps" {
     priority = 0
     weight   = 0
     port     = 993
-    target   = "mail.${each.key}"
+    # target   = "mail.${each.key}"
+    target  = var.main_mail_domain
   }
 }
 
@@ -160,7 +162,8 @@ resource "cloudflare_record" "srv-imaps" {
 #     priority = 0
 #     weight   = 0
 #     port     = 995
-#     target   = "mail.${each.key}"
+#     # target   = "mail.${each.key}"
+#     target  = var.main_mail_domain
 #   }
 # }
 
@@ -180,6 +183,7 @@ resource "cloudflare_record" "srv-submission" {
     priority = 0
     weight   = 0
     port     = 587
-    target   = "mail.${each.key}"
+    # target   = "mail.${each.key}"
+    target   = var.main_mail_domain
   }
 }
