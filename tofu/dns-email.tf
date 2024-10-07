@@ -27,6 +27,14 @@ variable "dns_email_comment" {
   default     = "mail"
 }
 
+variable "main_mail_domain" {
+  description = "Mail mail domain"
+  type        = string
+  # NOTE we use mail.brkn.lol here since this the only domain we have a reverse
+  # DNS entry for
+  default     = "mail.brkn.lol"
+}
+
 resource "cloudflare_record" "mx" {
   for_each = data.cloudflare_zone.zones
 
@@ -34,7 +42,8 @@ resource "cloudflare_record" "mx" {
   name     = "@"
   type     = "MX"
   ttl      = 3600
-  value    = "mail.${each.key}"
+  # value    = "mail.${each.key}"
+  value    = var.main_mail_domain
   priority = 10
   comment  = var.dns_email_comment
 }
@@ -56,7 +65,8 @@ resource "cloudflare_record" "spf" {
   zone_id = each.value.id
   type    = "TXT"
   name    = "@"
-  value   = "v=spf1 a:mail.${each.key} -all"
+  # value   = "v=spf1 a:mail.${each.key} -all"
+  value   = "v=spf1 a:${var.main_mail_domain} -all"
   ttl     = 3600
   comment = var.dns_email_comment
 }
@@ -134,25 +144,25 @@ resource "cloudflare_record" "srv-imaps" {
   }
 }
 
-resource "cloudflare_record" "srv-pop3s" {
-  for_each = data.cloudflare_zone.zones
-
-  zone_id = each.value.id
-  type    = "SRV"
-  name    = "_pop3s._tcp"
-  ttl     = 3600
-  comment = var.dns_email_comment
-
-  data {
-    service  = "_pop3s"
-    proto    = "_tcp"
-    name     = "pop3s-srv"
-    priority = 0
-    weight   = 0
-    port     = 995
-    target   = "mail.${each.key}"
-  }
-}
+# resource "cloudflare_record" "srv-pop3s" {
+#   for_each = data.cloudflare_zone.zones
+#
+#   zone_id = each.value.id
+#   type    = "SRV"
+#   name    = "_pop3s._tcp"
+#   ttl     = 3600
+#   comment = var.dns_email_comment
+#
+#   data {
+#     service  = "_pop3s"
+#     proto    = "_tcp"
+#     name     = "pop3s-srv"
+#     priority = 0
+#     weight   = 0
+#     port     = 995
+#     target   = "mail.${each.key}"
+#   }
+# }
 
 resource "cloudflare_record" "srv-submission" {
   for_each = data.cloudflare_zone.zones
