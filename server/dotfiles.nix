@@ -11,12 +11,60 @@ let
   };
 in
 {
+  environment.enableAllTerminfo = true;
+
   programs.zsh = {
     enable = true;
     enableCompletion = true;
     vteIntegration = true;
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
+    interactiveShellInit = ''
+      # This little snippets set TERM to TERM_SSH_CLIENT which holds the ssh
+      # client's TERM value. It is sent by the ssh::fix-term zsh func.
+      case "$TERM_SSH_CLIENT" in
+        foot|*kitty*|wezterm)
+          export TERM=$TERM_SSH_CLIENT
+          ;;
+      esac
+
+      zmodload zsh/terminfo
+      terminfo_bind() {
+        local key="$1"
+        local func="$2"
+        if [[ -n "''${terminfo[$key]}" ]]
+        then
+          bindkey "''${terminfo[$key]}" "$func"
+          return 0
+        fi
+        return 1
+      }
+      terminfo_bind kHOM5 beginning-of-line
+      terminfo_bind kend  end-of-line
+      terminfo_bind kLFT5 backward-word
+      terminfo_bind kRIT5 forward-word
+      terminfo_bind cub1  backward-kill-word
+
+      # We need to add some fallback bindings because some of the terminfos do
+      # not contain kLFT5, kRIT5 etc.
+      case "$TERM" in
+        screen*)
+          bindkey '^[[1;5C' forward-word      # ctrl-right
+          bindkey '^[[1;5D' backward-word     # ctrl-left
+          bindkey '^[[3;5~' kill-word         # ctrl-delete
+        ;;
+      esac
+
+      # Undo/Redo
+      bindkey '^[z' undo  # alt-z
+      bindkey '^[y' redo  # alt-y
+
+      # ctrl-e to edit current line in editor
+      autoload -Uz edit-command-line
+      zle -N edit-command-line
+      bindkey '\C-e' edit-command-line
+      bindkey '^E' edit-command-line
+    '';
   };
 
   programs.bash = {
