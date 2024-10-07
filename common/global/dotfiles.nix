@@ -29,7 +29,8 @@
     extraConfigBeforePlugins = ''
       set -g set-titles on
       set -g mouse on
-
+    '';
+    extraConfig = ''
       # binds
       # switch to main session
       unbind M
