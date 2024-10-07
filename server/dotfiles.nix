@@ -11,6 +11,14 @@ let
   };
 in
 {
+  programs.zsh = {
+    enable = true;
+    enableCompletion = true;
+    vteIntegration = true;
+    autosuggestions.enable = true;
+    syntaxHighlighting.enable = true;
+  };
+
   programs.bash = {
     vteIntegration = true;
     # blesh.enable = false; # disable ble.sh, we want a custom RC file

@@ -19,7 +19,7 @@
       # hass-fnuc
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7"
     ];
-    shell = if config.custom.server then pkgs.bash else pkgs.zsh;
+    shell = pkgs.zsh;
   };
 
   # Below is required for some reason when using greetd with autologin
