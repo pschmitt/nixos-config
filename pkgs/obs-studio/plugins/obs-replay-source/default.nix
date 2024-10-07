@@ -8,14 +8,14 @@
   qtbase,
 }:
 
-stdenv.mkDerivation (finalAttrs: {
+stdenv.mkDerivation (finalAttrs: rec {
   pname = "obs-replay-source";
   version = "1.8.0";
 
   src = fetchFromGitHub {
     owner = "exeldro";
     repo = "obs-replay-source";
-    rev = "1.8.0";
+    rev = version;
     hash = "sha256-0IBH4Wb4dbbwqu7DsMb/pfnA8dYRbsW7cBW2XTjQK0U=";
   };
 
