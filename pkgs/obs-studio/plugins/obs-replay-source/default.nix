@@ -3,20 +3,20 @@
   lib,
   fetchFromGitHub,
   cmake,
+  libcaption,
   obs-studio,
   qtbase,
-  libcaption,
 }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation (finalAttrs: {
   pname = "obs-replay-source";
-  version = "1.6.13";
+  version = "1.8.0";
+
   src = fetchFromGitHub {
     owner = "exeldro";
     repo = "obs-replay-source";
-    rev = "${version}";
-    sha256 = "sha256-i64rpIVnUplA9AKZtR3xeByeawca7B00kGmEcKi7DWQ=";
-    fetchSubmodules = true;
+    rev = "1.8.0";
+    hash = "sha256-0IBH4Wb4dbbwqu7DsMb/pfnA8dYRbsW7cBW2XTjQK0U=";
   };
 
   nativeBuildInputs = [ cmake ];
@@ -27,10 +27,10 @@ stdenv.mkDerivation rec {
   ];
 
   postInstall = ''
-    mkdir -p $out/lib $out/share
-    mv $out/obs-plugins/64bit $out/lib/obs-plugins
-    rm -rf $out/obs-plugins
-    mv $out/data $out/share/obs
+    mkdir -p "$out/lib" "$out/share"
+    mv "$out/obs-plugins/64bit" "$out/lib/obs-plugins"
+    rm -rf "$out/obs-plugins"
+    mv "$out/data" "$out/share/obs"
   '';
 
   dontWrapQtApps = true;
@@ -38,9 +38,8 @@ stdenv.mkDerivation rec {
   meta = with lib; {
     description = "Replay source for OBS studio";
     homepage = "https://github.com/exeldro/obs-replay-source";
-    license = licenses.gpl2;
+    license = licenses.gpl2Only;
     platforms = platforms.linux;
-    # never built on aarch64-linux since first introduction in nixpkgs
-    broken = stdenv.isLinux && stdenv.isAarch64;
+    maintainers = with maintainers; [ pschmitt ];
   };
-}
+})
