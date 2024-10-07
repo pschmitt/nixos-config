@@ -182,6 +182,8 @@ in
 
     alias tmad="tmux -u new -A -D -s main"
     alias tmam="tmux attach-session -t main"
+
+    alias grep="grep --color=auto"
   '';
 
   # NOTE This must be put *after* all the aliases were defined.
