@@ -31,11 +31,17 @@
       set -g mouse on
 
       # binds
+      # switch to main session
+      unbind M
+      bind M switch-client -t main
+
+      # vertical split
       unbind S
       bind S split-window -v
 
-      unbind M
-      bind M switch-client -t main
+      # disable confirmation when killing pane
+      unbind x
+      bind x kill-pane
     '';
     plugins = with pkgs.tmuxPlugins; [
       catppuccin
