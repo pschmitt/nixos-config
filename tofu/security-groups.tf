@@ -8,6 +8,11 @@ resource "openstack_networking_secgroup_v2" "secgroup_http" {
   description = "Allow HTTP(s) traffic"
 }
 
+resource "openstack_networking_secgroup_v2" "secgroup_email" {
+  name        = "allow-email"
+  description = "Allow email (imap+smtp) traffic"
+}
+
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v4" {
   direction         = "ingress"
   ethertype         = "IPv4"
@@ -106,6 +111,86 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_alt_v6" {
   port_range_max    = 8443
   remote_ip_prefix  = "::/0"
   security_group_id = openstack_networking_secgroup_v2.secgroup_http.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 143
+  port_range_max    = 143
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 143
+  port_range_max    = 143
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 993
+  port_range_max    = 993
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 993
+  port_range_max    = 993
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 25
+  port_range_max    = 25
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 25
+  port_range_max    = 25
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 587
+  port_range_max    = 587
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 587
+  port_range_max    = 587
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
 }
 
 # vim: set ft=terraform
