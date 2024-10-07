@@ -5,13 +5,13 @@
   fetchurl,
 }:
 
-stdenvNoCC.mkDerivation {
+stdenvNoCC.mkDerivation rec {
   pname = "obs-text-pthread-bin";
-  version = "2.0.4";
+  version = "2.0.5";
 
   src = fetchurl {
-    url = "https://github.com/norihiro/obs-text-pthread/releases/download/2.0.4/obs-text-pthread-2.0.4-obs28-ubuntu-20.04-x86_64.deb";
-    sha256 = "sha256-lAdinjBuJcTaaJOh9PD2d549Xlzg1mTXrSfxci8R+jI=";
+    url = "https://github.com/norihiro/obs-text-pthread/releases/download/${version}/obs-text-pthread-${version}-obs28-ubuntu-20.04-x86_64.deb";
+    hash = "sha256-PTsxjdi619U4/PL6p3ZPJJMJZa053CwwEKffbWn2YAQ=";
   };
 
   phases = [ "buildPhase" ];
