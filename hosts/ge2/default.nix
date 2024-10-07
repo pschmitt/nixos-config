@@ -6,6 +6,7 @@
 
     ./hardware-configuration.nix
     ./nvidia.nix
+    ./wacom.nix
     # ./luks-remote.nix
 
     ../../common/global
