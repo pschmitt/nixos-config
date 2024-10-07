@@ -10,8 +10,9 @@
     ../common/global
     ../common/mail
 
-    ../misc/initrd-luks-ssh-unlock.nix
+    ../misc/autoupgrade.nix
     ../misc/git-clone-nixos-config.nix
+    ../misc/initrd-luks-ssh-unlock.nix
     ../misc/users/github-actions.nix
     ../misc/users/nix-remote-builder.nix
 
