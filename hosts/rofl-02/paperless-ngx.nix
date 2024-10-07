@@ -31,6 +31,8 @@ in
 
       PAPERLESS_OCR_LANGUAGE = "deu+fra+eng";
       PAPERLESS_CONSUMER_RECURSIVE = true;
+
+      PAPERLESS_FILENAME_FORMAT = "{original_name}";
     };
     passwordFile = config.sops.secrets."paperless-ngx/adminPassword".path;
   };
@@ -58,5 +60,27 @@ in
     in
     {
       virtualHosts = virtualHosts;
+    };
+
+  users.users."${config.custom.username}" = {
+    extraGroups = [ "paperless" ];
+  };
+
+  # Override default tmpfile settings
+  # The ones provided by the module are not working too well.
+  systemd.tmpfiles.settings."10-paperless" =
+    let
+      user = config.services.paperless.user;
+
+      defaultRule = {
+        user = user;
+        group = user;
+        mode = "755"; # enforce mode for all dirs
+      };
+    in
+    {
+      "${config.services.paperless.dataDir}".d = defaultRule;
+      "${config.services.paperless.mediaDir}".d = defaultRule;
+      "${config.services.paperless.consumptionDir}".d = defaultRule;
     };
 }
