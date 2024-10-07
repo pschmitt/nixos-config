@@ -23,23 +23,27 @@
     newSession = true;
     terminal = "tmux-direct";
     aggressiveResize = true;
-    # Set prefix to C-a
+    # Set prefix to Ctrl-a
     shortcut = "a";
     keyMode = "vi";
-    # extraConfig = ''
-    #   set-option -g mouse on
-    # '';
-    plugins = with pkgs; [
-      tmuxPlugins.sensible
-      tmuxPlugins.pain-control
-      tmuxPlugins.catppuccin
-      tmuxPlugins.mode-indicator
-      tmuxPlugins.fuzzback # prefix-?
-    ];
-    extraConfig = ''
+    extraConfigBeforePlugins = ''
+      set -g set-titles on
+      set -g mouse on
+
+      # binds
       unbind S
       bind S split-window -v
+
+      unbind M
+      bind M switch-client -t main
     '';
+    plugins = with pkgs.tmuxPlugins; [
+      catppuccin
+      fuzzback # prefix-?
+      mode-indicator
+      pain-control
+      sensible
+    ];
   };
 
   programs.npm = {

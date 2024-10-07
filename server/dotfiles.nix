@@ -117,10 +117,6 @@ in
     };
   };
 
-  programs.tmux.extraConfig = ''
-    set -g mouse on
-  '';
-
   environment.interactiveShellInit = ''
     [[ "$SHELL" != *zsh ]] && alias where="which"
 
