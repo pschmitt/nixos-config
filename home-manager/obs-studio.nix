@@ -41,13 +41,13 @@ in
     ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
 
   programs.obs-studio = {
-    enable = false;
+    enable = true;
     package = pkgs.unstable.obs-studio;
-    plugins = with pkgs; [
-      unstable.obs-studio-plugins.droidcam-obs
-      unstable.obs-studio-plugins.obs-text-pthread
-      unstable.obs-studio-plugins.obs-freeze-filter
-      # obs-studio-plugins.obs-replay-source # https://github.com/NixOS/nixpkgs/pull/252191
+    plugins = with pkgs.obs-studio-plugins; [
+      droidcam-obs
+      obs-text-pthread
+      obs-freeze-filter
+      obs-replay-source
     ];
   };
 
@@ -71,6 +71,7 @@ in
     };
   };
 
+  # FIXME Below plugins do not work anymore as of 2024-10-07
   # WARNING The directory names DO matter. The freeze-filter for instance will
   # not load if the directory is named obs-freeze-filter.
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/text-pango" = {
