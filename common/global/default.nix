@@ -147,9 +147,14 @@ in
   # OpenSSH server
   services.openssh = {
     enable = true;
-    settings.PasswordAuthentication = true;
-    settings.KbdInteractiveAuthentication = true;
-    settings.PermitRootLogin = "prohibit-password";
+    settings = {
+      PasswordAuthentication = true;
+      KbdInteractiveAuthentication = true;
+      PermitRootLogin = "prohibit-password";
+    };
+    extraConfig = ''
+      AcceptEnv TERM_SSH_CLIENT
+    '';
   };
 
   virtualisation = {
