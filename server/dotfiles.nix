@@ -122,7 +122,7 @@ in
   '';
 
   environment.interactiveShellInit = ''
-    alias where="which"
+    [[ "$SHELL" != "zsh" ]] && alias where="which"
 
     alias cdr='cd "$(git rev-parse --show-toplevel)"'
     alias gst="git status"
@@ -183,6 +183,9 @@ in
     alias scu-start="systemctl --user start"
     alias scu-status="systemctl --user status"
     alias scu-stop="systemctl --user stop"
+
+    alias tmad="tmux -u new -A -D -s main"
+    alias tmam="tmux attach-session -t main"
   '';
 
   # NOTE This must be put *after* all the aliases were defined.
