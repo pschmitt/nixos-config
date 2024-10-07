@@ -122,7 +122,7 @@ in
   '';
 
   environment.interactiveShellInit = ''
-    [[ "$SHELL" != "zsh" ]] && alias where="which"
+    [[ "$SHELL" != *zsh ]] && alias where="which"
 
     alias cdr='cd "$(git rev-parse --show-toplevel)"'
     alias gst="git status"
