@@ -12,18 +12,46 @@ let
   };
 
   # Remove "auth-user-pass"
-  filteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
-    lib.splitString "\n" (builtins.readFile wiitOvpnConfig)
-  );
+  removeUnwantedLines =
+    configPath:
+    let
+      configContent = builtins.readFile configPath;
+      lines = lib.splitString "\n" configContent;
+      # Regular expression to match either "auth-user-pass" or "dev tun"
+      unwantedRegex = "auth-user-pass|dev tun";
+    in
+    lib.filter (line: builtins.match unwantedRegex line == null) lines;
 
+  # Apply the function to your configuration files
+  gecFilteredLines = removeUnwantedLines gecOvpnConfig;
+  wiitFilteredLines = removeUnwantedLines wiitOvpnConfig;
+  # gecFilteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
+  #   lib.splitString "\n" (builtins.readFile gecOvpnConfig)
+  # );
+  # wiitFilteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
+  #   lib.splitString "\n" (builtins.readFile wiitOvpnConfig)
+  # );
+
+  gecAuthUserPass = "/run/secrets/openvpn-gec";
   wiitAuthUserPass = "/run/secrets/openvpn-wiit";
 
   # Append custom config options
-  wiitOvpnConfigMod = lib.concatStringsSep "\n" (
-    filteredLines
+  gecOvpnConfigMod = lib.concatStringsSep "\n" (
+    gecFilteredLines
     ++ [
+      "dev ovpn-gec"
+      "dev-type tun"
+      "auth-user-pass ${gecAuthUserPass}"
+      # "auth-nocache"
+    ]
+  );
+  wiitOvpnConfigMod = lib.concatStringsSep "\n" (
+    wiitFilteredLines
+    ++ [
+      "dev ovpn-wiit"
+      "dev-type tun"
       "auth-user-pass ${wiitAuthUserPass}"
-      "auth-nocache"
+      # "auth-nocache"
       "setenv UV_IP4_TABLE FRA"
     ]
   );
@@ -222,10 +250,44 @@ in
       };
     };
 
-  services.openvpn.servers.wiit = {
-    config = wiitOvpnConfigMod;
-    autoStart = false;
-    updateResolvConf = true;
+  services.openvpn.servers = {
+    gec = {
+      config = gecOvpnConfigMod;
+      autoStart = false;
+      updateResolvConf = true;
+    };
+    wiit = {
+      config = wiitOvpnConfigMod;
+      autoStart = false;
+      updateResolvConf = true;
+    };
+  };
+
+  systemd.services.openvpn-gec = {
+    path = with pkgs; [
+      zsh
+      bitwarden-cli
+      jq
+      shadow.su
+    ];
+    preStart = ''
+      echo "Prestart: recreate auth file"
+      rm -vf "${gecAuthUserPass}"
+
+      PASSWORD="$(su pschmitt -c 'bww -o gec-ovpn')"
+      CREDENTIALS="${gecUsername}\n$PASSWORD"
+
+      echo -e "$CREDENTIALS" > "${gecAuthUserPass}"
+      chmod 400 "${gecAuthUserPass}"
+    '';
+    postStart = ''
+      sleep 30
+      rm -vf "${gecAuthUserPass}"
+    '';
+    preStop = ''
+      echo "Prestop: delete auth file"
+      rm -vf "${gecAuthUserPass}"
+    '';
   };
 
   systemd.services.openvpn-wiit = {
@@ -240,15 +302,15 @@ in
       rm -vf "${wiitAuthUserPass}"
 
       PASSWORD="$(su pschmitt -c 'bww -o wiit-ovpn')"
-      CREDENTIALS="${wiitUsername}\n$PASSWORD\n"
+      CREDENTIALS="${wiitUsername}\n$PASSWORD"
 
       echo -e "$CREDENTIALS" > "${wiitAuthUserPass}"
       chmod 400 "${wiitAuthUserPass}"
     '';
-    # postStart = ''
-    #   sleep 30
-    #   rm -vf "${wiitAuthUserPass}"
-    # '';
+    postStart = ''
+      sleep 30
+      rm -vf "${wiitAuthUserPass}"
+    '';
     preStop = ''
       echo "Prestop: delete auth file"
       rm -vf "${wiitAuthUserPass}"
