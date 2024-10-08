@@ -20,7 +20,6 @@
     ./archivebox.nix
     # ./email.nix
     ./immich.nix
-    ./jellyfin.nix
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
