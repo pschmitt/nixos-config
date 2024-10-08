@@ -254,12 +254,12 @@ in
     gec = {
       config = gecOvpnConfigMod;
       autoStart = false;
-      updateResolvConf = true;
+      updateResolvConf = false;
     };
     wiit = {
       config = wiitOvpnConfigMod;
       autoStart = false;
-      updateResolvConf = true;
+      updateResolvConf = false;
     };
   };
 
@@ -271,7 +271,7 @@ in
       shadow.su
     ];
     preStart = ''
-      echo "Prestart: recreate auth file"
+      echo "PreStart: recreate auth file"
       rm -vf "${gecAuthUserPass}"
 
       PASSWORD="$(su pschmitt -c 'bww -o gec-ovpn')"
@@ -281,11 +281,11 @@ in
       chmod 400 "${gecAuthUserPass}"
     '';
     postStart = ''
-      sleep 30
+      echo "PostStart: delete auth file"
       rm -vf "${gecAuthUserPass}"
     '';
     preStop = ''
-      echo "Prestop: delete auth file"
+      echo "PreStop: delete auth file"
       rm -vf "${gecAuthUserPass}"
     '';
   };
@@ -308,11 +308,11 @@ in
       chmod 400 "${wiitAuthUserPass}"
     '';
     postStart = ''
-      sleep 30
+      echo "PostStart: delete auth file"
       rm -vf "${wiitAuthUserPass}"
     '';
     preStop = ''
-      echo "Prestop: delete auth file"
+      echo "PreStop: delete auth file"
       rm -vf "${wiitAuthUserPass}"
     '';
   };
