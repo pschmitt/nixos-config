@@ -9,12 +9,25 @@
 {
   sops = {
     secrets = {
-      "ssh/nix-remote-builder/privkey" = { };
+      "nix/credentials/username" = { };
+      "nix/credentials/password" = { };
       "nix/github_token" = { };
+      "ssh/nix-remote-builder/privkey" = { };
     };
-    templates.nix-access-token-github.content = ''
-      access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
-    '';
+    templates = {
+      nix-cache-netrc.content = ''
+        machine cache.rofl-02.brkn.lol
+        login ${config.sops.placeholder."nix/credentials/username"}
+        password ${config.sops.placeholder."nix/credentials/password"}
+
+        machine cache.rofl-03.brkn.lol
+        login ${config.sops.placeholder."nix/credentials/username"}
+        password ${config.sops.placeholder."nix/credentials/password"}
+      '';
+      nix-access-token-github.content = ''
+        access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
+      '';
+    };
   };
 
   boot.binfmt.emulatedSystems = if pkgs.system != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
@@ -53,21 +66,20 @@
           "https://nix-community.cachix.org"
           "https://pschmitt-nixos-config.cachix.org"
           "https://cache.garnix.io"
-          # "ssh://nix-remote-builder@rofl-02.heimat.dev?ssh-key=${
+          # "ssh://nix-remote-builder@rofl-02.brkn.lol?ssh-key=${
           #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
           # }"
-          # "ssh://nix-remote-builder@rofl-03.heimat.dev?ssh-key=${
+          # "ssh://nix-remote-builder@rofl-03.brkn.lol?ssh-key=${
           #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
           # }"
-          # "https://nix-cache.heimat.dev"
+          # "https://nix-cache.brkn.lol"
         ]
         # don't use local http cache on the same host
-        ++ lib.optionals (config.networking.hostName != "rofl-02") [ "https://cache.rofl-02.nb.brkn.lol" ];
-      # FIXME rofl-03 has some issues with netbird
-      # ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.nb.brkn.lol" ];
+        ++ lib.optionals (config.networking.hostName != "rofl-02") [ "https://cache.rofl-02.brkn.lol" ];
+      # ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ];
 
-      # attic auth (nix.rofl-01.heimat.dev)
-      # netrc-file = "/etc/nix/netrc";
+      # private caches
+      netrc-file = config.sops.templates.nix-cache-netrc.path;
 
       trusted-public-keys = [
         # NOTE cache.nixos.org is enabled by default, adding it here only
