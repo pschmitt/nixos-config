@@ -23,11 +23,11 @@ stdenv.mkDerivation rec {
     if stdenv.isAarch64 then
       "sha256-o79n/cT5O2Z/hTWrGePsXSwPrl0PSOYPq+8TQkwguaI="
     else
-      "sha256-uXrOEZwcZfw/4/byyhaYwdc/TNJOQU2fVOSzDemZq6g=";
+      "sha256-5WmV+O3nS9kvLPnjgvnRd0aBnAPo2MXJHOaSmiQaglI=";
 
   src = fetchurl {
     url = "https://mmonit.com/dist/${pname}-${version}-linux-${arch}.tar.gz";
-    sha256 = "${checksum}";
+    hash = "${checksum}";
   };
 
   buildInputs = [
