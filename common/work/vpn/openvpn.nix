@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
 let
   gecOvpnConfig = pkgs.fetchurl {
@@ -10,6 +10,23 @@ let
     url = "https://vpn.wiit.one/wiit.ovpn";
     sha256 = "sha256-FaR5/ziamaoAyOWWsgb60sd279547GxoI44u+TOHjFI=";
   };
+
+  # Remove "auth-user-pass"
+  filteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
+    lib.splitString "\n" (builtins.readFile wiitOvpnConfig)
+  );
+
+  wiitAuthUserPass = "/run/secrets/openvpn-wiit";
+
+  # Append custom config options
+  wiitOvpnConfigMod = lib.concatStringsSep "\n" (
+    filteredLines
+    ++ [
+      "auth-user-pass ${wiitAuthUserPass}"
+      "auth-nocache"
+      "setenv UV_IP4_TABLE FRA"
+    ]
+  );
 
   extractOvpnDetails =
     { name, src }:
@@ -204,4 +221,37 @@ in
         mode = "0600";
       };
     };
+
+  services.openvpn.servers.wiit = {
+    config = wiitOvpnConfigMod;
+    autoStart = false;
+    updateResolvConf = true;
+  };
+
+  systemd.services.openvpn-wiit = {
+    path = with pkgs; [
+      zsh
+      bitwarden-cli
+      jq
+      shadow.su
+    ];
+    preStart = ''
+      echo "Prestart: recreate auth file"
+      rm -vf "${wiitAuthUserPass}"
+
+      PASSWORD="$(su pschmitt -c 'bww -o wiit-ovpn')"
+      CREDENTIALS="${wiitUsername}\n$PASSWORD\n"
+
+      echo -e "$CREDENTIALS" > "${wiitAuthUserPass}"
+      chmod 400 "${wiitAuthUserPass}"
+    '';
+    # postStart = ''
+    #   sleep 30
+    #   rm -vf "${wiitAuthUserPass}"
+    # '';
+    preStop = ''
+      echo "Prestop: delete auth file"
+      rm -vf "${wiitAuthUserPass}"
+    '';
+  };
 }
