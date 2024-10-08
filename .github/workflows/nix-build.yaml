@@ -67,8 +67,9 @@ jobs:
 
       - name: Build package
         run: |-
-          nix build --print-build-logs \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
+          nix build --print-build-logs "$FLAKE_PATH"
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
 
   build-pkgs-oci:
     needs: setup-matrix
@@ -116,15 +117,17 @@ jobs:
 
       - name: Build package (aarch64-linux)
         run: |-
-          nix build --print-build-logs --builders "$NIX_BUILDER" \
-            '.#packages.aarch64-linux.${{ matrix.pkg }}'
+          FLAKE_PATH='.#packages.aarch64-linux.${{ matrix.pkg }}'
+          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
           tree result
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
 
       - name: Build package (x86_64-linux)
         run: |-
-          nix build --print-build-logs --builders "$NIX_BUILDER" \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
+          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
           tree result
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
 
   build-pkgs-nonfree:
     needs: setup-matrix
@@ -182,9 +185,11 @@ jobs:
       - name: Build package
         # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
         run: |-
-          nix build --print-build-logs --builders "$NIX_BUILDER" --impure \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            --impure "$FLAKE_PATH"
           tree result
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
 
   build-hosts-x86_64:
     needs:
@@ -227,8 +232,9 @@ jobs:
 
       - name: Build nixosConfiguration
         run: |-
-          nix build --print-build-logs \
-            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+          FLAKE_PATH='.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+          nix build --print-build-logs "$FLAKE_PATH"
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
 
   build-hosts-aarch64:
     needs:
@@ -285,5 +291,6 @@ jobs:
 
       - name: Build nixosConfiguration
         run: |-
-          nix build --print-build-logs --builders "$NIX_BUILDER" \
-            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+          FLAKE_PATH='.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
+          nix copy --to "$NIX_BUILDER" "$FLAKE_PATH"
