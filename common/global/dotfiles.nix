@@ -154,6 +154,10 @@
     fuzzyCompletion = true;
   };
 
+  environment.variables = {
+    FZF_DEFAULT_OPTS = "--ansi --history $HOME/.local/share/fzf_history --height 100% --info=inline";
+  };
+
   environment.shells = with pkgs; [ zsh ];
   # Make ZSH respect XDG
   environment.etc = {
