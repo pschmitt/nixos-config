@@ -25,12 +25,6 @@ let
   # Apply the function to your configuration files
   gecFilteredLines = removeUnwantedLines gecOvpnConfig;
   wiitFilteredLines = removeUnwantedLines wiitOvpnConfig;
-  # gecFilteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
-  #   lib.splitString "\n" (builtins.readFile gecOvpnConfig)
-  # );
-  # wiitFilteredLines = lib.filter (line: builtins.match ".*auth-user-pass.*" line == null) (
-  #   lib.splitString "\n" (builtins.readFile wiitOvpnConfig)
-  # );
 
   gecAuthUserPass = "/run/secrets/openvpn-gec";
   wiitAuthUserPass = "/run/secrets/openvpn-wiit";
