@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 
 let
   services = {
@@ -7,6 +7,8 @@ let
       hosts = [
         "rdr.brkn.lol"
         "radarr.brkn.lol"
+        "rdr.${config.networking.hostName}.brkn.lol"
+        "radarr.${config.networking.hostName}.brkn.lol"
       ];
     };
     sonarr = {
@@ -14,6 +16,8 @@ let
       hosts = [
         "snr.brkn.lol"
         "sonarr.brkn.lol"
+        "snr.${config.networking.hostName}.brkn.lol"
+        "sonarr.${config.networking.hostName}.brkn.lol"
       ];
     };
     transmission = {
@@ -21,6 +25,8 @@ let
       hosts = [
         "to.brkn.lol"
         "torrent.brkn.lol"
+        "to.${config.networking.hostName}.brkn.lol"
+        "torrent.${config.networking.hostName}.brkn.lol"
       ];
     };
   };
