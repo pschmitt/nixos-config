@@ -149,6 +149,11 @@
     vteIntegration = true;
   };
 
+  programs.fzf = {
+    keybindings = true;
+    fuzzyCompletion = true;
+  };
+
   environment.shells = with pkgs; [ zsh ];
   # Make ZSH respect XDG
   environment.etc = {
