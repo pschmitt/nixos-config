@@ -2,6 +2,25 @@
 
 let
   services = {
+    jellyfin = {
+      port = 8096;
+      hosts = [
+        "jelly.${config.networking.hostName}.brkn.lol"
+        "jelly.brkn.lol"
+        "jellyfin.${config.networking.hostName}.brkn.lol"
+        "jellyfin.brkn.lol"
+        "media.heimat.dev"
+        "tv.brkn.lol"
+
+        # TODO Remove
+        "jelly.${config.networking.hostName}.heimat.dev"
+        "jelly.heimat.dev"
+        "jellyfin.${config.networking.hostName}.heimat.dev"
+        "jellyfin.heimat.dev"
+        "media.heimat.dev"
+        "tv.heimat.dev"
+      ];
+    };
     radarr = {
       port = 7878;
       hosts = [
