@@ -24,6 +24,7 @@
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
+    ./piracy.nix
     ./podsync.nix
   ];
 
