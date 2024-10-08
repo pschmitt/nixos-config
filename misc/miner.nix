@@ -13,6 +13,10 @@
         # 25% of $nproc threads
         max-threads-hint = lib.mkDefault 25;
       };
+      # https://xmrig.com/docs/miner/hugepages
+      randomx = {
+        "1gb-pages" = true;
+      };
       pools = [
         {
           url = "pool.hashvault.pro:443";
