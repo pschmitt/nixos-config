@@ -15,6 +15,17 @@
       # "schmi.tt"
     ];
 
+    # https://nixos-mailserver.readthedocs.io/en/latest/fts.html
+    fullTextSearch = {
+      enable = true;
+      # index new email as they arrive
+      autoIndex = true;
+      # this only applies to plain text attachments, binary attachments are
+      # never indexed
+      indexAttachments = true;
+      enforced = "body";
+    };
+
     # A list of all login accounts. To create the password hashes, use
     # nix-shell -p mkpasswd --run 'mkpasswd -sm bcrypt'
     loginAccounts = {
