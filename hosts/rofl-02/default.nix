@@ -18,13 +18,12 @@
     ../../misc/harmonia.nix
     ../../misc/http.nix
     ./archivebox.nix
+    ./container-services.nix
     # ./email.nix
     ./immich.nix
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
-    ./piracy.nix
-    ./podsync.nix
   ];
 
   # Enable networking
