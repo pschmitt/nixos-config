@@ -71,13 +71,19 @@ resource "cloudflare_record" "spf" {
   comment = var.dns_email_comment
 }
 
+# https://docker-mailserver.github.io/docker-mailserver/latest/config/best-practices/dkim_dmarc_spf/#dmarc
 resource "cloudflare_record" "dmarc" {
   for_each = data.cloudflare_zone.zones
 
   zone_id = each.value.id
   type    = "TXT"
   name    = "_dmarc"
-  value   = "v=DMARC1; p=none"
+  # Lowest setting
+  # value   = "v=DMARC1; p=none"
+  # Mid
+  value = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:p@schmitt.co; ruf=mailto:p@schmitt.co"
+  # Strict
+  # value = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:p@schmitt.co; ruf=mailto:p@schmitt.co"
   ttl     = 3600
   comment = var.dns_email_comment
 }
