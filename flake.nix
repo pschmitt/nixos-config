@@ -116,6 +116,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    update-systemd-resolved = {
+      url = "github:jonathanio/update-systemd-resolved";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     wezterm = {
       url = "github:wez/wezterm?dir=nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -141,6 +146,7 @@
       snapd,
       sops-nix,
       srvos,
+      update-systemd-resolved,
       ...
     }@inputs:
     let
@@ -154,14 +160,16 @@
       ];
 
       commonModules = [
+        ./modules/custom.nix
+        ./modules/luks-ssh-unlock.nix
+
         agenix.nixosModules.default
         disko.nixosModules.disko
         flatpaks.nixosModules.default
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         sops-nix.nixosModules.sops
-        ./modules/custom.nix
-        ./modules/luks-ssh-unlock.nix
+        update-systemd-resolved.nixosModules.update-systemd-resolved
       ];
 
       nixosSystemFor =

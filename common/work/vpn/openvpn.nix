@@ -310,4 +310,15 @@ in
       rm -vf "${wiitAuthUserPass}"
     '';
   };
+
+  programs.update-systemd-resolved.servers = {
+    gec = {
+      includeAutomatically = true;
+      settings.defaultRoute = false;
+    };
+    wiit = {
+      includeAutomatically = true;
+      settings.defaultRoute = false;
+    };
+  };
 }
