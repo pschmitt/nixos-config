@@ -2,6 +2,17 @@
 
 let
   services = {
+    archivebox = {
+      port = 27244;
+      hosts = [
+        "arc.brkn.lol"
+        "archive.brkn.lol"
+        "archivebox.brkn.lol"
+        "arc.${config.networking.hostName}.brkn.lol"
+        "archive.${config.networking.hostName}.brkn.lol"
+        "archivebox.${config.networking.hostName}.brkn.lol"
+      ];
+    };
     jellyfin = {
       port = 8096;
       hosts = [
