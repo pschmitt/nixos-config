@@ -8,7 +8,6 @@
     ./bluetooth.nix
     ./btrfs.nix
     ./fonts.nix
-    ./gec-vpn.nix
     ./hacompanion.nix
     ./hyprland.nix
     ./libvirt.nix
