@@ -32,16 +32,16 @@ variable "main_mail_domain" {
   type        = string
   # NOTE we use mail.brkn.lol here since this the only domain we have a reverse
   # DNS entry for
-  default     = "mail.brkn.lol"
+  default = "mail.brkn.lol"
 }
 
 resource "cloudflare_record" "mx" {
   for_each = data.cloudflare_zone.zones
 
-  zone_id  = each.value.id
-  name     = "@"
-  type     = "MX"
-  ttl      = 3600
+  zone_id = each.value.id
+  name    = "@"
+  type    = "MX"
+  ttl     = 3600
   # value    = "mail.${each.key}"
   value    = var.main_mail_domain
   priority = 10
@@ -132,7 +132,28 @@ resource "cloudflare_record" "srv-autodiscover" {
     weight   = 0
     port     = 443
     # target   = "mail.${each.key}"
-    target  = var.main_mail_domain
+    target = var.main_mail_domain
+  }
+}
+
+resource "cloudflare_record" "srv-imap" { # starttls
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_imap._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    service  = "_imaps"
+    proto    = "_tcp"
+    name     = "imaps-srv"
+    priority = 0
+    weight   = 0
+    port     = 143
+    # target   = "mail.${each.key}"
+    target = var.main_mail_domain
   }
 }
 
@@ -153,7 +174,7 @@ resource "cloudflare_record" "srv-imaps" {
     weight   = 0
     port     = 993
     # target   = "mail.${each.key}"
-    target  = var.main_mail_domain
+    target = var.main_mail_domain
   }
 }
 
@@ -178,7 +199,7 @@ resource "cloudflare_record" "srv-imaps" {
 #   }
 # }
 
-resource "cloudflare_record" "srv-submission" {
+resource "cloudflare_record" "srv-submission" { # starttls
   for_each = data.cloudflare_zone.zones
 
   zone_id = each.value.id
@@ -195,6 +216,27 @@ resource "cloudflare_record" "srv-submission" {
     weight   = 0
     port     = 587
     # target   = "mail.${each.key}"
-    target   = var.main_mail_domain
+    target = var.main_mail_domain
+  }
+}
+
+resource "cloudflare_record" "srv-submissions" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "SRV"
+  name    = "_submission._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    service  = "_submission"
+    proto    = "_tcp"
+    name     = "submission-srv"
+    priority = 0
+    weight   = 0
+    port     = 465
+    # target   = "mail.${each.key}"
+    target = var.main_mail_domain
   }
 }
