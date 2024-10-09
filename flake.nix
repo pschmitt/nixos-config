@@ -8,44 +8,45 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
+    agenix = {
+      url = "github:ryantm/agenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    attic = {
+      url = "github:zhaofengli/attic";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nur.url = "github:nix-community/NUR";
-    hardware.url = "github:nixos/nixos-hardware";
-
     # flake-registry = {
     #   url = "github:NixOS/flake-registry";
     #   flake = false;
     # };
+
     # flake-utils = {
     #   url = "github:numtide/flake-utils";
     # };
 
-    # Home manager
+    flatpaks = {
+      # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
+      url = "github:GermanBread/declarative-flatpak/stable-v3";
+      # NOTE Do *not* override nixpkgs, it is not supported
+    };
+
+    hardware.url = "github:nixos/nixos-hardware";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       # url = "github:nix-community/home-manager/release-23.11";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nix-index-database = {
-      url = "github:nix-community/nix-index-database";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    agenix = {
-      url = "github:ryantm/agenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    sops-nix = {
-      url = "github:Mic92/sops-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
+    # Hyprland and cie {{{
     hyprland = {
       type = "git";
       url = "https://github.com/hyprwm/Hyprland";
@@ -70,46 +71,27 @@
       url = "github:hyprwm/xdg-desktop-portal-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    # hyprland end }}}
+
+    neovim-nightly = {
+      url = "github:nix-community/neovim-nightly-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     nixpkgs-wayland = {
       url = "github:nix-community/nixpkgs-wayland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    wezterm = {
-      url = "github:wez/wezterm?dir=nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    nur.url = "github:nix-community/NUR";
 
-    flatpaks = {
-      # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
-      url = "github:GermanBread/declarative-flatpak/stable-v3";
-      # NOTE Do *not* override nixpkgs, it is not supported
-    };
-
-    neovim-nightly-overlay = {
-      url = "github:nix-community/neovim-nightly-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    attic = {
-      url = "github:zhaofengli/attic";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # zjstatus = {
-    #   url = "github:dj95/zjstatus";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
-    srvos = {
-      url = "github:nix-community/srvos";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    nix-snapd = {
-      url = "github:io12/nix-snapd";
-      # url = "/etc/nixos/nix-snapd.git";
+    pre-commit-hooks = {
+      url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -118,10 +100,31 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    pre-commit-hooks = {
-      url = "github:cachix/pre-commit-hooks.nix";
+    snapd = {
+      url = "github:io12/nix-snapd";
+      # url = "/etc/nixos/nix-snapd.git";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    srvos = {
+      url = "github:nix-community/srvos";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    wezterm = {
+      url = "github:wez/wezterm?dir=nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    # zjstatus = {
+    #   url = "github:dj95/zjstatus";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
   };
 
   outputs =
@@ -132,10 +135,10 @@
       flatpaks,
       home-manager,
       nix-index-database,
-      nix-snapd,
       nixpkgs,
       nur,
       simple-nixos-mailserver,
+      snapd,
       sops-nix,
       srvos,
       ...
@@ -176,7 +179,7 @@
               simple-nixos-mailserver.nixosModule
               srvos.nixosModules.mixins-terminfo
             ]
-            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ nix-snapd.nixosModules.default ];
+            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ snapd.nixosModules.default ];
         };
     in
     {
