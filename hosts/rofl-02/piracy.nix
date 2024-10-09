@@ -39,6 +39,13 @@ let
         "sonarr.${config.networking.hostName}.brkn.lol"
       ];
     };
+    tdarr = {
+      port = 8265;
+      hosts = [
+        "tdarr.brkn.lol"
+        "tdarr.${config.networking.hostName}.brkn.lol"
+      ];
+    };
     transmission = {
       port = 9091;
       hosts = [
