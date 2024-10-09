@@ -21,6 +21,15 @@ let
         "tv.heimat.dev"
       ];
     };
+    podsync = {
+      port = 7637;
+      hosts = [
+        "podcasts.brkn.lol"
+        "podsync.brkn.lol"
+        "podsync.${config.networking.hostName}.brkn.lol"
+        "podsync.${config.networking.hostName}.heimat.dev"
+      ];
+    };
     radarr = {
       port = 7878;
       hosts = [
@@ -67,6 +76,8 @@ let
         proxyPass = "http://127.0.0.1:${toString service.port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
+        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+        acmeRoot = null;
       };
     };
   };
