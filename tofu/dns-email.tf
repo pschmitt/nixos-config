@@ -123,6 +123,17 @@ resource "cloudflare_record" "autoconfig" {
   comment = var.dns_email_comment
 }
 
+resource "cloudflare_record" "autoconfigure" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "A"
+  name    = "autoconfigure"
+  value   = oci_core_instance.oci_01.public_ip
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
 resource "cloudflare_record" "srv-autodiscover" {
   for_each = data.cloudflare_zone.zones
 
@@ -140,7 +151,7 @@ resource "cloudflare_record" "srv-autodiscover" {
     weight   = 0
     port     = 443
     # target   = "mail.${each.key}"
-    target = var.main_mail_domain
+    target = "autoconfig.brkn.lol"
   }
 }
 
