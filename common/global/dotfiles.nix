@@ -43,6 +43,12 @@
       # disable confirmation when killing pane
       unbind x
       bind x kill-pane
+
+      # Select next/previous pane
+      unbind Tab
+      bind Tab select-pane -t:.+
+      unbind BTab
+      bind BTab select-pane -t:.-
     '';
     plugins = with pkgs.tmuxPlugins; [
       catppuccin
