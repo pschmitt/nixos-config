@@ -146,9 +146,9 @@ resource "cloudflare_record" "srv-imap" { # starttls
   comment = var.dns_email_comment
 
   data {
-    service  = "_imaps"
+    service  = "_imap"
     proto    = "_tcp"
-    name     = "imaps-srv"
+    name     = "imap-srv"
     priority = 0
     weight   = 0
     port     = 143
@@ -225,14 +225,14 @@ resource "cloudflare_record" "srv-submissions" {
 
   zone_id = each.value.id
   type    = "SRV"
-  name    = "_submission._tcp"
+  name    = "_submissions._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
   data {
-    service  = "_submission"
+    service  = "_submissions"
     proto    = "_tcp"
-    name     = "submission-srv"
+    name     = "submissions-srv"
     priority = 0
     weight   = 0
     port     = 465
