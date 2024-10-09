@@ -240,3 +240,26 @@ resource "cloudflare_record" "srv-submissions" {
     target = var.main_mail_domain
   }
 }
+
+# cnames
+resource "cloudflare_record" "cname-smtp" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "CNAME"
+  name    = "smtp"
+  value   = var.main_mail_domain
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_record" "cname-imap" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "CNAME"
+  name    = "imap"
+  value   = var.main_mail_domain
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
