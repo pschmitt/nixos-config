@@ -104,6 +104,17 @@ resource "cloudflare_record" "mailconf" {
   comment = var.dns_email_comment
 }
 
+resource "cloudflare_record" "autoconfig" {
+  for_each = data.cloudflare_zone.zones
+
+  zone_id = each.value.id
+  type    = "A"
+  name    = "autoconfig"
+  value   = oci_core_instance.oci_01.public_ip
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
 resource "cloudflare_record" "srv-autodiscover" {
   for_each = data.cloudflare_zone.zones
 
