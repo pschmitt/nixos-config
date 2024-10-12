@@ -114,6 +114,11 @@
 
     intel-gpu-tools
     piper # gui for libratbag
+
+    # qrcode create/read
+    qrencode
+    termimage # for displaying the qrcode in cli
+    zbar # provides zabarimg, for reading
   ];
 }
 
