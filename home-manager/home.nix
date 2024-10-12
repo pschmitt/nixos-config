@@ -82,7 +82,7 @@
 
     # devel
     android-tools
-    # ansible
+    ansible
     codespell
     flarectl
     openssl
