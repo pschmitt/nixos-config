@@ -60,6 +60,22 @@ resource "cloudflare_record" "mmonit-heimat-dev" {
   value   = "mmonit.oci-03.heimat.dev"
 }
 
+resource "cloudflare_record" "hc-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "hc"
+  type    = "A"
+  ttl     = 3600
+  value   = oci_core_instance.oci_01.public_ip
+}
+
+resource "cloudflare_record" "healthchecks-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "healthchecks"
+  type    = "A"
+  ttl     = 3600
+  value   = oci_core_instance.oci_01.public_ip
+}
+
 resource "cloudflare_record" "immich-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "immich"
