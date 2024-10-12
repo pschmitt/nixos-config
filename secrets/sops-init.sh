@@ -146,7 +146,7 @@ main() {
   # Append dummy secrets
   cleartext=$(yq -er '
     .mail.gmail = "changeme" |
-    .mail.heimat-dev = "changeme"
+    .mail.brkn-lol = "changeme"
     ' <<< "$cleartext")
 
   # TODO --filename-override is not supported in sops 3.8.1
