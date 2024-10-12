@@ -34,6 +34,7 @@ let
     };
     nextcloud = {
       port = 63982;
+      tls = true;
       hosts = [
         "c.brkn.lol"
         "nextcloud.brkn.lol"
@@ -95,7 +96,7 @@ let
       acmeRoot = null;
       forceSSL = true;
       locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString service.port}";
+        proxyPass = "http${if service.tls or false then "s" else ""}://127.0.0.1:${toString service.port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
       };
