@@ -32,6 +32,15 @@ let
         "tv.heimat.dev"
       ];
     };
+    nextcloud = {
+      port = 63982;
+      hosts = [
+        "c.brkn.lol"
+        "nextcloud.brkn.lol"
+        "c.${config.networking.hostName}.brkn.lol"
+        "nextcloud.${config.networking.hostName}.brkn.lol"
+      ];
+    };
     podsync = {
       port = 7637;
       hosts = [
