@@ -3,9 +3,11 @@
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets."mail/brkn-lol" = {
       sopsFile = config.custom.sopsFile;
+      owner = config.custom.username;
     };
     sops.secrets."mail/gmail" = {
       sopsFile = config.custom.sopsFile;
+      owner = config.custom.username;
     };
 
     programs.msmtp = {
