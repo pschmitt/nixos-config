@@ -18,13 +18,13 @@
       };
       accounts = {
         default = {
-          host = "mail.heimat.dev";
+          host = "mail.brkn.lol";
           port = 587;
           tls_starttls = true;
           tls_certcheck = false;
-          from = "${config.networking.hostName}@heimat.dev";
-          user = "${config.networking.hostName}@heimat.dev";
-          passwordeval = "cat ${config.sops.secrets."mail/heimat-dev".path}";
+          from = "${config.networking.hostName}@brkn.lol";
+          user = "${config.networking.hostName}@brkn.lol";
+          passwordeval = "cat ${config.sops.secrets."mail/brkn-lol".path}";
         };
         gmail = {
           host = "smtp.gmail.com";
