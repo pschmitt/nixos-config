@@ -18,7 +18,7 @@
         "fnuc.brkn.lol"
         "fnuc.nb.brkn.lol"
         "fnuc.heimat.dev"
-        "fnuc-ts.heimat.dev"
+        "fnuc.ts.brkn.lol"
         "fnuc.snake-eagle.ts.net"
         "fnuc.netbird.cloud"
       ];
@@ -30,7 +30,7 @@
         "fnuc.brkn.lol"
         "fnuc.nb.brkn.lol"
         "fnuc.heimat.dev"
-        "fnuc-ts.heimat.dev"
+        "fnuc.ts.brkn.lol"
         "fnuc.snake-eagle.ts.net"
         "fnuc.netbird.cloud"
       ];
@@ -42,7 +42,7 @@
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
         "rofl-02.heimat.dev"
-        "rofl-02-ts.heimat.dev"
+        "rofl-02.ts.brkn.lol"
         "rofl-02.snake-eagle.ts.net"
         "rofl-02.netbird.cloud"
       ];
@@ -54,7 +54,7 @@
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
         "rofl-02.heimat.dev"
-        "rofl-02-ts.heimat.dev"
+        "rofl-02.ts.brkn.lol"
         "rofl-02.snake-eagle.ts.net"
         "rofl-02.netbird.cloud"
       ];
@@ -66,7 +66,7 @@
         "rofl-03.brkn.lol"
         "rofl-03.nb.brkn.lol"
         "rofl-03.heimat.dev"
-        "rofl-03-ts.heimat.dev"
+        "rofl-03.ts.brkn.lol"
         "rofl-03.snake-eagle.ts.net"
         "rofl-03.netbird.cloud"
       ];
@@ -78,7 +78,7 @@
         "rofl-03.brkn.lol"
         "rofl-03.nb.brkn.lol"
         "rofl-03.heimat.dev"
-        "rofl-03-ts.heimat.dev"
+        "rofl-03.ts.brkn.lol"
         "rofl-03.snake-eagle.ts.net"
         "rofl-03.netbird.cloud"
       ];
@@ -90,7 +90,7 @@
         "oci-03.brkn.lol"
         "oci-03.nb.brkn.lol"
         "oci-03.heimat.dev"
-        "oci-03-ts.heimat.dev"
+        "oci-03.ts.brkn.lol"
         "oci-03.snake-eagle.ts.net"
         "oci-03.netbird.cloud"
       ];
@@ -102,7 +102,7 @@
         "oci-03.brkn.lol"
         "oci-03.nb.brkn.lol"
         "oci-03.heimat.dev"
-        "oci-03-ts.heimat.dev"
+        "oci-03.ts.brkn.lol"
         "oci-03.snake-eagle.ts.net"
         "oci-03.netbird.cloud"
       ];
