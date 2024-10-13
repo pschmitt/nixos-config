@@ -55,6 +55,8 @@
         };
       in
       {
+        "mmonit.oci-03.brkn.lol" = commonConfig;
+        "mmonit.brkn.lol" = commonConfig;
         "mmonit.oci-03.heimat.dev" = commonConfig;
         "mmonit.heimat.dev" = commonConfig;
       };
