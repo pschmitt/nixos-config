@@ -57,7 +57,15 @@ resource "cloudflare_record" "mmonit-heimat-dev" {
   name    = "mmonit"
   type    = "CNAME"
   ttl     = 3600
-  value   = "mmonit.oci-03.heimat.dev"
+  value   = "mmonit.brkn.lol"
+}
+
+resource "cloudflare_record" "mmonit-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "mmonit"
+  type    = "A"
+  ttl     = 3600
+  value   = oci_core_instance.oci_03.public_ip
 }
 
 resource "cloudflare_record" "hc-brkn-lol" {
