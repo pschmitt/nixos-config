@@ -10,7 +10,6 @@
     fqdn = "mail.brkn.lol";
     domains = [
       "brkn.lol"
-      "heimat.dev"
       "pschmitt.dev"
       # "schmi.tt"
     ];
