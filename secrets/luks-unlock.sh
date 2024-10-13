@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DOMAIN="${DOMAIN:-heimat.dev}"
+DOMAIN="${DOMAIN:-brkn.lol}"
 SSH_USER="${SSH_USER:-root}"
 
 SSH_ARGS=(-tt)
