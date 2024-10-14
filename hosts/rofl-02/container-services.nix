@@ -85,6 +85,10 @@ let
         "torrent.${config.networking.hostName}.brkn.lol"
       ];
     };
+    wikijs = {
+      port = 9454;
+      hosts = [ "wiki.brkn.lol" ];
+    };
   };
 
   # Helper function to create virtual hosts for each service
