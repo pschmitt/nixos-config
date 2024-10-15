@@ -61,6 +61,7 @@
           };
           conditionalHosts = lib.mkIf (config.networking.hostName == "rofl-02") {
             "cache.brkn.lol" = generateVHost { domain = "cache.brkn.lol"; };
+            "nix-cache.brkn.lol" = generateVHost { domain = "nix-cache.brkn.lol"; };
           };
         in
         commonHosts // conditionalHosts;
