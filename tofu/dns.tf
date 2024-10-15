@@ -2,6 +2,12 @@ resource "cloudflare_account" "me" {
   name = var.cloudflare_email
 }
 
+resource "cloudflare_zone" "bergmann_schmitt_de" {
+  zone       = "bergmann-schmitt.de"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
 resource "cloudflare_zone" "brkn_lol" {
   zone       = "brkn.lol"
   plan       = "free"
