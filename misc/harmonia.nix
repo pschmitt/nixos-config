@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 {
   sops = {
     secrets = {
@@ -19,40 +19,50 @@
     };
   };
 
-  services.nginx = {
-    virtualHosts."cache.${config.networking.hostName}.nb.brkn.lol" = {
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
+  services.nginx =
+    let
+      # A function to generate the virtual host configuration
+      generateVHost =
+        {
+          domain,
+          useBasicAuth ? false,
+        }:
+        {
+          enableACME = true;
+          acmeRoot = null; # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+          forceSSL = true;
+          inherit (config.services.harmonia.settings) bind;
 
-      locations."/" = {
-        proxyPass = "http://${config.services.harmonia.settings.bind}";
-        recommendedProxySettings = true;
-        proxyWebsockets = true;
-        extraConfig = ''
-          zstd on;
-          zstd_types application/x-nix-archive;
-        '';
-      };
+          basicAuthFile = if useBasicAuth then config.sops.secrets."nix/credentials/htpasswd".path else null;
+
+          locations."/" = {
+            proxyPass = "http://${config.services.harmonia.settings.bind}";
+            recommendedProxySettings = true;
+            proxyWebsockets = true;
+            extraConfig = ''
+              zstd on;
+              zstd_types application/x-nix-archive;
+            '';
+          };
+        };
+    in
+    {
+      services.nginx.virtualHosts =
+        let
+          # Define your hostnames
+          commonHosts = {
+            "cache.${config.networking.hostName}.nb.brkn.lol" = generateVHost {
+              domain = "cache.${config.networking.hostName}.nb.brkn.lol";
+            };
+            "cache.${config.networking.hostName}.brkn.lol" = generateVHost {
+              domain = "cache.${config.networking.hostName}.brkn.lol";
+              useBasicAuth = true;
+            };
+          };
+          conditionalHosts = lib.mkIf (config.networking.hostName == "rofl-02") {
+            "cache.brkn.lol" = generateVHost { domain = "cache.brkn.lol"; };
+          };
+        in
+        commonHosts // conditionalHosts;
     };
-
-    virtualHosts."cache.${config.networking.hostName}.brkn.lol" = {
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      basicAuthFile = config.sops.secrets."nix/credentials/htpasswd".path;
-
-      locations."/" = {
-        proxyPass = "http://${config.services.harmonia.settings.bind}";
-        recommendedProxySettings = true;
-        proxyWebsockets = true;
-        extraConfig = ''
-          zstd on;
-          zstd_types application/x-nix-archive;
-        '';
-      };
-    };
-  };
 }
