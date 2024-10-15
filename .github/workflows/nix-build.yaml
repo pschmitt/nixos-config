@@ -6,7 +6,7 @@ on:
 
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
-  NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} aarch64-linux,x86_64-linux ssh-key=/home/runner/.ssh/id_ed25519 - - - - -"
+  NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} aarch64-linux,x86_64-linux /home/runner/.ssh/id_ed25519 - - - - -"
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
     # substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} https://nix-cache.heimat.dev https://nix-community.cachix.org
