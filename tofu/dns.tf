@@ -8,6 +8,12 @@ resource "cloudflare_zone" "brkn_lol" {
   account_id = cloudflare_account.me.id
 }
 
+resource "cloudflare_zone" "curl-pipe-sh" {
+  zone       = "curl-pipe.sh"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
 resource "cloudflare_zone" "heimat_dev" {
   zone       = "heimat.dev"
   plan       = "free"
@@ -16,6 +22,24 @@ resource "cloudflare_zone" "heimat_dev" {
 
 resource "cloudflare_zone" "pschmitt_dev" {
   zone       = "pschmitt.dev"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
+resource "cloudflare_zone" "ovm5_de" {
+  zone       = "ovm5.de"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
+resource "cloudflare_zone" "schmitt-co" {
+  zone       = "schmitt-co"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+}
+
+resource "cloudflare_zone" "schmi-tt" {
+  zone       = "schmi.tt"
   plan       = "free"
   account_id = cloudflare_account.me.id
 }
