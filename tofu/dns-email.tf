@@ -102,7 +102,7 @@ resource "cloudflare_record" "dmarc" {
 # Allow receiving DMARC reports for other zones/domains
 resource "cloudflare_record" "dmarc-report" {
   for_each = data.cloudflare_zone.zones
-  zone_id = cloudflare_zone.schmitt-co.id
+  zone_id = cloudflare_zone.schmitt_co.id
   type    = "TXT"
   name    = "${each.value.name}._report._dmarc"
   value   = "v=DMARC1;"
