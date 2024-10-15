@@ -9,6 +9,7 @@ let
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
   obsws-python = pkgs.python3Packages.callPackage ./obs-studio/obsws-python { };
+  myl-discovery = pkgs.python3Packages.callPackage ./myl-discovery { };
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
@@ -23,6 +24,7 @@ in
   luks-mount = pkgs.callPackage ./luks-mount { };
   luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
+  myl = pkgs.callPackage ./myl { inherit myl-discovery; };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
