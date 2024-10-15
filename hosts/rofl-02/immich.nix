@@ -5,10 +5,7 @@
   ...
 }:
 let
-  domains = [
-    "brkn.lol"
-    "heimat.dev"
-  ];
+  domains = [ config.custom.mainDomain ];
   subdomains = [
     "img"
     "immich"

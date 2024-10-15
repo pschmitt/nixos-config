@@ -95,25 +95,25 @@ let
 
     ${generateHostCheck {
       svc = "jellyfin";
-      addr = "media.brkn.lol";
+      addr = "tv.${config.custom.mainDomain}";
     }}
     ${generateHostCheck {
       svc = "nextcloud";
-      addr = "c.brkn.lol";
+      addr = "c.${config.custom.mainDomain}";
     }}
     ${generateHostCheck {
       svc = "radarr";
-      addr = "radarr.brkn.lol";
+      addr = "radarr.${config.custom.mainDomain}";
       compose_yaml = "piracy";
     }}
     ${generateHostCheck {
       svc = "sonarr";
-      addr = "sonarr.brkn.lol";
+      addr = "sonarr.${config.custom.mainDomain}";
       compose_yaml = "piracy";
     }}
     ${generateHostCheck {
       svc = "transmission";
-      addr = "to.brkn.lol";
+      addr = "to.${config.custom.mainDomain}";
       compose_yaml = "piracy";
     }}
   '';

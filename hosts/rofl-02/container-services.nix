@@ -5,89 +5,80 @@ let
     archivebox = {
       port = 27244;
       hosts = [
-        "arc.brkn.lol"
-        "archive.brkn.lol"
-        "archivebox.brkn.lol"
-        "arc.${config.networking.hostName}.brkn.lol"
-        "archive.${config.networking.hostName}.brkn.lol"
-        "archivebox.${config.networking.hostName}.brkn.lol"
+        "arc.${config.custom.mainDomain}"
+        "archive.${config.custom.mainDomain}"
+        "archivebox.${config.custom.mainDomain}"
+        "arc.${config.networking.hostName}.${config.custom.mainDomain}"
+        "archive.${config.networking.hostName}.${config.custom.mainDomain}"
+        "archivebox.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     jellyfin = {
       port = 8096;
       hosts = [
-        "jelly.${config.networking.hostName}.brkn.lol"
-        "jelly.brkn.lol"
-        "jellyfin.${config.networking.hostName}.brkn.lol"
-        "jellyfin.brkn.lol"
-        "media.heimat.dev"
-        "tv.brkn.lol"
-
-        # TODO Remove
-        "jelly.${config.networking.hostName}.heimat.dev"
-        "jelly.heimat.dev"
-        "jellyfin.${config.networking.hostName}.heimat.dev"
-        "jellyfin.heimat.dev"
-        "media.heimat.dev"
-        "tv.heimat.dev"
+        "jelly.${config.networking.hostName}.${config.custom.mainDomain}"
+        "jelly.${config.custom.mainDomain}"
+        "jellyfin.${config.networking.hostName}.${config.custom.mainDomain}"
+        "jellyfin.${config.custom.mainDomain}"
+        "media.${config.custom.mainDomain}"
+        "tv.${config.custom.mainDomain}"
       ];
     };
     nextcloud = {
       port = 63982;
       tls = true;
       hosts = [
-        "c.brkn.lol"
-        "nextcloud.brkn.lol"
-        "c.${config.networking.hostName}.brkn.lol"
-        "nextcloud.${config.networking.hostName}.brkn.lol"
+        "c.${config.custom.mainDomain}"
+        "nextcloud.${config.custom.mainDomain}"
+        "c.${config.networking.hostName}.${config.custom.mainDomain}"
+        "nextcloud.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     podsync = {
       port = 7637;
       hosts = [
-        "podcasts.brkn.lol"
-        "podsync.brkn.lol"
-        "podsync.${config.networking.hostName}.brkn.lol"
-        "podsync.${config.networking.hostName}.heimat.dev"
+        "podcasts.${config.custom.mainDomain}"
+        "podsync.${config.custom.mainDomain}"
+        "podsync.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     radarr = {
       port = 7878;
       hosts = [
-        "rdr.brkn.lol"
-        "radarr.brkn.lol"
-        "rdr.${config.networking.hostName}.brkn.lol"
-        "radarr.${config.networking.hostName}.brkn.lol"
+        "rdr.${config.custom.mainDomain}"
+        "radarr.${config.custom.mainDomain}"
+        "rdr.${config.networking.hostName}.${config.custom.mainDomain}"
+        "radarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     sonarr = {
       port = 8989;
       hosts = [
-        "snr.brkn.lol"
-        "sonarr.brkn.lol"
-        "snr.${config.networking.hostName}.brkn.lol"
-        "sonarr.${config.networking.hostName}.brkn.lol"
+        "snr.${config.custom.mainDomain}"
+        "sonarr.${config.custom.mainDomain}"
+        "snr.${config.networking.hostName}.${config.custom.mainDomain}"
+        "sonarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     tdarr = {
       port = 8265;
       hosts = [
-        "tdarr.brkn.lol"
-        "tdarr.${config.networking.hostName}.brkn.lol"
+        "tdarr.${config.custom.mainDomain}"
+        "tdarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     transmission = {
       port = 9091;
       hosts = [
-        "to.brkn.lol"
-        "torrent.brkn.lol"
-        "to.${config.networking.hostName}.brkn.lol"
-        "torrent.${config.networking.hostName}.brkn.lol"
+        "to.${config.custom.mainDomain}"
+        "torrent.${config.custom.mainDomain}"
+        "to.${config.networking.hostName}.${config.custom.mainDomain}"
+        "torrent.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
     wikijs = {
       port = 9454;
-      hosts = [ "wiki.brkn.lol" ];
+      hosts = [ "wiki.${config.custom.mainDomain}" ];
     };
   };
 

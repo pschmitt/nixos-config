@@ -5,10 +5,7 @@
   ...
 }:
 let
-  hostnames = [
-    "docspell.${config.networking.hostName}.brkn.lol"
-    "docspell.${config.networking.hostName}.heimat.dev"
-  ];
+  hostnames = [ "docspell.${config.networking.hostName}.${config.custom.mainDomain}" ];
 in
 {
   # https://docspell.org/docs/install/nix/
