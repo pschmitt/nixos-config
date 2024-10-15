@@ -96,9 +96,16 @@ resource "cloudflare_record" "dmarc" {
   comment = var.dns_email_comment
 }
 
-# TODO add TXT record to schmitt-co zone
-# TXT "v=DMARC1;" ZONE_NAME._report._dmarc.schmitt.co
-# eg: brkn.lol._report._dmarc.schmitt.co
+# Allow receiving DMARC reports for other zones/domains
+resource "cloudflare_record" "dmarc-report" {
+  for_each = data.cloudflare_zone.zones
+  zone_id = cloudflare_zone.schmitt-co.id
+  type    = "TXT"
+  name    = "${each.value.zone}._report._dmarc.schmitt.co"
+  value   = "v=DMARC1;"
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
 
 resource "cloudflare_record" "dkim" {
   for_each = data.cloudflare_zone.zones
