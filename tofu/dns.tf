@@ -32,8 +32,8 @@ resource "cloudflare_zone" "ovm5_de" {
   account_id = cloudflare_account.me.id
 }
 
-resource "cloudflare_zone" "schmitt-co" {
-  zone       = "schmitt-co"
+resource "cloudflare_zone" "schmitt_co" {
+  zone       = "schmitt.co"
   plan       = "free"
   account_id = cloudflare_account.me.id
 }
