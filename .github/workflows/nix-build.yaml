@@ -191,7 +191,7 @@ jobs:
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             --impure "$FLAKE_PATH"
           tree result
-          nix copy --impure --to "$NIX_BUILDER" "$FLAKE_PATH"
+          nix copy --impure --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
 
   build-hosts-x86_64:
     needs:
