@@ -13,9 +13,9 @@ variable "domains" {
     "brkn.lol" = {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
     }
-    "schmi.tt" = {
-      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
-    }
+    # "schmi.tt" = {
+    #   dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+    # }
   }
 }
 
