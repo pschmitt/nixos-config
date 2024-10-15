@@ -13,6 +13,9 @@ variable "domains" {
     "brkn.lol" = {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
     }
+    "schmi.tt" = {
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+    }
   }
 }
 
@@ -101,7 +104,7 @@ resource "cloudflare_record" "dmarc-report" {
   for_each = data.cloudflare_zone.zones
   zone_id = cloudflare_zone.schmitt-co.id
   type    = "TXT"
-  name    = "${each.value.zone}._report._dmarc.schmitt.co"
+  name    = "${each.value.name}._report._dmarc"
   value   = "v=DMARC1;"
   ttl     = 3600
   comment = var.dns_email_comment
