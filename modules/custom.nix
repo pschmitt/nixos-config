@@ -53,6 +53,12 @@
       description = "Main user's prompt color";
     };
 
+    custom.mainDomain = lib.mkOption {
+      type = lib.types.str;
+      default = "brkn.lol";
+      description = "Main domain";
+    };
+
     custom.server = lib.mkOption {
       type = lib.types.bool;
       default = false;

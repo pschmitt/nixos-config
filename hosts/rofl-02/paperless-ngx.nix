@@ -1,9 +1,6 @@
 { config, lib, ... }:
 let
-  hostnames = [
-    "paperless.${config.networking.hostName}.brkn.lol"
-    "paperless.${config.networking.hostName}.heimat.dev"
-  ];
+  hostnames = [ "paperless.${config.networking.hostName}.${config.custom.mainDomain}" ];
   hostnamesWithSchema = map (host: "https://${host}") hostnames;
 in
 {
