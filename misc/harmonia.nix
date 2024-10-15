@@ -31,7 +31,6 @@
           enableACME = true;
           acmeRoot = null; # FIXME https://github.com/NixOS/nixpkgs/issues/210807
           forceSSL = true;
-          inherit (config.services.harmonia.settings) bind;
 
           basicAuthFile = if useBasicAuth then config.sops.secrets."nix/credentials/htpasswd".path else null;
 
@@ -47,9 +46,8 @@
         };
     in
     {
-      services.nginx.virtualHosts =
+      virtualHosts =
         let
-          # Define your hostnames
           commonHosts = {
             "cache.${config.networking.hostName}.nb.brkn.lol" = generateVHost {
               domain = "cache.${config.networking.hostName}.nb.brkn.lol";
