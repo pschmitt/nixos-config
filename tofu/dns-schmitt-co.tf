@@ -57,7 +57,7 @@ resource "cloudflare_record" "sites_schmitt_co" {
 # https://apps.google.com/supportwidget/articlehome?hl=en&article_url=https%3A%2F%2Fsupport.google.com%2Fa%2Fanswer%2F174125%3Fhl%3Den&assistant_event=welcome&assistant_id=gsuitemxrecords-gixvmm&product_context=174125&product_name=UnuFlow&trigger_context=a
 
 resource "cloudflare_record" "schmitt_co_mx" {
-  zone_id = cloudflare_zone.schmitt_co.id
+  zone_id  = cloudflare_zone.schmitt_co.id
   name     = "@"
   content  = "smtp.google.com"
   type     = "MX"
