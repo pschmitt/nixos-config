@@ -1,6 +1,6 @@
 resource "cloudflare_record" "schmitt_co" {
   zone_id = cloudflare_zone.schmitt_co.id
-  name    = "@"
+  name    = "schmitt.co"
   value   = oci_core_instance.oci_01.public_ip
   type    = "A"
   proxied = true
@@ -54,7 +54,8 @@ resource "cloudflare_record" "sites_schmitt_co" {
 
 resource "cloudflare_record" "schmitt_co_mx_1" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  # FIXME shouldn't this be "@"?
+  name     = "schmitt.co"
   value    = "aspmx3.googlemail.com"
   type     = "MX"
   priority = 10
@@ -64,7 +65,7 @@ resource "cloudflare_record" "schmitt_co_mx_1" {
 
 resource "cloudflare_record" "schmitt_co_mx_2" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "aspmx2.googlemail.com"
   type     = "MX"
   priority = 10
@@ -74,7 +75,7 @@ resource "cloudflare_record" "schmitt_co_mx_2" {
 
 resource "cloudflare_record" "schmitt_co_mx_3" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "alt2.aspmx.l.google.com"
   type     = "MX"
   priority = 5
@@ -84,7 +85,7 @@ resource "cloudflare_record" "schmitt_co_mx_3" {
 
 resource "cloudflare_record" "schmitt_co_mx_4" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "alt1.aspmx.l.google.com"
   type     = "MX"
   priority = 5
@@ -94,7 +95,7 @@ resource "cloudflare_record" "schmitt_co_mx_4" {
 
 resource "cloudflare_record" "schmitt_co_mx_5" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "aspmx.l.google.com"
   type     = "MX"
   priority = 1
@@ -104,7 +105,7 @@ resource "cloudflare_record" "schmitt_co_mx_5" {
 
 resource "cloudflare_record" "schmitt_co_mx_6" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "aspmx5.googlemail.com"
   type     = "MX"
   priority = 10
@@ -114,7 +115,7 @@ resource "cloudflare_record" "schmitt_co_mx_6" {
 
 resource "cloudflare_record" "schmitt_co_mx_7" {
   zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
+  name     = "schmitt.co"
   value    = "aspmx4.googlemail.com"
   type     = "MX"
   priority = 10
@@ -160,7 +161,7 @@ resource "cloudflare_record" "schmitt_co_keybase_txt" {
 
 resource "cloudflare_record" "spf_schmitt_co_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
-  name    = "@"
+  name    = "schmitt.co"
   value   = "v=spf1 include:_spf.google.com ~all"
   type    = "TXT"
   proxied = false
@@ -169,7 +170,7 @@ resource "cloudflare_record" "spf_schmitt_co_txt" {
 
 resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
-  name    = "@"
+  name    = "schmitt.co"
   value   = "google-site-verification=kECtmN9Ek7N1pyS7IwQEkMSD8Y8RknZ2yElqcM_q5LA"
   type    = "TXT"
   proxied = false
@@ -181,6 +182,7 @@ resource "cloudflare_record" "dmarc_report_schmi_tt_txt" {
   name    = "schmi.tt._report._dmarc"
   value   = "v=DMARC1;"
   type    = "TXT"
+  comment = "Allow receiving DMARC reports for schmi.tt"
   proxied = false
   ttl     = 1
 }
