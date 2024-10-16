@@ -1,17 +1,10 @@
 {
   lib,
-  buildPythonPackage,
+  python3,
   fetchPypi,
-  setuptools,
-  setuptools-scm,
-  dnspython,
-  exchangelib,
-  requests,
-  rich,
-  xmltodict,
 }:
 
-buildPythonPackage rec {
+python3.pkgs.buildPythonApplication rec {
   pname = "myl-discovery";
   version = "0.5.9";
   pyproject = true;
@@ -23,11 +16,11 @@ buildPythonPackage rec {
   };
 
   build-system = [
-    setuptools
-    setuptools-scm
+    python3.pkgs.setuptools
+    python3.pkgs.setuptools-scm
   ];
 
-  dependencies = [
+  dependencies = with python3.pkgs; [
     dnspython
     exchangelib
     requests
@@ -42,5 +35,6 @@ buildPythonPackage rec {
     homepage = "https://pypi.org/project/myl-discovery/";
     license = lib.licenses.gpl3Only;
     maintainers = with lib.maintainers; [ pschmitt ];
+    mainProgram = "myl-discovery";
   };
 }

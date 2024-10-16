@@ -25,6 +25,7 @@ in
   luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
   myl = pkgs.callPackage ./myl { inherit myl-discovery; };
+  myl-discovery = pkgs.callPackage ./myl-discovery { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
