@@ -1,21 +1,34 @@
 variable "domains" {
   type = map(object({
     dkim_public_key = string
+    cloudflare_mx   = bool
   }))
 
   default = {
     "pschmitt.dev" = {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAz2Yz+Sxm+fvWjnQyTpMRJFUUBBjBYENNWB/+rlQ25J9RJxWwSyIhRJQdcGquXARoKf9WT31KgbxglL4eUcRjWvGRP6Kz9e7bvseT1y4HR4lx0/yCzt4BmzsdX0BBGUL/PvWLFr0p/8hC6KNGzDpHgSAWXS8hF1yIyAe5yMnVzSogJo+cJTc+nmcH8g+j86naXmtRKXxuL8GfM97dpVwflulfUPWMhAoeTUzpUU90t45B0tz7GOCRXM4unIY0ZJDnboXlSX92vFTiVRvzgm5eBE+qUkKBZKHTcNhxZizQGZAULVhGNs3fsP8jl7ni2Pt9fEoGIzmAfQc/FYmVQtYQ5JZhGgk8SjDP8D7KzjR4Eg0kQN+oRuhDLnGrXwyJFc5bWiGt8+a5Fiy2sNAzEn8iIeucan9HFrB1oeLnvIwQMQXXhNsqPQjwmC7/2CNbaENQFFXTmZSsdY0UPkc7jBdgvO3mmokehVtAm3rGJJi/DjNDMp9a42tvvHQHHNcbdmEO3xEUFxfLSGY0dMGlWm0wGzhw6Uu6DjG3Sc5QO3AHY3Q4L4BnEIZZABw+aC1yFKDpTUbeUAhsJirH3NUFOAK4OB4CNiV4RisTAkyt7xN2P4VuAivSUY5tW88Dp76BDuwAJNa5e6O8Gjr0Qi8KeKSr9/v6ee/M5tXq59nfs/nUSgMCAwEAAQ=="
+      cloudflare_mx = false
     },
     "heimat.dev" = {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa;p=MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAxFeSdBleS75MJrFYl9HZ1aR6zOVBvRdhY4PLtCS02Ed9oLenFMHwQ5D4s7Ddq6zTHu0MRFprzJWMYcETsM0MEER5HUDuKPkpqChTLLQTqMJ4/pjleHj/zRr4GNIkJhp8xZNAcsNCDaDlfzzoY1c7euZj8BhYR8oc/0702408SYKgLq2w8fj/jVHaDcLoesYiNXlJdI4pN99lV/pv9usuMkxdwiADZl9N+PfG8Jm/ZFpkhm9qyECDLnp/G4MOr6/BzouP0ACjiYofsH8fUzXFclS3yGVv4Czd8vy4GlEOqTas6FrVtOKxJ6oFn/y0yfkwKeDmtdg76pHHB2aCTFPrajEfQ9jveEcbK7oladtsjJSJYk2Q4KwSXY0wc5icJjUWHbq5Q3rVH+BEqOGYFEJ6KKq75bQ2/SrQgwnbgKIg8uYX/4tl5ltEjYgiprUPNjxLgrQbHL+CWu9+/DMaaELi0PQ42NQc6yd1WxkMxFlKmYo3AcERn+okq6ldlF/DHrKptgrgFJTkcskdxhIro4W7vyP0nm3bZol4maCmIjxBej5ve/M1m/sVTv8w1FKSSlYe2IGGRFgQJ1dOdqehRQ5przXep2Lzn0oZ8a6fT+WfZOjHGD0d7SlXwyizq8JP9gVpDcz2mX51MaUXv+FXLztXqm9Ti6rW8RwcxeyogYrAY1sCAwEAAQ=="
+      cloudflare_mx = false
     },
     "brkn.lol" = {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      cloudflare_mx = false
+    },
+    "curl-pipe.sh" = {
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      cloudflare_mx = true
+    },
+    "schmi.tt" = {
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      cloudflare_mx = true
+    },
+    "ovm5.de" = {
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      cloudflare_mx = true
     }
-    # "schmi.tt" = {
-    #   dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
-    # }
   }
 }
 
@@ -44,10 +57,23 @@ variable "main_mail_domain" {
   default = "mail.brkn.lol"
 }
 
+resource "cloudflare_email_routing_settings" "cf_mail_routing" {
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
+
+  zone_id = data.cloudflare_zone.zones[each.key].id
+  enabled = true
+}
+
 resource "cloudflare_record" "mx" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
+  }
 
   zone_id = each.value.id
+  # zone_id = data.cloudflare_zone.zones[each.key].id
   name    = "@"
   type    = "MX"
   ttl     = 3600
@@ -58,7 +84,10 @@ resource "cloudflare_record" "mx" {
 }
 
 resource "cloudflare_record" "mail" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   name    = "mail"
@@ -69,7 +98,10 @@ resource "cloudflare_record" "mail" {
 }
 
 resource "cloudflare_record" "spf" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "TXT"
@@ -82,7 +114,10 @@ resource "cloudflare_record" "spf" {
 
 # https://docker-mailserver.github.io/docker-mailserver/latest/config/best-practices/dkim_dmarc_spf/#dmarc
 resource "cloudflare_record" "dmarc" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "TXT"
@@ -101,7 +136,10 @@ resource "cloudflare_record" "dmarc" {
 
 # Allow receiving DMARC reports for other zones/domains
 resource "cloudflare_record" "dmarc-report" {
-  for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
+  # for_each = data.cloudflare_zone.zones
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "TXT"
   name    = "${each.value.name}._report._dmarc"
@@ -111,7 +149,10 @@ resource "cloudflare_record" "dmarc-report" {
 }
 
 resource "cloudflare_record" "dkim" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "TXT"
@@ -122,7 +163,10 @@ resource "cloudflare_record" "dkim" {
 }
 
 resource "cloudflare_record" "mailconf" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "TXT"
@@ -133,7 +177,10 @@ resource "cloudflare_record" "mailconf" {
 }
 
 resource "cloudflare_record" "autoconfig" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "A"
@@ -144,7 +191,10 @@ resource "cloudflare_record" "autoconfig" {
 }
 
 resource "cloudflare_record" "autoconfigure" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "A"
@@ -155,7 +205,10 @@ resource "cloudflare_record" "autoconfigure" {
 }
 
 resource "cloudflare_record" "srv-autodiscover" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "SRV"
@@ -176,7 +229,10 @@ resource "cloudflare_record" "srv-autodiscover" {
 }
 
 resource "cloudflare_record" "srv-imap" { # starttls
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "SRV"
@@ -197,7 +253,10 @@ resource "cloudflare_record" "srv-imap" { # starttls
 }
 
 resource "cloudflare_record" "srv-imaps" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "SRV"
@@ -218,7 +277,10 @@ resource "cloudflare_record" "srv-imaps" {
 }
 
 # resource "cloudflare_record" "srv-pop3s" {
-#   for_each = data.cloudflare_zone.zones
+#   # for_each = data.cloudflare_zone.zones
+#   for_each = {
+#     for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+#   }
 #
 #   zone_id = each.value.id
 #   type    = "SRV"
@@ -239,7 +301,10 @@ resource "cloudflare_record" "srv-imaps" {
 # }
 
 resource "cloudflare_record" "srv-submission" { # starttls
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "SRV"
@@ -260,7 +325,10 @@ resource "cloudflare_record" "srv-submission" { # starttls
 }
 
 resource "cloudflare_record" "srv-submissions" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "SRV"
@@ -282,7 +350,10 @@ resource "cloudflare_record" "srv-submissions" {
 
 # cnames
 resource "cloudflare_record" "cname-smtp" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "CNAME"
@@ -293,7 +364,10 @@ resource "cloudflare_record" "cname-smtp" {
 }
 
 resource "cloudflare_record" "cname-imap" {
-  for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zone.zones
+  for_each = {
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+  }
 
   zone_id = each.value.id
   type    = "CNAME"
