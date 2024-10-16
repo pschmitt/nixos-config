@@ -50,7 +50,7 @@ variable "dmarc_report_email" {
 }
 
 variable "main_mail_domain" {
-  description = "Mail mail domain"
+  description = "Main mail domain"
   type        = string
   # NOTE we use mail.brkn.lol here since this the only domain we have a reverse
   # DNS entry for
@@ -61,19 +61,18 @@ resource "cloudflare_email_routing_settings" "cf_mail_routing" {
   for_each = {
     for domain, config in var.domains : domain => config if config.cloudflare_mx == true
   }
-
   zone_id = data.cloudflare_zone.zones[each.key].id
+  # FIXME Having this set to false raises an error when applying. Let's just not
+  # create a resource when cloudflare_mx is false.
   enabled = true
 }
 
 resource "cloudflare_record" "mx" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
     for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
-  # zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   name    = "@"
   type    = "MX"
   ttl     = 3600
@@ -84,12 +83,11 @@ resource "cloudflare_record" "mx" {
 }
 
 resource "cloudflare_record" "mail" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   name    = "mail"
   value   = oci_core_instance.oci_01.public_ip
   type    = "A"
@@ -98,12 +96,11 @@ resource "cloudflare_record" "mail" {
 }
 
 resource "cloudflare_record" "spf" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "TXT"
   name    = "@"
   # value   = "v=spf1 a:mail.${each.key} -all"
@@ -116,10 +113,10 @@ resource "cloudflare_record" "spf" {
 resource "cloudflare_record" "dmarc" {
   # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "TXT"
   name    = "_dmarc"
   # Low
@@ -137,24 +134,22 @@ resource "cloudflare_record" "dmarc" {
 # Allow receiving DMARC reports for other zones/domains
 resource "cloudflare_record" "dmarc-report" {
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
-  # for_each = data.cloudflare_zone.zones
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "TXT"
-  name    = "${each.value.name}._report._dmarc"
+  name    = "${each.key}._report._dmarc"
   value   = "v=DMARC1;"
   ttl     = 3600
   comment = var.dns_email_comment
 }
 
 resource "cloudflare_record" "dkim" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "TXT"
   name    = "mail._domainkey"
   value   = var.domains[each.key].dkim_public_key
@@ -163,12 +158,11 @@ resource "cloudflare_record" "dkim" {
 }
 
 resource "cloudflare_record" "mailconf" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "TXT"
   name    = "@"
   value   = "mailconf=https://autoconfig.${each.key}/mail/config-v1.1.xml"
@@ -177,12 +171,11 @@ resource "cloudflare_record" "mailconf" {
 }
 
 resource "cloudflare_record" "autoconfig" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "A"
   name    = "autoconfig"
   value   = oci_core_instance.oci_01.public_ip
@@ -191,12 +184,11 @@ resource "cloudflare_record" "autoconfig" {
 }
 
 resource "cloudflare_record" "autoconfigure" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "A"
   name    = "autoconfigure"
   value   = oci_core_instance.oci_01.public_ip
@@ -205,12 +197,11 @@ resource "cloudflare_record" "autoconfigure" {
 }
 
 resource "cloudflare_record" "srv-autodiscover" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "SRV"
   name    = "_autodiscover._tcp"
   ttl     = 3600
@@ -229,12 +220,11 @@ resource "cloudflare_record" "srv-autodiscover" {
 }
 
 resource "cloudflare_record" "srv-imap" { # starttls
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "SRV"
   name    = "_imap._tcp"
   ttl     = 3600
@@ -253,12 +243,11 @@ resource "cloudflare_record" "srv-imap" { # starttls
 }
 
 resource "cloudflare_record" "srv-imaps" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "SRV"
   name    = "_imaps._tcp"
   ttl     = 3600
@@ -277,12 +266,11 @@ resource "cloudflare_record" "srv-imaps" {
 }
 
 # resource "cloudflare_record" "srv-pop3s" {
-#   # for_each = data.cloudflare_zone.zones
 #   for_each = {
-#     for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+#     for domain, config in var.domains : domain => config if config.cloudflare_mx == false
 #   }
 #
-#   zone_id = each.value.id
+#   zone_id = data.cloudflare_zone.zones[each.key].id
 #   type    = "SRV"
 #   name    = "_pop3s._tcp"
 #   ttl     = 3600
@@ -301,12 +289,11 @@ resource "cloudflare_record" "srv-imaps" {
 # }
 
 resource "cloudflare_record" "srv-submission" { # starttls
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "SRV"
   name    = "_submission._tcp"
   ttl     = 3600
@@ -325,12 +312,11 @@ resource "cloudflare_record" "srv-submission" { # starttls
 }
 
 resource "cloudflare_record" "srv-submissions" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "SRV"
   name    = "_submissions._tcp"
   ttl     = 3600
@@ -350,12 +336,11 @@ resource "cloudflare_record" "srv-submissions" {
 
 # cnames
 resource "cloudflare_record" "cname-smtp" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "CNAME"
   name    = "smtp"
   value   = var.main_mail_domain
@@ -364,12 +349,11 @@ resource "cloudflare_record" "cname-smtp" {
 }
 
 resource "cloudflare_record" "cname-imap" {
-  # for_each = data.cloudflare_zone.zones
   for_each = {
-    for domain, config in var.domains : domain => config if config.cloudflare_mx == true
+    for domain, config in var.domains : domain => config if config.cloudflare_mx == false
   }
 
-  zone_id = each.value.id
+  zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "CNAME"
   name    = "imap"
   value   = var.main_mail_domain
