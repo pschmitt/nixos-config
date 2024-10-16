@@ -142,7 +142,7 @@ resource "cloudflare_record" "schmitt_co_mx_7" {
 
 resource "cloudflare_record" "schmitt_co_keybase_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
-  name    = "_keybase.schmitt.co"
+  name    = "_keybase"
   value   = "keybase-site-verification=boXlqI7ZwmmPcnNYS3kgA-rAQ_99IOkvEgU6bHbjTOQ"
   type    = "TXT"
   proxied = false
