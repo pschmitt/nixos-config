@@ -52,6 +52,10 @@ resource "cloudflare_record" "sites_schmitt_co" {
   ttl     = 1
 }
 
+# FIXME We might be able to reduce the amount of MX record to a single one!
+# MX Prio 1 -> SMTP.GOOGLE.COM
+# https://apps.google.com/supportwidget/articlehome?hl=en&article_url=https%3A%2F%2Fsupport.google.com%2Fa%2Fanswer%2F174125%3Fhl%3Den&assistant_event=welcome&assistant_id=gsuitemxrecords-gixvmm&product_context=174125&product_name=UnuFlow&trigger_context=a
+
 resource "cloudflare_record" "schmitt_co_mx_1" {
   zone_id  = cloudflare_zone.schmitt_co.id
   # FIXME shouldn't this be "@"?
