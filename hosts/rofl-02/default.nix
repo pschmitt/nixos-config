@@ -24,6 +24,7 @@
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
+    ./redirects.nix
   ];
 
   # Enable networking
