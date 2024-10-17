@@ -60,4 +60,7 @@ in
   # Lab
   pyghmi = pkgs.callPackage ./pyghmi { };
   vdhcoapp = pkgs.callPackage ./vdhcoapp { };
+
+  # data
+  pschmitt-dev = pkgs.callPackage ./pschmitt-dev { };
 }
