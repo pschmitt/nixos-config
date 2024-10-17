@@ -14,7 +14,7 @@ variable "domains" {
       cloudflare_mx   = false
     },
     "brkn.lol" = {
-      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzYK3JqwjHHIhk9OxYBE/FHIZxb7SkzZQLMx8XboOtoEAMsNJ99iKJ0mvywtadIt1giywb/q5xaFFqjsByWxA3vBIdqxTXSjNtTqV93qfq8Lw5YTwk7BGXZoVmMblg9aYOJRkF4LhH0uxOURnQz+Lhoj/cz4bnehfHEE/qii1cKXUhW4wTN4HypC22A3IVcNf3z+eTOcu8KPljpKARka7r0gmgPiunLpppafgbSZKtnycIvLdyTu45AD3+aTi836aZsX0vTty9wTl2JyB1buSpiq54IJyma8YSiwphCzBo4PI9OCXlIHTcuRLcU0id99BN6q3A4kE/Q85ks6DPv0dUQIDAQAB"
       cloudflare_mx   = false
     },
     "curl-pipe.sh" = {
