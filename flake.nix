@@ -125,7 +125,8 @@
 
     wezterm = {
       url = "github:wez/wezterm?dir=nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # https://github.com/NixOS/nixpkgs/issues/348832
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # zjstatus = {
