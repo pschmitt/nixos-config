@@ -28,7 +28,7 @@ in
     gitea-actions-runner.instances.main-runner = {
       enable = true;
       name = config.networking.hostName;
-      url = forgejoHostName;
+      url = config.services.forgejo.settings.server.ROOT_URL;
       tokenFile = config.sops.secrets."foregejo/runner/token".path;
       labels = [ config.networking.hostName ];
     };
