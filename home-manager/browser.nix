@@ -117,6 +117,7 @@
 
           "Bing".metaData.hidden = true;
           "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
+          "Wikipedia (en)".metaData.alias = "wiki"; # builtin engines only support specifying one additional alias
 
           "GitHub" = {
             urls = [ { template = "https://github.com/search?q={searchTerms}"; } ];
