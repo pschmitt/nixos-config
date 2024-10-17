@@ -99,7 +99,7 @@ in
     enable = true;
     # NOTE listening on "localhost" leads to immich only listening on IPv6
     host = "127.0.0.1";
-    port = 3001;
+    port = 2283;
     mediaLocation = "/mnt/data/srv/immich/media";
     package = pkgs.master.immich;
   };
