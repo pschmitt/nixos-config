@@ -19,6 +19,7 @@
     ../../misc/http.nix
     ./container-services.nix
     # ./email.nix
+    ./forgejo.nix
     ./immich.nix
     ./monit.nix
     ./nfs-server.nix
