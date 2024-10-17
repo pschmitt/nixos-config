@@ -152,7 +152,7 @@ in
             ];
             iconUpdateURL = "https://jira.gec.io/s/-8atya2/9160001/1dlckms/_/images/fav-generic.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "ji" ];
+            definedAliases = [ "jira" ];
           };
 
           "GEC Confluence" = {
