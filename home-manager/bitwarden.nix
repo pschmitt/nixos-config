@@ -19,7 +19,7 @@
           pkgs.bitwarden-cli
         ]
       }";
-      ExecStart = "/home/pschmitt/bin/zhj 'bwp sync; gec::bwp sync'";
+      ExecStart = "/home/pschmitt/bin/zhj 'bwp sync --force; gec::bwp sync --force'";
     };
 
     Install = {
