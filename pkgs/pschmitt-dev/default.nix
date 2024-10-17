@@ -4,13 +4,13 @@ with pkgs;
 
 stdenv.mkDerivation {
   pname = "pschmitt-dev";
-  version = "2024-10-17";
+  version = "2024-10-17-2";
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "pschmitt.dev";
     rev = "main";
-    sha256 = "sha256-MjXrCG1hYpSUQx8DQQX2hFv7ptdnEzP4j88lexr5a9M=";
+    hash = "sha256-N/lhS5B2Oc/tvwf/gsVQuO8OXgPriG3VeDvxkly8Zig=";
   };
 
   buildInputs = [ ];
