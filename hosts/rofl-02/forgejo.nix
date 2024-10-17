@@ -5,6 +5,8 @@ in
 {
   sops.secrets."forgejo/runner/token" = {
     sopsFile = config.custom.sopsFile;
+    # FIXME The gitea-runner is dynamic. It won't exit at build time.
+    # owner = "gitea-runner";
   };
 
   services = {
@@ -26,9 +28,13 @@ in
     };
 
     gitea-actions-runner.instances.main-runner = {
-      enable = true;
+      # TODO Enable once we figure out how to feed the credentials to the runner
+      # The service uses DynamicUser=true
+      # https://github.com/Mic92/sops-nix/issues/198
+      enable = false;
       name = config.networking.hostName;
       url = config.services.forgejo.settings.server.ROOT_URL;
+      # FIXME See comment above about DynamicUser
       tokenFile = config.sops.secrets."forgejo/runner/token".path;
       labels = [ config.networking.hostName ];
     };
