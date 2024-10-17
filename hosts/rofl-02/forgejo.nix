@@ -1,6 +1,6 @@
 { config, ... }:
 let
-  forgejoHostName = "git2.${config.custom.mainDomain}";
+  forgejoHostName = "git.${config.custom.mainDomain}";
 in
 {
   sops.secrets."forgejo/runner/token" = {
