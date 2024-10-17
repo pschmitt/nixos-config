@@ -31,8 +31,7 @@ in
       '')
       kubernetes-helm
       ipmitool
-      # FIXME ldifj is broken with python 3.12
-      # ldifj
+      ldifj
       lefthook
       lego
       httptunnel
