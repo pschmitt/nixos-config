@@ -3,7 +3,7 @@ let
   forgejoHostName = "git2.${config.custom.mainDomain}";
 in
 {
-  sops.secrets."foregejo/runner/token" = {
+  sops.secrets."forgejo/runner/token" = {
     sopsFile = config.custom.sopsFile;
   };
 
@@ -29,7 +29,7 @@ in
       enable = true;
       name = config.networking.hostName;
       url = config.services.forgejo.settings.server.ROOT_URL;
-      tokenFile = config.sops.secrets."foregejo/runner/token".path;
+      tokenFile = config.sops.secrets."forgejo/runner/token".path;
       labels = [ config.networking.hostName ];
     };
 
