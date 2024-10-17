@@ -1,10 +1,10 @@
 {
   lib,
-  python311,
+  python3,
   fetchPypi,
 }:
 
-python311.pkgs.buildPythonApplication rec {
+python3.pkgs.buildPythonApplication rec {
   pname = "ldifj";
   version = "0.1.1";
   pyproject = true;
@@ -15,18 +15,15 @@ python311.pkgs.buildPythonApplication rec {
   };
 
   nativeBuildInputs = [
-    python311.pkgs.setuptools
-    python311.pkgs.setuptools-scm
-    python311.pkgs.wheel
+    python3.pkgs.setuptools
+    python3.pkgs.setuptools-scm
+    python3.pkgs.wheel
   ];
 
-  propagatedBuildInputs = with python311.pkgs; [
+  propagatedBuildInputs = with python3.pkgs; [
     python-ldap
     rich
-    # FIXME the argparse check fails as of 2024.04.25
-    (rich-argparse.overrideAttrs (old: {
-      pytestCheckPhase = "echo 'TEST WERE SKIPPED!'";
-    }))
+    rich-argparse
   ];
 
   pythonImportsCheck = [ "ldifj" ];
