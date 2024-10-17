@@ -63,4 +63,98 @@ in
       ytt
     ]
     ++ guiPackages;
+
+  programs.firefox.profiles.default = {
+    search = {
+      # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
+      engines =
+        let
+          # Define a helper function to create the GitLab search engine
+          makeGitLabSearchEngine =
+            {
+              scope,
+              alias,
+              name,
+            }:
+            {
+              urls = [
+                {
+                  template = "https://git.mgmt.innovo-cloud.de/search";
+                  params = [
+                    {
+                      name = "scope";
+                      # Allowed values:
+                      # "blobs" (code)
+                      # "commits"
+                      # "epics"
+                      # "issues"
+                      # "milestones"
+                      # "merge_requests"
+                      # "notes" (comments)
+                      # "projects"
+                      # "users"
+                      # "wiki_blobs"
+                      value = scope;
+                    }
+                    {
+                      name = "search";
+                      value = "{searchTerms}";
+                    }
+                  ];
+                }
+              ];
+              iconUpdateURL = "https://git.mgmt.innovo-cloud.de/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png";
+              updateInterval = 24 * 60 * 60 * 1000; # every day
+              definedAliases = [ alias ];
+            };
+        in
+        {
+          # Use the helper function to define the search engines
+          "GEC GitLab (projects)" = makeGitLabSearchEngine {
+            name = "GEC GitLab (projects)";
+            scope = "projects";
+            alias = "gitp";
+          };
+
+          "GEC GitLab (code)" = makeGitLabSearchEngine {
+            name = "GEC GitLab (code)";
+            scope = "blobs";
+            alias = "gitc";
+          };
+
+          "JIRA" = {
+            urls = [
+              {
+                template =
+                  let
+                    jiraUrl = "https://jira.gec.io";
+
+                    # List of JIRA projects to search in
+                    jiraProjects = [
+                      "Incident Management"
+                      "HELPDESK"
+                      "Oncite Open Edition 🦦"
+                      "❌ (deprecated) OOE-OPS"
+                      "Edge Stack - Services 🐄🔑🐙💰㊙️"
+                    ];
+
+                    # Wrap the encoded project names quotes
+                    quotedProjects = map (p: "\"${p}\"") jiraProjects;
+
+                    # Construct the JQL project clause
+                    projectClause = "project in (${pkgs.lib.strings.concatStringsSep "," quotedProjects})";
+
+                    # Construct JQL query
+                    jqlQuery = "${projectClause} and text ~ \"{searchTerms}\"";
+                  in
+                  "${jiraUrl}/issues/?jql=${jqlQuery}";
+              }
+            ];
+            iconUpdateURL = "https://jira.gec.io/s/-8atya2/9160001/1dlckms/_/images/fav-generic.png";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "ji" ];
+          };
+        };
+    };
+  };
 }
