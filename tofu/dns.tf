@@ -117,15 +117,15 @@ resource "cloudflare_record" "wildcard-rofl-01-heimat-dev" {
 
 resource "cloudflare_record" "gitea-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
-  name    = "git"
+  name    = "gitea"
   type    = "CNAME"
   ttl     = 3600
-  content = "git.brkn.lol"
+  content = "gitea.brkn.lol"
 }
 
 resource "cloudflare_record" "gitea-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
-  name    = "git"
+  name    = "gitea"
   type    = "A"
   ttl     = 3600
   content = oci_core_instance.oci_01.public_ip
