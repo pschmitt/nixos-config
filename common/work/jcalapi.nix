@@ -28,6 +28,7 @@ in
         ${pkgs.podman}/bin/podman run --tty --rm \
                 --name ${container_name} \
                 --net=host \
+                --userns keep-id \
                 --env TZ='Europe/Berlin' \
                 --env-file ${config_file} \
                 --volume ${config.custom.homeDirectory}/.config/jcalapi:/config:Z \
