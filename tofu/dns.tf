@@ -74,6 +74,15 @@ resource "cloudflare_zone" "schmi-tt" {
   }
 }
 
+resource "cloudflare_zone" "server_globuli_de" {
+  zone       = "server-globuli.de"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "cloudflare_record" "wildcard-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "*"
