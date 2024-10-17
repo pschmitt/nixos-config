@@ -122,7 +122,7 @@ in
             alias = "gitc";
           };
 
-          "JIRA" = {
+          "GEC JIRA" = {
             urls = [
               {
                 template =
@@ -153,6 +153,24 @@ in
             iconUpdateURL = "https://jira.gec.io/s/-8atya2/9160001/1dlckms/_/images/fav-generic.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "ji" ];
+          };
+
+          "GEC Confluence" = {
+            urls = [
+              {
+                # FIXME This search sucks. Consider using CQL aka "Enhanced Search". Sadly there seems to be no way provide a search query directly via the URL
+                template = "https://confluence.gec.io/dosearchsite.action?cql=siteSearch+~+%22isd%22";
+                params = [
+                  {
+                    name = "queryString";
+                    value = "{searchTerms}";
+                  }
+                ];
+              }
+            ];
+            iconUpdateURL = "https://confluence.gec.io/favicon.ico";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "confl" ];
           };
         };
     };
