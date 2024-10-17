@@ -25,7 +25,7 @@ in
         server = {
           DOMAIN = forgejoHostName;
           ROOT_URL = "https://${forgejoHostName}";
-          SSH_PORT = 12222;
+          SSH_PORT = 22; # this ain't a container :)
         };
         service = {
           DISABLE_REGISTRATION = true;
