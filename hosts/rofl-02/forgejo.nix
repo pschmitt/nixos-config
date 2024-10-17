@@ -9,6 +9,15 @@ in
     # owner = "gitea-runner";
   };
 
+  # FIXME Patch the service to load the token from a file
+  # https://dee.underscore.world/blog/systemd-credentials-nixos-containers/
+  systemd.services.gitea-runner-main = {
+    serviceConfig = {
+      LoadCredential = [ "token:${config.sops.secrets."forgejo/runner/token".path}" ];
+      Environment = [ "TOKEN=%d/token" ];
+    };
+  };
+
   services = {
     forgejo = {
       enable = true;
@@ -27,17 +36,17 @@ in
       stateDir = "/srv/forgejo";
     };
 
-    gitea-actions-runner.instances.main-runner = {
+    gitea-actions-runner.instances.main = {
       # TODO Enable once we figure out how to feed the credentials to the runner
       # The service uses DynamicUser=true
       # https://github.com/Mic92/sops-nix/issues/198
       # This looks like the way to go:
-      # https://dee.underscore.world/blog/systemd-credentials-nixos-containers/
       enable = false;
       name = config.networking.hostName;
       url = config.services.forgejo.settings.server.ROOT_URL;
       # FIXME See comment above about DynamicUser
-      tokenFile = config.sops.secrets."forgejo/runner/token".path;
+      # tokenFile = config.sops.secrets."forgejo/runner/token".path;
+      tokenFile = "/dev/null";
       labels = [ config.networking.hostName ];
     };
 
