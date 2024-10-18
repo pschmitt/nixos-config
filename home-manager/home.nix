@@ -14,6 +14,7 @@
       inputs.nix-index-database.hmModules.nix-index
       ./bitwarden.nix
       ./crypto.nix
+      ./default-apps.nix
       ./devel.nix
       ./mail.nix
       ./networking.nix
