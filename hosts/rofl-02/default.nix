@@ -20,11 +20,11 @@
     ./container-services.nix
     # ./email.nix
     ./forgejo.nix
+    ./http-static.nix
     ./immich.nix
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
-    ./redirects.nix
   ];
 
   # Enable networking
