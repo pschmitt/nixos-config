@@ -120,10 +120,8 @@ in
   # install qt5ct as a system package (see ./common/gui/theme.nix)
   qt = {
     enable = true;
-    platformTheme.name = "qtct";
+    platformTheme.name = "adwaita-dark";
     style = {
-      # name = "adwaita-dark";
-      # package = pkgs.adwaita-qt6;
       name = "adwaita-dark";
     };
   };
