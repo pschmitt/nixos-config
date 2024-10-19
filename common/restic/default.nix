@@ -51,9 +51,20 @@
       initialize = true;
       createWrapper = true;
       exclude = [ ];
+      backupPrepareCommand = ''
+        ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+          -H "Content-Type: text/plain" \
+          --data "Starting backup (nix restic-main)" \
+          "$HEALTHCHECK_URL/start"
+      '';
       backupCleanupCommand = ''
         ${pkgs.coreutils}/bin/mkdir -p /var/lib/restic
         ${pkgs.coreutils}/bin/date +%s > /var/lib/restic/last-backup
+
+        ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+          -H "Content-Type: text/plain" \
+          --data "Backup successful (nix restic-main)" \
+          "$HEALTHCHECK_URL"
       '';
     };
   };
