@@ -30,7 +30,7 @@
         "${config.custom.homeDirectory}/devel"
         "${config.custom.homeDirectory}/Documents"
         "${config.custom.homeDirectory}/Pictures"
-        "${config.custom.homeDirectory}/.config/obs-studio"
+        "${config.custom.homeDirectory}/.config"
         "${config.custom.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
       ];
       timerConfig = {
