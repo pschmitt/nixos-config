@@ -4,7 +4,7 @@
   sops.secrets."bw-backup" = {
     sopsFile = config.custom.sopsFile;
   };
-  sops
+
   virtualisation.oci-containers.containers = {
     bw-backup = {
       image = "ghcr.io/pschmitt/bw-backup:latest";
