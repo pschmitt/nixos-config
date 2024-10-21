@@ -1,16 +1,4 @@
-{
-  pkgss,
-  inputs,
-  pkgs,
-  config,
-  ...
-}:
-let
-  container_image = "ghcr.io/pschmitt/jcalapi";
-  container_tag = "latest";
-  container_name = "jcalapi";
-  config_file = "${config.custom.homeDirectory}/devel/private/calendar-events/jcalapi/.envrc-secrets";
-in
+{ pkgs, config, ... }:
 {
   environment.systemPackages = with pkgs; [ deckmaster ];
 
