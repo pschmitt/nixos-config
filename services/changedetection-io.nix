@@ -3,6 +3,10 @@ let
   domain = "changes.${config.custom.mainDomain}";
 in
 {
+  # FIXME podman is currently failing to start more than one container as root
+  # Error: netavark: code: 1, msg: iptables: Chain already exists.
+  virtualisation.oci-containers.backend = "docker";
+
   services.changedetection-io = {
     enable = true;
 
@@ -15,13 +19,6 @@ in
     baseURL = "https://${domain}";
   };
 
-  sops.secrets = {
-    "changedetection-io/htpasswd" = {
-      sopsFile = config.custom.sopsFile;
-      owner = "nginx";
-    };
-  };
-
   services.nginx.virtualHosts = {
     "${domain}" = {
       enableACME = true;
@@ -32,7 +29,6 @@ in
         proxyPass = "http://${config.services.changedetection-io.listenAddress}:${toString config.services.changedetection-io.port}";
         recommendedProxySettings = true;
         proxyWebsockets = true;
-        basicAuthFile = config.sops.secrets."changedetection-io/htpasswd".path;
       };
     };
   };
