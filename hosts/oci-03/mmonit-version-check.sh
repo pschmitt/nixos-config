@@ -32,6 +32,10 @@ mmonit_latest_version() {
 	#   tail -n 1
 }
 
+version_gt() {
+  [[ "$(printf "%s\n%s" "$@" | sort -V | tail -n 1)" != "$1" ]]
+}
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
 	MMONIT_VERSION="$(mmonit_version)"
@@ -54,6 +58,12 @@ then
   then
 		echo "mmonit is up to date ($MMONIT_VERSION)"
 		exit 0
+  elif ! version_gt "${MMONIT_VERSION}" "${LATEST_MMONIT_VERSION}"
+  then
+    echo "mmonit is running a *newer* version"
+    echo "Currently installed: $MMONIT_VERSION"
+    echo "Latest release: $LATEST_MMONIT_VERSION"
+    exit 0
 	else
 		{
 			echo "A new version of mmonit is available: $LATEST_MMONIT_VERSION"
