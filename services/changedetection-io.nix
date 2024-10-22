@@ -15,6 +15,12 @@ in
     baseURL = "https://${domain}";
   };
 
+  sops.secrets = {
+    "changedetection-io/htpasswd" = {
+      sopsFile = config.custom.sopsFile;
+    };
+  };
+
   services.nginx.virtualHosts = {
     "${domain}" = {
       enableACME = true;
@@ -25,6 +31,7 @@ in
         proxyPass = "http://${config.services.changedetection-io.listenAddress}:${toString config.services.changedetection-io.port}";
         recommendedProxySettings = true;
         proxyWebsockets = true;
+        basicAuthFile = config.sops.secrets."changedetection-io/htpasswd".path;
       };
     };
   };
