@@ -124,7 +124,7 @@ in
     # (python3.withPackages(python-packages))
     # (python310.withPackages(python-packages))
     (python311.withPackages (python-packages))
-    unstable.rustc
+    rustc
     openssl
   ];
 
