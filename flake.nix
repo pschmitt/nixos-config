@@ -51,7 +51,6 @@
       type = "git";
       url = "https://github.com/hyprwm/Hyprland";
       # https://github.com/hyprwm/Hyprland/releases
-      # v0.44.1
       ref = "refs/tags/v0.44.1";
       # git ls-remote --tags https://github.com/hyprwm/Hyprland | sort --version-sort -k 2 | tail -1 | awk '{ print $1 }'
       # rev = "4520b30d498daca8079365bdb909a8dea38e8d55";
