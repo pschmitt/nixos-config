@@ -24,6 +24,7 @@ in
     ./appimage.nix
     ./atd.nix
     ./bootloader.nix
+    ./containers.nix
     ./dotfiles.nix
     ./nix.nix
     ./pschmitt.nix
