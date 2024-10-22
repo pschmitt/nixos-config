@@ -18,6 +18,7 @@ in
   sops.secrets = {
     "changedetection-io/htpasswd" = {
       sopsFile = config.custom.sopsFile;
+      owner = "nginx";
     };
   };
 
