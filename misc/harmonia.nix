@@ -51,14 +51,12 @@ let
   );
 in
 {
-  sops = {
-    secrets = {
-      "nix/store/privkey" = {
-        sopsFile = config.custom.sopsFile;
-      };
-      "nix/credentials/htpasswd" = {
-        owner = "nginx";
-      };
+  sops.secrets = {
+    "nix/store/privkey" = {
+      sopsFile = config.custom.sopsFile;
+    };
+    "nix/credentials/htpasswd" = {
+      owner = "nginx";
     };
   };
 
