@@ -3,10 +3,6 @@ let
   domain = "changes.${config.custom.mainDomain}";
 in
 {
-  # FIXME podman is currently failing to start more than one container as root
-  # Error: netavark: code: 1, msg: iptables: Chain already exists.
-  virtualisation.oci-containers.backend = "docker";
-
   services.changedetection-io = {
     enable = true;
 
