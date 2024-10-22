@@ -18,6 +18,7 @@
     ../../misc/harmonia.nix
     ../../misc/http.nix
     ../../services/bw-backup.nix
+    ../../services/changedetection-io.nix
     ./container-services.nix
     # ./email.nix
     ./forgejo.nix
