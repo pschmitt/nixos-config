@@ -10,7 +10,7 @@ in
     port = 24264;
     behindProxy = false;
 
-    webDriverSupport = true;
+    webDriverSupport = false;
     playwrightSupport = !config.services.changedetection-io.webDriverSupport;
     baseURL = "https://${domain}";
   };
