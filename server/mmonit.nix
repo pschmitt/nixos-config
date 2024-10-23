@@ -22,6 +22,7 @@
   # license
   sops.secrets."mmonit/license" = {
     sopsFile = config.custom.sopsFile;
+    owner = "mmonit";
   };
 
   environment.etc."mmonit/license.xml".source = "${config.sops.secrets."mmonit/license".path}";
