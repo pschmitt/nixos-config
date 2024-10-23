@@ -43,7 +43,6 @@ let
 in
 {
   # catppuccin.enable = true;
-  # catpuccin.accent = "blue";
 
   home.packages = with pkgs; [
     # icon-library
