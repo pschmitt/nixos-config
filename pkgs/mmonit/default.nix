@@ -12,7 +12,7 @@
   systemd,
   port ? 8080,
   mmonitHome ? "/var/lib/mmonit",
-  user ? "root", # TODO run as a dedicated user
+  user ? "mmonit",
 }:
 
 stdenv.mkDerivation rec {
