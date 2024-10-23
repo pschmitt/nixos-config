@@ -7,4 +7,7 @@
     qt5ct
     qt6ct
   ];
+
+  catppuccin.enable = true;
+  catppuccin.flavor = "mocha";
 }
