@@ -12,6 +12,7 @@
   systemd,
   port ? 8080,
   mmonitHome ? "/var/lib/mmonit",
+  user ? "root", # TODO run as a dedicated user
 }:
 
 stdenv.mkDerivation rec {
@@ -147,6 +148,7 @@ stdenv.mkDerivation rec {
     PIDFile=/var/lib/mmonit/logs/mmonit.pid
     Restart=on-abnormal
     RestartSec=30
+    User=${user}
 
     [Install]
     WantedBy=multi-user.target
