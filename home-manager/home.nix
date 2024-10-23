@@ -12,6 +12,7 @@
       inputs.sops-nix.homeManagerModules.sops
       inputs.nur.hmModules.nur
       inputs.nix-index-database.hmModules.nix-index
+      inputs.catppuccin.homeManagerModules.catppuccin
       ./bitwarden.nix
       ./crypto.nix
       ./default-apps.nix

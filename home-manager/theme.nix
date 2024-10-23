@@ -42,6 +42,9 @@ let
   cursorThemePkg = pkgs.bibata-cursors;
 in
 {
+  # catppuccin.enable = true;
+  # catpuccin.accent = "blue";
+
   home.packages = with pkgs; [
     # icon-library
     arc-icon-theme
