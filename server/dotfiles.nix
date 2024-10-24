@@ -16,10 +16,33 @@ in
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    vteIntegration = true;
+    vteIntegration = false; # see below.
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
+    shellInit = ''
+      # Force enable vte integration
+      export VTE_VERSION=9999 # must be > 3405
+    '';
     interactiveShellInit = ''
+      # OSC 7
+      function __osc7-pwd() {
+        emulate -L zsh # also sets localoptions for us
+        setopt extendedglob
+        local LC_ALL=C
+        # FIXME Below is supposed to leverage named dirs (ie: ~c for ~/.config) but it
+        # does not really work in wezterm (no path displayed and the hostname gets an
+        # extra '~' appended to it for some reason)
+        # local cwd="''${(z)$(print -P "%~")[1]}"
+        printf '\e]7;file://%s%s\e\' $HOST ''${PWD//(#m)([^@-Za-z&-;_~])/%''${(l:2::0:)$(([##16]#MATCH))}}
+      }
+
+      function __chpwd-osc7-pwd() {
+        (( ZSH_SUBSHELL )) || __osc7-pwd
+      }
+      __chpwd-osc7-pwd  # execute right away
+      # add-zsh-hook -Uz chpwd __chpwd-osc7-pwd
+      chpwd_functions+=(__chpwd-osc7-pwd)
+
       # This little snippets set TERM to TERM_SSH_CLIENT which holds the ssh
       # client's TERM value. It is sent by the ssh::fix-term zsh func.
       case "$TERM_SSH_CLIENT" in
