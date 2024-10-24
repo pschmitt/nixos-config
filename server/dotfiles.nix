@@ -48,7 +48,7 @@ in
       # We need to add some fallback bindings because some of the terminfos do
       # not contain kLFT5, kRIT5 etc.
       case "$TERM" in
-        screen*)
+        screen*|*wezterm*)
           bindkey '^[[1;5C' forward-word      # ctrl-right
           bindkey '^[[1;5D' backward-word     # ctrl-left
           bindkey '^[[3;5~' kill-word         # ctrl-delete
