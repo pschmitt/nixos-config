@@ -1,13 +1,12 @@
 # https://github.com/NixOS/nixpkgs/pull/119856/
 {
-  inputs,
   lib,
   pkgs,
   ...
 }:
-let
-  snapPkg = inputs.snapd.packages.${pkgs.system}.default;
-in
+# let
+#   snapPkg = inputs.snapd.packages.${pkgs.system}.default;
+# in
 {
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   custom.netbirdSetupKey = lib.mkForce "oci";
@@ -40,6 +39,7 @@ in
     source = "${pkgs.oracle-cloud-agent}/etc/oracle-cloud-agent";
   };
   systemd.packages = [ pkgs.oracle-cloud-agent ];
+  systemd.services.oracle-cloud-agent.enable = true;
   users.users.oracle-cloud-agent = {
     isSystemUser = true;
     home = "/var/lib/oracle-cloud-agent";
