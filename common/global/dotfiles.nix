@@ -152,7 +152,6 @@
 
   programs.zsh = {
     enable = true;
-    vteIntegration = true;
   };
 
   programs.fzf = {
