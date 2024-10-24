@@ -38,8 +38,12 @@
     enable = true;
     source = "${pkgs.oracle-cloud-agent}/etc/oracle-cloud-agent";
   };
+
+  # enable systemd service
   systemd.packages = [ pkgs.oracle-cloud-agent ];
   systemd.services.oracle-cloud-agent.enable = true;
+  systemd.services.oracle-cloud-agent.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
+
   users.users.oracle-cloud-agent = {
     isSystemUser = true;
     home = "/var/lib/oracle-cloud-agent";
