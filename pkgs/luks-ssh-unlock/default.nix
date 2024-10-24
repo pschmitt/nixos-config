@@ -40,7 +40,7 @@ stdenv.mkDerivation rec {
   '';
 
   meta = with lib; {
-    description = " Auto-unlock remote hosts via SSH and Kubernetes";
+    description = "Auto-unlock remote hosts via SSH and Kubernetes";
     homepage = "https://github.com/pschmitt/luks-ssh-unlock";
     license = licenses.gpl3Only;
     maintainers = with maintainers; [ pschmitt ];
