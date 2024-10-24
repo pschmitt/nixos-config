@@ -16,13 +16,9 @@ in
   programs.zsh = {
     enable = true;
     enableCompletion = true;
-    vteIntegration = false; # see below.
+    vteIntegration = false; # see below for osc7
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
-    shellInit = ''
-      # Force enable vte integration
-      export VTE_VERSION=9999 # must be > 3405
-    '';
     interactiveShellInit = ''
       # OSC 7
       function __osc7-pwd() {
