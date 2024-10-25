@@ -7,6 +7,8 @@ let
     "reconnect"
     "follow_symlinks"
     "x-systemd.automount"
+    "x-systemd.device-timeout=10s"
+    "x-systemd.mount-timeout=10s"
     # "x-gvfs-hide"
     "IdentityFile=${config.custom.homeDirectory}/.ssh/id_ed25519"
     "StrictHostKeyChecking=no"
