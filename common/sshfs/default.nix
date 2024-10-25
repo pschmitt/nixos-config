@@ -7,6 +7,7 @@ let
     "reconnect"
     "follow_symlinks"
     "x-systemd.automount"
+    # https://www.freedesktop.org/software/systemd/man/latest/systemd.automount.html
     "x-systemd.device-timeout=10s"
     "x-systemd.mount-timeout=10s"
     # "x-gvfs-hide"
