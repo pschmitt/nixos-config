@@ -44,11 +44,12 @@ let
     else
       cat > "$MONIT_CONF_DIR/gluetun" <<EOF
     check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSLv -x $TAILSCALE_IP:8888 https://myip.wtf/json"
+      every 5 cycles
       group piracy
       depends on "docker compose services"
       restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart gluetun"
       if status != 0 then restart
-      if status != 0 for 5 cycles then alert
+      if 2 restarts within 10 cycles then alert
     EOF
     fi
   '';
