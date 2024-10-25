@@ -6,10 +6,7 @@
 }:
 let
   # Conditional packages based on xserver.enabled
-  guiPackages = lib.optionals osConfig.services.xserver.enable [
-    pkgs.zoom-us
-    pkgs.onlyoffice-bin
-  ];
+  guiPackages = lib.optionals osConfig.services.xserver.enable [ pkgs.onlyoffice-bin ];
 in
 {
   home.packages =
@@ -60,6 +57,7 @@ in
       vendir
       velero
       vault
+      yamlfmt
       ytt
     ]
     ++ guiPackages;
