@@ -43,7 +43,7 @@ let
       echo "ERROR: Failed to determine Tailscale IP" >&1
     else
       cat > "$MONIT_CONF_DIR/gluetun" <<EOF
-    check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSLv -x $TAILSCALE_IP:8888 https://myip.wtf/json
+    check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSLv -x $TAILSCALE_IP:8888 https://myip.wtf/json"
       group piracy
       depends on "docker compose services"
       restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart gluetun"
