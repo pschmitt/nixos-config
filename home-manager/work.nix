@@ -144,8 +144,12 @@ in
                     # Construct the JQL project clause
                     projectClause = "project in (${pkgs.lib.strings.concatStringsSep "," quotedProjects})";
 
+                    # newest to oldest sort
+                    sortOrder = "ORDER BY created DESC";
+                    filter = "type not in (Sub-task) and text ~ \"*{searchTerms}*\"";
+
                     # Construct JQL query
-                    jqlQuery = "${projectClause} and text ~ \"{searchTerms}\"";
+                    jqlQuery = "${projectClause} and ${filter} ${sortOrder}";
                   in
                   "${jiraUrl}/issues/?jql=${jqlQuery}";
               }
