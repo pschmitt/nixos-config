@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -23,6 +24,40 @@ in
   #     "group=${config.services.paperless.user}"
   #   ];
   # };
+
+  systemd.services.lsyncd = {
+    description = "Lsyncd - Live Sync Daemon";
+    script = ''
+      ${pkgs.lsyncd}/bin/lsyncd -nodaemon /etc/lsyncd/lsyncd.conf.lua
+    '';
+    serviceConfig = {
+      Type = "oneshot";
+    };
+  };
+
+  systemd.timers.lsyncd = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+    };
+  };
+
+  environment.etc."lsyncd/lsyncd.conf.lua".text = ''
+    sync {
+      default.rsync,
+      source = "/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Documents",
+      target = "${config.services.paperless.consumptionDir}",
+      rsync = {
+        binary   = "${pkgs.rsync}/bin/rsync",
+        verbose  = true,
+        archive  = true,
+        compress = true,
+        perms    = true,
+        chown    = "${config.services.paperless.user}:${config.services.paperless.user}"
+      }
+    }
+  '';
 
   services.paperless = {
     enable = true;
