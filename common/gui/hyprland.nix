@@ -1,7 +1,3 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 {
   lib,
   inputs,
@@ -13,19 +9,8 @@
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
   # hyprlandPkg = pkgs.hyprland;
-
-  hyprland-wrapper = (
-    pkgs.writeTextFile {
-      name = "hyprland-wrapper";
-      destination = "/bin/hyprland-wrapper";
-      executable = true;
-      text = builtins.readFile ./hyprland-wrapper.sh;
-    }
-  );
-
   xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
-
   hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
   hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
 in
@@ -37,7 +22,6 @@ in
         config
         pkgs
         hyprlandPkg
-        hyprland-wrapper
         ;
     })
   ];
@@ -49,18 +33,20 @@ in
   };
 
   environment.sessionVariables = {
-    # GTK_THEME = "Adwaita:dark";
     # Setting MOZ_ENABLE_WAYLAND will lead to a fullscreen sharing indicator
     # when screensharing
     # https://bugzilla.mozilla.org/show_bug.cgi?id=1628431
     # MOZ_ENABLE_WAYLAND = "1";
     MOZ_USE_XINPUT2 = "1";
+
+    # Fix cursor not showing up on some outputs
+    # https://www.reddit.com/r/NixOS/comments/105f4e0/invisible_cursor_on_hyprland/
+    WLR_NO_HARDWARE_CURSORS = "1";
   };
 
   environment.systemPackages = with pkgs; [
     # Hyprland
     hyprlandPkg
-    hyprland-wrapper
 
     # Notifications
     libnotify # notify-send
@@ -108,22 +94,6 @@ in
     wev
     wlogout
     wofi
-
-    # NOTE We could use the below fake package to write the wayland-session file
-    # We'd PROBABLY (lol) only need to add it to:
-    # services.xserver.displayManager.sessionPackage
-    #
-    # (writeTextFile {
-    #   name = "hyprland-wrapped.desktop";
-    #   destination = "/share/wayland-sessions/hyprland-wrapped.desktop";
-    #   text = ''
-    #     [Desktop Entry]
-    #     Name=Hyprland (wrapped)
-    #     Comment=Hyprland (wrapped)
-    #     Exec=${config.users.users.pschmitt.home}/.config/hypr/bin/hyprland-wrapped.sh
-    #     Type=Application
-    #   '';
-    # })
   ];
 
   fonts.enableDefaultPackages = true;
@@ -135,6 +105,22 @@ in
       enable = true;
       package = hyprlandPkg;
       portalPackage = xdphPkg;
+    };
+
+    hyprlock.enable = true;
+    waybar.enable = true;
+    nm-applet.enable = true;
+
+    uwsm = {
+      enable = true;
+
+      waylandCompositors = {
+        hyprland = {
+          prettyName = "Hyprland";
+          comment = "Hyprland compositor managed by UWSM";
+          binPath = "/run/current-system/sw/bin/Hyprland";
+        };
+      };
     };
   };
 
@@ -149,25 +135,10 @@ in
       '';
     };
 
-    xserver = {
-      displayManager.session = [
-        {
-          manage = "desktop";
-          name = "hyprland-wrapper";
-          # FIXME Do we even still need this? The wrapper does not do all
-          # that much anymore...
-          start = builtins.readFile ./hyprland-wrapper.sh;
-        }
-      ];
-    };
-
     displayManager.sessionPackages = [ ];
   };
 
   security = {
-    # Enable gtk lock pam auth
-    pam.services.swaylock = { };
-    pam.services.hyprlock = { };
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
     # https://nixos.wiki/wiki/Sway
     pam.loginLimits = [
@@ -179,23 +150,6 @@ in
       }
     ];
   };
-
-  # XDG Portals
-  # xdg = {
-  #   autostart.enable = true;
-  #   portal = {
-  #     enable = true; # also set by programs.hyprland.enable = true;
-  #     xdgOpenUsePortal = true;
-  #     extraPortals = [ xdphPkg ];
-  #     # https://www.reddit.com/r/NixOS/comments/184hbt6/changes_to_xdgportals/
-  #     # NOTE If you simply want to keep the behaviour in < 1.17, which uses the first
-  #     # portal implementation found in lexicographical order, use the following:
-  #     # xdg.portal.config.common.default = "*";
-  #     config.common.default = "*";
-  #     # FIXME xdph does not ship any share/xdg-desktop-portal/*.conf file
-  #     # but share/xdg-desktop-portal/portals/hyprland.portal
-  #     # configPackages = [ xdphPkg ];
-  #   };
-  # };
 }
+
 # vim: set ft=nix et ts=2 sw=2 :

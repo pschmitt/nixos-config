@@ -1,31 +1,43 @@
 {
-  lib,
   config,
   pkgs,
-  hyprlandPkg,
-  hyprland-wrapper,
   ...
 }:
+let
+  hyprland-uwsm = pkgs.writeShellApplication {
+    name = "hyprland-uwsm";
+    runtimeInputs = [
+      pkgs.gawk
+      pkgs.util-linux
+    ];
+    text = ''
+      CMD=$(awk -F '=' '/^Exec=/ { print $2; exit }' \
+       "${config.services.displayManager.sessionData.desktops}/share/wayland-sessions/hyprland-uwsm.desktop")
+      logger -t greetd "Starting session: $CMD"
+      eval "$CMD"
+    '';
+  };
+in
 {
   # https://nixos.wiki/wiki/Greetd
   services.greetd = {
     enable = true;
     restart = false; # Disabled b/c of autologin
+
     settings = {
       initial_session = {
-        # command = "${hyprlandPkg}/bin/Hyprland";
-        command = "${hyprland-wrapper}/bin/hyprland-wrapper";
+        command = "${hyprland-uwsm}/bin/hyprland-uwsm";
         user = config.custom.username;
       };
+
       # default_session = initial_session;
       default_session = {
-        command = lib.concatStringsSep " " [
-          "${pkgs.greetd.tuigreet}/bin/tuigreet"
-          "--time"
-          "--remember"
-          "--sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions:${config.services.displayManager.sessionData.desktops}/share/xsessions"
-          "--cmd ${hyprland-wrapper}/bin/hyprland-wrapper"
-        ];
+        command = ''
+          ${pkgs.greetd.tuigreet}/bin/tuigreet \
+            --time \
+            --remember \
+            --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
+        '';
         user = "greeter";
       };
     };
