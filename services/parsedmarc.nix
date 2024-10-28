@@ -52,7 +52,7 @@
         reports_folder = "dmarc"; # gmail label
       };
       # provision.grafana.dashboard = true;
-      provision.geoip = config.geoipupdate.enable;
+      provision.geoip = config.services.geoipupdate.enable;
     };
   };
 }
