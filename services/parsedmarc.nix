@@ -19,7 +19,7 @@ in
   );
 
   services.geoipupdate = {
-    enable = false;
+    enable = lib.mkForce false;
     settings = {
       # FIXME This is expected to be a signed int!
       AccountID = {
