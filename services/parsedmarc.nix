@@ -37,6 +37,7 @@ in
         http_addr = "127.0.0.1";
         http_port = 47232;
         domain = grafanaHost;
+        enable_gzip = true;
       };
     };
   };
