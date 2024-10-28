@@ -3,7 +3,6 @@ let
   secrets = [
     "geoip/accountID"
     "geoip/licenseKey"
-    "parsedmarc/imap/username"
     "parsedmarc/imap/password"
   ];
 in
@@ -37,9 +36,7 @@ in
         host = "imap.gmail.com";
         port = 993;
         ssl = true;
-        user = {
-          _secret = config.sops.secrets."parsedmarc/imap/username".path;
-        };
+        user = config.custom.email;
         password = {
           _secret = config.sops.secrets."parsedmarc/imap/password".path;
         };
