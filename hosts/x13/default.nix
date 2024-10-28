@@ -1,7 +1,4 @@
-{
-  inputs,
-  ...
-}:
+{ inputs, ... }:
 {
   imports = [
     inputs.hardware.nixosModules.common-cpu-amd
@@ -36,6 +33,6 @@
   };
 
   # FIXME This works but is annoying since it seems to trigger
-  # gtklock very often, and the login process is password + fingerprint
+  # the lockscreen very often, and the login process is password + fingerprint
   # services.fprintd.enable = true;
 }

@@ -42,8 +42,6 @@ in
     })
   ];
 
-  # inherit (import ./greetd.nix { inherit pkgs hyprlandPkg hyprland-wrapper; });
-
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
@@ -70,12 +68,6 @@ in
 
     # lock
     chayang # gradually dim screen
-    (pkgs.writeShellScriptBin "gtklock-with-modules" ''
-      ${pkgs.gtklock}/bin/gtklock \
-        --modules ${pkgs.gtklock-userinfo-module}/lib/gtklock/userinfo-module.so \
-        --modules ${pkgs.gtklock-playerctl-module}/lib/gtklock/playerctl-module.so \
-        "$@"
-    '')
     swayidle
     # swaylock
     swaylock-effects
@@ -95,7 +87,11 @@ in
     wf-recorder
 
     # clipboard
-    cliphist
+    # FIXME cliphist 0.5.0 is broken, 0.6.1 is in master as of 2024-10-16
+    # See: https://nixpk.gs/pr-tracker.html?pr=348887
+    # https://github.com/NixOS/nixpkgs/issues/348819
+    master.cliphist
+    # cliphist
     wl-clip-persist
     wl-clipboard
 
@@ -135,21 +131,14 @@ in
   hardware.graphics.enable = lib.mkForce true;
 
   programs = {
-    dconf.enable = true; # also set by programs.hyprland.enable = true;
-    xwayland.enable = true; # also set by programs.hyprland.enable = true;
-
-    # Hyprland
-    # hyprland = {
-    #   enable = true;
-    #   package = hyprlandPkg;
-    #   portalPackage = xdphPkg;
-    # };
+    hyprland = {
+      enable = true;
+      package = hyprlandPkg;
+      portalPackage = xdphPkg;
+    };
   };
 
   services = {
-    # Required by gtklock-userinfo-module
-    accounts-daemon.enable = true;
-
     acpid = {
       enable = true;
       logEvents = true;
@@ -159,9 +148,6 @@ in
           ${config.custom.homeDirectory}/.config/hypr/bin/lid-event.sh $@
       '';
     };
-
-    # below is also set by programs.hyprland.enable = true;
-    displayManager.sessionPackages = [ hyprlandPkg ];
 
     xserver = {
       displayManager.session = [
@@ -174,11 +160,12 @@ in
         }
       ];
     };
+
+    displayManager.sessionPackages = [ ];
   };
 
   security = {
     # Enable gtk lock pam auth
-    pam.services.gtklock = { };
     pam.services.swaylock = { };
     pam.services.hyprlock = { };
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
@@ -193,32 +180,22 @@ in
     ];
   };
 
-  systemd = {
-    user.targets.hyprland-session = {
-      description = "Hyprland compositor session";
-      documentation = [ "man:systemd.special(7)" ];
-      bindsTo = [ "graphical-session.target" ];
-      wants = [ "graphical-session-pre.target" ];
-      after = [ "graphical-session-pre.target" ];
-    };
-  };
-
   # XDG Portals
-  xdg = {
-    autostart.enable = true;
-    portal = {
-      enable = true; # also set by programs.hyprland.enable = true;
-      xdgOpenUsePortal = true;
-      extraPortals = [ xdphPkg ];
-      # https://www.reddit.com/r/NixOS/comments/184hbt6/changes_to_xdgportals/
-      # NOTE If you simply want to keep the behaviour in < 1.17, which uses the first
-      # portal implementation found in lexicographical order, use the following:
-      # xdg.portal.config.common.default = "*";
-      config.common.default = "*";
-      # FIXME xdph does not ship any share/xdg-desktop-portal/*.conf file
-      # but share/xdg-desktop-portal/portals/hyprland.portal
-      # configPackages = [ xdphPkg ];
-    };
-  };
+  # xdg = {
+  #   autostart.enable = true;
+  #   portal = {
+  #     enable = true; # also set by programs.hyprland.enable = true;
+  #     xdgOpenUsePortal = true;
+  #     extraPortals = [ xdphPkg ];
+  #     # https://www.reddit.com/r/NixOS/comments/184hbt6/changes_to_xdgportals/
+  #     # NOTE If you simply want to keep the behaviour in < 1.17, which uses the first
+  #     # portal implementation found in lexicographical order, use the following:
+  #     # xdg.portal.config.common.default = "*";
+  #     config.common.default = "*";
+  #     # FIXME xdph does not ship any share/xdg-desktop-portal/*.conf file
+  #     # but share/xdg-desktop-portal/portals/hyprland.portal
+  #     # configPackages = [ xdphPkg ];
+  #   };
+  # };
 }
 # vim: set ft=nix et ts=2 sw=2 :
