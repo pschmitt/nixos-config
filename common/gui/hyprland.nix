@@ -107,7 +107,11 @@ in
       portalPackage = xdphPkg;
     };
 
-    hyprlock.enable = true;
+    hyprlock = {
+      enable = true;
+      package = hyprlockPkg;
+    };
+
     waybar.enable = true;
     nm-applet.enable = true;
 
@@ -135,7 +139,10 @@ in
       '';
     };
 
-    displayManager.sessionPackages = [ ];
+    hypridle = {
+      enable = true;
+      package = hypridlePkg;
+    };
   };
 
   security = {
