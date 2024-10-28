@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   secrets = [
     "geoip/accountID"
@@ -54,7 +54,7 @@ in
         reports_folder = "dmarc"; # gmail label
       };
       # provision.grafana.dashboard = true;
-      provision.geoip = false;
+      provision.geoip = lib.mkForce false;
     };
   };
 }
