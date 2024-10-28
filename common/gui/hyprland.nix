@@ -112,7 +112,10 @@ in
       package = hyprlockPkg;
     };
 
-    waybar.enable = true;
+    waybar = {
+      enable = true;
+      # also see systemd service override
+    };
     nm-applet.enable = true;
 
     uwsm = {
@@ -127,6 +130,13 @@ in
       };
     };
   };
+
+  systemd.user.services.waybar.path = [
+    "${config.custom.homeDirectory}" # do not append /bin
+    pkgs.bash
+    pkgs.jq
+    pkgs.wttrbar
+  ];
 
   services = {
     acpid = {
