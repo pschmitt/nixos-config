@@ -1,5 +1,11 @@
 { config, ... }:
 {
+  sops.secrets."geoip/accountID" = {
+    sopsFile = config.custom.sopsFile;
+  };
+  sops.secrets."geoip/licenseKey" = {
+    sopsFile = config.custom.sopsFile;
+  };
   sops.secrets."parsedmarc/imap/hostname" = {
     sopsFile = config.custom.sopsFile;
   };
@@ -8,6 +14,18 @@
   };
   sops.secrets."parsedmarc/imap/password" = {
     sopsFile = config.custom.sopsFile;
+  };
+
+  services.geiopupdate = {
+    enable = config.services.parsedmarc.provision.geoIp;
+    settings = {
+      AccountID = {
+        _secrets = config.sops.secrets."geoip/accountID".path;
+      };
+      LicenseKey = {
+        _secrets = config.sops.secrets."geoip/licenseKey".path;
+      };
+    };
   };
 
   services.parsedmarc = {
