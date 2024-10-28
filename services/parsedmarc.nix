@@ -5,6 +5,7 @@ let
     "geoip/licenseKey"
     "parsedmarc/imap/password"
   ];
+  grafanaHost = "grafana.${config.networking.hostName}.${config.custom.mainDomain}";
 in
 {
   sops.secrets = builtins.listToAttrs (
@@ -29,6 +30,28 @@ in
     };
   };
 
+  services.grafana = {
+    enable = true;
+    settings = {
+      server = {
+        http_addr = "127.0.0.1";
+        http_port = 47232;
+        domain = grafanaHost;
+      };
+    };
+  };
+
+  services.nginx.virtualHosts."${grafanaHost}" = {
+    enableACME = true;
+    forceSSL = true;
+
+    locations."/" = {
+      proxyPass = "http://${toString config.services.grafana.settings.server.http_addr}:${toString config.services.grafana.settings.server.http_port}";
+      proxyWebsockets = true;
+      recommendedProxySettings = true;
+    };
+  };
+
   services.parsedmarc = {
     enable = true;
     settings = {
@@ -47,7 +70,6 @@ in
         test = true;
         reports_folder = "dmarc"; # gmail label
       };
-      # provision.grafana.dashboard = true;
       provision.geoip = lib.mkForce false;
     };
   };
