@@ -1,20 +1,22 @@
 { config, ... }:
+let
+  secrets = [
+    "geoip/accountID"
+    "geoip/licenseKey"
+    "parsedmarc/imap/hostname"
+    "parsedmarc/imap/username"
+    "parsedmarc/imap/password"
+  ];
+in
 {
-  sops.secrets."geoip/accountID" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."geoip/licenseKey" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."parsedmarc/imap/hostname" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."parsedmarc/imap/username" = {
-    sopsFile = config.custom.sopsFile;
-  };
-  sops.secrets."parsedmarc/imap/password" = {
-    sopsFile = config.custom.sopsFile;
-  };
+  sops.secrets = builtins.listToAttrs (
+    map (secret: {
+      name = secret;
+      value = {
+        sopsFile = config.custom.sopsFile;
+      };
+    }) secrets
+  );
 
   services.geoipupdate = {
     enable = false;
@@ -52,7 +54,7 @@
         reports_folder = "dmarc"; # gmail label
       };
       # provision.grafana.dashboard = true;
-      provision.geoip = config.services.geoipupdate.enable;
+      provision.geoip = false;
     };
   };
 }
