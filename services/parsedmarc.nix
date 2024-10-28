@@ -16,8 +16,8 @@
     sopsFile = config.custom.sopsFile;
   };
 
-  services.geiopupdate = {
-    enable = config.services.parsedmarc.provision.geoIp;
+  services.geoipupdate = {
+    enable = true;
     settings = {
       AccountID = {
         _secrets = config.sops.secrets."geoip/accountID".path;
@@ -51,6 +51,7 @@
         reports_folder = "dmarc"; # gmail label
       };
       # provision.grafana.dashboard = true;
+      provision.geoip = config.geoipupdate.enable;
     };
   };
 }
