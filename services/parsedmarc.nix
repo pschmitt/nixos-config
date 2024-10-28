@@ -1,7 +1,6 @@
-{ config, lib, ... }:
+{ config, ... }:
 let
   secrets = [
-    "geoip/accountID"
     "geoip/licenseKey"
     "parsedmarc/imap/password"
   ];
@@ -18,14 +17,12 @@ in
   );
 
   services.geoipupdate = {
-    enable = lib.mkForce false;
+    enable = true;
     settings = {
-      # FIXME This is expected to be a signed int!
-      AccountID = {
-        _secrets = config.sops.secrets."geoip/accountID".path;
-      };
+      # FIXME This is expected to be a signed int and *not* a secret
+      AccountID = 945501;
       LicenseKey = {
-        _secrets = config.sops.secrets."geoip/licenseKey".path;
+        _secret = config.sops.secrets."geoip/licenseKey".path;
       };
     };
   };
@@ -68,10 +65,10 @@ in
       mailbox = {
         watch = true;
         delete = false;
-        test = true;
+        test = true; # do not move (archive) or delete any mail
         reports_folder = "dmarc"; # gmail label
       };
-      provision.geoip = lib.mkForce false;
+      provision.geoip = true;
     };
   };
 }
