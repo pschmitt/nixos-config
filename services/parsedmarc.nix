@@ -17,8 +17,9 @@
   };
 
   services.geoipupdate = {
-    enable = true;
+    enable = false;
     settings = {
+      # FIXME This is expected to be a signed int!
       AccountID = {
         _secrets = config.sops.secrets."geoip/accountID".path;
       };
