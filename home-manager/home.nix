@@ -45,6 +45,12 @@
 
   programs.nix-index-database.comma.enable = true;
 
+  home.sessionPath = [
+    "${config.home.homeDirectory}/.local/bin"
+    "${config.home.homeDirectory}/.local/share/polaris/bin"
+    "${config.home.homeDirectory}/bin"
+  ];
+
   home.packages = with pkgs; [
     home-manager
     # nwg-displays
