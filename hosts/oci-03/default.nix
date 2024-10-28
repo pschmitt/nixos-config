@@ -7,6 +7,7 @@
     ../../server/oci.nix
 
     ../../server/mmonit.nix
+    ../../services/parsedmarc.nix
     ../../common/restic
 
     ./monit.nix
