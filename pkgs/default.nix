@@ -62,5 +62,5 @@ in
   # Lab
   pyghmi = pkgs.callPackage ./pyghmi { };
   vdhcoapp = pkgs.callPackage ./vdhcoapp { };
-  netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
+  # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
