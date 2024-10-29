@@ -82,10 +82,10 @@ resource "cloudflare_record" "schmitt_co_dmarc" {
   # content   = "v=DMARC1; p=none"
 
   # Mid
-  # content = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:p@schmitt.co; ruf=mailto:p@schmitt.co"
+  content = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:p@schmitt.co; ruf=mailto:p@schmitt.co"
 
   # Strict
-  content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+  # content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
   ttl     = 3600
   comment = var.dns_email_comment
 }
