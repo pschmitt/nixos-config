@@ -72,6 +72,11 @@
     ssh-to-age
     yadm
 
+    # mail
+    justsendmail
+    myl
+    myl-discovery
+
     # gui
     gimp
     nextcloud-client
