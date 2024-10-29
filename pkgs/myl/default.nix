@@ -7,12 +7,12 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "myl";
-  version = "0.8.8";
+  version = "0.8.9";
   pyproject = true;
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-tQOKHgltDVLLhfmV5DpZd7h8fao8L0loaP3jdyzDCTg=";
+    hash = "sha256-U0nbkobAkn6wBwxvKDo/9Xwu1CLaD5jB0kzEJHNJ0r8=";
   };
 
   build-system = [
