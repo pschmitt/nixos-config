@@ -58,7 +58,9 @@
             echo "Failed to get myl password";
             exit 1;
           fi
-          myl -u "${config.networking.hostName}"@${config.custom.mainDomain} -p "$myl_password" "$@"
+          myl --auto \
+            --username "${config.networking.hostName}"@${config.custom.mainDomain} \
+            --password "$myl_password" "$@"
         '';
       })
     ];
