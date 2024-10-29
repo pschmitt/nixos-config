@@ -53,7 +53,7 @@
           pkgs.util-linux
         ];
         text = ''
-          myl_password=$(cat ${sops.secrets."mail/${config.custom.mainDomain}".path})
+          myl_password=$(cat ${config.sops.secrets."mail/${config.custom.mainDomain}".path})
           if [ -z "$myl_password" ]; then
             echo "Failed to get myl password";
             exit 1;
