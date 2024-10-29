@@ -129,7 +129,7 @@ in
 
   # This essentially adds ~/bin to the PATH of systemd user services
   systemd.user.extraConfig = ''
-    DefaultEnvironment="PATH=%h:/bin/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"
+    DefaultEnvironment="PATH=%h/bin:%h/.local/bin:/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"
   '';
 
   services = {
