@@ -20,6 +20,7 @@ in
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
+  justsendmail = pkgs.callPackage ./justsendmail { inherit myl-discovery; };
   ldifj = pkgs.callPackage ./ldifj { };
   lan-mouse = pkgs.callPackage ./lan-mouse { };
   luks-mount = pkgs.callPackage ./luks-mount { };
@@ -61,4 +62,5 @@ in
   # Lab
   pyghmi = pkgs.callPackage ./pyghmi { };
   vdhcoapp = pkgs.callPackage ./vdhcoapp { };
+  netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
