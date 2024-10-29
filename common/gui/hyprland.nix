@@ -112,10 +112,6 @@ in
       package = hyprlockPkg;
     };
 
-    waybar = {
-      enable = true;
-      # also see systemd service override
-    };
     nm-applet.enable = true;
 
     uwsm = {
@@ -131,33 +127,10 @@ in
     };
   };
 
-  systemd.user.services.waybar = {
-    environment = {
-      # FIXME Why doesn't this help to fix the icons?
-      # XDG_DATA_HOME = "${config.custom.homeDirectory}/.local/share";
-      XDG_DATA_DIRS = "/nix/store/7vsg6jgnjgw99dz1hz5lj7qn6z1g926p-desktops/share:/home/pschmitt/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/home/pschmitt/.nix-profile/share:/nix/profile/share:/home/pschmitt/.local/state/nix/profile/share:/etc/profiles/per-user/pschmitt/share:/nix/var/nix/profiles/default/share:/run/current-system/sw/share";
-    };
-    path = [
-      config.custom.homeDirectory # do not append /bin
-      pkgs.bash
-      pkgs.jq
-      pkgs.gdk-pixbuf
-      pkgs.wttrbar
-
-      pkgs.coreutils
-      pkgs.util-linux
-    ];
-    serviceConfig = {
-      ExecStart = [
-        "" # replace the default command
-        "${pkgs.waybar}/bin/waybar -l debug"
-      ];
-      ExecReload = [
-        "" # replace the default command
-        "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID"
-      ];
-    };
-  };
+  # This essentially adds ~/bin to the PATH of systemd user services
+  systemd.user.extraConfig = ''
+    DefaultEnvironment="PATH=%h:/bin/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"
+  '';
 
   services = {
     acpid = {
