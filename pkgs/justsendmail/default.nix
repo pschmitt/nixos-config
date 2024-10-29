@@ -7,12 +7,12 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "justsendmail";
-  version = "3.1";
+  version = "3.2";
   pyproject = true;
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-BhxDtD7oTF+6VK9CC45wHKYWTo502LPUhydKVa/7O7Y=";
+    hash = "sha256-dr4w0OPGTQbN0V6/19dadF0wKyiSmtcXw4g7q/xF8z4=";
   };
 
   build-system = [
@@ -23,6 +23,7 @@ python3.pkgs.buildPythonApplication rec {
   dependencies = [
     myl-discovery
     python3.pkgs.rich
+    python3.pkgs.rich-argparse
   ];
 
   optional-dependencies = with python3.pkgs; {
