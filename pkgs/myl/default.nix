@@ -21,6 +21,7 @@ python3.pkgs.buildPythonApplication rec {
   ];
 
   dependencies = with python3.pkgs; [
+    html2text
     imap-tools
     myl-discovery
     rich
