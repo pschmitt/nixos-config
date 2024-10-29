@@ -61,6 +61,7 @@
     atuin
     bat
     direnv
+    emoji-fzf
     fd
     fzf
     jc
