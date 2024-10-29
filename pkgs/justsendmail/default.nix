@@ -7,12 +7,12 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "justsendmail";
-  version = "3.2";
+  version = "4.0";
   pyproject = true;
 
   src = fetchPypi {
     inherit pname version;
-    hash = "sha256-dr4w0OPGTQbN0V6/19dadF0wKyiSmtcXw4g7q/xF8z4=";
+    hash = "sha256-WFkJDGc8sh3QqTSU3ISUOeRXELdAFwNLCj/XRjD1bac=";
   };
 
   build-system = [
