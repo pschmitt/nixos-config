@@ -33,6 +33,10 @@ variable "domains" {
       dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
       cloudflare_mx   = true
     }
+    "bergmann-schmitt.de" = {
+      dkim_public_key = "v=DKIM1; h=sha256; k=rsa; p=NONE"
+      cloudflare_mx   = true
+    }
   }
 }
 
