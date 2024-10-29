@@ -6,7 +6,7 @@
 }:
 {
   config = lib.mkIf (!config.custom.cattle) {
-    sops.secrets."mail/${config.custom.mainDomain}" = {
+    sops.secrets."mail/brkn-lol" = {
       sopsFile = config.custom.sopsFile;
       owner = config.custom.username;
     };
@@ -53,7 +53,7 @@
           pkgs.util-linux
         ];
         text = ''
-          myl_password=$(cat ${config.sops.secrets."mail/${config.custom.mainDomain}".path})
+          myl_password=$(cat ${config.sops.secrets."mail/brkn-lol".path})
           if [ -z "$myl_password" ]; then
             echo "Failed to get myl password";
             exit 1;
