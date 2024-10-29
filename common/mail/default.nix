@@ -43,24 +43,24 @@
         };
       };
     };
-  };
 
-  environment.systemPackages = with pkgs; [
-    myl
-    (pkgs.writeShellApplication {
-      name = "myl-me";
-      runtimeInputs = [
-        pkgs.myl
-        pkgs.util-linux
-      ];
-      text = ''
-        myl_password=$(cat ${sops.secrets."mail/${config.custom.mainDomain}".path})
-        if [ -z "$myl_password" ]; then
-          echo "Failed to get myl password";
-          exit 1;
-        fi
-        myl -u "${config.networking.HostName}"@${config.custom.mainDomain} -p "$myl_password" "$@"
-      '';
-    })
-  ];
+    environment.systemPackages = with pkgs; [
+      myl
+      (pkgs.writeShellApplication {
+        name = "myl-me";
+        runtimeInputs = [
+          pkgs.myl
+          pkgs.util-linux
+        ];
+        text = ''
+          myl_password=$(cat ${sops.secrets."mail/${config.custom.mainDomain}".path})
+          if [ -z "$myl_password" ]; then
+            echo "Failed to get myl password";
+            exit 1;
+          fi
+          myl -u "${config.networking.HostName}"@${config.custom.mainDomain} -p "$myl_password" "$@"
+        '';
+      })
+    ];
+  };
 }
