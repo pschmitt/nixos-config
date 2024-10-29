@@ -66,13 +66,13 @@ resource "cloudflare_record" "schmitt_co_mx" {
   ttl      = 1 # auto
 }
 
-resource "cloudflare_record" "schmitt_co_keybase_txt" {
+resource "cloudflare_record" "schmitt_co_dkim" {
   zone_id = cloudflare_zone.schmitt_co.id
-  name    = "_keybase"
-  content = "keybase-site-verification=boXlqI7ZwmmPcnNYS3kgA-rAQ_99IOkvEgU6bHbjTOQ"
+  name    = "schmitt.co._domainkey"
+  content = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCFfKjXJaCES5Z7YSp5OF+aavonYY4me9FzNZ1XgeQYPDOl9dPP1M7w2X8c9j2jgLPeOU7bs2ZDh+MiYU2OeHYFwl6uIO5BEeqhvQcJRJtfNorUvgfJ4v4Hyk5GbSS8OKs3AyskX4m+ImzVnwzjISVh89yLnTNxOs9sWPhpH3sRpQIDAQAB"
   type    = "TXT"
   proxied = false
-  ttl     = 1799
+  ttl     = 1
 }
 
 resource "cloudflare_record" "spf_schmitt_co_txt" {
@@ -88,6 +88,15 @@ resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
   name    = "schmitt.co"
   content = "google-site-verification=kECtmN9Ek7N1pyS7IwQEkMSD8Y8RknZ2yElqcM_q5LA"
+  type    = "TXT"
+  proxied = false
+  ttl     = 1799
+}
+
+resource "cloudflare_record" "schmitt_co_keybase_txt" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  name    = "_keybase"
+  content = "keybase-site-verification=boXlqI7ZwmmPcnNYS3kgA-rAQ_99IOkvEgU6bHbjTOQ"
   type    = "TXT"
   proxied = false
   ttl     = 1799
