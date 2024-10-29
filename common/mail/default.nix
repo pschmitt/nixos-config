@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets."mail/${config.custom.mainDomain}" = {
