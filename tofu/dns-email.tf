@@ -143,6 +143,8 @@ resource "cloudflare_record" "spf" {
   type    = "TXT"
   name    = "@"
   # TODO consider using -all for google domains, which is stricter than ~all
+  # https://support.google.com/a/answer/33786?hl=en
+  # https://support.google.com/a/answer/10683907?hl=en
   content = each.value.mx_provider == "google" ? "v=spf1 include:_spf.google.com ~all" : "v=spf1 a:${var.main_mail_domain} -all"
   ttl     = 3600
   comment = var.dns_email_comment
