@@ -47,7 +47,7 @@
     environment.systemPackages = with pkgs; [
       myl
       (pkgs.writeShellApplication {
-        name = "myl-me";
+        name = "mylbox";
         runtimeInputs = [
           pkgs.myl
           pkgs.util-linux
