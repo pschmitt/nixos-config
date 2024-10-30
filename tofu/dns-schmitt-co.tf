@@ -56,156 +56,157 @@ resource "cloudflare_record" "sites_schmitt_co" {
 # MX Prio 1 -> SMTP.GOOGLE.COM
 # https://apps.google.com/supportwidget/articlehome?hl=en&article_url=https%3A%2F%2Fsupport.google.com%2Fa%2Fanswer%2F174125%3Fhl%3Den&assistant_event=welcome&assistant_id=gsuitemxrecords-gixvmm&product_context=174125&product_name=UnuFlow&trigger_context=a
 
-resource "cloudflare_record" "schmitt_co_mx" {
-  zone_id  = cloudflare_zone.schmitt_co.id
-  name     = "@"
-  content  = "smtp.google.com"
-  type     = "MX"
-  priority = 1
-  proxied  = false
-  ttl      = 1 # auto
-}
+# resource "cloudflare_record" "schmitt_co_mx" {
+#   zone_id  = cloudflare_zone.schmitt_co.id
+#   name     = "@"
+#   content  = "smtp.google.com"
+#   type     = "MX"
+#   priority = 1
+#   proxied  = false
+#   ttl      = 1 # auto
+# }
 
-resource "cloudflare_record" "schmitt_co_dkim" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  name    = "schmitt.co._domainkey"
-  content = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCFfKjXJaCES5Z7YSp5OF+aavonYY4me9FzNZ1XgeQYPDOl9dPP1M7w2X8c9j2jgLPeOU7bs2ZDh+MiYU2OeHYFwl6uIO5BEeqhvQcJRJtfNorUvgfJ4v4Hyk5GbSS8OKs3AyskX4m+ImzVnwzjISVh89yLnTNxOs9sWPhpH3sRpQIDAQAB"
-  type    = "TXT"
-  proxied = false
-  ttl     = 1
-}
-resource "cloudflare_record" "schmitt_co_dmarc" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "TXT"
-  name    = "_dmarc"
-  # Low
-  # content   = "v=DMARC1; p=none"
+# resource "cloudflare_record" "schmitt_co_dkim" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   name    = "schmitt.co._domainkey"
+#   content = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCFfKjXJaCES5Z7YSp5OF+aavonYY4me9FzNZ1XgeQYPDOl9dPP1M7w2X8c9j2jgLPeOU7bs2ZDh+MiYU2OeHYFwl6uIO5BEeqhvQcJRJtfNorUvgfJ4v4Hyk5GbSS8OKs3AyskX4m+ImzVnwzjISVh89yLnTNxOs9sWPhpH3sRpQIDAQAB"
+#   type    = "TXT"
+#   proxied = false
+#   ttl     = 1
+# }
 
-  # Mid
-  content = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+# resource "cloudflare_record" "schmitt_co_dmarc" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "TXT"
+#   name    = "_dmarc"
+#   # Low
+#   # content   = "v=DMARC1; p=none"
+#
+#   # Mid
+#   content = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+#
+#   # Strict
+#   # content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
 
-  # Strict
-  # content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
-  ttl     = 1
-  comment = var.dns_email_comment
-}
-
-resource "cloudflare_record" "spf_schmitt_co_txt" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  name    = "schmitt.co"
-  content = "v=spf1 include:_spf.google.com ~all"
-  type    = "TXT"
-  proxied = false
-  ttl     = 1
-}
+# resource "cloudflare_record" "spf_schmitt_co_txt" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   name    = "schmitt.co"
+#   content = "v=spf1 include:_spf.google.com ~all"
+#   type    = "TXT"
+#   proxied = false
+#   ttl     = 1
+# }
 
 # SRV records
-resource "cloudflare_record" "schmitt_co_srv_imap" { # starttls
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "SRV"
-  name    = "_imap._tcp"
-  ttl     = 1
-  comment = var.dns_email_comment
-
-  data {
-    priority = 0
-    weight   = 0
-    port     = 143
-    target   = "imap.gmail.com"
-  }
-}
-
-resource "cloudflare_record" "schmitt_co_srv_imaps" { # ssl/tls
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "SRV"
-  name    = "_imaps._tcp"
-  ttl     = 1
-  comment = var.dns_email_comment
-
-  data {
-    priority = 0
-    weight   = 0
-    port     = 993
-    target   = "imap.gmail.com"
-  }
-}
-
-resource "cloudflare_record" "schmitt_co_srv_submission" { # starttls
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "SRV"
-  name    = "_submission._tcp"
-  ttl     = 1
-  comment = var.dns_email_comment
-
-  data {
-    priority = 0
-    weight   = 0
-    port     = 587
-    target   = "smtp.gmail.com"
-  }
-}
-
-resource "cloudflare_record" "schmitt_co_srv_submissions" { # ssl/tls
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "SRV"
-  name    = "_submissions._tcp"
-  ttl     = 1
-  comment = var.dns_email_comment
-
-  data {
-    priority = 0
-    weight   = 0
-    port     = 465
-    target   = "smtp.gmail.com"
-  }
-}
-
-# mailconf/autoconfig
-resource "cloudflare_record" "schmitt_co_mailconf" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "TXT"
-  name    = "@"
-  content = "mailconf=https://autoconfig.schmitt.co/mail/config-v1.1.xml"
-  ttl     = 1
-  comment = var.dns_email_comment
-}
-
-resource "cloudflare_record" "schmitt_co_autoconfig" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "A"
-  name    = "autoconfig"
-  content = oci_core_instance.oci_01.public_ip
-  ttl     = 1
-  comment = var.dns_email_comment
-}
-
-resource "cloudflare_record" "schmitt_co_autoconfigure" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "A"
-  name    = "autoconfigure"
-  content = oci_core_instance.oci_01.public_ip
-  ttl     = 1
-  comment = var.dns_email_comment
-}
-
-# cnames
-resource "cloudflare_record" "schmitt_co_cname_smtp" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "CNAME"
-  name    = "smtp"
-  content = "smtp.gmail.com"
-  ttl     = 1
-  comment = var.dns_email_comment
-}
-
-resource "cloudflare_record" "schmitt_co_cname_imap" {
-  zone_id = cloudflare_zone.schmitt_co.id
-  type    = "CNAME"
-  name    = "imap"
-  content = "imap.gmail.com"
-  ttl     = 1
-  comment = var.dns_email_comment
-}
+# resource "cloudflare_record" "schmitt_co_srv_imap" { # starttls
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "SRV"
+#   name    = "_imap._tcp"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+#
+#   data {
+#     priority = 0
+#     weight   = 0
+#     port     = 143
+#     target   = "imap.gmail.com"
+#   }
+# }
+#
+# resource "cloudflare_record" "schmitt_co_srv_imaps" { # ssl/tls
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "SRV"
+#   name    = "_imaps._tcp"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+#
+#   data {
+#     priority = 0
+#     weight   = 0
+#     port     = 993
+#     target   = "imap.gmail.com"
+#   }
+# }
+#
+# resource "cloudflare_record" "schmitt_co_srv_submission" { # starttls
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "SRV"
+#   name    = "_submission._tcp"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+#
+#   data {
+#     priority = 0
+#     weight   = 0
+#     port     = 587
+#     target   = "smtp.gmail.com"
+#   }
+# }
+#
+# resource "cloudflare_record" "schmitt_co_srv_submissions" { # ssl/tls
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "SRV"
+#   name    = "_submissions._tcp"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+#
+#   data {
+#     priority = 0
+#     weight   = 0
+#     port     = 465
+#     target   = "smtp.gmail.com"
+#   }
+# }
+#
+# # mailconf/autoconfig
+# resource "cloudflare_record" "schmitt_co_mailconf" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "TXT"
+#   name    = "@"
+#   content = "mailconf=https://autoconfig.schmitt.co/mail/config-v1.1.xml"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
+#
+# resource "cloudflare_record" "schmitt_co_autoconfig" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "A"
+#   name    = "autoconfig"
+#   content = oci_core_instance.oci_01.public_ip
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
+#
+# resource "cloudflare_record" "schmitt_co_autoconfigure" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "A"
+#   name    = "autoconfigure"
+#   content = oci_core_instance.oci_01.public_ip
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
+#
+# # cnames
+# resource "cloudflare_record" "schmitt_co_cname_smtp" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "CNAME"
+#   name    = "smtp"
+#   content = "smtp.gmail.com"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
+#
+# resource "cloudflare_record" "schmitt_co_cname_imap" {
+#   zone_id = cloudflare_zone.schmitt_co.id
+#   type    = "CNAME"
+#   name    = "imap"
+#   content = "imap.gmail.com"
+#   ttl     = 1
+#   comment = var.dns_email_comment
+# }
 
 # TXT records for verification
 resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
