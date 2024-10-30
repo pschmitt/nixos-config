@@ -66,10 +66,10 @@ variable "dmarc_report_email" {
 
 locals {
   # dmarc_policy_low = "v=DMARC1; p=none"
-  dmarc_policy_mid = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+  dmarc_policy_mid    = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
   dmarc_policy_strict = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
-  smtp_google = "smtp.gmail.com"
-  imap_google = "imap.gmail.com"
+  smtp_google         = "smtp.gmail.com"
+  imap_google         = "imap.gmail.com"
 }
 
 variable "main_mail_domain" {
