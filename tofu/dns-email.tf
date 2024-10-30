@@ -64,6 +64,14 @@ variable "dmarc_report_email" {
   default     = "dmarc-report@schmitt.co"
 }
 
+locals {
+  # dmarc_policy_low = "v=DMARC1; p=none"
+  dmarc_policy_mid = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+  dmarc_policy_strict = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+  smtp_google = "smtp.gmail.com"
+  imap_google = "imap.gmail.com"
+}
+
 variable "main_mail_domain" {
   description = "Main mail domain"
   type        = string
@@ -78,7 +86,7 @@ resource "cloudflare_email_routing_settings" "cf_mail_routing" {
   }
   zone_id = data.cloudflare_zone.zones[each.key].id
   # FIXME Having this set to false raises an error when applying. Let's just not
-  # create a resource when cloudflare_mx is false.
+  # create a resource when mx_provider is not set to "cloudflare"
   enabled = true
 }
 
@@ -91,6 +99,8 @@ resource "cloudflare_record" "mx" {
   name    = "@"
   type    = "MX"
   ttl     = 3600
+  # NOTE yes it's smtp.google.com and not smtp.gmail.com!
+  # https://support.google.com/a/answer/174125?hl=en
   content = each.value.mx_provider == "google" ? "smtp.google.com" : var.main_mail_domain
   # TODO Guess we could just use prio=1 for our custom domains as well
   priority = each.value.mx_provider == "google" ? 1 : 10
@@ -146,14 +156,7 @@ resource "cloudflare_record" "dmarc" {
   zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "TXT"
   name    = "_dmarc"
-  # Low
-  # content = "v=DMARC1; p=none"
-  # Mid
-  # content = "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
-  # Strict
-  # content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
-
-  content = var.domains[each.key].dmarc_policy == "mid" ? "v=DMARC1; p=none; sp=none; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}" : "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
+  content = var.domains[each.key].dmarc_policy == "mid" ? local.dmarc_policy_mid : local.dmarc_policy_strict
   ttl     = 3600
   comment = var.dns_email_comment
 }
@@ -271,7 +274,7 @@ resource "cloudflare_record" "srv-imap" { # starttls
     priority = 0
     weight   = 0
     port     = 143
-    target   = each.value.mx_provider == "google" ? "imap.gmail.com" : var.main_mail_domain
+    target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
   }
 }
 
@@ -290,7 +293,7 @@ resource "cloudflare_record" "srv-imaps" {
     priority = 0
     weight   = 0
     port     = 993
-    target   = each.value.mx_provider == "google" ? "imap.gmail.com" : var.main_mail_domain
+    target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
   }
 }
 
@@ -309,7 +312,7 @@ resource "cloudflare_record" "srv-imaps" {
 #     priority = 0
 #     weight   = 0
 #     port     = 995
-#     target   = each.value.mx_provider == "google" ? "pop.gmail.com" : var.main_mail_domain
+#     target   = each.value.mx_provider == "google" ? local.pop_google : var.main_mail_domain
 #   }
 # }
 
@@ -328,7 +331,7 @@ resource "cloudflare_record" "srv-submission" { # starttls
     priority = 0
     weight   = 0
     port     = 587
-    target   = each.value.mx_provider == "google" ? "smtp.gmail.com" : var.main_mail_domain
+    target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
   }
 }
 
@@ -347,7 +350,7 @@ resource "cloudflare_record" "srv-submissions" {
     priority = 0
     weight   = 0
     port     = 465
-    target   = each.value.mx_provider == "google" ? "smtp.gmail.com" : var.main_mail_domain
+    target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
   }
 }
 
@@ -360,7 +363,7 @@ resource "cloudflare_record" "cname-smtp" {
   zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "CNAME"
   name    = "smtp"
-  content = each.value.mx_provider == "google" ? "smtp.gmail.com" : var.main_mail_domain
+  content = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
   ttl     = 3600
   comment = var.dns_email_comment
 }
@@ -373,7 +376,7 @@ resource "cloudflare_record" "cname-imap" {
   zone_id = data.cloudflare_zone.zones[each.key].id
   type    = "CNAME"
   name    = "imap"
-  content = each.value.mx_provider == "google" ? "imap.gmail.com" : var.main_mail_domain
+  content = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
   ttl     = 3600
   comment = var.dns_email_comment
 }
