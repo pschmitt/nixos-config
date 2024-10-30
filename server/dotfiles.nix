@@ -75,8 +75,8 @@ in
       esac
 
       # For Termux, since we are often ssh'ing through an intermediary host
-      bindkey "^[[H"    beginning-of-line # Home
-      bindkey "^[[F"    end-of-line       # End
+      bindkey "^[OH"    beginning-of-line # Home
+      bindkey "^[OF"    end-of-line       # End
 
       # Undo/Redo
       bindkey '^[z' undo  # alt-z
