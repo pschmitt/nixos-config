@@ -1,12 +1,23 @@
+resource "cloudflare_record" "wildcard_schmitt_co" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  name    = "*"
+  content = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 1
+}
+
 resource "cloudflare_record" "schmitt_co" {
   zone_id = cloudflare_zone.schmitt_co.id
   name    = "schmitt.co"
   content = oci_core_instance.oci_01.public_ip
   type    = "A"
-  proxied = true
+  proxied = false
   ttl     = 1
 }
 
+# CNAME records for google workspace
+# NOTE The mail record is provided by dns-email.tf
 resource "cloudflare_record" "cal_schmitt_co" {
   zone_id = cloudflare_zone.schmitt_co.id
   name    = "cal"
@@ -24,8 +35,6 @@ resource "cloudflare_record" "drive_schmitt_co" {
   proxied = true
   ttl     = 1
 }
-
-# NOTE The mail record is provided by dns-email.tf
 
 resource "cloudflare_record" "sites_schmitt_co" {
   zone_id = cloudflare_zone.schmitt_co.id
