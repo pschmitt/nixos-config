@@ -1137,6 +1137,27 @@
         "type": "github"
       }
     },
+    "lan-mouse": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay"
+      },
+      "locked": {
+        "lastModified": 1730014886,
+        "narHash": "sha256-5JxfnHbGjWIWjEyLbnBgHr2kB0RpbOptHh0Xo14BzFw=",
+        "owner": "feschber",
+        "repo": "lan-mouse",
+        "rev": "7496015d8d36fe58cc2f915991e90d1acc1aa9cd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "feschber",
+        "repo": "lan-mouse",
+        "type": "github"
+      }
+    },
     "lib-aggregate": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -1570,6 +1591,7 @@
         "hypridle": "hypridle",
         "hyprland": "hyprland",
         "hyprlock": "hyprlock",
+        "lan-mouse": "lan-mouse",
         "neovim-nightly": "neovim-nightly",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_2",
@@ -1589,6 +1611,27 @@
       }
     },
     "rust-overlay": {
+      "inputs": {
+        "nixpkgs": [
+          "lan-mouse",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1728181869,
+        "narHash": "sha256-sQXHXsjIcGEoIHkB+RO6BZdrPfB+43V1TEpyoWRI3ww=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "cd46aa3906c14790ef5cbe278d9e54f2c38f95c0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
       "inputs": {
         "nixpkgs": [
           "wezterm",
@@ -1921,7 +1964,7 @@
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
         "nixpkgs": "nixpkgs_4",
-        "rust-overlay": "rust-overlay",
+        "rust-overlay": "rust-overlay_2",
         "zlib": "zlib"
       },
       "locked": {
