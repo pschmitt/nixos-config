@@ -99,6 +99,66 @@ resource "cloudflare_record" "spf_schmitt_co_txt" {
   ttl     = 1799
 }
 
+resource "cloudflare_record" "schmitt_co_srv_imap" { # starttls
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "SRV"
+  name    = "_imap._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    priority = 0
+    weight   = 0
+    port     = 143
+    target   = "imap.gmail.com"
+  }
+}
+
+resource "cloudflare_record" "schmitt_co_srv_imaps" { # ssl/tls
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "SRV"
+  name    = "_imaps._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    priority = 0
+    weight   = 0
+    port     = 993
+    target   = "imap.gmail.com"
+  }
+}
+
+resource "cloudflare_record" "schmitt_co_srv_submission" { # starttls
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "SRV"
+  name    = "_submission._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    priority = 0
+    weight   = 0
+    port     = 587
+    target   = "smtp.gmail.com"
+  }
+}
+
+resource "cloudflare_record" "schmitt_co_srv_submissions" { # ssl/tls
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "SRV"
+  name    = "_submissions._tcp"
+  ttl     = 3600
+  comment = var.dns_email_comment
+
+  data {
+    priority = 0
+    weight   = 0
+    port     = 465
+    target   = "smtp.gmail.com"
+  }
+}
+
 resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
   name    = "schmitt.co"
