@@ -12,7 +12,7 @@
     foot
     kitty
     inputs.wezterm.packages.${pkgs.system}.default
-    # inputs.lan-mouse.packages.${pkgs.system}.default
+    inputs.lan-mouse.packages.${pkgs.system}.default
 
     # files and docs
     eog
