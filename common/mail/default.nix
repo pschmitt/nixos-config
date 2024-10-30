@@ -53,14 +53,10 @@
           pkgs.util-linux
         ];
         text = ''
-          myl_password=$(cat ${config.sops.secrets."mail/brkn-lol".path})
-          if [ -z "$myl_password" ]; then
-            echo "Failed to get myl password";
-            exit 1;
-          fi
           myl --auto \
-            --username "${config.networking.hostName}"@${config.custom.mainDomain} \
-            --password "$myl_password" "$@"
+            --username "${config.networking.hostName}@${config.custom.mainDomain}" \
+            --password-file "${config.sops.secrets."mail/brkn-lol".path}" \
+            "$@"
         '';
       })
     ];
