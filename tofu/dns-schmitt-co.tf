@@ -86,7 +86,7 @@ resource "cloudflare_record" "schmitt_co_dmarc" {
 
   # Strict
   # content = "v=DMARC1; p=quarantine; sp=quarantine; fo=0; adkim=r; aspf=r; pct=100; rf=afrf; ri=86400; rua=mailto:${var.dmarc_report_email}; ruf=mailto:${var.dmarc_report_email}"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 }
 
@@ -104,7 +104,7 @@ resource "cloudflare_record" "schmitt_co_srv_imap" { # starttls
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "SRV"
   name    = "_imap._tcp"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 
   data {
@@ -119,7 +119,7 @@ resource "cloudflare_record" "schmitt_co_srv_imaps" { # ssl/tls
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "SRV"
   name    = "_imaps._tcp"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 
   data {
@@ -134,7 +134,7 @@ resource "cloudflare_record" "schmitt_co_srv_submission" { # starttls
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "SRV"
   name    = "_submission._tcp"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 
   data {
@@ -149,7 +149,7 @@ resource "cloudflare_record" "schmitt_co_srv_submissions" { # ssl/tls
   zone_id = cloudflare_zone.schmitt_co.id
   type    = "SRV"
   name    = "_submissions._tcp"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 
   data {
@@ -166,7 +166,7 @@ resource "cloudflare_record" "schmitt_co_mailconf" {
   type    = "TXT"
   name    = "@"
   content = "mailconf=https://autoconfig.schmitt.co/mail/config-v1.1.xml"
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 }
 
@@ -175,7 +175,7 @@ resource "cloudflare_record" "schmitt_co_autoconfig" {
   type    = "A"
   name    = "autoconfig"
   content = oci_core_instance.oci_01.public_ip
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 }
 
@@ -195,7 +195,7 @@ resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   content = "google-site-verification=kECtmN9Ek7N1pyS7IwQEkMSD8Y8RknZ2yElqcM_q5LA"
   type    = "TXT"
   proxied = false
-  ttl     = 1799
+  ttl     = 1
 }
 
 resource "cloudflare_record" "schmitt_co_keybase_txt" {
@@ -204,5 +204,5 @@ resource "cloudflare_record" "schmitt_co_keybase_txt" {
   content = "keybase-site-verification=boXlqI7ZwmmPcnNYS3kgA-rAQ_99IOkvEgU6bHbjTOQ"
   type    = "TXT"
   proxied = false
-  ttl     = 1799
+  ttl     = 1
 }
