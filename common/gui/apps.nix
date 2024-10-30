@@ -1,14 +1,11 @@
 { inputs, pkgs, ... }:
-let
-  weztermPkg = inputs.wezterm.packages.${pkgs.system}.default;
-in
 {
   environment.systemPackages = with pkgs; [
     alacritty
     foot
     kitty
-    weztermPkg
-    lan-mouse
+    inputs.wezterm.packages.${pkgs.system}.default
+    inputs.lan-mouse.packages.${pkgs.system}.default
 
     # files and docs
     eog

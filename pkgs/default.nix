@@ -22,7 +22,6 @@ in
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   justsendmail = pkgs.callPackage ./justsendmail { inherit myl-discovery; };
   ldifj = pkgs.callPackage ./ldifj { };
-  lan-mouse = pkgs.callPackage ./lan-mouse { };
   luks-mount = pkgs.callPackage ./luks-mount { };
   luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
