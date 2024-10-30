@@ -6,13 +6,13 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "myl-discovery";
-  version = "0.6.0";
+  version = "0.6.1";
   pyproject = true;
 
   src = fetchPypi {
     pname = "myl_discovery";
     inherit version;
-    hash = "sha256-EmiaM0Dtb0JKw5ZpaX1Z3uH0XNyWKJ9MhmokE8Y9/bE=";
+    hash = "sha256-5ulMzqd9YovEYCKO/B2nLTEvJC+bW76pJtDu1cNXLII=";
   };
 
   build-system = [
