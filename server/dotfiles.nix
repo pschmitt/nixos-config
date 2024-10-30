@@ -74,6 +74,10 @@ in
         ;;
       esac
 
+      # For Termux, since we are often ssh'ing through an intermediary host
+      bindkey "^[[H"    beginning-of-line # Home
+      bindkey "^[[F"    end-of-line       # End
+
       # Undo/Redo
       bindkey '^[z' undo  # alt-z
       bindkey '^[y' redo  # alt-y
