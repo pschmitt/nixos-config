@@ -52,7 +52,18 @@ in
 
   services.parsedmarc = {
     enable = true;
+    provision.geoIp = true;
+    provision.elasticsearch = true;
+
+    # https://domainaware.github.io/parsedmarc/usage.html
     settings = {
+      general = {
+        silent = false;
+        debug = true;
+        save_aggregate = true;
+        save_forensic = true;
+        save_smtp_tls = true;
+      };
       imap = {
         host = "imap.gmail.com";
         port = 993;
@@ -68,7 +79,6 @@ in
         test = true; # do not move (archive) or delete any mail
         reports_folder = "dmarc"; # gmail label
       };
-      provision.geoip = true;
     };
   };
 }
