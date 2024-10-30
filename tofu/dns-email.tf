@@ -39,7 +39,8 @@ variable "domains" {
       mx_provider = "cloudflare"
     }
     "schmitt.co" = {
-      mx_provider     = "google"
+      mx_provider = "google"
+      # https://admin.google.com/ac/apps/gmail/authenticateemail
       dkim_public_key = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCFfKjXJaCES5Z7YSp5OF+aavonYY4me9FzNZ1XgeQYPDOl9dPP1M7w2X8c9j2jgLPeOU7bs2ZDh+MiYU2OeHYFwl6uIO5BEeqhvQcJRJtfNorUvgfJ4v4Hyk5GbSS8OKs3AyskX4m+ImzVnwzjISVh89yLnTNxOs9sWPhpH3sRpQIDAQAB"
       dmarc_policy    = "mid"
     }
@@ -105,6 +106,19 @@ resource "cloudflare_record" "mail" {
   name    = "mail"
   content = oci_core_instance.oci_01.public_ip
   type    = "A"
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_record" "mail_google" {
+  for_each = {
+    for domain, config in var.domains : domain => config if config.mx_provider == "google"
+  }
+
+  zone_id = data.cloudflare_zone.zones[each.key].id
+  name    = "mail"
+  content = "ghs.googlehosted.com"
+  type    = "CNAME"
   ttl     = 3600
   comment = var.dns_email_comment
 }
