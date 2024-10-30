@@ -96,7 +96,7 @@ resource "cloudflare_record" "spf_schmitt_co_txt" {
   content = "v=spf1 include:_spf.google.com ~all"
   type    = "TXT"
   proxied = false
-  ttl     = 1799
+  ttl     = 1
 }
 
 # SRV records
@@ -184,7 +184,7 @@ resource "cloudflare_record" "schmitt_co_autoconfigure" {
   type    = "A"
   name    = "autoconfigure"
   content = oci_core_instance.oci_01.public_ip
-  ttl     = 3600
+  ttl     = 1
   comment = var.dns_email_comment
 }
 
