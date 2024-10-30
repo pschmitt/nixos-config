@@ -159,6 +159,35 @@ resource "cloudflare_record" "schmitt_co_srv_submissions" { # ssl/tls
   }
 }
 
+# mailconf/autoconfig
+resource "cloudflare_record" "schmitt_co_mailconf" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "TXT"
+  name    = "@"
+  content = "mailconf=https://autoconfig.schmitt.co/mail/config-v1.1.xml"
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_record" "schmitt_co_autoconfig" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "A"
+  name    = "autoconfig"
+  content = oci_core_instance.oci_01.public_ip
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_record" "schmitt_co_autoconfigure" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "A"
+  name    = "autoconfigure"
+  content = oci_core_instance.oci_01.public_ip
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+# TXT records for verification
 resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
   name    = "schmitt.co"
