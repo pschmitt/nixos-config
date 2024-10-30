@@ -188,6 +188,25 @@ resource "cloudflare_record" "schmitt_co_autoconfigure" {
   comment = var.dns_email_comment
 }
 
+# cnames
+resource "cloudflare_record" "schmitt_co_cname_smtp" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "CNAME"
+  name    = "smtp"
+  content = "smtp.gmail.com"
+  ttl     = 1
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_record" "schmitt_co_cname_imap" {
+  zone_id = cloudflare_zone.schmitt_co.id
+  type    = "CNAME"
+  name    = "imap"
+  content = "imap.gmail.com"
+  ttl     = 1
+  comment = var.dns_email_comment
+}
+
 # TXT records for verification
 resource "cloudflare_record" "schmitt_co_google_site_verification_txt" {
   zone_id = cloudflare_zone.schmitt_co.id
