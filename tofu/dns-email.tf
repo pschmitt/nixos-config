@@ -101,6 +101,7 @@ resource "cloudflare_record" "mx" {
   ttl     = 3600
   # NOTE yes it's smtp.google.com and not smtp.gmail.com!
   # https://support.google.com/a/answer/174125?hl=en
+  # to verify: https://workspace.google.com/u/0/verify/confirmation
   content = each.value.mx_provider == "google" ? "smtp.google.com" : var.main_mail_domain
   # TODO Guess we could just use prio=1 for our custom domains as well
   priority = each.value.mx_provider == "google" ? 1 : 10
