@@ -76,6 +76,11 @@
     };
     # hyprland end }}}
 
+    lan-mouse = {
+      url = "github:feschber/lan-mouse";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     neovim-nightly = {
       url = "github:nix-community/neovim-nightly-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -195,9 +200,7 @@
               simple-nixos-mailserver.nixosModule
               srvos.nixosModules.mixins-terminfo
             ]
-            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [
-              snapd.nixosModules.default
-            ];
+            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ snapd.nixosModules.default ];
         };
     in
     {
@@ -250,27 +253,13 @@
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
       nixosConfigurations = {
-        x13 = nixosSystemFor "x86_64-linux" "x13" {
-          laptop = true;
-        };
-        ge2 = nixosSystemFor "x86_64-linux" "ge2" {
-          laptop = true;
-        };
-        lrz = nixosSystemFor "x86_64-linux" "lrz" {
-          server = true;
-        };
-        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" {
-          server = true;
-        };
-        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" {
-          server = true;
-        };
-        rofl-04 = nixosSystemFor "x86_64-linux" "rofl-04" {
-          server = true;
-        };
-        rofl-05 = nixosSystemFor "x86_64-linux" "rofl-05" {
-          server = true;
-        };
+        x13 = nixosSystemFor "x86_64-linux" "x13" { laptop = true; };
+        ge2 = nixosSystemFor "x86_64-linux" "ge2" { laptop = true; };
+        lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
+        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { server = true; };
+        rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { server = true; };
+        rofl-04 = nixosSystemFor "x86_64-linux" "rofl-04" { server = true; };
+        rofl-05 = nixosSystemFor "x86_64-linux" "rofl-05" { server = true; };
         oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
           server = true;
           snapd = true;
