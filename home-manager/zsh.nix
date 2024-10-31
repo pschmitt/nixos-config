@@ -1,5 +1,6 @@
 { inputs, pkgs, ... }:
 {
+  home.packages = [ pkgs.nix-your-shell ];
   home.file = {
     ".config/zsh/custom/os/nixos/system.zsh" = {
       text = ''
