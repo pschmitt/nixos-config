@@ -243,6 +243,14 @@ resource "cloudflare_record" "jellyfin-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
+resource "cloudflare_record" "oci-yum-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "oci-yum"
+  type    = "A"
+  ttl     = 3600
+  content = oci_core_instance.oci_01.public_ip
+}
+
 resource "cloudflare_record" "tv-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "tv"
