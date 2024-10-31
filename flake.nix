@@ -96,8 +96,19 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # the myl family
     myl = {
       url = "github:pschmitt/myl";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    myl-discovery = {
+      url = "github:pschmitt/myl-discovery";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    sendmyl = {
+      url = "github:pschmitt/justsendmail";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

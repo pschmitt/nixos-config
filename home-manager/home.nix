@@ -73,12 +73,6 @@
     ssh-to-age
     yadm
 
-    # mail
-    inputs.myl.packages.${system}.myl
-    justsendmail
-    # myl
-    myl-discovery
-
     # gui
     gimp
     nextcloud-client
