@@ -49,7 +49,7 @@
       (pkgs.writeShellApplication {
         name = "mylbox";
         runtimeInputs = [
-          pkgs.myl
+          inputs.myl.packages.${pkgs.system}.myl
           pkgs.util-linux
         ];
         text = ''
