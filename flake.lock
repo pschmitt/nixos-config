@@ -1194,6 +1194,26 @@
         "type": "github"
       }
     },
+    "myl": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1730382096,
+        "narHash": "sha256-hR6RXOOq3vd8oDw+883TdYFN0dFqdKyGS7V/tSfl6pU=",
+        "owner": "pschmitt",
+        "repo": "myl",
+        "rev": "e4d7b9c822cc0a63b313795efcf359776a9b4bc0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "myl",
+        "type": "github"
+      }
+    },
     "neovim-nightly": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -1592,6 +1612,7 @@
         "hyprland": "hyprland",
         "hyprlock": "hyprlock",
         "lan-mouse": "lan-mouse",
+        "myl": "myl",
         "neovim-nightly": "neovim-nightly",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_2",
