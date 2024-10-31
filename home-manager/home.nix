@@ -64,6 +64,7 @@
     emoji-fzf
     fd
     fzf
+    gyb
     jc
     jsonrepair
     # rich-cli fails to build as of 2024-05-10 (rich-rst's test fail)
@@ -73,8 +74,9 @@
     yadm
 
     # mail
+    inputs.myl.packages.${system}.myl
     justsendmail
-    myl
+    # myl
     myl-discovery
 
     # gui
