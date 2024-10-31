@@ -108,7 +108,7 @@
     };
 
     sendmyl = {
-      url = "github:pschmitt/justsendmail";
+      url = "github:pschmitt/sendmyl";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
