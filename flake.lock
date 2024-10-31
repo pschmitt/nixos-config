@@ -1841,16 +1841,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1730399288,
-        "narHash": "sha256-wvjXNOymMFUV4aQkXeVljGMBbG/5OAPQWThD4gWpGk4=",
+        "lastModified": 1730407098,
+        "narHash": "sha256-hQrM1RyvVzNQxTOPgjldDP9i/lc7r5IMlgBn+GDjaU8=",
         "owner": "pschmitt",
-        "repo": "justsendmail",
-        "rev": "cda870d671a0bc49ac6bfbdae3bc4f2beeed49d0",
+        "repo": "sendmyl",
+        "rev": "4d1bb0f604326279323904621eb22f4da769ee98",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
-        "repo": "justsendmail",
+        "repo": "sendmyl",
         "type": "github"
       }
     },
