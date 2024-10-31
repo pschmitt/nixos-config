@@ -25,7 +25,6 @@ in
   luks-mount = pkgs.callPackage ./luks-mount { };
   luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
-  myl = pkgs.callPackage ./myl { inherit myl-discovery; };
   myl-discovery = pkgs.callPackage ./myl-discovery { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
