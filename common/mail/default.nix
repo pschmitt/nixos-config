@@ -1,9 +1,13 @@
 {
+  inputs,
   config,
   lib,
   pkgs,
   ...
 }:
+let
+  mylPkg = inputs.myl.packages.${pkgs.system}.myl;
+in
 {
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets."mail/brkn-lol" = {
@@ -44,12 +48,12 @@
       };
     };
 
-    environment.systemPackages = with pkgs; [
-      myl
+    environment.systemPackages = [
+      mylPkg
       (pkgs.writeShellApplication {
         name = "mylbox";
         runtimeInputs = [
-          inputs.myl.packages.${pkgs.system}.myl
+          mylPkg
           pkgs.util-linux
         ];
         text = ''
