@@ -140,6 +140,8 @@ in
         # NOTE We want to expand the args here, so we don't quote "$@"
         /run/wrappers/bin/sudo -u ${config.custom.username} \
           ${config.custom.homeDirectory}/.config/hypr/bin/lid-event.sh $@
+        # DIRTYFIX This a workaround for the the sshfs mounts being messed up
+        systemctl restart netbird-netbird-io.service
       '';
     };
 
