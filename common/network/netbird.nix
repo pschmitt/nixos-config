@@ -34,7 +34,7 @@ in
 
   services.netbird = {
     enable = true;
-    packages = pkgs.master.netbird;
+    package = pkgs.master.netbird;
     tunnels = {
       netbird-io = {
         port = 51820;
