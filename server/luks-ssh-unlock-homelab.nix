@@ -20,7 +20,7 @@ let
 
     healthcheck = {
       enable = true;
-      command = "mount | grep luks";
+      command = "mount | grep -v tmpfs | grep luks";
     };
   };
 
