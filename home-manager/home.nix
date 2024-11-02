@@ -138,7 +138,7 @@
         "file://${config.home.homeDirectory}/Documents 📄 documents"
         "file://${config.home.homeDirectory}/Downloads 📥 downloads"
         "file://${config.home.homeDirectory}/Music 🎵 music"
-        "file://${config.home.homeDirectory}/Public 📂 public"
+        # "file://${config.home.homeDirectory}/Public 📂 public"
         "file://${config.home.homeDirectory}/Pictures 📷 pictures"
         # "file://${config.home.homeDirectory}/Templates 📄 templates"
         "file://${config.home.homeDirectory}/Videos 🎥 videos"
