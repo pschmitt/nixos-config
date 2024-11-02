@@ -108,7 +108,7 @@ in
     };
 
     hyprlock = {
-      enable = true;
+      enable = false;
       package = hyprlockPkg;
     };
 
