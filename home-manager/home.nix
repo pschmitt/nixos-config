@@ -129,16 +129,19 @@
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
       bookmarks = [
-        "file:///tmp tmp"
-        "file://${config.home.homeDirectory}/devel/private devel-p"
-        "file://${config.home.homeDirectory}/devel/work devel-w"
-        "file://${config.home.homeDirectory}/Documents"
-        "file://${config.home.homeDirectory}/Downloads"
-        "file://${config.home.homeDirectory}/Music"
-        "file://${config.home.homeDirectory}/Public"
-        "file://${config.home.homeDirectory}/Pictures"
-        "file://${config.home.homeDirectory}/Templates"
-        "file://${config.home.homeDirectory}/Videos"
+        "file:///tmp 🗑 tmp"
+        "file:///mnt/data 🖧 data"
+        "file:///mnt/turris 🖧 turris"
+        "file:///mnt/hass 🖧 hass"
+        "file://${config.home.homeDirectory}/devel/private 💻 dev-p"
+        "file://${config.home.homeDirectory}/devel/work 💻 dev-w"
+        "file://${config.home.homeDirectory}/Documents 📄 documents"
+        "file://${config.home.homeDirectory}/Downloads 📥 downloads"
+        "file://${config.home.homeDirectory}/Music 🎵 music"
+        "file://${config.home.homeDirectory}/Public 📂 public"
+        "file://${config.home.homeDirectory}/Pictures 📷 pictures"
+        # "file://${config.home.homeDirectory}/Templates 📄 templates"
+        "file://${config.home.homeDirectory}/Videos 🎥 videos"
       ];
     };
   };
