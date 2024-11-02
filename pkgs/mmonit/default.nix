@@ -17,14 +17,14 @@
 
 stdenv.mkDerivation rec {
   pname = "mmonit";
-  version = "4.3.1";
+  version = "4.3.2";
 
   arch = if stdenv.isAarch64 then "arm64" else "x64";
   checksum =
     if stdenv.isAarch64 then
-      "sha256-t7fkAJ1DRbwteATEG7G7SzljOySlClRycxdfUU7B6aY="
+      "sha256-FsjtuWYKtKRPdPx7/FSXqmy7mgDC2oatPgAEQyoDezs="
     else
-      "sha256-viq87tKQ0AVvTi3MVPOB0ILzpBCTCy2HIvJ5cXA6WQA=";
+      "sha256-mud7gzum6d+Iq+V+VM1zv1lMGgDMXCsVJJvI+FzdRwk=";
 
   src = fetchurl {
     url = "https://mmonit.com/dist/${pname}-${version}-linux-${arch}.tar.gz";
