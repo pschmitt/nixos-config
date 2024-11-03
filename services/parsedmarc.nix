@@ -78,6 +78,7 @@ in
         delete = false;
         test = true; # do not move (archive) or delete any mail
         reports_folder = "dmarc"; # gmail label
+        batch_size = 25;
       };
     };
   };
