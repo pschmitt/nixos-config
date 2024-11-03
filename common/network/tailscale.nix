@@ -1,9 +1,10 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   sops.secrets."tailscale/auth-key" = { };
 
   services.tailscale = {
     enable = true;
+    package = pkgs.master.tailscale;
     openFirewall = true;
     extraUpFlags =
       if config.services.netbird.enable then
