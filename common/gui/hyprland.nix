@@ -91,6 +91,7 @@ in
     hyprpicker
     kanshi
     shikane # kanshi alternative, rust
+    waypoint
     wev
     wlogout
     wofi
