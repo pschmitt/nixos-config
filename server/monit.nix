@@ -34,7 +34,9 @@ let
   monitSystem = ''
     check system $HOST
       if loadavg (15min) per core > 1 for 5 times within 15 cycles then alert
-      if memory usage > 80% for 4 cycles then alert'';
+      if memory usage > 80% for 4 cycles then alert
+      if uptime < 1 hours then alert
+  '';
 
   monitFilesystem = fs: ''
     check filesystem "filesystem ${fs}" with path ${fs}
