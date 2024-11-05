@@ -21,6 +21,7 @@
       ./networking.nix
       ./nvim.nix
       ./work.nix
+      ./yadm.nix
       ./zsh.nix
       # ./zellij.nix
     ]
