@@ -4,7 +4,7 @@
   # be installed a systemPackage (home manager is not enough!)
   # https://github.com/NixOS/nixpkgs/issues/239909#issuecomment-1766317147
   environment.systemPackages = with pkgs; [
-    qt5ct
+    libsForQt5.qt5ct
     qt6ct
   ];
 
