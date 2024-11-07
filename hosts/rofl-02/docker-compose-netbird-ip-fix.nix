@@ -66,7 +66,7 @@
     description = "Fix netbird IPs in docker-compose files";
     wantedBy = [ "timers.target" ];
     timerConfig = {
-      OnCalendar = "daily";
+      OnCalendar = "hourly";
       Persistent = true;
     };
   };
