@@ -17,7 +17,7 @@ let
       # TODO Stupidly prepending sudo to the command doesn't work and just
       # breaks the netbird cli
       # exec /run/wrappers/bin/sudo ${pkgs.netbird}/bin/netbird "$@"
-      exec ${pkgs.netbird}/bin/netbird "$@"
+      exec ${pkgs.master.netbird}/bin/netbird "$@"
     '';
 
   netbirdScripts = lib.mapAttrsToList createNetbirdScript config.services.netbird.tunnels;
