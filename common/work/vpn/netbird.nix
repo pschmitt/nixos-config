@@ -33,14 +33,6 @@ in
           NB_ALLOW_SSH = "false";
         };
       };
-      wiit2 = {
-        port = 51822;
-        environment = {
-          NB_MANAGEMENT_URL = "https://grpc.nb2.gec.io";
-          NB_ADMIN_URL = "https://nb2.gec.io";
-          NB_ALLOW_SSH = "false";
-        };
-      };
     };
   };
 
