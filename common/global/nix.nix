@@ -46,17 +46,18 @@
     # Making legacy nix commands consistent as well, awesome!
     nixPath = lib.mapAttrsToList (key: value: "${key}=${value.to.path}") config.nix.registry;
 
+    gc = {
+      automatic = true;
+      dates = "daily";
+      persistent = true;
+      options = "--delete-older-than 10d";
+    };
+
     settings = {
       # Enable flakes and new 'nix' command
       experimental-features = "nix-command flakes";
       # Deduplicate and optimize nix store
       auto-optimise-store = true;
-      gc = {
-        automatic = true;
-        dates = "daily";
-        persist = true;
-        options = "--delete-older-than 10d";
-      };
 
       trusted-users = [
         "root"
