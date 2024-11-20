@@ -14,7 +14,7 @@
 
     users.pschmitt = {
       imports = [
-        inputs.flatpaks.homeManagerModules.default
+        inputs.flatpaks.homeManagerModules.declarative-flatpak
         ./home.nix
       ];
     };
