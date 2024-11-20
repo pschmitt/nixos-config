@@ -191,7 +191,7 @@
 
         agenix.nixosModules.default
         disko.nixosModules.disko
-        flatpaks.nixosModules.default
+        flatpaks.nixosModules.declarative-flatpak
         nix-index-database.nixosModules.nix-index
         nur.nixosModules.nur
         sops-nix.nixosModules.sops
