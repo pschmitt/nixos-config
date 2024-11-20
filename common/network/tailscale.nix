@@ -17,4 +17,6 @@
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
+
+  environment.systemPackages = [ pkgs.master.tailscale ];
 }
