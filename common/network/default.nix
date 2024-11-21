@@ -8,6 +8,12 @@
   ];
 
   environment.systemPackages = with pkgs; [
+    curl
+    fping
+    nethogs
+    nmap
+    ookla-speedtest
+    tcpdump
     wireguard-tools
   ];
 }
