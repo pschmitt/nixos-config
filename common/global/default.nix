@@ -76,7 +76,6 @@ in
     curl
     dua # ncdu on steroids
     file
-    fping
     fx
     htop
     hwatch
@@ -87,9 +86,6 @@ in
     mediainfo
     moreutils # ts among others
     ncdu
-    nethogs
-    nmap
-    ookla-speedtest
     p7zip
     pciutils # lspci
     pinentry-curses
@@ -99,7 +95,6 @@ in
     ripgrep
     socat
     sshpass
-    tailscale
     tmux
     tmux-slay
     tree
