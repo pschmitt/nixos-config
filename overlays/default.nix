@@ -12,6 +12,7 @@
     (import ./brotab.nix { inherit final prev; })
     // (import ./libratbag.nix { inherit final prev; })
     // (import ./piper.nix { inherit final prev; })
+    // (import ./openstack-cli.nix { inherit final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
     # // (import ./tmux.nix { inherit final prev; })
     // { }; # Continue merging additional overlays as needed
