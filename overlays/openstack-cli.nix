@@ -9,13 +9,7 @@ let
     prev.python311Packages.python-octaviaclient
   ];
 
-  openstackclient-full = py.python.withPackages (
-    ps:
-    [
-      python-openstackclient
-    ]
-    ++ cliPlugins
-  );
+  openstackclient-full = py.python.withPackages (ps: cliPlugins ++ [ python-openstackclient ]);
 in
 {
   openstackclient-full = openstackclient-full;
