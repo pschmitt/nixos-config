@@ -33,6 +33,7 @@
   # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
 
   services.logind.lidSwitchExternalPower = lib.mkForce "ignore";
+  services.logind.lidSwitch = lib.mkForce "ignore";
 
   # Enable networking
   networking = {
