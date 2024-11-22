@@ -61,6 +61,8 @@ in
 
   services.paperless = {
     enable = true;
+    package = pkgs.master.paperless-ngx;
+
     address = "127.0.0.1";
     port = 28981;
 
