@@ -1,44 +1,19 @@
-{ pkgs, config, ... }:
-let
-  container_image = "ghcr.io/pschmitt/jcalapi";
-  container_tag = "latest";
-  container_name = "jcalapi";
-  config_file = "${config.custom.homeDirectory}/.config/jcalapi/envrc.secret";
-in
-{
-  environment.systemPackages = with pkgs; [ podman ];
+{ config, ... }:
 
-  systemd.user.services.jcalapi = {
-    enable = true;
-    description = "Local JSON API for calendar events";
-    documentation = [ "https://github.com/pschmitt/jcalapi" ];
-    after = [ "NetworkManager-wait-online.service" ];
-    path = with pkgs; [
-      "/run/wrappers" # required for newuidmap
-      podman
-      systemd
-    ];
-    serviceConfig = {
-      ExecStartPre = [
-        "${pkgs.podman}/bin/podman pull ${container_image}:${container_tag}"
-        "-${pkgs.podman}/bin/podman kill ${container_name}"
-        "-${pkgs.podman}/bin/podman rm --force ${container_name}"
-      ];
-      ExecStart = ''
-        ${pkgs.podman}/bin/podman run --tty --rm \
-                --name ${container_name} \
-                --net=host \
-                --userns keep-id \
-                --env TZ='Europe/Berlin' \
-                --env-file ${config_file} \
-                --volume ${config.custom.homeDirectory}/.config/jcalapi:/config:Z \
-                ${container_image}:${container_tag}'';
-      ExecStartPost = "-${config.custom.homeDirectory}/bin/zhj 'sleep 10 && jcal reload'";
-      ExecStop = "${pkgs.podman}/bin/podman stop ${container_name}";
-      Restart = "always";
-      RestartSec = "30";
-      TimeoutStartSec = "0";
+{
+  virtualisation.oci-containers.containers.jcalapi = {
+    image = "ghcr.io/pschmitt/jcalapi:latest";
+    autoStart = true;
+    environment = {
+      TZ = "Europe/Berlin";
     };
-    wantedBy = [ "default.target" ];
+    environmentFiles = [
+      "${config.custom.homeDirectory}/.config/jcalapi/envrc.secret"
+    ];
+    volumes = [
+      "${config.custom.homeDirectory}/.config/jcalapi:/config:Z"
+    ];
+    ports = [ "127.0.0.1:7042:7042" ];
+    # extraOptions = [ "--network=host" ];
   };
 }
