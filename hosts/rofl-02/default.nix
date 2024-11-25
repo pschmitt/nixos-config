@@ -19,6 +19,7 @@
     ../../misc/http.nix
     ../../services/bw-backup.nix
     ../../services/changedetection-io.nix
+    ../../services/mealie.nix
     ./container-services.nix
     # ./email.nix
     ./forgejo.nix
