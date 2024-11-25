@@ -1,5 +1,5 @@
 # https://nixos.wiki/wiki/Nvidia
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   imports = [
     # Uncomment to completely disable the NVIDIA GPU
@@ -14,6 +14,10 @@
   # environment.systemPackages = with pkgs; [
   #   linuxPackages_latest.nvidia_x11
   # ];
+
+  # FIX till pr#358047 is available on nixpkgs-unstable
+  # https://nixpkgs-tracker.ocfox.me/?pr=358047
+  boot.kernelPackages = pkgs.linuxPackages_6_11;
 
   hardware.graphics.enable = true;
 
