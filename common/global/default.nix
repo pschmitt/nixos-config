@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   python-packages =
     ps: with ps; [
@@ -37,7 +42,7 @@ in
     kernel.sysctl = {
       "kernel.sysrq" = 1;
     };
-    kernelPackages = pkgs.linuxPackages_latest;
+    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
     tmp = {
       useTmpfs = true;
     };
