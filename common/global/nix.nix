@@ -150,8 +150,7 @@
   environment.systemPackages = with pkgs; [
     # nix
     inputs.agenix.packages.${system}.default
-    # FIXME attic fails to build as of 2024-01-16
-    inputs.attic.packages.${system}.default
+    # inputs.attic.packages.${system}.default
     nix-prefetch
   ];
 
