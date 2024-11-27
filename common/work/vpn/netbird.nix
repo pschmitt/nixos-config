@@ -29,6 +29,7 @@ let
 
     # Default action
     ACTION="add"
+    NB_INTERFACE_NAME="wiit"
 
     case "$1" in
       -h|--help)
@@ -40,14 +41,16 @@ let
         ;;
     esac
 
-    NB_INTERFACE_NAME="wiit"
-
     case "$ACTION" in
       add)
-        ${netbirdScripts.wiit}/bin/netbird-wiit routes list | \
+        ${netbirdScripts.wiit}/bin/netbird-wiit routes list
+        ROUTES=$(${netbirdScripts.wiit}/bin/netbird-wiit routes list | \
           ${pkgs.gawk}/bin/awk '/Network: 10\./ { print $2 }' | \
-          ${pkgs.coreutils}/bin/sort -u | \
-          ${pkgs.findutils}/bin/xargs --verbose -I {} \
+          ${pkgs.coreutils}/bin/sort -u)
+        echo "Adding routes over $NB_INTERFACE_NAME for:"
+        echo "''${ROUTES:-N/A}"
+
+        <<< "$ROUTES" ${pkgs.findutils}/bin/xargs --verbose -I {} \
             ${pkgs.iproute2}/bin/ip route add '{}' dev "$NB_INTERFACE_NAME"
       ;;
       delete)
@@ -78,26 +81,36 @@ in
   # FIXME This does not seem to get triggered when the service starts
   systemd.services.netbird-wiit = {
     postStart = ''
-      until ${pkgs.iproute2}/bin/ip link show "$NB_INTERFACE_NAME" &>/dev/null
+      nb_has_routes() {
+        local routes
+        if ! routes=$(${netbirdScripts.wiit}/bin/netbird-wiit routes list)
+        then
+          return 1
+        fi
+
+        # {
+        #   echo "[DEBUG] netbird routes list:"
+        #   echo "$routes"
+        # } >&2
+
+        ${pkgs.gnugrep}/bin/grep -vq 'No routes available' <<< "$routes"
+      }
+
+      until nb_has_routes
       do
-        echo "Waiting for interface $NB_INTERFACE_NAME to be created..."
+        echo "Waiting for netbird route info to be available"
         sleep 1
       done
 
-      echo "Interface $NB_INTERFACE_NAME created"
+      echo "Netbird route info is available"
 
-      until ${netbirdScripts.wiit}/bin/netbird-wiit status | \
-            ${pkgs.gnugrep}/bin/grep -qi Connected
-      do
-        echo "Waiting for netbird to be connected"
-        sleep 1
-      done
-
-      echo "Netbird instance $NB_INTERFACE_NAME is connected"
       echo "Running: ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes"
+      echo "Adding routes over $NB_INTERFACE_NAME for:"
+      echo "''${ROUTES:-N/A}"
 
       ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes
     '';
+
     preStop = ''
       echo "Deleting netbird routes from main routing table"
       ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes --delete
