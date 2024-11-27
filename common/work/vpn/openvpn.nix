@@ -302,7 +302,7 @@ in
       shadow.su
     ];
     preStart = ''
-      echo "Prestart: recreate auth file"
+      echo "PreStart: recreate auth file"
       rm -vf "${wiitAuthUserPass}"
 
       PASSWORD_PREFIX=$(cat ${config.sops.secrets."openvpn/wiit/password".path})
