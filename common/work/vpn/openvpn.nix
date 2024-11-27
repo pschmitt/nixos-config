@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   gecOvpnConfig = pkgs.fetchurl {
@@ -284,6 +289,11 @@ in
     '';
   };
 
+  sops.secrets = {
+    "openvpn/wiit/password" = { };
+    "openvpn/wiit/totp" = { };
+  };
+
   systemd.services.openvpn-wiit = {
     path = with pkgs; [
       zsh
@@ -295,7 +305,10 @@ in
       echo "Prestart: recreate auth file"
       rm -vf "${wiitAuthUserPass}"
 
-      PASSWORD="$(su pschmitt -c 'bww -o wiit-ovpn')"
+      PASSWORD_PREFIX=$(cat ${config.sops.secrets."openvpn/wiit/password".path})
+      TOTP_SECRET=$(cat ${config.sops.secrets."openvpn/wiit/totp".path})
+      TOTP=$(${pkgs.oath-toolkit}/bin/oathtool --base32 --totp --digits=6 "$TOTP_SECRET")
+      PASSWORD="''${PASSWORD_PREFIX}''${TOTP}"
       CREDENTIALS="${wiitUsername}\n$PASSWORD"
 
       echo -e "$CREDENTIALS" > "${wiitAuthUserPass}"
