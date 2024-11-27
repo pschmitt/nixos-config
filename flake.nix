@@ -13,10 +13,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    attic = {
-      url = "github:zhaofengli/attic";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # attic = {
+    #   url = "github:zhaofengli/attic";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
 
     catppuccin.url = "github:catppuccin/nix";
 
