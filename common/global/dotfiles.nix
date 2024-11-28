@@ -113,10 +113,12 @@
         nnoremap <leader>w :update<CR>
         nnoremap <leader>q :quitall!<CR>
         map Q :<C-u>quitall!<CR>
+        " NOTE pastetoggle has been removed from neovim
+        " https://github.com/neovim/neovim/blob/864f25d6b08ccfe17e0cf3fbc30639005c0145e0/runtime/doc/news-0.9.txt#L48
         " Toggle paste with F9
         " https://vim.fandom.com/wiki/Toggle_auto-indenting_for_code_paste
-        nnoremap <F9> :set invpaste paste?<CR>
-        set pastetoggle=<F9>
+        " nnoremap <F9> :set invpaste paste?<CR>
+        " set pastetoggle=<F9>
 
         " Spaces > Tabs
         set autoindent expandtab smarttab
