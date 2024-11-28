@@ -6,7 +6,7 @@ let
 
   # Attempt to access cli-plugins from passthru (may not always work)
   cliPlugins = (python-openstackclient.passthru.optional-dependencies.cli-plugins or [ ]) ++ [
-    prev.python311Packages.python-octaviaclient
+    py.python-octaviaclient
   ];
 
   openstackclient-full = py.python.withPackages (ps: cliPlugins ++ [ python-openstackclient ]);
