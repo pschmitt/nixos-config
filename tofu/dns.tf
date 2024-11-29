@@ -251,14 +251,6 @@ resource "cloudflare_record" "oci-yum-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "pp-brkn-lol" {
-  zone_id = cloudflare_zone.brkn_lol.id
-  name    = "pp"
-  type    = "A"
-  ttl     = 3600
-  content = oci_core_instance.oci_01.public_ip
-}
-
 resource "cloudflare_record" "tv-heimat-dev" {
   zone_id = cloudflare_zone.heimat_dev.id
   name    = "tv"
