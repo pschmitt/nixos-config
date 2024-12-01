@@ -21,6 +21,7 @@
     ../../common/work/deckmaster.nix
 
     ../../misc/nfs-client.nix
+    ../../services/netdata.nix
   ];
 
   # FIXME MIPI Camera
