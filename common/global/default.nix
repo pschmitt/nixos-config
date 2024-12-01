@@ -82,6 +82,7 @@ in
     dua # ncdu on steroids
     file
     fx
+    git
     htop
     hwatch
     jq
