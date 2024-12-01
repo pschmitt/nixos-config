@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   osConfig,
   pkgs,
@@ -30,7 +31,7 @@ in
   # };
 
   home.file."devel/work/.envrc" = {
-    source = osConfig.sops.templates."doers-envrc".path;
+    source = config.lib.file.mkOutOfStoreSymlink osConfig.sops.templates."doers-envrc".path;
   };
 
   home.packages =
