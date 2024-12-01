@@ -20,8 +20,7 @@
   #   linuxPackages_latest.nvidia_x11
   # ];
 
-  # FIX till pr#358047 is available on nixpkgs-unstable
-  # https://nixpkgs-tracker.ocfox.me/?pr=358047
+  # Newer kernels might not be compatible with the Nvidia crap.
   boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
 
   hardware.graphics.enable = true;
