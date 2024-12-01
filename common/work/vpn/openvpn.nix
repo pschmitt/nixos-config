@@ -306,8 +306,8 @@ in
       rm -vf "${wiitAuthUserPass}"
 
       PASSWORD_PREFIX=$(cat ${config.sops.secrets."openvpn/wiit/password".path})
-      TOTP_SECRET=$(cat ${config.sops.secrets."openvpn/wiit/totp".path})
-      TOTP=$(${pkgs.oath-toolkit}/bin/oathtool --base32 --totp --digits=6 "$TOTP_SECRET")
+      TOTP=$(cat ${config.sops.secrets."openvpn/wiit/totp".path} | \
+        ${pkgs.oath-toolkit}/bin/oathtool --base32 --totp --digits=6 -)
       PASSWORD="''${PASSWORD_PREFIX}''${TOTP}"
       CREDENTIALS="${wiitUsername}\n$PASSWORD"
 
