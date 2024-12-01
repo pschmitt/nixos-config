@@ -1,7 +1,4 @@
 {
-  inputs,
-  lib,
-  config,
   pkgs,
   ...
 }:
@@ -14,7 +11,9 @@
     configs = {
       home = {
         FSTYPE = "btrfs";
-        SUBVOLUME = "/home";
+        # NOTE make sure that there is a .snapshots subvolume!
+        # sudo btrfs subvolume create /home/.snapshots
+        SUBVOLUME = "/home"; # @home won't work here
         ALLOW_USERS = [ "pschmitt" ];
         TIMELINE_CREATE = true;
         TIMELINE_CLEANUP = true;
