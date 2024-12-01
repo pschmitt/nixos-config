@@ -32,7 +32,9 @@ in
         fira-code
         fira-code-symbols
         liberation_ttf
-        nerdfonts
+        nerd-fonts.fira-code
+        nerd-fonts.inconsolata
+        nerd-fonts.terminess-ttf
         noto-fonts
         noto-fonts-emoji
         ubuntu_font_family
