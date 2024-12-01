@@ -52,6 +52,10 @@
                       "noatime"
                     ];
                   };
+                  # sudo btrfs subvolume create /home/.snapshots
+                  # "@home/.snapshots" = {
+                  #   mountOptions = [ "compress=zstd" ];
+                  # };
                   "@nix" = {
                     mountpoint = "/nix";
                     mountOptions = [
