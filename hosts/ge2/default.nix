@@ -9,6 +9,8 @@
     ./wacom.nix
     # ./luks-remote.nix
 
+    ../../workarounds
+
     ../../common/global
     ../../common/gui
     ../../common/laptop
