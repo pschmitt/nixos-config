@@ -42,6 +42,12 @@
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = osConfig.system.stateVersion;
 
+  sops = {
+    defaultSopsFile = osConfig.sops.defaultSopsFile;
+    age.sshKeyPaths = [ "/home/pschmitt/.ssh/id_ed25519" ];
+    age.generateKey = false;
+  };
+
   programs.home-manager.enable = true;
 
   programs.nix-index-database.comma.enable = true;
