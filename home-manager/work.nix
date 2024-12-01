@@ -30,7 +30,7 @@ in
   #   };
   # };
 
-  home.file."devel/work/.envrc" = {
+  home.file."devel/work/gitops/.envrc" = {
     source = config.lib.file.mkOutOfStoreSymlink osConfig.sops.templates."doers-envrc".path;
   };
 
