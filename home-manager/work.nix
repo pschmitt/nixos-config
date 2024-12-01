@@ -9,6 +9,30 @@ let
   guiPackages = lib.optionals osConfig.services.xserver.enable [ pkgs.onlyoffice-bin ];
 in
 {
+  # FIXME the sops-nix hm modules produces garbage
+  # https://github.com/Mic92/sops-nix/issues/681
+  # sops = {
+  #   secrets = {
+  #     "artifactory/username" = { };
+  #     "artifactory/password" = { };
+  #     "gitlab/username" = { };
+  #     "gitlab/password" = { };
+  #   };
+  #   templates.doers-envrc = {
+  #     path = "${config.home.homeDirectory}/.cache/sops-nix/secrets/rendered";
+  #     content = ''
+  #       export VENDIR_SECRET_ARTIFACTORY_USERNAME=${config.sops.placeholder."artifactory/username"}
+  #       export VENDIR_SECRET_ARTIFACTORY_PASSWORD=${config.sops.placeholder."artifactory/password"}
+  #       export VENDIR_SECRET_GITLAB_USERNAME=${config.sops.placeholder."gitlab/username"}
+  #       export VENDIR_SECRET_GITLAB_PASSWORD=${config.sops.placeholder."gitlab/password"}
+  #     '';
+  #   };
+  # };
+
+  home.file."devel/work/.envrc" = {
+    source = osConfig.sops.templates."doers-envrc".path;
+  };
+
   home.packages =
     with pkgs;
     [
