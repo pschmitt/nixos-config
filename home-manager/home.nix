@@ -18,6 +18,7 @@
       ./default-apps.nix
       ./devel.nix
       ./mail.nix
+      ./mani.nix
       ./misc.nix
       ./networking.nix
       ./nvim.nix
