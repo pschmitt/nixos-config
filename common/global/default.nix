@@ -124,7 +124,7 @@ in
     nodejs
     podman-compose
     pkg-config
-    # (python3.withPackages(python-packages))
+    # (python3.withPackages (python-packages))
     (python312.withPackages (python-packages))
     rustc
     openssl
