@@ -21,6 +21,7 @@ let
       pynvim
       requests
       rich
+      uv
     ];
 in
 {
@@ -124,8 +125,7 @@ in
     podman-compose
     pkg-config
     # (python3.withPackages(python-packages))
-    # (python310.withPackages(python-packages))
-    (python311.withPackages (python-packages))
+    (python312.withPackages (python-packages))
     rustc
     openssl
   ];
