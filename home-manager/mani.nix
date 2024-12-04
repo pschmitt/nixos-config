@@ -38,6 +38,8 @@ let
   };
 in
 {
+  home.packages = [ pkgs.mani ];
+
   systemd.user.services = {
     mani = maniService "private";
     mani-work = maniService "work";
