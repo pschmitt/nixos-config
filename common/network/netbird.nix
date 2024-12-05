@@ -5,6 +5,7 @@
   ...
 }:
 let
+  netbirdPkg = pkgs.netbird; # or pkgs.master.netbird
   createNetbirdScript =
     tunnelName: tunnelConfig:
     pkgs.writeShellScriptBin "netbird-${tunnelName}" ''
@@ -16,8 +17,8 @@ let
       # Run netbird
       # TODO Stupidly prepending sudo to the command doesn't work and just
       # breaks the netbird cli
-      # exec /run/wrappers/bin/sudo ${pkgs.netbird}/bin/netbird "$@"
-      exec ${pkgs.master.netbird}/bin/netbird "$@"
+      # exec /run/wrappers/bin/sudo ${netbirdPkg}/bin/netbird "$@"
+      exec ${netbirdPkg}/bin/netbird "$@"
     '';
 
   netbirdScripts = lib.mapAttrsToList createNetbirdScript config.services.netbird.tunnels;
@@ -34,7 +35,7 @@ in
 
   services.netbird = {
     enable = true;
-    package = pkgs.master.netbird;
+    package = netbirdPkg;
     tunnels = {
       netbird-io = {
         port = 51820;
