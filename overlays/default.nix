@@ -1,4 +1,3 @@
-# This file defines overlays
 { inputs, ... }:
 {
   # This one brings our custom packages from the 'pkgs' directory
@@ -11,6 +10,7 @@
     final: prev:
     (import ./brotab.nix { inherit final prev; })
     // (import ./libratbag.nix { inherit final prev; })
+    // (import ./netbird.nix { inherit final prev; })
     // (import ./openstack-cli.nix { inherit final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
     # // (import ./tmux.nix { inherit final prev; })
