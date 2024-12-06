@@ -113,7 +113,6 @@
     virt-manager
 
     intel-gpu-tools
-    piper # gui for libratbag
 
     # qrcode create/read
     qrencode
