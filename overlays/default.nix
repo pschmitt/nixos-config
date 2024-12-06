@@ -9,7 +9,6 @@
   modifications =
     final: prev:
     (import ./brotab.nix { inherit final prev; })
-    // (import ./libratbag.nix { inherit final prev; })
     // (import ./netbird.nix { inherit final prev; })
     // (import ./openstack-cli.nix { inherit final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
