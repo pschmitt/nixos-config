@@ -16,7 +16,7 @@
 
         # FIXME the osc7 shell func produces output which p10k complains about
         # on startup (hence the WEZTERM_SHELL_SKIP_CWD)
-        WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
+        # WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
 
         # zoxide
         source ${
