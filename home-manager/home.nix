@@ -11,6 +11,7 @@
     [
       inputs.sops-nix.homeManagerModules.sops
       inputs.nur.hmModules.nur
+      # inputs.nur.modules.home-manager.default # new name
       inputs.nix-index-database.hmModules.nix-index
       inputs.catppuccin.homeManagerModules.catppuccin
       ./bitwarden.nix
