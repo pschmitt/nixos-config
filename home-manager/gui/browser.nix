@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 {
 
   home.packages = with pkgs; [ brotab ];
@@ -7,7 +7,7 @@
     enable = true;
 
     profiles.default = {
-      extensions = with config.nur.repos.rycee.firefox-addons; [
+      extensions = with pkgs.nur.repos.rycee.firefox-addons; [
         # https://nur.nix-community.org/repos/rycee/
         auto-tab-discard
         bitwarden
