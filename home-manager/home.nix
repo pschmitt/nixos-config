@@ -15,7 +15,6 @@
       inputs.catppuccin.homeManagerModules.catppuccin
       ./bitwarden.nix
       ./crypto.nix
-      ./default-apps.nix
       ./devel.nix
       ./mail.nix
       ./mani.nix
