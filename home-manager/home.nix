@@ -28,12 +28,7 @@
       # ./zellij.nix
     ]
     (lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix)
-    (lib.optionals (osConfig.services.xserver.enable) [
-      ./browser.nix
-      ./dotool.nix
-      ./media.nix
-      ./theme.nix
-    ])
+    (lib.optional (osConfig.services.xserver.enable) ./gui)
   ];
 
   # FIXME Do we need that for anything?
@@ -154,6 +149,4 @@
       ];
     };
   };
-
-  services.mpris-proxy.enable = osConfig.hardware.bluetooth.enable;
 }
