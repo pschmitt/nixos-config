@@ -193,8 +193,7 @@
         disko.nixosModules.disko
         flatpaks.nixosModules.declarative-flatpak
         nix-index-database.nixosModules.nix-index
-        nur.nixosModules.nur
-        # nur.modules.nixos.default # new name
+        nur.modules.nixos.default
         sops-nix.nixosModules.sops
         update-systemd-resolved.nixosModules.update-systemd-resolved
       ];
