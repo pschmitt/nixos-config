@@ -69,7 +69,7 @@ jobs:
 
       - name: Build package
         run: |-
-          nix build --print-build-logs "$FLAKE_PATH" \
+          nix build --print-build-logs \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
       - name: Nix copy package
