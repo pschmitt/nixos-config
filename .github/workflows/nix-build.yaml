@@ -201,7 +201,7 @@ jobs:
 
       - name: Nix copy package
         run: |
-          nix copy --to "$NIX_DEST_STORE_URL" \
+          nix copy --to "$NIX_DEST_STORE_URL" --impure \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts-x86_64:
