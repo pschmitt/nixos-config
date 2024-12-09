@@ -69,9 +69,13 @@ jobs:
 
       - name: Build package
         run: |-
-          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
-          nix build --print-build-logs "$FLAKE_PATH"
-          nix copy --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
+          nix build --print-build-logs "$FLAKE_PATH" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+
+      - name: Nix copy package
+        run: |
+          nix copy --to "$NIX_DEST_STORE_URL" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-pkgs-oci:
     needs: setup-matrix
@@ -119,17 +123,21 @@ jobs:
 
       - name: Build package (aarch64-linux)
         run: |-
-          FLAKE_PATH='.#packages.aarch64-linux.${{ matrix.pkg }}'
-          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#packages.aarch64-linux.${{ matrix.pkg }}'
           tree result
-          nix copy --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
 
       - name: Build package (x86_64-linux)
         run: |-
-          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
-          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
-          nix copy --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
+
+      - name: Nix copy packages
+        run: |
+          nix copy --to "$NIX_DEST_STORE_URL" \
+            '.#packages.aarch64-linux.${{ matrix.pkg }}' \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-pkgs-nonfree:
     needs: setup-matrix
@@ -187,11 +195,14 @@ jobs:
       - name: Build package
         # NOTE --impure is required for consuming env vars (ie. NIXPKGS_ALLOW_UNFREE)
         run: |-
-          FLAKE_PATH='.#packages.x86_64-linux.${{ matrix.pkg }}'
-          nix build --print-build-logs --builders "$NIX_BUILDER" \
-            --impure "$FLAKE_PATH"
+          nix build --print-build-logs --builders "$NIX_BUILDER" --impure \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
-          nix copy --impure --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
+
+      - name: Nix copy package
+        run: |
+          nix copy --to "$NIX_DEST_STORE_URL" \
+            '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts-x86_64:
     needs:
@@ -234,9 +245,13 @@ jobs:
 
       - name: Build nixosConfiguration
         run: |-
-          FLAKE_PATH='.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
-          nix build --print-build-logs "$FLAKE_PATH"
-          nix copy --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
+          nix build --print-build-logs \
+            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+
+      - name: Nix copy package
+        run: |
+          nix copy --to "$NIX_DEST_STORE_URL" \
+            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
   build-hosts-aarch64:
     needs:
@@ -293,6 +308,10 @@ jobs:
 
       - name: Build nixosConfiguration
         run: |-
-          FLAKE_PATH='.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
-          nix build --print-build-logs --builders "$NIX_BUILDER" "$FLAKE_PATH"
-          nix copy --to "$NIX_DEST_STORE_URL" "$FLAKE_PATH"
+          nix build --print-build-logs --builders "$NIX_BUILDER" \
+            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+
+      - name: Nix copy package
+        run: |
+          nix copy --to "$NIX_DEST_STORE_URL" \
+            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
