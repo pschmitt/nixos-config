@@ -156,7 +156,7 @@
 
   # Add symlink to flake source that built the current gen
   # https://www.reddit.com/r/NixOS/comments/16t2njf/small_trick_for_people_using_nixos_with_flakes/
-  environment.etc."nixos-source".source = ./.;
+  environment.etc."nixos-source".source = ./../..;
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system = {
