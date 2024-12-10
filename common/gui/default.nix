@@ -117,6 +117,7 @@
     # qrcode create/read
     qrencode
     termimage # for displaying the qrcode in cli
+    chafa
     zbar # provides zabarimg, for reading
   ];
 }
