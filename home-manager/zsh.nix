@@ -27,6 +27,19 @@
         }/init.zsh
         alias z=__zoxide_z
         alias zz=__zoxide_zi
+
+        # atuin
+        source ${
+          (pkgs.runCommand "atuin-init" { } ''
+            mkdir -p $out/home
+            HOME=$out/home ${pkgs.atuin}/bin/atuin init \
+              --disable-ctrl-r \
+              --disable-up-arrow \
+              zsh > $out/init.zsh
+            rm -rf $out/home
+          '')
+        }/init.zsh
+        # bindkey '^[r' _atuin_search_widget
       '';
     };
   };
