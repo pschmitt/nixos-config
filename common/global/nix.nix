@@ -48,7 +48,7 @@
 
     gc = {
       automatic = true;
-      dates = "weekly";
+      dates = lib.mkDefault "weekly";
       persistent = true;
       options = "--delete-older-than 10d";
     };
