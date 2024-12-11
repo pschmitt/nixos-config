@@ -69,4 +69,6 @@ in
   };
 
   services.nginx.virtualHosts = virtualHosts;
+
+  nix.gc.dates = lib.mkForce "monthly";
 }
