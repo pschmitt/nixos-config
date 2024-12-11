@@ -57,6 +57,10 @@ let
         "radarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    stirling-pdf = {
+      port = 18733;
+      hosts = [ "pdf.${config.custom.mainDomain}" ];
+    };
     sonarr = {
       port = 8989;
       hosts = [
