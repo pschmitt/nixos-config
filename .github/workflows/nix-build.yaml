@@ -72,10 +72,14 @@ jobs:
           nix build --print-build-logs \
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
-      - name: Nix copy package
-        run: |
-          nix copy --to "$NIX_DEST_STORE_URL" \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+      - name: "Nix copy package"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            nix copy --to "$NIX_DEST_STORE_URL" \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-pkgs-oci:
     needs: setup-matrix
@@ -133,11 +137,15 @@ jobs:
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
 
-      - name: Nix copy packages
-        run: |
-          nix copy --to "$NIX_DEST_STORE_URL" \
-            '.#packages.aarch64-linux.${{ matrix.pkg }}' \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+      - name: "Nix copy packages"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            nix copy --to "$NIX_DEST_STORE_URL" \
+              '.#packages.aarch64-linux.${{ matrix.pkg }}' \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-pkgs-nonfree:
     needs: setup-matrix
@@ -199,10 +207,14 @@ jobs:
             '.#packages.x86_64-linux.${{ matrix.pkg }}'
           tree result
 
-      - name: Nix copy package
-        run: |
-          nix copy --to "$NIX_DEST_STORE_URL" --impure \
-            '.#packages.x86_64-linux.${{ matrix.pkg }}'
+      - name: "Nix copy package"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            nix copy --to "$NIX_DEST_STORE_URL" --impure \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts-x86_64:
     needs:
@@ -248,10 +260,14 @@ jobs:
           nix build --print-build-logs \
             '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
-      - name: Nix copy package
-        run: |
-          nix copy --to "$NIX_DEST_STORE_URL" \
-            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+      - name: "Nix copy package"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            nix copy --to "$NIX_DEST_STORE_URL" \
+              '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
   build-hosts-aarch64:
     needs:
@@ -311,7 +327,11 @@ jobs:
           nix build --print-build-logs --builders "$NIX_BUILDER" \
             '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
-      - name: Nix copy package
-        run: |
-          nix copy --to "$NIX_DEST_STORE_URL" \
-            '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
+      - name: "Nix copy package"
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            nix copy --to "$NIX_DEST_STORE_URL" \
+              '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
