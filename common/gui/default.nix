@@ -8,6 +8,7 @@
     ./bluetooth.nix
     ./btrfs.nix
     ./fonts.nix
+    ./gpu.nix
     ./hacompanion.nix
     ./hyprland.nix
     ./libvirt.nix
