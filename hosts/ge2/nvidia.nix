@@ -3,6 +3,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -10,15 +11,6 @@
     # Uncomment to completely disable the NVIDIA GPU
     # inputs.hardware.nixosModules.common-gpu-nvidia-disable
   ];
-
-  # https://discourse.nixos.org/t/nixos-using-integrated-gpu-for-display-and-external-gpu-for-compute-a-guide/12345
-  # boot.blacklistedKernelModules = [ "nouveau" "nvidia_drm" "nvidia_modeset" "nvidia" ];
-  # boot.extraModulePackages = with pkgs; [
-  #   linuxPackages_latest.nvidia_x11
-  # ];
-  # environment.systemPackages = with pkgs; [
-  #   linuxPackages_latest.nvidia_x11
-  # ];
 
   # Newer kernels might not be compatible with the Nvidia crap.
   boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
@@ -52,7 +44,8 @@
     nvidiaSettings = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    # https://github.com/nixos/nixpkgs/blob/master/pkgs/os-specific/linux/nvidia-x11/default.nix
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
     # package = config.boot.kernelPackages.nvidiaPackages.vulkan_beta;
 
