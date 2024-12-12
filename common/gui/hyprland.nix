@@ -104,6 +104,7 @@ in
   programs = {
     hyprland = {
       enable = true;
+      withUWSM = true;
       package = hyprlandPkg;
       portalPackage = xdphPkg;
     };
@@ -114,18 +115,6 @@ in
     };
 
     nm-applet.enable = true;
-
-    uwsm = {
-      enable = true;
-
-      waylandCompositors = {
-        hyprland = {
-          prettyName = "Hyprland";
-          comment = "Hyprland compositor managed by UWSM";
-          binPath = "/run/current-system/sw/bin/Hyprland";
-        };
-      };
-    };
   };
 
   # This essentially adds ~/bin to the PATH of systemd user services
