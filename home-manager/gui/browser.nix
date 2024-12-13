@@ -1,7 +1,10 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 {
 
-  home.packages = with pkgs; [ brotab ];
+  home.packages = with pkgs; [
+    brotab
+    inputs.zen-browser.packages."${system}".specific
+  ];
 
   programs.firefox = {
     enable = true;
@@ -155,16 +158,20 @@
   # FIXME This seems to be the only really working way to install
   # native messaging hosts.
   # programs.firefox.nativeMessagingHosts.packages doesn't work!
-  home.file.".mozilla/native-messaging-hosts/brotab_mediator.json".source = "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
-  home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source = "${pkgs.fx-cast-bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
+  home.file.".mozilla/native-messaging-hosts/brotab_mediator.json".source =
+    "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
+  home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source =
+    "${pkgs.fx-cast-bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
   # FIXME the vdhcoapp 2.0.19 nixpkg does not ship with a static native
   # messaging manifest, instead it is relying on the user running:
   # $ vdhcoapp install
   # home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${pkgs.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
-  home.file.".mozilla/native-messaging-hosts/tridactyl.json".source = "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
+  home.file.".mozilla/native-messaging-hosts/tridactyl.json".source =
+    "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
   # BroTab for Google Chrome
-  home.file.".config/google-chrome/NativeMessagingHosts/brotab_mediator.json".source = "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
+  home.file.".config/google-chrome/NativeMessagingHosts/brotab_mediator.json".source =
+    "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
 
   systemd.user.services.fx-cast = {
     Unit = {

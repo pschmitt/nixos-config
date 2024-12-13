@@ -1833,7 +1833,8 @@
         "srvos": "srvos",
         "update-systemd-resolved": "update-systemd-resolved",
         "wezterm": "wezterm",
-        "xdph": "xdph_2"
+        "xdph": "xdph_2",
+        "zen-browser": "zen-browser"
       }
     },
     "rust-overlay": {
@@ -2393,6 +2394,26 @@
         "owner": "hyprwm",
         "ref": "v1.3.8",
         "repo": "xdg-desktop-portal-hyprland",
+        "type": "github"
+      }
+    },
+    "zen-browser": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1734038753,
+        "narHash": "sha256-v2NetNrFvObcTx5Gw0MV9leJQr0KfCLtbpC4gZaq+Tc=",
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
+        "rev": "b2a4aeaad1cdb4a0d8901313d6388a8b4bf2c59d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "0xc000022070",
+        "repo": "zen-browser-flake",
         "type": "github"
       }
     },
