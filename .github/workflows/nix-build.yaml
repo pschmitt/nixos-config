@@ -78,6 +78,8 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
+            # DEBUG
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
@@ -143,6 +145,8 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
+            # DEBUG
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.aarch64-linux.${{ matrix.pkg }}' \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
@@ -213,6 +217,8 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
+            # DEBUG
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
             nix copy --to "$NIX_DEST_STORE_URL" --impure \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
@@ -266,6 +272,8 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
+            # DEBUG
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
@@ -333,5 +341,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
+            # DEBUG
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
