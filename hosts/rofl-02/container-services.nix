@@ -86,6 +86,10 @@ let
         "torrent.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    wallos = {
+      port = 8282;
+      hosts = [ "subs.${config.custom.mainDomain}" ];
+    };
     wikijs = {
       port = 9454;
       hosts = [ "wiki.${config.custom.mainDomain}" ];
