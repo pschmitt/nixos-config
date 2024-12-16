@@ -18,16 +18,6 @@
         # on startup (hence the WEZTERM_SHELL_SKIP_CWD)
         # WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
 
-        # zoxide
-        source ${
-          (pkgs.runCommand "zoxide-init" { } ''
-            mkdir -p $out
-            ${pkgs.zoxide}/bin/zoxide init zsh --no-cmd > $out/init.zsh
-          '')
-        }/init.zsh
-        alias z=__zoxide_z
-        alias zz=__zoxide_zi
-
         # atuin
         source ${
           (pkgs.runCommand "atuin-init" { } ''
@@ -40,6 +30,29 @@
           '')
         }/init.zsh
         # bindkey '^[r' _atuin_search_widget
+
+        # direnv
+        source ${
+          (pkgs.runCommand "direnv-init" { } ''
+            mkdir -p $out
+            ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
+            # NOTE Setting DIRENV_LOG_FORMAT= will silence direnv,
+            # which will make p10k's instant prompt happy
+            DIRENV_LOG_FORMAT=
+          '')
+        }/init.zsh
+
+
+        # zoxide
+        source ${
+          (pkgs.runCommand "zoxide-init" { } ''
+            mkdir -p $out
+            ${pkgs.zoxide}/bin/zoxide init zsh --no-cmd > $out/init.zsh
+          '')
+        }/init.zsh
+        alias z=__zoxide_z
+        alias zz=__zoxide_zi
+
       '';
     };
   };
