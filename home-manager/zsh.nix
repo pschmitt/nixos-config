@@ -52,7 +52,6 @@
         }/init.zsh
         alias z=__zoxide_z
         alias zz=__zoxide_zi
-
       '';
     };
   };
