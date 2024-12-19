@@ -9,8 +9,8 @@
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
   # hyprlandPkg = pkgs.hyprland;
-  xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
-  # xdphPkg = pkgs.xdg-desktop-portal-hyprland;
+  # xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
+  xdphPkg = pkgs.xdg-desktop-portal-hyprland;
   hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
   hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
 in
@@ -39,6 +39,8 @@ in
     # MOZ_ENABLE_WAYLAND = "1";
     MOZ_USE_XINPUT2 = "1";
 
+    # TODO below is pseudo-deprecated since hyprland 0.46.0
+    # https://github.com/hyprwm/Hyprland/releases/tag/v0.46.0
     # Fix cursor not showing up on some outputs
     # https://www.reddit.com/r/NixOS/comments/105f4e0/invisible_cursor_on_hyprland/
     WLR_NO_HARDWARE_CURSORS = "1";
