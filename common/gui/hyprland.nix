@@ -43,7 +43,7 @@ in
     # https://github.com/hyprwm/Hyprland/releases/tag/v0.46.0
     # Fix cursor not showing up on some outputs
     # https://www.reddit.com/r/NixOS/comments/105f4e0/invisible_cursor_on_hyprland/
-    WLR_NO_HARDWARE_CURSORS = "1";
+    # WLR_NO_HARDWARE_CURSORS = "1";
   };
 
   environment.systemPackages = with pkgs; [
