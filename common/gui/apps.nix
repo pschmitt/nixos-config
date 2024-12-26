@@ -3,14 +3,21 @@
   # https://app.cachix.org/cache/lan-mouse
   nix.settings = {
     # lan-mouse flake
-    substituters = [ "https://lan-mouse.cachix.org" ];
-    trusted-public-keys = [ "lan-mouse.cachix.org-1:KlE2AEZUgkzNKM7BIzMQo8w9yJYqUpor1CAUNRY6OyM=" ];
+    substituters = [
+      "https://ghostty.cachix.org"
+      "https://lan-mouse.cachix.org"
+    ];
+    trusted-public-keys = [
+      "ghostty.cachix.org-1:QB389yTa6gTyneehvqG58y0WnHjQOqgnA+wBnpWWxns="
+      "lan-mouse.cachix.org-1:KlE2AEZUgkzNKM7BIzMQo8w9yJYqUpor1CAUNRY6OyM="
+    ];
   };
 
   environment.systemPackages = with pkgs; [
     alacritty
     foot
     kitty
+    inputs.ghostty.packages.${pkgs.system}.default
     inputs.wezterm.packages.${pkgs.system}.default
     inputs.lan-mouse.packages.${pkgs.system}.default
 
