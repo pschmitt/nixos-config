@@ -40,6 +40,11 @@
       # NOTE Do *not* override nixpkgs, it is not supported
     };
 
+    ghostty = {
+      url = "github:ghostty-org/ghostty";
+      inputs.nixpkgs-unstable.follows = "nixpkgs";
+    };
+
     hardware.url = "github:nixos/nixos-hardware";
 
     home-manager = {
