@@ -2,6 +2,12 @@
 
 let
   services = {
+    alby-hub = {
+      port = 25294;
+      hosts = [
+        "alby.${config.custom.mainDomain}"
+      ];
+    };
     archivebox = {
       port = 27244;
       hosts = [
