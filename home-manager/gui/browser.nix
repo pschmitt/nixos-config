@@ -3,7 +3,7 @@
 
   home.packages = with pkgs; [
     brotab
-    inputs.zen-browser.packages."${system}".specific
+    inputs.zen-browser.packages."${system}".default
   ];
 
   programs.firefox = {
