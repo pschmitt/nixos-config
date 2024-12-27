@@ -71,4 +71,10 @@ in
   services.nginx.virtualHosts = virtualHosts;
 
   nix.gc.dates = lib.mkForce "monthly";
+
+  # Setup nix store signing key path, so that we can also leverage the nix cache
+  # via ssh (which bypasses harmonia)
+  nix.extraOptions = ''
+    secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
+  '';
 }
