@@ -80,6 +80,9 @@ jobs:
           command: |
             # DEBUG
             ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
@@ -147,6 +150,9 @@ jobs:
           command: |
             # DEBUG
             ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.aarch64-linux.${{ matrix.pkg }}' \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
@@ -219,6 +225,9 @@ jobs:
           command: |
             # DEBUG
             ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
             nix copy --to "$NIX_DEST_STORE_URL" --impure \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
@@ -274,6 +283,9 @@ jobs:
           command: |
             # DEBUG
             ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
@@ -343,5 +355,8 @@ jobs:
           command: |
             # DEBUG
             ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
