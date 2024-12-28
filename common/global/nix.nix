@@ -115,6 +115,7 @@
       outputs.overlays.modifications
       outputs.overlays.unstable-packages
       outputs.overlays.old-packages
+      inputs.fenix.overlays.default # rust-nightly
 
       # You can also add overlays exported from other flakes:
       # neovim-nightly.overlays.default
