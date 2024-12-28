@@ -30,7 +30,14 @@
     };
   };
 
-  boot.binfmt.emulatedSystems = if pkgs.system != "aarch64-linux" then [ "aarch64-linux" ] else [ ];
+  boot.binfmt.emulatedSystems =
+    if pkgs.system != "aarch64-linux" then
+      [
+        "aarch64-linux"
+        "i686-linux"
+      ]
+    else
+      [ ];
 
   nix = {
     # GitHub access token
