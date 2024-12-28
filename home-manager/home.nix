@@ -65,6 +65,7 @@
     bat
     direnv
     emoji-fzf
+    eza
     fd
     fzf
     gyb
