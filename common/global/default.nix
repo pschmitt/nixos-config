@@ -117,7 +117,6 @@ in
     xfsprogs
 
     # devel
-    cargo
     gcc
     gnumake
     go
@@ -126,8 +125,18 @@ in
     pkg-config
     # (python3.withPackages (python-packages))
     (python312.withPackages (python-packages))
-    rustc
     openssl
+
+    # rust
+    # cargo
+    # rustc
+    (fenix.complete.withComponents [
+      "cargo"
+      "clippy"
+      "rust-src"
+      "rustc"
+      "rustfmt"
+    ])
   ];
 
   users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
