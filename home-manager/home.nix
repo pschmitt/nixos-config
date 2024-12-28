@@ -90,7 +90,7 @@
 
     # virtualization
     distrobox
-    quickemu
+    # quickemu # fails to build as of 28.12.2024
     # quickgui # fails to build as of 09.09.2024
 
     # devel
