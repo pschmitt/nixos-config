@@ -1,7 +1,7 @@
 { final, prev }:
 
 let
-  py = prev.python311Packages;
+  py = prev.python312Packages;
   python-openstackclient = py.python-openstackclient;
 
   # Attempt to access cli-plugins from passthru (may not always work)
