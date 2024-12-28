@@ -291,10 +291,6 @@
           server = true;
           snapd = true;
         };
-        oci-04 = nixosSystemFor "aarch64-linux" "oci-04" {
-          server = true;
-          snapd = true;
-        };
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
