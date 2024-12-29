@@ -16,6 +16,8 @@
 
       luajit
 
+      imagemagick # for image.nvim
+
       # lsp
       ruff-lsp
     ];
