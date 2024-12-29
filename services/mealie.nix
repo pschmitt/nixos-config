@@ -1,10 +1,11 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   mealieHost = "nom.${config.custom.mainDomain}";
 in
 {
   services.mealie = {
     enable = true;
+    package = pkgs.master.mealie;
     listenAddress = "127.0.0.1";
     port = 9000;
   };
