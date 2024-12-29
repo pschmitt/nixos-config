@@ -96,6 +96,11 @@ let
       port = 8282;
       hosts = [ "subs.${config.custom.mainDomain}" ];
     };
+    whoami = {
+      port = 19462;
+      hosts = [ "whoami.${config.custom.mainDomain}" ];
+      default = true;
+    };
     wikijs = {
       port = 9454;
       hosts = [ "wiki.${config.custom.mainDomain}" ];
@@ -106,6 +111,7 @@ let
   createVirtualHost = service: hostname: {
     name = hostname;
     value = {
+      default = service.default or false;
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
