@@ -5,7 +5,7 @@
   ...
 }:
 let
-  netbirdPkg = pkgs.netbird; # or pkgs.master.netbird
+  netbirdPkg = pkgs.master.netbird;
   createNetbirdScript =
     tunnelName: tunnelConfig:
     pkgs.writeShellScriptBin "netbird-${tunnelName}" ''
