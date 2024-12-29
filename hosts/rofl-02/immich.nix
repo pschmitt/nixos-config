@@ -97,7 +97,11 @@ in
 {
   services.immich = {
     enable = true;
-    # package = pkgs.master.immich;
+    # immich fails to build on unstable as of 2024-12-29
+    # Fix:
+    # https://github.com/NixOS/nixpkgs/pull/369042
+    # https://nixpkgs-tracker.ocfox.me/?pr=369042
+    package = pkgs.master.immich;
     # NOTE listening on "localhost" leads to immich only listening on IPv6
     host = "127.0.0.1";
     port = 2283;
