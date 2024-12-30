@@ -7,7 +7,7 @@ in
     secrets = {
       "mealie/openai-api-key" = {
         sopsFile = config.custom.sopsFile;
-        restartUnits = [ "mealie" ];
+        restartUnits = [ "mealie.service" ];
       };
     };
 
