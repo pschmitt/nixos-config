@@ -12,20 +12,11 @@ in
     };
 
     templates.mealieCredentials = {
-      # owner = "mealie";
       content = ''
         OPENAI_API_KEY=${config.sops.placeholder."mealie/openai-api-key"}
       '';
     };
   };
-
-  # systemd.services.mealie = {
-  #   serviceConfig = {
-  #     # Group = "mealie";
-  #     LoadCredential = [ "openai_api_key:${config.sops.secrets."mealie/openai-api-key".path}" ];
-  #     Environment = [ "OPENAI_API_KEY=%d/openai_api_key" ];
-  #   };
-  # };
 
   services.mealie = {
     enable = true;
