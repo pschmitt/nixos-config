@@ -5,16 +5,27 @@ in
 {
   sops = {
     secrets = {
-      "mealie/openai-api-key" = { };
+      "mealie/openai-api-key" = {
+        sopsFile = config.custom.sopsFile;
+        restartUnits = [ "mealie" ];
+      };
     };
 
     templates.mealieCredentials = {
-      owner = "mealie";
+      # owner = "mealie";
       content = ''
         OPENAI_API_KEY=${config.sops.placeholder."mealie/openai-api-key"}
       '';
     };
   };
+
+  # systemd.services.mealie = {
+  #   serviceConfig = {
+  #     # Group = "mealie";
+  #     LoadCredential = [ "openai_api_key:${config.sops.secrets."mealie/openai-api-key".path}" ];
+  #     Environment = [ "OPENAI_API_KEY=%d/openai_api_key" ];
+  #   };
+  # };
 
   services.mealie = {
     enable = true;
