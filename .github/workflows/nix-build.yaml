@@ -63,9 +63,15 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        run: |-
-          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Build package
         run: |-
@@ -112,9 +118,15 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        run: |-
-          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -190,9 +202,15 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        run: |-
-          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Fetch proprietary fonts (nixpkg src)
         uses: nick-fields/retry@v3
@@ -266,9 +284,15 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        run: |-
-          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Build nixosConfiguration
         run: |-
@@ -324,9 +348,15 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        run: |-
-          ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-            sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
