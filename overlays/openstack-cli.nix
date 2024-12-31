@@ -1,7 +1,7 @@
 { final, prev }:
 
 let
-  py = prev.python312Packages;
+  py = prev.python311Packages;
   python-openstackclient = py.python-openstackclient;
 
   cliPlugins = (python-openstackclient.passthru.optional-dependencies.cli-plugins or [ ]) ++ [
