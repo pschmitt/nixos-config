@@ -4,7 +4,9 @@
 
   # Enable sound with pipewire.
   # https://nixos.wiki/wiki/PipeWire
-  hardware.pulseaudio.enable = false;
+  # TODO as of 04.01.2025: hardware.pulseaudio -> services.pulseaudio
+  # default value: false
+  # services.pulseaudio.enable = false;
   security.rtkit.enable = true;
 
   services.pipewire = {
