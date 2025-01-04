@@ -132,8 +132,8 @@ in
     # rustc
     (fenix.complete.withComponents [
       "cargo"
-      "clippy"
-      "rust-src"
+      # "clippy"
+      # "rust-src"
       "rustc"
       "rustfmt"
     ])

@@ -205,6 +205,7 @@
       },
       "original": {
         "owner": "nix-community",
+        "ref": "monthly",
         "repo": "fenix",
         "type": "github"
       }
