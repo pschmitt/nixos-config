@@ -40,6 +40,12 @@ let
         "nextcloud.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    open-webui = {
+      port = 6736;
+      hosts = [
+        "ai.${config.custom.mainDomain}"
+      ];
+    };
     pp = {
       port = 9999;
       hosts = [
