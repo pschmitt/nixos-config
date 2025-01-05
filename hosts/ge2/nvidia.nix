@@ -2,6 +2,7 @@
 {
   config,
   lib,
+  inputs,
   pkgs,
   ...
 }:
@@ -14,6 +15,23 @@
   # FIXME Last known working version was:
   # - pkgs.linuxPackages_6_11 ie. Linux ge2 6.11.10 #1-NixOS SMP PREEMPT_DYNAMIC Fri Nov 22 14:39:56 UTC 2024 x86_64 GNU/Linux
   # - NVIDIA Driver Version: 560.35.03 (NVML Version: 12.560.35.03)
+  # - nixpkgs:
+  #   "nixpkgs": {
+  #     "locked": {
+  #       "lastModified": 1734424634,
+  #       "narHash": "sha256-cHar1vqHOOyC7f1+tVycPoWTfKIaqkoe1Q6TnKzuti4=",
+  #       "owner": "NixOS",
+  #       "repo": "nixpkgs",
+  #       "rev": "d3c42f187194c26d9f0309a8ecc469d6c878ce33",
+  #       "type": "github"
+  #     },
+  #     "original": {
+  #       "owner": "NixOS",
+  #       "ref": "nixos-unstable",
+  #       "repo": "nixpkgs",
+  #       "type": "github"
+  #     }
+  #   },
 
   # Newer kernels might not be compatible with the Nvidia crap.
   boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
