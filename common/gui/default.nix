@@ -57,6 +57,8 @@
   services.libinput.enable = true;
   services.udev.packages = [ pkgs.android-udev-rules ];
 
+  services.seatd.enable = true;
+
   # enable sushi and keyring
   services.gnome = {
     sushi.enable = true;
