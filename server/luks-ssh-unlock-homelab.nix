@@ -2,13 +2,18 @@
 
 let
   # List of instance names
-  instanceNames = [ "fnuc" ];
+  instances = [
+    {
+      name = "fnuc";
+      host = "10.5.0.14";
+    }
+  ];
 
   # Define a function to create an instance with common defaults
-  createInstance = name: {
+  createInstance = instance: {
     type = "dracut";
-    hostname = "${name}.lan";
-    passphraseFile = config.sops.secrets.${"luks/" + name}.path;
+    hostname = instance.host;
+    passphraseFile = config.sops.secrets.${"luks/" + instance.name}.path;
     forceIpv4 = true;
     sleepInterval = 30;
 
@@ -26,12 +31,12 @@ let
 
   # Helper to define sops secrets for each instance
   defineSopsSecrets = lib.listToAttrs (
-    lib.lists.map (name: {
-      name = "luks/${name}";
+    lib.lists.map (instance: {
+      name = "luks/${instance.name}";
       value = {
         sopsFile = config.custom.sopsFile;
       };
-    }) instanceNames
+    }) instances
   );
 in
 {
@@ -41,10 +46,10 @@ in
   services.luks-ssh-unlocker = {
     enable = true;
     instances = lib.listToAttrs (
-      lib.lists.map (name: {
-        name = name;
-        value = createInstance name;
-      }) instanceNames
+      lib.lists.map (instance: {
+        name = instance.name;
+        value = createInstance instance;
+      }) instances
     );
   };
 }
