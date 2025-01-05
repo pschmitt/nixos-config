@@ -75,11 +75,7 @@ in
     wf-recorder
 
     # clipboard
-    # FIXME cliphist 0.5.0 is broken, 0.6.1 is in master as of 2024-10-16
-    # See: https://nixpk.gs/pr-tracker.html?pr=348887
-    # https://github.com/NixOS/nixpkgs/issues/348819
-    master.cliphist
-    # cliphist
+    cliphist
     wl-clip-persist
     wl-clipboard
 
