@@ -14,6 +14,8 @@
     ./libvirt.nix
     ./logitech-mouse.nix
     ./printer.nix
+    ./sway.nix
+    ./gnome.nix
     ./theme.nix
   ];
 
