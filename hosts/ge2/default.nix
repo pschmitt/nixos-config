@@ -5,7 +5,11 @@
     inputs.hardware.nixosModules.common-pc-ssd
 
     ./hardware-configuration.nix
+
+    # gpus
+    ./intel-gpu.nix
     ./nvidia.nix
+
     ./wacom.nix
     # ./luks-remote.nix
 
