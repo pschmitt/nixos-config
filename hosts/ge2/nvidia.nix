@@ -11,11 +11,20 @@
     # inputs.hardware.nixosModules.common-gpu-nvidia-disable
   ];
 
+  # FIXME Last known working version was:
+  # - pkgs.linuxPackages_6_11 ie. Linux ge2 6.11.10 #1-NixOS SMP PREEMPT_DYNAMIC Fri Nov 22 14:39:56 UTC 2024 x86_64 GNU/Linux
+  # - NVIDIA Driver Version: 560.35.03 (NVML Version: 12.560.35.03)
+
   # Newer kernels might not be compatible with the Nvidia crap.
-  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
+  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   hardware.graphics.enable = true;
+
+  # FIX For gnome apps not opening
+  environment.sessionVariables = {
+    GSK_RENDERER = "ngl";
+  };
 
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
@@ -46,6 +55,7 @@
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
     # https://github.com/nixos/nixpkgs/blob/master/pkgs/os-specific/linux/nvidia-x11/default.nix
     package = config.boot.kernelPackages.nvidiaPackages.latest;
+    # package = config.boot.kernelPackages.nvidiaPackages.production;
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
     # package = config.boot.kernelPackages.nvidiaPackages.vulkan_beta;
 
