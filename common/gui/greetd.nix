@@ -64,7 +64,7 @@ in
   # https://nixos.wiki/wiki/Greetd
   services.greetd = {
     enable = true;
-    restart = false; # Disabled b/c of autologin
+    restart = false; # Disabled b/c of autologin (initial session)
 
     settings = {
       initial_session = {
