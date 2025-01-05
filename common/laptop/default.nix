@@ -8,6 +8,5 @@
     ../../services/bitwarden.nix
   ];
 
-  services.thermald.enable = true;
   services.logind.lidSwitchExternalPower = lib.mkDefault "suspend";
 }
