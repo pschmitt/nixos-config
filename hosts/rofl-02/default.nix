@@ -5,29 +5,30 @@
     ./hardware-configuration.nix
     ../../server
     ../../server/optimist.nix
-
     ./luks-data.nix
+
+    # backups
+    ./evernote.nix
     ./rclone-bisync.nix
     ./restic.nix
 
-    ./rsync-fonts-to-rofl-03.nix
     ./docker-compose-netbird-ip-fix.nix
-    ../../server/luks-ssh-unlock-homelab.nix
 
     # services
     ../../misc/harmonia.nix
     ../../misc/http.nix
+    ../../server/luks-ssh-unlock-homelab.nix
     ../../services/bw-backup.nix
     ../../services/changedetection-io.nix
     ../../services/mealie.nix
     ./container-services.nix
-    # ./email.nix
     ./forgejo.nix
     ./http-static.nix
     ./immich.nix
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
+    ./rsync-fonts-to-rofl-03.nix
   ];
 
   # Enable networking
