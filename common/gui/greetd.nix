@@ -17,7 +17,8 @@ let
         logger -t greetd "$*"
       }
 
-      COMPOSITOR="''${1:-hyprland}"
+      # Default to the script name if no compositor is provided
+      COMPOSITOR="''${1:-$(basename "$0")}"
       DESKTOP_FILE="${config.services.displayManager.sessionData.desktops}/share/wayland-sessions/''${COMPOSITOR}-uwsm.desktop"
 
       if [[ ! -f "$DESKTOP_FILE" ]]
@@ -46,7 +47,6 @@ let
 
   hyprland-uwsm = pkgs.writeShellApplication {
     name = "hyprland-uwsm";
-    runtimeInputs = [ ];
     text = ''
       exec ${uwsm-run}/bin/uwsm-run hyprland
     '';
@@ -54,7 +54,6 @@ let
 
   sway-uwsm = pkgs.writeShellApplication {
     name = "sway-uwsm";
-    runtimeInputs = [ ];
     text = ''
       exec ${uwsm-run}/bin/uwsm-run sway
     '';
