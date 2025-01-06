@@ -4,7 +4,7 @@
   home.file = {
     ".config/zsh/custom/os/nixos/system.zsh" = {
       text = ''
-        [[ -o interactive && -o login ]] || return
+        [[ -o interactive ]] || return
 
         # command-not-found integration
         source ${
