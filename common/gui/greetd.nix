@@ -69,7 +69,6 @@ in
     settings = {
       initial_session = {
         command = "${hyprland-uwsm}/bin/hyprland-uwsm";
-        # command = "${sway-uwsm}/bin/sway-uwsm";
         user = config.custom.username;
       };
 
