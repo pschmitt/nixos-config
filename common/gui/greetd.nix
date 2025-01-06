@@ -76,7 +76,9 @@ in
         command = ''
           ${pkgs.greetd.tuigreet}/bin/tuigreet \
             --time \
+            --asterisks \
             --remember \
+            --remember-user-session \
             --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
         '';
         user = "greeter";
