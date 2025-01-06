@@ -5,8 +5,8 @@
 }:
 let
   # Single script that dynamically extracts and runs the Exec= line
-  # from the matching “-uwsm.desktop” file, given a compositor name.
-  uwsm-run = pkgs.writeShellApplication {
+  # from the matching "*-uwsm.desktop" file, given a compositor name.
+  uwsm-run-bin = pkgs.writeShellApplication {
     name = "uwsm-run";
     runtimeInputs = [
       pkgs.gawk
@@ -42,20 +42,21 @@ let
       log "UWSM Desktop file: $DESKTOP_FILE"
       exec $CMD
     '';
-
   };
 
-  hyprland-uwsm = pkgs.writeShellApplication {
-    name = "hyprland-uwsm";
-    text = ''
-      exec ${uwsm-run}/bin/uwsm-run hyprland
-    '';
-  };
+  uwsm-run = pkgs.stdenv.mkDerivation {
+    name = "uwsm-runner-pkg";
+    buildCommand = ''
+      mkdir -p $out/bin
 
-  sway-uwsm = pkgs.writeShellApplication {
-    name = "sway-uwsm";
-    text = ''
-      exec ${uwsm-run}/bin/uwsm-run sway
+      # Install main runner script
+      cp ${uwsm-run-bin}/bin/uwsm-run $out/bin/uwsm-run
+
+      # Create symlinks
+      for compositor in sway hyprland
+      do
+        ln -s uwsm-run $out/bin/$compositor
+      done
     '';
   };
 in
@@ -67,11 +68,10 @@ in
 
     settings = {
       initial_session = {
-        command = "${hyprland-uwsm}/bin/hyprland-uwsm";
+        command = "${uwsm-run}/bin/hyprland";
         user = config.custom.username;
       };
 
-      # default_session = initial_session;
       default_session = {
         command = ''
           ${pkgs.greetd.tuigreet}/bin/tuigreet \
