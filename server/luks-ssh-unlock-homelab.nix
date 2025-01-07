@@ -5,7 +5,7 @@ let
   instances = [
     {
       name = "fnuc";
-      host = "10.5.0.14";
+      host = "fnuc.lan";
     }
   ];
 
@@ -18,14 +18,19 @@ let
     sleepInterval = 30;
 
     jumpHost = {
-      # hostname = "turris.ts.brkn.lol";
-      # hostname = "100.76.194.3";
-      hostname = "turris.netbird.cloud";
+      hostname = "turris.nb.brkn.lol";
     };
 
     healthcheck = {
       enable = true;
       command = "mount | grep -v tmpfs | grep luks";
+    };
+
+    emailNotifications = {
+      enable = true;
+      recipient = config.custom.email;
+      sender = "luks-ssh-unlock <${config.networking.hostName}@${config.custom.mainDomain}>";
+      subject = "LUKS SSH Unlocker: ${instance.name} -> #event_type";
     };
   };
 
