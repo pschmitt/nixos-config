@@ -3,6 +3,7 @@
   stdenv,
   fetchFromGitHub,
   makeWrapper,
+  bind,
   curl,
   jq,
   gnugrep,
@@ -31,6 +32,7 @@ stdenv.mkDerivation rec {
 
     wrapProgram $out/bin/luks-ssh-unlock --prefix PATH : ${
       lib.makeBinPath [
+        bind # dig
         curl
         gnugrep
         jq
