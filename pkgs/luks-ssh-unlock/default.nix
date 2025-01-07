@@ -12,13 +12,13 @@
 
 stdenv.mkDerivation rec {
   pname = "luks-ssh-unlock";
-  version = "e1679715a1e5f1108f148a65107dd36917411548";
+  version = "0c45e04a2f64522a2e12843fe1b2df3d0e07aab2";
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "${pname}";
     rev = "${version}";
-    hash = "sha256-ybzUtRYAI2tiuVIdL5Pb+F4HKrP0lSWDCOkN2NBmpzw=";
+    hash = "sha256-wxh3AjMcPwYrkQnWfQHR3Lmfpax6WjwncU/Q+jLQK18=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
