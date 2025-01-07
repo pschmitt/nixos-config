@@ -36,7 +36,7 @@ stdenv.mkDerivation rec {
         curl
         gnugrep
         jq
-        msmtp # for sendmail, TODO: determine the sendmail implementation?
+        msmtp # for sendmail TODO: allow overriding this via build var
         netcat-gnu
         openssh
       ]
