@@ -6,19 +6,20 @@
   curl,
   jq,
   gnugrep,
+  msmtp,
   netcat-gnu,
   openssh,
 }:
 
 stdenv.mkDerivation rec {
   pname = "luks-ssh-unlock";
-  version = "0c45e04a2f64522a2e12843fe1b2df3d0e07aab2";
+  version = "e66eb08f230ce486cb2285ba11ba32c3a51eefb2";
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "${pname}";
     rev = "${version}";
-    hash = "sha256-wxh3AjMcPwYrkQnWfQHR3Lmfpax6WjwncU/Q+jLQK18=";
+    hash = "sha256-VZS5yF54jqGyymRMykD2kFTpEXvUExDQzNhtMhyVVfk=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
@@ -33,6 +34,7 @@ stdenv.mkDerivation rec {
         curl
         gnugrep
         jq
+        msmtp # for sendmail, TODO: determine the sendmail implementation?
         netcat-gnu
         openssh
       ]
