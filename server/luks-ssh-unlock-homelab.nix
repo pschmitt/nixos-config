@@ -11,13 +11,14 @@ let
 
   # Define a function to create an instance with common defaults
   createInstance = instance: {
-    type = "dracut";
+    type = "systemd";
     hostname = instance.host;
     passphraseFile = config.sops.secrets.${"luks/" + instance.name}.path;
     forceIpv4 = true;
     sleepInterval = 30;
 
     jumpHost = {
+      enable = true;
       hostname = "turris.nb.brkn.lol";
     };
 
