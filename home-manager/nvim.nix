@@ -15,6 +15,7 @@
       nixpkgs-fmt
 
       luajit
+      stylua
 
       imagemagick # for image.nvim
 
