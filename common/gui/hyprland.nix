@@ -113,6 +113,7 @@ in
     };
 
     # FIXME This fails with .nm-applet-wrap[16214]: cannot open display:
+    # and uwsm is already starting it (app-nm\\x2dapplet@autostart.service)
     # nm-applet.enable = true;
   };
 
