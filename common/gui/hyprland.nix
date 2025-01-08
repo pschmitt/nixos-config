@@ -112,7 +112,8 @@ in
       package = hyprlockPkg;
     };
 
-    nm-applet.enable = true;
+    # FIXME This fails with .nm-applet-wrap[16214]: cannot open display:
+    # nm-applet.enable = true;
   };
 
   # This essentially adds ~/bin to the PATH of systemd user services
