@@ -32,6 +32,7 @@ in
     ./bootloader.nix
     ./containers.nix
     ./dotfiles.nix
+    # ./dict.nix
     ./nix.nix
     ./pschmitt.nix
     ./sops.nix
