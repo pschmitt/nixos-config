@@ -29,15 +29,6 @@ resource "cloudflare_zone" "curl-pipe-sh" {
   }
 }
 
-resource "cloudflare_zone" "heimat_dev" {
-  zone       = "heimat.dev"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "cloudflare_zone" "pschmitt_dev" {
   zone       = "pschmitt.dev"
   plan       = "free"
@@ -83,60 +74,12 @@ resource "cloudflare_zone" "server_globuli_de" {
   }
 }
 
-resource "cloudflare_record" "wildcard-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*"
-  content = oci_core_instance.oci_01.public_ip
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "rofl-01-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "rofl-01"
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-resource "cloudflare_record" "wildcard-rofl-01-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "*.rofl-01"
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-  type    = "A"
-  ttl     = 3600
-}
-
-# resource "cloudflare_record" "oci-04" {
-#   zone_id = cloudflare_zone.heimat_dev.id
-#   name    = "oci-04"
-#   content   = oci_core_instance.oci_04.public_ip
-#   type    = "A"
-#   ttl     = 3600
-# }
-
-resource "cloudflare_record" "gitea-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "gitea"
-  type    = "CNAME"
-  ttl     = 3600
-  content = "gitea.brkn.lol"
-}
-
 resource "cloudflare_record" "gitea-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "gitea"
   type    = "A"
   ttl     = 3600
   content = oci_core_instance.oci_01.public_ip
-}
-
-resource "cloudflare_record" "mmonit-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "mmonit"
-  type    = "CNAME"
-  ttl     = 3600
-  content = "mmonit.brkn.lol"
 }
 
 resource "cloudflare_record" "mmonit-brkn-lol" {
@@ -163,25 +106,9 @@ resource "cloudflare_record" "healthchecks-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "immich-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "immich"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-}
-
 resource "cloudflare_record" "immich-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "immich"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-}
-
-resource "cloudflare_record" "img-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "img"
   type    = "A"
   ttl     = 3600
   content = openstack_networking_floatingip_v2.rofl_02_fip.address
@@ -195,14 +122,6 @@ resource "cloudflare_record" "img-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
-resource "cloudflare_record" "media-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "media"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-}
-
 resource "cloudflare_record" "media-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "media"
@@ -211,25 +130,9 @@ resource "cloudflare_record" "media-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
-resource "cloudflare_record" "jelly-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "jelly"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-}
-
 resource "cloudflare_record" "jelly-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "jelly"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
-}
-
-resource "cloudflare_record" "jellyfin-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "jellyfin"
   type    = "A"
   ttl     = 3600
   content = openstack_networking_floatingip_v2.rofl_02_fip.address
@@ -249,14 +152,6 @@ resource "cloudflare_record" "oci-yum-brkn-lol" {
   type    = "A"
   ttl     = 3600
   content = oci_core_instance.oci_01.public_ip
-}
-
-resource "cloudflare_record" "tv-heimat-dev" {
-  zone_id = cloudflare_zone.heimat_dev.id
-  name    = "tv"
-  type    = "A"
-  ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
 }
 
 resource "cloudflare_record" "tv-brkn-lol" {
