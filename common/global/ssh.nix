@@ -5,19 +5,21 @@
   # Avoid TOFU MITM with github by providing their public key here.
   programs.ssh.knownHosts = {
     "github.com".hostNames = [ "github.com" ];
-    "github.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+    "github.com".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
     "gitlab.com".hostNames = [ "gitlab.com" ];
-    "gitlab.com".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
+    "gitlab.com".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf";
 
     "git.sr.ht".hostNames = [ "git.sr.ht" ];
-    "git.sr.ht".publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
+    "git.sr.ht".publicKey =
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMZvRd4EtM7R+IHVMWmDkVU3VLQTSwQDSAvW0t2Tkj60";
 
     fnuc-ed25519 = {
       hostNames = [
         "fnuc.brkn.lol"
         "fnuc.nb.brkn.lol"
-        "fnuc.heimat.dev"
         "fnuc.ts.brkn.lol"
         "fnuc.snake-eagle.ts.net"
         "fnuc.netbird.cloud"
@@ -29,7 +31,6 @@
       hostNames = [
         "fnuc.brkn.lol"
         "fnuc.nb.brkn.lol"
-        "fnuc.heimat.dev"
         "fnuc.ts.brkn.lol"
         "fnuc.snake-eagle.ts.net"
         "fnuc.netbird.cloud"
@@ -41,7 +42,6 @@
       hostNames = [
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
-        "rofl-02.heimat.dev"
         "rofl-02.ts.brkn.lol"
         "rofl-02.snake-eagle.ts.net"
         "rofl-02.netbird.cloud"
@@ -53,7 +53,6 @@
       hostNames = [
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
-        "rofl-02.heimat.dev"
         "rofl-02.ts.brkn.lol"
         "rofl-02.snake-eagle.ts.net"
         "rofl-02.netbird.cloud"
@@ -65,7 +64,6 @@
       hostNames = [
         "rofl-03.brkn.lol"
         "rofl-03.nb.brkn.lol"
-        "rofl-03.heimat.dev"
         "rofl-03.ts.brkn.lol"
         "rofl-03.snake-eagle.ts.net"
         "rofl-03.netbird.cloud"
@@ -77,7 +75,6 @@
       hostNames = [
         "rofl-03.brkn.lol"
         "rofl-03.nb.brkn.lol"
-        "rofl-03.heimat.dev"
         "rofl-03.ts.brkn.lol"
         "rofl-03.snake-eagle.ts.net"
         "rofl-03.netbird.cloud"
@@ -89,7 +86,6 @@
       hostNames = [
         "oci-03.brkn.lol"
         "oci-03.nb.brkn.lol"
-        "oci-03.heimat.dev"
         "oci-03.ts.brkn.lol"
         "oci-03.snake-eagle.ts.net"
         "oci-03.netbird.cloud"
@@ -101,7 +97,6 @@
       hostNames = [
         "oci-03.brkn.lol"
         "oci-03.nb.brkn.lol"
-        "oci-03.heimat.dev"
         "oci-03.ts.brkn.lol"
         "oci-03.snake-eagle.ts.net"
         "oci-03.netbird.cloud"
