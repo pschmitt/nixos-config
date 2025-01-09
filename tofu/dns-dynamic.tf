@@ -27,7 +27,6 @@ locals {
   ]
 
   zones = {
-    heimat_dev = { name = "heimat.dev", id = cloudflare_zone.heimat_dev.id },
     brkn_lol   = { name = "brkn.lol", id = cloudflare_zone.brkn_lol.id }
   }
 
