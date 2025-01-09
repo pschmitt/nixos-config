@@ -27,7 +27,7 @@ locals {
   ]
 
   zones = {
-    brkn_lol   = { name = "brkn.lol", id = cloudflare_zone.brkn_lol.id }
+    brkn_lol = { name = "brkn.lol", id = cloudflare_zone.brkn_lol.id }
   }
 
   combined_entries = flatten([
