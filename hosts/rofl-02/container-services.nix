@@ -116,7 +116,13 @@ let
     };
     whoami = {
       port = 19462;
-      hosts = [ "whoami.${config.custom.mainDomain}" ];
+      hosts = [
+        # FIXME Below is not valid config!
+        # You probably want to use:
+        # services.nginx.virtualHosts.<name>.useACMEHost
+        # "*.${config.custom.mainDomain}"
+        "whoami.${config.custom.mainDomain}"
+      ];
       default = true;
     };
     wikijs = {
