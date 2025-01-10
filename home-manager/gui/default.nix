@@ -2,8 +2,9 @@
 {
   imports = [
     ./browser.nix
-    ./dotool.nix
     ./default-apps.nix
+    ./dotool.nix
+    ./gnome.nix
     ./media.nix
     ./theme.nix
   ];
