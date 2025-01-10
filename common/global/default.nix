@@ -32,6 +32,9 @@ in
     ./bootloader.nix
     ./containers.nix
     ./dotfiles.nix
+    # FIXME dict 1.13.1 fails to build
+    # https://github.com/NixOS/nixpkgs/pull/367392
+    # https://nixpkgs-tracker.ocfox.me/?pr=367392
     # ./dict.nix
     ./nix.nix
     ./pschmitt.nix
