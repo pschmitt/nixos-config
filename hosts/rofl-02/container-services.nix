@@ -19,6 +19,12 @@ let
         "archivebox.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    hoarder = {
+      port = 46273;
+      hosts = [
+        "hoarder.${config.custom.mainDomain}"
+      ];
+    };
     jellyfin = {
       port = 8096;
       hosts = [
