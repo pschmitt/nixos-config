@@ -36,6 +36,12 @@ let
         "tv.${config.custom.mainDomain}"
       ];
     };
+    memos = {
+      port = 63667;
+      hosts = [
+        "memos.${config.custom.mainDomain}"
+      ];
+    };
     nextcloud = {
       port = 63982;
       tls = true;
