@@ -1,6 +1,14 @@
 { inputs, pkgs, ... }:
 {
-  home.packages = [ pkgs.nix-your-shell ];
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
+
+  home.packages = [
+    pkgs.nix-your-shell
+  ];
+
   home.file = {
     ".config/zsh/custom/os/nixos/system.zsh" = {
       text = ''
