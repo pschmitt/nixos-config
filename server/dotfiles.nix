@@ -20,6 +20,9 @@ in
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
     interactiveShellInit = ''
+      # Enable command correction prompts
+      setopt correct
+
       # OSC 7
       function __osc7-pwd() {
         emulate -L zsh # also sets localoptions for us
