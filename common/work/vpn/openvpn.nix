@@ -296,9 +296,7 @@ in
 
   systemd.services.openvpn-wiit = {
     path = with pkgs; [
-      zsh
-      bitwarden-cli
-      jq
+      oath-toolkit
       shadow.su
     ];
     preStart = ''
@@ -306,8 +304,8 @@ in
       rm -vf "${wiitAuthUserPass}"
 
       PASSWORD_PREFIX=$(cat ${config.sops.secrets."openvpn/wiit/password".path})
-      TOTP=$(cat ${config.sops.secrets."openvpn/wiit/totp".path} | \
-        ${pkgs.oath-toolkit}/bin/oathtool --base32 --totp --digits=6 -)
+      TOTP=$(oathtool --base32 --totp --digits=6 \
+        @${config.sops.secrets."openvpn/wiit/totp".path})
       PASSWORD="''${PASSWORD_PREFIX}''${TOTP}"
       CREDENTIALS="${wiitUsername}\n$PASSWORD"
 
