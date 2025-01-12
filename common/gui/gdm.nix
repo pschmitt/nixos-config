@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 {
   services.xserver.displayManager.gdm = {
     enable = true;
@@ -15,6 +15,10 @@
 
     defaultSession = "hyprland-uwsm";
   };
+
+  # https://github.com/NixOS/nixpkgs/pull/282317
+  security.pam.services.gdm.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
 
   # https://nixos.wiki/wiki/GNOME#automatic_login
   # Below fixes Gnome starting instead of hyprland
