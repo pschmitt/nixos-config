@@ -15,8 +15,8 @@
     ./theme.nix
 
     # Display Manager
-    # ./gdm.nix
-    ./greetd.nix
+    ./gdm.nix
+    # ./greetd.nix
 
     # Desktops
     ./gnome.nix
