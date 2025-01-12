@@ -13,8 +13,12 @@
       user = config.custom.username;
     };
 
-    # FIXME This doesn't work. Gnome gets started instead of hyprland
-    # https://github.com/NixOS/nixpkgs/issues/334404
     defaultSession = "hyprland-uwsm";
   };
+
+  # https://nixos.wiki/wiki/GNOME#automatic_login
+  # Below fixes Gnome starting instead of hyprland
+  # https://github.com/NixOS/nixpkgs/issues/334404
+  systemd.services."autovt@tty1".enable = false;
+  systemd.services."getty@tty1".enable = false;
 }
