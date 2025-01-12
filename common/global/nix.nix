@@ -79,7 +79,17 @@
           "https://hyprland.cachix.org"
           "https://nix-community.cachix.org"
           "https://pschmitt-nixos-config.cachix.org"
-          "https://cache.garnix.io"
+
+          # FIXME cache.garnix.io uses a wrong cert as of 2025-01-12
+          #
+          # » openssl::cat --pretty cache.garnix.io
+          # CN         SAN  ISSUER         STATUS  EXPIRES
+          # garnix.io  N/A  Let's Encrypt  valid   2025-02-13T17:45:36Z
+          #
+          # Might be due to a maintenance window:
+          # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
+          # "https://cache.garnix.io"
+
           # "ssh://nix-remote-builder@rofl-02.brkn.lol?ssh-key=${
           #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
           # }"
