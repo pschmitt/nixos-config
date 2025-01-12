@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   services.xserver.displayManager.gdm = {
     enable = true;
@@ -21,4 +21,16 @@
   # https://github.com/NixOS/nixpkgs/issues/334404
   systemd.services."autovt@tty1".enable = false;
   systemd.services."getty@tty1".enable = false;
+
+  # GDM monitor configuration
+  # systemd.tmpfiles.rules = [
+  #   "L+ /run/gdm/.config/monitors.xml - - - - ${pkgs.writeText "gdm-monitors.xml" ''
+  #     <!-- this should all be copied from your ~/.config/monitors.xml -->
+  #     <monitors version="2">
+  #       <configuration>
+  #           <!-- REDACTED -->
+  #       </configuration>
+  #     </monitors>
+  #   ''}"
+  # ];
 }
