@@ -15,17 +15,6 @@ let
   hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
 in
 {
-  imports = [
-    (import ./greetd.nix {
-      inherit
-        lib
-        config
-        pkgs
-        hyprlandPkg
-        ;
-    })
-  ];
-
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
