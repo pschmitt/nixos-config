@@ -101,6 +101,14 @@ let
         "tdarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    # traefik = {
+    #   port = 8723; # http: 18723
+    #   default = true;
+    # FIXME Below is not valid config!
+    # You probably want to use:
+    # services.nginx.virtualHosts.<name>.useACMEHost
+    #   hosts = ["*.${config.custom.mainDomain}"];
+    # };
     transmission = {
       port = 9091;
       hosts = [
