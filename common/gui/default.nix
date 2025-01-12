@@ -1,7 +1,6 @@
 { config, pkgs, ... }:
 {
   imports = [
-    # ./hardware-configuration.nix
     ./apps.nix
     ./audio.nix
     ./browser.nix
@@ -10,13 +9,19 @@
     ./fonts.nix
     ./gpu.nix
     ./hacompanion.nix
-    ./hyprland.nix
     ./libvirt.nix
     ./logitech-mouse.nix
     ./printer.nix
-    ./sway.nix
-    ./gnome.nix
     ./theme.nix
+
+    # Display Manager
+    # ./gdm.nix
+    ./greetd.nix
+
+    # Desktops
+    ./gnome.nix
+    ./hyprland.nix
+    ./sway.nix
   ];
 
   boot = {
