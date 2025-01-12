@@ -6,6 +6,10 @@
 
     ./hardware-configuration.nix
 
+    # customizations
+    # custom gdm monitor config
+    ./gdm.nix
+
     # gpus
     ./intel-gpu.nix
     ./nvidia.nix
