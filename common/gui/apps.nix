@@ -27,7 +27,6 @@
     gnome-font-viewer
     file-roller
     nautilus
-    seahorse
     sushi
     imv # image viewer
     zathura
