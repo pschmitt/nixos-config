@@ -4,7 +4,6 @@
 {
   config,
   lib,
-  pkgs,
   modulesPath,
   ...
 }:
@@ -51,7 +50,8 @@
     ];
   };
 
-  boot.initrd.luks.devices."encrypted".device = "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
+  boot.initrd.luks.devices."encrypted".device =
+    "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
 
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/5FDA-8CAF";
@@ -90,7 +90,4 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
-
-  # This is a laptop!
-  services.tlp.enable = true;
 }
