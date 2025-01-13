@@ -3,6 +3,7 @@
   home.packages = with pkgs; [
     bitwarden
     bitwarden-cli
+    rbw
   ];
 
   systemd.user.services.bitwarden-cli-sync = {
