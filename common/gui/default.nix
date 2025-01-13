@@ -7,6 +7,7 @@
     ./bluetooth.nix
     ./btrfs.nix
     ./fonts.nix
+    ./gnome-keyring.nix
     ./gpu.nix
     ./hacompanion.nix
     ./libvirt.nix
@@ -60,31 +61,29 @@
   hardware.uinput.enable = true;
   # Enable touchpad support (enabled default in most desktopManager).
   services.libinput.enable = true;
-  services.udev.packages = [ pkgs.android-udev-rules ];
 
-  services.seatd.enable = true;
+  services = {
+    avahi = {
+      enable = true;
+      nssmdns4 = true;
+    };
 
-  # enable sushi and keyring
-  services.gnome = {
-    sushi.enable = true;
-    gnome-keyring.enable = true;
-    rygel.enable = true;
+    dbus.enable = true;
+
+    # enable sushi and rygel
+    gnome = {
+      sushi.enable = true;
+      rygel.enable = true;
+    };
+
+    gvfs.enable = true;
+    seatd.enable = true;
+    tumbler.enable = true;
+    udev.packages = [ pkgs.android-udev-rules ];
   };
-
-  services.avahi = {
-    enable = true;
-    nssmdns4 = true;
-  };
-
-  services.dbus = {
-    enable = true;
-    packages = [ pkgs.gcr ];
-  };
-  services.gvfs.enable = true;
-  services.tumbler.enable = true;
 
   # Enable lingering
-  systemd.tmpfiles.rules = [ "f /var/lib/systemd/linger/pschmitt" ];
+  systemd.tmpfiles.rules = [ "f /var/lib/systemd/linger/${config.custom.username}" ];
   users.users."${config.custom.username}" = {
     linger = true;
 

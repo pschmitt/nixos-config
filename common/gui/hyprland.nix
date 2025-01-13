@@ -106,6 +106,8 @@ in
     # nm-applet.enable = true;
   };
 
+  services.displayManager.defaultSession = lib.mkForce "hyprland-uwsm";
+
   # This essentially adds ~/bin to the PATH of systemd user services
   systemd.user.extraConfig = ''
     DefaultEnvironment="PATH=%h/bin:%h/.local/bin:/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"

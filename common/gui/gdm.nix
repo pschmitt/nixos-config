@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 {
   services.xserver.displayManager.gdm = {
     enable = true;
@@ -13,7 +13,7 @@
       user = config.custom.username;
     };
 
-    defaultSession = "hyprland-uwsm";
+    defaultSession = lib.mkDefault "hyprland-uwsm";
   };
 
   # GDM monitor configuration
@@ -27,10 +27,6 @@
   #     </monitors>
   #   ''}"
   # ];
-
-  # Below is required to unlock the keyring with the LUKS passphrase
-  # https://discourse.nixos.org/t/automatically-unlocking-the-gnome-keyring-using-luks-key-with-greetd-and-hyprland/54260/3
-  boot.initrd.systemd.enable = true;
 
   # https://nixos.wiki/wiki/GNOME#automatic_login
   # Below fixes Gnome starting instead of hyprland
