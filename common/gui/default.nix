@@ -110,8 +110,8 @@
     tesseract
 
     # media
-    imagemagick
     deckmaster
+    imagemagick
     yt-dlp
 
     # apps
@@ -122,9 +122,11 @@
 
     # qrcode create/read
     qrencode
-    termimage # for displaying the qrcode in cli
+    zbar # provides zabarimg, for reading qr codes
+
+    # cli image viewers
     chafa
-    zbar # provides zabarimg, for reading
+    termimage
   ];
 }
 
