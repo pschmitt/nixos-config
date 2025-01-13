@@ -120,8 +120,6 @@
     usbimager # etcher alternative
     virt-manager
 
-    intel-gpu-tools
-
     # qrcode create/read
     qrencode
     termimage # for displaying the qrcode in cli
