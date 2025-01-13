@@ -27,7 +27,6 @@
 
   boot = {
     extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
-    # Explicitly load i8042 to attempt to fix the x13 keyboard in initrd
     kernelModules = [ "v4l2loopback" ];
     extraModprobeConfig = ''
       # exclusive_caps: Skype, Zoom, Teams etc. will only show device when actually streaming
