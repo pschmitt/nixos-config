@@ -1,5 +1,6 @@
 {
   inputs,
+  pkgs,
   ...
 }:
 {
@@ -22,4 +23,6 @@
   ];
   hardware.intelgpu.driver = "xe";
   hardware.intelgpu.vaapiDriver = "intel-media-driver";
+
+  environment.systemPackages = [ pkgs.intel-gpu-tools ];
 }
