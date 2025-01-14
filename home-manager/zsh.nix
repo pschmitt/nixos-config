@@ -5,8 +5,9 @@
     nix-direnv.enable = true;
   };
 
-  home.packages = [
-    pkgs.nix-your-shell
+  home.packages = with pkgs; [
+    nix-your-shell
+    zoxide
   ];
 
   home.file = {
