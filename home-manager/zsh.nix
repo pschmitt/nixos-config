@@ -7,6 +7,7 @@
 
   home.packages = with pkgs; [
     nix-your-shell
+    vivid
     zoxide
   ];
 
