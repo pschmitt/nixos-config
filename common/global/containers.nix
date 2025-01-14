@@ -23,6 +23,8 @@
       autoPrune = {
         enable = true;
       };
+      # https://docs.docker.com/engine/daemon/live-restore/
+      liveRestore = true;
     };
   };
 }
