@@ -105,7 +105,8 @@
                 params = [
                   {
                     name = "q";
-                    value = "{searchTerms}";
+                    # Search in title explicitly
+                    value = "in:title {searchTerms}";
                   }
                 ];
               }
