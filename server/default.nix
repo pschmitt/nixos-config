@@ -24,6 +24,12 @@
   custom.server = true;
   custom.useBIOS = lib.mkDefault true;
 
+  boot.kernel.sysctl = {
+    # Raise inotify limits
+    "fs.inotify.max_user_instances" = lib.mkDefault 524288;
+    "fs.inotify.max_user_watches" = lib.mkDefault 524288;
+  };
+
   # Write logs to console
   # https://github.com/nix-community/srvos/blob/main/nixos/common/serial.nix
   boot.kernelParams =
