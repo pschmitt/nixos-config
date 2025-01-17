@@ -40,9 +40,12 @@ in
   ];
 
   boot = {
-    # Enable all MagicSysRq keys
     kernel.sysctl = {
+      # Enable all MagicSysRq keys
       "kernel.sysrq" = 1;
+      # Raise inotify limits
+      "fs.inotify.max_user_instances" = lib.mkDefault 524288;
+      "fs.inotify.max_user_watches" = lib.mkDefault 524288;
     };
     kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
     tmp = {
