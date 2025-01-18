@@ -98,6 +98,7 @@ in
     pciutils # lspci
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
+    (hiPrio parallel-full) # GNU Parallel, note that moreutils also ships parallel
     psmisc # pstree, killall, fuser
     pwgen
     ripgrep
