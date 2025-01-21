@@ -319,7 +319,8 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
     if: ${{ always() && success('setup-matrix') }}
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
