@@ -3,9 +3,10 @@
   home.packages = with pkgs; [
     iftop
     nethogs
-    termshark
     tcpdump
+    termshark
     traceroute
+    whois
     wireshark
   ];
 }
