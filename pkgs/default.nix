@@ -30,22 +30,9 @@ in
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
     inherit obsws-python;
   };
-  obs-studio-plugins-flatpak-obs-text-pango-bin =
-    pkgs.callPackage ./obs-studio/plugins/flatpak/obs-text-pango-bin
-      { };
-  obs-studio-plugins-flatpak-obs-text-pthread-bin =
-    pkgs.callPackage ./obs-studio/plugins/flatpak/obs-text-pthread-bin
-      { };
-  obs-studio-plugins-flatpak-obs-freeze-filter-bin =
-    pkgs.callPackage ./obs-studio/plugins/flatpak/obs-freeze-filter-bin
-      { };
-  obs-studio-plugins-flatpak-obs-replay-source-bin =
-    pkgs.callPackage ./obs-studio/plugins/flatpak/obs-replay-source-bin
-      { };
-  obs-studio-plugins.obs-freeze-filter = pkgs.callPackage ./obs-studio/plugins/obs-freeze-filter { };
-  # obs-studio-plugins.obs-replay-source = pkgs.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
+  # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
+  # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
 
-  osc = pkgs.callPackage ./osc { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   tmux-slay = pkgs.callPackage ./tmux-slay { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
@@ -60,6 +47,7 @@ in
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
   # Lab
+  osc = pkgs.callPackage ./osc { };
   pyghmi = pkgs.callPackage ./pyghmi { };
   vdhcoapp = pkgs.callPackage ./vdhcoapp { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
