@@ -25,6 +25,8 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
+
+  # OBS Studio
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
     inherit obsws-python;
   };
@@ -40,8 +42,9 @@ in
   obs-studio-plugins-flatpak-obs-replay-source-bin =
     pkgs.callPackage ./obs-studio/plugins/flatpak/obs-replay-source-bin
       { };
-  # obs-studio-plugins.obs-freeze-filter = pkgs.callPackage ./obs-studio/plugins/obs-freeze-filter { };
+  obs-studio-plugins.obs-freeze-filter = pkgs.callPackage ./obs-studio/plugins/obs-freeze-filter { };
   # obs-studio-plugins.obs-replay-source = pkgs.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
+
   osc = pkgs.callPackage ./osc { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   tmux-slay = pkgs.callPackage ./tmux-slay { };
