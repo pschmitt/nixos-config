@@ -10,16 +10,16 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "waypoint";
-  version = "unstable-2024-04-17";
+  version = "unstable-2025-01-23";
 
   src = fetchFromGitHub {
     owner = "tadeokondrak";
     repo = pname;
-    rev = "702657a6c18688fed97e498a9c95771b073835cc";
-    hash = "sha256-ZRddQzSz++MlbbFBt5b1uZeOsOijdBtd9RfQeeTbQA4=";
+    rev = "da87598171571866910a86ec69398d2bf83b814c";
+    hash = "sha256-7ajLRQCX7igaad+5MxE2aOvrczsim7xJ+m0Jt1lLOrs=";
   };
 
-  cargoHash = "sha256-7r0x/GzYPht4LN1DH1a+/grVQk6hpKzxfundSUQD4LE=";
+  cargoHash = "sha256-PZSWoKo9QZRNWm94axra3wOExpzLu79W1wkmY88tM4E=";
 
   nativeBuildInputs = [
     pkg-config
