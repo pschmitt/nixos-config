@@ -1,6 +1,8 @@
 # https://nixos.wiki/wiki/Nvidia
 {
   config,
+  lib,
+  pkgs,
   ...
 }:
 {
@@ -10,7 +12,7 @@
   ];
 
   # Newer kernels might not be compatible with the Nvidia crap.
-  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_11;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_12;
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   hardware.graphics.enable = true;
