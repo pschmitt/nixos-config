@@ -11,6 +11,7 @@ let
 
     Service = {
       Type = "oneshot";
+      ExecStartPre = "-${pkgs.mani}/bin/mani --config %E/mani/${name}.yaml sync";
       ExecStart = "${pkgs.mani}/bin/mani --config %E/mani/${name}.yaml run update --all";
     };
 
