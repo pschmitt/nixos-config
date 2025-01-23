@@ -42,7 +42,7 @@ in
 
   programs.obs-studio = {
     enable = true;
-    package = pkgs.unstable.obs-studio;
+    # package = pkgs.obs-studio;
     plugins = with pkgs.obs-studio-plugins; [
       droidcam-obs
       obs-text-pthread
@@ -72,6 +72,7 @@ in
   };
 
   # FIXME Below plugins do not work anymore as of 2024-10-07
+  # see https://github.com/Blackstareye/obs-plugin-freeze-filter-flatpak
   # WARNING The directory names DO matter. The freeze-filter for instance will
   # not load if the directory is named obs-freeze-filter.
   home.file.".var/app/com.obsproject.Studio/config/obs-studio/plugins/text-pango" = {
