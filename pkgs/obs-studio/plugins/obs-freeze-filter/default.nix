@@ -15,7 +15,7 @@ stdenv.mkDerivation (finalAttrs: {
     owner = "exeldro";
     repo = "obs-freeze-filter";
     rev = finalAttrs.version;
-    hash = "";
+    hash = "sha256-fVrfGqwce4oFYdWGElXMsXHO1AzQ/mhfBmZL1mPdT3I=";
     fetchSubmodules = true;
   };
 
