@@ -14,7 +14,7 @@ rustPlatform.buildRustPackage rec {
 
   src = fetchFromGitHub {
     owner = "tadeokondrak";
-    repo = "waypoint";
+    repo = pname;
     rev = "702657a6c18688fed97e498a9c95771b073835cc";
     hash = "sha256-ZRddQzSz++MlbbFBt5b1uZeOsOijdBtd9RfQeeTbQA4=";
   };
