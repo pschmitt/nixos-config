@@ -94,23 +94,6 @@
     # quickemu # fails to build as of 28.12.2024
     # quickgui # fails to build as of 09.09.2024
 
-    # devel
-    android-tools
-    # ansible
-    codespell
-    flarectl
-    openssl
-    shellcheck
-
-    # nix
-    alejandra
-    cachix
-    niv
-    nix-init
-    nixfmt-rfc-style
-    nixos-anywhere
-    nixos-generators
-    nixpkgs-fmt
   ];
 
   # AccountService profile picture
