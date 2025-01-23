@@ -28,7 +28,9 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # magic cache is dead
+      # https://determinate.systems/posts/magic-nix-cache-free-tier-eol/
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Generate build matrix
         id: set-matrix
@@ -53,7 +55,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -108,7 +110,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -192,7 +194,7 @@ jobs:
       # technically redistribute our proprietary packages (by putting them in
       # the GitHub Actions cache). Luckily this should is not available outside
       # of GH Actions run from within this repo.
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -274,7 +276,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -318,6 +320,7 @@ jobs:
       - setup-matrix
       - build-pkgs-free
       - build-pkgs-nonfree
+      - build-pkgs-oci
     if: ${{ always() && success('setup-matrix') }}
     # runs-on: ubuntu-latest
     runs-on: ubuntu-24.04-arm
@@ -339,7 +342,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@main
+      # - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
