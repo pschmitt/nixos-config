@@ -18,12 +18,14 @@
         # bypass-paywalls-clean
         consent-o-matic
         don-t-fuck-with-paste
+        # WIP: https://gitlab.com/rycee/nur-expressions/-/merge_requests/77
+        # external-application-button
         firefox-translations
         foxyproxy-standard
         french-dictionary
         fx_cast
         header-editor
-        istilldontcareaboutcookies
+        # istilldontcareaboutcookies
         languagetool
         link-cleaner
         multi-account-containers
