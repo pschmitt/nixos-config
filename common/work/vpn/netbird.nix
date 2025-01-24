@@ -76,6 +76,13 @@ in
           NB_ALLOW_SSH = "false";
         };
       };
+      wiit-test = {
+        port = 51822;
+        environment = {
+          NB_MANAGEMENT_URL = "https://nb-test.gec.io";
+          NB_ALLOW_SSH = "false";
+        };
+      };
     };
   };
 
