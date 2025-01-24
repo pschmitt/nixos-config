@@ -27,5 +27,6 @@
     nixos-anywhere
     nixos-generators
     nixpkgs-fmt
+    nvd
   ];
 }
