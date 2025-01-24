@@ -302,19 +302,5 @@
           ];
         };
       };
-
-      # FIXME Why doesn't this work? The import never happens
-      # homeConfigurations = {
-      #   "pschmitt@ge2" = home-manager.lib.homeManagerConfiguration {
-      #     pkgs = nixpkgs.legacyPackages.x86_64-linux;
-      #     extraSpecialArgs = { inherit inputs outputs; };
-      #     useGlobalPkgs = true;
-      #     useUserPackages = true;
-      #     modules = [
-      #       # nix-index-database.hmModules.nix-index
-      #       ./home-manager/home.nix
-      #     ];
-      #   };
-      # };
     };
 }
