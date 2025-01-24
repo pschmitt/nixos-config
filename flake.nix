@@ -113,12 +113,15 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    firefox-addons = {
+      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     sendmyl = {
       url = "github:pschmitt/sendmyl";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    nur.url = "github:nix-community/NUR";
 
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
@@ -178,7 +181,6 @@
       home-manager,
       nix-index-database,
       nixpkgs,
-      nur,
       simple-nixos-mailserver,
       snapd,
       sops-nix,
@@ -204,7 +206,6 @@
         disko.nixosModules.disko
         flatpaks.nixosModules.declarative-flatpak
         nix-index-database.nixosModules.nix-index
-        nur.modules.nixos.default
         sops-nix.nixosModules.sops
         update-systemd-resolved.nixosModules.update-systemd-resolved
       ];

@@ -10,8 +10,8 @@
     enable = true;
 
     profiles.default = {
-      extensions = with pkgs.nur.repos.rycee.firefox-addons; [
-        # https://nur.nix-community.org/repos/rycee/
+      extensions = with pkgs.firefox-addons; [
+        # https://gitlab.com/rycee/nur-expressions
         auto-tab-discard
         bitwarden
         brotab
