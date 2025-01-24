@@ -4,6 +4,7 @@
   fetchFromGitHub,
   nodejs,
   jq,
+  makeWrapper,
 }:
 
 stdenv.mkDerivation rec {
@@ -17,6 +18,12 @@ stdenv.mkDerivation rec {
     hash = "sha256-g+X4TaOjw/cBxQP/mA2cBFya3DubQMJAortxHhs/hWc=";
   };
 
+  nativeBuildInputs = [
+    jq
+    nodejs
+    makeWrapper
+  ];
+
   phases = [ "buildPhase" ];
 
   buildPhase = ''
@@ -29,7 +36,7 @@ stdenv.mkDerivation rec {
     BINARY=$out/bin/run.sh
     # Mediator manifests
     get_extension_ids() {
-      ${nodejs}/bin/node -e '
+      node -e '
         const file = process.argv[1]
         const key = process.argv[2]
         const config = require(file)
@@ -38,7 +45,7 @@ stdenv.mkDerivation rec {
     }
 
     EXT_FIREFOX=$(get_extension_ids firefox)
-    ${jq}/bin/jq -ner \
+    jq -ner \
       --arg bin "$BINARY" \
       --argjson ext "$EXT_FIREFOX" '
       {
@@ -50,7 +57,7 @@ stdenv.mkDerivation rec {
       }' > $out/lib/mozilla/native-messaging-hosts/com.add0n.node.json
 
     EXT_CHROME=$(get_extension_ids chrome)
-    ${jq}/bin/jq -ner \
+    jq -ner \
       --arg bin "$BINARY" \
       --argjson ext "$EXT_CHROME" '
       {
@@ -61,12 +68,8 @@ stdenv.mkDerivation rec {
         "allowed_origins": $ext
       }' > $out/lib/chromium/NativeMessagingHosts/com.add0n.node.json
 
-    mkdir $out/bin
-    cat > $BINARY <<EOF
-    #!${stdenv.shell}
-    ${nodejs}/bin/node $out/lib/mozilla/native-messaging-hosts/host.js "\$@"
-    EOF
-    chmod +x $BINARY
+    makeWrapper ${nodejs}/bin/node "$BINARY" \
+      --add-flags $out/lib/mozilla/native-messaging-hosts/host.js
   '';
 
   meta = {
