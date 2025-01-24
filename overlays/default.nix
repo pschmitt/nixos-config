@@ -17,7 +17,7 @@
     // { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
-  unstable-packages = final: _prev: {
+  unstable-packages = final: prev: {
     unstable = import inputs.nixpkgs-unstable {
       system = final.system;
       config.allowUnfree = true;
@@ -26,6 +26,14 @@
     master = import inputs.nixpkgs-master {
       system = final.system;
       config.allowUnfree = true;
+    };
+  };
+
+  flakes = final: prev: {
+    firefox-addons = import inputs.firefox-addons {
+      fetchurl = final.fetchurl;
+      lib = final.lib;
+      stdenv = final.stdenv;
     };
   };
 

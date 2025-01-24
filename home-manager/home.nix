@@ -10,7 +10,6 @@
   imports = lib.concatLists [
     [
       inputs.sops-nix.homeManagerModules.sops
-      inputs.nur.modules.homeManager.default
       inputs.nix-index-database.hmModules.nix-index
       inputs.catppuccin.homeManagerModules.catppuccin
       ./bitwarden.nix
@@ -30,11 +29,6 @@
     (lib.optional (osConfig.hardware.bluetooth.enable) ./bluetooth.nix)
     (lib.optional (osConfig.services.xserver.enable) ./gui)
   ];
-
-  # FIXME Do we need that for anything?
-  # nixpkgs.overlays = [
-  #   inputs.nur.overlay
-  # ];
 
   # The home.stateVersion option does not have a default and must be set
   home.stateVersion = osConfig.system.stateVersion;
