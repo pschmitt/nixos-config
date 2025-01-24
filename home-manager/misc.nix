@@ -1,7 +1,8 @@
 { pkgs, ... }:
 {
-  home.packages = [
-    pkgs.eget
-    pkgs.home-assistant-cli
+  home.packages = with pkgs; [
+    eget
+    home-assistant-cli
+    todoist
   ];
 }
