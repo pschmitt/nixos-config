@@ -36,6 +36,7 @@ stdenv.mkDerivation rec {
 
     APP_NAME="com.add0n.node"
     BINARY=$out/bin/run.sh
+
     # Mediator manifests
     get_extension_ids() {
       node -e '
