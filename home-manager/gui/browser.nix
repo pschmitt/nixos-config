@@ -163,6 +163,9 @@
     "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
   home.file.".mozilla/native-messaging-hosts/fx_cast_bridge.json".source =
     "${pkgs.fx-cast-bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
+  # external-application-button
+  home.file.".mozilla/native-messaging-hosts/com.add0n.node.json".source =
+    "${pkgs.native-client}/lib/mozilla/native-messaging-hosts/com.add0n.node.json";
   # FIXME the vdhcoapp 2.0.19 nixpkg does not ship with a static native
   # messaging manifest, instead it is relying on the user running:
   # $ vdhcoapp install
