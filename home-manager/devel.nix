@@ -14,6 +14,11 @@
     # misc
     flarectl
 
+    # ai
+    aichat
+    shell-gpt
+    tgpt
+
     # android
     android-tools # adb + fastboot
     pmbootstrap
