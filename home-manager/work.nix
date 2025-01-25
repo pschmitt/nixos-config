@@ -63,6 +63,7 @@ in
       openldap
       openstackclient-full
       openvpn
+      rancher
       rclone
       s3cmd
       skopeo

@@ -10,6 +10,7 @@
     inotify-tools
     openssl
     shellcheck
+    zunit
 
     # misc
     flarectl
