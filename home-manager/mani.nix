@@ -16,7 +16,7 @@ let
     };
 
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ ];
     };
   };
 
