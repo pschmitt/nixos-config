@@ -154,7 +154,6 @@ in
     enable = true;
     package = pkgs.plocate;
     interval = "daily";
-    localuser = null; # scan as root
   };
 
   # OpenSSH server
