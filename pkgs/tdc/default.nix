@@ -12,8 +12,8 @@ python3.pkgs.buildPythonApplication {
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "tdc";
-    rev = "63370ff84f1eb333054593e326f42df2ede12388";
-    hash = "sha256-sfmSW51w6PHkSdpWy6j3YNU//EpB+fKAz9H37EKZFRU=";
+    rev = "38001488f2525ba4287b99809cf9579627bb2250";
+    hash = "sha256-tJYUGm1O1cwJWLsPyP+ViqqOVw9CzRS+VUj9RlAlyz0=";
   };
 
   build-system = [
