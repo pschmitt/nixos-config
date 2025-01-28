@@ -14,6 +14,7 @@
 
     # misc
     flarectl
+    sqlite
 
     # ai
     aichat
