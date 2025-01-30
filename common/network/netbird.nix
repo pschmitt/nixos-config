@@ -21,6 +21,10 @@ in
     clients = {
       netbird-io = {
         port = 51820;
+        dns-resolver = {
+          address = "127.0.0.20";
+          port = 53;
+        };
       };
     };
   };

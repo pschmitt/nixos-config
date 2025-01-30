@@ -56,12 +56,20 @@ in
           NB_MANAGEMENT_URL = "https://nb.gec.io";
           NB_ALLOW_SSH = "false";
         };
+        dns-resolver = {
+          address = "127.0.0.21";
+          port = 53;
+        };
       };
       wiit-test = {
         port = 51822;
         environment = {
           NB_MANAGEMENT_URL = "https://nb-test.gec.io";
           NB_ALLOW_SSH = "false";
+        };
+        dns-resolver = {
+          address = "127.0.0.22";
+          port = 53;
         };
       };
     };
