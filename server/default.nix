@@ -18,6 +18,7 @@
 
     ./dotfiles.nix
     ./monit.nix
+    ./netbird.nix
     ./restic.nix
   ];
 
