@@ -1,36 +1,17 @@
 {
   config,
   pkgs,
-  lib,
   ...
 }:
 let
-  netbirdPkg = pkgs.master.netbird;
-  createNetbirdScript =
-    tunnelName: tunnelConfig:
-    pkgs.writeShellScriptBin "netbird-${tunnelName}" ''
-      # Set environment variables
-      ${lib.concatStringsSep "\n" (
-        lib.mapAttrsToList (name: value: ''export ${name}="${value}"'') tunnelConfig.environment
-      )}
-
-      # Run netbird
-      # TODO Stupidly prepending sudo to the command doesn't work and just
-      # breaks the netbird cli
-      # exec /run/wrappers/bin/sudo ${netbirdPkg}/bin/netbird "$@"
-      exec ${netbirdPkg}/bin/netbird "$@"
-    '';
-
-  netbirdScripts = lib.genAttrs (lib.attrNames config.services.netbird.tunnels) (
-    name: createNetbirdScript name config.services.netbird.tunnels.${name}
-  );
-
-  netbirdWiitForceRoutes = pkgs.writeShellScriptBin "netbird-wiit-force-routes" ''
+  netbirdForceRoutes = pkgs.writeShellScriptBin "netbird-force-routes" ''
     set -x
+
+    NB_INSTANCE_NAME="''${NB_INSTANCE_NAME:-wiit}"
+    NB_INTERFACE_NAME="''${NB_INTERFACE_NAME:-nb-$NB_INSTANCE_NAME}"
 
     # Default action
     ACTION="add"
-    NB_INTERFACE_NAME="wiit"
 
     case "$1" in
       -h|--help)
@@ -44,8 +25,8 @@ let
 
     case "$ACTION" in
       add)
-        ${netbirdScripts.wiit}/bin/netbird-wiit routes list
-        ROUTES=$(${netbirdScripts.wiit}/bin/netbird-wiit routes list | \
+        /run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list
+        ROUTES=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list | \
           ${pkgs.gawk}/bin/awk '/Network: 10\./ { print $2 }' | \
           ${pkgs.coreutils}/bin/sort -u)
         echo "Adding routes over $NB_INTERFACE_NAME for:"
@@ -68,7 +49,7 @@ in
 {
   services.netbird = {
     enable = true;
-    tunnels = {
+    clients = {
       wiit = {
         port = 51821;
         environment = {
@@ -86,12 +67,21 @@ in
     };
   };
 
+  # Add ourselves to the netbird-wiit groups
+  users.users."${config.custom.username}".extraGroups = [
+    "netbird-wiit"
+    "netbird-wiit-test"
+  ];
+
   # FIXME This does not seem to get triggered when the service starts
   systemd.services.netbird-wiit = {
     postStart = ''
+      NB_INSTANCE=wiit
+      NB_INTERFACE_NAME="nb-$NB_INSTANCE"
+
       nb_has_routes() {
         local routes
-        if ! routes=$(${netbirdScripts.wiit}/bin/netbird-wiit routes list)
+        if ! routes=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE routes list)
         then
           return 1
         fi
@@ -112,18 +102,17 @@ in
 
       echo "Netbird route info is available"
 
-      echo "Running: ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes"
-      echo "Adding routes over $NB_INTERFACE_NAME for:"
-      echo "''${ROUTES:-N/A}"
+      echo "Running: NB_INTERFACE_NAME=$NB_INTERFACE_NAME ${netbirdForceRoutes}/bin/netbird-force-routes"
 
-      ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes
+      ${netbirdForceRoutes}/bin/netbird-force-routes
     '';
 
     preStop = ''
       echo "Deleting netbird routes from main routing table"
-      ${netbirdWiitForceRoutes}/bin/netbird-wiit-force-routes --delete
+      NB_INTERFACE_NAME=$NB_INTERFACE_NAME \
+        ${netbirdForceRoutes}/bin/netbird-force-routes --delete
     '';
   };
 
-  environment.systemPackages = lib.attrValues netbirdScripts ++ [ netbirdWiitForceRoutes ];
+  environment.systemPackages = [ netbirdForceRoutes ];
 }
