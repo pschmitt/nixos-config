@@ -9,6 +9,7 @@ let
 
     NB_INSTANCE_NAME="''${NB_INSTANCE_NAME:-wiit}"
     NB_INTERFACE_NAME="''${NB_INTERFACE_NAME:-nb-$NB_INSTANCE_NAME}"
+    NB_BIN="/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME"
 
     # Default action
     ACTION="add"
@@ -25,10 +26,11 @@ let
 
     case "$ACTION" in
       add)
-        /run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list
-        ROUTES=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list | \
+        $NB_BIN routes list
+        ROUTES=$($NB_BIN routes list | \
           ${pkgs.gawk}/bin/awk '/Network: 10\./ { print $2 }' | \
           ${pkgs.coreutils}/bin/sort -u)
+
         echo "Adding routes over $NB_INTERFACE_NAME for:"
         echo "''${ROUTES:-N/A}"
 
