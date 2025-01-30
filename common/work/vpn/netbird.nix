@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
@@ -8,7 +9,7 @@ let
     set -x
 
     PATH="${
-      pkgs.makeBinPath (
+      lib.makeBinPath (
         with pkgs;
         [
           coreutils # sort
