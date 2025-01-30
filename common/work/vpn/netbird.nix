@@ -34,7 +34,7 @@ let
 
         <<< "$ROUTES" ${pkgs.findutils}/bin/xargs --verbose -I {} \
             ${pkgs.iproute2}/bin/ip route add '{}' dev "$NB_INTERFACE_NAME"
-      ;;
+        ;;
       delete)
         ${pkgs.iproute2}/bin/ip -j route show | \
         ${pkgs.jq}/bin/jq -er --arg nb "$NB_INTERFACE_NAME" '
@@ -42,7 +42,7 @@ let
         ' | \
         ${pkgs.findutils}/bin/xargs --verbose -I {} \
           ${pkgs.iproute2}/bin/ip route delete '{}' dev "$NB_INTERFACE_NAME"
-      ;;
+        ;;
     esac
   '';
 in
@@ -76,12 +76,11 @@ in
   # FIXME This does not seem to get triggered when the service starts
   systemd.services.netbird-wiit = {
     postStart = ''
-      NB_INSTANCE=wiit
-      NB_INTERFACE_NAME="nb-$NB_INSTANCE"
+      NB_INSTANCE_NAME=wiit
 
       nb_has_routes() {
         local routes
-        if ! routes=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE routes list)
+        if ! routes=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list)
         then
           return 1
         fi
@@ -102,14 +101,14 @@ in
 
       echo "Netbird route info is available"
 
-      echo "Running: NB_INTERFACE_NAME=$NB_INTERFACE_NAME ${netbirdForceRoutes}/bin/netbird-force-routes"
+      echo "Running: NB_INSTANCE_NAME=$NB_INSTANCE_NAME ${netbirdForceRoutes}/bin/netbird-force-routes"
 
-      ${netbirdForceRoutes}/bin/netbird-force-routes
+      NB_INSTANCE_NAME=$NB_INSTANCE_NAME ${netbirdForceRoutes}/bin/netbird-force-routes
     '';
 
     preStop = ''
       echo "Deleting netbird routes from main routing table"
-      NB_INTERFACE_NAME=$NB_INTERFACE_NAME \
+      NB_INSTANCE_NAME=wiit \
         ${netbirdForceRoutes}/bin/netbird-force-routes --delete
     '';
   };
