@@ -35,5 +35,5 @@ in
   };
 
   # mask netbird-wt0 service
-  # systemd.services.netbird-wt0.enable = false;
+  systemd.services.netbird-wt0.enable = false;
 }
