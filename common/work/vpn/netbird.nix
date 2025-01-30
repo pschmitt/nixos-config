@@ -7,6 +7,19 @@ let
   netbirdForceRoutes = pkgs.writeShellScriptBin "netbird-force-routes" ''
     set -x
 
+    PATH="${
+      pkgs.makeBinPath (
+        with pkgs;
+        [
+          coreutils # sort
+          findutils # xargs
+          gawk
+          iproute2
+          jq
+        ]
+      )
+    }:$PATH"
+
     NB_INSTANCE_NAME="''${NB_INSTANCE_NAME:-wiit}"
     NB_INTERFACE_NAME="''${NB_INTERFACE_NAME:-nb-$NB_INSTANCE_NAME}"
     NB_BIN="/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME"
@@ -28,22 +41,21 @@ let
       add)
         $NB_BIN routes list
         ROUTES=$($NB_BIN routes list | \
-          ${pkgs.gawk}/bin/awk '/Network: 10\./ { print $2 }' | \
-          ${pkgs.coreutils}/bin/sort -u)
+          awk '/Network: 10\./ { print $2 }' | \
+          sort -u)
 
         echo "Adding routes over $NB_INTERFACE_NAME for:"
         echo "''${ROUTES:-N/A}"
 
-        <<< "$ROUTES" ${pkgs.findutils}/bin/xargs --verbose -I {} \
-            ${pkgs.iproute2}/bin/ip route add '{}' dev "$NB_INTERFACE_NAME"
+        <<< "$ROUTES" xargs --verbose -I {} \
+            ip route add '{}' dev "$NB_INTERFACE_NAME"
         ;;
       delete)
-        ${pkgs.iproute2}/bin/ip -j route show | \
-        ${pkgs.jq}/bin/jq -er --arg nb "$NB_INTERFACE_NAME" '
-         .[] | select(.dev == $nb and (.dst | test("^10\\."))) | .dst
-        ' | \
-        ${pkgs.findutils}/bin/xargs --verbose -I {} \
-          ${pkgs.iproute2}/bin/ip route delete '{}' dev "$NB_INTERFACE_NAME"
+        ip -j route show | \
+          jq -er --arg nb "$NB_INTERFACE_NAME" '
+            .[] | select(.dev == $nb and (.dst | test("^10\\."))) | .dst
+          ' | xargs --verbose -I {} \
+            ip route delete '{}' dev "$NB_INTERFACE_NAME"
         ;;
     esac
   '';
