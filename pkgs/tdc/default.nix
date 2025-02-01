@@ -6,14 +6,14 @@
 
 python3.pkgs.buildPythonApplication {
   pname = "tdc";
-  version = "unstable-2025-01-27";
+  version = "2025-02-01";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "tdc";
-    rev = "4ae701f4f34a88b0e8af99ed3149eba3468f5edd";
-    hash = "sha256-b18JFNADKnFGy+NJXW5P4TRnFzhebW156Sd4xJ4YHz0=";
+    rev = "5d7d114eabf5e77d4b91a07117ab31f401f7fab7";
+    hash = "sha256-k1WV0gntS4nr+SLoxLnnwMvy/4Up/YH0eQ3cWdoqvvc=";
   };
 
   build-system = [
