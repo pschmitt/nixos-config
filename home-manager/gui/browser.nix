@@ -40,9 +40,23 @@
       ];
       search = {
         force = true;
+        default = "DuckDuckGo";
 
         # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
         engines = {
+          "DuckDuckGo" = {
+            url = "https://www.duckduckgo.com/?q={searchTerms}";
+            hidden = false;
+            definedAliases = [ "ddg" ];
+          };
+
+          "Perplexity" = {
+            urls = [ { template = "https://www.perplexity.ai/?q={searchTerms}"; } ];
+            iconUpdateURL = "https://www.perplexity.ai/favicon.ico";
+            updateInterval = 24 * 60 * 60 * 1000; # Every day
+            definedAliases = [ "pp" ];
+          };
+
           "Nix Packages" = {
             urls = [
               {
