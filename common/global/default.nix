@@ -83,6 +83,7 @@ in
     curl
     dua # ncdu on steroids
     file
+    fd
     fx
     git
     htop
