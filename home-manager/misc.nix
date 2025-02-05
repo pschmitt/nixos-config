@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 {
   home.packages = with pkgs; [
     eget
     home-assistant-cli
 
     # todoist cli
-    tdc
+    inputs.tdc.packages."${system}".tdc
     todoist
   ];
 }
