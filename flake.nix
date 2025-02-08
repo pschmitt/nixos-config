@@ -311,6 +311,16 @@
             ./modules/custom.nix
           ];
         };
+        iso-xmr = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+            ./hosts/iso
+            ./modules/custom.nix
+            ./services/xmrig-iso.nix
+          ];
+        };
       };
     };
 }
