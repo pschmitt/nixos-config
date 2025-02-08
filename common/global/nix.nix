@@ -9,9 +9,15 @@
 {
   sops = {
     secrets = {
-      "nix/credentials/username" = { };
-      "nix/credentials/password" = { };
-      "nix/github_token" = { };
+      "nix/credentials/username" = {
+        owner = config.custom.username;
+      };
+      "nix/credentials/password" = {
+        owner = config.custom.username;
+      };
+      "nix/github_token" = {
+        owner = config.custom.username;
+      };
       "ssh/nix-remote-builder/privkey" = { };
     };
     templates = {
