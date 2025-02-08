@@ -10,6 +10,7 @@
     # backups
     ./evernote.nix
     ./rclone-bisync.nix
+    ./autorestic.nix
     ./restic.nix
 
     ./docker-compose-netbird-ip-fix.nix
