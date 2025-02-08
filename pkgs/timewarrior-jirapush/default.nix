@@ -23,7 +23,8 @@ rustPlatform.buildRustPackage rec {
   ];
   buildInputs = [ openssl ];
 
-  cargoHash = "sha256-jKIrnvDvSxmC1/Lno1LBgR9MQIKHsqF0gpo0dqHa7eI=";
+  useFetchCargoVendor = true;
+  cargoHash = "sha256-2dMl85p3Z1Fd+2ET2iOBeU3J4wnBniGphQU2hZP0vtA=";
 
   meta = with lib; {
     description = "A configurable TimeWarrior Extension that uploads timewarrior intervals to Jira as work logs.";
