@@ -11,6 +11,7 @@
 
   systemd.timers.podsync-yt-dlp-update = {
     description = "Daily timer for podsync youtube-dl update";
+    wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "daily";
       Persistent = true;
