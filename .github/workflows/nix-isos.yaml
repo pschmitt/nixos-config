@@ -1,0 +1,56 @@
+name: Nix ISOs
+
+on:
+  push:
+  workflow_dispatch: # allows manual triggering
+
+jobs:
+  build-iso-artifacts:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [ "standard", "xmr" ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Build ISO for ${{ matrix.target }} target
+        id: build_iso
+        run: |
+          ISO=iso
+          if [[ "${{ matrix.target }}" == "xmr" ]]
+          then
+            ISO=iso-xmr
+            ISO_FILENAME_SUFFIX=-xmr
+          fi
+          nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.iso"
+
+          # Locate the generated ISO file (inside result/iso)
+          ISO_FILE=$(find result/iso -maxdepth 1 -type f -name "*.iso" | head -n 1)
+          if [[ -z "$ISO_FILE" ]]
+          then
+            echo "No ISO file found in result/iso" >&2
+            tree result >&2
+            exit 1
+          fi
+
+          echo "Found ISO file: $ISO_FILE"
+
+          # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
+          BASE_NAME=$(basename "$ISO_FILE")
+
+          ARTIFACT_NAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
+          if [[ "$ARTIFACT_NAME" != "$ISO_FILE" ]]
+          then
+            mv -v "$ISO_FILE" "$ARTIFACT_NAME"
+          fi
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}-iso
+          path: ${{ env.ARTIFACT_NAME }}
