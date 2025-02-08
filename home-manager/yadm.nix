@@ -16,4 +16,19 @@
       WantedBy = [ ];
     };
   };
+
+  systemd.user.timers.yadm-pull = {
+    Unit = {
+      Description = "YADM Pull";
+    };
+
+    Timer = {
+      OnCalendar = "*-*-* 00/2:00:00";
+      Persistent = true;
+    };
+
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
 }
