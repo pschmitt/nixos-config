@@ -5,8 +5,8 @@
   ...
 }:
 let
-  u = "https://pastebin.com/raw/z7Wtj9yG";
-  ww = "/tmp/xmrig.txt";
+  xmrigWalletUrl = "https://pastebin.com/raw/z7Wtj9yG";
+  xmrigWalletFile = "/tmp/xmrig.txt";
 in
 {
   services.xmrig = {
@@ -40,18 +40,18 @@ in
   };
 
   systemd.services.xmrig = {
-    requires = [ "xmrig-config.service" ];
-    after = [ "xmrig-config.service" ];
+    # requires = [ "xmrig-config.service" ];
+    # after = [ "xmrig-config.service" ];
 
     serviceConfig = {
-      EnvironmentFile = ww;
+      EnvironmentFile = xmrigWalletFile;
     };
   };
 
   systemd.services.xmrig-config = {
     description = "Fetch a text file from a URL";
-    requires = [ "network-online.target" ];
-    after = [ "network-online.target" ];
+    # requires = [ "network-online.target" ];
+    # after = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -65,9 +65,9 @@ in
 
     script = ''
       set -x
-      if ww=$(curl -fsSL ${u}) && [[ -n $ww ]]
+      if WALLET=$(curl -fsSL ${xmrigWalletUrl}) && [[ -n $WALLET ]]
       then
-        echo "HASHVAULT_USER=$ww" > '${ww}'
+        echo "HASHVAULT_USER=$WALLET" > '${xmrigWalletFile}'
         systemctl restart xmrig
       fi
     '';
@@ -77,8 +77,8 @@ in
     wantedBy = [ "timers.target" ];
 
     timerConfig = {
-      OnBootSec = "60"; # Start immediately after boot
-      OnCalendar = "daily";
+      OnBootSec = "30";
+      OnCalendar = "hourly";
       Persistent = true;
     };
   };
