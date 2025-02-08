@@ -33,7 +33,7 @@ jobs:
           nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.isoImage"
 
           # Locate the generated ISO file (inside result/iso)
-          ISO_FILE=$(find result/iso -maxdepth 1 -type f -name "*.iso" | head -n 1)
+          ISO_FILE=$(find "$PWD" result/iso -maxdepth 1 -type f -name "*.iso" | head -n 1)
 
           if [[ -z "$ISO_FILE" ]]
           then
