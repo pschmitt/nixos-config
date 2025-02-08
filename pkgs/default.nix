@@ -15,7 +15,6 @@ in
   docker-compose-bulk = pkgs.callPackage ./docker-compose-bulk { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   flarectl = pkgs.callPackage ./flarectl { };
-  hacompanion = pkgs.callPackage ./hacompanion { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
