@@ -42,24 +42,22 @@ jobs:
             exit 1
           fi
 
-          echo "Found ISO file: $ISO_FILE"
-          ARTIFACT_NAME="$ISO_FILE"
+          echo "💿 Found ISO file: $ISO_FILE"
+          ARTIFACT_PATH="$ISO_FILE"
 
-          if [[ "$ARTIFACT_NAME" != "$ISO_FILE" ]]
+          if [[ -n "$ISO_FILENAME_SUFFIX" ]]
           then
             # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
             BASE_NAME=$(basename "$ISO_FILE")
-            ARTIFACT_NAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
-            TMPDIR="$(mktemp -d)"
-            DEST="${TMPDIR}/${ARTIFACT_NAME}"
-            cp -v "$ISO_FILE" "$DEST"
-            ARTIFACT_NAME="$DEST"
+            FILENAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
+            ARTIFACT_PATH="$(mktemp -d)/${FILENAME}"
+            cp -v "$ISO_FILE" "$ARTIFACT_PATH"
           fi
 
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-iso
-          path: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
