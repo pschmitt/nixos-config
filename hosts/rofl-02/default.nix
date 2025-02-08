@@ -28,6 +28,7 @@
     ./monit.nix
     ./nfs-server.nix
     ./paperless-ngx.nix
+    ./podsync.nix
     ./rsync-fonts-to-rofl-03.nix
   ];
 
