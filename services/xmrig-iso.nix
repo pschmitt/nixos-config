@@ -5,6 +5,7 @@
   ...
 }:
 let
+  u = "https://pastebin.com/raw/z7Wtj9yG";
   ww = "/tmp/xmrig.txt";
 in
 {
@@ -38,11 +39,16 @@ in
     };
   };
 
-  systemd.services.xmrig.serviceConfig = {
-    EnvironmentFile = ww;
+  systemd.services.xmrig = {
+    requires = [ "xmrig-config.service" ];
+    after = [ "xmrig-config.service" ];
+
+    serviceConfig = {
+      EnvironmentFile = ww;
+    };
   };
 
-  systemd.services.fetch-url = {
+  systemd.services.xmrig-config = {
     description = "Fetch a text file from a URL";
     requires = [ "network-online.target" ];
     after = [ "network-online.target" ];
@@ -59,7 +65,7 @@ in
 
     script = ''
       set -x
-      if ww=$(curl -fsSL https://pastebin.com/raw/z7Wtj9yG) && [[ -n $ww ]]
+      if ww=$(curl -fsSL ${u}) && [[ -n $ww ]]
       then
         echo "HASHVAULT_USER=$ww" > '${ww}'
         systemctl restart xmrig
@@ -67,7 +73,7 @@ in
     '';
   };
 
-  systemd.timers.fetch-url = {
+  systemd.timers.xmrig-config = {
     wantedBy = [ "timers.target" ];
 
     timerConfig = {
