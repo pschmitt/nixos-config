@@ -21,12 +21,14 @@ jobs:
         id: build_iso
         run: |
           ISO=iso
+
           if [[ "${{ matrix.target }}" == "xmr" ]]
           then
             ISO=iso-xmr
             ISO_FILENAME_SUFFIX=-xmr
           fi
-          nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.iso"
+
+          nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.isoImage"
 
           # Locate the generated ISO file (inside result/iso)
           ISO_FILE=$(find result/iso -maxdepth 1 -type f -name "*.iso" | head -n 1)
