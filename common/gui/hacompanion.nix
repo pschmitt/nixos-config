@@ -6,7 +6,9 @@
   ...
 }:
 {
-  environment.systemPackages = with pkgs; [ hacompanion ];
+  environment.systemPackages = [
+    inputs.hacompanion.packages.${pkgs.system}.hacompanion
+  ];
 
   systemd.services.hacompanion = {
     enable = true;
