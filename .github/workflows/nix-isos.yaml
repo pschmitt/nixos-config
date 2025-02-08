@@ -8,6 +8,7 @@ jobs:
   build-iso-artifacts:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         target: [ "standard", "xmr" ]
     steps:
@@ -21,6 +22,7 @@ jobs:
         id: build_iso
         run: |
           ISO=iso
+          ISO_FILENAME_SUFFIX=""
 
           if [[ "${{ matrix.target }}" == "xmr" ]]
           then
@@ -41,16 +43,16 @@ jobs:
           fi
 
           echo "Found ISO file: $ISO_FILE"
-
-          # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
-          BASE_NAME=$(basename "$ISO_FILE")
-          ARTIFACT_NAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
+          ARTIFACT_NAME="$ISO_FILE"
 
           if [[ "$ARTIFACT_NAME" != "$ISO_FILE" ]]
           then
+            # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
+            BASE_NAME=$(basename "$ISO_FILE")
+            ARTIFACT_NAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
             TMPDIR="$(mktemp -d)"
             DEST="${TMPDIR}/${ARTIFACT_NAME}"
-            mv -v "$ISO_FILE" "$DEST"
+            cp -v "$ISO_FILE" "$DEST"
             ARTIFACT_NAME="$DEST"
           fi
 
