@@ -83,5 +83,5 @@ in
     };
   };
 
-  services.getty.autologinUser = lib.mkForce false;
+  services.getty.autologinUser = lib.mkForce null;
 }
