@@ -59,8 +59,8 @@
     };
 
     hacompanion = {
-      url = "github:pschmitt/hacompanion/nix";
-      # inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:tobias-kuendig/hacompanion";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     # Hyprland and cie {{{
