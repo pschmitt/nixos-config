@@ -27,7 +27,9 @@ stdenv.mkDerivation rec {
       "sha256-giRzg0sjp6pVr/cB1K0lT5RU13Ksihz2kYHci9jFo7Q=";
 
   src = fetchurl {
-    url = "https://mmonit.com/dist/${pname}-${version}-linux-${arch}.tar.gz";
+    # NOTE Only the latest release seems to be available at this url
+    # url = "https://mmonit.com/dist/${pname}-${version}-linux-${arch}.tar.gz";
+    url = "https://mmonit.com/dist/4/${version}/${pname}-${version}-linux-${arch}.tar.gz";
     hash = "${checksum}";
   };
 
