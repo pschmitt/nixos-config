@@ -1,6 +1,5 @@
 {
   inputs,
-  lib,
   config,
   pkgs,
   ...
@@ -25,7 +24,7 @@
       User = "${config.custom.username}";
       # NOTE We can't use %E here since we are running as a system service
       EnvironmentFile = "${config.custom.homeDirectory}/.config/hacompanion/secrets";
-      ExecStart = "${pkgs.hacompanion}/bin/hacompanion -config ~/.config/hacompanion/hacompanion.toml";
+      ExecStart = "${pkgs.hacompanion}/bin/hacompanion -quiet -config ~/.config/hacompanion/hacompanion.toml";
       Restart = "always";
       RestartSec = 5;
     };
