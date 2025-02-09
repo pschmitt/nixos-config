@@ -82,4 +82,6 @@ in
       Persistent = true;
     };
   };
+
+  services.getty.autologinUser = lib.mkForce false;
 }
