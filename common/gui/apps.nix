@@ -33,7 +33,6 @@
 
     # wayland
     lemonade
-    nwg-displays
     remmina
     wayvnc
     wdisplays
