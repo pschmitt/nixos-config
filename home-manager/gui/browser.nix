@@ -3,6 +3,7 @@
 
   home.packages = with pkgs; [
     brotab
+    tor-browser
     inputs.zen-browser.packages."${system}".default
   ];
 
