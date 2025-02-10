@@ -76,6 +76,6 @@ jobs:
           # path is set to the value of $ASSET_DIR
           path: ./asset-dir/
           remote_path: ./isos/
-          remote_host: ${{ vars.SSH_HOSTNAME }}
-          remote_user: ${{ vars.SSH_USERNAME }}
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
