@@ -61,7 +61,7 @@ jobs:
 
           cp -v "$ISO_FILE" "${ASSET_DIR}/${ISO_FILENAME}"
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
-          ln -s -t "$ASSET_DIR" "$ISO_FILENAME" "$SYMLINK_FILENAME"
+          ln -s "${ASSET_DIR}${ISO_FILENAME}" "${ASSET_DIR}${SYMLINK_FILENAME}"
 
           tree "$ASSET_DIR"
 
@@ -77,7 +77,7 @@ jobs:
       - name: rsync transfer
         uses: burnett01/rsync-deployments@7.0.2
         with:
-          switches: -avzr
+          switches: -avzr --delete --safe-links
           # path is set to the value of $ASSET_DIR
           path: ./asset-dir/
           remote_path: ./isos/${{ matrix.target }}/
