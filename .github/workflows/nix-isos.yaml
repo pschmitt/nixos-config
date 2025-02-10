@@ -56,7 +56,7 @@ jobs:
           then
             # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
             ISO_FILENAME="${ISO_FILENAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
-            SYMLINK_FILENAME="${SYMLINK_FILENAME%latest.iso}${SYMLINK_FILENAME_SUFFIX}-latest.iso"
+            SYMLINK_FILENAME="${SYMLINK_FILENAME%-latest.iso}${SYMLINK_FILENAME_SUFFIX}-latest.iso"
           fi
 
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
@@ -80,7 +80,7 @@ jobs:
           switches: -avzr --delete --safe-links
           # path is set to the value of $ASSET_DIR
           path: ./asset-dir/
-          remote_path: ./isos/${{ matrix.target }}/
+          remote_path: isos/${{ matrix.target }}/
           remote_host: ${{ secrets.SSH_HOST }}
           remote_user: ${{ secrets.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
