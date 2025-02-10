@@ -45,19 +45,23 @@ jobs:
           fi
 
           echo "💿 Found ISO file: $ISO_FILE"
-          ARTIFACT_PATH="$ISO_FILE"
+
+          # Transfer file to writable dir (in case we need to rename it)
+          ASSET_DIR=asset-dir
+          mkdir -p "$ASSET_DIR"
+          ISO_FILENAME="$(basename "$ISO_FILE")"
 
           if [[ -n "$ISO_FILENAME_SUFFIX" ]]
           then
             # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
-            BASE_NAME=$(basename "$ISO_FILE")
-            FILENAME="${BASE_NAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
-            ARTIFACT_PATH="$(mktemp -d)/${FILENAME}"
-            cp -v "$ISO_FILE" "$ARTIFACT_PATH"
+            ISO_FILENAME="${ISO_FILENAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
           fi
 
-          echo "ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")" >> $GITHUB_ENV
-          echo "ARTIFACT_PATH=$ARTIFACT_PATH" >> $GITHUB_ENV
+          cp -v "$ISO_FILE" "${ASSET_DIR}/${ISO_FILENAME}"
+          ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
+
+          echo "ARTIFACT_NAME=${ISO_FILENAME}.zip" >> $GITHUB_ENV
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> $GITHUB_ENV
 
       - name: Upload ISO artifact
         uses: actions/upload-artifact@v4
@@ -65,18 +69,13 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
 
-      - name: Create local symlink
-        run: |
-          ISO_BASENAME=$(basename "${{ env.ARTIFACT_PATH }}")
-          ISO_SYMLINK="nixos-latest${{ matrix.target == 'xmr' && '-xmr' || '' }}.iso"
-          ln -sf "${{ env.ARTIFACT_PATH }}" "${{ env.ARTIFACT_PATH%/*}}/$ISO_SYMLINK"
-
-      - name: Deploy ISO with rsync
+      - name: rsync transfer
         uses: burnett01/rsync-deployments@7.0.2
         with:
-          switches: -avzr --delete --safe-links
-          path: ${{ env.ARTIFACT_PATH%/*}}
-          remote_path: ./isos
+          switches: -avzr
+          # path is set to the value of $ASSET_DIR
+          path: ./asset-dir/
+          remote_path: ./isos/
           remote_host: ${{ vars.SSH_HOSTNAME }}
           remote_user: ${{ vars.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
