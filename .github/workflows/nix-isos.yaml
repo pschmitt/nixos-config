@@ -86,7 +86,7 @@ jobs:
       - name: rsync transfer
         uses: burnett01/rsync-deployments@7.0.2
         with:
-          switches: -avzr --delete --safe-links
+          switches: -avzr --delete --safe-links --mkpath
           path: ${{ env.ASSET_DIR }}/
           remote_path: isos/${{ matrix.target }}/
           remote_host: ${{ secrets.SSH_HOST }}
