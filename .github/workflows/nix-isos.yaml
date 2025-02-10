@@ -61,9 +61,9 @@ jobs:
 
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
           cp -v "$ISO_FILE" "$ARTIFACT_PATH"
-          ln -s "$ARTIFACT_PATH" "${ASSET_DIR}${SYMLINK_FILENAME}"
+          ln -s "$ARTIFACT_PATH" "${ASSET_DIR}/${SYMLINK_FILENAME}"
 
-          tree "$ASSET_DIR"
+          tree -h "$ASSET_DIR"
 
           echo "ARTIFACT_NAME=${ISO_FILENAME}.zip" >> $GITHUB_ENV
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> $GITHUB_ENV
