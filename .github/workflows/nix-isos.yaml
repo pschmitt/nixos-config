@@ -2,6 +2,8 @@ name: Nix ISOs
 
 on:
   push:
+    branches:
+      - main
   workflow_dispatch: # allows manual triggering
 
 jobs:
@@ -62,3 +64,19 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
+
+      - name: Create local symlink
+        run: |
+          ISO_BASENAME=$(basename "${{ env.ARTIFACT_PATH }}")
+          ISO_SYMLINK="nixos-latest${{ matrix.target == 'xmr' && '-xmr' || '' }}.iso"
+          ln -sf "${{ env.ARTIFACT_PATH }}" "${{ env.ARTIFACT_PATH%/*}}/$ISO_SYMLINK"
+
+      - name: Deploy ISO with rsync
+        uses: burnett01/rsync-deployments@7.0.2
+        with:
+          switches: -avzr --delete --safe-links
+          path: ${{ env.ARTIFACT_PATH%/*}}
+          remote_path: ${{ vars.REMOTE_PATH }}
+          remote_host: ${{ vars.SSH_HOSTNAME }}
+          remote_user: ${{ vars.SSH_USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
