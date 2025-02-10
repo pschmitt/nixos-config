@@ -76,7 +76,7 @@ jobs:
         with:
           switches: -avzr --delete --safe-links
           path: ${{ env.ARTIFACT_PATH%/*}}
-          remote_path: ${{ vars.REMOTE_PATH }}
+          remote_path: ./isos
           remote_host: ${{ vars.SSH_HOSTNAME }}
           remote_user: ${{ vars.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
