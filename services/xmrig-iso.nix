@@ -41,11 +41,13 @@ in
 
   systemd.services.xmrig = {
     description = lib.mkForce "Initial cloud-init job (pre-networking)";
-    # requires = [ "xmrig-config.service" ];
-    # after = [ "xmrig-config.service" ];
+    requires = [ "xmrig-config.service" ];
+    after = [ "xmrig-config.service" ];
 
     serviceConfig = {
       EnvironmentFile = xmrigWalletFile;
+      Restart = "always";
+      RestartSec = 10;
     };
   };
 
