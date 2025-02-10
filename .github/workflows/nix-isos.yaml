@@ -59,9 +59,9 @@ jobs:
             SYMLINK_FILENAME="${SYMLINK_FILENAME//latest/-xmr-latest}"
           fi
 
-          cp -v "$ISO_FILE" "${ASSET_DIR}/${ISO_FILENAME}"
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
-          ln -s "${ASSET_DIR}${ISO_FILENAME}" "${ASSET_DIR}${SYMLINK_FILENAME}"
+          cp -v "$ISO_FILE" "$ARTIFACT_PATH"
+          ln -s "$ARTIFACT_PATH" "${ASSET_DIR}${SYMLINK_FILENAME}"
 
           tree "$ASSET_DIR"
 
