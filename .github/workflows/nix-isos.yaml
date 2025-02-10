@@ -56,6 +56,11 @@ jobs:
           ISO_FILENAME="$(basename "$ISO_FILE")"
           SYMLINK_FILENAME=nixos-min-latest.iso
 
+          if [[ "${{ matrix.target }}" != "standard" ]]
+          then
+            ISO_FILENAME_SUFFIX="-${{ matrix.target }}"
+          fi
+
           if [[ -n "$ISO_FILENAME_SUFFIX" ]]
           then
             # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
