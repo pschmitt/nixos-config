@@ -71,6 +71,8 @@ jobs:
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
           cp -v "$ISO_FILE" "$ARTIFACT_PATH"
 
+          sha256sum "$ARTIFACT_PATH" > "${ARTIFACT_PATH}.sha256sum"
+
           # symlink
           pushd "$ASSET_DIR"
           ln -sv "$ISO_FILENAME" "$SYMLINK_FILENAME"
