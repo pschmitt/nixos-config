@@ -37,6 +37,7 @@ jobs:
       - name: Prepare asset upload
         id: prepare_asset_upload
         run: |
+          set -x
           # Locate the generated ISO file (inside result/iso)
           ISO_FILE=$(find "$PWD" result/iso -maxdepth 1 -type f -name "*.iso" | head -n 1)
 
@@ -63,11 +64,11 @@ jobs:
           fi
 
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
-          cp -v "$ISO_FILE" "$ARTIFACT_PATH"
+          cp -v "$ISO_FILE" "${ARTIFACT_PATH}/${ISO_FILENAME}"
 
           # symlink
           pushd "$ASSET_DIR"
-          ln -s "$ISO_FILENAME" "${SYMLINK_FILENAME}"
+          ln -s "$ISO_FILENAME" "$SYMLINK_FILENAME"
           popd
 
           tree -h "$ASSET_DIR"
