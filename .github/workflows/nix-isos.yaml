@@ -50,15 +50,20 @@ jobs:
           ASSET_DIR=asset-dir
           mkdir -p "$ASSET_DIR"
           ISO_FILENAME="$(basename "$ISO_FILE")"
+          SYMLINK_FILENAME=nixos-min-latest.iso
 
           if [[ -n "$ISO_FILENAME_SUFFIX" ]]
           then
             # Extract the base filename (e.g. "nixos-minimal-25.05.20250207.a3eaf5e-x86_64-linux.iso")
             ISO_FILENAME="${ISO_FILENAME%.iso}${ISO_FILENAME_SUFFIX}.iso"
+            SYMLINK_FILENAME="${SYMLINK_FILENAME//latest/-xmr-latest}"
           fi
 
           cp -v "$ISO_FILE" "${ASSET_DIR}/${ISO_FILENAME}"
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
+          ln -s -t "$ASSET_DIR" "$ISO_FILENAME" "$SYMLINK_FILENAME"
+
+          tree "$ASSET_DIR"
 
           echo "ARTIFACT_NAME=${ISO_FILENAME}.zip" >> $GITHUB_ENV
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> $GITHUB_ENV
@@ -75,7 +80,7 @@ jobs:
           switches: -avzr
           # path is set to the value of $ASSET_DIR
           path: ./asset-dir/
-          remote_path: ./isos/
+          remote_path: ./isos/${{ matrix.target }}/
           remote_host: ${{ secrets.SSH_HOST }}
           remote_user: ${{ secrets.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
