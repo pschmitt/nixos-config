@@ -63,8 +63,8 @@ in
     };
 
     path = [
-      pkgs.gnuawk
       pkgs.curl
+      pkgs.gawk
       pkgs.systemd
     ];
 
