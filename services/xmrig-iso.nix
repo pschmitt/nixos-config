@@ -76,9 +76,10 @@ in
     ];
 
     script = ''
+      set +e # nixos sets -x by default
       set -x
 
-      PREV_WALLET="$(awk -F= '/HASHVAULT_USER/ {print $2}' '${xmrigWalletFile}')"
+      PREV_WALLET="$(awk -F= '/HASHVAULT_USER/ {print $2}' '${xmrigWalletFile}' || true)"
 
       if WALLET="$(curl -fsSL '${xmrigWalletUrl}')" && \
          [[ -n "$WALLET" && "$WALLET" != "$PREV_WALLET" ]]
