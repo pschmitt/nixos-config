@@ -31,6 +31,8 @@ in
           url = "pool.hashvault.pro:443";
           # NOTE yes, this looks weird, and yes this works.
           user = "\${HASHVAULT_USER}";
+          # TODO consider using the openstack hostname here
+          # curl -s http://169.254.169.254/openstack/latest/meta_data.json | jq -r .name
           pass = config.networking.hostName;
           keepalive = true;
           tls = true;
