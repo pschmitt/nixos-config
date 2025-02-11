@@ -4,6 +4,7 @@ let
   serverAddress = "rofl-02.netbird.cloud:/export";
   mounts = [
     "backups"
+    "blobs"
     "books"
     "documents"
     "mnt"
