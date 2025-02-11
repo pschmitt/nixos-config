@@ -19,8 +19,8 @@ in
         # https://xmrig.com/docs/miner/config/cpu
         enabled = true;
         priority = 1;
-        # 75% of $nproc threads
-        max-threads-hint = lib.mkDefault 75;
+        # 85% of $nproc threads
+        max-threads-hint = lib.mkDefault 85;
       };
       # https://xmrig.com/docs/miner/hugepages
       randomx = {
