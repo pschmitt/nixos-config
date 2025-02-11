@@ -41,7 +41,6 @@ in
       acme-sh
       argocd
       argocd-vault-plugin
-      azure-cli
       cmctl
       glab
       kubectl
