@@ -96,7 +96,6 @@ in
   };
 
   users.users.nixos = {
-    isNormalUser = lib.mkForce false;
     hashedPassword = "!";
   };
 }
