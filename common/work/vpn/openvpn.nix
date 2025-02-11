@@ -265,7 +265,7 @@ in
   systemd.services.openvpn-gec = {
     path = with pkgs; [
       zsh
-      bitwarden-cli
+      master.bitwarden-cli
       jq
       shadow.su
     ];
