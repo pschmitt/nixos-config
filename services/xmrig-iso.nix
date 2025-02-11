@@ -95,5 +95,8 @@ in
     hashedPassword = "$y$j9T$jESAnWexd1o0wWVdHBjQr.$CwFCe30wjNCkgKQ2z2ZS.SH6Q7pzGal215OkxnnV1p.";
   };
 
-  users.users.nixos.isNormalUser = false;
+  users.users.nixos = {
+    isNormalUser = lib.mkForce false;
+    hashedPassword = "!";
+  };
 }
