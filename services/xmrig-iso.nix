@@ -54,8 +54,7 @@ in
 
   systemd.services.xmrig-config = {
     description = "Initial cloud-init job (metadata service crawler)";
-    # requires = [ "network-online.target" ];
-    # after = [ "network-online.target" ];
+    after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
 
     unitConfig = {
