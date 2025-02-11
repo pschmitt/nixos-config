@@ -102,6 +102,9 @@ in
     };
   };
 
+  # set keymap
+  console.keyMap = "de";
+
   # sekurity
   services.getty.autologinUser = lib.mkForce null;
 
