@@ -17,7 +17,7 @@
         lib.makeBinPath [
           pkgs.bash
           pkgs.zsh
-          pkgs.bitwarden-cli
+          pkgs.master.bitwarden-cli
         ]
       }";
       ExecStart = "/home/pschmitt/bin/zhj 'bwp sync --force; gec::bwp sync --force'";
