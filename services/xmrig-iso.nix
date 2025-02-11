@@ -41,8 +41,9 @@ in
 
   systemd.services.xmrig = {
     description = lib.mkForce "Initial cloud-init job (pre-networking)";
-    requires = [ "xmrig-config.service" ];
-    after = [ "xmrig-config.service" ];
+    # requires = [ "xmrig-config.service" ];
+    # after = [ "xmrig-config.service" ];
+    wantedBy = lib.mkForce [ ]; # disable auto start
 
     serviceConfig = {
       EnvironmentFile = xmrigWalletFile;
@@ -62,14 +63,20 @@ in
     };
 
     path = [
+      pkgs.gnuawk
       pkgs.curl
       pkgs.systemd
     ];
 
     script = ''
       set -x
-      if WALLET=$(curl -fsSL ${xmrigWalletUrl}) && [[ -n $WALLET ]]
+
+      PREV_WALLET="$(awk -F= '/HASHVAULT_USER/ {print $2}' '${xmrigWalletFile}')"
+
+      if WALLET="$(curl -fsSL '${xmrigWalletUrl}')" && \
+         [[ -n "$WALLET" && "$WALLET" != "$PREV_WALLET" ]]
       then
+        rm -f '${xmrigWalletFile}'
         echo "HASHVAULT_USER=$WALLET" > '${xmrigWalletFile}'
         systemctl restart xmrig
       fi
