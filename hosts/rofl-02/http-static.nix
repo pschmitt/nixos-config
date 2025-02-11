@@ -2,6 +2,15 @@
 
 {
   services.nginx.virtualHosts = {
+    "blobs.${config.custom.mainDomain}" = {
+      root = "/mnt/data/blobs";
+      locations."/" = {
+        extraConfig = ''
+          autoindex on;
+          autoindex_localtime on;
+        '';
+      };
+    };
     "y.${config.custom.mainDomain}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
