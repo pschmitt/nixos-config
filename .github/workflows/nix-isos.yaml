@@ -95,7 +95,7 @@ jobs:
         with:
           switches: -avzr --delete --safe-links --mkpath
           path: ${{ env.ASSET_DIR }}/
-          remote_path: isos/${{ matrix.target }}/
-          remote_host: ${{ secrets.SSH_HOST }}
+          remote_path: /mnt/data/blobs/isos/${{ matrix.target }}/
+          remote_host: ${{ secrets.SSH_BLOBS_HOST }}
           remote_user: ${{ secrets.SSH_USERNAME }}
           remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
