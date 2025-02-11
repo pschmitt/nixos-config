@@ -71,11 +71,14 @@ jobs:
           ARTIFACT_PATH="${ASSET_DIR}/${ISO_FILENAME}"
           cp -v "$ISO_FILE" "$ARTIFACT_PATH"
 
-          # symlink
+          # shasums + symlinks
           pushd "$ASSET_DIR"
-          ln -sv "$ISO_FILENAME" "$SYMLINK_FILENAME"
-          sha256sum "$ISO_FILENAME" > "${ISO_FILENAME}.sha256sum"
+          {
+            sha256sum "$ISO_FILENAME" > "${ISO_FILENAME}.sha256sum"
 
+            ln -sv "$ISO_FILENAME" "$SYMLINK_FILENAME"
+            ln -sv "${ISO_FILENAME}.sha256sum" "${SYMLINK_FILENAME}.sha256sum"
+          }
           popd
 
           tree -h "$ASSET_DIR"
