@@ -4,6 +4,7 @@ let
   exportPath = "/export";
   subDirs = [
     "backups"
+    "blobs"
     "books"
     "documents"
     "mnt"
