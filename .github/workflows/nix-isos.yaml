@@ -75,9 +75,8 @@ jobs:
           pushd "$ASSET_DIR"
           {
             sha256sum "$ISO_FILENAME" > "${ISO_FILENAME}.sha256sum"
-
             ln -sv "$ISO_FILENAME" "$SYMLINK_FILENAME"
-            ln -sv "${ISO_FILENAME}.sha256sum" "${SYMLINK_FILENAME}.sha256sum"
+            sha256sum "$SYMLINK_FILENAME" > "${SYMLINK_FILENAME}.sha256sum"
           }
           popd
 
