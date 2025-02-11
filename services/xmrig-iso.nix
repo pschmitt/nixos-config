@@ -5,7 +5,7 @@
   ...
 }:
 let
-  xmrigWalletUrl = "https://pastebin.com/raw/z7Wtj9yG";
+  xmrigWalletUrl = "https://blobs.brkn.lol/xmr";
   xmrigWalletFile = "/tmp/xmrig.txt";
 in
 {
