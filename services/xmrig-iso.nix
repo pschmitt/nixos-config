@@ -86,5 +86,14 @@ in
     };
   };
 
+  # sekurity
   services.getty.autologinUser = lib.mkForce null;
+
+  users.mutableUsers = false;
+  users.users.root = {
+    # hashedPassword = "!";
+    hashedPassword = "$y$j9T$jESAnWexd1o0wWVdHBjQr.$CwFCe30wjNCkgKQ2z2ZS.SH6Q7pzGal215OkxnnV1p.";
+  };
+
+  users.users.nixos.isNormalUser = false;
 }
