@@ -3,6 +3,10 @@
 {
   services.nginx.virtualHosts = {
     "blobs.${config.custom.mainDomain}" = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
       root = "/mnt/data/blobs";
       locations."/" = {
         extraConfig = ''
