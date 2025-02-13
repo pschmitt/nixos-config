@@ -19,7 +19,7 @@
         # bypass-paywalls-clean
         consent-o-matic
         don-t-fuck-with-paste
-        external-application-button
+        external-application
         firefox-translations
         foxyproxy-standard
         french-dictionary
