@@ -19,22 +19,21 @@
         # bypass-paywalls-clean
         consent-o-matic
         don-t-fuck-with-paste
-        # WIP: https://gitlab.com/rycee/nur-expressions/-/merge_requests/77
-        # external-application-button
+        external-application-button
         firefox-translations
         foxyproxy-standard
         french-dictionary
         fx_cast
-        header-editor
+        # header-editor
         # istilldontcareaboutcookies
         languagetool
-        link-cleaner
+        # link-cleaner # leads to issues on github
         multi-account-containers
         refined-github
         re-enable-right-click
         sidebery
         sponsorblock
-        tridactyl
+        # tridactyl
         ublock-origin
         video-downloadhelper
         zoom-redirector
