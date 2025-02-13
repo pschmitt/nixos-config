@@ -10,6 +10,8 @@ in
   sops = {
     secrets.netbird-setup-key = {
       key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
+      owner = "netbird-netbird-io";
+      group = "netbird-netbird-io";
     };
   };
 
