@@ -12,6 +12,7 @@ in
       key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
       owner = "netbird-netbird-io";
       group = "netbird-netbird-io";
+      mode = "0440";
     };
   };
 
