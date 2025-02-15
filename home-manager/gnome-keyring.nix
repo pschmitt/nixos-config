@@ -7,7 +7,7 @@
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${config.home.homeDirectory}/bin/zhj gnome-keyring::auto-unlock'";
+      ExecStart = "${config.home.homeDirectory}/bin/zhj gnome-keyring::auto-unlock --verbose";
     };
   };
 
