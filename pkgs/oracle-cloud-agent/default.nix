@@ -33,7 +33,7 @@ stdenv.mkDerivation rec {
     if stdenv.isAarch64 then
       "sha256-+pwkTBVSbUOSZO6VJqExPwOKRDciUGXJ9d+79UxQjEI="
     else if stdenv.isx86_64 then
-      "sha256-+pwkTBVSbUOSZO6VJqExPwOKRDciUGXJ9d+79UxQjEI="
+      "sha256-BNpY+DR5ZBIWqWphHRfc/Euj9AQ9B+EbE8F/SLUz9Zo="
     else
       throw "Unsupported platform";
 
