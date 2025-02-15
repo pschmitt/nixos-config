@@ -12,6 +12,7 @@
     # // (import ./netbird.nix { inherit final prev; })
     // (import ./openstack-cli.nix { inherit final prev; })
     // (import ./paperless-ngx.nix { inherit final prev; })
+    // (import ./rbw.nix { inherit final prev; })
     // (import ./tela-icon-theme.nix { inherit final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
     # // (import ./tmux.nix { inherit final prev; })
