@@ -16,6 +16,7 @@
       ./crypto.nix
       ./devel.nix
       ./flatpak.nix
+      ./gnome-keyring.nix
       ./mail.nix
       ./mani.nix
       ./misc.nix
