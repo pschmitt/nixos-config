@@ -76,6 +76,12 @@ let
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
       if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
+
+    check program netbird-status with path "/run/current-system/sw/bin/netbird-netbird-io status"
+      group "network"
+      if status != 0 then restart
+      restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
+      if 5 restarts within 10 cycles then alert
   '';
 
   monitZeroTier = ''
