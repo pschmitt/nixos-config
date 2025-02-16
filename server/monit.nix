@@ -71,7 +71,7 @@ let
   '';
 
   monitNetbird = ''
-    check network netbird with interface netbird-io
+    check network netbird with interface nb-netbird-io
       group "network"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
       if link down for 2 cycles then restart
