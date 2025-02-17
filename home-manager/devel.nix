@@ -14,6 +14,7 @@
 
     # misc
     flarectl
+    hostctl
     sqlite
 
     # ai
