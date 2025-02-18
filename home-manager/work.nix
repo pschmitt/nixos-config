@@ -52,6 +52,7 @@ in
       '')
       kubernetes-helm
       ipmitool
+      jira-cli-go
       ldifj
       lefthook
       lego
