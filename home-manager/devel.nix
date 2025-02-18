@@ -26,6 +26,10 @@
     android-tools # adb + fastboot
     pmbootstrap
 
+    # python
+    poetry
+    uv
+
     # nix
     alejandra
     cachix
