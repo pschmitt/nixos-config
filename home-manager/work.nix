@@ -151,15 +151,13 @@ in
               {
                 template =
                   let
-                    jiraUrl = "https://jira.gec.io";
+                    jiraUrl = "https://jira.wiit.one";
 
                     # List of JIRA projects to search in
                     jiraProjects = [
-                      "Incident Management"
+                      # "Incident Management" # not available yet, still on the old instance...
                       "HELPDESK"
-                      "Oncite Open Edition 🦦"
-                      "❌ (deprecated) OOE-OPS"
-                      "Edge Stack - Services 🐄🔑🐙💰㊙️"
+                      "EDGE"
                     ];
 
                     # Wrap the encoded project names quotes
@@ -178,7 +176,7 @@ in
                   "${jiraUrl}/issues/?jql=${jqlQuery}";
               }
             ];
-            iconUpdateURL = "https://jira.gec.io/s/-8atya2/9160001/1dlckms/_/images/fav-generic.png";
+            iconUpdateURL = "https://jira.wiit.one/s/-jac4wp/9170005/4r0zo/_/images/fav-generic.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "jira" ];
           };
