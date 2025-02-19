@@ -146,7 +146,7 @@ in
             alias = "gitc";
           };
 
-          "GEC JIRA" = {
+          "WIIT JIRA" = {
             urls = [
               {
                 template =
