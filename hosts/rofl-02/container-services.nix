@@ -42,6 +42,12 @@ let
         "memos.${config.custom.mainDomain}"
       ];
     };
+    n8n = {
+      port = 5678;
+      hosts = [
+        "n8n.${config.custom.mainDomain}"
+      ];
+    };
     nextcloud = {
       port = 63982;
       tls = true;
