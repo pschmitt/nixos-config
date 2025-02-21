@@ -11,7 +11,7 @@
     enable = true;
 
     profiles.default = {
-      extensions = with pkgs.firefox-addons; [
+      extensions.packages = with pkgs.firefox-addons; [
         # https://gitlab.com/rycee/nur-expressions
         auto-tab-discard
         bitwarden
@@ -38,6 +38,7 @@
         video-downloadhelper
         zoom-redirector
       ];
+
       search = {
         force = true;
         default = "DuckDuckGo";
