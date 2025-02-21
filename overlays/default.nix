@@ -14,7 +14,7 @@
     // (import ./paperless-ngx.nix { inherit final prev; })
     // (import ./rbw.nix { inherit final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
-    // (import ./droidcam-obs.nix { inherit final prev; })
+    // (import ./droidcam-obs.nix { inherit inputs final prev; })
     # // (import ./tmux.nix { inherit final prev; })
     // { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
