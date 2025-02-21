@@ -33,7 +33,9 @@ in
     enable = true;
     # package = pkgs.obs-studio;
     plugins = with pkgs.obs-studio-plugins; [
-      droidcam-obs
+      # FIXME droidcam-obs build is broken, fix is pending:
+      # https://github.com/NixOS/nixpkgs/pull/382559
+      # droidcam-obs
       obs-text-pthread
       obs-freeze-filter
       obs-replay-source
