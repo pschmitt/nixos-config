@@ -35,7 +35,8 @@ in
     plugins = with pkgs.obs-studio-plugins; [
       # FIXME droidcam-obs build is broken, fix is pending:
       # https://github.com/NixOS/nixpkgs/pull/382559
-      # droidcam-obs
+      # once merged, we can revert to the rgular droidcam-obs package
+      pkgs.droidcam-obs-patched
       obs-text-pthread
       obs-freeze-filter
       # FIXME OBS Replay Source build is broken with obs 31
