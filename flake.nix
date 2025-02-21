@@ -179,6 +179,8 @@
     #   url = "github:dj95/zjstatus";
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
+
+    droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
   };
 
   outputs =
