@@ -38,7 +38,10 @@ in
       # droidcam-obs
       obs-text-pthread
       obs-freeze-filter
-      obs-replay-source
+      # FIXME OBS Replay Source build is broken with obs 31
+      # There's an untagged 1.8.1 which *might* work:
+      # https://github.com/exeldro/obs-replay-source/commit/18b0b8b3519ee7bb192ae19adce81b4dbb2ba9c2
+      # obs-replay-source
     ];
   };
 
