@@ -31,6 +31,7 @@
     ./paperless-ngx.nix
     ./podsync.nix
     ./rsync-fonts-to-rofl-03.nix
+    ./turris-ssh-tunnel.nix
   ];
 
   # Enable networking
