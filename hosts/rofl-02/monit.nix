@@ -94,6 +94,10 @@ let
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
 
+    check host "ssh-tunnel-turris" with address 127.0.0.1
+      group ssh
+      if failed port 22887 protocol ssh for 2 cycles then alert
+
     ${generateHostCheck {
       svc = "jellyfin";
       addr = "tv.${config.custom.mainDomain}";
