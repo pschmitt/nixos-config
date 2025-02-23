@@ -70,6 +70,16 @@ let
       if 3 restarts within 10 cycles then alert
   '';
 
+  netbirdStatus = pkgs.writeShellScript "netbird-status" ''
+    if /run/current-system/sw/bin/netbird-netbird-io status | \
+      ${pkgs.gnugrep}/bin/grep -q "NeedsLogin"
+    then
+      return 1
+    fi
+
+    return 0
+  '';
+
   monitNetbird = ''
     check network netbird with interface nb-netbird-io
       group "network"
@@ -77,7 +87,7 @@ let
       if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
 
-    check program netbird-status with path "/run/current-system/sw/bin/netbird-netbird-io status"
+    check program netbird-status with path "${netbirdStatus}"
       group "network"
       if status != 0 then restart
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
