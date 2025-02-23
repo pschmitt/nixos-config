@@ -74,10 +74,10 @@ let
     if /run/current-system/sw/bin/netbird-netbird-io status | \
       ${pkgs.gnugrep}/bin/grep -q "NeedsLogin"
     then
-      return 1
+      exit 1
     fi
 
-    return 0
+    exit 0
   '';
 
   monitNetbird = ''
