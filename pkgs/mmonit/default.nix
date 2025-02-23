@@ -13,6 +13,7 @@
   port ? 8080,
   mmonitHome ? "/var/lib/mmonit",
   user ? "mmonit",
+  sessionTimeout ? "43200 min", # 30days, default is 30min
 }:
 
 stdenv.mkDerivation rec {
@@ -54,7 +55,8 @@ stdenv.mkDerivation rec {
       --replace-fail 'Logger directory="logs"' 'Logger directory="${mmonitHome}/logs"' \
       --replace-fail '<License file="license.xml"' '<License file="${mmonitHome}/license.xml"' \
       --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="${toString port}"' \
-      --replace-fail '<CACertificatePath path="/path/to/ca/certs" />' '--><CACertificatePath path="${cacert}/etc/ssl/certs/ca-bundle.crt" /><!--'
+      --replace-fail '<CACertificatePath path="/path/to/ca/certs" />' '--><CACertificatePath path="${cacert}/etc/ssl/certs/ca-bundle.crt" /><!--' \
+      --replace-fail '<Context path="" docBase="docroot" sessionTimeout="30 min"' '<Context path="" docBase="docroot" sessionTimeout="${sessionTimeout}"'
 
     # Create systemd service
     mkdir -p $out/lib/systemd/system
