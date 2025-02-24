@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   services = {
@@ -19,12 +24,12 @@ let
         "archivebox.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
-    hoarder = {
-      port = 46273;
-      hosts = [
-        "hoarder.${config.custom.mainDomain}"
-      ];
-    };
+    # hoarder = {
+    #   port = 46273;
+    #   hosts = [
+    #     "hoarder.${config.custom.mainDomain}"
+    #   ];
+    # };
     jellyfin = {
       port = 8096;
       hosts = [
@@ -36,12 +41,12 @@ let
         "tv.${config.custom.mainDomain}"
       ];
     };
-    memos = {
-      port = 63667;
-      hosts = [
-        "memos.${config.custom.mainDomain}"
-      ];
-    };
+    # memos = {
+    #   port = 63667;
+    #   hosts = [
+    #     "memos.${config.custom.mainDomain}"
+    #   ];
+    # };
     n8n = {
       port = 5678;
       hosts = [
@@ -123,6 +128,9 @@ let
         "to.${config.networking.hostName}.${config.custom.mainDomain}"
         "torrent.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
+
+      http_status_code = 401;
+      compose_yaml = "piracy";
     };
     wallos = {
       port = 8282;
@@ -144,6 +152,38 @@ let
       hosts = [ "wiki.${config.custom.mainDomain}" ];
     };
   };
+
+  # Helper function to generate a Monit config snippet.
+  generateMonitCheck =
+    serviceName: host: service:
+    let
+      effectivePort = "443";
+      proto = "https";
+      extraClause =
+        if service ? http_status_code then "status " + toString service.http_status_code else "";
+      composePath = if service ? compose_yaml then service.compose_yaml else serviceName;
+    in
+    ''
+      check host "${serviceName}" with address "${host}"
+        group services
+        restart program = "${pkgs.docker}/bin/docker compose -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
+        if failed
+          port ${effectivePort}
+          protocol ${proto} ${extraClause} and certificate valid > 5 days
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+
+  # Generate a config snippet for each service using its service name and main host.
+  generatedChecks = lib.mapAttrs (
+    serviceName: service:
+    let
+      firstHost = builtins.head service.hosts;
+    in
+    generateMonitCheck serviceName firstHost service
+  ) services;
+
+  monitExtraConfig = lib.concatStringsSep "\n\n" (lib.attrValues generatedChecks);
 
   # Helper function to create virtual hosts for each service
   createVirtualHost = service: hostname: {
@@ -175,4 +215,5 @@ let
 in
 {
   services.nginx.virtualHosts = virtualHosts;
+  services.monit.config = lib.mkAfter monitExtraConfig;
 }

@@ -54,20 +54,20 @@ let
     fi
   '';
 
-  generateHostCheck = params: ''
-    check host ${params.svc} with address ${params.addr}
-      group piracy
-      depends on "docker compose services"
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/${
-        params.compose_yaml or params.svc
-      }/docker-compose.yaml up -d --force-recreate ${params.svc}"
-      if failed
-        port 443
-        protocol https
-        ${if params.svc == "transmission" then "status 401" else ""}
-      then restart
-      if 5 restarts within 10 cycles then alert
-  '';
+  # generateHostCheck = params: ''
+  #   check host ${params.svc} with address ${params.addr}
+  #     group piracy
+  #     depends on "docker compose services"
+  #     restart program = "${pkgs.docker}/bin/docker compose -f /srv/${
+  #       params.compose_yaml or params.svc
+  #     }/docker-compose.yaml up -d --force-recreate ${params.svc}"
+  #     if failed
+  #       port 443
+  #       protocol https
+  #       ${if params.svc == "transmission" then "status 401" else ""}
+  #     then restart
+  #     if 5 restarts within 10 cycles then alert
+  # '';
 
   monitExtraConfig = ''
     check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
@@ -97,32 +97,31 @@ let
     check host "ssh-tunnel-turris" with address 127.0.0.1
       group ssh
       if failed port 22887 protocol ssh for 2 cycles then alert
-
-    ${generateHostCheck {
-      svc = "jellyfin";
-      addr = "tv.${config.custom.mainDomain}";
-    }}
-    ${generateHostCheck {
-      svc = "nextcloud";
-      addr = "c.${config.custom.mainDomain}";
-    }}
-    ${generateHostCheck {
-      svc = "radarr";
-      addr = "radarr.${config.custom.mainDomain}";
-      compose_yaml = "piracy";
-    }}
-    ${generateHostCheck {
-      svc = "sonarr";
-      addr = "sonarr.${config.custom.mainDomain}";
-      compose_yaml = "piracy";
-    }}
-    ${generateHostCheck {
-      svc = "transmission";
-      addr = "to.${config.custom.mainDomain}";
-      compose_yaml = "piracy";
-    }}
   '';
 in
+# ${generateHostCheck {
+#   svc = "jellyfin";
+#   addr = "tv.${config.custom.mainDomain}";
+# }}
+# ${generateHostCheck {
+#   svc = "nextcloud";
+#   addr = "c.${config.custom.mainDomain}";
+# }}
+# ${generateHostCheck {
+#   svc = "radarr";
+#   addr = "radarr.${config.custom.mainDomain}";
+#   compose_yaml = "piracy";
+# }}
+# ${generateHostCheck {
+#   svc = "sonarr";
+#   addr = "sonarr.${config.custom.mainDomain}";
+#   compose_yaml = "piracy";
+# }}
+# ${generateHostCheck {
+#   svc = "transmission";
+#   addr = "to.${config.custom.mainDomain}";
+#   compose_yaml = "piracy";
+# }}
 {
   sops.secrets."mullvad/account" = {
     sopsFile = config.custom.sopsFile;
