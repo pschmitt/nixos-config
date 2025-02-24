@@ -5,7 +5,10 @@
   ...
 }:
 let
-  hostnames = [ "paperless.${config.networking.hostName}.${config.custom.mainDomain}" ];
+  hostnames = [
+    "paperless.${config.custom.mainDomain}"
+    "paperless.${config.networking.hostName}.${config.custom.mainDomain}"
+  ];
   hostnamesWithSchema = map (host: "https://${host}") hostnames;
 in
 {
@@ -133,4 +136,15 @@ in
       "${config.services.paperless.mediaDir}".d = defaultRule;
       "${config.services.paperless.consumptionDir}".d = defaultRule;
     };
+
+  services.monit.config = lib.mkAfter ''
+    check host "paperless-ngx" with address "${builtins.head hostnames}"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart paperless-web.service"
+      if failed
+        port 443
+        protocol https and certificate valid > 5 days
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
