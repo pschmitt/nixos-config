@@ -96,6 +96,19 @@ let
   '';
 
   monitNetbird = ''
+    check program "netbird login" with path "${netbirdStatus}"
+      group "network"
+      if status != 0 then restart
+      restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
+      if 5 restarts within 10 cycles then alert
+
+    check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
+      group "network"
+      depends on "netbird login"
+      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
+      if status != 0 then restart
+      if 5 restarts within 10 cycles then alert
+
     # FIXME Below check seems to be able to tell reliably when the interface is
     # up. It's probably due to the fact that the operstate of the netbird
     # interface is UNKNOWN.
@@ -103,21 +116,10 @@ let
     # See: ip -j link  | jq '.[] | select(.ifname | test("netbird|tailsc"))'
     # check network netbird with interface nb-netbird-io
     #   group "network"
+    #   depends on "netbird login"
     #   restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
     #   if link down for 2 cycles then restart
     #   if 5 restarts within 10 cycles then alert
-
-    check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
-      group "network"
-      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
-      if status != 0 then restart
-      if 5 restarts within 10 cycles then alert
-
-    check program "netbird login" with path "${netbirdStatus}"
-      group "network"
-      if status != 0 then restart
-      restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
-      if 5 restarts within 10 cycles then alert
   '';
 
   monitZeroTier = ''
