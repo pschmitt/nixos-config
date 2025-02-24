@@ -62,7 +62,7 @@ let
       if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
 
-    check host tailscale-magicdns with address 100.100.100.100
+    check host "tailscale magicdns" with address 100.100.100.100
       group "network"
       depends on "tailscale"
       restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
@@ -70,24 +70,50 @@ let
       if 3 restarts within 10 cycles then alert
   '';
 
+  interfaceIsUp = pkgs.writeShellScript "interface-is-up" ''
+    INTERFACE="$1"
+
+    # Display interface information
+    ${pkgs.iproute2}/bin/ip -brief addr show "$INTERFACE"
+
+    ${pkgs.iproute2}/bin/ip --json link show "$INTERFACE" | \
+      ${pkgs.jq}/bin/jq -er '.[0].flags | index("UP")' >/dev/null
+  '';
+
   netbirdStatus = pkgs.writeShellScript "netbird-status" ''
-    if /run/current-system/sw/bin/netbird-netbird-io status | \
-      ${pkgs.gnugrep}/bin/grep -q "NeedsLogin"
+    export PATH="/run/current-system/sw/bin:${pkgs.gnugrep}:$PATH"
+
+    if netbird-netbird-io status | \
+      grep -q "NeedsLogin"
     then
+      echo "Netbird login required" >&2
       exit 1
     fi
 
+    # Display status info
+    netbird-netbird-io status
     exit 0
   '';
 
   monitNetbird = ''
-    check network netbird with interface nb-netbird-io
+    # FIXME Below check seems to be able to tell reliably when the interface is
+    # up. It's probably due to the fact that the operstate of the netbird
+    # interface is UNKNOWN.
+    # But then: why does this not impact the tailscale interface?!
+    # See: ip -j link  | jq '.[] | select(.ifname | test("netbird|tailsc"))'
+    # check network netbird with interface nb-netbird-io
+    #   group "network"
+    #   restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
+    #   if link down for 2 cycles then restart
+    #   if 5 restarts within 10 cycles then alert
+
+    check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
       group "network"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
-      if link down for 2 cycles then restart
+      if status != 0 then restart
       if 5 restarts within 10 cycles then alert
 
-    check program netbird-status with path "${netbirdStatus}"
+    check program "netbird login" with path "${netbirdStatus}"
       group "network"
       if status != 0 then restart
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
