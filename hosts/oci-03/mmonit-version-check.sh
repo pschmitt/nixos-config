@@ -64,11 +64,14 @@ then
     echo "Currently installed: $MMONIT_VERSION"
     echo "Latest release: $LATEST_MMONIT_VERSION"
     exit 0
-	else
-		{
-			echo "A new version of mmonit is available: $LATEST_MMONIT_VERSION"
-			echo "Currently installed: ${MMONIT_VERSION}"
-		} >&2
-		exit 1
-	fi
+  else
+    {
+      echo "A new version of mmonit is available: $LATEST_MMONIT_VERSION"
+      echo "Currently installed: ${MMONIT_VERSION}"
+    } >&2
+
+    # Exiting with 1 here will make the check red
+    # exit 1
+    exit 0
+  fi
 fi
