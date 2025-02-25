@@ -198,12 +198,12 @@ in
       local shell rc res
       for shell in bash ash sh
       do
-        res=$(docker-compose-svc-exec "$shell" -c exit 2>&1)
+        res=$(docker-compose-svc-exec "$svc" "$shell" -c exit 2>&1)
         rc="$?"
         case "$rc" in
           0)
             echo "Using shell $shell" >&2
-            docker-compose-svc-exec "$shell" "$@"
+            docker-compose-svc-exec "$svc" $shell" "$@"
             return "$?"
             ;;
           125)
