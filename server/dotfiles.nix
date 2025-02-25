@@ -20,6 +20,9 @@ in
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
     interactiveShellInit = ''
+      # enable colors (exposes $fg etc)
+      autoload -U colors && colors
+
       # Enable command correction prompts
       setopt correct
 
@@ -146,6 +149,18 @@ in
   environment.interactiveShellInit = ''
     [[ "$SHELL" != *zsh ]] && alias where="which"
 
+    echo_info() {
+      echo "''${fg_bold[blue]}INF''${reset_color} ''${*}" >&2
+    }
+
+    echo_warning() {
+      echo "''${fg_bold[yellow]}WRN''${reset_color} ''${*}" >&2
+    }
+
+    echo_error() {
+      echo "''${fg_bold[red]}ERR''${reset_color} ''${*}" >&2
+    }
+
     alias cdr='cd "$(git rev-parse --show-toplevel)"'
     alias gst="git status"
     alias gl="git pull"
@@ -185,25 +200,45 @@ in
     }
     alias dlogs="dlog"
 
-    docker-compose-svc-exec() {
-      local svc="$1"
-      shift
-      docker compose -f "/srv/$svc/docker-compose.yaml" exec "$svc" "$@"
-    }
-
     de() {
-      local svc="$1"
-      shift
+      local svc
 
+      if [[ "$#" -eq 0 ]]
+      then
+        case "$PWD" in
+          /srv/*)
+            svc=$(basename "$PWD")
+            ;;
+          *)
+            echo_error "svc not provided and not in /srv directory"
+            return 1
+            ;;
+        esac
+      else
+        svc="$1"
+        shift
+      fi
+
+      local compose_file="/srv/''${svc}/docker-compose.yaml"
+      local cmd=("$@")
+
+      if [[ -n $cmd ]]
+      then
+        docker compose -f "$compose_file" exec "$svc" "''${cmd[@]}"
+        return "$?"
+      fi
+
+      # no command provided: default to a shell
       local shell rc res
       for shell in bash ash sh
       do
-        res=$(docker-compose-svc-exec "$svc" "$shell" -c exit 2>&1)
+        res=$(docker compose -f "$compose_file" exec "$svc" "$shell" -c exit 2>&1)
         rc="$?"
+
         case "$rc" in
           0)
-            echo "Using shell $shell" >&2
-            docker-compose-svc-exec "$svc" $shell" "$@"
+            echo_info "Using shell $shell"
+            docker compose -f "$compose_file" exec "$svc" "$shell"
             return "$?"
             ;;
           125)
@@ -212,6 +247,9 @@ in
             ;;
         esac
       done
+
+      echo_error "Failed to find an available shell in $svc"
+      return 1
     }
 
     alias sc-cat="sudo systemctl cat"
