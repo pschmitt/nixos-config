@@ -203,7 +203,6 @@ in
         case "$rc" in
           0)
             echo "Using shell $shell" >&2
-            # docker run -it --rm --entrypoint "$shell" $@
             docker-compose-svc-exec "$shell" "$@"
             return "$?"
             ;;
