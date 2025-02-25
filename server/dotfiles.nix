@@ -241,7 +241,7 @@ in
 
       if [[ -n $cmd ]]
       then
-        echo_info "Executing command \$ ''${fg_bold[magenta]}''${cmd:q}''${reset_color}"
+        echo_info "Executing command \$ ''${fg_bold[magenta]}''${cmd}''${reset_color}"
         docker compose -f "$compose_file" exec "$svc" "''${cmd[@]}"
         return "$?"
       fi
