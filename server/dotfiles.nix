@@ -183,8 +183,7 @@ in
     alias drupd="drup -d"
 
     docker-compose::services() {
-      find -L /srv -mindepth 2 -maxdepth 2 -iname docker-compose.yaml \
-        -exec sh -c 'basename "$(dirname "$1")"' -- {} \; 2>/dev/null | sort -u
+      docker compose ls --format json | jq -er '.[].Name'
     }
 
     dlog() {
