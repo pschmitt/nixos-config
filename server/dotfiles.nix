@@ -185,6 +185,36 @@ in
     }
     alias dlogs="dlog"
 
+    docker-compose-svc-exec() {
+      local svc="$1"
+      shift
+      docker compose -f "/srv/$svc/docker-compose.yaml" exec "$svc" "$@"
+    }
+
+    de() {
+      local svc="$1"
+      shift
+
+      local shell rc res
+      for shell in bash ash sh
+      do
+        res=$(docker-compose-svc-exec "$shell" -c exit 2>&1)
+        rc="$?"
+        case "$rc" in
+          0)
+            echo "Using shell $shell" >&2
+            # docker run -it --rm --entrypoint "$shell" $@
+            docker-compose-svc-exec "$shell" "$@"
+            return "$?"
+            ;;
+          125)
+            echo "$res" >&2
+            return "$rc"
+            ;;
+        esac
+      done
+    }
+
     alias sc-cat="sudo systemctl cat"
     alias sc-daemon-reload="sudo systemctl daemon-reload"
     alias sc-disable-now="sudo systemctl disable --now"
