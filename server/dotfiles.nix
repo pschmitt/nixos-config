@@ -182,6 +182,11 @@ in
     alias drup="docker compose down; docker compose up --force-recreate --remove-orphans"
     alias drupd="drup -d"
 
+    docker-compose::services() {
+      find -L /srv -mindepth 2 -maxdepth 2 -iname docker-compose.yaml \
+        -exec sh -c 'basename "$(dirname "$1")"' -- {} \; 2>/dev/null | sort -u
+    }
+
     dlog() {
       local ctrlc
       trap 'ctrlc=1; kill -9 %1;' INT
@@ -211,6 +216,8 @@ in
             ;;
           *)
             echo_error "not in a /srv directory. Please provide target svc."
+            echo_info "Available services:"
+            docker-compose::services
             return 1
             ;;
         esac
@@ -224,9 +231,12 @@ in
       if [[ ! -r $compose_file ]]
       then
         echo_error "Invalid svc: $svc -> $compose_file not found"
+        echo_info "Available services:"
+        docker-compose::services
         return 1
       fi
 
+      echo_info "Targeting compose service ''${fg_bold[yellow]}''${svc}''${reset_color}"
       local cmd=("$@")
 
       if [[ -n $cmd ]]
