@@ -230,7 +230,7 @@ in
 
       if [[ ! -r $compose_file ]]
       then
-        echo_error "Invalid svc: $svc -> $compose_file not found"
+        echo_error "Invalid svc: $svc -> ''${fg_bold[red]}''${compose_file}''${reset_color} not found"
         echo_info "Available services:"
         docker-compose::services
         return 1
@@ -241,6 +241,7 @@ in
 
       if [[ -n $cmd ]]
       then
+        echo_info "Executing command \$ ''${fg_bold[magenta]}''${cmd:q}''${reset_color}"
         docker compose -f "$compose_file" exec "$svc" "''${cmd[@]}"
         return "$?"
       fi
