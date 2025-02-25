@@ -254,7 +254,7 @@ in
 
         case "$rc" in
           0)
-            echo_info "Using shell $shell"
+            echo_info "Using shell ''${fg_bold[magenta]}''${shell}''${reset_color}"
             docker compose -f "$compose_file" exec "$svc" "$shell"
             return "$?"
             ;;
