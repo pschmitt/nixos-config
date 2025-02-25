@@ -210,7 +210,7 @@ in
             svc=$(basename "$PWD")
             ;;
           *)
-            echo_error "svc not provided and not in /srv directory"
+            echo_error "not in a /srv directory. Please provide target svc."
             return 1
             ;;
         esac
@@ -220,6 +220,13 @@ in
       fi
 
       local compose_file="/srv/''${svc}/docker-compose.yaml"
+
+      if [[ ! -r $compose_file ]]
+      then
+        echo_error "Invalid svc: $svc -> $compose_file not found"
+        return 1
+      fi
+
       local cmd=("$@")
 
       if [[ -n $cmd ]]
