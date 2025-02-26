@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   domain = "changes.${config.custom.mainDomain}";
 in
@@ -13,6 +13,10 @@ in
     webDriverSupport = false;
     playwrightSupport = !config.services.changedetection-io.webDriverSupport;
     baseURL = "https://${domain}";
+
+    environmentFile = pkgs.writeText "changedetection-io.env" ''
+      DISABLE_VERSION_CHECK=true
+    '';
   };
 
   services.nginx.virtualHosts = {
