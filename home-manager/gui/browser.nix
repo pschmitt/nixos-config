@@ -41,7 +41,7 @@
 
       search = {
         force = true;
-        default = "DuckDuckGo";
+        default = "Unduck";
 
         # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
         engines = {
@@ -167,6 +167,13 @@
             iconUpdateURL = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gm" ];
+          };
+
+          "Unduck" = {
+            urls = [ { template = "https://unduck.link?q={searchTerms}"; } ];
+            iconUpdateURL = "https://unduck.link/search.svg";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "ud" ];
           };
         };
       };
