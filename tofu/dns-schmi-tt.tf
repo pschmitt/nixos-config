@@ -15,3 +15,13 @@ resource "cloudflare_record" "schmi-tt" {
   proxied = false
   ttl     = 1
 }
+
+# bluesky verification
+resource "cloudflare_record" "bluesky-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  name    = "_atproto.p"
+  content = "did=did:plc:xnruav2mf2nhyysfpvpwflbu"
+  type    = "TXT"
+  proxied = false
+  ttl     = 1
+}
