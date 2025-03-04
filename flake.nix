@@ -180,7 +180,10 @@
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
 
+    # HOTFIXES: Overrides, pending PRs, etc
     droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
+    aerc.url = "github:NixOS/nixpkgs?ref=refs/pull/386733/head";
+    notmuch.url = "github:NixOS/nixpkgs?ref=refs/pull/386738/head";
   };
 
   outputs =
