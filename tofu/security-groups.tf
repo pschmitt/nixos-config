@@ -13,6 +13,11 @@ resource "openstack_networking_secgroup_v2" "secgroup_email" {
   description = "Allow email (imap+smtp) traffic"
 }
 
+resource "openstack_networking_secgroup_v2" "secgroup_xmr" {
+  name        = "allow-xmr"
+  description = "Allow xmr traffic"
+}
+
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v4" {
   direction         = "ingress"
   ethertype         = "IPv4"
@@ -191,6 +196,26 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v6" {
   port_range_max    = 587
   remote_ip_prefix  = "::/0"
   security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 39674
+  port_range_max    = 39674
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_xmr.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 39674
+  port_range_max    = 39674
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_xmr.id
 }
 
 # vim: set ft=terraform
