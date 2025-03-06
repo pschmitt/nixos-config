@@ -49,7 +49,8 @@ resource "openstack_networking_port_secgroup_associate_v2" "rofl_02_secgroup_ass
   security_group_ids = [
     openstack_networking_secgroup_v2.secgroup_ssh.id,
     openstack_networking_secgroup_v2.secgroup_http.id,
-    openstack_networking_secgroup_v2.secgroup_email.id
+    openstack_networking_secgroup_v2.secgroup_email.id,
+    openstack_networking_secgroup_v2.secgroup_xmr.id
   ]
 }
 
