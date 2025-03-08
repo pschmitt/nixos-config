@@ -151,10 +151,6 @@ let
       port = 9454;
       hosts = [ "wiki.${config.custom.mainDomain}" ];
     };
-    xmrig-proxy = {
-      port = 39674;
-      hosts = [ "x.${config.custom.mainDomain}" ];
-    };
   };
 
   # Helper function to generate a Monit config snippet.
