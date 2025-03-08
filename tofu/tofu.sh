@@ -79,7 +79,7 @@ main() {
     git -C "$NIXOS_CONFIG_DIR" add --intent-to-add . &>/dev/null
   fi
 
-  trap 'cleanup' EXIT
+  trap 'cleanup >&2' EXIT
 
   tofu -chdir="${TOFU_DIR}" "$@"
 }
