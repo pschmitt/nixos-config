@@ -1303,11 +1303,11 @@
         "systems": "systems_7"
       },
       "locked": {
-        "lastModified": 1741160143,
-        "narHash": "sha256-XqzfX+Hn1O1d8WypUDIsvqflmhhdXg0Iy9R/XRSBFmo=",
+        "lastModified": 1741427909,
+        "narHash": "sha256-z+s+llLXnKtek9VY4ca7b44GI4VgM6NMZrQNH/U38ns=",
         "owner": "hyprwm",
         "repo": "hyprlock",
-        "rev": "9f37c1c8e9923dff65b4b1771694be3be59b1836",
+        "rev": "9e82fe3547ab0de6385cc3367bcd1e2b1393e03e",
         "type": "github"
       },
       "original": {
