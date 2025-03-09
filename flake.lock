@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "aerc": {
-      "locked": {
-        "lastModified": 1741011634,
-        "narHash": "sha256-ja/Aivk0MiVlsogCZ1OjaJVJF6aqwLB0hQFFQds+KmU=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "bf68ce7d1b20a9186073e769a33dcab5186c4ba6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/386733/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "agenix": {
       "inputs": {
         "darwin": "darwin",
@@ -1898,22 +1882,6 @@
         "type": "github"
       }
     },
-    "notmuch": {
-      "locked": {
-        "lastModified": 1741007979,
-        "narHash": "sha256-QRippC3SNPwBjYdxEvWoaVjJ6uvF3SAimUnmLEiQr3c=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "70d23ab6672b2146ba6da33a790445cd8fa4d6f5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/386738/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "pre-commit-hooks": {
       "inputs": {
         "flake-compat": "flake-compat_2",
@@ -1961,7 +1929,6 @@
     },
     "root": {
       "inputs": {
-        "aerc": "aerc",
         "agenix": "agenix",
         "catppuccin": "catppuccin",
         "disko": "disko",
@@ -1986,7 +1953,6 @@
         "nixpkgs-stable": "nixpkgs-stable_2",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",
-        "notmuch": "notmuch",
         "pre-commit-hooks": "pre-commit-hooks_2",
         "sendmyl": "sendmyl",
         "simple-nixos-mailserver": "simple-nixos-mailserver",
