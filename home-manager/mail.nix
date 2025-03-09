@@ -6,8 +6,7 @@
     inputs.myl-discovery.packages.${system}.myl-discovery
     inputs.sendmyl.packages.${system}.sendmyl
 
-    # aerc
-    (aerc.override { withNotmuch = false; })
+    aerc
     gmailctl
     neomutt
   ];
