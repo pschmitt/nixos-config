@@ -1516,11 +1516,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1737227190,
-        "narHash": "sha256-u735plKOxBgntqrGQJXABWe5lewbby/8nxP4CRq8+kQ=",
+        "lastModified": 1741523588,
+        "narHash": "sha256-30Sth0ntRrh/YnMSbsBvlzKWaQ14VAkiNvsqRnWRS1E=",
         "owner": "pschmitt",
         "repo": "myl",
-        "rev": "57242a7d5dbc2185ad81262b0cc139a420b083a2",
+        "rev": "517a58319863b66414d7dca0c00dfcf13450844f",
         "type": "github"
       },
       "original": {
