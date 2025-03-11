@@ -12,6 +12,9 @@
     shellcheck
     zunit
 
+    # banking
+    python313Packages.woob
+
     # misc
     flarectl
     hostctl
