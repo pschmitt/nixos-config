@@ -45,6 +45,9 @@ in
       acme-sh
       argocd
       argocd-vault-plugin
+      azure-cli
+      azure-cli-extensions.ad
+      azure-cli-extensions.fzf
       cmctl
       glab
       kubectl
