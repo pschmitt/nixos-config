@@ -82,7 +82,8 @@ in
         ${pkgs.terraform}/bin/terraform "$@"
       '')
       pkgs.terraform-157.terraform
-      terragrunt
+      # FIXME terragrunt is broken as of 2025-03-14
+      # terragrunt
       opentofu
       thunderbird
       timewarrior
