@@ -12,6 +12,7 @@
       inputs.sops-nix.homeManagerModules.sops
       inputs.nix-index-database.hmModules.nix-index
       inputs.catppuccin.homeManagerModules.catppuccin
+      ./banking.nix
       ./bitwarden.nix
       ./crypto.nix
       ./devel.nix
