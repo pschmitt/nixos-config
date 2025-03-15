@@ -46,6 +46,7 @@ in
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
   # Lab
+  cdpcurl = pkgs.callPackage ./cdpcurl { };
   native-client = pkgs.callPackage ./native-client { };
   osc = pkgs.callPackage ./osc { };
   pyghmi = pkgs.callPackage ./pyghmi { };
