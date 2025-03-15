@@ -256,7 +256,7 @@ jobs:
       - setup-matrix
       - build-pkgs-free
       - build-pkgs-nonfree
-    if: ${{ always() && success('setup-matrix') }}
+    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -321,7 +321,7 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ always() && success('setup-matrix') }}
+    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
     # runs-on: ubuntu-24.04-arm
     strategy:
