@@ -198,6 +198,26 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v6" {
   security_group_id = openstack_networking_secgroup_v2.secgroup_email.id
 }
 
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v4" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 18080
+  port_range_max    = 18089
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_xmr.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v6" {
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 18080
+  port_range_max    = 18089
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_xmr.id
+}
+
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v4" {
   direction         = "ingress"
   ethertype         = "IPv4"
