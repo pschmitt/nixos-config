@@ -28,7 +28,7 @@
     ../../common/work
     ../../common/work/deckmaster.nix
 
-    ../../misc/nfs-client.nix
+    ../../services/nfs-client.nix
     # ../../services/bitfocus-companion.nix
     # ../../services/netdata.nix
   ];
