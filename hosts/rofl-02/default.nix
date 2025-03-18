@@ -16,11 +16,11 @@
     ./docker-compose-netbird-ip-fix.nix
 
     # services
-    ../../misc/harmonia.nix
-    ../../misc/http.nix
     ../../server/luks-ssh-unlock-homelab.nix
     ../../services/bw-backup.nix
     ../../services/changedetection-io.nix
+    ../../services/harmonia.nix
+    ../../services/http.nix
     ../../services/mealie.nix
     ./container-services.nix
     ./forgejo.nix
