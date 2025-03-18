@@ -6,9 +6,9 @@
     ../../server
     ../../server/optimist.nix
 
-    ../../misc/nfs-client.nix
-    ../../misc/tdarr.nix
-    ../../misc/miner.nix
+    ../../services/nfs-client.nix
+    ../../services/tdarr.nix
+    ../../services/miner.nix
     ../../services/http.nix
     ../../services/harmonia.nix
   ];
