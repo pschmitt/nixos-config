@@ -32,6 +32,12 @@ in
     };
   };
 
+  # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
+  # they don't seem to come up on their own after provisioning.
+  systemd.services.netbird-netbird-io.postStart = ''
+    /run/current-system/sw/bin/netbird-netbird-io up
+  '';
+
   # mask netbird-wt0 service
   systemd.services.netbird-wt0.enable = false;
 }
