@@ -2,6 +2,15 @@
 {
   services.monero = {
     enable = true;
+    extraConfig = ''
+      # ref: https://docs.getmonero.org/interacting/monero-config-file/#monerodconf
+      check-updates=disabled
+      enable-dns-blocklist=1
+
+      # Optional pruning
+      prune-blockchain=1
+      sync-pruned-blocks=1
+    '';
     rpc = {
       address = "127.0.0.1";
       port = 18081;
