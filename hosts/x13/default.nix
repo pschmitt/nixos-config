@@ -39,7 +39,5 @@
 
   boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
-  # FIXME This works but is annoying since it seems to trigger
-  # the lockscreen very often, and the login process is password + fingerprint
-  # services.fprintd.enable = true;
+  services.fprintd.enable = true;
 }
