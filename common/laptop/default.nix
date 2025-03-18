@@ -4,7 +4,7 @@
     inputs.hardware.nixosModules.common-pc-laptop
 
     ./network.nix
-    ../../misc/nix-distributed-build.nix
+    ../../services/nix-distributed-build.nix
     ../../services/bitwarden.nix
   ];
 
