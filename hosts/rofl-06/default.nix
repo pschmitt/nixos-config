@@ -7,6 +7,7 @@
     ../../server/optimist.nix
 
     ../../misc/miner.nix
+    ../../services/http.nix
     ../../services/monerod.nix
   ];
 
