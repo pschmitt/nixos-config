@@ -6,9 +6,9 @@
     ../../server
     ../../server/optimist.nix
 
-    ../../misc/nfs-client.nix
-    ../../misc/miner.nix
-    ../../misc/tdarr.nix
+    ../../services/nfs-client.nix
+    ../../services/miner.nix
+    ../../services/tdarr.nix
   ];
 
   custom.cattle = true;
