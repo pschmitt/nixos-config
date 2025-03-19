@@ -94,4 +94,8 @@ in
       gtk-theme = theme;
     };
   };
+
+  home.sessionVariables = {
+    GTK_THEME = theme;
+  };
 }
