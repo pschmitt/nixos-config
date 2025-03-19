@@ -1,36 +1,8 @@
 { pkgs, ... }:
 
 let
-  # https://github.com/NixOS/nixpkgs/blob/master/pkgs/data/icons/colloid-icon-theme/default.nix
-  colloidIconPkg = (
-    pkgs.colloid-icon-theme.override {
-      schemeVariants = [ "all" ];
-      colorVariants = [ "all" ];
-    }
-  );
-
-  # https://github.com/NixOS/nixpkgs/blob/master/pkgs/data/themes/colloid-gtk-theme/default.nix
-  colloidThemePkg = (
-    pkgs.colloid-gtk-theme.override {
-      themeVariants = [ "all" ];
-      colorVariants = [
-        "dark"
-        "light"
-        "standard"
-      ];
-      tweaks = [
-        "normal"
-        "nord"
-      ];
-      sizeVariants = [
-        "standard"
-        "compact"
-      ];
-    }
-  );
-
-  theme = "Colloid-Dark-Nord";
-  themePkg = colloidThemePkg;
+  theme = "Colloid-Dark";
+  themePkg = pkgs.colloid-gtk-theme;
 
   iconTheme = "Tela-circle";
   iconThemePkg = pkgs.tela-circle-icon-theme;
@@ -42,22 +14,14 @@ let
   cursorThemePkg = pkgs.bibata-cursors;
 in
 {
-  # catppuccin.enable = true;
+  # catppuccin = {
+  #   enable = true;
+  #   flavor = osConfig.catppuccin.flavor;
+  #   nvim.enable = false;
+  # };
 
   home.packages = with pkgs; [
-    # icon-library
-    arc-icon-theme
-    colloidIconPkg
-    colloidThemePkg
-    flat-remix-icon-theme
     gnome-themes-extra
-    numix-icon-theme
-    numix-icon-theme-circle
-    numix-icon-theme-square
-    paper-icon-theme
-    papirus-icon-theme
-    tela-circle-icon-theme
-    tela-icon-theme
 
     # gsettings wrapper
     (pkgs.writeTextFile {
@@ -81,8 +45,6 @@ in
   gtk = {
     enable = true;
     theme = {
-      # name = "Adwaita-dark";
-      # package = pkgs.gnome.gnome-themes-extra;
       name = theme;
       package = themePkg;
     };
@@ -104,13 +66,11 @@ in
 
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3 = {
-      # FIXME Should this be "true" or "1"?
       extraConfig = {
         gtk-application-prefer-dark-theme = "1";
       };
     };
 
-    # FIXME Should this be "true" or "1"?
     gtk4 = {
       extraConfig = {
         gtk-application-prefer-dark-theme = "1";
@@ -118,22 +78,20 @@ in
     };
   };
 
-  # FIXME qt is a mess on NixOS, for qtct to work even remotely one needs to
-  # install qt5ct as a system package (see ./common/gui/theme.nix)
   qt = {
     enable = true;
-    platformTheme.name = "adwaita-dark";
+    platformTheme.name = "adwaita";
+    # platformTheme.name = "kvantum"; # required for catpuccin
     style = {
       name = "adwaita-dark";
+      # name = "kvantum"; # required for catpuccin
     };
   };
 
   dconf.settings = {
     "org/gnome/desktop/interface" = {
       color-scheme = "prefer-dark";
-      # FIXME Below isn't really necessary. The idea here was to try to force
-      # nautilus to use the default gtk theme, but this seems to have no effect
-      # gtk-theme = theme;
+      gtk-theme = theme;
     };
   };
 }
