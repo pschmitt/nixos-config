@@ -15,7 +15,7 @@ resource "openstack_compute_instance_v2" "rofl-02" {
   flavor_name       = "m1.xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair.name
   availability_zone = var.availability_zone
-  security_groups   = [
+  security_groups = [
     "default",
     openstack_networking_secgroup_v2.secgroup_ssh.name,
     openstack_networking_secgroup_v2.secgroup_http.name,
