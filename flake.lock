@@ -154,22 +154,6 @@
         "type": "github"
       }
     },
-    "droidcam-obs": {
-      "locked": {
-        "lastModified": 1741553841,
-        "narHash": "sha256-8rc6k+d5Z344ZEuWJtAuVoeeX088zq04Y2Y1j8BRFPY=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b75edecb799b9529a35c650dee81b51573821adf",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/382559/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -1932,7 +1916,6 @@
         "agenix": "agenix",
         "catppuccin": "catppuccin",
         "disko": "disko",
-        "droidcam-obs": "droidcam-obs",
         "fenix": "fenix",
         "firefox-addons": "firefox-addons",
         "flatpaks": "flatpaks",
