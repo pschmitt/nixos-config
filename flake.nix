@@ -181,7 +181,7 @@
     # };
 
     # HOTFIXES: Overrides, pending PRs, etc
-    droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
+    # droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
   };
 
   outputs =
