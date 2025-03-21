@@ -194,3 +194,10 @@ resource "cloudflare_record" "webmail-brkn-lol" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "xmr-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  type    = "A"
+  name    = "xmr"
+  content = openstack_networking_floatingip_v2.rofl_06_fip.address
+  ttl     = 3600
+}
