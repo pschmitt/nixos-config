@@ -8,8 +8,8 @@
 
   services.monero = {
     enable = true;
+    # https://docs.getmonero.org/interacting/monero-config-file/#monerodconf
     extraConfig = ''
-      # ref: https://docs.getmonero.org/interacting/monero-config-file/#monerodconf
       check-updates=disabled
       enable-dns-blocklist=1
 
@@ -53,6 +53,8 @@
               recommendedProxySettings = true;
               proxyWebsockets = true;
             };
+            # FIXME basic auth does not work
+            # with monero-wallet-cli --daemon-login
             # basicAuthFile = config.sops.secrets."monerod/htpasswd".path;
           };
         }) hostNames
