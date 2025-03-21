@@ -1,5 +1,11 @@
 { config, ... }:
 {
+  # sops.secrets = {
+  #   "monerod/htpasswd" = {
+  #     owner = "nginx";
+  #   };
+  # };
+
   services.monero = {
     enable = true;
     extraConfig = ''
@@ -24,18 +30,12 @@
     };
   };
 
-  sops.secrets = {
-    "monerod/htpasswd" = {
-      owner = "nginx";
-    };
-  };
-
   services.nginx =
     let
       # TODO add a public endpoint, with basic auth?
       hostNames = [
         # public
-        "xmr.${config.custom.mainDomain}"
+        # "xmr.${config.custom.mainDomain}"
         # vpn
         "xmr.${config.networking.hostName}.nb.${config.custom.mainDomain}"
         "xmr.${config.networking.hostName}.ts.${config.custom.mainDomain}"
@@ -53,7 +53,7 @@
               recommendedProxySettings = true;
               proxyWebsockets = true;
             };
-            basicAuthFile = config.sops.secrets."monerod/htpasswd".path;
+            # basicAuthFile = config.sops.secrets."monerod/htpasswd".path;
           };
         }) hostNames
       );
