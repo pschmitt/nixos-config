@@ -23,12 +23,22 @@
       address = "";
     };
   };
+
+  sops.secrets = {
+    "monerod/htpasswd" = {
+      owner = "nginx";
+    };
+  };
+
   services.nginx =
     let
       # TODO add a public endpoint, with basic auth?
       hostNames = [
-        "rofl-06.nb.${config.custom.mainDomain}"
-        "rofl-06.ts.${config.custom.mainDomain}"
+        # public
+        "xmr.${config.custom.mainDomain}"
+        # vpn
+        "xmr.${config.networking.hostName}.nb.${config.custom.mainDomain}"
+        "xmr.${config.networking.hostName}.ts.${config.custom.mainDomain}"
       ];
       virtualHosts = builtins.listToAttrs (
         map (hostName: {
@@ -43,6 +53,7 @@
               recommendedProxySettings = true;
               proxyWebsockets = true;
             };
+            basicAuthFile = config.sops.secrets."monerod/htpasswd".path;
           };
         }) hostNames
       );
