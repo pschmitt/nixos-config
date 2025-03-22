@@ -109,6 +109,7 @@ in
               name,
             }:
             {
+              name = name;
               urls = [
                 {
                   template = "https://git.mgmt.innovo-cloud.de/search";
@@ -142,19 +143,20 @@ in
         in
         {
           # Use the helper function to define the search engines
-          "GEC GitLab (projects)" = makeGitLabSearchEngine {
+          gec-gitlab-projects = makeGitLabSearchEngine {
             name = "GEC GitLab (projects)";
             scope = "projects";
             alias = "gitp";
           };
 
-          "GEC GitLab (code)" = makeGitLabSearchEngine {
+          gec-gitlab-code = makeGitLabSearchEngine {
             name = "GEC GitLab (code)";
             scope = "blobs";
             alias = "gitc";
           };
 
-          "WIIT JIRA" = {
+          wiit-jira = {
+            name = "WIIT JIRA";
             urls = [
               {
                 template =
@@ -189,7 +191,8 @@ in
             definedAliases = [ "jira" ];
           };
 
-          "GEC Confluence" = {
+          gec-confluence = {
+            name = "GEC Confluence";
             urls = [
               {
                 # FIXME This search sucks. Consider using CQL aka "Enhanced Search". Sadly there seems to be no way provide a search query directly via the URL
