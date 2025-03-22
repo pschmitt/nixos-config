@@ -155,7 +155,7 @@
           # builtin engines only support specifying one additional alias
           google.metaData.alias = "g";
           # what's the right id here? wikipedia?
-          wikipedia-en.metaData.alias = "wiki";
+          wikipedia.metaData.alias = "wiki";
 
           github = {
             name = "GitHub";
