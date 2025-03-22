@@ -151,9 +151,11 @@
             definedAliases = [ "aw" ];
           };
 
-          "Bing".metaData.hidden = true;
-          "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
-          "Wikipedia (en)".metaData.alias = "wiki"; # builtin engines only support specifying one additional alias
+          bing.metaData.hidden = true;
+          # builtin engines only support specifying one additional alias
+          google.metaData.alias = "g";
+          # what's the right id here? wikipedia?
+          wikipedia-en.metaData.alias = "wiki";
 
           github = {
             name = "GitHub";
