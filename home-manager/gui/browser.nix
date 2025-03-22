@@ -45,20 +45,23 @@
 
         # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
         engines = {
-          "DuckDuckGo" = {
+          ddg = {
+            name = "DuckDuckGo";
             url = "https://www.duckduckgo.com/?q={searchTerms}";
             hidden = false;
             definedAliases = [ "ddg" ];
           };
 
-          "Perplexity" = {
+          perplexity = {
+            name = "Perplexity";
             urls = [ { template = "https://www.perplexity.ai/?q={searchTerms}"; } ];
             icon = "https://www.perplexity.ai/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # Every day
             definedAliases = [ "pp" ];
           };
 
-          "Nix Packages" = {
+          nix-packages = {
+            name = "Nix Packages";
             urls = [
               {
                 template = "https://search.nixos.org/packages";
@@ -83,7 +86,8 @@
             definedAliases = [ "nixp" ];
           };
 
-          "Nix Options" = {
+          nix-options = {
+            name = "Nix Options";
             urls = [
               {
                 template = "https://search.nixos.org/options";
@@ -108,14 +112,16 @@
             definedAliases = [ "nixopt" ];
           };
 
-          "NixOS Wiki" = {
+          nixos-wiki = {
+            name = "NixOS Wiki";
             urls = [ { template = "https://nixos.wiki/index.php?search={searchTerms}"; } ];
             icon = "https://nixos.wiki/favicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "nixw" ];
           };
 
-          "Nixpkgs PRs" = {
+          nixpkgs-prs = {
+            name = "Nixpkgs PRs";
             urls = [
               {
                 template = "https://github.com/NixOS/nixpkgs/pulls";
@@ -133,7 +139,8 @@
             definedAliases = [ "npr" ];
           };
 
-          "ArchWiki" = {
+          archwiki = {
+            name = "ArchWiki";
             urls = [
               {
                 template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}";
@@ -148,28 +155,32 @@
           "Google".metaData.alias = "g"; # builtin engines only support specifying one additional alias
           "Wikipedia (en)".metaData.alias = "wiki"; # builtin engines only support specifying one additional alias
 
-          "GitHub" = {
+          github = {
+            name = "GitHub";
             urls = [ { template = "https://github.com/search?q={searchTerms}"; } ];
             icon = "https://github.com/fluidicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gh" ];
           };
 
-          "YouTube" = {
+          youtube = {
+            name = "YouTube";
             urls = [ { template = "https://www.youtube.com/results?search_query={searchTerms}"; } ];
             icon = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "y" ];
           };
 
-          "GMail" = {
+          gmail = {
+            name = "GMail";
             urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
             icon = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gm" ];
           };
 
-          "Unduck" = {
+          unduck = {
+            name = "Unduck";
             urls = [ { template = "https://unduck.link?q={searchTerms}"; } ];
             icon = "https://unduck.link/search.svg";
             updateInterval = 24 * 60 * 60 * 1000; # every day
