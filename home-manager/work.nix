@@ -135,7 +135,7 @@ in
                   ];
                 }
               ];
-              iconUpdateURL = "https://git.mgmt.innovo-cloud.de/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png";
+              icon = "https://git.mgmt.innovo-cloud.de/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png";
               updateInterval = 24 * 60 * 60 * 1000; # every day
               definedAliases = [ alias ];
             };
@@ -184,7 +184,7 @@ in
                   "${jiraUrl}/issues/?jql=${jqlQuery}";
               }
             ];
-            iconUpdateURL = "https://jira.wiit.one/s/-jac4wp/9170005/4r0zo/_/images/fav-generic.png";
+            icon = "https://jira.wiit.one/s/-jac4wp/9170005/4r0zo/_/images/fav-generic.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "jira" ];
           };
@@ -202,7 +202,7 @@ in
                 ];
               }
             ];
-            iconUpdateURL = "https://confluence.gec.io/favicon.ico";
+            icon = "https://confluence.gec.io/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "confl" ];
           };

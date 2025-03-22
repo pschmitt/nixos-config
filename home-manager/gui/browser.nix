@@ -53,7 +53,7 @@
 
           "Perplexity" = {
             urls = [ { template = "https://www.perplexity.ai/?q={searchTerms}"; } ];
-            iconUpdateURL = "https://www.perplexity.ai/favicon.ico";
+            icon = "https://www.perplexity.ai/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # Every day
             definedAliases = [ "pp" ];
           };
@@ -110,7 +110,7 @@
 
           "NixOS Wiki" = {
             urls = [ { template = "https://nixos.wiki/index.php?search={searchTerms}"; } ];
-            iconUpdateURL = "https://nixos.wiki/favicon.png";
+            icon = "https://nixos.wiki/favicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "nixw" ];
           };
@@ -139,7 +139,7 @@
                 template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}";
               }
             ];
-            iconUpdateURL = "https://wiki.archlinux.org/favicon.ico";
+            icon = "https://wiki.archlinux.org/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "aw" ];
           };
@@ -150,28 +150,28 @@
 
           "GitHub" = {
             urls = [ { template = "https://github.com/search?q={searchTerms}"; } ];
-            iconUpdateURL = "https://github.com/fluidicon.png";
+            icon = "https://github.com/fluidicon.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gh" ];
           };
 
           "YouTube" = {
             urls = [ { template = "https://www.youtube.com/results?search_query={searchTerms}"; } ];
-            iconUpdateURL = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
+            icon = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "y" ];
           };
 
           "GMail" = {
             urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
-            iconUpdateURL = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
+            icon = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "gm" ];
           };
 
           "Unduck" = {
             urls = [ { template = "https://unduck.link?q={searchTerms}"; } ];
-            iconUpdateURL = "https://unduck.link/search.svg";
+            icon = "https://unduck.link/search.svg";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "ud" ];
           };
