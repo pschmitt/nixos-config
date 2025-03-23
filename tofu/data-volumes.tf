@@ -9,9 +9,24 @@ resource "openstack_blockstorage_volume_v3" "data_volume" {
   }
 }
 
+resource "openstack_blockstorage_volume_v3" "blob_volume" {
+  name              = "blob-vol"
+  size              = 4096 # GiB
+  availability_zone = var.availability_zone
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "openstack_compute_volume_attach_v2" "va_data" {
   instance_id = openstack_compute_instance_v2.rofl-02.id
   volume_id   = openstack_blockstorage_volume_v3.data_volume.id
+}
+
+resource "openstack_compute_volume_attach_v2" "va_blob" {
+  instance_id = openstack_compute_instance_v2.rofl-07.id
+  volume_id   = openstack_blockstorage_volume_v3.blob_volume.id
 }
 
 resource "oci_core_volume" "oci_01_data" {
