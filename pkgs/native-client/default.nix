@@ -70,7 +70,7 @@ stdenv.mkDerivation rec {
         "description": "Node Host for Native Messaging",
         "path": $bin,
         "type": "stdio",
-        "allowed_origins": $ext
+        "allowed_origins": ($ext | map("chrome-extension://" + . + "/"))
       }' > "$out/lib/chromium/NativeMessagingHosts/$APP_NAME.json"
 
     makeWrapper ${nodejs}/bin/node "$BINARY" \
