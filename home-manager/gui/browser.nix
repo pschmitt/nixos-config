@@ -213,6 +213,9 @@
   # BroTab for Google Chrome
   home.file.".config/google-chrome/NativeMessagingHosts/brotab_mediator.json".source =
     "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
+  # Native Addon (for open in firefox)
+  home.file.".config/google-chrome/NativeMessagingHosts/com.add0n.node.json".source =
+    "${pkgs.native-client}/lib/chromium/NativeMessagingHosts/com.add0n.node.json";
 
   systemd.user.services.fx-cast = {
     Unit = {
