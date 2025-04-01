@@ -3,6 +3,13 @@
 let
   theme = "Colloid-Dark";
   themePkg = pkgs.colloid-gtk-theme;
+  # theme = "catppuccin-mocha-blue-standard";
+  # themePkg = pkgs.catppuccin-gtk.override {
+  #   accents = [ "blue" ];
+  #   # variant = osConfig.catppuccin.flavor;
+  #   variant = "mocha";
+  #   # size = "compact";
+  # };
 
   iconTheme = "Tela-circle";
   iconThemePkg = pkgs.tela-circle-icon-theme;
