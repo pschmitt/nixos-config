@@ -35,6 +35,7 @@ stdenv.mkDerivation rec {
       $out/lib/chromium/NativeMessagingHosts
 
     APP_NAME="com.add0n.node"
+    APP_DESCRIPTION="Node Host for Native Messaging"
     BINARY=$out/bin/run.sh
 
     # Mediator manifests
@@ -50,11 +51,12 @@ stdenv.mkDerivation rec {
     EXT_FIREFOX=$(get_extension_ids firefox)
     jq -ner \
       --arg name "$APP_NAME" \
+      --arg description "$APP_DESCRIPTION" \
       --arg bin "$BINARY" \
       --argjson ext "$EXT_FIREFOX" '
       {
         "name": $name,
-        "description": "Node Host for Native Messaging",
+        "description": $description,
         "path": $bin,
         "type": "stdio",
         "allowed_extensions": $ext
@@ -63,11 +65,12 @@ stdenv.mkDerivation rec {
     EXT_CHROME=$(get_extension_ids chrome)
     jq -ner \
       --arg name "$APP_NAME" \
+      --arg description "$APP_DESCRIPTION" \
       --arg bin "$BINARY" \
       --argjson ext "$EXT_CHROME" '
       {
         "name": $name,
-        "description": "Node Host for Native Messaging",
+        "description": $description,
         "path": $bin,
         "type": "stdio",
         "allowed_origins": ($ext | map("chrome-extension://" + . + "/"))
