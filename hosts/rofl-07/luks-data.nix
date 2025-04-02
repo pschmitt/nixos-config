@@ -14,7 +14,17 @@
   #   mode = "0400";
   # };
 
-  fileSystems."/mnt/data".neededForBoot = lib.mkForce false;
+  # fileSystems."/mnt/data".neededForBoot = lib.mkForce false;
+  fileSystems."/mnt/data" = {
+    device = "/dev/mapper/data";
+    # fsType = "btrfs";
+    # options = [
+    #   "compress=zstd"
+    #   "noatime"
+    # ];
+
+    neededForBoot = lib.mkForce false;
+  };
 
   # TODO Replace with sops-nix
   # agenix
