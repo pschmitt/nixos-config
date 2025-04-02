@@ -16,7 +16,7 @@
 
   # fileSystems."/mnt/data".neededForBoot = lib.mkForce false;
   fileSystems."/mnt/data" = {
-    device = "/dev/mapper/data";
+    device = "/dev/mapper/data-encrypted";
     # fsType = "btrfs";
     # options = [
     #   "compress=zstd"
