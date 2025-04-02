@@ -4,9 +4,13 @@
   fetchgit,
 }:
 
+let
+  version = "0.10.0";
+in
+
 python3.pkgs.buildPythonApplication {
   pname = "emoji-fzf";
-  version = "0.9.0";
+  version = version;
   pyproject = true;
 
   # NOTE The build fails missing data when using fetchFromPypi
@@ -14,10 +18,8 @@ python3.pkgs.buildPythonApplication {
   # with fetchSubmodules=true
   src = fetchgit {
     url = "https://github.com/noahp/emoji-fzf.git";
-    # NOTE This commit is the latest as of 2024-10-29
-    # Sadly there is no 0.9.0 tag yet.
-    rev = "d79dd3c9a91ccc387907f83193e435ff623754d4";
-    sha256 = "sha256-e9ywYhb1C1i6Epgp3G9Dxa7Q4trjkMC0KOX+F6ncgb4=";
+    rev = version;
+    sha256 = "sha256-W1lCzV+RjhjjbD2sHPQayGB7iu9eIcvy7EPrxFkORv4=";
     fetchSubmodules = true;
   };
 
