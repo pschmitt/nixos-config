@@ -1,16 +1,15 @@
 {
   lib,
-  python3Packages,
+  buildPythonApplication,
   fetchFromGitHub,
   # build
   setuptools,
   setuptools-scm,
   wheel,
-  # deps
   fontforge,
 }:
 
-python3Packages.buildPythonApplication rec {
+buildPythonApplication rec {
   pname = "font-resizer";
   version = "0.1.0";
   pyproject = true;
@@ -28,7 +27,7 @@ python3Packages.buildPythonApplication rec {
     wheel
   ];
 
-  propagatedBuildInputs = [ python3Packages.fontforge ];
+  propagatedBuildInputs = [ fontforge ];
 
   pythonImportsCheck = [ "font_resizer" ];
 

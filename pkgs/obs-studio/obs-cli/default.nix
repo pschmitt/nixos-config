@@ -1,7 +1,7 @@
 {
   lib,
-  python3Packages,
   fetchPypi,
+  buildPythonApplication,
   # build
   setuptools,
   setuptools-scm,
@@ -11,7 +11,7 @@
   rich,
 }:
 
-python3Packages.buildPythonApplication rec {
+buildPythonApplication rec {
   pname = "obs-cli";
   version = "0.6.2";
   pyproject = true;

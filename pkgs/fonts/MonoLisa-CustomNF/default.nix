@@ -2,10 +2,9 @@
   lib,
   pkgs,
   stdenvNoCC,
-  python3Packages,
 }:
 
-stdenvNoCC.mkDerivation rec {
+stdenvNoCC.mkDerivation {
   pname = "MonoLisa-CustomNF";
   version = "1.808";
 
