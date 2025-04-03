@@ -59,5 +59,6 @@ sops -d --extract '["ssh"]["initrd_host_keys"]["ed25519"]["privkey"]' "$SOPS_FIL
 # make sure our ssh keys end with a newline
 for f in ./etc/ssh/* ./etc/ssh/initrd/*
 do
+  [[ -d "$f" ]] && continue # skip directories
   sed -i '$a\' "$f"
 done
