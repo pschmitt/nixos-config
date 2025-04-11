@@ -62,3 +62,10 @@ do
   [[ -d "$f" ]] && continue # skip directories
   sed -i '$a\' "$f"
 done
+
+# Add data decryption keyfile
+if [[ "$TARGET_HOST" == "rofl-07" ]]
+then
+  LUKS_SOPS_FILE="$(readlink -e "${SCRIPT_DIR}/../../hosts/${TARGET_HOST}/luks.sops.yaml")"
+  sops -d --extract '["luks"]["data"]' "$LUKS_SOPS_FILE" > ./luks-data.keyfile
+fi

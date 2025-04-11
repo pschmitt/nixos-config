@@ -8,7 +8,7 @@
     ../../server
     ../../server/optimist.nix
 
-    ../../services/nfs-client.nix
+    # ../../services/nfs-client.nix
   ];
 
   custom.cattle = true;
