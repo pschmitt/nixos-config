@@ -84,6 +84,8 @@
                 # fallbackToPassword = true;
                 allowDiscards = true;
               };
+              # additionalKeyFiles = [ "/tmp/additionalSecret.key" ];
+              # initrdUnlock = false;
               content = {
                 type = "btrfs";
                 extraArgs = [ "-f" ];

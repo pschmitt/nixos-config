@@ -1,4 +1,9 @@
 { config, lib, ... }:
+let
+  # keyFile = "/mnt-root/luks-data.keyfile";
+  # keyFile = "/sysroot/luks-data.keyfile";
+  keyFile = "/luks-data.keyfile";
+in
 {
   # Data volume
 
@@ -14,22 +19,28 @@
   #   mode = "0400";
   # };
 
-  # fileSystems."/mnt/data".neededForBoot = lib.mkForce false;
-  fileSystems."/mnt/data" = {
-    device = "/dev/mapper/data-encrypted";
-    # fsType = "btrfs";
-    # options = [
-    #   "compress=zstd"
-    #   "noatime"
-    # ];
-
-    neededForBoot = lib.mkForce false;
-  };
-
   # TODO Replace with sops-nix
   # agenix
-  age.secrets.luks-key-data.file = ../../secrets/${config.networking.hostName}/luks-passphrase-data.age;
+  # age.secrets.luks-key-data.file = ../../secrets/${config.networking.hostName}/luks-passphrase-data.age;
+  # environment.etc.crypttab.text = ''
+  #   data PARTLABEL=disk-data-luks ${config.age.secrets.luks-key-data.path}
+  # '';
+
   environment.etc.crypttab.text = ''
-    data PARTLABEL=disk-data-luks ${config.age.secrets.luks-key-data.path}
+    data PARTLABEL=disk-data-luks ${keyFile}
   '';
+
+  # fileSystems."/mnt/data" = {
+  #   encrypted = {
+  #     # TODO Try explicitly disabling it with lib.mkForce false
+  #     # and use crypttab?
+  #     enable = lib.mkForce false;
+  #     keyFile = "/mnt-root/luks-data.keyfile";
+  #   };
+  # };
+
+  boot.initrd.luks.devices.data-encrypted = {
+    keyFile = lib.mkForce "/sysroot${keyFile}";
+    fallbackToPassword = lib.mkForce false;
+  };
 }
