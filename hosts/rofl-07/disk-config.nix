@@ -1,8 +1,12 @@
-{ lib, ... }:
+{ ... }:
+let
+  tfVars = builtins.fromJSON (builtins.readFile ./tf-vars.json);
+in
 {
   disko.devices.disk = {
     system = {
-      device = lib.mkDefault "/dev/sda";
+      # device = lib.mkDefault "/dev/sda";
+      device = "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_${tfVars.disks.root.id}";
       type = "disk";
       content = {
         type = "gpt";
@@ -54,44 +58,6 @@
                   };
                   "@nix" = {
                     mountpoint = "/nix";
-                    mountOptions = [
-                      "compress=zstd"
-                      "noatime"
-                    ];
-                  };
-                };
-              };
-            };
-          };
-        };
-      };
-    };
-    data = {
-      device = lib.mkDefault "/dev/sdb";
-      type = "disk";
-      content = {
-        type = "gpt";
-        partitions = {
-          luks = {
-            size = "100%";
-            content = {
-              type = "luks";
-              name = "data-encrypted";
-              settings = {
-                keyFile = "/tmp/disk-2.key";
-                # NOTE fallbackToPassword is implied when enabling systemd
-                # in initrd
-                # fallbackToPassword = true;
-                allowDiscards = true;
-              };
-              # additionalKeyFiles = [ "/tmp/additionalSecret.key" ];
-              # initrdUnlock = false;
-              content = {
-                type = "btrfs";
-                extraArgs = [ "-f" ];
-                subvolumes = {
-                  "@data" = {
-                    mountpoint = "/mnt/data";
                     mountOptions = [
                       "compress=zstd"
                       "noatime"
