@@ -9,6 +9,7 @@ then
 fi
 
 mkdir -p ./etc/ssh/initrd
+mkdir -p ./etc/crypttab.d/keyfiles
 
 # TODO ?
 # umask 0177
@@ -64,8 +65,18 @@ do
 done
 
 # Add data decryption keyfile
-if [[ "$TARGET_HOST" == "rofl-07" ]]
+LUKS_SOPS_FILE="$(readlink -e "${SCRIPT_DIR}/../../hosts/${TARGET_HOST}/luks.sops.yaml")"
+if [[ ! -r "$LUKS_SOPS_FILE" ]]
 then
-  LUKS_SOPS_FILE="$(readlink -e "${SCRIPT_DIR}/../../hosts/${TARGET_HOST}/luks.sops.yaml")"
-  sops -d --extract '["luks"]["data"]' "$LUKS_SOPS_FILE" > ./luks-data.keyfile
+  echo "$LUKS_SOPS_FILE does not exist, no data file to decrypt" >&2
+  exit 0
 fi
+
+if ! DATA_KEYFILE="$(sops -d --extract '["luks"]["data"]' "$LUKS_SOPS_FILE")"
+then
+  echo "No data keyfile found in $LUKS_SOPS_FILE" >&2
+  exit 0
+fi
+
+umask 0177
+printf '%s' "$DATA_KEYFILE" > ./etc/crypttab.d/keyfiles/data

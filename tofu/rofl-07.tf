@@ -62,13 +62,47 @@ resource "openstack_networking_floatingip_associate_v2" "rofl_07_fip_associate" 
   port_id     = openstack_networking_port_v2.rofl_07_port.id
 }
 
+locals {
+  nixos_vars_file = "../hosts/rofl-07/tf-vars.json"
+  nixos_vars = {
+    disks = {
+      root = {
+        id = openstack_blockstorage_volume_v3.rofl_07_boot_volume.id,
+        name = openstack_blockstorage_volume_v3.rofl_07_boot_volume.name,
+        az = openstack_blockstorage_volume_v3.rofl_07_boot_volume.availability_zone
+      },
+      data = {
+        id = openstack_blockstorage_volume_v3.blob_volume.id,
+        name = openstack_blockstorage_volume_v3.blob_volume.name,
+        az = openstack_blockstorage_volume_v3.blob_volume.availability_zone
+      }
+    }
+    network = {
+      floating_ip = openstack_networking_floatingip_v2.rofl_07_fip.address
+    }
+  }
+}
+
+resource "local_file" "nixos_vars_rofl-07" {
+  content         = jsonencode(local.nixos_vars)
+  filename        = local.nixos_vars_file
+  file_permission = "600"
+
+  # Automatically adds the generated file to Git
+  # provisioner "local-exec" {
+  #   interpreter = ["sh", "-c"]
+  #   command     = "git add -f '${local.nixos_vars_file}'"
+  # }
+}
+
 module "nix-rofl-07" {
   depends_on = [
     openstack_compute_instance_v2.rofl-07,
     openstack_networking_floatingip_associate_v2.rofl_07_fip_associate,
     openstack_compute_volume_attach_v2.va_blob,
     cloudflare_record.records["rofl-07.brkn.lol"],
-    cloudflare_record.records["*.rofl-07.brkn.lol"]
+    cloudflare_record.records["*.rofl-07.brkn.lol"],
+    local_file.nixos_vars_rofl-07
   ]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
   nixos_system_attr      = "..#nixosConfigurations.rofl-07.config.system.build.toplevel"
