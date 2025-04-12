@@ -17,13 +17,13 @@ in
               name = "data-encrypted";
               settings = {
                 keyFile = "/tmp/disk-2.key";
-                # keyFile = "/luks-data.keyfile";
                 allowDiscards = true;
               };
               # additionalKeyFiles = [ "/tmp/additionalSecret.key" ];
               # initrdUnlock = false;
               content = {
                 type = "btrfs";
+                extraArgs = [ ];
                 # extraArgs = [ "-f" ];
                 subvolumes = {
                   "@data" = {
