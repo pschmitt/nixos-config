@@ -10,9 +10,10 @@ resource "openstack_blockstorage_volume_v3" "data_volume" {
 }
 
 resource "openstack_blockstorage_volume_v3" "blob_volume" {
-  name              = "blob-vol"
-  size              = 4096 # GiB
-  availability_zone = var.availability_zone
+  name                 = "blob-vol"
+  size                 = 4096 # GiB
+  availability_zone    = var.availability_zone
+  enable_online_resize = true
 
   lifecycle {
     prevent_destroy = true
