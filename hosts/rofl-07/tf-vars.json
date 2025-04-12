@@ -1,0 +1,1 @@
+{"disks":{"data":{"az":"es1","id":"a6d4cf39-eafc-43c4-a0a4-b9d816182aad","name":"blob-vol"},"root":{"az":"es1","id":"204f7cde-df3c-44b3-ba9a-f3e43b1e9c23","name":"rofl-07-boot-volume"}},"network":{"floating_ip":"45.94.110.113"}}
