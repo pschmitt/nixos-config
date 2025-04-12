@@ -67,14 +67,14 @@ locals {
   nixos_vars = {
     disks = {
       root = {
-        id = openstack_blockstorage_volume_v3.rofl_07_boot_volume.id,
+        id   = openstack_blockstorage_volume_v3.rofl_07_boot_volume.id,
         name = openstack_blockstorage_volume_v3.rofl_07_boot_volume.name,
-        az = openstack_blockstorage_volume_v3.rofl_07_boot_volume.availability_zone
+        az   = openstack_blockstorage_volume_v3.rofl_07_boot_volume.availability_zone
       },
       data = {
-        id = openstack_blockstorage_volume_v3.blob_volume.id,
+        id   = openstack_blockstorage_volume_v3.blob_volume.id,
         name = openstack_blockstorage_volume_v3.blob_volume.name,
-        az = openstack_blockstorage_volume_v3.blob_volume.availability_zone
+        az   = openstack_blockstorage_volume_v3.blob_volume.availability_zone
       }
     }
     network = {
@@ -112,6 +112,12 @@ module "nix-rofl-07" {
   instance_id            = openstack_compute_instance_v2.rofl-07.id
   debug_logging          = true
   build_on_remote        = true
+  # phases = [
+  #   "kexec",
+  #   # "disko",
+  #   # "install",
+  #   # "reboot"
+  # ]
   extra_environment = {
     TARGET_HOST = "rofl-07"
   }
