@@ -22,4 +22,21 @@
   environment.systemPackages = with pkgs; [
     htop
   ];
+
+  # quiesce
+  boot.kernelParams = [
+    "quiet"
+    "loglevel=0"
+  ];
+
+  # https://docs.kernel.org/core-api/printk-basics.html
+  boot.kernel.sysctl."kernel.printk" = "0 4 1 7";
+
+  services.journald.extraConfig = ''
+    ForwardToConsole=no
+    # TTYPath=
+    MaxLevelConsole=emerg
+    MaxLevelKMsg=emerg
+    Storage=volatile
+  '';
 }
