@@ -2,10 +2,18 @@
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
+usage() {
+  echo "Usage: $(basename "$0") [--delete] TARGET_HOST"
+}
+
 while [[ -n $* ]]
 do
   case "$1" in
-    -f|--force|-d|--delete|-r|--recreate)
+    -h|--help|-\?)
+      usage
+      exit 0
+      ;;
+    -f|--force|-d|--delete|--remove|-r|--recreate)
       DELETE=1
       shift
       ;;
@@ -16,6 +24,14 @@ do
 done
 
 TARGET_HOST="${1:-$TARGET_HOST}"
+
+if [[ -z "$TARGET_HOST" ]]
+then
+  echo "Missing target host name" >&2
+  usage >&2
+  exit 2
+fi
+
 if [[ -n "$DELETE" ]]
 then
   # TODO This *only* works for OpenStack VMs, we need to dynamically determine
