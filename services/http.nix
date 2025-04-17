@@ -30,5 +30,8 @@
     recommendedZstdSettings = true;
     recommendedOptimisation = true;
     recommendedProxySettings = true;
+
+    # Unlimited file sizes
+    clientMaxBodySize = "0";
   };
 }
