@@ -21,7 +21,8 @@
     catppuccin.url = "github:catppuccin/nix";
 
     disko = {
-      url = "github:nix-community/disko";
+      # url = "github:nix-community/disko";
+      url = "github:pschmitt/disko/no-destroy";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
