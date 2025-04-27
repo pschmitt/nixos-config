@@ -8,7 +8,7 @@
     ../../server
     ../../server/optimist.nix
 
-    # ../../services/nfs-client.nix
+    (import ../../services/nfs-client.nix { mountPoint = "/mnt/rofl-02"; })
   ];
 
   custom.cattle = true;
