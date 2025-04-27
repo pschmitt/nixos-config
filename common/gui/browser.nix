@@ -9,6 +9,7 @@
       brotab
       # inputs.nix-agordoj.packages.${pkgs.system}.vdhcoapp
       tridactyl-native
+      vdhcoapp
     ];
     preferences = {
       # Enable custom css (userChrome.css)

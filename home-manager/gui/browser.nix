@@ -203,10 +203,8 @@
   # external-application-button
   home.file.".mozilla/native-messaging-hosts/com.add0n.node.json".source =
     "${pkgs.native-client}/lib/mozilla/native-messaging-hosts/com.add0n.node.json";
-  # FIXME the vdhcoapp 2.0.19 nixpkg does not ship with a static native
-  # messaging manifest, instead it is relying on the user running:
-  # $ vdhcoapp install
-  # home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source = "${pkgs.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
+  home.file.".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source =
+    "${pkgs.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
   home.file.".mozilla/native-messaging-hosts/tridactyl.json".source =
     "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
 
