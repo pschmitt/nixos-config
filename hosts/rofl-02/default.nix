@@ -21,7 +21,7 @@
     ../../services/changedetection-io.nix
     ../../services/harmonia.nix
     ../../services/http.nix
-    ../../services/mealie.nix
+    # ../../services/mealie.nix
     ./container-services.nix
     ./forgejo.nix
     ./http-static.nix

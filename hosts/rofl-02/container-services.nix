@@ -41,6 +41,12 @@ let
         "tv.${config.custom.mainDomain}"
       ];
     };
+    mealie = {
+      port = 63254;
+      hosts = [
+        "nom.${config.custom.mainDomain}"
+      ];
+    };
     # memos = {
     #   port = 63667;
     #   hosts = [
