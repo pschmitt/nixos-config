@@ -1,8 +1,8 @@
-{ ... }:
-
-let
-  serverAddress = "rofl-02.netbird.cloud:/export";
-  mounts = [
+{
+  server ? "rofl-02.netbird.cloud",
+  exportPath ? "/export",
+  mountPoint ? "/mnt/data",
+  mounts ? [
     "backups"
     "blobs"
     "books"
@@ -11,13 +11,15 @@ let
     "srv"
     "tmp"
     "videos"
-  ];
-in
+  ],
+  ...
+}:
+
 {
   fileSystems = builtins.listToAttrs (
     map (dir: {
-      name = "/mnt/data/${dir}";
-      value.device = "${serverAddress}/${dir}";
+      name = "${mountPoint}/${dir}";
+      value.device = "${server}:${exportPath}/${dir}";
       value.fsType = "nfs";
       value.options = [
         "noauto"
