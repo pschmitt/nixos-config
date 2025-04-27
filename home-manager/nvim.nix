@@ -52,9 +52,6 @@ in
       stylua
 
       imagemagick # for image.nvim
-
-      # lsp
-      ruff-lsp
     ];
 
     viAlias = false;
