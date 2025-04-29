@@ -137,7 +137,7 @@ jobs:
         id: netbird
         uses: Alemiz112/netbird-connect@v1
         with:
-          setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
+          setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Add static /etc/hosts entry for Oracle YUM Repo
         run: |-
