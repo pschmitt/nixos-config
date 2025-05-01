@@ -21,7 +21,7 @@
     ../../services/harmonia.nix
     ../../services/http.nix
     ../../services/luks-ssh-unlock-homelab.nix
-    (import ../../services/nfs-server.nix { inherit lib; })
+    (import ../../services/nfs/nfs-server.nix { inherit lib; })
     # ../../services/mealie.nix
     ./container-services.nix
     ./forgejo.nix

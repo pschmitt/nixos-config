@@ -6,13 +6,13 @@
     ../../server
     ../../server/optimist.nix
 
-    (import ../../services/nfs-client.nix { })
-    ../../services/tdarr.nix
-    ../../services/miner.nix
-    ../../services/http.nix
     ../../services/harmonia.nix
+    ../../services/http.nix
+    ../../services/miner.nix
+    ../../services/tdarr.nix
   ];
 
+  custom.cattle = false;
   custom.promptColor = "yellow";
 
   # Enable networking
