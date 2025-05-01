@@ -10,7 +10,7 @@ let
     "mnt"
     "srv"
     "tmp"
-    "videos"
+    # "videos" # lives on rofl-07 now
   ];
   nfsNetwork = "100.64.0.0/10";
   exportOptions = "rw,nohide,insecure,no_subtree_check";

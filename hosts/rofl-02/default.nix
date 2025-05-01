@@ -8,26 +8,26 @@
     ./luks-data.nix
 
     # backups
+    ./autorestic.nix
     ./evernote.nix
     ./rclone-bisync.nix
-    ./autorestic.nix
     ./restic.nix
 
-    ./docker-compose-netbird-ip-fix.nix
+    ../../misc/docker-compose-netbird-ip-fix.nix
 
     # services
-    ../../server/luks-ssh-unlock-homelab.nix
     ../../services/bw-backup.nix
     ../../services/changedetection-io.nix
     ../../services/harmonia.nix
     ../../services/http.nix
+    ../../services/luks-ssh-unlock-homelab.nix
+    ../../services/nfs-server.nix
     # ../../services/mealie.nix
     ./container-services.nix
     ./forgejo.nix
     ./http-static.nix
     ./immich.nix
     ./monit.nix
-    ./nfs-server.nix
     ./paperless-ngx.nix
     ./podsync.nix
     ./rsync-fonts-to-rofl-03.nix

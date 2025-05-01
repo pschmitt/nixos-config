@@ -10,7 +10,7 @@
     "mnt"
     "srv"
     "tmp"
-    "videos"
+    # "videos" # lives on rofl-07 now
   ],
   ...
 }:
