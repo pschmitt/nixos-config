@@ -23,17 +23,17 @@ stdenv.mkDerivation rec {
   yum_repo = "oci-yum.brkn.lol"; # proxy to the Oracle Linux yum repo
   url =
     if stdenv.isAarch64 then
-      "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.48.0-17.el9.x86_64.rpm"
-    else if stdenv.isx86_64 then
       "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.48.0-17.el9.aarch64.rpm"
+    else if stdenv.isx86_64 then
+      "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.48.0-17.el9.x86_64.rpm"
     else
       throw "Unsupported platform";
 
   checksum =
     if stdenv.isAarch64 then
-      "sha256-BNpY+DR5ZBIWqWphHRfc/Euj9AQ9B+EbE8F/SLUz9Zo="
-    else if stdenv.isx86_64 then
       "sha256-+pwkTBVSbUOSZO6VJqExPwOKRDciUGXJ9d+79UxQjEI="
+    else if stdenv.isx86_64 then
+      "sha256-BNpY+DR5ZBIWqWphHRfc/Euj9AQ9B+EbE8F/SLUz9Zo="
     else
       throw "Unsupported platform";
 
