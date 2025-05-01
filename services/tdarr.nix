@@ -1,11 +1,7 @@
 { config, ... }:
 {
   imports = [
-    (import ./nfs-client.nix {
-      server = "rofl-07.netbird.cloud";
-      exports = [ "videos" ];
-      mountPoint = "/mnt/data";
-    })
+    ./nfs/nfs-client-rofl-07.nix
   ];
   sops = {
     secrets.tdarr-api-key = {

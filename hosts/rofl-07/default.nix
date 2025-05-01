@@ -8,8 +8,8 @@
     ../../server
     ../../server/optimist.nix
 
-    (import ../../services/nfs-client.nix { mountPoint = "/mnt/rofl-02"; })
-    (import ../../services/nfs-server.nix {
+    (import ../../services/nfs/nfs-client.nix { mountPoint = "/mnt/rofl-02"; })
+    (import ../../services/nfs/nfs-server.nix {
       inherit lib;
       exports = [
         "srv"

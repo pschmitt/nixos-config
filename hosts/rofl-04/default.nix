@@ -6,7 +6,6 @@
     ../../server
     ../../server/optimist.nix
 
-    (import ../../services/nfs-client.nix { })
     ../../services/miner.nix
     ../../services/tdarr.nix
   ];
