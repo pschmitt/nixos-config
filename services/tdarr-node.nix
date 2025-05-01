@@ -14,6 +14,7 @@
     '';
   };
 
+  # Reference: https://docs.tdarr.io/docs/installation/docker/run-compose
   virtualisation.oci-containers.containers = {
     tdarr = {
       image = "ghcr.io/haveagitgat/tdarr_node:2.37.01";
