@@ -7,7 +7,7 @@
     ../../server/optimist.nix
 
     ../../services/miner.nix
-    ../../services/tdarr.nix
+    ../../services/tdarr-node.nix
   ];
 
   custom.cattle = true;

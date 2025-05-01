@@ -1,8 +1,7 @@
 { config, ... }:
 {
-  imports = [
-    ./nfs/nfs-client-rofl-07.nix
-  ];
+  imports = [ ./nfs/nfs-client-rofl-07.nix ];
+
   sops = {
     secrets.tdarr-api-key = {
       key = "tdarr/api-key";

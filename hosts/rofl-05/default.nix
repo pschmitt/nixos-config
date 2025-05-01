@@ -8,7 +8,7 @@
 
     (import ../../services/nfs-client.nix { })
     ../../services/miner.nix
-    ../../services/tdarr.nix
+    ../../services/tdarr-node.nix
   ];
 
   custom.cattle = true;

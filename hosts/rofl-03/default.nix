@@ -9,7 +9,7 @@
     ../../services/harmonia.nix
     ../../services/http.nix
     ../../services/miner.nix
-    ../../services/tdarr.nix
+    ../../services/tdarr-node.nix
   ];
 
   custom.cattle = false;
