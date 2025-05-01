@@ -83,7 +83,7 @@ in
           # NOTE below still attempts to listen on 0.0.0.0:8266
           # socat TCP4-LISTEN:8266,so-bindtodevice=${iface.iface},reuseaddr,fork TCP4:127.0.0.1:8266
 
-          socat TCP4-LISTEN:8266,bind=''${LISTEN_IP},reuseaddr,fork TCP4:127.0.0.1:8266;
+          socat "TCP4-LISTEN:8266,bind=''${LISTEN_IP},reuseaddr,fork" TCP4:127.0.0.1:8266
         '';
         serviceConfig = {
           Restart = "always";
