@@ -28,7 +28,13 @@
     ../../common/work
     ../../common/work/deckmaster.nix
 
-    (import ../../services/nfs-client.nix { })
+    ../../services/nfs-client-all.nix
+    # (import ../../services/nfs-client.nix { })
+    # (import ../../services/nfs-client.nix {
+    #   server = "rofl-07.netbird.cloud";
+    #   exports = [ "videos" ];
+    #   mountPoint = "/mnt/data/videos";
+    # })
     # ../../services/bitfocus-companion.nix
     # ../../services/netdata.nix
   ];
