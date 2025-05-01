@@ -21,4 +21,6 @@
   #
   #   neededForBoot = false;
   # };
+
+  systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
 }

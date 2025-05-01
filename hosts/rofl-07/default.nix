@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   imports = [
     ./disk-config.nix
@@ -9,9 +9,13 @@
     ../../server/optimist.nix
 
     (import ../../services/nfs-client.nix { mountPoint = "/mnt/rofl-02"; })
+    ../../misc/docker-compose-netbird-ip-fix.nix
+    ../../services/http.nix
+    ./container-services.nix
+    ./restic.nix
   ];
 
-  custom.cattle = true;
+  custom.cattle = false;
 
   # Enable networking
   networking = {
@@ -23,4 +27,25 @@
       # allowedUDPPorts = [ ... ];
     };
   };
+
+  systemd.services.docker-compose-bulk-up = {
+    after = [
+      "network.target"
+      "docker.service"
+      "mnt-data.mount"
+    ];
+    requires = [
+      "docker.service"
+      "mnt-data.mount"
+    ];
+    wantedBy = [ "multi-user.target" ];
+
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk up -d";
+    };
+  };
+
+  environment.systemPackages = with pkgs; [ yt-dlp ];
 }
