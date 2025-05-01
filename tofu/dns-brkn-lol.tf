@@ -143,3 +143,11 @@ resource "cloudflare_record" "to-brkn-lol" {
   ttl     = 3600
   content = openstack_networking_floatingip_v2.rofl_07_fip.address
 }
+
+resource "cloudflare_record" "tdarr-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "tdarr"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl_07_fip.address
+}

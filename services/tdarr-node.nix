@@ -1,6 +1,7 @@
 { config, ... }:
 {
-  imports = [ ./nfs/nfs-client-rofl-07.nix ];
+  # NOTE we can't import this here, since it would produce a weird shizz on rofl-07
+  # imports = [ ./nfs/nfs-client-rofl-07.nix ];
 
   sops = {
     secrets.tdarr-api-key = {
@@ -13,7 +14,7 @@
 
   virtualisation.oci-containers.containers = {
     tdarr = {
-      image = "ghcr.io/haveagitgat/tdarr_node:2.27.02";
+      image = "ghcr.io/haveagitgat/tdarr_node:2.37.01";
       volumes = [
         # NOTE podman will *not* create these directories on the host
         # "/srv/tdarr/config/tdarr:/app/configs"
@@ -33,7 +34,7 @@
           PGID = "1000";
           UMASK_SET = "002";
           nodeName = "${config.networking.hostName}";
-          serverIP = "rofl-02.ts.${config.custom.mainDomain}";
+          serverIP = "rofl-07.ts.${config.custom.mainDomain}";
           serverPort = "8266";
           inContainer = "true";
           ffmpegVersion = "6";
