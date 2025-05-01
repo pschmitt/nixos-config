@@ -7,6 +7,7 @@ let
       pkgs.coreutils
       pkgs.docker
       pkgs.nettools
+      pkgs.util-linux # for umount
     ];
     script = "${scriptPath}";
   };
