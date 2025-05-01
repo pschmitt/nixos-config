@@ -47,9 +47,7 @@ let
       port = 9091;
       hosts = [
         "to.${config.custom.mainDomain}"
-        "torrent.${config.custom.mainDomain}"
         "to.${config.networking.hostName}.${config.custom.mainDomain}"
-        "torrent.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
 
       http_status_code = 401;
