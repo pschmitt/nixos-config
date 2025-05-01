@@ -39,7 +39,7 @@
           serverIP = "rofl-07.ts.${config.custom.mainDomain}";
           serverPort = "8266";
           inContainer = "true";
-          ffmpegVersion = "6";
+          ffmpegVersion = "7";
         }
         // (
           if config.hardware.nvidia-container-toolkit.enable then
