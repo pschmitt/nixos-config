@@ -16,8 +16,10 @@
       };
       ports = [
         "127.0.0.1:8265:8265" # web UI port
-        # FIXME publish server port netbird/ts IP
+        # FIXME dynamically publish server port netbird/ts IP
         "127.0.0.1:8266:8266" # server port
+        "100.122.139.168:8266:8266" # netbird
+        "100.114.226.109:8266:8266" # tailscale
 
         # "127.0.0.1:8267:8267" # Internal node port
       ];
