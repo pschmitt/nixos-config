@@ -22,7 +22,7 @@
       volumes = [
         # NOTE podman will *not* create these directories on the host
         # "/srv/tdarr/config/tdarr:/app/configs"
-        # Below reults in permission error on startup
+        # Below results in permission errors on startup:
         # "/srv/tdarr/data/logs:/app/logs"
         # "/srv/tdarr/data/tdarr/transcode_cache:/temp"
         "tdarr-config:/app/configs"
