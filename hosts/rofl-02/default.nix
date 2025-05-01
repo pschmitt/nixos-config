@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 {
   imports = [
     ./disk-config.nix
@@ -21,7 +21,7 @@
     ../../services/harmonia.nix
     ../../services/http.nix
     ../../services/luks-ssh-unlock-homelab.nix
-    ../../services/nfs-server.nix
+    (import ../../services/nfs-server.nix { inherit lib; })
     # ../../services/mealie.nix
     ./container-services.nix
     ./forgejo.nix
