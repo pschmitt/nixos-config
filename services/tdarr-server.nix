@@ -11,15 +11,15 @@
       environment = {
         internalNode = "true"; # server + node (aio)
         serverIP = lib.mkForce "0.0.0.0";
-        # serverPort= "8266";
         webUIPort = "8265";
         auth = "true";
       };
       ports = [
         "127.0.0.1:8265:8265" # web UI port
+        # FIXME publish server port netbird/ts IP
         "127.0.0.1:8266:8266" # server port
+
         # "127.0.0.1:8267:8267" # Internal node port
-        # "127.0.0.1:8268:8268" # Example extra node port
       ];
     };
   };
