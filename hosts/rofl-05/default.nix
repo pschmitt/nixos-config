@@ -7,6 +7,7 @@
     ../../server/optimist.nix
 
     ../../services/miner.nix
+    ../../services/nfs/nfs-client-rofl-07.nix
     ../../services/tdarr-node.nix
   ];
 
