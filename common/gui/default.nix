@@ -67,7 +67,10 @@
       nssmdns4 = true;
     };
 
-    dbus.enable = true;
+    dbus = {
+      enable = true;
+      implementation = "broker";
+    };
 
     # enable sushi and rygel
     gnome = {
