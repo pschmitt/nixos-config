@@ -1,7 +1,9 @@
 { config, ... }:
 {
   # NOTE we can't import this here, since it would produce a weird shizz on rofl-07
-  # imports = [ ./nfs/nfs-client-rofl-07.nix ];
+  imports = (
+    if config.networking.hostName != "rofl-07" then [ ./nfs/nfs-client-rofl-07.nix ] else [ ]
+  );
 
   sops = {
     secrets.tdarr-api-key = {
