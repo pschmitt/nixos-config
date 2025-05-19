@@ -20,6 +20,7 @@
     ../../services/http.nix
     ../../services/tdarr-server.nix
     ./container-services.nix
+    ./monit.nix
     ./restic.nix
   ];
 
