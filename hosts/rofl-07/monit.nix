@@ -21,7 +21,7 @@ let
     TAILSCALE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4)
     if [[ -z "$TAILSCALE_IP" ]]
     then
-      echo "ERROR: Failed to determine Tailscale IP" >&1
+      echo "ERROR: Failed to determine Tailscale IP" >&2
     else
       cat > "$MONIT_CONF_DIR/gluetun" <<EOF
     check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSL -x $TAILSCALE_IP:8888 https://myip.wtf/json"
@@ -57,9 +57,7 @@ let
   '';
 in
 {
-  sops.secrets."mullvad/account" = {
-    sopsFile = config.custom.sopsFile;
-  };
+  sops.secrets."mullvad/account".sopsFile = config.custom.sopsFile;
 
   services.monit.config = lib.mkAfter monitExtraConfig;
   systemd.services.monit.preStart = lib.mkAfter "${renderMonitConfig}";
