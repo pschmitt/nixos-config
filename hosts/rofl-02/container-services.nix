@@ -30,17 +30,6 @@ let
     #     "hoarder.${config.custom.mainDomain}"
     #   ];
     # };
-    jellyfin = {
-      port = 8096;
-      hosts = [
-        "jelly.${config.networking.hostName}.${config.custom.mainDomain}"
-        "jelly.${config.custom.mainDomain}"
-        "jellyfin.${config.networking.hostName}.${config.custom.mainDomain}"
-        "jellyfin.${config.custom.mainDomain}"
-        "media.${config.custom.mainDomain}"
-        "tv.${config.custom.mainDomain}"
-      ];
-    };
     mealie = {
       port = 63254;
       hosts = [
