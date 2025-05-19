@@ -16,25 +16,6 @@ let
     ${builtins.readFile ./mullvad-expiration.sh}
   '';
 
-  githubLastBackup = pkgs.writeShellScript "github-last-backup" ''
-    THRESHOLD=''${1:-86400}
-    NOW=$(${pkgs.coreutils}/bin/date '+%s')
-
-    LAST_BACKUP=$(cat /srv/github-backup/data/LAST_UPDATED | \
-      ${pkgs.findutils}/bin/xargs -I {} ${pkgs.coreutils}/bin/date -d '{}' '+%s')
-
-    if [[ $((NOW - LAST_BACKUP)) -gt $THRESHOLD ]]
-    then
-      echo "🚨 Last backup was more than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 1
-    else
-      echo -e "✅ Last backup was less than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 0
-    fi
-  '';
-
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
     MONIT_CONF_DIR=/etc/monit/conf.d
     TAILSCALE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4)
@@ -54,21 +35,6 @@ let
     fi
   '';
 
-  # generateHostCheck = params: ''
-  #   check host ${params.svc} with address ${params.addr}
-  #     group piracy
-  #     depends on "docker compose services"
-  #     restart program = "${pkgs.docker}/bin/docker compose -f /srv/${
-  #       params.compose_yaml or params.svc
-  #     }/docker-compose.yaml up -d --force-recreate ${params.svc}"
-  #     if failed
-  #       port 443
-  #       protocol https
-  #       ${if params.svc == "transmission" then "status 401" else ""}
-  #     then restart
-  #     if 5 restarts within 10 cycles then alert
-  # '';
-
   monitExtraConfig = ''
     check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
       group docker
@@ -82,21 +48,12 @@ let
       if status > 0 then start
       if 3 restarts within 10 cycles then alert
 
-    check program "github-backup" with path "${githubLastBackup}"
-      group backup
-      every 2 cycles
-      if status > 0 then alert
-
     check program mullvad with path "${mullvadExpiration} --warning 15 ${
       config.sops.secrets."mullvad/account".path
     }"
       group piracy
       every "11-13 3,6,12,18,23 * * *"
       if status != 0 then alert
-
-    check host "ssh-tunnel-turris" with address 127.0.0.1
-      group ssh
-      if failed port 22887 protocol ssh for 2 cycles then alert
   '';
 in
 {
