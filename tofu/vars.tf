@@ -47,7 +47,7 @@ variable "openstack_cloud" {
 }
 
 variable "availability_zone" {
-  description = "Availability zone for the VM"
+  description = "Default availability zone for VMs and volumes"
   type        = string
   default     = "es1"
 }
