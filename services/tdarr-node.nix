@@ -2,7 +2,7 @@
 {
   # NOTE we can't import this here, since it would produce a weird shizz on rofl-07
   # imports = [
-  #   ./nfs/nfs-client-rofl-07.nix
+  #   ./nfs/nfs-client-rofl-08.nix
   # ];
 
   sops = {
