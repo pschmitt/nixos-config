@@ -63,7 +63,13 @@ resource "openstack_networking_floatingip_associate_v2" "rofl_04_fip_associate" 
 }
 
 module "nix-rofl-04" {
-  depends_on             = [openstack_compute_instance_v2.rofl-04]
+  depends_on = [
+    openstack_compute_instance_v2.rofl-04,
+    openstack_networking_floatingip_associate_v2.rofl_04_fip_associate,
+    cloudflare_record.records["rofl-04.brkn.lol"],
+    cloudflare_record.records["*.rofl-04.brkn.lol"],
+    # local_file.nixos_vars_rofl-04
+  ]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
   nixos_system_attr      = "..#nixosConfigurations.rofl-04.config.system.build.toplevel"
   nixos_partitioner_attr = "..#nixosConfigurations.rofl-04.config.system.build.diskoScript"
