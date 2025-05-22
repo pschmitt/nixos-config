@@ -13,7 +13,7 @@ To create a new host:
 ```shell
 # nix config
 mkdir -p ./hosts/$NEW_HOST
-cp ./hosts/rofl-05/*.nix ./hosts/$NEW_HOST
+cp ./hosts/rofl-09/*.nix ./hosts/$NEW_HOST
 ./secrets/sops-init.sh $NEW_HOST
 
 # create tofu config
