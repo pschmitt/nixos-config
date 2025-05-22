@@ -14,7 +14,7 @@ resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
   size                 = 4096 # GiB
   availability_zone    = "ix1"
   enable_online_resize = true
-  description          = "*arr"
+  description          = "data volume, arrr!"
 
   lifecycle {
     prevent_destroy = true
