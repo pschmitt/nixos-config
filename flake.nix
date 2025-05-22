@@ -299,11 +299,10 @@
         lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
         rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { server = true; };
         rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { server = true; };
-        rofl-04 = nixosSystemFor "x86_64-linux" "rofl-04" { server = true; };
-        rofl-05 = nixosSystemFor "x86_64-linux" "rofl-05" { server = true; };
         rofl-06 = nixosSystemFor "x86_64-linux" "rofl-06" { server = true; };
         rofl-07 = nixosSystemFor "x86_64-linux" "rofl-07" { server = true; };
         rofl-08 = nixosSystemFor "x86_64-linux" "rofl-08" { server = true; };
+        # rofl-09 = nixosSystemFor "x86_64-linux" "rofl-09" { server = true; };
         oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
           server = true;
           snapd = true;
