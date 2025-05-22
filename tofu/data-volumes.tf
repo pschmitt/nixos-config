@@ -23,7 +23,7 @@ resource "openstack_blockstorage_volume_v3" "blob_volume" {
 resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
   name                 = "blobarr-vol"
   size                 = 4096 # GiB
-  availability_zone    = "ix2"
+  availability_zone    = "ix1"
   enable_online_resize = true
 
   lifecycle {
