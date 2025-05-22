@@ -21,10 +21,6 @@ locals {
       content  = openstack_networking_floatingip_v2.rofl_06_fip.address
     },
     {
-      hostname = "rofl-07",
-      content  = openstack_networking_floatingip_v2.rofl_07_fip.address
-    },
-    {
       hostname = "rofl-08",
       content  = openstack_networking_floatingip_v2.rofl_08_fip.address
     }
