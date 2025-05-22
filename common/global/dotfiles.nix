@@ -29,6 +29,7 @@
     extraConfigBeforePlugins = ''
       set -g set-titles on
       set -g mouse on
+      set -g default-shell ${pkgs.zsh}/bin/zsh
     '';
     extraConfig = ''
       # binds
