@@ -23,6 +23,7 @@
     # ../../services/mealie.nix # it's a container now!
     ../../services/paperless-ngx.nix
     ../../services/podsync.nix
+    ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
     ../../services/turris-ssh-tunnel.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
