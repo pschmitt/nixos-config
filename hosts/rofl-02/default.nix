@@ -14,7 +14,7 @@
     # ../../services/backups/bitwarden.nix
     # ../../services/backups/evernote.nix
     # ../../services/changedetection-io.nix
-    # ../../services/harmonia.nix
+    ../../services/harmonia.nix
     # ../../services/forgejo.nix
     # ../../services/http.nix
     # ../../services/http-static.nix
