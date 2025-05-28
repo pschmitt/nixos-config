@@ -12,6 +12,8 @@
   ];
 
   custom.cattle = true;
+  custom.promptColor = "#ff6600";
+
   services.xmrig.settings.cpu.max-threads-hint = lib.mkForce 15;
 
   # Enable networking
