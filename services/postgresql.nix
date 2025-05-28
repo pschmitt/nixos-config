@@ -29,11 +29,10 @@
       let
         # XXX specify the postgresql package you'd like to upgrade to.
         # Do not forget to list the extensions you need.
-        oldPostgres = pkgs.postgresql_15.withPackages (pp: [
+        newPostgres = pkgs.postgresql_16.withPackages (pp: [
           pp.pgvector
           pp.pgvecto-rs
         ]);
-
         cfg = config.services.postgresql;
       in
       pkgs.writeScriptBin "upgrade-pg-cluster" ''
@@ -41,11 +40,11 @@
         # XXX it's perhaps advisable to stop all services that depend on postgresql
         systemctl stop postgresql
 
-        export OLDDATA="/var/lib/postgresql/${oldPostgres.psqlSchema}"
-        export OLDBIN="${oldPostgres}/bin"
+        export NEWDATA="/var/lib/postgresql/${newPostgres.psqlSchema}"
+        export NEWBIN="${newPostgres}/bin"
 
-        export NEWDATA="${cfg.dataDir}"
-        export NEWBIN="${cfg.finalPackage}/bin"
+        export OLDDATA="${cfg.dataDir}"
+        export OLDBIN="${cfg.finalPackage}/bin"
 
         install -d -m 0700 -o postgres -g postgres "$NEWDATA"
         cd "$NEWDATA"
