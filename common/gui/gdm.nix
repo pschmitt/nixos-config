@@ -16,6 +16,9 @@
     defaultSession = lib.mkDefault "hyprland-uwsm";
   };
 
+  # https://github.com/NixOS/nixpkgs/pull/282317
+  security.pam.services.gdm.enableGnomeKeyring = true;
+
   # GDM monitor configuration
   # systemd.tmpfiles.rules = [
   #   "L+ /run/gdm/.config/monitors.xml - - - - ${pkgs.writeText "gdm-monitors.xml" ''
