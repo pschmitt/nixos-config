@@ -10,17 +10,15 @@
     keyFile = lib.mkForce "/sysroot/etc/crypttab.d/keyfiles/data";
   };
 
-  # fileSystems."/mnt/data" = {
-  #   device = "/dev/mapper/data-encrypted";
-  #   # mountPoint = "/mnt/data";
-  #   fsType = "btrfs";
-  #   options = [
-  #     "compress=zstd"
-  #     "noatime"
-  #   ];
-  #
-  #   neededForBoot = false;
-  # };
+  services.postgresql.dataDir = "/mnt/data/srv/postgresql";
 
-  systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
+  systemd.tmpfiles.rules = [
+    # dirs
+    #                             perm id gid
+    "d  /mnt/data/srv/postgresql  0755 71 71 - -"
+
+    # symlinks
+    "L+ /srv                      -    -  -  - /mnt/data/srv"
+    "L+ /var/lib/postgresql       -    -  -  - /mnt/data/srv/postgresql"
+  ];
 }
