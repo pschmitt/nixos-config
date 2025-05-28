@@ -31,7 +31,7 @@
     ../../misc/docker-compose-netbird-ip-fix.nix
     ../../misc/rsync-fonts-to-rofl-03.nix
 
-    # host-specific services config
+    # host-specific service config
     ./container-services.nix
     ./monit.nix
     ./restic.nix
