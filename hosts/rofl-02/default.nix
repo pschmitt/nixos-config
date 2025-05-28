@@ -16,7 +16,7 @@
     # ../../services/changedetection-io.nix
     ../../services/harmonia.nix
     # ../../services/forgejo.nix
-    # ../../services/http.nix
+    ../../services/http.nix
     # ../../services/http-static.nix
     # ../../services/immich.nix
     # ../../services/luks-ssh-unlock-homelab.nix
