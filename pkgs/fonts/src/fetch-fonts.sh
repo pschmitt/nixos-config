@@ -40,7 +40,7 @@ fetch_fonts() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   REMOTE_USER=${REMOTE_USER:-github-actions}
-  REMOTE_HOST=${REMOTE_HOST:-rofl-02}
+  REMOTE_HOST=${REMOTE_HOST:-rofl-09}
   REMOTE_PATH=${REMOTE_PATH:-./src}
   SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-}"
 

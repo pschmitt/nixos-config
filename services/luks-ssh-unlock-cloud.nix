@@ -4,10 +4,11 @@ let
   # List of instance names
   instanceNames = [
     "oci-03"
-    "rofl-02"
+    "rofl-02" # TODO Remove
     "rofl-03"
-    "rofl-04"
-    "rofl-05"
+    "rofl-06"
+    "rofl-08"
+    "rofl-09"
   ];
 
   # Define a function to create an instance with common defaults
