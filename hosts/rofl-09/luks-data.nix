@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ lib, ... }:
 {
   imports = [
     ./disk-config-data.nix
@@ -10,15 +10,8 @@
     keyFile = lib.mkForce "/sysroot/etc/crypttab.d/keyfiles/data";
   };
 
-  services.postgresql.dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
-
+  # symlink /srv to /mnt/data/srv
   systemd.tmpfiles.rules = [
-    # dirs
-    #                             perm id gid
-    "d  /mnt/data/srv/postgresql  0755 71 71 - -"
-
-    # symlinks
-    "L+ /srv                      -    -  -  - /mnt/data/srv"
-    "L+ /var/lib/postgresql       -    -  -  - /mnt/data/srv/postgresql"
+    "L+ /srv - - - - /mnt/data/srv"
   ];
 }
