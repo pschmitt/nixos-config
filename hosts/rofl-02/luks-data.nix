@@ -32,7 +32,7 @@
     # };
   };
 
-  services.postgresql.dataDir = "/mnt/data/srv/postgresql";
+  services.postgresql.dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
 
   systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
 }
