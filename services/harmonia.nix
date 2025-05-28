@@ -10,7 +10,7 @@ let
   ];
 
   # primary host
-  conditional_hosts = lib.optional (config.networking.hostName == "rofl-02") [
+  conditional_hosts = lib.optional (config.networking.hostName == "rofl-09") [
     { domain = "cache.brkn.lol"; }
     { domain = "nix-cache.brkn.lol"; }
   ];
