@@ -22,7 +22,7 @@
     };
     templates = {
       nix-cache-netrc.content = ''
-        machine cache.rofl-02.brkn.lol
+        machine cache.rofl-09.brkn.lol
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
 
@@ -105,7 +105,7 @@
           # "https://nix-cache.brkn.lol"
         ]
         # don't use local http cache on the same host
-        ++ lib.optionals (config.networking.hostName != "rofl-02") [ "https://cache.rofl-02.brkn.lol" ]
+        ++ lib.optionals (config.networking.hostName != "rofl-09") [ "https://cache.rofl-09.brkn.lol" ]
         ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ];
 
       # private caches
@@ -120,7 +120,7 @@
         "pschmitt-nixos-config.cachix.org-1:cE7rK+O+QCIEewMOOk3C7JYOhSXxqgLzNpm+tdSMkMk="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         # "nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM="
-        "rofl-02:OjuEw7+xiIgDDHLLoRHY6h4CQpl0Ie96qyjeJyQRJ38="
+        "rofl-02:OjuEw7+xiIgDDHLLoRHY6h4CQpl0Ie96qyjeJyQRJ38=" # TODO Replace this
         "rofl-03:p25y1GufWGd6aWpimb8j6F0obxn3jwYCj7sCCXgp7A0="
       ];
     };
@@ -185,7 +185,7 @@
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system = {
-    stateVersion = "24.05";
+    stateVersion = "25.05";
     # autoUpgrade = {
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
