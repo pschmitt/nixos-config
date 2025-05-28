@@ -3,7 +3,7 @@ resource "cloudflare_record" "wildcard-brkn-lol" {
   name    = "*"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
+  content = openstack_networking_floatingip_v2.rofl-09_fip.address
 }
 
 resource "cloudflare_record" "gitea-brkn-lol" {
@@ -35,7 +35,7 @@ resource "cloudflare_record" "img-brkn-lol" {
   name    = "img"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
+  content = openstack_networking_floatingip_v2.rofl-09_fip.address
 }
 
 resource "cloudflare_record" "immich-brkn-lol" {
@@ -43,7 +43,7 @@ resource "cloudflare_record" "immich-brkn-lol" {
   name    = "immich"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
+  content = openstack_networking_floatingip_v2.rofl-09_fip.address
 }
 
 resource "cloudflare_record" "mmonit-brkn-lol" {
@@ -74,7 +74,7 @@ resource "cloudflare_record" "webmail-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "webmail"
-  content = openstack_networking_floatingip_v2.rofl_02_fip.address
+  content = openstack_networking_floatingip_v2.rofl-09_fip.address
   ttl     = 3600
 }
 
