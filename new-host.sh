@@ -4,16 +4,10 @@ usage() {
   echo "Usage: $(basename "$0") [--force] [--optimist|--oci] NEW_HOSTNAME"
 }
 
-create_config() {
-  :
-}
-
-update_config() {
-  local new_hostname="$1"
-}
-
 main() {
-  local FORCE NEW_HOSTNAME TEMPLATE_TYPE=optimist
+  local FORCE=${FORCE:-}
+  local NEW_HOSTNAME=${NEW_HOSTNAME:-}
+  local TEMPLATE_TYPE=${TEMPLATE_TYPE:-optimist}
 
   while [[ -n $* ]]
   do
