@@ -8,31 +8,33 @@
     ../../server
     ../../server/optimist.nix
 
-    # backups
-    # ./autorestic.nix
-    # ./evernote.nix
-    # ./rclone-bisync.nix
-    # ./restic.nix
-    #
-    # ../../misc/docker-compose-netbird-ip-fix.nix
-    #
-    # # services
-    # ../../services/bw-backup.nix
-    # ../../services/changedetection-io.nix
-    # ../../services/harmonia.nix
-    # ../../services/http.nix
-    # ../../services/luks-ssh-unlock-homelab.nix
-    # (import ../../services/nfs/nfs-server.nix { inherit lib; })
-    # # ../../services/mealie.nix
-    # ./container-services.nix
-    # ./forgejo.nix
-    # ./http-static.nix
-    # ./immich.nix
-    # ./monit.nix
-    # ./paperless-ngx.nix
-    # ./podsync.nix
-    # ./rsync-fonts-to-rofl-03.nix
-    # ./turris-ssh-tunnel.nix
+    # services
+    # backups services
+    ../../services/backups/autorestic.nix
+    ../../services/backups/bitwarden.nix
+    ../../services/backups/evernote.nix
+    ../../services/changedetection-io.nix
+    ../../services/harmonia.nix
+    ../../services/forgejo.nix
+    ../../services/http.nix
+    ../../services/http-static.nix
+    ../../services/immich.nix
+    ../../services/luks-ssh-unlock-homelab.nix
+    # ../../services/mealie.nix # it's a container now!
+    ../../services/paperless-ngx.nix
+    ../../services/podsync.nix
+    ../../services/rclone-bisync.nix
+    ../../services/turris-ssh-tunnel.nix
+    (import ../../services/nfs/nfs-server.nix { inherit lib; })
+
+    # misc
+    ../../misc/docker-compose-netbird-ip-fix.nix
+    ../../misc/rsync-fonts-to-rofl-03.nix
+
+    # host-specific service config
+    ./container-services.nix
+    ./monit.nix
+    ./restic.nix
   ];
 
   custom.cattle = false;
