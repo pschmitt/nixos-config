@@ -1,5 +1,5 @@
 {
-  server ? "rofl-02.netbird.cloud",
+  server ? "rofl-09.netbird.cloud",
   exportPath ? "/export",
   mountPoint ? "/mnt/data",
   exports ? [
