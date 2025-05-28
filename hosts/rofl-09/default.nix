@@ -28,7 +28,6 @@
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
 
     # misc
-    ../../misc/docker-compose-netbird-ip-fix.nix
     ../../misc/rsync-fonts-to-rofl-03.nix
 
     # host-specific service config
