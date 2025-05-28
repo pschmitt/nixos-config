@@ -22,11 +22,11 @@
     };
     templates = {
       nix-cache-netrc.content = ''
-        machine cache.rofl-09.brkn.lol
+        machine cache.rofl-03.brkn.lol
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
 
-        machine cache.rofl-03.brkn.lol
+        machine cache.rofl-09.brkn.lol
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
       '';
