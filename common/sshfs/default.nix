@@ -53,9 +53,9 @@ in
   #   options = opts;
   # };
 
-  fileSystems."/mnt/rofl-02" = {
+  fileSystems."/mnt/rofl-09" = {
     fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-02.${vpnDomain}:/mnt/data";
+    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-09.${vpnDomain}:/mnt/data";
     options = opts;
   };
 }
