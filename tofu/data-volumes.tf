@@ -9,6 +9,17 @@ resource "openstack_blockstorage_volume_v3" "data_volume" {
   }
 }
 
+resource "openstack_blockstorage_volume_v3" "rofldata_volume" {
+  name                 = "rofldata"
+  size                 = 4096 # GiB
+  availability_zone    = "ix1"
+  enable_online_resize = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
   name                 = "blobarr-vol"
   size                 = 4096 # GiB
@@ -24,6 +35,11 @@ resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
 resource "openstack_compute_volume_attach_v2" "va_data" {
   instance_id = openstack_compute_instance_v2.rofl-02.id
   volume_id   = openstack_blockstorage_volume_v3.data_volume.id
+}
+
+resource "openstack_compute_volume_attach_v2" "va_rofldata" {
+  instance_id = openstack_compute_instance_v2.rofl-09.id
+  volume_id   = openstack_blockstorage_volume_v3.rofldata_volume.id
 }
 
 resource "openstack_compute_volume_attach_v2" "va_blobarr" {

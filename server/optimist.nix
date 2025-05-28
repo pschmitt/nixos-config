@@ -4,6 +4,8 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   custom.netbirdSetupKey = lib.mkForce "optimist";
 
+  # TODO Put the respective internalInterfaces values into the netbird.nix
+  # and tailscale.nix files
   # HACK Fix netbird port forwarding
   # Set up NAT (Masquerading)
   networking.nat = {
