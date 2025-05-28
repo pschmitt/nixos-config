@@ -16,9 +16,7 @@
   ];
 
   services.postgresql = {
-    # Stick to psql 15 for now
-    # TODO upgrade to 16!
-    package = pkgs.postgresql_15;
+    package = pkgs.postgresql_16;
     dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
   };
 
@@ -30,7 +28,7 @@
         # XXX specify the postgresql package you'd like to upgrade to.
         # Do not forget to list the extensions you need.
         newPostgres = pkgs.postgresql_16.withPackages (pp: [
-          pp.pgvector
+          # immich uses (used?) pgvecto-rs
           pp.pgvecto-rs
         ]);
         cfg = config.services.postgresql;
@@ -53,6 +51,7 @@
         sudo -u postgres "$NEWBIN/pg_upgrade" \
           --old-datadir "$OLDDATA" --new-datadir "$NEWDATA" \
           --old-bindir "$OLDBIN" --new-bindir "$NEWBIN" \
+          --new-options "-c shared_preload_libraries='vectors.so'" \
           "$@"
       ''
     )
