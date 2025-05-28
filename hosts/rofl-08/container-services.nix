@@ -116,6 +116,8 @@ let
   );
 in
 {
+  imports = [ ../../services/docker-compose-bulk.nix ];
+
   services.nginx.virtualHosts = virtualHosts;
   services.monit.config = lib.mkAfter monitExtraConfig;
 }
