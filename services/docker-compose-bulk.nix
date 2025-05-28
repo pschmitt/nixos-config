@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  imports = [ ../../misc/docker-compose-netbird-ip-fix.nix ];
+  imports = [ ../misc/docker-compose-netbird-ip-fix.nix ];
 
   systemd.services.docker-compose-bulk-up = {
     after = [
