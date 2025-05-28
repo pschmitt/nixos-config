@@ -38,6 +38,7 @@
   ];
 
   custom.cattle = false;
+  custom.promptColor = "#088A39"; # nginx green
 
   # Enable networking
   networking = {
