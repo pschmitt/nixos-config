@@ -5,6 +5,7 @@ in
 {
   services.changedetection-io = {
     enable = true;
+    datastorePath = "/mnt/data/srv/changedetection-io";
 
     listenAddress = "localhost";
     port = 24264;
