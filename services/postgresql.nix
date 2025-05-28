@@ -5,9 +5,22 @@
   ...
 }:
 {
-  # Stick to psql 15 for now
-  # TODO upgrade to 16!
-  services.postgresql.package = pkgs.postgresql_15;
+  # NOTE Do we really need this? Isn't the module crearing the dir already?
+  # NOTE The postgres user's home gets set to services.postgresql.dataDir
+  systemd.tmpfiles.rules = [
+    #                             perm id gid
+    "d  /mnt/data/srv/postgresql  0755 71 71 - -"
+
+    # symlink
+    "L+ /var/lib/postgresql       -    -  -  - /mnt/data/srv/postgresql"
+  ];
+
+  services.postgresql = {
+    # Stick to psql 15 for now
+    # TODO upgrade to 16!
+    package = pkgs.postgresql_15;
+    dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
+  };
 
   # FIXME This only *kinda* works
   # https://nixos.org/manual/nixos/stable/#module-services-postgres-upgrading
