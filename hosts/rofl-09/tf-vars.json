@@ -1,0 +1,1 @@
+{"disks":{"data":{"az":"ix1","device":"/dev/sdb","id":"398c31c3-0659-431b-bb05-88a47fedbb69","name":"rofldata"},"root":{"az":"ix1","id":"7d7e3152-055d-4a83-913c-7481210421a9","name":"rofl-09-boot-volume"}},"network":{"floating_ip":"45.94.109.61"}}
