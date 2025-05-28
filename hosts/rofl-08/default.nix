@@ -16,7 +16,6 @@
         "videos"
       ];
     })
-    ../../misc/docker-compose-netbird-ip-fix.nix
     ../../services/http.nix
     ../../services/tdarr-server.nix
     ./container-services.nix
