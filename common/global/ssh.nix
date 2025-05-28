@@ -39,6 +39,7 @@
     };
 
     rofl-02-ed25519 = {
+      # TODO Remove
       hostNames = [
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
@@ -50,6 +51,7 @@
     };
 
     rofl-02-rsa = {
+      # TODO Remove
       hostNames = [
         "rofl-02.brkn.lol"
         "rofl-02.nb.brkn.lol"
@@ -80,6 +82,28 @@
         "rofl-03.netbird.cloud"
       ];
       publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC2+NpD/TdP9/Itq46RmocRplaLVx1AIWri4M95+39jfllUzWjy+S2zVG6/xpw7iynKOzQG7tNU4QGeYiCNhqhGDBGB9O1urAuBLbizisJvRC3aQwg6+9fPFmtcpjgHjCyvJcV7dP/90KG1n2ABElxzqpVXpd/Le1i2cHplsbA6gY61NKmmxkG+Bni1mz6nf1a4xu7iWuoWFFjbV57ElbRoP5DM9TOAgP4lwcMdrtB1Bzpu+eLD3/to88iFrCBilkADlSPfITi4rUAAX3bzfAeWOHPyibXBTRmH8jEEYQnI3sVmT72zKz5jUoH3ZP0D8r7v8bcRKCUyQrJeejsGmCIRKr8FR00aLvsA3g4zuM1jBXN4lSfgTuyps4/9YcnrR2Lofd/IAKdVb89VEENrLE7kqPCGf7sdgRH76yYvz0q03IzJqCQ96qPfuRbmi0Nb6PHLU8u5WpcKugq/YwhMBqgjntIMkQmb+aSEAwiTjTpgg2l4sJ06iXCMWmvvFmNoPWk=";
+    };
+
+    rofl-09-ed25519 = {
+      hostNames = [
+        "rofl-09.brkn.lol"
+        "rofl-09.nb.brkn.lol"
+        "rofl-09.ts.brkn.lol"
+        "rofl-09.snake-eagle.ts.net"
+        "rofl-09.netbird.cloud"
+      ];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM1RQuD12+CL5NzJHrVge49uK9QyPlISobQG5MNgIZHo";
+    };
+
+    rofl-09-rsa = {
+      hostNames = [
+        "rofl-09.brkn.lol"
+        "rofl-09.nb.brkn.lol"
+        "rofl-09.ts.brkn.lol"
+        "rofl-09.snake-eagle.ts.net"
+        "rofl-09.netbird.cloud"
+      ];
+      publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCsnM7oDZn6crEsYMIMUQ3flFp6vbMCAz+wWzxahUGdvrpUNjDt5qbfBQFjIyfLgiF+xgI1Vrk7iBReLZ5cGoXBfAv2O/CuA8SeMD073PyEH/j6wxhSXNT+yWh6aWOQvqY7ql7Bxn9hUKGyHJFLJmOoewk/fMBnot7gBF0hbsIhqxbTgU5MAgQJCn4vn2GMZUbJqHYuHK5nbXC8zGfI2UZjoLFyz/UMR7+68qrPiuxVepU19+9iVcCWmRhS0JPQUcHeCXy5jsn/Qz02bqESltclRpseofPXIq/WKhFioBJgB+1ds0++bO0bS35j/Sj+9MHvqF6uc3jPoR9Fw3F208gxPYwcki3QbpDSrcodvBeOw798wXmdehuFY/fHM2lwAFLGOWJ3O7wc/Y8UY9jGKlpa55QEvkpCuDvewb84VXe2/7x1lDyjHqQjky+KxE/9mrp2VqVIVZvw00qo/48+AZsMHtH6dEN1oRYXNS9cxFUb+94kxQO1UNWem42kr/9sCV8=";
     };
 
     oci-03-ed25519 = {
