@@ -5,7 +5,7 @@ in
 {
   sops.secrets."forgejo/runner/token" = {
     sopsFile = config.custom.sopsFile;
-    # FIXME The gitea-runner is dynamic. It won't exit at build time.
+    # FIXME The gitea-runner is dynamic. It won't exist at build time.
     # owner = "gitea-runner";
   };
 
