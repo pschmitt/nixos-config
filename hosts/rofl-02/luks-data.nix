@@ -32,5 +32,7 @@
     # };
   };
 
+  services.postgresql.dataDir = "/mnt/data/srv/postgresql";
+
   systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
 }
