@@ -8,11 +8,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
-    agenix = {
-      url = "github:ryantm/agenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # attic = {
     #   url = "github:zhaofengli/attic";
     #   inputs.nixpkgs.follows = "nixpkgs";
@@ -187,7 +182,6 @@
   outputs =
     {
       self,
-      agenix,
       catppuccin,
       disko,
       flatpaks,
@@ -215,7 +209,6 @@
         ./modules/custom.nix
         ./modules/luks-ssh-unlock.nix
 
-        agenix.nixosModules.default
         disko.nixosModules.disko
         flatpaks.nixosModules.declarative-flatpak
         nix-index-database.nixosModules.nix-index
@@ -297,7 +290,6 @@
         x13 = nixosSystemFor "x86_64-linux" "x13" { laptop = true; };
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { laptop = true; };
         lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
-        rofl-02 = nixosSystemFor "x86_64-linux" "rofl-02" { server = true; };
         rofl-03 = nixosSystemFor "x86_64-linux" "rofl-03" { server = true; };
         rofl-06 = nixosSystemFor "x86_64-linux" "rofl-06" { server = true; };
         rofl-08 = nixosSystemFor "x86_64-linux" "rofl-08" { server = true; };

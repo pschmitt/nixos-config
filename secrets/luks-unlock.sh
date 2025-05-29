@@ -45,15 +45,6 @@ SSH_ARGS+=("$@")
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
-# agenix
-# NOTE agenix won't let you use "./xxxx"
-# if ! PASSPHRASE=$(agenix -d "${TARGET_HOST}/luks-passphrase-root.age") || \
-#    [[ -z "$PASSPHRASE" ]]
-# then
-#   echo "Failed to get passphrase for ${TARGET_HOST}" >&2
-#   exit 1
-# fi
-
 # sops
 if ! PASSPHRASE=$(sops --decrypt --extract '["luks"]["root"]' "../hosts/${TARGET_HOST}/luks.sops.yaml") || \
    [[ -z "$PASSPHRASE" ]]

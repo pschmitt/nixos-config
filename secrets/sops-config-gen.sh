@@ -29,10 +29,6 @@ nix_host_configs() {
 host_pubkey() {
   local host="$1"
 
-  # agenix
-  # age --decrypt --identity ~/.ssh/id_ed25519 \
-  #   ./secrets/"${host}"/ssh_host_ed25519_key.pub.age
-
   # sops
   sops --decrypt --extract '["ssh"]["host_keys"]["ed25519"]["pubkey"]' \
     "./hosts/${host}/secrets.sops.yaml"
