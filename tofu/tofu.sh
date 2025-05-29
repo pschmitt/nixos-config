@@ -91,6 +91,8 @@ main() {
 
   trap 'cleanup >&2' EXIT
 
+  # shellcheck disable=SC2155
+  export OS_CLOUD=$(jq -er '.openstack_cloud' terraform.tfvars.json)
   export TF_VAR_oci_private_key_path="${TOFU_DIR}/oci_private_key.pem"
   tofu -chdir="${TOFU_DIR}" "$@"
 }
