@@ -4,7 +4,7 @@ let
   authorizedKeysContent = lib.strings.fileContents (
     builtins.fetchurl {
       url = "https://github.com/pschmitt.keys";
-      sha256 = "16524539mfl0jnwgqqi714zvkwv8s6gsmrc52kkx46ar4p6ms9yg";
+      sha256 = "0zf9ylqj6xnaf909zilzgvi1iid7ihxviyawfdw44iqfvj32znwd";
     }
   );
 
