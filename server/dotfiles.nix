@@ -64,6 +64,11 @@ in
         fi
         return 1
       }
+
+      # remove slash ("/") from what zsh considers a "word" character,
+      # so backward-kill-word will stop at each /
+      WORDCHARS=''${WORDCHARS//\/}
+
       terminfo_bind kHOM5 beginning-of-line
       terminfo_bind kend  end-of-line
       terminfo_bind kLFT5 backward-word
@@ -132,7 +137,7 @@ in
         format = "[$user]($style)";
       };
       hostname = {
-        format = "[@$hostname]($style) ";
+        format = "@[$hostname]($style) ";
         ssh_only = false;
         style = "bold ${config.custom.promptColor}";
       };
