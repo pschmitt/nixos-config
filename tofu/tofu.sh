@@ -19,11 +19,11 @@ sops_decrypt() {
 
   SOPS_AGE_KEY="$age_key" \
     sops decrypt --extract '["openstack"]["clouds.yaml"]' \
-    cloud-credentials.sops.yaml > clouds.yaml
+    cloud-credentials.sops.yaml > "${dest}/clouds.yaml"
 
   SOPS_AGE_KEY="$age_key" \
     sops decrypt --extract '["oci"]["private_key"]' \
-    cloud-credentials.sops.yaml > oci_private_key.pem
+    cloud-credentials.sops.yaml > "${dest}/oci_private_key.pem"
 }
 
 cleanup() {
@@ -91,7 +91,7 @@ main() {
 
   trap 'cleanup >&2' EXIT
 
-  export TF_VAR_oci_private_key_path="$PWD/oci_private_key.pem"
+  export TF_VAR_oci_private_key_path="${TOFU_DIR}/oci_private_key.pem"
   tofu -chdir="${TOFU_DIR}" "$@"
 }
 
