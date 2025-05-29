@@ -42,7 +42,7 @@ shift
 
 if [[ -z "$SSH_HOST" ]]
 then
-  if ! SSH_HOST="$(dig +short @1.1.1.1 A "${TARGET_HOST}.${DOMAIN}")" || \
+  if ! SSH_HOST="$(dig +short @1.1.1.1 A "${TARGET_HOST}.${DOMAIN}" | head -1)" || \
      [[ -z "$SSH_HOST" ]]
   then
     echo "Error: Failed to resolve SSH host for ${TARGET_HOST}.${DOMAIN}" >&2
