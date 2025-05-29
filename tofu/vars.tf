@@ -105,6 +105,7 @@ variable "oci_fingerprint" {
 variable "oci_private_key_path" {
   description = "Path to the OCI private key"
   type        = string
+  default     = "~/.config/oci/oci_api_key.pem"
 }
 
 # vim: set ft=terraform
