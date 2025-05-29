@@ -18,7 +18,7 @@ terraform {
 
   backend "s3" {
     # NOTE We cannot use vars here :(
-    bucket                      = "terraform-state-heimat-dev"
+    bucket                      = "tofu-state-brkn-lol"
     key                         = "nixos-config.tfstate"
     region                      = "eu-central-2"
     endpoint                    = "s3.eu-central-2.wasabisys.com"
