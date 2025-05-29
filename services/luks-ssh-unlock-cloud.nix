@@ -4,7 +4,6 @@ let
   # List of instance names
   instanceNames = [
     "oci-03"
-    "rofl-02" # TODO Remove
     "rofl-03"
     "rofl-06"
     "rofl-08"
