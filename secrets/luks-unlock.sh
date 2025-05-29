@@ -40,7 +40,16 @@ fi
 
 shift
 
-SSH_HOST="${SSH_HOST:-${TARGET_HOST}.${DOMAIN}}"
+if [[ -z "$SSH_HOST" ]]
+then
+  if ! SSH_HOST="$(dig +short @1.1.1.1 A "${TARGET_HOST}.${DOMAIN}")" || \
+     [[ -z "$SSH_HOST" ]]
+  then
+    echo "Error: Failed to resolve SSH host for ${TARGET_HOST}.${DOMAIN}" >&2
+    return 1
+  fi
+fi
+
 SSH_ARGS+=("$@")
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
