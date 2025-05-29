@@ -6,6 +6,7 @@ pkgs/fonts/src/*.zip
 .terraform.lock.hcl
 terraform/etc
 *.bak
+*.bak.*
 .pre-commit-config.yaml
 .direnv/
 *.iso
