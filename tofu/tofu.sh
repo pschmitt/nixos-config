@@ -16,12 +16,22 @@ sops_decrypt() {
   SOPS_AGE_KEY="$age_key" \
     sops -d "${dest}/terraform.tfvars.sops.json" \
     > "${dest}/terraform.tfvars.json"
+
+  SOPS_AGE_KEY="$age_key" \
+    sops decrypt --extract '["openstack"]["clouds.yaml"]' \
+    cloud-credentials.sops.yaml > clouds.yaml
+
+  SOPS_AGE_KEY="$age_key" \
+    sops decrypt --extract '["oci"]["private_key"]' \
+    cloud-credentials.sops.yaml > oci_private_key.pem
 }
 
 cleanup() {
   if [[ -z "$KEEP_SECRETS" ]]
   then
-    rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json"
+    rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json" \
+           "${TD_DIR:-$PWD}/clouds.yaml" \
+           "${TD_DIR:-$PWD}/oci_private_key.pem"
   fi
 
   if [[ -n "$CLONE_CONFIG" ]]
@@ -81,7 +91,7 @@ main() {
 
   trap 'cleanup >&2' EXIT
 
-  tofu -chdir="${TOFU_DIR}" "$@"
+  tofu -chdir="${TOFU_DIR}" -var "oci_private_key_path=$PWD/oci_private_key.pem" "$@"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
