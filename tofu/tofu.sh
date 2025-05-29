@@ -72,6 +72,8 @@ main() {
     esac
   done
 
+  trap 'cleanup >&2' EXIT
+
   sops_decrypt || exit 1
   # shellcheck disable=SC2155
   export AWS_ACCESS_KEY_ID=$(jq -er '.s3_access_key_id' terraform.tfvars.json)
@@ -88,8 +90,6 @@ main() {
     echo_info "Adding all files in $NIXOS_CONFIG_DIR to git..."
     git -C "$NIXOS_CONFIG_DIR" add --intent-to-add . &>/dev/null
   fi
-
-  trap 'cleanup >&2' EXIT
 
   # shellcheck disable=SC2155
   export OS_CLOUD=$(jq -er '.openstack_cloud' terraform.tfvars.json)
