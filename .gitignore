@@ -11,3 +11,4 @@ terraform/etc
 *.iso
 *.log
 clouds.yaml
+*.pem
