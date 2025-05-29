@@ -1,6 +1,6 @@
 { pkgs, config, ... }:
 {
-  # TODO Define password with agenix
+  # TODO Define password with sops-nix
   users.users."${config.custom.username}" = {
     uid = 1000;
     isNormalUser = true;

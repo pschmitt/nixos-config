@@ -1,6 +1,6 @@
 output "rofl-09_fip" {
   value       = openstack_networking_floatingip_v2.rofl-09_fip.address
-  description = "Floating IP address of rofl-02"
+  description = "Floating IP address of rofl-09"
 }
 
 output "rofl_03_boot_volume_id" {

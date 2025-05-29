@@ -173,8 +173,6 @@
   programs.command-not-found.enable = false;
 
   environment.systemPackages = with pkgs; [
-    # nix
-    inputs.agenix.packages.${system}.default
     # inputs.attic.packages.${system}.default
     nix-prefetch
   ];
