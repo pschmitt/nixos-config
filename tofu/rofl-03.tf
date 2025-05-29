@@ -63,7 +63,7 @@ resource "openstack_networking_floatingip_associate_v2" "rofl_03_fip_associate" 
 }
 
 module "nix-rofl-03" {
-  depends_on             = [
+  depends_on = [
     openstack_compute_instance_v2.rofl-03,
     openstack_networking_floatingip_associate_v2.rofl_03_fip_associate,
     cloudflare_record.records["rofl-03.brkn.lol"],
