@@ -91,7 +91,8 @@ main() {
 
   trap 'cleanup >&2' EXIT
 
-  tofu -chdir="${TOFU_DIR}" -var "oci_private_key_path=$PWD/oci_private_key.pem" "$@"
+  export TF_VAR_oci_private_key_path="$PWD/oci_private_key.pem"
+  tofu -chdir="${TOFU_DIR}" "$@"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
