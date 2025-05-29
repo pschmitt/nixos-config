@@ -15,3 +15,6 @@ clouds.yaml
 *.pem
 *id_ed25519*
 *id_rsa*
+*.priv
+*.pkey
+*.pub
