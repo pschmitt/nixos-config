@@ -5,11 +5,14 @@ echo_info() {
 }
 
 sops_decrypt() {
+  echo_info "Decrypting sops secrets"
+
   local dest="${TOFU_DIR:-${PWD}}"
   local age_key
   age_key=$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")
 
   unset SOPS_AGE_KEY_FILE
+
   # FIXME naming the file tofu.tfvars.json does not work
   # only terraform.tfvars.json works
   # https://opentofu.org/docs/language/values/variables/#variable-definitions-tfvars-files
@@ -24,6 +27,11 @@ sops_decrypt() {
   SOPS_AGE_KEY="$age_key" \
     sops decrypt --extract '["oci"]["private_key"]' \
     cloud-credentials.sops.yaml > "${dest}/oci_private_key.pem"
+
+  SOPS_AGE_KEY="$age_key" \
+    sops decrypt --extract '["ssh"]["private_key"]' \
+    cloud-credentials.sops.yaml > "${dest}/nixos-anywhere_id_ed25519"
+  ssh-add "${dest}/nixos-anywhere_id_ed25519"
 }
 
 cleanup() {
@@ -31,7 +39,8 @@ cleanup() {
   then
     rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json" \
            "${TD_DIR:-$PWD}/clouds.yaml" \
-           "${TD_DIR:-$PWD}/oci_private_key.pem"
+           "${TD_DIR:-$PWD}/oci_private_key.pem" \
+           "${TD_DIR:-$PWD}/nixos-anywhere_id_ed25519"
   fi
 
   if [[ -n "$CLONE_CONFIG" ]]
