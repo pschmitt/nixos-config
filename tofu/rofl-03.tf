@@ -3,14 +3,14 @@ resource "openstack_blockstorage_volume_v3" "rofl_03_boot_volume" {
   size              = 150 # GiB
   image_id          = var.nixos_anywhere_image
   description       = "Boot volume for NixOS VM (rofl-03)"
-  availability_zone = var.availability_zone
+  availability_zone = "ix2"
 }
 
 resource "openstack_compute_instance_v2" "rofl-03" {
   name              = "rofl-03"
   flavor_name       = "m1.xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair.name
-  availability_zone = var.availability_zone
+  availability_zone = openstack_blockstorage_volume_v3.rofl_03_boot_volume.availability_zone
   security_groups = [
     "default",
     openstack_networking_secgroup_v2.secgroup_ssh.name,
@@ -32,12 +32,12 @@ resource "openstack_compute_instance_v2" "rofl-03" {
 
 resource "openstack_networking_port_v2" "rofl_03_port" {
   name = "rofl-03-port"
-  # network_id     = openstack_networking_network_v2.roflnet.id
-  network_id     = openstack_networking_network_v2.better_rofl_net.id
+  # network_id     = openstack_networking_network_v2.better_rofl_net.id
+  network_id     = openstack_networking_network_v2.roflnet-new.id
   admin_state_up = true
 
   fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.better_rofl_subnet_v4.id
+    subnet_id = openstack_networking_subnet_v2.roflsubnet-new-v4.id
   }
 
   # fixed_ip {
@@ -63,7 +63,13 @@ resource "openstack_networking_floatingip_associate_v2" "rofl_03_fip_associate" 
 }
 
 module "nix-rofl-03" {
-  depends_on             = [openstack_compute_instance_v2.rofl-03]
+  depends_on             = [
+    openstack_compute_instance_v2.rofl-03,
+    openstack_networking_floatingip_associate_v2.rofl_03_fip_associate,
+    cloudflare_record.records["rofl-03.brkn.lol"],
+    cloudflare_record.records["*.rofl-03.brkn.lol"]
+    # local_file.nixos_vars_rofl-03,
+  ]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
   nixos_system_attr      = "..#nixosConfigurations.rofl-03.config.system.build.toplevel"
   nixos_partitioner_attr = "..#nixosConfigurations.rofl-03.config.system.build.diskoScript"
