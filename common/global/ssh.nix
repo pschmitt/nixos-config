@@ -38,30 +38,6 @@
       publicKey = "fnuc ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCxPqTGClmwptv+dPHd0NBFmpp4WjVP8/D1r3rFu6d/JDQ6/hk5PWqu+dGrNLh5FLamNXRK5LWG2LDftCGC2lAcTWzFqIt9PDT019vj/idpBpZd/PQOwnQ03YED1IsPH+KVHjp9PG/VkNL1m2FdHciCvz9bh/U5DFvAiCzhCGgNB2JdGvEL3gi9TXTQx95vMNCc0bvEF1KNZV+VGhxIwdTT2Y/CKtcjkZUc+ERa/jhZ3mmdMSvubvMyKfrpQ3GO9PNEb1To0OybjcgmbpuJpXbAAtnyJIxurSm+Mwx1KAxVtoi/40Fp2MDuLjN2R96iqRpLjihwxaBZN/J3Slc4BIkWYB6EhI6vPTHS5ZaanrnmFQw/HzQnNKegZMr8oilj1iw+IpTC78mIvGQXQdHfxPWAbTebTgeYTDOFLZWA0LUfqLHX6Z72o4thm1UBSYa3Hs+IOsBSVNuwMBpvdxcGzJoTN7WFj4XLtxqIIc3Epe4yuyZCwgwLHAqvBJZkYmVPYb8=";
     };
 
-    rofl-02-ed25519 = {
-      # TODO Remove
-      hostNames = [
-        "rofl-02.brkn.lol"
-        "rofl-02.nb.brkn.lol"
-        "rofl-02.ts.brkn.lol"
-        "rofl-02.snake-eagle.ts.net"
-        "rofl-02.netbird.cloud"
-      ];
-      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHj1bwykYI4tC4kt3Rd4QAOV2D1srlcQ14NLB9w3JBXp";
-    };
-
-    rofl-02-rsa = {
-      # TODO Remove
-      hostNames = [
-        "rofl-02.brkn.lol"
-        "rofl-02.nb.brkn.lol"
-        "rofl-02.ts.brkn.lol"
-        "rofl-02.snake-eagle.ts.net"
-        "rofl-02.netbird.cloud"
-      ];
-      publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCn9xUKTdw83a9eiUAh4QNBBawp+FDfDfklbQms+8Y2B7r4PejtNELZRLPdcalAsqVJh8hS3G8i/7jzeLQXVkwJfUCgnM+19FIpvyBGoTvLxRfq5rpt2aaLo7i0g/C/9uo2I0do2kRETdODxHqng18DY2WzyaM84qlG9Xjv5NwVAK/Io7080tWc2QF5CzFA2E6j5EUPCmT4xsQdAUW5S3G7374RoPVOIEYeaf0P4tAcezktVRE3uUloQPMAYL6ty8hUaQY+aB5ZoTPJ4c+er4N2foGhrvZcmZSMzCnGpuR5A22pC7+z2G4wE++ppkc6bBbWWah+5xfuaSqxiYmFxaF/yyrXVYy41/uNLCYiIpZjvSw59CXMRUIx6O7fHD8MOg0DtZx+HTMA9ItyCSM9NexrBeol36THzOjHkYNkvwJ6ws/jhtcOjmzcbRgE2ysWjcQqlmnreEQgP1dfh3VUHyPWoDbclM/VX0vLy2tQ18YjNxx8c0aejVlLki30+o6ld/0=";
-    };
-
     rofl-03-ed25519 = {
       hostNames = [
         "rofl-03.brkn.lol"

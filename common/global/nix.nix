@@ -120,7 +120,6 @@
         "pschmitt-nixos-config.cachix.org-1:cE7rK+O+QCIEewMOOk3C7JYOhSXxqgLzNpm+tdSMkMk="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         # "nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM="
-        "rofl-02:OjuEw7+xiIgDDHLLoRHY6h4CQpl0Ie96qyjeJyQRJ38=" # TODO Delete
         "rofl-03:p25y1GufWGd6aWpimb8j6F0obxn3jwYCj7sCCXgp7A0="
         "rofl-09:aWhkLUlpkPYsTs32uCL5+lLTthnJQm+hlgJ1IUNwtIs="
       ];
