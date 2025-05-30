@@ -6,11 +6,6 @@
 }:
 
 let
-  gecOvpnConfig = pkgs.fetchurl {
-    url = "https://mgmt-vpn.gec.io/gec.ovpn";
-    sha256 = "sha256-PIWDHcoc5fv0vYRaBpJXXUV31wxua1nm5u6pWw3Kp3g=";
-  };
-
   wiitOvpnConfig = pkgs.fetchurl {
     url = "https://vpn.wiit.one/wiit.ovpn";
     sha256 = "sha256-FaR5/ziamaoAyOWWsgb60sd279547GxoI44u+TOHjFI=";
@@ -28,22 +23,11 @@ let
     lib.filter (line: builtins.match unwantedRegex line == null) lines;
 
   # Apply the function to your configuration files
-  gecFilteredLines = removeUnwantedLines gecOvpnConfig;
   wiitFilteredLines = removeUnwantedLines wiitOvpnConfig;
 
-  gecAuthUserPass = "/run/secrets/openvpn-gec";
   wiitAuthUserPass = "/run/secrets/openvpn-wiit";
 
   # Append custom config options
-  gecOvpnConfigMod = lib.concatStringsSep "\n" (
-    gecFilteredLines
-    ++ [
-      "dev ovpn-gec"
-      "dev-type tun"
-      "auth-user-pass ${gecAuthUserPass}"
-      # "auth-nocache"
-    ]
-  );
   wiitOvpnConfigMod = lib.concatStringsSep "\n" (
     wiitFilteredLines
     ++ [
@@ -92,18 +76,6 @@ let
       '';
     };
 
-  # GEC
-  gecOpenVPNDetails = extractOvpnDetails {
-    name = "gec-openvpn-details";
-    src = gecOvpnConfig;
-  };
-  gecCipher = builtins.readFile "${gecOpenVPNDetails}/details/cipher";
-  gecRemote = builtins.readFile "${gecOpenVPNDetails}/details/remote";
-  gecRemoteCertTls = builtins.readFile "${gecOpenVPNDetails}/details/remote-cert-tls";
-  gecRenegSeconds = builtins.readFile "${gecOpenVPNDetails}/details/reneg-sec";
-
-  gecUsername = "p.schmitt_admin";
-
   # WIIT
   wiitOpenVPNDetails = extractOvpnDetails {
     name = "wiit-openvpn-details";
@@ -120,46 +92,6 @@ in
 
   environment.etc =
     let
-      gecOpenVPNConnection = (pkgs.formats.ini { }).generate "gec-vpn-openvpn.nmconnection" {
-        connection = {
-          id = "GEC VPN (OpenVPN)";
-          type = "vpn";
-          uuid = "808a8205-399a-47df-9cac-7e31092f4f17";
-        };
-
-        vpn = {
-          service-type = "org.freedesktop.NetworkManager.openvpn";
-          ca = "/etc/NetworkManager/certs/gec-ca.pem";
-          cert = "/etc/NetworkManager/certs/gec-cert.pem";
-          key = "/etc/NetworkManager/certs/gec-key.pem";
-
-          dev = "gec-ovpn";
-          dev-type = "tun";
-
-          cipher = gecCipher;
-          remote = gecRemote;
-          remote-cert-tls = gecRemoteCertTls;
-          reneg-seconds = gecRenegSeconds;
-          username = gecUsername;
-
-          connection-type = "password-tls";
-          password-flags = 1;
-        };
-
-        ipv4 = {
-          method = "auto";
-          never-default = true;
-        };
-
-        ipv6 = {
-          method = "auto";
-          addr-gen-mode = "stable-privacy";
-          never-default = true;
-        };
-
-        proxy = { };
-      };
-
       wiitOpenVPNConnection = (pkgs.formats.ini { }).generate "wiit-vpn-openvpn.nmconnection" {
         connection = {
           id = "WIIT VPN (OpenVPN)";
@@ -207,26 +139,6 @@ in
       };
     in
     {
-      "NetworkManager/system-connections/${gecOpenVPNConnection.name}" = {
-        source = gecOpenVPNConnection;
-        mode = "0600";
-      };
-
-      "NetworkManager/certs/gec-ca.pem" = {
-        source = "${gecOpenVPNDetails}/certs/ca.pem";
-        mode = "0600";
-      };
-
-      "NetworkManager/certs/gec-cert.pem" = {
-        source = "${gecOpenVPNDetails}/certs/cert.pem";
-        mode = "0600";
-      };
-
-      "NetworkManager/certs/gec-key.pem" = {
-        source = "${gecOpenVPNDetails}/certs/key.pem";
-        mode = "0600";
-      };
-
       # WIIT
       "NetworkManager/system-connections/${wiitOpenVPNConnection.name}" = {
         source = wiitOpenVPNConnection;
@@ -250,43 +162,11 @@ in
     };
 
   services.openvpn.servers = {
-    gec = {
-      config = gecOvpnConfigMod;
-      autoStart = false;
-      updateResolvConf = false;
-    };
     wiit = {
       config = wiitOvpnConfigMod;
       autoStart = false;
       updateResolvConf = false;
     };
-  };
-
-  systemd.services.openvpn-gec = {
-    path = with pkgs; [
-      zsh
-      master.bitwarden-cli
-      jq
-      shadow.su
-    ];
-    preStart = ''
-      echo "PreStart: recreate auth file"
-      rm -vf "${gecAuthUserPass}"
-
-      PASSWORD="$(su pschmitt -c 'bww -o gec-ovpn')"
-      CREDENTIALS="${gecUsername}\n$PASSWORD"
-
-      echo -e "$CREDENTIALS" > "${gecAuthUserPass}"
-      chmod 400 "${gecAuthUserPass}"
-    '';
-    postStart = ''
-      echo "PostStart: delete auth file"
-      rm -vf "${gecAuthUserPass}"
-    '';
-    preStop = ''
-      echo "PreStop: delete auth file"
-      rm -vf "${gecAuthUserPass}"
-    '';
   };
 
   sops.secrets = {
@@ -323,10 +203,6 @@ in
   };
 
   programs.update-systemd-resolved.servers = {
-    gec = {
-      includeAutomatically = true;
-      settings.defaultRoute = false;
-    };
     wiit = {
       includeAutomatically = true;
       settings.defaultRoute = false;
