@@ -148,7 +148,7 @@ in
       restart program = "${pkgs.systemd}/bin/systemctl restart immich-server"
       if failed
         port 443
-        protocol https and certificate valid > 5 days
+        protocol https and certificate valid for 5 days
       then restart
       if 5 restarts within 10 cycles then alert
   '';
