@@ -24,6 +24,13 @@ let
         "archivebox.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    dawarich = {
+      port = 32927;
+      hosts = [
+        "dawarich.${config.custom.mainDomain}"
+        "location.${config.custom.mainDomain}"
+      ];
+    };
     # hoarder = {
     #   port = 46273;
     #   hosts = [
@@ -127,7 +134,8 @@ let
         restart program = "${pkgs.docker}/bin/docker compose -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
         if failed
           port ${effectivePort}
-          protocol ${proto} ${extraClause} and certificate valid > 5 days
+          protocol ${proto} ${extraClause}
+          and certificate valid for 5 days
         then restart
         if 5 restarts within 10 cycles then alert
     '';
