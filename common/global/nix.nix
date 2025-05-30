@@ -175,6 +175,7 @@
   environment.systemPackages = with pkgs; [
     # inputs.attic.packages.${system}.default
     nix-prefetch
+    nixos-rebuild-ng
   ];
 
   # Add symlink to flake source that built the current gen
