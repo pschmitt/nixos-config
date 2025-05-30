@@ -8,7 +8,7 @@
 let
   wiitOvpnConfig = pkgs.fetchurl {
     url = "https://vpn.wiit.one/wiit.ovpn";
-    sha256 = "sha256-FaR5/ziamaoAyOWWsgb60sd279547GxoI44u+TOHjFI=";
+    sha256 = "sha256-HsUD8scOdJZSbT1GUTMftrrEodQo34VcqqC78WaAl50=";
   };
 
   # Remove "auth-user-pass"
