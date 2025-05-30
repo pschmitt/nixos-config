@@ -135,6 +135,7 @@ let
         if failed
           port ${effectivePort}
           protocol ${proto} ${extraClause}
+          with timeout 15 seconds
           and certificate valid for 5 days
         then restart
         if 5 restarts within 10 cycles then alert

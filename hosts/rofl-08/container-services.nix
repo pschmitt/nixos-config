@@ -71,7 +71,9 @@ let
         restart program = "${pkgs.docker}/bin/docker compose -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
         if failed
           port ${effectivePort}
-          protocol ${proto} ${extraClause} and certificate valid for 5 days
+          protocol ${proto} ${extraClause}
+          with timeout 15 seconds
+          and certificate valid for 5 days
         then restart
         if 5 restarts within 10 cycles then alert
     '';
