@@ -84,8 +84,8 @@
       }
 
       server {
-        # Listen on TLS port 443 for miners
-        listen 443 ssl;
+        # TODO Multiplex on port 443
+        listen 8443 ssl;
 
         ssl_certificate     /var/lib/acme/xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}/fullchain.pem;
         ssl_certificate_key /var/lib/acme/xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}/key.pem;
