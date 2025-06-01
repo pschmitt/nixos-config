@@ -1,5 +1,8 @@
 { config, pkgs, ... }:
 
+# NOTE to connect:
+# sudo , xmrig -o xmrig-proxy.rofl-06.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD"
+
 {
   users.groups.xmrigproxy = { };
   users.users.xmrigproxy = {
