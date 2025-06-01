@@ -9,6 +9,7 @@
     ../../services/miner.nix
     ../../services/http.nix
     ../../services/monerod.nix
+    ../../services/xmrig-proxy.nix
   ];
 
   custom.cattle = true;
