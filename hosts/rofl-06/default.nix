@@ -6,9 +6,12 @@
     ../../server
     ../../server/optimist.nix
 
+    (import ../../services/nfs/nfs-client.nix { })
+
     ../../services/miner.nix
     ../../services/http.nix
     ../../services/monerod.nix
+    ../../services/monero-wallet-rpc.nix
     ../../services/xmrig-proxy.nix
   ];
 
