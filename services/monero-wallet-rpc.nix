@@ -83,6 +83,7 @@ in
       autoStart = true;
 
       extraOptions = [
+        # NOTE the containers runs as 1000:1000 by default
         # "--user=${userId}:${groupId}"
         "--add-host=host.docker.internal:host-gateway"
       ];
@@ -100,15 +101,6 @@ in
       ];
 
       cmd = [ "--config-file=${walletRpcConfigFile}" ];
-      # cmd = [
-      #   "--rpc-bind-port=${toString walletRpcBindPort}"
-      #   "--daemon-address=${monerodAddr}"
-      #   "--untrusted-daemon"
-      #   "--rpc-login=${monerodRpcUsername}:${monerodRpcPassword}"
-      #   "--restricted-rpc"
-      #   "--wallet-file=${walletContainerDir}/wallet/xmrig-wallet"
-      #   "--password-file=${walletContainerDir}/wallet/xmrig-wallet-password"
-      # ];
     };
   };
 }
