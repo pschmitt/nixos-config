@@ -48,13 +48,12 @@ in
         }
 
         # Disable any RPC calls that require a trusted daemon
-        restricted-rpc = 1
+        # restricted-rpc = 1
 
         # Where the wallet file lives INSIDE the container
         wallet-file = ${walletContainerDir}/wallet/xmrig-wallet
 
         # File that contains your wallet password (also inside container)
-        # password-file = ${walletContainerDir}/wallet/xmrig-wallet-password
         password-file = /wallet-password
       '';
     };
