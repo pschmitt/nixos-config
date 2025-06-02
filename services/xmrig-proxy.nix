@@ -54,6 +54,7 @@
 
       owner = "xmrigproxy";
       group = "xmrigproxy";
+      restartUnits = [ "xmrig-proxy.service" ];
     };
   };
 
