@@ -39,13 +39,13 @@ in
         # Point to your remote/full node
         daemon-address = ${monerodAddr}
 
-        # If your node is untrusted (e.g. remote), set this
-        untrusted-daemon = 1
-
         # RPC authentication username:password
         rpc-login = ${config.sops.placeholder."monero-wallet-rpc/username"}:${
           config.sops.placeholder."monero-wallet-rpc/password"
         }
+
+        # If your node is untrusted (e.g. remote), set this
+        # untrusted-daemon = 1
 
         # Disable any RPC calls that require a trusted daemon
         # restricted-rpc = 1
