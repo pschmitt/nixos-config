@@ -1,11 +1,14 @@
 { pkgs, config, ... }:
 {
   # TODO Define password with sops-nix
+  # sops.secrets."users/pschmitt/password".neededForUsers = true;
+
   users.users."${config.custom.username}" = {
     uid = 1000;
     isNormalUser = true;
     description = config.custom.fullName;
     group = config.custom.username;
+    # hashedPasswordFile = config.sops.secrets."users/pschmitt/password".path;
     extraGroups = [
       "cdrom"
       "docker"
