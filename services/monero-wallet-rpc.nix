@@ -32,6 +32,7 @@ in
     templates.moneroWalletRpcConfig = {
       owner = userId;
       # mode = "0400";
+      restartUnits = [ "${unitFile}" ];
       content = ''
         # Which port to bind the RPC server on
         rpc-bind-port = ${toString walletRpcBindPort}
