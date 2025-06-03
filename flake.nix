@@ -36,7 +36,7 @@
 
     flatpaks = {
       # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
-      url = "github:GermanBread/declarative-flatpak/stable-v3";
+      url = "github:in-a-dil-emma/declarative-flatpak/stable-v3";
       # NOTE Do *not* override nixpkgs, it is not supported
     };
 
@@ -210,7 +210,7 @@
         ./modules/luks-ssh-unlock.nix
 
         disko.nixosModules.disko
-        flatpaks.nixosModules.declarative-flatpak
+        flatpaks.nixosModule
         nix-index-database.nixosModules.nix-index
         sops-nix.nixosModules.sops
         update-systemd-resolved.nixosModules.update-systemd-resolved
