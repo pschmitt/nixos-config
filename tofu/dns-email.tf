@@ -28,9 +28,6 @@ variable "domains" {
     "ovm5.de" = {
       mx_provider = "cloudflare"
     }
-    "server-globuli.de" = {
-      mx_provider = "cloudflare"
-    }
     "bergmann-schmitt.de" = {
       mx_provider = "cloudflare"
     }
