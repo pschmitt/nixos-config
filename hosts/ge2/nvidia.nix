@@ -12,7 +12,7 @@
   ];
 
   # Newer kernels might not be compatible with the Nvidia crap.
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_14;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_15;
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   hardware.graphics.enable = true;
