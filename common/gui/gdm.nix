@@ -1,6 +1,6 @@
 { config, lib, ... }:
 {
-  services.xserver.displayManager.gdm = {
+  services.displayManager.gdm = {
     enable = true;
     debug = true;
     settings = { };
