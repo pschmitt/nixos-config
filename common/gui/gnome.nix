@@ -1,6 +1,6 @@
 { lib, pkgs, ... }:
 {
-  services.xserver.desktopManager.gnome.enable = true;
+  services.desktopManager.gnome.enable = true;
 
   # power-profiles-daemon conflicts with tlp
   # https://linrunner.de/tlp/faq/ppd.html
