@@ -9,8 +9,10 @@
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
   # hyprlandPkg = pkgs.hyprland;
+
   # xdphPkg = inputs.xdph.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   xdphPkg = pkgs.xdg-desktop-portal-hyprland;
+
   hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
   hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
 in
