@@ -28,6 +28,9 @@ in
       server = {
         bind_address = "127.0.0.1";
         port = 7372;
+        public_instance = true;
+        limiter = true;
+        image_proxy = true;
       };
       general = {
         debug = false;
