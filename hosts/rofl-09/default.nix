@@ -25,6 +25,7 @@
     ../../services/podsync.nix
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
+    ../../services/searxng.nix
     ../../services/turris-ssh-tunnel.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
 
