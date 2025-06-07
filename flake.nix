@@ -159,6 +159,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    vodafone-station-cli = {
+      url = "github:pschmitt/vodafone-station-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     wezterm = {
       url = "github:wez/wezterm?dir=nix";
       # https://github.com/NixOS/nixpkgs/issues/348832
