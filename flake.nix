@@ -79,6 +79,11 @@
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
 
+    grim-hyprland = {
+      url = "github:eriedaberrie/grim-hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # hyprland end }}}
 
     lan-mouse = {
@@ -317,6 +322,14 @@
             "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
             ./hosts/iso-xmr
+            ./modules/custom.nix
+          ];
+        };
+
+        dotFilesContainer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            ./hosts/container
             ./modules/custom.nix
           ];
         };

@@ -62,6 +62,9 @@ in
 
     # screenshots
     grim
+    (pkgs.writeShellScriptBin "grim-hyprland" ''
+      exec -a $0 ${inputs.grim-hyprland.packages.${pkgs.system}.default}/bin/grim "$@"
+    '')
     slurp
     swappy
     wf-recorder
