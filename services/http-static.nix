@@ -34,8 +34,8 @@
         root = pkgs.fetchFromGitHub {
           owner = "pschmitt";
           repo = "pschmitt.dev";
-          rev = "b38a10206cbe16f68e959a841894097f42013006";
-          hash = "sha256-w300c0c1AI2cDg5/3Gl5Q9s81skSDZox/YqLiSvWbU4=";
+          rev = "b6d5e9cc361cede2756c81e5e9ce4f34c78b3824";
+          hash = "sha256-w/BOiyBQIBsxlSdMhx0jx6Q0qKWHZQti0ayfLaBjINY=";
         };
       };
     };
