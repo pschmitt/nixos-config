@@ -19,6 +19,9 @@ in
     vteIntegration = false; # see below for osc7
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
+    shellInit = ''
+      export HOSTNAME="$HOST"
+    '';
     interactiveShellInit = ''
       # enable colors (exposes $fg etc)
       autoload -U colors && colors
