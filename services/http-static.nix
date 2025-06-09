@@ -21,7 +21,7 @@
       acmeRoot = null;
       forceSSL = true;
       locations."/" = {
-        return = "301 https://raw.githubusercontent.com/pschmitt/yadm-init/master/init.sh";
+        return = "301 https://raw.githubusercontent.com/pschmitt/yadm-init/main/init.sh";
       };
     };
 
