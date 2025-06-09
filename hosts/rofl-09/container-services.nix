@@ -92,10 +92,6 @@ let
     # traefik = {
     #   port = 8723; # http: 18723
     #   default = true;
-    # FIXME Below is not valid config!
-    # You probably want to use:
-    # services.nginx.virtualHosts.<name>.useACMEHost
-    #   hosts = ["*.${config.custom.mainDomain}"];
     # };
     wallos = {
       port = 8282;
@@ -104,10 +100,6 @@ let
     whoami = {
       port = 19462;
       hosts = [
-        # FIXME Below is not valid config!
-        # You probably want to use:
-        # services.nginx.virtualHosts.<name>.useACMEHost
-        # "*.${config.custom.mainDomain}"
         "whoami.${config.custom.mainDomain}"
       ];
       default = true;
