@@ -157,7 +157,8 @@ let
     name = hostname;
     value = {
       default = service.default or false;
-      enableACME = true;
+      enableACME = (if service.default or false then false else true);
+      useACMEHost = (if service.default or false then "wildcard.${config.custom.mainDomain}" else null);
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
       forceSSL = true;
@@ -182,6 +183,12 @@ let
 in
 {
   imports = [ ../../services/docker-compose-bulk.nix ];
+
+  # wildcard cert
+  security.acme.certs."wildcard.${config.custom.mainDomain}" = {
+    domain = "*.${config.custom.mainDomain}";
+    group = "nginx";
+  };
 
   services.nginx.virtualHosts = virtualHosts;
   services.monit.config = lib.mkAfter monitExtraConfig;
