@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  lib,
   ...
 }:
 let
@@ -18,6 +19,9 @@ in
 
   users.users."${config.custom.username}".extraGroups = [ "netbird-netbird-io" ];
 
+  # mask netbird-wt0 service
+  systemd.services.netbird-wt0.enable = false;
+
   services.netbird = {
     enable = true;
     package = netbirdPkg;
@@ -32,23 +36,39 @@ in
     };
   };
 
-  systemd.services.netbird-netbird-io.postStart = ''
-    NB_BIN=/run/current-system/sw/bin/netbird-netbird-io
+  # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
+  systemd.services.netbird-netbird-io-autoconnect = {
+    after = [ "netbird-netbird-io.service" ];
+    wants = [ "netbird-netbird-io.service" ];
+    wantedBy = [ "multi-user.target" ];
 
-    # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
-    # they don't seem to come up on their own after provisioning.
-    $NB_BIN up
+    serviceConfig = {
+      Type = "oneshot";
+    };
 
-    # Store Netbird IP address in /etc/netbird/netbird.env
-    if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
-    then
-      mkdir -p /etc/containers/env
-      echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
-    fi
-  '';
+    script = ''
+      NB_BIN=/run/current-system/sw/bin/netbird-netbird-io
 
-  # mask netbird-wt0 service
-  systemd.services.netbird-wt0.enable = false;
+      # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
+      # they don't seem to come up on their own after provisioning.
+      $NB_BIN up
+
+      # wait for connection to be established
+      # TODO Wait till we get an IP?
+      while ! "$NB_BIN" status --json | \
+            ${lib.getExe pkgs.jq} -e '.management.connected' >/dev/null
+      do
+        sleep 0.5
+      done
+
+      # Store Netbird IP address in /etc/netbird/netbird.env
+      if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
+      then
+        mkdir -p /etc/containers/env
+        echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
+      fi
+    '';
+  };
 
   environment.shellInit = ''
     # netbird ip
