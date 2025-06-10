@@ -32,18 +32,26 @@ in
     };
   };
 
-  # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
-  # they don't seem to come up on their own after provisioning.
   systemd.services.netbird-netbird-io.postStart = ''
-    /run/current-system/sw/bin/netbird-netbird-io up
+    NB_BIN=/run/current-system/sw/bin/netbird-netbird-io
+
+    # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
+    # they don't seem to come up on their own after provisioning.
+    $NB_BIN up
+
+    # Store Netbird IP address in /etc/netbird/netbird.env
+    if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
+    then
+      mkdir -p /etc/containers/env
+      echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
+    fi
   '';
 
   # mask netbird-wt0 service
   systemd.services.netbird-wt0.enable = false;
 
   environment.shellInit = ''
-    # netbird
-    export NETBIRD_IP=$(${pkgs.iproute2}/bin/ip -j -4 addr show dev nb-netbird-io 2>/dev/null | \
-      ${pkgs.jq}/bin/jq -er '.[0].addr_info[0].local' 2>/dev/null)
+    # netbird ip
+    source /etc/containers/env/netbird.env 2>/dev/null
   '';
 }
