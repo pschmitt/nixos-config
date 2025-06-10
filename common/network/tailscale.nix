@@ -1,10 +1,13 @@
 { config, pkgs, ... }:
+let
+  tailscalePkg = pkgs.master.tailscale;
+in
 {
   sops.secrets."tailscale/auth-key" = { };
 
   services.tailscale = {
     enable = true;
-    package = pkgs.master.tailscale;
+    package = tailscalePkg;
     openFirewall = true;
     extraUpFlags =
       if config.services.netbird.enable then
@@ -20,9 +23,18 @@
 
   environment.systemPackages = [ pkgs.master.tailscale ];
 
+  systemd.services.tailscaled.postStart = ''
+    # Store Tailscale IP address in /etc/containers/env/tailscale.env
+    if TAILSCALE_IP=$(${tailscalePkg}/bin/tailscale ip -4) && \
+       [[ -n $TAILSCALE_IP ]]
+    then
+      mkdir -p /etc/containers/env
+      echo "TAILSCALE_IP=$TAILSCALE_IP" > /etc/containers/env/tailscale.env
+    fi
+  '';
+
   environment.shellInit = ''
-    # tailscale
-    export TAILSCALE_IP=$(${pkgs.iproute2}/bin/ip -j -4 addr show dev tailscale0 2>/dev/null | \
-      ${pkgs.jq}/bin/jq -er '.[0].addr_info[0].local' 2>/dev/null)
+    # tailscale ip
+    source /etc/containers/env/tailscale.env 2>/dev/null
   '';
 }
