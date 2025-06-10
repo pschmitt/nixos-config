@@ -20,9 +20,9 @@
 
   environment.systemPackages = [ pkgs.master.tailscale ];
 
-  # environment.shellInit = ''
-  #   # tailscale
-  #   export TAILSCALE_IP=$(${pkgs.iproute2}/bin/ip -j -4 addr show dev tailscale0 | \
-  #     ${pkgs.jq}/bin/jq -er '.[0].addr_info[0].local' 2>/dev/null)
-  # '';
+  environment.shellInit = ''
+    # tailscale
+    export TAILSCALE_IP=$(${pkgs.iproute2}/bin/ip -j -4 addr show dev tailscale0 2>/dev/null | \
+      ${pkgs.jq}/bin/jq -er '.[0].addr_info[0].local' 2>/dev/null)
+  '';
 }
