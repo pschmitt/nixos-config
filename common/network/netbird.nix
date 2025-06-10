@@ -40,4 +40,10 @@ in
 
   # mask netbird-wt0 service
   systemd.services.netbird-wt0.enable = false;
+
+  # environment.shellInit = ''
+  #   # netbird
+  #   export NETBIRD_IP=$(${pkgs.iproute2}/bin/ip -j -4 addr show dev nb-netbird-io | \
+  #     ${pkgs.jq}/bin/jq -er '.[0].addr_info[0].local' 2>/dev/null)
+  # '';
 }
