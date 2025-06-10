@@ -17,6 +17,7 @@
         enable = true;
       };
     };
+
     docker = {
       enable = true;
       storageDriver = "btrfs";
@@ -26,5 +27,9 @@
       # https://docs.docker.com/engine/daemon/live-restore/
       liveRestore = true;
     };
+  };
+
+  environment.variables = {
+    COMPOSE_ENV_FILES = "/etc/containers/env/netbird.env,/etc/containers/env/tailscale.env";
   };
 }
