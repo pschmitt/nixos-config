@@ -36,5 +36,6 @@ in
   environment.shellInit = ''
     # tailscale ip
     source /etc/containers/env/tailscale.env 2>/dev/null
+    [[ -n $TAILSCALE_IP ]] && export TAILSCALE_IP
   '';
 }
