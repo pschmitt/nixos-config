@@ -73,5 +73,6 @@ in
   environment.shellInit = ''
     # netbird ip
     source /etc/containers/env/netbird.env 2>/dev/null
+    [[ -n $NETBIRD_IP ]] && export NETBIRD_IP
   '';
 }
