@@ -31,8 +31,8 @@ in
     ./atd.nix
     ./bootloader.nix
     ./containers.nix
-    ./dotfiles.nix
     ./dict.nix
+    ./dotfiles.nix
     ./nix.nix
     ./pschmitt.nix
     ./sops.nix
