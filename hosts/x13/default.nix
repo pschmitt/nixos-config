@@ -37,7 +37,7 @@
     };
   };
 
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
+  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   services.fprintd.enable = true;
 }
