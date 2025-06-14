@@ -174,6 +174,7 @@
 
   environment.systemPackages = with pkgs; [
     # inputs.attic.packages.${system}.default
+    inputs.nixos-needsreboot.packages.${pkgs.system}.default
     nix-prefetch
     nixos-rebuild-ng
   ];
@@ -189,5 +190,13 @@
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
     # };
+    activationScripts = {
+      nixos-needsreboot = {
+        supportsDryActivation = true;
+        text = "${
+          lib.getExe inputs.nixos-needsreboot.packages.${pkgs.system}.default
+        } \"$systemConfig\" || true";
+      };
+    };
   };
 }
