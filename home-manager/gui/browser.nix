@@ -151,6 +151,25 @@
             definedAliases = [ "aw" ];
           };
 
+          searXng = {
+            name = "SearxNG@brkn.lol";
+            urls = [
+              {
+                template = "https://search.brkn.lol/search";
+                method = "POST";
+                params = [
+                  {
+                    name = "q";
+                    value = "{searchTerms}";
+                  }
+                ];
+              }
+            ];
+            icon = "https://search.brkn.lol/static/themes/simple/img/favicon.svg";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "sx" ];
+          };
+
           bing.metaData.hidden = true;
           # builtin engines only support specifying one additional alias
           google.metaData.alias = "g";
