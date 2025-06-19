@@ -123,7 +123,7 @@ let
     ''
       check host "${serviceName}" with address "${host}"
         group services
-        restart program = "${pkgs.docker}/bin/docker compose -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
         if failed
           port ${effectivePort}
           protocol ${proto} ${extraClause}
