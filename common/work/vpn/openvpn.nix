@@ -95,4 +95,8 @@ in
       settings.defaultRoute = false;
     };
   };
+
+  # XXX Once connected to the VPN inno-cloud.de is not resolving correctly
+  # dig git.mgmt.innovo-cloud.de @1.1.1.1 A +short
+  networking.extraHosts = "185.32.80.217 git.mgmt.innovo-cloud.de";
 }
