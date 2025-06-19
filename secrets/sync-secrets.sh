@@ -21,23 +21,40 @@ update_secret() {
     return 0
   fi
 
-  echo "Setting '${path}' in '${sops_file}' to '${value}'" >&2
+  echo "Updating '${path}' in '${sops_file}' to '${value}'" >&2
   # NOTE value needs to be a JSON string
   sops set "$sops_file" "$path" "\"$value\""
+}
+
+sync_bw_secret() {
+  local sops_file="$1"
+  local path="$2"
+  local bw_item="$3"
+
+  if ! value="$(rbw get "$bw_item")"
+  then
+    echo "Failed to retrieve the secret '$bw_item' from Bitwarden." >&2
+    return 1
+  fi
+
+  update_secret "$sops_file" "$path" "$value"
 }
 
 update_wiit_openvpn_secret() {
   local sops_file="shared.sops.yaml"
   local path='["openvpn"]["wiit"]["password"]'
-  local value
+  local bw_item="vpn.wiit.one"
 
-  if ! value="$(rbw get vpn.wiit.one)"
-  then
-    echo "Failed to retrieve the secret from Bitwarden." >&2
-    return 1
-  fi
+  sync_bw_secret "$sops_file" "$path" "$bw_item"
+}
 
-  update_secret "$sops_file" "$path" "$value"
+# FIXME Artifactory secret is not in Bitwarden yet
+update_artifactory_secret() {
+  local sops_file="shared.sops.yaml"
+  local path='["artifactory"]["password"]'
+  local bw_item="JFrog Artifactory"
+
+  sync_bw_secret "$sops_file" "$path" "$bw_item"
 }
 
 git_diff_sops_files() {
@@ -54,6 +71,7 @@ main() {
   rbw sync
 
   update_wiit_openvpn_secret
+  # update_artifactory_secret
   git_diff_sops_files
 }
 
