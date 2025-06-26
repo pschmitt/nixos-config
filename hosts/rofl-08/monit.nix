@@ -1,10 +1,13 @@
 {
   lib,
   config,
+  inputs,
   pkgs,
   ...
 }:
 let
+  dcpPkg = inputs.docker-compose-bulk.packages.${pkgs.system}.docker-compose-bulk;
+
   mullvadExpiration = pkgs.writeShellScript "mullvad-expiration" ''
     export PATH=${
       pkgs.lib.makeBinPath [
@@ -40,10 +43,10 @@ let
       group docker
       if status > 0 then alert
 
-    check program "docker compose services" with path "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk status"
+    check program "docker compose services" with path "${dcpPkg}/bin/docker-compose-bulk status"
       depends on "dockerd"
       group docker
-      start program = "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk up -d" with timeout 600 seconds
+      start program = "${dcpPkg}/bin/docker-compose-bulk up -d" with timeout 600 seconds
       every 2 cycles
       if status > 0 then start
       if 3 restarts within 10 cycles then alert
