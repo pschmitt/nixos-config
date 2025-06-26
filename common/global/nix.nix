@@ -176,6 +176,7 @@
     # inputs.attic.packages.${system}.default
     inputs.nixos-needsreboot.packages.${pkgs.system}.default
     nix-prefetch
+    nixos-rebuild
     nixos-rebuild-ng
   ];
 
