@@ -1,5 +1,10 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
+let
+  dcpPkg = inputs.docker-compose-bulk.packages.${pkgs.system}.docker-compose-bulk;
+in
 {
+  environment.systemPackages = [ dcpPkg ];
+
   systemd.services.docker-compose-bulk-up = {
     after = [
       "docker.service"
@@ -14,13 +19,6 @@
 
     wantedBy = [ "multi-user.target" ];
 
-    serviceConfig = {
-      EnvironmentFile = [
-        "/etc/containers/env/netbird.env"
-        "/etc/containers/env/tailscale.env"
-      ];
-    };
-
-    script = "${pkgs.docker-compose-bulk}/bin/docker-compose-bulk up -d";
+    script = "${dcpPkg}/bin/docker-compose-bulk up -d";
   };
 }
