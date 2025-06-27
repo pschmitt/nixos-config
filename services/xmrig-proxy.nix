@@ -79,6 +79,8 @@
   services.nginx = {
     virtualHosts."xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}" = {
       enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
       forceSSL = true;
     };
 
