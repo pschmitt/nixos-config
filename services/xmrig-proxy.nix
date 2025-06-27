@@ -3,6 +3,9 @@
 # NOTE to connect:
 # sudo , xmrig -o xmrig-proxy.rofl-06.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD"
 
+let
+  hostname = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}";
+in
 {
   users.groups.xmrigproxy = { };
   users.users.xmrigproxy = {
@@ -77,7 +80,7 @@
   networking.firewall.allowedTCPPorts = [ 3333 ];
 
   services.nginx = {
-    virtualHosts."xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}" = {
+    virtualHosts."${hostname}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
@@ -93,8 +96,8 @@
         # TODO Multiplex on port 443
         listen 8443 ssl;
 
-        ssl_certificate     /var/lib/acme/xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}/fullchain.pem;
-        ssl_certificate_key /var/lib/acme/xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}/key.pem;
+        ssl_certificate     ${config.users.users.acme.home}/${hostname}/fullchain.pem;
+        ssl_certificate_key ${config.users.users.acme.home}/${hostname}/key.pem;
 
         proxy_pass xmrig_backend;
 
