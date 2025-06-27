@@ -160,6 +160,11 @@
     };
   };
 
+  programs.nh = {
+    enable = true;
+    flake = "/etc/nixos";
+  };
+
   programs.nix-ld = {
     enable = true;
     # libraries = [];
