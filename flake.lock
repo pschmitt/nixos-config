@@ -116,11 +116,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1750925577,
-        "narHash": "sha256-3H+tAo/m5NvSjEVeVJNRoLCvokGixJzwYhiRWMIp2Bg=",
+        "lastModified": 1751018485,
+        "narHash": "sha256-S5nUXwhWaQJau5mRo5qBWk0AL5uHuQMoZQFPzabGc7M=",
         "owner": "pschmitt",
         "repo": "docker-compose-bulk",
-        "rev": "eec655b77be79ab935bbb1ef684b7a7753b2c107",
+        "rev": "8a3b6360a3d3314a827fe5e7ff8ae3f71bf2a6cd",
         "type": "github"
       },
       "original": {
