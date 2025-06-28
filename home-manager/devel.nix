@@ -4,7 +4,6 @@
   home.packages = with pkgs; [
     act # gh actions, locally
     codespell
-    devenv
     gh
     git-extras
     inotify-tools
