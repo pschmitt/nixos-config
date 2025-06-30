@@ -27,8 +27,8 @@
 
   boot.kernel.sysctl = {
     # Raise inotify limits
-    "fs.inotify.max_user_instances" = lib.mkDefault 524288;
-    "fs.inotify.max_user_watches" = lib.mkDefault 524288;
+    "fs.inotify.max_user_instances" = lib.mkForce 524288;
+    "fs.inotify.max_user_watches" = lib.mkForce 524288;
   };
 
   # Write logs to console
