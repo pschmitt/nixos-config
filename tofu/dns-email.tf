@@ -83,7 +83,7 @@ resource "cloudflare_email_routing_settings" "cf_mail_routing" {
   enabled = true
 }
 
-resource "cloudflare_record" "mx" {
+resource "cloudflare_dns_record" "mx" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -101,7 +101,7 @@ resource "cloudflare_record" "mx" {
   comment  = var.dns_email_comment
 }
 
-resource "cloudflare_record" "mail" {
+resource "cloudflare_dns_record" "mail" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "custom"
   }
@@ -114,7 +114,7 @@ resource "cloudflare_record" "mail" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "mail_google" {
+resource "cloudflare_dns_record" "mail_google" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "google"
   }
@@ -127,7 +127,7 @@ resource "cloudflare_record" "mail_google" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "spf" {
+resource "cloudflare_dns_record" "spf" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -144,7 +144,7 @@ resource "cloudflare_record" "spf" {
 }
 
 # https://docker-mailserver.github.io/docker-mailserver/latest/config/best-practices/dkim_dmarc_spf/#dmarc
-resource "cloudflare_record" "dmarc" {
+resource "cloudflare_dns_record" "dmarc" {
   # for_each = data.cloudflare_zone.zones
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
@@ -159,7 +159,7 @@ resource "cloudflare_record" "dmarc" {
 }
 
 # Allow receiving DMARC reports for other zones/domains
-resource "cloudflare_record" "dmarc-report" {
+resource "cloudflare_dns_record" "dmarc-report" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare" && domain != "schmitt.co"
   }
@@ -171,7 +171,7 @@ resource "cloudflare_record" "dmarc-report" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "dkim" {
+resource "cloudflare_dns_record" "dkim" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "custom" && config.dkim_public_key != null
   }
@@ -184,7 +184,7 @@ resource "cloudflare_record" "dkim" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "dkim_google" {
+resource "cloudflare_dns_record" "dkim_google" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "google" && config.dkim_public_key != null
   }
@@ -197,7 +197,7 @@ resource "cloudflare_record" "dkim_google" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "mailconf" {
+resource "cloudflare_dns_record" "mailconf" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -210,7 +210,7 @@ resource "cloudflare_record" "mailconf" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "autoconfig" {
+resource "cloudflare_dns_record" "autoconfig" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -223,7 +223,7 @@ resource "cloudflare_record" "autoconfig" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "autoconfigure" {
+resource "cloudflare_dns_record" "autoconfigure" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -237,7 +237,7 @@ resource "cloudflare_record" "autoconfigure" {
 }
 
 # srv records
-resource "cloudflare_record" "srv-autodiscover" {
+resource "cloudflare_dns_record" "srv-autodiscover" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -256,7 +256,7 @@ resource "cloudflare_record" "srv-autodiscover" {
   }
 }
 
-resource "cloudflare_record" "srv-imap" { # starttls
+resource "cloudflare_dns_record" "srv-imap" { # starttls
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -275,7 +275,7 @@ resource "cloudflare_record" "srv-imap" { # starttls
   }
 }
 
-resource "cloudflare_record" "srv-imaps" {
+resource "cloudflare_dns_record" "srv-imaps" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -294,7 +294,7 @@ resource "cloudflare_record" "srv-imaps" {
   }
 }
 
-# resource "cloudflare_record" "srv-pop3s" {
+# resource "cloudflare_dns_record" "srv-pop3s" {
 #   for_each = {
 #     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
 #   }
@@ -313,7 +313,7 @@ resource "cloudflare_record" "srv-imaps" {
 #   }
 # }
 
-resource "cloudflare_record" "srv-submission" { # starttls
+resource "cloudflare_dns_record" "srv-submission" { # starttls
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -332,7 +332,7 @@ resource "cloudflare_record" "srv-submission" { # starttls
   }
 }
 
-resource "cloudflare_record" "srv-submissions" {
+resource "cloudflare_dns_record" "srv-submissions" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -352,7 +352,7 @@ resource "cloudflare_record" "srv-submissions" {
 }
 
 # cnames
-resource "cloudflare_record" "cname-smtp" {
+resource "cloudflare_dns_record" "cname-smtp" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
@@ -365,7 +365,7 @@ resource "cloudflare_record" "cname-smtp" {
   comment = var.dns_email_comment
 }
 
-resource "cloudflare_record" "cname-imap" {
+resource "cloudflare_dns_record" "cname-imap" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }

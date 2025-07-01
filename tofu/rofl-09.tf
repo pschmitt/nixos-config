@@ -93,8 +93,8 @@ module "nix-rofl-09" {
     openstack_compute_instance_v2.rofl-09,
     openstack_networking_floatingip_associate_v2.rofl-09_fip_associate,
     openstack_compute_volume_attach_v2.va_rofldata,
-    cloudflare_record.records["rofl-09.brkn.lol"],
-    cloudflare_record.records["*.rofl-09.brkn.lol"],
+    cloudflare_dns_record.records["rofl-09.brkn.lol"],
+    cloudflare_dns_record.records["*.rofl-09.brkn.lol"],
     local_file.nixos_vars_rofl-09,
   ]
 

@@ -103,8 +103,8 @@ module "nix-rofl-08" {
     openstack_networking_router_v2.roflrouter-new,
     openstack_networking_router_interface_v2.roflrouter-new-interface-v4,
     openstack_networking_floatingip_associate_v2.rofl_08_fip_associate,
-    cloudflare_record.records["rofl-08.brkn.lol"],
-    cloudflare_record.records["*.rofl-08.brkn.lol"],
+    cloudflare_dns_record.records["rofl-08.brkn.lol"],
+    cloudflare_dns_record.records["*.rofl-08.brkn.lol"],
     local_file.nixos_vars_rofl-08,
   ]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"

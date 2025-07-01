@@ -66,8 +66,8 @@ module "nix-rofl-03" {
   depends_on = [
     openstack_compute_instance_v2.rofl-03,
     openstack_networking_floatingip_associate_v2.rofl_03_fip_associate,
-    cloudflare_record.records["rofl-03.brkn.lol"],
-    cloudflare_record.records["*.rofl-03.brkn.lol"]
+    cloudflare_dns_record.records["rofl-03.brkn.lol"],
+    cloudflare_dns_record.records["*.rofl-03.brkn.lol"]
     # local_file.nixos_vars_rofl-03,
   ]
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
