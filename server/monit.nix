@@ -1,6 +1,7 @@
 {
-  lib,
   config,
+  inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -26,6 +27,12 @@ let
     fi
   '';
 
+  needsReboot = pkgs.writeShellScript "needs-reboot" ''
+    OUTPUT=$(${inputs.nixos-needsreboot.packages.${pkgs.system}.default}/bin/nixos-needsreboot 2>&1)
+    echo "$OUTPUT"
+    ${pkgs.gnugrep}/bin/grep -q 'No reboot required' <<< "$OUTPUT"
+  '';
+
   monitGeneral = ''
     set daemon 60
     include /etc/monit/conf.d/*
@@ -36,6 +43,13 @@ let
       if loadavg (15min) per core > 1 for 5 times within 15 cycles then alert
       if memory usage > 80% for 4 cycles then alert
       if uptime < 1 hours then alert
+  '';
+
+  monitRebootRequired = ''
+    check program "Reboot required" with path "${needsReboot}"
+      group system
+      every 2 cycles
+      if status > 0 then alert
   '';
 
   monitFilesystem = fs: ''
@@ -178,6 +192,7 @@ in
       config = lib.strings.concatStringsSep "\n" [
         monitGeneral
         monitSystem
+        monitRebootRequired
         monitFilesystems
         monitNetwork
         monitRestic
