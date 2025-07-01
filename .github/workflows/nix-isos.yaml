@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ "standard", "xmr" ]
+        target: [ "standard", "xmr", "standard-legacy", "xmr-legacy" ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +30,11 @@ jobs:
           then
             ISO=iso-xmr
             ISO_FILENAME_SUFFIX=-xmr
+          fi
+
+          if [[ "${{ matrix.target }}" == *legacy* ]]
+          then
+            ISO+="-legacy"
           fi
 
           nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.isoImage"

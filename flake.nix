@@ -337,6 +337,28 @@
             ./modules/custom.nix
           ];
         };
+
+        # legacy ISO images (no EFI, BIOS only!)
+        iso-legacy = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+            ./hosts/iso
+            ./modules/custom.nix
+            ./workarounds/no-efi.nix
+          ];
+        };
+        iso-xmr-legacy = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+            ./hosts/iso-xmr
+            ./modules/custom.nix
+            ./workarounds/no-efi.nix
+          ];
+        };
       };
     };
 }
