@@ -40,9 +40,14 @@ variable "domains" {
   }
 }
 
-data "cloudflare_zone" "zones" {
+data "cloudflare_zones" "zones" {
   for_each = var.domains
-  name     = each.key
+  name = each.key
+  # filter = [
+  #   {
+  #     name = each.key
+  #   }
+  # ]
 }
 
 variable "dns_email_comment" {
@@ -77,10 +82,7 @@ resource "cloudflare_email_routing_settings" "cf_mail_routing" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "cloudflare"
   }
-  zone_id = data.cloudflare_zone.zones[each.key].id
-  # FIXME Having this set to false raises an error when applying. Let's just not
-  # create a resource when mx_provider is not set to "cloudflare"
-  enabled = true
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
 }
 
 resource "cloudflare_dns_record" "mx" {
@@ -88,7 +90,7 @@ resource "cloudflare_dns_record" "mx" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   name    = "@"
   type    = "MX"
   ttl     = 3600
@@ -106,7 +108,7 @@ resource "cloudflare_dns_record" "mail" {
     for domain, config in var.domains : domain => config if config.mx_provider == "custom"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   name    = "mail"
   content = oci_core_instance.oci_01.public_ip
   type    = "A"
@@ -119,7 +121,7 @@ resource "cloudflare_dns_record" "mail_google" {
     for domain, config in var.domains : domain => config if config.mx_provider == "google"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   name    = "mail"
   content = "ghs.googlehosted.com"
   type    = "CNAME"
@@ -132,7 +134,7 @@ resource "cloudflare_dns_record" "spf" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "TXT"
   name    = "@"
   # TODO consider using -all for google domains, which is stricter than ~all
@@ -145,12 +147,12 @@ resource "cloudflare_dns_record" "spf" {
 
 # https://docker-mailserver.github.io/docker-mailserver/latest/config/best-practices/dkim_dmarc_spf/#dmarc
 resource "cloudflare_dns_record" "dmarc" {
-  # for_each = data.cloudflare_zone.zones
+  # for_each = data.cloudflare_zones.zones
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "TXT"
   name    = "_dmarc"
   content = var.domains[each.key].dmarc_policy == "mid" ? local.dmarc_policy_mid : local.dmarc_policy_strict
@@ -176,7 +178,7 @@ resource "cloudflare_dns_record" "dkim" {
     for domain, config in var.domains : domain => config if config.mx_provider == "custom" && config.dkim_public_key != null
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "TXT"
   name    = "mail._domainkey"
   content = var.domains[each.key].dkim_public_key
@@ -189,7 +191,7 @@ resource "cloudflare_dns_record" "dkim_google" {
     for domain, config in var.domains : domain => config if config.mx_provider == "google" && config.dkim_public_key != null
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "TXT"
   name    = "${each.key}._domainkey"
   content = var.domains[each.key].dkim_public_key
@@ -202,7 +204,7 @@ resource "cloudflare_dns_record" "mailconf" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "TXT"
   name    = "@"
   content = "mailconf=https://autoconfig.${each.key}/mail/config-v1.1.xml"
@@ -215,7 +217,7 @@ resource "cloudflare_dns_record" "autoconfig" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "A"
   name    = "autoconfig"
   content = oci_core_instance.oci_01.public_ip
@@ -228,7 +230,7 @@ resource "cloudflare_dns_record" "autoconfigure" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "A"
   name    = "autoconfigure"
   content = oci_core_instance.oci_01.public_ip
@@ -242,13 +244,13 @@ resource "cloudflare_dns_record" "srv-autodiscover" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "SRV"
   name    = "_autodiscover._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
-  data {
+  data = {
     priority = 0
     weight   = 0
     port     = 443
@@ -261,13 +263,13 @@ resource "cloudflare_dns_record" "srv-imap" { # starttls
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "SRV"
   name    = "_imap._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
-  data {
+  data = {
     priority = 0
     weight   = 0
     port     = 143
@@ -280,13 +282,13 @@ resource "cloudflare_dns_record" "srv-imaps" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "SRV"
   name    = "_imaps._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
-  data {
+  data = {
     priority = 0
     weight   = 0
     port     = 993
@@ -299,13 +301,13 @@ resource "cloudflare_dns_record" "srv-imaps" {
 #     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
 #   }
 #
-#   zone_id = data.cloudflare_zone.zones[each.key].id
+#   zone_id = data.cloudflare_zones.zones[each.key].result[0].id
 #   type    = "SRV"
 #   name    = "_pop3s._tcp"
 #   ttl     = 3600
 #   comment = var.dns_email_comment
 #
-#   data {
+#   data = {
 #     priority = 0
 #     weight   = 0
 #     port     = 995
@@ -318,13 +320,13 @@ resource "cloudflare_dns_record" "srv-submission" { # starttls
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "SRV"
   name    = "_submission._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
-  data {
+  data = {
     priority = 0
     weight   = 0
     port     = 587
@@ -337,13 +339,13 @@ resource "cloudflare_dns_record" "srv-submissions" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "SRV"
   name    = "_submissions._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
 
-  data {
+  data = {
     priority = 0
     weight   = 0
     port     = 465
@@ -357,7 +359,7 @@ resource "cloudflare_dns_record" "cname-smtp" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "CNAME"
   name    = "smtp"
   content = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
@@ -370,7 +372,7 @@ resource "cloudflare_dns_record" "cname-imap" {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
   }
 
-  zone_id = data.cloudflare_zone.zones[each.key].id
+  zone_id = data.cloudflare_zones.zones[each.key].result[0].id
   type    = "CNAME"
   name    = "imap"
   content = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
