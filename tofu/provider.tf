@@ -7,12 +7,12 @@ terraform {
 
     oci = {
       source  = "oracle/oci"
-      version = "5.38.0"
+      version = "~> 7.7.0"
     }
 
     openstack = {
       source  = "terraform-provider-openstack/openstack"
-      version = "~> 1.44"
+      version = "~> 3.2.0"
     }
   }
 
