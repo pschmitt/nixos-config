@@ -10,11 +10,15 @@ in
       "docker.service"
       "mnt-data.mount"
       "network.target"
+      "tailscaled.service"
+      "netbird-netbird-io.service"
     ];
 
     requires = [
       "docker.service"
       "mnt-data.mount"
+      "tailscaled.service"
+      "netbird-netbird-io.service"
     ];
 
     wantedBy = [ "multi-user.target" ];
