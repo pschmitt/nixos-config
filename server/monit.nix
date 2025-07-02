@@ -116,7 +116,7 @@ let
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
       if status != 0 then restart
       # recovery
-      else if succeeded then alert
+      else if succeeded then exec "${pkgs.coreutils}/bin/true"
 
       if 5 restarts within 10 cycles then alert
 
@@ -126,7 +126,7 @@ let
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
       if status != 0 then restart
       # recovery
-      else if succeeded then alert
+      else if succeeded then exec "${pkgs.coreutils}/bin/true"
       if 5 restarts within 10 cycles then alert
 
     # FIXME Below check seems to be able to tell reliably when the interface is
