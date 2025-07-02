@@ -67,7 +67,8 @@ let
     check program "restic backup status" with path "${resticLastBackup}"
       group storage
       every 5 cycles
-      if status > 0 then alert'';
+      if status > 0 then alert
+  '';
 
   monitTailscale = ''
     check network tailscale with interface tailscale0
@@ -112,8 +113,11 @@ let
   monitNetbird = ''
     check program "netbird login" with path "${netbirdStatus}"
       group "network"
-      if status != 0 then restart
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
+      if status != 0 then restart
+      # recovery
+      else if succeeded then alert
+
       if 5 restarts within 10 cycles then alert
 
     check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
@@ -121,6 +125,8 @@ let
       depends on "netbird login"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
       if status != 0 then restart
+      # recovery
+      else if succeeded then alert
       if 5 restarts within 10 cycles then alert
 
     # FIXME Below check seems to be able to tell reliably when the interface is
