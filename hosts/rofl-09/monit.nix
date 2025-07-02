@@ -37,6 +37,8 @@ let
       start program = "${dcpPkg}/bin/docker-compose-bulk up -d" with timeout 600 seconds
       every 2 cycles
       if status > 0 then start
+      # recovery
+      else if succeeded then alert
       if 3 restarts within 10 cycles then alert
 
     check program "github-backup" with path "${githubLastBackup}"
