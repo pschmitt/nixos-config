@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
 
   imports = [
@@ -13,7 +13,7 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
   ];
   networking = {
-    useDHCP = true;
+    useDHCP = lib.mkForce true;
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"

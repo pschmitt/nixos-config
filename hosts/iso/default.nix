@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 {
   # Enable SSH in the boot process.
   systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
@@ -7,7 +7,7 @@
   ];
   isoImage.squashfsCompression = "gzip -Xcompression-level 1";
   networking = {
-    useDHCP = true;
+    useDHCP = lib.mkForce true;
     nameservers = [
       "1.1.1.1"
       "8.8.8.8"
