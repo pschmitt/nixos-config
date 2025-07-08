@@ -123,7 +123,7 @@ let
     check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
       group "network"
       depends on "netbird login"
-      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
+      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io-autoconnect"
       if status != 0 then restart
       # recovery
       else if succeeded then exec "${pkgs.coreutils}/bin/true"
