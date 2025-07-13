@@ -18,6 +18,7 @@
 
   # https://github.com/NixOS/nixpkgs/pull/282317
   security.pam.services.gdm.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
 
   # GDM monitor configuration
   # systemd.tmpfiles.rules = [
