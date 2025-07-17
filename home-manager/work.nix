@@ -76,7 +76,6 @@ in
       skopeo
       stern
       sqlfluff
-      taskwarrior3
       # terraform # 1.6+
       (writeShellScriptBin "terraform-unfree" ''
         ${pkgs.terraform}/bin/terraform "$@"
@@ -86,13 +85,18 @@ in
       # terragrunt
       opentofu
       thunderbird
-      timewarrior
-      timewarrior-jirapush
       vendir
       velero
       vault
       yamlfmt
       ytt
+
+      # time tracking
+      taskwarrior3
+      timew-sync-client
+      timewarrior
+      timewarrior-jirapush
+      python312Packages.bugwarrior
     ]
     ++ guiPackages;
 
