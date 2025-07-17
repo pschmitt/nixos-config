@@ -10,7 +10,7 @@
   imports = lib.concatLists [
     [
       inputs.sops-nix.homeManagerModules.sops
-      inputs.nix-index-database.hmModules.nix-index
+      inputs.nix-index-database.homeModules.nix-index
       inputs.catppuccin.homeModules.catppuccin
       ./banking.nix
       ./bitwarden.nix
