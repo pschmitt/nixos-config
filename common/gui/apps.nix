@@ -16,7 +16,7 @@
   environment.systemPackages = with pkgs; [
     alacritty
     foot
-    kitty
+    pkgs.master.kitty
     inputs.ghostty.packages.${pkgs.system}.default
     inputs.wezterm.packages.${pkgs.system}.default
     inputs.lan-mouse.packages.${pkgs.system}.default
