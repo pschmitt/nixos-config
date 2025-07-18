@@ -26,8 +26,7 @@
     package = pkgs.nginxStable.override { modules = [ pkgs.nginxModules.zstd ]; };
 
     recommendedTlsSettings = true;
-    # recommendedGzipSettings = true;
-    recommendedZstdSettings = true;
+    recommendedGzipSettings = true;
     recommendedOptimisation = true;
     recommendedProxySettings = true;
 
