@@ -8,16 +8,16 @@
 
 let
   # hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
-  hyprlandPkg = pkgs.hyprland;
+  hyprlandPkg = pkgs.master.hyprland;
 
   # xdphPkg = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
-  xdphPkg = pkgs.xdg-desktop-portal-hyprland;
+  xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
 
   # hypridlePkg = inputs.hypridle.packages.${pkgs.system}.hypridle;
-  hypridlePkg = pkgs.hypridle;
+  hypridlePkg = pkgs.master.hypridle;
 
   # hyprlockPkg = inputs.hyprlock.packages.${pkgs.system}.hyprlock;
-  hyprlockPkg = pkgs.hyprlock;
+  hyprlockPkg = pkgs.master.hyprlock;
 in
 {
   nix.settings = {
