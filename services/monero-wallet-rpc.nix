@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   monerodAddr = "http://host.docker.internal:${toString config.services.monero.rpc.port}";
 
@@ -102,5 +102,22 @@ in
 
       cmd = [ "--config-file=${walletRpcConfigFile}" ];
     };
+  };
+
+  # Restart the wallet RPC service every night at 3:00
+  systemd.services."monero-wallet-rpc-restart" = {
+    description = "Restart the Monero Wallet RPC service";
+    script = ''
+      ${pkgs.systemd}/bin/systemctl restart ${unitFile}
+    '';
+  };
+
+  systemd.timers."monero-wallet-rpc-restart" = {
+    description = "Timer to regularly restart the Monero Wallet RPC service";
+    timerConfig = {
+      OnCalendar = "daily";
+      RandomizedDelaySec = "6h"; # -> Between 00:00 and 06:00?
+    };
+    wantedBy = [ "timers.target" ];
   };
 }
