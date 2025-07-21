@@ -108,7 +108,7 @@ in
   systemd.services."monero-wallet-rpc-restart" = {
     description = "Restart the Monero Wallet RPC service";
     script = ''
-      ${pkgs.systemd}/bin/systemctl restart ${unitFile}";
+      ${pkgs.systemd}/bin/systemctl restart ${unitFile}
     '';
   };
 
