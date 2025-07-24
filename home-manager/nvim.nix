@@ -48,6 +48,9 @@ in
       nil
       nixpkgs-fmt
 
+      # jssonnet
+      jsonnet-language-server
+
       luajit
       stylua
 
