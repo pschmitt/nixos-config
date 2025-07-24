@@ -7,7 +7,7 @@ let
   walletContainerDir = "/home/monero";
   walletRpcConfigFile = "/etc/monero-wallet-rpc.conf";
 
-  userId = "pschmitt";
+  userId = config.custom.username;
 
   unitFile = "docker-monero-wallet-rpc.service";
 in
