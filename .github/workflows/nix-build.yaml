@@ -29,9 +29,9 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      # magic cache is dead
-      # https://determinate.systems/posts/magic-nix-cache-free-tier-eol/
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      # magic cache is back!
+      # https://determinate.systems/posts/bringing-back-magic-nix-cache-action/
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Generate build matrix
         id: set-matrix
@@ -56,7 +56,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -111,7 +111,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -277,7 +277,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
@@ -343,7 +343,7 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
 
       - name: Store SSH key on disk
         run: |-
