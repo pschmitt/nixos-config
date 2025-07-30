@@ -31,12 +31,26 @@ let
         "location.${config.custom.mainDomain}"
       ];
     };
+    endurain = {
+      port = 36387;
+      hosts = [
+        "endurain.${config.custom.mainDomain}"
+        "endurian.${config.custom.mainDomain}" # common typo ;)
+      ];
+    };
     # hoarder = {
     #   port = 46273;
     #   hosts = [
     #     "hoarder.${config.custom.mainDomain}"
     #   ];
     # };
+    linkwarden = {
+      port = 54659;
+      hosts = [
+        "lw.${config.custom.mainDomain}"
+        "linkwarden.${config.custom.mainDomain}"
+      ];
+    };
     mealie = {
       port = 63254;
       hosts = [
