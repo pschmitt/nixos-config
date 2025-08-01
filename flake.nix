@@ -59,7 +59,7 @@
     };
 
     hacompanion = {
-      url = "github:tobias-kuendig/hacompanion";
+      url = "github:pschmitt/hacompanion/flake-fixes";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

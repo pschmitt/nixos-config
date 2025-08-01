@@ -799,31 +799,6 @@
         "type": "github"
       }
     },
-    "gomod2nix": {
-      "inputs": {
-        "flake-utils": [
-          "hacompanion",
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "hacompanion",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1733668782,
-        "narHash": "sha256-tPsqU00FhgdFr0JiQUiBMgPVbl1jbPCY5gbFiJycL3I=",
-        "owner": "tweag",
-        "repo": "gomod2nix",
-        "rev": "514283ec89c39ad0079ff2f3b1437404e4cba608",
-        "type": "github"
-      },
-      "original": {
-        "owner": "tweag",
-        "repo": "gomod2nix",
-        "type": "github"
-      }
-    },
     "grim-hyprland": {
       "inputs": {
         "nixpkgs": [
@@ -848,21 +823,21 @@
     "hacompanion": {
       "inputs": {
         "flake-utils": "flake-utils_3",
-        "gomod2nix": "gomod2nix",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1739092173,
-        "narHash": "sha256-0KWIIlBlbsMh0in1mVLStCWCGZndE27GirRxwVNSWto=",
-        "owner": "tobias-kuendig",
+        "lastModified": 1754040665,
+        "narHash": "sha256-saATNi6dmtv1c4dX0jw+mCG1/qWeRD+EkypUt3rlDUE=",
+        "owner": "pschmitt",
         "repo": "hacompanion",
-        "rev": "d2b4ac656ac17580e86ebeb0f3e7289b9639065e",
+        "rev": "cd8de540a85072b3c8767bd8268c140164c23818",
         "type": "github"
       },
       "original": {
-        "owner": "tobias-kuendig",
+        "owner": "pschmitt",
+        "ref": "flake-fixes",
         "repo": "hacompanion",
         "type": "github"
       }
