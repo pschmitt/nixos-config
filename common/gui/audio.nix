@@ -26,7 +26,7 @@
     pulseaudio # pactl + pacmd
 
     # apps
-    audacity
+    master.audacity # XXX https://nixpk.gs/pr-tracker.html?pr=429334
     (sox.override {
       enableLame = true;
       enableAMR = false;
