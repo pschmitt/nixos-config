@@ -36,6 +36,36 @@ let
   monitGeneral = ''
     set daemon 60
     include /etc/monit/conf.d/*
+
+    # https://mmonit.com/monit/documentation/monit.html#LIMITS
+    set limits {
+      # check program's output truncate limit, default: 512 B
+      programOutput:     1 MB,
+
+      # limit for send/expect protocol test, default: 256 B
+      sendExpectBuffer:  1 MB,
+
+      # limit for file content test, default: 512 B
+      fileContentBuffer: 1 MB,
+
+      # limit for HTTP content test, default: 1 MB
+      httpContentBuffer: 2 MB,
+
+      # timeout for network I/O, default: 5 s
+      networkTimeout:    20 s,
+
+      # timeout for check program, default: 300 s
+      programTimeout:    300 s,
+
+      # timeout for service stop, default: 30 s
+      stopTimeout:       120 s,
+
+      # timeout for service start, default: 30 s
+      startTimeout:      300 s,
+
+      # timeout for service restart, default: 30 s
+      restartTimeout:    600 s
+    }
   '';
 
   monitSystem = ''
