@@ -56,8 +56,10 @@
         };
       in
       {
-        "mmonit.oci-03.brkn.lol" = commonConfig;
         "mmonit.brkn.lol" = commonConfig;
+        "mmonit.oci-03.brkn.lol" = commonConfig;
+        "mmonit.oci-03.ts.brkn.lol" = commonConfig;
+        "mmonit.oci-03.nb.brkn.lol" = commonConfig;
       };
   };
 
