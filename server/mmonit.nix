@@ -41,6 +41,7 @@
     virtualHosts =
       let
         commonConfig = {
+          # NOTE we do HTTP-01 here!
           enableACME = true;
           forceSSL = true;
 
