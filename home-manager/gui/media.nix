@@ -13,4 +13,8 @@ in
     v4l-utils
     vlc
   ];
+
+  # Enable the rygel systemd user service
+  xdg.configFile."systemd/user/default.target.wants/rygel.service".source =
+    "${pkgs.rygel}/share/systemd/user/rygel.service";
 }
