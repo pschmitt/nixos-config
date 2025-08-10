@@ -51,6 +51,8 @@
     "${config.home.homeDirectory}/bin"
   ];
 
+  systemd.user.startServices = "sd-switch";
+
   home.packages = with pkgs; [
     home-manager
     # nwg-displays
