@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ./disk-config.nix
@@ -12,6 +12,7 @@
     ../../services/http.nix
     ../../services/monerod.nix
     ../../services/monero-wallet-rpc.nix
+    ../../services/p2pool.nix
     ../../services/xmrig-proxy.nix
   ];
 
@@ -29,5 +30,25 @@
       # allowedTCPPorts = [ ... ];
       # allowedUDPPorts = [ ... ];
     };
+  };
+
+  services.monero.extraConfig = ''
+    # add for p2pool's quick template updates
+    zmq-pub=tcp://127.0.0.1:18083
+  '';
+
+  services.p2pool = {
+    enable = true;
+    walletSecret = "p2pool/wallet";
+    sopsFile = config.custom.sopsFile;
+    mode = "mini"; # or "nano" for faster sync
+    stratum.port = 3333;
+    p2p.port = 37889; # will auto-use 37890 if mode="nano" and you keep default
+    openFirewall = true;
+    extraArgs = [
+      # examples:
+      # "--disable-upnp"
+      # "--loglevel" "2"
+    ];
   };
 }
