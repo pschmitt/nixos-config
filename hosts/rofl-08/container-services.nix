@@ -26,6 +26,7 @@ let
         "rdr.${config.networking.hostName}.${config.custom.mainDomain}"
         "radarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
+      compose_yaml = "piracy";
     };
     sonarr = {
       port = 8989;
@@ -35,6 +36,7 @@ let
         "snr.${config.networking.hostName}.${config.custom.mainDomain}"
         "sonarr.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
+      compose_yaml = "piracy";
     };
     tdarr = {
       port = 8265;
