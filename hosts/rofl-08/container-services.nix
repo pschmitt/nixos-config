@@ -10,12 +10,12 @@ let
     jellyfin = {
       port = 8096;
       hosts = [
+        "tv.${config.custom.mainDomain}"
         "jelly.${config.networking.hostName}.${config.custom.mainDomain}"
         "jelly.${config.custom.mainDomain}"
         "jellyfin.${config.networking.hostName}.${config.custom.mainDomain}"
         "jellyfin.${config.custom.mainDomain}"
         "media.${config.custom.mainDomain}"
-        "tv.${config.custom.mainDomain}"
       ];
     };
     radarr = {
