@@ -121,6 +121,7 @@
         "file:///mnt/hass 🖧 hass"
         "file://${config.home.homeDirectory}/devel/private 💻 dev-p"
         "file://${config.home.homeDirectory}/devel/work 💻 dev-w"
+        "file://${config.home.homeDirectory}/Backups 💾 backups"
         "file://${config.home.homeDirectory}/Documents 📄 documents"
         "file://${config.home.homeDirectory}/Downloads 📥 downloads"
         "file://${config.home.homeDirectory}/Music 🎵 music"
