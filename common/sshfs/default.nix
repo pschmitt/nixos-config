@@ -18,7 +18,7 @@ let
   ];
 
   # tsDomain = "snake-eagle.ts.net";
-  netbirdDomain = "netbird.cloud";
+  netbirdDomain = "nb.brkn.lol";
   vpnDomain = netbirdDomain;
 in
 {
