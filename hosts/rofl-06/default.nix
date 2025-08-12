@@ -13,6 +13,7 @@
     ../../services/monerod.nix
     ../../services/monero-wallet-rpc.nix
     ../../services/p2pool.nix
+    ../../services/xmrig-p2pool.nix
     ../../services/xmrig-proxy.nix
   ];
 
