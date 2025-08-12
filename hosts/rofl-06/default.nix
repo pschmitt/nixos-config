@@ -42,7 +42,7 @@
     walletSecret = "p2pool/wallet";
     sopsFile = config.custom.sopsFile;
     mode = "mini"; # or "nano" for faster sync
-    stratum.port = 3333;
+    stratum.port = 13333; # 3333 is used by xmrig-proxy!
     p2p.port = 37889; # will auto-use 37890 if mode="nano" and you keep default
     openFirewall = true;
     extraArgs = [
