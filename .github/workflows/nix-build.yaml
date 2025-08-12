@@ -24,7 +24,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -49,7 +49,7 @@ jobs:
         pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.free }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -104,7 +104,7 @@ jobs:
         pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -184,7 +184,7 @@ jobs:
         pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -270,7 +270,7 @@ jobs:
           tool-cache: true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -336,7 +336,7 @@ jobs:
           tool-cache: true
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
