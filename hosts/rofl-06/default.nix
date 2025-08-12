@@ -8,13 +8,14 @@
 
     (import ../../services/nfs/nfs-client.nix { })
 
-    ../../services/miner.nix
     ../../services/http.nix
-    ../../services/monerod.nix
-    ../../services/monero-wallet-rpc.nix
-    ../../services/p2pool.nix
-    ../../services/xmrig-p2pool.nix
-    ../../services/xmrig-proxy.nix
+
+    ../../services/xmr/xmrig.nix
+    ../../services/xmr/monerod.nix
+    ../../services/xmr/monero-wallet-rpc.nix
+    ../../services/xmr/p2pool.nix
+    ../../services/xmr/xmrig-p2pool.nix
+    ../../services/xmr/xmrig-proxy.nix
   ];
 
   custom.cattle = true;

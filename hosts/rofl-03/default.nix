@@ -8,9 +8,9 @@
 
     ../../services/harmonia.nix
     ../../services/http.nix
-    ../../services/miner.nix
     ../../services/nfs/nfs-client-rofl-08.nix
     ../../services/tdarr-node.nix
+    ../../services/xmr/xmrig.nix
   ];
 
   custom.cattle = false;
