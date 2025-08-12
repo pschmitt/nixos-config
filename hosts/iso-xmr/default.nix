@@ -2,7 +2,7 @@
 {
 
   imports = [
-    ../../services/xmrig-iso.nix
+    ../../services/xmr/xmrig-iso.nix
   ];
 
   isoImage.squashfsCompression = "gzip -Xcompression-level 1";
