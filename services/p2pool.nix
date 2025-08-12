@@ -10,7 +10,6 @@ let
     mkEnableOption
     types
     mkIf
-    optionalString
     escapeShellArgs
     ;
 in
@@ -213,7 +212,6 @@ in
 
       sops.templates = lib.mkIf walletFromSops {
         p2poolEnv = {
-          # systemd EnvironmentFile needs KEY=VALUE syntax
           content = ''
             WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
           '';
