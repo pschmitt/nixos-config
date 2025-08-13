@@ -7,8 +7,10 @@
 let
   netbirdStatus = pkgs.writeShellScript "netbird-status" ''
     export PATH="/run/current-system/sw/bin:${pkgs.gnugrep}:$PATH"
+    NB_BIN="netbird-netbird-io"
+    export HOME="/var/lib/$NB_BIN" # prevent warning about HOME not being set
 
-    if netbird-netbird-io status | \
+    if "$NB_BIN" status | \
       grep -q "NeedsLogin"
     then
       echo "Netbird login required" >&2
@@ -22,8 +24,10 @@ let
 
   netbirdHostname = pkgs.writeShellScript "netbird-hostname" ''
     export PATH="/run/current-system/sw/bin:${pkgs.jq}:$PATH"
+    NB_BIN="netbird-netbird-io"
+    export HOME="/var/lib/$NB_BIN" # prevent warning about HOME not being set
 
-    NB_HOSTNAME=$(netbird-netbird-io status --json 2>/dev/null | \
+    NB_HOSTNAME=$("$NB_BIN" status --json | \
       jq -er '.fqdn | split(".")[0]')
     NB_HOSTNAME_EXPECTED="${config.networking.hostName}"
 
