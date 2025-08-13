@@ -165,6 +165,7 @@ in
       KbdInteractiveAuthentication = true;
       PermitRootLogin = "prohibit-password";
     };
+    sftpServerExecutable = "internal-sftp";
     extraConfig = ''
       AcceptEnv TERM_SSH_CLIENT
     '';
