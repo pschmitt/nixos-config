@@ -828,16 +828,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1754040665,
-        "narHash": "sha256-saATNi6dmtv1c4dX0jw+mCG1/qWeRD+EkypUt3rlDUE=",
-        "owner": "pschmitt",
+        "lastModified": 1754983325,
+        "narHash": "sha256-mdJYB42ho6aYQsPCeG9RvRHTS1qFoqOVuS+6z5ke6AU=",
+        "owner": "tobias-kuendig",
         "repo": "hacompanion",
-        "rev": "cd8de540a85072b3c8767bd8268c140164c23818",
+        "rev": "3d61654874ad5bb888e0d410f59dda08e05f1c6e",
         "type": "github"
       },
       "original": {
-        "owner": "pschmitt",
-        "ref": "flake-fixes",
+        "owner": "tobias-kuendig",
         "repo": "hacompanion",
         "type": "github"
       }
