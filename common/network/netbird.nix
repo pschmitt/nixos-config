@@ -25,6 +25,12 @@ in
   services.netbird = {
     enable = true;
     package = netbirdPkg;
+
+    ui = {
+      enable = true;
+      package = netbirdPkg;
+    };
+
     clients = {
       netbird-io = {
         port = 51820;
