@@ -45,7 +45,7 @@
     sopsFile = config.custom.sopsFile;
     mode = "mini"; # or "nano" for faster sync
     stratum.port = 13333; # 3333 is used by xmrig-proxy!
-    openFirewall = false;
+    openFirewall = true;
     extraArgs = [
       # examples:
       # "--disable-upnp"
