@@ -8,6 +8,8 @@ let
   netbirdPkg = pkgs.master.netbird;
 in
 {
+  imports = [ ../monit/netbird.nix ];
+
   sops = {
     secrets.netbird-setup-key = {
       key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";

@@ -100,92 +100,6 @@ let
       if status > 0 then alert
   '';
 
-  monitTailscale = ''
-    check network tailscale with interface tailscale0
-      group "network"
-      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
-      if link down for 2 cycles then restart
-      if 5 restarts within 10 cycles then alert
-
-    check host "tailscale magicdns" with address 100.100.100.100
-      group "network"
-      depends on "tailscale"
-      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
-      if failed ping for 2 cycles then restart
-      if 3 restarts within 10 cycles then alert
-  '';
-
-  interfaceIsUp = pkgs.writeShellScript "interface-is-up" ''
-    INTERFACE="$1"
-
-    # Display interface information
-    ${pkgs.iproute2}/bin/ip -brief addr show "$INTERFACE"
-
-    ${pkgs.iproute2}/bin/ip --json link show "$INTERFACE" | \
-      ${pkgs.jq}/bin/jq -er '.[0].flags | index("UP")' >/dev/null
-  '';
-
-  netbirdStatus = pkgs.writeShellScript "netbird-status" ''
-    export PATH="/run/current-system/sw/bin:${pkgs.gnugrep}:$PATH"
-
-    if netbird-netbird-io status | \
-      grep -q "NeedsLogin"
-    then
-      echo "Netbird login required" >&2
-      exit 1
-    fi
-
-    # Display status info
-    netbird-netbird-io status
-    exit 0
-  '';
-
-  monitNetbird = ''
-    check program "netbird login" with path "${netbirdStatus}"
-      group "network"
-      restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
-      if status != 0 then restart
-      # recovery
-      else if succeeded then exec "${pkgs.coreutils}/bin/true"
-
-      if 5 restarts within 10 cycles then alert
-
-    check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
-      group "network"
-      depends on "netbird login"
-      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io-autoconnect"
-      if status != 0 then restart
-      # recovery
-      else if succeeded then exec "${pkgs.coreutils}/bin/true"
-      if 5 restarts within 10 cycles then alert
-
-    # FIXME Below check seems to be able to tell reliably when the interface is
-    # up. It's probably due to the fact that the operstate of the netbird
-    # interface is UNKNOWN.
-    # But then: why does this not impact the tailscale interface?!
-    # See: ip -j link  | jq '.[] | select(.ifname | test("netbird|tailsc"))'
-    # check network netbird with interface nb-netbird-io
-    #   group "network"
-    #   depends on "netbird login"
-    #   restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
-    #   if link down for 2 cycles then restart
-    #   if 5 restarts within 10 cycles then alert
-  '';
-
-  monitZeroTier = ''
-    check network zerotier with interface ztbtosdaym
-      group "network"
-      restart program = "${pkgs.systemd}/bin/systemctl restart zerotier-one"
-      if link down for 2 cycles then restart
-      if 5 restarts within 10 cycles then alert
-  '';
-
-  monitNetwork = lib.strings.concatStringsSep "\n" [
-    monitNetbird
-    monitTailscale
-    monitZeroTier
-  ];
-
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
     MONIT_CONF_DIR=/etc/monit/conf.d
     mkdir -p "$MONIT_CONF_DIR"
@@ -230,15 +144,10 @@ in
         monitSystem
         monitRebootRequired
         monitFilesystems
-        monitNetwork
         monitRestic
       ];
     };
 
-    systemd.services.monit.after = [
-      "tailscaled.service"
-      "netbird-netbird-io.service"
-    ];
     systemd.services.monit.preStart = "${renderMonitConfig}";
   };
 }

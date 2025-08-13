@@ -3,6 +3,8 @@ let
   tailscalePkg = pkgs.master.tailscale;
 in
 {
+  imports = [ ../monit/tailscale.nix ];
+
   sops.secrets."tailscale/auth-key" = { };
 
   services.tailscale = {
