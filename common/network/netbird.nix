@@ -27,7 +27,7 @@ in
     package = netbirdPkg;
 
     ui = {
-      enable = true;
+      enable = false;
       package = netbirdPkg;
     };
 
