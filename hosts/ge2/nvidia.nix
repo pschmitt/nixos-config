@@ -69,7 +69,9 @@
     };
   };
 
-  # virtualisation.docker.enableNvidia = true;
-  # virtualisation.containers.cdi.dynamic.nvidia.enable = true;
+  # XXX Both opts below have been deprecated in favor of
+  # hardware.nvidia-container-toolkit.enable:
+  # - virtualisation.docker.enableNvidia = true;
+  # - virtualisation.containers.cdi.dynamic.nvidia.enable = true;
   hardware.nvidia-container-toolkit.enable = true;
 }
