@@ -1,8 +1,8 @@
-{ ... }:
+{ config, ... }:
 {
   imports = [
     (import ./nfs-client.nix {
-      server = "rofl-08.netbird.cloud";
+      server = "rofl-08.nb.${config.custom.mainDomain}";
       exports = [ "videos" ];
       mountPoint = "/mnt/data";
     })
