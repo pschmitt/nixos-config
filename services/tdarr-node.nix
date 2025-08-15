@@ -17,7 +17,7 @@
   # Reference: https://docs.tdarr.io/docs/installation/docker/run-compose
   virtualisation.oci-containers.containers = {
     tdarr = {
-      image = "ghcr.io/haveagitgat/tdarr_node:2.37.01";
+      image = "ghcr.io/haveagitgat/tdarr_node:2.45.01";
       volumes = [
         # NOTE podman will *not* create these directories on the host
         # "/srv/tdarr/config/tdarr:/app/configs"
@@ -37,7 +37,7 @@
           PGID = "1000";
           UMASK_SET = "002";
           nodeName = "${config.networking.hostName}";
-          serverIP = "rofl-07.ts.${config.custom.mainDomain}";
+          serverIP = "rofl-08.ts.${config.custom.mainDomain}";
           serverPort = "8266";
           inContainer = "true";
           ffmpegVersion = "7";
