@@ -111,6 +111,14 @@ resource "cloudflare_record" "jellyfin-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl_08_fip.address
 }
 
+resource "cloudflare_record" "pp-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "pp"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+}
+
 resource "cloudflare_record" "tv-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "tv"
