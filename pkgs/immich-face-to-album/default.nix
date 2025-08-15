@@ -12,7 +12,7 @@ python3.pkgs.buildPythonApplication rec {
   src = fetchPypi {
     pname = "immich_face_to_album";
     inherit version;
-    hash = "";
+    hash = "sha256-aq5hGT+ppBHjDp7qUoV71i0jltBsz7gicYpdo/siaDI=";
   };
 
   build-system = [
