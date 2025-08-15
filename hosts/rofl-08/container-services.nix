@@ -18,6 +18,12 @@ let
         "media.${config.custom.mainDomain}"
       ];
     };
+    pp = {
+      port = 7827;
+      hosts = [
+        "pp.${config.custom.mainDomain}"
+      ];
+    };
     radarr = {
       port = 7878;
       hosts = [
