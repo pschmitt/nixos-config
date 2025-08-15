@@ -99,6 +99,13 @@ let
         "podsync.${config.networking.hostName}.${config.custom.mainDomain}"
       ];
     };
+    readeck = {
+      port = 7323;
+      hosts = [
+        "readeck.${config.custom.mainDomain}"
+        "read.${config.custom.mainDomain}"
+      ];
+    };
     stirling-pdf = {
       port = 18733;
       hosts = [ "pdf.${config.custom.mainDomain}" ];
