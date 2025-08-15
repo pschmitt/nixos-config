@@ -44,6 +44,13 @@ let
     #     "hoarder.${config.custom.mainDomain}"
     #   ];
     # };
+    linkding = {
+      port = 54653;
+      hosts = [
+        "ld.${config.custom.mainDomain}"
+        "linkding.${config.custom.mainDomain}"
+      ];
+    };
     linkwarden = {
       port = 54659;
       hosts = [
