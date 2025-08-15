@@ -92,12 +92,6 @@ let
         "ai.${config.custom.mainDomain}"
       ];
     };
-    pp = {
-      port = 9999;
-      hosts = [
-        "pp.${config.custom.mainDomain}"
-      ];
-    };
     podsync = {
       port = 7637;
       hosts = [
