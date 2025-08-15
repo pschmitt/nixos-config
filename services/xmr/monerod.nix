@@ -20,6 +20,7 @@
     rpc = {
       address = "127.0.0.1";
       port = 18081;
+      restricted = false;
       # user = "fart";
       # password = "fart";
     };
