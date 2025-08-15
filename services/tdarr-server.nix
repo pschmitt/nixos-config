@@ -18,7 +18,7 @@ in
   virtualisation.oci-containers.containers = {
     tdarr = {
       # NOTE the server image is different from the node image!
-      image = lib.mkForce "ghcr.io/haveagitgat/tdarr:2.37.01";
+      image = lib.mkForce "ghcr.io/haveagitgat/tdarr:2.45.01";
       volumes = [ "/srv/tdarr/data/server:/app/server" ];
       environment = {
         internalNode = "true"; # server + node (aio)
