@@ -107,7 +107,7 @@ in
 
     timerConfig = {
       OnCalendar = "daily";
-      RandomizedDelaySec = "10m";
+      RandomizedDelaySec = "6h";
       Persistent = true;
     };
   };
