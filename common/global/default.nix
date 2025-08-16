@@ -189,5 +189,8 @@ in
   };
 
   # create a wireshark wrapper
-  programs.wireshark.enable = true;
+  programs.wireshark = {
+    enable = true;
+    usbmon.enable = true;
+  };
 }

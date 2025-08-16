@@ -8,6 +8,5 @@
     traceroute
     inputs.vodafone-station-cli.packages.${pkgs.system}.vodafone-station-cli
     whois
-    wireshark
   ];
 }
