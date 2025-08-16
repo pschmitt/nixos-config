@@ -5,19 +5,53 @@ let
     ps.psutil
   ]);
 
-  wiresharkWithPy = pkgs.symlinkJoin {
-    name = "wireshark-with-python-deps";
-    paths = [ pkgs.wireshark ];
+  nordicExtcap = pkgs.stdenv.mkDerivation {
+    name = "nordic-ble-sniffer-extcap";
+    src = pkgs.fetchzip {
+      url = "https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-sniffer/sw/nrf_sniffer_for_bluetooth_le_4.1.1.zip";
+      hash = "sha256-lmpTeGFCs/luNo9ygAt/uCfuoqoPBCPgsu44x4uL/zs=";
+      stripRoot = false;
+    };
+    dontBuild = true;
+    installPhase = ''
+      set -e
+      mkdir -p $out/lib/wireshark/extcap
+      if [ -d extcap ]
+      then
+        cp -r extcap/* $out/lib/wireshark/extcap/
+      elif [ -d nrf_sniffer_ble/extcap ]
+      then
+        cp -r nrf_sniffer_ble/extcap/* $out/lib/wireshark/extcap/
+      else
+        echo "Could not find extcap/ in Nordic ZIP layout" >&2
+        exit 1
+      fi
+      chmod +x $out/lib/wireshark/extcap/*.py || true
+
+      if [ -d profiles ]
+      then
+        mkdir -p $out/share/wireshark/profiles
+        cp -r profiles/* $out/share/wireshark/profiles/
+      fi
+    '';
+  };
+
+  wiresharkWithSniffer = pkgs.symlinkJoin {
+    name = "wireshark-with-nordic-sniffer";
+    paths = [
+      pkgs.wireshark
+      nordicExtcap
+    ];
     nativeBuildInputs = [ pkgs.makeWrapper ];
     postBuild = ''
       wrapProgram $out/bin/wireshark \
         --prefix PATH : ${py}/bin \
-        --set PYTHONNOUSERSITE 1
+        --prefix PYTHONPATH : ${nordicExtcap}/lib/wireshark/extcap/SnifferAPI
       if [ -x $out/bin/tshark ]
       then
         wrapProgram $out/bin/tshark \
           --prefix PATH : ${py}/bin \
-          --set PYTHONNOUSERSITE 1
+        --prefix PYTHONPATH : ${nordicExtcap}/lib/wireshark/extcap/SnifferAPI
       fi
     '';
   };
@@ -31,7 +65,6 @@ in
   ];
 
   environment.systemPackages = with pkgs; [
-    # nrf-command-line-tools
     nrfutil
     nrf-udev
     nrfconnect
@@ -40,6 +73,7 @@ in
 
   programs.wireshark = {
     enable = true;
-    package = lib.mkForce wiresharkWithPy;
+    usbmon.enable = true;
+    package = lib.mkForce wiresharkWithSniffer;
   };
 }
