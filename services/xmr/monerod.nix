@@ -48,7 +48,7 @@
             enableACME = true;
             # FIXME https://github.com/NixOS/nixpkgs/issues/210807
             acmeRoot = null;
-            forceSSL = true;
+            forceSSL = false;
             locations."/" = {
               proxyPass = "http://${config.services.monero.rpc.address}:${toString config.services.monero.rpc.port}";
               recommendedProxySettings = true;
