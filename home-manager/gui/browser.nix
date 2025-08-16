@@ -28,10 +28,12 @@
         # istilldontcareaboutcookies
         languagetool
         # link-cleaner # leads to issues on github
+        linkding-extension
+        linkding-injector
         multi-account-containers
         refined-github
         re-enable-right-click
-        sidebery
+        single-file
         sponsorblock
         # tridactyl
         ublock-origin
