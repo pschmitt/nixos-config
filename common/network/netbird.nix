@@ -83,4 +83,8 @@ in
     source /etc/containers/env/netbird.env 2>/dev/null
     [[ -n $NETBIRD_IP ]] && export NETBIRD_IP
   '';
+
+  environment.interactiveShellInit = ''
+    alias netbird=netbird-netbird-io
+  '';
 }
