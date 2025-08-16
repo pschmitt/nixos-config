@@ -12,6 +12,7 @@
     extraGroups = [
       "cdrom"
       "docker"
+      "dialout" # for /dev/tty{ACM,USB}*
       "libvirtd"
       "mlocate"
       "users"
