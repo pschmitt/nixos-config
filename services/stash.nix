@@ -73,11 +73,11 @@ let
       # backupDatabase
     )
 
-    set -x
-    for item in "''${MUTATIONS[@]}"
+    # set -x
+    for ITEM in "''${MUTATIONS[@]}"
     do
-      IFS=":" read -r name flag <<<"$item"
-      stash_mutation "$name" "$flag"
+      IFS=":" read -r NAME FLAG <<<"$ITEM"
+      stash_mutation "$NAME" "$FLAG"
     done
   '';
 in
