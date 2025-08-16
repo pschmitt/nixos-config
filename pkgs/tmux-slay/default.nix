@@ -11,13 +11,13 @@
 
 stdenv.mkDerivation rec {
   pname = "tmux-slay";
-  version = "621012f56711ba20ad4327b2f6c868c1edb7c6b1";
+  version = "484510bb034876dcc066d00d65aab9a53da8451e";
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "${pname}";
     rev = "${version}";
-    hash = "sha256-Fq4G1W17dvbihvZ7X4j50Uz0H2aJ0Mpe8N7YfhlN5ow=";
+    hash = "sha256-ONVhx9KvnexxUnAFTtfZQuJEjQUHoFyWk6EgbxnZ8ng=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
