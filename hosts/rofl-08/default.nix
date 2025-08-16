@@ -17,7 +17,9 @@
       ];
     })
     ../../services/http.nix
+    ../../services/stash.nix
     ../../services/tdarr-server.nix
+
     ./container-services.nix
     ./monit.nix
     ./restic.nix
