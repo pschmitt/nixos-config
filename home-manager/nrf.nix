@@ -1,7 +1,4 @@
-{
-  pkgs,
-  ...
-}:
+{ pkgs, lib, ... }:
 
 let
   python311Env = pkgs.python311.withPackages (ps: [
@@ -20,32 +17,39 @@ let
     version = "4.1.1";
     src = snifferZip;
 
-    # python311Env here so patchShebangs can resolve it
     nativeBuildInputs = [
       pkgs.makeWrapper
       python311Env
-      pkgs.bash
     ];
 
     installPhase = ''
       runHook preInstall
-      mkdir -p $out
 
-      cp -r "extcap/SnifferAPI" "$out/"
-      install -m755 "extcap/nrf_sniffer_ble.py" "$out/nrf_sniffer_ble.py"
+      libdir=$out/lib/nrf-sniffer
+      bindir=$out/bin
+      mkdir -p "$libdir" "$bindir"
 
-      patchShebangs "$out"
+      # Keep Python sources private
+      cp -r extcap/SnifferAPI "$libdir/"
+      install -m755 extcap/nrf_sniffer_ble.py "$libdir/nrf_sniffer_ble.py"
+
+      # Pin the .py shebang to py311 inside libdir
+      PATH=${lib.makeBinPath [ python311Env ]} patchShebangs "$libdir/nrf_sniffer_ble.py"
+
+      # Single extcap launcher (no .py/.sh in extcap dir)
+      makeWrapper "${python311Env}/bin/python3" "$bindir/nrf_sniffer_ble" \
+        --set PYTHONPATH "$libdir" \
+        --add-flags "$libdir/nrf_sniffer_ble.py" \
+        --set PYTHONUNBUFFERED "1"
 
       runHook postInstall
     '';
   };
-
 in
 {
-  # Install into Wireshark's user extcap path
-  home.file.".local/lib/wireshark/extcap".source = nrfSnifferExtcap;
+  # Install exactly one executable into Wireshark's extcap dir
+  home.file.".local/lib/wireshark/extcap/nrf_sniffer_ble".source =
+    "${nrfSnifferExtcap}/bin/nrf_sniffer_ble";
 
-  # home.packages = with pkgs; [
-  #   wireshark
-  # ];
+  home.packages = with pkgs; [ wireshark ];
 }
