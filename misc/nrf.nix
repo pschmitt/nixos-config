@@ -9,8 +9,9 @@
 
   environment.systemPackages = with pkgs; [
     nrfutil
-    nrf-udev
     nrfconnect
     nrfconnect-bluetooth-low-energy
   ];
+
+  services.udev.packages = [ pkgs.nrf-udev ];
 }
