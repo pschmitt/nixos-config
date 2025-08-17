@@ -22,6 +22,7 @@
       ./mani.nix
       ./misc.nix
       ./networking.nix
+      ./nrf.nix
       ./nvim.nix
       ./work.nix
       ./yadm.nix
