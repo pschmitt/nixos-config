@@ -1,0 +1,30 @@
+--- a/extcap/SnifferAPI/Filelock.py
++++ b/extcap/SnifferAPI/Filelock.py
+@@ -6,6 +6,9 @@
+     import psutil
+ 
+ from . import Exceptions
++
++# Prefer user-writable lock dir over /var/lock
++LOCK_DIR = (os.environ.get('NRF_SNIFFER_LOCK_DIR') or os.environ.get('XDG_RUNTIME_DIR') or '/tmp')
+ 
+ # Lock file management.
+ # ref: https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s09.html
+@@ -33,7 +36,7 @@
+         return
+ 
+     tty = os.path.basename(port)
+-    lockfile = f'/var/lock/LCK..{tty}'
++    lockfile = os.path.join(LOCK_DIR, f'LCK..{tty}')
+ 
+     lockedpid = lockpid(lockfile)
+     if lockedpid:
+@@ -55,7 +58,7 @@
+         return
+ 
+     tty = os.path.basename(port)
+-    lockfile = f'/var/lock/LCK..{tty}'
++    lockfile = os.path.join(LOCK_DIR, f'LCK..{tty}')
+ 
+     lockedpid = lockpid(lockfile)
+     if lockedpid == os.getpid():

@@ -17,6 +17,8 @@ let
     version = "4.1.1";
     src = snifferZip;
 
+    patches = [ ./nrf-sniffer-filelock.patch ];
+
     nativeBuildInputs = [
       pkgs.makeWrapper
       python311Env
