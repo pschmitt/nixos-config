@@ -1,0 +1,42 @@
+{ pkgs, config, ... }:
+{
+  environment.systemPackages = with pkgs; [
+    deckmaster
+    streamcontroller
+  ];
+
+  systemd.user.services.deckmaster = {
+    enable = false;
+    description = "An application to control your Elgato Stream Deck on Linux";
+    documentation = [ "https://github.com/muesli/deckmaster" ];
+    path = [
+      "${config.custom.homeDirectory}"
+      "/run/current-system/sw"
+      "/etc/profiles/per-user/${config.custom.username}"
+    ];
+    serviceConfig = {
+      ExecStart = "${pkgs.deckmaster}/bin/deckmaster --verbose --deck %E/deckmaster/main.deck --brightness 33";
+      Restart = "on-failure";
+      RestartSec = "3";
+    };
+    wantedBy = [ "default.target" ];
+  };
+
+  systemd.user.services.streamcontroller = {
+    enable = true;
+    description = "An elegant Linux app for the Elgato Stream Deck with support for plugins";
+    documentation = [ "https://github.com/StreamController/StreamController" ];
+    path = [
+      "${config.custom.homeDirectory}"
+      "/run/current-system/sw"
+      "/etc/profiles/per-user/${config.custom.username}"
+    ];
+    serviceConfig = {
+      ExecStart = "${pkgs.streamcontroller}/bin/streamcontroller -b --data %E/streamcontroller";
+      Restart = "on-failure";
+      RestartSec = "3";
+    };
+    wantedBy = [ "default.target" ];
+  };
+
+}

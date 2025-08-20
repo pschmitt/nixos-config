@@ -26,7 +26,7 @@
     ../../common/snek
     ../../common/sshfs
     ../../common/work
-    ../../common/work/deckmaster.nix
+    ../../common/work/elgato-stream-deck.nix
 
     ../../misc/nrf.nix
 
