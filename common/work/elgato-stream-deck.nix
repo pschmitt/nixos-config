@@ -1,8 +1,11 @@
 { pkgs, config, ... }:
+let
+  streamcontrollerPkg = pkgs.streamcontroller.streamcontroller;
+in
 {
   environment.systemPackages = with pkgs; [
     deckmaster
-    streamcontroller
+    streamcontrollerPkg
   ];
 
   systemd.user.services.deckmaster = {
@@ -31,11 +34,17 @@
       "/run/current-system/sw"
       "/etc/profiles/per-user/${config.custom.username}"
     ];
-    serviceConfig = {
-      ExecStart = "${pkgs.streamcontroller}/bin/streamcontroller -b --data %E/streamcontroller";
-      Restart = "on-failure";
-      RestartSec = "3";
-    };
+    serviceConfig =
+      let
+        streamcontrollerBin = "${streamcontrollerPkg}/bin/streamcontroller --data %E/streamcontroller";
+      in
+      {
+        # ExecStartPre = "-${streamcontrollerBin} --close-running";
+        ExecStart = "${streamcontrollerBin} -b";
+        ExecStop = "${streamcontrollerBin} --close-running";
+        Restart = "on-failure";
+        RestartSec = "5";
+      };
     wantedBy = [ "default.target" ];
   };
 

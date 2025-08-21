@@ -30,6 +30,11 @@
       system = final.system;
       config.allowUnfree = true;
     };
+
+    streamcontroller = import inputs.nixpkgs-streamcontroller {
+      system = final.system;
+      config.allowUnfree = true;
+    };
   };
 
   flakes = final: prev: {

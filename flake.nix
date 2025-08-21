@@ -8,6 +8,9 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
+    # prs
+    nixpkgs-streamcontroller.url = "github:NixOS/nixpkgs/pull/416567/head";
+
     # attic = {
     #   url = "github:zhaofengli/attic";
     #   inputs.nixpkgs.follows = "nixpkgs";
