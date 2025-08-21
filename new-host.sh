@@ -28,6 +28,10 @@ main() {
         TEMPLATE_TYPE="optimist"
         shift
         ;;
+      --raw)
+        TEMPLATE_TYPE="raw"
+        shift
+        ;;
       *)
         break
         ;;
@@ -62,7 +66,13 @@ main() {
   ./secrets/sops-init.sh "$NEW_HOSTNAME"
 
   # tofu config
-  sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" ./templates/tofu/${TEMPLATE_TYPE}/host.tf \
+  if [[ "$TEMPLATE_TYPE" == "raw" ]]
+  then
+    echo "Raw template does not support tofu configuration."
+    return 0
+  fi
+
+  sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" "./templates/tofu/${TEMPLATE_TYPE}/host.tf" \
     > "./tofu/${NEW_HOSTNAME}.tf"
 
   echo "Config created for $NEW_HOSTNAME"

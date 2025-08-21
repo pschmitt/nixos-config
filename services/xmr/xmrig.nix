@@ -1,5 +1,7 @@
 { config, lib, ... }:
 {
+  sops.secrets."xmrig/env" = { };
+
   services.xmrig = {
     enable = true;
     settings = {
