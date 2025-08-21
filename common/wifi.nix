@@ -12,6 +12,9 @@ let
     };
     home-wwan = {
       # autoconnect = false; # never auto-connect
+      priority = -10;
+    };
+    g4p = {
       priority = -100;
     };
   };
