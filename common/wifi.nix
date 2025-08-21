@@ -11,7 +11,7 @@ let
       # routeMetric6 = 500;           # optional
     };
     home-wwan = {
-      autoconnect = false; # never auto-connect this one
+      # autoconnect = false; # never auto-connect
       priority = -100;
     };
   };
