@@ -28,8 +28,6 @@
     ../../common/work
     ../../common/work/elgato-stream-deck.nix
 
-    ../../misc/nrf.nix
-
     ../../services/nfs/nfs-client-all.nix
     # ../../services/bitfocus-companion.nix
     # ../../services/netdata.nix
