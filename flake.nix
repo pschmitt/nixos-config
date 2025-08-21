@@ -322,6 +322,19 @@
           server = true;
           snapd = true;
         };
+        # pica4 = nixosSystemFor "aarch64-linux" "pica4" { server = true; };
+        pica4 = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+          specialArgs = {
+            inherit inputs outputs;
+          };
+          modules = [
+            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+            ./hosts/pica4
+            ./modules/custom.nix
+          ];
+        };
+
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
