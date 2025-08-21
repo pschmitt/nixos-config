@@ -1,15 +1,15 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 {
   imports = [
     ./hardware-configuration.nix
-
 
     ../../common/global
 
     ../../common/mail
 
-    # Below imports initrd-luks-ssh-unlock etc
+    # XXX Below imports initrd-luks-ssh-unlock etc
     # ../../server
+    # So we only import what we really need here:
     ../../server/dotfiles.nix
     # ../../monit.nix
     # ../../netbird.nix
@@ -17,16 +17,6 @@
   ];
 
   custom.cattle = true;
-
-  # Here for force-set a few settings that are set by bootloader.nix, which
-  # overrides the nixos-hardware settings.
-  boot = {
-    kernelPackages = lib.mkForce pkgs.linuxKernel.packages.linux_rpi4;
-    loader = {
-      grub.enable = lib.mkForce false;
-      systemd-boot.enable = lib.mkForce false;
-    };
-  };
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
