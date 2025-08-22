@@ -16,7 +16,9 @@
     # ../../restic.nix
   ];
 
+  custom.raspberryPi = true;
   custom.cattle = true;
+  custom.kvmGuest = false;
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);

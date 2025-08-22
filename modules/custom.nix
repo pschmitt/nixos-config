@@ -71,6 +71,12 @@
       description = "Use BIOS instead of UEFI";
     };
 
+    custom.raspberryPi = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether this is a Raspberry Pi";
+    };
+
     custom.kvmGuest = lib.mkOption {
       type = lib.types.bool;
       default = true;

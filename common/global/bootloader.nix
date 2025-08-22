@@ -2,7 +2,9 @@
 {
   boot = {
     loader =
-      if config.custom.useBIOS then
+      if config.custom.raspberryPi then
+        { }
+      else if config.custom.useBIOS then
         {
           grub = {
             enable = true;
