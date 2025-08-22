@@ -77,36 +77,35 @@
         "@wheel"
       ];
 
-      substituters =
-        [
-          # NOTE cache.nixos.org is enabled by default, adding it here only
-          # duplicates it
-          # "https://cache.nixos.org"
-          "https://hyprland.cachix.org"
-          "https://nix-community.cachix.org"
-          "https://pschmitt-nixos-config.cachix.org"
+      substituters = [
+        # NOTE cache.nixos.org is enabled by default, adding it here only
+        # duplicates it
+        # "https://cache.nixos.org"
+        "https://hyprland.cachix.org"
+        "https://nix-community.cachix.org"
+        "https://pschmitt-nixos-config.cachix.org"
 
-          # FIXME cache.garnix.io uses a wrong cert as of 2025-01-12
-          #
-          # » openssl::cat --pretty cache.garnix.io
-          # CN         SAN  ISSUER         STATUS  EXPIRES
-          # garnix.io  N/A  Let's Encrypt  valid   2025-02-13T17:45:36Z
-          #
-          # Might be due to a maintenance window:
-          # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
-          # "https://cache.garnix.io"
+        # FIXME cache.garnix.io uses a wrong cert as of 2025-01-12
+        #
+        # » openssl::cat --pretty cache.garnix.io
+        # CN         SAN  ISSUER         STATUS  EXPIRES
+        # garnix.io  N/A  Let's Encrypt  valid   2025-02-13T17:45:36Z
+        #
+        # Might be due to a maintenance window:
+        # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
+        # "https://cache.garnix.io"
 
-          # "ssh://nix-remote-builder@rofl-03.brkn.lol?ssh-key=${
-          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-          # }"
-          # "ssh://nix-remote-builder@rofl-09.brkn.lol?ssh-key=${
-          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-          # }"
-          # "https://nix-cache.brkn.lol"
-        ]
-        # don't use local http cache on the same host
-        ++ lib.optionals (config.networking.hostName != "rofl-09") [ "https://cache.rofl-09.brkn.lol" ]
-        ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ];
+        # "ssh://nix-remote-builder@rofl-03.brkn.lol?ssh-key=${
+        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        # }"
+        # "ssh://nix-remote-builder@rofl-09.brkn.lol?ssh-key=${
+        #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
+        # }"
+        # "https://nix-cache.brkn.lol"
+      ]
+      # don't use local http cache on the same host
+      ++ lib.optionals (config.networking.hostName != "rofl-09") [ "https://cache.rofl-09.brkn.lol" ]
+      ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ];
 
       # private caches
       netrc-file = config.sops.templates.nix-cache-netrc.path;
@@ -196,7 +195,7 @@
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
     # };
-    activationScripts = {
+    activationScripts = lib.mkIf (!config.custom.raspberryPi) {
       nixos-needsreboot = {
         supportsDryActivation = true;
         text = "${
