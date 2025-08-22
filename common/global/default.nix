@@ -44,7 +44,12 @@ in
       # Enable all MagicSysRq keys
       "kernel.sysrq" = 1;
     };
-    kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
+    kernelPackages = lib.mkDefault (
+      if config.custom.raspberryPi then
+        pkgs.linuxKernel.packages.linux_rpi4
+      else
+        pkgs.linuxPackages_latest
+    );
     tmp = {
       useTmpfs = true;
     };
