@@ -1,0 +1,83 @@
+name: Nix RPi Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-rpi-img-artifacts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ["pica4"] # add more hosts if needed
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Enable fast caches
+        uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Build SD image for ${{ matrix.target }}
+        run: |
+          nix build --print-build-logs '.#nixosConfigurations.${{ matrix.target }}.config.system.build.sdImage'
+
+      - name: Prepare asset upload
+        id: prepare_asset_upload
+        run: |
+          IMG_ZST=$(find "$PWD" result/sd-image -maxdepth 1 -type f -name "*.img.zst" | head -n 1)
+          if [[ -z "$IMG_ZST" ]]
+          then
+            echo "No .img.zst file found in result/sd-image" >&2
+            tree result >&2
+            exit 1
+          fi
+
+          echo "📦 Found image: $IMG_ZST"
+
+          ASSET_DIR=asset-dir
+          mkdir -p "$ASSET_DIR"
+
+          BASE="$(basename "$IMG_ZST")"
+          SUFFIX=""
+          if [[ "${{ matrix.target }}" != "pica4" ]]
+          then
+            SUFFIX="-${{ matrix.target }}"
+          fi
+
+          OUT="${BASE%.img.zst}${SUFFIX}.img.zst"
+          cp -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
+
+          pushd "$ASSET_DIR"
+          LATEST="nixos-rpi${SUFFIX}-latest.img.zst"
+          ln -svf "$OUT" "$LATEST"
+          sha256sum "$OUT" > "${OUT}.sha256sum"
+          sha256sum "$LATEST" > "${LATEST}.sha256sum"
+          popd
+
+          tree -h "$ASSET_DIR"
+
+          echo "ASSET_DIR=${ASSET_DIR}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${OUT}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_PATH=${ASSET_DIR}/${OUT}" >> "$GITHUB_ENV"
+
+      - name: Upload SD image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
+
+      - name: rsync transfer
+        uses: burnett01/rsync-deployments@7.0.2
+        with:
+          switches: -avzr --delete --delete-after --safe-links --mkpath
+          path: ${{ env.ASSET_DIR }}/
+          remote_path: /mnt/data/blobs/img/${{ matrix.target }}/
+          remote_host: ${{ secrets.SSH_BLOBS_HOST }}
+          remote_user: ${{ secrets.SSH_USERNAME }}
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
