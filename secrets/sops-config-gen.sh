@@ -34,6 +34,14 @@ host_pubkey() {
     "./hosts/${host}/secrets.sops.yaml"
 }
 
+host_privkey() {
+  local host="$1"
+
+  # sops
+  sops --decrypt --extract '["ssh"]["host_keys"]["ed25519"]["privkey"]' \
+    "./hosts/${host}/secrets.sops.yaml"
+}
+
 host_age_key() {
   host_pubkey "$1" | ssh-to-age
 }
