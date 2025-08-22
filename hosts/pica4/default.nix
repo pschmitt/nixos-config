@@ -1,11 +1,16 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
 
     ../../common/global
-
     ../../common/mail
+    ../../common/wifi.nix
 
     # XXX Below imports initrd-luks-ssh-unlock etc
     # ../../server
@@ -14,11 +19,17 @@
     # ../../monit.nix
     # ../../netbird.nix
     # ../../restic.nix
+
+    # Set hostkeys
+    # XXX This is circular dependency!
+    # ./ssh.nix
+
+    ./picamera.nix
   ];
 
-  custom.raspberryPi = true;
   custom.cattle = true;
   custom.kvmGuest = false;
+  custom.raspberryPi = true;
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
@@ -30,17 +41,28 @@
       # allowedUDPPorts = [ ... ];
     };
 
+    networkmanager = {
+      enable = true;
+      dns = "systemd-resolved";
+    };
+
     wireless = {
       enable = true;
       userControlled.enable = true;
-      # iwd.enable = true;
-      networks = {
-        "brkn-lan" = {
-          psk = "changeme";
-        };
-      };
     };
   };
 
-  # environment.systemPackages = with pkgs; [ ];
+  programs.nix-index-database.comma.enable = true;
+
+  environment.systemPackages = with pkgs; [
+    curl
+    dnsutils
+    gitMinimal
+    htop
+    jq
+    tmux
+    tmux-slay
+  ];
+
+  users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
 }
