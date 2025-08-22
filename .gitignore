@@ -1,4 +1,5 @@
 result
+result*
 pkgs/fonts/src/*.zip
 *.tfstate
 *.tfstate.backup
