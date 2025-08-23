@@ -116,12 +116,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-raspberrypi = {
-      url = "github:nvmd/nixos-raspberrypi/main";
-      # Don't!
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nixpkgs-wayland = {
       url = "github:nix-community/nixpkgs-wayland";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -217,7 +211,6 @@
       flatpaks,
       home-manager,
       nix-index-database,
-      nixos-raspberrypi,
       nixpkgs,
       simple-nixos-mailserver,
       snapd,
@@ -329,33 +322,12 @@
           server = true;
           snapd = true;
         };
-        # pica4 = nixpkgs.lib.nixosSystem {
-        #   system = "aarch64-linux";
-        #   specialArgs = {
-        #     inherit inputs outputs;
-        #   };
-        #   modules = [
-        #     nix-index-database.nixosModules.nix-index
-        #     sops-nix.nixosModules.sops
-        #     "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-        #     ./hosts/pica4
-        #     ./modules/custom.nix
-        #   ];
-        # };
-        pica4 = nixos-raspberrypi.lib.nixosSystemFull {
-          # specialArgs = inputs;
+        pica4 = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = {
             inherit inputs outputs;
-            "nixos-raspberrypi" = nixos-raspberrypi;
           };
           modules = [
-            { disabledModules = [ "rename.nix" ]; }
-            {
-              imports = with nixos-raspberrypi.nixosModules; [
-                raspberry-pi-4.base
-              ];
-            }
             nix-index-database.nixosModules.nix-index
             sops-nix.nixosModules.sops
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
@@ -363,7 +335,6 @@
             ./modules/custom.nix
           ];
         };
-
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
