@@ -118,7 +118,8 @@
 
     nixos-raspberrypi = {
       url = "github:nvmd/nixos-raspberrypi/main";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # NOTE Caching is nice, maybe don't override nixpkgs here
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixpkgs-wayland = {
@@ -215,6 +216,7 @@
       disko,
       flatpaks,
       home-manager,
+      nixos-raspberrypi,
       nix-index-database,
       nixpkgs,
       simple-nixos-mailserver,
@@ -333,9 +335,12 @@
             inherit inputs outputs;
           };
           modules = [
-            nix-index-database.nixosModules.nix-index
-            sops-nix.nixosModules.sops
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+            nix-index-database.nixosModules.nix-index
+            # overlay all them rpi packages!
+            # nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
+            sops-nix.nixosModules.sops
+
             ./hosts/pica4
             ./modules/custom.nix
           ];
