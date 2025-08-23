@@ -40,7 +40,13 @@ pubkey() {
 
 _ssh() {
   # shellcheck disable=SC2086,SC2029
-  ssh ${SSH_OPTS:-} "${SSH_USER}@${TARGET_HOST}" "$@"
+  ssh \
+    -o ControlMaster=no \
+    -o UserKnownHostsFile=/dev/null \
+    -o StrictHostKeyChecking=no \
+    ${SSH_OPTS:-} \
+    "${SSH_USER}@${TARGET_HOST}" \
+    "$@"
 }
 
 backup_existing_host_keys() {
