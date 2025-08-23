@@ -1,17 +1,12 @@
-{ config, inputs, pkgs, ... }:
+{ config, pkgs, ... }:
 {
-  boot.kernelModules = [
-    "bcm2835-unicam"
-    "imx219"
-  ];
-
   environment.systemPackages = with pkgs; [
     ffmpeg
-    # libcamera
+    libcamera
     v4l-utils
 
     # do we need this? Does that even make sense?
-    raspberrypifw
+    # raspberrypifw
   ];
 
   users.users."${config.custom.username}".extraGroups = [
@@ -30,6 +25,9 @@
       # or: { name = "ov5647"; dtbo = "${pkgs.raspberrypi-firmware}/share/raspberrypi/boot/overlays/ov5647.dtbo"; }
     ];
   };
+
+  # XXX Do we need to add this?
+  hardware.raspberry-pi."4".apply-overlays-dtmerge.enable = true;
 
   # XXX The mediamtx pkg does NOT include raspberry pi camera support!
   # services.mediamtx = {
