@@ -7,16 +7,6 @@
 {
   imports = [ inputs.hardware.nixosModules.raspberry-pi-4 ];
 
-  hardware = {
-    i2c.enable = true;
-
-    raspberry-pi."4" = {
-      bluetooth.enable = true;
-    #   i2c0.enable = false;
-    #   i2c1.enable = true;
-    };
-  };
-
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
 
   boot.kernelPackages = lib.mkForce pkgs.linuxKernel.packages.linux_rpi4;

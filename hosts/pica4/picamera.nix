@@ -1,11 +1,15 @@
-{ config, pkgs, ... }:
+{ config, inputs, pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
     ffmpeg
-    libcamera
+    # libcamera
+    # libcamera-tools
+    inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera
+    inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
+    inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils
     v4l-utils
 
-    # do we need this? Does that even make sense?
+    # XXX do we need this? Does that even make sense?
     # raspberrypifw
   ];
 
@@ -14,20 +18,39 @@
     "video"
   ];
 
+  hardware = {
+    i2c.enable = true;
+
+    raspberry-pi."4" = {
+      bluetooth.enable = true;
+      i2c0.enable = false;
+      i2c1.enable = true;
+    };
+  };
+
   # XXX ???????
   hardware.deviceTree = {
     enable = true;
+    # name = "bcm2711-rpi-4-b.dtb";
     overlays = [
       {
         name = "imx219";
         dtboFile = "${pkgs.raspberrypifw}/share/raspberrypi/boot/overlays/imx219.dtbo";
       }
-      # or: { name = "ov5647"; dtbo = "${pkgs.raspberrypi-firmware}/share/raspberrypi/boot/overlays/ov5647.dtbo"; }
     ];
   };
 
-  # XXX Do we need to add this?
-  hardware.raspberry-pi."4".apply-overlays-dtmerge.enable = true;
+  hardware.raspberry-pi."4" = {
+    # XXX Do we need to add this?
+    apply-overlays-dtmerge.enable = true;
+  };
+
+  boot.kernelModules = [
+    "i2c-dev"
+    "i2c-bcm2835"
+    "bcm2835-unicam"
+    "imx219"
+  ];
 
   # XXX The mediamtx pkg does NOT include raspberry pi camera support!
   # services.mediamtx = {
