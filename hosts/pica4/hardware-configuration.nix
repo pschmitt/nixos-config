@@ -5,29 +5,9 @@
   ...
 }:
 {
-  # imports = [ inputs.hardware.nixosModules.raspberry-pi-4 ];
-  # imports = [
-  #   inputs.nixos-raspberrypi.nixosModules.raspberry-pi-4.base
-  # ];
+  imports = [ inputs.hardware.nixosModules.raspberry-pi-4 ];
 
-  hardware = {
-    i2c.enable = true;
-
-    # raspberry-pi."4" = {
-    #   bluetooth.enable = true;
-    #   i2c0.enable = false;
-    #   i2c1.enable = true;
-    # };
-
-    raspberry-pi.config.all = {
-      dt-overlays = {
-        imx219 = {
-          enable = true;
-          params = { };
-        };
-      };
-    };
-  };
+  hardware.raspberry-pi."4".bluetooth.enable = true;
 
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
 
