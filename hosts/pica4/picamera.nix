@@ -8,51 +8,20 @@ let
   ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
   libcameraPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera;
   raspberrypiUtilsPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils;
+  # XXX The rpicam-apps build is broken as of 2025-08-24
+  # rpicamPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
 in
 {
+  # TODO Add start_x=1 and gpu_mem=128 to /boot/firmware/config.txt
+
   environment.systemPackages = with pkgs; [
-    libcameraPkg
     ffmpegPkg
+    libcameraPkg
     raspberrypiUtilsPkg
-    # XXX The rpicam-apps build is broken as of 2025-08-24
-    # inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
     v4l-utils
   ];
 
-  users.users."${config.custom.username}".extraGroups = [
-    "i2c"
-    "video"
-  ];
-
-  hardware = {
-    i2c.enable = true;
-
-    raspberry-pi."4" = {
-      # XXX Do we need to add this?
-      apply-overlays-dtmerge.enable = true;
-
-      i2c0.enable = true;
-      i2c1.enable = true;
-    };
-
-    deviceTree = {
-      enable = true;
-      # XXX This BORKS the pi! It won't boot!
-      # name = "bcm2711-rpi-4-b.dtb";
-      overlays = [
-        # Raspberry Pi Camera Module v1
-        {
-          name = "ov5647";
-          dtboFile = "${pkgs.raspberrypifw}/share/raspberrypi/boot/overlays/ov5647.dtbo";
-        }
-        # Raspberry Pi Camera Module v2.1
-        {
-          name = "imx219";
-          dtboFile = "${pkgs.raspberrypifw}/share/raspberrypi/boot/overlays/imx219.dtbo";
-        }
-      ];
-    };
-  };
+  users.users."${config.custom.username}".extraGroups = [ "video" ];
 
   services.mediamtx = {
     enable = true;
