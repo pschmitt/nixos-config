@@ -4,20 +4,22 @@
   pkgs,
   ...
 }:
+let
+  ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
+  libcameraPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera;
+  raspberrypiUtilsPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils;
+in
 {
   environment.systemPackages = with pkgs; [
     # ffmpeg
     # libcamera
     # raspberrypi-utils
-    inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless
-    inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera
-    inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils
+    libcameraPkg
+    ffmpegPkg
+    raspberrypiUtilsPkg
+    # XXX The rpicam-apps build is broken as of 2025-08-24
     # inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
     v4l-utils
-
-    # XXX do we need this? Does that even make sense?
-    # Should be put that in hardware.firmware?
-    # raspberrypifw
   ];
 
   users.users."${config.custom.username}".extraGroups = [
@@ -64,34 +66,28 @@
     "ov5647"
   ];
 
-  # XXX The mediamtx pkg does NOT include raspberry pi camera support!
-  # services.mediamtx = {
-  #   enable = true;
-  #
-  #   # Give the service access to /dev/video* etc.
-  #   allowVideoAccess = true;
-  #
-  #   # MediaMTX settings map 1:1 to mediamtx.yml
-  #   settings = {
-  #     # Optional: enable WebRTC (nice for browsers)
-  #     webrtc = true;
-  #
-  #     # Define one camera path called "cam"
-  #     paths = {
-  #       cam = {
-  #         # Built-in Raspberry Pi camera source
-  #         source = "rpiCamera";
-  #
-  #         # Useful tunables (adjust to taste/hardware)
-  #         rpiCameraWidth = 1280;
-  #         rpiCameraHeight = 720;
-  #         rpiCameraFPS = 30;
-  #         rpiCameraBitrate = 2000000; # ~2 Mbps
-  #
-  #         # Only power/encode when a client connects
-  #         sourceOnDemand = true;
-  #       };
-  #     };
-  #   };
-  # };
+  services.mediamtx = {
+    enable = true;
+
+    # Give the service access to /dev/video* etc.
+    allowVideoAccess = true;
+
+    # MediaMTX settings map 1:1 to mediamtx.yml
+    settings = {
+      # Optional: enable WebRTC (nice for browsers)
+      webrtc = true;
+
+      # Define one camera path called "cam"
+      paths = {
+        cam = {
+          # XXX The mediamtx pkg does NOT include raspberry pi camera support!
+          # Built-in Raspberry Pi camera source
+          # source = "rpiCamera";
+          runOnDemand = "${ffmpegPkg}/bin/ffmpeg -hide_banner -loglevel warning -f v4l2 -input_format h264 -framerate 15 -video_size 1280x720 -i /dev/video0 -c:v copy -an -f rtsp rtsp://127.0.0.1:8554/cam";
+          runOnDemandRestart = true;
+          runOnDemandCloseAfter = "10s";
+        };
+      };
+    };
+  };
 }
