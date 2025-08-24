@@ -74,24 +74,26 @@ in
         # See:
         # https://github.com/bluenviron/mediamtx/discussions/3378
         content = ''
-          FFPMEG_USER=${config.sops.placeholder."mediamtx/ffmpeg/username"}
-          FFPMEG_PASS=${config.sops.placeholder."mediamtx/ffmpeg/password"}
+          FFMPEG_USER=${config.sops.placeholder."mediamtx/ffmpeg/username"}
+          FFMPEG_PASS=${config.sops.placeholder."mediamtx/ffmpeg/password"}
+
+          # MTX_AUTHMETHOD=internal
 
           MTX_AUTHINTERNALUSERS_0_USER=${config.sops.placeholder."mediamtx/ffmpeg/username"}
           MTX_AUTHINTERNALUSERS_0_PASS=${config.sops.placeholder."mediamtx/ffmpeg/password"}
-          MTX_AUTHINTERNALUSERS_0_IPS_0=127.0.0.1
-          MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_ACTION=publish
-          MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_PATH=${camPath}
+          # MTX_AUTHINTERNALUSERS_0_IPS_0=127.0.0.1
+          # MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_ACTION=publish
+          # MTX_AUTHINTERNALUSERS_0_PERMISSIONS_0_PATH=${camPath}
 
           MTX_AUTHINTERNALUSERS_1_USER=${config.sops.placeholder."mediamtx/frigate/username"}
           MTX_AUTHINTERNALUSERS_1_PASS=${config.sops.placeholder."mediamtx/frigate/password"}
-          MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_ACTION=read
-          MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_PATH=${camPath}
+          # MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_ACTION=read
+          # MTX_AUTHINTERNALUSERS_1_PERMISSIONS_0_PATH=${camPath}
 
           MTX_AUTHINTERNALUSERS_2_USER=${config.sops.placeholder."mediamtx/admin/username"}
           MTX_AUTHINTERNALUSERS_2_PASS=${config.sops.placeholder."mediamtx/admin/password"}
-          MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_ACTION=read
-          MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_PATH=${camPath}
+          # MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_ACTION=read
+          # MTX_AUTHINTERNALUSERS_2_PERMISSIONS_0_PATH=${camPath}
         '';
         owner = "root";
         group = "video";
@@ -120,43 +122,42 @@ in
       # hls = false
       # srt = false;
 
+      # NOTE auth is configured via env vars above
       authMethod = "internal";
-      # authInternalUsers = [
-      #   {
-      #     user = "ffmpeg_placeholder";
-      #     # user = "$FFMPEG_USER";
-      #     # pass = "$FFMPEG_PASS";
-      #     ips = [ "127.0.0.1" ];
-      #     permissions = [
-      #       {
-      #         action = "publish";
-      #         path = camPath;
-      #       }
-      #     ];
-      #   }
-      #   {
-      #     user = "frigate_placeholder";
-      #     # user = "$FRIGATE_USER";
-      #     # pass = "$FRIGATE_PASS";
-      #     permissions = [
-      #       {
-      #         action = "read";
-      #         path = camPath;
-      #       }
-      #     ];
-      #   }
-      #   {
-      #     user = "admin_placeholder";
-      #     # user = "$ADMIN_USER";
-      #     # pass = "$ADMIN_PASS";
-      #     permissions = [
-      #       {
-      #         action = "read";
-      #         path = camPath;
-      #       }
-      #     ];
-      #   }
-      # ];
+
+      authInternalUsers = [
+        {
+          user = "ffmpeg_placeholder";
+          pass = "changeme";
+          ips = [ "127.0.0.1" ];
+          permissions = [
+            {
+              action = "publish";
+              path = camPath;
+            }
+          ];
+        }
+        {
+          user = "frigate_placeholder";
+          pass = "changeme";
+          permissions = [
+            {
+              action = "read";
+              path = camPath;
+            }
+          ];
+        }
+        {
+          user = "admin_placeholder";
+          pass = "changeme";
+          permissions = [
+            {
+              action = "read";
+              path = camPath;
+            }
+          ];
+        }
+      ];
 
       paths."${camPath}" = {
         runOnDemand = ffmpegCmd;
