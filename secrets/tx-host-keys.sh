@@ -40,9 +40,6 @@ pubkey() {
 
 _ssh() {
   # shellcheck disable=SC2086,SC2029
-<<<<<<< HEAD
-  ssh ${SSH_OPTS:-} "${SSH_USER}@${TARGET_HOST}" "$@"
-=======
   ssh \
     -o ControlMaster=no \
     -o UserKnownHostsFile=/dev/null \
@@ -50,7 +47,6 @@ _ssh() {
     ${SSH_OPTS:-} \
     "${SSH_USER}@${TARGET_HOST}" \
     "$@"
->>>>>>> rpi-wip
 }
 
 backup_existing_host_keys() {
