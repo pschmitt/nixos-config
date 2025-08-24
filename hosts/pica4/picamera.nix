@@ -3,11 +3,10 @@
   environment.systemPackages = with pkgs; [
     # ffmpeg
     # libcamera
-    # libcamera-tools
     inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless
     inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera
     inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils
-    inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
+    # inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
     v4l-utils
 
     # XXX do we need this? Does that even make sense?
