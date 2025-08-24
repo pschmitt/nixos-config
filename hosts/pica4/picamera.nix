@@ -1,7 +1,6 @@
 {
   config,
   inputs,
-  lib,
   pkgs,
   ...
 }:
@@ -9,10 +8,6 @@ let
   ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
   libcameraPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera;
   raspberrypiUtilsPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils;
-
-  camPath = "cam";
-  ffmpegBin = "${ffmpegPkg}/bin/ffmpeg";
-  v4l2Dev = "/dev/video0";
 in
 {
   # minimal firmware reminder:
