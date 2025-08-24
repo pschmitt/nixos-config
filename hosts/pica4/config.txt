@@ -19,14 +19,6 @@ disable_overscan=1
 # Supported in newer board revisions
 arm_boost=1
 
-# Disable LEDs
-dtparam=act_led_trigger=none
-dtparam=pwr_led_trigger=none
-
-# Disable ethernet port LEDs
-dtparam=eth0_led=4
-dtparam=eth1_led=4
-
 [cm4]
 # Enable host mode on the 2711 built-in XHCI USB controller.
 # This line should be removed if the legacy DWC2 controller is required
@@ -46,6 +38,20 @@ enable_uart=1
 # when attempting to show low-voltage or overtemperature warnings.
 avoid_warnings=1
 
+# https://raw.githubusercontent.com/raspberrypi/firmware/master/boot/overlays/README
 # Below is required to enable the camera module!
 start_x=1
 gpu_mem=128
+
+# Disable LEDs
+dtparam=act_led_trigger=none
+dtparam=act_led_activelow=off
+dtparam=pwr_led_trigger=none
+dtparam=pwr_led_activelow=off
+
+# Disable ethernet port LEDs
+dtparam=eth_led0=4
+dtparam=eth_led1=4
+
+# Debug
+dtdebug=on
