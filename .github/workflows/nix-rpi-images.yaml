@@ -28,6 +28,9 @@ jobs:
         uses: actions/checkout@v5
 
       - uses: wimpysworld/nothing-but-nix@main
+        with:
+          hatchet-protocol: 'rampage'
+          witness-carnage: true
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
