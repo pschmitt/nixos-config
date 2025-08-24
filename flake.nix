@@ -118,8 +118,8 @@
 
     nixos-raspberrypi = {
       url = "github:nvmd/nixos-raspberrypi/main";
-      # Don't!
-      inputs.nixpkgs.follows = "nixpkgs";
+      # NOTE Caching is nice, maybe don't override nixpkgs here
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nixpkgs-wayland = {
@@ -329,41 +329,22 @@
           server = true;
           snapd = true;
         };
-        # pica4 = nixpkgs.lib.nixosSystem {
-        #   system = "aarch64-linux";
-        #   specialArgs = {
-        #     inherit inputs outputs;
-        #   };
-        #   modules = [
-        #     nix-index-database.nixosModules.nix-index
-        #     sops-nix.nixosModules.sops
-        #     "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-        #     ./hosts/pica4
-        #     ./modules/custom.nix
-        #   ];
-        # };
-        pica4 = nixos-raspberrypi.lib.nixosSystemFull {
-          # specialArgs = inputs;
+        pica4 = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           specialArgs = {
             inherit inputs outputs;
-            "nixos-raspberrypi" = nixos-raspberrypi;
           };
           modules = [
-            { disabledModules = [ "rename.nix" ]; }
-            {
-              imports = with nixos-raspberrypi.nixosModules; [
-                raspberry-pi-4.base
-              ];
-            }
-            nix-index-database.nixosModules.nix-index
-            sops-nix.nixosModules.sops
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+            nix-index-database.nixosModules.nix-index
+            # overlay all them rpi packages!
+            # nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
+            sops-nix.nixosModules.sops
+
             ./hosts/pica4
             ./modules/custom.nix
           ];
         };
-
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [

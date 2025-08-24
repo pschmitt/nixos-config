@@ -11,6 +11,7 @@
     ../../common/global
     ../../common/mail
     ../../common/wifi.nix
+    ../../common/network
 
     # XXX Below imports initrd-luks-ssh-unlock etc
     # ../../server
