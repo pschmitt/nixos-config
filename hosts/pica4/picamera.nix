@@ -8,6 +8,7 @@
   environment.systemPackages = with pkgs; [
     # ffmpeg
     # libcamera
+    # raspberrypi-utils
     inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless
     inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera
     inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils
@@ -40,6 +41,12 @@
       # XXX This BORKS the pi! It won't boot!
       # name = "bcm2711-rpi-4-b.dtb";
       overlays = [
+        # Raspberry Pi Camera Module v1
+        {
+          name = "ov5647";
+          dtboFile = "${pkgs.raspberrypifw}/share/raspberrypi/boot/overlays/ov5647.dtbo";
+        }
+        # Raspberry Pi Camera Module v2.1
         {
           name = "imx219";
           dtboFile = "${pkgs.raspberrypifw}/share/raspberrypi/boot/overlays/imx219.dtbo";
@@ -49,10 +56,12 @@
   };
 
   boot.kernelModules = [
-    "i2c-dev"
-    "i2c-bcm2835"
     "bcm2835-unicam"
+    "bcm2835-v4l2"
+    "i2c-bcm2835"
+    "i2c-dev"
     "imx219"
+    "ov5647"
   ];
 
   # XXX The mediamtx pkg does NOT include raspberry pi camera support!
