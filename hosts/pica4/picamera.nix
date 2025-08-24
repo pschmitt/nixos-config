@@ -13,20 +13,12 @@ let
 
   camPath = "cam";
 
-  # credentials
-  pubUser = "pub";
-  pubPass = "pubpass";
-
-  # TODO these are placeholders! -> sops!
-  readUser = "cam";
-  readPass = "readpass";
-
   # binaries & device
   ffmpegBin = "${ffmpegPkg}/bin/ffmpeg";
   v4l2Device = "/dev/video0";
 
   # local publish target for ffmpeg (auth only here)
-  rtspLocal = "rtsp://${pubUser}:${pubPass}@127.0.0.1:8554/${camPath}";
+  rtspLocal = "rtsp://$FFMPEG_USER:$FFMPEG_PASS@127.0.0.1:8554/${camPath}";
 
   # single source of truth for the ffmpeg command (video-only, zero-copy H.264, low-latency)
   ffmpegCmd = ''
@@ -51,6 +43,51 @@ in
 
   users.users."${config.custom.username}".extraGroups = [ "video" ];
 
+  sops = {
+    secrets = {
+      "mediamtx/admin/username" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "mediamtx/admin/password" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "mediamtx/ffmpeg/username" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "mediamtx/ffmpeg/password" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "mediamtx/frigate/username" = {
+        sopsFile = config.custom.sopsFile;
+      };
+      "mediamtx/frigate/password" = {
+        sopsFile = config.custom.sopsFile;
+      };
+    };
+
+    templates = {
+      mediamtxCredentials = {
+        content = ''
+          ADMIN_USER=${config.sops.placeholder."mediamtx/admin/username"}
+          ADMIN_PASS=${config.sops.placeholder."mediamtx/admin/password"}
+          FFMPEG_USER=${config.sops.placeholder."mediamtx/ffmpeg/username"}
+          FFMPEG_PASS=${config.sops.placeholder."mediamtx/ffmpeg/password"}
+          FRIGATE_USER=${config.sops.placeholder."mediamtx/frigate/username"}
+          FRIGATE_PASS=${config.sops.placeholder."mediamtx/frigate/password"}
+        '';
+        owner = "mediamtx";
+        group = "video";
+      };
+    };
+  };
+
+  # inject secrets
+  systemd.services.mediamtx = {
+    serviceConfig = {
+      EnvironmentFile = config.sops.templates.mediamtxCredentials.path;
+    };
+  };
+
   services.mediamtx = {
     enable = true;
 
@@ -64,8 +101,8 @@ in
       authMethod = "internal";
       authInternalUsers = [
         {
-          user = pubUser;
-          pass = pubPass;
+          user = "$FFMPEG_USER";
+          pass = "$FFMPEG_PASS";
           ips = [ "127.0.0.1" ];
           permissions = [
             {
@@ -75,8 +112,18 @@ in
           ];
         }
         {
-          user = readUser;
-          pass = readPass;
+          user = "$FRIGATE_USER";
+          pass = "$FRIGATE_PASS";
+          permissions = [
+            {
+              action = "read";
+              path = camPath;
+            }
+          ];
+        }
+        {
+          user = "$ADMIN_USER";
+          pass = "$ADMIN_PASS";
           permissions = [
             {
               action = "read";
