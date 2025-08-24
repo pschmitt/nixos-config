@@ -38,10 +38,6 @@ enable_uart=1
 # when attempting to show low-voltage or overtemperature warnings.
 avoid_warnings=1
 
+# Below is required to enable the camera module!
 start_x=1
 gpu_mem=128
-dtparam=i2c_arm=on
-dtparam=i2c_vc=on
-camera_auto_detect=1
-dtoverlay=imx319,cam1
-# dtoverlay=ov5647,cam0
