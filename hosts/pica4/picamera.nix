@@ -11,9 +11,6 @@ let
 in
 {
   environment.systemPackages = with pkgs; [
-    # ffmpeg
-    # libcamera
-    # raspberrypi-utils
     libcameraPkg
     ffmpegPkg
     raspberrypiUtilsPkg
@@ -57,24 +54,13 @@ in
     };
   };
 
-  boot.kernelModules = [
-    "bcm2835-unicam"
-    "bcm2835-v4l2"
-    "i2c-bcm2835"
-    "i2c-dev"
-    "imx219"
-    "ov5647"
-  ];
-
   services.mediamtx = {
     enable = true;
 
     # Give the service access to /dev/video* etc.
     allowVideoAccess = true;
 
-    # MediaMTX settings map 1:1 to mediamtx.yml
     settings = {
-      # Optional: enable WebRTC (nice for browsers)
       webrtc = true;
 
       # Define one camera path called "cam"
@@ -83,6 +69,8 @@ in
           # XXX The mediamtx pkg does NOT include raspberry pi camera support!
           # Built-in Raspberry Pi camera source
           # source = "rpiCamera";
+
+          # NOTE We could use runOnInit/runOnInitRestart etc here
           runOnDemand = "${ffmpegPkg}/bin/ffmpeg -hide_banner -loglevel warning -f v4l2 -input_format h264 -framerate 15 -video_size 1280x720 -i /dev/video0 -c:v copy -an -f rtsp rtsp://127.0.0.1:8554/cam";
           runOnDemandRestart = true;
           runOnDemandCloseAfter = "10s";
