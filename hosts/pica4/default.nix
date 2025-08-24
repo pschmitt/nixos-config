@@ -26,6 +26,7 @@
     # ./ssh.nix
 
     ./picamera.nix
+    ../../services/mediamtx.nix
   ];
 
   custom.cattle = true;
