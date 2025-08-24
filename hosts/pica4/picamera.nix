@@ -34,8 +34,10 @@
       i2c0.enable = true;
       i2c1.enable = true;
     };
+
     deviceTree = {
       enable = true;
+      # XXX This BORKS the pi! It won't boot!
       # name = "bcm2711-rpi-4-b.dtb";
       overlays = [
         {
