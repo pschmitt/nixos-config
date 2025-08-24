@@ -8,11 +8,39 @@ let
   ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
   libcameraPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera;
   raspberrypiUtilsPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils;
-  # XXX The rpicam-apps build is broken as of 2025-08-24
+  # XXX rpicam-apps build currently broken (sdl3 fails to build)
   # rpicamPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.rpicam-apps
+
+  camPath = "cam";
+
+  # credentials
+  pubUser = "pub";
+  pubPass = "pubpass";
+
+  # TODO these are placeholders! -> sops!
+  readUser = "cam";
+  readPass = "readpass";
+
+  # binaries & device
+  ffmpegBin = "${ffmpegPkg}/bin/ffmpeg";
+  v4l2Device = "/dev/video0";
+
+  # local publish target for ffmpeg (auth only here)
+  rtspLocal = "rtsp://${pubUser}:${pubPass}@127.0.0.1:8554/${camPath}";
+
+  # single source of truth for the ffmpeg command (video-only, zero-copy H.264, low-latency)
+  ffmpegCmd = ''
+    ${ffmpegBin} -hide_banner -loglevel warning \
+      -fflags nobuffer -flags low_delay -use_wallclock_as_timestamps 1 -avioflags direct \
+      -f v4l2 -input_format h264 -framerate 15 -video_size 1280x720 -i ${v4l2Device} \
+      -c:v copy -an \
+      -f rtsp ${rtspLocal}
+  '';
 in
 {
-  # TODO Add start_x=1 and gpu_mem=128 to /boot/firmware/config.txt
+  # TODO: ensure /boot/firmware/config.txt has:
+  # start_x=1
+  # gpu_mem=128
 
   environment.systemPackages = with pkgs; [
     ffmpegPkg
@@ -26,25 +54,47 @@ in
   services.mediamtx = {
     enable = true;
 
-    # Give the service access to /dev/video* etc.
+    # give the service access to /dev/video*
     allowVideoAccess = true;
 
     settings = {
       webrtc = true;
+      # rtmp = false; hls = false; srt = false;
 
-      # Define one camera path called "cam"
-      paths = {
-        cam = {
-          # XXX The mediamtx pkg does NOT include raspberry pi camera support!
-          # Built-in Raspberry Pi camera source
-          # source = "rpiCamera";
+      authMethod = "internal";
+      authInternalUsers = [
+        {
+          user = pubUser;
+          pass = pubPass;
+          ips = [ "127.0.0.1" ];
+          permissions = [
+            {
+              action = "publish";
+              path = camPath;
+            }
+          ];
+        }
+        {
+          user = readUser;
+          pass = readPass;
+          permissions = [
+            {
+              action = "read";
+              path = camPath;
+            }
+          ];
+        }
+      ];
 
-          # NOTE We could use runOnInit/runOnInitRestart etc here
-          runOnDemand = "${ffmpegPkg}/bin/ffmpeg -hide_banner -loglevel warning -f v4l2 -input_format h264 -framerate 15 -video_size 1280x720 -i /dev/video0 -c:v copy -an -f rtsp rtsp://127.0.0.1:8554/cam";
-          runOnDemandRestart = true;
-          runOnDemandCloseAfter = "10s";
-        };
+      paths."${camPath}" = {
+        runOnDemand = ffmpegCmd;
+        runOnDemandRestart = true;
+        runOnDemandCloseAfter = "10s";
       };
     };
   };
+
+  # Optional: open only what you need (RTSP/TCP 8554; add 8889 for WebRTC page)
+  # networking.firewall.allowedTCPPorts = [ 8554 8889 ];
+  # networking.firewall.allowedUDPPorts = [ 8189 ]; # WebRTC ICE/UDP
 }
