@@ -24,7 +24,7 @@
 
     raspberry-pi."4" = {
       bluetooth.enable = true;
-      i2c0.enable = false;
+      i2c0.enable = true;
       i2c1.enable = true;
     };
   };
