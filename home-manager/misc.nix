@@ -1,6 +1,8 @@
 { inputs, pkgs, ... }:
 {
   home.packages = with pkgs; [
+    caligula # disk imaging
+
     eget
     home-assistant-cli
 
