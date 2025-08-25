@@ -10,6 +10,7 @@
 
     # prs
     nixpkgs-streamcontroller.url = "github:NixOS/nixpkgs/pull/416567/head";
+    nixpkgs-rbw-114.url = "github:NixOS/nixpkgs/pull/436619/head";
 
     # attic = {
     #   url = "github:zhaofengli/attic";
