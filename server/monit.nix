@@ -30,7 +30,7 @@ let
   needsReboot = pkgs.writeShellScript "needs-reboot" ''
     OUTPUT=$(${inputs.nixos-needsreboot.packages.${pkgs.system}.default}/bin/nixos-needsreboot 2>&1 | ${pkgs.strip-ansi}/bin/strip-ansi)
     echo "$OUTPUT"
-    ${pkgs.gnugrep}/bin/grep -q 'No reboot required' <<< "$OUTPUT"
+    ${pkgs.gnugrep}/bin/grep -q 'Reboot not required' <<< "$OUTPUT"
   '';
 
   monitGeneral = ''
