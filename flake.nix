@@ -113,7 +113,9 @@
     nixos-needsreboot = {
       # url = "https://codeberg.org/Mynacol/nixos-needsreboot/archive/main.tar.gz";
       # same, but with a different output
-      url = "https://flakehub.com/f/wimpysworld/nixos-needsreboot/*.tar.gz";
+      # url = "https://flakehub.com/f/wimpysworld/nixos-needsreboot/*.tar.gz";
+      # The bash version that actually works
+      url = "https://codeberg.org/Mynacol/nixos-needsreboot/archive/main.tar.gz";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
