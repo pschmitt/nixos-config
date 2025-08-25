@@ -1840,6 +1840,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-rbw-114": {
+      "locked": {
+        "lastModified": 1756081959,
+        "narHash": "sha256-5+Ehg0gWr8lY9nUMLzpI/J6XZhYD74Bgyg4dKz69iJ4=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "9684c484070a8bc050244df21a988b82284c9d55",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "pull/436619/head",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1735563628,
@@ -2028,6 +2044,7 @@
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_3",
         "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-rbw-114": "nixpkgs-rbw-114",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",
         "nixpkgs-unstable": "nixpkgs-unstable",
