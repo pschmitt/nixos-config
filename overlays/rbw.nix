@@ -1,23 +1,21 @@
+{ final, prev }:
 {
-  inputs,
-  final,
-  prev,
-}:
-let
-  # TODO remove once https://github.com/NixOS/nixpkgs/pull/436619
-  # is merged!
-  pkgs114 = import inputs.nixpkgs-rbw-114 {
-    inherit (final) system;
-    overlays = [ ]; # keep it clean to avoid recursion
-  };
+  rbw = prev.rbw.overrideAttrs (old: rec {
+    pname = "rbw";
+    version = "1.14.1";
 
-  fullPatch = final.fetchpatch {
-    url = "https://github.com/doy/rbw/compare/1.14.0...pschmitt:json-1.14.patch";
-    hash = "sha256-yMyxGAsqUXt0ipXGSa+TYTMOXSRlNkrNg09cZRLYCv0=";
-  };
-in
-{
-  rbw = pkgs114.rbw.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ fullPatch ];
+    src = prev.fetchFromGitHub {
+      owner = "pschmitt";
+      repo = pname;
+      rev = "json-1.14";
+      hash = "sha256-d44LaEtZD68ucBlfp7Pwd3mvV09U5ITNJSi5LDVwq1Q=";
+    };
+
+    # cargoHash = null;
+
+    cargoDeps = final.rustPlatform.fetchCargoVendor {
+      inherit src;
+      hash = "sha256-H1DSP3Kyklv8ncn7zDP0njDlwB8Qh+h7mqWRAJcpWrE=";
+    };
   });
 }
