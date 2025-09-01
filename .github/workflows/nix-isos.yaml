@@ -98,7 +98,7 @@ jobs:
           path: ${{ env.ARTIFACT_PATH }}
 
       - name: rsync transfer
-        uses: burnett01/rsync-deployments@7.0.2
+        uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -avzr --delete --delete-after --safe-links --mkpath
           path: ${{ env.ASSET_DIR }}/
