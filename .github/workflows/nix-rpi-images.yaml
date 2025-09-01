@@ -31,9 +31,9 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - uses: wimpysworld/nothing-but-nix@main
-        with:
-          hatchet-protocol: 'rampage'
-          witness-carnage: true
+        # with:
+        #   hatchet-protocol: 'rampage'
+        #   witness-carnage: true
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
