@@ -18,8 +18,7 @@ env:
 
 jobs:
   build-rpi-img-artifacts:
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -28,13 +27,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      # - name: Set up QEMU
-      #   uses: docker/setup-qemu-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - uses: wimpysworld/nothing-but-nix@main
-        # with:
-        #   hatchet-protocol: 'rampage'
-        #   witness-carnage: true
+        with:
+          hatchet-protocol: 'rampage'
+          witness-carnage: true
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
