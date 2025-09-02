@@ -5,7 +5,10 @@
   ...
 }:
 {
-  imports = [ inputs.hardware.nixosModules.raspberry-pi-4 ];
+  imports = [
+    inputs.hardware.nixosModules.raspberry-pi-4
+    ./config-txt.nix
+  ];
 
   hardware.raspberry-pi."4".bluetooth.enable = true;
 
