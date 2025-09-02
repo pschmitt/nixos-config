@@ -1765,6 +1765,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-azure-cli-2770": {
+      "locked": {
+        "lastModified": 1756822725,
+        "narHash": "sha256-t2DV3cyVEIlAbAkD/45dlYc/cbPxumyleaUo2zaJOV0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6e8ded8238544180225a3b50bc96159811f977f4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "pull/439522/head",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1754788789,
@@ -2010,6 +2026,7 @@
         "nixos-needsreboot": "nixos-needsreboot",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_3",
+        "nixpkgs-azure-cli-2770": "nixpkgs-azure-cli-2770",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",
