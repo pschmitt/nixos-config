@@ -3,31 +3,44 @@ let
   configTxt = ./config.txt;
 in
 {
-  systemd.services.install-config-txt = {
-    description = "Install /boot/firmware/config.txt from nix-config repo";
+  systemd.services.config-txt = {
+    description = "Install config.txt from nix-config repo";
     documentation = [ "https://github.com/pschmitt/nixos-config/blob/HEAD/hosts/pica4/config.txt" ];
     wantedBy = [ "multi-user.target" ];
     restartTriggers = [ configTxt ];
+    restartIfChanged = true;
 
     requires = [ "boot-firmware.mount" ];
     after = [ "boot-firmware.mount" ];
-
-    unitConfig = {
-      RequiresMountsFor = "/boot/firmware";
-    };
+    unitConfig.RequiresMountsFor = "/boot/firmware";
 
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
     };
 
-    path = [ pkgs.coreutils ];
+    path = [
+      pkgs.coreutils
+      pkgs.diffutils
+    ];
+
     script = ''
+      DEST=/boot/firmware/config.txt
+
+      if diff --unified --new-file "${configTxt}" "$DEST"
+      then
+        echo "No changes in config.txt, nothing to do."
+        exit 0
+      fi
+
+      echo "Installing updated config.txt from '${configTxt}' to '$DEST'"
+
       install --debug --compare \
         --owner=root \
         --mode=0644 \
-        "${configTxt}" /boot/firmware/config.txt
-      sync
+        "${configTxt}" "$DEST"
+
+      sync --file-system "$DEST"
     '';
   };
 }

@@ -43,6 +43,7 @@ avoid_warnings=1
 start_x=1
 gpu_mem=128
 
+# FIXME Below settings have no effect on the actual LEDs!
 # Disable LEDs
 dtparam=act_led_trigger=none
 dtparam=act_led_activelow=off
