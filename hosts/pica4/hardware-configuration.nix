@@ -8,6 +8,7 @@
   imports = [
     inputs.hardware.nixosModules.raspberry-pi-4
     ./config-txt.nix
+    ./power-monitoring.nix
   ];
 
   hardware.raspberry-pi."4".bluetooth.enable = true;
