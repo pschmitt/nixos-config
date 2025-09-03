@@ -11,7 +11,14 @@
     ./power-monitoring.nix
   ];
 
-  hardware.raspberry-pi."4".bluetooth.enable = true;
+  hardware.raspberry-pi."4" = {
+    bluetooth.enable = false;
+    leds = {
+      act.disable = true;
+      eth.disable = true;
+      pwr.disable = true;
+    };
+  };
 
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
 
