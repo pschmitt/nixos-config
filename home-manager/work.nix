@@ -3,7 +3,6 @@
   lib,
   osConfig,
   pkgs,
-  inputs,
   ...
 }:
 let
@@ -46,9 +45,9 @@ in
       acme-sh
       argocd
       argocd-vault-plugin
-      azure-cli-2770.azure-cli
-      azure-cli-2770.azure-cli-extensions.ad
-      azure-cli-2770.azure-cli-extensions.fzf
+      master.azure-cli
+      master.azure-cli-extensions.ad
+      master.azure-cli-extensions.fzf
       cmctl
       glab
       kubectl
