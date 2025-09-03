@@ -66,6 +66,7 @@ in
     enable = true;
     # package = pkgs.master.paperless-ngx;
 
+    domain = builtins.elemAt hostnames 0;
     address = "127.0.0.1";
     port = 28981;
 
