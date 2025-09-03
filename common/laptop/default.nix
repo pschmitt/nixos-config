@@ -11,5 +11,5 @@
     ./wireshark.nix
   ];
 
-  services.logind.lidSwitchExternalPower = lib.mkDefault "suspend";
+  services.logind.settings.Login.HandleLidSwitchExternalPower = lib.mkDefault "suspend";
 }
