@@ -35,11 +35,6 @@
       system = final.system;
       config.allowUnfree = true;
     };
-
-    azure-cli-2770 = import inputs.nixpkgs-azure-cli-2770 {
-      system = final.system;
-      config.allowUnfree = true;
-    };
   };
 
   flakes = final: prev: {
