@@ -1765,22 +1765,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-azure-cli-2770": {
-      "locked": {
-        "lastModified": 1756822725,
-        "narHash": "sha256-t2DV3cyVEIlAbAkD/45dlYc/cbPxumyleaUo2zaJOV0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "6e8ded8238544180225a3b50bc96159811f977f4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "pull/439522/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1754788789,
@@ -1825,11 +1809,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1756927948,
-        "narHash": "sha256-ceV6hbFGIEUyzor6CCzq75LRpctfGGXoCfTNhWeyj8c=",
+        "lastModified": 1756928278,
+        "narHash": "sha256-w59vKB8BNGzktwyWEfxwxLv84X3o1yxctIhHPm0t/EM=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "026ab521b496feea06a45c3773f87f76a4bf320d",
+        "rev": "147f230375d8d3797abe6919a0ca25eeb5104ce8",
         "type": "github"
       },
       "original": {
@@ -2039,7 +2023,6 @@
         "nixos-needsreboot": "nixos-needsreboot",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_4",
-        "nixpkgs-azure-cli-2770": "nixpkgs-azure-cli-2770",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",

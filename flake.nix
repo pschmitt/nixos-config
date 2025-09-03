@@ -9,7 +9,6 @@
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
     # prs
-    nixpkgs-azure-cli-2770.url = "github:NixOS/nixpkgs/pull/439522/head";
     nixpkgs-streamcontroller.url = "github:NixOS/nixpkgs/pull/416567/head";
 
     # attic = {
