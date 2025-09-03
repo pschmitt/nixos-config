@@ -42,17 +42,3 @@ avoid_warnings=1
 # Below is required to enable the camera module!
 start_x=1
 gpu_mem=128
-
-# FIXME Below settings have no effect on the actual LEDs!
-# Disable LEDs
-dtparam=act_led_trigger=none
-dtparam=act_led_activelow=off
-dtparam=pwr_led_trigger=none
-dtparam=pwr_led_activelow=off
-
-# Disable ethernet port LEDs
-dtparam=eth_led0=4
-dtparam=eth_led1=4
-
-# Debug
-dtdebug=on
