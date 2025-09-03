@@ -4,7 +4,10 @@
   system.autoUpgrade = {
     enable = true;
     flake = "github:pschmitt/nixos-config";
-    # flags = [ ];
+    flags = [
+      # auto-accept nixConfig.extra-substituters from flake.nix
+      "--accept-flake-config"
+    ];
 
     dates = "02:30";
     randomizedDelaySec = "7200";
