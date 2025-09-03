@@ -129,7 +129,7 @@
 
     # cli image viewers
     chafa
-    termimage
+    # termimage
   ];
 }
 
