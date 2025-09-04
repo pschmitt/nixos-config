@@ -14,6 +14,10 @@ let
       # autoconnect = false; # never auto-connect
       priority = -10;
     };
+    home-vpn = {
+      # autoconnect = false; # never auto-connect
+      priority = -10;
+    };
     g4p = {
       priority = -100;
     };
