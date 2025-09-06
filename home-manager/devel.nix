@@ -27,13 +27,6 @@
       "rustfmt"
     ])
 
-    black
-    pipx
-    uv
-    python3Packages.flake8
-    python3Packages.ipython
-    python3Packages.isort
-
     # misc
     flarectl
     hostctl
@@ -49,7 +42,12 @@
     pmbootstrap
 
     # python
+    black
+    isort
+    pipx
     poetry
+    python3Packages.flake8
+    python3Packages.ipython
     uv
 
     # nix
