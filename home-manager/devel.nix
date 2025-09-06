@@ -1,5 +1,23 @@
 { pkgs, ... }:
-
+let
+  pythonPackages =
+    ps: with ps; [
+      dbus-python
+      dnspython
+      black
+      flake8
+      gst-python
+      ipython
+      isort
+      pip
+      pipx
+      pygobject3
+      pynvim
+      requests
+      rich
+      uv
+    ];
+in
 {
   home.packages = with pkgs; [
     act # gh actions, locally
@@ -13,6 +31,21 @@
 
     # banking
     python313Packages.woob
+
+    # devel
+    gcc
+    gnumake
+    go
+    nodejs
+    pkg-config
+    (fenix.complete.withComponents [
+      "cargo"
+      # "clippy"
+      # "rust-src"
+      "rustc"
+      "rustfmt"
+    ])
+    (python3.withPackages (pythonPackages))
 
     # misc
     flarectl

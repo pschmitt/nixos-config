@@ -7,18 +7,8 @@
 let
   python-packages =
     ps: with ps; [
-      # ansible
-      dbus-python
-      dnspython
-      black
-      flake8
-      gst-python
-      ipython
-      isort
       pip
       pipx
-      pygobject3
-      pynvim
       requests
       rich
       uv
@@ -105,6 +95,7 @@ in
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     (hiPrio parallel-full) # GNU Parallel, note that moreutils also ships parallel
+    openssl
     psmisc # pstree, killall, fuser
     pwgen
     ripgrep
@@ -124,27 +115,7 @@ in
     exfatprogs
     xfsprogs
 
-    # devel
-    gcc
-    gnumake
-    go
-    nodejs
-    podman-compose
-    pkg-config
-    # (python3.withPackages (python-packages))
-    (python312.withPackages (python-packages))
-    openssl
-
-    # rust
-    # cargo
-    # rustc
-    (fenix.complete.withComponents [
-      "cargo"
-      # "clippy"
-      # "rust-src"
-      "rustc"
-      "rustfmt"
-    ])
+    (python3.withPackages (python-packages))
   ];
 
   users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;

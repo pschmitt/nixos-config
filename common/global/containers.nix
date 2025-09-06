@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   virtualisation = {
     # FIXME as of 2024-10-21 podman is failing to start more than one container
@@ -37,4 +37,8 @@
   # environment.variables = {
   #   COMPOSE_ENV_FILES = ".env,/etc/containers/env/netbird.env,/etc/containers/env/tailscale.env";
   # };
+
+  environment.systemPackages = with pkgs; [
+    podman-compose
+  ];
 }
