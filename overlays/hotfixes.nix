@@ -25,5 +25,5 @@
   # };
 
   # Ensure python313Packages uses the modified interpreter
-  python313Packages = final.python313.pkgs;
+  # python313Packages = final.python313.pkgs;
 }

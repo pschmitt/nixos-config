@@ -1,23 +1,4 @@
 { pkgs, ... }:
-let
-  pythonPackages =
-    ps: with ps; [
-      dbus-python
-      dnspython
-      black
-      flake8
-      gst-python
-      ipython
-      isort
-      pip
-      pipx
-      pygobject3
-      pynvim
-      requests
-      rich
-      uv
-    ];
-in
 {
   home.packages = with pkgs; [
     act # gh actions, locally
@@ -30,7 +11,7 @@ in
     zunit
 
     # banking
-    python313Packages.woob
+    python3Packages.woob
 
     # devel
     gcc
@@ -45,7 +26,13 @@ in
       "rustc"
       "rustfmt"
     ])
-    (python3.withPackages (pythonPackages))
+
+    black
+    pipx
+    uv
+    python3Packages.flake8
+    python3Packages.ipython
+    python3Packages.isort
 
     # misc
     flarectl

@@ -4,16 +4,6 @@
   pkgs,
   ...
 }:
-let
-  python-packages =
-    ps: with ps; [
-      pip
-      pipx
-      requests
-      rich
-      uv
-    ];
-in
 {
   imports = [
     ../network
@@ -115,7 +105,22 @@ in
     exfatprogs
     xfsprogs
 
-    (python3.withPackages (python-packages))
+    # python
+    python3Packages.pip
+    pipx
+    uv
+    # main python pkgs
+    (python3.withPackages (
+      ps: with ps; [
+        dbus-python
+        dnspython # for ansible
+        gst-python
+        pygobject3
+        pynvim
+        requests
+        rich
+      ]
+    ))
   ];
 
   users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
