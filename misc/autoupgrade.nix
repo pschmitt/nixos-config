@@ -5,7 +5,7 @@
     enable = true;
     flake = "github:pschmitt/nixos-config";
     flags = [
-      # auto-accept nixConfig.extra-substituters from flake.nix
+      # FIXME auto-accept nixConfig.extra-substituters from flake.nix
       "--accept-flake-config"
     ];
 
