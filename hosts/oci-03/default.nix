@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 {
   imports = [
     ./disk-config.nix
@@ -26,4 +26,7 @@
       # allowedUDPPorts = [ ... ];
     };
   };
+
+  # FIXME nodejs_22 does not built currently on aarch64-linux (2025-09-07)
+  programs.npm.enable = lib.mkForce false;
 }
