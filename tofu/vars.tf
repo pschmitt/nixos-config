@@ -51,10 +51,16 @@ variable "openstack_cloud" {
   type        = string
 }
 
+variable "availability_zone_legacy" {
+  description = "Default availability zone for VMs and volumes (LEGACY)"
+  type        = string
+  default     = "es1"
+}
+
 variable "availability_zone" {
   description = "Default availability zone for VMs and volumes"
   type        = string
-  default     = "es1"
+  default     = "sz1"
 }
 
 variable "provider_network_id_legacy" {
