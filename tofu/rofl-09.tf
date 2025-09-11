@@ -1,4 +1,5 @@
 resource "openstack_blockstorage_volume_v3" "rofl-09_boot_volume" {
+  provider    = openstack.optimist-legacy
   name        = "rofl-09-boot-volume"
   size        = 150 # GiB
   image_id    = var.nixos_anywhere_image
@@ -6,6 +7,7 @@ resource "openstack_blockstorage_volume_v3" "rofl-09_boot_volume" {
 }
 
 resource "openstack_compute_instance_v2" "rofl-09" {
+  provider    = openstack.optimist-legacy
   name        = "rofl-09"
   flavor_name = "s1.xlarge"
   key_pair    = openstack_compute_keypair_v2.keypair.name
@@ -29,6 +31,7 @@ resource "openstack_compute_instance_v2" "rofl-09" {
 }
 
 resource "openstack_networking_port_v2" "rofl-09_port" {
+  provider       = openstack.optimist-legacy
   name           = "rofl-09-port"
   network_id     = openstack_networking_network_v2.roflnet-new.id
   admin_state_up = true
@@ -43,10 +46,12 @@ resource "openstack_networking_port_v2" "rofl-09_port" {
 }
 
 resource "openstack_networking_floatingip_v2" "rofl-09_fip" {
+  provider    = openstack.optimist-legacy
   pool = "provider"
 }
 
 resource "openstack_networking_floatingip_associate_v2" "rofl-09_fip_associate" {
+  provider    = openstack.optimist-legacy
   depends_on = [
     openstack_networking_router_interface_v2.roflrouter-new-interface-v4
   ]
