@@ -13,8 +13,8 @@ resource "openstack_compute_instance_v2" "rofl-09" {
   key_pair    = openstack_compute_keypair_v2.keypair_legacy.name
   security_groups = [
     "default",
-    openstack_networking_secgroup_v2.secgroup_ssh.name,
-    openstack_networking_secgroup_v2.secgroup_http.name
+    openstack_networking_secgroup_v2.secgroup_ssh_legacy.name,
+    openstack_networking_secgroup_v2.secgroup_http_legacy.name
   ]
 
   block_device {

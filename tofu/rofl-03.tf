@@ -15,8 +15,8 @@ resource "openstack_compute_instance_v2" "rofl-03" {
   availability_zone = openstack_blockstorage_volume_v3.rofl_03_boot_volume.availability_zone
   security_groups = [
     "default",
-    openstack_networking_secgroup_v2.secgroup_ssh.name,
-    openstack_networking_secgroup_v2.secgroup_http.name
+    openstack_networking_secgroup_v2.secgroup_ssh_legacy.name,
+    openstack_networking_secgroup_v2.secgroup_http_legacy.name
   ]
 
   block_device {
@@ -52,8 +52,8 @@ resource "openstack_networking_port_secgroup_associate_v2" "rofl_03_secgroup_ass
   provider = openstack.optimist-legacy
   port_id  = openstack_networking_port_v2.rofl_03_port.id
   security_group_ids = [
-    openstack_networking_secgroup_v2.secgroup_ssh.id,
-    openstack_networking_secgroup_v2.secgroup_http.id
+    openstack_networking_secgroup_v2.secgroup_ssh_legacy.id,
+    openstack_networking_secgroup_v2.secgroup_http_legacy.id
   ]
 }
 
