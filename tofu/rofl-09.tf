@@ -46,12 +46,12 @@ resource "openstack_networking_port_v2" "rofl-09_port" {
 }
 
 resource "openstack_networking_floatingip_v2" "rofl-09_fip" {
-  provider    = openstack.optimist-legacy
-  pool = "provider"
+  provider = openstack.optimist-legacy
+  pool     = "provider"
 }
 
 resource "openstack_networking_floatingip_associate_v2" "rofl-09_fip_associate" {
-  provider    = openstack.optimist-legacy
+  provider = openstack.optimist-legacy
   depends_on = [
     openstack_networking_router_interface_v2.roflrouter-new-interface-v4
   ]
