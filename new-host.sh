@@ -76,8 +76,10 @@ main() {
     return 0
   fi
 
+  TOFU_CONF="./tofu/${NEW_HOSTNAME}.tf"
   sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" "./templates/tofu/${TEMPLATE_TYPE}/host.tf" \
-    > "./tofu/${NEW_HOSTNAME}.tf"
+    > "$TOFU_CONF"
+  tofu fmt "$TOFU_CONF"
 
   echo "Config created for $NEW_HOSTNAME"
   echo "To deploy, run:"
