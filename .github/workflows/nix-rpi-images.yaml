@@ -49,6 +49,7 @@ jobs:
       - name: Prepare asset upload
         id: prepare_asset_upload
         run: |
+          set -x
           IMG_ZST=$(find "$PWD" result/sd-image -maxdepth 1 -type f -name "*.img.zst" | head -n 1)
           if [[ -z "$IMG_ZST" ]]
           then
