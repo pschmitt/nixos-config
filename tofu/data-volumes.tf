@@ -24,7 +24,7 @@ resource "openstack_blockstorage_volume_v3" "blobarr_volume_legacy" {
 }
 
 resource "openstack_blockstorage_volume_v3" "rofl_data" {
-  provider             = openstack.optimist-legacy
+  provider             = openstack.openstack-wiit
   name                 = "rofl-data"
   size                 = 4096 # GiB
   enable_online_resize = true
@@ -35,7 +35,7 @@ resource "openstack_blockstorage_volume_v3" "rofl_data" {
 }
 
 resource "openstack_blockstorage_volume_v3" "blobarr" {
-  provider             = openstack.optimist-legacy
+  provider             = openstack.openstack-wiit
   name                 = "blobarr"
   size                 = 4096 # GiB
   enable_online_resize = true
