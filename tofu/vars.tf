@@ -57,10 +57,16 @@ variable "availability_zone" {
   default     = "es1"
 }
 
+variable "provider_network_id_legacy" {
+  description = "Network ID of the provider network (legacy, optimist)"
+  type        = string
+  default     = "54258498-a513-47da-9369-1a644e4be692"
+}
+
 variable "provider_network_id" {
   description = "Network ID of the provider network"
   type        = string
-  default     = "54258498-a513-47da-9369-1a644e4be692"
+  default     = "a2424481-1b98-4da4-ab0a-bad0a6479ecf"
 }
 
 variable "ssh_public_key" {
