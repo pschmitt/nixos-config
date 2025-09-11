@@ -1,4 +1,5 @@
 resource "openstack_blockstorage_volume_v3" "${REPLACEME}_boot_volume" {
+  provider          = openstack.openstack-wiit
   name              = "${REPLACEME}-boot-volume"
   size              = 150 # GiB
   image_id          = var.nixos_anywhere_image
@@ -6,6 +7,7 @@ resource "openstack_blockstorage_volume_v3" "${REPLACEME}_boot_volume" {
 }
 
 resource "openstack_compute_instance_v2" "${REPLACEME}" {
+  provider          = openstack.openstack-wiit
   name              = "${REPLACEME}"
   flavor_name       = "s1.xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair.name
@@ -29,7 +31,8 @@ resource "openstack_compute_instance_v2" "${REPLACEME}" {
 }
 
 resource "openstack_networking_port_v2" "${REPLACEME}_port" {
-  name = "${REPLACEME}-port"
+  provider       = openstack.openstack-wiit
+  name           = "${REPLACEME}-port"
   network_id     = openstack_networking_network_v2.roflnet-new.id
   admin_state_up = true
 
@@ -43,10 +46,12 @@ resource "openstack_networking_port_v2" "${REPLACEME}_port" {
 }
 
 resource "openstack_networking_floatingip_v2" "${REPLACEME}_fip" {
-  pool = "provider"
+  provider = openstack.openstack-wiit
+  pool     = "provider"
 }
 
 resource "openstack_networking_floatingip_associate_v2" "${REPLACEME}_fip_associate" {
+  provider   = openstack.openstack-wiit
   depends_on = [
     openstack_networking_router_interface_v2.roflrouter-new-interface-v4
   ]
