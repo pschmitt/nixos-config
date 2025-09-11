@@ -64,14 +64,10 @@ jobs:
           mkdir -p "$ASSET_DIR"
 
           BASE="$(basename "$IMG_ZST")"
-          SUFFIX=""
-          if [[ "${{ matrix.target }}" != "pica4" ]]
-          then
-            SUFFIX="-${{ matrix.target }}"
-          fi
+          SUFFIX="-${{ matrix.target }}"
 
           OUT="${BASE%.img.zst}${SUFFIX}.img.zst"
-          mv -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
+          cp -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
 
           pushd "$ASSET_DIR"
           LATEST="nixos-rpi${SUFFIX}-latest.img.zst"
