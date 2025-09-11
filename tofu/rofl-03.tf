@@ -11,7 +11,7 @@ resource "openstack_compute_instance_v2" "rofl-03" {
   provider          = openstack.optimist-legacy
   name              = "rofl-03"
   flavor_name       = "s1.xlarge"
-  key_pair          = openstack_compute_keypair_v2.keypair.name
+  key_pair          = openstack_compute_keypair_v2.keypair_legacy.name
   availability_zone = openstack_blockstorage_volume_v3.rofl_03_boot_volume.availability_zone
   security_groups = [
     "default",
