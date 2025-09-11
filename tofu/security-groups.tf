@@ -1,24 +1,29 @@
 resource "openstack_networking_secgroup_v2" "secgroup_ssh" {
+  provider    = openstack.optimist-legacy
   name        = "allow-ssh"
   description = "Allow SSH traffic"
 }
 
 resource "openstack_networking_secgroup_v2" "secgroup_http" {
+  provider    = openstack.optimist-legacy
   name        = "allow-http"
   description = "Allow HTTP(s) traffic"
 }
 
 resource "openstack_networking_secgroup_v2" "secgroup_email" {
+  provider    = openstack.optimist-legacy
   name        = "allow-email"
   description = "Allow email (imap+smtp) traffic"
 }
 
 resource "openstack_networking_secgroup_v2" "secgroup_xmr" {
+  provider    = openstack.optimist-legacy
   name        = "allow-xmr"
   description = "Allow xmr traffic"
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -29,6 +34,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -39,6 +45,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -49,6 +56,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -59,6 +67,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_alt_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -69,6 +78,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_alt_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_alt_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -79,6 +89,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_alt_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -89,6 +100,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -99,6 +111,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_alt_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -109,6 +122,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_alt_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_alt_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -119,6 +133,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_https_alt_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -129,6 +144,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -139,6 +155,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imap_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -149,6 +166,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -159,6 +177,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_imaps_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -169,6 +188,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -179,6 +199,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtp_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -189,6 +210,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -199,6 +221,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_smtps_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -209,6 +232,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -219,6 +243,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_monerod_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -229,6 +254,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v4" 
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -239,6 +265,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_xmrig_proxy_v6" 
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_p2pool_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -249,6 +276,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_p2pool_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_p2pool_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -259,6 +287,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_p2pool_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -269,6 +298,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_v4" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
@@ -279,6 +309,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_v6" {
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_alt_v4" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv4"
   protocol          = "tcp"
@@ -289,6 +320,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_alt_v4" 
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_alt_v6" {
+  provider          = openstack.optimist-legacy
   direction         = "ingress"
   ethertype         = "IPv6"
   protocol          = "tcp"
