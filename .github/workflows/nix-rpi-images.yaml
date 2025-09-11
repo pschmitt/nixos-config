@@ -50,37 +50,36 @@ jobs:
         id: prepare_asset_upload
         run: |
           set -x
-          IMG_ZST=$(find "$PWD" result/sd-image -maxdepth 1 -type f -name "*.img.zst" | head -n 1)
-          if [[ -z "$IMG_ZST" ]]
-          then
-            echo "No .img.zst file found in result/sd-image" >&2
-            tree result >&2
+          # Resolve the nix result symlink to avoid copying large files
+          RESULT_DIR=$(readlink -f result) || {
+            echo "Could not resolve 'result' symlink" >&2
+            ls -la . >&2
+            exit 1
+          }
+
+          SD_DIR=$(readlink -f "${RESULT_DIR}/sd-image") || {
+            echo "Could not resolve sd-image directory under result" >&2
+            ls -la "${RESULT_DIR}" >&2
+            exit 1
+          }
+
+          IMG_ZST=$(find "${SD_DIR}" -maxdepth 1 -type f -name "*.img.zst" | head -n 1)
+          if [[ -z "$IMG_ZST" ]]; then
+            echo "No .img.zst file found in ${SD_DIR}" >&2
+            ls -la "${SD_DIR}" >&2 || true
             exit 1
           fi
 
           echo "📦 Found image: $IMG_ZST"
 
-          ASSET_DIR=asset-dir
-          mkdir -p "$ASSET_DIR"
-
-          BASE="$(basename "$IMG_ZST")"
-          SUFFIX="-${{ matrix.target }}"
-
-          OUT="${BASE%.img.zst}${SUFFIX}.img.zst"
-          cp -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
-
-          pushd "$ASSET_DIR"
-          LATEST="nixos-rpi${SUFFIX}-latest.img.zst"
-          ln -svf "$OUT" "$LATEST"
-          sha256sum "$OUT" > "${OUT}.sha256sum"
-          sha256sum "$LATEST" > "${LATEST}.sha256sum"
-          popd
-
-          tree -h "$ASSET_DIR"
+          # Use the nix store sd-image directory directly as the asset dir
+          ASSET_DIR="$SD_DIR"
+          ARTIFACT_NAME="$(basename "$IMG_ZST")"
+          ARTIFACT_PATH="$IMG_ZST"
 
           echo "ASSET_DIR=${ASSET_DIR}" >> "$GITHUB_ENV"
-          echo "ARTIFACT_NAME=${OUT}" >> "$GITHUB_ENV"
-          echo "ARTIFACT_PATH=${ASSET_DIR}/${OUT}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
+          echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> "$GITHUB_ENV"
 
       - name: Upload SD image artifact
         uses: actions/upload-artifact@v4
@@ -92,7 +91,7 @@ jobs:
         uses: burnett01/rsync-deployments@7.1.0
         with:
           switches: -avzr --delete --delete-after --safe-links --mkpath
-          path: ${{ env.ASSET_DIR }}/
+          path: ${{ env.ARTIFACT_PATH }}
           remote_path: /mnt/data/blobs/img/${{ matrix.target }}/
           remote_host: ${{ secrets.SSH_BLOBS_HOST }}
           remote_user: ${{ secrets.SSH_USERNAME }}
