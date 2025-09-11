@@ -1,4 +1,5 @@
 resource "openstack_compute_keypair_v2" "keypair" {
+  provider   = openstack.optimist-legacy
   name       = "nixos-anywhere"
   public_key = var.ssh_public_key
 }

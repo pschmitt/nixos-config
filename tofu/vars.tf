@@ -41,6 +41,11 @@ variable "cloudflare_api_key" {
   type        = string
 }
 
+variable "openstack_cloud_legacy" {
+  description = "Openstack *LEGACY* cloud name (OS_CLOUD)"
+  type        = string
+}
+
 variable "openstack_cloud" {
   description = "Openstack cloud name (OS_CLOUD)"
   type        = string

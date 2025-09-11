@@ -45,6 +45,12 @@ provider "oci" {
 }
 
 provider "openstack" {
+  alias = "optimist-legacy"
+  cloud = var.openstack_cloud_legacy
+}
+
+provider "openstack" {
+  alias = "openstack-wiit"
   cloud = var.openstack_cloud
 }
 

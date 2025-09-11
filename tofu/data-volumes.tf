@@ -1,4 +1,5 @@
 resource "openstack_blockstorage_volume_v3" "rofldata_volume" {
+  provider             = openstack.optimist-legacy
   name                 = "rofldata"
   size                 = 4096 # GiB
   availability_zone    = "ix1"
@@ -10,6 +11,7 @@ resource "openstack_blockstorage_volume_v3" "rofldata_volume" {
 }
 
 resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
+  provider             = openstack.optimist-legacy
   name                 = "blobarr-vol"
   size                 = 4096 # GiB
   availability_zone    = "ix1"
@@ -22,11 +24,13 @@ resource "openstack_blockstorage_volume_v3" "blobarr_volume" {
 }
 
 resource "openstack_compute_volume_attach_v2" "va_rofldata" {
+  provider    = openstack.optimist-legacy
   instance_id = openstack_compute_instance_v2.rofl-09.id
   volume_id   = openstack_blockstorage_volume_v3.rofldata_volume.id
 }
 
 resource "openstack_compute_volume_attach_v2" "va_blobarr" {
+  provider    = openstack.optimist-legacy
   instance_id = openstack_compute_instance_v2.rofl-08.id
   volume_id   = openstack_blockstorage_volume_v3.blobarr_volume.id
 }
