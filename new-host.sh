@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "Usage: $(basename "$0") [--force] [--optimist|--oci] NEW_HOSTNAME"
+  echo "Usage: $(basename "$0") [--force] [--openstack|--oci] NEW_HOSTNAME"
 }
 
 main() {
   local FORCE=${FORCE:-}
   local NEW_HOSTNAME=${NEW_HOSTNAME:-}
-  local TEMPLATE_TYPE=${TEMPLATE_TYPE:-optimist}
+  local TEMPLATE_TYPE=${TEMPLATE_TYPE:-openstack-wiit}
 
   while [[ -n $* ]]
   do
@@ -24,8 +24,12 @@ main() {
         TEMPLATE_TYPE="oci"
         shift
         ;;
-      --openstack|--optimist)
-        TEMPLATE_TYPE="optimist"
+      --openstack)
+        TEMPLATE_TYPE="openstack-wiit"
+        shift
+        ;;
+      --openstack-leg*)
+        TEMPLATE_TYPE="openstack-legacy"
         shift
         ;;
       --raw)
@@ -48,7 +52,7 @@ main() {
   fi
 
   # nix config
-  local DEST="./hosts/$NEW_HOSTNAME"
+  local DEST="./hosts/${NEW_HOSTNAME}"
 
   if [[ -d "$DEST" ]]
   then
