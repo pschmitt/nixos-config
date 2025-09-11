@@ -28,6 +28,8 @@ resource "openstack_blockstorage_volume_v3" "rofl_data" {
   name                 = "rofl-data"
   size                 = 4096 # GiB
   enable_online_resize = true
+  description          = "rofl data"
+  availability_zone    = var.availability_zone
 
   lifecycle {
     prevent_destroy = true
@@ -40,6 +42,7 @@ resource "openstack_blockstorage_volume_v3" "blobarr" {
   size                 = 4096 # GiB
   enable_online_resize = true
   description          = "data volume, arrr!"
+  availability_zone    = var.availability_zone
 
   lifecycle {
     prevent_destroy = true
