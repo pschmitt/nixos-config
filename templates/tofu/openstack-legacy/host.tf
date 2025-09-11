@@ -83,7 +83,7 @@ resource "local_file" "nixos_vars_${REPLACEME}" {
   # Automatically adds the generated file to Git
   provisioner "local-exec" {
     interpreter = ["sh", "-c"]
-    command     = "git add -f '${local.nixos_vars_${REPLACEME}}'"
+    command     = "git add -f '${local.nixos_vars_file_${REPLACEME}}'"
   }
 }
 
