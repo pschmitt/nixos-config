@@ -1,4 +1,5 @@
 resource "openstack_blockstorage_volume_v3" "rofl_08_boot_volume" {
+  provider          = openstack.optimist-legacy
   name              = "rofl-08-boot-volume"
   size              = 150 # GiB
   image_id          = var.nixos_anywhere_image
@@ -7,6 +8,7 @@ resource "openstack_blockstorage_volume_v3" "rofl_08_boot_volume" {
 }
 
 resource "openstack_compute_instance_v2" "rofl-08" {
+  provider          = openstack.optimist-legacy
   name              = "rofl-08"
   flavor_name       = "s1.xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair.name
@@ -31,7 +33,8 @@ resource "openstack_compute_instance_v2" "rofl-08" {
 }
 
 resource "openstack_networking_port_v2" "rofl_08_port" {
-  name = "rofl-08-port"
+  provider = openstack.optimist-legacy
+  name     = "rofl-08-port"
   # network_id     = openstack_networking_network_v2.better_rofl_net.id
   network_id     = openstack_networking_network_v2.roflnet-new.id
   admin_state_up = true
@@ -46,7 +49,8 @@ resource "openstack_networking_port_v2" "rofl_08_port" {
 }
 
 resource "openstack_networking_port_secgroup_associate_v2" "rofl_08_secgroup_assoc" {
-  port_id = openstack_networking_port_v2.rofl_08_port.id
+  provider = openstack.optimist-legacy
+  port_id  = openstack_networking_port_v2.rofl_08_port.id
   security_group_ids = [
     openstack_networking_secgroup_v2.secgroup_ssh.id,
     openstack_networking_secgroup_v2.secgroup_http.id
@@ -54,10 +58,12 @@ resource "openstack_networking_port_secgroup_associate_v2" "rofl_08_secgroup_ass
 }
 
 resource "openstack_networking_floatingip_v2" "rofl_08_fip" {
-  pool = "provider"
+  provider = openstack.optimist-legacy
+  pool     = "provider"
 }
 
 resource "openstack_networking_floatingip_associate_v2" "rofl_08_fip_associate" {
+  provider    = openstack.optimist-legacy
   floating_ip = openstack_networking_floatingip_v2.rofl_08_fip.address
   port_id     = openstack_networking_port_v2.rofl_08_port.id
 }
