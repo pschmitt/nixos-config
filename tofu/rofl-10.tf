@@ -1,16 +1,16 @@
 resource "openstack_blockstorage_volume_v3" "rofl-10_boot_volume" {
-  provider          = openstack.openstack-wiit
-  name              = "rofl-10-boot-volume"
-  size              = 150 # GiB
-  image_id          = var.nixos_anywhere_image
-  description       = "Boot volume for NixOS VM (rofl-10)"
+  provider    = openstack.openstack-wiit
+  name        = "rofl-10-boot-volume"
+  size        = 150 # GiB
+  image_id    = var.nixos_anywhere_image
+  description = "Boot volume for NixOS VM (rofl-10)"
 }
 
 resource "openstack_compute_instance_v2" "rofl-10" {
-  provider          = openstack.openstack-wiit
-  name              = "rofl-10"
-  flavor_name       = "s1.xlarge"
-  key_pair          = openstack_compute_keypair_v2.keypair.name
+  provider    = openstack.openstack-wiit
+  name        = "rofl-10"
+  flavor_name = "s1.xlarge"
+  key_pair    = openstack_compute_keypair_v2.keypair.name
   security_groups = [
     "default",
     openstack_networking_secgroup_v2.secgroup_ssh.name,
@@ -51,7 +51,7 @@ resource "openstack_networking_floatingip_v2" "rofl-10_fip" {
 }
 
 resource "openstack_networking_floatingip_associate_v2" "rofl-10_fip_associate" {
-  provider   = openstack.openstack-wiit
+  provider = openstack.openstack-wiit
   depends_on = [
     openstack_networking_router_interface_v2.roflrouter-interface-v4
   ]
