@@ -33,15 +33,15 @@ resource "openstack_compute_instance_v2" "${REPLACEME}" {
 resource "openstack_networking_port_v2" "${REPLACEME}_port" {
   provider       = openstack.openstack-wiit
   name           = "${REPLACEME}-port"
-  network_id     = openstack_networking_network_v2.roflnet-new.id
+  network_id     = openstack_networking_network_v2.rofl_net.id
   admin_state_up = true
 
   fixed_ip {
-    subnet_id = openstack_networking_subnet_v2.roflsubnet-new-v4.id
+    subnet_id = openstack_networking_subnet_v2.rofl_subnet-v4.id
   }
 
   # fixed_ip {
-  #   subnet_id = openstack_networking_subnet_v2.roflsubnet-new-v6.id
+  #   subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
   # }
 }
 
@@ -53,7 +53,7 @@ resource "openstack_networking_floatingip_v2" "${REPLACEME}_fip" {
 resource "openstack_networking_floatingip_associate_v2" "${REPLACEME}_fip_associate" {
   provider   = openstack.openstack-wiit
   depends_on = [
-    openstack_networking_router_interface_v2.roflrouter-new-interface-v4
+    openstack_networking_router_interface_v2.roflrouter-interface-v4
   ]
   floating_ip = openstack_networking_floatingip_v2.${REPLACEME}_fip.address
   port_id     = openstack_networking_port_v2.${REPLACEME}_port.id
