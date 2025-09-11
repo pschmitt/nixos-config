@@ -69,10 +69,10 @@ locals {
         az   = openstack_blockstorage_volume_v3.rofl-09_boot_volume.availability_zone
       },
       data = {
-        id     = openstack_blockstorage_volume_v3.rofldata_volume.id,
-        name   = openstack_blockstorage_volume_v3.rofldata_volume.name,
-        az     = openstack_blockstorage_volume_v3.rofldata_volume.availability_zone
-        device = openstack_compute_volume_attach_v2.va_rofldata.device # /dev/sdb for example
+        id     = openstack_blockstorage_volume_v3.rofldata_volume_legacy.id,
+        name   = openstack_blockstorage_volume_v3.rofldata_volume_legacy.name,
+        az     = openstack_blockstorage_volume_v3.rofldata_volume_legacy.availability_zone
+        device = openstack_compute_volume_attach_v2.va_rofldata_legacy.device # /dev/sdb for example
       }
     }
     network = {
@@ -97,7 +97,7 @@ module "nix-rofl-09" {
   depends_on = [
     openstack_compute_instance_v2.rofl-09,
     openstack_networking_floatingip_associate_v2.rofl-09_fip_associate,
-    openstack_compute_volume_attach_v2.va_rofldata,
+    openstack_compute_volume_attach_v2.va_rofldata_legacy,
     cloudflare_record.records["rofl-09.brkn.lol"],
     cloudflare_record.records["*.rofl-09.brkn.lol"],
     local_file.nixos_vars_rofl-09,

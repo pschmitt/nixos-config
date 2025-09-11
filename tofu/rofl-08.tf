@@ -4,7 +4,7 @@ resource "openstack_blockstorage_volume_v3" "rofl_08_boot_volume" {
   size              = 150 # GiB
   image_id          = var.nixos_anywhere_image
   description       = "Boot volume for NixOS VM (rofl-08)"
-  availability_zone = openstack_blockstorage_volume_v3.blobarr_volume.availability_zone
+  availability_zone = openstack_blockstorage_volume_v3.blobarr_volume_legacy.availability_zone
 }
 
 resource "openstack_compute_instance_v2" "rofl-08" {
@@ -12,7 +12,7 @@ resource "openstack_compute_instance_v2" "rofl-08" {
   name              = "rofl-08"
   flavor_name       = "s1.xlarge"
   key_pair          = openstack_compute_keypair_v2.keypair_legacy.name
-  availability_zone = openstack_blockstorage_volume_v3.blobarr_volume.availability_zone
+  availability_zone = openstack_blockstorage_volume_v3.blobarr_volume_legacy.availability_zone
   security_groups = [
     "default",
     openstack_networking_secgroup_v2.secgroup_ssh.name,
@@ -78,10 +78,10 @@ locals {
         az   = openstack_blockstorage_volume_v3.rofl_08_boot_volume.availability_zone
       },
       data = {
-        id     = openstack_blockstorage_volume_v3.blobarr_volume.id,
-        name   = openstack_blockstorage_volume_v3.blobarr_volume.name,
-        az     = openstack_blockstorage_volume_v3.blobarr_volume.availability_zone
-        device = openstack_compute_volume_attach_v2.va_blobarr.device # /dev/sdb for example
+        id     = openstack_blockstorage_volume_v3.blobarr_volume_legacy.id,
+        name   = openstack_blockstorage_volume_v3.blobarr_volume_legacy.name,
+        az     = openstack_blockstorage_volume_v3.blobarr_volume_legacy.availability_zone
+        device = openstack_compute_volume_attach_v2.va_blobarr_legacy.device # /dev/sdb for example
       }
     }
     network = {
