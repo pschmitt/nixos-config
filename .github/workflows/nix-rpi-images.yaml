@@ -71,7 +71,7 @@ jobs:
           fi
 
           OUT="${BASE%.img.zst}${SUFFIX}.img.zst"
-          cp -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
+          mv -v "$IMG_ZST" "${ASSET_DIR}/${OUT}"
 
           pushd "$ASSET_DIR"
           LATEST="nixos-rpi${SUFFIX}-latest.img.zst"
