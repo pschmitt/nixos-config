@@ -13,6 +13,7 @@ resource "openstack_compute_instance_v2" "rofl-10" {
   key_pair    = openstack_compute_keypair_v2.keypair.name
   security_groups = [
     "default",
+    openstack_networking_secgroup_v2.secgroup_icmp.name,
     openstack_networking_secgroup_v2.secgroup_ssh.name,
     openstack_networking_secgroup_v2.secgroup_http.name
   ]
