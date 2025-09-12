@@ -48,8 +48,7 @@
           # "/run/secrets/ssh/initrd_host_keys/ed25519/privkey"
           # "/run/secrets/ssh/initrd_host_keys/rsa/privkey"
         ];
-        # If host keys are missing, allow ephemeral keys so SSH still starts
-        ignoreEmptyHostKeys = true;
+        # ignoreEmptyHostKeys = false;
       };
     };
   };
