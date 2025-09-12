@@ -53,4 +53,8 @@
   };
 
   # environment.systemPackages = with pkgs; [ ];
+  # TODO remove once the migration is done
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOSMurkElc1C0mgQM97reY6D8bIg6cDX3TRx6mjd5Cru root@rofl-10"
+  ];
 }
