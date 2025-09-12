@@ -41,7 +41,7 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_icmp_v6" {
   provider          = openstack.openstack-wiit
   direction         = "ingress"
   ethertype         = "IPv6"
-  protocol          = "icmp"
+  protocol          = "ipv6-icmp"
   remote_ip_prefix  = "::/0"
   security_group_id = openstack_networking_secgroup_v2.secgroup_icmp.id
 }
