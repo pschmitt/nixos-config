@@ -1,6 +1,10 @@
 { modulesPath, ... }:
 {
-  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
+  imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
+    ./luks-data.nix
+  ];
+
   boot.initrd.availableKernelModules = [
     "ata_piix"
     "uhci_hcd"

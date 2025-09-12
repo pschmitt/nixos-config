@@ -73,6 +73,12 @@ locals {
         id   = openstack_blockstorage_volume_v3.rofl-10_boot_volume.id,
         name = openstack_blockstorage_volume_v3.rofl-10_boot_volume.name,
         az   = openstack_blockstorage_volume_v3.rofl-10_boot_volume.availability_zone
+      },
+      data = {
+        id     = openstack_blockstorage_volume_v3.rofl_data.id,
+        name   = openstack_blockstorage_volume_v3.rofl_data.name,
+        az     = openstack_blockstorage_volume_v3.rofl_data.availability_zone
+        device = openstack_compute_volume_attach_v2.va_rofldata.device # /dev/sdb for example
       }
     }
     network = {
@@ -119,6 +125,10 @@ module "nix-rofl-10" {
     {
       path   = "/tmp/disk-1.key",
       script = "${path.module}/scripts/decrypt-luks-passphrase.sh"
+    },
+    {
+      path   = "/tmp/disk-2.key",
+      script = "${path.module}/scripts/decrypt-luks-passphrase-data.sh"
     }
   ]
 
