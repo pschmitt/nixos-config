@@ -19,3 +19,5 @@ clouds.yaml
 *.priv
 *.pkey
 *.pub
+*_key
+data
