@@ -1,3 +1,9 @@
+resource "openstack_networking_secgroup_v2" "secgroup_icmp" {
+  provider    = openstack.openstack-wiit
+  name        = "allow-icmp"
+  description = "Allow ICMP"
+}
+
 resource "openstack_networking_secgroup_v2" "secgroup_ssh" {
   provider    = openstack.openstack-wiit
   name        = "allow-ssh"
@@ -20,6 +26,24 @@ resource "openstack_networking_secgroup_v2" "secgroup_xmr" {
   provider    = openstack.openstack-wiit
   name        = "allow-xmr"
   description = "Allow xmr traffic"
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_icmp_v4" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "icmp"
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_icmp.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_icmp_v6" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "icmp"
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_icmp.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v4" {
