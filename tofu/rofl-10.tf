@@ -30,6 +30,12 @@ resource "openstack_compute_instance_v2" "rofl-10" {
   }
 }
 
+resource "openstack_compute_volume_attach_v2" "va_rofldata" {
+  provider    = openstack.openstack-wiit
+  instance_id = openstack_compute_instance_v2.rofl-10.id
+  volume_id   = openstack_blockstorage_volume_v3.rofl_data.id
+}
+
 resource "openstack_networking_port_v2" "rofl-10_port" {
   provider       = openstack.openstack-wiit
   name           = "rofl-10-port"
