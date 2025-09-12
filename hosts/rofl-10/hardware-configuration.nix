@@ -10,6 +10,10 @@
     "uhci_hcd"
     "xen_blkfront"
     "vmw_pvscsi"
+
+    # NOTE Not sure we really need these below
+    "virtio_pci"
+    "virtio_net"
   ];
   boot.initrd.kernelModules = [ "nvme" ];
 
