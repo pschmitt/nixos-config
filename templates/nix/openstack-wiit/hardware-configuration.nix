@@ -6,6 +6,9 @@
     "uhci_hcd"
     "xen_blkfront"
     "vmw_pvscsi"
+    # Below is required for ssh in initrd
+    "virtio_pci"
+    "virtio_net"
   ];
   boot.initrd.kernelModules = [ "nvme" ];
 

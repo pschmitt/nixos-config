@@ -11,7 +11,7 @@
     "xen_blkfront"
     "vmw_pvscsi"
 
-    # NOTE Not sure we really need these below
+    # Below is required for ssh in initrd
     "virtio_pci"
     "virtio_net"
   ];
