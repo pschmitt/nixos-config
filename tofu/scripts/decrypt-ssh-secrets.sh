@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 TARGET_HOST="${TARGET_HOST:-}"
 
 if [[ -z "$TARGET_HOST" ]]
