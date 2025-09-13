@@ -13,6 +13,8 @@
   # initrd networking/SSH bring-up and early boot.
   boot = {
     initrd.verbose = true;
+    initrd.network.ssh.extraConfig = "LogLevel DEBUG3";
+
     # Kernel verbosity on consoles
     consoleLogLevel = 7;
     # Add verbose logging for initrd/systemd and udev
@@ -22,6 +24,7 @@
       # Also increase regular systemd logging to console for completeness
       "systemd.log_target=console"
     ];
+
   };
 
   # Enable networking
