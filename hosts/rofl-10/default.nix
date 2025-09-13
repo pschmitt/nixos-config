@@ -6,6 +6,11 @@
 
     ../../server
     ../../server/optimist.nix
+
+    # TODO Add missing services
+    ../../services/luks-ssh-unlock-homelab.nix
+    ../../services/harmonia.nix
+    ../../services/http.nix
   ];
 
   custom.cattle = true;
