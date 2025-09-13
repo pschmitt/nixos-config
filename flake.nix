@@ -329,6 +329,7 @@
         rofl-09 = nixosSystemFor "x86_64-linux" "rofl-09" { server = true; };
         rofl-10 = nixosSystemFor "x86_64-linux" "rofl-10" { server = true; };
         rofl-11 = nixosSystemFor "x86_64-linux" "rofl-11" { server = true; };
+        rofl-12 = nixosSystemFor "x86_64-linux" "rofl-12" { server = true; };
         oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
           server = true;
           snapd = true;
