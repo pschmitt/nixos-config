@@ -62,6 +62,12 @@ then
   exit 1
 fi
 
+if ! ssh "${SSH_ARGS[@]}" -l "$SSH_USER" "$SSH_HOST" 'test -e /etc/initrd-release'
+then
+  echo "Target host ${TARGET_HOST} is not in initrd" >&2
+  exit 1
+fi
+
 if [[ -n "$DRY_RUN" ]]
 then
   echo "DRY RUN: Would unlock LUKS on ${TARGET_HOST} with passphrase: '${PASSPHRASE}'"
