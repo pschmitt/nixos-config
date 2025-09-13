@@ -97,6 +97,13 @@ module "nix-${REPLACEME}" {
     local_file.nixos_vars_${REPLACEME},
   ]
 
+  # phases = [
+  #   "kexec",
+  #   "disko",
+  #   "install",
+  #   "reboot" # Comment out to DEBUG
+  # ]
+
   source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
   nixos_system_attr      = "..#nixosConfigurations.${REPLACEME}.config.system.build.toplevel"
   nixos_partitioner_attr = "..#nixosConfigurations.${REPLACEME}.config.system.build.diskoScript"
