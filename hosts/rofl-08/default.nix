@@ -40,4 +40,9 @@
   };
 
   environment.systemPackages = with pkgs; [ yt-dlp ];
+
+  # TODO remove once the migration is done
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHB6ka1hViLzMVIxgpUZlzgXlrtrSEYHNiBL0hPr3tRP root@rofl-11"
+  ];
 }
