@@ -121,7 +121,7 @@ module "nix-rofl-11" {
     "kexec",
     "disko",
     "install",
-    # "reboot" # Comment out to DEBUG
+    "reboot" # Comment out to DEBUG
   ]
 
   extra_environment = {
