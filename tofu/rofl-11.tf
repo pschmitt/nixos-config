@@ -117,6 +117,12 @@ module "nix-rofl-11" {
   instance_id            = openstack_compute_instance_v2.rofl-11.id
   debug_logging          = true
   build_on_remote        = true
+  phases = [
+    "kexec",
+    "disko",
+    "install",
+    # "reboot" # Comment out to DEBUG
+  ]
 
   extra_environment = {
     TARGET_HOST = "rofl-11"
