@@ -71,6 +71,7 @@
     fd
     fx
     git
+    grc
     htop
     hwatch
     jq
