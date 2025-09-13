@@ -29,6 +29,14 @@
         machine cache.rofl-09.brkn.lol
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
+
+        machine cache.rofl-10.brkn.lol
+        login ${config.sops.placeholder."nix/credentials/username"}
+        password ${config.sops.placeholder."nix/credentials/password"}
+
+        machine cache.rofl-13.brkn.lol
+        login ${config.sops.placeholder."nix/credentials/username"}
+        password ${config.sops.placeholder."nix/credentials/password"}
       '';
       nix-access-token-github.content = ''
         access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
@@ -105,7 +113,9 @@
       ]
       # don't use local http cache on the same host
       ++ lib.optionals (config.networking.hostName != "rofl-09") [ "https://cache.rofl-09.brkn.lol" ]
-      ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ];
+      ++ lib.optionals (config.networking.hostName != "rofl-03") [ "https://cache.rofl-03.brkn.lol" ]
+      ++ lib.optionals (config.networking.hostName != "rofl-10") [ "https://cache.rofl-10.brkn.lol" ]
+      ++ lib.optionals (config.networking.hostName != "rofl-13") [ "https://cache.rofl-13.brkn.lol" ];
 
       # private caches
       netrc-file = config.sops.templates.nix-cache-netrc.path;
@@ -119,8 +129,13 @@
         "pschmitt-nixos-config.cachix.org-1:cE7rK+O+QCIEewMOOk3C7JYOhSXxqgLzNpm+tdSMkMk="
         "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
         # "nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM="
+        # TODO remove legacy hosts
         "rofl-03:p25y1GufWGd6aWpimb8j6F0obxn3jwYCj7sCCXgp7A0="
         "rofl-09:aWhkLUlpkPYsTs32uCL5+lLTthnJQm+hlgJ1IUNwtIs="
+
+        # new hosts
+        "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0="
+        "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0="
       ];
     };
 
