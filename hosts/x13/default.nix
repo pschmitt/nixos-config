@@ -1,7 +1,5 @@
 {
   inputs,
-  lib,
-  pkgs,
   ...
 }:
 {
@@ -19,6 +17,7 @@
     ../../common/snek
     ../../common/sshfs
     ../../common/work
+    ../../services/nfs/nfs-client-all.nix
   ];
 
   # Configure network proxy if necessary
