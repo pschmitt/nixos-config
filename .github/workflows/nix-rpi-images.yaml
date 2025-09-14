@@ -72,12 +72,17 @@ jobs:
 
           echo "📦 Found image: $IMG_ZST"
 
-          # Use the nix store sd-image directory directly as the asset dir
-          ASSET_DIR="$SD_DIR"
-          ARTIFACT_NAME="$(basename "$IMG_ZST")"
+          # Use Nix store path directly to avoid copying/duplication
+          BASENAME="$(basename "$IMG_ZST")"
+          BASE_NOEXT="${BASENAME%.img.zst}"
+          DATE_STR="$(date -u +%Y%m%d)"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          REMOTE_IMG_NAME="${BASE_NOEXT}-${DATE_STR}-${SHORT_SHA}.img.zst"
+
+          ARTIFACT_NAME="$REMOTE_IMG_NAME"  # artifact label; file path unchanged
           ARTIFACT_PATH="$IMG_ZST"
 
-          echo "ASSET_DIR=${ASSET_DIR}" >> "$GITHUB_ENV"
+          echo "REMOTE_IMG_NAME=${REMOTE_IMG_NAME}" >> "$GITHUB_ENV"
           echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
           echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> "$GITHUB_ENV"
 
@@ -86,13 +91,32 @@ jobs:
         with:
           name: ${{ env.ARTIFACT_NAME }}
           path: ${{ env.ARTIFACT_PATH }}
-
-      - name: rsync transfer
-        uses: burnett01/rsync-deployments@7.1.0
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          switches: -avzr --delete --delete-after --safe-links --mkpath
-          path: ${{ env.ARTIFACT_PATH }}
-          remote_path: /mnt/data/blobs/img/${{ matrix.target }}/
-          remote_host: ${{ secrets.SSH_BLOBS_HOST }}
-          remote_user: ${{ secrets.SSH_USERNAME }}
-          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Seed known_hosts
+        run: |
+          mkdir -p "$HOME/.ssh"
+          ssh-keyscan -H "${{ secrets.SSH_BLOBS_HOST }}" >> "$HOME/.ssh/known_hosts"
+
+      - name: scp transfer
+        env:
+          TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
+        run: |
+          # Ensure remote directory exists
+          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" "mkdir -p \"$TARGET_DIR\""
+          # Transfer the file without duplicating locally
+          scp -v "${{ env.ARTIFACT_PATH }}" "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}:$TARGET_DIR/${{ env.REMOTE_IMG_NAME }}"
+
+      - name: Prune remote images
+        env:
+          TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
+          KEEP_IMAGE_COUNT: 3
+        run: |
+          KEEP="${KEEP_IMAGE_COUNT:-3}"
+          START=$(( KEEP + 1 ))
+          # Delete all but the KEEP most recent .img.zst files
+          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" \
+            "bash -c 'cd \"$TARGET_DIR\" 2>/dev/null || exit 9; ls -1t -- *.img.zst 2>/dev/null | tail -n +${START} | xargs -r rm -f'"
