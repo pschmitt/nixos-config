@@ -31,6 +31,12 @@ sops_decrypt() {
   SOPS_AGE_KEY="$age_key" \
     sops decrypt --extract '["ssh"]["private_key"]' \
     cloud-credentials.sops.yaml > "${dest}/nixos-anywhere_id_ed25519"
+
+  if [[ -z $SSH_AUTH_SOCK ]]
+  then
+    eval "$(ssh-agent -s)"
+  fi
+
   chmod 600 "${dest}/nixos-anywhere_id_ed25519"
   ssh-add "${dest}/nixos-anywhere_id_ed25519"
 }
