@@ -106,17 +106,17 @@ jobs:
           TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
         run: |
           # Ensure remote directory exists
-          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" "mkdir -p \"$TARGET_DIR\""
+          ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" "mkdir -p \"${TARGET_DIR}\""
           # Transfer the file without duplicating locally
-          scp -v "${{ env.ARTIFACT_PATH }}" "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}:$TARGET_DIR/${{ env.REMOTE_IMG_NAME }}"
+          scp -v "${{ env.ARTIFACT_PATH }}" \
+            "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}:${TARGET_DIR}/${{ env.REMOTE_IMG_NAME }}"
 
       - name: Prune remote images
         env:
           TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
           KEEP_IMAGE_COUNT: 3
         run: |
-          KEEP="${KEEP_IMAGE_COUNT:-3}"
-          START=$(( KEEP + 1 ))
+          KEEP_INDEX=$(( KEEP_IMAGE_COUNT + 1 ))
           # Delete all but the KEEP most recent .img.zst files
           ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" \
-            "bash -c 'cd \"$TARGET_DIR\" 2>/dev/null || exit 9; ls -1t -- *.img.zst 2>/dev/null | tail -n +${START} | xargs -r rm -f'"
+            "bash -c 'cd \"$TARGET_DIR\" || exit 9; ls -1t -- *.img.zst 2>/dev/null | tail -n +${KEEP_INDEX} | xargs -r rm -f'"
