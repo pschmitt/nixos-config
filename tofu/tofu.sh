@@ -32,8 +32,9 @@ sops_decrypt() {
     sops decrypt --extract '["ssh"]["private_key"]' \
     cloud-credentials.sops.yaml > "${dest}/nixos-anywhere_id_ed25519"
 
-  if [[ -z $SSH_AUTH_SOCK ]]
+  if [[ -z $SSH_AUTH_SOCK || $SSH_AUTH_SOCK == *gpg* ]]
   then
+    echo_info "Starting ssh agent"
     eval "$(ssh-agent -s)"
   fi
 
