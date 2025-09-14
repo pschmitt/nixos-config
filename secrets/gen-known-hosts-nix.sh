@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Generate a Nix attrset mapping host -> { ed25519 = "..."; rsa = "..."; }
-# from SOPS host secrets and write it next to ssh.nix so it can be imported.
+# Generate a JSON mapping host -> { ed25519: "...", rsa: "..." }
+# from SOPS host secrets and write it next to ssh.nix.
 
 GIT_ROOT="$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)"
-DEST="$GIT_ROOT/common/global/ssh-hosts.generated.nix"
+DEST="$GIT_ROOT/common/global/ssh-hosts.generated.json"
 
 echo "Regenerating $DEST" >&2
 
-{
-  echo '{'
+shopt -s nullglob
 
-  shopt -s nullglob
+{
   for SOPS_FILE in "${GIT_ROOT}"/hosts/*/secrets.sops.yaml
   do
     host_dir="$(dirname "$SOPS_FILE")"
@@ -29,22 +28,20 @@ echo "Regenerating $DEST" >&2
       continue
     fi
 
-    # Write the mapping for this host; only include keys that exist
-    echo "  \"$host\" = {"
-    if [[ -n "$ed25519" ]]
-    then
-      printf '    ed25519 = "%s";\n' "$ed25519"
-    fi
-
-    if [[ -n "$rsa" ]]
-    then
-      printf '    rsa = "%s";\n' "$rsa"
-    fi
-
-    echo "  };"
+    jq -n \
+      --arg host "$host" \
+      --arg ed "$ed25519" \
+      --arg rsa "$rsa" \
+      '
+        {
+          ($host): (
+            {} +
+            (if $ed != "" then {ed25519: $ed} else {} end) +
+            (if $rsa != "" then {rsa: $rsa} else {} end)
+          )
+        }
+      '
   done
+} | jq -s 'add // {}' >"$DEST"
 
-  echo '}'
-} >"$DEST"
-
-  echo "Wrote $DEST" >&2
+echo "Wrote $DEST" >&2
