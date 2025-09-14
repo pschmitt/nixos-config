@@ -312,4 +312,5 @@ in
   '';
 
   programs.ssh.startAgent = true;
+  programs.gnupg.agent.enableSSHSupport = lib.mkForce false;
 }
