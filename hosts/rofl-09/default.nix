@@ -29,6 +29,9 @@
     ../../services/turris-ssh-tunnel.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
 
+    # misc
+    ../../misc/rsync-fonts-to-rofl-03.nix
+
     # host-specific service config
     ./container-services.nix
     ./monit.nix
