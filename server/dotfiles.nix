@@ -310,4 +310,6 @@ in
       complete -F _complete_alias "''${!BASH_ALIASES[@]}"
     fi
   '';
+
+  programs.ssh.startAgent = true;
 }
