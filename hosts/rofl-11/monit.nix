@@ -1,13 +1,10 @@
 {
   lib,
   config,
-  inputs,
   pkgs,
   ...
 }:
 let
-  dcpPkg = inputs.docker-compose-bulk.packages.${pkgs.system}.docker-compose-bulk;
-
   mullvadExpiration = pkgs.writeShellScript "mullvad-expiration" ''
     export PATH=${
       pkgs.lib.makeBinPath [
@@ -16,7 +13,7 @@ let
         pkgs.jq
       ]
     }
-    ${builtins.readFile ./mullvad-expiration.sh}
+    ${builtins.readFile ../../common/monit/mullvad-expiration.sh}
   '';
 
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
