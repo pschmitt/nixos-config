@@ -39,6 +39,10 @@ locals {
     {
       hostname = "rofl-13",
       content  = openstack_networking_floatingip_v2.rofl-13_fip.address
+    },
+    {
+      hostname = "rofl-14",
+      content  = openstack_networking_floatingip_v2.rofl-14_fip.address
     }
   ]
 
