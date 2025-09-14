@@ -1,8 +1,8 @@
 { config, ... }:
 {
-  # NOTE we can't import this here, since it would produce a weird shizz on rofl-07
+  # NOTE we can't import this here, since it would produce a weird shizz on rofl-11
   # imports = [
-  #   ./nfs/nfs-client-rofl-08.nix
+  #   ./nfs/nfs-client-rofl-11.nix
   # ];
 
   sops = {
