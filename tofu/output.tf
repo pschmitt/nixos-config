@@ -1,21 +1,6 @@
-output "rofl-09_fip" {
-  value       = openstack_networking_floatingip_v2.rofl-09_fip.address
-  description = "Floating IP address of rofl-09"
-}
-
-output "rofl_03_boot_volume_id" {
-  value       = openstack_blockstorage_volume_v3.rofl_03_boot_volume.id
-  description = "Volume ID of the root volume of rofl-03"
-}
-
-output "rofl_03_fip" {
-  value       = openstack_networking_floatingip_v2.rofl_03_fip.address
-  description = "Floating IP address of rofl-03"
-}
-
-output "oci_03_public_ip" {
-  value       = oci_core_instance.oci_03.public_ip
-  description = "Public IP address of oci-03"
+output "rofl-10_fip" {
+  value       = openstack_networking_floatingip_v2.rofl-10_fip.address
+  description = "Floating IP address of rofl-10"
 }
 
 # vim: set ft=terraform
