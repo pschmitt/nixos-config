@@ -92,7 +92,7 @@ resource "cloudflare_record" "media-brkn-lol" {
   name    = "media"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "jelly-brkn-lol" {
@@ -100,7 +100,7 @@ resource "cloudflare_record" "jelly-brkn-lol" {
   name    = "jelly"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "jellyfin-brkn-lol" {
@@ -108,7 +108,7 @@ resource "cloudflare_record" "jellyfin-brkn-lol" {
   name    = "jellyfin"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "pp-brkn-lol" {
@@ -116,7 +116,7 @@ resource "cloudflare_record" "pp-brkn-lol" {
   name    = "pp"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "tv-brkn-lol" {
@@ -124,7 +124,7 @@ resource "cloudflare_record" "tv-brkn-lol" {
   name    = "tv"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 # arr
@@ -133,7 +133,7 @@ resource "cloudflare_record" "snr-brkn-lol" {
   name    = "snr"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "rdr-brkn-lol" {
@@ -141,7 +141,7 @@ resource "cloudflare_record" "rdr-brkn-lol" {
   name    = "rdr"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "to-brkn-lol" {
@@ -149,7 +149,7 @@ resource "cloudflare_record" "to-brkn-lol" {
   name    = "to"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
 
 resource "cloudflare_record" "tdarr-brkn-lol" {
@@ -157,5 +157,5 @@ resource "cloudflare_record" "tdarr-brkn-lol" {
   name    = "tdarr"
   type    = "A"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl_08_fip.address
+  content = openstack_networking_floatingip_v2.rofl_11_fip.address
 }
