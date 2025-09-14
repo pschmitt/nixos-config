@@ -30,7 +30,7 @@
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
 
     # misc
-    ../../misc/rsync-fonts-to-rofl-03.nix
+    ../../misc/rsync-fonts-to-rofl-13.nix
 
     # host-specific service config
     ./container-services.nix
