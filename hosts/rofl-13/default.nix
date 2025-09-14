@@ -9,13 +9,12 @@
 
     ../../services/harmonia.nix
     ../../services/http.nix
-    # TODO enable NFS on rofl-11
-    # ../../services/nfs/nfs-client-rofl-11.nix
+    ../../services/nfs/nfs-client-rofl-11.nix
     ../../services/tdarr-node.nix
     ../../services/xmr/xmrig.nix
   ];
 
-  custom.cattle = true;
+  custom.cattle = false;
   custom.promptColor = "yellow";
 
   # Enable networking
