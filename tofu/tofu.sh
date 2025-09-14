@@ -9,7 +9,7 @@ sops_decrypt() {
 
   local dest="${TOFU_DIR:-${PWD}}"
   local age_key
-  age_key=$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")
+  age_key=${SOPS_AGE_KEY:-$(ssh-to-age -private-key -i "$SSH_IDENTITY_FILE")}
 
   unset SOPS_AGE_KEY_FILE
 
