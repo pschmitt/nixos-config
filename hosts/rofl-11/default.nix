@@ -20,7 +20,8 @@
 
     ./container-services.nix
     ./monit.nix
-    ./restic.nix
+    # FIXME We are missing some config for restic to work..
+    # ./restic.nix
   ];
 
   custom.cattle = false;
