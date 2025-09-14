@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -23,7 +23,8 @@
     ./restic.nix
   ];
 
-  custom.cattle = true;
+  custom.cattle = false;
+  custom.promptColor = "#9C62C5"; # jellyfin purple
 
   # Enable networking
   networking = {
@@ -36,5 +37,5 @@
     };
   };
 
-  # environment.systemPackages = with pkgs; [ ];
+  environment.systemPackages = with pkgs; [ yt-dlp ];
 }
