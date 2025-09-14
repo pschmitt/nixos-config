@@ -9,12 +9,12 @@ let
     "${host}.netbird.cloud"
   ];
 
-  # NOTE ssh-hosts.generated.nix is generated using ./secrets/
+  # NOTE ssh-hosts.generated.json is generated using ./secrets/gen-known-hosts-nix.sh
   generatedHostKeys =
     let
-      p = ./ssh-hosts.generated.nix;
+      p = ./ssh-hosts.generated.json;
     in
-    if builtins.pathExists p then import p else { };
+    if builtins.pathExists p then builtins.fromJSON (builtins.readFile p) else { };
 
   # Default map of hosts to their pubkeys
   defaultHostKeys = {
