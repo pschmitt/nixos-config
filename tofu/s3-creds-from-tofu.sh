@@ -8,8 +8,10 @@ cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
   | if $host != "" and $host != null and $ids[$host] != null
     then
+      # Show host keys only
       "\($ids[$host]) \($secrets[$host])"
     else
+      # Show all
       ($ids | keys_unsorted[]) as $h
       | "\($h): \($ids[$h]) \($secrets[$h])"
     end
