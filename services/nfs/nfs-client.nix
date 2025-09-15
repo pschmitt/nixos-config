@@ -1,7 +1,5 @@
 {
-  # TODO Update default host once migration is done
-  # server ? "rofl-10.netbird.cloud",
-  server ? "rofl-09.netbird.cloud",
+  server ? "rofl-10.netbird.cloud",
   exportPath ? "/export",
   mountPoint ? "/mnt/data",
   exports ? [
