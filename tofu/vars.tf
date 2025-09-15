@@ -125,4 +125,22 @@ variable "oci_private_key_path" {
   default     = "~/.config/oci/oci_api_key.pem"
 }
 
+variable "wasabi_region" {
+  description = "Wasabi region"
+  type        = string
+  default     = "eu-central-2"
+}
+
+variable "wasabi_access_key" {
+  description = "Wasabi root account access key"
+  type        = string
+  sensitive   = true
+}
+
+variable "wasabi_secret_key" {
+  description = "Wasabi root account secret key"
+  type        = string
+  sensitive   = true
+}
+
 # vim: set ft=terraform
