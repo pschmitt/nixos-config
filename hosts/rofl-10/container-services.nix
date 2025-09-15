@@ -51,13 +51,6 @@ let
         "linkding.${config.custom.mainDomain}"
       ];
     };
-    linkwarden = {
-      port = 54659;
-      hosts = [
-        "lw.${config.custom.mainDomain}"
-        "linkwarden.${config.custom.mainDomain}"
-      ];
-    };
     mealie = {
       port = 63254;
       hosts = [
