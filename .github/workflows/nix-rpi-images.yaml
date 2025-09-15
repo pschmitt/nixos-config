@@ -114,7 +114,7 @@ jobs:
       - name: Prune remote images
         env:
           TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
-          KEEP_IMAGE_COUNT: 3
+          KEEP_IMAGE_COUNT: 10
         run: |
           KEEP_INDEX=$(( KEEP_IMAGE_COUNT + 1 ))
           # Delete all but the KEEP most recent .img.zst files
