@@ -27,6 +27,7 @@
     ../../services/searxng.nix
     ../../services/turris-ssh-tunnel.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
+    ../../services/nfs/nfs-client-rofl-11.nix
 
     # misc
     ../../misc/rsync-fonts-to-rofl-13.nix
