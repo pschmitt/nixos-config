@@ -14,6 +14,11 @@ terraform {
       source  = "terraform-provider-openstack/openstack"
       version = "~> 3.2.0"
     }
+
+    wasabi = {
+      source  = "thesisedu/wasabi"
+      version = "~> 4.1"
+    }
   }
 
   backend "s3" {
@@ -54,4 +59,9 @@ provider "openstack" {
   cloud = var.openstack_cloud
 }
 
+provider "wasabi" {
+  region     = var.wasabi_region
+  access_key = var.wasabi_access_key
+  secret_key = var.wasabi_secret_key
+}
 # vim: set ft=terraform :
