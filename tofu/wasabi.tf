@@ -1,53 +1,11 @@
-resource "wasabi_bucket" "deleteme-test" {
-  bucket = "test-deleteme-pschmitt-lol-fart"
-  acl    = "private"
+module "restic_wasabi" {
+  source = "./modules/wasabi"
+  hosts  = ["rofl-10", "rofl-11", "rofl-12", "rofl-13", "rofl-14"]
 
-  versioning {
-    enabled = false
-  }
-}
-
-resource "wasabi_policy" "restic_backup_test_deleteme_rw" {
-  name = "restic-backup-test-deleteme-rw"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["s3:ListAllMyBuckets"]
-        Resource = "arn:aws:s3:::*"
-      },
-      {
-        Effect = "Allow"
-        Action = ["s3:*"]
-        Resource = [
-          "arn:aws:s3:::${wasabi_bucket.deleteme-test.bucket}",
-          "arn:aws:s3:::${wasabi_bucket.deleteme-test.bucket}/*"
-        ]
-      }
-    ]
-  })
-}
-
-resource "wasabi_user_policy_attachment" "restic_test_deleteme_rw" {
-  user       = wasabi_user.restic_test_deleteme.name
-  policy_arn = wasabi_policy.restic_backup_test_deleteme_rw.arn
-}
-
-resource "wasabi_user" "restic_test_deleteme" {
-  name = "restic-test-deleteme"
-}
-
-resource "wasabi_group" "restic" {
-  name = "restic"
-}
-
-resource "wasabi_group_membership" "restic_members" {
-  name = "restic"
-
-  group = wasabi_group.restic.name
-  users = [
-    # non-tofu managed group members
+  bucket_prefix       = "restic-backup"
+  versioning_enabled  = false
+  restic_group_name   = "restic"
+  static_group_members = [
     "autorestic",
     "restic-fnuc",
     "restic-ge2",
@@ -59,24 +17,15 @@ resource "wasabi_group_membership" "restic_members" {
     "restic-turris",
     "restic-wrt1900ac",
     "restic-x13",
-
-    # tofu managed group members
-    wasabi_user.restic_test_deleteme.name
   ]
 }
 
-resource "wasabi_access_key" "restic_test_deleteme" {
-  user   = wasabi_user.restic_test_deleteme.name
-  status = "Active"
-}
-
-# --- Outputs (sensitive) ---
-output "restic_test_deleteme_access_key_id" {
-  value     = wasabi_access_key.restic_test_deleteme.id
+output "access_key_ids" {
+  value     = module.restic_wasabi.access_key_ids
   sensitive = true
 }
 
-output "restic_test_deleteme_secret" {
-  value     = wasabi_access_key.restic_test_deleteme.secret
+output "access_key_secrets" {
+  value     = module.restic_wasabi.access_key_secrets
   sensitive = true
 }
