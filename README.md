@@ -19,18 +19,14 @@ To create a new host:
 2. Create the config files:
 
 ```shell
-# nix config
-mkdir -p ./hosts/$NEW_HOST
-cp ./hosts/rofl-09/*.nix ./hosts/$NEW_HOST
-./secrets/sops-init.sh $NEW_HOST
-
-# create tofu config
-cp -a ./tofu/rofl-05.tf ./tofu/${NEW_HOST}.tf
+./new-host.sh $NEW_HOST
 ```
 
-3. Add to `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
+3. Update [./tofu/dns-dynamic.tf](./tofu/dns-dynamic.tf)
 
-4. Deploy:
+4. Add to `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
+
+5. Deploy:
 
 ```shell
 ./tofu/tofu.sh init
@@ -39,10 +35,13 @@ cp -a ./tofu/rofl-05.tf ./tofu/${NEW_HOST}.tf
 
 ## Removing a host
 
-1. Remove from `flake.nix`
-2. Remove from `./tofu/dns-dynamic.tf`
-3. Remove from `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
-4.
+1. Remove its config from:
+- [flake.nix](./flake.nix)
+- [./tofu/dns-dynamic.tf](./tofu/dns-dynamic.tf)
+
+2. Remove from `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
+
+3.
 ```shell
 HOST_TO_REMOVE=xxx
 rm -rf "./host/$HOST_TO_REMOVE" "./tofu/${HOST_TO_REMOVE}.tf"
