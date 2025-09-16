@@ -5,14 +5,6 @@ Description: tdb.
 
 ## Deploying a new host
 
-### Don't got no time?
-
-```shell
-./new-host.sh --optimist $NEW_HOSTNAME
-```
-
-### Manually
-
 To create a new host:
 
 1. Add it to [flake.nix](./flake.nix)
