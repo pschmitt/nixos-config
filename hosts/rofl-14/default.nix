@@ -12,6 +12,8 @@
     ../../services/nfs/nfs-client-rofl-11.nix
     ../../services/tdarr-node.nix
     ../../services/xmr/xmrig.nix
+
+    ../../services/github-runner.nix
   ];
 
   custom.cattle = true;
