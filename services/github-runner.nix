@@ -27,6 +27,7 @@
       git
       jq
       nix
+      openssh
     ];
   };
 }
