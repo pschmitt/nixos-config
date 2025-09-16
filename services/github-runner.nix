@@ -20,8 +20,9 @@
 
     noDefaultLabels = false;
     extraLabels = [
-      "self-hosted"
       "linux"
+      "nixos"
+      "self-hosted"
     ];
 
     extraPackages = with pkgs; [
