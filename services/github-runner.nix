@@ -19,6 +19,7 @@
     extraLabels = [
       "self-hosted"
       "linux"
+      "nixos"
     ];
     # workDir = "/var/lib/github-runner/work";
   };
