@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
 
   sops.secrets."github-runners/nixos-config/token" = {
@@ -22,5 +22,11 @@
       "nixos"
     ];
     # workDir = "/var/lib/github-runner/work";
+
+    extraPackages = with pkgs; [
+      git
+      jq
+      nix
+    ];
   };
 }
