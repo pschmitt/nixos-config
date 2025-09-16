@@ -1,15 +1,16 @@
-{ ... }:
+{ config, ... }:
 let
   # Helper to build hostnames across all known suffixes
   mkHostnames = host: [
-    "${host}.brkn.lol"
-    "${host}.nb.brkn.lol"
-    "${host}.ts.brkn.lol"
+    host
+    "${host}.${config.custom.mainDomain}"
+    "${host}.nb.${config.custom.mainDomain}"
+    "${host}.ts.${config.custom.mainDomain}"
     "${host}.snake-eagle.ts.net"
     "${host}.netbird.cloud"
   ];
 
-  # NOTE ssh-hosts.generated.json is generated using ./secrets/gen-known-hosts-nix.sh
+  # NOTE ssh-hosts.generated.json is generated using ./secrets/ssh-gen-known-hosts.sh
   generatedHostKeys =
     let
       p = ./ssh-hosts.generated.json;
