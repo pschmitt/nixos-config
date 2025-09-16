@@ -22,7 +22,6 @@
     extraLabels = [
       "self-hosted"
       "linux"
-      "nixos"
     ];
 
     extraPackages = with pkgs; [
