@@ -68,7 +68,7 @@ main() {
   cp -va "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
   printf '%s' "$NEW_HOSTNAME" > "${DEST}/HOSTNAME"
   ./secrets/sops-init.sh "$NEW_HOSTNAME"
-  ./secrets/gen-known-hosts-nix.sh
+  ./secrets/ssh-gen-known-hosts.sh
 
   # tofu config
   if [[ "$TEMPLATE_TYPE" == "raw" ]]
