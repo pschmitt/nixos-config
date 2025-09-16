@@ -21,7 +21,6 @@
       "linux"
       "nixos"
     ];
-    # workDir = "/var/lib/github-runner/work";
 
     extraPackages = with pkgs; [
       git
@@ -29,5 +28,7 @@
       nix
       openssh
     ];
+
+    # workDir = "/var/lib/github-runner/work";
   };
 }
