@@ -302,6 +302,8 @@ in
     alias tmam="tmux attach-session -t main"
 
     alias grep="grep --color=auto"
+
+    alias cdnix="cd /etc/nixos"
   '';
 
   # NOTE This must be put *after* all the aliases were defined.
