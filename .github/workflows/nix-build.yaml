@@ -19,7 +19,7 @@ env:
 
 jobs:
   setup-matrix:
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -42,7 +42,7 @@ jobs:
 
   build-pkgs-free:
     needs: setup-matrix
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -97,7 +97,7 @@ jobs:
 
   build-pkgs-oci:
     needs: setup-matrix
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -174,7 +174,7 @@ jobs:
 
   build-pkgs-nonfree:
     needs: setup-matrix
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     env:
       NIXPKGS_ALLOW_UNFREE: 1
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
@@ -258,7 +258,7 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
     if: ${{ always() && (needs.setup-matrix.result == 'success') }}
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -323,7 +323,7 @@ jobs:
       - build-pkgs-nonfree
       - build-pkgs-oci
     if: ${{ always() && (needs.setup-matrix.result == 'success') }}
-    runs-on: [self-hosted, nixos]
+    runs-on: ubuntu-latest
     # runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
