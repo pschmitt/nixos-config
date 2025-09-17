@@ -40,6 +40,8 @@ in
     withPython3 = false;
 
     extraPackages = with pkgs; [
+      tree-sitter
+
       # vimPlugins.nvim-treesitter.withAllGrammars
       shellcheck
       shfmt
