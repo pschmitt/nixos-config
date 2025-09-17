@@ -104,6 +104,12 @@ in
     };
   };
 
+  # We need to have the NFS share mounted *before* starting the container
+  systemd.services."docker-monero-wallet-rpc" = {
+    requires = [ "mnt-data-srv.mount" ];
+    after = [ "mnt-data-srv.mount" ];
+  };
+
   # Restart the wallet RPC service every night at 3:00
   systemd.services."monero-wallet-rpc-restart" = {
     description = "Restart the Monero Wallet RPC service";
