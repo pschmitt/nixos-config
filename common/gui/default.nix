@@ -9,6 +9,7 @@
     ./fonts.nix
     ./gnome-keyring.nix
     ./gpu.nix
+    ./go-hass-agent.nix
     ./hacompanion.nix
     ./libvirt.nix
     ./logitech-mouse.nix
