@@ -14,9 +14,10 @@
     documentation = [ "https://github.com/joshuar/go-hass-agent" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = [
-      "${config.custom.homeDirectory}"
+      config.custom.homeDirectory
       "/run/current-system/sw"
       "/etc/profiles/per-user/${config.custom.username}"
+      pkgs.chrony
     ];
 
     # NOTE We probably need these 2 vars for playerctl
