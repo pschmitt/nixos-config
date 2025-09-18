@@ -11,6 +11,7 @@
     name = config.networking.hostName;
     replace = true;
     ephemeral = false;
+
     # Run the runner as our dedicated user so $HOME is writable
     user = "github-actions";
     group = "github-actions";
