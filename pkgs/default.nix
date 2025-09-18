@@ -15,6 +15,7 @@ in
   docker-compose-wrapper = pkgs.callPackage ./docker-compose-wrapper { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   flarectl = pkgs.callPackage ./flarectl { };
+  go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
