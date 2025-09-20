@@ -34,7 +34,7 @@
 
     # ai
     aichat
-    codex
+    master.codex
     shell-gpt
     tgpt
 
