@@ -8,6 +8,18 @@
     pkgs.go-hass-agent
   ];
 
+  sops.secrets = {
+    "home-assistant/server" = { };
+    "home-assistant/token".sopsFile = config.custom.sopsFile;
+  };
+
+  sops.templates."go-hass-agent.env" = {
+    content = ''
+      HASS_SERVER=${config.sops.placeholder."home-assistant/server"}
+      HASS_TOKEN=${config.sops.placeholder."home-assistant/token"}
+    '';
+  };
+
   systemd.services.go-hass-agent = {
     enable = true;
     description = "A Home Assistant, native app for desktop/laptop devices.";
@@ -26,12 +38,16 @@
       XDG_RUNTIME_DIR = "/run/user/1000";
       DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
       # For the gui
-      WAYLAND_DISPLAY= "wayland-1";
+      WAYLAND_DISPLAY = "wayland-1";
       DISPLAY = ":0";
     };
 
     serviceConfig = {
       User = "${config.custom.username}";
+      EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
+
+      ExecStartPre = "${pkgs.go-hass-agent}/bin/go-hass-agent register --force --server=\"$HASS_SERVER\" --token=\"$HASS_TOKEN\"";
+
       # NOTE We can't use %E here since we are running as a system service
       # EnvironmentFile = "${config.custom.homeDirectory}/.config/go-hass-agent/secrets";
       ExecStart = "${pkgs.go-hass-agent}/bin/go-hass-agent run";
