@@ -49,22 +49,28 @@
       DISPLAY = ":0";
     };
 
-    serviceConfig = {
-      User = "${config.custom.username}";
-      EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
+    serviceConfig =
+      let
+        goHassAgent = "${pkgs.go-hass-agent}/bin/go-hass-agent";
+      in
+      {
+        User = "${config.custom.username}";
+        EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
 
-      ExecStartPre = [
-        "${pkgs.go-hass-agent}/bin/go-hass-agent --terminal register --server=\"$HASS_SERVER\" --token=\"$HASS_TOKEN\""
-        "${pkgs.go-hass-agent}/bin/go-hass-agent --terminal config --mqtt-server=\"$MQTT_SERVER\" --mqtt-user=\"$MQTT_USERNAME\" --mqtt-password=\"$MQTT_PASSWORD\""
-      ];
+        ExecStartPre = [
+          # FIXME The env vars are not expanded here for some reason, if not
+          # run wrapped in bash
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal register --force --server=$HASS_SERVER --token=$HASS_TOKEN'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD'"
+        ];
 
-      # NOTE We can't use %E here since we are running as a system service
-      # EnvironmentFile = "${config.custom.homeDirectory}/.config/go-hass-agent/secrets";
-      ExecStart = "${pkgs.go-hass-agent}/bin/go-hass-agent run";
+        # NOTE We can't use %E here since we are running as a system service
+        # EnvironmentFile = "${config.custom.homeDirectory}/.config/go-hass-agent/secrets";
+        ExecStart = "${goHassAgent} run";
 
-      Restart = "always";
-      RestartSec = 5;
-    };
+        Restart = "always";
+        RestartSec = 5;
+      };
 
     # For user services
     # wantedBy = [ "default.target" ];
