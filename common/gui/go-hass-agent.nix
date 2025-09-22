@@ -11,13 +11,20 @@
   sops.secrets = {
     "home-assistant/server" = { };
     "home-assistant/token".sopsFile = config.custom.sopsFile;
+    "home-assistant/mqtt/host" = { };
+    "home-assistant/mqtt/username".sopsFile = config.custom.sopsFile;
+    "home-assistant/mqtt/password".sopsFile = config.custom.sopsFile;
   };
 
   sops.templates."go-hass-agent.env" = {
     content = ''
       HASS_SERVER=${config.sops.placeholder."home-assistant/server"}
       HASS_TOKEN=${config.sops.placeholder."home-assistant/token"}
+      MQTT_SERVER=${config.sops.placeholder."home-assistant/mqtt/host"}
+      MQTT_USERNAME=${config.sops.placeholder."home-assistant/mqtt/username"}
+      MQTT_PASSWORD=${config.sops.placeholder."home-assistant/mqtt/password"}
     '';
+    owner = config.systemd.services.go-hass-agent.serviceConfig.User;
   };
 
   systemd.services.go-hass-agent = {
@@ -46,7 +53,10 @@
       User = "${config.custom.username}";
       EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
 
-      ExecStartPre = "${pkgs.go-hass-agent}/bin/go-hass-agent register --force --server=\"$HASS_SERVER\" --token=\"$HASS_TOKEN\"";
+      ExecStartPre = [
+        "${pkgs.go-hass-agent}/bin/go-hass-agent --terminal register --server=\"$HASS_SERVER\" --token=\"$HASS_TOKEN\""
+        "${pkgs.go-hass-agent}/bin/go-hass-agent --terminal config --mqtt-server=\"$MQTT_SERVER\" --mqtt-user=\"$MQTT_USERNAME\" --mqtt-password=\"$MQTT_PASSWORD\""
+      ];
 
       # NOTE We can't use %E here since we are running as a system service
       # EnvironmentFile = "${config.custom.homeDirectory}/.config/go-hass-agent/secrets";
