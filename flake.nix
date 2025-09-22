@@ -145,6 +145,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # nur-combined = {
+    #   url = "github:nix-community/nur-combined";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
+
     sendmyl = {
       url = "github:pschmitt/sendmyl";
       inputs.nixpkgs.follows = "nixpkgs";
