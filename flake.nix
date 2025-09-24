@@ -44,7 +44,7 @@
 
     flatpaks = {
       # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
-      url = "github:in-a-dil-emma/declarative-flatpak/stable-v3";
+      url = "github:in-a-dil-emma/declarative-flatpak/v3.1.0";
       # NOTE Do *not* override nixpkgs, it is not supported
     };
 
