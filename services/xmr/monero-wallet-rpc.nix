@@ -108,6 +108,10 @@ in
   systemd.services."docker-monero-wallet-rpc" = {
     requires = [ "mnt-data-srv.mount" ];
     after = [ "mnt-data-srv.mount" ];
+    serviceConfig = {
+      Restart = "always";
+      RestartSec = "10s";
+    };
   };
 
   # Restart the wallet RPC service every night at 3:00
