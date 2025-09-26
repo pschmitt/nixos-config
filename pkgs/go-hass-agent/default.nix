@@ -26,7 +26,7 @@ buildGoModule rec {
     owner = "joshuar";
     repo = "go-hass-agent";
     rev = "v${version}";
-    hash = "sha256-6OgEhP2G8tnaYsa9rpPx/VoQ1akrGDFmwjkBuzjPVPQ=";
+    hash = "sha256-gvb/XuNAnypfgHqMnxFwn+8BXTJm4r1TvC8fwLmO5Bk=";
   };
 
   vendorHash = "sha256-m+4kPNlfZBSW3TGsoYjburKdEo10ysV5AJCr5oDy9qU=";
