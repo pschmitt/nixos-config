@@ -60,7 +60,7 @@
         ExecStartPre = [
           # FIXME The env vars are not expanded here for some reason, if not
           # run wrapped in bash
-          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal register --force --server=$HASS_SERVER --token=$HASS_TOKEN'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal register --server=$HASS_SERVER --token=$HASS_TOKEN'"
           "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD'"
         ];
 
