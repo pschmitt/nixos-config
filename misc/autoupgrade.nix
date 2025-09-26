@@ -7,7 +7,9 @@
     flags = [
       # FIXME auto-accept nixConfig.extra-substituters from flake.nix
       "--accept-flake-config"
-      "--fallback" # fall back to building locally if substitutes fail
+
+      # fall back to building locally if substitutes fail
+      "--fallback"
     ];
 
     dates = "02:30";
