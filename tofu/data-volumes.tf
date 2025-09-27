@@ -49,12 +49,6 @@ resource "openstack_blockstorage_volume_v3" "blobarr" {
   }
 }
 
-resource "openstack_compute_volume_attach_v2" "va_rofldata_legacy" {
-  provider    = openstack.optimist-legacy
-  instance_id = openstack_compute_instance_v2.rofl-09.id
-  volume_id   = openstack_blockstorage_volume_v3.rofldata_volume_legacy.id
-}
-
 resource "openstack_compute_volume_attach_v2" "va_blobarr_legacy" {
   provider    = openstack.optimist-legacy
   instance_id = openstack_compute_instance_v2.rofl-08.id
