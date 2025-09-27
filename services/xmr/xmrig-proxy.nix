@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 # NOTE to connect:
-# sudo , xmrig -o xmrig-proxy.rofl-06.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD"
+# sudo , xmrig -o xmrig-proxy.<hostname>.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD"
 
 let
   hostname = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}";

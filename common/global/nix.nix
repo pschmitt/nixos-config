@@ -22,14 +22,6 @@
     };
     templates = {
       nix-cache-netrc.content = ''
-        machine cache.rofl-03.brkn.lol
-        login ${config.sops.placeholder."nix/credentials/username"}
-        password ${config.sops.placeholder."nix/credentials/password"}
-
-        machine cache.rofl-09.brkn.lol
-        login ${config.sops.placeholder."nix/credentials/username"}
-        password ${config.sops.placeholder."nix/credentials/password"}
-
         machine cache.rofl-10.brkn.lol
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
@@ -108,12 +100,6 @@
           # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
           # "https://cache.garnix.io"
 
-          # "ssh://nix-remote-builder@rofl-03.brkn.lol?ssh-key=${
-          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-          # }"
-          # "ssh://nix-remote-builder@rofl-09.brkn.lol?ssh-key=${
-          #   config.sops.secrets."ssh/nix-remote-builder/privkey".path
-          # }"
           # "https://nix-cache.brkn.lol"
         ]
         # don't use local http cache on the same host

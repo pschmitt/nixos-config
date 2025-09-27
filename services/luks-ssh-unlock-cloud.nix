@@ -4,10 +4,12 @@ let
   # List of instance names
   instanceNames = [
     "oci-03"
-    "rofl-03"
-    "rofl-06"
     "rofl-08"
-    "rofl-09"
+    "rofl-10"
+    "rofl-11"
+    "rofl-12"
+    "rofl-13"
+    "rofl-14"
   ];
 
   # Define a function to create an instance with common defaults

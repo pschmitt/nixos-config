@@ -6,7 +6,6 @@
     ../../server
     ../../server/optimist.nix
 
-    (import ../../services/nfs/nfs-client.nix { mountPoint = "/mnt/rofl-09"; })
     (import ../../services/nfs/nfs-server.nix {
       inherit lib;
       exports = [
