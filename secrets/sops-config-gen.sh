@@ -120,6 +120,11 @@ main() {
         SOPS_UPDATE_KEYS=1
         shift
         ;;
+      -a|--auto)
+        SOPS_UPDATE_KEYS=1
+        SOPS_GEN_SSH_AUTH_KEYS=1
+        shift
+        ;;
       *)
         break
         ;;
@@ -149,6 +154,11 @@ main() {
   [[ -z "$SOPS_UPDATE_KEYS" ]] && return 0
 
   ./secrets/sops-update-keys.sh
+  local rc="$?"
+
+  [[ -z "$SOPS_GEN_SSH_AUTH_KEYS" ]] && return "$rc"
+
+  ./secrets/ssh-gen-known-hosts.sh
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
