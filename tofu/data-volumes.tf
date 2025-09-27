@@ -24,12 +24,6 @@ resource "openstack_blockstorage_volume_v3" "blobarr" {
   }
 }
 
-resource "openstack_compute_volume_attach_v2" "va_blobarr_legacy" {
-  provider    = openstack.optimist-legacy
-  instance_id = openstack_compute_instance_v2.rofl-08.id
-  volume_id   = openstack_blockstorage_volume_v3.blobarr_volume_legacy.id
-}
-
 resource "oci_core_volume" "oci_01_data" {
   availability_domain = oci_core_instance.oci_01.availability_domain
   compartment_id      = var.oci_compartment_id
