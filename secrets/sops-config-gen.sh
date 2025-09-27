@@ -113,8 +113,13 @@ main() {
   do
     case "$1" in
       -g|--username|--github-user*)
-        GITHUB_USERNAME="$2"
-        shift 2
+        if [[ -n "$2" ]]; then
+          GITHUB_USERNAME="$2"
+          shift 2
+        else
+          echo "Error: Missing value for $1" >&2
+          exit 1
+        fi
         ;;
       -u|--update*)
         SOPS_UPDATE_KEYS=1
