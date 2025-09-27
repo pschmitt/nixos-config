@@ -4,7 +4,7 @@ github_age_keys() {
   local user="$1"
   local url="https://github.com/${user:-${GITHUB_USERNAME}}.keys"
 
-  curl -fsSL "$url" | grep ed25519 | xargs -I {} sh -c 'ssh-to-age <<< "{}"'
+  curl -fsSL "$url" | grep ed25519 | xargs -I {} bash -c 'ssh-to-age <<< "{}"'
 }
 
 # shellcheck disable=2120
@@ -50,6 +50,12 @@ sops_config_gen() {
   local gh_keys hosts
   mapfile -t hosts < <(nix_host_configs)
   gh_keys=$(github_age_keys_yaml)
+
+  if [[ -z $gh_keys ]]
+  then
+    echo "No github keys found for user ${GITHUB_USERNAME}" >&2
+    return 1
+  fi
 
   local sops_config
   sops_config=$(gh_keys="$gh_keys" yq -n '
@@ -97,7 +103,7 @@ sops_config_gen() {
 }
 
 main() {
-  set -e
+  set -e -o pipefail
   # go to the root of the repo
   cd "$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)" || exit 9
 
@@ -107,7 +113,7 @@ main() {
   do
     case "$1" in
       -g|--username|--github-user*)
-        GITHUB_USERNAME="$1"
+        GITHUB_USERNAME="$2"
         shift 2
         ;;
       *)
