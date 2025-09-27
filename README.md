@@ -37,6 +37,5 @@ To create a new host:
 ```shell
 HOST_TO_REMOVE=xxx
 rm -rf "./host/$HOST_TO_REMOVE" "./tofu/${HOST_TO_REMOVE}.tf"
-./secrets/sops-config-gen.sh
-./secrets/sops-update-keys.sh
+./secrets/sops-config-gen.sh --github-username pschmitt --update
 ```

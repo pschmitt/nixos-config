@@ -116,6 +116,10 @@ main() {
         GITHUB_USERNAME="$2"
         shift 2
         ;;
+      -u|--update*)
+        SOPS_UPDATE_KEYS=1
+        shift
+        ;;
       *)
         break
         ;;
@@ -135,10 +139,16 @@ main() {
     return 1
   fi
 
-  if mv "$SOPS_CONFIG_TMPFILE" "$SOPS_CONFIG_FILE"
+  if ! mv "$SOPS_CONFIG_TMPFILE" "$SOPS_CONFIG_FILE"
   then
-    echo "✅ sops config was written to $SOPS_CONFIG_FILE"
+    echo "Failed to write sops config to $SOPS_CONFIG_FILE" >&2
+    return 1
   fi
+
+  echo "✅ sops config was written to $SOPS_CONFIG_FILE"
+  [[ -z "$SOPS_UPDATE_KEYS" ]] && return 0
+
+  ./secrets/sops-update-keys.sh
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
