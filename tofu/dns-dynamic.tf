@@ -9,10 +9,6 @@ locals {
       content  = oci_core_instance.oci_03.public_ip
     },
     {
-      hostname = "rofl-08",
-      content  = openstack_networking_floatingip_v2.rofl_08_fip.address
-    },
-    {
       hostname = "rofl-10",
       content  = openstack_networking_floatingip_v2.rofl-10_fip.address
     },
