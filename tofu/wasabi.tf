@@ -2,9 +2,9 @@ module "restic_wasabi" {
   source = "./modules/wasabi"
   hosts  = ["rofl-10", "rofl-11", "rofl-12", "rofl-13", "rofl-14"]
 
-  bucket_prefix       = "restic-backup"
-  versioning_enabled  = false
-  restic_group_name   = "restic"
+  bucket_prefix      = "restic-backup"
+  versioning_enabled = false
+  restic_group_name  = "restic"
   static_group_members = [
     "autorestic",
     "restic-fnuc",
