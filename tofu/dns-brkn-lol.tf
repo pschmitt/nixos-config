@@ -82,7 +82,7 @@ resource "cloudflare_record" "xmr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "xmr"
-  content = openstack_networking_floatingip_v2.rofl_06_fip.address
+  content = openstack_networking_floatingip_v2.rofl_12_fip.address
   ttl     = 3600
 }
 
