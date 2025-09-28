@@ -7,5 +7,6 @@
     ./gnome.nix
     ./media.nix
     ./theme.nix
+    ./vicinae.nix
   ];
 }

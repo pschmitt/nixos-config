@@ -9,9 +9,10 @@
 {
   imports = lib.concatLists [
     [
-      inputs.sops-nix.homeManagerModules.sops
-      inputs.nix-index-database.homeModules.nix-index
       inputs.catppuccin.homeModules.catppuccin
+      inputs.nix-index-database.homeModules.nix-index
+      inputs.sops-nix.homeManagerModules.sops
+
       ./banking.nix
       ./bitwarden.nix
       ./crypto.nix

@@ -443,6 +443,24 @@
         "type": "github"
       }
     },
+    "flake-utils_13": {
+      "inputs": {
+        "systems": "systems_17"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -2018,6 +2036,7 @@
         "srvos": "srvos",
         "tdc": "tdc",
         "update-systemd-resolved": "update-systemd-resolved",
+        "vicinae": "vicinae",
         "vodafone-station-cli": "vodafone-station-cli",
         "wezterm": "wezterm",
         "zen-browser": "zen-browser"
@@ -2310,6 +2329,21 @@
         "type": "github"
       }
     },
+    "systems_17": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "systems_2": {
       "locked": {
         "lastModified": 1681028828,
@@ -2516,9 +2550,30 @@
         "type": "github"
       }
     },
-    "vodafone-station-cli": {
+    "vicinae": {
       "inputs": {
         "flake-utils": "flake-utils_11",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1759005986,
+        "narHash": "sha256-eeSdtu8gTPE9UmFvCjaUr/eF6kUVmzC5MdK1nwKjkP4=",
+        "owner": "vicinaehq",
+        "repo": "vicinae",
+        "rev": "07a6b0c7b0bc353da042f1bcd8a09a5d54656ff2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vicinaehq",
+        "repo": "vicinae",
+        "type": "github"
+      }
+    },
+    "vodafone-station-cli": {
+      "inputs": {
+        "flake-utils": "flake-utils_12",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2539,7 +2594,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_12",
+        "flake-utils": "flake-utils_13",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
