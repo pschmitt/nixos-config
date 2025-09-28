@@ -1,9 +1,0 @@
-{ config, ... }:
-{
-  imports = [
-    (import ./nfs-client.nix {
-      server = "rofl-09.nb.${config.custom.mainDomain}";
-      mountPoint = "/mnt/data";
-    })
-  ];
-}
