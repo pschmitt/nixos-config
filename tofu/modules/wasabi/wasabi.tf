@@ -38,8 +38,8 @@ variable "restic_group_name" {
 
 # Non-Tofu managed members that must remain in the group.
 variable "static_group_members" {
-  type        = list(string)
-  default     = [
+  type = list(string)
+  default = [
     "autorestic",
     "restic-fnuc",
     "restic-ge2",
@@ -85,7 +85,7 @@ resource "wasabi_policy" "host_rw" {
 
   name = "restic-${each.value}-rw"
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         Effect   = "Allow"
@@ -93,8 +93,8 @@ resource "wasabi_policy" "host_rw" {
         Resource = "arn:aws:s3:::*"
       },
       {
-        Effect   = "Allow"
-        Action   = [
+        Effect = "Allow"
+        Action = [
           # If you want least-privilege, replace "s3:*" with explicit actions:
           # "s3:ListBucket","s3:GetBucketLocation",
           # "s3:GetObject","s3:PutObject","s3:DeleteObject","s3:AbortMultipartUpload"
