@@ -76,12 +76,11 @@ let
     ''
       check host "${serviceName}" with address "${host}"
         group services
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate ${serviceName}"
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps ${serviceName}"
         if failed
           port ${effectivePort}
           protocol ${proto} ${extraClause}
-          with timeout 15 seconds
-          and certificate valid for 5 days
+          with timeout 90 seconds
         then restart
         if 5 restarts within 10 cycles then alert
     '';
