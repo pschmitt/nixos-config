@@ -53,7 +53,10 @@
       {
         User = "${config.custom.username}";
         EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
-        AmbientCapabilities = [ "CAP_SYS_RAWIO" ];
+        AmbientCapabilities = [
+          "CAP_SYS_ADMIN"
+          "CAP_SYS_RAWIO"
+        ];
 
         ExecStartPre = [
           # FIXME The env vars are not expanded here for some reason, if not
