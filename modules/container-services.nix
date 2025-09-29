@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   inherit (lib)
@@ -12,7 +17,7 @@ let
     concatStringsSep
     attrNames
     optionalString
-  ;
+    ;
 
   cfg = config.custom.containerServices;
 
@@ -66,32 +71,30 @@ let
     };
   });
 
-  effectiveEnableACME = service:
+  effectiveEnableACME =
+    service:
     let
       override = service.enableACME;
-      base =
-        if service.default then cfg.defaultEnableACMEForDefaultHosts else cfg.defaultEnableACME;
+      base = if service.default then cfg.defaultEnableACMEForDefaultHosts else cfg.defaultEnableACME;
     in
     if override != null then override else base;
 
-  effectiveUseACMEHost = service:
+  effectiveUseACMEHost =
+    service:
     let
       override = service.useACMEHost;
-      base =
-        if service.default
-        then cfg.defaultUseACMEHostForDefaultHosts
-        else cfg.defaultUseACMEHost;
+      base = if service.default then cfg.defaultUseACMEHostForDefaultHosts else cfg.defaultUseACMEHost;
     in
     if override != null then override else base;
 
-  generateMonitCheck = serviceName: host: service:
+  generateMonitCheck =
+    serviceName: host: service:
     let
       effectivePort = "443";
       proto = "https";
       extraClause =
         if service.http_status_code != null then "status " + toString service.http_status_code else "";
-      composePath =
-        if service.compose_yaml != null then service.compose_yaml else serviceName;
+      composePath = if service.compose_yaml != null then service.compose_yaml else serviceName;
     in
     ''
       check host "${serviceName}" with address "${host}"
@@ -107,10 +110,10 @@ let
 
   generatedChecks = mapAttrs (
     serviceName: service:
-      let
-        firstHost = builtins.head service.hosts;
-      in
-      generateMonitCheck serviceName firstHost service
+    let
+      firstHost = builtins.head service.hosts;
+    in
+    generateMonitCheck serviceName firstHost service
   ) cfg.services;
 
   monitExtraConfig = concatStringsSep "\n\n" (attrValues generatedChecks);
@@ -135,10 +138,10 @@ let
   virtualHosts = builtins.listToAttrs (
     concatMap (
       serviceName:
-        let
-          service = cfg.services.${serviceName};
-        in
-        map (hostname: createVirtualHost service hostname) service.hosts
+      let
+        service = cfg.services.${serviceName};
+      in
+      map (hostname: createVirtualHost service hostname) service.hosts
     ) (attrNames cfg.services)
   );
 
@@ -149,7 +152,7 @@ in
 
     services = mkOption {
       type = types.attrsOf serviceType;
-      default = {};
+      default = { };
       description = "Container services exposed through nginx and monitored by Monit.";
     };
 
