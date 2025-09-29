@@ -1,194 +1,129 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, ... }:
 
 let
-  services = {
-    alby-hub = {
-      port = 25294;
-      hosts = [
-        "alby.${config.custom.mainDomain}"
-      ];
-    };
-    archivebox = {
-      port = 27244;
-      hosts = [
-        "arc.${config.custom.mainDomain}"
-        "archive.${config.custom.mainDomain}"
-        "archivebox.${config.custom.mainDomain}"
-        "arc.${config.networking.hostName}.${config.custom.mainDomain}"
-        "archive.${config.networking.hostName}.${config.custom.mainDomain}"
-        "archivebox.${config.networking.hostName}.${config.custom.mainDomain}"
-      ];
-    };
-    dawarich = {
-      port = 32927;
-      hosts = [
-        "dawarich.${config.custom.mainDomain}"
-        "location.${config.custom.mainDomain}"
-      ];
-    };
-    endurain = {
-      port = 36387;
-      hosts = [
-        "endurain.${config.custom.mainDomain}"
-        "endurian.${config.custom.mainDomain}" # common typo ;)
-      ];
-    };
-    # hoarder = {
-    #   port = 46273;
-    #   hosts = [
-    #     "hoarder.${config.custom.mainDomain}"
-    #   ];
-    # };
-    linkding = {
-      port = 54653;
-      hosts = [
-        "ld.${config.custom.mainDomain}"
-        "linkding.${config.custom.mainDomain}"
-      ];
-    };
-    mealie = {
-      port = 63254;
-      hosts = [
-        "nom.${config.custom.mainDomain}"
-      ];
-    };
-    # memos = {
-    #   port = 63667;
-    #   hosts = [
-    #     "memos.${config.custom.mainDomain}"
-    #   ];
-    # };
-    n8n = {
-      port = 5678;
-      hosts = [
-        "n8n.${config.custom.mainDomain}"
-      ];
-    };
-    nextcloud = {
-      port = 63982;
-      tls = true;
-      hosts = [
-        "c.${config.custom.mainDomain}"
-        "nextcloud.${config.custom.mainDomain}"
-        "c.${config.networking.hostName}.${config.custom.mainDomain}"
-        "nextcloud.${config.networking.hostName}.${config.custom.mainDomain}"
-      ];
-    };
-    open-webui = {
-      port = 6736;
-      hosts = [
-        "ai.${config.custom.mainDomain}"
-      ];
-    };
-    podsync = {
-      port = 7637;
-      hosts = [
-        "podcasts.${config.custom.mainDomain}"
-        "podsync.${config.custom.mainDomain}"
-        "podsync.${config.networking.hostName}.${config.custom.mainDomain}"
-      ];
-    };
-    stirling-pdf = {
-      port = 18733;
-      hosts = [ "pdf.${config.custom.mainDomain}" ];
-    };
-    # traefik = {
-    #   port = 8723; # http: 18723
-    #   default = true;
-    # };
-    wallos = {
-      port = 8282;
-      hosts = [ "subs.${config.custom.mainDomain}" ];
-    };
-    whoami = {
-      port = 19462;
-      hosts = [
-        "whoami.${config.custom.mainDomain}"
-      ];
-      default = true;
-    };
-    wikijs = {
-      port = 9454;
-      hosts = [ "wiki.${config.custom.mainDomain}" ];
-    };
-  };
+  domain = config.custom.mainDomain;
+  hostName = config.networking.hostName;
+  mkHost = subdomain: "${subdomain}.${domain}";
+  mkHostWithNode = subdomain: "${subdomain}.${hostName}.${domain}";
+  wildcardCert = "wildcard.${domain}";
 
-  # Helper function to generate a Monit config snippet.
-  generateMonitCheck =
-    serviceName: host: service:
-    let
-      effectivePort = "443";
-      proto = "https";
-      extraClause =
-        if service ? http_status_code then "status " + toString service.http_status_code else "";
-      composePath = if service ? compose_yaml then service.compose_yaml else serviceName;
-    in
-    ''
-      check host "${serviceName}" with address "${host}"
-        group services
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps ${serviceName}"
-        if failed
-          port ${effectivePort}
-          protocol ${proto} ${extraClause}
-          with timeout 90 seconds
-        then restart
-        if 5 restarts within 10 cycles then alert
-    '';
+in
+{
+  imports = [
+    ../../modules/container-services.nix
+    ../../services/docker-compose-bulk.nix
+  ];
 
-  # Generate a config snippet for each service using its service name and main host.
-  generatedChecks = lib.mapAttrs (
-    serviceName: service:
-    let
-      firstHost = builtins.head service.hosts;
-    in
-    generateMonitCheck serviceName firstHost service
-  ) services;
-
-  monitExtraConfig = lib.concatStringsSep "\n\n" (lib.attrValues generatedChecks);
-
-  # Helper function to create virtual hosts for each service
-  createVirtualHost = service: hostname: {
-    name = hostname;
-    value = {
-      default = service.default or false;
-      enableACME = (if service.default or false then false else true);
-      useACMEHost = (if service.default or false then "wildcard.${config.custom.mainDomain}" else null);
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      locations."/" = {
-        proxyPass = "http${if service.tls or false then "s" else ""}://127.0.0.1:${toString service.port}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
+  custom.containerServices = {
+    enable = true;
+    defaultEnableACMEForDefaultHosts = false;
+    defaultUseACMEHostForDefaultHosts = wildcardCert;
+    services = {
+      alby-hub = {
+        port = 25294;
+        hosts = [ (mkHost "alby") ];
+      };
+      archivebox = {
+        port = 27244;
+        hosts = [
+          (mkHost "arc")
+          (mkHost "archive")
+          (mkHost "archivebox")
+          (mkHostWithNode "arc")
+          (mkHostWithNode "archive")
+          (mkHostWithNode "archivebox")
+        ];
+      };
+      dawarich = {
+        port = 32927;
+        hosts = [
+          (mkHost "dawarich")
+          (mkHost "location")
+        ];
+      };
+      endurain = {
+        port = 36387;
+        hosts = [
+          (mkHost "endurain")
+          (mkHost "endurian") # common typo ;)
+        ];
+      };
+      # hoarder = {
+      #   port = 46273;
+      #   hosts = [
+      #     (mkHost "hoarder")
+      #   ];
+      # };
+      linkding = {
+        port = 54653;
+        hosts = [
+          (mkHost "ld")
+          (mkHost "linkding")
+        ];
+      };
+      mealie = {
+        port = 63254;
+        hosts = [ (mkHost "nom") ];
+      };
+      # memos = {
+      #   port = 63667;
+      #   hosts = [
+      #     (mkHost "memos")
+      #   ];
+      # };
+      n8n = {
+        port = 5678;
+        hosts = [ (mkHost "n8n") ];
+      };
+      nextcloud = {
+        port = 63982;
+        tls = true;
+        hosts = [
+          (mkHost "c")
+          (mkHost "nextcloud")
+          (mkHostWithNode "c")
+          (mkHostWithNode "nextcloud")
+        ];
+      };
+      open-webui = {
+        port = 6736;
+        hosts = [ (mkHost "ai") ];
+      };
+      podsync = {
+        port = 7637;
+        hosts = [
+          (mkHost "podcasts")
+          (mkHost "podsync")
+          (mkHostWithNode "podsync")
+        ];
+      };
+      stirling-pdf = {
+        port = 18733;
+        hosts = [ (mkHost "pdf") ];
+      };
+      # traefik = {
+      #   port = 8723; # http: 18723
+      #   default = true;
+      # };
+      wallos = {
+        port = 8282;
+        hosts = [ (mkHost "subs") ];
+      };
+      whoami = {
+        port = 19462;
+        hosts = [ (mkHost "whoami") ];
+        default = true;
+      };
+      wikijs = {
+        port = 9454;
+        hosts = [ (mkHost "wiki") ];
       };
     };
   };
 
-  # Generate virtual hosts for all services and their hostnames
-  virtualHosts = builtins.listToAttrs (
-    lib.concatMap (
-      serviceName:
-      let
-        service = services.${serviceName};
-      in
-      map (hostname: createVirtualHost service hostname) service.hosts
-    ) (builtins.attrNames services)
-  );
-in
-{
-  imports = [ ../../services/docker-compose-bulk.nix ];
-
   # wildcard cert
-  security.acme.certs."wildcard.${config.custom.mainDomain}" = {
-    domain = "*.${config.custom.mainDomain}";
+  security.acme.certs."${wildcardCert}" = {
+    domain = "*.${domain}";
     group = "nginx";
   };
-
-  services.nginx.virtualHosts = virtualHosts;
-  services.monit.config = lib.mkAfter monitExtraConfig;
 }
