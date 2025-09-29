@@ -44,9 +44,6 @@
     environment = {
       XDG_RUNTIME_DIR = "/run/user/1000";
       DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
-      # For the gui
-      WAYLAND_DISPLAY = "wayland-1";
-      DISPLAY = ":0";
     };
 
     serviceConfig =
@@ -60,8 +57,8 @@
         ExecStartPre = [
           # FIXME The env vars are not expanded here for some reason, if not
           # run wrapped in bash
-          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal register --server=$HASS_SERVER --token=$HASS_TOKEN'"
-          "${pkgs.bash}/bin/bash -c '${goHassAgent} --terminal config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} register --server=$HASS_SERVER --token=$HASS_TOKEN'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD'"
         ];
 
         # NOTE We can't use %E here since we are running as a system service
