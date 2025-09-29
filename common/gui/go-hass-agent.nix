@@ -58,7 +58,7 @@
           # FIXME The env vars are not expanded here for some reason, if not
           # run wrapped in bash
           "${pkgs.bash}/bin/bash -c '${goHassAgent} register --server=$HASS_SERVER --token=$HASS_TOKEN'"
-          "${pkgs.bash}/bin/bash -c '${goHassAgent} config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD' --mqtt-topic-prefix=homeassistant"
         ];
 
         # NOTE We can't use %E here since we are running as a system service
