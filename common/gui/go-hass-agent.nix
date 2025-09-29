@@ -33,10 +33,15 @@
     documentation = [ "https://github.com/joshuar/go-hass-agent" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = [
-      config.custom.homeDirectory
-      "/run/current-system/sw"
       "/etc/profiles/per-user/${config.custom.username}"
+      "/run/current-system/sw"
+      config.custom.homeDirectory
       pkgs.chrony
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.gnugrep
+      pkgs.smartmontools
+      pkgs.util-linux
     ];
 
     # NOTE We probably need these 2 vars for playerctl
