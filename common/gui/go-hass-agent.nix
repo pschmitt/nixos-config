@@ -59,8 +59,8 @@
         User = "${config.custom.username}";
         EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
         AmbientCapabilities = [
-          "CAP_MKNOD"
           "CAP_DAC_OVERRIDE"
+          "CAP_MKNOD"
           "CAP_SYS_ADMIN"
           "CAP_SYS_RAWIO"
         ];
