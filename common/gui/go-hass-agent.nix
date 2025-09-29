@@ -58,6 +58,14 @@
       {
         User = "${config.custom.username}";
         EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
+
+        # Alternatively we could use security.wrappers:
+        # security.wrappers.go-hass-agent = {
+        #   source = goHassBin;
+        #   capabilities = "cap_sys_rawio,cap_sys_admin,cap_mknod,cap_dac_override=+ep";
+        #   owner = config.custom.username;
+        #   group = "users";
+        # };
         AmbientCapabilities = [
           "CAP_DAC_OVERRIDE"
           "CAP_MKNOD"
