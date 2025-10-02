@@ -6,35 +6,36 @@
 }:
 let
   netbirdPkg = pkgs.master.netbird;
+  netbirdClientName = "netbird-io";
 in
 {
   imports = [ ../monit/netbird.nix ];
 
   sops = {
     secrets.netbird-setup-key = {
-      key = "netbird/setup-keys/netbird-io/${config.custom.netbirdSetupKey}";
-      owner = "netbird-netbird-io";
-      group = "netbird-netbird-io";
+      key = "netbird/setup-keys/${netbirdClientName}/${config.custom.netbirdSetupKey}";
+      owner = "netbird-${netbirdClientName}";
+      group = "netbird-${netbirdClientName}";
       mode = "0440";
     };
   };
 
-  users.users."${config.custom.username}".extraGroups = [ "netbird-netbird-io" ];
-
-  # mask netbird-wt0 service
-  systemd.services.netbird-wt0.enable = false;
+  users.users."${config.custom.username}".extraGroups = [
+    "netbird-${netbirdClientName}"
+  ];
 
   services.netbird = {
     enable = true;
     package = netbirdPkg;
 
     ui = {
-      enable = false;
+      enable = lib.mkDefault false;
       package = netbirdPkg;
     };
 
-    clients = {
-      netbird-io = {
+    # NOTE We use mkForce here to remove the "default" client
+    clients = lib.mkForce {
+      "${netbirdClientName}" = {
         port = 51820;
         dns-resolver = {
           address = "127.0.0.20";
@@ -44,10 +45,14 @@ in
     };
   };
 
+  networking.firewall.trustedInterfaces = lib.mkAfter (
+    map (c: c.interface) (builtins.attrValues config.services.netbird.clients)
+  );
+
   # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
-  systemd.services.netbird-netbird-io-autoconnect = {
-    after = [ "netbird-netbird-io.service" ];
-    wants = [ "netbird-netbird-io.service" ];
+  systemd.services."netbird-${netbirdClientName}-autoconnect" = {
+    after = [ "netbird-${netbirdClientName}.service" ];
+    wants = [ "netbird-${netbirdClientName}.service" ];
     wantedBy = [ "multi-user.target" ];
 
     serviceConfig = {
@@ -55,7 +60,7 @@ in
     };
 
     script = ''
-      NB_BIN=/run/current-system/sw/bin/netbird-netbird-io
+      NB_BIN=/run/current-system/sw/bin/netbird-${netbirdClientName}
 
       # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
       # they don't seem to come up on their own after provisioning.
@@ -85,6 +90,6 @@ in
   '';
 
   environment.interactiveShellInit = ''
-    alias netbird=netbird-netbird-io
+    alias netbird=netbird-${netbirdClientName}
   '';
 }

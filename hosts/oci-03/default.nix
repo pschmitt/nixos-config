@@ -19,12 +19,6 @@
   # Enable networking
   networking = {
     hostName = "oci-03";
-    # Disable the firewall altogether.
-    firewall = {
-      enable = false;
-      # allowedTCPPorts = [ ... ];
-      # allowedUDPPorts = [ ... ];
-    };
   };
 
   # FIXME nodejs_22 does not built currently on aarch64-linux (2025-09-07)
