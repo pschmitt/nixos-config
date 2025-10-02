@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   tailscalePkg = pkgs.master.tailscale;
 in
@@ -22,6 +27,10 @@ in
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
+
+  networking.firewall.trustedInterfaces = lib.mkAfter [
+    config.services.tailscale.interfaceName
+  ];
 
   environment.systemPackages = [ pkgs.master.tailscale ];
 
