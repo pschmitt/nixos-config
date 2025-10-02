@@ -11,7 +11,7 @@
     "mnt"
     "srv"
     "tmp"
-    # "videos" # lives on rofl-07 now
+    # "videos" # lives on rofl-11
   ],
   exportOptions ? "rw,nohide,insecure,no_subtree_check",
   ...
