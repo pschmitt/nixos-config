@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   forgejoHostName = "git.${config.custom.mainDomain}";
 in
@@ -17,6 +17,9 @@ in
       Environment = [ "TOKEN=%d/token" ];
     };
   };
+
+  # Explicitly allow ssh
+  networking.firewall.allowedTCPPorts = lib.mkBefore [ 22 ];
 
   services = {
     forgejo = {
