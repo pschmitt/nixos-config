@@ -12,10 +12,6 @@ let
       [ "netbird0" "netbird" ]
       ++ map (client: "nb-${client}") (builtins.attrNames netbirdClients)
     );
-  netbirdPorts =
-    builtins.filter (port: port != null) (
-      lib.mapAttrsToList (_: clientCfg: clientCfg.port or null) netbirdClients
-    );
 in
 {
   imports = [ ../monit/netbird.nix ];
@@ -56,7 +52,6 @@ in
 
   networking.firewall = lib.mkIf (config.services.netbird.enable or false) {
     trustedInterfaces = lib.mkAfter netbirdInterfaces;
-    allowedUDPPorts = lib.mkBefore netbirdPorts;
   };
 
   # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
