@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   # Helper to build hostnames across all known suffixes
   mkHostnames = host: [
@@ -73,4 +73,6 @@ in
     }
     // generatedHosts
   );
+
+  networking.firewall.allowedTCPPorts = lib.mkBefore [ 22 ];
 }

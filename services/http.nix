@@ -33,4 +33,11 @@
     # Unlimited file sizes
     clientMaxBodySize = "0";
   };
+
+  networking.firewall = {
+    allowedTCPPorts = [
+      80
+      443
+    ];
+  };
 }
