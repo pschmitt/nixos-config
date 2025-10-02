@@ -20,7 +20,9 @@ in
     };
   };
 
-  users.users."${config.custom.username}".extraGroups = [ "netbird-${netbirdClientName}" ];
+  users.users."${config.custom.username}".extraGroups = [
+    "netbird-${netbirdClientName}"
+  ];
 
   services.netbird = {
     enable = true;
