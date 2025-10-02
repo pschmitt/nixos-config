@@ -1,6 +1,8 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   tailscalePkg = pkgs.master.tailscale;
+  tailscaleInterface = "tailscale0";
+  handshakePorts = [ 41641 ];
 in
 {
   imports = [ ../monit/tailscale.nix ];
@@ -21,6 +23,11 @@ in
         [ "--accept-dns=false" ];
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
+  };
+
+  networking.firewall = lib.mkIf (config.services.tailscale.enable or false) {
+    trustedInterfaces = lib.mkAfter [ tailscaleInterface ];
+    allowedUDPPorts = lib.mkBefore handshakePorts;
   };
 
   environment.systemPackages = [ pkgs.master.tailscale ];
