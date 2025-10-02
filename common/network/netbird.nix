@@ -6,12 +6,6 @@
 }:
 let
   netbirdPkg = pkgs.master.netbird;
-  netbirdClients = config.services.netbird.clients or { };
-  netbirdInterfaces =
-    lib.unique (
-      [ "netbird0" "netbird" ]
-      ++ map (client: "nb-${client}") (builtins.attrNames netbirdClients)
-    );
 in
 {
   imports = [ ../monit/netbird.nix ];
@@ -27,9 +21,6 @@ in
 
   users.users."${config.custom.username}".extraGroups = [ "netbird-netbird-io" ];
 
-  # mask netbird-wt0 service
-  systemd.services.netbird-wt0.enable = false;
-
   services.netbird = {
     enable = true;
     package = netbirdPkg;
@@ -39,7 +30,8 @@ in
       package = netbirdPkg;
     };
 
-    clients = {
+    # NOTE We use mkForce here to remove the "default" client
+    clients = lib.mkForce {
       netbird-io = {
         port = 51820;
         dns-resolver = {
@@ -50,9 +42,9 @@ in
     };
   };
 
-  networking.firewall = lib.mkIf (config.services.netbird.enable or false) {
-    trustedInterfaces = lib.mkAfter netbirdInterfaces;
-  };
+  networking.firewall.trustedInterfaces = lib.mkAfter (
+    builtins.attrNames config.services.netbird.clients
+  );
 
   # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
   systemd.services.netbird-netbird-io-autoconnect = {

@@ -1,7 +1,11 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   tailscalePkg = pkgs.master.tailscale;
-  tailscaleInterface = "tailscale0";
 in
 {
   imports = [ ../monit/tailscale.nix ];
@@ -24,9 +28,7 @@ in
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
 
-  networking.firewall = lib.mkIf (config.services.tailscale.enable or false) {
-    trustedInterfaces = lib.mkAfter [ tailscaleInterface ];
-  };
+  networking.firewall.trustedInterfaces = lib.mkAfter [ config.services.tailscale.interfaceName ];
 
   environment.systemPackages = [ pkgs.master.tailscale ];
 
