@@ -26,7 +26,7 @@ in
     package = netbirdPkg;
 
     ui = {
-      enable = false;
+      enable = lib.mkDefault false;
       package = netbirdPkg;
     };
 
