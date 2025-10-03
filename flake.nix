@@ -17,7 +17,7 @@
     # };
 
     anika-blue = {
-      url = "github:pschmitt/anika-blue/copilot/fix-8aa0d6da-b171-41ac-a26b-000154a46965";
+      url = "github:pschmitt/anika-blue";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
