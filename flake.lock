@@ -8,16 +8,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1759527716,
+        "lastModified": 1759528154,
         "narHash": "sha256-WGBybeI7ucPg+jV9nxrRKBZkRBigkZQvavCH78TLkb8=",
         "owner": "pschmitt",
         "repo": "anika-blue",
-        "rev": "642b93f5d839a49e010cde3c501d522c9342e1de",
+        "rev": "6e10b9013921148e9a73875a3a65b2b408678874",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
-        "ref": "copilot/fix-8aa0d6da-b171-41ac-a26b-000154a46965",
         "repo": "anika-blue",
         "type": "github"
       }
