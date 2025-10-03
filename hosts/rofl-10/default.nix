@@ -9,6 +9,7 @@
 
     # services
     # backups services
+    ../../services/anika-blue.nix
     ../../services/backups/autorestic.nix
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote.nix
@@ -47,6 +48,5 @@
   };
 
   # environment.systemPackages = with pkgs; [ ];
-
 
 }
