@@ -4,7 +4,6 @@ let
   # List of instance names
   instanceNames = [
     "oci-03"
-    "rofl-08"
     "rofl-10"
     "rofl-11"
     "rofl-12"
