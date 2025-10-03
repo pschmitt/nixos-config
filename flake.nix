@@ -228,7 +228,6 @@
 
   outputs =
     {
-      self,
       anika-blue,
       catppuccin,
       disko,
@@ -237,6 +236,7 @@
       nix-index-database,
       nixos-raspberrypi,
       nixpkgs,
+      self,
       simple-nixos-mailserver,
       snapd,
       sops-nix,
