@@ -16,6 +16,11 @@
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
 
+    anika-blue = {
+      url = "github:pschmitt/anika-blue/copilot/fix-8aa0d6da-b171-41ac-a26b-000154a46965";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     catppuccin.url = "github:catppuccin/nix";
 
     disko = {
@@ -224,6 +229,7 @@
   outputs =
     {
       self,
+      anika-blue,
       catppuccin,
       disko,
       flatpaks,
@@ -253,6 +259,7 @@
         ./modules/custom.nix
         ./modules/luks-ssh-unlock.nix
 
+        anika-blue.nixosModules.default
         disko.nixosModules.disko
         flatpaks.nixosModule
         nix-index-database.nixosModules.nix-index
