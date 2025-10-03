@@ -29,44 +29,25 @@
     config.services.restic.backups.main.paths ++ [ "/var/lib/mmonit" ]
   );
 
-  services.nginx = {
-    enable = true;
-    recommendedGzipSettings = true;
-    recommendedOptimisation = true;
-    recommendedProxySettings = true;
-    recommendedTlsSettings = true;
+  services.nginx.virtualHosts =
+    let
+      commonConfig = {
+        enableACME = true;
+        forceSSL = true;
 
-    virtualHosts =
-      let
-        commonConfig = {
-          # NOTE we do HTTP-01 here!
-          enableACME = true;
-          forceSSL = true;
-
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:8080/";
-            index = "index.csp";
-            proxyWebsockets = true;
-            extraConfig = ''
-              # Avoid redirections to the wrong port (ie. 8080)
-              proxy_set_header X-Forwarded-Port $server_port;
-            '';
-          };
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:8080/";
+          index = "index.csp";
+          proxyWebsockets = true;
+          extraConfig = ''
+            # Avoid redirections to the wrong port (ie. 8080)
+            proxy_set_header X-Forwarded-Port $server_port;
+          '';
         };
-      in
-      {
-        "mmonit.${config.networking.hostName}.${config.custom.mainDomain}" = commonConfig;
-        "mmonit.${config.custom.mainDomain}" = commonConfig;
       };
-  };
-
-  networking.firewall.allowedTCPPorts = [
-    80
-    443
-  ];
-
-  security.acme = {
-    acceptTerms = true;
-    defaults.email = config.custom.email;
-  };
+    in
+    {
+      "mmonit.${config.networking.hostName}.${config.custom.mainDomain}" = commonConfig;
+      "mmonit.${config.custom.mainDomain}" = commonConfig;
+    };
 }
