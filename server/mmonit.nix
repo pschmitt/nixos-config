@@ -55,10 +55,15 @@
         };
       in
       {
-        "mmonit.oci-03.brkn.lol" = commonConfig;
-        "mmonit.brkn.lol" = commonConfig;
+        "mmonit.${config.networking.hostName}.${config.custom.mainDomain}" = commonConfig;
+        "mmonit.${config.custom.mainDomain}" = commonConfig;
       };
   };
+
+  networking.firewall.allowedTCPPorts = [
+    80
+    443
+  ];
 
   security.acme = {
     acceptTerms = true;
