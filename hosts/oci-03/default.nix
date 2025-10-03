@@ -6,10 +6,10 @@
     ../../server
     ../../server/oci.nix
 
-    ../../server/mmonit.nix
-    ../../services/http.nix
-    ../../services/parsedmarc.nix
     ../../common/restic
+    ../../services/http.nix
+    ../../services/mmonit.nix
+    ../../services/parsedmarc.nix
 
     ./monit.nix
     ./restic.nix
