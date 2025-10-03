@@ -6,7 +6,7 @@
 
   services.anika-blue = {
     enable = true;
-    port = 5000;
+    port = 26452;
     dataDir = "/var/lib/anika-blue";
     # Optional: path to file containing secret key
     # secretKeyFile = "/run/secrets/anika-blue-secret";
