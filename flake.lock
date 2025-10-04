@@ -8,11 +8,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1759532386,
-        "narHash": "sha256-dnm6wR3g6nZaV/d/v9jxjYEbQ5f5rIXTfIWpOx1tj9k=",
+        "lastModified": 1759560356,
+        "narHash": "sha256-Ibg+LaDta9VJwmdxnWY5nFPd8TTdClbIq/2aL8v2tXk=",
         "owner": "pschmitt",
         "repo": "anika-blue",
-        "rev": "50788f8855bec15c500dc2549d247f5f6853a9de",
+        "rev": "6508f6520c34a6a33de231d0426147a594301063",
         "type": "github"
       },
       "original": {
