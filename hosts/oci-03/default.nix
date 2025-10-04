@@ -15,6 +15,7 @@
     ./restic.nix
   ];
 
+  custom.cattle = false;
   networking.hostName = "oci-03";
 
   # FIXME nodejs_22 does not built currently on aarch64-linux (2025-09-07)
