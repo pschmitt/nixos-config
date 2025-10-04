@@ -13,7 +13,7 @@
     ../../services/tdarr-node.nix
     ../../services/***REMOVED***/***REMOVED***.nix
 
-    ../../services/github-runner.nix
+    # ../../services/github-runner.nix
   ];
 
   custom.cattle = true;
