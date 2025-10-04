@@ -1,10 +1,14 @@
 locals {
   restic_backup_hosts = [
+    # servers
     "oci-03",
     "rofl-10",
     "rofl-11",
     "rofl-12",
     "rofl-13",
+    # laptops
+    "ge2",
+    "x13"
   ]
 }
 
