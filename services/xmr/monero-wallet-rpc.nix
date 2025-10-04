@@ -111,8 +111,9 @@ in
 
   # We need to have the NFS share mounted *before* starting the container
   systemd.services."docker-monero-wallet-rpc" = {
-    requires = [ "mnt-data-srv.mount" ];
-    after = [ "mnt-data-srv.mount" ];
+    # Depend on the automount unit so systemd keeps retrying the NFS share
+    requires = [ "mnt-data-srv.automount" ];
+    after = [ "mnt-data-srv.automount" ];
     serviceConfig = {
       Restart = "always";
       RestartSec = "10s";
