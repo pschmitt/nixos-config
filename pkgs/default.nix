@@ -37,6 +37,7 @@ in
   tmux-slay = pkgs.callPackage ./tmux-slay { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
   waypoint = pkgs.callPackage ./waypoint { };
+  yank-osc52 = pkgs.callPackage ./yank-osc52 { };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
