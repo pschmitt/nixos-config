@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # List of Harmonia hosts with their respective configurations
   harmonia_hosts = [
@@ -76,5 +81,17 @@ in
   # via ssh (which bypasses harmonia)
   nix.extraOptions = ''
     secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
+  '';
+
+  services.monit.config = lib.mkAfter ''
+    check host "harmonia" with address "cache.${config.networking.hostName}.brkn.lol"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
+      if failed
+        port 443
+        protocol https
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
   '';
 }

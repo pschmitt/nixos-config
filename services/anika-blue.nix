@@ -1,4 +1,9 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   sops.secrets."anika-blue/secretKey" = {
     sopsFile = config.custom.sopsFile;
@@ -33,4 +38,16 @@
       "anika-blue.${config.custom.mainDomain}" = nginxConfig;
       "anika-blue.bergmann-schmitt.de" = nginxConfig;
     };
+
+  services.monit.config = lib.mkAfter ''
+    check host "anika-blue" with address "anika-blue.${config.custom.mainDomain}"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart anika-blue"
+      if failed
+        port 443
+        protocol https
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
