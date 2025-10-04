@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 {
   virtualisation = {
     # FIXME as of 2024-10-21 podman is failing to start more than one container
@@ -41,4 +41,6 @@
   environment.systemPackages = with pkgs; [
     podman-compose
   ];
+
+  networking.firewall.trustedInterfaces = lib.mkAfter [ "docker0" ];
 }
