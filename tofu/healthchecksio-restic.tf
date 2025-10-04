@@ -14,6 +14,12 @@ resource "healthchecksio_check" "restic_backup" {
   name = "Restic Backup ${each.value}"
   slug = "restic-backup-${replace(each.value, "_", "-")}"
 
+  channels = [
+    # email + discord
+    "4eb97cbe-152c-464d-a2fb-7455375a2717",
+    "7fdca605-8eee-48bf-87d3-e5546346cb41",
+  ]
+
   tags = [
     "restic",
     each.value,
