@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   monerodAddr = "http://host.docker.internal:${toString config.services.monero.rpc.port}";
 
@@ -130,4 +135,16 @@ in
     };
     wantedBy = [ "timers.target" ];
   };
+
+  services.monit.config = lib.mkAfter ''
+    check host "monero-wallet-rpc" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart ${unitFile}"
+      if failed
+        port ${toString walletRpcBindPort}
+        type tcp
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }

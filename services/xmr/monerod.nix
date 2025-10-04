@@ -1,4 +1,9 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   # sops.secrets = {
   #   "monerod/htpasswd" = {
@@ -64,4 +69,16 @@
     {
       virtualHosts = virtualHosts;
     };
+
+  services.monit.config = lib.mkAfter ''
+    check host "monerod" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart monerod"
+      if failed
+        port ${toString config.services.monero.rpc.port}
+        type tcp
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
