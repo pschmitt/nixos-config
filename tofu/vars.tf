@@ -143,4 +143,15 @@ variable "wasabi_secret_key" {
   sensitive   = true
 }
 
+variable "healthchecksio_api_key" {
+  description = "Healthchecks.io API key"
+  type        = string
+  sensitive   = true
+}
+
+variable "healthchecksio_api_url" {
+  description = "Healthchecks.io API base URL"
+  type        = string
+}
+
 # vim: set ft=terraform

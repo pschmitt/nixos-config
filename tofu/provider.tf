@@ -19,6 +19,11 @@ terraform {
       source  = "thesisedu/wasabi"
       version = "~> 4.1"
     }
+
+    healthchecksio = {
+      source  = "kristofferahl/healthchecksio"
+      version = "~> 2.0"
+    }
   }
 
   backend "s3" {
@@ -63,5 +68,12 @@ provider "wasabi" {
   region     = var.wasabi_region
   access_key = var.wasabi_access_key
   secret_key = var.wasabi_secret_key
+}
+
+provider "healthchecksio" {
+  api_key = var.healthchecksio_api_key
+
+  # Default to the self-hosted instance but allow override through variables.
+  api_url = var.healthchecksio_api_url
 }
 # vim: set ft=terraform :
