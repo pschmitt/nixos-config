@@ -89,7 +89,7 @@ in
       restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
       if failed
         port 443
-        protocol https
+        protocol https status 401
         with timeout 15 seconds
       then restart
       if 5 restarts within 10 cycles then alert
