@@ -85,7 +85,7 @@
 
     custom.cattle = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = true;
       description = "Whether this is a cattle/throw-away server";
     };
 
