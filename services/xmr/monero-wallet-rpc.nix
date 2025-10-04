@@ -15,6 +15,15 @@ let
   userId = config.custom.username;
 
   unitFile = "docker-monero-wallet-rpc.service";
+
+  walletRpcHealthCmd = lib.escapeShellArg ''
+    set -eu
+    creds=$(grep '^rpc-login' ${walletRpcConfigFile} | tail -n1 | cut -d= -f2- | tr -d '[:space:]')
+    curl -fsS -u "$creds" \
+      -H "Content-Type: application/json" \
+      --data-binary "{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"get_version\"}" \
+      http://127.0.0.1:${toString walletRpcBindPort}/json_rpc >/dev/null
+  '';
 in
 {
   sops = {
@@ -66,7 +75,7 @@ in
   };
 
   virtualisation.oci-containers.containers = {
-    # Forward host.docker.internal:108084 -> localhost:18084
+    # Forward host.docker.internal:${toString config.services.monero.rpc.port} -> 127.0.0.1:${toString config.services.monero.rpc.port}
     monerod-relay = {
       image = "alpine/socat:latest";
       pull = "always";
@@ -91,6 +100,11 @@ in
         # NOTE the containers runs as 1000:1000 by default
         # "--user=${userId}:${groupId}"
         "--add-host=host.docker.internal:host-gateway"
+        "--health-cmd=/bin/sh -c ${walletRpcHealthCmd}"
+        "--health-interval=30s"
+        "--health-timeout=10s"
+        "--health-retries=3"
+        "--health-start-period=120s"
       ];
 
       volumes = [
@@ -148,4 +162,5 @@ in
       then restart
       if 5 restarts within 10 cycles then alert
   '';
+
 }
