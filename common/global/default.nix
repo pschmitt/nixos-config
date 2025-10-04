@@ -94,6 +94,7 @@
     sshpass
     tmux
     tmux-slay
+    yank-osc52
     tree
     ugrep
     unzip
