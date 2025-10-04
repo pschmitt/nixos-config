@@ -16,6 +16,8 @@
 	"oci_fingerprint": "ENC[AES256_GCM,data:qPk6XC5m3mAOuQ2izCCKfvqcglnbeTdFQK0UuVi2/+HopDJMpYkxVOapfViT+Lg=,iv:kUkNHpDEliMryN4Ut7L4TdF4JlpuCmqldZ3agVra8yE=,tag:AjE7OLbEr5VlFQif7vzEeg==,type:str]",
 	"wasabi_access_key": "ENC[AES256_GCM,data:QntzD2uFz0bWv5Uv0LZ2TLY+B3Y=,iv:MEomY3Saxy2nWFYm/JAkXzhlVL/DvU+zuRxY8htoMVw=,tag:4z0BN5joWCEpiRe7HONMkA==,type:str]",
 	"wasabi_secret_key": "ENC[AES256_GCM,data:bFztshLOBkHQSqSY2XPXEfHpNr/otqu3PiMG7ai6axuVcq+TQbxGiA==,iv:Inr+p9/RdRteqdWxT55cWrDBNKQl2yLAgWECeJ596X0=,tag:cfJIVIXOtnDrBjgU0uugTA==,type:str]",
+	"healthchecksio_api_url": "ENC[AES256_GCM,data:pwcXbDmJzDFo236rPXMyHFub7kOQv3yyu+M=,iv:iZoWWzWjMZdN7K60r9PzD7ueTfaBStWOc7Yidq+hWuM=,tag:jZDU3m03GKRwqGVTkNJxHg==,type:str]",
+	"healthchecksio_api_key": "ENC[AES256_GCM,data:EW0cuG34Rs0gX3UkJCObtaeAYHYIvmgNVYjqliyBEo4=,iv:gZ49QCEg9/o9601Wfn0r3ry42ENbljKcegHQLP8hMew=,tag:q8/FNUa6yDmGAgVq6Gqb9g==,type:str]",
 	"sops": {
 		"age": [
 			{
@@ -43,9 +45,9 @@
 				"enc": "-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBxU1NqbmZQbzBJSUpCSnNq\ndExTT0xTa0FPZkQwUS92SHZ4dStialh2bGg0Ck1uTkRPcDdoQmEydEFla2JRcjhJ\nWjBCRUttc3dlQ1ViRUxZY2RXWUhsTUUKLS0tIGIwanpKQkR2aTUrMStHZEpHR2Ji\nSWpMUFlYUi8yOHh3czVuUGtmWitGQTAKWppzr7ppKNxRB4ylT2wUjJaj2AfMeGMV\nwuQT6TZEMzJ/C2+doQ8gxBdN7tZSlzRda+I8e1zia8Fkg2tw/ozsKQ==\n-----END AGE ENCRYPTED FILE-----\n"
 			}
 		],
-		"lastmodified": "2025-09-15T09:30:51Z",
-		"mac": "ENC[AES256_GCM,data:aelRTHTDCa983ZFVkqyW+gn4ixP8DxtRdndJyy7GOebIKhCUjSWqSoW8Ijk1yXfHbcmGIff7SMKHUD8QxSeMKaL9Iv0RzrQ5RnMTtBgn1vKhqw1lGD+qJLBAYynmptXtDtFFWD3WcXlzkbZ0uKzq8ZvhtHFFH6EzaolJBqCI50c=,iv:C0EWPvFbBs5z+8969kM5ysnYZ0OC9LZXB/9dOuOjw2Q=,tag:Is171tYcNKq4kwdiSZNynA==,type:str]",
+		"lastmodified": "2025-10-04T19:27:29Z",
+		"mac": "ENC[AES256_GCM,data:4lGx0bb2tdAKtlxwqnF/aYd10XG0GJ9mPRFmel1kET1Zc5VAVxh+H0UF3AFsl2z4sp4qwXawcXn60hBeHAXjvCOeK0Jv9tO/ZX9uPb5+ve+Y/uhnaD2cXwjoxLxQOLsqE30PIoSFOPfK1Lm4bhaJtJJBskajzGv6jXgX8VKsW40=,iv:+oTF9pMOvuZX/ygdx2CtsYilP6I16VezSSLb6FczQeI=,tag:L8OFlwESaLQB9NLw6QuoFw==,type:str]",
 		"unencrypted_suffix": "_unencrypted",
-		"version": "3.10.2"
+		"version": "3.11.0"
 	}
 }
