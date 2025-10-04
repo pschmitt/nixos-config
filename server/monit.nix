@@ -28,7 +28,9 @@ let
   '';
 
   needsReboot = pkgs.writeShellScript "needs-reboot" ''
-    OUTPUT=$(${inputs.nixos-needsreboot.packages.${pkgs.system}.default}/bin/nixos-needsreboot 2>&1 | ${pkgs.strip-ansi}/bin/strip-ansi)
+    OUTPUT=$(${
+      inputs.nixos-needsreboot.packages.${pkgs.system}.default
+    }/bin/nixos-needsreboot 2>&1 | ${pkgs.strip-ansi}/bin/strip-ansi)
     echo "$OUTPUT"
     ${pkgs.gnugrep}/bin/grep -q 'Reboot not required' <<< "$OUTPUT"
   '';
@@ -132,22 +134,40 @@ let
   '';
 in
 {
-  config = lib.mkIf (!config.custom.cattle) {
-    sops.secrets."monit/config" = { };
-    environment.etc."monit/conf.d/secret-config".source = "${config.sops.secrets."monit/config".path}";
-
-    services.monit = {
-      # Do not enable monit if cattle if this is a cattle server
-      enable = true;
-      config = lib.strings.concatStringsSep "\n" [
-        monitGeneral
-        monitSystem
-        monitRebootRequired
-        monitFilesystems
-        monitRestic
-      ];
+  sops = {
+    secrets = {
+      "monit/config/httpd" = { };
+      "monit/config/mmonit" = { };
     };
 
-    systemd.services.monit.preStart = "${renderMonitConfig}";
+    templates.monitSecretConfig = {
+      content = builtins.concatStringsSep "\n" [
+        # only include the mmonit config if this is not a cattle server
+        (lib.optionalString (!(config.custom.cattle or true)) config.sops.placeholder."monit/config/mmonit")
+        config.sops.placeholder."monit/config/httpd"
+      ];
+
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
   };
+
+  environment.etc = {
+    "monit/conf.d/secret-config".source = config.sops.templates.monitSecretConfig.path;
+  };
+
+  services.monit = {
+    # Do not enable monit if cattle if this is a cattle server
+    enable = true;
+    config = lib.strings.concatStringsSep "\n" [
+      monitGeneral
+      monitSystem
+      monitRebootRequired
+      monitFilesystems
+      monitRestic
+    ];
+  };
+
+  systemd.services.monit.preStart = "${renderMonitConfig}";
 }
