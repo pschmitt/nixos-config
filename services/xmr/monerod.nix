@@ -81,4 +81,6 @@
       then restart
       if 5 restarts within 10 cycles then alert
   '';
+
+  networking.firewall.allowedTCPPorts = lib.mkAfter [ 18080 ];
 }
