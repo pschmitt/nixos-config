@@ -14,6 +14,7 @@
     ../../services/xmr/xmrig.nix
   ];
 
+  custom.cattle = true;
   custom.promptColor = "yellow";
 
   # Enable networking
