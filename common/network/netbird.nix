@@ -61,6 +61,7 @@ in
 
     environment = {
       NB_BIN = "/run/current-system/sw/bin/netbird-${netbirdClientName}";
+      NB_HOSTNAME = config.networking.hostName;
       NB_SETUP_KEY_FILE = config.sops.secrets."netbird-setup-key".path;
     };
 
