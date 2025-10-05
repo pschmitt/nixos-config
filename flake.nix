@@ -263,11 +263,11 @@
 
       commonModules = [
         ./modules/custom.nix
-        luks-ssh-unlock.nixosModules.default
 
         anika-blue.nixosModules.default
         disko.nixosModules.disko
         flatpaks.nixosModule
+        luks-ssh-unlock.nixosModules.default
         nix-index-database.nixosModules.nix-index
         sops-nix.nixosModules.sops
         update-systemd-resolved.nixosModules.update-systemd-resolved
