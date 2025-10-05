@@ -33,6 +33,8 @@
     # ../../services/netdata.nix
   ];
 
+  custom.cattle = false;
+
   # FIXME MIPI Camera
   # hardware.ipu6 = {
   #   enable = true;
