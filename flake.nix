@@ -73,20 +73,25 @@
 
     # Hyprland and cie {{{
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.50.0";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:hyprwm/Hyprland/v0.51.1";
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hypridle = {
       url = "github:hyprwm/hypridle";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "hyprland";
     };
 
     hyprlock = {
       url = "github:hyprwm/hyprlock";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "hyprland";
     };
 
+    hyprtasking = {
+      # url = "github:raybbian/hyprtasking";
+      url = "github:r00t3g/hyprtasking/fix-build-on-hypr-0.51";
+      inputs.hyprland.follows = "hyprland";
+    };
     # xdph = {
     #   url = "github:hyprwm/xdg-desktop-portal-hyprland";
     #   inputs.nixpkgs.follows = "nixpkgs";
