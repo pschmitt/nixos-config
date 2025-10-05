@@ -21,3 +21,6 @@ clouds.yaml
 *.pub
 *_key
 data
+
+# Separate repository managed via flake input
+luks-ssh-unlock/
