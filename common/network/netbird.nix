@@ -59,9 +59,12 @@ in
       Type = "oneshot";
     };
 
-    script = ''
-      NB_BIN=/run/current-system/sw/bin/netbird-${netbirdClientName}
+    environment = {
+      NB_BIN = "/run/current-system/sw/bin/netbird-${netbirdClientName}";
+      NB_SETUP_KEY_FILE = config.sops.secrets."netbird-setup-key".path;
+    };
 
+    script = ''
       # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
       # they don't seem to come up on their own after provisioning.
       $NB_BIN up
