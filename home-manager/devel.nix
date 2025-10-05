@@ -35,6 +35,7 @@
     # ai
     aichat
     master.codex
+    master.copilot-cli
     shell-gpt
     tgpt
 
