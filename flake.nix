@@ -104,6 +104,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    luks-ssh-unlock = {
+      url = "github:pschmitt/luks-ssh-unlock";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     neovim-nightly = {
       url = "github:nix-community/neovim-nightly-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -233,6 +238,7 @@
       disko,
       flatpaks,
       home-manager,
+      luks-ssh-unlock,
       nix-index-database,
       nixos-raspberrypi,
       nixpkgs,
@@ -257,7 +263,7 @@
 
       commonModules = [
         ./modules/custom.nix
-        ./modules/luks-ssh-unlock.nix
+        luks-ssh-unlock.nixosModules.default
 
         anika-blue.nixosModules.default
         disko.nixosModules.disko
@@ -295,8 +301,13 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          customPackages = import ./pkgs { inherit pkgs; };
         in
-        import ./pkgs { inherit pkgs; }
+        customPackages
+        // {
+          # Include luks-ssh-unlock from the flake
+          luks-ssh-unlock = luks-ssh-unlock.packages.${system}.default;
+        }
       );
 
       checks = forAllSystems (system: {

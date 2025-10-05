@@ -500,6 +500,24 @@
         "type": "github"
       }
     },
+    "flake-utils_14": {
+      "inputs": {
+        "systems": "systems_18"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -1524,7 +1542,7 @@
     },
     "lib-aggregate": {
       "inputs": {
-        "flake-utils": "flake-utils_7",
+        "flake-utils": "flake-utils_8",
         "nixpkgs-lib": "nixpkgs-lib_2"
       },
       "locked": {
@@ -1558,9 +1576,30 @@
         "type": "github"
       }
     },
-    "myl": {
+    "luks-ssh-unlock": {
       "inputs": {
         "flake-utils": "flake-utils_4",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1759668279,
+        "narHash": "sha256-9nS2OWGfAv//C3ra7wMSGAX/MTLcY6Fzi52pgORQokU=",
+        "owner": "pschmitt",
+        "repo": "luks-ssh-unlock",
+        "rev": "b98712abb2b65f2fc8197d838eac57b580014d5a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "luks-ssh-unlock",
+        "type": "github"
+      }
+    },
+    "myl": {
+      "inputs": {
+        "flake-utils": "flake-utils_5",
         "myl-discovery": "myl-discovery",
         "nixpkgs": [
           "nixpkgs"
@@ -1582,7 +1621,7 @@
     },
     "myl-discovery": {
       "inputs": {
-        "flake-utils": "flake-utils_5",
+        "flake-utils": "flake-utils_6",
         "nixpkgs": [
           "myl",
           "nixpkgs"
@@ -1604,7 +1643,7 @@
     },
     "myl-discovery_2": {
       "inputs": {
-        "flake-utils": "flake-utils_6",
+        "flake-utils": "flake-utils_7",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -1625,7 +1664,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-        "flake-utils": "flake-utils_9",
+        "flake-utils": "flake-utils_10",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2071,6 +2110,7 @@
         "hyprland": "hyprland",
         "hyprlock": "hyprlock",
         "lan-mouse": "lan-mouse",
+        "luks-ssh-unlock": "luks-ssh-unlock",
         "myl": "myl",
         "myl-discovery": "myl-discovery_2",
         "neovim-nightly": "neovim-nightly",
@@ -2158,7 +2198,7 @@
     },
     "sendmyl": {
       "inputs": {
-        "flake-utils": "flake-utils_8",
+        "flake-utils": "flake-utils_9",
         "myl-discovery": "myl-discovery_3",
         "nixpkgs": [
           "nixpkgs"
@@ -2399,6 +2439,21 @@
         "type": "github"
       }
     },
+    "systems_18": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "systems_2": {
       "locked": {
         "lastModified": 1681028828,
@@ -2521,7 +2576,7 @@
     },
     "tdc": {
       "inputs": {
-        "flake-utils": "flake-utils_10",
+        "flake-utils": "flake-utils_11",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2607,7 +2662,7 @@
     },
     "vicinae": {
       "inputs": {
-        "flake-utils": "flake-utils_11",
+        "flake-utils": "flake-utils_12",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2628,7 +2683,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_12",
+        "flake-utils": "flake-utils_13",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2649,7 +2704,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_13",
+        "flake-utils": "flake-utils_14",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",

@@ -21,7 +21,6 @@ in
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
   luks-mount = pkgs.callPackage ./luks-mount { };
-  luks-ssh-unlock = pkgs.callPackage ./luks-ssh-unlock { };
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
