@@ -7,8 +7,8 @@
 }:
 
 let
-  # hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
-  hyprlandPkg = pkgs.master.hyprland;
+  hyprlandPkg = inputs.hyprland.packages.${pkgs.system}.hyprland;
+  # hyprlandPkg = pkgs.master.hyprland;
 
   # xdphPkg = inputs.hyprland.packages.${pkgs.system}.xdg-desktop-portal-hyprland;
   xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
@@ -20,6 +20,8 @@ let
   hyprlockPkg = pkgs.master.hyprlock;
 in
 {
+  imports = [ inputs.hyprland.nixosModules.default ];
+
   nix.settings = {
     # Hyprland flake
     substituters = [ "https://hyprland.cachix.org" ];
@@ -96,6 +98,9 @@ in
       withUWSM = true;
       package = hyprlandPkg;
       portalPackage = xdphPkg;
+      plugins = [
+        inputs.hyprtasking.packages.${pkgs.system}.hyprtasking
+      ];
     };
 
     hyprlock = {
