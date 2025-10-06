@@ -10,16 +10,16 @@
 
 buildGoModule rec {
   pname = "go-hass-agent";
-  version = "14.0.2";
+  version = "14.0.3";
 
   src = pkgs.fetchFromGitHub {
     owner = "joshuar";
     repo = "go-hass-agent";
     rev = "v${version}";
-    hash = "sha256-aZsGCyV7Kbp/IrwU0O471rX48uVHvkd3Giefrm3Gbu4=";
+    hash = "sha256-QsJDlZBAle52r/9ft1jGZRBBzHkshjfMafzOb7juazc=";
   };
 
-  vendorHash = "sha256-A0uygP8ZwNfByWMA1yRMv0fN73vUSNYwyeCFGkPPyoA=";
+  vendorHash = "sha256-mQiijKHiRAPiK/61xHRTHngVVQ5hmMp4Bqg2P1tziIM=";
 
   ldflags = [
     "-s"
