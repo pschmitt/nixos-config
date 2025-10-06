@@ -155,6 +155,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    poor-tools = {
+      url = "github:curl-pipe-sh/poor-tools";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     firefox-addons = {
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
