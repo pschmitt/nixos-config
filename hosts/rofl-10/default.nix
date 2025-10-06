@@ -23,6 +23,7 @@
     # ../../services/mealie.nix # it's a container now!
     ../../services/paperless-ngx.nix
     ../../services/podsync.nix
+    ../../services/poor-tools.nix
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
     ../../services/searxng.nix
