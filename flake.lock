@@ -2168,11 +2168,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1759746507,
-        "narHash": "sha256-Pgaj/KAB9Ex6uwEcDgvx8k+zNcwzKLKtDZm46Pp7CQQ=",
+        "lastModified": 1759752286,
+        "narHash": "sha256-eh8AmwC+vtjYM/fnwoFsPcS22hzO/0TG5kpqIMbmoz8=",
         "owner": "curl-pipe-sh",
         "repo": "poor-tools",
-        "rev": "b8ca375e4389c846452165995c9ef18538c3cc2e",
+        "rev": "ba2ab57972afc22ba61144195601f3d4e363fa22",
         "type": "github"
       },
       "original": {
