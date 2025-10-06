@@ -17,6 +17,7 @@
     gcc
     gnumake
     go
+    just
     nodejs
     pkg-config
     (fenix.complete.withComponents [
