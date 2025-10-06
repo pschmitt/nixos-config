@@ -2,7 +2,7 @@
 {
   imports = [ inputs.poor-tools.nixosModules.default ];
 
-  services.poor-tools-web = {
+  services.poor-installer-web = {
     enable = true;
   };
 
@@ -13,7 +13,7 @@
         forceSSL = false; # disabled on purpose!
 
         locations."/" = {
-          proxyPass = "http://${toString config.services.poor-tools-web.bindHost}:${toString config.services.poor-tools-web.bindPort}";
+          proxyPass = "http://${toString config.services.poor-installer-web.bindHost}:${toString config.services.poor-installer-web.bindPort}";
           proxyWebsockets = true;
           recommendedProxySettings = true;
         };
