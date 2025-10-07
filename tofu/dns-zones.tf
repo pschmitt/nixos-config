@@ -29,6 +29,15 @@ resource "cloudflare_zone" "curl-pipe-sh" {
   }
 }
 
+resource "cloudflare_zone" "poor-tools" {
+  zone       = "poor.tools"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "cloudflare_zone" "pschmitt_dev" {
   zone       = "pschmitt.dev"
   plan       = "free"
