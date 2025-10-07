@@ -21,6 +21,7 @@
       };
     in
     {
+      "poor.tools" = nginxConfig;
       "poor.curl-pipe.sh" = nginxConfig;
       "poor.${config.custom.mainDomain}" = nginxConfig;
     };
