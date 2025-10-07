@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # Helper to build hostnames across all known suffixes
   mkHostnames = host: [
@@ -75,4 +80,9 @@ in
   );
 
   networking.firewall.allowedTCPPorts = lib.mkBefore [ 22 ];
+
+  environment.systemPackages = with pkgs; [
+    mosh
+    sshfs
+  ];
 }
