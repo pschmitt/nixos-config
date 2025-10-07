@@ -156,7 +156,7 @@
     };
 
     poor-tools = {
-      url = "github:curl-pipe-sh/poor-tools";
+      url = "github:pschmitt/poor-tools";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 

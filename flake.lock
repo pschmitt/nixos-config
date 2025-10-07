@@ -2170,13 +2170,13 @@
       "locked": {
         "lastModified": 1759826606,
         "narHash": "sha256-Zyh2qtkGVeBhOe7uxmPxXEN198dfnKTdsj3pQEwZDQw=",
-        "owner": "curl-pipe-sh",
+        "owner": "pschmitt",
         "repo": "poor-tools",
         "rev": "1ed19281f821853acd23e6d3663bbc324ece6ed3",
         "type": "github"
       },
       "original": {
-        "owner": "curl-pipe-sh",
+        "owner": "pschmitt",
         "repo": "poor-tools",
         "type": "github"
       }
