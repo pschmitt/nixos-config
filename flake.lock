@@ -2168,11 +2168,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1759829315,
-        "narHash": "sha256-24PDQX3BPdAMRU+uv2Yta/oSDlRIBw24UaH3sCaoauk=",
+        "lastModified": 1759830948,
+        "narHash": "sha256-2oTUsiTaXEbQ3KGwZhv19hCa0wQHUrewPSfygksREEk=",
         "owner": "pschmitt",
         "repo": "poor-tools",
-        "rev": "06b513feada0af1e568314fcbbd589869971f3e9",
+        "rev": "c49fe7a1961518300761ae22e5b74ec438f65972",
         "type": "github"
       },
       "original": {
