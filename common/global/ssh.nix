@@ -79,7 +79,16 @@ in
     // generatedHosts
   );
 
-  networking.firewall.allowedTCPPorts = lib.mkBefore [ 22 ];
+  networking.firewall = {
+    allowedTCPPorts = lib.mkBefore [ 22 ];
+    allowedUDPPortRanges = [
+      {
+        # mosh
+        from = 60000;
+        to = 61000;
+      }
+    ];
+  };
 
   environment.systemPackages = with pkgs; [
     mosh

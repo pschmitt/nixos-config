@@ -68,6 +68,28 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_ssh_v6" {
   security_group_id = openstack_networking_secgroup_v2.secgroup_ssh.id
 }
 
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_mosh_v4" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 60000
+  port_range_max    = 61000
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_ssh.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_mosh_v6" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "udp"
+  port_range_min    = 60000
+  port_range_max    = 61000
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_ssh.id
+}
+
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_http_v4" {
   provider          = openstack.openstack-wiit
   direction         = "ingress"
