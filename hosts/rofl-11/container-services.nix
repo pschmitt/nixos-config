@@ -27,6 +27,12 @@ in
           (mkHost "media")
         ];
       };
+      lazylibrarian = {
+        port = 5299;
+        hosts = [
+          (mkHost "ll")
+        ];
+      };
       pp = {
         port = 7827;
         hosts = [ (mkHost "pp") ];
