@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 {
   networking.firewall = {
     enable = lib.mkDefault true;
@@ -10,4 +10,8 @@
     # logRefusedPackets = true;
     # logRefusedConnections = true;
   };
+
+  environment.systemPackages = [
+    pkgs.nftables
+  ];
 }
