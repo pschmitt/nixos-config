@@ -13,6 +13,7 @@
     ./hacompanion.nix
     ./libvirt.nix
     ./logitech-mouse.nix
+    ./podsync-cookies.nix
     ./printer.nix
     ./theme.nix
 
