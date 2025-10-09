@@ -3,6 +3,26 @@ let
   serviceName = "soundboard-tagesschau";
 in
 {
+
+  xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
+    "context.objects" = [
+      {
+        factory = "adapter";
+        args = {
+          "factory.name" = "support.null-audio-sink";
+          "media.class" = "Audio/Sink";
+          "node.name" = "soundboard-sink";
+          "node.description" = "Soundboard Sink";
+          "adapter.auto-port-config" = {
+            mode = "dsp";
+            monitor = true;
+            position = "preserve";
+          };
+        };
+      }
+    ];
+  };
+
   systemd.user.services.${serviceName} = {
     Unit = {
       Description = "Play Tagesschau Jingle";
