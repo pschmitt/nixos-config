@@ -195,20 +195,34 @@ in
     }
 
     dlog() {
-      local ctrlc
-      trap 'ctrlc=1; kill -9 %1;' INT
+      local ctrlc pid rc
+
+      trap '
+        ctrlc=1
+        if [ -n "$pid" ]
+        then
+          kill "$pid" 2>/dev/null
+        fi
+      ' INT
+
       while :
       do
-        if [[ -n "$ctrlc" ]]
+        docker compose logs -f "$@" &
+        pid=$!
+
+        wait "$pid"
+        rc=$?
+
+        if [ -n "$ctrlc" ]
         then
-          kill %1
           break
         fi
 
-        { docker compose logs -f "$@" & } 2>/dev/null
-        wait || break
+        # If docker exited normally (no -f, or daemon restarted), retry after a short pause
         sleep 1 || break
       done
+
+      trap - INT
     }
     alias dlogs="dlog"
 
