@@ -1,7 +1,5 @@
 { pkgs, ... }:
 {
-  imports = [ ./soundboard.nix ];
-
   # Enable sound with pipewire.
   # https://nixos.wiki/wiki/PipeWire
   # TODO as of 04.01.2025: hardware.pulseaudio -> services.pulseaudio
