@@ -6,7 +6,8 @@
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
-      forceSSL = true;
+      forceSSL = false; # disabled on purpose!
+      addSSL = true; # required to actually response on https requests
       root = "/mnt/data/blobs";
       locations."/" = {
         extraConfig = ''
