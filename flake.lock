@@ -740,11 +740,11 @@
         "zon2nix": "zon2nix"
       },
       "locked": {
-        "lastModified": 1760116835,
-        "narHash": "sha256-4+/2RVKDI+oaOD5Yr/cwxVe+hyOPwWgM6efTXddD2MA=",
+        "lastModified": 1760128918,
+        "narHash": "sha256-2BAJkbGXebSCxbe4KHdtpH4optMmptw7Ibw1Bs23TPc=",
         "owner": "ghostty-org",
         "repo": "ghostty",
-        "rev": "cd7621167fb9be3f3d7b3f547283f71771941a86",
+        "rev": "c5ad7563f92656ec02bd08856b46431f2e222e69",
         "type": "github"
       },
       "original": {
@@ -1017,11 +1017,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1760103600,
-        "narHash": "sha256-R4cltQFceN3POiPhBu7aTKsrwqTiwo6zjzmitrHD80E=",
+        "lastModified": 1760130406,
+        "narHash": "sha256-GKMwBaFRw/C1p1VtjDz4DyhyzjKUWyi1K50bh8lgA2E=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "bcccb01d0a353c028cc8cb3254cac7ebae32929e",
+        "rev": "d305eece827a3fe317a2d70138f53feccaf890a1",
         "type": "github"
       },
       "original": {
@@ -1998,11 +1998,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1760118067,
-        "narHash": "sha256-Cj0yn6f8ORroaagizJBKwjNXTkV4l9kHS55mBBALwDA=",
+        "lastModified": 1760151434,
+        "narHash": "sha256-GZec7YPQ2dPmEYsSvUm9XzA49YADMCqluAigLIcrW+A=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "fb45249f521ece9ed80bad5140361e5bbe36eb2d",
+        "rev": "3d356d308a8ef6ccc9bf8c1534ad7afb1b5328d5",
         "type": "github"
       },
       "original": {
@@ -2069,11 +2069,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1760118861,
-        "narHash": "sha256-DVFT8UjsphLJGdhqughlLfTb/NT0pv1LnQMK6qSVv1I=",
+        "lastModified": 1760121647,
+        "narHash": "sha256-R97Sw9o3ZVuiwTRYX4H6Jki6z9mB7qeQLon3f6E2RWk=",
         "owner": "nix-community",
         "repo": "nixpkgs-wayland",
-        "rev": "1e3a4ca1da74110f01c5d84c6b931ec4853cf4c2",
+        "rev": "a9190588f566d353521da652913ed50fa881d56e",
         "type": "github"
       },
       "original": {
@@ -2168,11 +2168,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1760090630,
-        "narHash": "sha256-Z+Qz+X8Gh/YSNSsP3XQjQ76k6V6/kuAIdIUzgqXNesM=",
+        "lastModified": 1760123933,
+        "narHash": "sha256-17tuBOH1olHr6dFSEUgqM/1D2l9Ow964IMvsTUrpFms=",
         "owner": "pschmitt",
         "repo": "poor-tools",
-        "rev": "49113b9490bb32a00f4cd9170db40ab65a658be5",
+        "rev": "619a4f7ccfd4138a9ea9a428c975d076a9053ec6",
         "type": "github"
       },
       "original": {
@@ -2842,11 +2842,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1760096337,
-        "narHash": "sha256-6ZMN1OuyGfQYWh2KZBi/amrtmQ+C0hoPJxo3hcwnAeQ=",
+        "lastModified": 1760143813,
+        "narHash": "sha256-5+cPGPYuE2J4LHY4MIBs9zk+MpUj7qH2GXle+x5WgF4=",
         "owner": "vicinaehq",
         "repo": "vicinae",
-        "rev": "4d6d3e6e972e17d271ddb607ade9ff7106a721e0",
+        "rev": "89fcc28c99dd97c5eaa7e59e40cfe6a9bc45f7b8",
         "type": "github"
       },
       "original": {
