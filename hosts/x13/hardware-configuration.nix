@@ -9,7 +9,10 @@
 }:
 
 {
-  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+    ./disko-config.nix
+  ];
 
   # Attempt to fix keyboard in initrd on x13
   # kernelParams = [ "i8042.notimeout=1" "i8042.dumbkbd=1" "i8042.reset=1" "i8042.direct=1" ];
@@ -41,41 +44,41 @@
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-    fsType = "btrfs";
-    options = [
-      "subvol=@root"
-      "compress=zstd"
-    ];
-  };
-
-  boot.initrd.luks.devices."encrypted".device =
-    "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/5FDA-8CAF";
-    fsType = "vfat";
-  };
-
-  fileSystems."/home" = {
-    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-    fsType = "btrfs";
-    options = [
-      "subvol=@home"
-      "compress=zstd"
-    ];
-  };
-
-  fileSystems."/nix" = {
-    device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
-    fsType = "btrfs";
-    options = [
-      "subvol=@nix"
-      "compress=zstd"
-      "noatime"
-    ];
-  };
+  # fileSystems."/" = {
+  #   device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+  #   fsType = "btrfs";
+  #   options = [
+  #     "subvol=@root"
+  #     "compress=zstd"
+  #   ];
+  # };
+  #
+  # boot.initrd.luks.devices."encrypted".device =
+  #   "/dev/disk/by-uuid/d3725a76-331b-4658-a160-10d89d51c80e";
+  #
+  # fileSystems."/boot" = {
+  #   device = "/dev/disk/by-uuid/5FDA-8CAF";
+  #   fsType = "vfat";
+  # };
+  #
+  # fileSystems."/home" = {
+  #   device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+  #   fsType = "btrfs";
+  #   options = [
+  #     "subvol=@home"
+  #     "compress=zstd"
+  #   ];
+  # };
+  #
+  # fileSystems."/nix" = {
+  #   device = "/dev/disk/by-uuid/76f0b042-784e-42c4-afbd-0985100e6626";
+  #   fsType = "btrfs";
+  #   options = [
+  #     "subvol=@nix"
+  #     "compress=zstd"
+  #     "noatime"
+  #   ];
+  # };
 
   swapDevices = [ ];
 
