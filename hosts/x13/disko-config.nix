@@ -1,13 +1,19 @@
 {
   disko.devices.disk.main = {
     type = "disk";
-    device = "/dev/nvme0n1";
+    device = "/dev/disk/by-id/nvme-Samsung_SSD_990_PRO_2TB_S7HENU0Y622582M";
     content = {
       type = "gpt";
       partitions = {
+        mbr = {
+          label = "MBR"; # FIXME, this has no effect?
+          size = "1M";
+          type = "EF02"; # for grub MBR
+          priority = 1;
+        };
         ESP = {
-          label = "EFI";
           name = "ESP";
+          label = "EFI";
           size = "5120M";
           type = "EF00";
           content = {
@@ -15,13 +21,15 @@
             format = "vfat";
             mountpoint = "/boot";
             mountOptions = [ "defaults" ];
+            extraArgs = ["-n" "EFI"];
           };
         };
         luks = {
           size = "100%";
+          # label = "luks-root";
           content = {
             type = "luks";
-            name = "encrypted";
+            name = "luks-root";
             extraOpenArgs = [ "--allow-discards" ];
             # if you want to use the key for interactive login be sure there is no trailing newline
             # for example use `echo -n "password" > /tmp/secret.key`
@@ -34,7 +42,7 @@
             # additionalKeyFiles = ["/tmp/additionalSecret.key"];
             content = {
               type = "btrfs";
-              extraArgs = [ "-f" ];
+              extraArgs = [ "-L" "luks-root" ];
               subvolumes = {
                 "@root" = {
                   mountpoint = "/";
