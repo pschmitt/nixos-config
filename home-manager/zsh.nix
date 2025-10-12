@@ -3,6 +3,7 @@
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;
+    silent = true;
   };
 
   home.packages = with pkgs; [
@@ -40,17 +41,6 @@
           '')
         }/init.zsh
         # bindkey '^[r' _atuin_search_widget
-
-        # direnv
-        # NOTE Setting DIRENV_LOG_FORMAT= will silence direnv,
-        # which will make p10k's instant prompt happy
-        export DIRENV_LOG_FORMAT=
-        source ${
-          (pkgs.runCommand "direnv-init" { } ''
-            mkdir -p $out
-            ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
-          '')
-        }/init.zsh
 
         # zoxide
         source ${
