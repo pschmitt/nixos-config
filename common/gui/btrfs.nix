@@ -75,8 +75,6 @@ in
     configs = {
       home = {
         FSTYPE = "btrfs";
-        # NOTE make sure that there is a .snapshots subvolume!
-        # sudo btrfs subvolume create /home/.snapshots
         SUBVOLUME = "/home"; # @home won't work here
         ALLOW_USERS = [ config.custom.username ];
         TIMELINE_CREATE = true;
