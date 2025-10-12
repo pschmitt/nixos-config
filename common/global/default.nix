@@ -14,7 +14,7 @@
     ./dict.nix
     ./dotfiles.nix
     ./nix.nix
-    ./pschmitt.nix
+    ./users.nix
     ./sops.nix
     ./ssh.nix
   ];
