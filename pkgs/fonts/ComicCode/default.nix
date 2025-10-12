@@ -4,7 +4,7 @@
   stdenvNoCC,
 }:
 
-stdenvNoCC.mkDerivation rec {
+stdenvNoCC.mkDerivation {
   pname = "ComicCode";
   version = "478c9f6";
 
