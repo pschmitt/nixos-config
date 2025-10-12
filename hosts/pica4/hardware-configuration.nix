@@ -47,7 +47,9 @@
   # };
 
   environment.systemPackages = with pkgs; [
-    libraspberrypi
+    # Disabled since it does not compile with cmake 4
+    # see https://github.com/NixOS/nixpkgs/pull/450828
+    # libraspberrypi
     raspberrypi-eeprom
   ];
 
