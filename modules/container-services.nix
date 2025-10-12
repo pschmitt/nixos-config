@@ -100,6 +100,7 @@ let
       check host "${serviceName}" with address "${host}"
         group services
         restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps ${serviceName}"
+          with timeout 180 seconds
         if failed
           port ${effectivePort}
           protocol ${proto}${optionalString (extraClause != "") " ${extraClause}"}
