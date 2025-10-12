@@ -52,4 +52,5 @@ in
   osc = pkgs.callPackage ./osc { };
   pyghmi = pkgs.callPackage ./pyghmi { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
+  still = pkgs.callPackage ./still { };
 }
