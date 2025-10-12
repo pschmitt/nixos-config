@@ -102,20 +102,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprpanel = {
-      url = "github:Jas-SinghFSU/HyprPanel";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     noctalia = {
       url = "github:noctalia-dev/noctalia-shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    # dankMaterialShell = {
-    #   url = "github:AvengeMedia/DankMaterialShell";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
 
     # hyprland end }}}
 
