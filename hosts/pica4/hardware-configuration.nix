@@ -46,12 +46,11 @@
   #   ];
   # };
 
-  environment.systemPackages = with pkgs; [
-    # Disabled since it does not compile with cmake 4
-    # see https://github.com/NixOS/nixpkgs/pull/450828
-    # libraspberrypi
-    raspberrypi-eeprom
-  ];
+  # FIXME Disabled since libraspberrypi does not compile with cmake 4
+  # see https://github.com/NixOS/nixpkgs/pull/450828
+  # environment.systemPackages = with pkgs; [
+  #   raspberrypi-eeprom
+  # ];
 
   # Can't use btrfs storage driver!
   virtualisation.docker.storageDriver = lib.mkForce null;
