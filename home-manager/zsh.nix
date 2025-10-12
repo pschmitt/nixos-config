@@ -42,6 +42,14 @@
         }/init.zsh
         # bindkey '^[r' _atuin_search_widget
 
+        # direnv
+        source ${
+          (pkgs.runCommand "direnv-init" { } ''
+            mkdir -p $out
+            ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
+          '')
+        }/init.zsh
+
         # zoxide
         source ${
           (pkgs.runCommand "zoxide-init" { } ''
