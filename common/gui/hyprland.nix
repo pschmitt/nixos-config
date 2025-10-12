@@ -58,6 +58,9 @@ in
     waybar
     wttrbar
 
+    # noctalia-shell
+    inputs.noctalia.packages.${pkgs.system}.default
+
     # screenshots
     grim
     (pkgs.writeShellScriptBin "grim-hyprland" ''
