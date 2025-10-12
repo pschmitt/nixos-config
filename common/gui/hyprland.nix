@@ -67,8 +67,8 @@ in
       exec -a $0 ${inputs.grim-hyprland.packages.${pkgs.system}.default}/bin/grim "$@"
     '')
     slurp
-    still
     swappy
+    wayfreeze
     wf-recorder
 
     # clipboard
