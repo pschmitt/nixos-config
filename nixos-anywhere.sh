@@ -69,8 +69,7 @@ main() {
     flake_uri="${flake_uri}#${target_host}"
   fi
 
-  # TODO And ---disk-encryption-keys maybe?
-  echo nix run github:nix-community/nixos-anywhere -- \
+  nix run github:nix-community/nixos-anywhere -- \
     --flake "$flake_uri" \
     --target-host "$target_host" \
     --build-on local \
