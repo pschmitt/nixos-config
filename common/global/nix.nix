@@ -18,7 +18,6 @@
       "nix/github_token" = {
         owner = config.custom.username;
       };
-      "ssh/nix-remote-builder/privkey" = { };
     };
     templates = {
       nix-cache-netrc.content = ''
