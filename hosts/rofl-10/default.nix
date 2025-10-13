@@ -13,6 +13,7 @@
     ../../services/backups/autorestic.nix
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote.nix
+    ../../services/calibre.nix
     ../../services/changedetection-io.nix
     ../../services/harmonia.nix
     ../../services/forgejo.nix
