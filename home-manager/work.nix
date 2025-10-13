@@ -83,6 +83,7 @@ in
       pkgs.terraform-157.terraform
       # FIXME terragrunt is broken as of 2025-03-14
       # terragrunt
+      openbao
       opentofu
       thunderbird
       vendir
