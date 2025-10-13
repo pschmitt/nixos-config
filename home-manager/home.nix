@@ -25,6 +25,7 @@
       ./networking.nix
       ./nrf.nix
       ./nvim.nix
+      ./ssh.nix
       ./work.nix
       ./yadm.nix
       ./zsh.nix
