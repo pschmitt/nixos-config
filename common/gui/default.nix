@@ -75,6 +75,7 @@
 
     # enable sushi and rygel
     gnome = {
+      gnome-online-accounts.enable = true;
       sushi.enable = true;
       rygel.enable = true;
     };
