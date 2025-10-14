@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -12,6 +17,11 @@
         "srv"
         "videos"
       ];
+    })
+    (import ./nfs-client.nix {
+      server = "rofl-10.nb.${config.custom.mainDomain}";
+      exports = [ "books" ];
+      mountPoint = "/mnt/data";
     })
     ../../services/http.nix
     ../../services/stash.nix
