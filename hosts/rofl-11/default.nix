@@ -18,7 +18,7 @@
         "videos"
       ];
     })
-    (import ./nfs-client.nix {
+    (import ./../../services/nfs/nfs-client.nix {
       server = "rofl-10.nb.${config.custom.mainDomain}";
       exports = [ "books" ];
       mountPoint = "/mnt/data";
