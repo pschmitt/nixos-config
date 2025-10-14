@@ -124,6 +124,8 @@ in
     environment = {
       TZ = timezone;
       NETWORK_SHARE_MODE = "false";
+      PUID = 1000;
+      PGID = 1000;
     };
   };
 
