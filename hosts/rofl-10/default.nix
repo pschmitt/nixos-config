@@ -29,6 +29,7 @@
     ../../services/rclone-bisync.nix
     ../../services/searxng.nix
     ../../services/turris-ssh-tunnel.nix
+    ../../services/vdirsyncer.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
     ../../services/nfs/nfs-client-rofl-11.nix
 
