@@ -104,6 +104,7 @@ in
           a = "google_contacts";
           b = "nextcloud_contacts";
           collections = [
+            # TODO shouldn't this be ["a", "default", "google"]?
             [
               "google_sync"
               "default"
@@ -112,8 +113,8 @@ in
           ];
           conflict_resolution = "a wins";
           metadata = [
-            "displayname"
             "color"
+            "displayname"
           ];
         };
       };
