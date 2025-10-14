@@ -5,25 +5,16 @@
   ...
 }:
 let
-  hostnames = [
-    "cw.books.${config.custom.mainDomain}"
-  ];
   rootDir = "/mnt/data/srv/calibre";
   calibreLibrary = "${rootDir}/library";
   calibreServerListen = {
     ip = "127.0.0.1";
     port = 22542;
   };
-  calibreWebListen = {
-    ip = "127.0.0.1";
-    port = 22543;
-  };
   calibreWebAutomatedListen = {
     ip = "127.0.0.1";
     port = 22544;
   };
-  calibreWebUpstream = "http://${calibreWebListen.ip}:${toString calibreWebListen.port}";
-  # calibreServerUpstream = "http://${calibreServerListen.ip}:${toString calibreServerListen.port}";
   calibreWebAutomatedUpstream = "http://${calibreWebAutomatedListen.ip}:${toString calibreWebAutomatedListen.port}";
   calibreWebAutomatedRoot = "${rootDir}/calibre-web-automated";
   calibreWebAutomatedPaths = {
@@ -31,7 +22,9 @@ let
     ingest = "/mnt/data/books/ingest";
     plugins = "${calibreWebAutomatedRoot}/plugins";
   };
-  calibreWebAutomatedHostnames = map (hostname: "${hostname}") hostnames;
+  calibreWebAutomatedHostnames = [
+    "books.${config.custom.mainDomain}"
+  ];
   calibreWebAutomatedVirtualHosts = builtins.listToAttrs (
     map (hostname: {
       name = hostname;
@@ -69,45 +62,9 @@ in
     libraries = [ calibreLibrary ];
   };
 
-  services.calibre-web = {
-    enable = true;
+  services.calibre-web.enable = lib.mkForce false;
 
-    listen = calibreWebListen;
-
-    dataDir = "${rootDir}/data";
-
-    options = {
-      calibreLibrary = calibreLibrary;
-      enableBookConversion = true;
-      enableBookUploading = true;
-    };
-  };
-
-  services.nginx.virtualHosts =
-    builtins.listToAttrs (
-      map (hostname: {
-        name = hostname;
-        value = {
-          enableACME = true;
-          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-          acmeRoot = null;
-          forceSSL = true;
-          locations = {
-            "/" = {
-              proxyPass = calibreWebUpstream;
-              recommendedProxySettings = true;
-              proxyWebsockets = true;
-            };
-
-            # "/opds/" = {
-            #   proxyPass = "${calibreServerUpstream}/";
-            #   recommendedProxySettings = true;
-            # };
-          };
-        };
-      }) hostnames
-    )
-    // calibreWebAutomatedVirtualHosts;
+  services.nginx.virtualHosts = calibreWebAutomatedVirtualHosts;
 
   virtualisation.oci-containers.containers.calibre-web-automated = {
     image = "docker.io/crocodilestick/calibre-web-automated:latest";
@@ -130,14 +87,14 @@ in
   };
 
   services.monit.config = lib.mkAfter ''
-    check host "calibre-web" with address "${builtins.head hostnames}"
+    check host "calibre-server" with address "${calibreServerListen.ip}"
       group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart calibre-web.service"
+      restart program = "${pkgs.systemd}/bin/systemctl restart calibre-server.service"
       if failed
-        port 443
-        protocol https
+        port ${toString calibreServerListen.port}
+        protocol http
+        request "/opds/"
         with timeout 15 seconds
-        and certificate valid for 5 days
       then restart
       if 5 restarts within 10 cycles then alert
 
@@ -151,17 +108,5 @@ in
         and certificate valid for 5 days
       then restart
       if 5 restarts within 10 cycles then alert
-
-    # check host "calibre-server" with address "${builtins.head hostnames}"
-    #   group services
-    #   restart program = "${pkgs.systemd}/bin/systemctl restart calibre-server.service"
-    #   if failed
-    #     port 443
-    #     protocol https
-    #     request "/opds/"
-    #     with timeout 15 seconds
-    #     and certificate valid for 5 days
-    #   then restart
-    #   if 5 restarts within 10 cycles then alert
   '';
 }
