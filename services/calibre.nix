@@ -6,7 +6,7 @@
 }:
 let
   hostnames = [
-    "books.${config.custom.mainDomain}"
+    "cw.books.${config.custom.mainDomain}"
   ];
   rootDir = "/mnt/data/srv/calibre";
   calibreLibrary = "${rootDir}/library";
@@ -31,7 +31,7 @@ let
     ingest = "/mnt/data/books/ingest";
     plugins = "${calibreWebAutomatedRoot}/plugins";
   };
-  calibreWebAutomatedHostnames = map (hostname: "cwa.${hostname}") hostnames;
+  calibreWebAutomatedHostnames = map (hostname: "${hostname}") hostnames;
   calibreWebAutomatedVirtualHosts = builtins.listToAttrs (
     map (hostname: {
       name = hostname;
