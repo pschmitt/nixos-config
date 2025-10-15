@@ -1,4 +1,8 @@
 { config, lib, ... }:
+let
+  dataFileSystem = lib.attrByPath [ "/mnt/data" ] { } config.fileSystems;
+  dataIsBtrfs = (dataFileSystem.fsType or null) == "btrfs";
+in
 {
   imports = [ ../services/snapper.nix ];
 
@@ -8,12 +12,14 @@
     cleanupInterval = lib.mkDefault "1d";
     persistentTimer = lib.mkDefault true;
 
-    configs.data = lib.mkDefault {
-      FSTYPE = "btrfs";
-      SUBVOLUME = "/mnt/data";
-      ALLOW_USERS = [ config.custom.username ];
-      TIMELINE_CREATE = true;
-      TIMELINE_CLEANUP = true;
+    configs = lib.mkIf dataIsBtrfs {
+      data = lib.mkDefault {
+        FSTYPE = "btrfs";
+        SUBVOLUME = "/mnt/data";
+        ALLOW_USERS = [ config.custom.username ];
+        TIMELINE_CREATE = true;
+        TIMELINE_CLEANUP = true;
+      };
     };
   };
 }
