@@ -5,7 +5,6 @@
     ./audio.nix
     ./browser.nix
     ./bluetooth.nix
-    ./btrfs.nix
     ./fonts.nix
     ./gnome-keyring.nix
     ./gpu.nix
@@ -14,6 +13,7 @@
     ./libvirt.nix
     ./logitech-mouse.nix
     ./printer.nix
+    ./snapper.nix
     ./theme.nix
 
     # Display Manager
