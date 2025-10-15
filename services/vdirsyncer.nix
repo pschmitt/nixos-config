@@ -151,6 +151,11 @@ in
     extraGroups = lib.mkAfter [ "${syncGroup}" ];
   };
 
+  # system.activationScripts.vdirsyncerAcls.text = ''
+  #   ${pkgs.acl}/bin/setfacl -m u:pschmitt:rx /var/lib/vdirsyncer
+  #   ${pkgs.acl}/bin/setfacl -m u:pschmitt:rx /var/lib/vdirsyncer/google-contacts
+  # '';
+
   # Just delete the state before every run, this allows us to delete
   # the "google" address book from nextcloud cleanly if we ever want to.
   # systemd.services."vdirsyncer@google-contacts".serviceConfig.ExecStartPre = lib.mkAfter (
