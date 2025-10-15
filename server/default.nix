@@ -20,6 +20,7 @@
     ./firewall.nix
     ./monit.nix
     ./restic.nix
+    ./snapper.nix
   ];
 
   custom.server = true;
