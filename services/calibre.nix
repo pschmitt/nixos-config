@@ -7,10 +7,6 @@
 let
   rootDir = "/mnt/data/srv/calibre";
   calibreLibrary = "${rootDir}/library";
-  calibreServerListen = {
-    ip = "127.0.0.1";
-    port = 22542;
-  };
   calibreWebAutomatedListen = {
     ip = "127.0.0.1";
     port = 22544;
@@ -50,17 +46,11 @@ in
   systemd.tmpfiles.rules = [
     "d ${rootDir} 0750 root root - -"
     "d ${calibreWebAutomatedRoot} 0750 ${config.custom.username} ${config.custom.username} - -"
+    "d ${calibreLibrary} 0750 ${config.custom.username} ${config.custom.username} - -"
     "d ${calibreWebAutomatedPaths.config} 0750 ${config.custom.username} ${config.custom.username} - -"
     "d ${calibreWebAutomatedPaths.ingest} 0750 ${config.custom.username} ${config.custom.username} - -"
     "d ${calibreWebAutomatedPaths.plugins} 0750 ${config.custom.username} ${config.custom.username} - -"
   ];
-
-  services.calibre-server = {
-    enable = true;
-    host = calibreServerListen.ip;
-    port = calibreServerListen.port;
-    libraries = [ calibreLibrary ];
-  };
 
   services.calibre-web.enable = lib.mkForce false;
 
@@ -87,17 +77,6 @@ in
   };
 
   services.monit.config = lib.mkAfter ''
-    check host "calibre-server" with address "${calibreServerListen.ip}"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart calibre-server.service"
-      if failed
-        port ${toString calibreServerListen.port}
-        protocol http
-        request "/opds/"
-        with timeout 15 seconds
-      then restart
-      if 5 restarts within 10 cycles then alert
-
     check host "calibre-web-automated" with address "${builtins.head calibreWebAutomatedHostnames}"
       group services
       restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-calibre-web-automated.service"
