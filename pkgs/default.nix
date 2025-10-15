@@ -50,6 +50,5 @@ in
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   native-client = pkgs.callPackage ./native-client { };
   osc = pkgs.callPackage ./osc { };
-  pyghmi = pkgs.callPackage ./pyghmi { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
