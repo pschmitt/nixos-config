@@ -1,6 +1,7 @@
 { config, lib, ... }:
 let
-  dataFileSystem = lib.attrByPath [ "/mnt/data" ] { } config.fileSystems;
+  dataDir = "/mnt/data";
+  dataFileSystem = lib.attrByPath [ dataDir ] { } config.fileSystems;
   dataIsBtrfs = (dataFileSystem.fsType or null) == "btrfs";
 in
 {
@@ -15,7 +16,7 @@ in
     configs = lib.mkIf dataIsBtrfs {
       data = lib.mkDefault {
         FSTYPE = "btrfs";
-        SUBVOLUME = "/mnt/data";
+        SUBVOLUME = dataDir;
         ALLOW_USERS = [ config.custom.username ];
         TIMELINE_CREATE = true;
         TIMELINE_CLEANUP = true;
