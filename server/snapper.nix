@@ -8,9 +8,9 @@
     cleanupInterval = lib.mkDefault "1d";
     persistentTimer = lib.mkDefault true;
 
-    configs.srv = lib.mkDefault {
+    configs.data = lib.mkDefault {
       FSTYPE = "btrfs";
-      SUBVOLUME = "/srv";
+      SUBVOLUME = "/mnt/data";
       ALLOW_USERS = [ config.custom.username ];
       TIMELINE_CREATE = true;
       TIMELINE_CLEANUP = true;
