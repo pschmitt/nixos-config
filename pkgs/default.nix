@@ -50,5 +50,6 @@ in
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   native-client = pkgs.callPackage ./native-client { };
   osc = pkgs.callPackage ./osc { };
+  davcli = pkgs.callPackage ./davcli { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
