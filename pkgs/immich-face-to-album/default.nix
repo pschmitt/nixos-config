@@ -6,17 +6,18 @@
 
 python3.pkgs.buildPythonApplication rec {
   pname = "immich-face-to-album";
-  version = "1.0.9";
+  version = "1.0.11";
   pyproject = true;
 
   src = fetchPypi {
     pname = "immich_face_to_album";
     inherit version;
-    hash = "sha256-YcGiynQK7ABWk5O4/SdPkmmsPrrDkQAy1dmGZKuhSng=";
+    hash = "sha256-pXCSFp+T2ZawPp1FSOsPk7+AQCpY6vhfLjb/FEX5NYA=";
   };
 
   build-system = [
     python3.pkgs.setuptools
+    python3.pkgs.setuptools-scm
     python3.pkgs.wheel
   ];
 
