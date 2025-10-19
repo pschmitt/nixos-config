@@ -24,11 +24,12 @@
     # files and docs
     eog
     evince
-    gnome-font-viewer
+    ffmpegthumbnailer # for video thumbnails in nautilus
     file-roller
+    gnome-font-viewer
+    imv # image viewer
     nautilus
     sushi
-    imv # image viewer
     zathura
 
     # wayland
