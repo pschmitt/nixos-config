@@ -40,8 +40,6 @@
     };
   };
 
-  sops.secrets."xmrig/env" = { };
-
   systemd.services.xmrig.serviceConfig = {
     EnvironmentFile = config.sops.secrets."xmrig/env".path;
   };
