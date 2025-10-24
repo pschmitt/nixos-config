@@ -82,6 +82,7 @@ in
 
     # tools
     brightnessctl
+    hints
     hyprpaper # wallpaper
     hyprpicker
     kanshi
