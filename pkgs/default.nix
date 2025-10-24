@@ -51,5 +51,6 @@ in
   native-client = pkgs.callPackage ./native-client { };
   osc = pkgs.callPackage ./osc { };
   davcli = pkgs.callPackage ./davcli { };
+  hints = pkgs.callPackage ./hints { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
