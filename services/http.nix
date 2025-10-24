@@ -3,6 +3,10 @@
   sops.secrets = {
     "cloudflare/email" = { };
     "cloudflare/api_key" = { };
+    "htpasswd" = {
+      owner = "nginx";
+      group = "nginx";
+    };
   };
 
   security.acme = {

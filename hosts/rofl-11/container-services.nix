@@ -16,6 +16,11 @@ in
   custom.containerServices = {
     enable = true;
     services = {
+      ***REMOVED*** = {
+        port = 29223;
+        hosts = [ (mkHost "***REMOVED***") ];
+        credentialsFile = config.sops.secrets."htpasswd".path;
+      };
       jellyfin = {
         port = 8096;
         hosts = [
@@ -29,9 +34,7 @@ in
       };
       lazylibrarian = {
         port = 5299;
-        hosts = [
-          (mkHost "ll")
-        ];
+        hosts = [ (mkHost "ll") ];
       };
       pp = {
         port = 7827;
