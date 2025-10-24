@@ -86,6 +86,14 @@ resource "cloudflare_record" "xmr-brkn-lol" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "cwabd-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "cwabd"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+}
+
 # jellyfin
 resource "cloudflare_record" "media-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id

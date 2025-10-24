@@ -17,6 +17,7 @@ let
     concatStringsSep
     attrNames
     optionalString
+    optionalAttrs
     ;
 
   cfg = config.custom.containerServices;
@@ -68,6 +69,17 @@ let
         default = null;
         description = "Override the ACME certificate to reuse for this host.";
       };
+
+      credentialsFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = ''
+          Path to an htpasswd-formatted file containing HTTP basic authentication
+          credentials (typically provided by a sops secret). When provided the
+          service will be protected behind basic auth while still allowing
+          requests from 127.0.0.1 without credentials for local monitoring.
+        '';
+      };
     };
   });
 
@@ -87,39 +99,53 @@ let
     in
     if override != null then override else base;
 
-  generateMonitCheck =
-    serviceName: host: service:
-    let
-      effectivePort = "443";
-      proto = "https";
-      extraClause =
-        if service.http_status_code != null then "status " + toString service.http_status_code else "";
-      composePath = if service.compose_yaml != null then service.compose_yaml else serviceName;
-    in
+  monitCheckText =
+    {
+      serviceName,
+      composePath,
+      monitoredPort,
+      proto,
+      extraClause,
+    }:
     ''
-      check host "${serviceName}" with address "${host}"
+      check host "${serviceName}" with address "127.0.0.1"
         group services
         restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps ${serviceName}"
           with timeout 180 seconds
         if failed
-          port ${effectivePort}
+          port ${monitoredPort}
           protocol ${proto}${optionalString (extraClause != "") " ${extraClause}"}
           with timeout 90 seconds
         then restart
         if 5 restarts within 10 cycles then alert
     '';
 
-  generatedChecks = mapAttrs (
+  generateMonitCheck =
     serviceName: service:
     let
-      firstHost = builtins.head service.hosts;
+      extraClause =
+        if service.http_status_code != null then "status " + toString service.http_status_code else "";
+      composePath = if service.compose_yaml != null then service.compose_yaml else serviceName;
+      monitoredPort = toString service.port;
+      proto = if service.tls then "https" else "http";
     in
-    generateMonitCheck serviceName firstHost service
-  ) cfg.services;
+    monitCheckText {
+      inherit
+        serviceName
+        composePath
+        monitoredPort
+        proto
+        extraClause
+        ;
+    };
 
-  monitExtraConfig = concatStringsSep "\n\n" (attrValues generatedChecks);
+  monitExtraConfig =
+    let
+      checks = mapAttrs (serviceName: service: generateMonitCheck serviceName service) cfg.services;
+    in
+    concatStringsSep "\n\n" (attrValues checks);
 
-  createVirtualHost = service: hostname: {
+  createVirtualHost = serviceName: service: hostname: {
     name = hostname;
     value = {
       default = service.default;
@@ -132,6 +158,23 @@ let
         proxyPass = "http${if service.tls then "s" else ""}://127.0.0.1:${toString service.port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
+      }
+      // optionalAttrs (service.credentialsFile != null) {
+        basicAuthFile = service.credentialsFile;
+        extraConfig = ''
+          satisfy any;
+
+          # local (nginx and monitoring)
+          allow 127.0.0.1;
+          # allow ::1;
+          # allow fc00::/7;
+
+          # Netbird + Tailscale IP range
+          allow 100.64.0.0/10;
+
+          # Reject all other requests
+          deny all;
+        '';
       };
     };
   };
@@ -142,7 +185,7 @@ let
       let
         service = cfg.services.${serviceName};
       in
-      map (hostname: createVirtualHost service hostname) service.hosts
+      map (hostname: createVirtualHost serviceName service hostname) service.hosts
     ) (attrNames cfg.services)
   );
 
