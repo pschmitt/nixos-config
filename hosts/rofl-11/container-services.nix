@@ -19,7 +19,8 @@ in
       cwabd = {
         port = 29223;
         hosts = [ (mkHost "cwabd") ];
-        credentialsFile = config.sops.secrets."htpasswd".path;
+        # credentialsFile = config.sops.secrets."htpasswd".path;
+        sso = true;
       };
       jellyfin = {
         port = 8096;
