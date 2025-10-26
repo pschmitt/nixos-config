@@ -63,5 +63,6 @@
     nixos-generators
     nixpkgs-fmt
     nvd
+    statix
   ];
 }
