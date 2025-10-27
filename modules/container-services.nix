@@ -18,15 +18,43 @@ let
     attrValues
     concatStringsSep
     attrNames
+    optional
     optionalString
     optionalAttrs
     filter
     hasPrefix
+    escapeShellArg
+    genAttrs
     ;
 
   cfg = config.custom.containerServices;
 
   autheliaDomain = "auth.${config.custom.mainDomain}";
+
+  nginxUser = config.services.nginx.user or "nginx";
+  nginxGroup = config.services.nginx.group or "nginx";
+
+  trustedStateDir = "/run/container-services";
+  nginxTrustedNetworksFile = "${trustedStateDir}/trusted-networks.conf";
+  autheliaTrustedNetworksFile = "${trustedStateDir}/authelia-trusted-networks.yml";
+  trustedHosts = [ "turris.${config.custom.mainDomain}" ];
+  autheliaLocalNetworks = [
+    "127.0.0.1/32"
+    "::1/128"
+    "100.64.0.0/10"
+  ];
+  autheliaInstanceNames = attrNames config.services.authelia.instances;
+  autheliaServiceNames = map (name: "authelia-${name}.service") autheliaInstanceNames;
+  autheliaUnitsEnv = concatStringsSep " " autheliaServiceNames;
+  trustedHostsEnv = concatStringsSep " " trustedHosts;
+  autheliaLocalNetworksEnv = concatStringsSep "\n" autheliaLocalNetworks;
+  trustedNetworksUpdaterScript =
+    pkgs.writeShellScript "update-container-trusted-networks" (
+      builtins.readFile ../services/scripts/update-container-trusted-networks.sh
+    );
+  nginxServiceName = "nginx.service";
+
+  trustedNetworksIncludeLine = "        include ${nginxTrustedNetworksFile};\n";
 
   # Effective Authz URL (can be overridden via options below)
   defaultAuthzURL =
@@ -40,7 +68,7 @@ let
       configured = cfg.authelia.resolver.addresses;
       fallback =
         let
-          nameservers = config.networking.nameservers;
+          inherit (config.networking) nameservers;
         in
         if nameservers != [ ] then nameservers else [ "127.0.0.53" ];
     in
@@ -109,26 +137,37 @@ let
         description = "Override the ACME certificate to reuse for this host.";
       };
 
-      credentialsFile = mkOption {
-        type = types.nullOr types.path;
-        default = null;
-        description = ''
-          Path to an htpasswd-formatted file containing HTTP basic authentication
-          credentials (typically provided by a sops secret). When provided the
-          service will be protected behind basic auth while still allowing
-          requests from 127.0.0.1 without credentials for local monitoring.
-        '';
-      };
+      auth = mkOption {
+        description = "Authentication policy for the container service.";
+        default = { };
+        type = types.submodule (_: {
+          options = {
+            enable = mkEnableOption "authentication for this service";
 
-      sso = mkOption {
-        type = types.bool;
-        default = false;
-        description = ''
-          Protect this service behind the Authelia SSO gateway. Requests coming
-          from localhost or the CGNAT range used by Tailscale/Netbird are
-          automatically bypassed according to the Authelia access control
-          policy.
-        '';
+            type = mkOption {
+              type = types.enum [ "basic" "sso" ];
+              default = "sso";
+              defaultText = "\"sso\"";
+              description = ''
+                Authentication mode to enforce when auth is enabled.
+                Supported values are:
+                  - "basic": HTTP basic authentication backed by an htpasswd
+                    file.
+                  - "sso": Authelia single sign-on protection.
+              '';
+            };
+
+            htpasswdFile = mkOption {
+              type = types.nullOr types.path;
+              default = null;
+              description = ''
+                Path to an htpasswd-formatted file containing HTTP basic
+                authentication credentials (typically provided by a sops
+                secret). Required when ``type = "basic"``.
+              '';
+            };
+          };
+        });
       };
     };
   });
@@ -196,16 +235,24 @@ let
     concatStringsSep "\n\n" (attrValues checks);
 
   authOptionAssertions =
-    mapAttrsToList (
-      serviceName: service:
+    concatMap (
+      serviceName:
       let
-        conflict = service.sso && service.credentialsFile != null;
+        service = cfg.services.${serviceName};
+        inherit (service) auth;
+        inherit (auth) enable htpasswdFile;
+        authType = auth.type;
+        wantsBasic = enable && authType == "basic";
       in
-      {
-        assertion = !conflict;
-        message = "Container service '${serviceName}' cannot enable SSO and provide a credentialsFile simultaneously.";
+      optional wantsBasic {
+        assertion = htpasswdFile != null;
+        message = "Container service '${serviceName}' requires auth.htpasswdFile when using basic auth.";
       }
-    ) cfg.services;
+      ++ optional (htpasswdFile != null && !wantsBasic) {
+        assertion = false;
+        message = "Container service '${serviceName}' should only set auth.htpasswdFile when auth.type = \"basic\".";
+      }
+    ) (attrNames cfg.services);
 
   createVirtualHost =
     serviceName: service: hostname:
@@ -216,8 +263,12 @@ let
         recommendedProxySettings = true;
       };
 
+      inherit (service) auth;
+      wantsBasicAuth = auth.enable && auth.type == "basic";
+      wantsSsoAuth = auth.enable && auth.type == "sso";
+
       # Authelia (authz endpoint using upstream configuration guidance)
-      autheliaExtraConfig = optionalString service.sso ''
+      autheliaExtraConfig = optionalString wantsSsoAuth ''
         ## Send a subrequest to Authelia to verify if the user is authenticated and has permission to access the resource.
         auth_request /internal/authelia/authz;
 
@@ -254,7 +305,7 @@ let
       '';
 
       # Optional Basic Auth with local/CGNAT bypass at NGINX layer
-      basicAuthExtraConfig = optionalString (service.credentialsFile != null) ''
+      basicAuthExtraConfig = optionalString wantsBasicAuth ''
         satisfy any;
 
         # local (nginx and monitoring)
@@ -264,6 +315,9 @@ let
 
         # Netbird + Tailscale IP range (CGNAT)
         allow 100.64.0.0/10;
+
+        # Trusted remote host managed dynamically
+        include ${nginxTrustedNetworksFile};
 
         # Reject all other requests unless basic auth succeeds
         deny all;
@@ -278,15 +332,15 @@ let
 
       locationAttrs =
         baseLocation
-        // optionalAttrs (service.credentialsFile != null) {
-          basicAuthFile = service.credentialsFile;
+        // optionalAttrs wantsBasicAuth {
+          basicAuthFile = auth.htpasswdFile;
         }
         // optionalAttrs (locationExtraConfig != "") {
           extraConfig = locationExtraConfig;
         };
 
       # Internal location for Authelia authz check
-      autheliaServerExtraConfig = optionalString service.sso ''
+      autheliaServerExtraConfig = optionalString wantsSsoAuth ''
         set $upstream_authelia ${defaultAuthzURL};
 
         ## Virtual endpoint created by nginx to forward auth requests.
@@ -325,7 +379,7 @@ ${autheliaResolverDirectives}
     {
       name = hostname;
       value = {
-        default = service.default;
+        inherit (service) default;
         enableACME = effectiveEnableACME service;
         useACMEHost = effectiveUseACMEHost service;
         # FIXME https://github.com/NixOS/nixpkgs/issues/210807
@@ -428,5 +482,55 @@ in
     assertions = authOptionAssertions;
     services.nginx.virtualHosts = virtualHosts;
     services.monit.config = lib.mkAfter monitExtraConfig;
+    systemd = {
+      tmpfiles.rules = [
+        "d ${trustedStateDir} 0755 root root -"
+      ];
+
+      services =
+        {
+          container-services-update-trusted-networks = {
+            description = "Update container trusted networks allowlist";
+            wantedBy = [ "multi-user.target" ];
+            path = [
+              pkgs.coreutils
+              pkgs.dnsutils
+              pkgs.diffutils
+              pkgs.systemd
+            ];
+            script =
+              ''
+              set -eu
+
+              resolver_script=${lib.escapeShellArg trustedNetworksUpdaterScript}
+              export NGINX_OUTPUT=${lib.escapeShellArg nginxTrustedNetworksFile}
+              export AUTHELIA_OUTPUT=${lib.escapeShellArg autheliaTrustedNetworksFile}
+              export NGINX_SERVICE=${lib.escapeShellArg nginxServiceName}
+              export AUTHELIA_UNITS=${lib.escapeShellArg autheliaUnitsEnv}
+              export TRUSTED_HOSTS=${lib.escapeShellArg trustedHostsEnv}
+              export AUTHELIA_LOCAL_NETWORKS=${lib.escapeShellArg autheliaLocalNetworksEnv}
+
+              "$resolver_script"
+            '';
+          };
+
+          nginx = {
+            requires = [ "container-services-update-trusted-networks.service" ];
+            after = [ "container-services-update-trusted-networks.service" ];
+          };
+        }
+        // genAttrs (map (name: "authelia-${name}") autheliaInstanceNames) (_: {
+          requires = [ "container-services-update-trusted-networks.service" ];
+          after = [ "container-services-update-trusted-networks.service" ];
+        });
+
+      timers.container-services-update-trusted-networks = {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "30s";
+          OnUnitActiveSec = "5m";
+        };
+      };
+    };
   };
 }
