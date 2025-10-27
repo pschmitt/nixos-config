@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   instanceName = "main";
   autheliaDomain = "auth.${config.custom.mainDomain}";
@@ -8,8 +13,7 @@ let
   autheliaPort = 28843;
   stateDir = "/var/lib/${autheliaUser}";
   runtimeStateDir = "/run/authelia";
-  containerServicesEnabled =
-    lib.attrByPath [ "custom" "containerServices" "enable" ] false config;
+  containerServicesEnabled = lib.attrByPath [ "custom" "containerServices" "enable" ] false config;
   managedTrustedNetworksFile = "${runtimeStateDir}/trusted-networks.yml";
   dynamicTrustedNetworksFile =
     if containerServicesEnabled then
@@ -31,10 +35,9 @@ let
     "100.64.0.0/10"
   ];
   autheliaLocalNetworksEnv = lib.concatStringsSep "\n" bypassNetworks;
-  trustedNetworksUpdaterScript =
-    pkgs.writeShellScript "authelia-trusted-networks" (
-      builtins.readFile ./scripts/update-container-trusted-networks.sh
-    );
+  trustedNetworksUpdaterScript = pkgs.writeShellScript "authelia-trusted-networks" (
+    builtins.readFile ./scripts/update-container-trusted-networks.sh
+  );
   autheliaSettings = {
     server.address = "tcp://:${toString autheliaPort}/";
     theme = "auto";
@@ -80,8 +83,10 @@ let
         }
         {
           policy = "bypass";
-          networks = [ "local" ]
-            ++ lib.optional (dynamicTrustedNetworksFile != null) "container-services-trusted";
+          networks = [
+            "local"
+          ]
+          ++ lib.optional (dynamicTrustedNetworksFile != null) "container-services-trusted";
           domain = [ "*.${config.custom.mainDomain}" ];
         }
       ];
@@ -106,9 +111,11 @@ in
       "authelia/duo.yml" = {
         content = ''
           duo_api:
+            disable: false
             hostname: ${config.sops.placeholder."authelia/duo/hostname"}
             integration_key: ${config.sops.placeholder."authelia/duo/integration-key"}
             secret_key: ${config.sops.placeholder."authelia/duo/secret-key"}
+            enable_self_enrollment: true
         '';
         owner = autheliaUser;
         group = autheliaGroup;
@@ -136,12 +143,10 @@ in
     enable = true;
     user = autheliaUser;
     group = autheliaGroup;
-    settingsFiles =
-      lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile
-      ++ [
-        config.sops.templates."authelia/duo.yml".path
-        config.sops.templates."authelia/smtp.yml".path
-      ];
+    settingsFiles = lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile ++ [
+      config.sops.templates."authelia/duo.yml".path
+      config.sops.templates."authelia/smtp.yml".path
+    ];
     secrets = {
       jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
       storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
