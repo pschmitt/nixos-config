@@ -19,9 +19,9 @@ in
       ***REMOVED*** = {
         port = 29223;
         hosts = [ (mkHost "***REMOVED***") ];
-        credentialsFile = config.sops.secrets."htpasswd".path;
+        # credentialsFile = config.sops.secrets."htpasswd".path;
         # FIXME this leads to http 500 on the ***REMOVED*** service
-        # sso = true;
+        sso = true;
       };
       jellyfin = {
         port = 8096;
