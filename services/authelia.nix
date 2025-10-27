@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 let
   instanceName = "main";
   autheliaDomain = "auth.${config.custom.mainDomain}";
@@ -7,7 +7,7 @@ let
   autheliaService = "authelia-${instanceName}.service";
   stateDir = "/var/lib/${autheliaUser}";
   secretsAttrs = owner: {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
     inherit owner;
     group = autheliaGroup;
     mode = "0400";
@@ -27,7 +27,7 @@ let
       }
     ];
     authentication_backend.file = {
-      path = config.sops.secrets."authelia/users-database".path;
+      inherit (config.sops.secrets."authelia/users-database") path;
       watch = false;
     };
     storage.local.path = "${stateDir}/db.sqlite3";
