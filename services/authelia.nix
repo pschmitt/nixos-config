@@ -53,10 +53,6 @@ let
       watch = false;
     };
     storage.local.path = "${stateDir}/db.sqlite3";
-    duo_api = {
-      disable = false;
-      enable_self_enrollment = true;
-    };
     webauthn = {
       disable = false;
       enable_passkey_login = true;
