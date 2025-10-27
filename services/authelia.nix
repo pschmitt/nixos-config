@@ -5,6 +5,7 @@ let
   autheliaUser = "authelia-${instanceName}";
   autheliaGroup = autheliaUser;
   autheliaService = "authelia-${instanceName}.service";
+  autheliaPort = 28843;
   stateDir = "/var/lib/${autheliaUser}";
   secretsAttrs = owner: {
     inherit (config.custom) sopsFile;
@@ -20,6 +21,7 @@ let
   ];
 
   autheliaSettings = {
+    server.address = "tcp://:${toString autheliaPort}/";
     session.cookies = [
       {
         domain = config.custom.mainDomain;
@@ -78,7 +80,7 @@ in
     acmeRoot = null;
     forceSSL = true;
     locations."/" = {
-      proxyPass = "http://127.0.0.1:9091/";
+      proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
       proxyWebsockets = true;
       recommendedProxySettings = true;
     };
