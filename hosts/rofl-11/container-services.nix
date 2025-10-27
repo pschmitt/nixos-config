@@ -19,9 +19,9 @@ in
       cwabd = {
         port = 29223;
         hosts = [ (mkHost "cwabd") ];
-        credentialsFile = config.sops.secrets."htpasswd".path;
+        # credentialsFile = config.sops.secrets."htpasswd".path;
         # FIXME this leads to http 500 on the cwabd service
-        # sso = true;
+        sso = true;
       };
       jellyfin = {
         port = 8096;
