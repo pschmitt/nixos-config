@@ -17,6 +17,7 @@
           systemd-boot = {
             enable = true;
             configurationLimit = 10;
+            netbootxyz.enable = true;
           };
           efi.canTouchEfiVariables = true;
         };
