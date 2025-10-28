@@ -83,7 +83,6 @@
     gvfs.enable = true;
     seatd.enable = true;
     tumbler.enable = true;
-    udev.packages = [ pkgs.android-udev-rules ];
   };
 
   # Enable lingering
@@ -92,7 +91,6 @@
     linger = true;
 
     extraGroups = [
-      "adbusers"
       "input" # do we need this?
       "uinput" # for dotool
       "video" # do we need this?
