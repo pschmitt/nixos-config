@@ -59,7 +59,7 @@ in
     wttrbar
 
     # noctalia-shell
-    inputs.noctalia.packages.${pkgs.system}.default
+    # inputs.noctalia.packages.${pkgs.system}.default
 
     # screenshots
     grim
