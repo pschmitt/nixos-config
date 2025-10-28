@@ -11,8 +11,8 @@
     hashedPasswordFile = config.sops.secrets."users/pschmitt/password".path;
     extraGroups = [
       "cdrom"
-      "docker"
       "dialout" # for /dev/tty{ACM,USB}*
+      "docker"
       "libvirtd"
       "mlocate"
       "users"
