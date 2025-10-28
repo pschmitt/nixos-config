@@ -59,7 +59,7 @@
   };
 
   hardware.uinput.enable = true;
-  # Enable touchpad support (enabled default in most desktopManager).
+  # Enable touchpad support (enabled by default in most desktopManager).
   services.libinput.enable = true;
 
   services = {
@@ -83,7 +83,6 @@
     gvfs.enable = true;
     seatd.enable = true;
     tumbler.enable = true;
-    udev.packages = [ pkgs.android-udev-rules ];
   };
 
   # Enable lingering
@@ -92,7 +91,6 @@
     linger = true;
 
     extraGroups = [
-      "adbusers"
       "input" # do we need this?
       "uinput" # for dotool
       "video" # do we need this?
