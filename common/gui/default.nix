@@ -15,6 +15,7 @@
     ./printer.nix
     ./snapper.nix
     ./theme.nix
+    ./winboat.nix
 
     # Display Manager
     ./gdm.nix

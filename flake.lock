@@ -2190,6 +2190,7 @@
         "vicinae": "vicinae",
         "vodafone-station-cli": "vodafone-station-cli",
         "wezterm": "wezterm",
+        "winboat": "winboat",
         "zen-browser": "zen-browser"
       }
     },
@@ -2775,6 +2776,26 @@
         "dir": "nix",
         "owner": "wez",
         "repo": "wezterm",
+        "type": "github"
+      }
+    },
+    "winboat": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1761706386,
+        "narHash": "sha256-rTIOYFYUvnZG0x1ZF/NDWdvuiZVhBkzceKyDK8nC3+U=",
+        "owner": "TibixDev",
+        "repo": "winboat",
+        "rev": "197ce74c95713e9b67f6494aed58b7bd44e6064c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TibixDev",
+        "repo": "winboat",
         "type": "github"
       }
     },
