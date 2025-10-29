@@ -10,7 +10,7 @@
   ];
 
   systemd.services.hacompanion = {
-    enable = true;
+    enable = false;
     description = "Home Assistant Companion application";
     documentation = [ "https://github.com/tobias-kuendig/hacompanion" ];
     after = [ "NetworkManager-wait-online.service" ];
