@@ -6,11 +6,12 @@
   lib,
   rpmextract,
   stdenv,
+  zlib,
 }:
 
-stdenv.mkDerivation rec {
+stdenv.mkDerivation {
   pname = "oracle-cloud-agent";
-  version = "1.48.0";
+  version = "1.53.0";
 
   # NOTE the Oracle Cloud Agent is available from the Oracle Linux yum repo
   # But this is not a public repo, so we have to download the RPMs manually
@@ -19,27 +20,21 @@ stdenv.mkDerivation rec {
   # Building this package directly on an OCI machine should work out of the box
   # Addendum: there's wrapper next to this file (./get-download-urls.sh) that
   # should output the URLs
-  # yum_repo = "yum.eu-frankfurt-1.oci.oraclecloud.com";
-  yum_repo = "oci-yum.brkn.lol"; # proxy to the Oracle Linux yum repo
-  url =
-    if stdenv.isAarch64 then
-      "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.48.0-17.el9.aarch64.rpm"
-    else if stdenv.isx86_64 then
-      "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.48.0-17.el9.x86_64.rpm"
-    else
-      throw "Unsupported platform";
-
-  checksum =
-    if stdenv.isAarch64 then
-      "sha256-+pwkTBVSbUOSZO6VJqExPwOKRDciUGXJ9d+79UxQjEI="
-    else if stdenv.isx86_64 then
-      "sha256-BNpY+DR5ZBIWqWphHRfc/Euj9AQ9B+EbE8F/SLUz9Zo="
-    else
-      throw "Unsupported platform";
-
   src = fetchurl {
-    url = "${url}";
-    sha256 = "${checksum}";
+    url =
+      if stdenv.isAarch64 then
+        "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.53.0-3.el9.aarch64.rpm"
+      else if stdenv.isx86_64 then
+        "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.53.0-3.el9.x86_64.rpm"
+      else
+        throw "Unsupported platform";
+    sha256 =
+      if stdenv.isAarch64 then
+        "sha256-1KxiVWRVQ4w0MW/TRD0iWg/WJDqfmIq/5navUY3I/Pw="
+      else if stdenv.isx86_64 then
+        "sha256-YpKGS+WGTUOgkCJzdWaeU0EJlSZwxFQPsjObmHa+euQ="
+      else
+        throw "Unsupported platform";
   };
   # Manually downloaded RPMs
   # src =
@@ -54,6 +49,7 @@ stdenv.mkDerivation rec {
     autoPatchelfHook
     gawk
     rpmextract
+    zlib
   ];
 
   unpackPhase = ''
