@@ -28,7 +28,7 @@ stdenv.mkDerivation {
         "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.53.0-3.el9.x86_64.rpm"
       else
         throw "Unsupported platform";
-    sha256 =
+    hash =
       if stdenv.isAarch64 then
         "sha256-1KxiVWRVQ4w0MW/TRD0iWg/WJDqfmIq/5navUY3I/Pw="
       else if stdenv.isx86_64 then
