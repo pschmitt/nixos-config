@@ -38,8 +38,10 @@ in
       "${netbirdClientName}" = {
         port = 51820;
         dns-resolver = {
-          address = "127.0.0.20";
-          port = 53;
+          # NOTE Having the addr set to the default value (null) will lead to nb
+          # using its own addr
+          # address = "127.0.0.20";
+          port = 11053;
         };
       };
     };
