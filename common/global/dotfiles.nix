@@ -2,7 +2,7 @@
 {
 
   environment.systemPackages = with pkgs; [
-    (vim_configurable.customize {
+    (vim-full.customize {
       name = "vim";
       vimrcConfig.customRC = ''
         set nocompatible
