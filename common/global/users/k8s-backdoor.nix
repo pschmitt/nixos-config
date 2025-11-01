@@ -13,4 +13,8 @@
   };
 
   users.groups.k8s-backdoor = { };
+
+  environment.systemPackages = with pkgs; [
+    kubectl
+  ];
 }
