@@ -10,6 +10,6 @@
     ./podsync-cookies-tx.nix
     ./soundboard.nix
     ./theme.nix
-    ./vicinae.nix
+    # ./vicinae.nix
   ];
 }
