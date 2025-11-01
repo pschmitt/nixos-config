@@ -7,7 +7,8 @@
 }:
 let
   # Conditional packages based on xserver.enabled
-  guiPackages = lib.optionals osConfig.services.xserver.enable [ pkgs.onlyoffice-bin ];
+  guiPackages = lib.optionals osConfig.services.xserver.enable [ pkgs.onlyoffice-desktopeditors ];
+
 in
 {
   # FIXME the sops-nix hm modules produces garbage

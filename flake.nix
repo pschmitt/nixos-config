@@ -216,10 +216,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    vicinae = {
-      url = "github:vicinaehq/vicinae";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+    # FIXME it does not build currently! (2025-11-01)
+    # vicinae = {
+    #   url = "github:vicinaehq/vicinae";
+    #   inputs.nixpkgs.follows = "nixpkgs";
+    # };
 
     vodafone-station-cli = {
       url = "github:pschmitt/vodafone-station-cli";
@@ -263,7 +264,7 @@
       sops-nix,
       srvos,
       update-systemd-resolved,
-      vicinae,
+      # vicinae,
       ...
     }@inputs:
     let
