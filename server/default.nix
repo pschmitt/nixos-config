@@ -10,11 +10,11 @@
     ../common/global
     ../common/mail
 
+    ../common/global/users/github-actions.nix
+    ../common/global/users/nix-remote-builder.nix
     ../misc/autoupgrade.nix
     ../misc/git-clone-nixos-config.nix
     ../misc/initrd-luks-ssh-unlock.nix
-    ../misc/users/github-actions.nix
-    ../misc/users/nix-remote-builder.nix
 
     ./dotfiles.nix
     ./firewall.nix
