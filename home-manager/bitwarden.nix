@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   home.packages = with pkgs; [
-    bitwarden
+    bitwarden-desktop
     master.bitwarden-cli
     rbw
   ];
