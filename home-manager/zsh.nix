@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  stdenv,
+  ...
+}:
 {
   programs.direnv = {
     enable = true;

@@ -2,6 +2,7 @@
   config,
   inputs,
   pkgs,
+  stdenv,
   ...
 }:
 let
