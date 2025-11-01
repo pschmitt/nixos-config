@@ -9,7 +9,7 @@ let
   nvimStable = config.programs.neovim.finalPackage;
 
   # The unwrapped nightly binary from your flake input.
-  nvimNightly = inputs.neovim-nightly.packages.${pkgs.system}.neovim;
+  nvimNightly = inputs.neovim-nightly.packages.${stdenv.hostPlatform.system}.neovim;
 
   # A second script that copies stable's wrapper environment,
   # but calls the nightly binary.
@@ -34,7 +34,7 @@ in
 {
   programs.neovim = {
     enable = true;
-    # package = inputs.neovim-nightly.packages.${pkgs.system}.neovim;
+    # package = inputs.neovim-nightly.packages.${stdenv.hostPlatform.system}.neovim;
 
     withRuby = false;
     withPython3 = false;

@@ -6,7 +6,7 @@
 }:
 {
   environment.systemPackages = [
-    inputs.hacompanion.packages.${pkgs.system}.hacompanion
+    inputs.hacompanion.packages.${stdenv.hostPlatform.system}.hacompanion
   ];
 
   systemd.services.hacompanion = {

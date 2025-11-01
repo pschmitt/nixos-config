@@ -5,9 +5,10 @@
   ...
 }:
 let
-  ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
-  libcameraPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.libcamera;
-  raspberrypiUtilsPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils;
+  ffmpegPkg = inputs.nixos-raspberrypi.packages.${stdenv.hostPlatform.system}.ffmpeg_7-headless;
+  libcameraPkg = inputs.nixos-raspberrypi.packages.${stdenv.hostPlatform.system}.libcamera;
+  raspberrypiUtilsPkg =
+    inputs.nixos-raspberrypi.packages.${stdenv.hostPlatform.system}.raspberrypi-utils;
 in
 {
   # minimal firmware reminder:

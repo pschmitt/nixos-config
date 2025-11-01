@@ -6,7 +6,7 @@
   ...
 }:
 let
-  ffmpegPkg = inputs.nixos-raspberrypi.packages.${pkgs.system}.ffmpeg_7-headless;
+  ffmpegPkg = inputs.nixos-raspberrypi.packages.${stdenv.hostPlatform.system}.ffmpeg_7-headless;
 
   camPath = "cam";
   ffmpegBin = "${ffmpegPkg}/bin/ffmpeg";

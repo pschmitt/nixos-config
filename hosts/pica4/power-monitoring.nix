@@ -9,7 +9,7 @@
 
     # Add vcgencmd to PATH just for this service
     path = [
-      inputs.nixos-raspberrypi.packages.${pkgs.system}.raspberrypi-utils
+      inputs.nixos-raspberrypi.packages.${stdenv.hostPlatform.system}.raspberrypi-utils
       pkgs.coreutils
     ];
 
