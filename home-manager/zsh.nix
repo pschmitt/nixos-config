@@ -1,4 +1,8 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 {
   programs.direnv = {
     enable = true;
@@ -19,7 +23,7 @@
 
         # command-not-found integration
         source ${
-          inputs.nix-index-database.packages.${pkgs.system}.nix-index-with-db
+          inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}.nix-index-with-db
         }/etc/profile.d/command-not-found.sh
 
         # DEPRECATED: Use wezterm.sh instead

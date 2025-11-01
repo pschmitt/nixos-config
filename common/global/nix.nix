@@ -81,31 +81,30 @@
         "@wheel"
       ];
 
-      substituters =
-        [
-          # NOTE cache.nixos.org is enabled by default, adding it here only
-          # duplicates it
-          # "https://cache.nixos.org"
-          "https://hyprland.cachix.org"
-          "https://nix-community.cachix.org"
-          "https://pschmitt-nixos-config.cachix.org"
+      substituters = [
+        # NOTE cache.nixos.org is enabled by default, adding it here only
+        # duplicates it
+        # "https://cache.nixos.org"
+        "https://hyprland.cachix.org"
+        "https://nix-community.cachix.org"
+        "https://pschmitt-nixos-config.cachix.org"
 
-          # FIXME cache.garnix.io uses a wrong cert as of 2025-01-12
-          #
-          # » openssl::cat --pretty cache.garnix.io
-          # CN         SAN  ISSUER         STATUS  EXPIRES
-          # garnix.io  N/A  Let's Encrypt  valid   2025-02-13T17:45:36Z
-          #
-          # Might be due to a maintenance window:
-          # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
-          # "https://cache.garnix.io"
+        # FIXME cache.garnix.io uses a wrong cert as of 2025-01-12
+        #
+        # » openssl::cat --pretty cache.garnix.io
+        # CN         SAN  ISSUER         STATUS  EXPIRES
+        # garnix.io  N/A  Let's Encrypt  valid   2025-02-13T17:45:36Z
+        #
+        # Might be due to a maintenance window:
+        # https://discord.com/channels/960235377506025542/960235378030301216/1327366389769572483
+        # "https://cache.garnix.io"
 
-          # "https://nix-cache.brkn.lol"
-        ]
-        # don't use local http cache on the same host
-        ++ lib.optionals (config.networking.hostName != "rofl-10") [ "https://cache.rofl-10.brkn.lol" ]
-        ++ lib.optionals (config.networking.hostName != "rofl-13") [ "https://cache.rofl-13.brkn.lol" ]
-        ++ lib.optionals (config.networking.hostName != "rofl-14") [ "https://cache.rofl-14.brkn.lol" ];
+        # "https://nix-cache.brkn.lol"
+      ]
+      # don't use local http cache on the same host
+      ++ lib.optionals (config.networking.hostName != "rofl-10") [ "https://cache.rofl-10.brkn.lol" ]
+      ++ lib.optionals (config.networking.hostName != "rofl-13") [ "https://cache.rofl-13.brkn.lol" ]
+      ++ lib.optionals (config.networking.hostName != "rofl-14") [ "https://cache.rofl-14.brkn.lol" ];
 
       # private caches
       netrc-file = config.sops.templates.nix-cache-netrc.path;
@@ -179,7 +178,7 @@
 
   environment.systemPackages = with pkgs; [
     # inputs.attic.packages.${system}.default
-    inputs.nixos-needsreboot.packages.${pkgs.system}.default
+    inputs.nixos-needsreboot.packages.${pkgs.stdenv.hostPlatform.system}.default
     nix-prefetch
     nixos-rebuild
     nixos-rebuild-ng
@@ -200,7 +199,7 @@
       nixos-needsreboot = {
         supportsDryActivation = true;
         text = "${
-          lib.getExe inputs.nixos-needsreboot.packages.${pkgs.system}.default
+          lib.getExe inputs.nixos-needsreboot.packages.${pkgs.stdenv.hostPlatform.system}.default
         } \"$systemConfig\" || true";
       };
     };
