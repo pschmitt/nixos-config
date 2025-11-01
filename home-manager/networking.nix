@@ -6,7 +6,7 @@
     tcpdump
     termshark
     traceroute
-    inputs.vodafone-station-cli.packages.${stdenv.hostPlatform.system}.vodafone-station-cli
+    inputs.vodafone-station-cli.packages.${pkgs.stdenv.hostPlatform.system}.vodafone-station-cli
     whois
   ];
 }

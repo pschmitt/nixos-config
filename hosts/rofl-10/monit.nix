@@ -5,7 +5,7 @@
   ...
 }:
 let
-  dcpPkg = inputs.docker-compose-bulk.packages.${stdenv.hostPlatform.system}.docker-compose-bulk;
+  dcpPkg = inputs.docker-compose-bulk.packages.${pkgs.stdenv.hostPlatform.system}.docker-compose-bulk;
 
   githubLastBackup = pkgs.writeShellScript "github-last-backup" ''
     THRESHOLD=''${1:-86400}

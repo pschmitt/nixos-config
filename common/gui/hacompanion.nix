@@ -2,12 +2,11 @@
   inputs,
   config,
   pkgs,
-  stdenv,
   ...
 }:
 {
   environment.systemPackages = [
-    inputs.hacompanion.packages.${stdenv.hostPlatform.system}.hacompanion
+    inputs.hacompanion.packages.${pkgs.stdenv.hostPlatform.system}.hacompanion
   ];
 
   systemd.services.hacompanion = {

@@ -17,9 +17,9 @@
     alacritty
     foot
     pkgs.master.kitty
-    inputs.ghostty.packages.${stdenv.hostPlatform.system}.default
-    inputs.wezterm.packages.${stdenv.hostPlatform.system}.default
-    inputs.lan-mouse.packages.${stdenv.hostPlatform.system}.default
+    inputs.ghostty.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.wezterm.packages.${pkgs.stdenv.hostPlatform.system}.default
+    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     # files and docs
     eog

@@ -5,7 +5,7 @@
   ...
 }:
 # let
-#   snapPkg = inputs.snapd.packages.${stdenv.hostPlatform.system}.default;
+#   snapPkg = inputs.snapd.packages.${pkgs.stdenv.hostPlatform.system}.default;
 # in
 {
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";

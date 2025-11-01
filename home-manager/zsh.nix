@@ -1,7 +1,6 @@
 {
   inputs,
   pkgs,
-  stdenv,
   ...
 }:
 {
@@ -24,7 +23,7 @@
 
         # command-not-found integration
         source ${
-          inputs.nix-index-database.packages.${stdenv.hostPlatform.system}.nix-index-with-db
+          inputs.nix-index-database.packages.${pkgs.stdenv.hostPlatform.system}.nix-index-with-db
         }/etc/profile.d/command-not-found.sh
 
         # DEPRECATED: Use wezterm.sh instead

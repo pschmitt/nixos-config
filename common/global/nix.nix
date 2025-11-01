@@ -4,7 +4,6 @@
   lib,
   outputs,
   pkgs,
-  stdenv,
   ...
 }:
 {
@@ -179,7 +178,7 @@
 
   environment.systemPackages = with pkgs; [
     # inputs.attic.packages.${system}.default
-    inputs.nixos-needsreboot.packages.${stdenv.hostPlatform.system}.default
+    inputs.nixos-needsreboot.packages.${pkgs.stdenv.hostPlatform.system}.default
     nix-prefetch
     nixos-rebuild
     nixos-rebuild-ng
@@ -200,7 +199,7 @@
       nixos-needsreboot = {
         supportsDryActivation = true;
         text = "${
-          lib.getExe inputs.nixos-needsreboot.packages.${stdenv.hostPlatform.system}.default
+          lib.getExe inputs.nixos-needsreboot.packages.${pkgs.stdenv.hostPlatform.system}.default
         } \"$systemConfig\" || true";
       };
     };

@@ -6,7 +6,7 @@
   ...
 }:
 let
-  mylPkg = inputs.myl.packages.${stdenv.hostPlatform.system}.myl;
+  mylPkg = inputs.myl.packages.${pkgs.stdenv.hostPlatform.system}.myl;
 in
 {
   config = lib.mkIf (!config.custom.cattle) {

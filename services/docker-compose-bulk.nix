@@ -1,6 +1,6 @@
 { inputs, pkgs, ... }:
 let
-  dcpPkg = inputs.docker-compose-bulk.packages.${stdenv.hostPlatform.system}.docker-compose-bulk;
+  dcpPkg = inputs.docker-compose-bulk.packages.${pkgs.stdenv.hostPlatform.system}.docker-compose-bulk;
 in
 {
   environment.systemPackages = [ dcpPkg ];

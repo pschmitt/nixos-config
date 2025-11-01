@@ -3,21 +3,20 @@
   inputs,
   config,
   pkgs,
-  stdenv,
   ...
 }:
 
 let
-  hyprlandPkg = inputs.hyprland.packages.${stdenv.hostPlatform.system}.hyprland;
+  hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
   # hyprlandPkg = pkgs.master.hyprland;
 
-  # xdphPkg = inputs.hyprland.packages.${stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  # xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
 
-  # hypridlePkg = inputs.hypridle.packages.${stdenv.hostPlatform.system}.hypridle;
+  # hypridlePkg = inputs.hypridle.packages.${pkgs.stdenv.hostPlatform.system}.hypridle;
   hypridlePkg = pkgs.master.hypridle;
 
-  # hyprlockPkg = inputs.hyprlock.packages.${stdenv.hostPlatform.system}.hyprlock;
+  # hyprlockPkg = inputs.hyprlock.packages.${pkgs.stdenv.hostPlatform.system}.hyprlock;
   hyprlockPkg = pkgs.master.hyprlock;
 in
 {
@@ -60,12 +59,12 @@ in
     wttrbar
 
     # noctalia-shell
-    # inputs.noctalia.packages.${stdenv.hostPlatform.system}.default
+    # inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     # screenshots
     grim
     (pkgs.writeShellScriptBin "grim-hyprland" ''
-      exec -a $0 ${inputs.grim-hyprland.packages.${stdenv.hostPlatform.system}.default}/bin/grim "$@"
+      exec -a $0 ${inputs.grim-hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/grim "$@"
     '')
     slurp
     swappy
@@ -104,9 +103,9 @@ in
       withUWSM = true;
       package = hyprlandPkg;
       portalPackage = xdphPkg;
-      plugins = [
-        inputs.hyprtasking.packages.${stdenv.hostPlatform.system}.hyprtasking
-      ];
+      # plugins = [
+      #   inputs.hyprtasking.packages.${pkgs.stdenv.hostPlatform.system}.hyprtasking
+      # ];
     };
 
     hyprlock = {
