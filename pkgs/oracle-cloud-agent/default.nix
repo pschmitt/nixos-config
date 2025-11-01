@@ -9,7 +9,7 @@
   zlib,
 }:
 
-stdenv.mkDerivation {
+stdenv.mkDerivation rec {
   pname = "oracle-cloud-agent";
   version = "1.53.0";
 
@@ -20,12 +20,13 @@ stdenv.mkDerivation {
   # Building this package directly on an OCI machine should work out of the box
   # Addendum: there's wrapper next to this file (./get-download-urls.sh) that
   # should output the URLs
+  yum_repo = "oci-yum.brkn.lol"; # proxy to the Oracle Linux yum repo
   src = fetchurl {
     url =
       if stdenv.isAarch64 then
-        "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.53.0-3.el9.aarch64.rpm"
+        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.53.0-3.el9.aarch64.rpm"
       else if stdenv.isx86_64 then
-        "https://yum.eu-frankfurt-1.oci.oraclecloud.com/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.53.0-3.el9.x86_64.rpm"
+        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.53.0-3.el9.x86_64.rpm"
       else
         throw "Unsupported platform";
     hash =
