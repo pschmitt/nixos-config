@@ -41,6 +41,8 @@
     ./container-services.nix
     ./monit.nix
     ./restic.nix
+
+    ../../common/global/users/k8s-backdoor.nix
   ];
 
   custom.cattle = false;
