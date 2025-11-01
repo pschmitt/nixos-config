@@ -36,7 +36,7 @@ in
         nerd-fonts.inconsolata
         nerd-fonts.terminess-ttf
         noto-fonts-color-emoji
-        noto-fonts-emoji
+        noto-fonts-color-emoji
         ubuntu-classic
         font-awesome
         font-awesome_5
