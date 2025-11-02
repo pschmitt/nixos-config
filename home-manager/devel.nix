@@ -29,10 +29,11 @@
     ])
 
     # misc
+    apacheHttpd # for htpasswd
+    envsubst
     flarectl
     hostctl
     sqlite
-    apacheHttpd # for htpasswd
 
     # ai
     aichat
