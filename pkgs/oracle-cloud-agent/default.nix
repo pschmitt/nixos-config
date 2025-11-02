@@ -20,7 +20,8 @@ stdenv.mkDerivation rec {
   # Building this package directly on an OCI machine should work out of the box
   # Addendum: there's wrapper next to this file (./get-download-urls.sh) that
   # should output the URLs
-  yum_repo = "oci-yum.brkn.lol"; # proxy to the Oracle Linux yum repo
+  # yum_repo = "oci-yum.brkn.lol"; # proxy to the Oracle Linux yum repo
+  yum_repo = "yum.eu-frankfurt-1.oci.oraclecloud.com";
   src = fetchurl {
     url =
       if stdenv.isAarch64 then
