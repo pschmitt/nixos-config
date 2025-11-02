@@ -40,8 +40,10 @@ in
         dns-resolver = {
           # NOTE Having the addr set to the default value (null) will lead to nb
           # using its own addr
-          # address = "127.0.0.20";
-          port = 11053;
+          address = "127.0.0.20";
+          # NOTE for resolvectl to work reliably we need to leave the port on 53
+          # other ports does not seem to work well with systemd-resolved
+          port = 53;
         };
       };
     };
