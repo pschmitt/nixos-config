@@ -29,17 +29,17 @@ in
   sops = {
     secrets = {
       "monero-wallet-rpc/username" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
         restartUnits = [ "${unitFile}" ];
       };
       "monero-wallet-rpc/password" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
         restartUnits = [ "${unitFile}" ];
       };
       "monero-wallet-rpc/wallet/password" = {
-        sopsFile = config.custom.sopsFile;
-        restartUnits = [ "${unitFile}" ];
+        inherit (config.custom) sopsFile;
         owner = userId;
+        restartUnits = [ "${unitFile}" ];
       };
     };
 
@@ -124,31 +124,35 @@ in
   };
 
   # We need to have the NFS share mounted *before* starting the container
-  systemd.services."docker-monero-wallet-rpc" = {
-    # Depend on the automount unit so systemd keeps retrying the NFS share
-    requires = [ "mnt-data-srv.automount" ];
-    after = [ "mnt-data-srv.automount" ];
-    serviceConfig = {
-      Restart = "always";
-      RestartSec = "10s";
-    };
-  };
+  systemd = {
+    services = {
+      docker-monero-wallet-rpc = {
+        # Depend on the automount unit so systemd keeps retrying the NFS share
+        requires = [ "mnt-data-srv.automount" ];
+        after = [ "mnt-data-srv.automount" ];
+        serviceConfig = {
+          Restart = "always";
+          RestartSec = "10s";
+        };
+      };
 
-  # Restart the wallet RPC service every night at 3:00
-  systemd.services."monero-wallet-rpc-restart" = {
-    description = "Restart the Monero Wallet RPC service";
-    script = ''
-      ${pkgs.systemd}/bin/systemctl restart ${unitFile}
-    '';
-  };
-
-  systemd.timers."monero-wallet-rpc-restart" = {
-    description = "Timer to regularly restart the Monero Wallet RPC service";
-    timerConfig = {
-      OnCalendar = "daily";
-      RandomizedDelaySec = "6h"; # -> Between 00:00 and 06:00?
+      # Restart the wallet RPC service every night at 3:00
+      monero-wallet-rpc-restart = {
+        description = "Restart the Monero Wallet RPC service";
+        script = ''
+          ${pkgs.systemd}/bin/systemctl restart ${unitFile}
+        '';
+      };
     };
-    wantedBy = [ "timers.target" ];
+
+    timers.monero-wallet-rpc-restart = {
+      description = "Timer to regularly restart the Monero Wallet RPC service";
+      timerConfig = {
+        OnCalendar = "daily";
+        RandomizedDelaySec = "6h"; # -> Between 00:00 and 06:00?
+      };
+      wantedBy = [ "timers.target" ];
+    };
   };
 
   services.monit.config = lib.mkAfter ''
