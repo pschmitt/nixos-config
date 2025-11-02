@@ -147,6 +147,8 @@
       PasswordAuthentication = true;
       KbdInteractiveAuthentication = true;
       PermitRootLogin = "prohibit-password";
+      # Let clients pick the bind address (e.g. 0.0.0.0)
+      GatewayPorts = "clientspecified";
     };
     sftpServerExecutable = "internal-sftp";
     extraConfig = ''
