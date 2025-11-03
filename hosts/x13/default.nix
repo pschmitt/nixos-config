@@ -18,6 +18,8 @@
     ../../common/sshfs
     ../../common/work
     ../../services/nfs/nfs-client-all.nix
+
+    ../../services/nixos-installer-boot-entry.nix
   ];
 
   custom.cattle = false;
