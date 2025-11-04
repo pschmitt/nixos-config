@@ -13,6 +13,7 @@
     ./containers.nix
     ./dict.nix
     ./dotfiles.nix
+    ./locales.nix
     ./nix.nix
     ./users.nix
     ./sops.nix
@@ -36,27 +37,6 @@
   };
 
   hardware.enableAllFirmware = true;
-
-  # Set your time zone.
-  time.timeZone = "Europe/Berlin";
-
-  # Select internationalisation properties.
-  i18n.defaultLocale = "en_US.UTF-8";
-
-  i18n.extraLocaleSettings = {
-    LC_ADDRESS = "de_DE.UTF-8";
-    LC_IDENTIFICATION = "de_DE.UTF-8";
-    LC_MEASUREMENT = "de_DE.UTF-8";
-    LC_MONETARY = "de_DE.UTF-8";
-    LC_NAME = "de_DE.UTF-8";
-    LC_NUMERIC = "de_DE.UTF-8";
-    LC_PAPER = "de_DE.UTF-8";
-    LC_TELEPHONE = "de_DE.UTF-8";
-    LC_TIME = "de_DE.UTF-8";
-  };
-
-  # Configure console keymap
-  console.keyMap = "de";
 
   environment.systemPackages = with pkgs; [
     # core
@@ -131,29 +111,31 @@
   security.sudo.wheelNeedsPassword = false;
 
   # firmware updates
-  services.fwupd.enable = true;
+  services = {
+    fwupd.enable = true;
 
-  # mlocate
-  services.locate = {
-    enable = true;
-    package = pkgs.plocate;
-    interval = "daily";
-  };
-
-  # OpenSSH server
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = true;
-      KbdInteractiveAuthentication = true;
-      PermitRootLogin = "prohibit-password";
-      # Let clients pick the bind address (e.g. 0.0.0.0)
-      GatewayPorts = "clientspecified";
+    # mlocate
+    locate = {
+      enable = true;
+      package = pkgs.plocate;
+      interval = "daily";
     };
-    sftpServerExecutable = "internal-sftp";
-    extraConfig = ''
-      AcceptEnv TERM_SSH_CLIENT
-    '';
+
+    # OpenSSH server
+    openssh = {
+      enable = true;
+      settings = {
+        PasswordAuthentication = true;
+        KbdInteractiveAuthentication = true;
+        PermitRootLogin = "prohibit-password";
+        # Let clients pick the bind address (e.g. 0.0.0.0)
+        GatewayPorts = "clientspecified";
+      };
+      sftpServerExecutable = "internal-sftp";
+      extraConfig = ''
+        AcceptEnv TERM_SSH_CLIENT
+      '';
+    };
   };
 
   # started in user sessions.
@@ -162,14 +144,5 @@
     enable = true;
     # pinentryPackage = pkgs.pinentry-gnome3;
     enableSSHSupport = true;
-  };
-
-  security.wrappers = {
-    fping = {
-      source = "${pkgs.fping}/bin/fping";
-      setuid = true;
-      owner = "root";
-      group = "root";
-    };
   };
 }

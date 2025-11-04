@@ -16,4 +16,13 @@
     tcpdump
     wireguard-tools
   ];
+
+  security.wrappers = {
+    fping = {
+      source = "${pkgs.fping}/bin/fping";
+      setuid = true;
+      owner = "root";
+      group = "root";
+    };
+  };
 }
