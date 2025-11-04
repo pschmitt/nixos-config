@@ -8,7 +8,6 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    autossh
     bind # dig
     curl
     fping

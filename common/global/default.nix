@@ -67,7 +67,6 @@
     pwgen
     ripgrep
     socat
-    sshpass
     tmux
     tmux-slay
     yank-osc52
@@ -100,8 +99,6 @@
     ))
   ];
 
-  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
-
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
 
@@ -115,13 +112,5 @@
       package = pkgs.plocate;
       interval = "daily";
     };
-  };
-
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  programs.gnupg.agent = {
-    enable = true;
-    # pinentryPackage = pkgs.pinentry-gnome3;
-    enableSSHSupport = true;
   };
 }
