@@ -15,6 +15,7 @@
     nmap
     ookla-speedtest
     openssl
+    socat
     tcpdump
     wget
     wireguard-tools
