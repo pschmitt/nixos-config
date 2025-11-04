@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./apps.nix
@@ -24,6 +29,8 @@
     ./gnome.nix
     ./hyprland.nix
     ./sway.nix
+
+    inputs.flatpaks.nixosModule
   ];
 
   boot = {
