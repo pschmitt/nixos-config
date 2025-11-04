@@ -106,7 +106,19 @@ in
   };
 
   environment.systemPackages = with pkgs; [
+    autossh
     mosh
     sshfs
+    sshpass
   ];
+
+  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
+
+  # started in user sessions.
+  # programs.mtr.enable = true;
+  programs.gnupg.agent = {
+    enable = true;
+    # pinentryPackage = pkgs.pinentry-gnome3;
+    enableSSHSupport = true;
+  };
 }
