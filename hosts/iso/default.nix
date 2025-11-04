@@ -1,10 +1,13 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
-  installerAuthorizedKeys =
-    config.custom.authorizedKeys
-    ++ [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
-    ];
+  installerAuthorizedKeys = config.custom.authorizedKeys ++ [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
+  ];
 in
 {
   services.openssh.enable = true;
@@ -12,8 +15,17 @@ in
   systemd.services.sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
 
   users.users = {
+    nixos.openssh.authorizedKeys.keys = installerAuthorizedKeys;
     root.openssh.authorizedKeys.keys = installerAuthorizedKeys;
-    nixos = {
+
+    pschmitt = {
+      isNormalUser = true;
+      group = "users";
+      extraGroups = [
+        "networkmanager"
+        "video"
+        "wheel"
+      ];
       openssh.authorizedKeys.keys = installerAuthorizedKeys;
     };
   };
