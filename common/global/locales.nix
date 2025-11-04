@@ -1,6 +1,6 @@
 {
-  # Set your time zone.
-  time.timeZone = "Europe/Berlin";
+  # Configure console keymap
+  console.keyMap = "de";
 
   # Select internationalisation properties.
   i18n = {
@@ -19,6 +19,6 @@
     };
   };
 
-  # Configure console keymap
-  console.keyMap = "de";
+  # Set your time zone.
+  time.timeZone = "Europe/Berlin";
 }
