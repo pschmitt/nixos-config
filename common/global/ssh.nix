@@ -50,7 +50,7 @@ let
         };
       };
     in
-    builtins.map (t: mk t) types;
+    builtins.map mk types;
 
   # Flatten all host entries to a single list and build attrset
   generatedHosts = builtins.listToAttrs (
