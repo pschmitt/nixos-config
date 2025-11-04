@@ -18,7 +18,7 @@ in
     nixos.openssh.authorizedKeys.keys = installerAuthorizedKeys;
     root.openssh.authorizedKeys.keys = installerAuthorizedKeys;
 
-    pschmitt = {
+    "${config.custom.username}" = {
       isNormalUser = true;
       group = "users";
       extraGroups = [
