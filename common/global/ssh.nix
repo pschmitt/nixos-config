@@ -60,6 +60,23 @@ let
   );
 in
 {
+
+  # OpenSSH server
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = true;
+      KbdInteractiveAuthentication = true;
+      PermitRootLogin = "prohibit-password";
+      # Let clients pick the bind address (e.g. 0.0.0.0)
+      GatewayPorts = "clientspecified";
+    };
+    sftpServerExecutable = "internal-sftp";
+    extraConfig = ''
+      AcceptEnv TERM_SSH_CLIENT
+    '';
+  };
+
   # https://github.com/nix-community/srvos/blob/main/nixos/common/well-known-hosts.nix
   # Avoid TOFU MITM with known forges.
   programs.ssh.knownHosts = (

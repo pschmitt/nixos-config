@@ -105,8 +105,8 @@
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
 
-  # firmware updates
   services = {
+    # firmware updates
     fwupd.enable = true;
 
     # mlocate
@@ -114,22 +114,6 @@
       enable = true;
       package = pkgs.plocate;
       interval = "daily";
-    };
-
-    # OpenSSH server
-    openssh = {
-      enable = true;
-      settings = {
-        PasswordAuthentication = true;
-        KbdInteractiveAuthentication = true;
-        PermitRootLogin = "prohibit-password";
-        # Let clients pick the bind address (e.g. 0.0.0.0)
-        GatewayPorts = "clientspecified";
-      };
-      sftpServerExecutable = "internal-sftp";
-      extraConfig = ''
-        AcceptEnv TERM_SSH_CLIENT
-      '';
     };
   };
 
