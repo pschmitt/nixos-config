@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, inputs, lib, ... }:
 
 let
   # List of instance names
@@ -36,6 +36,8 @@ let
   );
 in
 {
+  imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
+
   # Define sops secrets using the helper function
   sops.secrets = defineSopsSecrets;
 

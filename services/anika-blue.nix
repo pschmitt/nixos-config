@@ -1,10 +1,13 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 {
+  imports = [ inputs.anika-blue.nixosModules.default ];
+
   sops.secrets."anika-blue/secretKey" = {
     sopsFile = config.custom.sopsFile;
   };

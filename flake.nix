@@ -249,22 +249,8 @@
 
   outputs =
     {
-      anika-blue,
-      catppuccin,
-      disko,
-      flatpaks,
-      home-manager,
-      luks-ssh-unlock,
-      nix-index-database,
-      nixos-raspberrypi,
       nixpkgs,
       self,
-      simple-nixos-mailserver,
-      snapd,
-      sops-nix,
-      srvos,
-      update-systemd-resolved,
-      # vicinae,
       ...
     }@inputs:
     let
@@ -280,13 +266,8 @@
       commonModules = [
         ./modules/custom.nix
 
-        anika-blue.nixosModules.default
-        disko.nixosModules.disko
-        flatpaks.nixosModule
-        luks-ssh-unlock.nixosModules.default
-        nix-index-database.nixosModules.nix-index
-        sops-nix.nixosModules.sops
-        update-systemd-resolved.nixosModules.update-systemd-resolved
+        inputs.disko.nixosModules.disko
+        inputs.sops-nix.nixosModules.sops
       ];
 
       nixosSystemFor =
@@ -301,13 +282,13 @@
             ++ [ ./hosts/${hostname} ]
             ++ nixpkgs.lib.optionals (!(configOptions.server or false)) [
               ./home-manager
-              catppuccin.nixosModules.catppuccin
+              inputs.catppuccin.nixosModules.catppuccin
             ]
             ++ nixpkgs.lib.optionals (configOptions.server or true) [
-              simple-nixos-mailserver.nixosModule
-              srvos.nixosModules.mixins-terminfo
+              inputs.simple-nixos-mailserver.nixosModule
+              inputs.srvos.nixosModules.mixins-terminfo
             ]
-            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ snapd.nixosModules.default ];
+            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ inputs.snapd.nixosModules.default ];
         };
     in
     {
@@ -320,10 +301,6 @@
           customPackages = import ./pkgs { inherit pkgs; };
         in
         customPackages
-        // {
-          # Include luks-ssh-unlock from the flake
-          luks-ssh-unlock = luks-ssh-unlock.packages.${system}.default;
-        }
       );
 
       checks = forAllSystems (system: {
@@ -385,10 +362,10 @@
           };
           modules = [
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-            nix-index-database.nixosModules.nix-index
+            inputs.nix-index-database.nixosModules.nix-index
             # overlay all them rpi packages!
-            # nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
-            sops-nix.nixosModules.sops
+            # inputs.nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
+            inputs.sops-nix.nixosModules.sops
 
             ./hosts/pica4
             ./modules/custom.nix

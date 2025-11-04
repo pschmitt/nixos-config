@@ -7,6 +7,10 @@
   ...
 }:
 {
+  imports = [
+    inputs.nix-index-database.nixosModules.nix-index
+  ];
+
   sops = {
     secrets = {
       "nix/credentials/username" = {

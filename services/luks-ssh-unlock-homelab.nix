@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, inputs, lib, ... }:
 
 let
   # List of instance names
@@ -40,12 +40,14 @@ let
     lib.lists.map (instance: {
       name = "luks/${instance.name}";
       value = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
     }) instances
   );
 in
 {
+  imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
+
   # Define sops secrets using the helper function
   sops.secrets = defineSopsSecrets;
 
@@ -53,7 +55,7 @@ in
     enable = true;
     instances = lib.listToAttrs (
       lib.lists.map (instance: {
-        name = instance.name;
+        inherit (instance) name;
         value = createInstance instance;
       }) instances
     );
