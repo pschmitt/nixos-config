@@ -8,12 +8,16 @@
   ];
 
   environment.systemPackages = with pkgs; [
+    autossh
+    bind # dig
     curl
     fping
     nethogs
     nmap
     ookla-speedtest
+    openssl
     tcpdump
+    wget
     wireguard-tools
   ];
 
