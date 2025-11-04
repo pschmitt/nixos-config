@@ -384,6 +384,7 @@
           system = "x86_64-linux";
           modules = [
             "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
             ./hosts/iso
             ./modules/custom.nix
