@@ -1,10 +1,23 @@
 { config, lib, pkgs, ... }:
+let
+  installerAuthorizedKeys =
+    config.custom.authorizedKeys
+    ++ [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
+    ];
+in
 {
-  # Enable SSH in the boot process.
-  systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
-  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
-  ];
+  services.openssh.enable = true;
+  # Ensure sshd is started out of the box.
+  systemd.services.sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
+
+  users.users = {
+    root.openssh.authorizedKeys.keys = installerAuthorizedKeys;
+    nixos = {
+      openssh.authorizedKeys.keys = installerAuthorizedKeys;
+    };
+  };
+
   isoImage.squashfsCompression = "gzip -Xcompression-level 1";
   networking = {
     useDHCP = lib.mkForce true;
