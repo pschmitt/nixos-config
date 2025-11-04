@@ -15,9 +15,9 @@
     ./dotfiles.nix
     ./locales.nix
     ./nix.nix
-    ./users.nix
     ./sops.nix
     ./ssh.nix
+    ./users.nix
   ];
 
   boot = {
