@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -43,6 +44,8 @@ let
   wiitUsername = "philipp.schmitt";
 in
 {
+  imports = [ inputs.update-systemd-resolved.nixosModules.update-systemd-resolved ];
+
   environment.systemPackages = with pkgs; [ openvpn ];
 
   services.openvpn.servers = {

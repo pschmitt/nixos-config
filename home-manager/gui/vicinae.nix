@@ -1,9 +1,6 @@
 { inputs, ... }:
-let
-  vicinaeModule = inputs.vicinae.homeManagerModules.default;
-in
 {
-  imports = [ vicinaeModule ];
+  imports = [ inputs.vicinae.homeManagerModules.default ];
 
   services.vicinae = {
     enable = true;
