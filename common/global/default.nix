@@ -39,45 +39,54 @@
   hardware.enableAllFirmware = true;
 
   environment.systemPackages = with pkgs; [
-    # core
+    # misc
     acpi
     bc
-    cryptsetup
-    dua # ncdu on steroids
-    file
-    fd
-    fx
     git
     grc
     htop
     hwatch
-    jq
-    killall
-    lm_sensors
-    luks-mount
-    mediainfo
-    moreutils # ts among others
-    ncdu
-    p7zip
-    pciutils # lspci
     pinentry-curses
-    procps # coreutils' uptime does not have the -s flag
-    (lib.hiPrio parallel-full) # GNU Parallel, note that moreutils also ships parallel
-    psmisc # pstree, killall, fuser
     pwgen
-    ripgrep
-    socat
     tmux
     tmux-slay
     yank-osc52
-    tree
-    ugrep
-    unzip
+
+    # sensors and devices
+    lm_sensors
+    pciutils # lspci
     usbutils # lsusb
-    yq-go
+
+    # coreutils
+    moreutils # ts among others
+    killall
+    psmisc # pstree, killall, fuser
+    procps # coreutils' uptime does not have the -s flag
+    (lib.hiPrio parallel-full) # GNU Parallel, note that moreutils also ships parallel
+
+    # files
+    dua # ncdu on steroids
+    fd
+    file
+    mediainfo
+    ncdu
+    p7zip
+    unzip
     zip
 
-    # mkfs
+    # the greps
+    ripgrep
+    tree
+    ugrep
+
+    # json/yaml/xml
+    fx
+    jq
+    luks-mount
+    yq-go
+
+    # fs
+    cryptsetup
     exfatprogs
     xfsprogs
 
