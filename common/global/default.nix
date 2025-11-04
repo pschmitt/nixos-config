@@ -41,11 +41,8 @@
   environment.systemPackages = with pkgs; [
     # core
     acpi
-    autossh
     bc
-    bind # dig
     cryptsetup
-    curl
     dua # ncdu on steroids
     file
     fd
@@ -66,7 +63,6 @@
     pinentry-curses
     procps # coreutils' uptime does not have the -s flag
     (lib.hiPrio parallel-full) # GNU Parallel, note that moreutils also ships parallel
-    openssl
     psmisc # pstree, killall, fuser
     pwgen
     ripgrep
@@ -79,7 +75,6 @@
     ugrep
     unzip
     usbutils # lsusb
-    wget
     yq-go
     zip
 
