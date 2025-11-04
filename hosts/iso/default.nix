@@ -10,6 +10,8 @@ let
   ];
 in
 {
+  isoImage.squashfsCompression = "gzip -Xcompression-level 1";
+
   services.openssh.enable = true;
   # Ensure sshd is started out of the box.
   systemd.services.sshd.wantedBy = lib.mkForce [ "multi-user.target" ];
@@ -30,7 +32,29 @@ in
     };
   };
 
-  isoImage.squashfsCompression = "gzip -Xcompression-level 1";
+  i18n = {
+    defaultLocale = "en_US.UTF-8";
+    extraLocales = [
+      "de_DE.UTF-8/UTF-8"
+    ];
+  };
+
+  # keyboard layout
+  console.keyMap = "de";
+  services.xserver = {
+    layout = "de";
+    xkbVariant = "";
+  };
+
+  # Dark mode!
+  programs.dconf = {
+    enable = true;
+    settings."org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+      gtk-theme = "Adwaita-dark";
+    };
+  };
+
   networking = {
     useDHCP = lib.mkForce true;
     nameservers = [
