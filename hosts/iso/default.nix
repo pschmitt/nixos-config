@@ -46,14 +46,7 @@ in
     xkbVariant = "";
   };
 
-  # Dark mode!
-  programs.dconf = {
-    enable = true;
-    settings."org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-      gtk-theme = "Adwaita-dark";
-    };
-  };
+  # TODO Dark mode for GNOME!
 
   networking = {
     useDHCP = lib.mkForce true;
