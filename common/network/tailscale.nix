@@ -25,8 +25,6 @@ in
     config.services.tailscale.interfaceName
   ];
 
-  environment.systemPackages = [ pkgs.master.tailscale ];
-
   systemd.services.tailscaled-autoconnect.postStart = ''
     # Store Tailscale IP address in /etc/containers/env/tailscale.env
     if TAILSCALE_IP=$(${tailscalePkg}/bin/tailscale ip -4) && \
