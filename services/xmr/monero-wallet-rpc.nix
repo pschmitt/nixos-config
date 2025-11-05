@@ -21,23 +21,23 @@ in
     secrets = {
       "monero-wallet-rpc/username" = {
         inherit (config.custom) sopsFile;
-        restartUnits = [ "${unitFile}" ];
+        restartUnits = [ unitFile ];
       };
       "monero-wallet-rpc/password" = {
         inherit (config.custom) sopsFile;
-        restartUnits = [ "${unitFile}" ];
+        restartUnits = [ unitFile ];
       };
       "monero-wallet-rpc/wallet/password" = {
         inherit (config.custom) sopsFile;
         owner = userId;
-        restartUnits = [ "${unitFile}" ];
+        restartUnits = [ unitFile ];
       };
     };
 
     templates.moneroWalletRpcConfig = {
       owner = userId;
       # mode = "0400";
-      restartUnits = [ "${unitFile}" ];
+      restartUnits = [ unitFile ];
       content = ''
         # Which port to bind the RPC server on
         rpc-bind-port = ${toString walletRpcBindPort}
