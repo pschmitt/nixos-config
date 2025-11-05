@@ -41,10 +41,7 @@ in
 
   # keyboard layout
   console.keyMap = "de";
-  services.xserver = {
-    layout = "de";
-    xkbVariant = "";
-  };
+  services.xserver.xkb.layout = "de";
 
   # TODO Dark mode for GNOME!
 
