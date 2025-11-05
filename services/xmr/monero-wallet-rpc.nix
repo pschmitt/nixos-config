@@ -5,25 +5,16 @@
   ...
 }:
 let
-  monerodAddr = "http://host.docker.internal:${toString config.services.monero.rpc.port}";
+  monerodAddr = "http://${config.services.monero.rpc.address}:${toString config.services.monero.rpc.port}";
 
   walletRpcBindPort = 18084;
   walletHostDir = "/mnt/data/srv/monerod/data/monero-wallet-rpc";
-  walletContainerDir = "/home/monero";
-  walletRpcConfigFile = "/etc/monero-wallet-rpc.conf";
+  walletFile = "${walletHostDir}/wallet/xmrig-wallet";
+  walletRpcConfigFile = config.sops.templates.moneroWalletRpcConfig.path;
 
   userId = config.custom.username;
 
-  unitFile = "docker-monero-wallet-rpc.service";
-
-  walletRpcHealthCmd = lib.escapeShellArg ''
-    set -eu
-    creds=$(grep '^rpc-login' ${walletRpcConfigFile} | tail -n1 | cut -d= -f2- | tr -d '[:space:]')
-    curl -fsS -u "$creds" \
-      -H "Content-Type: application/json" \
-      --data-binary "{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"get_version\"}" \
-      http://127.0.0.1:${toString walletRpcBindPort}/json_rpc >/dev/null
-  '';
+  unitFile = "monero-wallet-rpc.service";
 in
 {
   sops = {
@@ -65,74 +56,39 @@ in
         # Disable any RPC calls that require a trusted daemon
         # restricted-rpc = 1
 
-        # Where the wallet file lives INSIDE the container
-        wallet-file = ${walletContainerDir}/wallet/xmrig-wallet
+        # Where the wallet file lives
+        wallet-file = ${walletFile}
 
-        # File that contains your wallet password (also inside container)
-        password-file = /wallet-password
+        # File that contains your wallet password
+        password-file = ${config.sops.secrets."monero-wallet-rpc/wallet/password".path}
       '';
     };
   };
 
-  virtualisation.oci-containers.containers = {
-    # Forward host.docker.internal:${toString config.services.monero.rpc.port} -> 127.0.0.1:${toString config.services.monero.rpc.port}
-    monerod-relay = {
-      image = "alpine/socat:latest";
-      pull = "always";
-
-      extraOptions = [
-        "--network=host"
-        "--add-host=host.docker.internal:host-gateway"
-      ];
-
-      cmd = [
-        "TCP-LISTEN:${toString config.services.monero.rpc.port},fork,bind=host.docker.internal"
-        "TCP-CONNECT:127.0.0.1:${toString config.services.monero.rpc.port}"
-      ];
-    };
-
-    monero-wallet-rpc = {
-      image = "sethsimmons/simple-monero-wallet-rpc:latest";
-      pull = "always";
-      autoStart = true;
-
-      extraOptions = [
-        # NOTE the containers runs as 1000:1000 by default
-        # "--user=${userId}:${groupId}"
-        "--add-host=host.docker.internal:host-gateway"
-        "--health-cmd=/bin/sh -c ${walletRpcHealthCmd}"
-        "--health-interval=30s"
-        "--health-timeout=10s"
-        "--health-retries=3"
-        "--health-start-period=120s"
-      ];
-
-      volumes = [
-        "${walletHostDir}:${walletContainerDir}"
-        "${config.sops.templates.moneroWalletRpcConfig.path}:${walletRpcConfigFile}:ro"
-        "${config.sops.secrets."monero-wallet-rpc/wallet/password".path}:/wallet-password:ro"
-      ];
-
-      ports = [
-        # localhost
-        # "127.0.0.1:${toString walletRpcBindPort}:${toString walletRpcBindPort}"
-        "${toString walletRpcBindPort}:${toString walletRpcBindPort}"
-      ];
-
-      cmd = [ "--config-file=${walletRpcConfigFile}" ];
-    };
-  };
-
-  # We need to have the NFS share mounted *before* starting the container
+  # We need to have the NFS share mounted *before* starting the service
   systemd = {
     services = {
-      docker-monero-wallet-rpc = {
+      monero-wallet-rpc = {
+        description = "Monero Wallet RPC";
+        wantedBy = [ "multi-user.target" ];
         # Depend on the automount unit so systemd keeps retrying the NFS share
         requires = [ "mnt-data-srv.automount" ];
-        after = [ "mnt-data-srv.automount" ];
+        after = [
+          "mnt-data-srv.automount"
+          "network.target"
+          "monerod.service"
+        ];
+        path = [ pkgs.coreutils ];
+        preStart = ''
+          install -d -m 0750 -o ${userId} -g ${userId} ${walletHostDir}
+        '';
         serviceConfig = {
+          ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile}";
           Restart = "always";
           RestartSec = "10s";
+          User = userId;
+          Group = userId;
+          WorkingDirectory = walletHostDir;
         };
       };
 
