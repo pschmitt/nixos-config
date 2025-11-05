@@ -49,6 +49,11 @@ in
     };
   };
 
+  # Don't let tailscale drop all our packets!
+  services.tailscale.extraSetFlags = [
+    "--netfilter-mode=off"
+  ];
+
   networking.firewall.trustedInterfaces = lib.mkAfter (
     map (c: c.interface) (builtins.attrValues config.services.netbird.clients)
   );
