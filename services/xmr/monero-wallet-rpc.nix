@@ -39,6 +39,8 @@ in
       # mode = "0400";
       restartUnits = [ unitFile ];
       content = ''
+        # Listen on all interfaces, praise the firewall
+        rpc-bind-ip = 0.0.0.0
         # Which port to bind the RPC server on
         rpc-bind-port = ${toString walletRpcBindPort}
 
@@ -83,7 +85,7 @@ in
           install -d -m 0750 -o ${userId} -g ${userId} ${walletHostDir}
         '';
         serviceConfig = {
-          ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile}";
+          ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile} --confirm-external-bind";
           Restart = "always";
           RestartSec = "10s";
           User = userId;
