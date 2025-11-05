@@ -19,11 +19,11 @@ in
   sops = {
     secrets = {
       "xmrig-proxy/wallet" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
         restartUnits = [ "xmrig-proxy.service" ];
       };
       "xmrig-proxy/password" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
         restartUnits = [ "xmrig-proxy.service" ];
       };
     };
