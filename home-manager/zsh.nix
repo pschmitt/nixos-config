@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   pkgs,
   ...
@@ -17,7 +18,7 @@
   ];
 
   home.file = {
-    ".config/zsh/custom/os/nixos/system.zsh" = {
+    "${config.xdg.configHome}/zsh/custom/os/nixos/system.zsh" = {
       text = ''
         [[ -o interactive ]] || return
 
@@ -63,6 +64,16 @@
         }/init.zsh
         alias z=__zoxide_z
         alias zz=__zoxide_zi
+      '';
+    };
+
+    # completions
+    "${config.xdg.configHome}/zsh/completions/source-me.zsh" = {
+      text = ''
+        # bashcompinit is not needed here since we already do this in zinit
+        # autoload -U +X bashcompinit && bashcompinit
+        complete -C "${pkgs.openbao}/bin/bao" bao
+        complete -C "${pkgs.vault}/bin/vault" vault
       '';
     };
   };
