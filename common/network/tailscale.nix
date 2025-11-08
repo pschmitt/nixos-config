@@ -16,7 +16,11 @@ in
     enable = true;
     package = tailscalePkg;
     openFirewall = true;
-    extraSetFlags = [ "--accept-dns=false" ];
+    extraSetFlags = [
+      "--advertise-exit-node"
+      "--accept-dns=false"
+      "--operator=${config.custom.username}"
+    ];
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
