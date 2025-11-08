@@ -9,7 +9,11 @@
 
   environment.systemPackages = with pkgs; [
     bind # dig
-    curl
+    (pkgs.curl.override {
+      http3Support = true;
+      ldapSupport = true;
+      websocketSupport = true;
+    })
     fping
     nethogs
     nmap
