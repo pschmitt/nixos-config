@@ -16,9 +16,7 @@
 
   users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
 
-  services.tailscale.extraUpFlags = [
+  services.tailscale.extraSetFlags = [
     "--accept-routes"
-    "--advertise-exit-node"
-    "--operator=${config.custom.username}"
   ];
 }
