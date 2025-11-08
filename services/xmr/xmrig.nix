@@ -1,6 +1,9 @@
 { config, lib, ... }:
 {
   sops.secrets."xmrig/env" = { };
+  systemd.services.xmrig.serviceConfig = {
+    EnvironmentFile = config.sops.secrets."xmrig/env".path;
+  };
 
   services.xmrig = {
     enable = true;
@@ -38,9 +41,5 @@
         }
       ];
     };
-  };
-
-  systemd.services.xmrig.serviceConfig = {
-    EnvironmentFile = config.sops.secrets."xmrig/env".path;
   };
 }
