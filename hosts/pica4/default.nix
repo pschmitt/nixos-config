@@ -29,9 +29,11 @@
     ../../services/mediamtx.nix
   ];
 
-  custom.cattle = true;
-  custom.kvmGuest = false;
-  custom.raspberryPi = true;
+  custom = {
+    cattle = true;
+    kvmGuest = false;
+    raspberryPi = true;
+  };
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);

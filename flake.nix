@@ -362,7 +362,6 @@
           };
           modules = [
             "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-            inputs.nix-index-database.nixosModules.nix-index
             # overlay all them rpi packages!
             # inputs.nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
             inputs.sops-nix.nixosModules.sops
