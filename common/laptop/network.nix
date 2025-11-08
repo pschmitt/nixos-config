@@ -12,9 +12,9 @@
     };
   };
 
-  custom.netbirdSetupKey = lib.mkForce "laptop";
-
   users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
+
+  custom.netbirdSetupKey = lib.mkForce "laptop";
 
   services.tailscale.extraSetFlags = [
     "--accept-routes"
