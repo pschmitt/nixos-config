@@ -28,6 +28,8 @@ in
       };
     };
 
+    # NOTE To interrogate the API:
+    # curl http://127.0.0.1:9674/2/summary | jq
     templates.xmrigProxyConfig = {
       content = ''
         {
@@ -40,6 +42,17 @@ in
             "port": 3333,
             "tls": false
           }],
+          "api": {
+            "id": "${config.networking.hostName}",
+            "worker-id": "${config.networking.hostName}"
+          },
+          "http": {
+            "enabled": true,
+            "host": "127.0.0.1",
+            "port": 9674,
+            "access-token": null,
+            "restricted": true
+          },
           "pools": [{
             "coin": "monero",
             "url": "pool.hashvault.pro:443",
