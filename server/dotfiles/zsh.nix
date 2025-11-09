@@ -18,15 +18,15 @@ in
     shellInit = ''
       export HOSTNAME="$HOST"
     '';
+    setOptions = [
+      # cd to paths directly (no need to prepend with 'cd')
+      "AUTO_CD"
+      # Enable command correction prompts
+      "CORRECT"
+    ];
     interactiveShellInit = ''
       # enable colors (exposes $fg etc)
       autoload -U colors && colors
-
-      # cd to paths directly (no need to prepend with 'cd')
-      setopt autocd
-
-      # Enable command correction prompts
-      setopt correct
 
       fpath=(${manydots-magic} $fpath)
       autoload -Uz manydots-magic
