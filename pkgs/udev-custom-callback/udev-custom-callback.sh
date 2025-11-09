@@ -34,7 +34,7 @@ then
 
   UDEV_ACTION="$1"
   UDEV_DEVICE_PATH="$2"
-  # FIXME Below only works for connected devices (ie it won't work when 
+  # FIXME Below only works for connected devices (ie it won't work when
   # UDEV_ACTION is "remove")
   udev-export-device-info "$UDEV_DEVICE_PATH"
 
