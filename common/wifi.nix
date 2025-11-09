@@ -65,17 +65,15 @@ let
       a = nets.${n};
     in
     {
-      connection = (
-        {
-          id = n;
-          type = "wifi";
-          autoconnect = a.autoconnect or true;
-          "autoconnect-priority" = a.priority or 0;
-        }
-        // lib.optionalAttrs (a ? interfaceName && a.interfaceName != null) {
-          "interface-name" = a.interfaceName;
-        }
-      );
+      connection = {
+        id = n;
+        type = "wifi";
+        autoconnect = a.autoconnect or true;
+        "autoconnect-priority" = a.priority or 0;
+      }
+      // lib.optionalAttrs (a ? interfaceName && a.interfaceName != null) {
+        "interface-name" = a.interfaceName;
+      };
 
       wifi = {
         ssid = "$NM_${toEnv n}_SSID";
@@ -88,23 +86,19 @@ let
         psk = "$NM_${toEnv n}_PSK"; # ends up only in /run keyfile
       };
 
-      ipv4 = (
-        {
-          method = "auto";
-        }
-        // lib.optionalAttrs (a ? routeMetric4 && a.routeMetric4 != null) {
-          "route-metric" = a.routeMetric4;
-        }
-      );
+      ipv4 = {
+        method = "auto";
+      }
+      // lib.optionalAttrs (a ? routeMetric4 && a.routeMetric4 != null) {
+        "route-metric" = a.routeMetric4;
+      };
 
-      ipv6 = (
-        {
-          method = "auto";
-        }
-        // lib.optionalAttrs (a ? routeMetric6 && a.routeMetric6 != null) {
-          "route-metric" = a.routeMetric6;
-        }
-      );
+      ipv6 = {
+        method = "auto";
+      }
+      // lib.optionalAttrs (a ? routeMetric6 && a.routeMetric6 != null) {
+        "route-metric" = a.routeMetric6;
+      };
     }
   );
 in
