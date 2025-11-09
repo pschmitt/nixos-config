@@ -1,9 +1,9 @@
-{
-  lib,
-  allowedIps ? "100.64.0.0/10", # cg-nat, ie tailscale/netbird
-  basePath ? "/mnt/data",
-  exportPath ? "/export",
-  exports ? [
+args@{ lib, ... }:
+let
+  allowedIps = args.allowedIps or "100.64.0.0/10"; # cg-nat, ie tailscale/netbird
+  basePath = args.basePath or "/mnt/data";
+  exportPath = args.exportPath or "/export";
+  exports = args.exports or [
     "backups"
     "blobs"
     "books"
@@ -12,10 +12,9 @@
     "srv"
     "tmp"
     # "videos" # lives on rofl-11
-  ],
-  exportOptions ? "rw,nohide,insecure,no_subtree_check",
-  ...
-}:
+  ];
+  exportOptions = args.exportOptions or "rw,nohide,insecure,no_subtree_check";
+in
 {
   fileSystems = builtins.listToAttrs (
     map (dir: {
