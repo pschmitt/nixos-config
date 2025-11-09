@@ -91,7 +91,10 @@ in
     wantedBy = [ "multi-user.target" ];
   };
 
-  networking.firewall.allowedTCPPorts = [ 3333 ];
+  networking.firewall.allowedTCPPorts = [
+    3333
+    8443
+  ];
 
   services.nginx = {
     virtualHosts."${hostname}" = {
