@@ -27,7 +27,7 @@ in
     package = tailscalePkg;
     openFirewall = true;
     extraSetFlags = tailscaleFlags;
-    extraUpFlags = tailscaleFlags // [ "--reset" ]; # enforce!
+    extraUpFlags = tailscaleFlags ++ [ "--reset" ]; # enforce!
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
