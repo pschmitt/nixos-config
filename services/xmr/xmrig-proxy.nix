@@ -7,13 +7,15 @@ let
   hostname = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}";
 in
 {
-  users.groups.xmrigproxy = { };
-  users.users.xmrigproxy = {
-    isSystemUser = true;
-    description = "XMRig Proxy service account";
-    group = "xmrigproxy";
-    home = "/var/lib/xmrig-proxy";
-    shell = "/run/current-system/sw/bin/nologin";
+  users = {
+    groups.xmrigproxy = { };
+    users.xmrigproxy = {
+      isSystemUser = true;
+      description = "XMRig Proxy service account";
+      group = "xmrigproxy";
+      home = "/var/lib/xmrig-proxy";
+      shell = "/run/current-system/sw/bin/nologin";
+    };
   };
 
   sops = {
