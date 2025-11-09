@@ -12,6 +12,7 @@ in
   programs.zsh = {
     enable = true;
     enableCompletion = true;
+    enableBashCompletion = true;
     vteIntegration = false; # see below for osc7
     autosuggestions.enable = true;
     syntaxHighlighting.enable = true;
