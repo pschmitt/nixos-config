@@ -6,21 +6,29 @@
 }:
 let
   tailscalePkg = pkgs.master.tailscale;
+
+  tailscaleFlags = [
+    "--reset" # enforce!
+    "--advertise-exit-node"
+    "--accept-dns"
+    "--operator=${config.custom.username}"
+  ];
 in
 {
   imports = [ ../monit/tailscale.nix ];
 
-  sops.secrets."tailscale/auth-key" = { };
+  sops.secrets."tailscale/auth-key" = {
+    restartUnits = [
+      "tailscaled-autoconnect.service"
+    ];
+  };
 
   services.tailscale = {
     enable = true;
     package = tailscalePkg;
     openFirewall = true;
-    extraSetFlags = [
-      "--advertise-exit-node"
-      "--accept-dns"
-      "--operator=${config.custom.username}"
-    ];
+    extraSetFlags = tailscaleFlags;
+    extraUpFlags = tailscaleFlags;
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
