@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 # NOTE to connect:
-# sudo , xmrig -o xmrig-proxy.<hostname>.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD"
+# sudo , xmrig -o xmrig-proxy.<hostname>.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD" --rig-id "$HOSTNAME"
 
 let
   hostname = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}";
@@ -30,6 +30,7 @@ in
 
     # NOTE To interrogate the API:
     # curl http://127.0.0.1:9674/2/summary | jq
+    # curl http://127.0.0.1:9674/1/workers | jq
     templates.xmrigProxyConfig = {
       content = ''
         {
