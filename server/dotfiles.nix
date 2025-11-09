@@ -5,6 +5,7 @@
 {
   imports = [
     ./dotfiles/bash.nix
+    ./dotfiles/shell.nix
     ./dotfiles/starship.nix
     ./dotfiles/zsh.nix
   ];
