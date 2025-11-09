@@ -18,7 +18,7 @@ in
     openFirewall = true;
     extraSetFlags = [
       "--advertise-exit-node"
-      "--accept-dns=false"
+      "--accept-dns"
       "--operator=${config.custom.username}"
     ];
     useRoutingFeatures = "both";
