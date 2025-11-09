@@ -8,7 +8,6 @@ let
   tailscalePkg = pkgs.master.tailscale;
 
   tailscaleFlags = [
-    "--reset" # enforce!
     "--advertise-exit-node"
     "--accept-dns"
     "--operator=${config.custom.username}"
@@ -28,7 +27,7 @@ in
     package = tailscalePkg;
     openFirewall = true;
     extraSetFlags = tailscaleFlags;
-    extraUpFlags = tailscaleFlags;
+    extraUpFlags = tailscaleFlags // [ "--reset" ]; # enforce!
     useRoutingFeatures = "both";
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
