@@ -1,10 +1,13 @@
-{ config, lib, ... }@args:
+{
+  config,
+  lib,
+  useProxy ? false,
+  cpuUsage ? 25,
+  ...
+}:
 let
-  useProxy = args.useProxy or false;
-  cpuUsage = args.cpuUsage or 25;
-
   proxyPool = {
-    url = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}:8443";
+    url = "xmrig-proxy.rofl-12.nb.${config.custom.mainDomain}:8443";
     user = config.networking.hostName;
     pass = "\${XMRIG_PROXY_PASSWORD}";
     keepalive = true;
@@ -35,7 +38,9 @@ let
   pools = if useProxy then [ proxyPool ] else publicPools;
 in
 {
-  sops.secrets."xmrig/env" = { };
+  sops.secrets."xmrig/env" = {
+    restartUnits = [ "xmrig.service" ];
+  };
   systemd.services.xmrig.serviceConfig = {
     EnvironmentFile = config.sops.secrets."xmrig/env".path;
   };
@@ -43,6 +48,8 @@ in
   services.xmrig = {
     enable = true;
     settings = {
+      inherit pools;
+
       autosave = true;
       opencl = false;
       cuda = false;
@@ -57,7 +64,6 @@ in
       randomx = {
         "1gb-pages" = true;
       };
-      pools = pools;
     };
   };
 }
