@@ -4,12 +4,14 @@
 {
   config,
   lib,
+  inputs,
   modulesPath,
   ...
 }:
 
 {
   imports = [
+    inputs.hardware.nixosModules.lenovo-thinkpad-x13-amd
     (modulesPath + "/installer/scan/not-detected.nix")
     ./disko-config.nix
   ];
@@ -25,9 +27,6 @@
     "sd_mod"
     "rtsx_pci_sdmmc"
   ];
-  boot.initrd.kernelModules = [ ];
-  boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
 
   swapDevices = [
     {
@@ -38,5 +37,4 @@
 
   networking.useDHCP = lib.mkDefault true;
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }
