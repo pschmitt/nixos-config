@@ -12,6 +12,8 @@
     inputs.hardware.nixosModules.common-gpu-intel
   ];
 
+  hardware.intelgpu.driver = "i915"; # or "xe"
+
   # FIXME This makes the screen not work (as in "*all black*") as of 2025-10-05
   # Force xe driver
   # https://wiki.archlinux.org/title/Intel_graphics#Testing_the_new_experimental_Xe_driver
