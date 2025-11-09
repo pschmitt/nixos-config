@@ -1,11 +1,8 @@
-{
-  config,
-  lib,
-  useProxy ? false,
-  cpuUsage ? 25,
-  ...
-}:
+args@{ config, lib, ... }:
 let
+  useProxy = args.useProxy or false;
+  cpuUsage = args.cpuUsage or 25;
+
   proxyPool = {
     url = "xmrig-proxy.rofl-12.nb.${config.custom.mainDomain}:8443";
     user = config.networking.hostName;
