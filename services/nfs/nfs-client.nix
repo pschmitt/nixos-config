@@ -1,8 +1,9 @@
-{
-  server ? "rofl-10.netbird.cloud",
-  exportPath ? "/export",
-  mountPoint ? "/mnt/data",
-  exports ? [
+args@{ ... }:
+let
+  server = args.server or "rofl-10.netbird.cloud";
+  exportPath = args.exportPath or "/export";
+  mountPoint = args.mountPoint or "/mnt/data";
+  exports = args.exports or [
     "backups"
     "blobs"
     "books"
@@ -11,9 +12,8 @@
     "srv"
     "tmp"
     # "videos" # lives on rofl-11 now
-  ],
-  ...
-}:
+  ];
+in
 
 {
   fileSystems = builtins.listToAttrs (
