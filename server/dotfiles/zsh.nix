@@ -52,7 +52,7 @@ in
       # add-zsh-hook -Uz chpwd __chpwd-osc7-pwd
       chpwd_functions+=(__chpwd-osc7-pwd)
 
-      # This little snippets set TERM to TERM_SSH_CLIENT which holds the ssh
+      # This little snippets sets TERM to TERM_SSH_CLIENT which holds the ssh
       # client's TERM value. It is sent by the ssh::fix-term zsh func.
       case "$TERM_SSH_CLIENT" in
         foot|*kitty*|wezterm)
