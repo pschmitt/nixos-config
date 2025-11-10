@@ -19,7 +19,7 @@
   sops.templates."go-hass-agent.env" = {
     content = ''
       # DEBUG
-      # GOHASSAGENT_LOGLEVEL=debug
+      GOHASSAGENT_LOGLEVEL=debug
       HASS_SERVER=${config.sops.placeholder."home-assistant/server"}
       HASS_TOKEN=${config.sops.placeholder."home-assistant/token"}
       MQTT_SERVER=${config.sops.placeholder."home-assistant/mqtt/host"}
@@ -78,7 +78,7 @@
         ExecStartPre = [
           # FIXME The env vars are not expanded here for some reason, if not
           # run wrapped in bash
-          "${pkgs.bash}/bin/bash -c '${goHassAgent} register --ignore-hass-urls --server=$HASS_SERVER --token=$HASS_TOKEN'"
+          "${pkgs.bash}/bin/bash -c '${goHassAgent} register --server=$HASS_SERVER --token=$HASS_TOKEN'"
           "${pkgs.bash}/bin/bash -c '${goHassAgent} config --mqtt-server=$MQTT_SERVER --mqtt-user=$MQTT_USERNAME --mqtt-password=$MQTT_PASSWORD --mqtt-topic-prefix=homeassistant'"
         ];
 
