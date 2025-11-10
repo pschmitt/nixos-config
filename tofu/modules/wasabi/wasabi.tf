@@ -45,7 +45,6 @@ variable "static_group_members" {
     "restic-ge2",
     "restic-oci-01",
     "restic-oci-03",
-    "restic-rofl-08",
     "restic-turris",
     "restic-wrt1900ac",
     "restic-x13",
