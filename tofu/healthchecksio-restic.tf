@@ -5,7 +5,6 @@ locals {
     "rofl-10",
     "rofl-11",
     "rofl-12",
-    "rofl-13",
     # laptops
     "ge2",
     "x13"
