@@ -35,6 +35,7 @@
       alias ddwn="docker compose down"
       alias drup="docker compose down; docker compose up --force-recreate --remove-orphans"
       alias drupd="drup -d"
+      alias drupdp="docker compose pull && drupd"
 
       docker-compose::services() {
         docker compose ls --format json | jq -er '.[].Name'
