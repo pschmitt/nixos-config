@@ -34,6 +34,10 @@ in
           (mkHostWithNode "archivebox")
         ];
       };
+      bentopdf = {
+        port = 23686;
+        hosts = [ (mkHost "pdf") ];
+      };
       dawarich = {
         port = 32927;
         hosts = [
@@ -96,10 +100,6 @@ in
           (mkHost "podsync")
           (mkHostWithNode "podsync")
         ];
-      };
-      stirling-pdf = {
-        port = 18733;
-        hosts = [ (mkHost "pdf") ];
       };
       # traefik = {
       #   port = 8723; # http: 18723
