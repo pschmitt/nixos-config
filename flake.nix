@@ -342,8 +342,12 @@
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
       nixosConfigurations = {
-        x13 = nixosSystemFor "x86_64-linux" "x13" { laptop = true; };
+        # laptops
         ge2 = nixosSystemFor "x86_64-linux" "ge2" { laptop = true; };
+        gk4 = nixosSystemFor "x86_64-linux" "gk4" { laptop = true; };
+        x13 = nixosSystemFor "x86_64-linux" "x13" { laptop = true; };
+
+        # servers
         lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
         rofl-08 = nixosSystemFor "x86_64-linux" "rofl-08" { server = true; };
         rofl-10 = nixosSystemFor "x86_64-linux" "rofl-10" { server = true; };
@@ -370,6 +374,8 @@
             ./modules/custom.nix
           ];
         };
+
+        # installation media
         iso = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
