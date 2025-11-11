@@ -38,6 +38,10 @@ in
         port = 23686;
         hosts = [ (mkHost "pdf") ];
       };
+      changedetection = {
+        port = 24264;
+        hosts = [ (mkHost "changes") ];
+      };
       dawarich = {
         port = 32927;
         hosts = [
