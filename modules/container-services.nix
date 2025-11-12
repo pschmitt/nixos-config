@@ -124,8 +124,14 @@ let
 
             restartAll = mkOption {
               type = types.bool;
-              default = false;
+              default = true;
               description = "Whether Monit restarts the entire compose stack instead of a single service.";
+            };
+
+            restartComposeService = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Compose service name to restart when restartAll = false; defaults to the container service name.";
             };
           };
         });
@@ -198,7 +204,7 @@ let
     {
       serviceName,
       composePath,
-      restartAll,
+      restartTarget,
       monitoredPort,
       proto,
       extraClause,
@@ -206,7 +212,7 @@ let
     ''
       check host "${serviceName}" with address "127.0.0.1"
         group services
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps${optionalString (!restartAll) " ${serviceName}"}"
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps${optionalString (restartTarget != null) " ${restartTarget}"}"
           with timeout 180 seconds
         if failed
           port ${monitoredPort}
@@ -219,22 +225,25 @@ let
   generateMonitCheck =
     serviceName: service:
     let
+      inherit (service.monitoring)
+        expectedHttpStatusCode
+        composeYaml
+        restartAll
+        restartComposeService
+        ;
       extraClause =
-        if service.monitoring.expectedHttpStatusCode != null then
-          "status " + toString service.monitoring.expectedHttpStatusCode
-        else
-          "";
-      composePath =
-        if service.monitoring.composeYaml != null then service.monitoring.composeYaml else serviceName;
+        if expectedHttpStatusCode != null then "status " + toString expectedHttpStatusCode else "";
+      composePath = if composeYaml != null then composeYaml else serviceName;
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
-      inherit (service.monitoring) restartAll;
+      restartTarget =
+        if restartAll then null else (if restartComposeService != null then restartComposeService else serviceName);
     in
     monitCheckText {
       inherit
         serviceName
         composePath
-        restartAll
+        restartTarget
         monitoredPort
         proto
         extraClause
