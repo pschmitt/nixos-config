@@ -140,6 +140,65 @@ jobs:
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
+      - name: Wait for Netbird routes
+        env:
+          NB_INTERFACE: wt0
+          YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
+          WAIT_SECS: "180"
+          SLEEP_SECS: "3"
+        run: |
+          set -euo pipefail
+          deadline=$((SECONDS + WAIT_SECS))
+
+          echo "Waiting for $YUM_DOMAIN to route via $NB_INTERFACE"
+
+          while (( SECONDS < deadline ))
+          do
+            if ! mapfile -t ips < <(dig +short A "$YUM_DOMAIN" | grep -v '^$')
+            then
+              echo "dig failed, retrying..."
+              sleep "$SLEEP_SECS"
+              continue
+            fi
+
+            if (( ${#ips[@]} == 0 ))
+            then
+              echo "No IPs resolved yet, retrying..."
+              sleep "$SLEEP_SECS"
+              continue
+            fi
+
+            READY=true
+            for ip in "${ips[@]}"
+            do
+              if ! route_json=$(ip -j route get "$ip" 2>/dev/null)
+              then
+                READY=false
+                break
+              fi
+
+              if ! jq -e --arg iface "$NB_INTERFACE" '
+                .[0].dev == $iface
+              ' <<<"$route_json" >/dev/null
+              then
+                READY=false
+                break
+              fi
+            done
+
+            if [[ "$READY" == true ]]
+            then
+              echo "All $YUM_DOMAIN routes go via $NB_INTERFACE"
+              exit 0
+            fi
+
+            sleep "$SLEEP_SECS"
+          done
+
+          echo "Timed out waiting for $YUM_DOMAIN routes via $NB_INTERFACE" >&2
+          ip r || true
+          exit 1
+
       - name: Debug netbird routing
         run: |
           set -x
