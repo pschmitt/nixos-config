@@ -49,6 +49,7 @@ in
         ];
         monitoring = {
           composeYaml = "piracy";
+          restartAll = false;
         };
       };
       sonarr = {
@@ -61,6 +62,7 @@ in
         ];
         monitoring = {
           composeYaml = "piracy";
+          restartAll = false;
         };
       };
       tdarr = {
@@ -79,6 +81,7 @@ in
         monitoring = {
           composeYaml = "piracy";
           expectedHttpStatusCode = 401;
+          restartAll = false;
         };
       };
     };
