@@ -24,7 +24,7 @@ let
       echo "ERROR: Failed to determine Tailscale IP" >&2
     else
       cat > "$MONIT_CONF_DIR/gluetun" <<EOF
-    check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSL -x $TAILSCALE_IP:8888 https://myip.wtf/json"
+    check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSL -x 127.0.0.1:8888 https://myip.wtf/json"
       every 5 cycles
       group piracy
       restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart"
