@@ -47,7 +47,9 @@ in
           (mkHostWithNode "rdr")
           (mkHostWithNode "radarr")
         ];
-        compose_yaml = "piracy";
+        monitoring = {
+          composeYaml = "piracy";
+        };
       };
       sonarr = {
         port = 8989;
@@ -57,7 +59,9 @@ in
           (mkHostWithNode "snr")
           (mkHostWithNode "sonarr")
         ];
-        compose_yaml = "piracy";
+        monitoring = {
+          composeYaml = "piracy";
+        };
       };
       tdarr = {
         port = 8265;
@@ -72,8 +76,10 @@ in
           (mkHost "to")
           (mkHostWithNode "to")
         ];
-        http_status_code = 401;
-        compose_yaml = "piracy";
+        monitoring = {
+          composeYaml = "piracy";
+          expectedHttpStatusCode = 401;
+        };
       };
     };
   };

@@ -48,6 +48,9 @@ in
           (mkHost "dawarich")
           (mkHost "location")
         ];
+        monitoring = {
+          restartAll = true;
+        };
       };
       endurain = {
         port = 36387;
