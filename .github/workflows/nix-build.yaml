@@ -143,6 +143,7 @@ jobs:
       - name: Debug netbird routing
         run: |
           set -x
+          ip a
           ip r
           ip -6 r
           YUM_IP=$(dig +short A yum.eu-frankfurt-1.oci.oraclecloud.com | head -1)
