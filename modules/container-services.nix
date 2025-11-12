@@ -13,7 +13,6 @@ let
     types
     concatMapStringsSep
     mapAttrs
-    mapAttrsToList
     concatMap
     attrValues
     concatStringsSep
@@ -22,17 +21,12 @@ let
     optionalString
     optionalAttrs
     filter
-    hasPrefix
-    escapeShellArg
     genAttrs
     ;
 
   cfg = config.custom.containerServices;
 
   autheliaDomain = "auth.${config.custom.mainDomain}";
-
-  nginxUser = config.services.nginx.user or "nginx";
-  nginxGroup = config.services.nginx.group or "nginx";
 
   trustedStateDir = "/run/container-services";
   nginxTrustedNetworksFile = "${trustedStateDir}/trusted-networks.conf";
@@ -53,8 +47,6 @@ let
       builtins.readFile ../services/scripts/update-container-trusted-networks.sh
     );
   nginxServiceName = "nginx.service";
-
-  trustedNetworksIncludeLine = "        include ${nginxTrustedNetworksFile};\n";
 
   # Effective Authz URL (can be overridden via options below)
   defaultAuthzURL =
@@ -113,16 +105,30 @@ let
         description = "Whether the container expects TLS at the upstream.";
       };
 
-      http_status_code = mkOption {
-        type = types.nullOr types.int;
-        default = null;
-        description = "Optional expected HTTP status code for health checks.";
-      };
+      monitoring = mkOption {
+        description = "Monitoring configuration applied to Monit checks for this service.";
+        default = { };
+        type = types.submodule (_: {
+          options = {
+            expectedHttpStatusCode = mkOption {
+              type = types.nullOr types.int;
+              default = null;
+              description = "Optional expected HTTP status code for health checks.";
+            };
 
-      compose_yaml = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = "Optional docker-compose project directory.";
+            composeYaml = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Optional docker-compose project directory.";
+            };
+
+            restartAll = mkOption {
+              type = types.bool;
+              default = false;
+              description = "Whether Monit restarts the entire compose stack instead of a single service.";
+            };
+          };
+        });
       };
 
       enableACME = mkOption {
@@ -192,6 +198,7 @@ let
     {
       serviceName,
       composePath,
+      restartAll,
       monitoredPort,
       proto,
       extraClause,
@@ -199,7 +206,7 @@ let
     ''
       check host "${serviceName}" with address "127.0.0.1"
         group services
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps ${serviceName}"
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps${optionalString (!restartAll) " ${serviceName}"}"
           with timeout 180 seconds
         if failed
           port ${monitoredPort}
@@ -213,15 +220,21 @@ let
     serviceName: service:
     let
       extraClause =
-        if service.http_status_code != null then "status " + toString service.http_status_code else "";
-      composePath = if service.compose_yaml != null then service.compose_yaml else serviceName;
+        if service.monitoring.expectedHttpStatusCode != null then
+          "status " + toString service.monitoring.expectedHttpStatusCode
+        else
+          "";
+      composePath =
+        if service.monitoring.composeYaml != null then service.monitoring.composeYaml else serviceName;
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
+      inherit (service.monitoring) restartAll;
     in
     monitCheckText {
       inherit
         serviceName
         composePath
+        restartAll
         monitoredPort
         proto
         extraClause
