@@ -34,6 +34,7 @@
     flarectl
     hostctl
     sqlite
+    websocat
 
     # ai
     aichat
