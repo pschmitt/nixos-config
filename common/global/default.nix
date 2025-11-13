@@ -38,6 +38,7 @@
 
   hardware.enableAllFirmware = true;
 
+  environment.sessionVariables.HOSTNAME = config.networking.hostName;
   environment.systemPackages = with pkgs; [
     # misc
     acpi
