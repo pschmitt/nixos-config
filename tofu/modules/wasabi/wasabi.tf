@@ -48,6 +48,7 @@ variable "static_group_members" {
     "restic-turris",
     "restic-wrt1900ac",
     "restic-x13",
+    "restic-gk4"
   ]
 }
 
