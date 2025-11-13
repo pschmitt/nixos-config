@@ -113,9 +113,8 @@ let
   dualDisplayTemplate = tmpl "docked-dual.go.tmpl" ''
     {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
     {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
-    monitor={{$lenovo.Name}},1920x1080@60,0x0,1
-    monitor={{$lg.Name}},3440x1440@60,1920x0,1
-    focusmonitor={{$lg.Name}}
+    monitor={{$lg.Name}},3440x1440@60,0x0,1
+    monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
@@ -125,10 +124,9 @@ let
     {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
     {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
     {{- $laptop := index .MonitorsByTag "laptop" -}}
-    monitor={{$lenovo.Name}},1920x1080@60,0x0,1
-    monitor={{$lg.Name}},3440x1440@60,1920x0,1
+    monitor={{$lg.Name}},3440x1440@60,0x0,1
+    monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
     monitor={{$laptop.Name}},disable
-    focusmonitor={{$lg.Name}}
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
@@ -138,10 +136,9 @@ let
     {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
     {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
     {{- $pikvm := index .MonitorsByTag "pikvm" -}}
-    monitor={{$lenovo.Name}},1920x1080@60,0x0,1
-    monitor={{$lg.Name}},3440x1440@60,1920x0,1
+    monitor={{$lg.Name}},3440x1440@60,0x0,1
+    monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
     monitor={{$pikvm.Name}},disable
-    focusmonitor={{$lg.Name}}
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
@@ -152,11 +149,10 @@ let
     {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
     {{- $pikvm := index .MonitorsByTag "pikvm" -}}
     {{- $laptop := index .MonitorsByTag "laptop" -}}
-    monitor={{$lenovo.Name}},1920x1080@60,0x0,1
-    monitor={{$lg.Name}},3440x1440@60,1920x0,1
+    monitor={{$lg.Name}},3440x1440@60,0x0,1
+    monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
     monitor={{$pikvm.Name}},disable
     monitor={{$laptop.Name}},disable
-    focusmonitor={{$lg.Name}}
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
