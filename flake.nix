@@ -77,6 +77,11 @@
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    hyprdynamicmonitors = {
+      url = "github:fiffeek/hyprdynamicmonitors";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     hypridle = {
       url = "github:hyprwm/hypridle";
       inputs.nixpkgs.follows = "hyprland";
