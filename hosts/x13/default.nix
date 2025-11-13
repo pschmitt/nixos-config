@@ -1,10 +1,8 @@
-{
-  inputs,
-  ...
-}:
+{ ... }:
 {
   imports = [
     ./hardware-configuration.nix
+    ../../misc/fprintd.nix
 
     ../../common/global
     ../../common/gui
@@ -37,6 +35,4 @@
   };
 
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
-
-  services.fprintd.enable = true;
 }
