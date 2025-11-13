@@ -92,11 +92,18 @@
       inputs.nixpkgs.follows = "hyprland";
     };
 
+    # hyprland plugins
     hyprtasking = {
       # url = "github:raybbian/hyprtasking";
       url = "github:r00t3g/hyprtasking/fix-build-on-hypr-0.51";
       inputs.hyprland.follows = "hyprland";
     };
+
+    hyprgrass = {
+      url = "github:horriblename/hyprgrass";
+      inputs.hyprland.follows = "hyprland"; # IMPORTANT
+    };
+
     # xdph = {
     #   url = "github:hyprwm/xdg-desktop-portal-hyprland";
     #   inputs.nixpkgs.follows = "nixpkgs";
