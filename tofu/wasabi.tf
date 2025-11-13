@@ -1,6 +1,11 @@
 module "restic_wasabi" {
   source = "./modules/wasabi"
-  hosts  = ["rofl-10", "rofl-11", "rofl-12"]
+  hosts = [
+    # servers
+    "rofl-10", "rofl-11", "rofl-12",
+    # laptops
+    "gk4"
+  ]
 }
 
 output "access_key_ids" {

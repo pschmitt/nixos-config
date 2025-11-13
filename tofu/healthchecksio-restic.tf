@@ -7,6 +7,7 @@ locals {
     "rofl-12",
     # laptops
     "ge2",
+    "gk4",
     "x13"
   ]
 }
