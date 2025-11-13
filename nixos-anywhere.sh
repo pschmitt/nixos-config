@@ -29,6 +29,7 @@ main() {
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
   local flake_uri="." # "github:pschmitt/nixos-config"
+  local ssh_host
 
   while [[ -n $* ]]
   do
@@ -41,6 +42,10 @@ main() {
         flake_uri="$2"
         shift 2
         ;;
+      -H|--ssh-host*)
+        ssh_host="$2"
+        shift 2
+        ;;
       *)
         break
         ;;
@@ -48,6 +53,7 @@ main() {
   done
 
   local target_host="$1"
+  ssh_host="${ssh_host:-$target_host}"
 
   if [[ -z $target_host ]]
   then
@@ -55,6 +61,8 @@ main() {
     usage >&2
     return 2
   fi
+
+  shift
 
   local tmpdir
   tmpdir="$(mktemp -d)" || return 7
@@ -71,7 +79,7 @@ main() {
 
   nix run github:nix-community/nixos-anywhere -- \
     --flake "$flake_uri" \
-    --target-host "$target_host" \
+    --target-host "$ssh_host" \
     --build-on local \
     --disko-mode disko \
     --disk-encryption-keys /tmp/disk-1.key "${tmpdir}/luks-passphrase-root.txt" \
