@@ -9,8 +9,13 @@
   ];
 
   sops.secrets = {
-    "home-assistant/server" = { };
-    "home-assistant/token".sopsFile = config.custom.sopsFile;
+    "home-assistant/server" = {
+      owner = config.custom.username;
+    };
+    "home-assistant/token" = {
+      inherit (config.custom) sopsFile;
+      owner = config.custom.username;
+    };
     "home-assistant/mqtt/host" = { };
     "home-assistant/mqtt/username".sopsFile = config.custom.sopsFile;
     "home-assistant/mqtt/password".sopsFile = config.custom.sopsFile;
