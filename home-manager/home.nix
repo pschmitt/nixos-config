@@ -18,6 +18,7 @@
       ./crypto.nix
       ./devel.nix
       ./flatpak.nix
+      ./hyprland.nix
       ./gnome-keyring.nix
       ./mail.nix
       ./mani.nix
