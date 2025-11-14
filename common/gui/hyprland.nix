@@ -103,10 +103,6 @@ in
       withUWSM = true;
       package = hyprlandPkg;
       portalPackage = xdphPkg;
-      plugins = [
-        #   inputs.hyprtasking.packages.${pkgs.stdenv.hostPlatform.system}.hyprtasking
-        inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
-      ];
     };
 
     hyprlock = {
