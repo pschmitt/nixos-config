@@ -13,6 +13,14 @@ in
     systemd.target = "graphical-session.target";
     settings.windows = {
       enable = true;
+      overview = {
+        enable = true;
+        key = "super_l";
+        modifier = "super";
+        launcher = {
+          show_when_empty = true;
+        };
+      };
       switch = {
         enable = true;
         modifier = "super";
