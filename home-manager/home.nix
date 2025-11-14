@@ -38,7 +38,7 @@ in
       ./crypto.nix
       ./devel.nix
       ./flatpak.nix
-      ./hyprland.nix
+      ./hyprland
       ./gnome-keyring.nix
       ./mail.nix
       ./mani.nix
