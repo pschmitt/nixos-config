@@ -1,11 +1,11 @@
 { lib, ... }:
 {
   imports = [
-    ../mako.nix
     ./hyprdynamicmonitors.nix
     ./hypridle.nix
     ./hyprlock.nix
     ./hyprpaper.nix
+    ./mako.nix
   ];
   # Mirrors ~/.config/hypr/config.d/services.conf.
   wayland.windowManager.hyprland.settings = {
