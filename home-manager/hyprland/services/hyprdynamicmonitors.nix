@@ -8,7 +8,7 @@
 }:
 
 let
-  inherit (lib) escapeShellArg optionalAttrs;
+  inherit (lib) escapeShellArg;
   inherit (pkgs.stdenv.hostPlatform) system;
 
   hyprdynamicmonitorsPkg = inputs.hyprdynamicmonitors.packages.${system}.default;
@@ -84,27 +84,27 @@ let
 
   tmpl = name: text: pkgs.writeText name text;
 
+  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
+  isGk4 = hostName == "gk4";
+
+  laptopMonitorAutoSettings =
+    if isGk4 then "preferred,auto,1.666,transform,3" else "preferred,auto,1";
+  laptopMonitorOriginSettings =
+    if isGk4 then "preferred,0x0,1.666,transform,3" else "preferred,0x0,1";
+
   laptopTemplate = tmpl "laptop.go.tmpl" ''
     {{- $laptop := index .MonitorsByTag "laptop" -}}
-    monitor={{$laptop.Name}},preferred,auto,1
+    monitor={{$laptop.Name}},${laptopMonitorAutoSettings}
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
   '';
 
-  gpdPocketTemplate = tmpl "laptop-gpd-pocket4.go.tmpl" ''
-    {{- $laptop := index .MonitorsByTag "laptop" -}}
-    monitor={{$laptop.Name}},preferred,auto,1.666,transform,3
-    {{- range .ExtraMonitors }}
-    monitor={{.Name}},disable
-    {{- end }}
-  '';
-
-  laptopM14Template = tmpl "laptop-m14.go.tmpl" ''
+  laptopEdpM14Template = tmpl "laptop-edp-m14.go.tmpl" ''
     {{- $laptop := index .MonitorsByTag "laptop" -}}
     {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
-    monitor={{$laptop.Name}},preferred,0x0,1.666,transform,3
-    monitor={{$lenovo.Name}},1920x1080@60,1536x0,1
+    monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
+    monitor={{$lenovo.Name}},preferred,1920x0,1
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
@@ -177,8 +177,6 @@ in
 
   home =
     let
-      hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
-      isGk4 = hostName == "gk4";
       profilesCommon = {
         "laptop" = {
           config_file = "hyprconfigs/laptop.go.tmpl";
@@ -189,6 +187,21 @@ in
               name = "eDP-1";
               monitor_tag = "laptop";
             }
+          ];
+        };
+        "laptop-edp-m14" = {
+          config_file = "hyprconfigs/laptop-edp-m14.go.tmpl";
+          config_file_type = "template";
+          post_apply_exec = callbackCommand "laptop-edp-m14";
+          conditions.required_monitors = [
+            {
+              name = "eDP-1";
+              monitor_tag = "laptop";
+            }
+            (regexMonitor {
+              pattern = "Lenovo.* M14.*";
+              tag = "lenovo_m14";
+            })
           ];
         };
 
@@ -273,39 +286,11 @@ in
         };
       };
 
-      profiles =
-        profilesCommon
-        // optionalAttrs isGk4 {
-          "laptop-gpd-pocket4" = {
-            config_file = "hyprconfigs/laptop-gpd-pocket4.go.tmpl";
-            config_file_type = "template";
-            post_apply_exec = callbackCommand "laptop-gpd-pocket4";
-            conditions.required_monitors = [
-              {
-                name = "eDP-1";
-                monitor_tag = "laptop";
-              }
-            ];
-          };
-          "laptop-m14" = {
-            config_file = "hyprconfigs/laptop-m14.go.tmpl";
-            config_file_type = "template";
-            post_apply_exec = callbackCommand "laptop-m14";
-            conditions.required_monitors = [
-              {
-                name = "eDP-1";
-                monitor_tag = "laptop";
-              }
-              (regexMonitor {
-                pattern = "Lenovo.* M14.*";
-                tag = "lenovo_m14";
-              })
-            ];
-          };
-        };
+      profiles = profilesCommon;
 
       extraFilesCommon = {
         "hyprdynamicmonitors/hyprconfigs/laptop.go.tmpl" = laptopTemplate;
+        "hyprdynamicmonitors/hyprconfigs/laptop-edp-m14.go.tmpl" = laptopEdpM14Template;
         "hyprdynamicmonitors/hyprconfigs/docked-dual.go.tmpl" = dualDisplayTemplate;
         "hyprdynamicmonitors/hyprconfigs/dual-display-pikvm.go.tmpl" = dualDisplayPiKvmTemplate;
         "hyprdynamicmonitors/hyprconfigs/dual-display-pikvm-with-laptop.go.tmpl" =
@@ -314,12 +299,7 @@ in
         "hyprdynamicmonitors/hyprconfigs/default.conf" = fallbackConfig;
       };
 
-      extraFiles =
-        extraFilesCommon
-        // optionalAttrs isGk4 {
-          "hyprdynamicmonitors/hyprconfigs/laptop-gpd-pocket4.go.tmpl" = gpdPocketTemplate;
-          "hyprdynamicmonitors/hyprconfigs/laptop-m14.go.tmpl" = laptopM14Template;
-        };
+      extraFiles = extraFilesCommon;
     in
     {
       file."${callbackScriptPath}" = {
