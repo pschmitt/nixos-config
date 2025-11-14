@@ -28,7 +28,8 @@
 
       debug = {
         disable_time = true;
-        disable_logs = false;
+        # Avoid ~/.local/share/hyprland/hyprland.log; journald captures stdout via systemd-cat wrapper.
+        disable_logs = true;
         enable_stdout_logs = true;
       };
 
