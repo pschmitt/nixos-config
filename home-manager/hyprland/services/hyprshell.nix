@@ -24,6 +24,7 @@ in
       switch = {
         enable = true;
         modifier = "super";
+        filter_by = [ ];
       };
     };
   };
