@@ -6,26 +6,6 @@
   pkgs,
   ...
 }:
-let
-  # DIRTYFIX for ssh keys transferred via nixos-anywhere's --extra-files option
-  # All files are owned by root, which makes sops-nix unhappy
-  fixSshOwnership = pkgs.writeShellScript "hm-fix-ssh-ownership" ''
-    SUDO_BIN="/run/wrappers/bin/sudo"
-    DIR='${osConfig.custom.homeDirectory}/.ssh'
-
-    if [[ ! -d "$DIR" ]]
-    then
-      exit 0
-    fi
-
-    echo "Ensuring ownership on $DIR"
-    if ! "$SUDO_BIN" -n chown -R "${osConfig.custom.username}:${osConfig.custom.username}" "$DIR"
-    then
-      echo "Could not change ownership on $DIR (needs passwordless sudo)" >&2
-      exit 1
-    fi
-  '';
-in
 {
   imports = lib.concatLists [
     [
@@ -46,6 +26,7 @@ in
       ./networking.nix
       ./nrf.nix
       ./nvim.nix
+      ./sops.nix
       ./ssh.nix
       ./work.nix
       ./yadm.nix
@@ -55,15 +36,6 @@ in
     (lib.optional osConfig.hardware.bluetooth.enable ./bluetooth.nix)
     (lib.optional osConfig.services.xserver.enable ./gui)
   ];
-
-  sops = {
-    inherit (osConfig.sops) defaultSopsFile;
-    age.sshKeyPaths = [ "${osConfig.custom.homeDirectory}/.ssh/id_ed25519" ];
-    age.generateKey = false;
-  };
-
-  systemd.user.services.sops-nix.Service.ExecStartPre =
-    lib.mkBefore [ "${fixSshOwnership}" ];
 
   programs.home-manager.enable = true;
 
