@@ -17,6 +17,7 @@ in
   flarectl = pkgs.callPackage ./flarectl { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
+  hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };

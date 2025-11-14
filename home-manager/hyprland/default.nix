@@ -1,3 +1,4 @@
+{ pkgs, ... }:
 {
   imports = [
     ./bin
@@ -5,5 +6,9 @@
     ./plugins
     ./services
     ./waybar
+  ];
+
+  home.packages = [
+    pkgs.hyprevents
   ];
 }
