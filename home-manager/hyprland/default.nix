@@ -13,6 +13,7 @@ in
     ./hyprgrass.nix
     ./hypridle.nix
     ./hyprlock.nix
+    ./bin
     ./env.nix
     ./swag.nix
     ./layouts.nix
