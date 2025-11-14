@@ -28,6 +28,7 @@
     # Desktops
     ./gnome.nix
     ./hyprland.nix
+    ./niri.nix
     ./sway.nix
 
     inputs.flatpaks.nixosModule
