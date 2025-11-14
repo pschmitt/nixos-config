@@ -7,6 +7,7 @@
     ./hyprevents.nix
     ./hypridle.nix
     ./hyprlock.nix
+    ./hyprshell.nix
     ./hyprpaper.nix
     ./mako.nix
     ./polkit.nix

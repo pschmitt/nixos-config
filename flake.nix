@@ -92,6 +92,13 @@
       inputs.nixpkgs.follows = "hyprland";
     };
 
+    hyprshell = {
+      url = "github:H3rmt/hyprshell?ref=hyprshell-release";
+      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     # hyprland plugins
     hyprtasking = {
       # url = "github:raybbian/hyprtasking";
