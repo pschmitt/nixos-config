@@ -345,4 +345,9 @@ in
         inherit extraFiles;
       };
     };
+
+  wayland.windowManager.hyprland.settings.source = lib.mkAfter [
+    # Include HyprDynamicMonitors output so Hyprland uses the generated layout.
+    "$config_dir/91-hdm-monitors.conf"
+  ];
 }
