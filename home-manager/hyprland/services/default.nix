@@ -1,5 +1,12 @@
 { lib, ... }:
 {
+  imports = [
+    ../mako.nix
+    ./hyprdynamicmonitors.nix
+    ./hypridle.nix
+    ./hyprlock.nix
+    ./hyprpaper.nix
+  ];
   # Mirrors ~/.config/hypr/config.d/services.conf.
   wayland.windowManager.hyprland.settings = {
     # Service supervision from services.conf (all still run via $ensure1 helper)
