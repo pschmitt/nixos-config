@@ -1,6 +1,3 @@
-let
-  glyph = str: builtins.fromJSON "\"${str}\"";
-in
 [
   {
     "layer" = "top";
@@ -45,8 +42,8 @@ in
     "hyprland/workspaces" = {
       "all-outputs" = false;
       "format-icons" = {
-        "active" = glyph "\\uf06a";
-        "default" = glyph "\\uf111";
+        "active" = "";
+        "default" = "";
         "persistent" = "(P)";
       };
       "show-special" = false;
@@ -56,13 +53,13 @@ in
       "disable-scroll" = false;
       "format" = "{icon}{value}";
       "format-icons" = {
-        "urgent" = "${glyph "\\uf06a"} ";
+        "urgent" = " ";
         "focused" = "";
         "default" = "";
       };
     };
     "sway/mode" = {
-      "format" = "${glyph "\\uf6a5"} {}";
+      "format" = " {}";
       "max-length" = 50;
     };
     "wlr/taskbar" = {
@@ -96,7 +93,7 @@ in
       "max-length" = 120;
     };
     "hyprland/window" = {
-      "format" = "${glyph "\\ud83d\\udc49"} {}";
+      "format" = "👉 {}";
       "separate-outputs" = true;
     };
     "hyprland/submap" = {
@@ -133,7 +130,7 @@ in
       "escape" = true;
     };
     "custom/weather" = {
-      "format" = "{}${glyph "\\u00b0"}C";
+      "format" = "{}°C";
       "tooltip" = true;
       "interval" = 3600;
       "exec" = "wttrbar --location 'Frankfurt am Main, Germany'";
@@ -149,19 +146,19 @@ in
         "Easy Effects Sink"
       ];
       "format" = "{icon} {volume}%";
-      "format-bluetooth" = "<span foreground=\"#55ACEE\">${glyph "\\udb80\\udcb0"}</span> {volume}%";
-      "format-muted" = "<span foreground=\"#e27978\" font-weight=\"bold\">${glyph "\\udb81\\udf5f"} MUTE</span>";
+      "format-bluetooth" = "<span foreground=\"#55ACEE\">󰂰</span> {volume}%";
+      "format-muted" = "<span foreground=\"#e27978\" font-weight=\"bold\">󰝟 MUTE</span>";
       "format-icons" = {
-        "headphones" = glyph "\\uf025";
-        "handsfree" = glyph "\\uf590";
-        "headset" = glyph "\\uf590";
-        "phone" = glyph "\\uf095";
-        "portable" = glyph "\\uf095";
-        "car" = glyph "\\uf1b9";
+        "headphones" = "";
+        "handsfree" = "";
+        "headset" = "";
+        "phone" = "";
+        "portable" = "";
+        "car" = "";
         "default" = [
-          (glyph "\\uf026")
-          (glyph "\\uf027")
-          (glyph "\\udb81\\udd7e")
+          ("")
+          ("")
+          ("󰕾")
         ];
       };
       "on-click" = "~/.config/sway/bin/barify sink mute";
@@ -185,14 +182,14 @@ in
       "noise_reduction" = 0.2;
       "input_delay" = 2;
       "format-icons" = [
-        (glyph "\\u2581")
-        (glyph "\\u2582")
-        (glyph "\\u2583")
-        (glyph "\\u2584")
-        (glyph "\\u2585")
-        (glyph "\\u2586")
-        (glyph "\\u2587")
-        (glyph "\\u2588")
+        ("▁")
+        ("▂")
+        ("▃")
+        ("▄")
+        ("▅")
+        ("▆")
+        ("▇")
+        ("█")
       ];
       "actions" = {
         "on-click-right" = "mode";
@@ -201,8 +198,8 @@ in
     "pulseaudio#source" = {
       "scroll-step" = 5;
       "format" = "{format_source}";
-      "format-source" = glyph "\\udb80\\udf6c";
-      "format-source-muted" = "<span foreground=\"#e27978\" font-weight=\"bold\">${glyph "\\uf131"} MUTED</span>";
+      "format-source" = "󰍬";
+      "format-source-muted" = "<span foreground=\"#e27978\" font-weight=\"bold\"> MUTED</span>";
       "on-click" = "sh -c '~/bin/obs.zsh toggle-mute; ~/.config/sway/bin/barify source mute'";
       "on-click-right" = "sh -c 'swaymsg [app_id=\"pavucontrol\"] scratchpad show || exec pavucontrol'";
       "on-scroll-down" = "~/.config/sway/bin/barify source down";
@@ -215,23 +212,23 @@ in
         "warning" = 30;
         "critical" = 15;
       };
-      "format" = "<span color=\"#FFAB00\">${glyph "\\udb80\\udc85"}</span> {capacity}%";
-      "format-full-full" = "<span color=\"green\">${glyph "\\udb80\\udc8b"}</span>";
+      "format" = "<span color=\"#FFAB00\">󰂅</span> {capacity}%";
+      "format-full-full" = "<span color=\"green\">󰂋</span>";
       "format-discharging-critical" = "<span color=\"red\">!! {icon} {capacity}%</span>";
       "format-discharging" = "{icon} {capacity}%";
       "format-icons" = [
-        (glyph "\\udb80\\udc7a")
-        (glyph "\\udb80\\udc7c")
-        (glyph "\\udb80\\udc7e")
-        (glyph "\\udb80\\udc81")
-        (glyph "\\udb80\\udc79")
+        ("󰁺")
+        ("󰁼")
+        ("󰁾")
+        ("󰂁")
+        ("󰁹")
       ];
       "tooltip" = true;
     };
     "bluetooth" = {
-      "format" = "${glyph "\\uf294"} {status}";
-      "format-disabled" = glyph "\\uf5b1";
-      "format-connected" = "<span foreground=\"#55ACEE\">${glyph "\\udb80\\udcb3"}{num_connections}</span>";
+      "format" = " {status}";
+      "format-disabled" = "";
+      "format-connected" = "<span foreground=\"#55ACEE\">󰂳{num_connections}</span>";
       "tooltip-format" = "{controller_alias}\t{controller_address}";
       "tooltip-format-connected" = "{controller_alias}\t{controller_address}\n\n{device_enumerate}";
       "tooltip-format-enumerate-connected" = "{device_alias}\t{device_address}";
@@ -242,8 +239,8 @@ in
     "idle_inhibitor" = {
       "format" = "{icon}";
       "format-icons" = {
-        "activated" = "${glyph "\\uf0f4"} NO IDLE";
-        "deactivated" = "${glyph "\\udb83\\udfaa"} IDLE";
+        "activated" = " NO IDLE";
+        "deactivated" = "󰾪 IDLE";
       };
     };
     "clock" = {
@@ -258,9 +255,9 @@ in
       "return-type" = "json";
       "max-length" = 40;
       "format-icons" = {
-        "spotify" = glyph "\\uf1bc";
-        "plasma-browser-integration" = glyph "\\udb80\\ude39";
-        "default" = glyph "\\ud83c\\udf9c";
+        "spotify" = "";
+        "plasma-browser-integration" = "󰈹";
+        "default" = "🎜";
       };
       "escape" = true;
       "exec" = "~/.config/waybar/custom_modules/mediaplayer-wrapper.sh 2> /dev/null";
@@ -270,19 +267,19 @@ in
       "critical-threshold" = 80;
       "thermal-zone" = 4;
       "interval" = 5;
-      "format" = " {temperatureC}${glyph "\\u00b0"}C";
+      "format" = " {temperatureC}°C";
       "format-icons" = [
-        (glyph "\\uf2cb")
-        (glyph "\\uf2ca")
-        (glyph "\\uf2c9")
-        (glyph "\\uf2c8")
-        (glyph "\\uf2c8")
+        ("")
+        ("")
+        ("")
+        ("")
+        ("")
       ];
       "tooltip" = true;
     };
     "cpu" = {
       "interval" = 5;
-      "format" = "${glyph "\\uf2db"} {load} {avg_frequency}GHz";
+      "format" = " {load} {avg_frequency}GHz";
       "states" = {
         "warning" = 70;
         "critical" = 90;
@@ -294,7 +291,7 @@ in
     };
     "memory" = {
       "interval" = 5;
-      "format" = "${glyph "\\udb80\\udf5b"} {}%";
+      "format" = "󰍛 {}%";
       "states" = {
         "warning" = 70;
         "critical" = 90;
@@ -302,15 +299,15 @@ in
     };
     "network" = {
       "interval" = 5;
-      "format-wifi" = "${glyph "\\uf1eb"}  {essid} ({signalStrength}%)";
-      "format-ethernet" = "${glyph "\\uf796"}  {ifname}: {ipaddr}/{cidr}";
-      "format-disconnected" = "${glyph "\\u26a0"}  Disconnected";
+      "format-wifi" = "  {essid} ({signalStrength}%)";
+      "format-ethernet" = "  {ifname}: {ipaddr}/{cidr}";
+      "format-disconnected" = "⚠  Disconnected";
       "tooltip-format" = "{ifname}: {ipaddr}";
     };
     "custom/keyboard-layout" = {
       "exec" = "swaymsg -t get_inputs | grep -m1 'xkb_active_layout_name' | cut -d '\"' -f4";
       "interval" = 30;
-      "format" = "${glyph "\\uf11c"}  {}";
+      "format" = "  {}";
       "signal" = 1;
       "tooltip" = false;
     };
