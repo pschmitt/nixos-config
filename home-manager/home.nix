@@ -8,7 +8,7 @@
 }:
 let
   # DIRTYFIX for ssh keys transferred via nixos-anywhere's --extra-files option
-  # All files are then owned by root, which makes sops-nix unhappy
+  # All files are owned by root, which makes sops-nix unhappy
   fixSshOwnership = pkgs.writeShellScript "hm-fix-ssh-ownership" ''
     SUDO_BIN="/run/wrappers/bin/sudo"
     DIR='${osConfig.custom.homeDirectory}/.ssh'
