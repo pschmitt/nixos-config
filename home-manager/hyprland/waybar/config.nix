@@ -156,9 +156,9 @@
         "portable" = "";
         "car" = "";
         "default" = [
-          ("")
-          ("")
-          ("󰕾")
+          ""
+          ""
+          "󰕾"
         ];
       };
       "on-click" = "~/.config/sway/bin/barify sink mute";
@@ -182,14 +182,14 @@
       "noise_reduction" = 0.2;
       "input_delay" = 2;
       "format-icons" = [
-        ("▁")
-        ("▂")
-        ("▃")
-        ("▄")
-        ("▅")
-        ("▆")
-        ("▇")
-        ("█")
+        "▁"
+        "▂"
+        "▃"
+        "▄"
+        "▅"
+        "▆"
+        "▇"
+        "█"
       ];
       "actions" = {
         "on-click-right" = "mode";
@@ -217,11 +217,11 @@
       "format-discharging-critical" = "<span color=\"red\">!! {icon} {capacity}%</span>";
       "format-discharging" = "{icon} {capacity}%";
       "format-icons" = [
-        ("󰁺")
-        ("󰁼")
-        ("󰁾")
-        ("󰂁")
-        ("󰁹")
+        "󰁺"
+        "󰁼"
+        "󰁾"
+        "󰂁"
+        "󰁹"
       ];
       "tooltip" = true;
     };
@@ -269,11 +269,11 @@
       "interval" = 5;
       "format" = " {temperatureC}°C";
       "format-icons" = [
-        ("")
-        ("")
-        ("")
-        ("")
-        ("")
+        ""
+        ""
+        ""
+        ""
+        ""
       ];
       "tooltip" = true;
     };
