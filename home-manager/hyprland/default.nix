@@ -13,6 +13,16 @@ in
     ./hyprgrass.nix
     ./hypridle.nix
     ./hyprlock.nix
+    ./env.nix
+    ./swag.nix
+    ./layouts.nix
+    ./windowrules.nix
+    ./input.nix
+    ./keys.nix
+    ./alt-tab.nix
+    ./services.nix
+    ./autostart.nix
+    ./lock.nix
   ];
 
   wayland.windowManager.hyprland =
@@ -47,26 +57,9 @@ in
         "$ensure" = "$bin_dir/ensure-running.sh";
         "$ensure1" = "$ensure --single-instance";
 
+        # Allow ad-hoc local overrides without nix rebuilds
         source = [
-          # Some default env vars.
-          "$config_dir/env.conf"
-          # animations and decorations
-          "$config_dir/swag.conf"
-          # layout config
-          "$config_dir/layouts.conf"
-          # window rules
-          "$config_dir/windowrules.conf"
-          # input config
-          "$config_dir/input.conf"
-          # Keybindings
-          "$config_dir/keys.conf"
-          "$config_dir/alt-tab.conf"
-          # core services (kanshi, mako etc)
-          "$config_dir/services.conf"
-          # Startup applications
-          "$config_dir/autostart.conf"
-          # Screen locking
-          "$config_dir/lock.conf"
+          "$config_dir/static.conf"
         ];
 
         debug = {
