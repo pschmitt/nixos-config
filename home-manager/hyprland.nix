@@ -1,10 +1,12 @@
 {
+  config,
   lib,
   osConfig ? null,
   ...
 }:
 let
   hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
+  wallpaperPath = "${config.home.homeDirectory}/Pictures/Wallpapers/chill.png";
 in
 {
   imports = [
@@ -108,4 +110,12 @@ in
         }
         // hostSpecificSettings;
     };
+
+  services.hyprpaper = {
+    enable = true;
+    settings = {
+      preload = [ wallpaperPath ];
+      wallpaper = [ ",${wallpaperPath}" ];
+    };
+  };
 }
