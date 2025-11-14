@@ -333,7 +333,7 @@ in
         enable = true;
         package = hyprdynamicmonitorsPkg;
         configFile = (pkgs.formats.toml { }).generate "hyprdynamicmonitors-config.toml" {
-          general.destination = "${config.xdg.configHome}/hypr/config.d/91-hdm-monitors.conf";
+          general.destination = "${config.xdg.configHome}/hypr/config.d/monitors.conf";
           inherit profiles;
           fallback_profile = {
             config_file = "hyprconfigs/default.conf";
@@ -348,6 +348,6 @@ in
 
   wayland.windowManager.hyprland.settings.source = lib.mkAfter [
     # Include HyprDynamicMonitors output so Hyprland uses the generated layout.
-    "$config_dir/91-hdm-monitors.conf"
+    "$config_dir/monitors.conf"
   ];
 }
