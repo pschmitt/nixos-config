@@ -4,6 +4,7 @@
     ./hardware-configuration.nix
     ./iio-hyprland.nix
     ../../misc/fprintd.nix
+    ../../misc/touchscreen.nix
 
     ../../common/global
     ../../common/gui
@@ -35,7 +36,5 @@
     };
   };
 
-  systemd.services.go-hass-agent = {
-    enable = lib.mkForce false;
-  };
+  systemd.services.go-hass-agent.enable = lib.mkForce false;
 }
