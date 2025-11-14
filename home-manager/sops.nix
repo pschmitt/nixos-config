@@ -34,5 +34,5 @@ in
     };
   };
 
-  # systemd.user.services.sops-nix.Service.ExecStartPre = lib.mkBefore [ "-${fixSshOwnership}" ];
+  systemd.user.services.sops-nix.Service.ExecStartPre = lib.mkBefore [ "-${fixSshOwnership}" ];
 }
