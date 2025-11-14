@@ -1,0 +1,99 @@
+* {
+  border: none;
+  border-radius: 0;
+  font-family: "ComicCode Nerd Font", "MonoLisa Nerd Font";
+  font-size: 14px;
+  font-weight: bold;
+  min-height: 0;
+}
+
+/* Follow GTK theme */
+/*
+window#waybar {
+    background: @theme_base_color;
+    border-bottom: 1px solid @unfocused_borders;
+    color: @theme_text_color;
+}
+*/
+
+#waybar {
+  background-color: #191818;
+  transition-duration: 0.5s;
+}
+
+#workspaces button {
+  padding: 0 6px;
+  color: #d2d2d2;
+}
+
+#workspaces button:hover {
+  background-color: #191818;
+  color: #7186b2;
+  border-bottom: 4px solid #7186b2;
+}
+
+#workspaces button.focused,
+#workspaces button.active {
+  color: #d2d2d2;
+  /* background-color: #7186b2; */
+  border-bottom: 2px solid #7186b2;
+}
+
+#workspaces button.urgent {
+  background-color: #bf5151;
+  border-bottom: 4px solid #191818;
+  color: #191818;
+}
+
+#mode,
+#window {
+  color: #d2d2d2;
+}
+
+#idle_inhibitor.deactivated {
+  color: #a9a9a9;
+}
+
+#idle_inhibitor.activated {
+  color: #8d70b3;
+}
+
+#custom-modkey {
+  /* background-color: #6CA0A3; */
+  /* color: white; */
+  color: #6ca0a3;
+}
+
+#backlight,
+#battery,
+#clock,
+#custom-clipboard,
+#custom-weather,
+#load,
+#network,
+#pulseaudio,
+#tray {
+  padding: 0 10px;
+  color: #d2d2d2;
+}
+
+#taskbar button.active {
+  /* background-color: rgba(120,118,117,0.8); */
+  color: #d2d2d2;
+  /* background-color: #7186b2; */
+  border-bottom: 2px solid #7186b2;
+}
+
+@keyframes blink {
+  to {
+    background-color: yellow;
+  }
+}
+
+#battery.critical:not(.charging) {
+  animation-name: blink;
+  animation-duration: 0.5s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}

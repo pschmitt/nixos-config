@@ -4,5 +4,6 @@
     ./conf
     ./plugins
     ./services
+    ./waybar
   ];
 }

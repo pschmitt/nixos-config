@@ -11,7 +11,7 @@
   wayland.windowManager.hyprland.settings = {
     # Service supervision from services.conf (all still run via $ensure1 helper)
     exec = lib.mkAfter [
-      "$ensure1 -j waybar -- ~/.config/waybar/waybar-cava-wrapper.sh -l debug"
+      # "$ensure1 -j waybar -- ~/.config/waybar/waybar-cava-wrapper.sh -l debug"
       "$ensure1 -j xdg-portal -- $bin_dir/xdg-portal-screencast-watcher.sh"
       "$ensure1 -j hyprevents -- ~/.config/hypr/hyprevents/hyprevents --file $bin_dir/hyprevents-handler.sh"
       "$ensure1 -j clipboard -- wl-clip-persist --clipboard both"
