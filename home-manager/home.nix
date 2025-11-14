@@ -19,6 +19,7 @@
       ./devel.nix
       ./flatpak.nix
       ./hyprland
+      ./niri.nix
       ./gnome-keyring.nix
       ./mail.nix
       ./mani.nix
