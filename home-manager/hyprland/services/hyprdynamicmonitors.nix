@@ -91,6 +91,7 @@ let
     if isGk4 then "preferred,auto,1.666,transform,3" else "preferred,auto,1";
   laptopMonitorOriginSettings =
     if isGk4 then "preferred,0x0,1.666,transform,3" else "preferred,0x0,1";
+  lenovoRightOfLaptopPosition = if isGk4 then "1600x0" else "1920x0";
 
   laptopTemplate = tmpl "laptop.go.tmpl" ''
     {{- $laptop := index .MonitorsByTag "laptop" -}}
@@ -104,7 +105,7 @@ let
     {{- $laptop := index .MonitorsByTag "laptop" -}}
     {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
     monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
-    monitor={{$lenovo.Name}},preferred,1920x0,1
+    monitor={{$lenovo.Name}},preferred,${lenovoRightOfLaptopPosition},1
     {{- range .ExtraMonitors }}
     monitor={{.Name}},disable
     {{- end }}
