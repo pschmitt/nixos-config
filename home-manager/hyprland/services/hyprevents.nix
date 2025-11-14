@@ -5,6 +5,10 @@ let
   hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
 in
 {
+  home.packages = [
+    pkgs.hyprevents
+  ];
+
   systemd.user.services.hyprevents = {
     Unit = {
       Description = "Hyprland event dispatcher";
