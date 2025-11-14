@@ -9,6 +9,7 @@
     ./hyprlock.nix
     ./hyprpaper.nix
     ./mako.nix
+    ./polkit.nix
     ./xdg-portal-screencast-watcher.nix
   ];
 }

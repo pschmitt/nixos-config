@@ -65,44 +65,6 @@ hyprctl::set-cursor-theme() {
   hyprctl setcursor "$theme" "$size"
 }
 
-polkit::start() {
-  local unit="polkit-gnome-authentication-agent-1"
-
-  if systemd-unit::is-active "$unit"
-  then
-    echo "polkit: $unit is active. No need to launch it from $0" >&2
-    return
-  fi
-
-  # Default path (Arch Linux etc.)
-  local bin=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
-
-  if is_nixos
-  then
-    local polkit_impl="polkit_gnome"
-    local pkg_path
-    pkg_path=$(nix eval -f '<nixpkgs>' --raw "$polkit_impl")
-
-    if [[ -z "$pkg_path" ]]
-    then
-      echo "Failed to determine nix store path of $polkit_impl" >&2
-      return 1
-    fi
-
-    bin="$(find "$pkg_path" -executable -type f | head -1)"
-  fi
-
-  if ! [[ -x "$bin" ]]
-  then
-    echo "$bin does not exist or isn't executable." >&2
-    return 1
-  fi
-
-  hyprctl::exec \
-    "${XDG_CONFIG_HOME:-${HOME}/.config}/hypr/bin/ensure-running.sh" \
-    -j polkit "$bin"
-}
-
 xdg-portal::restart() {
   local u units=(
     xdg-desktop-portal.service
@@ -233,9 +195,6 @@ then
       :
       ;;
   esac
-
-  # Make sure a polkit agent is running
-  polkit::start
 
   # FIXME This should not be necessary! Pipewire bug?
   # Force (re)start of pipewire
