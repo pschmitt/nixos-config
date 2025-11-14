@@ -28,8 +28,10 @@
 
       debug = {
         disable_time = true;
-        # Avoid ~/.local/share/hyprland/hyprland.log; journald captures stdout via systemd-cat wrapper.
+        # Disable writing logs to a separate file, on disk
         disable_logs = true;
+        # to read logs:
+        # journalctl -xlf --user -u 'wayland-wm@Hyprland.service'
         enable_stdout_logs = true;
       };
 

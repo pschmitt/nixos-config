@@ -7,6 +7,7 @@
     ./hyprevents.nix
     ./hypridle.nix
     ./hyprlock.nix
+    ./iio-hyprland.nix
     ./hyprshell.nix
     ./hyprpaper.nix
     ./mako.nix
