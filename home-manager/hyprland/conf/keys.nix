@@ -62,7 +62,7 @@ let
     "$mod, l, movefocus, r"
     "$mod, k, movefocus, u"
     "$mod, j, movefocus, d"
-    "$mod, tab, exec, $bin_dir/switch-workspace.sh previous"
+    "$mod SHIFT, tab, exec, $bin_dir/switch-workspace.sh previous"
     "$mod ALT, left, workspace, -1"
     "$mod ALT, right, workspace, +1"
   ];
