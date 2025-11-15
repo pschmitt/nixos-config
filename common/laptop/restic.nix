@@ -1,6 +1,6 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
-  services.restic.backups.main.paths = lib.mkAfter [
+  services.restic.backups.main.paths = [
     # bluetooth device data
     "/var/lib/bluetooth"
 
