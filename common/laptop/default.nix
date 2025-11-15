@@ -8,6 +8,7 @@
 
     ../wifi.nix
     ./network.nix
+    ./restic.nix
     ./wireshark.nix
   ];
 

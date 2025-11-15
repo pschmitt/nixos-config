@@ -8,13 +8,13 @@
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets = {
       "restic/env" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
       "restic/password" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
       "restic/repository" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
     };
 
@@ -25,14 +25,8 @@
       passwordFile = config.sops.secrets."restic/password".path;
       repositoryFile = config.sops.secrets."restic/repository".path;
 
-      paths = lib.mkDefault [
-        "/etc/nixos"
-        "${config.custom.homeDirectory}/devel"
-        "${config.custom.homeDirectory}/Documents"
-        "${config.custom.homeDirectory}/Pictures"
-        "${config.custom.homeDirectory}/.config"
-        "${config.custom.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
-      ];
+      paths = [ "/etc/nixos" ];
+
       timerConfig = {
         OnCalendar = "12:30:00";
         Persistent = true;
