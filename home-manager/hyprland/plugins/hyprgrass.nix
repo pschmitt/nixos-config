@@ -18,7 +18,11 @@
       })
       {
         hyprgrass-bind = [
-          ", edge:d:u, exec, $bin_dir/toggle-wvkbd.sh"
+          ", edge:d:u, exec, $bin_dir/toggle-soft-keyboard.sh"
+          ", tap:4, killactive"
+        ];
+        hyprgrass-bindm = [
+          ", longpress:2, movewindow"
         ];
       }
     ];
