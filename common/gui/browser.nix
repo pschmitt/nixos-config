@@ -19,6 +19,9 @@
       "privacy.webrtc.hideGlobalIndicator" = true;
       # Prevent Firefox from Googling .lan addresses and opening them directly
       "browser.fixup.domainsuffixwhitelist.lan" = true;
+      # Hide the "Summarize Page" button in the AI sidebar
+      # https://www.reddit.com/r/firefox/comments/1o8zt65/how_do_i_remove_the_summarize_page_button_below/
+      "browser.ml.chat.page" = false;
     };
     preferencesStatus = "user";
   };
