@@ -72,9 +72,18 @@ window#waybar {
 #load,
 #network,
 #pulseaudio,
+#power-profiles-daemon,
 #tray {
   padding: 0 10px;
   color: #d2d2d2;
+}
+
+#power-profiles-daemon.performance {
+  color: #bf5151;
+}
+
+#power-profiles-daemon.power-saver {
+  color: #7ab87a;
 }
 
 #taskbar button.active {
