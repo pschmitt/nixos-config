@@ -15,12 +15,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
       if is_enabled; then
         icon=""
         alt="enabled"
-        class="custom-soft-keyboard enabled"
+        class="soft-keyboard-enabled"
         tooltip="On-screen keyboard enabled"
       else
         icon=""
         alt="disabled"
-        class="custom-soft-keyboard disabled"
+        class="soft-keyboard-disabled"
         tooltip="On-screen keyboard disabled"
       fi
 
