@@ -36,7 +36,7 @@ resource "healthchecksio_check" "restic_backup" {
 }
 
 output "ping_url" {
-  value = healthchecksio_check.restic_backup.ping_url
+  value = { for host, check in healthchecksio_check.restic_backup : host => check.ping_url }
 }
 
 # vim: set ft=terraform
