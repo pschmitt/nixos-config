@@ -18,5 +18,9 @@
     tlp.enable = lib.mkForce false;
   };
 
-  services.logind.settings.Login.HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+  # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
+  services.logind.settings.Login = {
+    HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
+    HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+  };
 }
