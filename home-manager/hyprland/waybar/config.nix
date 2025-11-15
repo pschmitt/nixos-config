@@ -1,5 +1,10 @@
+{ hostName ? null }:
+let
+  isGk4 = hostName == "gk4";
+in
 [
-  {
+  (
+    {
     "layer" = "top";
     "position" = "top";
     "height" = 30;
@@ -15,18 +20,22 @@
       "clock"
       "custom/timewarrior"
     ];
-    "modules-right" = [
-      "custom/screencast"
-      "tray"
-      "custom/clipboard"
-      "idle_inhibitor"
-      "pulseaudio#source"
-      "custom/media"
-      "pulseaudio#sink"
-      "load"
-      "power-profiles-daemon"
-      "battery"
-    ];
+    "modules-right" =
+      [
+        "custom/screencast"
+        "tray"
+        "custom/clipboard"
+        "idle_inhibitor"
+      ]
+      ++ (if isGk4 then [ "custom/soft-keyboard" ] else [ ])
+      ++ [
+        "pulseaudio#source"
+        "custom/media"
+        "pulseaudio#sink"
+        "load"
+        "power-profiles-daemon"
+        "battery"
+      ];
     "wlr/workspaces" = {
       "format" = "{icon}";
       "on-click" = "activate";
@@ -323,4 +332,15 @@
       "tooltip" = false;
     };
   }
+    // (if isGk4 then {
+      "custom/soft-keyboard" = {
+        "exec" = "~/.config/waybar/custom_modules/soft-keyboard.sh format";
+        "interval" = 5;
+        "return-type" = "json";
+        "signal" = 8;
+        "on-click" = "sh -c '~/.config/hypr/bin/toggle-soft-keyboard.sh && pkill -RTMIN+8 waybar'";
+      };
+    } else
+      { })
+  )
 ]
