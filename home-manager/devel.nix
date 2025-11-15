@@ -40,7 +40,6 @@
     aichat
     master.codex
     master.github-copilot-cli
-    shell-gpt
     tgpt
 
     # android
