@@ -9,7 +9,8 @@ in
     # Media
     ffmpeg-full
     mpvPkg
-    ustreamer
+    # FIXME ustreamer fails to build as of 2025-11-15
+    # ustreamer
     v4l-utils
     vlc
   ];
