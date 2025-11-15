@@ -1,11 +1,11 @@
-{ lib, ... }:
-{
+_: {
   services.mako = {
     enable = true;
     settings =
       let
+        fontName = "ComicCode Nerd Font";
         infoBanner = {
-          font = "ComicCode Nerd Font 24";
+          font = "${fontName} 24";
           anchor = "center";
           "text-color" = "#e8e9ea";
           "text-alignment" = "center";
@@ -19,7 +19,7 @@
         osdCategory = infoBanner;
       in
       {
-        font = "ComicCode Nerd Font 14";
+        font = "${fontName} 14";
         layer = "overlay";
         history = 1;
         icons = true;
@@ -75,7 +75,7 @@
         };
 
         "app-name=feierabend" = {
-          font = "ComicCode 32";
+          font = "${fontName} 32";
           width = 800;
           height = 1024;
           anchor = "center";
@@ -95,7 +95,7 @@
         };
 
         "app-name=wofi-run" = {
-          font = "ComicCode Nerd Font 18";
+          font = "${fontName} 18";
           width = 600;
           anchor = "top-center";
           "text-color" = "#2e4a62";
@@ -108,7 +108,7 @@
         };
 
         "category=bluetooth" = {
-          font = "ComicCode Nerd Font 18";
+          font = "${fontName} 18";
           "background-color" = "#365b81";
           "text-color" = "#aaaaaa";
           anchor = "top-center";
