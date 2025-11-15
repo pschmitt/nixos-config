@@ -35,4 +35,8 @@ resource "healthchecksio_check" "restic_backup" {
   desc = "Restic backup job for ${each.value}"
 }
 
+output "ping_url" {
+  value = healthchecksio_check.restic_backup.ping_url
+}
+
 # vim: set ft=terraform
