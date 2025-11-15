@@ -94,9 +94,11 @@
 
     hyprshell = {
       url = "github:H3rmt/hyprshell?ref=hyprshell-release";
-      inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
+      inputs = {
+        hyprland.follows = "hyprland";
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
     };
 
     # hyprland plugins
