@@ -24,7 +24,6 @@ in
       [
         "custom/screencast"
         "tray"
-        "custom/clipboard"
         "idle_inhibitor"
       ]
       ++ (if isGk4 then [ "custom/soft-keyboard" ] else [ ])
