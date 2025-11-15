@@ -87,11 +87,11 @@ window#waybar {
   color: #7ab87a;
 }
 
-.custom-soft-keyboard.enabled {
+#custom-soft-keyboard.soft-keyboard-enabled {
   color: #7ab87a;
 }
 
-.custom-soft-keyboard.disabled {
+#custom-soft-keyboard.soft-keyboard-disabled {
   color: #a9a9a9;
 }
 
