@@ -24,6 +24,11 @@ variable "bucket_prefix" {
   default     = "restic-backup"
 }
 
+variable "region" {
+  description = "Wasabi region used to construct bucket endpoints"
+  type        = string
+}
+
 variable "versioning_enabled" {
   description = "Enable versioning on buckets"
   type        = bool
@@ -151,6 +156,13 @@ resource "wasabi_group_membership" "restic_members" {
 ############################################
 output "bucket_names" {
   value = { for k, b in wasabi_bucket.host : k => b.bucket }
+}
+
+output "bucket_urls" {
+  value = {
+    for k, b in wasabi_bucket.host :
+    k => "https://s3.${var.region}.wasabisys.com/${b.bucket}"
+  }
 }
 
 output "usernames" {

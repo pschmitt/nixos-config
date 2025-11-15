@@ -37,18 +37,21 @@ fi
 
 DATA=$(./tofu.sh output -json)
 
-IFS=$'\t' read -r AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY HEALTHCHECK_URL < <(
+IFS=$'\t' read -r RESTIC_BUCKET_URL AWS_ACCESS_KEY_ID \
+AWS_SECRET_ACCESS_KEY HEALTHCHECK_URL < <(
   jq -er --arg host "$TARGET_HOST" <<< "$DATA" '
-      .access_key_ids.value as $ids
+      .bucket_urls.value as $urls
+    | .access_key_ids.value as $ids
     | .access_key_secrets.value as $secrets
     | .restic_backup_ping_urls.value as $hc_urls
 
-    | [$ids[$host], $secrets[$host], $hc_urls[$host]]
+    | [("s3:" + $urls[$host]), $ids[$host], $secrets[$host], $hc_urls[$host]]
     | @tsv
   '
 )
 
-if [[ -z $AWS_ACCESS_KEY_ID || -z $AWS_SECRET_ACCESS_KEY || -z $HEALTHCHECK_URL ]]
+if [[ -z $RESTIC_BUCKET_URL || -z $AWS_ACCESS_KEY_ID || \
+      -z $AWS_SECRET_ACCESS_KEY || -z $HEALTHCHECK_URL ]]
 then
   echo "Error: Missing required Restic environment settings for host '$TARGET_HOST'" >&2
   exit 3
@@ -60,14 +63,27 @@ RESTIC_ENV=$(
   echo "HEALTHCHECK_URL=$HEALTHCHECK_URL"
 )
 
+jq::to-string() {
+  # NOTE don't use -r here!
+  jq -en --arg v "$1" '$v'
+}
+
 if [[ -n $PATCH ]]
 then
+  set -euo pipefail
+
   SOPS_FILE=$(readlink -f "../hosts/${TARGET_HOST}/secrets.sops.yaml") || exit 1
   echo "Patching $SOPS_FILE"
-  RESTIC_ENV_JSON=$(jq -n --arg env "$RESTIC_ENV" '$env')
+
+  RESTIC_BUCKET_URL_JSON=$(jq::to-string "$RESTIC_BUCKET_URL")
+  sops set "$SOPS_FILE" '["restic"]["repository"]' "$RESTIC_BUCKET_URL_JSON"
+
+  RESTIC_ENV_JSON=$(jq::to-string "$RESTIC_ENV")
   sops set "$SOPS_FILE" '["restic"]["env"]' "$RESTIC_ENV_JSON"
+
   exit "$?"
 fi
 
 # Default: output to stdout
+echo "Restic Bucket URL: $RESTIC_BUCKET_URL"
 echo "$RESTIC_ENV"
