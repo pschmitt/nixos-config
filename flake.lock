@@ -1747,11 +1747,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1757049198,
-        "narHash": "sha256-+m7qc9QImcLpygmBpYyYT016rC2qu1qiC6y98BEsb4Q=",
+        "lastModified": 1763196186,
+        "narHash": "sha256-Pdi3AgWq++bAhmUMYTmC1OQUwWBhGTPGwGhRNtZXLzw=",
         "owner": "pschmitt",
         "repo": "myl",
-        "rev": "9e2ff3a4356768b9f6fc43f1d0ed41a0d534ad0d",
+        "rev": "4b903ebf77d0ce3dbf17d8329dc7ea6d3b3c2507",
         "type": "github"
       },
       "original": {
@@ -1769,11 +1769,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1745064666,
-        "narHash": "sha256-vN3QtLsU8hT0qKDI86XnguYAK1lUJx084QhCafr4JFo=",
+        "lastModified": 1763195933,
+        "narHash": "sha256-Eq+DC4msEblz3tS9ypS8rZHPJ+ow/UPaMiJ2WGWk8GE=",
         "owner": "pschmitt",
         "repo": "myl-discovery",
-        "rev": "412b2b4b4543f7713ccc3b280f2719ac7cd868a8",
+        "rev": "d6da6de0c7ae0ba29108e702c8d458bd19177faa",
         "type": "github"
       },
       "original": {
@@ -1790,11 +1790,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1757922869,
-        "narHash": "sha256-C4dyXm35EM7Ms0B5DeAuucGD6Z39jTQBvj7glcEUSJc=",
+        "lastModified": 1763195933,
+        "narHash": "sha256-Eq+DC4msEblz3tS9ypS8rZHPJ+ow/UPaMiJ2WGWk8GE=",
         "owner": "pschmitt",
         "repo": "myl-discovery",
-        "rev": "59562a50cfa368b26e11a4dd2c776d9bd1825963",
+        "rev": "d6da6de0c7ae0ba29108e702c8d458bd19177faa",
         "type": "github"
       },
       "original": {
@@ -1812,11 +1812,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1745064666,
-        "narHash": "sha256-vN3QtLsU8hT0qKDI86XnguYAK1lUJx084QhCafr4JFo=",
+        "lastModified": 1763195933,
+        "narHash": "sha256-Eq+DC4msEblz3tS9ypS8rZHPJ+ow/UPaMiJ2WGWk8GE=",
         "owner": "pschmitt",
         "repo": "myl-discovery",
-        "rev": "412b2b4b4543f7713ccc3b280f2719ac7cd868a8",
+        "rev": "d6da6de0c7ae0ba29108e702c8d458bd19177faa",
         "type": "github"
       },
       "original": {
@@ -2409,11 +2409,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1757026327,
-        "narHash": "sha256-VYIzN5xfKL5Hh4iKbFJGNyL4GmVYQZM2oQR9FxGHmcU=",
+        "lastModified": 1763196479,
+        "narHash": "sha256-ENByqPT/y+8t9C67CuT/Am9UvuR8krvTJSMIqw9i8tU=",
         "owner": "pschmitt",
         "repo": "sendmyl",
-        "rev": "b423ad2eb429af4b831fe13857b1004679342751",
+        "rev": "15881281aa740fb18a3cfbf831bd0fcdd5a0ab02",
         "type": "github"
       },
       "original": {
