@@ -1,9 +1,12 @@
-{ inputs, pkgs, ... }:
+{ pkgs, ... }:
 let
   mpvPkg = pkgs.mpv.override { scripts = [ pkgs.mpvScripts.mpris ]; };
 in
 {
-  imports = [ ./obs-studio.nix ];
+  imports = [
+    ./obs-studio.nix
+    ./jellysync.nix
+  ];
 
   home.packages = with pkgs; [
     # Media
@@ -13,7 +16,6 @@ in
     # ustreamer
     v4l-utils
     vlc
-    inputs.jellysync.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   # Enable the rygel systemd user service
