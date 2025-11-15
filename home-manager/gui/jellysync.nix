@@ -26,7 +26,7 @@
       };
 
       local = {
-        root = "~/Videos";
+        root = "${config.home.homeDirectory}/Videos";
         directories = {
           tv_shows = "TV Shows";
           movies = "Movies";
