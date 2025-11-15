@@ -1,4 +1,4 @@
-{ lib, pkgs, config, ... }:
+{ lib, pkgs, config, osConfig ? null, ... }:
 let
   # Gather scripts from the scripts directory.
   scriptsDir = ./scripts;
@@ -10,6 +10,7 @@ let
       executable = true;
     };
   };
+  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
 in
 {
   programs.waybar = {
@@ -17,7 +18,7 @@ in
     systemd.enable = true;
     systemd.enableDebug = true;
     style = builtins.readFile ./style.css;
-    settings = import ./config.nix;
+    settings = import ./config.nix { inherit hostName; };
   };
 
   xdg.configFile =

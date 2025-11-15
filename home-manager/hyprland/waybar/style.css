@@ -69,6 +69,7 @@ window#waybar {
 #clock,
 #custom-clipboard,
 #custom-weather,
+#custom-soft-keyboard,
 #load,
 #network,
 #pulseaudio,
@@ -84,6 +85,14 @@ window#waybar {
 
 #power-profiles-daemon.power-saver {
   color: #7ab87a;
+}
+
+.custom-soft-keyboard.enabled {
+  color: #7ab87a;
+}
+
+.custom-soft-keyboard.disabled {
+  color: #a9a9a9;
 }
 
 #taskbar button.active {
