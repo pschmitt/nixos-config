@@ -24,6 +24,7 @@
       "custom/media"
       "pulseaudio#sink"
       "load"
+      "power-profiles-daemon"
       "battery"
     ];
     "wlr/workspaces" = {
@@ -288,6 +289,16 @@
     "load" = {
       "interval" = 2;
       "format" = "{load1}";
+    };
+    "power-profiles-daemon" = {
+      "format" = "{icon}";
+      "tooltip-format" = "Power profile: {profile}\nDriver: {driver}";
+      "format-icons" = {
+        "default" = "";
+        "performance" = "";
+        "balanced" = "";
+        "power-saver" = "";
+      };
     };
     "memory" = {
       "interval" = 5;
