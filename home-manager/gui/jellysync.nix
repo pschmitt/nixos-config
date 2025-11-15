@@ -1,0 +1,61 @@
+{
+  inputs,
+  lib,
+  config,
+  osConfig,
+  ...
+}:
+{
+  imports = [
+    inputs.jellysync.homeManagerModules.default
+  ];
+
+  services.jellysync = {
+    enable = osConfig.networking.hostName == "gk4";
+
+    settings = {
+      remote = {
+        hostname = "tv.${osConfig.custom.mainDomain}";
+        inherit (config.home) username;
+        port = 22;
+        root = "/mnt/data/videos";
+        directories = {
+          tv_shows = "tv_shows";
+          movies = "movies";
+        };
+      };
+
+      local = {
+        root = "~/Videos";
+        directories = {
+          tv_shows = "TV Shows";
+          movies = "Movies";
+        };
+      };
+
+      jobs = {
+        # Sync all of pluribus
+        Pluribus = {
+          directory = "tv_shows";
+        };
+
+        "The Paper" = {
+          directory = "tv_shows";
+          wildcard = true;
+          seasons = "latest";
+        };
+
+        # Andor = {
+        #   directory = "tv_shows";
+        #   seasons = "latest";
+        # };
+      };
+    };
+
+    schedule = lib.mkForce "hourly";
+    persistent = false;
+
+    # Sync all jobs (empty list = all jobs)
+    jobNames = [ ];
+  };
+}
