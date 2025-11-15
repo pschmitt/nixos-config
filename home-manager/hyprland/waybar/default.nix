@@ -32,7 +32,7 @@ in
       };
     }) (lib.filterAttrs (_: t: t == "regular") (builtins.readDir ./custom_modules)))
     // (lib.listToAttrs (map mkScriptFile (builtins.attrNames scripts)));
-  
+
   home.packages = lib.mkAfter [
     pkgs.ComicCode
     pkgs.ComicCodeNF
@@ -41,4 +41,9 @@ in
   home.activation."waybar-font-cache" = lib.hm.dag.entryAfter [ "installPackages" ] ''
     ${pkgs.fontconfig}/bin/fc-cache -r "${config.home.homeDirectory}/.local/share/fonts" || true
   '';
+
+  systemd.user.services.waybar.Service = {
+    Restart = lib.mkForce "always";
+    RestartSec = 5;
+  };
 }
