@@ -80,8 +80,32 @@ jq::to-string() {
   jq -en --arg v "$1" '$v'
 }
 
+sops_get() {
+  local key="$1"
+  sops decrypt --extract "$key" "$SOPS_FILE"
+}
+
+sops_set() {
+  local key="$1"
+  local value="$2"
+
+  local prev_value
+  prev_value=$(sops_get "$key")
+
+  if [[ "$prev_value" == "$value" ]]
+  then
+    echo "$key value is already up to date, skipping"
+    return 0
+  fi
+
+  local value_json
+  value_json=$(jq::to-string "$value")
+  echo "Updating $key value"
+  sops set "$SOPS_FILE" "$key" "$value_json"
+}
+
 restic_repo_password() {
-  sops decrypt --extract '["restic"]["password"]' "$SOPS_FILE"
+  sops_get '["restic"]["password"]'
 }
 
 if [[ -n $PATCH ]]
@@ -90,8 +114,7 @@ then
 
   echo "Patching $SOPS_FILE"
 
-  RESTIC_BUCKET_URL_JSON=$(jq::to-string "$RESTIC_BUCKET_URL")
-  sops set "$SOPS_FILE" '["restic"]["repository"]' "$RESTIC_BUCKET_URL_JSON"
+  sops_set '["restic"]["repository"]' "$RESTIC_BUCKET_URL"
 
   RESTIC_REPO_PASSWORD=$(restic_repo_password)
   if [[ "$RESTIC_REPO_PASSWORD" == "null" || -z "$RESTIC_REPO_PASSWORD" || \
@@ -100,12 +123,10 @@ then
     echo "Generating new restic repository password"
     RESTIC_REPO_PASSWORD=$(pwgen "${PASSWORD_LENGTH:-120}" 1)
 
-    RESTIC_REPO_PASSWORD_JSON=$(jq::to-string "$RESTIC_REPO_PASSWORD")
-    sops set "$SOPS_FILE" '["restic"]["password"]' "$RESTIC_REPO_PASSWORD_JSON"
+    sops_set '["restic"]["password"]' "$RESTIC_REPO_PASSWORD"
   fi
 
-  RESTIC_ENV_JSON=$(jq::to-string "$RESTIC_ENV")
-  sops set "$SOPS_FILE" '["restic"]["env"]' "$RESTIC_ENV_JSON"
+  sops_set '["restic"]["env"]' "$RESTIC_ENV"
 
   exit "$?"
 fi
