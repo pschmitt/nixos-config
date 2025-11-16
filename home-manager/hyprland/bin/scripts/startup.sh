@@ -206,11 +206,15 @@ then
   # Fix gparted & cie
   (sleep 10 && fix-root-gui-apps) &
 
-  # Set DISPLAY and WAYLAND_DISPLAY in tmux session
-  tmux::set-display-vars
+  # Set DISPLAY and WAYLAND_DISPLAY in tmux session if one already exists.
+  if tmux has-session -t main 2>/dev/null
+  then
+    tmux::set-display-vars
+  fi
 
   # Start terminal
-  hyprctl::exec '[workspace 1 silent;] ~/.config/hypr/bin/term.sh'
+  # shellcheck disable=SC2016
+  hyprctl::exec '[workspace 1 silent;] kitty "${HOME}/bin/zhj" tmux::attach'
 
   # Misc apps
   hyprctl::exec '[workspace 1 silent;] firefox'
