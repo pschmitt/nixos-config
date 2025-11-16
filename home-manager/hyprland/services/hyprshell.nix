@@ -14,7 +14,7 @@ in
     settings.windows = {
       enable = true;
       overview = {
-        enable = true;
+        enable = false;
         key = "super_l";
         modifier = "super";
         launcher = {
