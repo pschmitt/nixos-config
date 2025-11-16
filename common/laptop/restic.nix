@@ -5,6 +5,7 @@
     "/var/lib/bluetooth"
 
     # homedir
+    "${config.custom.homeDirectory}/bin"
     "${config.custom.homeDirectory}/devel"
     "${config.custom.homeDirectory}/Documents"
     "${config.custom.homeDirectory}/Pictures"
