@@ -1,8 +1,5 @@
 locals {
   restic_hosts = [
-    # non-nixos servers
-    "oci-01",
-
     # nixos servers
     "oci-03",
     "rofl-10",
@@ -14,19 +11,25 @@ locals {
     "gk4",
     "x13",
   ]
+
+  autorestic_hosts = [
+    "oci-01",
+  ]
+
+  all_restic_hosts = sort(distinct(concat(local.restic_hosts, local.autorestic_hosts)))
 }
 
 module "restic_wasabi" {
   source = "./modules/wasabi"
   region = var.wasabi_region
-  hosts  = local.restic_hosts
+  hosts  = local.all_restic_hosts
 }
 
 resource "healthchecksio_check" "restic_backup" {
-  for_each = toset(local.restic_hosts)
+  for_each = toset(local.all_restic_hosts)
 
-  name = "Restic Backup ${each.value}"
-  slug = "restic-backup-${replace(each.value, "_", "-")}"
+  name = "${contains(local.autorestic_hosts, each.value) ? "Autorestic" : "Restic"} Backup ${each.value}"
+  slug = "${contains(local.autorestic_hosts, each.value) ? "autorestic" : "restic"}-backup-${replace(each.value, "_", "-")}"
 
   channels = [
     # email + discord
@@ -35,7 +38,7 @@ resource "healthchecksio_check" "restic_backup" {
   ]
 
   tags = [
-    "restic",
+    contains(local.autorestic_hosts, each.value) ? "autorestic" : "restic",
     each.value,
   ]
 
