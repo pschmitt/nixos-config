@@ -1,6 +1,7 @@
 locals {
   restic_hosts = [
     # servers
+    "oci-01",
     "oci-03",
     "rofl-10",
     "rofl-11",
