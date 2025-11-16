@@ -6,6 +6,7 @@ usage() {
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
+ARGS=()
 while [[ -n "$*" ]]
 do
   case "$1" in
@@ -22,16 +23,25 @@ do
       break
       ;;
     *)
-      break
+      ARGS+=("$1")
+      shift
       ;;
   esac
 done
+
+set -- "${ARGS[@]}"
 
 TARGET_HOST="$1"
 
 if [[ -z $TARGET_HOST ]]
 then
   usage
+  exit 2
+fi
+
+if ! SOPS_FILE=$(readlink -e "../hosts/${TARGET_HOST}/secrets.sops.yaml")
+then
+  echo "Error: Could not find secrets.sops.yaml for host '$TARGET_HOST'" >&2
   exit 2
 fi
 
@@ -68,15 +78,29 @@ jq::to-string() {
   jq -en --arg v "$1" '$v'
 }
 
+restic_repo_password() {
+  sops decrypt --extract '["restic"]["password"]' "$SOPS_FILE"
+}
+
 if [[ -n $PATCH ]]
 then
   set -euo pipefail
 
-  SOPS_FILE=$(readlink -f "../hosts/${TARGET_HOST}/secrets.sops.yaml") || exit 1
   echo "Patching $SOPS_FILE"
 
   RESTIC_BUCKET_URL_JSON=$(jq::to-string "$RESTIC_BUCKET_URL")
   sops set "$SOPS_FILE" '["restic"]["repository"]' "$RESTIC_BUCKET_URL_JSON"
+
+  RESTIC_REPO_PASSWORD=$(restic_repo_password)
+  if [[ "$RESTIC_REPO_PASSWORD" == "null" || -z "$RESTIC_REPO_PASSWORD" || \
+        "$RESTIC_REPO_PASSWORD" == "changeme" ]]
+  then
+    echo "Generating new restic repository password"
+    RESTIC_REPO_PASSWORD=$(pwgen "${PASSWORD_LENGTH:-120}" 1)
+
+    RESTIC_REPO_PASSWORD_JSON=$(jq::to-string "$RESTIC_REPO_PASSWORD")
+    sops set "$SOPS_FILE" '["restic"]["password"]' "$RESTIC_REPO_PASSWORD_JSON"
+  fi
 
   RESTIC_ENV_JSON=$(jq::to-string "$RESTIC_ENV")
   sops set "$SOPS_FILE" '["restic"]["env"]' "$RESTIC_ENV_JSON"
@@ -86,4 +110,6 @@ fi
 
 # Default: output to stdout
 echo "Restic Bucket URL: $RESTIC_BUCKET_URL"
+echo "Restic Repository Password: $(restic_repo_password)"
+echo "Restic Repository Environment Variables:"
 echo "$RESTIC_ENV"
