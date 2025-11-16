@@ -3,9 +3,14 @@ module "restic_wasabi" {
   region = var.wasabi_region
   hosts = [
     # servers
-    "rofl-10", "rofl-11", "rofl-12",
+    "rofl-10",
+    "rofl-11",
+    "rofl-12",
+
     # laptops
-    "gk4"
+    "ge2",
+    "gk4",
+    "x13"
   ]
 }
 
