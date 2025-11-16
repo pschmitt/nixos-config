@@ -8,11 +8,13 @@ let
   monerodAddr = "http://${config.services.monero.rpc.address}:${toString config.services.monero.rpc.port}";
 
   walletRpcBindPort = 18084;
-  walletHostDir = "/mnt/data/srv/monerod/data/monero-wallet-rpc";
-  walletFile = "${walletHostDir}/wallet/xmrig-wallet";
+  walletHostDir = "/mnt/data/srv/monero-wallet-rpc";
+  walletFile = "${walletHostDir}/data/xmrig-wallet";
+  walletFileDir = builtins.dirOf walletFile;
   walletRpcConfigFile = config.sops.templates.moneroWalletRpcConfig.path;
 
-  userId = config.custom.username;
+  svcUser = "monero-wallet-rpc";
+  svcGroup = "monero-wallet-rpc";
 
   unitFile = "monero-wallet-rpc.service";
 in
@@ -29,13 +31,13 @@ in
       };
       "monero-wallet-rpc/wallet/password" = {
         inherit (config.custom) sopsFile;
-        owner = userId;
+        owner = svcUser;
         restartUnits = [ unitFile ];
       };
     };
 
     templates.moneroWalletRpcConfig = {
-      owner = userId;
+      owner = svcUser;
       # mode = "0400";
       restartUnits = [ unitFile ];
       content = ''
@@ -67,6 +69,15 @@ in
     };
   };
 
+  users.users.${svcUser} = {
+    isSystemUser = true;
+    description = "Monero Wallet RPC service user";
+    group = svcGroup;
+    home = walletHostDir;
+    createHome = false;
+  };
+  users.groups.${svcGroup} = { };
+
   # We need to have the NFS share mounted *before* starting the service
   systemd = {
     services = {
@@ -81,15 +92,17 @@ in
           "monerod.service"
         ];
         path = [ pkgs.coreutils ];
-        preStart = ''
-          install -d -m 0750 -o ${userId} -g ${userId} ${walletHostDir}
-        '';
+        # FIXME This won't work since we don't run the service as root
+        # preStart = ''
+        #   install -d -m 0750 -o ${svcUser} -g ${svcGroup} ${walletHostDir}
+        #   install -d -m 0750 -o ${svcUser} -g ${svcGroup} ${walletFileDir}
+        # '';
         serviceConfig = {
           ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile} --confirm-external-bind";
           Restart = "always";
           RestartSec = "10s";
-          User = userId;
-          Group = userId;
+          User = svcUser;
+          Group = svcGroup;
           WorkingDirectory = walletHostDir;
         };
       };
@@ -112,6 +125,8 @@ in
       wantedBy = [ "timers.target" ];
     };
   };
+
+  services.restic.backups.main.paths = [ walletHostDir ];
 
   services.monit.config = lib.mkAfter ''
     check host "monero-wallet-rpc" with address "127.0.0.1"
