@@ -1,4 +1,7 @@
-{ osConfig ? null, ... }:
+{
+  osConfig ? null,
+  ...
+}:
 {
   wayland.windowManager.hyprland.settings =
     let
@@ -9,7 +12,7 @@
         device = [
           {
             name = "hailuck-co.-ltd-usb-keyboard";
-            kb_layout = "us,de";
+            kb_layout = "gpdpocket4,us,de";
           }
         ];
 
