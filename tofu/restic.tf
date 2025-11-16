@@ -13,7 +13,9 @@ locals {
   ]
 
   autorestic_hosts = [
+    "fnuc",
     "oci-01",
+    "turris",
   ]
 
   all_restic_hosts = sort(distinct(concat(local.restic_hosts, local.autorestic_hosts)))
