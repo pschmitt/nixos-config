@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "Usage: $0 [--patch] TARGET_HOST"
+  echo "Usage: $0 [--ignore-missing-sops-file] [--patch] TARGET_HOST"
 }
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)/../tofu" || exit 9
@@ -15,6 +15,10 @@ do
     help|h|-h|--help)
       usage
       exit 0
+      ;;
+    -i|--ignore-missing-sops-file)
+      IGNORE_MISSING_SOPS_FILE=1
+      shift
       ;;
     -p|--patch)
       PATCH=1
@@ -43,8 +47,11 @@ fi
 
 if ! SOPS_FILE=$(readlink -e "../hosts/${TARGET_HOST}/secrets.sops.yaml")
 then
-  echo "Error: Could not find secrets.sops.yaml for host '$TARGET_HOST'" >&2
-  exit 2
+  if [[ -z "$IGNORE_MISSING_SOPS_FILE" ]]
+  then
+    echo "Error: Could not find secrets.sops.yaml for host '$TARGET_HOST'" >&2
+    exit 2
+  fi
 fi
 
 DATA=$(./tofu.sh output -json)
