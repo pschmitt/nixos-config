@@ -19,15 +19,11 @@
 
   # license
   sops.secrets."mmonit/license" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
     owner = "mmonit";
   };
 
   environment.etc."mmonit/license.xml".source = "${config.sops.secrets."mmonit/license".path}";
-
-  services.restic.backups.main.paths = lib.mkAfter (
-    config.services.restic.backups.main.paths ++ [ "/var/lib/mmonit" ]
-  );
 
   services.nginx.virtualHosts =
     let

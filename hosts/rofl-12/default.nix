@@ -3,6 +3,7 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
+    ./restic.nix
 
     ../../server
     ../../server/optimist.nix

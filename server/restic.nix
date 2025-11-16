@@ -3,7 +3,7 @@
   imports = [ ../common/restic ];
 
   config = lib.mkIf (!config.custom.cattle) {
-    services.restic.backups.main.paths = lib.mkForce [
+    services.restic.backups.main.paths = [
       "/etc"
       "${config.custom.homeDirectory}"
     ];

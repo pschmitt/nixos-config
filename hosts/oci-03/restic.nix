@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, ... }:
 {
-  services.restic.backups.main.paths = lib.mkForce [ "/var/lib/mmonit" ];
+  services.restic.backups.main.paths = [ config.users.users.mmonit.home ];
 }
