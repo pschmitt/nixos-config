@@ -139,7 +139,8 @@ then
 fi
 
 # Default: output to stdout
-echo "Restic Bucket URL: $RESTIC_BUCKET_URL"
-echo "Restic Repository Password: $(restic_repo_password)"
+RESTIC_REPO_PASSWORD=$(restic_repo_password)
+echo "Restic Bucket URL: ${RESTIC_BUCKET_URL:-N/A}"
+echo "Restic Repository Password: ${RESTIC_REPO_PASSWORD:-N/A}"
 echo "Restic Repository Environment Variables:"
 echo "$RESTIC_ENV"
