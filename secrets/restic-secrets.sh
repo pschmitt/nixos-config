@@ -4,7 +4,9 @@ usage() {
   echo "Usage: $0 [--patch] TARGET_HOST"
 }
 
-cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)/../tofu" || exit 9
+
+source .envrc
 
 ARGS=()
 while [[ -n "$*" ]]
