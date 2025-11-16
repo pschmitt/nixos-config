@@ -100,7 +100,7 @@
     file = {
       ".face" = {
         enable = true;
-        source = "/var/lib/AccountsService/icons/${config.home.username}";
+        source = config.lib.file.mkOutOfStoreSymlink "/var/lib/AccountsService/icons/${config.home.username}";
       };
     };
   };
