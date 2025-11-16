@@ -1,19 +1,26 @@
 locals {
-  restic_backup_hosts = [
+  restic_hosts = [
     # servers
     "oci-03",
     "rofl-10",
     "rofl-11",
     "rofl-12",
+
     # laptops
     "ge2",
     "gk4",
-    "x13"
+    "x13",
   ]
 }
 
+module "restic_wasabi" {
+  source = "./modules/wasabi"
+  region = var.wasabi_region
+  hosts  = local.restic_hosts
+}
+
 resource "healthchecksio_check" "restic_backup" {
-  for_each = toset(local.restic_backup_hosts)
+  for_each = toset(local.restic_hosts)
 
   name = "Restic Backup ${each.value}"
   slug = "restic-backup-${replace(each.value, "_", "-")}"
@@ -29,14 +36,29 @@ resource "healthchecksio_check" "restic_backup" {
     each.value,
   ]
 
-  timeout = 2 * 24 * 3600 # seconds
-  grace   = 1 * 24 * 3600 # seconds
+  # 2 days timeout + 1 day grace period
+  timeout = 2 * 24 * 3600
+  grace   = 1 * 24 * 3600
 
   desc = "Restic backup job for ${each.value}"
+}
+
+output "bucket_urls" {
+  value = module.restic_wasabi.bucket_urls
+}
+
+output "access_key_ids" {
+  value     = module.restic_wasabi.access_key_ids
+  sensitive = true
+}
+
+output "access_key_secrets" {
+  value     = module.restic_wasabi.access_key_secrets
+  sensitive = true
 }
 
 output "ping_url" {
   value = { for host, check in healthchecksio_check.restic_backup : host => check.ping_url }
 }
 
-# vim: set ft=terraform
+# vim: set ft=terraform :
