@@ -38,6 +38,19 @@ in
           color = "rgba(25, 20, 20, 1.0)";
         }
       ];
+      shape = [
+        {
+          monitor = "";
+          size = "33%, 20%";
+          color = "rgba(15, 15, 15, 0.45)";
+          rounding = 25;
+          border_size = 0;
+          position = "0, -1%";
+          halign = "center";
+          valign = "center";
+          zindex = -1;
+        }
+      ];
       image = [
         {
           monitor = "";
@@ -92,7 +105,7 @@ in
           dots_size = 0.33;
           dots_spacing = 0.15;
           outer_color = "rgb(151515)";
-          inner_color = "rgb(200, 200, 200)";
+          inner_color = "rgba(210, 210, 210, 0.65)";
           font_color = "rgb(10, 10, 10)";
           fade_on_empty = true;
           placeholder_text = "<i>Input Password...</i>";
