@@ -1,7 +1,18 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
-  hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
-  hyprlockWidgetsScript = "${hyprBinDir}/hyprlock-widgets.sh";
+  hyprlockWidgetsWrapper = pkgs.writeShellApplication {
+    name = "hyprlock-widgets";
+    runtimeInputs = with pkgs; [
+      bash
+      jc
+      jq
+      upower
+    ];
+    text = ''
+      exec ${config.home.homeDirectory}/.config/hypr/bin}/hyprlock-widgets.sh "$@"
+    '';
+  };
+  hyprlockWidgetsScript = "${hyprlockWidgetsWrapper}/bin/hyprlock-widgets";
   profileImage = "${config.home.homeDirectory}/.face";
 in
 {
