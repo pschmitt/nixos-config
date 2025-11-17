@@ -26,7 +26,7 @@ battery::widget() {
   # state=$(jq -r '.state' <<< "$data")
   local percent state
   IFS=$'\t' read -r percent state < <(jq -r  <<< "$data" '
-    .detail | [(.percentage | floor), .state] | @tsv
+    .detail | [(.percentage | floor), (.state | ascii_downcase)] | @tsv
   ')
 
   local emoji="🔋"
