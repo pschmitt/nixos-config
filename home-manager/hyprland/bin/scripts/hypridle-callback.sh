@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 
 # Add the sudo wrapper to path
-export PATH="/run/wrappers/bin:${PATH}"
+export PATH="/run/wrappers/bin:${HOME}/bin:${PATH}"
 
 notify() {
   notify-send -a hypridle "$@"
 }
 
 gcr-unlock() {
-  /home/pschmitt/bin/zhj \
+  zhj \
     gnome-keyring::auto-unlock --verbose --no-callback
 }
 
 lock() {
-  /home/pschmitt/.config/hypr/bin/lock.sh "$@"
+  "${HOME}/.config/hypr/bin/lock.sh" "$@"
 }
 
 unlock() {
-  /home/pschmitt/bin/zhj lockscreen::off
+  zhj lockscreen::off
 }
 
 ACTION="$1"
