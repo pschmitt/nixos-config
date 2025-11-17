@@ -193,31 +193,33 @@ in
 
       users.groups.${cfg.group} = { };
       users.users.${cfg.user} = {
+        inherit (cfg) group;
         isSystemUser = true;
-        group = cfg.group;
         home = cfg.dataDir;
         createHome = true;
       };
 
       # If SOPS is used, create a tiny env file with WALLET=...
       # (keeps the address out of the ExecStart line)
-      sops.secrets = lib.mkIf walletFromSops {
-        "${cfg.walletSecret}" = {
-          sopsFile = cfg.sopsFile;
+      sops = lib.mkIf walletFromSops {
+        secrets."${cfg.walletSecret}" = {
+          inherit (cfg) sopsFile group;
           restartUnits = [ "p2pool.service" ];
           owner = cfg.user;
-          group = cfg.group;
         };
-      };
 
-      sops.templates = lib.mkIf walletFromSops {
-        p2poolEnv = {
+        templates.p2poolEnv = {
           content = ''
             WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
           '';
           restartUnits = [ "p2pool.service" ];
         };
       };
+
+      services.monero.extraConfig = ''
+        # add for p2pool's quick template updates
+        zmq-pub=tcp://127.0.0.1:${toString cfg.zmqPort}
+      '';
 
       systemd.services.p2pool = {
         description = "Monero p2pool";
