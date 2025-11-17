@@ -175,8 +175,10 @@ then
 
   zhj gnome-keyring::auto-unlock
 
+  FIREFOX_WORKSPACE=2
   case "${HOSTNAME:-$(hostname)}" in
     ge2)
+      FIREFOX_WORKSPACE=1
       # NOTE hyprctl refuses to parse batch commands that contain newlines
       hyprctl --batch "\
         dispatch moveworkspacetomonitor 1 desc:LG; \
@@ -217,7 +219,7 @@ then
   hyprctl::exec '[workspace 1 silent;] kitty "${HOME}/bin/zhj" tmux::attach'
 
   # Misc apps
-  hyprctl::exec '[workspace 2 silent;] firefox'
+  hyprctl::exec "[workspace $FIREFOX_WORKSPACE silent;] firefox"
   if ! pgrep -af nextcloud &>/dev/null
   then
     hyprctl::exec nextcloud --background
