@@ -80,7 +80,7 @@ hyprlock-cmd() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  JOURNAL_IDENTIFIER="${JOURNAL_IDENTIFIER:-hyprland-lock}"
+  JOURNAL_IDENTIFIER="${JOURNAL_IDENTIFIER:-hyprlock}"
 
   case "$1" in
     --now)
