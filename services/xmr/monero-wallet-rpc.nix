@@ -10,7 +10,6 @@ let
   walletRpcBindPort = 18084;
   walletHostDir = "/mnt/data/srv/monero-wallet-rpc";
   walletFile = "${walletHostDir}/data/xmrig-wallet";
-  walletFileDir = builtins.dirOf walletFile;
   walletRpcConfigFile = config.sops.templates.moneroWalletRpcConfig.path;
 
   svcUser = "monero-wallet-rpc";
@@ -126,6 +125,8 @@ in
     };
   };
 
+  # FIXME This does not work, since only the monero-waller-rpc user has access
+  # to the wallet files!
   services.restic.backups.main.paths = [ walletHostDir ];
 
   services.monit.config = lib.mkAfter ''
