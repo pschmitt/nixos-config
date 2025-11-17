@@ -14,6 +14,8 @@ let
   };
   hyprlockWidgetsScript = "${hyprlockWidgetsWrapper}/bin/hyprlock-widgets";
   profileImage = "${config.home.homeDirectory}/.face";
+
+  font = "ComicCode Nerd Font";
 in
 {
   programs.hyprlock = {
@@ -70,7 +72,7 @@ in
           text = "cmd[update:1000] date '+%Y-%m-%d %H:%M:%S'";
           color = "rgba(50, 50, 50, 1.0)";
           font_size = 40;
-          font_family = "Comic Code";
+          font_family = font;
           position = "0, 4%";
           halign = "center";
           valign = "center";
@@ -80,7 +82,7 @@ in
           text = "Login attempts: $ATTEMPTS $FPRINTFAIL";
           color = "rgba(50, 50, 50, 1.0)";
           font_size = 30;
-          font_family = "Comic Code";
+          font_family = font;
           position = "0, -7%";
           halign = "center";
           valign = "center";
@@ -89,8 +91,8 @@ in
           monitor = "";
           text = "cmd[update:1000] ${hyprlockWidgetsScript} battery";
           color = "rgba(200, 200, 200, 1.0)";
-          font_size = 24;
-          font_family = "Comic Code";
+          font_size = 26;
+          font_family = font;
           position = "-2%, 0";
           halign = "right";
           valign = "bottom";
@@ -106,6 +108,7 @@ in
           dots_spacing = 0.15;
           outer_color = "rgb(151515)";
           inner_color = "rgba(210, 210, 210, 0.65)";
+          font_family = font;
           font_color = "rgb(10, 10, 10)";
           fade_on_empty = true;
           placeholder_text = "<i>Input Password...</i>";
