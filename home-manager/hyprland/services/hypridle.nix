@@ -1,7 +1,19 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
-  hyprIdleCallback = "${hyprBinDir}/hypridle-callback.sh";
+  hyprIdleCallbackScript = "${hyprBinDir}/hypridle-callback.sh";
+  hyprIdleCallbackWrapper = pkgs.writeShellApplication {
+    name = "hypridle-callback";
+    runtimeInputs = with pkgs; [
+      bash
+      libnotify
+      systemd
+    ];
+    text = ''
+      exec ${hyprIdleCallbackScript} "$@"
+    '';
+  };
+  hyprIdleCallback = "${hyprIdleCallbackWrapper}/bin/hypridle-callback";
 in
 {
   services.hypridle = {

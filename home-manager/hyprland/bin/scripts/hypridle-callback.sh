@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Add the sudo wrapper to path
+export PATH="/run/wrappers/bin:${PATH}"
+
 notify() {
   notify-send -a hypridle "$@"
 }
