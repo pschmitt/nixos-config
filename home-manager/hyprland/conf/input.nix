@@ -1,10 +1,9 @@
 { lib, ... }:
 let
-  mkHhkbDevice =
-    name: {
-      inherit name;
-      kb_layout = "de_hhkb";
-    };
+  mkHhkbDevice = name: {
+    inherit name;
+    kb_layout = "de_hhkb";
+  };
 in
 {
   # Mirrors ~/.config/hypr/config.d/input.conf (device + gesture tuning).
@@ -12,25 +11,24 @@ in
   wayland.windowManager.hyprland.settings = lib.mkMerge [
     {
       # Device-specific overrides from input.conf.
-      device =
-        [
-          # HHKB (USB variants).
-          (mkHhkbDevice "pfu-limited-hhkb-hybrid")
-          (mkHhkbDevice "pfu-limited-hhkb-hybrid-keyboard")
-          (mkHhkbDevice "pfu-limited-hhkb-hybrid-consumer-control")
-          # HHKB over Bluetooth (multiple slots).
-          (mkHhkbDevice "hhkb-hybrid_1-keyboard")
-          (mkHhkbDevice "hhkb-hybrid_2-keyboard")
-          (mkHhkbDevice "hhkb-hybrid_3-keyboard")
-          (mkHhkbDevice "hhkb-hybrid_4-keyboard")
-          # Magic Trackpad tuning.
-          {
-            name = "apple-inc.-magic-trackpad-usb-c";
-            sensitivity = 0.3;
-            accel_profile = "adaptive";
-            scroll_factor = 1.8;
-          }
-        ];
+      device = [
+        # HHKB (USB variants).
+        (mkHhkbDevice "pfu-limited-hhkb-hybrid")
+        (mkHhkbDevice "pfu-limited-hhkb-hybrid-keyboard")
+        (mkHhkbDevice "pfu-limited-hhkb-hybrid-consumer-control")
+        # HHKB over Bluetooth (multiple slots).
+        (mkHhkbDevice "hhkb-hybrid_1-keyboard")
+        (mkHhkbDevice "hhkb-hybrid_2-keyboard")
+        (mkHhkbDevice "hhkb-hybrid_3-keyboard")
+        (mkHhkbDevice "hhkb-hybrid_4-keyboard")
+        # Magic Trackpad tuning.
+        {
+          name = "apple-inc.-magic-trackpad-usb-c";
+          sensitivity = 0.3;
+          accel_profile = "adaptive";
+          scroll_factor = 1.8;
+        }
+      ];
 
       input = {
         kb_layout = "de,us";
@@ -40,7 +38,7 @@ in
         kb_rules = "";
         follow_mouse = 2;
         sensitivity = 0;
-        touchpad.natural_scroll = "no";
+        touchpad.natural_scroll = false;
       };
 
       # Global gesture bindings from input.conf.
