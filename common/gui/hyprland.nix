@@ -105,11 +105,6 @@ in
       portalPackage = xdphPkg;
     };
 
-    hyprlock = {
-      enable = false;
-      package = hyprlockPkg;
-    };
-
     # FIXME This fails with .nm-applet-wrap[16214]: cannot open display:
     # and uwsm is already starting it (app-nm\\x2dapplet@autostart.service)
     # nm-applet.enable = true;
@@ -134,17 +129,14 @@ in
         systemctl restart netbird-netbird-io.service
       '';
     };
-
-    hypridle = {
-      enable = true;
-      package = hypridlePkg;
-    };
   };
 
-  security = {
+  security.pam = {
+    # fix [ERR] Pam module "/etc/pam.d/hyprlock" does not exist! Falling back to "/etc/pam.d/su"
+    services.hyprlock = { };
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
     # https://nixos.wiki/wiki/Sway
-    pam.loginLimits = [
+    loginLimits = [
       {
         domain = "@users";
         item = "rtprio";
