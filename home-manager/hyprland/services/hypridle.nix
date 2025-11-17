@@ -22,6 +22,7 @@ in
         # Wait for the lockscreen to be active before going to sleep
         # https://wiki.hypr.land/Hypr-Ecosystem/hypridle/#:~:text=inhibit%5Fsleep
         inhibit_sleep = 3;
+        # FIXME Wouldn't below just start another instance of hyprlock?
         lock_cmd = "$callback lock --now";
         unlock_cmd = "$callback unlock";
         on_unlock_cmd = "$callback on-unlock";
