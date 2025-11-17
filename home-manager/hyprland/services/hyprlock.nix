@@ -31,11 +31,11 @@ in
         {
           monitor = "";
           path = profileImage;
-          size = 125;
+          size = 200;
           rounding = -1;
           border_size = 4;
           border_color = "rgb(221, 221, 221)";
-          position = "0, 200";
+          position = "0, 18%";
           halign = "center";
           valign = "center";
         }
@@ -45,9 +45,9 @@ in
           monitor = "";
           text = "cmd[update:1000] date '+%Y-%m-%d %H:%M:%S'";
           color = "rgba(50, 50, 50, 1.0)";
-          font_size = 25;
+          font_size = 40;
           font_family = "Comic Code";
-          position = "0, 40";
+          position = "0, 4%";
           halign = "center";
           valign = "center";
         }
@@ -55,9 +55,9 @@ in
           monitor = "";
           text = "Login attempts: $ATTEMPTS $FPRINTFAIL";
           color = "rgba(50, 50, 50, 1.0)";
-          font_size = 20;
+          font_size = 30;
           font_family = "Comic Code";
-          position = "0, -75";
+          position = "0, -7%";
           halign = "center";
           valign = "center";
         }
@@ -65,9 +65,9 @@ in
           monitor = "";
           text = "cmd[update:1000] ${hyprlockWidgetsScript} battery";
           color = "rgba(200, 200, 200, 1.0)";
-          font_size = 18;
+          font_size = 24;
           font_family = "Comic Code";
-          position = "-20, 0";
+          position = "-2%, 0";
           halign = "right";
           valign = "bottom";
         }
@@ -75,7 +75,7 @@ in
       "input-field" = [
         {
           monitor = "";
-          size = "300, 50";
+          size = "25%, 4%";
           outline_thickness = 3;
           dots_center = true;
           dots_size = 0.33;
@@ -86,7 +86,7 @@ in
           fade_on_empty = true;
           placeholder_text = "<i>Input Password...</i>";
           hide_input = false;
-          position = "0, -20";
+          position = "0, -2%";
           halign = "center";
           valign = "center";
         }
