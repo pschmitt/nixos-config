@@ -30,23 +30,13 @@
   services = {
     ***REMOVED***.settings.cpu.max-threads-hint = lib.mkForce 15;
 
-    ***REMOVED***.extraConfig = ''
-      # add for ***REMOVED***'s quick template updates
-      zmq-pub=tcp://127.0.0.1:18083
-    '';
-
     ***REMOVED*** = {
       enable = true;
+      inherit (config.custom) sopsFile;
       walletSecret = "***REMOVED***/wallet";
-      sopsFile = config.custom.sopsFile;
       mode = "mini"; # or "nano" for faster sync
       stratum.port = 13333; # 3333 is used by ***REMOVED***-proxy!
       openFirewall = true;
-      extraArgs = [
-        # examples:
-        # "--disable-upnp"
-        # "--loglevel" "2"
-      ];
     };
   };
 }
