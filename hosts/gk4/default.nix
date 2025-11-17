@@ -19,6 +19,7 @@
   ];
 
   custom.cattle = false;
+  console.keyMap = lib.mkForce "custom/gpdpocket4";
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";

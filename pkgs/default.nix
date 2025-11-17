@@ -12,6 +12,7 @@ let
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
+  custom-keymaps = pkgs.callPackage ./custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./docker-compose-wrapper { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   flarectl = pkgs.callPackage ./flarectl { };
