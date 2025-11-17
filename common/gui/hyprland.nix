@@ -1,7 +1,6 @@
 {
   lib,
   inputs,
-  config,
   pkgs,
   ...
 }:
@@ -117,23 +116,10 @@ in
     DefaultEnvironment="PATH=%h/bin:%h/.local/bin:/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"
   '';
 
-  services = {
-    acpid = {
-      enable = true;
-      logEvents = true;
-      lidEventCommands = ''
-        # NOTE We want to expand the args here, so we don't quote "$@"
-        /run/wrappers/bin/sudo -u ${config.custom.username} \
-          ${config.custom.homeDirectory}/.config/hypr/bin/lid-event.sh $@
-        # DIRTYFIX This a workaround for the the sshfs mounts being messed up
-        systemctl restart netbird-netbird-io.service
-      '';
-    };
-  };
-
   security.pam = {
     # fix [ERR] Pam module "/etc/pam.d/hyprlock" does not exist! Falling back to "/etc/pam.d/su"
     services.hyprlock = { };
+
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
     # https://nixos.wiki/wiki/Sway
     loginLimits = [

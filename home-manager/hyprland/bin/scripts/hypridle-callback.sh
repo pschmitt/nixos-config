@@ -36,14 +36,14 @@ case "$ACTION" in
     lock --now
     ;;
   lock|timeout|on-timeout)
-    lock "$@"
+    lock --now
     ;;
   unlock|on-unlock)
-    unlock
-    # calling gcr-unlock here might be redundant, since
-    # unlocking the screen (via unlock) will trigger the another hypridle event
-    # -> the same?
+    # NOTE calling gcr-unlock here might be redundant, since
+    # unlocking the screen (via unlock) will trigger the another hypridle event,
+    # maybe even the same?
     gcr-unlock
+    # unlock
     ;;
   activity|on-resume)
     gcr-unlock
