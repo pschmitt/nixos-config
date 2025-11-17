@@ -6,17 +6,28 @@ usage() {
 
 
 battery::json() {
-  acpi -b | jc --acpi | jq '.[]'
+  # NOTE jc's acpi parser chokes on:
+  # » acpi -b
+  # Battery 0: Charging, 79%, charging at zero rate - will never fully charge.
+  #
+  # acpi -b | jc --acpi | jq '.[]'
+
+  upower --battery | jc --upower | jq '.[]'
 }
 
 battery::widget() {
   local data
   data=$(battery::json)
 
-  local percent
-  percent=$(jq -r '.charge_percent' <<< "$data")
-  local state
-  state=$(jq -r '.state' <<< "$data")
+  # NOTE below is for acpi -b | jc --acpi
+  # local percent
+  # percent=$(jq -r '.charge_percent' <<< "$data")
+  # local state
+  # state=$(jq -r '.state' <<< "$data")
+  local percent state
+  IFS=$'\t' read -r percent state < <(jq -r  <<< "$data" '
+    .detail | [(.percentage | floor), .state] | @tsv
+  ')
 
   local emoji="🔋"
   if [[ "$percent" -lt 20 ]]
