@@ -5,6 +5,45 @@ usage() {
 }
 
 
+battery::icon() {
+  local percent="$1"
+  local state="$2"
+
+  # Keep icon set in sync with the Waybar module to have a consistent battery
+  # look everywhere (see home-manager/hyprland/waybar/config.nix).
+  local -a discharging_icons=(
+    "󰁺" # 0-19%
+    "󰁼" # 20-39%
+    "󰁾" # 40-59%
+    "󰂁" # 60-79%
+    "󰁹" # 80-100%
+  )
+
+  case "$state" in
+    charging|pending-charge)
+      echo "󰂅"
+      return
+      ;;
+    fully-charged)
+      echo "󰂋"
+      return
+      ;;
+  esac
+
+  if [[ "$percent" -ge 98 ]]
+  then
+    echo "󰂋"
+    return
+  fi
+
+  local bucket=$(( percent / 20 ))
+  if (( bucket >= ${#discharging_icons[@]} ))
+  then
+    bucket=$((${#discharging_icons[@]} - 1))
+  fi
+  echo "${discharging_icons[$bucket]}"
+}
+
 battery::json() {
   # NOTE jc's acpi parser chokes on:
   # » acpi -b
@@ -19,28 +58,27 @@ battery::widget() {
   local data
   data=$(battery::json)
 
-  # NOTE below is for acpi -b | jc --acpi
-  # local percent
-  # percent=$(jq -r '.charge_percent' <<< "$data")
-  # local state
-  # state=$(jq -r '.state' <<< "$data")
   local percent state
   IFS=$'\t' read -r percent state < <(jq -r  <<< "$data" '
     .detail | [(.percentage | floor), (.state | ascii_downcase)] | @tsv
   ')
 
-  local emoji="🔋"
-  if [[ "$percent" -lt 20 ]]
+  if [[ -z "$percent" || "$percent" == "null" ]]
   then
-    emoji="🪫"
+    echo "󰂃 --"
+    return
   fi
 
-  if [[ "$state" == "charging" ]]
+  local emoji
+  emoji=$(battery::icon "$percent" "$state")
+
+  local prefix=""
+  if [[ "$state" == "discharging" && "$percent" -lt 15 ]]
   then
-    emoji="🔌"
+    prefix="!! "
   fi
 
-  echo "${emoji}${percent}%"
+  echo "${prefix}${emoji} ${percent}%"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
