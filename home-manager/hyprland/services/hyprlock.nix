@@ -9,7 +9,7 @@ let
       upower
     ];
     text = ''
-      exec ${config.home.homeDirectory}/.config/hypr/bin}/hyprlock-widgets.sh "$@"
+      exec ${config.home.homeDirectory}/.config/hypr/bin/hyprlock-widgets.sh "$@"
     '';
   };
   hyprlockWidgetsScript = "${hyprlockWidgetsWrapper}/bin/hyprlock-widgets";
