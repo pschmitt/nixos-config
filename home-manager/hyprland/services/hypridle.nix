@@ -23,7 +23,7 @@ in
         # https://wiki.hypr.land/Hypr-Ecosystem/hypridle/#:~:text=inhibit%5Fsleep
         inhibit_sleep = 3;
         # FIXME Wouldn't below just start another instance of hyprlock?
-        lock_cmd = "$callback lock --now";
+        lock_cmd = "$callback lock";
         unlock_cmd = "$callback unlock";
         on_unlock_cmd = "$callback on-unlock";
         before_sleep_cmd = "$callback sleep";
