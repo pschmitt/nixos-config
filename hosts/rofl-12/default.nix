@@ -30,23 +30,13 @@
   services = {
     xmrig.settings.cpu.max-threads-hint = lib.mkForce 15;
 
-    monero.extraConfig = ''
-      # add for p2pool's quick template updates
-      zmq-pub=tcp://127.0.0.1:18083
-    '';
-
     p2pool = {
       enable = true;
+      inherit (config.custom) sopsFile;
       walletSecret = "p2pool/wallet";
-      sopsFile = config.custom.sopsFile;
       mode = "mini"; # or "nano" for faster sync
       stratum.port = 13333; # 3333 is used by xmrig-proxy!
       openFirewall = true;
-      extraArgs = [
-        # examples:
-        # "--disable-upnp"
-        # "--loglevel" "2"
-      ];
     };
   };
 }
