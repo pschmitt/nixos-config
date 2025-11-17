@@ -44,7 +44,7 @@ in
         {
           monitor = "";
           size = "33%, 20%";
-          color = "rgba(15, 15, 15, 0.45)";
+          color = "rgba(15, 15, 15, 0.9)";
           rounding = 25;
           border_size = 0;
           position = "0, -1%";
