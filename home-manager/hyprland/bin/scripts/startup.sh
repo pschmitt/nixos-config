@@ -217,7 +217,7 @@ then
   hyprctl::exec '[workspace 1 silent;] kitty "${HOME}/bin/zhj" tmux::attach'
 
   # Misc apps
-  hyprctl::exec '[workspace 1 silent;] firefox'
+  hyprctl::exec '[workspace 2 silent;] firefox'
   if ! pgrep -af nextcloud &>/dev/null
   then
     hyprctl::exec nextcloud --background
