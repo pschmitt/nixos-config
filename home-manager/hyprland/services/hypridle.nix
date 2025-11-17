@@ -19,6 +19,9 @@ in
     settings = {
       "$callback" = hyprIdleCallback;
       general = {
+        # Wait for the lockscreen to be active before going to sleep
+        # https://wiki.hypr.land/Hypr-Ecosystem/hypridle/#:~:text=inhibit%5Fsleep
+        inhibit_sleep = 3;
         lock_cmd = "$callback lock --now";
         unlock_cmd = "$callback unlock";
         on_unlock_cmd = "$callback on-unlock";
