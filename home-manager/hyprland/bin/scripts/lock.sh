@@ -11,21 +11,10 @@ pause_media_playback() {
 kill-lock-cmd() {
   killall gtklock
   killall -USR1 swaylock
-  # TODO killall hyprlock
-  # https://github.com/hyprwm/hyprlock/issues/16
+  killall -USR1 hyprlock
 }
 
 lock-cmd() {
-  # FIXME gtklock is currently broken on Hyprland:
-  # ** (gtklock:628736): CRITICAL **: 15:26:15.805: Your compositor doesn't support wlr-input-inhibitor
-  # local gtklock
-  # gtklock=$(gtklock-cmd)
-  # if [[ -n "$gtklock" ]]
-  # then
-  #   echo "$gtklock"
-  #   return 0
-  # fi
-
   if has hyprlock
   then
     hyprlock-cmd
@@ -89,16 +78,6 @@ hyprlock-cmd() {
   echo "${cmd[@]}"
 }
 
-update-hass-entity() {
-  {
-    for _ in $(seq 1 10)
-    do
-      ~/.config/hacompanion/bin/update-entity.sh lockscreen_state
-      sleep .5
-    done
-  } &
-}
-
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   JOURNAL_IDENTIFIER="${JOURNAL_IDENTIFIER:-hyprland-lock}"
@@ -123,22 +102,8 @@ then
     exit 1
   fi
 
-  if [[ -z "$NO_BULLSHIT" ]]
-  then
-    update-hass-entity
-  fi
-
   # Avoid running multiple instances of gtklock/swaylock
   kill-lock-cmd
 
   eval systemd-cat --identifier="$JOURNAL_IDENTIFIER" -- "$LOCK_CMD"
-
-  # CURRENT_WS_CLIENTS=$(zhj hyprctl::current-workspace-clients | jq -s length)
-  #
-  # # If currently on an empty workspace, try switching to the previous one
-  # if [[ "$CURRENT_WS_CLIENTS" -eq 0 ]]
-  # then
-  #   notify-send -t 5000 -a "$0" "$(basename "$0")" "Switching to previous workspace"
-  #   ~/.config/hypr/bin/switch-workspace.sh prev
-  # fi
 fi
