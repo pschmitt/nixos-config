@@ -35,7 +35,7 @@ battery::widget() {
     emoji="🪫"
   fi
 
-  if [[ "$state" == "Charging" ]]
+  if [[ "$state" == "charging" ]]
   then
     emoji="🔌"
   fi
