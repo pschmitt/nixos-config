@@ -57,14 +57,34 @@
     packages = [ ];
   };
 
-  services.xserver = {
-    # Enable the X11 windowing system.
-    enable = true;
-    xkb = {
-      layout = "de";
-      variant = "";
+  services.xserver =
+    let
+      customKeymaps = pkgs.custom-keymaps;
+      symbolsFile = name: "${customKeymaps}/share/X11/xkb/symbols/${name}";
+    in
+    {
+      # Enable the X11 windowing system.
+      enable = true;
+      xkb = {
+        layout = "de";
+        variant = "";
+        extraLayouts = {
+          de_hhkb = {
+            description = "Custom HHKB DE layout by pschmitt";
+            languages = [ "deu" ];
+            symbolsFile = symbolsFile "de_hhkb";
+          };
+          gpdpocket4 = {
+            description = "GPD Pocket 4 layout with swapped Y/Z and AltGr tweaks";
+            languages = [
+              "eng"
+              "deu"
+            ];
+            symbolsFile = symbolsFile "gpdpocket4";
+          };
+        };
+      };
     };
-  };
 
   hardware.uinput.enable = true;
   # Enable touchpad support (enabled by default in most desktopManager).

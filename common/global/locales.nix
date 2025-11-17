@@ -1,6 +1,11 @@
 {
+  pkgs,
+  ...
+}:
+{
   # Configure console keymap
   console.keyMap = "de";
+  console.packages = [ pkgs.custom-keymaps ];
 
   # Select internationalisation properties.
   i18n = {
