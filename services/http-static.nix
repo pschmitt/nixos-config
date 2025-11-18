@@ -1,8 +1,18 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   autheliaDomain = "auth.${config.custom.mainDomain}";
-  autheliaAuthzURL = "https://${autheliaDomain}/api/authz/auth-request";
+  autheliaAddress =
+    config.services.authelia.instances.main.settings.server.address or "tcp://:28843/";
+  autheliaPort = lib.last (
+    lib.splitString ":" (lib.removeSuffix "/" (lib.removePrefix "tcp://" autheliaAddress))
+  );
+  autheliaAuthzURL = "http://127.0.0.1:${autheliaPort}/api/authz/auth-request";
 in
 {
   services.nginx.virtualHosts = {
@@ -46,7 +56,13 @@ in
         "/internal/authelia/authz" = {
           extraConfig = ''
             internal;
-            proxy_pass ${autheliaAuthzURL};
+            set $authelia_query "";
+            if ($http_authorization != "") {
+              set $authelia_query "?auth=basic";
+            }
+            proxy_pass ${autheliaAuthzURL}$authelia_query;
+            proxy_set_header Host ${autheliaDomain};
+            proxy_set_header Authorization $http_authorization;
             proxy_set_header X-Original-Method $request_method;
             proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
             proxy_set_header X-Forwarded-For $remote_addr;
@@ -65,6 +81,7 @@ in
             proxy_connect_timeout 240;
           '';
         };
+
       };
     };
 

@@ -85,6 +85,29 @@ let
           ++ lib.optional (dynamicTrustedNetworksFile != null) "container-services-trusted";
           domain = [ "*.${config.custom.mainDomain}" ];
         }
+        {
+          policy = "one_factor";
+          domain = [ "blobs.${config.custom.mainDomain}" ];
+          subject = [ "group:admin" ];
+        }
+        {
+          policy = "one_factor";
+          domain = [ "blobs.${config.custom.mainDomain}" ];
+          resources = [
+            "^/private/?$"
+            "^/private/.*$"
+          ];
+          subject = [
+            "group:admin"
+            "group:github-actions"
+          ];
+        }
+        # Deny any other request to blobs
+        # {
+        #   policy = "deny";
+        #   domain = [ "blobs.${config.custom.mainDomain}" ];
+        #   subject = [ "group:github-actions" ];
+        # }
       ];
     };
   };
