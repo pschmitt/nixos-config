@@ -1,11 +1,32 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 usage() {
-  echo "Usage: $0 [--host HOSTNAME] [--remote-path PATH]"
+  echo "Usage: $0 [--base-url URL]"
 }
 
 list_fonts() {
   awk '{ print $2 }' ./sha256sum.txt
+}
+
+font_checksum() {
+  local font="$1"
+  awk -v font="$font" '$2 == font { print $1; exit 0 }' ./sha256sum.txt
+}
+
+font_is_valid() {
+  local font="$1"
+  local checksum="$2"
+
+  [[ -f "$font" ]] || return 1
+
+  if printf "%s  %s\n" "$checksum" "$font" | sha256sum --status --check -
+  then
+    return 0
+  fi
+
+  return 1
 }
 
 check_fonts() {
@@ -13,25 +34,50 @@ check_fonts() {
 }
 
 fetch_fonts() {
-  local font
-  local extra_args=(
-    -o UserKnownHostsFile=/dev/null
-    -o StrictHostKeyChecking=no
+  local font checksum tmp_file
+  local -a curl_args=(
+    --fail
+    --location
+    --retry 5
+    --retry-delay 2
+    --silent
+    --show-error
   )
-  if [[ -n "$SSH_IDENTITY_FILE" ]]
+
+  if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
   then
-    extra_args+=(-i "$SSH_IDENTITY_FILE")
+    echo "BLOBS_BASIC_AUTH is required to download private fonts" >&2
+    return 1
   fi
+
+  curl_args+=(
+    --user "$BLOBS_BASIC_AUTH"
+  )
 
   for font in $(list_fonts)
   do
-    if [[ "${HOSTNAME:-$(hostname)}" == "$REMOTE_HOST" ]]
+    checksum="$(font_checksum "$font")"
+    if [[ -z "$checksum" ]]
     then
-      cp "${REMOTE_PATH}/${font}" "$font"
-    else
-      scp "${extra_args[@]}" \
-        "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_PATH}/${font}" "$font"
+      echo "No checksum found for $font" >&2
+      return 1
     fi
+
+    if font_is_valid "$font" "$checksum"
+    then
+      continue
+    fi
+
+    tmp_file="$(mktemp "${font}.XXXXXX")"
+    if ! curl "${curl_args[@]}" \
+      "${BLOBS_BASE_URL%/}/${font}" \
+      --output "$tmp_file"
+    then
+      rm -f "$tmp_file"
+      return 1
+    fi
+
+    mv "$tmp_file" "$font"
   done
 
   check_fonts
@@ -39,32 +85,17 @@ fetch_fonts() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  REMOTE_USER=${REMOTE_USER:-github-actions}
-  REMOTE_HOST=${REMOTE_HOST:-rofl-10}
-  REMOTE_PATH=${REMOTE_PATH:-./src}
-  SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-}"
+  BLOBS_BASE_URL=${BLOBS_BASE_URL:-https://blobs.brkn.lol/private/fonts}
 
-  while [[ -n "$*" ]]
+  while [[ -n "${1:-}" ]]
   do
     case "$1" in
       -h|--help)
         usage
         exit 0
         ;;
-      --user*|--remote-user*|-u)
-        REMOTE_USER="$2"
-        shift 2
-        ;;
-      --host|--hostname|--remote-host*|-H)
-        REMOTE_HOST="$2"
-        shift 2
-        ;;
-      --remote-path|-p)
-        REMOTE_PATH="$2"
-        shift 2
-        ;;
-      --identity-file|-i)
-        SSH_IDENTITY_FILE="$2"
+      --base-url)
+        BLOBS_BASE_URL="$2"
         shift 2
         ;;
       *)
