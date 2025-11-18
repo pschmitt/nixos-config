@@ -14,6 +14,24 @@
     ./disko-config.nix
   ];
 
+  swapDevices = [
+    {
+      device = "/swapfile";
+      size = 16384; # storage space is basically free nowadays
+    }
+  ];
+
+  networking.useDHCP = lib.mkDefault true;
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+
+  services.fprintd = {
+    enable = true;
+    package = pkgs.fprintd.override {
+      libfprint = pkgs.libfprint-focaltech;
+    };
+  };
+
+  # GPD Fan Control
   hardware.gpd-fan.enable = true;
 
   environment.systemPackages = [
@@ -81,14 +99,4 @@
       esac
     '')
   ];
-
-  swapDevices = [
-    {
-      device = "/swapfile";
-      size = 16384; # storage space is basically free nowadays
-    }
-  ];
-
-  networking.useDHCP = lib.mkDefault true;
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 }

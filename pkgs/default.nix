@@ -22,6 +22,7 @@ in
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ldifj = pkgs.callPackage ./ldifj { };
+  libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   luks-mount = pkgs.callPackage ./luks-mount { };
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };

@@ -22,5 +22,5 @@ clouds.yaml
 *_key
 data
 
-# Separate repository managed via flake input
-luks-ssh-unlock/
+# Proprietary drivers (pkgs.libfprint-focaltech)
+libfprint*.install
