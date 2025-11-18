@@ -3,6 +3,8 @@
   services.restic.backups.main.paths = [
     # bluetooth device data
     "/var/lib/bluetooth"
+    # fingerprint data
+    "/var/lib/fprint"
 
     # homedir
     "${config.custom.homeDirectory}/bin"
