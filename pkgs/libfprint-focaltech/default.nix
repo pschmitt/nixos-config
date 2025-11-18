@@ -3,7 +3,7 @@
 {
   stdenv,
   lib,
-  # fetchurl,
+  fetchurl,
   rpm,
   cpio,
   glib,
@@ -24,32 +24,40 @@ let
 in
 stdenv.mkDerivation rec {
   pname = "libfprint-focaltech";
+  # NOTE had to fake bump the version to avoid compilation issues
   version = "1.94.9";
 
-  src = ./libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install;
-  # src = fetchurl {
-  #   # url = "https://github.com/ftfpteams/focaltech-linux-fingerprint-driver/raw/refs/heads/main/Fedora_Redhat/libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install";
-  #   url = ./libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install;
-  #   sha256 = "0y7kb2mr7zd2irfgsmfgdpb0c7v33cb4hf3hfj7mndalma3xdhzn";  # Will help you fetch this in a sec
-  # };
+  # local source
+  # src = ./libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install;
+
+  src = fetchurl {
+    # Original URL, DMCA'd - offline
+    # url = "https://github.com/ftfpteams/focaltech-linux-fingerprint-driver/raw/refs/heads/main/Fedora_Redhat/libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install";
+
+    # Archive.org URL - 2025-03-14 capture
+    url = "https://web.archive.org/web/20250314121447if_/https://raw.githubusercontent.com/ftfpteams/focaltech-linux-fingerprint-driver/refs/heads/main/Fedora_Redhat/libfprint-2-2_1.94.4%2Btod1_redhat_all_x64_20250219.install";
+    # Alt url
+    # url = "https://cdn.files-text.com/us-south1/api/lc/att/15479052/e76cefad14d04f253628a5038b28b772/libfprint-2-2_1.94.4+tod1_redhat_all_x64_20250219.install";
+    sha256 = "0y7kb2mr7zd2irfgsmfgdpb0c7v33cb4hf3hfj7mndalma3xdhzn";
+  };
 
   nativeBuildInputs = [
-    rpm
-    cpio
-    pkg-config
     autoPatchelfHook
     copyPkgconfigItems
+    cpio
+    pkg-config
+    rpm
   ];
 
   buildInputs = [
-    stdenv.cc.cc
+    cairo
     glib
     gusb
-    pixman
-    nss
-    libgudev
     libfprint
-    cairo
+    libgudev
+    nss
+    pixman
+    stdenv.cc.cc
   ];
 
   unpackPhase = ''
