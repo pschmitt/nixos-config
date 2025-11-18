@@ -41,4 +41,25 @@
   };
 
   environment.systemPackages = with pkgs; [ yt-dlp ];
+
+  systemd.services.piracy-restart = {
+    description = "Recreate /srv/piracy docker compose stack";
+    serviceConfig = {
+      Type = "oneshot";
+      WorkingDirectory = "/srv/piracy";
+    };
+    path = [ pkgs.docker ];
+    script = ''
+      docker compose down
+      docker compose up --force-recreate --remove-orphans -d
+    '';
+  };
+
+  systemd.timers.piracy-restart = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "05:00";
+      Persistent = true;
+    };
+  };
 }
