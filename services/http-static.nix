@@ -20,6 +20,7 @@ in
             autoindex_localtime on;
           '';
         };
+
         "/private/" = {
           # Lock down the private subtree via Authelia while still offering listings.
           extraConfig = ''
@@ -41,6 +42,7 @@ in
             error_page 401 =302 $redirection_url;
           '';
         };
+
         "/internal/authelia/authz" = {
           extraConfig = ''
             internal;
