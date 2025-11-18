@@ -2,7 +2,7 @@
 
 let
   autheliaDomain = "auth.${config.custom.mainDomain}";
-  autheliaAuthzURL = "http://127.0.0.1:28843/api/authz/auth-request";
+  autheliaAuthzURL = "https://${autheliaDomain}/api/authz/auth-request";
 in
 {
   services.nginx.virtualHosts = {
@@ -52,7 +52,6 @@ in
             proxy_set_header Connection "";
             proxy_pass_request_body off;
             proxy_next_upstream error timeout invalid_header http_500 http_502 http_503;
-            proxy_redirect http:// $scheme://;
             proxy_http_version 1.1;
             proxy_cache_bypass $cookie_session;
             proxy_no_cache $cookie_session;
