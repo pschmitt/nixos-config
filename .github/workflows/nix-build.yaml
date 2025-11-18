@@ -271,15 +271,14 @@ jobs:
 
       - name: Fetch proprietary fonts (nixpkg src)
         uses: nick-fields/retry@v3
+        env:
+          BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
         with:
           timeout_minutes: 5
           max_attempts: 3
           shell: bash
           command: |-
-            ./pkgs/fonts/src/fetch-fonts.sh \
-              --remote-user "${{ secrets.SSH_USERNAME }}" \
-              --remote-host "${{ secrets.SSH_HOST }}" \
-              --identity-file "${HOME}/.ssh/id_ed25519"
+            ./pkgs/fonts/src/fetch-fonts.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
         run: |-
@@ -351,6 +350,17 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Fetch proprietary fonts (nixpkg src)
+        uses: nick-fields/retry@v3
+        env:
+          BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          shell: bash
+          command: |-
+            ./pkgs/fonts/src/fetch-fonts.sh
+
       - name: Build nixosConfiguration
         run: |-
           nix build --print-build-logs \
@@ -416,6 +426,17 @@ jobs:
             set -o pipefail
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+
+      - name: Fetch proprietary fonts (nixpkg src)
+        uses: nick-fields/retry@v3
+        env:
+          BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          shell: bash
+          command: |-
+            ./pkgs/fonts/src/fetch-fonts.sh
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
