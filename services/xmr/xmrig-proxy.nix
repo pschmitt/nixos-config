@@ -4,7 +4,17 @@
 # sudo , xmrig -o xmrig-proxy.<hostname>.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD" --rig-id "$HOSTNAME"
 
 let
-  hostname = "xmrig-proxy.${config.networking.hostName}.nb.${config.custom.mainDomain}";
+  baseHostName = config.networking.hostName;
+  inherit (config.custom) mainDomain;
+  hostnames = [
+    "xmrig-proxy.${baseHostName}.nb.${mainDomain}"
+    "xmrig-proxy.${baseHostName}.ts.${mainDomain}"
+    "xmrig-proxy.${baseHostName}.${mainDomain}"
+    "xp.${baseHostName}.${mainDomain}"
+    "xp.${mainDomain}"
+  ];
+  hostname = builtins.head hostnames;
+  extraHostnames = builtins.tail hostnames;
 in
 {
   users = {
@@ -100,6 +110,7 @@ in
 
   services.nginx = {
     virtualHosts."${hostname}" = {
+      serverAliases = extraHostnames;
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
