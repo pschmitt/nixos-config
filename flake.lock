@@ -2351,6 +2351,26 @@
         "type": "github"
       }
     },
+    "pschmitt-dev": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1763467561,
+        "narHash": "sha256-zcSdSBFSrhHtybA26ITvKcMocS2wVTCcUjuEcbKa6Vc=",
+        "owner": "pschmitt",
+        "repo": "pschmitt.dev",
+        "rev": "783403cd813c46d8d2406bb453410161bbf00c72",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "pschmitt.dev",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
@@ -2390,6 +2410,7 @@
         "nixpkgs-wayland": "nixpkgs-wayland",
         "poor-tools": "poor-tools",
         "pre-commit-hooks": "pre-commit-hooks_3",
+        "pschmitt-dev": "pschmitt-dev",
         "sendmyl": "sendmyl",
         "simple-nixos-mailserver": "simple-nixos-mailserver",
         "snapd": "snapd",
