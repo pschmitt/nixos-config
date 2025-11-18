@@ -7,12 +7,17 @@
 
 let
   autheliaDomain = "auth.${config.custom.mainDomain}";
-  autheliaAddress =
-    config.services.authelia.instances.main.settings.server.address or "tcp://:28843/";
-  autheliaPort = lib.last (
-    lib.splitString ":" (lib.removeSuffix "/" (lib.removePrefix "tcp://" autheliaAddress))
-  );
-  autheliaAuthzURL = "http://127.0.0.1:${autheliaPort}/api/authz/auth-request";
+  autheliaAuthzURL = "https://${autheliaDomain}/api/authz/auth-request";
+  autheliaResolverAddresses =
+    let
+      stub = "127.0.0.53";
+      nameservers = config.networking.nameservers;
+    in
+    if nameservers != [ ] then nameservers else [ stub ];
+  autheliaResolverDirectives = ''
+    resolver ${lib.concatStringsSep " " autheliaResolverAddresses} valid=30s;
+    resolver_timeout 5s;
+  '';
 in
 {
   services.nginx.virtualHosts = {
@@ -37,6 +42,11 @@ in
             autoindex on;
             autoindex_localtime on;
 
+            set $authelia_basic_request 0;
+            if ($http_authorization != "") {
+              set $authelia_basic_request 1;
+            }
+
             auth_request /internal/authelia/authz;
             auth_request_set $user $upstream_http_remote_user;
             auth_request_set $groups $upstream_http_remote_groups;
@@ -49,18 +59,23 @@ in
             proxy_set_header Remote-Name $name;
             proxy_set_header Remote-Email $email;
 
-            error_page 401 =302 $redirection_url;
+            error_page 401 = @authelia401;
           '';
         };
 
         "/internal/authelia/authz" = {
           extraConfig = ''
             internal;
-            set $authelia_query "";
+            ${autheliaResolverDirectives}
+
+            set $authelia_upstream ${autheliaAuthzURL};
             if ($http_authorization != "") {
-              set $authelia_query "?auth=basic";
+              set $authelia_upstream ${autheliaAuthzURL}?auth=basic;
             }
-            proxy_pass ${autheliaAuthzURL}$authelia_query;
+
+            proxy_pass $authelia_upstream;
+            proxy_ssl_server_name on;
+            proxy_ssl_name ${autheliaDomain};
             proxy_set_header Host ${autheliaDomain};
             proxy_set_header Authorization $http_authorization;
             proxy_set_header X-Original-Method $request_method;
@@ -79,6 +94,16 @@ in
             proxy_read_timeout 240;
             proxy_send_timeout 240;
             proxy_connect_timeout 240;
+          '';
+        };
+
+        "@authelia401" = {
+          extraConfig = ''
+            if ($authelia_basic_request = 1) {
+              return 401;
+            }
+
+            return 302 $redirection_url;
           '';
         };
 
