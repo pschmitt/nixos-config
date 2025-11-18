@@ -360,6 +360,7 @@ jobs:
           shell: bash
           command: |-
             ./pkgs/fonts/src/fetch-fonts.sh
+            git add --intent-to-add --force pkgs/fonts/src/*.zip
 
       - name: Build nixosConfiguration
         run: |-
@@ -437,6 +438,7 @@ jobs:
           shell: bash
           command: |-
             ./pkgs/fonts/src/fetch-fonts.sh
+            git add --intent-to-add --force pkgs/fonts/src/*.zip
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
