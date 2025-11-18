@@ -3,7 +3,15 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [--base-url URL]"
+  cat <<'USAGE'
+Usage: fetch-fonts.sh [--base-url URL] [--username USER] [--password PASS] [--auth USER:PASS]
+
+Environment variables:
+  BLOBS_URL         Override the download endpoint (default: https://blobs.brkn.lol/private/fonts)
+  BLOBS_BASIC_AUTH  Provide HTTP basic auth credentials directly (USER:PASS)
+  BLOBS_USERNAME    Username part of the credentials
+  BLOBS_PASSWORD    Password part of the credentials
+USAGE
 }
 
 list_fonts() {
@@ -70,7 +78,7 @@ fetch_fonts() {
 
     tmp_file="$(mktemp "${font}.XXXXXX")"
     if ! curl "${curl_args[@]}" \
-      "${BLOBS_BASE_URL%/}/${font}" \
+      "${BLOBS_URL%/}/${font}" \
       --output "$tmp_file"
     then
       rm -f "$tmp_file"
@@ -85,7 +93,10 @@ fetch_fonts() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  BLOBS_BASE_URL=${BLOBS_BASE_URL:-https://blobs.brkn.lol/private/fonts}
+  BLOBS_URL=${BLOBS_URL:-https://blobs.brkn.lol/private/fonts}
+  BLOBS_USERNAME=${BLOBS_USERNAME:-}
+  BLOBS_PASSWORD=${BLOBS_PASSWORD:-}
+  BLOBS_AUTH=${BLOBS_AUTH:-}
 
   while [[ -n "${1:-}" ]]
   do
@@ -95,7 +106,19 @@ then
         exit 0
         ;;
       --base-url)
-        BLOBS_BASE_URL="$2"
+        BLOBS_URL="$2"
+        shift 2
+        ;;
+      --username)
+        BLOBS_USERNAME="$2"
+        shift 2
+        ;;
+      --password)
+        BLOBS_PASSWORD="$2"
+        shift 2
+        ;;
+      --auth)
+        BLOBS_AUTH="$2"
         shift 2
         ;;
       *)
@@ -103,6 +126,23 @@ then
         ;;
     esac
   done
+
+  if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
+  then
+    if [[ -n "$BLOBS_AUTH" ]]
+    then
+      BLOBS_BASIC_AUTH="$BLOBS_AUTH"
+    elif [[ -n "$BLOBS_USERNAME" || -n "$BLOBS_PASSWORD" ]]
+    then
+      if [[ -z "$BLOBS_USERNAME" || -z "$BLOBS_PASSWORD" ]]
+      then
+        echo "--username and --password must be provided together" >&2
+        exit 64
+      fi
+
+      BLOBS_BASIC_AUTH="${BLOBS_USERNAME}:${BLOBS_PASSWORD}"
+    fi
+  fi
 
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
