@@ -7,6 +7,7 @@
     ../../services/nix-distributed-build.nix
 
     ../wifi.nix
+    ./a11y.nix
     ./network.nix
     ./restic.nix
     ./wireshark.nix
