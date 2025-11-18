@@ -1457,16 +1457,15 @@
         "systems": "systems_9"
       },
       "locked": {
-        "lastModified": 1763107914,
-        "narHash": "sha256-yNS36TqD/jviDGa1wQeNZW9tHAvv6HrZ+FanxbJrjOI=",
-        "owner": "r00t3g",
+        "lastModified": 1763425019,
+        "narHash": "sha256-+ftuthMA8MMQC83+YNk+vKokZaVvW/i8jb9hu6cfoho=",
+        "owner": "raybbian",
         "repo": "hyprtasking",
-        "rev": "dce034eaad80e02b4b2ce12577d7597388ea83c9",
+        "rev": "e7ac324a8ac2702cc2ae83727bea3c1e93240686",
         "type": "github"
       },
       "original": {
-        "owner": "r00t3g",
-        "ref": "fix-build-on-hypr-0.51",
+        "owner": "raybbian",
         "repo": "hyprtasking",
         "type": "github"
       }

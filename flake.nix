@@ -109,8 +109,7 @@
 
     # hyprland plugins
     hyprtasking = {
-      # url = "github:raybbian/hyprtasking";
-      url = "github:r00t3g/hyprtasking/fix-build-on-hypr-0.51";
+      url = "github:raybbian/hyprtasking";
       inputs.hyprland.follows = "hyprland";
     };
 
