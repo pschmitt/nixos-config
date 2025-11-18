@@ -19,12 +19,16 @@ then
   fi
 
   case "$1" in
-    --now)
-      NOW=1
+    -d|--delay)
+      DELAY="$2"
+      shift 2
+      ;;
+    -f|--force)
+      FORCE=1
       shift
       ;;
-    --force)
-      FORCE=1
+    -n|--now)
+      NOW=1
       shift
       ;;
   esac
