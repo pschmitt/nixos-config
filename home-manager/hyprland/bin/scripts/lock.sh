@@ -29,7 +29,7 @@ then
       ;;
   esac
 
-  if [[ -n $NOW ]] && has chayang
+  if [[ -z $NOW ]] && has chayang
   then
     chayang -d "${DELAY:-5}" || exit
   fi
