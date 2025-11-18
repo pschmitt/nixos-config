@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  inputs,
   pkgs,
   ...
 }:
@@ -10,8 +11,8 @@ let
   autheliaAuthzURL = "https://${autheliaDomain}/api/authz/auth-request";
   autheliaResolverAddresses =
     let
+      inherit (config.networking) nameservers;
       stub = "127.0.0.53";
-      nameservers = config.networking.nameservers;
     in
     if nameservers != [ ] then nameservers else [ stub ];
   autheliaResolverDirectives = ''
@@ -116,12 +117,7 @@ in
       acmeRoot = null;
       forceSSL = true;
       locations."/" = {
-        root = pkgs.fetchFromGitHub {
-          owner = "pschmitt";
-          repo = "pschmitt.dev";
-          rev = "b6d5e9cc361cede2756c81e5e9ce4f34c78b3824";
-          hash = "sha256-w/BOiyBQIBsxlSdMhx0jx6Q0qKWHZQti0ayfLaBjINY=";
-        };
+        root = inputs.pschmitt-dev.packages.${pkgs.stdenv.hostPlatform.system}.default;
       };
     };
 

@@ -212,6 +212,11 @@
     #   inputs.nixpkgs.follows = "nixpkgs";
     # };
 
+    pschmitt-dev = {
+      url = "github:pschmitt/pschmitt.dev";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     sendmyl = {
       url = "github:pschmitt/sendmyl";
       inputs.nixpkgs.follows = "nixpkgs";
