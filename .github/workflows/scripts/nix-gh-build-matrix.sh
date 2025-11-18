@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
+
 nix_host_architecture() {
   local host="$1"
   nix eval --raw ".#nixosConfigurations.${host}.config.nixpkgs.system"
