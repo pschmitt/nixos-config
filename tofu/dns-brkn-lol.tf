@@ -86,6 +86,22 @@ resource "cloudflare_record" "xmr-brkn-lol" {
   ttl     = 3600
 }
 
+resource "cloudflare_record" "x-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  type    = "A"
+  name    = "x"
+  content = openstack_networking_floatingip_v2.rofl-12_fip.address
+  ttl     = 3600
+}
+
+resource "cloudflare_record" "xp-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  type    = "A"
+  name    = "xp"
+  content = openstack_networking_floatingip_v2.rofl-12_fip.address
+  ttl     = 3600
+}
+
 resource "cloudflare_record" "cwabd-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "cwabd"
