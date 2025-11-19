@@ -72,8 +72,7 @@ in
             "user": "${config.sops.placeholder."xmrig-proxy/wallet"}",
             "pass": "${config.networking.hostName}",
             "tls": true,
-            "keepalive": true,
-            "socks5": "socks5h://rofl-11.nb.brkn.lol:1080"
+            "keepalive": true
           }],
           "retries": 5,
           "retry-pause": 5,
@@ -95,7 +94,7 @@ in
     serviceConfig = {
       User = "xmrigproxy";
       Group = "xmrigproxy";
-      ExecStart = "${pkgs.xmrig-proxy}/bin/xmrig-proxy -c ${config.sops.templates.xmrigProxyConfig.path}";
+      ExecStart = "${pkgs.xmrig-proxy}/bin/xmrig-proxy -x rofl-11.nb.${config.custom.mainDomain}:1080 -c ${config.sops.templates.xmrigProxyConfig.path}";
       # Increase open file limit if expecting many connections
       LimitNOFILE = 65535;
       Restart = "on-failure";
