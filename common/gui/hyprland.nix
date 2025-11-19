@@ -20,14 +20,6 @@ in
     trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
   };
 
-  environment.sessionVariables = {
-    # Setting MOZ_ENABLE_WAYLAND will lead to a fullscreen sharing indicator
-    # when screensharing
-    # https://bugzilla.mozilla.org/show_bug.cgi?id=1628431
-    # MOZ_ENABLE_WAYLAND = "1";
-    MOZ_USE_XINPUT2 = "1";
-  };
-
   fonts.enableDefaultPackages = true;
   hardware.graphics.enable = lib.mkForce true;
 
