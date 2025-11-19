@@ -1457,15 +1457,15 @@
         "systems": "systems_9"
       },
       "locked": {
-        "lastModified": 1763425019,
-        "narHash": "sha256-+ftuthMA8MMQC83+YNk+vKokZaVvW/i8jb9hu6cfoho=",
-        "owner": "raybbian",
+        "lastModified": 1763493209,
+        "narHash": "sha256-C7nNhWQ/l1+TYQJlChW+995rzLVb/7n4K+QcRobb4CQ=",
+        "owner": "Megakuul",
         "repo": "hyprtasking",
-        "rev": "e7ac324a8ac2702cc2ae83727bea3c1e93240686",
+        "rev": "ca70c394055717b1e78a7242c1450c1041a092b4",
         "type": "github"
       },
       "original": {
-        "owner": "raybbian",
+        "owner": "Megakuul",
         "repo": "hyprtasking",
         "type": "github"
       }
