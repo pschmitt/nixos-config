@@ -39,6 +39,7 @@
     # ai
     aichat
     master.codex
+    master.gemini-cli
     master.github-copilot-cli
     tgpt
 
