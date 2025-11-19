@@ -94,6 +94,7 @@ in
     serviceConfig = {
       User = "xmrigproxy";
       Group = "xmrigproxy";
+      # FIXME The socks5 proxy seems to NOT be used at all
       ExecStart = "${pkgs.xmrig-proxy}/bin/xmrig-proxy -x rofl-11.nb.${config.custom.mainDomain}:1080 -c ${config.sops.templates.xmrigProxyConfig.path}";
       # Increase open file limit if expecting many connections
       LimitNOFILE = 65535;
