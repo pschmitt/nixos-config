@@ -308,7 +308,13 @@ in
         executable = true;
       };
 
-      packages = [ hyprdynamicmonitorsPkg ];
+      packages = [
+        hyprdynamicmonitorsPkg
+
+        # Alternative monitor config tools
+        pkgs.kanshi
+        pkgs.shikane # kanshi alternative, rust
+      ];
 
       hyprdynamicmonitors = {
         enable = true;
