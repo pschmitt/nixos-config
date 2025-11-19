@@ -11,11 +11,17 @@
 
       # Toolkit/env overrides from env.conf.
       env = lib.mkAfter [
+        # "MOZ_ENABLE_WAYLAND,1"
+        # https://wiki.archlinux.org/title/Firefox/Tweaks#:~:text=MOZ%5FUSE%5FXINPUT2%3D1
+        "MOZ_USE_XINPUT2,1"
+
         # Force Wayland (with xcb fallback) for Qt apps.
         "QT_QPA_PLATFORM,wayland;xcb"
+
         # SDL + Clutter should default to Wayland.
         "SDL_VIDEODRIVER,wayland"
         "CLUTTER_BACKEND,wayland"
+
         # Identify the Hyprland desktop/session.
         "XDG_CURRENT_DESKTOP,Hyprland"
         "XDG_SESSION_TYPE,wayland"
