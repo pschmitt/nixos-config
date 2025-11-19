@@ -5,7 +5,7 @@
   ...
 }:
 {
-  wayland.windowManager.hyprland.plugins = lib.mkAfter [
+  wayland.windowManager.hyprland.plugins = [
     inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 

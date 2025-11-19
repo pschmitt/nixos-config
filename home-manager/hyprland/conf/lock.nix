@@ -5,17 +5,17 @@
     # Lock helpers from lock.conf.
     "$lock" = "$bin_dir/lock.sh";
 
-    bind = lib.mkAfter [
+    bind = [
       "$mod ALT, L, exec, $lock --now"
     ];
 
-    bindl = lib.mkAfter [
+    bindl = [
       "$mod CONTROL ALT, L, exec, ~/bin/zhj \"lockscreen::restart\""
       ", switch:off:Lid Switch, exec, $lock"
       ", switch:on:Lid Switch, exec, hyprctl dispatch dpms on"
     ];
 
-    windowrule = lib.mkAfter [
+    windowrule = [
       "idleinhibit fullscreen, class:^(firefox)$"
       "idleinhibit always, title:^(Picture-in-Picture)$"
       "idleinhibit fullscreen, class:^(Google-chrome)$"
