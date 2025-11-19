@@ -45,9 +45,6 @@ in
 
     # lock
     chayang # gradually dim screen
-    swayidle
-    # swaylock
-    swaylock-effects
     hypridlePkg
     hyprlockPkg
 
