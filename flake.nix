@@ -109,7 +109,11 @@
 
     # hyprland plugins
     hyprtasking = {
-      url = "github:raybbian/hyprtasking";
+      # upstream url
+      # url = "github:raybbian/hyprtasking";
+
+      # https://github.com/raybbian/hyprtasking/pull/82
+      url = "github:Megakuul/hyprtasking";
       inputs.hyprland.follows = "hyprland";
     };
 
