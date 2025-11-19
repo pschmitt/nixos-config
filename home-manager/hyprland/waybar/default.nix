@@ -1,4 +1,10 @@
-{ lib, pkgs, config, osConfig ? null, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  osConfig ? null,
+  ...
+}:
 let
   # Gather scripts from the scripts directory.
   scriptsDir = ./scripts;
@@ -21,27 +27,28 @@ in
     settings = import ./config.nix { inherit hostName; };
   };
 
-  xdg.configFile =
-    {
-      "waybar/cava.config".source = ./cava.config;
-    }
-    // (lib.mapAttrs' (name: _: {
-      name = "waybar/custom_modules/${name}";
-      value = {
-        source = "${./custom_modules}/${name}";
-        executable = true;
-      };
-    }) (lib.filterAttrs (_: t: t == "regular") (builtins.readDir ./custom_modules)))
-    // (lib.listToAttrs (map mkScriptFile (builtins.attrNames scripts)));
+  xdg.configFile = {
+    "waybar/cava.config".source = ./cava.config;
+  }
+  // (lib.mapAttrs' (name: _: {
+    name = "waybar/custom_modules/${name}";
+    value = {
+      source = "${./custom_modules}/${name}";
+      executable = true;
+    };
+  }) (lib.filterAttrs (_: t: t == "regular") (builtins.readDir ./custom_modules)))
+  // (lib.listToAttrs (map mkScriptFile (builtins.attrNames scripts)));
 
-  home.packages = lib.mkAfter [
-    pkgs.ComicCode
-    pkgs.ComicCodeNF
+  home.packages = with pkgs; [
+    networkmanagerapplet
+    playerctl
+    waybar
+    wttrbar
+
+    # Fonts
+    ComicCode
+    ComicCodeNF
   ];
-
-  home.activation."waybar-font-cache" = lib.hm.dag.entryAfter [ "installPackages" ] ''
-    ${pkgs.fontconfig}/bin/fc-cache -r "${config.home.homeDirectory}/.local/share/fonts" || true
-  '';
 
   systemd.user.services.waybar.Service = {
     Restart = lib.mkForce "always";
