@@ -1,5 +1,16 @@
-{ lib, ... }:
 {
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+{
+  home.packages = [
+    (pkgs.writeShellScriptBin "grim-hyprland" ''
+      exec -a $0 ${inputs.grim-hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/grim "$@"
+    '')
+  ];
+
   # Mirrors ~/.config/hypr/config.d/alt-tab.conf.
   # Docs: https://wiki.hyprland.org/Configuring/Uncommon-tips--tricks/#alt-tab-behaviour
   wayland.windowManager.hyprland = {
