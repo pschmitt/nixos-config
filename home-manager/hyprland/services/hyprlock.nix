@@ -18,6 +18,10 @@ let
   font = "ComicCode Nerd Font";
 in
 {
+  home.packages = [
+    pkgs.chayang
+  ];
+
   programs.hyprlock = {
     enable = true;
     settings = {

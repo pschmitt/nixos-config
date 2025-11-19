@@ -1,5 +1,7 @@
-{ lib, ... }:
+{ pkgs, lib, ... }:
 {
+  home.packages = [ pkgs.xhost ];
+
   # Mirrors ~/.config/hypr/config.d/autostart.conf.
   wayland.windowManager.hyprland.settings."exec-once" = lib.mkAfter [
     # Startup helper from autostart.conf.
