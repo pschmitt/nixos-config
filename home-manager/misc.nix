@@ -5,6 +5,7 @@
 
     eget
     home-assistant-cli
+    withoutbg
 
     # todoist cli
     inputs.tdc.packages."${system}".tdc

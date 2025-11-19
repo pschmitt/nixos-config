@@ -39,6 +39,7 @@ in
   tmux-slay = pkgs.callPackage ./tmux-slay { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
   waypoint = pkgs.callPackage ./waypoint { };
+  withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
 
   # Fonts
