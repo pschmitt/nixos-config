@@ -5,12 +5,12 @@
   wayland.windowManager.hyprland.settings = lib.mkMerge [
     {
       # Propagate the graphical session environment to systemd/DBus.
-      "exec-once" = lib.mkAfter [
+      "exec-once" = [
         "dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP"
       ];
 
       # Toolkit/env overrides from env.conf.
-      env = lib.mkAfter [
+      env = [
         # "MOZ_ENABLE_WAYLAND,1"
         # https://wiki.archlinux.org/title/Firefox/Tweaks#:~:text=MOZ%5FUSE%5FXINPUT2%3D1
         "MOZ_USE_XINPUT2,1"

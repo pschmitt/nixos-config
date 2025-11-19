@@ -16,7 +16,7 @@
   wayland.windowManager.hyprland = {
     settings = {
       # Alt-tab helper bindings from alt-tab.conf.
-      bind = lib.mkAfter [
+      bind = [
         "ALT, TAB, exec, $bin_dir/alt-tab.sh enable 'down'"
         "ALT SHIFT, TAB, exec, $bin_dir/alt-tab.sh enable 'up'"
         "ALT, Return, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return, class:alttab"
@@ -24,14 +24,14 @@
         "ALT, escape, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab"
         "ALT SHIFT, escape, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab"
       ];
-      bindrt = lib.mkAfter [
+      bindrt = [
         "ALT, ALT_L, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab"
         "ALT SHIFT, ALT_L, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab"
       ];
-      workspace = lib.mkAfter [
+      workspace = [
         "special:alttab, gapsout:200, gapsin:200, bordersize:0"
       ];
-      windowrule = lib.mkAfter [
+      windowrule = [
         "noanim, class:alttab"
         "stayfocused, class:alttab"
         "workspace special:alttab, class:alttab"

@@ -42,7 +42,7 @@ in
       };
 
       # Global gesture bindings from input.conf.
-      gesture = lib.mkAfter [
+      gesture = [
         "3, horizontal, workspace"
         "3, up, scale: 1.5, fullscreen"
         "3, down, scale: 1.5, fullscreen"
