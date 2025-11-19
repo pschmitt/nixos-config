@@ -3,6 +3,7 @@ let
   hintsd = lib.getExe' pkgs.hints "hintsd";
 in
 {
+  home.packages = [ pkgs.hints ];
   systemd.user.services.hintsd = {
     Unit = {
       Description = "Hintsd service";

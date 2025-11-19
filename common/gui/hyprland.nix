@@ -7,16 +7,9 @@
 
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-  # hyprlandPkg = pkgs.master.hyprland;
-
-  # xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
-
-  # hypridlePkg = inputs.hypridle.packages.${pkgs.stdenv.hostPlatform.system}.hypridle;
-  hypridlePkg = pkgs.master.hypridle;
-
-  # hyprlockPkg = inputs.hyprlock.packages.${pkgs.stdenv.hostPlatform.system}.hyprlock;
-  hyprlockPkg = pkgs.master.hyprlock;
+  # hyprlandPkg = pkgs.master.hyprland;
+  # xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 in
 {
   imports = [ inputs.hyprland.nixosModules.default ];
@@ -35,62 +28,7 @@ in
     MOZ_USE_XINPUT2 = "1";
   };
 
-  environment.systemPackages = with pkgs; [
-    # Hyprland
-    hyprlandPkg
-
-    # Notifications
-    libnotify # notify-send
-    mako
-
-    # lock
-    chayang # gradually dim screen
-    hypridlePkg
-    hyprlockPkg
-
-    # waybar
-    networkmanagerapplet
-    playerctl
-    waybar
-    wttrbar
-
-    # noctalia-shell
-    # inputs.noctalia.packages.${pkgs.stdenv.hostPlatform.system}.default
-
-    # screenshots
-    grim
-    (pkgs.writeShellScriptBin "grim-hyprland" ''
-      exec -a $0 ${inputs.grim-hyprland.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/grim "$@"
-    '')
-    slurp
-    swappy
-    wayfreeze
-    wf-recorder
-
-    # clipboard
-    cliphist
-    wl-clip-persist
-    wl-clipboard
-
-    # services
-    polkit_gnome
-    xorg.xhost
-
-    # tools
-    brightnessctl
-    hints
-    hyprpaper # wallpaper
-    hyprpicker
-    kanshi
-    shikane # kanshi alternative, rust
-    waypoint
-    wev
-    wlogout
-    wofi
-  ];
-
   fonts.enableDefaultPackages = true;
-
   hardware.graphics.enable = lib.mkForce true;
 
   programs = {
@@ -109,12 +47,24 @@ in
   services.displayManager.defaultSession = lib.mkForce "hyprland-uwsm";
 
   # This essentially adds ~/bin to the PATH of systemd user services
-  systemd.user.extraConfig = ''
-    DefaultEnvironment="PATH=%h/bin:%h/.local/bin:/run/wrappers/bin:/etc/profiles/per-user/%u/bin:/nix/var/nix/profiles/default/bin:/run/current-system/sw/bin:$PATH"
-  '';
+  systemd.user.extraConfig =
+    let
+      paths = [
+        "%h/bin"
+        "%h/.local/bin"
+        "/run/wrappers/bin"
+        "/etc/profiles/per-user/%u/bin"
+        "/nix/var/nix/profiles/default/bin"
+        "/run/current-system/sw/bin"
+      ];
+    in
+    ''
+      DefaultEnvironment="PATH=${builtins.concatStringsSep ":" paths}:\$PATH"
+    '';
 
   security.pam = {
-    # fix [ERR] Pam module "/etc/pam.d/hyprlock" does not exist! Falling back to "/etc/pam.d/su"
+    # fix for:
+    # [ERR] Pam module "/etc/pam.d/hyprlock" does not exist! Falling back to "/etc/pam.d/su"
     services.hyprlock = { };
 
     # NOTE Mitigate hyprland crapping its pants under high load (nixos-rebuild)
