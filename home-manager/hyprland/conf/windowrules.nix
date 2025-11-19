@@ -14,7 +14,7 @@
       "$porn" = "title:.*(?i)porn.*";
       "$bitwarden" = "title:.*(?i)bitwarden.*";
 
-      windowrule = lib.mkAfter [
+      windowrule = [
         # Floating/PiP helpers.
         "float, $firefox_pip"
         "pin, $firefox_pip"

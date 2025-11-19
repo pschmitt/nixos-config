@@ -27,8 +27,8 @@
 
       animations = {
         enabled = true;
-        bezier = lib.mkAfter [ "myBezier, 0.05, 0.9, 0.1, 1.05" ];
-        animation = lib.mkAfter [
+        bezier = [ "myBezier, 0.05, 0.9, 0.1, 1.05" ];
+        animation = [
           "windows, 1, 3, myBezier"
           "windowsOut, 1, 3, default, popin 80%"
           "border, 1, 10, default"
@@ -39,7 +39,7 @@
       };
 
       # GTK settings import helper script.
-      exec = lib.mkAfter [ "$sway_bin_dir/import-gsettings.sh" ];
+      exec = [ "$sway_bin_dir/import-gsettings.sh" ];
     }
   ];
 }

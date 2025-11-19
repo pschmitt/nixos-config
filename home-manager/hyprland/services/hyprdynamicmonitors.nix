@@ -333,7 +333,7 @@ in
       };
     };
 
-  wayland.windowManager.hyprland.settings.source = lib.mkAfter [
+  wayland.windowManager.hyprland.settings.source = [
     # Include HyprDynamicMonitors output so Hyprland uses the generated layout.
     "$config_dir/monitors.conf"
   ];

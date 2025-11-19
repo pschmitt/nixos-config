@@ -68,33 +68,58 @@ let
   ];
 
   workspaceKeys = [
-    { key = "1"; workspace = "1"; }
-    { key = "2"; workspace = "2"; }
-    { key = "3"; workspace = "3"; }
-    { key = "4"; workspace = "4"; }
-    { key = "5"; workspace = "5"; }
-    { key = "6"; workspace = "6"; }
-    { key = "7"; workspace = "7"; }
-    { key = "8"; workspace = "8"; }
-    { key = "9"; workspace = "9"; }
-    { key = "0"; workspace = "10"; }
+    {
+      key = "1";
+      workspace = "1";
+    }
+    {
+      key = "2";
+      workspace = "2";
+    }
+    {
+      key = "3";
+      workspace = "3";
+    }
+    {
+      key = "4";
+      workspace = "4";
+    }
+    {
+      key = "5";
+      workspace = "5";
+    }
+    {
+      key = "6";
+      workspace = "6";
+    }
+    {
+      key = "7";
+      workspace = "7";
+    }
+    {
+      key = "8";
+      workspace = "8";
+    }
+    {
+      key = "9";
+      workspace = "9";
+    }
+    {
+      key = "0";
+      workspace = "10";
+    }
   ];
 
-  workspaceNumberBinds =
-    lib.flatten (
-      map (
-        entry:
-        [
-          "$mod, ${entry.key}, moveworkspacetomonitor, ${entry.workspace} current"
-          "$mod, ${entry.key}, exec, $bin_dir/switch-workspace.sh ${entry.workspace}"
-        ]
-      ) workspaceKeys
-    );
+  workspaceNumberBinds = lib.flatten (
+    map (entry: [
+      "$mod, ${entry.key}, moveworkspacetomonitor, ${entry.workspace} current"
+      "$mod, ${entry.key}, exec, $bin_dir/switch-workspace.sh ${entry.workspace}"
+    ]) workspaceKeys
+  );
 
-  workspaceMoveBinds =
-    map (
-      entry: "$mod SHIFT, ${entry.key}, movetoworkspace, ${entry.workspace}"
-    ) workspaceKeys;
+  workspaceMoveBinds = map (
+    entry: "$mod SHIFT, ${entry.key}, movetoworkspace, ${entry.workspace}"
+  ) workspaceKeys;
 
   globalBinde = [
     "$mod SHIFT, h, resizeactive, -25 0"
@@ -195,31 +220,23 @@ in
         "$playerctl_previous" = "$sway_bin_dir/playerctl-wrapper.sh previous";
 
         bind =
-          lib.mkAfter (
-            hyprBinds
-            ++ tilingBinds
-            ++ workspaceScrollBinds
-            ++ fullscreenBinds
-            ++ windowMoveExecBinds
-            ++ focusBinds
-            ++ workspaceNumberBinds
-            ++ workspaceMoveBinds
-            ++ mouseModeBinds
-            ++ resizeModeBind
-            ++ appBinds
-          );
+          hyprBinds
+          ++ tilingBinds
+          ++ workspaceScrollBinds
+          ++ fullscreenBinds
+          ++ windowMoveExecBinds
+          ++ focusBinds
+          ++ workspaceNumberBinds
+          ++ workspaceMoveBinds
+          ++ mouseModeBinds
+          ++ resizeModeBind
+          ++ appBinds;
 
-        bindm = lib.mkAfter mouseMoveResizeBinds;
+        bindm = mouseMoveResizeBinds;
 
-        binde = lib.mkAfter globalBinde;
+        binde = globalBinde;
 
-        bindl =
-          lib.mkAfter (
-            brightnessBinds
-            ++ audioBinds
-            ++ playerctlBinds
-            ++ obsBindl
-          );
+        bindl = brightnessBinds ++ audioBinds ++ playerctlBinds ++ obsBindl;
       }
     ];
 
