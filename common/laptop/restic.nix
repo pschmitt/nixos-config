@@ -11,6 +11,9 @@
     "${config.custom.homeDirectory}/devel"
     "${config.custom.homeDirectory}/Documents"
     "${config.custom.homeDirectory}/Pictures"
+
+    # config directories
+    "${config.custom.homeDirectory}/.android" # adb
     "${config.custom.homeDirectory}/.config"
     "${config.custom.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
   ];
