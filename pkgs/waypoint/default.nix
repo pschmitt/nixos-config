@@ -10,28 +10,27 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "waypoint";
-  version = "unstable-2025-01-23";
+  version = "unstable-2025-06-10";
 
   src = fetchFromGitHub {
     owner = "tadeokondrak";
     repo = pname;
-    rev = "da87598171571866910a86ec69398d2bf83b814c";
-    hash = "sha256-7ajLRQCX7igaad+5MxE2aOvrczsim7xJ+m0Jt1lLOrs=";
+    rev = "bfd3a4ddf75b0be933ea8954f7db0fdb6fd22fab";
+    hash = "sha256-WUsJlZAmIhKMNuQI74fyiUCLvQ321bz2vkSHJ8YVLbg=";
   };
 
-  cargoHash = "sha256-uspm4fTTd4H9RM7JOdAxb/B7UKI+ue5pkDzFQybP4XU=";
+  cargoHash = "sha256-U2xHFII0FMG9Zc+2W3JguBIXIgtfWIHWsUUDxnjoF5U=";
 
   nativeBuildInputs = [
     pkg-config
   ];
 
-  buildInputs =
-    [
-      libxkbcommon
-    ]
-    ++ lib.optionals stdenv.isLinux [
-      wayland
-    ];
+  buildInputs = [
+    libxkbcommon
+  ]
+  ++ lib.optionals stdenv.isLinux [
+    wayland
+  ];
 
   meta = {
     description = "Wayland clone of keynav";
