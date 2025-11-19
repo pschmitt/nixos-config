@@ -72,7 +72,8 @@ in
             "user": "${config.sops.placeholder."xmrig-proxy/wallet"}",
             "pass": "${config.networking.hostName}",
             "tls": true,
-            "keepalive": true
+            "keepalive": true,
+            "socks5": "socks5h://rofl-11.nb.brkn.lol:1080"
           }],
           "retries": 5,
           "retry-pause": 5,
