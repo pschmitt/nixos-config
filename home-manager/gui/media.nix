@@ -9,7 +9,7 @@ in
   ];
 
   home.packages = with pkgs; [
-    easyeffects
+    master.easyeffects
     ffmpeg-full
     mpvPkg
     # FIXME ustreamer fails to build as of 2025-11-15
