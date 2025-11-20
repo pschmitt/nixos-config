@@ -1,9 +1,6 @@
-{ inputs, lib, ... }:
+{ lib, ... }:
 {
   imports = [
-    inputs.hardware.nixosModules.common-cpu-intel
-    inputs.hardware.nixosModules.common-pc-ssd
-
     ./hardware-configuration.nix
 
     # customizations
@@ -27,10 +24,8 @@
     ../../common/sshfs
     ../../common/work
     ../../common/work/elgato-stream-deck.nix
-
+    ../../misc/initrd-luks-ssh-unlock.nix
     ../../services/nfs/nfs-client-all.nix
-    # ../../services/bitfocus-companion.nix
-    # ../../services/netdata.nix
   ];
 
   custom.cattle = false;
