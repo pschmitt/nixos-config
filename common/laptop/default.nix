@@ -9,6 +9,7 @@
     ../wifi.nix
     ./a11y.nix
     ./initrd-network.nix
+    ./media.nix
     ./network.nix
     ./restic.nix
     ./wireshark.nix
