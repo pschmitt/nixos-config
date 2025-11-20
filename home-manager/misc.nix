@@ -8,7 +8,7 @@
     withoutbg
 
     # todoist cli
-    inputs.tdc.packages."${system}".tdc
+    inputs.tdc.packages."${pkgs.stdenv.hostPlatform.system}".tdc
 
     # Below allows exporting address books from Evolution
     # we use this in ~zpl/contacts.zsh

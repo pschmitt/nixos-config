@@ -9,7 +9,7 @@
     customPackages
     // {
       # Include luks-ssh-unlock from the flake
-      luks-ssh-unlock = inputs.luks-ssh-unlock.packages.${final.system}.default;
+      luks-ssh-unlock = inputs.luks-ssh-unlock.packages.${final.stdenv.hostPlatform.system}.default;
     };
 
   # This one contains whatever you want to overlay
@@ -31,26 +31,26 @@
   # be accessible through 'pkgs.unstable'
   unstable-packages = final: prev: {
     unstable = import inputs.nixpkgs-unstable {
-      system = final.system;
+      inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
     };
 
     master = import inputs.nixpkgs-master {
-      system = final.system;
+      inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
     };
 
     streamcontroller = import inputs.nixpkgs-streamcontroller {
-      system = final.system;
+      inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
     };
   };
 
   flakes = final: prev: {
     firefox-addons = import inputs.firefox-addons {
-      fetchurl = final.fetchurl;
-      lib = final.lib;
-      stdenv = final.stdenv;
+      inherit (final) fetchurl;
+      inherit (final) lib;
+      inherit (final) stdenv;
     };
   };
 
@@ -59,16 +59,16 @@
     kubectl-121 = import (builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/05ae01fcea6c7d270cc15374b0a806b09f548a9a.tar.gz";
       sha256 = "sha256:1c629ncdqdd1y5h8b3pm3cn2sa0gyinlam4jncbrp1m7pvsr02ji";
-    }) { system = final.system; };
+    }) { inherit (final.stdenv.hostPlatform) system; };
 
     kubectl-123 = import (builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/611bf8f183e6360c2a215fa70dfd659943a9857f.tar.gz";
       sha256 = "sha256:1rhrajxywl1kaa3pfpadkpzv963nq2p4a2y4vjzq0wkba21inr9k";
-    }) { system = final.system; };
+    }) { inherit (final.stdenv.hostPlatform) system; };
 
     terraform-157 = import (builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/4ab8a3de296914f3b631121e9ce3884f1d34e1e5.tar.gz";
       sha256 = "sha256:095mc0mlag8m9n9zmln482a32nmbkr4aa319f2cswyfrln9j41cr";
-    }) { system = final.system; };
+    }) { inherit (final.stdenv.hostPlatform) system; };
   };
 }

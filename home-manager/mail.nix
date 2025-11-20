@@ -1,21 +1,25 @@
 { inputs, pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    inputs.myl.packages.${system}.myl
-    inputs.myl-discovery.packages.${system}.myl-discovery
-    inputs.sendmyl.packages.${system}.sendmyl
+  home = {
+    packages = with pkgs; [
+      inputs.myl.packages.${stdenv.hostPlatform.system}.myl
+      inputs.myl-discovery.packages.${stdenv.hostPlatform.system}.myl-discovery
+      inputs.sendmyl.packages.${stdenv.hostPlatform.system}.sendmyl
 
-    aerc
-    gmailctl
-    neomutt
-  ];
+      aerc
+      gmailctl
+      neomutt
+    ];
 
-  home.file.".config/neomutt/nix" = {
-    source = "${pkgs.neomutt}/share/neomutt";
-  };
+    file = {
+      ".config/neomutt/nix" = {
+        source = "${pkgs.neomutt}/share/neomutt";
+      };
 
-  # Create cache dir
-  home.file.".cache/neomutt/bodies/.keep" = {
-    source = builtins.toFile "keep" "";
+      # Create cache dir
+      ".cache/neomutt/bodies/.keep" = {
+        source = builtins.toFile "keep" "";
+      };
+    };
   };
 }
