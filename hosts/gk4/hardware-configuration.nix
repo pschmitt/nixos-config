@@ -22,6 +22,10 @@
   ];
 
   networking.useDHCP = lib.mkDefault true;
+
+  # ethernet nic, for network initrd
+  boot.initrd.availableKernelModules = [ "r8169" ];
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   services.fprintd = {
