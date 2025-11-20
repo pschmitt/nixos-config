@@ -18,7 +18,8 @@ let
   ];
 
   # tsDomain = "snake-eagle.ts.net";
-  netbirdDomain = "nb.brkn.lol";
+  tsDomain = "ts.${config.custom.mainDomain}";
+  netbirdDomain = "nb.${config.custom.mainDomain}";
   vpnDomain = netbirdDomain;
 in
 {
@@ -28,40 +29,42 @@ in
   programs.fuse.userAllowOther = true;
 
   # https://releases.nixos.org/nix-dev/2016-September/021768.html
-  fileSystems."/mnt/fnuc" = {
-    fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@fnuc.${vpnDomain}:/";
-    options = opts;
-  };
+  fileSystems = {
+    "/mnt/fnuc" = {
+      fsType = "fuse";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@fnuc.${vpnDomain}:/";
+      options = opts;
+    };
 
-  fileSystems."/mnt/hass" = {
-    fsType = "fuse";
-    # NOTE We cannot use /config here since it is a symlink to /homeassistant
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
-    options = opts;
-  };
+    "/mnt/hass" = {
+      fsType = "fuse";
+      # NOTE We cannot use /config here since it is a symlink to /homeassistant
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${tsDomain}:/homeassistant";
+      options = opts;
+    };
 
-  fileSystems."/mnt/turris" = {
-    fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
-    options = opts;
-  };
+    "/mnt/turris" = {
+      fsType = "fuse";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
+      options = opts;
+    };
 
-  # fileSystems."/mnt/wrt1900ac" = {
-  #   fsType = "fuse";
-  #   device = "${pkgs.sshfs-fuse}/bin/sshfs#root@wrt1900ac.${vpnDomain}:/";
-  #   options = opts;
-  # };
+    # "/mnt/wrt1900ac" = {
+    #   fsType = "fuse";
+    #   device = "${pkgs.sshfs-fuse}/bin/sshfs#root@wrt1900ac.${vpnDomain}:/";
+    #   options = opts;
+    # };
 
-  fileSystems."/mnt/rofl-10" = {
-    fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-10.${vpnDomain}:/mnt/data";
-    options = opts;
-  };
+    "/mnt/rofl-10" = {
+      fsType = "fuse";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-10.${vpnDomain}:/mnt/data";
+      options = opts;
+    };
 
-  fileSystems."/mnt/rofl-11" = {
-    fsType = "fuse";
-    device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-11.${vpnDomain}:/mnt/data";
-    options = opts;
+    "/mnt/rofl-11" = {
+      fsType = "fuse";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#pschmitt@rofl-11.${vpnDomain}:/mnt/data";
+      options = opts;
+    };
   };
 }
