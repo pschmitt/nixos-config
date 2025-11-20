@@ -17,7 +17,6 @@ let
         flatpak
         gawk
         gnugrep
-        nvidia-offload
         obs-studio
         procps
       ];
