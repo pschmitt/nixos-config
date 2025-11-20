@@ -19,7 +19,7 @@ obs-studio::command() {
 
 # shellcheck disable=SC2120
 obs-studio::start() {
-  local start_scene="${1:-Joining soon}"
+  local start_scene="${1:-🚬 brb}"
   local obs_args=(--minimize-to-tray --startvirtualcam --scene "$start_scene")
   local -a obs_cmd=()
 
@@ -53,5 +53,5 @@ obs-studio::start() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  obs-studio::start "${1:-${OBS_SCENE:-Joining soon}}"
+  obs-studio::start "${1:-${OBS_SCENE:-🚬 brb}}"
 fi
