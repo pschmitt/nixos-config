@@ -9,9 +9,9 @@
 
 let
   inherit (lib) escapeShellArg;
-  inherit (pkgs.stdenv.hostPlatform) system;
 
-  hyprdynamicmonitorsPkg = inputs.hyprdynamicmonitors.packages.${system}.default;
+  hyprdynamicmonitorsPkg =
+    inputs.hyprdynamicmonitors.packages.${pkgs.stdenv.hostPlatform.system}.default;
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
 
