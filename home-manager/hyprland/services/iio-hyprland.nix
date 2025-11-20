@@ -5,7 +5,7 @@
   ...
 }:
 let
-  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
+  inherit (osConfig.networking) hostName;
   isGk4 = hostName == "gk4";
   iioHyprlandBin = lib.getExe pkgs.iio-hyprland;
 in
