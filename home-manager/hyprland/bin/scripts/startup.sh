@@ -104,69 +104,6 @@ tmux::set-display-vars() {
   killall -USR2 zsh
 }
 
-obs-studio::command() {
-  # NOTE order matters here!
-  if command -v obs &>/dev/null
-  then
-    echo obs
-    return 0
-  fi
-
-  if flatpak list --user --app | grep -q "com.obsproject.Studio"
-  then
-    echo flatpak run --user com.obsproject.Studio
-    return 0
-  fi
-
-  return 1
-}
-
-obs-studio::version() {
-  local obs_cmd
-  mapfile -t obs_cmd < <(obs-studio::command)
-  # shellcheck disable=SC2068
-  ${obs_cmd[@]} --version | awk -F ' - ' '{split($2, a, "."); print a[1]}'
-}
-
-# shellcheck disable=SC2120
-obs-studio::start() {
-  local start_scene="${1:-Joining soon}"
-  local obs_args=(--minimize-to-tray --startvirtualcam --scene "$start_scene")
-  mapfile -t obs_cmd < <(obs-studio::command)
-
-  # Check if obs >= 30 and disable the shutdown check (and remove the flag in v32)
-  local obs_version
-  obs_version=$(obs-studio::version)
-  if [[ $obs_version -ge 30 && $obs_version -lt 32 ]]
-  then
-    obs_args+=(--disable-shutdown-check)
-  elif [[ $obs_version -ge 32 ]]
-  then
-    # Remove the sentinel dir ourselves if obs is not running
-    if ! pgrep -af "$(command -v "${obs_cmd[*]}")" &>/dev/null
-    then
-      rm -vrf ~/.config/obs-studio/.sentinel
-    fi
-  fi
-
-  obs_cmd+=("${obs_args[@]}")
-
-  # Use NVIDIA card explicitly for OBS (if available and only not targeting
-  # the flatpak)
-  if [[ "${obs_cmd[*]}" == "obs" ]] && \
-     [[ -e /dev/dri/card1 ]] && \
-     command -v nvidia-offload &>/dev/null
-  then
-    obs_cmd=(nvidia-offload "${obs_cmd[@]}")
-  fi
-
-  # FIXME If we use the nvidia-offload wrapper we might want to do the following:
-  # hyprctl::exec "${obs_cmd[*]@Q}"
-  hyprctl::exec "systemd-cat --identifier='obs-studio' -- ${obs_cmd[*]}"
-  # Update mute status in OBS
-  hyprctl::sleep-exec 10 ~/bin/obs.zsh update
-}
-
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   hyprctl::symlink-dir
@@ -191,7 +128,6 @@ then
       # Mute default mic
       zhj pulseaudio::mute-default-source
 
-      obs-studio::start
       ;;
     x13)
       :
