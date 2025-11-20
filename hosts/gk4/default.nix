@@ -2,7 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./iio-hyprland.nix
     ../../misc/fprintd.nix
     ../../misc/touchscreen.nix
 

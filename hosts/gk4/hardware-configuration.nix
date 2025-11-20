@@ -28,6 +28,9 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
+  # Display rotation via IIO sensors
+  hardware.sensor.iio.enable = lib.mkDefault true;
+
   services.fprintd = {
     enable = true;
     package = pkgs.fprintd.override {
