@@ -220,10 +220,11 @@ then
 
   # Misc apps
   hyprctl::exec "[workspace $FIREFOX_WORKSPACE silent;] firefox"
-  if ! pgrep -af nextcloud &>/dev/null
-  then
-    hyprctl::exec nextcloud --background
-  fi
+  # Nextcloud is started via home manager now
+  # if ! pgrep -af nextcloud &>/dev/null
+  # then
+  #   hyprctl::exec nextcloud --background
+  # fi
 
   # DIRTYFIX Fix for the terminal and firefox being split vertically on startup
   # We want them next to each other

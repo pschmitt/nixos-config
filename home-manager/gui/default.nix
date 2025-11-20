@@ -1,6 +1,7 @@
 { ... }:
 {
   imports = [
+    ./autostart.nix
     ./browser.nix
     ./default-apps.nix
     # ./dank.nix
