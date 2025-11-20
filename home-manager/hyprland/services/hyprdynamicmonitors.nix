@@ -84,7 +84,7 @@ let
 
   tmpl = name: text: pkgs.writeText name text;
 
-  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
+  inherit (osConfig.networking) hostName;
   isGk4 = hostName == "gk4";
 
   laptopMonitorAutoSettings =

@@ -1,7 +1,6 @@
 {
   lib,
   pkgs,
-  config,
   osConfig ? null,
   ...
 }:
@@ -16,7 +15,8 @@ let
       executable = true;
     };
   };
-  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
+
+  inherit (osConfig.networking) hostName;
 in
 {
   programs.waybar = {

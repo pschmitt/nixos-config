@@ -5,8 +5,7 @@
   ...
 }:
 let
-  hostName = if osConfig == null then null else (osConfig.networking.hostName or null);
-  ge2Host = hostName == "ge2";
+  ge2Host = osConfig.networking.hostName == "ge2";
 
   obsAutostartExec = "${
     pkgs.writeShellApplication {
