@@ -13,8 +13,8 @@
     ../../common/snek
     ../../common/sshfs
     ../../common/work
+    ../../misc/initrd-luks-ssh-unlock.nix
     ../../services/nfs/nfs-client-all.nix
-
     ../../services/nixos-installer-boot-entry.nix
   ];
 
