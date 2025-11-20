@@ -2,6 +2,7 @@
 {
   networking.useDHCP = lib.mkDefault true;
 
+  # NOTE Below will *NOT* work!
   # sops.secrets = {
   #   "ssh/initrd_host_keys/ed25519/privkey" = {
   #     sopsFile = config.custom.sopsFile;
@@ -23,32 +24,36 @@
 
   boot.initrd = {
     enable = true;
-    # NOTE the command to unlock is systemd-tty-ask-password-agent
+    # NOTE the command to unlock is: $ systemd-tty-ask-password-agent
     systemd = {
       enable = true;
-      # network.enable = true;
       emergencyAccess = true;
+
+      # network.enable = true;
     };
+
     # availableKernelModules = [ "r8169" ];
+
     network = {
       enable = true;
       flushBeforeStage2 = lib.mkDefault false;
       ssh = {
         enable = true;
         port = 22;
-        authorizedKeys = config.custom.authorizedKeys;
+        inherit (config.custom) authorizedKeys;
         # authorizedKeys = with lib; concatLists (mapAttrsToList (name: user: if elem "wheel" user.extraGroups then user.openssh.authorizedKeys.keys else [ ]) config.users.users);
         hostKeys = [
-          # NOTE the host keys in initrd are stored in plain text
+          # WARNING the host keys in initrd are stored in plain text
           # "/etc/ssh/ssh_host_rsa_key"
           # "/etc/ssh/ssh_host_ed25519_key"
-          "/etc/ssh/initrd/ssh_host_rsa_key"
-          "/etc/ssh/initrd/ssh_host_ed25519_key"
+
           # NOTE sops-nix does *not* support initrd secrets
           # "/run/secrets/ssh/initrd_host_keys/ed25519/privkey"
           # "/run/secrets/ssh/initrd_host_keys/rsa/privkey"
+
+          "/etc/ssh/initrd/ssh_host_rsa_key"
+          "/etc/ssh/initrd/ssh_host_ed25519_key"
         ];
-        # ignoreEmptyHostKeys = false;
       };
     };
   };
