@@ -22,7 +22,7 @@
     extraModulePackages = [ ];
     initrd.availableKernelModules = [
       "nvme"
-      "r8169" # wavlink dock nic
+      "r8152" # wavlink dock nic
       "rtsx_pci_sdmmc"
       "sd_mod"
       "thunderbolt"
