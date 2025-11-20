@@ -45,7 +45,7 @@
   };
 
   boot.binfmt.emulatedSystems =
-    if pkgs.system != "aarch64-linux" then
+    if pkgs.stdenv.hostPlatform.system != "aarch64-linux" then
       [
         "aarch64-linux"
         "i686-linux"
