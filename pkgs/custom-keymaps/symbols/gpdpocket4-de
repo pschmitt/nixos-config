@@ -7,23 +7,18 @@ xkb_symbols "basic" {
   // Repurpose Caps Lock as Tab and clear the Lock modifier.
   key <CAPS> { [ Tab ] };
 
+  // ESC key
+  key <ESC> { [escape, dead_circumflex, dead_circumflex, escape] };
+
+  // ` / ~ key becomes dead grave / (dead) tilde
+  // key <TLDE> { [ dead_grave, dead_tilde ] };
+  key <TLDE> { [ dead_grave, tilde ] };
+
   // Right Shift becomes AltGr / level3 chooser.
   key <RTSH> { [ ISO_Level3_Shift ] };
 
-  // Shift+Q: we want @ on level 3.
-  key <AD01> { [ q, Q, at ] };
-
-  // o / O / ö / Ö
-  key <AD09> { [ o, O, odiaeresis, Odiaeresis ] };
-
   // a / A / ä / Ä
   key <AC01> { [ a, A, adiaeresis, Adiaeresis ] };
-
-  // u / U / ü / Ü
-  key <AD07> { [ u, U, udiaeresis, Udiaeresis ] };
-
-  // s / S / ß / ẞ
-  key <AC02> { [ s, S, ssharp, U1E9E ] };
 
   // c / C / ç / Ç
   key <AB03> { [ c, C, ccedilla, Ccedilla ] };
@@ -31,20 +26,32 @@ xkb_symbols "basic" {
   // e / E / é / É
   key <AD03> { [ e, E, eacute, Eacute ] };
 
-  // ESC key
-  key <ESC> { [escape, dead_circumflex, dead_circumflex, escape] };
+  // o / O / ö / Ö
+  key <AD09> { [ o, O, odiaeresis, Odiaeresis ] };
 
-  // ` / ~ key becomes dead grave / (dead) tilde
-  key <TLDE> { [dead_grave, asciitilde, U2032, U2033 ] };
+  // u / U / ü / Ü
+  key <AD07> { [ u, U, udiaeresis, Udiaeresis ] };
 
-  // ? / / key -> minus / underscore / pipe / pipe
+  // Shift+Q: we want @ on level 3.
+  key <AD01> { [ q, Q, at ] };
+
+  // s / S / ß / ẞ
+  key <AC02> { [ s, S, ssharp, U1E9E ] };
+
+  // '?' key -> - / _ / | / |
   key <AB10> { [ minus, underscore, bar, bar ] };
 
-  // ; / : key -> TODO
+  // '<' key -> , / ; / < / <
+  key <AB08> { [ comma, semicolon, less, less ] };
+
+  // '>' key -> . / : / > / >
+  key <AB09> { [ period, colon, greater, greater ] };
+
+  // ':/;' key (would be 'ö' in de)
   key <AC10> { [ odiaeresis, Odiaeresis, dead_doubleacute, dead_belowdot ] };
 
-  // ' / " key -> TODO
-  key <AC11> { [ adiaeresis, Adiaeresis, dead_circumflex, dead_caron ] };
+  // TODO "' key (would be 'ä' in de)
+  key <AC11> { [ apostrophe, quotedbl, dead_circumflex, dead_caron ] };
 };
 
 // vim: set ft=xkb :
