@@ -40,9 +40,26 @@ xkb_symbols "basic" {
   // TILDE/CIRCUMFLEXE KEY (F12) -> caret
   key <AE12> { [ dead_acute, dead_grave, asciitilde, caret ] };
 
-  // Z KEY (ie Y in qwertz)
-  key <AB01> { [ y, Y, bar, bar ] };
-
   // ESC Key
   key <ESC> { [escape, dead_circumflex, dead_circumflex, escape] };
+
+  // A KEY
+  key <AC01> { [ a, A, adiaeresis, Adiaeresis ] };
+
+  // C KEY
+  key <AB03> { [ c, C, U202F, any, cent, copyright ] };
+
+  // O KEY
+  key <AD09> { [ o, O, odiaeresis, Odiaeresis ] };
+
+  // U KEY
+  key <AD07> { [ u, U, udiaeresis, Udiaeresis ] };
+
+  // S KEY
+  key <AC02> { [ s, S, ssharp, U1E9E ] };
+
+  // Z KEY (ie Y in qwertz)
+  key <AB01> { [ y, Y, bar, bar ] };
 };
+
+// vim: set ft=xkb :
