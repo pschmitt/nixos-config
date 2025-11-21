@@ -1,39 +1,18 @@
 {
+  config,
   lib,
   osConfig ? null,
   pkgs,
   ...
 }:
 let
-  ge2Host = osConfig.networking.hostName == "ge2";
+  ge2Host = osConfig != null && osConfig.networking.hostName == "ge2";
 
-  obsAutostartExec = "${
-    pkgs.writeShellApplication {
-      name = "obs-hyprland-autostart";
-      runtimeInputs = with pkgs; [
-        coreutils
-        findutils
-        flatpak
-        gawk
-        gnugrep
-        obs-studio
-        procps
-      ];
-      text = builtins.readFile ./obs-autostart.sh;
-    }
-  }/bin/obs-hyprland-autostart";
+  obsDesktopEntry = lib.attrByPath [ "xdg" "desktopEntries" "obs-studio-custom" ] null config;
 
-  obsAutostartDesktop = pkgs.writeText "obs-hyprland.desktop" ''
-    [Desktop Entry]
-    Type=Application
-    Name=OBS Studio (Custom)
-    Comment=Start OBS with our custom flags
-    Exec=${obsAutostartExec}
-    TryExec=${obsAutostartExec}
-    Terminal=false
-    OnlyShowIn=Hyprland;
-    X-GNOME-Autostart-enabled=true
-  '';
+  obsAutostartDesktop = lib.optionals (obsDesktopEntry != null) [
+    "${config.home.profileDirectory}/share/applications/obs-studio-custom.desktop"
+  ];
 in
 {
   xdg.autostart = {
@@ -42,6 +21,6 @@ in
     entries = [
       "${pkgs.nextcloud-client}/share/applications/com.nextcloud.desktopclient.nextcloud.desktop"
     ]
-    ++ lib.optionals ge2Host [ obsAutostartDesktop ];
+    ++ lib.optionals ge2Host obsAutostartDesktop;
   };
 }

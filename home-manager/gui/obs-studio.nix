@@ -7,6 +7,21 @@
 
 let
   enableNvidiaOffload = osConfig.hardware.nvidia.prime.offload.enable;
+  obsAutostartExec = "${
+    pkgs.writeShellApplication {
+      name = "obs-hyprland-autostart";
+      runtimeInputs = with pkgs; [
+        coreutils
+        findutils
+        flatpak
+        gawk
+        gnugrep
+        obs-studio
+        procps
+      ];
+      text = builtins.readFile ./obs-autostart.sh;
+    }
+  }/bin/obs-hyprland-autostart";
   obs-nvidia = pkgs.writeShellScriptBin "obs-nvidia" ''
     nvidia-offload ${pkgs.obs-studio}/bin/obs "$@"
   '';
@@ -44,6 +59,17 @@ in
       # https://github.com/exeldro/obs-replay-source/commit/18b0b8b3519ee7bb192ae19adce81b4dbb2ba9c2
       # obs-replay-source
     ];
+  };
+
+  xdg.desktopEntries."obs-studio-custom" = {
+    name = "OBS Studio (Custom)";
+    comment = "Start OBS with our custom flags";
+    icon = "com.obsproject.Studio";
+    exec = obsAutostartExec;
+    terminal = false;
+    settings = {
+      TryExec = obsAutostartExec;
+    };
   };
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = builtins.fetchurl {
