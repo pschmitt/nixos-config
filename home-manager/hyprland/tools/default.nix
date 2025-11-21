@@ -9,6 +9,7 @@
 
     # screenshots
     grim
+    satty
     slurp
     swappy
     wayfreeze
