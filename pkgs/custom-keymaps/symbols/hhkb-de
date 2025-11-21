@@ -22,7 +22,7 @@ xkb_symbols "basic" {
   // C KEY
   // w/o the key.type annotation you won't be able to enter 'C'
   key.type[Group1] = "FOUR_LEVEL_ALPHABETIC";
-  key <AB03> { [ c, C, U202F, any, cent, copyright ] };
+  key <AB03> { [ c, C, ccedilla, Ccedilla ] };
 
   // O KEY
   key <AD09> { [ o, O, odiaeresis, Odiaeresis ] };
