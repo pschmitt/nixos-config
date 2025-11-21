@@ -10,9 +10,9 @@ let
 in
 {
   systemd.tmpfiles.rules = [
-    "d ${dataDir} 0750 root root - -"
+    "d ${dataDir}         0750 root root - -"
     "d ${dataDir}/uploads 0750 root root - -"
-    "d ${dataDir}/data 0750 root root - -"
+    "d ${dataDir}/data    0750 root root - -"
   ];
 
   virtualisation.oci-containers.containers.wishlist = {
