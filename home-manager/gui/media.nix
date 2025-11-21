@@ -9,13 +9,15 @@ in
   ];
 
   home.packages = with pkgs; [
-    master.easyeffects
-    ffmpeg-full
-    mpvPkg
     # FIXME ustreamer fails to build as of 2025-11-15
     # ustreamer
+    master.easyeffects
+    ffmpeg-full
+    imagemagick
+    mpvPkg
     v4l-utils
     vlc
+    yt-dlp
   ];
 
   # Enable the rygel systemd user service
