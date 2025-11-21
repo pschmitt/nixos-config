@@ -7,8 +7,9 @@
 let
   symbolsDir = ./symbols;
   layouts = [
-    "de_hhkb"
-    "gpdpocket4"
+    "hhkb-de"
+    "gpdpocket4-de"
+    "gpdpocket4-us"
   ];
   layoutCommands = lib.concatStringsSep "\n" (
     map (layout: ''
@@ -25,7 +26,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "pschmitt-keymaps";
-  version = "unstable-2024-08-15";
+  version = "unstable-2025-11-21";
   dontUnpack = true;
   strictDeps = true;
 
