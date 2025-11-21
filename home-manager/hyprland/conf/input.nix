@@ -2,7 +2,7 @@
 let
   mkHhkbDevice = name: {
     inherit name;
-    kb_layout = "hhkb-de";
+    kb_layout = "hhkb-de,de,us";
   };
 in
 {
