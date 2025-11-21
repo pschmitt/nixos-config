@@ -3,33 +3,6 @@ default partial alphanumeric_keys
 xkb_symbols "basic" {
   include "de"
   name[Group1] = "Custom HHKB DE layout by pschmitt";
-  // https://github.com/swaywm/sway/issues/4250
-
-  // 1. Determine the keycode of the key
-  // $ wev -f wl_keyboard:key
-  // [14:     wl_keyboard] key: serial: 12819; time: 14642473; key: 48; state: 1 (pressed)
-  //                       sym: adiaeresis   (228), utf8: 'ä'
-  //
-  // Here, the keycode is 48
-  // NOTE: You can also use xev to get the scancode
-  //
-  // 2. Get the internal ID
-  // $ </usr/share/X11/xkb/keycodes/evdev | grep -E "=\s+(132)"
-  // <AE13> = 132;   // Yen
-  // On NixOS:
-  //  < $(nix::pkg-path xkeyboard_config)/share/X11/xkb/keycodes/evdev | grep -E '= +48;'
-  //  <AC11> = 48;
-  //
-  // 3. The key name to map to can be fetched via:
-  // $ </usr/include/X11/keysymdef.h grep -E "#define XK_"
-
-  // The mapping goes as follows:
-  // key <KEY_ID> { [ map1, map2, map3, map4 ]};
-  // Where:
-  // map1: normal key press
-  // map2: shift + key
-  // map3: AltGr + key
-  // map4: AltGr + shift + key
 
   // YEN KEY (Insert) -> "pipe" char
   key <AE13> { [ bar, bar, bar, bar ] };
@@ -47,6 +20,8 @@ xkb_symbols "basic" {
   key <AC01> { [ a, A, adiaeresis, Adiaeresis ] };
 
   // C KEY
+  // w/o the key.type annotation you won't be able to enter 'C'
+  key.type[Group1] = "FOUR_LEVEL_ALPHABETIC";
   key <AB03> { [ c, C, U202F, any, cent, copyright ] };
 
   // O KEY
