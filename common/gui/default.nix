@@ -1,24 +1,31 @@
 {
   imports = [
-    ./apps.nix
+    # system
     ./audio.nix
-    ./browser.nix
     ./bluetooth.nix
-    ./fonts.nix
-    ./gnome-keyring.nix
     ./gpu.nix
+
+    # misc
+    ./apps.nix
+    ./browser.nix
+    ./fonts.nix
+    ./theme.nix
+
+    # services
+    ./flatpak.nix
+    ./gnome-keyring.nix
     ./go-hass-agent.nix
     ./hacompanion.nix
-    ./flatpak.nix
-    ./keyboard.nix
     ./libvirt.nix
-    ./logitech-mouse.nix
-    ./printer.nix
     ./services.nix
     ./snapper.nix
-    ./touchpad.nix
-    ./theme.nix
     ./v4l2loopback.nix
+
+    # io
+    ./keyboard.nix
+    ./logitech-mouse.nix
+    ./printers.nix
+    ./touchpad.nix
 
     # Display Manager
     ./gdm.nix
