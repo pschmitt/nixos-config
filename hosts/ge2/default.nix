@@ -25,6 +25,7 @@
     ../../common/work
     ../../common/work/elgato-stream-deck.nix
     ../../misc/initrd-luks-ssh-unlock.nix
+    ../../misc/fprintd.nix
     ../../services/nfs/nfs-client-all.nix
   ];
 
