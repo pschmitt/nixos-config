@@ -4,6 +4,7 @@
     ./audio.nix
     ./bluetooth.nix
     ./gpu.nix
+    ./linger.nix
 
     # misc
     ./apps.nix
