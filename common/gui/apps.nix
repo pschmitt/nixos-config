@@ -44,7 +44,32 @@
     dotool
     wtype
     ydotool
+
+    gobject-introspection
+    gtk3 # gtk-update-icon-cache
+    iw
+    libinput # libinput debug-events
+    libsecret # secret-tool
+    pinentry-curses
+    pinentry-gnome3
+    tesseract
+
+    # apps
+    gparted
+    mullvad-vpn
+    usbimager # etcher alternative
+    virt-manager
+
+    # qrcode create/read
+    qrencode
+    zbar # provides zabarimg, for reading qr codes
+
+    # cli image viewers
+    chafa
+    # termimage
   ];
+
+  programs.adb.enable = true;
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
