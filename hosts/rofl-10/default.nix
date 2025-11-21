@@ -31,7 +31,7 @@
     ../../services/searxng.nix
     ../../services/turris-ssh-tunnel.nix
     ../../services/vdirsyncer.nix
-    ../../services/whishlist.nix
+    ../../services/wishlist.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
     ../../services/nfs/nfs-client-rofl-11.nix
 

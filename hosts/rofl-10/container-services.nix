@@ -116,6 +116,10 @@ in
         port = 8282;
         hosts = [ (mkHost "subs") ];
       };
+      wishlist = {
+        port = 19001;
+        hosts = [ (mkHost "wish") ];
+      };
       whoami = {
         port = 19462;
         hosts = [ (mkHost "whoami") ];
