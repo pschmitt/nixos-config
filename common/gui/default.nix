@@ -69,18 +69,23 @@
         layout = "de";
         variant = "";
         extraLayouts = {
-          de_hhkb = {
+          hhkb-de = {
             description = "Custom HHKB DE layout by pschmitt";
             languages = [ "deu" ];
-            symbolsFile = symbolsFile "de_hhkb";
+            symbolsFile = symbolsFile "hhkb-de";
           };
-          gpdpocket4 = {
+          gpdpocket4-us = {
             description = "GPD Pocket 4 layout with swapped Y/Z and AltGr tweaks";
             languages = [
               "eng"
               "deu"
             ];
-            symbolsFile = symbolsFile "gpdpocket4";
+            symbolsFile = symbolsFile "gpdpocket4-us";
+          };
+          gpdpocket4-de = {
+            description = "GPD Pocket 4 custom DE Layout";
+            languages = [ "deu" ];
+            symbolsFile = symbolsFile "gpdpocket4-de";
           };
         };
       };

@@ -2,7 +2,7 @@
 let
   mkHhkbDevice = name: {
     inherit name;
-    kb_layout = "de_hhkb";
+    kb_layout = "hhkb-de";
   };
 in
 {
@@ -34,7 +34,7 @@ in
         # NOTE These are relevant even on other hosts because of the KVM module!
         {
           name = "hailuck-co.-ltd-usb-keyboard";
-          kb_layout = "gpdpocket4,us,de";
+          kb_layout = "gpdpocket4-de,gpdpocket4-us,us,de";
         }
         {
           # Enable inverted scrolling for the built-in touchpad.

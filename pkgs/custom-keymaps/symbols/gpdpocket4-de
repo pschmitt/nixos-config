@@ -1,24 +1,14 @@
 default partial alphanumeric_keys
 
 xkb_symbols "basic" {
-  include "us"
-  name[Group1] = "gpdpocket4 custom US layout with swapped Y/Z";
+  include "de"
+  name[Group1] = "gpdpocket4 custom DE layout";
 
   // Repurpose Caps Lock as Tab and clear the Lock modifier.
   key <CAPS> { [ Tab ] };
 
   // Right Shift becomes AltGr / level3 chooser.
   key <RTSH> { [ ISO_Level3_Shift ] };
-
-  // Swap the Z and Y keys.
-  key <AB01> { [ y, Y ] };
-  key <AD06> { [ z, Z ] };
-
-  // : unshifted, ; shifted.
-  key <AC10> { [ colon, semicolon ] };
-
-  // | unshifted, \ shifted.
-  key <BKSL> { [ bar, backslash ] };
 
   // Shift+Q: we want @ on level 3.
   key <AD01> { [ q, Q, at ] };
@@ -45,6 +35,16 @@ xkb_symbols "basic" {
   key <ESC> { [escape, dead_circumflex, dead_circumflex, escape] };
 
   // ` / ~ key becomes dead grave / (dead) tilde
-  // key <TLDE> { [ dead_grave, dead_tilde ] };
-  key <TLDE> { [ dead_grave, tilde ] };
+  key <TLDE> { [dead_grave, asciitilde, U2032, U2033 ] };
+
+  // ? / / key -> minus / underscore / pipe / pipe
+  key <AB10> { [ minus, underscore, bar, bar ] };
+
+  // ; / : key -> TODO
+  key <AC10> { [ odiaeresis, Odiaeresis, dead_doubleacute, dead_belowdot ] };
+
+  // ' / " key -> TODO
+  key <AC11> { [ adiaeresis, Adiaeresis, dead_circumflex, dead_caron ] };
 };
+
+// vim: set ft=xkb :

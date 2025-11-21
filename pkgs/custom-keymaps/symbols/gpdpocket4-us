@@ -1,0 +1,52 @@
+default partial alphanumeric_keys
+
+xkb_symbols "basic" {
+  include "us"
+  name[Group1] = "gpdpocket4 custom US layout with some german-isms";
+
+  // Repurpose Caps Lock as Tab and clear the Lock modifier.
+  key <CAPS> { [ Tab ] };
+
+  // Right Shift becomes AltGr / level3 chooser.
+  key <RTSH> { [ ISO_Level3_Shift ] };
+
+  // Swap the Z and Y keys.
+  key <AB01> { [ y, Y ] };
+  key <AD06> { [ z, Z ] };
+
+  // : unshifted, ; shifted.
+  key <AC10> { [ colon, semicolon ] };
+
+  // | unshifted, \ shifted.
+  key <BKSL> { [ bar, backslash ] };
+
+  // Shift+Q: we want @ on level 3.
+  key <AD01> { [ q, Q, at ] };
+
+  // o / O / ö / Ö
+  key <AD09> { [ o, O, odiaeresis, Odiaeresis ] };
+
+  // a / A / ä / Ä
+  key <AC01> { [ a, A, adiaeresis, Adiaeresis ] };
+
+  // u / U / ü / Ü
+  key <AD07> { [ u, U, udiaeresis, Udiaeresis ] };
+
+  // s / S / ß / ẞ
+  key <AC02> { [ s, S, ssharp, U1E9E ] };
+
+  // c / C / ç / Ç
+  key <AB03> { [ c, C, ccedilla, Ccedilla ] };
+
+  // e / E / é / É
+  key <AD03> { [ e, E, eacute, Eacute ] };
+
+  // ESC key
+  key <ESC> { [escape, dead_circumflex, dead_circumflex, escape] };
+
+  // ` / ~ key becomes dead grave / (dead) tilde
+  // key <TLDE> { [ dead_grave, dead_tilde ] };
+  key <TLDE> { [ dead_grave, tilde ] };
+};
+
+// vim: set ft=xkb :
