@@ -15,11 +15,9 @@
       ".config/neomutt/nix" = {
         source = "${pkgs.neomutt}/share/neomutt";
       };
-
-      # Create cache dir
-      ".cache/neomutt/bodies/.keep" = {
-        source = builtins.toFile "keep" "";
-      };
     };
   };
+
+  # Create cache dir
+  xdg.cacheFile."neomutt/bodies/.keep".text = "";
 }
