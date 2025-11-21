@@ -21,12 +21,25 @@ in
         (mkHhkbDevice "hhkb-hybrid_2-keyboard")
         (mkHhkbDevice "hhkb-hybrid_3-keyboard")
         (mkHhkbDevice "hhkb-hybrid_4-keyboard")
+
         # Magic Trackpad tuning.
         {
           name = "apple-inc.-magic-trackpad-usb-c";
           sensitivity = 0.3;
           accel_profile = "adaptive";
           scroll_factor = 1.8;
+        }
+
+        # GPD Pocket 4 keyboard and touchpad.
+        # NOTE These are relevant even on other hosts because of the KVM module!
+        {
+          name = "hailuck-co.-ltd-usb-keyboard";
+          kb_layout = "gpdpocket4,us,de";
+        }
+        {
+          # Enable inverted scrolling for the built-in touchpad.
+          name = "hailuck-co.-ltd-usb-keyboard-mouse";
+          natural_scroll = true;
         }
       ];
 
@@ -41,12 +54,12 @@ in
         touchpad.natural_scroll = false;
       };
 
-      # Global gesture bindings from input.conf.
       gesture = [
         "3, horizontal, workspace"
         "3, up, scale: 1.5, fullscreen"
         "3, down, scale: 1.5, fullscreen"
       ];
+
       "gestures:workspace_swipe_invert" = false;
     }
   ];
