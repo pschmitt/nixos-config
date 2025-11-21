@@ -5,8 +5,8 @@
 }:
 let
   domain = "wish.${config.custom.mainDomain}";
-  dataDir = "/mnt/data/srv/whishlist";
-  listenPort = 3280;
+  dataDir = "/mnt/data/srv/wishlist";
+  listenPort = 19001;
 in
 {
   systemd.tmpfiles.rules = [
@@ -15,7 +15,7 @@ in
     "d ${dataDir}/data 0750 root root - -"
   ];
 
-  virtualisation.oci-containers.containers.whishlist = {
+  virtualisation.oci-containers.containers.wishlist = {
     image = "ghcr.io/cmintey/wishlist:latest";
     autoStart = true;
     volumes = [
@@ -30,24 +30,5 @@ in
       TZ = config.time.timeZone;
     };
     ports = [ "127.0.0.1:${toString listenPort}:3280" ];
-  };
-
-  services.nginx.virtualHosts."${domain}" = {
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString listenPort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
-      # Mitigate https://github.com/cmintey/wishlist/issues/170 when using nginx
-      extraConfig = ''
-        proxy_buffer_size   128k;
-        proxy_buffers   4 256k;
-        proxy_busy_buffers_size   256k;
-      '';
-    };
   };
 }
