@@ -11,11 +11,7 @@
       neomutt
     ];
 
-    file = {
-      ".config/neomutt/nix" = {
-        source = "${pkgs.neomutt}/share/neomutt";
-      };
-    };
+    file.".config/neomutt/nix".source = "${pkgs.neomutt}/share/neomutt";
   };
 
   # Create cache dir
