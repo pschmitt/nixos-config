@@ -25,8 +25,9 @@ in
   ];
 
   virtualisation.oci-containers.containers.wishlist = {
-    image = "ghcr.io/cmintey/wishlist:latest";
     autoStart = true;
+    image = "ghcr.io/cmintey/wishlist:latest";
+    pull = "always";
     volumes = [
       "${dataDir}/uploads:/usr/src/app/uploads"
       "${dataDir}/data:/usr/src/app/data"
