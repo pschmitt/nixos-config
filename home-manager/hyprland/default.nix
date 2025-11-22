@@ -6,5 +6,6 @@
     ./services
     ./tools
     ./waybar
+    ./xdph.nix
   ];
 }
