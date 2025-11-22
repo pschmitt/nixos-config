@@ -5,14 +5,13 @@
   ...
 }:
 let
-  domain = "wish.${config.custom.mainDomain}";
+  primaryHost = "wish.${config.custom.mainDomain}";
   hostnames = [
-    domain
+    primaryHost
     "wishlist.${config.custom.mainDomain}"
     "wuensche.${config.custom.mainDomain}"
     "wunschliste.${config.custom.mainDomain}"
   ];
-  primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
   dataDir = "/mnt/data/srv/wishlist";
   listenPort = 19001;
@@ -35,7 +34,8 @@ in
     environment = {
       # NOTE We can't set an ORIGIN here since we use multiple hostnames
       # https://github.com/cmintey/wishlist/issues/224
-      # ORIGIN = "https://${domain}";
+      # ORIGIN = "https://${primaryHost}";
+      ORIGIN = "";
       TOKEN_TIME = "72";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
@@ -65,7 +65,7 @@ in
   };
 
   services.monit.config = lib.mkAfter ''
-    check host "wishlist" with address "${domain}"
+    check host "wishlist" with address "${primaryHost}"
       group services
       restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-wishlist.service"
       if failed
