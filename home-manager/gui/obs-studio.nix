@@ -36,28 +36,23 @@ in
 {
   home.packages = [
     pkgs.obs-cli
-    # FIXME ustreamer fails to build as of 2025-11-15
-    # (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
-    #   ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
-    # '')
+    (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
+      ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
+    '')
   ]
-  ++ lib.optional enableNvidiaOffload obs-nvidia
-  ++ lib.optional enableNvidiaOffload obs-nvidia-custom;
+  ++ lib.optionals enableNvidiaOffload [
+    obs-nvidia
+    obs-nvidia-custom
+  ];
 
   programs.obs-studio = {
     enable = true;
     package = pkgs.master.obs-studio;
     plugins = with pkgs.obs-studio-plugins; [
-      # FIXME fails to build as of 2025-11-15
-      # https://github.com/NixOS/nixpkgs/issues/461403
-      # droidcam-obs
-
+      droidcam-obs
       obs-text-pthread
       obs-freeze-filter
-      # FIXME OBS Replay Source build is broken with obs 31
-      # There's an untagged 1.8.1 which *might* work:
-      # https://github.com/exeldro/obs-replay-source/commit/18b0b8b3519ee7bb192ae19adce81b4dbb2ba9c2
-      # obs-replay-source
+      obs-replay-source
     ];
   };
 
@@ -67,9 +62,6 @@ in
     icon = "com.obsproject.Studio";
     exec = obsAutostartExec;
     terminal = false;
-    settings = {
-      TryExec = obsAutostartExec;
-    };
   };
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = builtins.fetchurl {
