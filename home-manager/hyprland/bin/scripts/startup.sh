@@ -68,11 +68,8 @@ then
   # Fix gparted & cie
   (sleep 10 && fix-root-gui-apps) &
 
-  FIREFOX_WORKSPACE=2
   case "${HOSTNAME:-$(hostname)}" in
     ge2)
-      FIREFOX_WORKSPACE=1
-      TOGGLE_SPLIT=1
       # NOTE hyprctl refuses to parse batch commands that contain newlines
       hyprctl --batch "\
         dispatch moveworkspacetomonitor 1 desc:LG; \
@@ -86,20 +83,6 @@ then
       zhj pulseaudio::mute-default-source
       ;;
   esac
-
-  # Start terminal
-  # shellcheck disable=SC2016
-  hyprctl::exec '[workspace 1 silent;] kitty "${HOME}/bin/zhj" tmux::attach'
-
-  # Start browser
-  hyprctl::exec "[workspace $FIREFOX_WORKSPACE silent;] firefox"
-
-  # DIRTYFIX Fix for the terminal and firefox being split vertically on startup
-  # We want them next to each other (ge2 only)
-  if [[ -n $TOGGLE_SPLIT ]]
-  then
-    (sleep 5 && hyprctl dispatch togglesplit) &
-  fi
 
   [[ -n $WAIT ]] && wait
 fi

@@ -26,6 +26,9 @@
         "XDG_CURRENT_DESKTOP,Hyprland"
         "XDG_SESSION_TYPE,wayland"
         "XDG_SESSION_DESKTOP,Hyprland"
+
+        # Preferred terminal for helpers (xdg-terminal-exec/autostart, etc.).
+        "TERMINAL,kitty"
       ];
 
       # Optional overrides kept from env.conf for future toggling:
