@@ -2,7 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../misc/fprintd.nix
 
     ../../common/global
     ../../common/gui
@@ -23,7 +22,7 @@
 
   # Enable networking
   networking = {
-    hostName = "x13"; # Define your hostname.
+    hostName = "x13";
     # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
     # Disable the firewall altogether.
     firewall = {

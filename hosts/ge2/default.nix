@@ -6,15 +6,7 @@
     # customizations
     # custom gdm monitor config
     ./gdm.nix
-
-    # gpus
-    ./intel-gpu.nix
-    ./nvidia.nix
-
     ./wacom.nix
-    # ./luks-remote.nix
-
-    ../../workarounds
 
     ../../common/global
     ../../common/gui
@@ -24,19 +16,11 @@
     ../../common/snek
     ../../common/work
     ../../common/work/elgato-stream-deck.nix
-    ../../misc/fprintd.nix
     ../../misc/initrd-luks-ssh-unlock.nix
     ../../services/nfs/nfs-client-all.nix
   ];
 
   custom.cattle = false;
-
-  # FIXME MIPI Camera
-  # hardware.ipu6 = {
-  #   enable = true;
-  #   # NOTE ipu6ep is for Raptor Lake
-  #   platform = "ipu6ep";
-  # };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -49,7 +33,7 @@
 
   # Enable networking
   networking = {
-    hostName = "ge2"; # Define your hostname.
+    hostName = "ge2";
     # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
     # Disable the firewall altogether.
     firewall = {
