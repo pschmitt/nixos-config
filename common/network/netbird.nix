@@ -45,6 +45,12 @@ in
           # other ports does not seem to work well with systemd-resolved
           port = 53;
         };
+        environment = {
+          # do not set up netbird ssh
+          NB_ALLOW_SERVER_SSH = "false";
+          # don't mess with my ssh config!
+          NB_DISABLE_SSH_CONFIG = "true";
+        };
       };
     };
   };
