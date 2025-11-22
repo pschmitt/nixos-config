@@ -9,8 +9,6 @@ in
   ];
 
   home.packages = with pkgs; [
-    # FIXME ustreamer fails to build as of 2025-11-15
-    # ustreamer
     master.easyeffects
     ffmpeg-full
     imagemagick
