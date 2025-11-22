@@ -1,13 +1,18 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
   tdarrInterfaces = [
     {
       name = "tailscale";
-      iface = "tailscale0";
+      iface = config.services.tailscale.interfaceName;
     }
     {
       name = "netbird";
-      iface = "netbird-netbird-io";
+      iface = config.services.netbird.clients.netbird-io.interface;
     }
   ];
 in
