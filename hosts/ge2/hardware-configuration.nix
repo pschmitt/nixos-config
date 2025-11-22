@@ -11,6 +11,7 @@
     (modulesPath + "/installer/scan/not-detected.nix")
     inputs.hardware.nixosModules.common-cpu-intel
     inputs.hardware.nixosModules.common-pc-ssd
+    ./disko-config.nix
     ./fans.nix
     ../../misc/fprintd.nix
 
@@ -31,34 +32,6 @@
       "usb_storage"
       "xhci_pci"
     ];
-  };
-
-  # TODO remove below? These are already provided by disk-configuration.nix
-  boot.initrd.luks.devices."encrypted".device =
-    "/dev/disk/by-uuid/d4f522ea-e59a-4960-908d-dc8445e1ffcd";
-  fileSystems = {
-    "/" = {
-      device = "/dev/disk/by-uuid/23c2aab8-e91f-478f-a090-08ad0d604055";
-      fsType = "btrfs";
-      options = [ "subvol=@root" ];
-    };
-
-    "/boot" = {
-      device = "/dev/disk/by-uuid/1E3C-2DA0";
-      fsType = "vfat";
-    };
-
-    "/home" = {
-      device = "/dev/disk/by-uuid/23c2aab8-e91f-478f-a090-08ad0d604055";
-      fsType = "btrfs";
-      options = [ "subvol=@home" ];
-    };
-
-    "/nix" = {
-      device = "/dev/disk/by-uuid/23c2aab8-e91f-478f-a090-08ad0d604055";
-      fsType = "btrfs";
-      options = [ "subvol=@nix" ];
-    };
   };
 
   swapDevices = [ ];
