@@ -6,13 +6,13 @@
 }:
 let
   primaryHost = "wish.${config.custom.mainDomain}";
-  hostnames = [
-    primaryHost
-    "wishlist.${config.custom.mainDomain}"
-    "wuensche.${config.custom.mainDomain}"
-    "wunschliste.${config.custom.mainDomain}"
-  ];
-  serverAliases = lib.remove primaryHost hostnames;
+  # hostnames = [
+  #   primaryHost
+  #   "wishlist.${config.custom.mainDomain}"
+  #   "wuensche.${config.custom.mainDomain}"
+  #   "wunschliste.${config.custom.mainDomain}"
+  # ];
+  # serverAliases = lib.remove primaryHost hostnames;
   dataDir = "/mnt/data/srv/wishlist";
   listenPort = 19001;
 in
@@ -32,10 +32,10 @@ in
       "${dataDir}/data:/usr/src/app/data"
     ];
     environment = {
-      # NOTE We can't set an ORIGIN here since we use multiple hostnames
+      # FIXME We can't set an ORIGIN here since we want multiple hostnames
       # https://github.com/cmintey/wishlist/issues/224
-      # ORIGIN = "https://${primaryHost}";
-      ORIGIN = "";
+      # ... but setting none (or empty) seems to break login
+      ORIGIN = "https://${primaryHost}";
       TOKEN_TIME = "72";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
@@ -45,7 +45,7 @@ in
   };
 
   services.nginx.virtualHosts."${primaryHost}" = {
-    inherit serverAliases;
+    # inherit serverAliases;
     enableACME = true;
     # FIXME https://github.com/NixOS/nixpkgs/issues/210807
     acmeRoot = null;
