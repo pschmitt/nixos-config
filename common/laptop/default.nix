@@ -6,7 +6,7 @@
     ../../services/bitwarden.nix
     ../../services/nix-distributed-build.nix
 
-    ../wifi.nix
+    ../network/wifi.nix
     ./a11y.nix
     ./initrd-network.nix
     ./media.nix
@@ -20,11 +20,11 @@
   services = {
     power-profiles-daemon.enable = lib.mkForce true;
     tlp.enable = lib.mkForce false;
-  };
 
-  # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
-  services.logind.settings.Login = {
-    HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
-    HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+    # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
+    logind.settings.Login = {
+      HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
+      HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+    };
   };
 }
