@@ -32,7 +32,9 @@ in
       "${dataDir}/data:/usr/src/app/data"
     ];
     environment = {
-      ORIGIN = "https://${domain}";
+      # NOTE We can't set an ORIGIN here since we use multiple hostnames
+      # https://github.com/cmintey/wishlist/issues/224
+      # ORIGIN = "https://${domain}";
       TOKEN_TIME = "72";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
