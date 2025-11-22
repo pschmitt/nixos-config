@@ -1,9 +1,17 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
-  # Mirrors ~/.config/hypr/config.d/swag.conf (decorations + animations).
   # See https://wiki.hyprland.org/Configuring/Variables/ and /Animations/ for docs.
   wayland.windowManager.hyprland.settings = lib.mkMerge [
     {
+      env = [
+        "HYPRCURSOR_THEME,${config.gtk.cursorTheme.name}"
+        "HYPRCURSOR_SIZE,24"
+
+        # legacy
+        "XCURSOR_THEME,${config.gtk.cursorTheme.name}"
+        "XCURSOR_SIZE,24"
+      ];
+
       # Decoration/animation tuning from swag.conf.
       decoration = {
         rounding = 2;
