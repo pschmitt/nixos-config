@@ -10,8 +10,8 @@
 
     ../../common/global
     ../../common/mail
-    ../../common/wifi.nix
     ../../common/network
+    ../../common/network/wifi.nix
 
     # XXX Below imports initrd-luks-ssh-unlock etc
     # ../../server

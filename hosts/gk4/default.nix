@@ -8,9 +8,9 @@
     ../../common/global
     ../../common/gui
     ../../common/laptop
+    ../../common/network/sshfs.nix
     ../../common/restic
     ../../common/snek
-    ../../common/sshfs
     ../../common/work
     ../../misc/initrd-luks-ssh-unlock.nix
     ../../services/nfs/nfs-client-all.nix

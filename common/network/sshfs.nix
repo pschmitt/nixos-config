@@ -18,9 +18,9 @@ let
   ];
 
   # tsDomain = "snake-eagle.ts.net";
-  tsDomain = "ts.${config.custom.mainDomain}";
-  netbirdDomain = "nb.${config.custom.mainDomain}";
-  vpnDomain = netbirdDomain;
+  # tsDomain = "ts.${config.custom.mainDomain}";
+  # netbirdDomain = "nb.${config.custom.mainDomain}";
+  vpnDomain = "vpn.${config.custom.mainDomain}";
 in
 {
   # NOTE Arch Linux equivalent /etc/fstab entry:
@@ -39,13 +39,13 @@ in
     "/mnt/hass" = {
       fsType = "fuse";
       # NOTE We cannot use /config here since it is a symlink to /homeassistant
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${tsDomain}:/homeassistant";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
       options = opts;
     };
 
     "/mnt/turris" = {
       fsType = "fuse";
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${tsDomain}:/";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
       options = opts;
     };
 
