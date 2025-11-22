@@ -45,7 +45,7 @@ in
 
     "/mnt/turris" = {
       fsType = "fuse";
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${tsDomain}:/";
       options = opts;
     };
 
