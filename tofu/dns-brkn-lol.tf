@@ -191,3 +191,27 @@ resource "cloudflare_record" "tdarr-brkn-lol" {
   ttl     = 3600
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
+
+resource "cloudflare_record" "wishlist-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "wishlist"
+  type    = "CNAME"
+  ttl     = 3600
+  content = "wish.brkn.lol"
+}
+
+resource "cloudflare_record" "wunschliste-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "wunschliste"
+  type    = "CNAME"
+  ttl     = 3600
+  content = "wish.brkn.lol"
+}
+
+resource "cloudflare_record" "wuensche-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "wuensche"
+  type    = "CNAME"
+  ttl     = 3600
+  content = "wish.brkn.lol"
+}
