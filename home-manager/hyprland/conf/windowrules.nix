@@ -1,6 +1,5 @@
-{ lib, ... }:
+{ lib, osConfig, ... }:
 {
-  # Mirrors ~/.config/hypr/config.d/windowrules.conf (screensharing + pinning rules).
   # Docs: https://wiki.hyprland.org/Configuring/Window-Rules/.
   wayland.windowManager.hyprland.settings = lib.mkMerge [
     {
@@ -35,6 +34,10 @@
         "noscreenshare, $peeppee"
         "noscreenshare, $porn"
         "noscreenshare, $bitwarden"
+      ]
+      ++ lib.optionals (osConfig.networking.hostName != "ge2") [
+        # Place Firefox on workspace 2 by default (except ge2 which has custom layout).
+        "workspace 2, class:^(firefox)$"
       ];
     }
   ];
