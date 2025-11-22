@@ -9,34 +9,12 @@ hyprctl::exec() {
   hyprctl dispatch exec -- "$@"
 }
 
-hyprctl::sleep-exec() {
-  local delay="${1:-1}"
-  shift
-  local cmd=("$@")
-
-  hyprctl::exec "sh -c 'sleep \"${delay}\"; ${cmd[*]@Q}'"
-}
-
 is_nixos() {
   command -v nixos-help &>/dev/null
 }
 
 zhj() {
   "${HOME}/bin/zhj" "$@"
-}
-
-systemd-unit::is-active() {
-  local unit="$1"
-  local state
-  state="$(systemctl --user is-active "$unit" 2>/dev/null)"
-
-  case "$state" in
-    active|activating)
-      return 0
-      ;;
-  esac
-
-  return 1
 }
 
 hyprctl::symlink-dir() {
@@ -50,36 +28,6 @@ hyprctl::symlink-dir() {
 
   rm -rvf "$dest"
   ln -sfv "${XDG_RUNTIME_DIR}/hypr/${HYPRLAND_INSTANCE_SIGNATURE}" "$dest"
-}
-
-hyprctl::set-cursor-theme() {
-  local theme size="${1:-24}"
-  theme="$(zhj mouse-cursor::current-theme)"
-
-  if [[ -z "$theme" ]]
-  then
-    echo "Failed to determine current cursor theme" >&2
-    return 1
-  fi
-
-  hyprctl setcursor "$theme" "$size"
-}
-
-xdg-portal::restart() {
-  local u units=(
-    xdg-desktop-portal.service
-    xdg-desktop-portal-hyprland.service
-  )
-
-  for u in "${units[@]}"
-  do
-    echo "Restarting $u" >&2
-    systemctl --user restart "$u"
-  done
-}
-
-pipewire::restart() {
-  systemctl --user restart pipewire pipewire-pulse
 }
 
 # https://wiki.archlinux.org/title/Running_GUI_applications_as_root#Using_xhost
@@ -108,14 +56,23 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   hyprctl::symlink-dir
 
-  hyprctl::set-cursor-theme 24
+  # Set DISPLAY and WAYLAND_DISPLAY in tmux session if one already exists.
+  if tmux has-session -t main 2>/dev/null
+  then
+    tmux::set-display-vars
+  fi
 
+  # DIRTYFIX Workaround for gnome-keyring not auto-unlocking on hyprland startup
   zhj gnome-keyring::auto-unlock
+
+  # Fix gparted & cie
+  (sleep 10 && fix-root-gui-apps) &
 
   FIREFOX_WORKSPACE=2
   case "${HOSTNAME:-$(hostname)}" in
     ge2)
       FIREFOX_WORKSPACE=1
+      TOGGLE_SPLIT=1
       # NOTE hyprctl refuses to parse batch commands that contain newlines
       hyprctl --batch "\
         dispatch moveworkspacetomonitor 1 desc:LG; \
@@ -127,43 +84,22 @@ then
 
       # Mute default mic
       zhj pulseaudio::mute-default-source
-
-      ;;
-    x13)
-      :
       ;;
   esac
-
-  # FIXME This should not be necessary! Pipewire bug?
-  # Force (re)start of pipewire
-  pipewire::restart
-
-  # Force (re)start of xdg portal
-  (sleep 10 && xdg-portal::restart) &
-
-  # Fix gparted & cie
-  (sleep 10 && fix-root-gui-apps) &
-
-  # Set DISPLAY and WAYLAND_DISPLAY in tmux session if one already exists.
-  if tmux has-session -t main 2>/dev/null
-  then
-    tmux::set-display-vars
-  fi
 
   # Start terminal
   # shellcheck disable=SC2016
   hyprctl::exec '[workspace 1 silent;] kitty "${HOME}/bin/zhj" tmux::attach'
 
-  # Misc apps
+  # Start browser
   hyprctl::exec "[workspace $FIREFOX_WORKSPACE silent;] firefox"
-  # Nextcloud is started via home manager now
-  # if ! pgrep -af nextcloud &>/dev/null
-  # then
-  #   hyprctl::exec nextcloud --background
-  # fi
 
   # DIRTYFIX Fix for the terminal and firefox being split vertically on startup
-  # We want them next to each other
-  sleep 5 && "hyprctl dispatch togglesplit" &
-  wait
+  # We want them next to each other (ge2 only)
+  if [[ -n $TOGGLE_SPLIT ]]
+  then
+    (sleep 5 && hyprctl dispatch togglesplit) &
+  fi
+
+  [[ -n $WAIT ]] && wait
 fi
