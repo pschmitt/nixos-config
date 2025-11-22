@@ -6,6 +6,14 @@
 }:
 let
   domain = "wish.${config.custom.mainDomain}";
+  hostnames = [
+    domain
+    "wishlist.${config.custom.mainDomain}"
+    "wuensche.${config.custom.mainDomain}"
+    "wunschliste.${config.custom.mainDomain}"
+  ];
+  primaryHost = builtins.head hostnames;
+  serverAliases = lib.remove primaryHost hostnames;
   dataDir = "/mnt/data/srv/wishlist";
   listenPort = 19001;
 in
@@ -33,7 +41,8 @@ in
     ports = [ "127.0.0.1:${toString listenPort}:3280" ];
   };
 
-  services.nginx.virtualHosts."${domain}" = {
+  services.nginx.virtualHosts."${primaryHost}" = {
+    inherit serverAliases;
     enableACME = true;
     # FIXME https://github.com/NixOS/nixpkgs/issues/210807
     acmeRoot = null;
