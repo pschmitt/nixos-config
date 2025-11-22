@@ -12,6 +12,9 @@
     inputs.hardware.nixosModules.gpd-pocket-4
     inputs.gpd-fan-driver.nixosModules.default
     ./disko-config.nix
+
+    ../../misc/fprintd.nix
+    ../../misc/touchscreen.nix
   ];
 
   swapDevices = [

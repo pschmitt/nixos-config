@@ -2,8 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../misc/fprintd.nix
-    ../../misc/touchscreen.nix
 
     ../../common/global
     ../../common/gui
