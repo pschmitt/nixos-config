@@ -39,6 +39,8 @@ let
     pkgs.writeShellScript "hm-gpg-import-${entry.name}" ''
       set -euo pipefail
 
+      export GNUPGHOME="${config.home.homeDirectory}/.config/gnupg"
+
       import_key() {
         key_path="$1"
         pass_path="$2"
