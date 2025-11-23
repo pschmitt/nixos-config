@@ -59,6 +59,7 @@ in
       corkscrew
       oci-cli
       openldap
+      opsgenie-cli
       openstackclient-full
       openvpn
       rancher
