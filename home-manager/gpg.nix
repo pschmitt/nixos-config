@@ -65,6 +65,7 @@ let
         ${pkgs.gnupg}/bin/gpg --batch --yes --pinentry-mode loopback \
           --passphrase-file "$pass_path" --import "$key_path"
 
+        local fpr
         fpr="$(${pkgs.gnupg}/bin/gpg --batch --with-colons \
           --pinentry-mode loopback --passphrase-file "$pass_path" \
           --import-options show-only --import "$key_path" \
