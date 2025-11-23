@@ -300,7 +300,7 @@
 
       commonModules = [
         ./modules/custom.nix
-        ./modules/device.nix
+        ./modules/hardware.nix
 
         inputs.disko.nixosModules.disko
         inputs.sops-nix.nixosModules.sops
@@ -326,7 +326,7 @@
             ++ [
               ./hosts/${hostname}
               {
-                device.type = deviceType;
+                hardware.type = deviceType;
                 home-manager.enabled = homeManager;
               }
             ]
@@ -453,9 +453,9 @@
               "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
               inputs.sops-nix.nixosModules.sops
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/pica4
-              { device.type = "rpi"; }
+              { hardware.type = "rpi"; }
             ];
           };
 
@@ -466,9 +466,9 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/iso
-              { device.type = "installation-media"; }
+              { hardware.type = "installation-media"; }
             ];
           };
           iso-graphical = nixpkgs.lib.nixosSystem {
@@ -479,9 +479,9 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
 
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/iso
-              { device.type = "installation-media"; }
+              { hardware.type = "installation-media"; }
             ];
           };
           iso-xmr = nixpkgs.lib.nixosSystem {
@@ -490,9 +490,9 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/iso-xmr
-              { device.type = "installation-media"; }
+              { hardware.type = "installation-media"; }
             ];
           };
 
@@ -503,10 +503,10 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/iso
               ./workarounds/no-efi.nix
-              { device.type = "installation-media"; }
+              { hardware.type = "installation-media"; }
             ];
           };
           iso-xmr-legacy = nixpkgs.lib.nixosSystem {
@@ -515,10 +515,10 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules/custom.nix
-              ./modules/device.nix
+              ./modules/hardware.nix
               ./hosts/iso-xmr
               ./workarounds/no-efi.nix
-              { device.type = "installation-media"; }
+              { hardware.type = "installation-media"; }
             ];
           };
         };

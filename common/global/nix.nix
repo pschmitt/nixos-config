@@ -199,7 +199,7 @@
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
     # };
-    activationScripts = lib.mkIf (!config.custom.raspberryPi) {
+    activationScripts = lib.mkIf (config.hardware.type != "rpi") {
       nixos-needsreboot = {
         supportsDryActivation = true;
         text = "${

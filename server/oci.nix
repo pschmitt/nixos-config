@@ -10,7 +10,7 @@
 {
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   custom.netbirdSetupKey = lib.mkForce "oci";
-  custom.useBIOS = false;
+  hardware.biosBoot = false;
 
   boot.kernelParams = [
     "nvme.shutdown_timeout=10"

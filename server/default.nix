@@ -24,7 +24,7 @@
   ];
 
   custom.server = true;
-  custom.useBIOS = lib.mkDefault true;
+  hardware.biosBoot = lib.mkDefault true;
 
   boot.kernel.sysctl = {
     # Raise inotify limits
@@ -35,7 +35,7 @@
   # Write logs to console
   # https://github.com/nix-community/srvos/blob/main/nixos/common/serial.nix
   boot.kernelParams =
-    if config.custom.kvmGuest then
+    if config.hardware.kvmGuest then
       [
         "console=tty0"
         "console=ttyS0,115200"
