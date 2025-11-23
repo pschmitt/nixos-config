@@ -236,17 +236,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    simple-nixos-mailserver = {
-      url = "gitlab:simple-nixos-mailserver/nixos-mailserver";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    snapd = {
-      url = "github:io12/nix-snapd";
-      # url = "/etc/nixos/nix-snapd.git";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     sops-nix = {
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -311,30 +300,42 @@
 
       commonModules = [
         ./modules/custom.nix
+        ./modules/device.nix
 
         inputs.disko.nixosModules.disko
         inputs.sops-nix.nixosModules.sops
       ];
 
-      nixosSystemFor =
-        system: hostname: configOptions:
+      mkHost =
+        hostname:
+        {
+          system,
+          deviceType,
+          homeManager ? false,
+        }:
+        let
+          isServer = deviceType == "server";
+        in
         nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            inherit inputs outputs configOptions;
+            inherit inputs outputs;
           };
           modules =
             commonModules
-            ++ [ ./hosts/${hostname} ]
-            ++ nixpkgs.lib.optionals (!(configOptions.server or false)) [
+            ++ [
+              ./hosts/${hostname}
+              {
+                device.type = deviceType;
+                home-manager.enabled = homeManager;
+              }
+            ]
+            ++ nixpkgs.lib.optionals homeManager [
               ./home-manager
-              inputs.catppuccin.nixosModules.catppuccin
             ]
-            ++ nixpkgs.lib.optionals (configOptions.server or true) [
-              inputs.simple-nixos-mailserver.nixosModule
+            ++ nixpkgs.lib.optionals isServer [
               inputs.srvos.nixosModules.mixins-terminfo
-            ]
-            ++ nixpkgs.lib.optionals (configOptions.snapd or false) [ inputs.snapd.nixosModules.default ];
+            ];
         };
     in
     {
@@ -387,92 +388,140 @@
 
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
-      nixosConfigurations = {
-        # laptops
-        ge2 = nixosSystemFor "x86_64-linux" "ge2" { laptop = true; };
-        gk4 = nixosSystemFor "x86_64-linux" "gk4" { laptop = true; };
-        x13 = nixosSystemFor "x86_64-linux" "x13" { laptop = true; };
+      nixosConfigurations =
+        (
+          let
+            hostConfigs = {
+              # laptops
+              ge2 = {
+                system = "x86_64-linux";
+                deviceType = "laptop";
+                homeManager = true;
+              };
+              gk4 = {
+                system = "x86_64-linux";
+                deviceType = "laptop";
+                homeManager = true;
+              };
+              x13 = {
+                system = "x86_64-linux";
+                deviceType = "laptop";
+                homeManager = true;
+              };
 
-        # servers
-        lrz = nixosSystemFor "x86_64-linux" "lrz" { server = true; };
-        rofl-08 = nixosSystemFor "x86_64-linux" "rofl-08" { server = true; };
-        rofl-10 = nixosSystemFor "x86_64-linux" "rofl-10" { server = true; };
-        rofl-11 = nixosSystemFor "x86_64-linux" "rofl-11" { server = true; };
-        rofl-12 = nixosSystemFor "x86_64-linux" "rofl-12" { server = true; };
-        rofl-13 = nixosSystemFor "x86_64-linux" "rofl-13" { server = true; };
-        rofl-14 = nixosSystemFor "x86_64-linux" "rofl-14" { server = true; };
-        oci-03 = nixosSystemFor "aarch64-linux" "oci-03" {
-          server = true;
-          snapd = true;
-        };
-        pica4 = nixpkgs.lib.nixosSystem {
-          system = "aarch64-linux";
-          specialArgs = {
-            inherit inputs outputs;
+              # servers
+              lrz = {
+                system = "x86_64-linux";
+                deviceType = "server";
+                homeManager = true;
+              };
+              rofl-10 = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              rofl-11 = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              rofl-12 = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              rofl-13 = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              rofl-14 = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              oci-03 = {
+                system = "aarch64-linux";
+                deviceType = "server";
+              };
+            };
+          in
+          nixpkgs.lib.mapAttrs mkHost hostConfigs
+        )
+        // {
+          pica4 = nixpkgs.lib.nixosSystem {
+            system = "aarch64-linux";
+            specialArgs = {
+              inherit inputs outputs;
+            };
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
+              inputs.sops-nix.nixosModules.sops
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/pica4
+              { device.type = "rpi"; }
+            ];
           };
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-            # overlay all them rpi packages!
-            # inputs.nixos-raspberrypi.nixosModules.nixos-raspberrypi.lib.inject-overlays-global
-            inputs.sops-nix.nixosModules.sops
 
-            ./hosts/pica4
-            ./modules/custom.nix
-          ];
-        };
+          # installation media
+          iso = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/iso
+              { device.type = "installation-media"; }
+            ];
+          };
+          iso-graphical = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
 
-        # installation media
-        iso = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-            ./hosts/iso
-            ./modules/custom.nix
-          ];
-        };
-        iso-graphical = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
-            ./hosts/iso
-            ./modules/custom.nix
-          ];
-        };
-        iso-xmr = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-            ./hosts/iso-xmr
-            ./modules/custom.nix
-          ];
-        };
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/iso
+              { device.type = "installation-media"; }
+            ];
+          };
+          iso-xmr = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/iso-xmr
+              { device.type = "installation-media"; }
+            ];
+          };
 
-        # legacy ISO images (no EFI, BIOS only!)
-        iso-legacy = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-            ./hosts/iso
-            ./modules/custom.nix
-            ./workarounds/no-efi.nix
-          ];
+          # legacy ISO images (no EFI, BIOS only!)
+          iso-legacy = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/iso
+              ./workarounds/no-efi.nix
+              { device.type = "installation-media"; }
+            ];
+          };
+          iso-xmr-legacy = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+              ./modules/custom.nix
+              ./modules/device.nix
+              ./hosts/iso-xmr
+              ./workarounds/no-efi.nix
+              { device.type = "installation-media"; }
+            ];
+          };
         };
-        iso-xmr-legacy = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-            ./hosts/iso-xmr
-            ./modules/custom.nix
-            ./workarounds/no-efi.nix
-          ];
-        };
-      };
     };
 
   nixConfig = {

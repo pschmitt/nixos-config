@@ -1,9 +1,7 @@
 { config, ... }:
 {
   systemd.user.services.gnome-keyring-auto-unlock = {
-    Unit = {
-      Description = "Auto-unlock GNOME keyring";
-    };
+    Unit.Description = "Auto-unlock GNOME keyring";
 
     Service = {
       Type = "oneshot";
@@ -12,16 +10,8 @@
   };
 
   systemd.user.timers.gnome-keyring-auto-unlock = {
-    Unit = {
-      Description = "Auto-unlock GNOME keyring every 5 minutes";
-    };
-
-    Timer = {
-      OnCalendar = "*:0/5"; # every 5 min
-    };
-
-    Install = {
-      WantedBy = [ "timers.target" ];
-    };
+    Unit.Description = "Auto-unlock GNOME keyring every 5 minutes";
+    Timer.OnCalendar = "*:0/5"; # every 5 min
+    Install.WantedBy = [ "timers.target" ];
   };
 }

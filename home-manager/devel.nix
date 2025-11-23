@@ -17,6 +17,13 @@
     gcc
     gnumake
     go
+    (
+      # NOTE go-task binary is named "task", which conflicts with taskwarrior
+      # the nixpkg ships both, but hey it still conflicts. So we just wrap it ;)
+      pkgs.writeShellScriptBin "go-task" ''
+        exec ${pkgs.go-task}/bin/task "$@"
+      ''
+    )
     just
     nodejs
     pkg-config
