@@ -45,9 +45,9 @@ let
       # ${pkgs.coreutils}/bin/touch "$GNUPGHOME/pubring.kbx"
 
       import_key() {
-        key_path="$1"
-        pass_path="$2"
-        label="$3"
+        local key_path="$1"
+        local pass_path="$2"
+        local label="$3"
 
         if [[ ! -s "$key_path" ]]
         then
