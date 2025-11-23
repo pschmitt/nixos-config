@@ -26,6 +26,26 @@ nix_host_configs() {
     -exec sh -c 'i="$1"; basename "$(dirname "$i")"' shell {} \; | sort -u
 }
 
+nix_hm_enabled_hosts() {
+  # shellcheck disable=2016
+  nix eval --json '.#nixosConfigurations' --apply '
+    cfgs: builtins.filter (n: cfgs.${n}.config.home-manager.enabled or false)
+    (builtins.attrNames cfgs)
+   ' | jq -r 'sort | .[]'
+}
+
+hm_host_age_keys_yaml() {
+  local -a hm_hosts
+  mapfile -t hm_hosts < <(nix_hm_enabled_hosts)
+
+  local host host_age_key
+  for host in "${hm_hosts[@]}"
+  do
+    host_age_key=$(host_age_key "$host")
+    echo "- ${host_age_key} # host key of ${host}"
+  done
+}
+
 host_pubkey() {
   local host="$1"
 
@@ -47,8 +67,10 @@ host_age_key() {
 }
 
 sops_config_gen() {
-  local gh_keys hosts
+  local hosts
   mapfile -t hosts < <(nix_host_configs)
+
+  local gh_keys
   gh_keys=$(github_age_keys_yaml)
 
   if [[ -z $gh_keys ]]
@@ -57,19 +79,27 @@ sops_config_gen() {
     return 1
   fi
 
+  local hm_keys
+  hm_keys=$(hm_host_age_keys_yaml)
+
   local sops_config
-  sops_config=$(gh_keys="$gh_keys" yq -n '
+  sops_config=$(gh_keys="$gh_keys" hm_keys="$hm_keys" yq -n '
     {
       "creation_rules": [
         {
           "path_regex": "secrets/shared.*",
           "key_groups": [{"age": env(gh_keys)}]
+        },
+        {
+          "path_regex": "secrets/gpg.sops.yaml",
+          "key_groups": [{"age": env(gh_keys) + env(hm_keys)}]
         }
       ]
     }
   ')
 
-  local creation_rules host host_age_key
+
+  local host creation_rules host_age_key
   for host in "${hosts[@]}"
   do
     host_age_key=$(host_age_key "$host")

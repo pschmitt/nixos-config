@@ -4,6 +4,10 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ../../server
+
+    # home-manager configuration (TEST!)
+    ../../home-manager
+    ../../common/gui/linger.nix
   ];
 
   custom.useBIOS = false;

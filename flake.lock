@@ -70,22 +70,6 @@
         "type": "github"
       }
     },
-    "blobs": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1604995301,
-        "narHash": "sha256-wcLzgLec6SGJA8fx1OEN1yV/Py5b+U5iyYpksUY/yLw=",
-        "owner": "simple-nixos-mailserver",
-        "repo": "blobs",
-        "rev": "2cccdf1ca48316f2cfd1c9a0017e8de5a7156265",
-        "type": "gitlab"
-      },
-      "original": {
-        "owner": "simple-nixos-mailserver",
-        "repo": "blobs",
-        "type": "gitlab"
-      }
-    },
     "catppuccin": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -304,36 +288,6 @@
         "type": "github"
       }
     },
-    "flake-compat_6": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1761588595,
-        "narHash": "sha256-XKUZz9zewJNUj46b4AJdiRZJAvSZ0Dqj2BNfXvFlJC4=",
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "rev": "f387cd2afec9419c8ee37694406ca490c3f34ee5",
-        "type": "github"
-      },
-      "original": {
-        "owner": "edolstra",
-        "repo": "flake-compat",
-        "type": "github"
-      }
-    },
-    "flake-compat_7": {
-      "locked": {
-        "lastModified": 1733328505,
-        "narHash": "sha256-NeCCThCEP3eCl2l/+27kNNK7QrwZB1IJCrXfrbv5oqU=",
-        "rev": "ff81ac966bb2cae68946d5ed5fc4994f96d0ffec",
-        "revCount": 69,
-        "type": "tarball",
-        "url": "https://api.flakehub.com/f/pinned/edolstra/flake-compat/1.1.0/01948eb7-9cba-704f-bbf3-3fa956735b52/source.tar.gz"
-      },
-      "original": {
-        "type": "tarball",
-        "url": "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz"
-      }
-    },
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
@@ -415,24 +369,6 @@
     "flake-parts_5": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib_4"
-      },
-      "locked": {
-        "lastModified": 1760948891,
-        "narHash": "sha256-TmWcdiUUaWk8J4lpjzu4gCGxWY6/Ok7mOK4fIFfBuU4=",
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "rev": "864599284fc7c0ba6357ed89ed5e2cd5040f0c04",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "flake-parts",
-        "type": "github"
-      }
-    },
-    "flake-parts_6": {
-      "inputs": {
-        "nixpkgs-lib": "nixpkgs-lib_5"
       },
       "locked": {
         "lastModified": 1741352980,
@@ -775,32 +711,6 @@
         "type": "github"
       }
     },
-    "git-hooks": {
-      "inputs": {
-        "flake-compat": [
-          "simple-nixos-mailserver",
-          "flake-compat"
-        ],
-        "gitignore": "gitignore_4",
-        "nixpkgs": [
-          "simple-nixos-mailserver",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1763319842,
-        "narHash": "sha256-YG19IyrTdnVn0l3DvcUYm85u3PaqBt6tI6VvolcuHnA=",
-        "owner": "cachix",
-        "repo": "git-hooks.nix",
-        "rev": "7275fa67fbbb75891c16d9dee7d88e58aea2d761",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cachix",
-        "repo": "git-hooks.nix",
-        "type": "github"
-      }
-    },
     "gitignore": {
       "inputs": {
         "nixpkgs": [
@@ -849,28 +759,6 @@
       "inputs": {
         "nixpkgs": [
           "pre-commit-hooks",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1709087332,
-        "narHash": "sha256-HG2cCnktfHsKV0s4XW83gU3F57gaTljL9KNSuG6bnQs=",
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "rev": "637db329424fd7e46cf4185293b9cc8c88c95394",
-        "type": "github"
-      },
-      "original": {
-        "owner": "hercules-ci",
-        "repo": "gitignore.nix",
-        "type": "github"
-      }
-    },
-    "gitignore_4": {
-      "inputs": {
-        "nixpkgs": [
-          "simple-nixos-mailserver",
-          "git-hooks",
           "nixpkgs"
         ]
       },
@@ -2173,21 +2061,6 @@
     },
     "nixpkgs-lib_4": {
       "locked": {
-        "lastModified": 1754788789,
-        "narHash": "sha256-x2rJ+Ovzq0sCMpgfgGaaqgBSwY+LST+WbZ6TytnT9Rk=",
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "rev": "a73b9c743612e4244d865a2fdee11865283c04e6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "nixpkgs.lib",
-        "type": "github"
-      }
-    },
-    "nixpkgs-lib_5": {
-      "locked": {
         "lastModified": 1740877520,
         "narHash": "sha256-oiwv/ZK/2FhGxrCkQkB83i7GnWXPPLzoqFHpDD3uYpk=",
         "owner": "nix-community",
@@ -2515,8 +2388,6 @@
         "pre-commit-hooks": "pre-commit-hooks_3",
         "pschmitt-dev": "pschmitt-dev",
         "sendmyl": "sendmyl",
-        "simple-nixos-mailserver": "simple-nixos-mailserver",
-        "snapd": "snapd",
         "sops-nix": "sops-nix",
         "srvos": "srvos",
         "tdc": "tdc",
@@ -2605,51 +2476,6 @@
       "original": {
         "owner": "pschmitt",
         "repo": "sendmyl",
-        "type": "github"
-      }
-    },
-    "simple-nixos-mailserver": {
-      "inputs": {
-        "blobs": "blobs",
-        "flake-compat": "flake-compat_6",
-        "git-hooks": "git-hooks",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1763564778,
-        "narHash": "sha256-HSWMOylEaTtVgzIjpTbjcjVLXHDwNyV081eVUBfAcMs=",
-        "owner": "simple-nixos-mailserver",
-        "repo": "nixos-mailserver",
-        "rev": "4987d275a90392347f84923cd4cd8efcf0aa7a22",
-        "type": "gitlab"
-      },
-      "original": {
-        "owner": "simple-nixos-mailserver",
-        "repo": "nixos-mailserver",
-        "type": "gitlab"
-      }
-    },
-    "snapd": {
-      "inputs": {
-        "flake-compat": "flake-compat_7",
-        "flake-parts": "flake-parts_5",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1761703712,
-        "narHash": "sha256-OKuNVXmHuZ0zi8T0aGWrBJizIfvdTqV1RiV0IN8GPZs=",
-        "owner": "io12",
-        "repo": "nix-snapd",
-        "rev": "f7694a0e26d890e285137e1b726b1b44038805c4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "io12",
-        "repo": "nix-snapd",
         "type": "github"
       }
     },
@@ -3053,7 +2879,7 @@
     "update-systemd-resolved": {
       "inputs": {
         "devshell": "devshell",
-        "flake-parts": "flake-parts_6",
+        "flake-parts": "flake-parts_5",
         "nixpkgs": [
           "nixpkgs"
         ],

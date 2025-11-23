@@ -17,7 +17,8 @@ let
     fi
 
     echo "Ensuring ownership on $DIR"
-    if ! "$SUDO_BIN" -n chown -R "${osConfig.custom.username}:${osConfig.custom.username}" "$DIR"
+    if ! "$SUDO_BIN" -n ${pkgs.coreutils}/bin/chown \
+       -R "${osConfig.custom.username}:${osConfig.custom.username}" "$DIR"
     then
       echo "Could not change ownership on $DIR (needs passwordless sudo)" >&2
       exit 1
