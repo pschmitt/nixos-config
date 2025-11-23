@@ -1,8 +1,7 @@
 { lib, ... }:
 let
   scriptsDir = ./scripts;
-  scripts =
-    lib.filterAttrs (_: type: type == "regular") (builtins.readDir scriptsDir);
+  scripts = lib.filterAttrs (_: type: type == "regular") (builtins.readDir scriptsDir);
   mkScriptFile = name: {
     name = ".config/hypr/bin/${name}";
     value = {

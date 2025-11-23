@@ -2,7 +2,7 @@
 
 let
   user = osConfig.custom.username;
-  sopsFile = osConfig.custom.sopsFile;
+  inherit (osConfig.custom) sopsFile;
 
   algs = [
     "ed25519"
@@ -20,7 +20,10 @@ let
       alg:
       map (kind: {
         name = secretName alg kind;
-        value = { inherit sopsFile; };
+        value = {
+          inherit sopsFile;
+          mode = if kind == "privkey" then "0400" else "0444";
+        };
       }) kinds
     ) algs
   );

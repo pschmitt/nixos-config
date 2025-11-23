@@ -18,15 +18,13 @@
       ./crypto.nix
       ./devel.nix
       ./flatpak.nix
-      ./hyprland
-      ./niri.nix
-      ./gnome-keyring.nix
       ./mail.nix
       ./mani.nix
       ./misc.nix
       ./networking.nix
       ./nrf.nix
       ./nvim.nix
+      ./gpg.nix
       ./sops.nix
       ./ssh.nix
       ./work.nix
