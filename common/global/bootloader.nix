@@ -2,9 +2,9 @@
 {
   boot = {
     loader =
-      if config.custom.raspberryPi then
+      if config.hardware.type == "rpi" then
         { }
-      else if config.custom.useBIOS then
+      else if config.hardware.biosBoot then
         {
           grub = {
             enable = true;
