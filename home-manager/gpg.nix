@@ -39,7 +39,7 @@ let
     pkgs.writeShellScript "hm-gpg-import-${entry.name}" ''
       set -euo pipefail
 
-      export GNUPGHOME="${config.home.homeDirectory}/.config/gnupg"
+      export GNUPGHOME="''${GNUPGHOME:-${config.home.homeDirectory}/.config/gnupg}"
 
       import_key() {
         key_path="$1"
@@ -73,8 +73,8 @@ let
           return 1
         fi
 
-        printf '%s:6:\n' "$fpr" \
-          | ${pkgs.gnupg}/bin/gpg --batch --yes --import-ownertrust
+        printf '%s:6:\n' "$fpr" | \
+          ${pkgs.gnupg}/bin/gpg --batch --yes --import-ownertrust
       }
 
       import_key \
@@ -97,6 +97,7 @@ in
         };
         Service = {
           Type = "oneshot";
+          Environment = [ "GNUPGHOME=${config.home.homeDirectory}/.config/gnupg" ];
           # Allow subsequent start requests (e.g., when yadm-clone is
           # triggered during activation) to re-run the import.
           RemainAfterExit = false;
