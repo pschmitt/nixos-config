@@ -12,6 +12,7 @@
   };
 
   home.packages = with pkgs; [
+    gitstatus # used by p10k
     nix-your-shell
     vivid
     zoxide
