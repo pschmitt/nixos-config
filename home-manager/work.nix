@@ -51,15 +51,20 @@ in
       master.azure-cli-extensions.fzf
       cmctl
       glab
+
+      # k8s
+      krew
       kubectl
-      kubecolor
       (writeShellScriptBin "kubectl-1.21" ''
         ${pkgs.kubectl-121.kubectl}/bin/kubectl "$@"
       '')
       (writeShellScriptBin "kubectl-1.23" ''
         ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
       '')
+      kubecolor
+      kubectl-rook-ceph
       kubernetes-helm
+
       ipmitool
       jira-cli-go
       ldifj
