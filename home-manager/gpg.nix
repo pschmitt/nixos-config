@@ -41,6 +41,9 @@ let
 
       export GNUPGHOME="''${GNUPGHOME:-${config.home.homeDirectory}/.config/gnupg}"
 
+      ${pkgs.coreutils}/bin/mkdir -p "$GNUPGHOME"
+      # ${pkgs.coreutils}/bin/touch "$GNUPGHOME/pubring.kbx"
+
       import_key() {
         key_path="$1"
         pass_path="$2"
