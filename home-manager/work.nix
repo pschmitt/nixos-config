@@ -95,6 +95,7 @@ in
       (writeShellScriptBin "kubectl-1.23" ''
         ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
       '')
+      kubectl-neat
       kubectl-rook-ceph
       kubernetes-helm
 
