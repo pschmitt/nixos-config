@@ -44,27 +44,11 @@ in
     [
       # Work
       acme-sh
-      argocd
-      argocd-vault-plugin
       master.azure-cli
       master.azure-cli-extensions.ad
       master.azure-cli-extensions.fzf
       cmctl
       glab
-
-      # k8s
-      krew
-      kubectl
-      (writeShellScriptBin "kubectl-1.21" ''
-        ${pkgs.kubectl-121.kubectl}/bin/kubectl "$@"
-      '')
-      (writeShellScriptBin "kubectl-1.23" ''
-        ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
-      '')
-      kubecolor
-      kubectl-rook-ceph
-      kubernetes-helm
-
       ipmitool
       jira-cli-go
       ldifj
@@ -98,6 +82,21 @@ in
       vault
       yamlfmt
       ytt
+
+      # k8s
+      argocd
+      argocd-vault-plugin
+      krew
+      kubectl
+      (writeShellScriptBin "kubectl-1.21" ''
+        ${pkgs.kubectl-121.kubectl}/bin/kubectl "$@"
+      '')
+      (writeShellScriptBin "kubectl-1.23" ''
+        ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
+      '')
+      kubecolor
+      kubectl-rook-ceph
+      kubernetes-helm
 
       # time tracking
       taskwarrior3
