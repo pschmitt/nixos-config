@@ -8,7 +8,9 @@ let
   # Helper to build hostnames across all known suffixes
   mkHostnames = host: [
     host
+    "${host}.lan"
     "${host}.${config.custom.mainDomain}"
+    "${host}.vpn.${config.custom.mainDomain}"
     "${host}.nb.${config.custom.mainDomain}"
     "${host}.ts.${config.custom.mainDomain}"
     "${host}.snake-eagle.ts.net"
