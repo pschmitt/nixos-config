@@ -6,7 +6,7 @@
   ...
 }:
 # NOTE to truly force a new clone from scratch, run this as root:
-# systemctl -M pschmitt@ --user stop yadm-clone yadm-pull yadm-pull.timer zinit-install gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; cp -vaf /home/pschmitt/.ssh/id_ed25519 /root; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh;  mv -vf /root/id_ed25519 /home/pschmitt/.ssh/id_ed25519; chown -R pschmitt:pschmitt /home/pschmitt
+# ssh root@lrz.lan 'systemctl -M pschmitt@ --user stop yadm-clone yadm-pull yadm-pull.timer zinit-install gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; cp -vaf /home/pschmitt/.ssh/id_ed25519 /root; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh;  mv -vf /root/id_ed25519 /home/pschmitt/.ssh/id_ed25519; chown -R pschmitt:pschmitt /home/pschmitt'
 #
 # Then to re-trigger the clone, either reboot or run:
 # nrb --target-host lrz.lan
