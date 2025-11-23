@@ -122,10 +122,11 @@
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
-    # xdph = {
-    #   url = "github:hyprwm/xdg-desktop-portal-hyprland";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    xdph = {
+      # url = "github:hyprwm/xdg-desktop-portal-hyprland";
+      url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     grim-hyprland = {
       url = "github:eriedaberrie/grim-hyprland";
