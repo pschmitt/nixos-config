@@ -155,6 +155,7 @@
       alias scu-disable="systemctl --user disable"
       alias scu-enable-now="systemctl --user enable --now"
       alias scu-enable="systemctl --user enable"
+      alias scu-restart="systemctl --user restart"
       alias scu-start="systemctl --user start"
       alias scu-status="systemctl --user status"
       alias scu-stop="systemctl --user stop"
