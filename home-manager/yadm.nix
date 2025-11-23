@@ -6,9 +6,9 @@
   ...
 }:
 # NOTE to truly force a new clone from scratch, run this as root:
-# systemctl -M pschmitt@ --user stop yadm-clone yadm-pull zinit-install gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh; chown -R pschmitt:pschmitt /home/pschmitt
+# systemctl -M pschmitt@ --user stop yadm-clone yadm-pull yadm-pull.timer zinit-install gpg-import-private gpg-import-work gpg-agent.service gpg-agent.socket; cp -vaf /home/pschmitt/.ssh/id_ed25519 /root; rm -rf /home/pschmitt; mkdir -p /home/pschmitt/.ssh;  mv -vf /root/id_ed25519 /home/pschmitt/.ssh/id_ed25519; chown -R pschmitt:pschmitt /home/pschmitt
 # Then to re-trigger the clone, either reboot or run:
-# scp ~/.ssh/id_ed25519 pschmitt@lrz.lan:~/.ssh/id_ed25519 && nrb --target-host lrz.lan
+# nrb --target-host lrz.lan
 
 let
   yadmCloneScript = pkgs.writeShellScript "yadm-clone" ''
