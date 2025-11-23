@@ -27,6 +27,7 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
   oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
+  opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
 
   # OBS Studio
   obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
