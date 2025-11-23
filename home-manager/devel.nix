@@ -41,6 +41,7 @@
     flarectl
     hostctl
     sqlite
+    tmux-xpanes
     websocat
 
     # ai
