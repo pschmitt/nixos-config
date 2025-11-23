@@ -11,16 +11,16 @@ in
 {
   config = lib.mkIf (!config.custom.cattle) {
     sops.secrets."mail/brkn-lol" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = config.custom.username;
     };
     sops.secrets."mail/gmail" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = config.custom.username;
     };
 
     programs.msmtp = {
-      enable = !config.mailserver.enable;
+      enable = true;
       setSendmail = true;
       defaults = {
         auth = true;
