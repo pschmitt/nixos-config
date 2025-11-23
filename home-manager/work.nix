@@ -52,6 +52,7 @@ in
       cmctl
       glab
       kubectl
+      kubecolor
       (writeShellScriptBin "kubectl-1.21" ''
         ${pkgs.kubectl-121.kubectl}/bin/kubectl "$@"
       '')
