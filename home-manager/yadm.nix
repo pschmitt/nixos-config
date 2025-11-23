@@ -9,6 +9,7 @@ let
   yadmCloneScript = pkgs.writeShellScript "yadm-clone" ''
     set -euo pipefail
 
+    export GNUPGHOME="${config.home.homeDirectory}/.config/gnupg"
     export GIT_SSH_COMMAND="${pkgs.openssh}/bin/ssh -i ${config.home.homeDirectory}/.ssh/hm/id_ed25519"
 
     echo "Cloning yadm repo (recursive, no bootstrap)"
