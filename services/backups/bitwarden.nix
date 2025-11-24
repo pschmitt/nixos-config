@@ -2,7 +2,7 @@
 
 {
   sops.secrets."bw-backup" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
   };
 
   virtualisation.oci-containers.containers = {
