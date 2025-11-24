@@ -2,21 +2,24 @@ name: update flake.lock
 on:
   workflow_dispatch: # allows manual triggering
   schedule:
-    - cron: '0 3 * * *' # runs daily at 03:00 AM (GMT)
+    - cron: "0 3 * * *" # runs daily at 03:00 AM (GMT)
 
 jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
+      # FIXME: switch back to actions/checkout@v6 once the PR creation issue is
+      # resolved
+      # https://github.com/DeterminateSystems/update-flake-lock/issues/223
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
       - name: Update flake.lock
         uses: DeterminateSystems/update-flake-lock@main
         with:
           pr-title: "Update flake.lock" # Title of PR to be created
-          pr-labels: |                  # Labels to be set on the PR
+          pr-labels: | # Labels to be set on the PR
             flake-lock
           # https://github.com/DeterminateSystems/update-flake-lock?tab=readme-ov-file#with-a-personal-authentication-token
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
