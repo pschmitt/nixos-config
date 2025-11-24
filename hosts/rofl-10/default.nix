@@ -30,6 +30,7 @@
     ../../services/rclone-bisync.nix
     ../../services/searxng.nix
     ../../services/turris-ssh-tunnel.nix
+    ../../services/vaultwarden.nix
     ../../services/vdirsyncer.nix
     ../../services/wishlist.nix
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
