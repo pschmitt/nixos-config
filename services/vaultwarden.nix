@@ -1,18 +1,22 @@
-_:
+{ lib, ... }:
 let
   primaryHost = "vault.brkn.lol";
   serverAliases = [ "bw.brkn.lol" ];
   vaultwardenPort = 8222;
   websocketPort = 3012;
+
+  rootDir = "/srv/vaultwarden";
+  dataDir = "${rootDir}/data";
+  backupDir = "${rootDir}/backups";
 in
 {
   services.vaultwarden = {
     enable = true;
-    backupDir = "/srv/vaultwarden/backups";
+    inherit backupDir;
     config = {
       DOMAIN = "https://${primaryHost}";
-      SIGNUPS_ALLOWED = false;
-      DATA_FOLDER = "/srv/vaultwarden/data";
+      SIGNUPS_ALLOWED = lib.mkForce false;
+      DATA_FOLDER = dataDir;
       ROCKET_ADDRESS = "127.0.0.1";
       ROCKET_PORT = vaultwardenPort;
       WEBSOCKET_ENABLED = true;
@@ -45,11 +49,16 @@ in
     };
   };
 
-  systemd.tmpfiles.rules = [
-    "d /srv/vaultwarden 0750 vaultwarden vaultwarden -"
-    "d /srv/vaultwarden/data 0750 vaultwarden vaultwarden -"
-    "d /srv/vaultwarden/backups 0770 vaultwarden vaultwarden -"
-  ];
+  systemd = {
+    tmpfiles.rules = [
+      "d ${rootDir}   0750 vaultwarden vaultwarden -"
+      "d ${dataDir}   0750 vaultwarden vaultwarden -"
+      "d ${backupDir} 0770 vaultwarden vaultwarden -"
+    ];
 
-  systemd.services.vaultwarden.serviceConfig.ReadWritePaths = [ "/srv/vaultwarden" ];
+    services.vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];
+
+    # Ensure built-in backup service uses the custom data dir.
+    services.backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
+  };
 }
