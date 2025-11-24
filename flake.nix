@@ -83,6 +83,11 @@
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.nixpkgs.follows = "hyprland";
+    };
+
     hyprdynamicmonitors = {
       url = "github:fiffeek/hyprdynamicmonitors";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -125,7 +130,7 @@
     xdph = {
       # url = "github:hyprwm/xdg-desktop-portal-hyprland";
       url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "hyprland";
     };
 
     grim-hyprland = {
