@@ -122,7 +122,7 @@ in
               name,
             }:
             {
-              name = name;
+              inherit name;
               urls = [
                 {
                   template = "https://git.mgmt.innovo-cloud.de/search";

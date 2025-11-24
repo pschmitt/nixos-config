@@ -19,6 +19,7 @@
     final: prev:
     (import ./brotab.nix { inherit final prev; })
     // (import ./hass-cli.nix { inherit final prev; })
+    // (import ./go-task.nix { inherit final prev; })
     # // (import ./netbird.nix { inherit final prev; })
     // (import ./openstack-cli.nix { inherit final prev; })
     // (import ./paperless-ngx.nix { inherit final prev; })
