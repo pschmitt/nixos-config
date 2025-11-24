@@ -8,11 +8,13 @@ jobs:
   lockfile:
     runs-on: ubuntu-latest
     steps:
-      # FIXME: switch back to actions/checkout@v6 once the PR creation issue is
-      # resolved
-      # https://github.com/DeterminateSystems/update-flake-lock/issues/223
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+        # FIXME Remove the option below once
+        # https://github.com/DeterminateSystems/update-flake-lock/issues/223
+        # is fixed
+        with:
+          persist-credentials: false
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
       - name: Update flake.lock
