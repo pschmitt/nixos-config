@@ -75,5 +75,9 @@
     nixpkgs-fmt
     nvd
     statix
+
+    # zsh
+    revolver
+    zunit
   ];
 }
