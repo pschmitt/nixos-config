@@ -12,7 +12,7 @@
       environmentFiles = [ config.sops.secrets."bw-backup".path ];
       environment = {
         CRON = "0 0 * * *";
-        # DEBUG = "true";
+        DEBUG = "true";
       };
       volumes = [ "/srv/bw-backup:/data" ];
     };
