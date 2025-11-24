@@ -14,6 +14,7 @@
     python3Packages.woob
 
     # devel
+    diff-so-fancy
     gcc
     gnumake
     go
