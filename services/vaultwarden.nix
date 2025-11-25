@@ -27,7 +27,7 @@ in
     secrets = {
       "vaultwarden/smtp/host" = secretAttrs;
       "vaultwarden/smtp/port" = secretAttrs;
-      "vaultwarden/smtp/encryption" = secretAttrs;
+      "vaultwarden/smtp/security" = secretAttrs;
       "vaultwarden/smtp/username" = secretAttrs;
       "vaultwarden/smtp/password" = secretAttrs;
       "vaultwarden/smtp/from" = secretAttrs;
