@@ -39,7 +39,7 @@ let
     pkgs.writeShellScript "hm-gpg-import-${entry.name}" ''
       set -euo pipefail
 
-      export GNUPGHOME="''${GNUPGHOME:-${config.home.homeDirectory}/.config/gnupg}"
+      export GNUPGHOME=${config.home.sessionVariables.GNUPGHOME}
 
       ${pkgs.coreutils}/bin/mkdir -p "$GNUPGHOME"
       # ${pkgs.coreutils}/bin/touch "$GNUPGHOME/pubring.kbx"
@@ -101,7 +101,7 @@ in
         };
         Service = {
           Type = "oneshot";
-          Environment = [ "GNUPGHOME=${config.home.homeDirectory}/.config/gnupg" ];
+          Environment = [ "GNUPGHOME=${config.home.sessionVariables.GNUPGHOME}" ];
           # Allow subsequent start requests (e.g., when yadm-clone is
           # triggered during activation) to re-run the import.
           RemainAfterExit = false;

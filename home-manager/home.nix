@@ -17,6 +17,7 @@
       ./bitwarden.nix
       ./crypto.nix
       ./devel.nix
+      ./env.nix
       ./flatpak.nix
       ./mail.nix
       ./mani.nix
