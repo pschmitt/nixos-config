@@ -6,12 +6,10 @@
     ../../common/global
     ../../common/gui
     ../../common/laptop
-    ../../common/network/sshfs.nix
     ../../common/restic
-    ../../common/snek
     ../../common/work
+
     ../../misc/initrd-luks-ssh-unlock.nix
-    ../../services/nfs/nfs-client-all.nix
     ../../services/nixos-installer-boot-entry.nix
   ];
 
