@@ -1,4 +1,10 @@
-{ config, inputs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [ inputs.poor-tools.nixosModules.default ];
 
@@ -25,4 +31,16 @@
       "poor.curl-pipe.sh" = nginxConfig;
       "poor.${config.custom.mainDomain}" = nginxConfig;
     };
+
+  services.monit.config = lib.mkAfter ''
+    check host "poor-installer-web" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart poor-installer-web.service"
+      if failed
+        port ${toString config.services.poor-installer-web.bindPort}
+        protocol http
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }

@@ -131,4 +131,14 @@ in
       };
     };
   };
+
+  services.monit.config = lib.mkAfter ''
+    check host "http-static-blobs" with address "blobs.${config.custom.mainDomain}"
+      group services
+      if failed
+        port 443
+        protocol https
+        with timeout 15 seconds
+      then alert
+  '';
 }

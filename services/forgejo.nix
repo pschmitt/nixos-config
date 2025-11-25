@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   forgejoHostName = "git.${config.custom.mainDomain}";
 in
@@ -81,4 +86,16 @@ in
         virtualHosts = virtualHosts;
       };
   };
+
+  services.monit.config = lib.mkAfter ''
+    check host "forgejo" with address "${config.services.forgejo.settings.server.HTTP_ADDR}"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart forgejo.service"
+      if failed
+        port ${toString config.services.forgejo.settings.server.HTTP_PORT}
+        protocol http
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
