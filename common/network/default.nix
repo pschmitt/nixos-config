@@ -3,7 +3,7 @@
   imports = [
     ./network.nix
     ./netbird.nix
-    ./proxy.nix
+    ./snek/proxychains.nix
     ./tailscale.nix
     ./zerotier.nix
   ];

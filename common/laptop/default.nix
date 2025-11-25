@@ -7,7 +7,7 @@
     ../../services/nfs/nfs-client-all.nix
     ../../services/nix-distributed-build.nix
 
-    ../../common/network/snek.nix
+    ../../common/network/snek
     ../../common/network/sshfs.nix
 
     ../network/wifi.nix
