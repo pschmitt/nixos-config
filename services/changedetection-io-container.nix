@@ -10,6 +10,7 @@ let
   listenPort = 24264;
   networkName = "changedetection-io";
   containerBackend = config.virtualisation.oci-containers.backend;
+  monitUnit = "${containerBackend}-changedetection-io.service";
   runtimePkg =
     if containerBackend == "docker" then
       pkgs.docker
@@ -65,4 +66,15 @@ in
     fi
   '';
 
+  services.monit.config = lib.mkAfter ''
+    check host "changedetection-io" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart ${monitUnit}"
+      if failed
+        port ${toString listenPort}
+        protocol http
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
