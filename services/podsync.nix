@@ -17,10 +17,4 @@
       Persistent = true;
     };
   };
-
-  services.monit.config = lib.mkAfter ''
-    check program "podsync-yt-dlp-update.timer" with path "${pkgs.systemd}/bin/systemctl is-active podsync-yt-dlp-update.timer"
-      group services
-      if status > 0 then alert
-  '';
 }
