@@ -230,9 +230,9 @@
   # ];
 
   # programs.google-chrome.nativeMessagingHosts for poor people
-  home.file =
+  xdg.configFile =
     let
-      dest = ".config/google-chrome/NativeMessagingHosts";
+      dest = "google-chrome/NativeMessagingHosts";
     in
     {
       # BroTab for Google Chrome
