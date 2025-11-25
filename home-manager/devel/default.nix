@@ -1,4 +1,9 @@
 { pkgs, ... }:
+let
+  httpasswdPkg = pkgs.writeShellScriptBin "htpasswd" ''
+    exec ${pkgs.apacheHttpd}/bin/htpasswd "$@"
+  '';
+in
 {
 
   imports = [
@@ -13,13 +18,11 @@
   ];
 
   home.packages = with pkgs; [
-    apacheHttpd # for htpasswd
     codespell
     envsubst
     flarectl
-    hostctl
+    httpasswdPkg
     inotify-tools
-    openssl
     sqlite
     tmux-xpanes
     websocat
@@ -28,10 +31,5 @@
     gnumake
     go-task
     just
-
-    # compilers and shit
-    gcc
-    go
-    nodejs
   ];
 }
