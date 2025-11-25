@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   sops.secrets = {
     "cloudflare/email" = { };
@@ -44,4 +49,12 @@
       443
     ];
   };
+
+  services.monit.config = lib.mkAfter ''
+    check program "nginx" with path "${pkgs.systemd}/bin/systemctl is-active nginx"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart nginx"
+      if status > 0 then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
