@@ -94,8 +94,12 @@ in
     serviceConfig = {
       User = "xmrigproxy";
       Group = "xmrigproxy";
-      # FIXME The socks5 proxy seems to NOT be used at all
-      ExecStart = "${pkgs.xmrig-proxy}/bin/xmrig-proxy -x rofl-11.nb.${config.custom.mainDomain}:1080 -c ${config.sops.templates.xmrigProxyConfig.path}";
+      # FIXME The socks5 proxy seems to NOT be used at all when we append
+      # -x HOST:PORT to the command -> wrap with proxychains4
+      # To verify:
+      # sudo tcpdump -i any host pool.hashvault.pro and port 443
+      # sudo tcpdump -i any host 10.64.0.1 and port 1080
+      ExecStart = "${pkgs.proxychains}/bin/proxychains4 ${pkgs.xmrig-proxy}/bin/xmrig-proxy -c ${config.sops.templates.xmrigProxyConfig.path}";
       # Increase open file limit if expecting many connections
       LimitNOFILE = 65535;
       Restart = "on-failure";
