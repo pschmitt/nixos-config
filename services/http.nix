@@ -52,6 +52,7 @@
 
   services.monit.config = lib.mkAfter ''
     check program "nginx" with path "${pkgs.systemd}/bin/systemctl is-active nginx"
+      group nginx
       group services
       restart program = "${pkgs.systemd}/bin/systemctl restart nginx"
       if status > 0 then restart

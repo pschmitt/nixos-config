@@ -7,12 +7,14 @@ let
   monitTailscale = ''
     check network tailscale with interface tailscale0
       group "network"
+      group "tailscale"
       restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
       if link down for 2 cycles then restart
       if 5 restarts within 10 cycles then alert
 
     check host "tailscale magicdns" with address 100.100.100.100
       group "network"
+      group "tailscale"
       depends on "tailscale"
       restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
       if failed ping for 2 cycles then restart
