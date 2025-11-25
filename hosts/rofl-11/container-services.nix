@@ -10,7 +10,6 @@ in
 {
   imports = [
     ../../modules/container-services.nix
-    ../../services/docker-compose-bulk.nix
   ];
 
   custom.containerServices = {
