@@ -49,45 +49,59 @@ in
     };
   };
 
-  services.vaultwarden = {
-    enable = true;
-    inherit backupDir;
-    environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
-    config = {
-      DOMAIN = "https://${primaryHost}";
-      SIGNUPS_ALLOWED = lib.mkForce false;
-      DATA_FOLDER = dataDir;
-      ROCKET_ADDRESS = "127.0.0.1";
-      ROCKET_PORT = vaultwardenPort;
-      WEBSOCKET_ENABLED = true;
-      WEBSOCKET_ADDRESS = "127.0.0.1";
-      WEBSOCKET_PORT = websocketPort;
-      SMTP_FROM_NAME = "Vaultwarden";
+  services = {
+    vaultwarden = {
+      enable = true;
+      inherit backupDir;
+      environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
+      config = {
+        DOMAIN = "https://${primaryHost}";
+        SIGNUPS_ALLOWED = lib.mkForce false;
+        DATA_FOLDER = dataDir;
+        ROCKET_ADDRESS = "127.0.0.1";
+        ROCKET_PORT = vaultwardenPort;
+        WEBSOCKET_ENABLED = true;
+        WEBSOCKET_ADDRESS = "127.0.0.1";
+        WEBSOCKET_PORT = websocketPort;
+        SMTP_FROM_NAME = "Vaultwarden";
+      };
     };
-  };
 
-  services.nginx.virtualHosts.${primaryHost} = {
-    inherit serverAliases;
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-    locations = {
-      "/" = {
-        proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-      };
-      "/notifications/hub" = {
-        proxyPass = "http://127.0.0.1:${toString websocketPort}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-      };
-      "/notifications/hub/negotiate" = {
-        proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
-        recommendedProxySettings = true;
+    nginx.virtualHosts.${primaryHost} = {
+      inherit serverAliases;
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      locations = {
+        "/" = {
+          proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+        };
+        "/notifications/hub" = {
+          proxyPass = "http://127.0.0.1:${toString websocketPort}";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+        };
+        "/notifications/hub/negotiate" = {
+          proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
+          recommendedProxySettings = true;
+        };
       };
     };
+
+    monit.config = lib.mkAfter ''
+      check host "vaultwarden" with address "127.0.0.1"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
+        if failed
+          port ${toString vaultwardenPort}
+          protocol http
+          with timeout 15 seconds
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
   };
 
   systemd = {
@@ -97,21 +111,11 @@ in
       "d ${backupDir} 0770 vaultwarden vaultwarden -"
     ];
 
-    services.vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];
+    services = {
+      vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];
 
-    # Ensure built-in backup service uses the custom data dir.
-    services.backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
+      # Ensure built-in backup service uses the custom data dir.
+      backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
+    };
   };
-
-  services.monit.config = lib.mkAfter ''
-    check host "vaultwarden" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
-      if failed
-        port ${toString vaultwardenPort}
-        protocol http
-        with timeout 15 seconds
-      then restart
-      if 5 restarts within 10 cycles then alert
-  '';
 }
