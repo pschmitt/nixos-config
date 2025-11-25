@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ./disk-config.nix
@@ -11,7 +11,12 @@
     ../../services/http.nix
     ../../services/nfs/nfs-client-rofl-11.nix
     ../../services/tdarr-node.nix
-    ../../services/xmr/xmrig.nix
+
+    (import ../../services/xmr/xmrig.nix {
+      inherit config lib;
+      useProxy = true;
+      cpuUsage = 50;
+    })
   ];
 
   custom.cattle = true;
