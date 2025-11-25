@@ -38,7 +38,7 @@ in
         SMTP_FROM="${config.sops.placeholder."vaultwarden/smtp/from"}"
         SMTP_HOST="${config.sops.placeholder."vaultwarden/smtp/host"}"
         SMTP_PORT="${toString config.sops.placeholder."vaultwarden/smtp/port"}"
-        SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/encryption"}"
+        SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/security"}"
         SMTP_USERNAME="${config.sops.placeholder."vaultwarden/smtp/username"}"
         SMTP_PASSWORD="${config.sops.placeholder."vaultwarden/smtp/password"}"
       '';
@@ -63,7 +63,6 @@ in
         WEBSOCKET_ENABLED = true;
         WEBSOCKET_ADDRESS = "127.0.0.1";
         WEBSOCKET_PORT = websocketPort;
-        SMTP_FROM_NAME = "Vaultwarden";
       };
     };
 
