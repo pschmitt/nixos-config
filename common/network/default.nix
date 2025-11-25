@@ -3,6 +3,7 @@
   imports = [
     ./network.nix
     ./netbird.nix
+    ./proxy.nix
     ./tailscale.nix
     ./zerotier.nix
   ];
