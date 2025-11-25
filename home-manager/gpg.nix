@@ -39,7 +39,7 @@ let
     pkgs.writeShellScript "hm-gpg-import-${entry.name}" ''
       set -euo pipefail
 
-      export GNUPGHOME=${config.home.sessionVariables.GNUPGHOME}
+      export GNUPGHOME="${config.programs.gpg.homedir}"
 
       ${pkgs.coreutils}/bin/mkdir -p "$GNUPGHOME"
       # ${pkgs.coreutils}/bin/touch "$GNUPGHOME/pubring.kbx"
@@ -90,10 +90,10 @@ in
 {
   sops.secrets = sopsSecrets;
 
-  # programs.gnupg = {
-  #   enable = true;
-  #   homedir = config.home.sessionVariables.GNUPGHOME;
-  # };
+  programs.gpg = {
+    enable = true;
+    homedir = "${config.xdg.configHome}/gnupg";
+  };
 
   systemd.user.services = builtins.listToAttrs (
     builtins.map (entry: {
@@ -106,7 +106,7 @@ in
         };
         Service = {
           Type = "oneshot";
-          Environment = [ "GNUPGHOME=${config.home.sessionVariables.GNUPGHOME}" ];
+          Environment = [ "GNUPGHOME=${config.programs.gpg.homedir}" ];
           # Allow subsequent start requests (e.g., when yadm-clone is
           # triggered during activation) to re-run the import.
           RemainAfterExit = false;

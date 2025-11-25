@@ -22,7 +22,7 @@ let
       git@github.com:pschmitt/yadm-config.git
 
     # FIXME this requires user interaction, so it does not work in the activation script
-    # export GNUPGHOME="${config.home.sessionVariables.GNUPGHOME}"
+    # export GNUPGHOME="${config.programs.gpg.homedir}"
     # echo "Attempting yadm decrypt"
     # ${pkgs.yadm}/bin/yadm decrypt
   '';
