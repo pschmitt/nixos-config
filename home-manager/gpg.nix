@@ -90,6 +90,11 @@ in
 {
   sops.secrets = sopsSecrets;
 
+  # programs.gnupg = {
+  #   enable = true;
+  #   homedir = config.home.sessionVariables.GNUPGHOME;
+  # };
+
   systemd.user.services = builtins.listToAttrs (
     builtins.map (entry: {
       name = "gpg-import-${entry.name}";
