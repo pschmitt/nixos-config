@@ -2,16 +2,14 @@
 
 let
   domain = config.custom.mainDomain;
-  hostName = config.networking.hostName;
+  inherit (config.networking) hostName;
   mkHost = subdomain: "${subdomain}.${domain}";
   mkHostWithNode = subdomain: "${subdomain}.${hostName}.${domain}";
   wildcardCert = "wildcard.${domain}";
-
 in
 {
   imports = [
     ../../modules/container-services.nix
-    ../../services/docker-compose-bulk.nix
   ];
 
   custom.containerServices = {
