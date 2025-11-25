@@ -10,6 +10,14 @@
   programs.firefox = {
     enable = true;
 
+    nativeMessagingHosts = with pkgs; [
+      brotab
+      fx-cast-bridge
+      native-client # external-application-button
+      tridactyl-native
+      vdhcoapp
+    ];
+
     profiles.default = {
       extensions.packages = with pkgs.firefox-addons; [
         # https://gitlab.com/rycee/nur-expressions
@@ -214,31 +222,26 @@
     };
   };
 
-  # FIXME This seems to be the only really working way to install
-  # native messaging hosts.
-  # programs.firefox.nativeMessagingHosts.packages doesn't work!
-  home = {
-    file = {
-      ".mozilla/native-messaging-hosts/brotab_mediator.json".source =
-        "${pkgs.brotab}/lib/mozilla/native-messaging-hosts/brotab_mediator.json";
-      ".mozilla/native-messaging-hosts/fx_cast_bridge.json".source =
-        "${pkgs.fx-cast-bridge}/lib/mozilla/native-messaging-hosts/fx_cast_bridge.json";
-      # external-application-button
-      ".mozilla/native-messaging-hosts/com.add0n.node.json".source =
-        "${pkgs.native-client}/lib/mozilla/native-messaging-hosts/com.add0n.node.json";
-      ".mozilla/native-messaging-hosts/net.downloadhelper.coapp.json".source =
-        "${pkgs.vdhcoapp}/lib/mozilla/native-messaging-hosts/net.downloadhelper.coapp.json";
-      ".mozilla/native-messaging-hosts/tridactyl.json".source =
-        "${pkgs.tridactyl-native}/lib/mozilla/native-messaging-hosts/tridactyl.json";
+  # NOTE Below is *only* for chromium, not google-chrome-stable!
+  # programs.chromium.nativeMessagingHosts = with pkgs; [
+  #   brotab
+  #   native-client # external-application-button
+  #   vdhcoapp
+  # ];
 
+  # programs.google-chrome.nativeMessagingHosts for poor people
+  home.file =
+    let
+      dest = ".config/google-chrome/NativeMessagingHosts";
+    in
+    {
       # BroTab for Google Chrome
-      ".config/google-chrome/NativeMessagingHosts/brotab_mediator.json".source =
+      "${dest}/brotab_mediator.json".source =
         "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
       # Native Addon (for open in firefox)
-      ".config/google-chrome/NativeMessagingHosts/com.add0n.node.json".source =
+      "${dest}/com.add0n.node.json".source =
         "${pkgs.native-client}/lib/chromium/NativeMessagingHosts/com.add0n.node.json";
     };
-  };
 
   systemd.user.services.fx-cast = {
     Unit = {
@@ -246,12 +249,8 @@
       Documentation = "https://hensm.github.io/fx_cast/";
     };
 
-    Service = {
-      ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
-    };
+    Service.ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
 
-    Install = {
-      WantedBy = [ "default.target" ];
-    };
+    Install.WantedBy = [ "graphical-session.target" ];
   };
 }
