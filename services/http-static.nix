@@ -134,6 +134,7 @@ in
 
   services.monit.config = lib.mkAfter ''
     check host "http-static-blobs" with address "blobs.${config.custom.mainDomain}"
+      group nginx
       group services
       if failed
         port 443
