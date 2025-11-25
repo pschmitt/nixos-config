@@ -57,6 +57,8 @@ in
       luajit
       stylua
 
+      nodejs # for copilot
+
       imagemagick # for image.nvim
     ];
 
