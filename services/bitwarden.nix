@@ -1,7 +1,7 @@
 { config, ... }:
 {
   sops.secrets."bitwarden/password" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
     owner = config.custom.username;
   };
 }
