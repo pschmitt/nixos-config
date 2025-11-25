@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "Usage: $(basename "$0") [--force] [--openstack|--oci] NEW_HOSTNAME"
+  echo "Usage: $(basename "$0") [--force] [--openstack|--oci|--laptop] NEW_HOSTNAME"
 }
 
 main() {
@@ -30,6 +30,10 @@ main() {
         ;;
       --openstack-leg*)
         TEMPLATE_TYPE="openstack-legacy"
+        shift
+        ;;
+      --laptop)
+        TEMPLATE_TYPE="laptop"
         shift
         ;;
       --raw)
@@ -71,11 +75,12 @@ main() {
   ./secrets/ssh-gen-known-hosts.sh
 
   # tofu config
-  if [[ "$TEMPLATE_TYPE" == "raw" ]]
-  then
-    echo "Raw template does not support tofu configuration."
-    return 0
-  fi
+  case "$TEMPLATE_TYPE" in
+    raw|laptop)
+      echo "Template '$TEMPLATE_TYPE' does not support tofu configuration."
+      return 0
+      ;;
+  esac
 
   TOFU_CONF="./tofu/${NEW_HOSTNAME}.tf"
   sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" "./templates/tofu/${TEMPLATE_TYPE}/host.tf" \
