@@ -40,6 +40,7 @@ in
     withPython3 = false;
 
     extraPackages = with pkgs; [
+      codespell
       tree-sitter
 
       # vimPlugins.nvim-treesitter.withAllGrammars
