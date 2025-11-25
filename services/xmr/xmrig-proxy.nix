@@ -94,6 +94,19 @@ in
     serviceConfig = {
       User = "xmrigproxy";
       Group = "xmrigproxy";
+
+      # Block all - but our proxy
+      # Below is too strict, miners will not be able to connect
+      # IPAddressDeny = [ "any" ];
+
+      # Block IPv6
+      IPAddressDeny = [ "::/0" ];
+      IPAddressAllow = [
+        config.programs.proxychains.proxies.mullvad.host
+        # cgnat (nb+ts)
+        "100.64.0.0/10"
+      ];
+
       # FIXME The socks5 proxy seems to NOT be used at all when we append
       # -x HOST:PORT to the command -> wrap with proxychains4
       # To verify:
