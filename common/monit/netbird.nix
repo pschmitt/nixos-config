@@ -55,6 +55,7 @@ let
   monitNetbird = ''
     check program "netbird login" with path "${netbirdStatus}"
       group "network"
+      group "netbird"
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
       if status != 0 then restart
       # recovery
@@ -64,10 +65,12 @@ let
 
     check program "netbird hostname" with path "${netbirdHostname}"
       group "network"
+      group "netbird"
       if status != 0 then alert
 
     check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
       group "network"
+      group "netbird"
       depends on "netbird login"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io-autoconnect"
       if status != 0 then restart
