@@ -1,8 +1,10 @@
 { inputs, pkgs, ... }:
 {
   home.packages = with pkgs; [
+    hostctl
     iftop
     nethogs
+    openssl
     tcpdump
     termshark
     traceroute
