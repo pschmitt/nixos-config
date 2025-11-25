@@ -42,10 +42,9 @@ let
   autheliaUnitsEnv = concatStringsSep " " autheliaServiceNames;
   trustedHostsEnv = concatStringsSep " " trustedHosts;
   autheliaLocalNetworksEnv = concatStringsSep "\n" autheliaLocalNetworks;
-  trustedNetworksUpdaterScript =
-    pkgs.writeShellScript "update-container-trusted-networks" (
-      builtins.readFile ../services/scripts/update-container-trusted-networks.sh
-    );
+  trustedNetworksUpdaterScript = pkgs.writeShellScript "update-container-trusted-networks" (
+    builtins.readFile ../services/scripts/update-container-trusted-networks.sh
+  );
   nginxServiceName = "nginx.service";
 
   # Effective Authz URL (can be overridden via options below)
@@ -157,7 +156,10 @@ let
             enable = mkEnableOption "authentication for this service";
 
             type = mkOption {
-              type = types.enum [ "basic" "sso" ];
+              type = types.enum [
+                "basic"
+                "sso"
+              ];
               default = "sso";
               defaultText = "\"sso\"";
               description = ''
@@ -212,7 +214,9 @@ let
     ''
       check host "${serviceName}" with address "127.0.0.1"
         group services
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --force-recreate --always-recreate-deps${optionalString (restartTarget != null) " ${restartTarget}"}"
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --no-deps${
+          optionalString (restartTarget != null) " ${restartTarget}"
+        }"
           with timeout 180 seconds
         if failed
           port ${monitoredPort}
@@ -237,7 +241,10 @@ let
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
       restartTarget =
-        if restartAll then null else (if restartComposeService != null then restartComposeService else serviceName);
+        if restartAll then
+          null
+        else
+          (if restartComposeService != null then restartComposeService else serviceName);
     in
     monitCheckText {
       inherit
@@ -256,25 +263,24 @@ let
     in
     concatStringsSep "\n\n" (attrValues checks);
 
-  authOptionAssertions =
-    concatMap (
-      serviceName:
-      let
-        service = cfg.services.${serviceName};
-        inherit (service) auth;
-        inherit (auth) enable htpasswdFile;
-        authType = auth.type;
-        wantsBasic = enable && authType == "basic";
-      in
-      optional wantsBasic {
-        assertion = htpasswdFile != null;
-        message = "Container service '${serviceName}' requires auth.htpasswdFile when using basic auth.";
-      }
-      ++ optional (htpasswdFile != null && !wantsBasic) {
-        assertion = false;
-        message = "Container service '${serviceName}' should only set auth.htpasswdFile when auth.type = \"basic\".";
-      }
-    ) (attrNames cfg.services);
+  authOptionAssertions = concatMap (
+    serviceName:
+    let
+      service = cfg.services.${serviceName};
+      inherit (service) auth;
+      inherit (auth) enable htpasswdFile;
+      authType = auth.type;
+      wantsBasic = enable && authType == "basic";
+    in
+    optional wantsBasic {
+      assertion = htpasswdFile != null;
+      message = "Container service '${serviceName}' requires auth.htpasswdFile when using basic auth.";
+    }
+    ++ optional (htpasswdFile != null && !wantsBasic) {
+      assertion = false;
+      message = "Container service '${serviceName}' should only set auth.htpasswdFile when auth.type = \"basic\".";
+    }
+  ) (attrNames cfg.services);
 
   createVirtualHost =
     serviceName: service: hostname:
@@ -363,39 +369,39 @@ let
 
       # Internal location for Authelia authz check
       autheliaServerExtraConfig = optionalString wantsSsoAuth ''
-        set $upstream_authelia ${defaultAuthzURL};
+                set $upstream_authelia ${defaultAuthzURL};
 
-        ## Virtual endpoint created by nginx to forward auth requests.
-        location /internal/authelia/authz {
-          ## Essential Proxy Configuration
-          internal;
-${autheliaResolverDirectives}
-          proxy_pass $upstream_authelia;
+                ## Virtual endpoint created by nginx to forward auth requests.
+                location /internal/authelia/authz {
+                  ## Essential Proxy Configuration
+                  internal;
+        ${autheliaResolverDirectives}
+                  proxy_pass $upstream_authelia;
 
-          ## Headers
-          ## The headers starting with X-* are required.
-          proxy_set_header X-Original-Method $request_method;
-          proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
-          proxy_set_header X-Forwarded-For $remote_addr;
-          proxy_set_header Content-Length "";
-          proxy_set_header Connection "";
+                  ## Headers
+                  ## The headers starting with X-* are required.
+                  proxy_set_header X-Original-Method $request_method;
+                  proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
+                  proxy_set_header X-Forwarded-For $remote_addr;
+                  proxy_set_header Content-Length "";
+                  proxy_set_header Connection "";
 
-          ## Basic Proxy Configuration
-          proxy_pass_request_body off;
-          proxy_next_upstream error timeout invalid_header http_500 http_502 http_503; # Timeout if the real server is dead
-          proxy_redirect http:// $scheme://;
-          proxy_http_version 1.1;
-          proxy_cache_bypass $cookie_session;
-          proxy_no_cache $cookie_session;
-          proxy_buffers 4 32k;
-          client_body_buffer_size 128k;
+                  ## Basic Proxy Configuration
+                  proxy_pass_request_body off;
+                  proxy_next_upstream error timeout invalid_header http_500 http_502 http_503; # Timeout if the real server is dead
+                  proxy_redirect http:// $scheme://;
+                  proxy_http_version 1.1;
+                  proxy_cache_bypass $cookie_session;
+                  proxy_no_cache $cookie_session;
+                  proxy_buffers 4 32k;
+                  client_body_buffer_size 128k;
 
-          ## Advanced Proxy Configuration
-          send_timeout 5m;
-          proxy_read_timeout 240;
-          proxy_send_timeout 240;
-          proxy_connect_timeout 240;
-        }
+                  ## Advanced Proxy Configuration
+                  send_timeout 5m;
+                  proxy_read_timeout 240;
+                  proxy_send_timeout 240;
+                  proxy_connect_timeout 240;
+                }
       '';
     in
     {
@@ -509,42 +515,40 @@ in
         "d ${trustedStateDir} 0755 root root -"
       ];
 
-      services =
-        {
-          container-services-update-trusted-networks = {
-            description = "Update container trusted networks allowlist";
-            wantedBy = [ "multi-user.target" ];
-            path = [
-              pkgs.coreutils
-              pkgs.dnsutils
-              pkgs.diffutils
-              pkgs.systemd
-            ];
-            script =
-              ''
-              set -eu
+      services = {
+        container-services-update-trusted-networks = {
+          description = "Update container trusted networks allowlist";
+          wantedBy = [ "multi-user.target" ];
+          path = [
+            pkgs.coreutils
+            pkgs.dnsutils
+            pkgs.diffutils
+            pkgs.systemd
+          ];
+          script = ''
+            set -eu
 
-              resolver_script=${lib.escapeShellArg trustedNetworksUpdaterScript}
-              export NGINX_OUTPUT=${lib.escapeShellArg nginxTrustedNetworksFile}
-              export AUTHELIA_OUTPUT=${lib.escapeShellArg autheliaTrustedNetworksFile}
-              export NGINX_SERVICE=${lib.escapeShellArg nginxServiceName}
-              export AUTHELIA_UNITS=${lib.escapeShellArg autheliaUnitsEnv}
-              export TRUSTED_HOSTS=${lib.escapeShellArg trustedHostsEnv}
-              export AUTHELIA_LOCAL_NETWORKS=${lib.escapeShellArg autheliaLocalNetworksEnv}
+            resolver_script=${lib.escapeShellArg trustedNetworksUpdaterScript}
+            export NGINX_OUTPUT=${lib.escapeShellArg nginxTrustedNetworksFile}
+            export AUTHELIA_OUTPUT=${lib.escapeShellArg autheliaTrustedNetworksFile}
+            export NGINX_SERVICE=${lib.escapeShellArg nginxServiceName}
+            export AUTHELIA_UNITS=${lib.escapeShellArg autheliaUnitsEnv}
+            export TRUSTED_HOSTS=${lib.escapeShellArg trustedHostsEnv}
+            export AUTHELIA_LOCAL_NETWORKS=${lib.escapeShellArg autheliaLocalNetworksEnv}
 
-              "$resolver_script"
-            '';
-          };
+            "$resolver_script"
+          '';
+        };
 
-          nginx = {
-            requires = [ "container-services-update-trusted-networks.service" ];
-            after = [ "container-services-update-trusted-networks.service" ];
-          };
-        }
-        // genAttrs (map (name: "authelia-${name}") autheliaInstanceNames) (_: {
+        nginx = {
           requires = [ "container-services-update-trusted-networks.service" ];
           after = [ "container-services-update-trusted-networks.service" ];
-        });
+        };
+      }
+      // genAttrs (map (name: "authelia-${name}") autheliaInstanceNames) (_: {
+        requires = [ "container-services-update-trusted-networks.service" ];
+        after = [ "container-services-update-trusted-networks.service" ];
+      });
 
       timers.container-services-update-trusted-networks = {
         wantedBy = [ "timers.target" ];
