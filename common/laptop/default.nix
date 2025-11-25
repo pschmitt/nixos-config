@@ -4,7 +4,11 @@
     inputs.hardware.nixosModules.common-pc-laptop
 
     ../../services/bitwarden.nix
+    ../../services/nfs/nfs-client-all.nix
     ../../services/nix-distributed-build.nix
+
+    ../../common/network/snek.nix
+    ../../common/network/sshfs.nix
 
     ../network/wifi.nix
     ./a11y.nix

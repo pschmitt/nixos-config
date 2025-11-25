@@ -6,11 +6,9 @@
     ../../common/global
     ../../common/gui
     ../../common/laptop
-    ../../common/network/sshfs.nix
     ../../common/restic
-    ../../common/snek
     ../../common/work
-    ../../services/nfs/nfs-client-all.nix
+
     ../../services/nixos-installer-boot-entry.nix
   ];
 

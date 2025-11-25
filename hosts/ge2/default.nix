@@ -7,17 +7,15 @@
     # custom gdm monitor config
     ./gdm.nix
     ./wacom.nix
+    ../../common/work/elgato-stream-deck.nix
 
     ../../common/global
     ../../common/gui
     ../../common/laptop
-    ../../common/network/sshfs.nix
     ../../common/restic
-    ../../common/snek
     ../../common/work
-    ../../common/work/elgato-stream-deck.nix
+
     ../../misc/initrd-luks-ssh-unlock.nix
-    ../../services/nfs/nfs-client-all.nix
   ];
 
   custom.cattle = false;
