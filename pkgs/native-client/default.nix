@@ -9,13 +9,13 @@
 
 stdenv.mkDerivation rec {
   pname = "native-client";
-  version = "0.9.8";
+  version = "1.0.6";
 
   src = fetchFromGitHub {
     owner = "andy-portmen";
     repo = "native-client";
     rev = version;
-    hash = "sha256-g+X4TaOjw/cBxQP/mA2cBFya3DubQMJAortxHhs/hWc=";
+    hash = "sha256-631W4yKXqhEikSSCN4Vll7FZJ0qbs0OpnUYQH0qUXM4=";
   };
 
   nativeBuildInputs = [
@@ -28,11 +28,16 @@ stdenv.mkDerivation rec {
 
   buildPhase = ''
     # code
-    mkdir -p $out/lib/mozilla/native-messaging-hosts $out/lib/chromium/NativeMessagingHosts
-    cp $src/config.js $src/follow-redirects.js $src/host.js $src/messaging.js \
-      $out/lib/mozilla/native-messaging-hosts
-    cp $src/config.js $src/follow-redirects.js $src/host.js $src/messaging.js \
-      $out/lib/chromium/NativeMessagingHosts
+    hostDir=$out/libexec/native-client
+    firefoxHosts=$out/lib/mozilla/native-messaging-hosts
+    chromeHosts=$out/lib/chromium/NativeMessagingHosts
+
+    mkdir -p "$hostDir" "$firefoxHosts" "$chromeHosts"
+    # Keep manifests clean; only manifests live in native-messaging-hosts.
+    install -Dm444 -t "$hostDir" \
+      $src/config.js \
+      $src/host.js \
+      $src/messaging.js
 
     APP_NAME="com.add0n.node"
     APP_DESCRIPTION="Node Host for Native Messaging"
@@ -45,7 +50,7 @@ stdenv.mkDerivation rec {
         const key = process.argv[2]
         const config = require(file)
         console.log(JSON.stringify(config.ids[key], null, 2))
-      ' $src/config.js "$1"
+      ' "$hostDir/config.js" "$1"
     }
 
     EXT_FIREFOX=$(get_extension_ids firefox)
@@ -60,7 +65,7 @@ stdenv.mkDerivation rec {
         "path": $bin,
         "type": "stdio",
         "allowed_extensions": $ext
-      }' > "$out/lib/mozilla/native-messaging-hosts/$APP_NAME.json"
+      }' > "$firefoxHosts/$APP_NAME.json"
 
     EXT_CHROME=$(get_extension_ids chrome)
     jq -ner \
@@ -74,10 +79,10 @@ stdenv.mkDerivation rec {
         "path": $bin,
         "type": "stdio",
         "allowed_origins": ($ext | map("chrome-extension://" + . + "/"))
-      }' > "$out/lib/chromium/NativeMessagingHosts/$APP_NAME.json"
+      }' > "$chromeHosts/$APP_NAME.json"
 
     makeWrapper ${nodejs}/bin/node "$BINARY" \
-      --add-flags $out/lib/mozilla/native-messaging-hosts/host.js
+      --add-flags "$hostDir/host.js"
   '';
 
   meta = {
