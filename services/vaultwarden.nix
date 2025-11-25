@@ -1,4 +1,9 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   primaryHost = "vault.brkn.lol";
   serverAliases = [ "bw.brkn.lol" ];
@@ -8,11 +13,46 @@ let
   rootDir = "/srv/vaultwarden";
   dataDir = "${rootDir}/data";
   backupDir = "${rootDir}/backups";
+  vaultwardenUser = "vaultwarden";
+  secretAttrs = {
+    inherit (config.custom) sopsFile;
+    owner = vaultwardenUser;
+    group = vaultwardenUser;
+    mode = "0400";
+    restartUnits = [ "vaultwarden.service" ];
+  };
 in
 {
+  sops = {
+    secrets = {
+      "vaultwarden/smtp/host" = secretAttrs;
+      "vaultwarden/smtp/port" = secretAttrs;
+      "vaultwarden/smtp/encryption" = secretAttrs;
+      "vaultwarden/smtp/username" = secretAttrs;
+      "vaultwarden/smtp/password" = secretAttrs;
+      "vaultwarden/smtp/from" = secretAttrs;
+    };
+
+    templates."vaultwarden/smtp.env" = {
+      content = ''
+        SMTP_FROM="${config.sops.placeholder."vaultwarden/smtp/from"}"
+        SMTP_HOST="${config.sops.placeholder."vaultwarden/smtp/host"}"
+        SMTP_PORT="${toString config.sops.placeholder."vaultwarden/smtp/port"}"
+        SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/encryption"}"
+        SMTP_USERNAME="${config.sops.placeholder."vaultwarden/smtp/username"}"
+        SMTP_PASSWORD="${config.sops.placeholder."vaultwarden/smtp/password"}"
+      '';
+      owner = vaultwardenUser;
+      group = vaultwardenUser;
+      mode = "0400";
+      restartUnits = [ "vaultwarden.service" ];
+    };
+  };
+
   services.vaultwarden = {
     enable = true;
     inherit backupDir;
+    environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
     config = {
       DOMAIN = "https://${primaryHost}";
       SIGNUPS_ALLOWED = lib.mkForce false;
@@ -22,6 +62,7 @@ in
       WEBSOCKET_ENABLED = true;
       WEBSOCKET_ADDRESS = "127.0.0.1";
       WEBSOCKET_PORT = websocketPort;
+      SMTP_FROM_NAME = "Vaultwarden";
     };
   };
 
@@ -61,4 +102,16 @@ in
     # Ensure built-in backup service uses the custom data dir.
     services.backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
   };
+
+  services.monit.config = lib.mkAfter ''
+    check host "vaultwarden" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
+      if failed
+        port ${toString vaultwardenPort}
+        protocol http
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
