@@ -32,10 +32,7 @@
     openvpn
 
     # cloud
-    oci-cli
     openstackclient-full
-    rclone
-    s3cmd
   ];
 
 }

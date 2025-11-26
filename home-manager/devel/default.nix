@@ -9,6 +9,7 @@ in
   imports = [
     ./ai.nix
     ./android.nix
+    ./cloud.nix
     ./git.nix
     ./nix.nix
     ./python.nix
