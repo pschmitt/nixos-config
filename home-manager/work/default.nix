@@ -8,6 +8,7 @@
     ./devel.nix
     ./gui.nix
     ./hashicorp.nix
+    ./jcalapi.nix
     ./k8s.nix
     ./timetracking.nix
   ];
