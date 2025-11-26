@@ -150,6 +150,11 @@
 
     # hyprland end }}}
 
+    jcalapi = {
+      url = "github:pschmitt/jcalapi";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     jellysync = {
       url = "github:pschmitt/jellysync";
       inputs.nixpkgs.follows = "nixpkgs";
