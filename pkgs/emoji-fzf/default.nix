@@ -10,7 +10,7 @@ in
 
 python3.pkgs.buildPythonApplication {
   pname = "emoji-fzf";
-  version = version;
+  inherit version;
   pyproject = true;
 
   # NOTE The build fails missing data when using fetchFromPypi

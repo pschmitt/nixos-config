@@ -21,6 +21,7 @@ in
   hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
+  ketall = pkgs.callPackage ./ketall { };
   ldifj = pkgs.callPackage ./ldifj { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   luks-mount = pkgs.callPackage ./luks-mount { };

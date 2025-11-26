@@ -4,6 +4,7 @@
     argocd
     argocd-vault-plugin
     cmctl
+    ketall # kubectl get-all
     krew
     kubecolor
     kubectl
