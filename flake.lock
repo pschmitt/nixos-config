@@ -2098,14 +2098,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1764172367,
-        "narHash": "sha256-9x9IKtp6/E2AU/QVqb06T9x1scrlO8AUupCer+zqq4k=",
-        "path": "/home/pschmitt/devel/private/pschmitt/jcalapi.git",
-        "type": "path"
+        "lastModified": 1764172542,
+        "narHash": "sha256-OBMK+mPeFK+RJlH10i7PYJhVQsDZS1U/o3uik42yjeM=",
+        "owner": "pschmitt",
+        "repo": "jcalapi",
+        "rev": "b053f0a9e04c4fc671a4f55ea62abc8dd9dc8b4b",
+        "type": "github"
       },
       "original": {
-        "path": "/home/pschmitt/devel/private/pschmitt/jcalapi.git",
-        "type": "path"
+        "owner": "pschmitt",
+        "repo": "jcalapi",
+        "type": "github"
       }
     },
     "jellysync": {
