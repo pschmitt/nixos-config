@@ -1,7 +1,8 @@
 { pkgs, ... }:
 {
   home.packages = with pkgs; [
-    android-tools # adb + fastboot
-    pmbootstrap
+    oci-cli
+    rclone
+    s3cmd
   ];
 }
