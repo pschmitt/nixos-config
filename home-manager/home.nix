@@ -28,7 +28,7 @@
       ./gpg.nix
       ./sops.nix
       ./ssh.nix
-      ./work.nix
+      ./work
       ./yadm.nix
       ./zsh.nix
       # ./zellij.nix
