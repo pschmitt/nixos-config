@@ -24,6 +24,7 @@ in
   ketall = pkgs.callPackage ./ketall { };
   ldifj = pkgs.callPackage ./ldifj { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
+  linkding-cli = pkgs.callPackage ./linkding-cli { };
   luks-mount = pkgs.callPackage ./luks-mount { };
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
