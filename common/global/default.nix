@@ -83,30 +83,17 @@
     # json/yaml/xml
     fx
     jq
-    luks-mount
     yq-go
 
     # fs
     cryptsetup
     exfatprogs
+    luks-mount
     xfsprogs
 
     # python
-    python3Packages.pip
     pipx
     uv
-    # main python pkgs
-    (python3.withPackages (
-      ps: with ps; [
-        dbus-python
-        dnspython # for ansible
-        gst-python
-        pygobject3
-        pynvim
-        requests
-        rich
-      ]
-    ))
   ];
 
   # Disable password prompts for wheel users when sudo'ing
