@@ -5,6 +5,7 @@
 
     eget
     home-assistant-cli
+    linkding-cli
     withoutbg
 
     # todoist cli
