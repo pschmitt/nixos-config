@@ -11,7 +11,7 @@ in
     ./android.nix
     ./cloud.nix
     ./git.nix
-    ./manix.nix
+    ./mani.nix
     ./nix.nix
     ./python.nix
     ./rust.nix
