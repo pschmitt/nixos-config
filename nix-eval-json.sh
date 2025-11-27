@@ -72,4 +72,4 @@ nix eval --json --no-warn-dirty --apply '
     inherit (hp) system;
     res = n.config.'"${CONFIG_PATH}"';
   }
-' ".#nixosConfigurations.${TARGET_HOST}" | jq -e "${JQ_ARGS[@]}" '.res'
+' ".#nixosConfigurations.${TARGET_HOST}" | jq "${JQ_ARGS[@]}" '.res'
