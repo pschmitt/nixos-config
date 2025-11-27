@@ -11,7 +11,6 @@
     fzf
     linkding-cli
     withoutbg
-    yadm
 
     # iot
     home-assistant-cli
