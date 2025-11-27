@@ -7,9 +7,7 @@
 {
   imports = lib.concatLists [
     [
-      inputs.catppuccin.homeModules.catppuccin
       inputs.nix-index-database.homeModules.nix-index
-      inputs.sops-nix.homeManagerModules.sops
 
       ./banking.nix
       ./bitwarden.nix
@@ -19,7 +17,7 @@
       ./env.nix
       ./flatpak.nix
       ./mail.nix
-      ./networking.nix
+      ./network.nix
       ./nrf.nix
       ./nvim.nix
       ./gpg.nix
