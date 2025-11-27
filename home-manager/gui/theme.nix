@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 
 let
   theme = "Colloid-Dark";
@@ -21,6 +21,8 @@ let
   cursorThemePkg = pkgs.bibata-cursors;
 in
 {
+  imports = [ inputs.catppuccin.homeModules.catppuccin ];
+
   # catppuccin = {
   #   enable = true;
   #   flavor = osConfig.catppuccin.flavor;
