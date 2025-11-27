@@ -3,6 +3,7 @@
   home.packages = with pkgs; [
     hostctl
     iftop
+    net-snmp
     nethogs
     openssl
     tcpdump

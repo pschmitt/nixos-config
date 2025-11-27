@@ -1,10 +1,21 @@
 { inputs, pkgs, ... }:
 {
   home.packages = with pkgs; [
+    atuin
+    bat
+    direnv
     eget
-    home-assistant-cli
+    emoji-fzf
+    eza
+    fd
+    fzf
     linkding-cli
     withoutbg
+    yadm
+
+    # iot
+    home-assistant-cli
+    mosquitto
 
     # Below allows exporting address books from Evolution
     # we use this in ~zpl/contacts.zsh
