@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ inputs, pkgs, ... }:
 let
   httpasswdPkg = pkgs.writeShellScriptBin "htpasswd" ''
     exec ${pkgs.apacheHttpd}/bin/htpasswd "$@"
@@ -26,6 +26,8 @@ in
     sqlite
     tmux-xpanes
     websocat
+
+    inputs.ruamel-fmt.packages.${pkgs.stdenv.hostPlatform.system}.ruamel-fmt
 
     # task runners
     gnumake
