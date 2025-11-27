@@ -581,6 +581,24 @@
         "type": "github"
       }
     },
+    "flake-utils_17": {
+      "inputs": {
+        "systems": "systems_23"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -2277,7 +2295,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-        "flake-utils": "flake-utils_13",
+        "flake-utils": "flake-utils_14",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2851,6 +2869,7 @@
         "poor-tools": "poor-tools",
         "pre-commit-hooks": "pre-commit-hooks_4",
         "pschmitt-dev": "pschmitt-dev",
+        "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "sops-nix": "sops-nix",
         "srvos": "srvos",
@@ -2860,6 +2879,27 @@
         "wezterm": "wezterm",
         "xdph": "xdph_3",
         "zen-browser": "zen-browser"
+      }
+    },
+    "ruamel-fmt": {
+      "inputs": {
+        "flake-utils": "flake-utils_12",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764227546,
+        "narHash": "sha256-hyRHBJK145yKxco4UCKYDQtZSQfqhfkX/mH7a17W5XQ=",
+        "owner": "pschmitt",
+        "repo": "ruamel-fmt",
+        "rev": "d18a2b8ae23db43d642d71a3a2f7eba79c1f5f0d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "ruamel-fmt",
+        "type": "github"
       }
     },
     "rust-analyzer-src": {
@@ -2923,7 +2963,7 @@
     },
     "sendmyl": {
       "inputs": {
-        "flake-utils": "flake-utils_12",
+        "flake-utils": "flake-utils_13",
         "myl-discovery": "myl-discovery_3",
         "nixpkgs": [
           "nixpkgs"
@@ -3210,6 +3250,21 @@
     },
     "systems_23": {
       "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_24": {
+      "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
         "owner": "nix-systems",
@@ -3330,7 +3385,7 @@
     },
     "tdc": {
       "inputs": {
-        "flake-utils": "flake-utils_14",
+        "flake-utils": "flake-utils_15",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3395,7 +3450,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_15",
+        "flake-utils": "flake-utils_16",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3416,7 +3471,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_16",
+        "flake-utils": "flake-utils_17",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
@@ -3537,7 +3592,7 @@
         "nixpkgs": [
           "hyprland"
         ],
-        "systems": "systems_23"
+        "systems": "systems_24"
       },
       "locked": {
         "lastModified": 1763867065,
