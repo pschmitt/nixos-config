@@ -88,11 +88,6 @@
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.nixpkgs.follows = "hyprland";
-    };
-
     hyprdynamicmonitors = {
       url = "github:fiffeek/hyprdynamicmonitors";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -108,16 +103,21 @@
       inputs.nixpkgs.follows = "hyprland";
     };
 
+    # hyprland plugins
+    hyprland-plugins = {
+      url = "github:hyprwm/hyprland-plugins";
+      inputs.hyprland.follows = "hyprland";
+    };
+
     hyprshell = {
       url = "github:H3rmt/hyprshell?ref=hyprshell-release";
       inputs = {
+        home-manager.follows = "home-manager";
         hyprland.follows = "hyprland";
         nixpkgs.follows = "nixpkgs";
-        home-manager.follows = "home-manager";
       };
     };
 
-    # hyprland plugins
     hyprtasking = {
       # upstream url
       # url = "github:raybbian/hyprtasking";
@@ -132,26 +132,23 @@
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
-    xdph = {
-      # url = "github:hyprwm/xdg-desktop-portal-hyprland";
-      url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
-      inputs.nixpkgs.follows = "hyprland";
-    };
-
     grim-hyprland = {
       url = "github:eriedaberrie/grim-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # iio-hyprland = {
-    #   url = "github:JeanSchoeller/iio-hyprland";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    hypr-dynamic-cursors = {
+      url = "github:VirtCode/hypr-dynamic-cursors";
+      inputs.hyprland.follows = "hyprland";
+    };
 
-    # noctalia = {
-    #   url = "github:noctalia-dev/noctalia-shell";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
+    # end of plugins
+
+    xdph = {
+      # url = "github:hyprwm/xdg-desktop-portal-hyprland";
+      url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
+      inputs.nixpkgs.follows = "hyprland";
+    };
 
     # hyprland end }}}
 
