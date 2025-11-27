@@ -55,16 +55,12 @@ deploy host='' *args:
   fi
 
 build-iso host='iso' *args:
-  #!/usr/bin/env bash
-  set -euxo pipefail
-  set -- {{args}}
-  ./build-iso.sh "{{host}}" "$@"
+  @echo "Building ISO for host '{{host}}' with args: {{args}}"
+  ./build-iso.sh {{host}} {{args}}
 
 build-rpi-img host='pica4' *args:
-  #!/usr/bin/env bash
-  set -euxo pipefail
-  set -- {{args}}
-  ./build-rpi-img.sh "{{host}}" "$@"
+  @echo "Building Raspberry Pi Image for host '{{host}}' with args: {{args}}"
+  ./build-rpi-img.sh {{host}} {{args}}
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
