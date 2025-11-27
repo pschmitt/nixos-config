@@ -8,7 +8,6 @@
 let
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
-  obsws-python = pkgs.python3Packages.callPackage ./obs-studio/obsws-python { };
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
@@ -32,9 +31,6 @@ in
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
 
   # OBS Studio
-  obs-cli = pkgs.python3Packages.callPackage ./obs-studio/obs-cli/default.nix {
-    inherit obsws-python;
-  };
   # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
   # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
 

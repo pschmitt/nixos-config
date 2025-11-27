@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   osConfig,
   pkgs,
@@ -35,7 +36,8 @@ let
 in
 {
   home.packages = [
-    pkgs.obs-cli
+    inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system}.obs-cli
+
     (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
       ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"
     '')
