@@ -15,7 +15,7 @@ let
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
   hyprConfigAutoreloadDisabled =
-    config.wayland.windowManager.hyprland.settings.misc.disable_autoreload == "true";
+    config.wayland.windowManager.hyprland.settings.misc.disable_autoreload;
 
   callbackScript = pkgs.writeShellScript "hyprdynamicmonitors-profile-callback.sh" ''
     set -euo pipefail
