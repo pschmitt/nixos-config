@@ -14,7 +14,7 @@ let
     inputs.hyprdynamicmonitors.packages.${pkgs.stdenv.hostPlatform.system}.default;
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
-  hyprConfigAutoreloadEnabled =
+  hyprConfigAutoreloadDisabled =
     config.wayland.windowManager.hyprland.settings.misc.disable_autoreload == "true";
 
   callbackScript = pkgs.writeShellScript "hyprdynamicmonitors-profile-callback.sh" ''
@@ -23,7 +23,7 @@ let
     STATE_BASE="''${XDG_CACHE_HOME:-''${HOME}/.cache}"
     STATEFILE="$STATE_BASE/hyprdynamicmonitors/current-state.json"
     JQ_BIN=${pkgs.jq}/bin/jq
-    MANUAL_RELOAD_REQUIRED="${if !hyprConfigAutoreloadEnabled then "1" else ""}"
+    MANUAL_RELOAD_REQUIRED="${if hyprConfigAutoreloadDisabled then "1" else ""}"
 
     usage() {
       echo "Usage: $0 save|get [STATE]"
