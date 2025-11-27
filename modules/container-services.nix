@@ -132,6 +132,18 @@ let
               default = null;
               description = "Compose service name to restart when restartAll = false; defaults to the container service name.";
             };
+
+            dependsOn = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Optional dependency for the Monit check.";
+            };
+
+            group = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Monit group name";
+            };
           };
         });
       };
@@ -210,10 +222,14 @@ let
       monitoredPort,
       proto,
       extraClause,
+      dependsOn,
+      group,
     }:
     ''
       check host "${serviceName}" with address "127.0.0.1"
-        group services
+        group container-services
+        ${optionalString (group != null) "group ${group}"}
+        ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
         restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --no-deps${
           optionalString (restartTarget != null) " ${restartTarget}"
         }"
@@ -234,6 +250,8 @@ let
         composeYaml
         restartAll
         restartComposeService
+        dependsOn
+        group
         ;
       extraClause =
         if expectedHttpStatusCode != null then "status " + toString expectedHttpStatusCode else "";
@@ -254,6 +272,8 @@ let
         monitoredPort
         proto
         extraClause
+        dependsOn
+        group
         ;
     };
 
