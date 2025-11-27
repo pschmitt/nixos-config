@@ -1,4 +1,5 @@
 {
+  inputs,
   lib,
   osConfig,
   pkgs,
@@ -27,6 +28,8 @@ let
 
 in
 {
+  imports = [ inputs.sops-nix.homeManagerModules.sops ];
+
   sops = {
     inherit (osConfig.sops) defaultSopsFile;
     age = {
