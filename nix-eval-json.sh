@@ -3,10 +3,12 @@
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
 usage() {
-  echo "Usage: $(basename "$0") TARGET_HOST CONFIG_PATH"
+  echo "Usage: $(basename "$0") [--home-manager] TARGET_HOST CONFIG_PATH"
   echo
-  echo "Example: $(basename "$0") x13 custom.username"
-  echo "Example: $(basename "$0") rofl-10 'fileSystems.\"/mnt/data\"'"
+  echo "Examples:"
+  echo "$(basename "$0") x13 custom.username"
+  echo "$(basename "$0") rofl-10 'fileSystems.\"/mnt/data\"'"
+  echo "$(basename "$0") --home-manager gk4 'wayland.windowManager.hyprland.settings.misc.disable_autoreload'"
 }
 
 ARGS=()
