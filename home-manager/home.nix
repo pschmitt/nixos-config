@@ -21,7 +21,6 @@
       ./env.nix
       ./flatpak.nix
       ./mail.nix
-      ./mani.nix
       ./networking.nix
       ./nrf.nix
       ./nvim.nix
