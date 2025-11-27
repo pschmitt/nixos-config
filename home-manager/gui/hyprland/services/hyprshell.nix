@@ -1,7 +1,7 @@
 { inputs, pkgs, ... }:
 let
-  # hyprshellPkg = inputs.hyprshell.packages.${pkgs.stdenv.hostPlatform.system}.hyprshell;
-  hyprshellPkg = pkgs.master.hyprshell;
+  hyprshellPkg = inputs.hyprshell.packages.${pkgs.stdenv.hostPlatform.system}.hyprshell;
+  # hyprshellPkg = pkgs.master.hyprshell;
 in
 {
   imports = [
