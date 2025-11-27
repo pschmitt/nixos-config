@@ -599,6 +599,24 @@
         "type": "github"
       }
     },
+    "flake-utils_18": {
+      "inputs": {
+        "systems": "systems_24"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -2295,7 +2313,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-        "flake-utils": "flake-utils_14",
+        "flake-utils": "flake-utils_15",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2693,6 +2711,27 @@
         "type": "github"
       }
     },
+    "obs-cli": {
+      "inputs": {
+        "flake-utils": "flake-utils_12",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764228353,
+        "narHash": "sha256-c+ZEySbirFKt6NhmlMTz1rag3JG5/8TZsVBYVeDispc=",
+        "owner": "pschmitt",
+        "repo": "obs-cli",
+        "rev": "bbedb4d8470543e543f860bf66c8cd98b3a57bec",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "obs-cli",
+        "type": "github"
+      }
+    },
     "poor-tools": {
       "inputs": {
         "flake-parts": "flake-parts_4",
@@ -2866,6 +2905,7 @@
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",
+        "obs-cli": "obs-cli",
         "poor-tools": "poor-tools",
         "pre-commit-hooks": "pre-commit-hooks_4",
         "pschmitt-dev": "pschmitt-dev",
@@ -2883,7 +2923,7 @@
     },
     "ruamel-fmt": {
       "inputs": {
-        "flake-utils": "flake-utils_12",
+        "flake-utils": "flake-utils_13",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2963,7 +3003,7 @@
     },
     "sendmyl": {
       "inputs": {
-        "flake-utils": "flake-utils_13",
+        "flake-utils": "flake-utils_14",
         "myl-discovery": "myl-discovery_3",
         "nixpkgs": [
           "nixpkgs"
@@ -3265,6 +3305,21 @@
     },
     "systems_24": {
       "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_25": {
+      "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
         "owner": "nix-systems",
@@ -3385,7 +3440,7 @@
     },
     "tdc": {
       "inputs": {
-        "flake-utils": "flake-utils_15",
+        "flake-utils": "flake-utils_16",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3450,7 +3505,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_16",
+        "flake-utils": "flake-utils_17",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3471,7 +3526,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_17",
+        "flake-utils": "flake-utils_18",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
@@ -3592,7 +3647,7 @@
         "nixpkgs": [
           "hyprland"
         ],
-        "systems": "systems_24"
+        "systems": "systems_25"
       },
       "locked": {
         "lastModified": 1763867065,
