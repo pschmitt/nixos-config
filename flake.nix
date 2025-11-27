@@ -216,6 +216,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    ruamel-fmt = {
+      url = "github:pschmitt/ruamel-fmt";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     firefox-addons = {
       url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
