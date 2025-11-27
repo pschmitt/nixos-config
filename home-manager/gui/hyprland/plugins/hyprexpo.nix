@@ -1,10 +1,12 @@
 {
+  # inputs,
   pkgs,
   ...
 }:
 {
   wayland.windowManager.hyprland.plugins = [
-    pkgs.hyprlandPlugins.hyprexpo
+    pkgs.master.hyprlandPlugins.hyprexpo
+    # inputs.hyprland-plugins.packages.${pkgs.system}.hyprexpo
   ];
 
   wayland.windowManager.hyprland.settings = {
