@@ -15,13 +15,13 @@
 
       ./banking.nix
       ./bitwarden.nix
+      ./cli
       ./crypto.nix
       ./devel
       ./env.nix
       ./flatpak.nix
       ./mail.nix
       ./mani.nix
-      ./misc.nix
       ./networking.nix
       ./nrf.nix
       ./nvim.nix
@@ -30,7 +30,7 @@
       ./ssh.nix
       ./work
       ./yadm.nix
-      ./zsh.nix
+      ./zsh
       # ./zellij.nix
     ]
     (lib.optional osConfig.hardware.bluetooth.enable ./bluetooth.nix)
