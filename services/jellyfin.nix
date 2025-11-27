@@ -6,8 +6,10 @@
 let
   hostnames = [
     # main
-    "media.${config.custom.mainDomain}"
     "tv.${config.custom.mainDomain}"
+
+    # alt
+    "media.${config.custom.mainDomain}"
     "jellyfin.${config.custom.mainDomain}"
     "jelly.${config.custom.mainDomain}"
   ];
@@ -26,7 +28,6 @@ in
     jellyseer = {
       enable = true;
       # configDir = "/var/lib/jellyseerr/config";
-
     };
 
     nginx.virtualHosts."${primaryHost}" = {
