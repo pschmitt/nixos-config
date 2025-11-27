@@ -15,6 +15,7 @@
 
       ./banking.nix
       ./bitwarden.nix
+      ./cli
       ./crypto.nix
       ./devel
       ./env.nix

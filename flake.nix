@@ -241,6 +241,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    slack-react = {
+      url = "github:pschmitt/slack-react";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     tdc = {
       url = "github:pschmitt/tdc";
       inputs.nixpkgs.follows = "nixpkgs";
