@@ -12,14 +12,13 @@ nix-repl host='':
 build-host-pkg pkg host='':
   #!/usr/bin/env bash
   set -euxo pipefail
-  host_arg="{{host}}"
-  if [[ -z "$host_arg" ]]
+  TARGET_HOST="{{host}}"
+  if [[ -z "$TARGET_HOST" ]]
   then
-    host_arg="${HOSTNAME:-$(hostname)}"
+    TARGET_HOST="${HOSTNAME:-$(hostname)}"
   fi
-  echo "Building pkg '{{pkg}}' for host '${host_arg}'"
-  cmd=(nix build ".#nixosConfigurations.${host_arg}.pkgs.{{pkg}}")
-  "${cmd[@]}"
+  echo "Building pkg '{{pkg}}' for host '${TARGET_HOST}'"
+  nix build ".#nixosConfigurations.${TARGET_HOST}.pkgs.{{pkg}}"
 
 nixos-anywhere *args:
   ./nixos-anywhere.sh {{args}}
@@ -31,35 +30,29 @@ nix-eval-json *params:
   #!/usr/bin/env bash
   set -euxo pipefail
   set -- {{params}}
-  if [[ "$#" -eq 0 ]]
-  then
-    echo "Usage: just nix-eval-json <config_path> [<host>] [-- extra-args]" >&2
-    exit 2
-  fi
-  host_arg="${CUSTOM_HOSTNAME:-${HOSTNAME:-$(hostname)}}"
-  config_path="$1"
+  TARGET_HOST="${HOSTNAME:-$(hostname)}"
+  CONFIG_PATH="$1"
   shift || true
   if [[ "$#" -ge 1 ]]
   then
-    host_arg="$config_path"
-    config_path="$1"
+    TARGET_HOST="$CONFIG_PATH"
+    CONFIG_PATH="$1"
     shift || true
   fi
-  echo "Evaluating '${config_path}' for host '${host_arg}'"
-  cmd=(./nix-eval-json.sh "$host_arg" "$config_path" "$@")
-  "${cmd[@]}"
+  echo "Evaluating '${CONFIG_PATH}' for host '${TARGET_HOST}'"
+  ./nix-eval-json.sh "$TARGET_HOST" "$CONFIG_PATH" "$@"
 
 deploy host='' *args:
   #!/usr/bin/env bash
   set -euxo pipefail
-  host_arg="{{host}}"
+  TARGET_HOST="{{host}}"
   set -- {{args}}
-  cmd=(zhj nixos::rebuild)
-  if [[ -n "$host_arg" ]]
+  CMD=(zhj nixos::rebuild)
+  if [[ -n "$TARGET_HOST" ]]
   then
-    cmd+=(--target-host "$host_arg")
+    CMD+=(--target-host "$TARGET_HOST")
   fi
-  "${cmd[@]}" "$@"
+  "${CMD[@]}" "$@"
 
 build-iso *args:
   ./build-iso.sh {{args}}
