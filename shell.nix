@@ -26,6 +26,9 @@
       nixfmt-rfc-style
       statix
 
+      # task runner
+      just
+
       opentofu
       yq-go
     ];
