@@ -66,6 +66,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    firefox-addons = {
+      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     home-manager = {
       url = "github:nix-community/home-manager";
       # url = "github:nix-community/home-manager/release-23.11";
@@ -211,6 +216,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    obs-cli = {
+      url = "github:pschmitt/obs-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     poor-tools = {
       url = "github:pschmitt/poor-tools";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -220,16 +230,6 @@
       url = "github:pschmitt/ruamel-fmt";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    firefox-addons = {
-      url = "gitlab:rycee/nur-expressions?dir=pkgs/firefox-addons";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    # nur-combined = {
-    #   url = "github:nix-community/nur-combined";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
 
     pschmitt-dev = {
       url = "github:pschmitt/pschmitt.dev";
