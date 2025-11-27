@@ -6,10 +6,10 @@ default:
 sops-config-gen *args:
   ./secrets/sops-config-gen.sh {{args}}
 
-nix-repl host='':
+repl host='':
   ./nix-repl.sh "{{host}}"
 
-build-host-pkg pkg host='':
+build-pkg pkg host='':
   #!/usr/bin/env bash
   set -euxo pipefail
   TARGET_HOST="{{host}}"
@@ -47,18 +47,24 @@ deploy host='' *args:
   set -euxo pipefail
   TARGET_HOST="{{host}}"
   set -- {{args}}
-  CMD=(zhj nixos::rebuild)
   if [[ -n "$TARGET_HOST" ]]
   then
-    CMD+=(--target-host "$TARGET_HOST")
+    zhj nixos::rebuild --target-host "$TARGET_HOST" "$@"
+  else
+    zhj nixos::rebuild "$@"
   fi
-  "${CMD[@]}" "$@"
 
-build-iso *args:
-  ./build-iso.sh {{args}}
+build-iso host='iso' *args:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  set -- {{args}}
+  ./build-iso.sh "{{host}}" "$@"
 
-build-rpi-img *args:
-  ./build-rpi-img.sh {{args}}
+build-rpi-img host='pica4' *args:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  set -- {{args}}
+  ./build-rpi-img.sh "{{host}}" "$@"
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
