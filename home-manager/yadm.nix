@@ -28,6 +28,10 @@ let
   '';
 in
 {
+  home.packages = with pkgs; [
+    yadm
+  ];
+
   systemd.user = {
     services = {
       yadm-clone = {
