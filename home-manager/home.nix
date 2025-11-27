@@ -49,49 +49,8 @@
 
     sessionPath = [
       "${config.home.homeDirectory}/.local/bin"
-      "${config.home.homeDirectory}/.local/share/polaris/bin"
+      "${config.home.homeDirectory}/.local/share/polaris/bin" # $ZPFX (zinit)
       "${config.home.homeDirectory}/bin"
-    ];
-
-    packages = with pkgs; [
-      # nwg-displays
-      # thunderbird
-
-      # cli
-      age
-      atuin
-      bat
-      direnv
-      emoji-fzf
-      eza
-      fd
-      fzf
-      gyb
-      jc
-      jsonrepair
-      # rich-cli fails to build as of 2024-05-10 (rich-rst's test fail)
-      # rich-cli
-      sops
-      ssh-to-age
-      yadm
-
-      # gui
-      gimp
-      nextcloud-client
-
-      # chat
-      element-desktop
-      signal-desktop
-
-      # iot
-      mosquitto
-      net-snmp
-
-      # virtualization
-      distrobox
-      # quickemu # fails to build as of 28.12.2024
-      # quickgui # fails to build as of 09.09.2024
-
     ];
 
     # AccountService profile picture

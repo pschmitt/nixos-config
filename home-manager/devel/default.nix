@@ -33,5 +33,10 @@ in
     gnumake
     go-task
     just
+
+    # encryption tools
+    age
+    sops
+    ssh-to-age
   ];
 }

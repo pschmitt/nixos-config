@@ -11,6 +11,7 @@ in
   home.packages = with pkgs; [
     master.easyeffects
     ffmpeg-full
+    gimp
     imagemagick
     mpvPkg
     v4l-utils

@@ -6,6 +6,10 @@
   ...
 }:
 {
+  home.packages = with pkgs; [
+    nextcloud-client
+  ];
+
   xdg = {
     desktopEntries = {
       tmux = {
