@@ -1,13 +1,12 @@
 { inputs, ... }:
 {
-  imports = [
+  imports = [ inputs.flatpaks.nixosModule ];
 
-    inputs.flatpaks.nixosModule
-  ];
   xdg.portal = {
     enable = true; # required for flatpak
     xdgOpenUsePortal = true; # fix xdg-open
   };
+
   services.flatpak = {
     enable = true;
     remotes = {
