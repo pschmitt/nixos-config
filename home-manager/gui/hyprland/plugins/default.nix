@@ -7,6 +7,6 @@
 
     ./hyprgrass.nix
     ./hypr-dynamic-cursors.nix
-    # ./xtra-dispatchers.nix
+    ./xtra-dispatchers.nix
   ];
 }
