@@ -617,6 +617,24 @@
         "type": "github"
       }
     },
+    "flake-utils_19": {
+      "inputs": {
+        "systems": "systems_25"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_2": {
       "inputs": {
         "systems": "systems_2"
@@ -2911,6 +2929,7 @@
         "pschmitt-dev": "pschmitt-dev",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
+        "slack-react": "slack-react",
         "sops-nix": "sops-nix",
         "srvos": "srvos",
         "tdc": "tdc",
@@ -3020,6 +3039,27 @@
       "original": {
         "owner": "pschmitt",
         "repo": "sendmyl",
+        "type": "github"
+      }
+    },
+    "slack-react": {
+      "inputs": {
+        "flake-utils": "flake-utils_16",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1764238431,
+        "narHash": "sha256-cAdIJ15WzoXSGUvaUNLo9fea87KhldmvkWZcimE7eGY=",
+        "owner": "pschmitt",
+        "repo": "slack-react",
+        "rev": "7319949131fc1da5af2fe7a89de8bce825fe471a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "slack-react",
         "type": "github"
       }
     },
@@ -3320,6 +3360,21 @@
     },
     "systems_25": {
       "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_26": {
+      "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
         "owner": "nix-systems",
@@ -3440,7 +3495,7 @@
     },
     "tdc": {
       "inputs": {
-        "flake-utils": "flake-utils_16",
+        "flake-utils": "flake-utils_17",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3505,7 +3560,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_17",
+        "flake-utils": "flake-utils_18",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3526,7 +3581,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_18",
+        "flake-utils": "flake-utils_19",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
@@ -3647,7 +3702,7 @@
         "nixpkgs": [
           "hyprland"
         ],
-        "systems": "systems_25"
+        "systems": "systems_26"
       },
       "locked": {
         "lastModified": 1763867065,
