@@ -1,7 +1,7 @@
 {
   imports = [
     # NOTE Below plugins conflict with one another!
-    ./hyprexpo.nix
+    # ./hyprexpo.nix
     # ./hyprspace.nix
     # ./hyprtasking.nix
 
