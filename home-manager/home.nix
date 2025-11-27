@@ -54,7 +54,6 @@
     ];
 
     packages = with pkgs; [
-      home-manager
       # nwg-displays
       # thunderbird
 
