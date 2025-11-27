@@ -318,10 +318,14 @@ jobs:
       matrix:
         host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.amd64 }}
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+      # - name: Free Disk Space (Ubuntu)
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: true
+
+      - uses: wimpysworld/nothing-but-nix@main
         with:
-          tool-cache: true
+          hatchet-protocol: 'cleave'
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -396,10 +400,14 @@ jobs:
       matrix:
         host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64 }}
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+      # - name: Free Disk Space (Ubuntu)
+      #   uses: jlumbroso/free-disk-space@main
+      #   with:
+      #     tool-cache: true
+
+      - uses: wimpysworld/nothing-but-nix@main
         with:
-          tool-cache: true
+          hatchet-protocol: 'cleave'
 
       - name: Checkout code
         uses: actions/checkout@v6
