@@ -1,5 +1,4 @@
 {
-  inputs,
   lib,
   pkgs,
   osConfig,
@@ -8,8 +7,6 @@
 {
   imports = lib.concatLists [
     [
-      inputs.nix-index-database.homeModules.nix-index
-
       ./banking.nix
       ./bitwarden.nix
       ./cli
@@ -19,6 +16,7 @@
       ./flatpak.nix
       ./mail.nix
       ./network.nix
+      ./nix-index-database.nix
       ./nrf.nix
       ./gpg.nix
       ./sops.nix
@@ -30,16 +28,13 @@
     (lib.optional osConfig.services.xserver.enable ./gui)
   ];
 
-  home.packages = [ pkgs.home-manager ];
-  programs = {
-    home-manager.enable = true;
-    nix-index-database.comma.enable = true;
-  };
+  programs.home-manager.enable = true;
 
   systemd.user.startServices = "sd-switch";
 
   home = {
     # The home.stateVersion option does not have a default and must be set
     inherit (osConfig.system) stateVersion;
+    packages = [ pkgs.home-manager ];
   };
 }
