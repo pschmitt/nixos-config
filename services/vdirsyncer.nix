@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -19,43 +18,45 @@ in
 {
   sops.secrets = {
     "vdirsyncer/google/client-id" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
     "vdirsyncer/google/client-secret" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
     "vdirsyncer/google/token" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
     "vdirsyncer/nextcloud/username" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
     "vdirsyncer/nextcloud/password" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
   };
 
-  users.groups.${syncGroup} = { };
-  users.users.${syncUser} = {
-    isSystemUser = true;
-    group = syncGroup;
-    home = stateDir;
-    createHome = true;
+  users = {
+    groups.${syncGroup} = { };
+    users.${syncUser} = {
+      isSystemUser = true;
+      group = syncGroup;
+      home = stateDir;
+      createHome = true;
+    };
   };
 
   services.vdirsyncer = {
