@@ -16,28 +16,28 @@ let
     ${builtins.readFile ../../common/monit/mullvad-expiration.sh}
   '';
 
-  renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
-    MONIT_CONF_DIR=/etc/monit/conf.d
-    TAILSCALE_IP=$(${pkgs.tailscale}/bin/tailscale ip -4)
-    if [[ -z "$TAILSCALE_IP" ]]
-    then
-      echo "ERROR: Failed to determine Tailscale IP" >&2
-    else
-      cat > "$MONIT_CONF_DIR/gluetun" <<EOF
-    check program "gluetun" with path "${pkgs.curl}/bin/curl -fsSL -x 127.0.0.1:8888 https://myip.wtf/json"
-      every 5 cycles
-      group piracy
-      restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart"
-      if status != 0 then restart
-      if 2 restarts within 10 cycles then alert
-    EOF
-    fi
-  '';
-
   monitExtraConfig = ''
     check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
       group docker
       if status > 0 then alert
+
+    check program "gluetun" with path "${pkgs.docker}/bin/docker exec gluetun /usr/bin/wget -qO- --tries=1 --timeout=5 http://127.0.0.1:9999/health"
+      group piracy
+      depends on dockerd
+      restart program = "${pkgs.docker}/bin/docker compose -f /srv/piracy/docker-compose.yaml restart gluetun"
+      if status != 0 for 3 cycles then restart
+      if 2 restarts within 10 cycles then alert
+
+    check program "gluetun-http-proxy" with path "${pkgs.curl}/bin/curl -fsSL -x 127.0.0.1:8888 https://myip.wtf/json"
+      group piracy
+      depends on gluetun
+      every 5 cycles
+      if status != 0 then alert
+
+    check host "gluetun-socks5-proxy" with address 127.0.0.1
+      group piracy
+      depends on gluetun
+      if failed port 1080 protocol default then alert
 
     check program mullvad with path "${mullvadExpiration} --warning 15 ${
       config.sops.secrets."mullvad/account".path
