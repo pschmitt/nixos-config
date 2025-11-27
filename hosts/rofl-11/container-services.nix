@@ -22,6 +22,12 @@ in
           enable = true;
           # htpasswdFile = config.sops.secrets."htpasswd".path; # for type = "basic"
         };
+        monitoring = {
+          composeYaml = "piracy";
+          restartAll = false;
+          dependsOn = "gluetun";
+          group = "piracy";
+        };
       };
       jellyfin = {
         port = 8096;
@@ -37,6 +43,10 @@ in
       pp = {
         port = 7827;
         hosts = [ (mkHost "pp") ];
+        monitoring = {
+          composeYaml = "stash";
+          group = "piracy";
+        };
       };
       radarr = {
         port = 7878;
@@ -49,6 +59,8 @@ in
         monitoring = {
           composeYaml = "piracy";
           restartAll = false;
+          dependsOn = "gluetun";
+          group = "piracy";
         };
       };
       sonarr = {
@@ -62,6 +74,8 @@ in
         monitoring = {
           composeYaml = "piracy";
           restartAll = false;
+          dependsOn = "gluetun";
+          group = "piracy";
         };
       };
       tdarr = {
@@ -81,6 +95,8 @@ in
           composeYaml = "piracy";
           expectedHttpStatusCode = 401;
           restartAll = false;
+          dependsOn = "gluetun";
+          group = "piracy";
         };
       };
     };
