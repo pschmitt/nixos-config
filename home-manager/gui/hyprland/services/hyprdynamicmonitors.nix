@@ -14,14 +14,16 @@ let
     inputs.hyprdynamicmonitors.packages.${pkgs.stdenv.hostPlatform.system}.default;
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
+  hyprConfigAutoreloadEnabled =
+    config.wayland.windowManager.hyprland.settings.misc.disable_autoreload == "true";
 
   callbackScript = pkgs.writeShellScript "hyprdynamicmonitors-profile-callback.sh" ''
     set -euo pipefail
 
     STATE_BASE="''${XDG_CACHE_HOME:-''${HOME}/.cache}"
     STATEFILE="$STATE_BASE/hyprdynamicmonitors/current-state.json"
-    LEGACY_STATEFILE="$STATE_BASE/shikane/current-state.json"
     JQ_BIN=${pkgs.jq}/bin/jq
+    MANUAL_RELOAD_REQUIRED="${if !hyprConfigAutoreloadEnabled then "1" else ""}"
 
     usage() {
       echo "Usage: $0 save|get [STATE]"
@@ -41,16 +43,10 @@ let
     save-state() {
       local state="$1"
       write-state "$STATEFILE" "$state"
-      write-state "$LEGACY_STATEFILE" "$state"
     }
 
     get-state() {
-      local source="$STATEFILE"
-      if [[ ! -s "$source" && -s "$LEGACY_STATEFILE" ]]
-      then
-        source="$LEGACY_STATEFILE"
-      fi
-      "$JQ_BIN" -er '.state' "$source"
+      "$JQ_BIN" -er '.state' "$STATEFILE"
     }
 
     if [[ "''${BASH_SOURCE[0]}" == "$0" ]]
@@ -69,7 +65,10 @@ let
             exit 2
           fi
           save-state "$2"
-          hyprctl reload
+          if [[ -n "$MANUAL_RELOAD_REQUIRED" ]]
+          then
+            hyprctl reload
+          fi
           ;;
         get|retrieve)
           get-state
