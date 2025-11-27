@@ -30,7 +30,7 @@
       ./ssh.nix
       ./work
       ./yadm.nix
-      ./zsh.nix
+      ./zsh
       # ./zellij.nix
     ]
     (lib.optional osConfig.hardware.bluetooth.enable ./bluetooth.nix)
