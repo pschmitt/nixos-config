@@ -7,6 +7,7 @@
 
     aerc
     gmailctl
+    gyb
     neomutt
   ];
 
