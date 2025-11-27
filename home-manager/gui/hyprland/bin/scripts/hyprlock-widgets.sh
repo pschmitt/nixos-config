@@ -4,7 +4,6 @@ usage() {
   echo "Usage: $(basename "$0") widget"
 }
 
-
 battery::icon() {
   local percent="$1"
   local state="$2"
