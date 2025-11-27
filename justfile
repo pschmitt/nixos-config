@@ -11,15 +11,14 @@ nix-repl host='':
 
 build-host-pkg pkg host='':
   #!/usr/bin/env bash
-  set -euo pipefail
+  set -euxo pipefail
   host_arg="{{host}}"
   if [[ -z "$host_arg" ]]
   then
-    host_arg="${CUSTOM_HOSTNAME:-${HOSTNAME:-$(hostname)}}"
+    host_arg="${HOSTNAME:-$(hostname)}"
   fi
   echo "Building pkg '{{pkg}}' for host '${host_arg}'"
   cmd=(nix build ".#nixosConfigurations.${host_arg}.pkgs.{{pkg}}")
-  echo "+ ${cmd[*]}"
   "${cmd[@]}"
 
 nixos-anywhere *args:
@@ -30,7 +29,7 @@ new-host *args:
 
 nix-eval-json *params:
   #!/usr/bin/env bash
-  set -euo pipefail
+  set -euxo pipefail
   set -- {{params}}
   if [[ "$#" -eq 0 ]]
   then
@@ -48,8 +47,19 @@ nix-eval-json *params:
   fi
   echo "Evaluating '${config_path}' for host '${host_arg}'"
   cmd=(./nix-eval-json.sh "$host_arg" "$config_path" "$@")
-  echo "+ ${cmd[*]}"
   "${cmd[@]}"
+
+deploy host='' *args:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  host_arg="{{host}}"
+  set -- {{args}}
+  cmd=(zhj nixos::rebuild)
+  if [[ -n "$host_arg" ]]
+  then
+    cmd+=(--target-host "$host_arg")
+  fi
+  "${cmd[@]}" "$@"
 
 build-iso *args:
   ./build-iso.sh {{args}}
