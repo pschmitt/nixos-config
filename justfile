@@ -26,21 +26,27 @@ nixos-anywhere *args:
 new-host *args:
   ./new-host.sh {{args}}
 
-nix-eval-json *params:
+eval *params:
   #!/usr/bin/env bash
   set -euxo pipefail
-  set -- {{params}}
   TARGET_HOST="${HOSTNAME:-$(hostname)}"
-  CONFIG_PATH="$1"
-  shift || true
-  if [[ "$#" -ge 1 ]]
+  set -- {{params}}
+  if [[ $# -eq 1 ]]
   then
-    TARGET_HOST="$CONFIG_PATH"
-    CONFIG_PATH="$1"
-    shift || true
+    set -- "$TARGET_HOST" "$1"
   fi
-  echo "Evaluating '${CONFIG_PATH}' for host '${TARGET_HOST}'"
-  ./nix-eval-json.sh "$TARGET_HOST" "$CONFIG_PATH" "$@"
+  ./nix-eval-json.sh "$@"
+
+eval-hm *params:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+  TARGET_HOST="${HOSTNAME:-$(hostname)}"
+  set -- {{params}}
+  if [[ $# -eq 1 ]]
+  then
+    set -- "$TARGET_HOST" "$1"
+  fi
+  ./nix-eval-json.sh "$1" "$2" --home-manager "${@:3}"
 
 deploy host='' *args:
   #!/usr/bin/env bash
