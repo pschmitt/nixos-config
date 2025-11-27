@@ -54,7 +54,7 @@
       };
 
       misc = {
-        disable_autoreload = true;
+        disable_autoreload = false;
         enable_swallow = true;
         swallow_regex = "^(kitty)$";
         mouse_move_enables_dpms = true;
