@@ -1,5 +1,10 @@
 { inputs, pkgs, ... }:
 {
+  imports = [
+    ./nvim.nix
+    ./zsh
+  ];
+
   home.packages = with pkgs; [
     atuin
     bat
