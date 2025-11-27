@@ -23,6 +23,10 @@ do
       JQ_ARGS+=(-r)
       shift
       ;;
+    -H|--home-manager|--homemanager|--hm)
+      HOME_MANAGER=1
+      shift
+      ;;
     --)
       shift
       break
@@ -51,6 +55,11 @@ then
   echo "Missing CONFIG_PATH argument" >&2
   usage >&2
   exit 2
+fi
+
+if [[ -n $HOME_MANAGER ]]
+then
+  CONFIG_PATH="\"home-manager\".users.${USER:-pschmitt}.${CONFIG_PATH}"
 fi
 
 nix eval --json --no-warn-dirty --apply '
