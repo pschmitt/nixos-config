@@ -51,5 +51,4 @@ in
   sops.secrets."mullvad/account".sopsFile = config.custom.sopsFile;
 
   services.monit.config = lib.mkAfter monitExtraConfig;
-  systemd.services.monit.preStart = lib.mkAfter "${renderMonitConfig}";
 }
