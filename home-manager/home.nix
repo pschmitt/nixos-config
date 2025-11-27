@@ -1,6 +1,7 @@
 {
   inputs,
   lib,
+  pkgs,
   osConfig,
   ...
 }:
@@ -19,18 +20,17 @@
       ./mail.nix
       ./network.nix
       ./nrf.nix
-      ./nvim.nix
       ./gpg.nix
       ./sops.nix
       ./ssh.nix
       ./work
       ./yadm.nix
-      ./zsh
     ]
     (lib.optional osConfig.hardware.bluetooth.enable ./bluetooth.nix)
     (lib.optional osConfig.services.xserver.enable ./gui)
   ];
 
+  home.packages = [ pkgs.home-manager ];
   programs = {
     home-manager.enable = true;
     nix-index-database.comma.enable = true;
