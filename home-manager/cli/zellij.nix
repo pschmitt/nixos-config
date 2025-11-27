@@ -5,7 +5,7 @@
     inputs.zjstatus.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
-  home.file.".config/zellij/plugins/zjstatus.wasm" = {
+  xdg.configFile."zellij/plugins/zjstatus.wasm" = {
     source = "${inputs.zjstatus.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/zjstatus.wasm";
   };
 }
