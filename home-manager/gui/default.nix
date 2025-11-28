@@ -13,6 +13,7 @@
     ./podsync-cookies-tx.nix
     ./soundboard.nix
     ./theme.nix
+    ./xdg-portal.nix
 
     # window managers
     ./gnome.nix
