@@ -56,9 +56,12 @@
 
     # apps
     gparted
-    mullvad-vpn
     usbimager # etcher alternative
     virt-manager
+
+    # vpn
+    tor-browser
+    mullvad-vpn
 
     # qrcode create/read
     qrencode
