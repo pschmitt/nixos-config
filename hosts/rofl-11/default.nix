@@ -26,6 +26,7 @@
     ../../services/http.nix
     ../../services/stash.nix
     ../../services/tdarr-server.nix
+    ../../services/tor.nix
 
     ./container-services.nix
     ./monit.nix
