@@ -4,6 +4,7 @@
     openFirewall = false;
     settings = {
       ControlPort = [ { port = 9051; } ];
+      CookieAuthentication = true;
       SocksPort = [ { port = 9050; } ];
     };
     relay.enable = false;
