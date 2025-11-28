@@ -407,7 +407,8 @@ jobs:
 
       - uses: wimpysworld/nothing-but-nix@main
         with:
-          hatchet-protocol: 'cleave'
+          # 'cleave' removes docker, which we need later for qemu
+          hatchet-protocol: 'carve'
 
       - name: Checkout code
         uses: actions/checkout@v6
