@@ -11,13 +11,11 @@ in
 {
   imports = [ ../monit/netbird.nix ];
 
-  sops = {
-    secrets.netbird-setup-key = {
-      key = "netbird/setup-keys/${netbirdClientName}/${config.custom.netbirdSetupKey}";
-      owner = "netbird-${netbirdClientName}";
-      group = "netbird-${netbirdClientName}";
-      mode = "0440";
-    };
+  sops.secrets.netbird-setup-key = {
+    key = "netbird/setup-keys/${netbirdClientName}/${config.custom.netbirdSetupKey}";
+    owner = "netbird-${netbirdClientName}";
+    group = "netbird-${netbirdClientName}";
+    mode = "0440";
   };
 
   users.users."${config.custom.username}".extraGroups = [
@@ -38,6 +36,10 @@ in
       clients = lib.mkForce {
         "${netbirdClientName}" = {
           port = 51820;
+          login = {
+            enable = true;
+            setupKeyFile = config.sops.secrets."netbird-setup-key".path;
+          };
           dns-resolver = {
             # NOTE Having the addr set to the default value (null) will lead to nb
             # using its own addr
@@ -73,43 +75,56 @@ in
     map (c: c.interface) (builtins.attrValues config.services.netbird.clients)
   );
 
+  systemd.services."${netbirdClientName}-login".postStart = ''
+    NB_BIN="/run/current-system/sw/bin/netbird-${netbirdClientName}"
+
+    # Store Netbird IP address in /etc/netbird/netbird.env
+    if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
+    then
+      ${pkgs.coreutils}/bin/mkdir -p /etc/containers/env
+      echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
+    fi
+  '';
+
+  # TODO Verify that services.netbird.tunnels.<name>.login.enable works (see above)
+  # Then we should be able to safely delete the below autoconnect service.
   # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
-  systemd.services."netbird-${netbirdClientName}-autoconnect" = {
-    after = [ "netbird-${netbirdClientName}.service" ];
-    wants = [ "netbird-${netbirdClientName}.service" ];
-    wantedBy = [ "multi-user.target" ];
-
-    serviceConfig = {
-      Type = "oneshot";
-    };
-
-    environment = {
-      NB_BIN = "/run/current-system/sw/bin/netbird-${netbirdClientName}";
-      NB_HOSTNAME = config.networking.hostName;
-      NB_SETUP_KEY_FILE = config.sops.secrets."netbird-setup-key".path;
-    };
-
-    script = ''
-      # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
-      # they don't seem to come up on their own after provisioning.
-      $NB_BIN up
-
-      # wait for connection to be established
-      # TODO Wait till we get an IP?
-      while ! "$NB_BIN" status --json | \
-            ${lib.getExe pkgs.jq} -e '.management.connected' >/dev/null
-      do
-        sleep 0.5
-      done
-
-      # Store Netbird IP address in /etc/netbird/netbird.env
-      if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
-      then
-        mkdir -p /etc/containers/env
-        echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
-      fi
-    '';
-  };
+  # systemd.services."netbird-${netbirdClientName}-autoconnect" = {
+  #   after = [ "netbird-${netbirdClientName}.service" ];
+  #   wants = [ "netbird-${netbirdClientName}.service" ];
+  #   wantedBy = [ "multi-user.target" ];
+  #
+  #   serviceConfig = {
+  #     Type = "oneshot";
+  #   };
+  #
+  #   environment = {
+  #     NB_BIN = "/run/current-system/sw/bin/netbird-${netbirdClientName}";
+  #     NB_HOSTNAME = config.networking.hostName;
+  #     NB_SETUP_KEY_FILE = config.sops.secrets."netbird-setup-key".path;
+  #   };
+  #
+  #   script = ''
+  #     # HOTFIX Do an explicit netbird up. This is mostly for new hosts - as
+  #     # they don't seem to come up on their own after provisioning.
+  #     $NB_BIN up
+  #
+  #     # wait for connection to be established
+  #     # TODO Wait till we get an IP?
+  #     while ! "$NB_BIN" status --json | \
+  #           ${lib.getExe pkgs.jq} -e '.management.connected' >/dev/null
+  #     do
+  #       sleep 0.5
+  #     done
+  #
+  #     # Store Netbird IP address in /etc/netbird/netbird.env
+  #     if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
+  #     then
+  #       ${pkgs.coreutils}/bin/mkdir -p /etc/containers/env
+  #       echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
+  #     fi
+  #   '';
+  # };
 
   environment.shellInit = ''
     # netbird ip
