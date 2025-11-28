@@ -24,48 +24,50 @@ in
     "netbird-${netbirdClientName}"
   ];
 
-  services.netbird = {
-    enable = true;
-    package = netbirdPkg;
-
-    ui = {
-      enable = lib.mkDefault false;
+  services = {
+    netbird = {
+      enable = true;
       package = netbirdPkg;
-    };
 
-    # NOTE We use mkForce here to remove the "default" client
-    clients = lib.mkForce {
-      "${netbirdClientName}" = {
-        port = 51820;
-        dns-resolver = {
-          # NOTE Having the addr set to the default value (null) will lead to nb
-          # using its own addr
-          address = "127.0.0.20";
-          # NOTE for resolvectl to work reliably we need to leave the port on 53
-          # other ports does not seem to work well with systemd-resolved
-          port = 53;
-        };
-        environment = {
-          # do not set up netbird ssh
-          NB_ALLOW_SERVER_SSH = "false";
-          # don't mess with my ssh config!
-          NB_DISABLE_SSH_CONFIG = "true";
+      ui = {
+        enable = lib.mkDefault false;
+        package = netbirdPkg;
+      };
+
+      # NOTE We use mkForce here to remove the "default" client
+      clients = lib.mkForce {
+        "${netbirdClientName}" = {
+          port = 51820;
+          dns-resolver = {
+            # NOTE Having the addr set to the default value (null) will lead to nb
+            # using its own addr
+            address = "127.0.0.20";
+            # NOTE for resolvectl to work reliably we need to leave the port on 53
+            # other ports does not seem to work well with systemd-resolved
+            port = 53;
+          };
+          environment = {
+            # do not set up netbird ssh
+            NB_ALLOW_SERVER_SSH = "false";
+            # don't mess with my ssh config!
+            NB_DISABLE_SSH_CONFIG = "true";
+          };
         };
       };
     };
-  };
 
-  # Don't let tailscale drop all our packets!
-  services.tailscale =
-    let
-      tsFlags = [
-        "--netfilter-mode=off"
-      ];
-    in
-    {
-      extraSetFlags = tsFlags;
-      extraUpFlags = tsFlags;
-    };
+    # Don't let tailscale drop all our packets!
+    tailscale =
+      let
+        tsFlags = [
+          "--netfilter-mode=off"
+        ];
+      in
+      {
+        extraSetFlags = tsFlags;
+        extraUpFlags = tsFlags;
+      };
+  };
 
   networking.firewall.trustedInterfaces = lib.mkAfter (
     map (c: c.interface) (builtins.attrValues config.services.netbird.clients)
@@ -119,12 +121,11 @@ in
     alias netbird=netbird-${netbirdClientName}
   '';
 
-  # We use a udev rule here because the interface is created dynamically
-  # and might not exist when systemd-sysctl runs.
-  #
   # We need to enable route_localnet to allow DNAT to 127.0.0.1.
   # This is used by modules/container-services.nix to redirect traffic
   # from the VPN interface to the container services listening on localhost.
+  # We use a udev rule here because the interface is created dynamically
+  # and might not exist when systemd-sysctl runs.
   # boot.kernel.sysctl = {
   #   "net.ipv4.conf.nb-${netbirdClientName}.route_localnet" = 1;
   # };
