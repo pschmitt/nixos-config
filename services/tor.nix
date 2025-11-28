@@ -8,5 +8,6 @@
       dns.enable = true;
     };
     torsocks.enable = true;
+    tsocks.enable = true;
   };
 }
