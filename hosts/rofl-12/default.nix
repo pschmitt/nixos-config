@@ -10,6 +10,7 @@
     (import ../../services/nfs/nfs-client.nix { })
 
     ../../services/http.nix
+    ../../services/tor.nix
 
     ../../services/***REMOVED***/***REMOVED***-wallet-rpc.nix
     ../../services/***REMOVED***/***REMOVED***d.nix
