@@ -19,7 +19,7 @@ let
   monitExtraConfig =
     let
       composeFile = "/srv/piracy/docker-compose.yaml";
-      restartCmd = "${pkgs.docker}/bin/docker compose -f ${composeFile} restart";
+      restartCmd = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f ${composeFile} restart";
     in
     ''
       check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
