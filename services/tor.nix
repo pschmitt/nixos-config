@@ -3,9 +3,11 @@
     enable = true;
     openFirewall = false;
     settings = {
-      ControlPort = [ { port = 9051; } ];
+      ControlPort = 9051;
       CookieAuthentication = true;
-      SocksPort = [ { port = 9050; } ];
+      # NOTE Don't set the port here, it will add a secondary SocksPort option
+      # in the torrc!
+      # SocksPort = 9050;
     };
     relay.enable = false;
     client = {
