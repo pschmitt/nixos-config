@@ -10,6 +10,7 @@
     (import ../../services/nfs/nfs-client.nix { })
 
     ../../services/http.nix
+    ../../services/tor.nix
 
     ../../services/xmr/monero-wallet-rpc.nix
     ../../services/xmr/monerod.nix
