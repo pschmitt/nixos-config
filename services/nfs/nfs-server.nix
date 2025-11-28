@@ -3,17 +3,18 @@ let
   allowedIps = args.allowedIps or "100.64.0.0/10"; # cg-nat, ie tailscale/netbird
   basePath = args.basePath or "/mnt/data";
   exportPath = args.exportPath or "/export";
-  exports = args.exports or [
-    "backups"
-    "blobs"
-    "books"
-    "documents"
-    "mnt"
-    "srv"
-    "tmp"
-    # "videos" # lives on rofl-11
-  ];
-  exportOptions = args.exportOptions or "rw,nohide,insecure,no_subtree_check";
+  exports =
+    args.exports or [
+      "backups"
+      "blobs"
+      "books"
+      "documents"
+      "mnt"
+      "srv"
+      "tmp"
+      # "videos" # lives on rofl-11
+    ];
+  exportOptions = args.exportOptions or "rw,nohide,insecure,no_subtree_check,no_root_squash";
 in
 {
   fileSystems = builtins.listToAttrs (
