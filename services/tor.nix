@@ -3,6 +3,9 @@
     enable = true;
     openFirewall = false;
     relay.enable = false;
-    client.enable = true;
+    client = {
+      enable = true;
+      dns.enable = true;
+    };
   };
 }
