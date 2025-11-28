@@ -70,3 +70,6 @@ build-rpi-img host='pica4' *args:
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
+
+tofu-yolo host='' *args:
+  zhj nixos::rebuild-all-from-rofl {{args}}
