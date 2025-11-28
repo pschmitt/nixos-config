@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   imports = [
-    ./network.nix
+    ./dns.nix
     ./netbird.nix
     ./snek/proxychains.nix
     ./tailscale.nix

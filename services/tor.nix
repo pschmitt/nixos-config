@@ -7,5 +7,6 @@
       enable = true;
       dns.enable = true;
     };
+    torsocks.enable = true;
   };
 }
