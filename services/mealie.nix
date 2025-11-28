@@ -6,7 +6,7 @@ in
   sops = {
     secrets = {
       "mealie/openai-api-key" = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
         restartUnits = [ "mealie.service" ];
       };
     };

@@ -9,7 +9,7 @@ let
 in
 {
   sops.secrets."forgejo/runner/token" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
     # FIXME The gitea-runner is dynamic. It won't exist at build time.
     # owner = "gitea-runner";
   };
@@ -83,7 +83,7 @@ in
         );
       in
       {
-        virtualHosts = virtualHosts;
+        inherit virtualHosts;
       };
   };
 
