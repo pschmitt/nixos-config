@@ -37,6 +37,7 @@ in
       # ... but setting none (or empty) seems to break login
       ORIGIN = "https://${primaryHost}";
       TOKEN_TIME = "72";
+      DEFAULT_CURRENCY = "EUR";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
       TZ = config.time.timeZone;
