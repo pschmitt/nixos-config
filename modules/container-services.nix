@@ -524,12 +524,46 @@ in
       default = null;
       description = "Default ACME certificate name to reuse for default hosts.";
     };
+
+    enableRedirection = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Whether to enable NFTables redirection for container services.";
+    };
+
+    trustedInterfacePatterns = mkOption {
+      type = types.listOf types.str;
+      default = [
+        "nb-*"
+        "tailscale*"
+      ];
+      description = "Interface patterns to enable redirection and route_localnet for.";
+    };
   };
 
   config = mkIf cfg.enable {
     assertions = authOptionAssertions;
     services.nginx.virtualHosts = virtualHosts;
     services.monit.config = lib.mkAfter monitExtraConfig;
+
+    networking.nftables = mkIf cfg.enableRedirection {
+      enable = true;
+      tables."nat-redirection" = {
+        family = "ip";
+        content = ''
+          chain prerouting {
+            type nat hook prerouting priority dstnat; policy accept;
+            ${concatMapStringsSep "\n            " (
+              service:
+              "iifname { ${
+                concatMapStringsSep ", " (p: "\"${p}\"") cfg.trustedInterfacePatterns
+              } } tcp dport ${toString service.port} dnat to 127.0.0.1:${toString service.port}"
+            ) (attrValues cfg.services)}
+          }
+        '';
+      };
+    };
+
     systemd = {
       tmpfiles.rules = [
         "d ${trustedStateDir} 0755 root root -"

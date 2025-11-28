@@ -51,4 +51,17 @@ in
     source /etc/containers/env/tailscale.env 2>/dev/null
     [[ -n $TAILSCALE_IP ]] && export TAILSCALE_IP
   '';
+
+  # We use a udev rule here because the interface is created dynamically
+  # and might not exist when systemd-sysctl runs.
+  #
+  # We need to enable route_localnet to allow DNAT to 127.0.0.1.
+  # This is used by modules/container-services.nix to redirect traffic
+  # from the VPN interface to the container services listening on localhost.
+  # boot.kernel.sysctl = {
+  #   "net.ipv4.conf.${config.services.tailscale.interfaceName}.route_localnet" = 1;
+  # };
+  services.udev.extraRules = ''
+    SUBSYSTEM=="net", ACTION=="add", KERNEL=="${config.services.tailscale.interfaceName}", RUN+="${pkgs.procps}/bin/sysctl -w net.ipv4.conf.%k.route_localnet=1"
+  '';
 }
