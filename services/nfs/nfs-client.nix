@@ -1,18 +1,19 @@
-args@{ ... }:
+args:
 let
   server = args.server or "rofl-10.netbird.cloud";
   exportPath = args.exportPath or "/export";
   mountPoint = args.mountPoint or "/mnt/data";
-  exports = args.exports or [
-    "backups"
-    "blobs"
-    "books"
-    "documents"
-    "mnt"
-    "srv"
-    "tmp"
-    # "videos" # lives on rofl-11 now
-  ];
+  exports =
+    args.exports or [
+      "backups"
+      "blobs"
+      "books"
+      "documents"
+      "mnt"
+      "srv"
+      "tmp"
+      # "videos" # lives on rofl-11 now
+    ];
 in
 
 {

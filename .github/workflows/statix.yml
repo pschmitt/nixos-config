@@ -1,0 +1,19 @@
+name: Statix Lint
+
+on:
+  push:
+    paths:
+      - "**/*.nix"
+  pull_request:
+    paths:
+      - "**/*.nix"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+      - name: Run statix
+        run: nix run 'nixpkgs#statix' -- check

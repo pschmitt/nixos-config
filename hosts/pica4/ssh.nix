@@ -12,34 +12,38 @@ in
     map (secret: {
       name = secret;
       value = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
     }) secrets
   );
 
-  environment.etc."ssh/ssh_host_rsa_key" = {
-    source = config.sops.secrets."ssh/host_keys/rsa/privkey".path;
-    user = "root";
-    group = "root";
-    mode = "0400";
-  };
-  environment.etc."ssh/ssh_host_ed25519_key" = {
-    source = config.sops.secrets."ssh/host_keys/ed25519/privkey".path;
-    user = "root";
-    group = "root";
-    mode = "0400";
-  };
-  environment.etc."ssh/ssh_host_rsa_key.pub" = {
-    source = config.sops.secrets."ssh/host_keys/rsa/pubkey".path;
-    mode = "0444";
-    user = "root";
-    group = "root";
-  };
-  environment.etc."ssh/ssh_host_ed25519_key.pub" = {
-    source = config.sops.secrets."ssh/host_keys/ed25519/pubkey".path;
-    mode = "0444";
-    user = "root";
-    group = "root";
+  environment = {
+    etc = {
+      "ssh/ssh_host_rsa_key" = {
+        source = config.sops.secrets."ssh/host_keys/rsa/privkey".path;
+        user = "root";
+        group = "root";
+        mode = "0400";
+      };
+      "ssh/ssh_host_ed25519_key" = {
+        source = config.sops.secrets."ssh/host_keys/ed25519/privkey".path;
+        user = "root";
+        group = "root";
+        mode = "0400";
+      };
+      "ssh/ssh_host_rsa_key.pub" = {
+        source = config.sops.secrets."ssh/host_keys/rsa/pubkey".path;
+        mode = "0444";
+        user = "root";
+        group = "root";
+      };
+      "ssh/ssh_host_ed25519_key.pub" = {
+        source = config.sops.secrets."ssh/host_keys/ed25519/pubkey".path;
+        mode = "0444";
+        user = "root";
+        group = "root";
+      };
+    };
   };
 
   # services.openssh.hostKeys = [

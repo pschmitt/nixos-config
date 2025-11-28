@@ -7,7 +7,7 @@
     in
     {
       pname = "netbird";
-      version = version;
+      inherit version;
 
       src = prev.fetchFromGitHub {
         owner = "netbirdio";

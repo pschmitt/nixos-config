@@ -8,39 +8,41 @@
 {
   imports = [ inputs.poor-tools.nixosModules.default ];
 
-  services.poor-installer-web = {
-    enable = true;
-  };
-
-  services.nginx.virtualHosts =
-    let
-      nginxConfig = {
-        enableACME = true;
-        forceSSL = false; # disabled on purpose!
-        addSSL = true; # required to actually response on https requests
-
-        locations."/" = {
-          proxyPass = "http://${toString config.services.poor-installer-web.bindHost}:${toString config.services.poor-installer-web.bindPort}";
-          proxyWebsockets = true;
-          recommendedProxySettings = true;
-        };
-      };
-    in
-    {
-      "poor.tools" = nginxConfig;
-      "poor.curl-pipe.sh" = nginxConfig;
-      "poor.${config.custom.mainDomain}" = nginxConfig;
+  services = {
+    poor-installer-web = {
+      enable = true;
     };
 
-  services.monit.config = lib.mkAfter ''
-    check host "poor-installer-web" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart poor-installer-web.service"
-      if failed
-        port ${toString config.services.poor-installer-web.bindPort}
-        protocol http
-        with timeout 15 seconds
-      then restart
-      if 5 restarts within 10 cycles then alert
-  '';
+    nginx.virtualHosts =
+      let
+        nginxConfig = {
+          enableACME = true;
+          forceSSL = false; # disabled on purpose!
+          addSSL = true; # required to actually response on https requests
+
+          locations."/" = {
+            proxyPass = "http://${toString config.services.poor-installer-web.bindHost}:${toString config.services.poor-installer-web.bindPort}";
+            proxyWebsockets = true;
+            recommendedProxySettings = true;
+          };
+        };
+      in
+      {
+        "poor.tools" = nginxConfig;
+        "poor.curl-pipe.sh" = nginxConfig;
+        "poor.${config.custom.mainDomain}" = nginxConfig;
+      };
+
+    monit.config = lib.mkAfter ''
+      check host "poor-installer-web" with address "127.0.0.1"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart poor-installer-web.service"
+        if failed
+          port ${toString config.services.poor-installer-web.bindPort}
+          protocol http
+          with timeout 15 seconds
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+  };
 }

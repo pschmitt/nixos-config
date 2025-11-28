@@ -58,22 +58,36 @@ in
 {
   sops.secrets = {
     "nix/store/privkey" = {
-      sopsFile = config.custom.sopsFile;
+      inherit (config.custom) sopsFile;
     };
     "nix/credentials/htpasswd" = {
       owner = "nginx";
     };
   };
 
-  services.harmonia = {
-    enable = true;
-    signKeyPaths = [ config.sops.secrets."nix/store/privkey".path ];
-    settings = {
-      bind = "127.0.0.1:42766";
+  services = {
+    harmonia = {
+      enable = true;
+      signKeyPaths = [ config.sops.secrets."nix/store/privkey".path ];
+      settings = {
+        bind = "127.0.0.1:42766";
+      };
     };
-  };
 
-  services.nginx.virtualHosts = virtualHosts;
+    nginx.virtualHosts = virtualHosts;
+
+    monit.config = lib.mkAfter ''
+      check host "harmonia" with address "cache.${config.networking.hostName}.brkn.lol"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
+        if failed
+          port 443
+          protocol https status 401
+          with timeout 15 seconds
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+  };
 
   nix.gc.dates = lib.mkForce "monthly";
 
@@ -81,17 +95,5 @@ in
   # via ssh (which bypasses harmonia)
   nix.extraOptions = ''
     secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
-  '';
-
-  services.monit.config = lib.mkAfter ''
-    check host "harmonia" with address "cache.${config.networking.hostName}.brkn.lol"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
-      if failed
-        port 443
-        protocol https status 401
-        with timeout 15 seconds
-      then restart
-      if 5 restarts within 10 cycles then alert
   '';
 }

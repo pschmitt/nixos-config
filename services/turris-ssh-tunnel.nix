@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   users.users."ssh-tunnel-turris" = {
     isSystemUser = true;
     group = "ssh-tunnel-turris";

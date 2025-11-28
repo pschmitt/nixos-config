@@ -1,11 +1,14 @@
 { pkgs, ... }:
 {
-  nixpkgs.config.allowUnfree = true;
-  nixpkgs.config.segger-jlink.acceptLicense = true;
-
-  nixpkgs.config.permittedInsecurePackages = [
-    "segger-jlink-qt4-810"
-  ];
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+      segger-jlink.acceptLicense = true;
+      permittedInsecurePackages = [
+        "segger-jlink-qt4-810"
+      ];
+    };
+  };
 
   environment.systemPackages = with pkgs; [
     nrfutil

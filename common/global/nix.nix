@@ -163,22 +163,24 @@
     };
   };
 
-  programs.nh = {
-    enable = true;
-    flake = "/etc/nixos";
-  };
+  programs = {
+    nh = {
+      enable = true;
+      flake = "/etc/nixos";
+    };
 
-  programs.nix-ld = {
-    enable = true;
-    # libraries = [];
+    nix-ld = {
+      enable = true;
+      # libraries = [];
+    };
+
+    command-not-found.enable = false;
   };
 
   # Do not use /tmp (50% RAM tmpfs) for builds
   systemd.services.nix-daemon.environment.TMPDIR = "/nix/tmp";
   # Create /nix/tmp and clean it up every 48 hours (2 days)
   systemd.tmpfiles.rules = [ "d /nix/tmp 0755 root root 2d" ];
-
-  programs.command-not-found.enable = false;
 
   environment.systemPackages = with pkgs; [
     # inputs.attic.packages.${system}.default

@@ -158,19 +158,41 @@ in
     };
   };
 
-  services.authelia.instances.${instanceName} = {
-    enable = true;
-    user = autheliaUser;
-    group = autheliaGroup;
-    settingsFiles = lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile ++ [
-      config.sops.templates."authelia/duo.yml".path
-      config.sops.templates."authelia/smtp.yml".path
-    ];
-    secrets = {
-      jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
-      storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
+  services = {
+    authelia.instances.${instanceName} = {
+      enable = true;
+      user = autheliaUser;
+      group = autheliaGroup;
+      settingsFiles = lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile ++ [
+        config.sops.templates."authelia/duo.yml".path
+        config.sops.templates."authelia/smtp.yml".path
+      ];
+      secrets = {
+        jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
+        storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
+      };
+      settings = autheliaSettings;
     };
-    settings = autheliaSettings;
+
+    nginx.virtualHosts.${autheliaDomain} = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
+      };
+    };
+
+    monit.config = lib.mkAfter ''
+      check host "authelia" with address "127.0.0.1"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart ${autheliaService}"
+        if failed port ${toString autheliaPort} then restart
+        if 5 restarts within 10 cycles then alert
+    '';
   };
 
   systemd = lib.mkIf (!containerServicesEnabled) {
@@ -208,24 +230,4 @@ in
       };
     };
   };
-
-  services.nginx.virtualHosts.${autheliaDomain} = {
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
-    };
-  };
-
-  services.monit.config = lib.mkAfter ''
-    check host "authelia" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${autheliaService}"
-      if failed port ${toString autheliaPort} then restart
-      if 5 restarts within 10 cycles then alert
-  '';
 }

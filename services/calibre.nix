@@ -52,9 +52,22 @@ in
     "d ${calibreWebAutomatedPaths.plugins} 0750 ${config.custom.username} ${config.custom.username} - -"
   ];
 
-  services.calibre-web.enable = lib.mkForce false;
-
-  services.nginx.virtualHosts = calibreWebAutomatedVirtualHosts;
+  services = {
+    calibre-web.enable = lib.mkForce false;
+    nginx.virtualHosts = calibreWebAutomatedVirtualHosts;
+    monit.config = lib.mkAfter ''
+      check host "calibre-web-automated" with address "${builtins.head calibreWebAutomatedHostnames}"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-calibre-web-automated.service"
+        if failed
+          port 443
+          protocol https
+          with timeout 15 seconds
+          and certificate valid for 5 days
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+  };
 
   virtualisation.oci-containers.containers.calibre-web-automated = {
     image = "docker.io/crocodilestick/calibre-web-automated:latest";
@@ -75,17 +88,4 @@ in
       PGID = "1000";
     };
   };
-
-  services.monit.config = lib.mkAfter ''
-    check host "calibre-web-automated" with address "${builtins.head calibreWebAutomatedHostnames}"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-calibre-web-automated.service"
-      if failed
-        port 443
-        protocol https
-        with timeout 15 seconds
-        and certificate valid for 5 days
-      then restart
-      if 5 restarts within 10 cycles then alert
-  '';
 }

@@ -3,36 +3,41 @@
 { modulesPath, ... }:
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
-  boot.initrd.availableKernelModules = [
-    "xhci_pci"
-    "virtio_scsi"
-  ];
-
-  boot.supportedFilesystems = [ "btrfs" ];
-
-  fileSystems."/" = {
-    # device = "/dev/sda1";  # set by disko
-    fsType = "btrfs";
-    options = [
-      "subvol=@root"
-      "compress=zstd"
-    ];
+  boot = {
+    initrd = {
+      availableKernelModules = [
+        "xhci_pci"
+        "virtio_scsi"
+      ];
+    };
+    supportedFilesystems = [ "btrfs" ];
   };
 
-  fileSystems."/home" = {
-    fsType = "btrfs";
-    options = [
-      "subvol=@home"
-      "compress=zstd"
-    ];
-  };
+  fileSystems = {
+    "/" = {
+      # device = "/dev/sda1";  # set by disko
+      fsType = "btrfs";
+      options = [
+        "subvol=@root"
+        "compress=zstd"
+      ];
+    };
 
-  fileSystems."/nix" = {
-    fsType = "btrfs";
-    options = [
-      "subvol=@nix"
-      "compress=zstd"
-    ];
+    "/home" = {
+      fsType = "btrfs";
+      options = [
+        "subvol=@home"
+        "compress=zstd"
+      ];
+    };
+
+    "/nix" = {
+      fsType = "btrfs";
+      options = [
+        "subvol=@nix"
+        "compress=zstd"
+      ];
+    };
   };
 
   # NOTE This is set by disko already

@@ -83,10 +83,10 @@ let
 in
 {
   sops.secrets."stash/api-key" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
   };
   sops.secrets."stash/host" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
   };
 
   systemd.services.stash-scan = {

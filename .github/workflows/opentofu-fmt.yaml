@@ -28,4 +28,3 @@ jobs:
     - name: Check OpenTofu files
       run: tofu fmt -check -recursive
       working-directory: ./tofu
-

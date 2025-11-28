@@ -41,9 +41,13 @@
   };
 
   # enable systemd service
-  systemd.packages = [ pkgs.oracle-cloud-agent ];
-  systemd.services.oracle-cloud-agent.enable = true;
-  systemd.services.oracle-cloud-agent.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
+  systemd = {
+    packages = [ pkgs.oracle-cloud-agent ];
+    services.oracle-cloud-agent = {
+      enable = true;
+      wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
+    };
+  };
 
   users.users.oracle-cloud-agent = {
     isSystemUser = true;

@@ -38,7 +38,7 @@ in
     name: cfg: lib.nameValuePair name (createService name cfg.path)
   ) services;
   systemd.timers = lib.mapAttrs' (
-    name: cfg: lib.nameValuePair (name) (createTimer name cfg.time)
+    name: cfg: lib.nameValuePair name (createTimer name cfg.time)
   ) services;
 
   # FIXME: Add Monit checks for autorestic jobs.
