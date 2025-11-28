@@ -1,5 +1,8 @@
 { pkgs, ... }:
 {
+  imports = [
+    ./keyd.nix
+  ];
   # console.useXkbConfig = true;
 
   services.xserver.enable = true;
