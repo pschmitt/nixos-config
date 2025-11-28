@@ -5,32 +5,34 @@
   #   # options = [ "defaults" "fmask=0077" ];
   # };
 
-  fileSystems."/" = {
-    # device = "/dev/sda1";  # set by disko
-    fsType = "btrfs";
-    options = [
-      "subvol=@root"
-      "compress=zstd"
-      "noatime"
-    ];
-  };
+  fileSystems = {
+    "/" = {
+      # device = "/dev/sda1";  # set by disko
+      fsType = "btrfs";
+      options = [
+        "subvol=@root"
+        "compress=zstd"
+        "noatime"
+      ];
+    };
 
-  fileSystems."/home" = {
-    fsType = "btrfs";
-    options = [
-      "subvol=@home"
-      "compress=zstd"
-      "noatime"
-    ];
-  };
+    "/home" = {
+      fsType = "btrfs";
+      options = [
+        "subvol=@home"
+        "compress=zstd"
+        "noatime"
+      ];
+    };
 
-  fileSystems."/nix" = {
-    fsType = "btrfs";
-    options = [
-      "subvol=@nix"
-      "compress=zstd"
-      "noatime"
-    ];
+    "/nix" = {
+      fsType = "btrfs";
+      options = [
+        "subvol=@nix"
+        "compress=zstd"
+        "noatime"
+      ];
+    };
   };
 
   disko.devices = {

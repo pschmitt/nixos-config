@@ -2,7 +2,7 @@
 {
 
   sops.secrets."github-runners/nixos-config/token" = {
-    sopsFile = config.custom.sopsFile;
+    inherit (config.custom) sopsFile;
   };
 
   services.github-runners.nixos-config = {

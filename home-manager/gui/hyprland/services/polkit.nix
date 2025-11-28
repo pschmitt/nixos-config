@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   services.hyprpolkitagent.enable = true;
 
   systemd.user.services.hyprpolkitagent.Service = {

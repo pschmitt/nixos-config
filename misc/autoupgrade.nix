@@ -1,5 +1,4 @@
-{ ... }:
-{
+_: {
   # https://search.nixos.org/options?channel=unstable&type=options&query=system.autoUpgrade
   system.autoUpgrade = {
     enable = true;

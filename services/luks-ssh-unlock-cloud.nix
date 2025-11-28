@@ -1,4 +1,9 @@
-{ config, inputs, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 
 let
   # List of instance names
@@ -30,7 +35,7 @@ let
     lib.lists.map (name: {
       name = "luks/${name}";
       value = {
-        sopsFile = config.custom.sopsFile;
+        inherit (config.custom) sopsFile;
       };
     }) instanceNames
   );
@@ -45,7 +50,7 @@ in
     enable = true;
     instances = lib.listToAttrs (
       lib.lists.map (name: {
-        name = name;
+        inherit name;
         value = createInstance name;
       }) instanceNames
     );

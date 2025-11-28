@@ -1,4 +1,4 @@
-{ ... }:
+_:
 let
   tfVars = builtins.fromJSON (builtins.readFile ./tf-vars.json);
 in
