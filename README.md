@@ -11,7 +11,7 @@ To create a new host:
 2. Create the config files:
 
 ```shell
-./new-host.sh $NEW_HOST
+./init-host-config.sh $NEW_HOST
 ```
 
 3. Update [./tofu/dns-dynamic.tf](./tofu/dns-dynamic.tf)
