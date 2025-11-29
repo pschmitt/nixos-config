@@ -7,6 +7,7 @@
   imports = [
     ./atuin.nix
     ./direnv.nix
+    ./fzf.nix
     ./vivid.nix
     ./zoxide.nix
   ];
