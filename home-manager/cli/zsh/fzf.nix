@@ -5,18 +5,16 @@
 }:
 {
   home.packages = with pkgs; [
-    zoxide
+    fzf
   ];
 
   xdg.configFile."zsh/custom/os/nixos/system.zsh".text = lib.mkAfter ''
-    # zoxide
+    # fzf
     source ${
-      (pkgs.runCommand "zoxide-init" { } ''
+      (pkgs.runCommand "fzf-init" { } ''
         mkdir -p $out
-        ${pkgs.zoxide}/bin/zoxide init zsh --no-cmd > $out/init.zsh
+        ${pkgs.fzf}/bin/fzf --zsh > $out/init.zsh
       '')
     }/init.zsh
-    alias z=__zoxide_z
-    alias zz=__zoxide_zi
   '';
 }
