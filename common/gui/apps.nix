@@ -29,43 +29,37 @@
     gnome-font-viewer
     imv # image viewer
     nautilus
-    sushi
-    zathura
+    sushi # file previewer for gnome
 
     # wayland
-    remmina
     wayvnc
     wdisplays
     wlr-randr
-    wlrctl
 
     # input emulation
-    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
     dotool
+    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
+    libinput # libinput debug-events
+    wlrctl
     wtype
     ydotool
 
-    gobject-introspection
-    gtk3 # gtk-update-icon-cache
-    iw
-    libinput # libinput debug-events
+    # secrets
     libsecret # secret-tool
     pinentry-curses
     pinentry-gnome3
-    tesseract
 
-    # apps
+    # misc apps
     gparted
+    remmina
     usbimager # etcher alternative
     virt-manager
 
-    # qrcode create/read
-    qrencode
-    zbar # provides zabarimg, for reading qr codes
-
-    # cli image viewers
+    # images
     chafa
-    # termimage
+    qrencode
+    tesseract
+    zbar # provides zabarimg, for reading qr codes
   ];
 
   programs.adb.enable = true;
