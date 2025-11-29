@@ -56,28 +56,35 @@ cmd_sd_image() {
   fi
 }
 
-if [[ $# -eq 0 ]]
-then
-  usage
-  exit 1
-fi
-
-case "$1" in
-  iso)
-    shift
-    cmd_iso "$@"
-    ;;
-  sd-image)
-    shift
-    cmd_sd_image "$@"
-    ;;
-  -h|--help)
+main() {
+  if [[ $# -eq 0 ]]
+  then
     usage
-    exit 0
-    ;;
-  *)
-    echo "Error: Unknown command '$1'" >&2
-    usage >&2
     exit 1
-    ;;
-esac
+  fi
+
+  case "$1" in
+    iso)
+      shift
+      cmd_iso "$@"
+      ;;
+    sd-image)
+      shift
+      cmd_sd_image "$@"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Error: Unknown command '$1'" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
