@@ -44,8 +44,8 @@ cmd_repl() {
 
 cmd_eval() {
   local target_host="$HOSTNAME"
-  local config_path=""
-  local home_manager=0
+  local config_path
+  local home_manager
   local jq_args=()
   local args=()
 
@@ -100,7 +100,7 @@ cmd_eval() {
 
   config_path="config.${args[0]}"
 
-  if [[ $home_manager -eq 1 ]]
+  if [[ -n ${home_manager:-} ]]
   then
     config_path="\"home-manager\".users.${USER:-pschmitt}.${config_path}"
   fi
@@ -118,28 +118,34 @@ cmd_eval() {
   ' ".#nixosConfigurations.${target_host}" | jq "${jq_args[@]}" '.res'
 }
 
-# Main dispatch
-if [[ $# -eq 0 ]]
-then
-  usage
-  exit 1
-fi
-
-case "$1" in
-  repl|--repl)
-    shift
-    cmd_repl "$@"
-    ;;
-  eval)
-    shift
-    cmd_eval "$@"
-    ;;
-  -h|--help)
+main() {
+  if [[ $# -eq 0 ]]
+  then
     usage
-    exit 0
-    ;;
-  *)
-    # Pass everything to eval, it handles flags and args
-    cmd_eval "$@"
-    ;;
-esac
+    exit 1
+  fi
+
+  case "$1" in
+    repl|--repl)
+      shift
+      cmd_repl "$@"
+      ;;
+    eval)
+      shift
+      cmd_eval "$@"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      # Pass everything to eval, it handles flags and args
+      cmd_eval "$@"
+      ;;
+  esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
