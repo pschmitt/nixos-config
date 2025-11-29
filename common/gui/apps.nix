@@ -59,7 +59,7 @@
     chafa
     qrencode
     tesseract
-    zbar # provides zabarimg, for reading qr codes
+    zbar # provides zbarimg, for reading qr codes
   ];
 
   programs.adb.enable = true;
