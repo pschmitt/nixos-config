@@ -44,13 +44,11 @@ deploy host='' *args:
     zhj nixos::rebuild "$@"
   fi
 
-build-iso host='iso' *args:
-  @echo "Building ISO for host '{{host}}' with args: {{args}}"
-  ./build-iso.sh {{host}} {{args}}
+build-iso host='iso':
+  ./build-installation-media.sh iso "{{host}}"
 
-build-rpi-img host='pica4' *args:
-  @echo "Building Raspberry Pi Image for host '{{host}}' with args: {{args}}"
-  ./build-rpi-img.sh {{host}} {{args}}
+build-rpi-img host='pica4':
+  ./build-installation-media.sh sd-image "{{host}}"
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
