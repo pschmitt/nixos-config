@@ -21,7 +21,10 @@ build-pkg pkg host='':
   nix build ".#nixosConfigurations.${TARGET_HOST}.pkgs.{{pkg}}"
 
 nixos-anywhere *args:
-  ./nixos-anywhere.sh {{args}}
+  ./nixos-install.sh local {{args}}
+
+nixos-remote *args:
+  ./nixos-install.sh remote {{args}}
 
 new-host *args:
   ./new-host.sh {{args}}
