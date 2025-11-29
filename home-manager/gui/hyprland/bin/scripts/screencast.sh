@@ -72,43 +72,19 @@ state_is_recent() {
 }
 
 screencast_status() {
-  local hass
-
-  case "$1" in
-    *home-assistant|*ha*|*homeass*)
-      hass=1
-      ;;
-  esac
-
   if ! screencast_running
   then
-    if [[ -z "$hass" ]]
-    then
-      echo "Screencasting is off"
-      return 1
-    fi
-
-    # Home Assistant output (hacompanion)
-    echo "off"
-    return 0
+    echo "Screencasting is off"
+    return 1
   fi
 
   local output apps
   output="$(get_output)"
   apps="$(get_screencasting_apps | jq -er '.[]')"
 
-  if [[ -z "$hass" ]]
-  then
-    local apps_single_line
-    apps_single_line="$(tr '\n' ' ' <<<"$apps")"
-    echo "Screencasting is on (Output: ${output:-N/A} - Apps: ${apps_single_line%% })"
-    return 0
-  fi
-
-  # Home Assistant output (hacompanion)
-  echo "on"
-  echo "output:${output}"
-  echo "apps:${apps}"
+  local apps_single_line
+  apps_single_line="$(tr '\n' ' ' <<<"$apps")"
+  echo "Screencasting is on (Output: ${output:-N/A} - Apps: ${apps_single_line%% })"
   return 0
 }
 
@@ -124,9 +100,6 @@ screencast_on() {
 
   # Update waybar module (signal: 7)
   pkill -RTMIN+7 waybar
-
-  # Update binary_sensor state in Home Assistant
-  "${HOME}"/.config/hacompanion/bin/update-entity.sh screencast
 }
 
 screencast_off() {
@@ -147,9 +120,6 @@ screencast_off() {
 
   # Update waybar module (signal: 7)
   pkill -RTMIN+7 waybar
-
-  # Update binary_sensor state in Home Assistant
-  "${HOME}"/.config/hacompanion/bin/update-entity.sh screencast
 }
 
 select_output() {
