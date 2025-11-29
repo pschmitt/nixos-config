@@ -26,8 +26,8 @@ nixos-anywhere *args:
 nixos-remote *args:
   ./nixos-install.sh remote {{args}}
 
-new-host *args:
-  ./new-host.sh {{args}}
+init-host *args:
+  ./init-host-config.sh {{args}}
 
 eval *params:
   ./nix.sh eval {{params}}
