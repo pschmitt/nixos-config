@@ -14,12 +14,12 @@
   };
 
   environment.systemPackages = with pkgs; [
+    # terminals
     alacritty
     foot
     pkgs.master.kitty
     inputs.ghostty.packages.${pkgs.stdenv.hostPlatform.system}.default
     inputs.wezterm.packages.${pkgs.stdenv.hostPlatform.system}.default
-    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     # files and docs
     eog
@@ -33,7 +33,6 @@
     zathura
 
     # wayland
-    lemonade
     remmina
     wayvnc
     wdisplays
@@ -41,6 +40,7 @@
     wlrctl
 
     # input emulation
+    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
     dotool
     wtype
     ydotool
@@ -58,10 +58,6 @@
     gparted
     usbimager # etcher alternative
     virt-manager
-
-    # vpn
-    tor-browser
-    mullvad-vpn
 
     # qrcode create/read
     qrencode
