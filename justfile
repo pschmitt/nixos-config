@@ -7,7 +7,7 @@ sops-config-gen *args:
   ./secrets/sops-config-gen.sh {{args}}
 
 repl host='':
-  ./nix-repl.sh "{{host}}"
+  ./nix.sh repl "{{host}}"
 
 build-pkg pkg host='':
   #!/usr/bin/env bash
@@ -27,26 +27,10 @@ new-host *args:
   ./new-host.sh {{args}}
 
 eval *params:
-  #!/usr/bin/env bash
-  set -euxo pipefail
-  TARGET_HOST="${HOSTNAME:-$(hostname)}"
-  set -- {{params}}
-  if [[ $# -eq 1 ]]
-  then
-    set -- "$TARGET_HOST" "$1"
-  fi
-  ./nix-eval-json.sh "$@"
+  ./nix.sh eval {{params}}
 
 eval-hm *params:
-  #!/usr/bin/env bash
-  set -euxo pipefail
-  TARGET_HOST="${HOSTNAME:-$(hostname)}"
-  set -- {{params}}
-  if [[ $# -eq 1 ]]
-  then
-    set -- "$TARGET_HOST" "$1"
-  fi
-  ./nix-eval-json.sh "$1" "$2" --home-manager "${@:3}"
+  ./nix.sh eval --home-manager {{params}}
 
 deploy host='' *args:
   #!/usr/bin/env bash
