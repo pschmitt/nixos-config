@@ -29,5 +29,11 @@
         default = true;
         description = "Whether this is cloud-based server";
       };
+
+      highDpi = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether this host has a high DPI screen";
+      };
     };
 }
