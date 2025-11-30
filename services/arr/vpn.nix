@@ -18,4 +18,9 @@
       "100.64.0.0/10"
     ];
   };
+
+  networking.extraHosts = ''
+    ${config.vpnNamespaces.mullvad.namespaceAddress} mullvad.local
+  '';
+
 }
