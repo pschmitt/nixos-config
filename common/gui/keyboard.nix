@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   imports = [
-    ./keyd.nix
+    # ./keyd.nix
   ];
   # console.useXkbConfig = true;
 
