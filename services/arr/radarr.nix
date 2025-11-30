@@ -2,7 +2,7 @@
 let
   internalIP = "10.67.42.2";
   port = 7878;
-  publicHost = "radarr.arr.${config.custom.mainDomain}";
+  publicHost = "rad.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {

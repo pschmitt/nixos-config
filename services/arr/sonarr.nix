@@ -2,7 +2,7 @@
 let
   internalIP = "10.67.42.2";
   port = 8989;
-  publicHost = "sonarr.arr.${config.custom.mainDomain}";
+  publicHost = "son.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {
