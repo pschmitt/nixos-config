@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 let
-  internalIP = "10.67.42.2";
+  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8083;
   publicHost = "cwabd.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };

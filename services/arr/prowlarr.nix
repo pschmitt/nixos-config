@@ -1,14 +1,28 @@
 { config, pkgs, ... }:
 let
-  internalIP = "10.67.42.2";
+  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9696;
   publicHost = "prowl.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {
+  sops = {
+    secrets."prowlarr/apiKey" = {
+      inherit (config.custom) sopsFile;
+      restartUnits = [ "prowlarr.service" ];
+    };
+    templates."prowlarr-env" = {
+      content = ''
+        PROWLARR__AUTH__APIKEY=${config.sops.placeholder."prowlarr/apiKey"}
+      '';
+      restartUnits = [ "prowlarr.service" ];
+    };
+  };
+
   services = {
     prowlarr = {
       enable = true;
+      environmentFiles = [ config.sops.templates."prowlarr-env".path ];
     };
 
     nginx.virtualHosts."${publicHost}" = {
@@ -33,9 +47,16 @@ in
     '';
   };
 
-  systemd.services.prowlarr.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "mullvad";
+  systemd.services.prowlarr = {
+    environment = {
+      PROWLARR__SERVER__BINDADDRESS = internalIP;
+      PROWLARR__AUTH__METHOD = "Forms";
+      PROWLARR__AUTH__REQUIRED = "Enabled";
+    };
+    vpnConfinement = {
+      enable = true;
+      vpnNamespace = "mullvad";
+    };
   };
 
   vpnNamespaces.mullvad.portMappings = [

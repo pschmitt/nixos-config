@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 let
-  internalIP = "10.67.42.2";
+  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9117;
   publicHost = "jackett.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };

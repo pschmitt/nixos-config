@@ -1,14 +1,28 @@
 { config, pkgs, ... }:
 let
-  internalIP = "10.67.42.2";
+  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 7878;
   publicHost = "rad.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {
+  sops = {
+    secrets."radarr/apiKey" = {
+      inherit (config.custom) sopsFile;
+      restartUnits = [ "radarr.service" ];
+    };
+    templates."radarr-env" = {
+      content = ''
+        RADARR__AUTH__APIKEY=${config.sops.placeholder."radarr/apiKey"}
+      '';
+      restartUnits = [ "radarr.service" ];
+    };
+  };
+
   services = {
     radarr = {
       enable = true;
+      environmentFiles = [ config.sops.templates."radarr-env".path ];
     };
 
     nginx.virtualHosts."${publicHost}" = {
@@ -33,9 +47,16 @@ in
     '';
   };
 
-  systemd.services.radarr.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "mullvad";
+  systemd.services.radarr = {
+    environment = {
+      RADARR__SERVER__BINDADDRESS = internalIP;
+      RADARR__AUTH__METHOD = "Forms";
+      RADARR__AUTH__REQUIRED = "Enabled";
+    };
+    vpnConfinement = {
+      enable = true;
+      vpnNamespace = "mullvad";
+    };
   };
 
   vpnNamespaces.mullvad.portMappings = [
