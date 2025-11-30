@@ -2,7 +2,7 @@
 let
   internalIP = "10.67.42.2";
   port = 9696;
-  publicHost = "prowlarr.arr.${config.custom.mainDomain}";
+  publicHost = "prowl.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {
