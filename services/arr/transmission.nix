@@ -1,0 +1,81 @@
+{ config, pkgs, ... }:
+let
+  internalIP = "10.67.42.2";
+  port = 9091;
+  publicHost = "to.arr.${config.custom.mainDomain}";
+  autheliaConfig = import ./authelia.nix { inherit config; };
+in
+{
+  sops = {
+    secrets = {
+      "transmission/username" = {
+        inherit (config.custom) sopsFile;
+        owner = "transmission";
+        group = "transmission";
+      };
+      "transmission/password" = {
+        inherit (config.custom) sopsFile;
+        owner = "transmission";
+        group = "transmission";
+      };
+    };
+
+    templates."transmission-credentials.json" = {
+      content = ''
+        {
+          "rpc-username": "${config.sops.placeholder."transmission/username"}",
+          "rpc-password": "${config.sops.placeholder."transmission/password"}"
+        }
+      '';
+      owner = "transmission";
+      group = "transmission";
+    };
+  };
+
+  services = {
+    transmission = {
+      enable = true;
+      package = pkgs.transmission_4;
+      credentialsFile = config.sops.templates."transmission-credentials.json".path;
+      settings = {
+        rpc-bind-address = internalIP;
+        rpc-whitelist-enabled = false;
+        rpc-host-whitelist-enabled = false;
+        rpc-authentication-required = true;
+      };
+    };
+
+    nginx.virtualHosts."${publicHost}" = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      extraConfig = autheliaConfig.server;
+      locations."/" = {
+        proxyPass = "http://${internalIP}:${toString port}";
+        proxyWebsockets = true;
+        extraConfig = autheliaConfig.location;
+      };
+    };
+
+    monit.config = ''
+      check host "transmission2" with address ${internalIP}
+        group piracy
+        restart program = "${pkgs.systemd}/bin/systemctl restart transmission"
+        if failed port ${toString port} protocol http status 401 then restart
+        if 5 restarts within 5 cycles then alert
+    '';
+  };
+
+  systemd.services.transmission.vpnConfinement = {
+    enable = true;
+    vpnNamespace = "mullvad";
+  };
+
+  vpnNamespaces.mullvad.portMappings = [
+    {
+      from = 20000 + port;
+      to = port;
+    }
+  ];
+}

@@ -199,3 +199,11 @@ resource "cloudflare_record" "tdarr-brkn-lol" {
   ttl     = 3600
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
+
+resource "cloudflare_record" "wildcard-arr-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "*.arr"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+}
