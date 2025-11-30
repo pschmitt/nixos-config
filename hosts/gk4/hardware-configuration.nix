@@ -34,6 +34,8 @@
   # Display rotation via IIO sensors
   hardware.sensor.iio.enable = lib.mkDefault true;
 
+  hardware.highDpi = true;
+
   services.fprintd = {
     enable = true;
     package = pkgs.fprintd.override {
