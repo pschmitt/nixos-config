@@ -15,7 +15,7 @@
           ;;
       esac
 
-      exec ${pkgs.curl}/bin/curl -fsSL "$URL"
+      exec ${pkgs.curl}/bin/curl -fsSL "$URL" "$@"
     '')
   ];
 }
