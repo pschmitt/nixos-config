@@ -1,5 +1,19 @@
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  osConfig ? null,
+  ...
+}:
 let
+  isHighDpi = if osConfig != null then osConfig.hardware.highDpi else false;
+
+  # Sizes
+  imageSize = if isHighDpi then 200 else 120;
+  dateFontSize = if isHighDpi then 40 else 25;
+  attemptsFontSize = if isHighDpi then 30 else 15;
+  batteryFontSize = if isHighDpi then 26 else 14;
+
   hyprlockWidgetsWrapper = pkgs.writeShellApplication {
     name = "hyprlock-widgets";
     runtimeInputs = with pkgs; [
@@ -59,7 +73,7 @@ in
         {
           monitor = "";
           path = profileImage;
-          size = 200;
+          size = imageSize;
           rounding = -1;
           border_size = 4;
           border_color = "rgb(221, 221, 221)";
@@ -73,7 +87,7 @@ in
           monitor = "";
           text = "cmd[update:1000] date '+%Y-%m-%d %H:%M:%S'";
           color = "rgba(50, 50, 50, 1.0)";
-          font_size = 40;
+          font_size = dateFontSize;
           font_family = font;
           position = "0, 4%";
           halign = "center";
@@ -83,7 +97,7 @@ in
           monitor = "";
           text = "Login attempts: $ATTEMPTS $FPRINTFAIL";
           color = "rgba(50, 50, 50, 1.0)";
-          font_size = 30;
+          font_size = attemptsFontSize;
           font_family = font;
           position = "0, -7%";
           halign = "center";
@@ -93,7 +107,7 @@ in
           monitor = "";
           text = "cmd[update:1000] ${hyprlockWidgetsScript} battery";
           color = "rgba(200, 200, 200, 1.0)";
-          font_size = 26;
+          font_size = batteryFontSize;
           font_family = font;
           position = "-2%, 0";
           halign = "right";
