@@ -22,9 +22,14 @@
         then
           cat
         else
-          ${pkgs.jq}/bin/jq '.'
+          ${pkgs.jq}/bin/jq -e'.'
         fi
       }
+    '')
+
+    # Alias: mullvad-status
+    (pkgs.writeShellScriptBin "mullvad-status" ''
+      am-i-mullvad "$@"
     '')
   ];
 }
