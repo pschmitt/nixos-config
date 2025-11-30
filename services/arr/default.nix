@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, ... }:
 {
   imports = [
     ./vpn.nix
@@ -9,6 +9,9 @@
     ./radarr.nix
     ./jackett.nix
     ./prowlarr.nix
+    ./cwabd.nix
     ./test.nix
   ];
+
+  virtualisation.oci-containers.backend = lib.mkForce "podman";
 }
