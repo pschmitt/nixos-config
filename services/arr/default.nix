@@ -4,13 +4,14 @@
     ./vpn.nix
 
     # services
-    ./transmission.nix
-    ./sonarr.nix
-    ./radarr.nix
-    ./jackett.nix
-    ./prowlarr.nix
     ./cwabd.nix
+    ./jackett.nix
+    ./podman-net.nix
+    ./prowlarr.nix
+    ./radarr.nix
+    ./sonarr.nix
     ./test.nix
+    ./transmission.nix
   ];
 
   virtualisation.oci-containers.backend = lib.mkForce "podman";
