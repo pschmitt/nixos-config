@@ -50,8 +50,8 @@ in
   systemd.services.radarr = {
     environment = {
       RADARR__SERVER__BINDADDRESS = internalIP;
-      RADARR__AUTH__METHOD = "Forms";
-      RADARR__AUTH__REQUIRED = "Enabled";
+      RADARR__AUTH__METHOD = "None";
+      RADARR__AUTH__REQUIRED = "DisabledForLocalAddresses";
     };
     vpnConfinement = {
       enable = true;

@@ -32,6 +32,11 @@ in
 
     ## Virtual endpoint created by nginx to forward auth requests.
     location /internal/authelia/authz {
+      ## Bypass Authelia if API key is present
+      if ($http_x_api_key) {
+        return 200;
+      }
+
       ## Essential Proxy Configuration
       internal;
       resolver 1.1.1.1 valid=30s;

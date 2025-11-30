@@ -50,8 +50,8 @@ in
   systemd.services.prowlarr = {
     environment = {
       PROWLARR__SERVER__BINDADDRESS = internalIP;
-      PROWLARR__AUTH__METHOD = "Forms";
-      PROWLARR__AUTH__REQUIRED = "Enabled";
+      PROWLARR__AUTH__METHOD = "None";
+      PROWLARR__AUTH__REQUIRED = "DisabledForLocalAddresses";
     };
     vpnConfinement = {
       enable = true;

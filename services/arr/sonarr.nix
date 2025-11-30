@@ -50,8 +50,8 @@ in
   systemd.services.sonarr = {
     environment = {
       SONARR__SERVER__BINDADDRESS = internalIP;
-      SONARR__AUTH__METHOD = "Forms";
-      SONARR__AUTH__REQUIRED = "Enabled";
+      SONARR__AUTH__METHOD = "None";
+      SONARR__AUTH__REQUIRED = "DisabledForLocalAddresses";
     };
     vpnConfinement = {
       enable = true;
