@@ -171,25 +171,25 @@ resource "cloudflare_record" "ll-brkn-lol" {
 resource "cloudflare_record" "snr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "snr"
-  type    = "A"
+  type    = "CNAME"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+  content = "son.arr.brkn.lol"
 }
 
 resource "cloudflare_record" "rdr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "rdr"
-  type    = "A"
+  type    = "CNAME"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+  content = "rad.arr.brkn.lol"
 }
 
 resource "cloudflare_record" "to-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "to"
-  type    = "A"
+  type    = "CNAME"
   ttl     = 3600
-  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+  content = "to.arr.brkn.lol"
 }
 
 resource "cloudflare_record" "tdarr-brkn-lol" {
