@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
-  port = 8083;
+  port = 8084;
   publicHost = "cwabd.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
@@ -9,10 +9,32 @@ in
   virtualisation.oci-containers.containers.cwabd = {
     image = "ghcr.io/calibrain/calibre-web-automated-book-downloader";
     autoStart = true;
+    environment = {
+      FLASK_PORT = toString port;
+      LOG_LEVEL = "info";
+      BOOK_LANGUAGE = "en";
+      USE_BOOK_TITLE = "true";
+      TZ = "Europe/Berlin";
+      APP_ENV = "prod";
+      UID = "1000";
+      GID = "100";
+      MAX_CONCURRENT_DOWNLOADS = "3";
+      DOWNLOAD_PROGRESS_UPDATE_INTERVAL = "5";
+    };
+    volumes = [
+      "/mnt/data/books/ingest:/cwa-book-ingest"
+    ];
     extraOptions = [
       "--net=ns:/run/netns/mullvad"
     ];
   };
+
+  vpnNamespaces.mullvad.portMappings = [
+    {
+      from = 20000 + port;
+      to = port;
+    }
+  ];
 
   systemd.services."${config.virtualisation.oci-containers.containers.cwabd.serviceName}" = {
     after = [ "mullvad.service" ];
