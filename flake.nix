@@ -144,6 +144,8 @@
 
     # end of plugins
 
+    vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
+
     xdph = {
       # url = "github:hyprwm/xdg-desktop-portal-hyprland";
       url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
