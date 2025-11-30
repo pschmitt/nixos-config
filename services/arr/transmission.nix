@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9091;
@@ -69,9 +74,19 @@ in
     '';
   };
 
-  systemd.services.transmission.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "mullvad";
+  systemd.services.transmission = {
+    vpnConfinement = {
+      enable = true;
+      vpnNamespace = "mullvad";
+    };
+    serviceConfig = {
+      # Fuck ipv6, all my homies use ipv4
+      IPAddressDeny = lib.mkForce [ "::/0" ];
+      RestrictAddressFamilies = lib.mkForce [
+        "AF_UNIX"
+        "AF_INET"
+      ];
+    };
   };
 
   vpnNamespaces.mullvad.portMappings = [
