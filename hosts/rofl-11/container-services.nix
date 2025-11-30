@@ -15,20 +15,20 @@ in
   custom.containerServices = {
     enable = true;
     services = {
-      ***REMOVED*** = {
-        port = 29223;
-        hosts = [ (mkHost "***REMOVED***") ];
-        auth = {
-          enable = true;
-          # htpasswdFile = config.sops.secrets."htpasswd".path; # for type = "basic"
-        };
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # ***REMOVED*** = {
+      #   port = 29223;
+      #   hosts = [ (mkHost "***REMOVED***") ];
+      #   auth = {
+      #     enable = true;
+      #     # htpasswdFile = config.sops.secrets."htpasswd".path; # for type = "basic"
+      #   };
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
       jellyfin = {
         port = 8096;
         hosts = [
@@ -48,36 +48,36 @@ in
           group = "piracy";
         };
       };
-      ***REMOVED*** = {
-        port = 7878;
-        hosts = [
-          (mkHost "rdr")
-          (mkHost "***REMOVED***")
-          (mkHostWithNode "rdr")
-          (mkHostWithNode "***REMOVED***")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
-      ***REMOVED*** = {
-        port = 8989;
-        hosts = [
-          (mkHost "snr")
-          (mkHost "***REMOVED***")
-          (mkHostWithNode "snr")
-          (mkHostWithNode "***REMOVED***")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # ***REMOVED*** = {
+      #   port = 7878;
+      #   hosts = [
+      #     (mkHost "rdr")
+      #     (mkHost "***REMOVED***")
+      #     (mkHostWithNode "rdr")
+      #     (mkHostWithNode "***REMOVED***")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
+      # ***REMOVED*** = {
+      #   port = 8989;
+      #   hosts = [
+      #     (mkHost "snr")
+      #     (mkHost "***REMOVED***")
+      #     (mkHostWithNode "snr")
+      #     (mkHostWithNode "***REMOVED***")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
       tdarr = {
         port = 8265;
         hosts = [
@@ -85,20 +85,20 @@ in
           (mkHostWithNode "tdarr")
         ];
       };
-      transmission = {
-        port = 9091;
-        hosts = [
-          (mkHost "to")
-          (mkHostWithNode "to")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          expectedHttpStatusCode = 401;
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # transmission = {
+      #   port = 9091;
+      #   hosts = [
+      #     (mkHost "to")
+      #     (mkHostWithNode "to")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     expectedHttpStatusCode = 401;
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
     };
   };
 }
