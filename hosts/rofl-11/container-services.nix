@@ -15,20 +15,20 @@ in
   custom.containerServices = {
     enable = true;
     services = {
-      cwabd = {
-        port = 29223;
-        hosts = [ (mkHost "cwabd") ];
-        auth = {
-          enable = true;
-          # htpasswdFile = config.sops.secrets."htpasswd".path; # for type = "basic"
-        };
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # cwabd = {
+      #   port = 29223;
+      #   hosts = [ (mkHost "cwabd") ];
+      #   auth = {
+      #     enable = true;
+      #     # htpasswdFile = config.sops.secrets."htpasswd".path; # for type = "basic"
+      #   };
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
       jellyfin = {
         port = 8096;
         hosts = [
@@ -48,36 +48,36 @@ in
           group = "piracy";
         };
       };
-      radarr = {
-        port = 7878;
-        hosts = [
-          (mkHost "rdr")
-          (mkHost "radarr")
-          (mkHostWithNode "rdr")
-          (mkHostWithNode "radarr")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
-      sonarr = {
-        port = 8989;
-        hosts = [
-          (mkHost "snr")
-          (mkHost "sonarr")
-          (mkHostWithNode "snr")
-          (mkHostWithNode "sonarr")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # radarr = {
+      #   port = 7878;
+      #   hosts = [
+      #     (mkHost "rdr")
+      #     (mkHost "radarr")
+      #     (mkHostWithNode "rdr")
+      #     (mkHostWithNode "radarr")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
+      # sonarr = {
+      #   port = 8989;
+      #   hosts = [
+      #     (mkHost "snr")
+      #     (mkHost "sonarr")
+      #     (mkHostWithNode "snr")
+      #     (mkHostWithNode "sonarr")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
       tdarr = {
         port = 8265;
         hosts = [
@@ -85,20 +85,20 @@ in
           (mkHostWithNode "tdarr")
         ];
       };
-      transmission = {
-        port = 9091;
-        hosts = [
-          (mkHost "to")
-          (mkHostWithNode "to")
-        ];
-        monitoring = {
-          composeYaml = "piracy";
-          expectedHttpStatusCode = 401;
-          restartAll = false;
-          dependsOn = "gluetun";
-          group = "piracy";
-        };
-      };
+      # transmission = {
+      #   port = 9091;
+      #   hosts = [
+      #     (mkHost "to")
+      #     (mkHostWithNode "to")
+      #   ];
+      #   monitoring = {
+      #     composeYaml = "piracy";
+      #     expectedHttpStatusCode = 401;
+      #     restartAll = false;
+      #     dependsOn = "gluetun";
+      #     group = "piracy";
+      #   };
+      # };
     };
   };
 }
