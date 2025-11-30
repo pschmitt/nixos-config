@@ -4,13 +4,12 @@
   pkgs,
   ...
 }:
-
 {
   imports = [
     inputs.vpn-confinement.nixosModules.default
+    ../common/network/snek/am-i-mullvad.nix
   ];
 
-  # Define the secret for the VPN config
   sops.secrets."mullvad/config" = {
     inherit (config.custom) sopsFile;
   };
@@ -22,7 +21,8 @@
 
     # Allow access from local network
     accessibleFrom = [
-      # NOTE This routes Mullvad DNS (10.64.0.1) to the local network instead of the VPN
+      # NOTE This routes Mullvad DNS (10.64.0.1) to the local network instead
+      # of the VPN
       # "10.0.0.0/8"
 
       # Tailscale/Netbird CGNAT range
