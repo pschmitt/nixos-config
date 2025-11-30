@@ -1,4 +1,10 @@
-{ config, ... }:
+{ config, pkgs, ... }:
+let
+  internalIP = "10.67.42.2";
+  port = 8083;
+  publicHost = "cwabd.arr.${config.custom.mainDomain}";
+  autheliaConfig = import ./authelia.nix { inherit config; };
+in
 {
   virtualisation.oci-containers.containers.cwabd = {
     image = "ghcr.io/calibrain/calibre-web-automated-book-downloader";
@@ -11,5 +17,28 @@
   systemd.services."${config.virtualisation.oci-containers.containers.cwabd.serviceName}" = {
     after = [ "mullvad.service" ];
     requires = [ "mullvad.service" ];
+  };
+
+  services = {
+    nginx.virtualHosts."${publicHost}" = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      extraConfig = autheliaConfig.server;
+      locations."/" = {
+        proxyPass = "http://${internalIP}:${toString port}";
+        proxyWebsockets = true;
+        extraConfig = autheliaConfig.location;
+      };
+    };
+
+    monit.config = ''
+      check host "cwabd2" with address ${internalIP}
+        group piracy
+        restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.containers.cwabd.serviceName}"
+        if failed port ${toString port} protocol http then restart
+        if 5 restarts within 5 cycles then alert
+    '';
   };
 }
