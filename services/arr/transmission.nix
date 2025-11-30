@@ -42,6 +42,8 @@ in
         rpc-whitelist-enabled = false;
         rpc-host-whitelist-enabled = false;
         rpc-authentication-required = true;
+        ratio-limit = 0;
+        ratio-limit-enabled = true;
       };
     };
 
