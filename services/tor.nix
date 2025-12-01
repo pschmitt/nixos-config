@@ -1,3 +1,4 @@
+{ lib, ... }:
 {
   services.tor = {
     enable = true;
@@ -17,4 +18,6 @@
     torsocks.enable = true;
     tsocks.enable = true;
   };
+
+  programs.proxychains.proxies.torproxy.enable = lib.mkForce false;
 }
