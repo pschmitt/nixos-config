@@ -1,6 +1,7 @@
 { pkgs, ... }:
 {
-  # GDM monitor configuration
+  # FIXME GDM monitor configuration
+  # https://github.com/NixOS/nixpkgs/pull/227963
   systemd.tmpfiles.rules = [
     "L+ /run/gdm/.config/monitors.xml - - - - ${pkgs.writeText "gdm-monitors.xml" ''
       <monitors version="2">
