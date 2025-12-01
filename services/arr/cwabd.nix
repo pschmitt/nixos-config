@@ -31,7 +31,7 @@ in
 
   vpnNamespaces.mullvad.portMappings = [
     {
-      from = 20000 + port;
+      from = port;
       to = port;
     }
   ];
