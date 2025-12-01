@@ -29,6 +29,13 @@ in
     ];
   };
 
+  vpnNamespaces.mullvad.portMappings = [
+    {
+      from = 20000 + port;
+      to = port;
+    }
+  ];
+
   systemd.services."${config.virtualisation.oci-containers.containers.cwabd.serviceName}" = {
     after = [ "mullvad.service" ];
     requires = [ "mullvad.service" ];
