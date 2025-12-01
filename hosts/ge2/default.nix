@@ -20,10 +20,7 @@
 
   custom.cattle = false;
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
+  # don't go to sleep when lid is closed
   services.logind.settings.Login = {
     HandleLidSwitchExternalPower = lib.mkForce "ignore";
     HandleLidSwitch = lib.mkForce "ignore";
@@ -32,12 +29,7 @@
   # Enable networking
   networking = {
     hostName = "ge2";
-    # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
     # Disable the firewall altogether.
-    firewall = {
-      enable = false;
-      # allowedTCPPorts = [ ... ];
-      # allowedUDPPorts = [ ... ];
-    };
+    firewall.enable = false;
   };
 }
