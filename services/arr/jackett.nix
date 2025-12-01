@@ -38,4 +38,11 @@ in
     enable = true;
     vpnNamespace = "mullvad";
   };
+
+  vpnNamespaces.mullvad.portMappings = [
+    {
+      from = 20000 + port;
+      to = port;
+    }
+  ];
 }

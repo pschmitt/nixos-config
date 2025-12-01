@@ -10,6 +10,7 @@
     ./prowlarr.nix
     ./radarr.nix
     ./sonarr.nix
+    ./test.nix
     ./transmission.nix
   ];
 
