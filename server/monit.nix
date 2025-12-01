@@ -83,6 +83,30 @@ let
     exit 1
   '';
 
+  failedServices = pkgs.writeShellScript "failed-systemd-services" ''
+    SYSTEMCTL=${pkgs.systemd}/bin/systemctl
+
+    FAILED_SERVICES=$($SYSTEMCTL \
+      --failed \
+      --type=service \
+      --output=json \
+      --no-pager \
+      | ${pkgs.jq}/bin/jq -r '
+        .[] | select((.active // "") == "failed" or (.sub // "") == "failed")) | .unit
+      ' \
+    )
+
+    if [[ -z "$FAILED_SERVICES" ]]
+    then
+      echo "✅ No failed systemd services detected."
+      exit 0
+    fi
+
+    echo "🚨 Failed systemd services detected:"
+    echo "$FAILED_SERVICES"
+    exit 1
+  '';
+
   monitGeneral = ''
     set daemon 60
     include /etc/monit/conf.d/*
@@ -135,7 +159,12 @@ let
   monitFailedTimers = ''
     check program "Systemd timers" with path "${failedTimers}"
       group system
-      every 5 cycles
+      if status > 0 then alert
+  '';
+
+  monitFailedServices = ''
+    check program "Systemd services" with path "${failedServices}"
+      group system
       if status > 0 then alert
   '';
 
@@ -220,6 +249,7 @@ in
       monitSystem
       monitRebootRequired
       monitFailedTimers
+      monitFailedServices
       monitFilesystems
       monitRestic
     ];
