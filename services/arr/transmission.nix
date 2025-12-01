@@ -64,6 +64,7 @@ in
         proxyPass = "http://${internalIP}:${toString port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
+        extraConfig = autheliaConfig.location;
       };
     };
 
