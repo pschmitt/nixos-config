@@ -18,7 +18,7 @@ in
     quietMode = false;
     proxyDNS = true;
     localnet = "127.0.0.0/255.0.0.0"; # TODO: nb+ts
-    chain.type = "strict";
+    chain.type = "dynamic";
     proxies.mullvad = {
       enable = true;
       type = "socks5";
