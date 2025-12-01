@@ -26,26 +26,6 @@ let
         group docker
         if status > 0 then alert
 
-      # check program "gluetun" with path "${pkgs.docker}/bin/docker exec gluetun /usr/bin/wget -qO- --tries=1 --timeout=5 http://127.0.0.1:9999/health"
-      #   group piracy
-      #   depends on dockerd
-      #   restart program = "${restartCmd} gluetun"
-      #   if status != 0 for 3 cycles then restart
-      #   if 2 restarts within 10 cycles then alert
-      #
-      # check program "gluetun-http-proxy" with path "${pkgs.curl}/bin/curl -fsSL -x 127.0.0.1:8888 https://myip.wtf/json"
-      #   group piracy
-      #   depends on gluetun
-      #   every 5 cycles
-      #   if status != 0 for 10 cycles then alert
-      #
-      # check host "gluetun-socks5-proxy" with address 127.0.0.1
-      #   group piracy
-      #   depends on gluetun
-      #   restart program = "${restartCmd} socks5-proxy"
-      #   if failed port 1080 protocol default then restart
-      #   if 2 restarts within 10 cycles then alert
-
       check program mullvad with path "${mullvadExpiration} --warning 15 ${
         config.sops.secrets."mullvad/account".path
       }"
