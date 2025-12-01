@@ -8,6 +8,7 @@ let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9091;
   publicHost = "to.arr.${config.custom.mainDomain}";
+  serverAliases = [ "to.${config.custom.mainDomain}" ];
   autheliaConfig = import ./authelia.nix { inherit config; };
 in
 {
@@ -53,6 +54,7 @@ in
     };
 
     nginx.virtualHosts."${publicHost}" = {
+      inherit serverAliases;
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
