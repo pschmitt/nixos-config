@@ -69,8 +69,9 @@ in
     };
 
     monit.config = ''
-      check host "transmission2" with address ${internalIP}
+      check host "transmission" with address ${internalIP}
         group piracy
+        depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart transmission"
         if failed port ${toString port} protocol http status 401 then restart
         if 5 restarts within 5 cycles then alert

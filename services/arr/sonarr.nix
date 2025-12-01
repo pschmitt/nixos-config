@@ -42,8 +42,9 @@ in
     };
 
     monit.config = ''
-      check host "sonarr2" with address ${internalIP}
+      check host "sonarr" with address ${internalIP}
         group piracy
+        depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart sonarr"
         if failed port ${toString port} protocol http then restart
         if 5 restarts within 5 cycles then alert

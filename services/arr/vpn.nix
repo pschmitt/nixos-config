@@ -1,4 +1,9 @@
-{ config, inputs, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 {
   imports = [
     inputs.vpn-confinement.nixosModules.default
@@ -27,5 +32,9 @@
   networking.extraHosts = ''
     ${config.vpnNamespaces.mullvad.namespaceAddress} mullvad.local
   '';
-
+  services.monit.config = lib.mkAfter ''
+    check file "mullvad-netns" with path "/run/netns/mullvad"
+      group piracy
+      if does not exist then alert
+  '';
 }

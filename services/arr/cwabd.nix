@@ -57,8 +57,9 @@ in
     };
 
     monit.config = ''
-      check host "cwabd2" with address ${internalIP}
+      check host "cwabd" with address ${internalIP}
         group piracy
+        depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.containers.cwabd.serviceName}"
         if failed port ${toString port} protocol http then restart
         if 5 restarts within 5 cycles then alert
