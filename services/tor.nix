@@ -29,7 +29,8 @@ in
     tsocks.enable = true;
   };
 
-  programs.proxychains.proxies.torproxy.enable = lib.mkForce false;
+  # To disable the proxychains tor proxy uncomment the line below:
+  # programs.proxychains.proxies.torproxy.enable = lib.mkForce false;
 
   environment.etc."proxychains-tor.conf".text = ''
     strict_chain
