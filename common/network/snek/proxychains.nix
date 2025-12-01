@@ -1,3 +1,16 @@
+{ pkgs, ... }:
+
+let
+  mullvadHost = "10.64.0.1";
+  mullvadPort = 1080;
+  proxychainsMullvad = pkgs.writeShellApplication {
+    name = "proxychains-mullvad";
+    runtimeInputs = [ pkgs.proxychains ];
+    text = ''
+      exec proxychains4 -f /etc/proxychains-mullvad.conf "$@"
+    '';
+  };
+in
 {
   programs.proxychains = {
     enable = true;
@@ -8,8 +21,23 @@
     proxies.mullvad = {
       enable = true;
       type = "socks5";
-      host = "10.64.0.1";
-      port = 1080;
+      host = mullvadHost;
+      port = mullvadPort;
     };
   };
+
+  environment.etc."proxychains-mullvad.conf".text = ''
+    strict_chain
+    proxy_dns
+    remote_dns_subnet 224
+    tcp_read_time_out 15000
+    tcp_connect_time_out 8000
+
+    [ProxyList]
+    socks5 ${mullvadHost} ${toString mullvadPort}
+  '';
+
+  environment.systemPackages = [
+    proxychainsMullvad
+  ];
 }

@@ -1,4 +1,14 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
+
+let
+  proxychainsTor = pkgs.writeShellApplication {
+    name = "proxychains-tor";
+    runtimeInputs = [ pkgs.proxychains ];
+    text = ''
+      exec proxychains4 -f /etc/proxychains-tor.conf "$@"
+    '';
+  };
+in
 {
   services.tor = {
     enable = true;
@@ -20,4 +30,19 @@
   };
 
   programs.proxychains.proxies.torproxy.enable = lib.mkForce false;
+
+  environment.etc."proxychains-tor.conf".text = ''
+    strict_chain
+    proxy_dns
+    remote_dns_subnet 224
+    tcp_read_time_out 15000
+    tcp_connect_time_out 8000
+
+    [ProxyList]
+    socks5 127.0.0.1 9050
+  '';
+
+  environment.systemPackages = [
+    proxychainsTor
+  ];
 }
