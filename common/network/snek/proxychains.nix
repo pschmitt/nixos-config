@@ -5,7 +5,7 @@ let
   mullvadPort = 1080;
   proxychainsMullvad = pkgs.writeShellApplication {
     name = "proxychains-mullvad";
-    runtimeInputs = [ pkgs.proxychains ];
+    runtimeInputs = [ pkgs.proxychains-ng ];
     text = ''
       exec proxychains4 -f /etc/proxychains-mullvad.conf "$@"
     '';
@@ -13,6 +13,7 @@ let
 in
 {
   programs.proxychains = {
+    package = pkgs.proxychains-ng;
     enable = true;
     quietMode = false;
     proxyDNS = true;

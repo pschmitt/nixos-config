@@ -3,7 +3,7 @@
 let
   proxychainsTor = pkgs.writeShellApplication {
     name = "proxychains-tor";
-    runtimeInputs = [ pkgs.proxychains ];
+    runtimeInputs = [ pkgs.proxychains-ng ];
     text = ''
       exec proxychains4 -f /etc/proxychains-tor.conf "$@"
     '';
