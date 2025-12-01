@@ -15,6 +15,11 @@
     namespaceAddress = "10.67.42.2";
     bridgeAddress = "10.67.42.1";
     accessibleFrom = [
+      # FIXME localhost bindings do *not* work, you'll have to use the
+      # namespace address locally (or the nb/ts ips)
+      # "127.0.0.1/32"
+
+      # netbird + tailscale
       "100.64.0.0/10"
     ];
   };
