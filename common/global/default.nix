@@ -42,6 +42,7 @@
   environment.systemPackages = with pkgs; [
     # misc
     acpi
+    b3sum
     bc
     git
     grc
