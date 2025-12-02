@@ -484,7 +484,7 @@ deploy_paranoid_bundle() {
 
   local remote_uname
   remote_uname=$(ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "uname -m")
-  log_info "paranoid: remote arch detected: $remote_uname"
+  log_info "remote arch detected: $remote_uname"
   local nix_attr="nixpkgs#pkgsStatic.busybox"
   case "$remote_uname" in
     aarch64)
@@ -496,13 +496,13 @@ deploy_paranoid_bundle() {
   esac
 
   local remote_root="/run/initrd-checksum/bin"
-  log_info "paranoid: deploying busybox bundle to $host:$remote_root"
+  log_info "deploying busybox bundle to $host:$remote_root"
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "mkdir -p '$remote_root'"
 
   local busybox_src
   if command -v nix &>/dev/null
   then
-    log_debug "paranoid: building '$nix_attr' via nix (with --fallback)"
+    log_debug "building '$nix_attr' via nix (with --fallback)"
     local build_out
     if build_out=$(nix build "$nix_attr" --fallback --print-out-paths 2>/dev/null | tail -n1)
     then
@@ -512,16 +512,16 @@ deploy_paranoid_bundle() {
 
   if [[ -z "$busybox_src" || ! -x "$busybox_src" ]]
   then
-    log_err "paranoid: busybox not available locally (nix build failed?), cannot proceed"
+    log_err "busybox nix build failed? cannot proceed"
     exit 1
   fi
 
-  log_info "paranoid: uploading busybox from $busybox_src"
+  log_info "uploading busybox from $busybox_src"
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cat > '$remote_root/busybox' && chmod +x '$remote_root/busybox'" < "$busybox_src"
 
   # Symlink required applets to busybox (single ssh)
   local applets=(find sort sha256sum readlink realpath cpio gzip)
-  log_info "paranoid: linking applets: ${applets[*]}"
+  log_info "linking applets: ${applets[*]}"
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cd '$remote_root' && for a in ${applets[*]}; do ln -sf busybox \"\$a\"; done"
 
   REMOTE_PATH_PREFIX="$remote_root"
