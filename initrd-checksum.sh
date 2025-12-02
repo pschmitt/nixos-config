@@ -4,23 +4,23 @@ set -euo pipefail
 # Requirements (binaries):
 # - coreutils: find, sort, sha256sum, mktemp, cat, printf
 # - util-linux: readlink, realpath
-# - file: file (only for initrd image mode)
 # - cpio: cpio (only for initrd image mode)
 # - gzip or zstd: gzip/zstd (only for initrd image mode)
 # - openssh-client: ssh (remote modes)
 # - bash: for local and remote shells
 # - tee (only if you re-enable streaming outputs)
 # Remote live-root mode: needs bash + find + sort + sha256sum (pkgs.bashInteractive pkgs.coreutils pkgs.findutils).
-# Remote initrd-image mode: additionally needs file + cpio + gzip/zstd (or ship pkgs.file pkgs.cpio pkgs.gzip/pkgs.zstd).
+# Remote initrd-image mode: additionally needs cpio + gzip/zstd (pkgs.cpio pkgs.gzip/pkgs.zstd).
+# Paranoid mode: pushes a tiny bundle to /run/initrd-checksum/bin on the remote host and prepends it to PATH for all remote actions.
 #
 # Nix quick refs (packages providing the above):
-#   pkgs.coreutils, pkgs.findutils, pkgs.util-linux, pkgs.file, pkgs.cpio,
+#   pkgs.coreutils, pkgs.findutils, pkgs.util-linux, pkgs.cpio,
 #   pkgs.gzip, pkgs.zstd, pkgs.openssh, pkgs.bashInteractive
 
 usage() {
   cat <<EOF
 Usage:
-  $0 checksum [--host HOST] [--ssh-user USER] [--initrd[=PATH]] [--diff FILE] [-q|--quiet]
+  $0 checksum [--host HOST] [--ssh-user USER] [--initrd[=PATH]] [--diff FILE] [-q|--quiet] [--paranoid]
   $0 diff FILE1 FILE2
 
 Modes:
@@ -29,6 +29,7 @@ Modes:
     - With --initrd: force hashing of an initrd image (default path: /run/current-system/initrd).
     - With --diff FILE: after hashing, show diff vs FILE (sorted).
     - With --quiet: suppress checksum stdout (still logs and runs diff if provided).
+    - With --paranoid: push a minimal binary bundle to /run/initrd-checksum/bin on the remote host and prepend to PATH.
 
   diff                 Unified diff of two existing checksum files (sorted).
 
@@ -40,6 +41,11 @@ Notes:
   - Live root measurement expects root privileges.
   - SSH defaults to user "root". Override with --ssh-user/--ssh-username/-l.
 EOF
+}
+
+ssh() {
+  log_info "\$ ssh $*"
+  command ssh "$@"
 }
 
 setup_colors() {
@@ -112,6 +118,8 @@ IGNORE_RELS=(
   "etc/ssh/initrd/ssh_host_"
   ".initrd-secrets/etc/ssh/initrd/ssh_host_"
 )
+
+REMOTE_PATH_PREFIX=""
 
 resolve_initrd_path() {
   local path resolved
@@ -187,32 +195,32 @@ measure_initrd_image() {
 
   local initrd_src
   initrd_src=$(resolve_initrd_path "$initrd_path")
+  if [[ ! -f "$initrd_src" && "$initrd_path" == "/run/current-system/initrd" && -f /run/booted-system/initrd ]]
+  then
+    log_warn "initrd not found at $initrd_src, falling back to /run/booted-system/initrd"
+    initrd_src=/run/booted-system/initrd
+  fi
+  if [[ ! -f "$initrd_src" ]]
+  then
+    log_err "initrd not found: $initrd_src"
+    return 1
+  fi
 
   local tmpdir
   tmpdir=$(mktemp -d)
   add_exit_trap "rm -rf '$tmpdir'"
 
-  local mime
-  mime=$(file -b "$initrd_src")
-
   local decompress_cmd
 
-  case "$mime" in
-    *gzip*)
-      decompress_cmd="gzip -dc"
-    ;;
-    *Zstandard*|*zstd*)
-      decompress_cmd="zstd -dc"
-    ;;
-    *cpio*)
-      decompress_cmd="cat"
-    ;;
-    *)
-      log_err "unknown initrd format: $mime"
-      rm -rf "$tmpdir"
-      return 1
-    ;;
-  esac
+  if command -v zstd &>/dev/null && zstd -t "$initrd_src" &>/dev/null
+  then
+    decompress_cmd="zstd -dc"
+  elif command -v gzip &>/dev/null && gzip -t "$initrd_src" &>/dev/null
+  then
+    decompress_cmd="gzip -dc"
+  else
+    decompress_cmd="cat"
+  fi
 
   log_info "mode=initrd-image source=$initrd_src unpack_dir=$tmpdir"
 
@@ -226,10 +234,15 @@ measure_initrd_image() {
 measure_remote_live_root() {
   local host=$1
   local ssh_user=$2
+  local remote_env=()
+  if [[ -n "$REMOTE_PATH_PREFIX" ]]
+  then
+    remote_env=(env "PATH=${REMOTE_PATH_PREFIX}:\$PATH")
+  fi
 
   log_info "remote host=$host user=$ssh_user mode=live-root"
 
-  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" bash -s << 'EOF'
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "${remote_env[@]}" bash -s << 'EOF'
 set -eu
 
 hash_tree() {
@@ -275,11 +288,11 @@ hash_tree() {
     done
 }
 
-if [[ $(id -u) -ne 0 ]]
-then
-  echo "error: live root measurement needs root privileges (rerun with sudo or inside initrd)" >&2
-  exit 1
-fi
+  if [ "$(id -u)" -ne 0 ]
+  then
+    echo "error: live root measurement needs root privileges (rerun with sudo or inside initrd)" >&2
+    exit 1
+  fi
 
 hash_tree /
 EOF
@@ -290,10 +303,15 @@ measure_remote_initrd_image() {
   host=$1
   initrd_path=$2
   ssh_user=$3
+  local remote_env=()
+  if [[ -n "$REMOTE_PATH_PREFIX" ]]
+  then
+    remote_env=(env "PATH=${REMOTE_PATH_PREFIX}:\$PATH")
+  fi
 
   log_info "remote host=$host user=$ssh_user mode=initrd-image path=$initrd_path"
 
-  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" bash -s "$initrd_path" << 'EOF'
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "${remote_env[@]}" sh -s "$initrd_path" << 'EOF'
 set -eu
 
 resolve_initrd_path() {
@@ -361,27 +379,27 @@ hash_tree() {
 
 INITRD_PATH=$1
 INITRD_SRC=$(resolve_initrd_path "$INITRD_PATH")
+if [ ! -f "$INITRD_SRC" ] && [ "$INITRD_PATH" = "/run/current-system/initrd" ] && [ -f /run/booted-system/initrd ]; then
+  echo "warn: initrd not found at $INITRD_SRC, falling back to /run/booted-system/initrd" >&2
+  INITRD_SRC=/run/booted-system/initrd
+fi
+if [ ! -f "$INITRD_SRC" ]; then
+  echo "error: initrd not found: $INITRD_SRC" >&2
+  exit 1
+fi
 TMPDIR=$(mktemp -d)
 trap "rm -rf '$TMPDIR'" EXIT
-MIME=$(file -b "$INITRD_SRC")
 DECOMPRESS_CMD=""
 
-case "$MIME" in
-  *gzip*)
-    DECOMPRESS_CMD="gzip -dc"
-  ;;
-  *Zstandard*|*zstd*)
-    DECOMPRESS_CMD="zstd -dc"
-  ;;
-  *cpio*)
-    DECOMPRESS_CMD="cat"
-  ;;
-  *)
-    echo "Unknown initrd format: $MIME" >&2
-    rm -rf "$TMPDIR"
-    exit 1
-  ;;
-esac
+if command -v zstd >/dev/null 2>&1 && zstd -t "$INITRD_SRC" >/dev/null 2>&1
+then
+  DECOMPRESS_CMD="zstd -dc"
+elif command -v gzip >/dev/null 2>&1 && gzip -t "$INITRD_SRC" >/dev/null 2>&1
+then
+  DECOMPRESS_CMD="gzip -dc"
+else
+  DECOMPRESS_CMD="cat"
+fi
 
 cd "$TMPDIR"
 $DECOMPRESS_CMD "$INITRD_SRC" | cpio -idmu
@@ -427,8 +445,13 @@ detect_remote_initrd() {
   local host ssh_user
   host=$1
   ssh_user=$2
+  local remote_env=()
+  if [[ -n "$REMOTE_PATH_PREFIX" ]]
+  then
+    remote_env=(env "PATH=${REMOTE_PATH_PREFIX}:\$PATH")
+  fi
 
-  if ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" '[[ -e /etc/initrd-release ]]'
+  if ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" -- 'test -e /etc/initrd-release'
   then
     log_info "remote host=$host appears to be in initrd"
     printf 'initrd\n'
@@ -449,20 +472,69 @@ detect_local_initrd() {
   fi
 }
 
+deploy_paranoid_bundle() {
+  local host ssh_user
+  host=$1
+  ssh_user=$2
+
+  local remote_root="/run/initrd-checksum/bin"
+  log_info "paranoid: deploying busybox bundle to $host:$remote_root"
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "mkdir -p '$remote_root'"
+
+  local busybox_src
+  busybox_src=$(command -v busybox || true)
+  if [[ -z "$busybox_src" ]]
+  then
+    if command -v nix >/dev/null 2>&1
+    then
+      log_info "paranoid: building pkgsStatic.busybox via nix (with --fallback)"
+      log_info "paranoid: command: nix build nixpkgs#pkgsStatic.busybox --fallback --print-out-paths"
+      local build_out
+      if build_out=$(nix build nixpkgs#pkgsStatic.busybox --fallback --print-out-paths 2>/dev/null | tail -n1)
+      then
+        busybox_src="$build_out/bin/busybox"
+      fi
+    fi
+  fi
+
+  if [[ -z "$busybox_src" || ! -x "$busybox_src" ]]
+  then
+    log_err "paranoid: busybox not available locally (install pkgs.busybox or ensure nix build succeeds)"
+    exit 1
+  fi
+
+  log_info "paranoid: uploading busybox from $busybox_src"
+  log_info "paranoid: dest=$remote_root/busybox"
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cat > '$remote_root/busybox' && chmod +x '$remote_root/busybox'" < "$busybox_src"
+
+  # Symlink required applets to busybox (single ssh)
+  local applets="find sort sha256sum readlink realpath cpio gzip"
+  log_info "paranoid: linking applets: $applets"
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cd '$remote_root' && for a in $applets; do ln -sf busybox \"\$a\"; done"
+
+  REMOTE_PATH_PREFIX="$remote_root"
+}
+
 run_checksum() {
-  local host initrd_path initrd_mode ssh_user diff_target mode tmpfile quiet
+  local host initrd_path initrd_mode ssh_user diff_target mode tmpfile quiet paranoid
   host=$1
   initrd_path=$2
   initrd_mode=$3
   ssh_user=$4
   diff_target=$5
   quiet=$6
+  paranoid=$7
 
   tmpfile=$(mktemp)
   add_exit_trap "rm -f '$tmpfile'"
 
   if [[ -n "$host" ]]
   then
+    if [[ -n "$paranoid" ]]
+    then
+      deploy_paranoid_bundle "$host" "$ssh_user"
+    fi
+
     if [[ "$initrd_mode" == "1" ]]
     then
       measure_remote_initrd_image "$host" "$initrd_path" "$ssh_user" > "$tmpfile"
@@ -532,6 +604,7 @@ main() {
   diff_file2=""
   checksum_diff=""
   quiet=""
+  local paranoid=""
 
   while [[ $# -gt 0 ]]
   do
@@ -607,6 +680,10 @@ main() {
         quiet=1
         shift
       ;;
+      --paranoid)
+        paranoid=1
+        shift
+      ;;
       *)
         if [[ "$action" == "diff" ]]
         then
@@ -642,7 +719,7 @@ main() {
         log_err "use --ssh-user/--ssh-username/-l instead of embedding '@' in --host"
         exit 2
       fi
-      run_checksum "$host" "$initrd_path" "$initrd_mode" "$ssh_user" "$checksum_diff" "$quiet"
+      run_checksum "$host" "$initrd_path" "$initrd_mode" "$ssh_user" "$checksum_diff" "$quiet" "$paranoid"
     ;;
     diff)
       if [[ -z "$diff_file1" || -z "$diff_file2" ]]
