@@ -44,13 +44,14 @@ EOF
 }
 
 ssh() {
-  log_info "\$ ssh $*"
+  log_debug "\$ ssh $*"
   command ssh "$@"
 }
 
 setup_colors() {
   if [[ -t 1 ]]
   then
+    COLOR_DEBUG=$'\033[1;35m'
     COLOR_INFO=$'\033[1;34m'
     COLOR_WARN=$'\033[1;33m'
     COLOR_ERR=$'\033[1;31m'
@@ -71,6 +72,10 @@ log() {
   msg=$2
   color=$3
   printf '%s%s%s %s\n' "$color" "$level" "$COLOR_RESET" "$msg" >&2
+}
+
+log_debug() {
+  log DBG "$1" "$COLOR_DEBUG"
 }
 
 log_info() {
@@ -477,40 +482,47 @@ deploy_paranoid_bundle() {
   host=$1
   ssh_user=$2
 
+  local remote_uname
+  remote_uname=$(ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "uname -m")
+  log_info "paranoid: remote arch detected: $remote_uname"
+  local nix_attr="nixpkgs#pkgsStatic.busybox"
+  case "$remote_uname" in
+    aarch64)
+      nix_attr="nixpkgs#legacyPackages.aarch64-linux.pkgsStatic.busybox"
+    ;;
+    x86_64)
+      nix_attr="nixpkgs#legacyPackages.x86_64-linux.pkgsStatic.busybox"
+    ;;
+  esac
+
   local remote_root="/run/initrd-checksum/bin"
   log_info "paranoid: deploying busybox bundle to $host:$remote_root"
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "mkdir -p '$remote_root'"
 
   local busybox_src
-  busybox_src=$(command -v busybox || true)
-  if [[ -z "$busybox_src" ]]
+  if command -v nix &>/dev/null
   then
-    if command -v nix >/dev/null 2>&1
+    log_debug "paranoid: building '$nix_attr' via nix (with --fallback)"
+    local build_out
+    if build_out=$(nix build "$nix_attr" --fallback --print-out-paths 2>/dev/null | tail -n1)
     then
-      log_info "paranoid: building pkgsStatic.busybox via nix (with --fallback)"
-      log_info "paranoid: command: nix build nixpkgs#pkgsStatic.busybox --fallback --print-out-paths"
-      local build_out
-      if build_out=$(nix build nixpkgs#pkgsStatic.busybox --fallback --print-out-paths 2>/dev/null | tail -n1)
-      then
-        busybox_src="$build_out/bin/busybox"
-      fi
+      busybox_src="$build_out/bin/busybox"
     fi
   fi
 
   if [[ -z "$busybox_src" || ! -x "$busybox_src" ]]
   then
-    log_err "paranoid: busybox not available locally (install pkgs.busybox or ensure nix build succeeds)"
+    log_err "paranoid: busybox not available locally (nix build failed?), cannot proceed"
     exit 1
   fi
 
   log_info "paranoid: uploading busybox from $busybox_src"
-  log_info "paranoid: dest=$remote_root/busybox"
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cat > '$remote_root/busybox' && chmod +x '$remote_root/busybox'" < "$busybox_src"
 
   # Symlink required applets to busybox (single ssh)
-  local applets="find sort sha256sum readlink realpath cpio gzip"
-  log_info "paranoid: linking applets: $applets"
-  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cd '$remote_root' && for a in $applets; do ln -sf busybox \"\$a\"; done"
+  local applets=(find sort sha256sum readlink realpath cpio gzip)
+  log_info "paranoid: linking applets: ${applets[*]}"
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cd '$remote_root' && for a in ${applets[*]}; do ln -sf busybox \"\$a\"; done"
 
   REMOTE_PATH_PREFIX="$remote_root"
 }
