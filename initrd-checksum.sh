@@ -471,16 +471,9 @@ rm -rf "$TMPDIR"
 EOF
 }
 
-sort_and_filter() {
-  local file
-  file=$1
-  sort "$file"
-}
-
 diff_hashes() {
-  local file1 file2
-  file1=$1
-  file2=$2
+  local file1=$1
+  local file2=$2
 
   if [[ ! -f "$file1" ]]
   then
@@ -495,8 +488,8 @@ diff_hashes() {
   fi
 
   log_info "diffing files"
-  log_info "command: diff -u <(sort \"$file1\") <(sort \"$file2\")"
-  if diff -u <(sort_and_filter "$file1") <(sort_and_filter "$file2")
+  log_debug "diff -u <(sort \"$file1\") <(sort \"$file2\")"
+  if diff -u <(sort "$file1") <(sort "$file2")
   then
     log_ok "files are identical"
   fi
