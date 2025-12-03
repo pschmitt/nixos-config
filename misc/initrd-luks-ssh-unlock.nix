@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 {
   networking.useDHCP = lib.mkDefault true;
 
@@ -56,5 +61,11 @@
         ];
       };
     };
+  };
+
+  imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
+  services.luks-ssh-unlocker = {
+    enable = true;
+    activationScript.enable = true;
   };
 }
