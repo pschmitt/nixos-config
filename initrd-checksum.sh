@@ -360,10 +360,10 @@ EOF
 }
 
 measure_remote_initrd_image() {
-  local host initrd_path ssh_user
-  host=$1
-  initrd_path=$2
-  ssh_user=$3
+  local host=$1
+  local initrd_path=$2
+  local ssh_user=$3
+
   local remote_env=()
   if [[ -n "$REMOTE_PATH_PREFIX" ]]
   then
