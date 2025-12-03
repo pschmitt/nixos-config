@@ -496,9 +496,9 @@ diff_hashes() {
 }
 
 detect_remote_initrd() {
-  local host ssh_user
-  host=$1
-  ssh_user=$2
+  local host=$1
+  local ssh_user=$2
+
   local remote_env=()
   if [[ -n "$REMOTE_PATH_PREFIX" ]]
   then
@@ -527,9 +527,8 @@ detect_local_initrd() {
 }
 
 deploy_paranoid_bundle() {
-  local host ssh_user
-  host=$1
-  ssh_user=$2
+  local host=$1
+  local ssh_user=$2
 
   local remote_uname
   remote_uname=$(ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "uname -m")
