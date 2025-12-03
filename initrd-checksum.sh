@@ -75,10 +75,7 @@ setup_colors() {
 }
 
 log() {
-  local level msg color
-  level=$1
-  msg=$2
-  color=$3
+  local level=$1 msg=$2 color=$3
   printf '%s%s%s %s\n' "$color" "$level" "$COLOR_RESET" "$msg" >&2
 }
 
@@ -161,8 +158,7 @@ apply_known_hosts_file() {
     return
   fi
 
-  local user_known_hosts_file
-  user_known_hosts_file=$SSH_KNOWN_HOSTS_FILE
+  local user_known_hosts_file=$SSH_KNOWN_HOSTS_FILE
   SSH_OPTS+=( -o "UserKnownHostsFile=${user_known_hosts_file}" )
 }
 
@@ -178,27 +174,145 @@ IGNORE_RELS=(
 REMOTE_PATH_PREFIX=""
 
 resolve_initrd_path() {
-  local path resolved
-  path=$1
+  local input_path=$1 resolved=""
 
-  if resolved=$(readlink -f "$path" 2>/dev/null)
+  if resolved=$(readlink -f "$input_path" 2>/dev/null)
   then
     printf '%s\n' "$resolved"
     return
   fi
 
-  if resolved=$(realpath "$path" 2>/dev/null)
+  if resolved=$(realpath "$input_path" 2>/dev/null)
   then
     printf '%s\n' "$resolved"
     return
   fi
 
-  printf '%s\n' "$path"
+  printf '%s\n' "$input_path"
+}
+
+detect_decompress_cmd() {
+  local input_path=$1
+
+  if command -v zstd &>/dev/null && zstd -t "$input_path" &>/dev/null
+  then
+    printf 'zstd -dc\n'
+    return
+  fi
+
+  if command -v gzip &>/dev/null && gzip -t "$input_path" &>/dev/null
+  then
+    printf 'gzip -dc\n'
+    return
+  fi
+
+  printf 'cat\n'
+}
+
+extract_cpio() {
+  local archive_path=$1 decompress_cmd=""
+  decompress_cmd=$(detect_decompress_cmd "$archive_path")
+
+  if [[ "$decompress_cmd" == "cat" ]]
+  then
+    cpio -idmu < "$archive_path"
+  else
+    $decompress_cmd "$archive_path" | cpio -idmu
+  fi
+}
+
+newc_end_offset() {
+  local archive_path=$1 offset=0 header="" magic="" namesize_hex="" filesize_hex="" namesize=0 filesize=0 name=""
+
+  while true
+  do
+    header=$(dd if="$archive_path" bs=1 count=110 skip=$offset status=none 2>/dev/null | LC_ALL=C tr -d '\0') || return 1
+    if [[ ${#header} -lt 110 ]]
+    then
+      return 1
+    fi
+    magic=${header:0:6}
+    if [[ "$magic" != "070701" ]]
+    then
+      return 1
+    fi
+
+    namesize_hex=${header:94:8}
+    filesize_hex=${header:54:8}
+    namesize=$((16#$namesize_hex))
+    filesize=$((16#$filesize_hex))
+    if (( namesize <= 0 ))
+    then
+      return 1
+    fi
+
+    name=$(dd if="$archive_path" bs=1 count=$((namesize - 1)) skip=$((offset + 110)) status=none 2>/dev/null) || return 1
+
+    offset=$(( (offset + 110 + namesize + 3) & ~3 ))
+    offset=$(( (offset + filesize + 3) & ~3 ))
+
+    if [[ "$name" == "TRAILER!!!" ]]
+    then
+      printf '%s\n' "$offset"
+      return 0
+    fi
+  done
+}
+
+write_initrd_tail() {
+  local src=$1 dest=$2 end_offset="" total_size=""
+
+  end_offset=$(newc_end_offset "$src") || return 1
+  total_size=$(stat -c '%s' "$src") || return 1
+
+  if (( end_offset >= total_size ))
+  then
+    return 1
+  fi
+
+  if dd if="$src" of="$dest" bs=1 skip="$end_offset" status=none 2>/dev/null
+  then
+    printf '%s\n' "$end_offset"
+    return 0
+  fi
+
+  return 1
+}
+
+find_compressed_magic_offset() {
+  local archive_path=$1 offset_gzip="" offset_zstd=""
+
+  offset_zstd=$(LC_ALL=C grep -aob -m1 $'\x28\xb5\x2f\xfd' "$archive_path" | head -n1 | cut -d: -f1)
+  offset_gzip=$(LC_ALL=C grep -aob -m1 $'\x1f\x8b\x08' "$archive_path" | head -n1 | cut -d: -f1)
+
+  if [[ -n "$offset_zstd" && -n "$offset_gzip" ]]
+  then
+    if (( offset_zstd <= offset_gzip ))
+    then
+      printf '%s\n' "$offset_zstd"
+    else
+      printf '%s\n' "$offset_gzip"
+    fi
+    return 0
+  fi
+
+  if [[ -n "$offset_zstd" ]]
+  then
+    printf '%s\n' "$offset_zstd"
+    return 0
+  fi
+
+  if [[ -n "$offset_gzip" ]]
+  then
+    printf '%s\n' "$offset_gzip"
+    return 0
+  fi
+
+  return 1
 }
 
 hash_tree() {
-  local root
-  root=$1
+  local root=$1
 
   cd "$root"
 
@@ -217,16 +331,16 @@ hash_tree() {
           ;;
         esac
       done
-      local fs_path path hash_line hash
+      local fs_path="" abs_path="" hash_line="" hash=""
       fs_path="$root/$rel"
-      path=/$rel
+      abs_path=/$rel
 
       if hash_line=$(sha256sum "$fs_path" 2>/dev/null)
       then
         hash=${hash_line%% *}
-        printf '%s  %s\n' "$hash" "$path"
+        printf '%s  %s\n' "$hash" "$abs_path"
       else
-        log_err "failed to hash $path (need root?)"
+        log_err "failed to hash $abs_path (need root?)"
         exit 1
       fi
     done
@@ -247,9 +361,8 @@ measure_live_root() {
 }
 
 measure_initrd_image() {
-  local initrd_path="$1"
+  local initrd_path="$1" initrd_src="" tmpdir="" initrd_tail="" tail_offset="" tail_stream="" magic_offset="" tail_stream_tmp=""
 
-  local initrd_src
   initrd_src=$(resolve_initrd_path "$initrd_path")
   if [[ ! -f "$initrd_src" && "$initrd_path" == "/run/current-system/initrd" && -f /run/booted-system/initrd ]]
   then
@@ -262,30 +375,33 @@ measure_initrd_image() {
     return 1
   fi
 
-  local tmpdir
   tmpdir=$(mktemp -d)
   add_exit_trap "rm -rf '$tmpdir'"
-
-  local decompress_cmd
-
-  if command -v zstd &>/dev/null && zstd -t "$initrd_src" &>/dev/null
-  then
-    decompress_cmd="zstd -dc"
-  elif command -v gzip &>/dev/null && gzip -t "$initrd_src" &>/dev/null
-  then
-    decompress_cmd="gzip -dc"
-  else
-    decompress_cmd="cat"
-  fi
 
   log_info "mode=initrd-image source=$initrd_src unpack_dir=$tmpdir"
 
   cd "$tmpdir"
-  if [[ "$decompress_cmd" == "cat" ]]
+  extract_cpio "$initrd_src"
+
+  initrd_tail=$(mktemp)
+  add_exit_trap "rm -f '$initrd_tail'"
+  if tail_offset=$(write_initrd_tail "$initrd_src" "$initrd_tail")
   then
-    cpio -idmu < "$initrd_src"
-  else
-    $decompress_cmd "$initrd_src" | cpio -idmu
+    log_info "detected concatenated initrd payload at offset=$tail_offset; unpacking tail"
+    tail_stream=$initrd_tail
+    if [[ $(detect_decompress_cmd "$tail_stream") == "cat" ]] && magic_offset=$(find_compressed_magic_offset "$tail_stream")
+    then
+      tail_stream_tmp=$(mktemp)
+      add_exit_trap "rm -f '$tail_stream_tmp'"
+      if dd if="$tail_stream" of="$tail_stream_tmp" bs=1 skip="$magic_offset" status=none 2>/dev/null
+      then
+        tail_stream=$tail_stream_tmp
+      else
+        rm -f "$tail_stream_tmp"
+      fi
+    fi
+
+    extract_cpio "$tail_stream"
   fi
 
   hash_tree "$tmpdir"
@@ -293,8 +409,7 @@ measure_initrd_image() {
 }
 
 measure_remote_live_root() {
-  local host=$1
-  local ssh_user=$2
+  local host=$1 ssh_user=$2
   local remote_env=()
   if [[ -n "$REMOTE_PATH_PREFIX" ]]
   then
@@ -307,8 +422,7 @@ measure_remote_live_root() {
 set -eu
 
 hash_tree() {
-  local root
-  root=$1
+  local root=$1
 
   local ignore_rels=(
     "etc/machine-id"
@@ -334,22 +448,22 @@ hash_tree() {
           ;;
         esac
       done
-      local path hash_line hash
-      path=/$rel
+      local abs_path hash_line hash
+      abs_path=/$rel
 
-      if hash_line=$(sha256sum "$path" 2>/dev/null)
+      if hash_line=$(sha256sum "$abs_path" 2>/dev/null)
       then
         set -- $hash_line
         hash=$1
-        printf '%s  %s\n' "$hash" "$path"
+        printf '%s  %s\n' "$hash" "$abs_path"
       else
-        echo "error: failed to hash $path" >&2
+        echo "error: failed to hash $abs_path" >&2
         exit 1
       fi
     done
 }
 
-  if [ "$(id -u)" -ne 0 ]
+  if [[ "$(id -u)" -ne 0 ]]
   then
     echo "error: live root measurement needs root privileges (rerun with sudo or inside initrd)" >&2
     exit 1
@@ -360,9 +474,7 @@ EOF
 }
 
 measure_remote_initrd_image() {
-  local host=$1
-  local initrd_path=$2
-  local ssh_user=$3
+  local host=$1 initrd_path=$2 ssh_user=$3
 
   local remote_env=()
   if [[ -n "$REMOTE_PATH_PREFIX" ]]
@@ -372,31 +484,149 @@ measure_remote_initrd_image() {
 
   log_info "remote host=$host user=$ssh_user mode=initrd-image path=$initrd_path"
 
-  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "${remote_env[@]}" sh -s "$initrd_path" << 'EOF'
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "${remote_env[@]}" bash -s "$initrd_path" << 'EOF'
 set -eu
 
 resolve_initrd_path() {
-  local path resolved
-  path=$1
+  local input_path=$1 resolved=""
 
-  if resolved=$(readlink -f "$path" 2>/dev/null)
+  if resolved=$(readlink -f "$input_path" 2>/dev/null)
   then
     printf '%s\n' "$resolved"
     return
   fi
 
-  if resolved=$(realpath "$path" 2>/dev/null)
+  if resolved=$(realpath "$input_path" 2>/dev/null)
   then
     printf '%s\n' "$resolved"
     return
   fi
 
-  printf '%s\n' "$path"
+  printf '%s\n' "$input_path"
+}
+
+detect_decompress_cmd() {
+  local input_path=$1
+
+  if command -v zstd >/dev/null 2>&1 && zstd -t "$input_path" >/dev/null 2>&1
+  then
+    printf 'zstd -dc\n'
+    return
+  fi
+
+  if command -v gzip >/dev/null 2>&1 && gzip -t "$input_path" >/dev/null 2>&1
+  then
+    printf 'gzip -dc\n'
+    return
+  fi
+
+  printf 'cat\n'
+}
+
+extract_cpio() {
+  local archive_path=$1 decompress_cmd=""
+  decompress_cmd=$(detect_decompress_cmd "$archive_path")
+
+  if [[ "$decompress_cmd" == "cat" ]]
+  then
+    cpio -idmu < "$archive_path"
+  else
+    $decompress_cmd "$archive_path" | cpio -idmu
+  fi
+}
+
+newc_end_offset() {
+  local archive_path=$1 offset=0 header="" magic="" namesize_hex="" filesize_hex="" namesize=0 filesize=0 name=""
+
+  while true
+  do
+    header=$(dd if="$archive_path" bs=1 count=110 skip=$offset status=none 2>/dev/null | LC_ALL=C tr -d '\0') || return 1
+    if [[ ${#header} -lt 110 ]]
+    then
+      return 1
+    fi
+    magic=${header:0:6}
+    if [[ "$magic" != "070701" ]]
+    then
+      return 1
+    fi
+
+    namesize_hex=${header:94:8}
+    filesize_hex=${header:54:8}
+    namesize=$((16#$namesize_hex))
+    filesize=$((16#$filesize_hex))
+    if [[ "$namesize" -le 0 ]]
+    then
+      return 1
+    fi
+
+    name=$(dd if="$archive_path" bs=1 count=$((namesize - 1)) skip=$((offset + 110)) status=none 2>/dev/null) || return 1
+
+    offset=$(( (offset + 110 + namesize + 3) & ~3 ))
+    offset=$(( (offset + filesize + 3) & ~3 ))
+
+    if [[ "$name" == "TRAILER!!!" ]]
+    then
+      printf '%s\n' "$offset"
+      return 0
+    fi
+  done
+}
+
+write_initrd_tail() {
+  local src=$1 dest=$2 end_offset="" total_size=""
+
+  end_offset=$(newc_end_offset "$src") || return 1
+  total_size=$(stat -c '%s' "$src") || return 1
+
+  if [[ "$end_offset" -ge "$total_size" ]]
+  then
+    return 1
+  fi
+
+  if dd if="$src" of="$dest" bs=1 skip="$end_offset" status=none 2>/dev/null
+  then
+    printf '%s\n' "$end_offset"
+    return 0
+  fi
+
+  return 1
+}
+
+find_compressed_magic_offset() {
+  local archive_path=$1 offset_gzip="" offset_zstd=""
+
+  offset_zstd=$(LC_ALL=C grep -aob -m1 $'\x28\xb5\x2f\xfd' "$archive_path" | head -n1 | cut -d: -f1)
+  offset_gzip=$(LC_ALL=C grep -aob -m1 $'\x1f\x8b\x08' "$archive_path" | head -n1 | cut -d: -f1)
+
+  if [[ -n "$offset_zstd" && -n "$offset_gzip" ]]
+  then
+    if [[ "$offset_zstd" -le "$offset_gzip" ]]
+    then
+      printf '%s\n' "$offset_zstd"
+    else
+      printf '%s\n' "$offset_gzip"
+    fi
+    return 0
+  fi
+
+  if [[ -n "$offset_zstd" ]]
+  then
+    printf '%s\n' "$offset_zstd"
+    return 0
+  fi
+
+  if [[ -n "$offset_gzip" ]]
+  then
+    printf '%s\n' "$offset_gzip"
+    return 0
+  fi
+
+  return 1
 }
 
 hash_tree() {
-  local root
-  root=$1
+  local root=$1
 
   local ignore_rels=(
     "etc/machine-id"
@@ -422,17 +652,17 @@ hash_tree() {
           ;;
         esac
       done
-      local fs_path path hash_line hash
+      local fs_path abs_path hash_line hash
       fs_path="$root/$rel"
-      path=/$rel
+      abs_path=/$rel
 
       if hash_line=$(sha256sum "$fs_path" 2>/dev/null)
       then
         set -- $hash_line
         hash=$1
-        printf '%s  %s\n' "$hash" "$path"
+        printf '%s  %s\n' "$hash" "$abs_path"
       else
-        echo "error: failed to hash $path" >&2
+        echo "error: failed to hash $abs_path" >&2
         exit 1
       fi
     done
@@ -440,30 +670,47 @@ hash_tree() {
 
 INITRD_PATH=$1
 INITRD_SRC=$(resolve_initrd_path "$INITRD_PATH")
-if [ ! -f "$INITRD_SRC" ] && [ "$INITRD_PATH" = "/run/current-system/initrd" ] && [ -f /run/booted-system/initrd ]; then
+if [[ ! -f "$INITRD_SRC" && "$INITRD_PATH" = "/run/current-system/initrd" && -f /run/booted-system/initrd ]]
+then
   echo "warn: initrd not found at $INITRD_SRC, falling back to /run/booted-system/initrd" >&2
   INITRD_SRC=/run/booted-system/initrd
 fi
-if [ ! -f "$INITRD_SRC" ]; then
+if [[ ! -f "$INITRD_SRC" ]]
+then
   echo "error: initrd not found: $INITRD_SRC" >&2
   exit 1
 fi
 TMPDIR=$(mktemp -d)
 trap "rm -rf '$TMPDIR'" EXIT
-DECOMPRESS_CMD=""
-
-if command -v zstd >/dev/null 2>&1 && zstd -t "$INITRD_SRC" >/dev/null 2>&1
-then
-  DECOMPRESS_CMD="zstd -dc"
-elif command -v gzip >/dev/null 2>&1 && gzip -t "$INITRD_SRC" >/dev/null 2>&1
-then
-  DECOMPRESS_CMD="gzip -dc"
-else
-  DECOMPRESS_CMD="cat"
-fi
-
 cd "$TMPDIR"
-$DECOMPRESS_CMD "$INITRD_SRC" | cpio -idmu
+extract_cpio "$INITRD_SRC"
+
+INITRD_TAIL=$(mktemp)
+TAIL_STREAM_TMP=""
+trap 'rm -rf "$TMPDIR" "$INITRD_TAIL" "${TAIL_STREAM_TMP:-}"' EXIT
+if TAIL_OFFSET=$(write_initrd_tail "$INITRD_SRC" "$INITRD_TAIL")
+then
+  echo "info: detected concatenated initrd payload at offset=$TAIL_OFFSET; unpacking tail" >&2
+  TAIL_STREAM="$INITRD_TAIL"
+  if [[ "$(detect_decompress_cmd "$TAIL_STREAM")" == "cat" ]] && MAGIC_OFFSET=$(find_compressed_magic_offset "$TAIL_STREAM")
+  then
+    TAIL_STREAM_TMP=$(mktemp)
+    if ! dd if="$TAIL_STREAM" of="$TAIL_STREAM_TMP" bs=1 skip="$MAGIC_OFFSET" status=none 2>/dev/null
+    then
+      rm -f "$TAIL_STREAM_TMP"
+      TAIL_STREAM_TMP=""
+    else
+      TAIL_STREAM="$TAIL_STREAM_TMP"
+    fi
+  fi
+
+  extract_cpio "$TAIL_STREAM"
+  if [[ -n "$TAIL_STREAM_TMP" && -f "$TAIL_STREAM_TMP" ]]
+  then
+    rm -f "$TAIL_STREAM_TMP"
+  fi
+fi
+rm -f "$INITRD_TAIL"
 
 hash_tree "$TMPDIR"
 
@@ -496,8 +743,7 @@ diff_hashes() {
 }
 
 detect_remote_initrd() {
-  local host=$1
-  local ssh_user=$2
+  local host=$1 ssh_user=$2
 
   local remote_env=()
   if [[ -n "$REMOTE_PATH_PREFIX" ]]
@@ -527,8 +773,7 @@ detect_local_initrd() {
 }
 
 deploy_paranoid_bundle() {
-  local host=$1
-  local ssh_user=$2
+  local host=$1 ssh_user=$2
 
   local remote_uname
   remote_uname=$(ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "uname -m")
@@ -545,7 +790,7 @@ deploy_paranoid_bundle() {
 
   local remote_root="/run/initrd-checksum/bin"
   log_info "deploying busybox bundle to $host:$remote_root"
-  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "mkdir -p '$remote_root'"
+  ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "rm -rf '$remote_root' && mkdir -p '$remote_root'"
 
   local busybox_src
   if command -v nix &>/dev/null
@@ -573,16 +818,14 @@ deploy_paranoid_bundle() {
   ssh "${SSH_OPTS[@]}" -l "$ssh_user" "$host" "cd '$remote_root' && for a in ${applets[*]}; do ln -sf busybox \"\$a\"; done"
 
   REMOTE_PATH_PREFIX="$remote_root"
+
+  local cleanup_cmd="ssh ${SSH_OPTS[*]} -l '$ssh_user' '$host' \"rm -rf '$remote_root'\""
+  add_exit_trap "$cleanup_cmd"
 }
 
 run_checksum() {
-  local host=$1
-  local initrd_path=$2
-  local initrd_mode=$3
-  local ssh_user=$4
-  local diff_target=$5
-  local quiet=$6
-  local paranoid=$7
+  local host=$1 initrd_path=$2 initrd_mode=$3 ssh_user=$4 diff_target=$5 quiet=$6 paranoid=$7
+  local tmpfile="" mode=""
 
   tmpfile=$(mktemp)
   add_exit_trap "rm -f '$tmpfile'"
@@ -638,10 +881,9 @@ run_checksum() {
 main() {
   setup_colors
 
-  local action host=""
-  local initrd_mode="" initrd_path=""
+  local action="" host="" initrd_mode="" initrd_path=""
   local diff_file1="" diff_file2="" checksum_diff="" quiet=""
-  local known_hosts_file="" ssh_user="root"
+  local known_hosts_file="" ssh_user="root" paranoid=""
 
   if [[ $# -gt 0 ]]
   then
@@ -658,9 +900,6 @@ main() {
   then
     shift
   fi
-
-  ssh_user=root
-  local paranoid=""
 
   while [[ $# -gt 0 ]]
   do
