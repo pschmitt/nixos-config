@@ -46,7 +46,7 @@ in
   # Define sops secrets using the helper function
   sops.secrets = defineSopsSecrets;
 
-  services.luks-ssh-unlocker = {
+  services.luks-ssh-unlock = {
     enable = true;
     instances = lib.listToAttrs (
       lib.lists.map (name: {
