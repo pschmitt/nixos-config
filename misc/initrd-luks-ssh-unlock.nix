@@ -64,7 +64,7 @@
   };
 
   imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
-  services.luks-ssh-unlocker = {
+  services.luks-ssh-unlock = {
     enable = true;
     activationScript.enable = true;
   };
