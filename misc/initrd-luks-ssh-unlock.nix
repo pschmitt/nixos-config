@@ -66,7 +66,6 @@
   imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
   services.luks-ssh-unlock = {
     enable = true;
-    # FIXME this breaks boot?!
-    activationScript.enable = false;
+    activationScript.enable = true;
   };
 }
