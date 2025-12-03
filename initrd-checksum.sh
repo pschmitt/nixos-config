@@ -281,7 +281,12 @@ measure_initrd_image() {
   log_info "mode=initrd-image source=$initrd_src unpack_dir=$tmpdir"
 
   cd "$tmpdir"
-  $decompress_cmd "$initrd_src" | cpio -idmu
+  if [[ "$decompress_cmd" == "cat" ]]
+  then
+    cpio -idmu < "$initrd_src"
+  else
+    $decompress_cmd "$initrd_src" | cpio -idmu
+  fi
 
   hash_tree "$tmpdir"
   rm -rf "$tmpdir"
@@ -579,14 +584,13 @@ deploy_paranoid_bundle() {
 }
 
 run_checksum() {
-  local host initrd_path initrd_mode ssh_user diff_target mode tmpfile quiet paranoid
-  host=$1
-  initrd_path=$2
-  initrd_mode=$3
-  ssh_user=$4
-  diff_target=$5
-  quiet=$6
-  paranoid=$7
+  local host=$1
+  local initrd_path=$2
+  local initrd_mode=$3
+  local ssh_user=$4
+  local diff_target=$5
+  local quiet=$6
+  local paranoid=$7
 
   tmpfile=$(mktemp)
   add_exit_trap "rm -f '$tmpfile'"
@@ -642,7 +646,11 @@ run_checksum() {
 main() {
   setup_colors
 
-  local action host initrd_mode initrd_path ssh_user diff_file1 diff_file2 checksum_diff quiet known_hosts_file
+  local action host=""
+  local initrd_mode="" initrd_path=""
+  local diff_file1="" diff_file2="" checksum_diff="" quiet=""
+  local known_hosts_file="" ssh_user="root"
+
   if [[ $# -gt 0 ]]
   then
     case "$1" in
@@ -660,7 +668,7 @@ main() {
   fi
 
   ssh_user=root
-  local paranoid
+  local paranoid=""
 
   while [[ $# -gt 0 ]]
   do
@@ -740,7 +748,7 @@ main() {
         paranoid=1
         shift
       ;;
-      --insecure-ssh)
+      --insecure*)
         enable_insecure_ssh
         shift
       ;;
@@ -784,18 +792,19 @@ main() {
     esac
   done
 
-  if [[ -z "$initrd_path" ]]
+  if [[ -z "${initrd_path:-}" ]]
   then
     initrd_path=/run/current-system/initrd
   fi
 
   case "$action" in
     checksum|check)
-      if [[ -n "$host" ]] && [[ "$host" == *@* ]]
+      if [[ -n "$host" && "$host" == *@* ]]
       then
         log_err "use --ssh-user/--ssh-username/-l instead of embedding '@' in --host"
         exit 2
       fi
+
       run_checksum "$host" "$initrd_path" "$initrd_mode" "$ssh_user" "$checksum_diff" "$quiet" "$paranoid"
     ;;
     diff)
@@ -804,6 +813,7 @@ main() {
         log_err "diff mode needs two files"
         exit 2
       fi
+
       diff_hashes "$diff_file1" "$diff_file2"
     ;;
     *)
@@ -814,4 +824,7 @@ main() {
   esac
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
