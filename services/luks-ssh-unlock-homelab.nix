@@ -1,4 +1,9 @@
-{ config, inputs, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 
 let
   # List of instance names
@@ -51,7 +56,7 @@ in
   # Define sops secrets using the helper function
   sops.secrets = defineSopsSecrets;
 
-  services.luks-ssh-unlocker = {
+  services.luks-ssh-unlock = {
     enable = true;
     instances = lib.listToAttrs (
       lib.lists.map (instance: {
