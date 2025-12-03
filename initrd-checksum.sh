@@ -19,23 +19,31 @@ set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage:
-  $0 checksum [--host HOST] [--ssh-user USER] [--initrd[=PATH]] [--diff FILE] [-q|--quiet] [--paranoid]
-  $0 diff FILE1 FILE2
+Usage: $0 [ACTION] [OPTIONS]
+  or:  $0 diff FILE1 FILE2
+Hash initrd contents locally or over SSH, or diff two checksum files.
 
-Modes:
-  checksum (default)  Detects initrd vs normal, hashes accordingly.
-    - With --host: ssh to HOST; auto-detect initrd via /etc/initrd-release.
-    - With --initrd: force hashing of an initrd image (default path: /run/current-system/initrd).
-    - With --diff FILE: after hashing, show diff vs FILE (sorted).
-    - With --quiet: suppress checksum stdout (still logs and runs diff if provided).
-    - With --paranoid: push a minimal binary bundle to /run/initrd-checksum/bin on the remote host and prepend to PATH.
+Actions:
+  checksum                Detect and hash initrd or live root (default action).
+  diff FILE1 FILE2        Unified diff of two existing checksum files (sorted).
 
-  diff                 Unified diff of two existing checksum files (sorted).
+Mandatory arguments to long options are mandatory for short options too.
+
+Options (checksum):
+  -H, --host HOST         SSH to HOST; auto-detect initrd via /etc/initrd-release.
+  -l, --ssh-user USER     SSH user (default: root).
+      --initrd[=PATH]     Force hashing of an initrd image (default: /run/current-system/initrd).
+      --diff FILE         After hashing, show diff vs FILE (sorted).
+  -q, --quiet             Suppress checksum stdout (still logs and runs diff if provided).
+      --paranoid          Push a minimal bundle to /run/initrd-checksum/bin on the remote host and prepend to PATH.
+      --insecure-ssh      Disable host key verification (unsafe; sets StrictHostKeyChecking=no and null known_hosts files).
+      --known-hosts-file FILE
+                          Override the SSH UserKnownHostsFile (only in secure mode).
+  -h, --help              Show this help and exit.
 
 Output:
   SHA256_HASH  /absolute/path  (for checksum)
-  unified diff (for diff)
+  unified diff                 (for diff)
 
 Notes:
   - Live root measurement expects root privileges.
@@ -110,12 +118,55 @@ add_exit_trap() {
   trap run_exit_traps EXIT
 }
 
-SSH_OPTS=(
+SSH_OPTS_SECURE=(
+  -o ControlMaster=no
+)
+
+SSH_OPTS_INSECURE=(
   -o ControlMaster=no
   -o UserKnownHostsFile=/dev/null
   -o GlobalKnownHostsFile=/dev/null
   -o StrictHostKeyChecking=no
 )
+
+SSH_OPTS=()
+SSH_KNOWN_HOSTS_FILE=""
+INSECURE_SSH=0
+
+enable_secure_ssh() {
+  INSECURE_SSH=0
+  SSH_OPTS=("${SSH_OPTS_SECURE[@]}")
+  apply_known_hosts_file
+}
+
+enable_insecure_ssh() {
+  log_warn "insecure SSH mode: host key validation disabled; susceptible to MITM"
+  if [[ -n "$SSH_KNOWN_HOSTS_FILE" ]]
+  then
+    log_warn "--known-hosts-file ignored while --insecure-ssh is active"
+  fi
+  INSECURE_SSH=1
+  SSH_OPTS=("${SSH_OPTS_INSECURE[@]}")
+}
+
+apply_known_hosts_file() {
+  if [[ -z "$SSH_KNOWN_HOSTS_FILE" ]]
+  then
+    return
+  fi
+
+  if (( INSECURE_SSH == 1 ))
+  then
+    log_warn "--known-hosts-file ignored while --insecure-ssh is active"
+    return
+  fi
+
+  local user_known_hosts_file
+  user_known_hosts_file=$SSH_KNOWN_HOSTS_FILE
+  SSH_OPTS+=( -o "UserKnownHostsFile=${user_known_hosts_file}" )
+}
+
+enable_secure_ssh
 
 IGNORE_RELS=(
   "etc/machine-id"
@@ -591,7 +642,7 @@ run_checksum() {
 main() {
   setup_colors
 
-  local action host initrd_mode initrd_path ssh_user diff_file1 diff_file2 checksum_diff quiet
+  local action host initrd_mode initrd_path ssh_user diff_file1 diff_file2 checksum_diff quiet known_hosts_file
   if [[ $# -gt 0 ]]
   then
     case "$1" in
@@ -608,15 +659,8 @@ main() {
     shift
   fi
 
-  host=""
-  initrd_mode=""
-  initrd_path=""
   ssh_user=root
-  diff_file1=""
-  diff_file2=""
-  checksum_diff=""
-  quiet=""
-  local paranoid=""
+  local paranoid
 
   while [[ $# -gt 0 ]]
   do
@@ -694,6 +738,27 @@ main() {
       ;;
       --paranoid)
         paranoid=1
+        shift
+      ;;
+      --insecure-ssh)
+        enable_insecure_ssh
+        shift
+      ;;
+      --known-hosts-file)
+        if [[ $# -lt 2 ]]
+        then
+          log_err "missing argument for $1"
+          exit 2
+        fi
+        known_hosts_file=$2
+        SSH_KNOWN_HOSTS_FILE=$known_hosts_file
+        apply_known_hosts_file
+        shift 2
+      ;;
+      --known-hosts-file=*)
+        known_hosts_file=${1#--known-hosts-file=}
+        SSH_KNOWN_HOSTS_FILE=$known_hosts_file
+        apply_known_hosts_file
         shift
       ;;
       *)
