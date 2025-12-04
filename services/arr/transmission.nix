@@ -78,6 +78,8 @@ in
     '';
   };
 
+  fakeHosts.transmission.port = port;
+
   systemd.services.transmission = {
     vpnConfinement = {
       enable = true;

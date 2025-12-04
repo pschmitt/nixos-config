@@ -35,6 +35,8 @@ in
     '';
   };
 
+  fakeHosts.jackett.port = port;
+
   systemd.services.jackett.vpnConfinement = {
     enable = true;
     vpnNamespace = "mullvad";

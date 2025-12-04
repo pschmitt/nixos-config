@@ -64,6 +64,8 @@ in
     };
   };
 
+  fakeHosts.sonarr.port = port;
+
   vpnNamespaces.mullvad.portMappings = [
     {
       from = port;

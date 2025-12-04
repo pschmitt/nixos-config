@@ -65,4 +65,6 @@ in
         if 5 restarts within 5 cycles then alert
     '';
   };
+
+  fakeHosts.cwabd.port = port;
 }
