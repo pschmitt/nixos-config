@@ -66,7 +66,8 @@ in
   config = lib.mkIf (hostEntries != [ ]) {
     # Local-only hostnames to reach Arr services inside the Mullvad namespace.
     networking.extraHosts = lib.mkAfter (
-      lib.concatStringsSep "\n" (map (h: "${localBind} " + h) hostEntries)
+      "# Provided by services/arr/fake-hosts.nix\n"
+      + lib.concatStringsSep "\n" (map (h: "${localBind} " + h) hostEntries)
     );
 
     services.nginx.virtualHosts = vhosts;
