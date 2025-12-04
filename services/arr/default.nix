@@ -6,6 +6,7 @@
     # services
     ./cwabd.nix
     ./jackett.nix
+    ./listenarr.nix
     ./podman-net.nix
     ./prowlarr.nix
     ./radarr.nix
