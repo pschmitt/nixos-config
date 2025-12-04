@@ -5,6 +5,7 @@
 
     # services
     ./cwabd.nix
+    ./fake-hosts.nix
     ./jackett.nix
     ./listenarr.nix
     ./podman-net.nix

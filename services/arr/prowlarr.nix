@@ -49,6 +49,8 @@ in
     '';
   };
 
+  fakeHosts.prowlarr.port = port;
+
   systemd.services.prowlarr = {
     environment = {
       PROWLARR__SERVER__BINDADDRESS = internalIP;

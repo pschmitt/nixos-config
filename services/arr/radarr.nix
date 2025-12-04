@@ -51,6 +51,8 @@ in
     '';
   };
 
+  fakeHosts.radarr.port = port;
+
   systemd.services.radarr = {
     environment = {
       RADARR__SERVER__BINDADDRESS = internalIP;
