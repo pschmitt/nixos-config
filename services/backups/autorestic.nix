@@ -27,10 +27,10 @@ let
       path = "/srv/autorestic-remote/autorestic-remote.sh turris";
       time = "03:00";
     };
-    "autorestic-remote-wrt1900ac" = {
-      path = "/srv/autorestic-remote/autorestic-remote.sh wrt1900ac";
-      time = "04:00";
-    };
+    # "autorestic-remote-wrt1900ac" = {
+    #   path = "/srv/autorestic-remote/autorestic-remote.sh wrt1900ac";
+    #   time = "04:00";
+    # };
   };
 in
 {
