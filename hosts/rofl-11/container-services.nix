@@ -34,7 +34,7 @@ in
         port = 5055;
         hosts = [
           (mkHost "jellyseerr")
-          (mkHostWithNode "jellyseerr")
+          (mkHost "jellyseerr.arr")
         ];
         monitoring = {
           composeYaml = "jellyfin";
