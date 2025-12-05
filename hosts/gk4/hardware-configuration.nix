@@ -10,7 +10,6 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     inputs.hardware.nixosModules.gpd-pocket-4
-    inputs.gpd-fan-driver.nixosModules.default
     ./disko-config.nix
 
     ../../misc/fprintd.nix
@@ -32,8 +31,6 @@
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
   hardware = {
-    # GPD Fan Control
-    gpd-fan.enable = true;
     highDpi = true;
 
     # Display rotation via IIO sensors
