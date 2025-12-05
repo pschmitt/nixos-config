@@ -31,10 +31,14 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  # Display rotation via IIO sensors
-  hardware.sensor.iio.enable = lib.mkDefault true;
+  hardware = {
+    # GPD Fan Control
+    gpd-fan.enable = true;
+    highDpi = true;
 
-  hardware.highDpi = true;
+    # Display rotation via IIO sensors
+    sensor.iio.enable = lib.mkDefault true;
+  };
 
   services.fprintd = {
     enable = true;
@@ -42,9 +46,6 @@
       libfprint = pkgs.libfprint-focaltech;
     };
   };
-
-  # GPD Fan Control
-  hardware.gpd-fan.enable = true;
 
   environment.systemPackages = [
 
