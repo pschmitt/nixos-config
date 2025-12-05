@@ -2,7 +2,7 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 5000;
-  publicHost = "listen.arr.brkn.lol";
+  publicHost = "listen.arr.${config.custom.mainDomain}";
   autheliaConfig = import ./authelia.nix { inherit config; };
   containerService = config.virtualisation.oci-containers.containers.listenarr.serviceName;
   dataDir = "/mnt/data/srv/listenarr/config";
@@ -21,6 +21,7 @@ in
   virtualisation.oci-containers.containers.listenarr = {
     image = "ghcr.io/therobbiedavis/listenarr:canary";
     autoStart = true;
+    pull = "always";
     environment = {
       LISTENARR_PUBLIC_URL = "https://${publicHost}";
     };
