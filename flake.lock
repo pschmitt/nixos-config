@@ -863,26 +863,6 @@
         "type": "github"
       }
     },
-    "gpd-fan-driver": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1764125601,
-        "narHash": "sha256-QKXCUADJGFtRxRLg7qfkxumR8YaOjMzOhAU29i/6U0U=",
-        "owner": "Cryolitia",
-        "repo": "gpd-fan-driver",
-        "rev": "49bd324cbd76478eb0f3136d416c3f1fb86cd5a1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "Cryolitia",
-        "repo": "gpd-fan-driver",
-        "type": "github"
-      }
-    },
     "grim-hyprland": {
       "inputs": {
         "nixpkgs": [
@@ -2559,7 +2539,6 @@
         "firefox-addons": "firefox-addons",
         "flatpaks": "flatpaks",
         "ghostty": "ghostty",
-        "gpd-fan-driver": "gpd-fan-driver",
         "grim-hyprland": "grim-hyprland",
         "hacompanion": "hacompanion",
         "hardware": "hardware",
