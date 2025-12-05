@@ -37,4 +37,12 @@
 
   # Ensure python313Packages uses the modified interpreter
   # python313Packages = final.python313.pkgs;
+
+  # https://github.com/NixOS/nixpkgs/pull/465400
+  termbench-pro = prev.termbench-pro.overrideAttrs (old: {
+    buildInputs = [
+      prev.fmt
+      (prev.glaze.override { enableSSL = false; })
+    ];
+  });
 }
