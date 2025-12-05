@@ -40,6 +40,8 @@ in
           composeYaml = "jellyfin";
           group = "jellyfin";
         };
+
+        auth.type = "sso";
       };
       pp = {
         port = 7827;
