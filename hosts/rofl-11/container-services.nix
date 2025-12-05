@@ -25,6 +25,21 @@ in
           (mkHost "jellyfin")
           (mkHost "media")
         ];
+        monitoring = {
+          composeYaml = "jellyfin";
+          group = "jellyfin";
+        };
+      };
+      jellyseerr = {
+        port = 5055;
+        hosts = [
+          (mkHost "jellyseerr")
+          (mkHostWithNode "jellyseerr")
+        ];
+        monitoring = {
+          composeYaml = "jellyfin";
+          group = "jellyfin";
+        };
       };
       pp = {
         port = 7827;
