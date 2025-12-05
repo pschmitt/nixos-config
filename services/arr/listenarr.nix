@@ -67,8 +67,8 @@ in
         group piracy
         depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart ${containerService}"
-        if failed port ${toString port} protocol http then restart
-        if 5 restarts within 5 cycles then alert
+        if failed port ${toString port} protocol http for 3 cycles then restart
+        if 2 restarts within 10 cycles then alert
     '';
   };
 
