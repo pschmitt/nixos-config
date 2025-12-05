@@ -9,6 +9,7 @@
     ../network
     ./appimage.nix
     ./atd.nix
+    ./btrfs.nix
     ./bootloader.nix
     ./containers.nix
     ./dict.nix
