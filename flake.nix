@@ -128,7 +128,10 @@
     };
 
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
+      # NOTE commit bcbe929cca73f273f3a5927298851662c31ef27c introduces
+      # compilation issues with hyprland 0.52.x
+      # https://github.com/horriblename/hyprgrass/commits/main/
+      url = "github:horriblename/hyprgrass/8c57cc1cb13361774ddde67bfc75ab04e9b13f28";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
