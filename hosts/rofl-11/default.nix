@@ -9,7 +9,6 @@
     ./hardware-configuration.nix
 
     ../../server
-    ../../server/optimist.nix
 
     (import ../../services/nfs/nfs-server.nix {
       inherit lib;

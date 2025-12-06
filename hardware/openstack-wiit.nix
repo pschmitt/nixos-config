@@ -1,13 +1,29 @@
-# https://github.com/NixOS/nixpkgs/pull/119856/
-{ lib, ... }:
+{ lib, modulesPath, ... }:
 {
+  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   custom.netbirdSetupKey = lib.mkForce "optimist";
+
+  boot = {
+    initrd = {
+      availableKernelModules = [
+        "ata_piix"
+        "uhci_hcd"
+        "xen_blkfront"
+        "vmw_pvscsi"
+        # Below is required for ssh in initrd
+        "virtio_pci"
+        "virtio_net"
+      ];
+      kernelModules = [ "nvme" ];
+    };
+    supportedFilesystems = [ "btrfs" ];
+  };
 
   # TODO Put the respective internalInterfaces values into the netbird.nix
   # and tailscale.nix files
   # HACK Fix netbird port forwarding
-  # Set up NAT (Masquerading)
   networking.nat = {
     enable = true;
     externalInterface = "ens3";

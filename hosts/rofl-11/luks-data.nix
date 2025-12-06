@@ -10,17 +10,5 @@
     keyFile = lib.mkForce "/sysroot/etc/crypttab.d/keyfiles/data";
   };
 
-  # fileSystems."/mnt/data" = {
-  #   device = "/dev/mapper/data-encrypted";
-  #   # mountPoint = "/mnt/data";
-  #   fsType = "btrfs";
-  #   options = [
-  #     "compress=zstd"
-  #     "noatime"
-  #   ];
-  #
-  #   neededForBoot = false;
-  # };
-
   systemd.tmpfiles.rules = [ "L+ /srv - - - - /mnt/data/srv" ];
 }
