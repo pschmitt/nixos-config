@@ -13,7 +13,7 @@ let
         pkgs.jq
       ]
     }
-    ${builtins.readFile ../../common/monit/mullvad-expiration.sh}
+    ${builtins.readFile ../../services/monit/mullvad-expiration.sh}
   '';
 
   monitExtraConfig =
