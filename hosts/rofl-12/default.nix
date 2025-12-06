@@ -1,11 +1,9 @@
 { config, lib, ... }:
 {
   imports = [
-    ./disk-config.nix
     ./hardware-configuration.nix
 
     ../../server
-    ../../server/optimist.nix
 
     (import ../../services/nfs/nfs-client.nix { })
 

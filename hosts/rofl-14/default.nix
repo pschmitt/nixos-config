@@ -1,11 +1,9 @@
 { config, lib, ... }:
 {
   imports = [
-    ./disk-config.nix
     ./hardware-configuration.nix
 
     ../../server
-    ../../server/optimist.nix
 
     ../../services/harmonia.nix
     ../../services/http.nix
