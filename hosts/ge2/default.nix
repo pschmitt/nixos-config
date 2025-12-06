@@ -15,7 +15,7 @@
     ../../services/restic
     ../../common/work
 
-    ../../misc/initrd-luks-ssh-unlock.nix
+    ../../services/initrd-luks-ssh-unlock.nix
   ];
 
   custom.cattle = false;

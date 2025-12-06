@@ -1,15 +1,16 @@
 { final, prev }:
 
+# https://github.com/NixOS/nixpkgs/pull/468021
 {
-  tmux = prev.tmux.overrideAttrs (oldAttrs: {
+  tmux = prev.tmux.overrideAttrs (oldAttrs: rec {
     # pname = "tmux";
-    version = "3.5a-unreleased";
+    version = "3.6a";
 
     src = prev.fetchFromGitHub {
       owner = "tmux";
       repo = "tmux";
-      rev = "356887bca27b48e895eca261e0989319f432de73";
-      hash = "sha256-sF1Ccs/7grn7qFx7Xwh8HlwgD0UQSMNn7mtMe9syj1I=";
+      rev = version;
+      hash = "sha256-VwOyR9YYhA/uyVRJbspNrKkJWJGYFFktwPnnwnIJ97s=";
     };
   });
 }

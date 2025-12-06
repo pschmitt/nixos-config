@@ -9,7 +9,7 @@
     ../../services/restic
     ../../common/work
 
-    ../../misc/initrd-luks-ssh-unlock.nix
+    ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix
   ];
 
