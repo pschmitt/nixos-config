@@ -12,7 +12,8 @@
   ];
 
   # Newer kernels might not be compatible with the Nvidia crap.
-  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_6_17;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_6_17;
+
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   hardware = {
