@@ -4,7 +4,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../server
+    ../../common/server
 
     # services
     # backups services

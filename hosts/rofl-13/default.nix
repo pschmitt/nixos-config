@@ -3,7 +3,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../server
+    ../../common/server
 
     ../../services/harmonia.nix
     ../../services/http.nix
