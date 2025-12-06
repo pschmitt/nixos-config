@@ -39,3 +39,13 @@ HOST_TO_REMOVE=xxx
 rm -rf "./host/$HOST_TO_REMOVE" "./tofu/${HOST_TO_REMOVE}.tf"
 ./secrets/sops-config-gen.sh --github-username pschmitt --auto
 ```
+
+## Updating custom packages
+
+- Use `just nix-update --list` to see the available package attributes.
+- Run `just nix-update --package <name>` to refresh a single package or omit
+  the flag to sweep all custom packages. Add `--build` to verify builds or
+  `--commit` to let `nix-update` create commits.
+- The scheduled workflow in [`.github/workflows/nix-update.yaml`](.github/workflows/nix-update.yaml)
+  runs daily and opens a pull request with automated updates when changes are
+  detected.
