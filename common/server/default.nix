@@ -12,9 +12,9 @@
 
     ../global/users/github-actions.nix
     ../global/users/nix-remote-builder.nix
-    ../../misc/autoupgrade.nix
-    ../../misc/git-clone-nixos-config.nix
-    ../../misc/initrd-luks-ssh-unlock.nix
+    ../../services/autoupgrade.nix
+    ../../services/git-clone-nixos-config.nix
+    ../../services/initrd-luks-ssh-unlock.nix
 
     ./dotfiles.nix
     ./firewall.nix

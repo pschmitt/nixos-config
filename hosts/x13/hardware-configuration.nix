@@ -10,7 +10,7 @@
     inputs.hardware.nixosModules.lenovo-thinkpad-x13-amd
     (modulesPath + "/installer/scan/not-detected.nix")
     ./disko-config.nix
-    ../../misc/fprintd.nix
+    ../../hardware/fprintd.nix
   ];
 
   # https://bugs.launchpad.net/ubuntu/+source/linux-source-2.6.17/+bug/76881
