@@ -14,7 +14,7 @@ let
   ];
 in
 {
-  imports = [ ../monit/tailscale.nix ];
+  imports = [ ../../services/monit/tailscale.nix ];
 
   sops.secrets."tailscale/auth-key" = {
     restartUnits = [

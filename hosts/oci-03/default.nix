@@ -3,10 +3,10 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../server
-    ../../server/oci.nix
+    ../../common/server
+    ../../common/server/oci.nix
 
-    ../../common/restic
+    ../../services/restic
     ../../services/http.nix
     ../../services/mmonit.nix
     ../../services/parsedmarc.nix

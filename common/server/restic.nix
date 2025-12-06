@@ -1,6 +1,6 @@
 { config, lib, ... }:
 {
-  imports = [ ../common/restic ];
+  imports = [ ../../services/restic ];
 
   config = lib.mkIf (!config.custom.cattle) {
     services.restic.backups.main = {

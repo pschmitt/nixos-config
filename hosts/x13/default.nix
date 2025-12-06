@@ -6,7 +6,7 @@
     ../../common/global
     ../../common/gui
     ../../common/laptop
-    ../../common/restic
+    ../../services/restic
     ../../common/work
 
     ../../services/nixos-installer-boot-entry.nix

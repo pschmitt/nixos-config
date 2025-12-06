@@ -4,7 +4,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../server
+    ../../common/server
   ];
 
   custom.cattle = true;

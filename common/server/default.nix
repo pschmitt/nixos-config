@@ -7,14 +7,14 @@
 }:
 {
   imports = [
-    ../common/global
-    ../common/mail
+    ../global
+    ../../services/mail
 
-    ../common/global/users/github-actions.nix
-    ../common/global/users/nix-remote-builder.nix
-    ../misc/autoupgrade.nix
-    ../misc/git-clone-nixos-config.nix
-    ../misc/initrd-luks-ssh-unlock.nix
+    ../global/users/github-actions.nix
+    ../global/users/nix-remote-builder.nix
+    ../../misc/autoupgrade.nix
+    ../../misc/git-clone-nixos-config.nix
+    ../../misc/initrd-luks-ssh-unlock.nix
 
     ./dotfiles.nix
     ./firewall.nix

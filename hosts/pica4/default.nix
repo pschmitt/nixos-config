@@ -9,14 +9,14 @@
     ./hardware-configuration.nix
 
     ../../common/global
-    ../../common/mail
+    ../../services/mail
     ../../common/network
     ../../common/network/wifi.nix
 
     # XXX Below imports initrd-luks-ssh-unlock etc
-    # ../../server
+    # ../../common/server
     # So we only import what we really need here:
-    ../../server/dotfiles.nix
+    ../../common/server/dotfiles.nix
     # ../../monit.nix
     # ../../netbird.nix
     # ../../restic.nix

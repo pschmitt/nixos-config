@@ -5,7 +5,7 @@ let
   dataIsBtrfs = (dataFileSystem.fsType or null) == "btrfs";
 in
 {
-  imports = [ ../services/snapper.nix ];
+  imports = [ ../../services/snapper.nix ];
 
   services.snapper = {
     snapshotRootOnBoot = lib.mkDefault false;

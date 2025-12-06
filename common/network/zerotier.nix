@@ -3,7 +3,7 @@ let
   networkId = "12ac4a1e716b9d7d";
 in
 {
-  imports = [ ../monit/zerotier.nix ];
+  imports = [ ../../services/monit/zerotier.nix ];
 
   # sops.secrets."zerotier/api-token" = {
   #   owner = "zeronsd";

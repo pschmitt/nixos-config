@@ -9,7 +9,7 @@ let
   netbirdClientName = "netbird-io";
 in
 {
-  imports = [ ../monit/netbird.nix ];
+  imports = [ ../../services/monit/netbird.nix ];
 
   sops.secrets.netbird-setup-key = {
     key = "netbird/setup-keys/${netbirdClientName}/${config.custom.netbirdSetupKey}";
