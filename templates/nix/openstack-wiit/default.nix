@@ -5,7 +5,6 @@
     ./hardware-configuration.nix
 
     ../../server
-    ../../server/optimist.nix
   ];
 
   custom.cattle = true;
