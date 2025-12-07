@@ -67,6 +67,7 @@ main() {
   local repo_root
   local build_flag
   local commit_flag
+  local fail_fast
   local list_only
   local system="x86_64-linux"
 
@@ -94,7 +95,7 @@ main() {
         shift 2
         ;;
       -f|--fail|--fail-fast)
-        FAIL_FAST=1
+        fail_fast=1
         shift
         ;;
       --build)
@@ -148,7 +149,7 @@ main() {
     then
       echo "Failed to update package: $pkg" >&2
 
-      if [[ -n $FAIL_FAST ]]
+      if [[ -n ${fail_fast:-} ]]
       then
         return 1
       fi
