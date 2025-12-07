@@ -1,0 +1,13 @@
+{
+  "ignoredPackages": [
+    "bluez-headset-callback",
+    "ComicCode",
+    "ComicCodeNF",
+    "custom-keymaps",
+    "MonoLisa",
+    "MonoLisaNF",
+    "MonoLisa-Custom",
+    "MonoLisa-CustomNF",
+    "oracle-cloud-agent"
+  ]
+}
