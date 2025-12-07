@@ -46,7 +46,9 @@ rm -rf "./host/$HOST_TO_REMOVE" "./tofu/${HOST_TO_REMOVE}.tf"
 - Run `just nix-update --package <name>` to refresh a single package or omit
   the flag to sweep all custom packages. Add `--build` to verify builds or
   `--commit` to let `nix-update` create commits.
-- Packages skipped by nix-update are listed in `pkgs/nix-update.json`.
+- Packages that need bespoke handling should define a `passthru.updateScript`
+  alongside the derivation; the helper will use it automatically (disable with
+  `--no-update-script`). Lingering skips live in `pkgs/nix-update.json`.
 - The scheduled workflow in [`.github/workflows/nix-update.yaml`](.github/workflows/nix-update.yaml)
   runs daily and opens a pull request with automated updates when changes are
   detected.
