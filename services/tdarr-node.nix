@@ -30,27 +30,26 @@
       ];
       autoStart = true;
       environmentFiles = [ config.sops.templates."tdarr-api-key".path ];
-      environment =
-        {
-          TZ = "Europe/Berlin";
-          PUID = "1000";
-          PGID = "1000";
-          UMASK_SET = "002";
-          nodeName = "${config.networking.hostName}";
-          serverIP = "rofl-11.ts.${config.custom.mainDomain}";
-          serverPort = "8266";
-          inContainer = "true";
-          ffmpegVersion = "7";
-        }
-        // (
-          if config.hardware.nvidia-container-toolkit.enable then
-            {
-              NVIDIA_VISIBLE_DEVICES = "all";
-              NVIDIA_DRIVER_CAPABILITIES = "all";
-            }
-          else
-            { }
-        );
+      environment = {
+        TZ = "Europe/Berlin";
+        PUID = "1000";
+        PGID = "1000";
+        UMASK_SET = "002";
+        nodeName = "${config.networking.hostName}";
+        serverIP = "rofl-11.ts.${config.custom.mainDomain}";
+        serverPort = "8266";
+        inContainer = "true";
+        ffmpegVersion = "7";
+      }
+      // (
+        if config.hardware.nvidia-container-toolkit.enable then
+          {
+            NVIDIA_VISIBLE_DEVICES = "all";
+            NVIDIA_DRIVER_CAPABILITIES = "all";
+          }
+        else
+          { }
+      );
       extraOptions = if config.hardware.nvidia-container-toolkit.enable then [ "--gpus=all" ] else [ ];
     };
   };
