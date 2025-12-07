@@ -2,6 +2,15 @@ resource "cloudflare_account" "me" {
   name = var.cloudflare_email
 }
 
+resource "cloudflare_zone" "anika_blue" {
+  zone       = "anika.blue"
+  plan       = "free"
+  account_id = cloudflare_account.me.id
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "cloudflare_zone" "bergmann_schmitt_de" {
   zone       = "bergmann-schmitt.de"
   plan       = "free"
