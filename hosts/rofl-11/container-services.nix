@@ -30,11 +30,13 @@ in
           group = "jellyfin";
         };
       };
-      jellyseerr = {
+      seerr = {
         port = 5055;
         hosts = [
           (mkHost "jellyseerr")
           (mkHost "jellyseerr.arr")
+          (mkHost "seerr")
+          (mkHost "seerr.arr")
         ];
         monitoring = {
           composeYaml = "jellyfin";
