@@ -46,7 +46,7 @@ jobs:
 
       - name: Update ${{ matrix.package }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
         run: |
           set -euo pipefail
 
@@ -55,6 +55,7 @@ jobs:
       - name: Create pull request for ${{ matrix.package }}
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           branch: chore/nix-update/${{ matrix.package }}
           delete-branch: true
           commit-message: "chore: update ${{ matrix.package }}"
