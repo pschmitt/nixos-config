@@ -23,7 +23,7 @@ buildGoModule rec {
   ];
 
   meta = {
-    description = "curl-like tool with CDP request signing";
+    description = "cdpcurl is a tool that allows you to make HTTP requests to the Coinbase API with your CDP (Coinbase Developer Platform) API key";
     homepage = "https://github.com/coinbase/cdpcurl";
     # NOTE There is no license file in the repository as of 2025-03-15
     # https://github.com/coinbase/cdpcurl/issues/39
