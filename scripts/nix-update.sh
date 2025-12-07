@@ -93,6 +93,10 @@ main() {
         system="$2"
         shift 2
         ;;
+      -f|--fail|--fail-fast)
+        FAIL_FAST=1
+        shift
+        ;;
       --build)
         build_flag=1
         shift
@@ -140,7 +144,15 @@ main() {
   local pkg
   for pkg in "${packages[@]}"
   do
-    run_update "$pkg" "$system" || echo "Failed to update package: $pkg" >&2
+    if ! run_update "$pkg" "$system"
+    then
+      echo "Failed to update package: $pkg" >&2
+
+      if [[ -n $FAIL_FAST ]]
+      then
+        return 1
+      fi
+    fi
   done
 }
 
