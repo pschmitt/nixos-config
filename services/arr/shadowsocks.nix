@@ -8,6 +8,10 @@ in
     inherit (config.custom) sopsFile;
   };
 
+  # NOTE To connect, run:
+  # , ss-local -s rofl-11.nb.brkn.lol -p 8388 -l 1080 -m chacha20-ietf-poly1305 -k 'SHADOWSOCKS_PASSWORD'
+  # curl -x socks5h://127.0.0.1:1080 myip.wtf/json
+
   services.shadowsocks = {
     enable = true;
     localAddress = [ "0.0.0.0" ];
