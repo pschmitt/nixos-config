@@ -8,7 +8,9 @@
     ./fake-hosts.nix
     ./jackett.nix
     ./listenarr.nix
+    ./microsocks.nix
     ./podman-net.nix
+    ./shadowsocks.nix
     ./prowlarr.nix
     ./radarr.nix
     ./sonarr.nix
