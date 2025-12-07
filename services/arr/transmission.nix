@@ -10,6 +10,9 @@ let
   publicHost = "to.arr.${config.custom.mainDomain}";
   serverAliases = [ "to.${config.custom.mainDomain}" ];
   autheliaConfig = import ./authelia.nix { inherit config; };
+  downloadDir =
+    config.services.transmission.settings."download-dir"
+      or "${config.services.transmission.home}/Downloads";
 in
 {
   sops = {
@@ -38,6 +41,12 @@ in
     };
   };
 
+  users.users.transmission.extraGroups = [ "media" ];
+
+  systemd.tmpfiles.rules = [
+    "d ${downloadDir} 2775 transmission media - -"
+  ];
+
   services = {
     transmission = {
       enable = true;
@@ -50,6 +59,7 @@ in
         rpc-authentication-required = true;
         ratio-limit = 0;
         ratio-limit-enabled = true;
+        umask = 2;
       };
     };
 

@@ -20,6 +20,8 @@ in
     };
   };
 
+  users.users.sonarr.extraGroups = [ "media" ];
+
   services = {
     sonarr = {
       enable = true;

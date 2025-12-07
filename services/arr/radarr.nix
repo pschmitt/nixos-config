@@ -20,6 +20,8 @@ in
     };
   };
 
+  users.users.radarr.extraGroups = [ "media" ];
+
   services = {
     radarr = {
       enable = true;
