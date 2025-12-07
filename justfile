@@ -29,6 +29,33 @@ nixos-remote *args:
 init-host *args:
   ./init-host-config.sh {{args}}
 
+nixfmt:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    source /etc/profile.d/nix.sh
+  fi
+  mapfile -t files < <(find . -name '*.nix' -print)
+  if [[ ${#files[@]} -gt 0 ]]
+  then
+    nix run nixpkgs#nixfmt-rfc-style -- "${files[@]}"
+  else
+    echo "No .nix files to format"
+  fi
+
+fmt-tofu:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    source /etc/profile.d/nix.sh
+  fi
+  tofu -chdir=tofu fmt
+
+fmt: nixfmt fmt-tofu
+  @echo "Formatted nix files and tofu configs"
+
 eval *params:
   ./nix.sh eval {{params}}
 

@@ -21,7 +21,10 @@
             format = "vfat";
             mountpoint = "/boot";
             mountOptions = [ "defaults" ];
-            extraArgs = ["-n" "EFI"];
+            extraArgs = [
+              "-n"
+              "EFI"
+            ];
           };
         };
         luks = {
@@ -42,7 +45,10 @@
             # additionalKeyFiles = ["/tmp/additionalSecret.key"];
             content = {
               type = "btrfs";
-              extraArgs = [ "-L" "luks-root" ];
+              extraArgs = [
+                "-L"
+                "luks-root"
+              ];
               subvolumes = {
                 "@root" = {
                   mountpoint = "/";
