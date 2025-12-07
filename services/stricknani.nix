@@ -100,6 +100,7 @@ in
       if failed
         port 443
         protocol https
+        request "/healthz"
         with timeout 15 seconds
       then restart
       if 5 restarts within 10 cycles then alert
