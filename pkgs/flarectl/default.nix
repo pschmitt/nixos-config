@@ -6,17 +6,17 @@
 
 buildGoModule rec {
   pname = "flarectl";
-  version = "0.80.0";
+  version = "6.4.0";
 
   src = fetchFromGitHub {
     owner = "cloudflare";
     repo = "cloudflare-go";
     rev = "v${version}";
-    sha256 = "sha256-Dks5tF+mHVmtj8Uh8eK50ZPZTW8p65Da08EHUnLfF7g=";
+    sha256 = "sha256-9hTdg3zF7j6ffvnyx2qb9ZbbQUbZg/XR2s1pkPFDL9s=";
   };
 
   subPackages = [ "cmd/flarectl" ];
-  vendorHash = "sha256-gQxHJNPLVcnilMIv4drDCcQ8QJCyuZ6vejsuo0elIPw=";
+  vendorHash = "sha256-weXaSUDNm4uyjraVpdEaFLIuMLz91iAGV5TCUyWrInY=";
 
   # FIXME Why aren't these working?
   # Below works...
