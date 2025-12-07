@@ -39,7 +39,7 @@ discover_packages() {
   local target_system="$1"
 
   nix eval --json ".#packages.${target_system}" --apply builtins.attrNames |
-    jq -er '.[]' | grep -Ev '^(ComicCode|MonoLisa)'
+    jq -er '.[]' | grep -Ev '^(ComicCode|MonoLisa|oracle-cloud-agent)'
 }
 
 run_update() {
