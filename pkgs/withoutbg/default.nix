@@ -26,7 +26,7 @@ let
 in
 buildPythonApplication {
   pname = "withoutbg";
-  version = "0.0.0-unstable-2025-11-17";
+  version = "1.2.0";
 
   src = fetchFromGitHub {
     owner = "withoutbg";
