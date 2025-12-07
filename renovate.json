@@ -4,8 +4,24 @@
     "config:recommended"
   ],
   "nix": {
-    "enabled": true
+    "enabled": true,
+    "fileMatch": [
+      "(^|/)flake\\.lock$",
+      "(^|/)pkgs/.+\\.nix$"
+    ]
   },
+  "packageRules": [
+    {
+      "description": "Autoupdate Nix derivations under pkgs/",
+      "matchManagers": [
+        "nix"
+      ],
+      "matchPaths": [
+        "pkgs/**"
+      ],
+      "separateMinorPatch": true
+    }
+  ],
   "includePaths": [
     "**/*.nix"
   ]
