@@ -36,22 +36,16 @@ resolve_repo_root() {
 }
 
 discover_packages() {
-  local target_system
-
-  target_system="$1"
+  local target_system="$1"
 
   nix eval --json ".#packages.${target_system}" --apply builtins.attrNames |
-    python3 -c 'import json, sys; print("\n".join(json.load(sys.stdin)))'
+    jq -er '.[]' | grep -Ev '^(ComicCode|MonoLisa)'
 }
 
 run_update() {
-  local package_name
-  local target_system
-  local -a args
-
-  package_name="$1"
-  target_system="$2"
-  args=("--flake" ".#${package_name}" "--system" "$target_system" "--format" "--use-update-script")
+  local package_name="$1"
+  local target_system="$2"
+  local args=("--flake" "${package_name}")
 
   if [[ -n ${build_flag:-} ]]
   then
@@ -68,15 +62,13 @@ run_update() {
 }
 
 main() {
-  local -a packages
+  local -a packages=()
   local system
   local repo_root
   local build_flag
   local commit_flag
   local list_only
-
-  packages=()
-  system="x86_64-linux"
+  local system="x86_64-linux"
 
   while [[ $# -gt 0 ]]
   do
@@ -145,9 +137,10 @@ main() {
     exit 1
   fi
 
+  local pkg
   for pkg in "${packages[@]}"
   do
-    run_update "$pkg" "$system"
+    run_update "$pkg" "$system" || echo "Failed to update package: $pkg" >&2
   done
 }
 
