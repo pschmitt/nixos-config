@@ -6,36 +6,47 @@
   ...
 }:
 let
-  mainHost = "wool.anika.blue";
-  serverAliases = [ "stricken.anika.blue" ];
+  domain = "anika.blue";
+  mainHost = "wool.${domain}";
+  serverAliases = [
+    "stricken.${domain}"
+    "wolle.${domain}"
+  ];
   dataDir = "/var/lib/stricknani";
   port = 7674;
   envFileName = "stricknani.env";
   stricknaniPkg = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
+
+  user = "stricknani";
+  group = user;
 in
 {
-  sops.secrets."stricknani/secretKey" = {
-    inherit (config.custom) sopsFile;
-  };
-  sops.secrets."stricknani/initialAdmin/password" = {
-    inherit (config.custom) sopsFile;
-  };
-  sops.secrets."stricknani/initialAdmin/username" = {
-    inherit (config.custom) sopsFile;
+  sops = {
+    secrets = {
+      "stricknani/secretKey" = {
+        inherit (config.custom) sopsFile;
+      };
+      "stricknani/initialAdmin/password" = {
+        inherit (config.custom) sopsFile;
+      };
+      "stricknani/initialAdmin/username" = {
+        inherit (config.custom) sopsFile;
+      };
+    };
+
+    templates."${envFileName}" = {
+      content = ''
+        SECRET_KEY="${config.sops.placeholder."stricknani/secretKey"}"
+        INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
+        INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
+      '';
+      owner = "stricknani";
+      group = "stricknani";
+      mode = "0400";
+    };
   };
 
-  sops.templates."${envFileName}" = {
-    content = ''
-      SECRET_KEY="${config.sops.placeholder."stricknani/secretKey"}"
-      INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
-      INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
-    '';
-    owner = "stricknani";
-    group = "stricknani";
-    mode = "0400";
-  };
-
-  users.users.stricknani = {
+  users.users."${user}" = {
     isSystemUser = true;
     group = "stricknani";
     home = dataDir;
@@ -69,8 +80,8 @@ in
     serviceConfig = {
       EnvironmentFile = config.sops.templates."${envFileName}".path;
       ExecStart = lib.getExe stricknaniPkg;
-      User = "stricknani";
-      Group = "stricknani";
+      User = user;
+      Group = group;
       WorkingDirectory = dataDir;
       StateDirectory = "stricknani";
       StateDirectoryMode = "0750";
