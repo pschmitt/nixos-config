@@ -35,6 +35,9 @@ eval *params:
 eval-hm *params:
   ./nix.sh eval --home-manager {{params}}
 
+nix-update *args:
+  ./scripts/nix-update.sh {{args}}
+
 deploy host='' *args:
   #!/usr/bin/env bash
   set -euxo pipefail
