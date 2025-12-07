@@ -11,6 +11,8 @@ let
 in
 {
   bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
+  cdpcurl = pkgs.callPackage ./cdpcurl { };
+  native-client = pkgs.callPackage ./native-client { };
   custom-keymaps = pkgs.callPackage ./custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./docker-compose-wrapper { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
@@ -20,25 +22,22 @@ in
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ketall = pkgs.callPackage ./ketall { };
-  ldifj = pkgs.callPackage ./ldifj { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   linkding-cli = pkgs.callPackage ./linkding-cli { };
   luks-mount = pkgs.callPackage ./luks-mount { };
   mmonit = pkgs.callPackage ./mmonit { };
   oci-consistent-device-naming = pkgs.callPackage ./oci-consistent-device-naming { };
-  oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
-
-  # OBS Studio
-  # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
-  # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
-
+  oracle-cloud-agent = pkgs.callPackage ./oracle-cloud-agent { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
-  tmux-slay = pkgs.callPackage ./tmux-slay { };
   udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
   waypoint = pkgs.callPackage ./waypoint { };
   withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
+
+  # custom packages, that should be flakes
+  ldifj = pkgs.callPackage ./ldifj { };
+  tmux-slay = pkgs.callPackage ./tmux-slay { };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
@@ -48,9 +47,11 @@ in
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
+  # OBS Studio
+  # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
+  # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
+
   # Lab
-  cdpcurl = pkgs.callPackage ./cdpcurl { };
-  native-client = pkgs.callPackage ./native-client { };
   osc = pkgs.callPackage ./osc { };
   davcli = pkgs.callPackage ./davcli { };
   hints = pkgs.callPackage ./hints { };
