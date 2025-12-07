@@ -18,4 +18,6 @@
   ];
 
   virtualisation.oci-containers.backend = lib.mkForce "podman";
+
+  users.groups.media = { };
 }

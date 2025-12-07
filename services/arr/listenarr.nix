@@ -14,7 +14,6 @@ in
 {
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 1001 1001 - -"
-    "d ${transmissionDownloadDir} 0770 transmission transmission - -"
     "d ${audiobooksDir} 0755 1001 1001 - -"
   ];
 
