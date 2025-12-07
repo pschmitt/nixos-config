@@ -39,7 +39,23 @@ discover_packages() {
   local target_system="$1"
 
   nix eval --json ".#packages.${target_system}" --apply builtins.attrNames |
-    jq -er '.[]' | grep -Ev '^(ComicCode|MonoLisa|oracle-cloud-agent)'
+    jq -r '.[]'
+}
+
+is_ignored_package() {
+  local package_name="$1"
+  shift
+  local ignored
+
+  for ignored in "$@"
+  do
+    if [[ "$ignored" == "$package_name" ]]
+    then
+      return 0
+    fi
+  done
+
+  return 1
 }
 
 run_update() {
@@ -58,18 +74,21 @@ run_update() {
   fi
 
   echo "Updating ${package_name} for ${target_system}" >&2
-  nix run nixpkgs#nix-update -- "${args[@]}"
+  # FIXME This seems to have no effect?
+  export NIXPKGS_ALLOW_UNFREE=1
+  nix run --impure nixpkgs#nix-update -- "${args[@]}"
 }
 
 main() {
   local -a packages=()
-  local system
   local repo_root
   local build_flag
   local commit_flag
   local fail_fast
   local list_only
   local system="x86_64-linux"
+  local ignore_config_path
+  local -a ignored_packages
 
   while [[ $# -gt 0 ]]
   do
@@ -125,10 +144,33 @@ main() {
   repo_root=$(resolve_repo_root)
   cd "$repo_root"
 
+  ignore_config_path="$repo_root/pkgs/nix-update.json"
+
+  if [[ -f "$ignore_config_path" ]]
+  then
+    mapfile -t ignored_packages < <(jq -r '.ignoredPackages // [] | .[]' "$ignore_config_path")
+  fi
+
   if [[ ${#packages[@]} -eq 0 ]]
   then
     mapfile -t packages < <(discover_packages "$system")
   fi
+
+  local -a filtered_packages
+  local pkg
+
+  for pkg in "${packages[@]}"
+  do
+    if is_ignored_package "$pkg" "${ignored_packages[@]}"
+    then
+      echo "Skipping ignored package: $pkg" >&2
+      continue
+    fi
+
+    filtered_packages+=("$pkg")
+  done
+
+  packages=("${filtered_packages[@]}")
 
   if [[ -n ${list_only:-} ]]
   then
