@@ -23,7 +23,7 @@ buildGoModule rec {
   ];
 
   meta = {
-    description = "";
+    description = "curl-like tool with CDP request signing";
     homepage = "https://github.com/coinbase/cdpcurl";
     # NOTE There is no license file in the repository as of 2025-03-15
     # https://github.com/coinbase/cdpcurl/issues/39
