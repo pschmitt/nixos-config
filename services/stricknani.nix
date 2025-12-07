@@ -17,10 +17,18 @@ in
   sops.secrets."stricknani/secretKey" = {
     inherit (config.custom) sopsFile;
   };
+  sops.secrets."stricknani/initialAdmin/password" = {
+    inherit (config.custom) sopsFile;
+  };
+  sops.secrets."stricknani/initialAdmin/username" = {
+    inherit (config.custom) sopsFile;
+  };
 
   sops.templates."${envFileName}" = {
     content = ''
       SECRET_KEY="${config.sops.placeholder."stricknani/secretKey"}"
+      INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
+      INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
     '';
     owner = "stricknani";
     group = "stricknani";
