@@ -1,8 +1,8 @@
 # Repository Guidelines
 
 ## Environment preparation
-- Before invoking the `nix` CLI inside this repository, run `source /etc/profile.d/nix.sh` to make the command available in the container environment.
-- After sourcing, verify the installation with `nix --version` if needed.
+- Before invoking the `nix` CLI inside this repository, run `source /etc/profile.d/nix.sh` **only when working in the cloud environment**. Do not source it when running from the Codex CLI or GitHub Copilot context.
+- After sourcing (cloud only), verify the installation with `nix --version` if needed.
 
 ## Deployment
 - Do not *EVER* commit or push changes from this environment.
