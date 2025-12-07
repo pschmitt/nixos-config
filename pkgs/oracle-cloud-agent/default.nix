@@ -11,7 +11,14 @@
 
 stdenv.mkDerivation rec {
   pname = "oracle-cloud-agent";
-  version = "1.53.0";
+  # Version metadata is tracked in ./sources.json to keep the updater simple.
+  # The update script rewrites that file; default.nix just reads it.
+  inherit (builtins.fromJSON (builtins.readFile ./sources.json))
+    version
+    release
+    hashAarch64
+    hashX86_64
+    ;
 
   # NOTE the Oracle Cloud Agent is available from the Oracle Linux yum repo
   # But this is not a public repo, so we have to download the RPMs manually
@@ -25,16 +32,16 @@ stdenv.mkDerivation rec {
   src = fetchurl {
     url =
       if stdenv.isAarch64 then
-        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-1.53.0-3.el9.aarch64.rpm"
+        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-${version}-${release}.aarch64.rpm"
       else if stdenv.isx86_64 then
-        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-1.53.0-3.el9.x86_64.rpm"
+        "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-${version}-${release}.x86_64.rpm"
       else
         throw "Unsupported platform";
     hash =
       if stdenv.isAarch64 then
-        "sha256-1KxiVWRVQ4w0MW/TRD0iWg/WJDqfmIq/5navUY3I/Pw="
+        hashAarch64
       else if stdenv.isx86_64 then
-        "sha256-YpKGS+WGTUOgkCJzdWaeU0EJlSZwxFQPsjObmHa+euQ="
+        hashX86_64
       else
         throw "Unsupported platform";
   };
@@ -87,6 +94,8 @@ stdenv.mkDerivation rec {
     # /usr/lib holds usr/lib/python3.9/site-packages/dnf-plugins/osmsplugin.py
     rm -rf $out/var $out/etc/systemd $out/etc/yum $out/usr/lib
   '';
+
+  passthru.updateScript = ./update.sh;
 
   meta = with lib; {
     description = "Oracle Cloud Agent";

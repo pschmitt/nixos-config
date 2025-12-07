@@ -8,7 +8,8 @@ Usage: nix-update.sh [OPTIONS]
 
 Options:
   -p, --package NAME   Update only the specified package (can be repeated)
-  -s, --system NAME    Target system for flake evaluation (default: x86_64-linux)
+  -s, --system NAME    Target system for flake evaluation (can be repeated; default: x86_64-linux)
+  --no-update-script   Do not invoke passthru.updateScript even if present
   --build              Build each package after updating
   --commit             Let nix-update commit individual updates
   --list               Print the package list and exit
@@ -58,12 +59,49 @@ is_ignored_package() {
   return 1
 }
 
+has_update_script() {
+  local package_name="$1"
+  local target_system="$2"
+  local key="${package_name}@${target_system}"
+  local result
+
+  if [[ -n ${package_has_update_script[$key]:-} ]]
+  then
+    [[ "${package_has_update_script[$key]}" == "1" ]]
+    return
+  fi
+
+  if ! result=$(
+    nix eval --json ".#packages.${target_system}.${package_name}" \
+      --apply 'p: if p ? passthru && p.passthru ? updateScript then true else false' 2>/dev/null
+  )
+  then
+    echo "Warning: could not detect passthru.updateScript for ${package_name} (${target_system}); continuing without." >&2
+    package_has_update_script[$key]=0
+    return 1
+  fi
+
+  if [[ "$result" == "true" ]]
+  then
+    package_has_update_script[$key]=1
+    return 0
+  fi
+
+  package_has_update_script[$key]=0
+  return 1
+}
+
 run_update() {
   local package_name="$1"
   local target_system="$2"
 
   # NOTE We need to set pure-eval to false to allow building nonfree pkgs
   local args=(--flake "$package_name" --format --option pure-eval false)
+
+  if [[ -n ${use_update_script:-} ]] && has_update_script "$package_name" "$target_system"
+  then
+    args+=(--use-update-script)
+  fi
 
   if [[ -n ${build_flag:-} ]]
   then
@@ -88,9 +126,12 @@ main() {
   local commit_flag
   local fail_fast
   local list_only
-  local system="x86_64-linux"
+  local -a systems=()
   local ignore_config_path
   local -a ignored_packages
+  local -A package_has_update_script=()
+  local primary_system
+  local use_update_script=1
 
   while [[ $# -gt 0 ]]
   do
@@ -112,7 +153,7 @@ main() {
           usage >&2
           exit 2
         fi
-        system="$2"
+        systems+=("$2")
         shift 2
         ;;
       -f|--fail|--fail-fast)
@@ -131,6 +172,10 @@ main() {
         list_only=1
         shift
         ;;
+      --no-update-script)
+        use_update_script=
+        shift
+        ;;
       -h|--help)
         usage
         exit 0
@@ -143,8 +188,19 @@ main() {
     esac
   done
 
+  if [[ ${#systems[@]} -eq 0 ]]
+  then
+    systems=("x86_64-linux")
+  fi
+
   repo_root=$(resolve_repo_root)
   cd "$repo_root"
+
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    # shellcheck disable=SC1091
+    source /etc/profile.d/nix.sh
+  fi
 
   ignore_config_path="$repo_root/pkgs/nix-update.json"
 
@@ -155,7 +211,8 @@ main() {
 
   if [[ ${#packages[@]} -eq 0 ]]
   then
-    mapfile -t packages < <(discover_packages "$system")
+    primary_system="${systems[0]}"
+    mapfile -t packages < <(discover_packages "$primary_system")
   fi
 
   local -a filtered_packages
@@ -182,22 +239,26 @@ main() {
 
   if [[ ${#packages[@]} -eq 0 ]]
   then
-    echo "No packages found for system '${system}'" >&2
+    echo "No packages found for system(s) '${systems[*]}'" >&2
     exit 1
   fi
 
   local pkg
+  local system
   for pkg in "${packages[@]}"
   do
-    if ! run_update "$pkg" "$system"
-    then
-      echo "Failed to update package: $pkg" >&2
-
-      if [[ -n ${fail_fast:-} ]]
+    for system in "${systems[@]}"
+    do
+      if ! run_update "$pkg" "$system"
       then
-        return 1
+        echo "Failed to update package: $pkg (${system})" >&2
+
+        if [[ -n ${fail_fast:-} ]]
+        then
+          return 1
+        fi
       fi
-    fi
+    done
   done
 }
 
