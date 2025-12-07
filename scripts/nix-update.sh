@@ -61,20 +61,22 @@ is_ignored_package() {
 run_update() {
   local package_name="$1"
   local target_system="$2"
-  local args=("--flake" "${package_name}")
+
+  # NOTE We need to set pure-eval to false to allow building nonfree pkgs
+  local args=(--flake "$package_name" --format --option pure-eval false)
 
   if [[ -n ${build_flag:-} ]]
   then
-    args+=("--build")
+    args+=(--build)
   fi
 
   if [[ -n ${commit_flag:-} ]]
   then
-    args+=("--commit")
+    args+=(--commit)
   fi
 
   echo "Updating ${package_name} for ${target_system}" >&2
-  # FIXME This seems to have no effect?
+
   export NIXPKGS_ALLOW_UNFREE=1
   nix run --impure nixpkgs#nix-update -- "${args[@]}"
 }
