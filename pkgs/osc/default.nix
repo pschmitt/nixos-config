@@ -6,16 +6,16 @@
 
 buildGoModule rec {
   pname = "osc";
-  version = "0.4.3";
+  version = "0.4.8";
 
   src = fetchFromGitHub {
     owner = "theimpostor";
     repo = "osc";
     rev = "v${version}";
-    hash = "sha256-KGB7mizex4RSkxlaeikS1BEzkNkLAlhSM7J7upbDxQI=";
+    hash = "sha256-XVFNcQH4MFZKmuOD9b3t320/hE+s+3igjlyHBWGKr0Q=";
   };
 
-  vendorHash = "sha256-VEzVd1LViMtqhQaltvGuupEemV/2ewMuVYjGbKOi0iw=";
+  vendorHash = "sha256-k+4m9y7oAZqTr8S0zldJk5FeI3+/nN9RggKIfiyxzDI=";
 
   ldflags = [
     "-s"
