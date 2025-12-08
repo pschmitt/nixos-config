@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 let
   hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
 in
