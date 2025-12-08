@@ -24,7 +24,7 @@ in
       };
       switch = {
         enable = true;
-        modifier = "super";
+        modifier = "alt";
         filter_by = [ ];
       };
     };
