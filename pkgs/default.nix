@@ -52,7 +52,6 @@ in
   # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
 
   # Lab
-  osc = pkgs.callPackage ./osc { };
   davcli = pkgs.callPackage ./davcli { };
   hints = pkgs.callPackage ./hints { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
