@@ -56,5 +56,6 @@ in
   # Lab
   davcli = pkgs.callPackage ./davcli { };
   hints = pkgs.callPackage ./hints { };
+  qs-hyprview = pkgs.callPackage ./qs-hyprview { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 }
