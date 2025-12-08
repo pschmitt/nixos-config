@@ -11,10 +11,10 @@ let
 in
 {
   # local pkgs
-  bluez-headset-callback = pkgs.callPackage ./bluez-headset-callback { };
-  custom-keymaps = pkgs.callPackage ./custom-keymaps { };
-  docker-compose-wrapper = pkgs.callPackage ./docker-compose-wrapper { };
-  udev-custom-callback = pkgs.callPackage ./udev-custom-callback { };
+  bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
+  custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
+  docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
+  udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
