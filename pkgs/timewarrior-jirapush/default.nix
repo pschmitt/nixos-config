@@ -8,13 +8,13 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "timewarrior-jirapush";
-  version = "0.4.1";
+  version = "0.6.0";
 
   src = fetchFromGitLab {
     owner = "FoxAmes";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-y19qmXXyIV2KUsTNa16gkw7OcqPQy4d1nxFB6WSn8jY=";
+    hash = "sha256-mQH3w3ke6biaJuVPQ7aDSo1BxN1kGvQDl5cz3aYFErk=";
   };
 
   nativeBuildInputs = [
@@ -23,7 +23,7 @@ rustPlatform.buildRustPackage rec {
   ];
   buildInputs = [ openssl ];
 
-  cargoHash = "sha256-2dMl85p3Z1Fd+2ET2iOBeU3J4wnBniGphQU2hZP0vtA=";
+  cargoHash = "sha256-8HQPeaH/wWIBZvu/hmgwduXaFfLHXzVzfAFXW9844AY=";
 
   meta = with lib; {
     description = "A configurable TimeWarrior Extension that uploads timewarrior intervals to Jira as work logs.";
