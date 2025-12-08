@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -60,7 +61,7 @@
     htop
     jq
     tmux
-    tmux-slay
+    inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
   users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
