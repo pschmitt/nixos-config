@@ -1957,15 +1957,15 @@
       "locked": {
         "lastModified": 1765185124,
         "narHash": "sha256-Uh+tfsLsu1jcOkl2li1hz+t5PpRV1qKDR84ITGi7C4s=",
-        "ref": "refs/heads/main",
+        "owner": "pschmitt",
+        "repo": "ldifj",
         "rev": "7482e78985fa12a18cc6c04b4d1a455a613d87f5",
-        "revCount": 18,
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/ldifj.git"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/ldifj.git"
+        "owner": "pschmitt",
+        "repo": "ldifj",
+        "type": "github"
       }
     },
     "lib-aggregate": {
@@ -2014,15 +2014,15 @@
       "locked": {
         "lastModified": 1765185171,
         "narHash": "sha256-7BHnbta66BPsqny8Dw0S5nyc5gCWOiMi5iyNzUsyDro=",
-        "ref": "refs/heads/main",
+        "owner": "pschmitt",
+        "repo": "luks-mount.sh",
         "rev": "a4c157612812aed2afdf4389600264ac3138528c",
-        "revCount": 15,
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/luks-mount.sh.git"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/luks-mount.sh.git"
+        "owner": "pschmitt",
+        "repo": "luks-mount.sh",
+        "type": "github"
       }
     },
     "luks-ssh-unlock": {
@@ -3354,15 +3354,15 @@
       "locked": {
         "lastModified": 1765185044,
         "narHash": "sha256-qK8zNcteolt7ueWSnOaGmPIVrx6uDBw1+rJp1UZ5R3c=",
-        "ref": "refs/heads/main",
+        "owner": "pschmitt",
+        "repo": "tmux-slay",
         "rev": "581a0abb0e68c96cc1cefeb10021b094a415affe",
-        "revCount": 51,
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/tmux-slay.git"
+        "type": "github"
       },
       "original": {
-        "type": "git",
-        "url": "file:///home/pschmitt/devel/private/pschmitt/tmux-slay.git"
+        "owner": "pschmitt",
+        "repo": "tmux-slay",
+        "type": "github"
       }
     },
     "treefmt-nix": {
