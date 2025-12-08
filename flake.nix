@@ -177,17 +177,17 @@
     };
 
     tmux-slay = {
-      url = "git+file:///home/pschmitt/devel/private/pschmitt/tmux-slay.git";
+      url = "github:pschmitt/tmux-slay";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     luks-mount = {
-      url = "git+file:///home/pschmitt/devel/private/pschmitt/luks-mount.sh.git";
+      url = "github:pschmitt/luks-mount.sh";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     ldifj = {
-      url = "git+file:///home/pschmitt/devel/private/pschmitt/ldifj.git";
+      url = "github:pschmitt/ldifj";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
