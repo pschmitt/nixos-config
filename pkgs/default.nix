@@ -36,9 +36,6 @@ in
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
 
   # custom packages, that should be flakes
-  ldifj = pkgs.callPackage ./ldifj { };
-  luks-mount = pkgs.callPackage ./luks-mount { };
-  tmux-slay = pkgs.callPackage ./tmux-slay { };
 
   # oci pkgs
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };

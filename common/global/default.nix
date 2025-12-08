@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -52,7 +53,7 @@
     pinentry-curses
     pwgen
     tmux
-    tmux-slay
+    inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
     yank-osc52
 
     # sensors and devices
@@ -90,7 +91,7 @@
     # fs
     cryptsetup
     exfatprogs
-    luks-mount
+    inputs.luks-mount.packages.${pkgs.stdenv.hostPlatform.system}.default
     xfsprogs
 
     # python
