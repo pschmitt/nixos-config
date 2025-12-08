@@ -1,11 +1,12 @@
 {
   "ignoredPackages": [
     "bluez-headset-callback",
-    "ComicCode",
-    "ComicCodeNF",
     "custom-keymaps",
     "davcli",
     "docker-compose-wrapper",
+
+    "ComicCode",
+    "ComicCodeNF",
     "MonoLisa",
     "MonoLisaNF",
     "MonoLisa-Custom",
