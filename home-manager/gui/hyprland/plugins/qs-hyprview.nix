@@ -19,7 +19,7 @@
   };
 
   wayland.windowManager.hyprland.settings = {
-    bind = [ "SUPER, g, exec, ${pkgs.qs-hyprview}/bin/qs-hyprview-ipc smartgrid" ];
+    bind = [ "$mod, tab, exec, ${pkgs.qs-hyprview}/bin/qs-hyprview-ipc smartgrid" ];
 
     # dim around the preview
     decoration = {
