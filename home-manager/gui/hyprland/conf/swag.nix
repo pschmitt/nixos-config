@@ -48,6 +48,7 @@
             "borderangle, 1, 8, default"
             "fade, 1, 3, default"
             "workspaces, 1, 2, default"
+            "layersIn, 1, 1.5, default, popin"
           ];
         };
 

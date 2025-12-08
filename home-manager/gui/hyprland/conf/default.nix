@@ -1,6 +1,6 @@
 {
   imports = [
-    ./alt-tab.nix
+    # ./alt-tab.nix
     ./autostart.nix
     ./env.nix
     ./host-specific.nix
