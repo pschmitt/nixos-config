@@ -176,6 +176,21 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    tmux-slay = {
+      url = "git+file:///home/pschmitt/devel/private/pschmitt/tmux-slay.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    luks-mount = {
+      url = "git+file:///home/pschmitt/devel/private/pschmitt/luks-mount.sh.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    ldifj = {
+      url = "git+file:///home/pschmitt/devel/private/pschmitt/ldifj.git";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     neovim-nightly = {
       url = "github:nix-community/neovim-nightly-overlay";
       inputs.nixpkgs.follows = "nixpkgs";

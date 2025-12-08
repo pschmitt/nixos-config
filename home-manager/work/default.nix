@@ -1,5 +1,6 @@
 {
   pkgs,
+  inputs,
   ...
 }:
 {
@@ -22,7 +23,7 @@
     master.azure-cli
     master.azure-cli-extensions.ad
     master.azure-cli-extensions.fzf
-    ldifj
+    inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default
     openldap
 
     # misc
