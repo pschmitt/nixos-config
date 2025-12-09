@@ -8,6 +8,7 @@
     ./gdm.nix
     ./wacom.nix
     ../../common/work/elgato-stream-deck.nix
+    ../../common/work/crowdstrike-falcon-sensor.nix
 
     ../../common/global
     ../../common/gui

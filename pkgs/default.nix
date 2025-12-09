@@ -3,6 +3,7 @@
 
 {
   pkgs ? (import ../nixpkgs.nix) { },
+  inputs ? null,
 }:
 
 let
@@ -58,4 +59,6 @@ in
   hints = pkgs.callPackage ./hints { };
   qs-hyprview = pkgs.callPackage ./qs-hyprview { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
+
+  falcon-sensor-wiit = pkgs.callPackage ./falcon-sensor-wiit { inherit inputs; };
 }

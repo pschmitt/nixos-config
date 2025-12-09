@@ -43,6 +43,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    falcon-sensor = {
+      url = "github:benley/falcon-sensor-nixos";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     # flake-registry = {
     #   url = "github:NixOS/flake-registry";
     #   flake = false;
@@ -381,7 +386,7 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
-          customPackages = import ./pkgs { inherit pkgs; };
+          customPackages = import ./pkgs { inherit pkgs inputs; };
         in
         customPackages
       );
