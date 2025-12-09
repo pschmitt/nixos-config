@@ -2,14 +2,6 @@
 
 set -euo pipefail
 
-# List of packages that have a 'proprietarySource' attribute
-PROPRIETARY_PACKAGES=(
-  "falcon-sensor-wiit"
-  "ComicCode"
-  "MonoLisa"
-  "MonoLisa-Custom"
-)
-
 usage() {
   cat <<USAGE
 Usage: $(basename "$0") [--username USER] [--password PASS] [--auth USER:PASS]
@@ -21,18 +13,34 @@ Environment variables:
 USAGE
 }
 
+# List of packages that have a 'proprietarySource' attribute
+get_proprietary_packages() {
+  # shellcheck disable=SC2016
+  NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure --expr '
+    let
+      flake = builtins.getFlake (builtins.toString ./.);
+      pkgs = flake.packages.x86_64-linux;
+      hasProprietarySource = n:
+        let res = builtins.tryEval (pkgs.${n}.proprietarySource or null);
+        in res.success && res.value != null;
+      proprietaryPkgs = builtins.filter hasProprietarySource (builtins.attrNames pkgs);
+    in
+      proprietaryPkgs
+  ' | jq -r '.[]'
+}
+
 fetch_package_source() {
   local pkg="$1"
   local json
 
-  echo "Checking $pkg..."
+  echo "Processing $pkg"
 
   # Evaluate the proprietarySource attribute
   # Gotta use --impure and NIXPKGS_ALLOW_UNFREE=1 here!
   if ! json=$(NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure \
     ".#packages.x86_64-linux.$pkg.proprietarySource")
   then
-    echo "  Failed to evaluate proprietarySource for $pkg (or it doesn't exist)"
+    echo "Failed to evaluate proprietarySource for $pkg (or it doesn't exist)"
     return 1
   fi
 
@@ -43,20 +51,17 @@ fetch_package_source() {
 
   if [[ "$name" == "null" || "$url" == "null" || "$sha256" == "null" ]]
   then
-    echo "  Invalid proprietarySource metadata for $pkg"
+    echo "Invalid proprietarySource metadata for $pkg"
     return 1
   fi
 
-  # Simple check: if we don't have credentials, we can't download.
+  # Simple check: if we don't have credentials, we might not be able to download.
   if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
   then
-     # If we can't download, we hope it's already there.
-     # We can't easily verify without the file content or complex nix queries.
-     echo "  ⚠️  BLOBS_BASIC_AUTH not set, skipping download check for $name"
-     return 0
+     echo "⚠️ BLOBS_BASIC_AUTH not set, download might fail for $name"
   fi
 
-  echo "  Downloading $name from $url..."
+  echo "Downloading $name from $url"
 
   local tmp_file
   tmp_file="$(mktemp "${name}.XXXXXX")"
@@ -68,26 +73,26 @@ fetch_package_source() {
     --retry-delay 2
     --silent
     --show-error
-    --user "$BLOBS_BASIC_AUTH"
+    --user "${BLOBS_BASIC_AUTH:-:}"
   )
 
   if ! curl "${curl_args[@]}" "$url" --output "$tmp_file"
   then
-    echo "  ❌ Failed to download $url"
+    echo "❌ Failed to download $url"
     rm -f "$tmp_file"
     return 1
   fi
 
-  echo "  Adding to Nix store..."
+  echo "Adding $tmp_file to Nix store"
   if ! nix-store --add-fixed sha256 "$tmp_file"
   then
-    echo "  ❌ Failed to add to Nix store"
+    echo "❌ Failed to add to Nix store"
     rm -f "$tmp_file"
     return 1
   fi
 
   rm -f "$tmp_file"
-  echo "  ✅ Successfully added $name"
+  echo "✅ Successfully added $name"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
@@ -138,6 +143,15 @@ then
 
       BLOBS_BASIC_AUTH="${BLOBS_USERNAME}:${BLOBS_PASSWORD}"
     fi
+  fi
+
+  echo "Discovering proprietary packages..."
+  mapfile -t PROPRIETARY_PACKAGES < <(get_proprietary_packages)
+
+  if [[ ${#PROPRIETARY_PACKAGES[@]} -eq 0 ]]
+  then
+    echo "No proprietary packages found."
+    exit 0
   fi
 
   for PKG in "${PROPRIETARY_PACKAGES[@]}"
