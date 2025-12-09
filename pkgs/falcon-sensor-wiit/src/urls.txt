@@ -1,1 +1,0 @@
-falcon-sensor_7.29.0-18202_amd64.deb https://blobs.brkn.lol/private/crowdstrike-falcon/falcon-sensor_7.29.0-18202_amd64.deb

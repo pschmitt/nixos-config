@@ -1,3 +1,0 @@
-552e644f329de0c8bf90eebc8c4a0bbefcefec0a055ecd5e00df573c9580292b  ILT-220422-478c9f6.zip
-b7ae88b7bf14eaa1ffda18036bd12274d39cc5faa460e1ab67831be283bf2f0d  MonoLisa-Plus-1.808-otf.zip
-b705a9d6c140c7a4d84fd526335bc857c7d3bfad42d84d11c1b850f86ad61338  MonoLisa-Plus-Custom-1.808.zip
