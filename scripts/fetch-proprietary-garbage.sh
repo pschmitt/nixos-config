@@ -83,6 +83,9 @@ fetch_package_source() {
     return 1
   fi
 
+  echo "nix hash of our downloaded file (${tmp_file}):"
+  nix hash file --type sha256 "$tmp_file"
+
   echo "Adding $tmp_file to Nix store"
   if ! nix-store --add-fixed sha256 "$tmp_file"
   then
