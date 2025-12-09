@@ -165,6 +165,26 @@
         "type": "github"
       }
     },
+    "falcon-sensor": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1761936734,
+        "narHash": "sha256-FfNO8W4C1ievoubu+uVFT68bF2ABY7/Cc+a4O/rC+kM=",
+        "owner": "benley",
+        "repo": "falcon-sensor-nixos",
+        "rev": "b4f646ea6ee7136b1edb3eeb02cc1357a74363d9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "benley",
+        "repo": "falcon-sensor-nixos",
+        "type": "github"
+      }
+    },
     "fenix": {
       "inputs": {
         "nixpkgs": [
@@ -2649,6 +2669,7 @@
         "catppuccin": "catppuccin",
         "disko": "disko",
         "docker-compose-bulk": "docker-compose-bulk",
+        "falcon-sensor": "falcon-sensor",
         "fenix": "fenix",
         "firefox-addons": "firefox-addons",
         "flatpaks": "flatpaks",

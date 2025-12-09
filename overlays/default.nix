@@ -4,7 +4,10 @@
   additions =
     final: _prev:
     let
-      customPackages = import ../pkgs { pkgs = final; };
+      customPackages = import ../pkgs {
+        pkgs = final;
+        inherit inputs;
+      };
     in
     customPackages
     // {

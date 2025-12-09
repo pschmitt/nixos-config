@@ -24,3 +24,4 @@ data
 
 # Proprietary drivers (pkgs.libfprint-focaltech)
 libfprint*.install
+*.deb
