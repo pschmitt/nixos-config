@@ -31,7 +31,7 @@ file_url() {
   local default_url="${BLOBS_URL%/}/${file}"
   
   if [[ -f ./urls.txt ]]; then
-    awk -v file="$file" -v default="$default_url" '$1 == file { print $2; exit 0 } END { if (NR==0 || !found) print default }' ./urls.txt
+    awk -v file="$file" -v def_url="$default_url" '$1 == file { print $2; exit 0 } END { if (NR==0 || !found) print def_url }' ./urls.txt
   else
     echo "$default_url"
   fi
