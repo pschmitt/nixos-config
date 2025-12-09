@@ -8,7 +8,7 @@ then
 
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
-  if ! ./fetch-fonts.sh
+  if ! ../../../scripts/fetch-proprietary-garbage.sh .
   then
     echo "Failed to fetch font files" >&2
     exit 1
