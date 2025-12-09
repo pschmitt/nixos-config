@@ -250,10 +250,15 @@ main() {
     mapfile -t proprietary_packages < <(get_proprietary_packages "$primary_system")
   fi
 
-  if [[ ${#packages[@]} -eq 0 ]]
-  then
-    mapfile -t packages < <(discover_packages "$primary_system")
-  fi
+  case "${#packages[@]}" in
+    0)
+      mapfile -t packages < <(discover_packages "$primary_system")
+      ;;
+    1)
+      # we should return 1 when we try to update a single pkg and it fails
+      fail_fast=1
+      ;;
+  esac
 
   local -a filtered_packages
   local pkg
@@ -302,7 +307,7 @@ main() {
       then
         echo "Failed to update package: $pkg (${system})" >&2
 
-        if [[ -n ${fail_fast:-} || ${#packages[@]} -eq 1 ]]
+        if [[ -n ${fail_fast:-} ]]
         then
           return 1
         fi
