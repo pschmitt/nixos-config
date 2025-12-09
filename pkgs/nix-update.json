@@ -8,9 +8,10 @@
     "ComicCode",
     "ComicCodeNF",
     "MonoLisa",
-    "MonoLisaNF",
     "MonoLisa-Custom",
     "MonoLisa-CustomNF",
-    "falcon-sensor-wiit"
+    "MonoLisaNF",
+    "falcon-sensor-wiit",
+    "libfprint-focaltech"
   ]
 }
