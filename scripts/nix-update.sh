@@ -64,7 +64,7 @@ has_update_script() {
   local result
   if ! result=$(
     nix eval --json ".#packages.${target_system}.${package_name}" \
-      --apply 'p: if p ? passthru && p.passthru ? updateScript then true else false'
+      --apply 'p: if p ? passthru && p.passthru ? updateScript then (let script = p.passthru.updateScript; in if builtins.isList script && builtins.length script > 0 then (let name = builtins.baseNameOf (builtins.head script); in name != "nix-update") else if builtins.isString script || builtins.isPath script then (let name = builtins.baseNameOf script; in name != "nix-update") else false) else false'
   )
   then
     echo "Warning: could not detect passthru.updateScript for ${package_name} (${target_system}); continuing without." >&2
