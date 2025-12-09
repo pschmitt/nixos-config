@@ -268,8 +268,11 @@ main() {
 
     if [[ -z ${include_proprietary:-} ]] && is_proprietary_package "$pkg" "${proprietary_packages[@]}"
     then
-      echo "Skipping proprietary package: $pkg" >&2
-      continue
+      if ! has_update_script "$pkg" "$primary_system"
+      then
+        echo "Skipping proprietary package (no update script): $pkg" >&2
+        continue
+      fi
     fi
 
     filtered_packages+=("$pkg")
