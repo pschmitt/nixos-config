@@ -23,6 +23,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     hash = "sha256-Amfv7Kh+oWc3IDZih6E5sU8gqc3gOZdDbr8B67LjkYU=";
   };
 
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
+
   dontConfigure = true;
   dontBuild = true;
 
@@ -53,14 +61,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
         ]
       }
   '';
-
-  passthru.updateScript = nix-update-script {
-    extraArgs = [
-      "--flake"
-      "--version"
-      "branch"
-    ];
-  };
 
   meta = with lib; {
     description = "Hyprland event loader shim and helper scripts";

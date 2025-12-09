@@ -19,6 +19,11 @@ stdenv.mkDerivation rec {
     fetchSubmodules = true;
   };
 
+  passthru.updateScript = gitUpdater {
+    rev-prefix = "";
+    url = "https://gitlab.com/dom/happy-hacking-gnu.git";
+  };
+
   nativeBuildInputs = [
     cmake
     udev
@@ -28,11 +33,6 @@ stdenv.mkDerivation rec {
     mkdir -p "$out/bin"
     cp hhg "$out/bin"
   '';
-
-  passthru.updateScript = gitUpdater {
-    rev-prefix = "";
-    url = "https://gitlab.com/dom/happy-hacking-gnu.git";
-  };
 
   meta = with lib; {
     description = "A free, open-source alternative to the HHKB Keymap Tool provided by PFU";

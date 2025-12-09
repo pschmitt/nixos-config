@@ -54,6 +54,8 @@ stdenv.mkDerivation rec {
   #   else
   #     throw "Unsupported platform";
 
+  passthru.updateScript = ./update.sh;
+
   buildInputs = [
     autoPatchelfHook
     gawk
@@ -94,8 +96,6 @@ stdenv.mkDerivation rec {
     # /usr/lib holds usr/lib/python3.9/site-packages/dnf-plugins/osmsplugin.py
     rm -rf $out/var $out/etc/systemd $out/etc/yum $out/usr/lib
   '';
-
-  passthru.updateScript = ./update.sh;
 
   meta = with lib; {
     description = "Oracle Cloud Agent";

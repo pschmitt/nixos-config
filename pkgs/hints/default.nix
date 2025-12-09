@@ -22,6 +22,14 @@ python3.pkgs.buildPythonApplication {
     hash = "sha256-zaD81dxx2zuDqu9WCkTebhNSO09uPACjd+MZ/SpD+vE=";
   };
 
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
+
   preBuild = ''
     export HOME="$out"
     export HINTS_EXPECTED_BIN_DIR="$out/bin"
@@ -55,14 +63,6 @@ python3.pkgs.buildPythonApplication {
 
   # Importing 'hints' can pull GI; leave empty to avoid headless import flakiness during build.
   pythonImportsCheck = [ ];
-
-  passthru.updateScript = nix-update-script {
-    extraArgs = [
-      "--flake"
-      "--version"
-      "branch"
-    ];
-  };
 
   meta = with lib; {
     description = "Keyboard-driven GUI navigation via on-screen hints";
