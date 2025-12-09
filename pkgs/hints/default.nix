@@ -7,18 +7,19 @@
   gtk3,
   gtk-layer-shell,
   grim,
+  nix-update-script,
 }:
 
 python3.pkgs.buildPythonApplication {
   pname = "hints";
-  version = "unstable-2025-09-27";
+  version = "0-unstable-2025-11-15";
   format = "setuptools";
 
   src = fetchFromGitHub {
     owner = "AlfredoSequeida";
     repo = "hints";
-    rev = "e5739a5d1b3603935ad463338fa8ef32d55f3f55";
-    hash = "sha256-02SWUH+HXiYwKGrGIu5T1W7mKtEMLjJvi8VOm+APJ5o=";
+    rev = "6dc66ba1481cb568dfa653a32cd1d1ea3970783c";
+    hash = "sha256-zaD81dxx2zuDqu9WCkTebhNSO09uPACjd+MZ/SpD+vE=";
   };
 
   preBuild = ''
@@ -54,6 +55,14 @@ python3.pkgs.buildPythonApplication {
 
   # Importing 'hints' can pull GI; leave empty to avoid headless import flakiness during build.
   pythonImportsCheck = [ ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
 
   meta = with lib; {
     description = "Keyboard-driven GUI navigation via on-screen hints";

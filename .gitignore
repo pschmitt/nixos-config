@@ -24,4 +24,8 @@ data
 
 # Proprietary drivers (pkgs.libfprint-focaltech)
 libfprint*.install
+# Proprietary debs (pkgs.falcon-sensor-wiit)
 *.deb
+
+# nix-update
+update-git-commits.txt
