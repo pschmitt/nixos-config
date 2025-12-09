@@ -29,6 +29,7 @@ nixos-remote *args:
 init-host *args:
   ./scripts/init-host-config.sh {{args}}
 
+alias fmt-nix := nixfmt
 nixfmt:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -44,6 +45,7 @@ nixfmt:
     echo "No .nix files to format"
   fi
 
+alias tofu-fmt := fmt-tofu
 fmt-tofu:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -77,17 +79,21 @@ deploy host='' *args:
     zhj nixos::rebuild "$@"
   fi
 
+alias iso := build-iso
 build-iso host='iso':
   ./scripts/build-installation-media.sh iso "{{host}}"
 
+alias rpi := build-rpi-img
 build-rpi-img host='pica4':
   ./scripts/build-installation-media.sh sd-image "{{host}}"
 
+alias fetch-blobs := fetch-proprietary-garbage
 fetch-proprietary-garbage:
   ./scripts/fetch-proprietary-garbage.sh
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
 
+alias tofu-deploy-all := tofu-yolo
 tofu-yolo host='' *args:
   zhj nixos::rebuild-all-from-rofl {{args}}
