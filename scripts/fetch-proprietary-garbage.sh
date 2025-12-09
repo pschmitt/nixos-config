@@ -2,62 +2,65 @@
 
 set -euo pipefail
 
-usage() {
-  cat <<'USAGE'
-Usage: fetch-proprietary-garbage.sh [DIRECTORY] [--base-url URL] [--username USER] [--password PASS] [--auth USER:PASS]
+# List of packages that have a 'proprietarySource' attribute
+PROPRIETARY_PACKAGES=(
+  "falcon-sensor-wiit"
+  "ComicCode"
+  "MonoLisa"
+  "MonoLisa-Custom"
+)
 
-Arguments:
-  DIRECTORY         Directory containing sha256sum.txt (default: current directory)
+usage() {
+  cat <<USAGE
+Usage: $(basename "$0") [--username USER] [--password PASS] [--auth USER:PASS]
 
 Environment variables:
-  BLOBS_URL         Default download endpoint (default: https://blobs.brkn.lol/private/fonts)
   BLOBS_BASIC_AUTH  Provide HTTP basic auth credentials directly (USER:PASS)
   BLOBS_USERNAME    Username part of the credentials
   BLOBS_PASSWORD    Password part of the credentials
 USAGE
 }
 
-list_files() {
-  awk '{ print $2 }' ./sha256sum.txt
-}
+fetch_package_source() {
+  local pkg="$1"
+  local json
 
-file_checksum() {
-  local file="$1"
-  awk -v file="$file" '$2 == file { print $1; exit 0 }' ./sha256sum.txt
-}
+  echo "Checking $pkg..."
 
-file_url() {
-  local file="$1"
-  local default_url="${BLOBS_URL%/}/${file}"
-
-  if [[ -f ./urls.txt ]]
+  # Evaluate the proprietarySource attribute
+  # Gotta use --impure and NIXPKGS_ALLOW_UNFREE=1 here!
+  if ! json=$(NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure \
+    ".#packages.x86_64-linux.$pkg.proprietarySource")
   then
-    awk -v file="$file" -v def_url="$default_url" '$1 == file { print $2; found=1; exit 0 } END { if (!found) print def_url }' ./urls.txt
-  else
-    echo "$default_url"
-  fi
-}
-
-file_is_valid() {
-  local file="$1"
-  local checksum="$2"
-
-  [[ -f "$file" ]] || return 1
-
-  if printf "%s  %s\n" "$checksum" "$file" | sha256sum --status --check -
-  then
-    return 0
+    echo "  Failed to evaluate proprietarySource for $pkg (or it doesn't exist)"
+    return 1
   fi
 
-  return 1
-}
+  local name url sha256
+  IFS=$'\t' read -r name url sha256 <<< "$(jq -er <<< "$json" '
+    [.name, .url, .sha256] | @tsv
+  ')"
 
-check_files() {
-  sha256sum -c ./sha256sum.txt "$@"
-}
+  if [[ "$name" == "null" || "$url" == "null" || "$sha256" == "null" ]]
+  then
+    echo "  Invalid proprietarySource metadata for $pkg"
+    return 1
+  fi
 
-fetch_files() {
-  local file checksum url tmp_file
+  # Simple check: if we don't have credentials, we can't download.
+  if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
+  then
+     # If we can't download, we hope it's already there.
+     # We can't easily verify without the file content or complex nix queries.
+     echo "  ⚠️  BLOBS_BASIC_AUTH not set, skipping download check for $name"
+     return 0
+  fi
+
+  echo "  Downloading $name from $url..."
+
+  local tmp_file
+  tmp_file="$(mktemp "${name}.XXXXXX")"
+
   local -a curl_args=(
     --fail
     --location
@@ -65,74 +68,33 @@ fetch_files() {
     --retry-delay 2
     --silent
     --show-error
-  )
-
-  if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
-  then
-    echo "BLOBS_BASIC_AUTH is required to download private files" >&2
-    return 1
-  fi
-
-  curl_args+=(
     --user "$BLOBS_BASIC_AUTH"
   )
 
-  for file in $(list_files)
-  do
-    checksum="$(file_checksum "$file")"
-    if [[ -z "$checksum" ]]
-    then
-      echo "No checksum found for $file" >&2
-      return 1
-    fi
+  if ! curl "${curl_args[@]}" "$url" --output "$tmp_file"
+  then
+    echo "  ❌ Failed to download $url"
+    rm -f "$tmp_file"
+    return 1
+  fi
 
-    if file_is_valid "$file" "$checksum"
-    then
-      continue
-    fi
+  echo "  Adding to Nix store..."
+  if ! nix-store --add-fixed sha256 "$tmp_file"
+  then
+    echo "  ❌ Failed to add to Nix store"
+    rm -f "$tmp_file"
+    return 1
+  fi
 
-    url="$(file_url "$file")"
-    echo "Downloading $file from $url..."
-
-    tmp_file="$(mktemp "${file}.XXXXXX")"
-    if ! curl "${curl_args[@]}" \
-      "$url" \
-      --output "$tmp_file"
-    then
-      rm -f "$tmp_file"
-      return 1
-    fi
-
-    mv "$tmp_file" "$file"
-
-    echo "Adding $file to Nix store..."
-    nix-store --add-fixed sha256 "$file"
-  done
-
-  check_files
-}
-
-process_directory() {
-  local dir="$1"
-  (
-    cd "$dir" || exit 1
-    if check_files --quiet --status 2>/dev/null
-    then
-      echo -e "\e[32m✅All archives present and accounted for in $dir\e[0m"
-      exit 0
-    fi
-    echo "Processing $dir"
-    fetch_files
-  )
+  rm -f "$tmp_file"
+  echo "  ✅ Successfully added $name"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  BLOBS_URL=${BLOBS_URL:-https://blobs.brkn.lol/private/fonts}
   BLOBS_USERNAME=${BLOBS_USERNAME:-}
   BLOBS_PASSWORD=${BLOBS_PASSWORD:-}
   BLOBS_AUTH=${BLOBS_AUTH:-}
-  TARGET_DIR=""
 
   while [[ -n "${1:-}" ]]
   do
@@ -140,10 +102,6 @@ then
       -h|--help)
         usage
         exit 0
-        ;;
-      --base-url)
-        BLOBS_URL="$2"
-        shift 2
         ;;
       --username)
         BLOBS_USERNAME="$2"
@@ -157,23 +115,13 @@ then
         BLOBS_AUTH="$2"
         shift 2
         ;;
-      -*)
+      *)
         echo "Unknown option: $1" >&2
         usage
         exit 1
         ;;
-      *)
-        TARGET_DIR="$1"
-        shift
-        ;;
     esac
   done
-
-  if [[ -z "$TARGET_DIR" ]]
-  then
-    SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
-    TARGET_DIR="$SCRIPT_DIR/../pkgs"
-  fi
 
   if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
   then
@@ -192,26 +140,8 @@ then
     fi
   fi
 
-  if [[ ! -d "$TARGET_DIR" ]]
-  then
-    echo "Directory not found: $TARGET_DIR" >&2
-    exit 1
-  fi
-
-  # Resolve to absolute path
-  TARGET_DIR="$(readlink -e "$TARGET_DIR")"
-
-  FOUND_FILES=""
-  while IFS= read -r -d '' CHECKSUM_FILE
+  for PKG in "${PROPRIETARY_PACKAGES[@]}"
   do
-    FOUND_FILES=1
-    DIR="$(dirname "$CHECKSUM_FILE")"
-    process_directory "$DIR"
-  done < <(find "$TARGET_DIR" -name sha256sum.txt -print0)
-
-  if [[ -z "$FOUND_FILES" ]]
-  then
-    echo "No sha256sum.txt files found in $TARGET_DIR or its subdirectories." >&2
-    exit 1
-  fi
+    fetch_package_source "$PKG"
+  done
 fi

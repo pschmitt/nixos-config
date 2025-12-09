@@ -13,14 +13,16 @@
 }:
 
 let
+  source = {
+    name = "falcon-sensor_7.29.0-18202_amd64.deb";
+    url = "https://blobs.brkn.lol/private/crowdstrike-falcon/falcon-sensor_7.29.0-18202_amd64.deb";
+    sha256 = "sha256-aTN4ca1C1L7wxjeOoEAPjuTWhew4V4oUhmg0yxBA2SY=";
+  };
+
   unwrapped = stdenv.mkDerivation {
     pname = "falcon-sensor-unwrapped";
     version = "7.29.0-18202";
-    src = requireFile {
-      name = "falcon-sensor_7.29.0-18202_amd64.deb";
-      url = "https://blobs.brkn.lol/private/crowdstrike-falcon/falcon-sensor_7.29.0-18202_amd64.deb";
-      sha256 = "sha256-aTN4ca1C1L7wxjeOoEAPjuTWhew4V4oUhmg0yxBA2SY=";
-    };
+    src = requireFile source;
 
     nativeBuildInputs = [
       dpkg
@@ -51,5 +53,7 @@ in
 wrapped.overrideAttrs (old: {
   passthru = (old.passthru or { }) // {
     inherit unwrapped;
+    # NOTE: This is required for us to be able to get the urls set programatically in the fetch-garbage script
+    proprietarySource = source;
   };
 })
