@@ -253,7 +253,7 @@ main() {
       then
         echo "Failed to update package: $pkg (${system})" >&2
 
-        if [[ -n ${fail_fast:-} ]]
+        if [[ -n ${fail_fast:-} || ${#packages[@]} -eq 1 ]]
         then
           return 1
         fi
