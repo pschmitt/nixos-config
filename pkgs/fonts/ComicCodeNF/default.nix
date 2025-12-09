@@ -15,7 +15,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "ComicCodeNF";
-  version = "478c9f6-lol";
+  version = "478c9f6";
 
   src = requireFile source;
   # NOTE: This is required for us to be able to get the urls programatically
