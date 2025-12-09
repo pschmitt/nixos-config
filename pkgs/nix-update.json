@@ -5,13 +5,6 @@
     "davcli",
     "docker-compose-wrapper",
 
-    "ComicCode",
-    "ComicCodeNF",
-    "MonoLisa",
-    "MonoLisa-Custom",
-    "MonoLisa-CustomNF",
-    "MonoLisaNF",
-    "falcon-sensor-wiit",
     "libfprint-focaltech"
   ]
 }

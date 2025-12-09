@@ -10,6 +10,7 @@ Options:
   --no-update-script   Do not invoke passthru.updateScript even if present
   --build              Build each package after updating
   --commit             Let nix-update commit individual updates
+  --proprietary        Include proprietary packages in the update
   --list               Print the package list and exit
   -h, --help           Show this help message
 
@@ -41,6 +42,22 @@ discover_packages() {
     jq -r '.[]'
 }
 
+get_proprietary_packages() {
+  local target_system="$1"
+  # shellcheck disable=SC2016
+  NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure --expr "
+    let
+      flake = builtins.getFlake (builtins.toString ./.);
+      pkgs = flake.packages.${target_system};
+      hasProprietarySource = n:
+        let res = builtins.tryEval (pkgs.\${n}.proprietarySource or null);
+        in res.success && res.value != null;
+      proprietaryPkgs = builtins.filter hasProprietarySource (builtins.attrNames pkgs);
+    in
+      proprietaryPkgs
+  " | jq -r '.[]'
+}
+
 is_ignored_package() {
   local package_name="$1"
   shift
@@ -49,6 +66,22 @@ is_ignored_package() {
   for ignored in "$@"
   do
     if [[ "$ignored" == "$package_name" ]]
+    then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+is_proprietary_package() {
+  local package_name="$1"
+  shift
+  local proprietary
+
+  for proprietary in "$@"
+  do
+    if [[ "$proprietary" == "$package_name" ]]
     then
       return 0
     fi
@@ -114,9 +147,11 @@ main() {
   local commit_flag
   local fail_fast
   local list_only
+  local include_proprietary
   local -a systems=()
   local ignore_config_path
   local -a ignored_packages
+  local -a proprietary_packages
   local primary_system
 
   while [[ $# -gt 0 ]]
@@ -154,6 +189,10 @@ main() {
         commit_flag=1
         shift
         ;;
+      --proprietary|--proprietary-garbage|--garbage)
+        include_proprietary=1
+        shift
+        ;;
       --list)
         list_only=1
         shift
@@ -187,9 +226,15 @@ main() {
     ' "$ignore_config_path")
   fi
 
+  primary_system="${systems[0]}"
+
+  if [[ -z ${include_proprietary:-} ]]
+  then
+    mapfile -t proprietary_packages < <(get_proprietary_packages "$primary_system")
+  fi
+
   if [[ ${#packages[@]} -eq 0 ]]
   then
-    primary_system="${systems[0]}"
     mapfile -t packages < <(discover_packages "$primary_system")
   fi
 
@@ -201,6 +246,12 @@ main() {
     if is_ignored_package "$pkg" "${ignored_packages[@]}"
     then
       echo "Skipping ignored package: $pkg" >&2
+      continue
+    fi
+
+    if [[ -z ${include_proprietary:-} ]] && is_proprietary_package "$pkg" "${proprietary_packages[@]}"
+    then
+      echo "Skipping proprietary package: $pkg" >&2
       continue
     fi
 
