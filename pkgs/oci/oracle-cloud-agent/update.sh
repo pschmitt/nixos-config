@@ -46,13 +46,7 @@ main() {
     source /etc/profile.d/nix.sh
   fi
 
-  repo_root="${REPO_ROOT:-${UPDATE_NIX_IMPORT_PATH:-$PWD}}"
-  repo_root=$(
-    cd "$repo_root" >/dev/null 2>&1
-    pwd -P
-  )
-
-  script_dir="${repo_root}/pkgs/oracle-cloud-agent"
+  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
   cd "$script_dir"
 
