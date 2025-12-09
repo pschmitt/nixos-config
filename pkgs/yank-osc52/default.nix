@@ -16,10 +16,6 @@ stdenvNoCC.mkDerivation {
     hash = "sha256-QuWwnlxhaHxQve++PhFjLrYTnKzjmM8GcK00zWn4f4M=";
   };
 
-  installPhase = ''
-    install -Dm755 bin/yank $out/bin/yank
-  '';
-
   passthru.updateScript = nix-update-script {
     extraArgs = [
       "--flake"
@@ -27,6 +23,10 @@ stdenvNoCC.mkDerivation {
       "branch"
     ];
   };
+
+  installPhase = ''
+    install -Dm755 bin/yank $out/bin/yank
+  '';
 
   meta = with lib; {
     description = "OSC52 clipboard helper that works in terminals, tmux, and X11";
