@@ -10,9 +10,9 @@ stdenvNoCC.mkDerivation {
   version = "1.808";
 
   src = requireFile {
-    name = "MonoLisa-Plus-Custom-1.808.zip";
-    url = "https://blobs.brkn.lol/private/fonts/MonoLisa-Plus-Custom-1.808.zip";
-    sha256 = "sha256-twWp1sFAx6TYT9UjNbyVfH07+tQtZDG1D4atYTO4AQA=";
+    name = "MonoLisa-Plus-1.808-otf.zip";
+    url = "https://blobs.brkn.lol/private/fonts/MonoLisa-Plus-1.808-otf.zip";
+    sha256 = "sha256-t66It78U6qH/2hgDa9EidNOcxfqkYOGrZ4Mb4oO/Lw0=";
   };
 
   nativeBuildInputs = with pkgs; [
