@@ -3,6 +3,8 @@
     "bluez-headset-callback",
     "custom-keymaps",
     "davcli",
-    "docker-compose-wrapper"
+    "docker-compose-wrapper",
+    "oci-consistent-device-naming",
+    "udev-custom-callback"
   ]
 }
