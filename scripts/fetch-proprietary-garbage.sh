@@ -209,7 +209,7 @@ then
     process_directory "$DIR"
   done < <(find "$TARGET_DIR" -name sha256sum.txt -print0)
 
-  if [[ -n "$FOUND_FILES" ]]
+  if [[ -z "$FOUND_FILES" ]]
   then
     echo "No sha256sum.txt files found in $TARGET_DIR or its subdirectories." >&2
     exit 1
