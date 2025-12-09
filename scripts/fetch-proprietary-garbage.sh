@@ -148,7 +148,7 @@ then
     fi
   fi
 
-  echo "Discovering proprietary packages..."
+  echo "Discovering proprietary packages"
   mapfile -t PROPRIETARY_PACKAGES < <(get_proprietary_packages)
 
   if [[ ${#PROPRIETARY_PACKAGES[@]} -eq 0 ]]
