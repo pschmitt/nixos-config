@@ -29,9 +29,10 @@ file_checksum() {
 file_url() {
   local file="$1"
   local default_url="${BLOBS_URL%/}/${file}"
-  
-  if [[ -f ./urls.txt ]]; then
-    awk -v file="$file" -v def_url="$default_url" '$1 == file { print $2; exit 0 } END { if (NR==0 || !found) print def_url }' ./urls.txt
+
+  if [[ -f ./urls.txt ]]
+  then
+    awk -v file="$file" -v def_url="$default_url" '$1 == file { print $2; found=1; exit 0 } END { if (!found) print def_url }' ./urls.txt
   else
     echo "$default_url"
   fi
@@ -103,7 +104,7 @@ fetch_files() {
     fi
 
     mv "$tmp_file" "$file"
-    
+
     echo "Adding $file to Nix store..."
     nix-store --add-fixed sha256 "$file"
   done
@@ -115,11 +116,12 @@ process_directory() {
   local dir="$1"
   (
     cd "$dir" || exit 1
-    if check_files --quiet --status 2>/dev/null; then
+    if check_files --quiet --status 2>/dev/null
+    then
       echo -e "\e[32m✅All archives present and accounted for in $dir\e[0m"
       exit 0
     fi
-    echo "Processing $dir..."
+    echo "Processing $dir"
     fetch_files
   )
 }
@@ -167,7 +169,8 @@ then
     esac
   done
 
-  if [[ -z "$TARGET_DIR" ]]; then
+  if [[ -z "$TARGET_DIR" ]]
+  then
     SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
     TARGET_DIR="$SCRIPT_DIR/../pkgs"
   fi
@@ -189,19 +192,25 @@ then
     fi
   fi
 
-  if [[ ! -d "$TARGET_DIR" ]]; then
+  if [[ ! -d "$TARGET_DIR" ]]
+  then
     echo "Directory not found: $TARGET_DIR" >&2
     exit 1
   fi
 
-  FOUND_FILES=0
-  while IFS= read -r -d '' checksum_file; do
+  # Resolve to absolute path
+  TARGET_DIR="$(readlink -e "$TARGET_DIR")"
+
+  FOUND_FILES=""
+  while IFS= read -r -d '' CHECKSUM_FILE
+  do
     FOUND_FILES=1
-    dir="$(dirname "$checksum_file")"
-    process_directory "$dir"
+    DIR="$(dirname "$CHECKSUM_FILE")"
+    process_directory "$DIR"
   done < <(find "$TARGET_DIR" -name sha256sum.txt -print0)
 
-  if [[ "$FOUND_FILES" -eq 0 ]]; then
+  if [[ -n "$FOUND_FILES" ]]
+  then
     echo "No sha256sum.txt files found in $TARGET_DIR or its subdirectories." >&2
     exit 1
   fi
