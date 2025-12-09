@@ -28,7 +28,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Support for consistent device naming for Oracle Cloud Infrastructure on NixOS";
-    license = lib.licenses.gpl3Only;
+    license = lib.licenses.upl;
     maintainers = with lib.maintainers; [ pschmitt ];
   };
 }
