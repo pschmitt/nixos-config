@@ -270,7 +270,7 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
-      - name: Fetch proprietary fonts (nixpkg src)
+      - name: Fetch proprietary garbage
         uses: nick-fields/retry@v3
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -279,7 +279,7 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |-
-            ./pkgs/fonts/src/fetch-fonts.sh
+            ./scripts/fetch-proprietary-garbage.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
         run: |-
@@ -355,7 +355,7 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
-      - name: Fetch proprietary fonts (nixpkg src)
+      - name: Fetch proprietary garbage
         uses: nick-fields/retry@v3
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -364,8 +364,19 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |-
-            ./pkgs/fonts/src/fetch-fonts.sh
-            git add --intent-to-add --force pkgs/fonts/src/*.zip
+            ./scripts/fetch-proprietary-garbage.sh
+
+      - name: Add proprietary garbage to Nix store
+        run: |
+          find . -name sha256sum.txt | while read checksum_file; do
+            dir=$(dirname "$checksum_file")
+            awk '{print $2}' "$checksum_file" | while read filename; do
+              if [ -f "$dir/$filename" ]; then
+                echo "Adding $dir/$filename to Nix store..."
+                nix-store --add-fixed sha256 "$dir/$filename"
+              fi
+            done
+          done
 
       - name: Build nixosConfiguration
         run: |-
@@ -438,7 +449,7 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
-      - name: Fetch proprietary fonts (nixpkg src)
+      - name: Fetch proprietary garbage
         uses: nick-fields/retry@v3
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -447,8 +458,19 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |-
-            ./pkgs/fonts/src/fetch-fonts.sh
-            git add --intent-to-add --force pkgs/fonts/src/*.zip
+            ./scripts/fetch-proprietary-garbage.sh
+
+      - name: Add proprietary garbage to Nix store
+        run: |
+          find . -name sha256sum.txt | while read checksum_file; do
+            dir=$(dirname "$checksum_file")
+            awk '{print $2}' "$checksum_file" | while read filename; do
+              if [ -f "$dir/$filename" ]; then
+                echo "Adding $dir/$filename to Nix store..."
+                nix-store --add-fixed sha256 "$dir/$filename"
+              fi
+            done
+          done
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
