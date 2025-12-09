@@ -5,16 +5,17 @@
   makeWrapper,
   qt6Packages,
   quickshell,
+  nix-update-script,
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "qs-hyprview";
-  version = "unstable-2025-12-08";
+  version = "0-unstable-2025-12-07";
 
   src = fetchFromGitHub {
     owner = "dom0";
     repo = "qs-hyprview";
-    rev = "main"; # TODO: pin a real commit
+    rev = "8354f99a26ca6e88b105bf86b886d6b1399deed7"; # TODO: pin a real commit
     hash = "sha256-7nmHhI5pkHq1Ln76TatqhAB6XPQ52Zut1gc9tyLBVUQ=";
   };
 
@@ -101,6 +102,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     chmod +x $out/bin/qs-hyprview-ipc
     runHook postInstall
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
 
   meta = with lib; {
     description = "QML-based window switcher/Exposé for Hyprland powered by Quickshell";

@@ -4,6 +4,7 @@
   fetchFromGitHub,
   hatchling,
   pkgs,
+  nix-update-script,
 }:
 
 let
@@ -26,7 +27,7 @@ let
 in
 buildPythonApplication {
   pname = "withoutbg";
-  version = "0.0.0-unstable-2025-11-17";
+  version = "1.2.0";
 
   src = fetchFromGitHub {
     owner = "withoutbg";
@@ -66,6 +67,10 @@ buildPythonApplication {
   '';
 
   sourceRoot = "source/packages/python";
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [ "--flake" ];
+  };
 
   meta = with lib; {
     description = "AI-powered background removal with local and cloud options";
