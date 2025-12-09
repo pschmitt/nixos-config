@@ -6,11 +6,12 @@
   libxkbcommon,
   stdenv,
   wayland,
+  nix-update-script,
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "waypoint";
-  version = "unstable-2025-06-10";
+  version = "0-unstable-2025-06-10";
 
   src = fetchFromGitHub {
     owner = "tadeokondrak";
@@ -31,6 +32,14 @@ rustPlatform.buildRustPackage rec {
   ++ lib.optionals stdenv.isLinux [
     wayland
   ];
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
 
   meta = {
     description = "Wayland clone of keynav";
