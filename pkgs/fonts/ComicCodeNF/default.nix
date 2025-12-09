@@ -2,20 +2,19 @@
   lib,
   pkgs,
   stdenvNoCC,
-  fetchurl,
   font-resizer,
+  requireFile,
 }:
 
-stdenvNoCC.mkDerivation rec {
+stdenvNoCC.mkDerivation {
   pname = "ComicCodeNF";
-  version = "478c9f6";
+  version = "478c9f6-lol";
 
-  # FIXME Why is fetchzip refusing to download this?
-  # src = fetchurl {
-  #   url = "file:///etc/nixos/pkgs/proprietary-fonts/ComicCode/ILT-220422-478c9f6.zip";
-  #   sha256 = "sha256-VS5kTzKd4Mi/kO68jEoLvvzv7AoFXs1eAN9XPJWAKSs=";
-  # };
-  src = ../src/ILT-220422-478c9f6.zip;
+  src = requireFile {
+    name = "ILT-220422-478c9f6.zip";
+    url = "https://blobs.brkn.lol/private/fonts/ILT-220422-478c9f6.zip";
+    sha256 = "sha256-VS5kTzKd4Mi/kO68jEoLvvzv7AoFXs1eAN9XPJWAKSs=";
+  };
 
   nativeBuildInputs = with pkgs; [
     nerd-font-patcher
