@@ -1,23 +1,32 @@
 {
   lib,
   stdenvNoCC,
-  fetchurl,
+  fetchFromGitHub,
+  nix-update-script,
 }:
 
-stdenvNoCC.mkDerivation rec {
+stdenvNoCC.mkDerivation {
   pname = "yank-osc52";
-  version = "2024-10-04";
+  version = "0-unstable-2025-12-02";
 
-  src = fetchurl {
-    url = "https://raw.githubusercontent.com/sunaku/home/master/bin/yank";
-    sha256 = "sha256-iM6zeh35uBO+xSDnMCWM/QZz28wmrumyQIh35QUqE1g=";
+  src = fetchFromGitHub {
+    owner = "sunaku";
+    repo = "home";
+    rev = "16952560fcb4ee1090185ecbfc78eff26a7cec3c";
+    hash = "sha256-QuWwnlxhaHxQve++PhFjLrYTnKzjmM8GcK00zWn4f4M=";
   };
 
-  dontUnpack = true;
-
   installPhase = ''
-    install -Dm755 ${src} $out/bin/yank
+    install -Dm755 bin/yank $out/bin/yank
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
 
   meta = with lib; {
     description = "OSC52 clipboard helper that works in terminals, tmux, and X11";
