@@ -58,11 +58,11 @@ fmt-tofu:
 fmt: nixfmt fmt-tofu
   @echo "Formatted nix files and tofu configs"
 
-eval *params:
-  ./scripts/nix.sh eval {{params}}
+eval *args:
+  ./scripts/nix.sh eval {{args}}
 
-eval-hm *params:
-  ./scripts/nix.sh eval --home-manager {{params}}
+eval-hm *args:
+  ./scripts/nix.sh eval --home-manager {{args}}
 
 nix-update *args:
   ./scripts/nix-update.sh {{args}}
@@ -88,8 +88,8 @@ build-rpi-img host='pica4':
   ./scripts/build-installation-media.sh sd-image "{{host}}"
 
 alias fetch-blobs := fetch-proprietary-garbage
-fetch-proprietary-garbage:
-  ./scripts/fetch-proprietary-garbage.sh
+fetch-proprietary-garbage *args:
+  ./scripts/fetch-proprietary-garbage.sh {{args}}
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
