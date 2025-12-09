@@ -78,8 +78,8 @@ get_proprietary_packages() {
 is_ignored_package() {
   local package_name="$1"
   shift
-  local ignored
 
+  local ignored
   for ignored in "$@"
   do
     if [[ "$ignored" == "$package_name" ]]
@@ -94,8 +94,8 @@ is_ignored_package() {
 is_proprietary_package() {
   local package_name="$1"
   shift
-  local proprietary
 
+  local proprietary
   for proprietary in "$@"
   do
     if [[ "$proprietary" == "$package_name" ]]
