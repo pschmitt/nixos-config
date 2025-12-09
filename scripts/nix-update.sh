@@ -49,10 +49,27 @@ get_proprietary_packages() {
     let
       flake = builtins.getFlake (builtins.toString ./.);
       pkgs = flake.packages.${target_system};
-      hasProprietarySource = n:
-        let res = builtins.tryEval (pkgs.\${n}.proprietarySource or null);
-        in res.success && res.value != null;
-      proprietaryPkgs = builtins.filter hasProprietarySource (builtins.attrNames pkgs);
+
+      checkPkg = n:
+        let
+          pkg = pkgs.\${n};
+          # Check proprietarySource
+          propSrc = builtins.tryEval (pkg.proprietarySource or null);
+          hasPropSrc = propSrc.success && propSrc.value != null;
+
+          # Check license
+          meta = builtins.tryEval (pkg.meta or {});
+          license = meta.value.license or {};
+
+          isUnfree = if meta.success then
+            (if builtins.isList license then
+              builtins.any (l: (l.free or true) == false) license
+            else
+              (license.free or true) == false)
+            else false;
+        in hasPropSrc || isUnfree;
+
+      proprietaryPkgs = builtins.filter checkPkg (builtins.attrNames pkgs);
     in
       proprietaryPkgs
   " | jq -r '.[]'

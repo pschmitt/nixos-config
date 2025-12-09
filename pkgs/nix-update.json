@@ -3,8 +3,6 @@
     "bluez-headset-callback",
     "custom-keymaps",
     "davcli",
-    "docker-compose-wrapper",
-
-    "libfprint-focaltech"
+    "docker-compose-wrapper"
   ]
 }
