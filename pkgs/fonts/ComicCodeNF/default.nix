@@ -6,15 +6,21 @@
   requireFile,
 }:
 
-stdenvNoCC.mkDerivation {
-  pname = "ComicCodeNF";
-  version = "478c9f6-lol";
-
-  src = requireFile {
+let
+  source = {
     name = "ILT-220422-478c9f6.zip";
     url = "https://blobs.brkn.lol/private/fonts/ILT-220422-478c9f6.zip";
     sha256 = "sha256-VS5kTzKd4Mi/kO68jEoLvvzv7AoFXs1eAN9XPJWAKSs=";
   };
+in
+stdenvNoCC.mkDerivation {
+  pname = "ComicCodeNF";
+  version = "478c9f6-lol";
+
+  src = requireFile source;
+  # NOTE: This is required for us to be able to get the urls programatically
+  # in the fetch-proprietary-garbage.sh script
+  passthru.proprietarySource = source;
 
   nativeBuildInputs = with pkgs; [
     nerd-font-patcher
