@@ -7,7 +7,7 @@ sops-config-gen *args:
   ./secrets/sops-config-gen.sh {{args}}
 
 repl host='':
-  ./nix.sh repl "{{host}}"
+  ./scripts/nix.sh repl "{{host}}"
 
 build-pkg pkg host='':
   #!/usr/bin/env bash
@@ -21,13 +21,13 @@ build-pkg pkg host='':
   nix build ".#nixosConfigurations.${TARGET_HOST}.pkgs.{{pkg}}"
 
 nixos-anywhere *args:
-  ./nixos-install.sh local {{args}}
+  ./scripts/nixos-install.sh local {{args}}
 
 nixos-remote *args:
-  ./nixos-install.sh remote {{args}}
+  ./scripts/nixos-install.sh remote {{args}}
 
 init-host *args:
-  ./init-host-config.sh {{args}}
+  ./scripts/init-host-config.sh {{args}}
 
 nixfmt:
   #!/usr/bin/env bash
@@ -57,10 +57,10 @@ fmt: nixfmt fmt-tofu
   @echo "Formatted nix files and tofu configs"
 
 eval *params:
-  ./nix.sh eval {{params}}
+  ./scripts/nix.sh eval {{params}}
 
 eval-hm *params:
-  ./nix.sh eval --home-manager {{params}}
+  ./scripts/nix.sh eval --home-manager {{params}}
 
 nix-update *args:
   ./scripts/nix-update.sh {{args}}
@@ -78,10 +78,13 @@ deploy host='' *args:
   fi
 
 build-iso host='iso':
-  ./build-installation-media.sh iso "{{host}}"
+  ./scripts/build-installation-media.sh iso "{{host}}"
 
 build-rpi-img host='pica4':
-  ./build-installation-media.sh sd-image "{{host}}"
+  ./scripts/build-installation-media.sh sd-image "{{host}}"
+
+fetch-proprietary-garbage:
+  ./scripts/fetch-proprietary-garbage.sh
 
 tofu *args:
   ./tofu/tofu.sh {{args}}
