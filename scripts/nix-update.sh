@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
-
 usage() {
   cat <<'USAGE'
 Usage: nix-update.sh [OPTIONS]
@@ -62,32 +60,22 @@ is_ignored_package() {
 has_update_script() {
   local package_name="$1"
   local target_system="$2"
-  local key="${package_name}@${target_system}"
+
   local result
-
-  if [[ -n ${package_has_update_script[$key]:-} ]]
-  then
-    [[ "${package_has_update_script[$key]}" == "1" ]]
-    return
-  fi
-
   if ! result=$(
     nix eval --json ".#packages.${target_system}.${package_name}" \
-      --apply 'p: if p ? passthru && p.passthru ? updateScript then true else false' 2>/dev/null
+      --apply 'p: if p ? passthru && p.passthru ? updateScript then true else false'
   )
   then
     echo "Warning: could not detect passthru.updateScript for ${package_name} (${target_system}); continuing without." >&2
-    package_has_update_script[$key]=0
     return 1
   fi
 
   if [[ "$result" == "true" ]]
   then
-    package_has_update_script[$key]=1
     return 0
   fi
 
-  package_has_update_script[$key]=0
   return 1
 }
 
@@ -98,7 +86,7 @@ run_update() {
   # NOTE We need to set pure-eval to false to allow building nonfree pkgs
   local args=(--flake "$package_name" --format --option pure-eval false)
 
-  if [[ -n ${use_update_script:-} ]] && has_update_script "$package_name" "$target_system"
+  if has_update_script "$package_name" "$target_system"
   then
     args+=(--use-update-script)
   fi
@@ -129,9 +117,7 @@ main() {
   local -a systems=()
   local ignore_config_path
   local -a ignored_packages
-  local -A package_has_update_script=()
   local primary_system
-  local use_update_script=1
 
   while [[ $# -gt 0 ]]
   do
@@ -172,10 +158,6 @@ main() {
         list_only=1
         shift
         ;;
-      --no-update-script)
-        use_update_script=
-        shift
-        ;;
       -h|--help)
         usage
         exit 0
@@ -196,17 +178,13 @@ main() {
   repo_root=$(resolve_repo_root)
   cd "$repo_root"
 
-  if [[ -f /etc/profile.d/nix.sh ]]
-  then
-    # shellcheck disable=SC1091
-    source /etc/profile.d/nix.sh
-  fi
-
   ignore_config_path="$repo_root/pkgs/nix-update.json"
 
   if [[ -f "$ignore_config_path" ]]
   then
-    mapfile -t ignored_packages < <(jq -r '.ignoredPackages // [] | .[]' "$ignore_config_path")
+    mapfile -t ignored_packages < <(jq -er '
+      .ignoredPackages // [] | .[]
+    ' "$ignore_config_path")
   fi
 
   if [[ ${#packages[@]} -eq 0 ]]
@@ -264,5 +242,7 @@ main() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+  set -euo pipefail
+
   main "$@"
 fi
