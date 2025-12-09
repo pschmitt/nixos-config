@@ -9,11 +9,12 @@
   procps,
   socat,
   netcat-openbsd,
+  nix-update-script,
 }:
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "hyprevents";
-  version = "unstable-2025-02-02";
+  version = "0-unstable-2024-10-15";
 
   src = fetchFromGitHub {
     owner = "vilari-mickopf";
@@ -52,6 +53,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
         ]
       }
   '';
+
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version"
+      "branch"
+    ];
+  };
 
   meta = with lib; {
     description = "Hyprland event loader shim and helper scripts";
