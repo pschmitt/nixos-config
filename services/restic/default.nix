@@ -5,7 +5,7 @@
   ...
 }:
 {
-  config = lib.mkIf (!config.custom.cattle) {
+  config = lib.mkIf (!config.hardware.cattle) {
     sops.secrets = {
       "restic/env" = {
         inherit (config.custom) sopsFile;

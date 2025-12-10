@@ -11,7 +11,7 @@ let
     "x-systemd.device-timeout=10s"
     "x-systemd.mount-timeout=10s"
     # "x-gvfs-hide"
-    "IdentityFile=${config.custom.homeDirectory}/.ssh/id_ed25519"
+    "IdentityFile=${config.mainUser.homeDirectory}/.ssh/id_ed25519"
     "StrictHostKeyChecking=no"
     "UserKnownHostsFile=/dev/null"
     "ServerAliveInterval=10"

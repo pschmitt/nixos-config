@@ -46,7 +46,7 @@
     ../../common/global/users/k8s-backdoor.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
   custom.promptColor = "#0B87CA"; # nextcloud blue
 
   # Enable networking

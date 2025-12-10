@@ -227,7 +227,7 @@ in
     templates.monitSecretConfig = {
       content = builtins.concatStringsSep "\n" [
         # only include the mmonit config if this is not a cattle server
-        (lib.optionalString (!config.custom.cattle) config.sops.placeholder."monit/config/mmonit")
+        (lib.optionalString (!config.hardware.cattle) config.sops.placeholder."monit/config/mmonit")
         config.sops.placeholder."monit/config/httpd"
       ];
 

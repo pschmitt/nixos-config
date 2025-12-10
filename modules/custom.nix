@@ -3,6 +3,12 @@
 {
   options = {
     custom = {
+      netbirdSetupKey = lib.mkOption {
+        type = lib.types.str;
+        default = "default";
+        description = "Netbird setup key name";
+      };
+
       promptColor = lib.mkOption {
         type = lib.types.str;
         default = "white";
@@ -13,12 +19,6 @@
         type = lib.types.path;
         default = ../hosts/${config.networking.hostName}/secrets.sops.yaml;
         description = "Host-specific SOPS configuration file";
-      };
-
-      netbirdSetupKey = lib.mkOption {
-        type = lib.types.str;
-        default = "default";
-        description = "Netbird setup key name";
       };
     };
 

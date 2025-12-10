@@ -19,7 +19,7 @@
     ../../services/initrd-luks-ssh-unlock.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
 
   # don't go to sleep when lid is closed
   services.logind.settings.Login = {

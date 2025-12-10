@@ -13,7 +13,7 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
   console.keyMap = lib.mkForce "custom/gpdpocket4-de";
 
   # Configure network proxy if necessary

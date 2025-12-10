@@ -36,20 +36,18 @@
           default = false;
           description = "Whether this host has a high DPI screen";
         };
-      };
 
-    custom = {
-      server = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether or not this is a server";
-      };
+        server = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Whether or not this is a server";
+        };
 
-      cattle = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = "Whether this is a cattle/throw-away server";
+        cattle = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Whether this is a cattle/throw-away server";
+        };
       };
-    };
   };
 }

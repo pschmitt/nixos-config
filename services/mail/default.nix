@@ -9,14 +9,14 @@ let
   mylPkg = inputs.myl.packages.${pkgs.stdenv.hostPlatform.system}.myl;
 in
 {
-  config = lib.mkIf (!config.custom.cattle) {
+  config = lib.mkIf (!config.hardware.cattle) {
     sops.secrets."mail/brkn-lol" = {
       inherit (config.custom) sopsFile;
-      owner = config.custom.username;
+      owner = config.mainUser.username;
     };
     sops.secrets."mail/gmail" = {
       inherit (config.custom) sopsFile;
-      owner = config.custom.username;
+      owner = config.mainUser.username;
     };
 
     programs.msmtp = {

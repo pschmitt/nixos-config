@@ -12,7 +12,7 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
