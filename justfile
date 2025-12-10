@@ -47,12 +47,6 @@ nixfmt:
 
 alias tofu-fmt := fmt-tofu
 fmt-tofu:
-  #!/usr/bin/env bash
-  set -euo pipefail
-  if [[ -f /etc/profile.d/nix.sh ]]
-  then
-    source /etc/profile.d/nix.sh
-  fi
   tofu -chdir=tofu fmt
 
 fmt: nixfmt fmt-tofu
