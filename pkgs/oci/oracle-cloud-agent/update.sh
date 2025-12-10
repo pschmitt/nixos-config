@@ -12,11 +12,12 @@ parse_version_release() {
   local url="$1"
   local regex="oracle-cloud-agent-([^-]+)-([^.]+\.el[0-9]+)\.x86_64\.rpm"
 
-  if [[ $url =~ $regex ]]; then
+  if [[ $url =~ $regex ]]
+  then
     echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
   else
     echo "Unable to parse version/release from URL: $url" >&2
-    exit 1
+    return 1
   fi
 }
 
@@ -65,7 +66,7 @@ main() {
   if ! mkdir -p "$(dirname "$sources_json")" 2>/dev/null || ! touch "${sources_json}.tmp" 2>/dev/null
   then
     echo "Unable to write to ${sources_json}. Set SOURCES_JSON_PATH to a writable location." >&2
-    exit 1
+    return 1
   fi
   rm -f "${sources_json}.tmp"
 
@@ -85,7 +86,7 @@ main() {
   if [[ ${#urls[@]} -lt 2 ]]
   then
     echo "Failed to discover oracle-cloud-agent URLs" >&2
-    exit 1
+    return 1
   fi
 
   local aarch64_url x86_64_url
@@ -104,7 +105,7 @@ main() {
   if [[ -z ${aarch64_url:-} || -z ${x86_64_url:-} ]]
   then
     echo "Missing architecture-specific URLs" >&2
-    exit 1
+    return 1
   fi
 
   local version release
