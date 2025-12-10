@@ -51,6 +51,10 @@ main() {
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)
 
+  if [[ -z "$repo_root" ]]; then
+    repo_root=$(git -C . rev-parse --show-toplevel 2>/dev/null || true)
+  fi
+
   if [[ -n $repo_root ]]
   then
     if [[ "${script_dir}/" == "${repo_root}/"* ]]
@@ -58,7 +62,7 @@ main() {
       relative_script_dir=${script_dir#"$repo_root"/}
       sources_json="${SOURCES_JSON_PATH:-$repo_root/$relative_script_dir/sources.json}"
     else
-      sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
+      sources_json="${SOURCES_JSON_PATH:-$repo_root/pkgs/oci/oracle-cloud-agent/sources.json}"
     fi
   else
     sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
