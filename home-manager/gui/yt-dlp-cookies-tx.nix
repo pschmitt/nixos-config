@@ -26,7 +26,7 @@ in
         Environment = [
           "DEST=/srv/podsync/data/yt-dlp/cookies.txt"
           "SRC_BROWSER=firefox"
-          "TARGET_HOST=rofl-10.${osConfig.custom.mainDomain}"
+          "TARGET_HOST=rofl-10.${osConfig.domains.main}"
         ];
 
         ExecStart = pkgs.writeShellScript "${serviceName}.sh" ''

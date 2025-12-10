@@ -5,7 +5,7 @@
   ...
 }:
 let
-  pinchflatDomain = "pinchflat.${config.custom.mainDomain}";
+  pinchflatDomain = "pinchflat.${config.domains.main}";
   pinchflatPort = 28945;
   pinchflatUser = "pinchflat";
   pinchflatGroup = pinchflatUser;

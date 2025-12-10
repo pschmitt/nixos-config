@@ -30,7 +30,7 @@
       {
         "poor.tools" = nginxConfig;
         "poor.curl-pipe.sh" = nginxConfig;
-        "poor.${config.custom.mainDomain}" = nginxConfig;
+        "poor.${config.domains.main}" = nginxConfig;
       };
 
     monit.config = lib.mkAfter ''

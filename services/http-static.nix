@@ -7,7 +7,7 @@
 }:
 
 let
-  autheliaDomain = "auth.${config.custom.mainDomain}";
+  autheliaDomain = "auth.${config.domains.main}";
   autheliaAuthzURL = "https://${autheliaDomain}/api/authz/auth-request";
   autheliaResolverAddresses =
     let
@@ -22,7 +22,7 @@ let
 in
 {
   services.nginx.virtualHosts = {
-    "blobs.${config.custom.mainDomain}" = {
+    "blobs.${config.domains.main}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
@@ -111,7 +111,7 @@ in
       };
     };
 
-    "p.${config.custom.mainDomain}" = {
+    "p.${config.domains.main}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
@@ -121,7 +121,7 @@ in
       };
     };
 
-    "y.${config.custom.mainDomain}" = {
+    "y.${config.domains.main}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
@@ -133,7 +133,7 @@ in
   };
 
   services.monit.config = lib.mkAfter ''
-    check host "http-static-blobs" with address "blobs.${config.custom.mainDomain}"
+    check host "http-static-blobs" with address "blobs.${config.domains.main}"
       group nginx
       group services
       if failed

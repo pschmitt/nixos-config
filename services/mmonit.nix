@@ -45,7 +45,7 @@
       };
     in
     {
-      "mmonit.${config.networking.hostName}.${config.custom.mainDomain}" = commonConfig;
-      "mmonit.${config.custom.mainDomain}" = commonConfig;
+      "mmonit.${config.networking.hostName}.${config.domains.main}" = commonConfig;
+      "mmonit.${config.domains.main}" = commonConfig;
     };
 }
