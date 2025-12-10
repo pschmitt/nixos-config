@@ -6,8 +6,8 @@
 }:
 let
   hostnames = [
-    "paperless.${config.custom.mainDomain}"
-    "paperless.${config.networking.hostName}.${config.custom.mainDomain}"
+    "paperless.${config.domains.main}"
+    "paperless.${config.networking.hostName}.${config.domains.main}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;

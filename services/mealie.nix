@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 let
-  mealieHost = "nom.${config.custom.mainDomain}";
+  mealieHost = "nom.${config.domains.main}";
 in
 {
   sops = {

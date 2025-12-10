@@ -26,12 +26,12 @@ let
 
   cfg = config.custom.containerServices;
 
-  autheliaDomain = "auth.${config.custom.mainDomain}";
+  autheliaDomain = "auth.${config.domains.main}";
 
   trustedStateDir = "/run/container-services";
   nginxTrustedNetworksFile = "${trustedStateDir}/trusted-networks.conf";
   autheliaTrustedNetworksFile = "${trustedStateDir}/authelia-trusted-networks.yml";
-  trustedHosts = [ "turris.${config.custom.mainDomain}" ];
+  trustedHosts = [ "turris.${config.domains.main}" ];
   autheliaLocalNetworks = [
     "127.0.0.1/32"
     "::1/128"
@@ -347,9 +347,9 @@ let
         # set_escape_uri $target_url $scheme://$http_host$request_uri;
 
         ## Legacy Method: When there is a 401 response code from the authz endpoint redirect to the portal with the 'rd'
-        ## URL parameter set to $target_url. This requires users update 'auth.${config.custom.mainDomain}/' with their external
+        ## URL parameter set to $target_url. This requires users update 'auth.${config.domains.main}/' with their external
         ## authelia URL.
-        # error_page 401 =302 https://auth.${config.custom.mainDomain}/?rd=$target_url;
+        # error_page 401 =302 https://auth.${config.domains.main}/?rd=$target_url;
       '';
 
       # Optional Basic Auth with local/CGNAT bypass at NGINX layer
@@ -463,13 +463,13 @@ in
 
     # Where should the auth_request subrequest go?
     # - For local Authelia: "http://127.0.0.1:9091/api/authz/auth-request"
-    # - For remote portal:  "https://auth.${config.custom.mainDomain}/api/authz/auth-request"
+    # - For remote portal:  "https://auth.${config.domains.main}/api/authz/auth-request"
     authelia.authzURL = mkOption {
       type = types.nullOr types.str;
       default = null;
       description = ''
         Full URL for the Authelia Authz endpoint used by NGINX auth_request.
-        If null, defaults to "https://auth.${config.custom.mainDomain}/api/authz/auth-request".
+        If null, defaults to "https://auth.${config.domains.main}/api/authz/auth-request".
       '';
     };
 

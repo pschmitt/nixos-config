@@ -58,7 +58,7 @@ in
         ];
         text = ''
           myl --auto \
-            --username "${config.networking.hostName}@${config.custom.mainDomain}" \
+            --username "${config.networking.hostName}@${config.domains.main}" \
             --password-file "${config.sops.secrets."mail/brkn-lol".path}" \
             "$@"
         '';

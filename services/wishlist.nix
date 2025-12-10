@@ -5,12 +5,12 @@
   ...
 }:
 let
-  primaryHost = "wish.${config.custom.mainDomain}";
+  primaryHost = "wish.${config.domains.main}";
   # hostnames = [
   #   primaryHost
-  #   "wishlist.${config.custom.mainDomain}"
-  #   "wuensche.${config.custom.mainDomain}"
-  #   "wunschliste.${config.custom.mainDomain}"
+  #   "wishlist.${config.domains.main}"
+  #   "wuensche.${config.domains.main}"
+  #   "wunschliste.${config.domains.main}"
   # ];
   # serverAliases = lib.remove primaryHost hostnames;
   dataDir = "/mnt/data/srv/wishlist";

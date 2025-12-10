@@ -4,7 +4,7 @@ let
   cpuUsage = args.cpuUsage or 25;
 
   proxyPool = {
-    url = "xmrig-proxy.rofl-12.nb.${config.custom.mainDomain}:8443";
+    url = "xmrig-proxy.rofl-12.${config.domains.netbirdDomain}:8443";
     user = config.networking.hostName;
     pass = "\${XMRIG_PROXY_PASSWORD}";
     keepalive = true;

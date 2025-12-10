@@ -5,7 +5,7 @@
   ...
 }:
 let
-  domain = "search.${config.custom.mainDomain}";
+  domain = "search.${config.domains.main}";
 in
 {
   sops = {

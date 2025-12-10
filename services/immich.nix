@@ -6,10 +6,10 @@
 }:
 let
   hostnames = [
-    "img.${config.custom.mainDomain}"
-    "img.${config.networking.hostName}.${config.custom.mainDomain}"
-    "immich.${config.custom.mainDomain}"
-    "immich.${config.networking.hostName}.${config.custom.mainDomain}"
+    "img.${config.domains.main}"
+    "img.${config.networking.hostName}.${config.domains.main}"
+    "immich.${config.domains.main}"
+    "immich.${config.networking.hostName}.${config.domains.main}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;

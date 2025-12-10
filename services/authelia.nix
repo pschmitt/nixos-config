@@ -6,7 +6,7 @@
 }:
 let
   instanceName = "main";
-  autheliaDomain = "auth.${config.custom.mainDomain}";
+  autheliaDomain = "auth.${config.domains.main}";
   autheliaUser = "authelia-${instanceName}";
   autheliaGroup = autheliaUser;
   autheliaService = "authelia-${instanceName}.service";
@@ -20,7 +20,7 @@ let
       "/run/container-services/authelia-trusted-networks.yml"
     else
       managedTrustedNetworksFile;
-  trustedHosts = [ "turris.${config.custom.mainDomain}" ];
+  trustedHosts = [ "turris.${config.domains.main}" ];
   trustedHostsEnv = lib.concatStringsSep " " trustedHosts;
   secretsAttrs = owner: {
     inherit (config.custom) sopsFile;
@@ -44,7 +44,7 @@ let
     default_2fa_method = "webauthn";
     session.cookies = [
       {
-        domain = config.custom.mainDomain;
+        domain = config.domains.main;
         authelia_url = "https://${autheliaDomain}";
       }
     ];
@@ -83,16 +83,16 @@ let
             "local"
           ]
           ++ lib.optional (dynamicTrustedNetworksFile != null) "container-services-trusted";
-          domain = [ "*.${config.custom.mainDomain}" ];
+          domain = [ "*.${config.domains.main}" ];
         }
         {
           policy = "one_factor";
-          domain = [ "blobs.${config.custom.mainDomain}" ];
+          domain = [ "blobs.${config.domains.main}" ];
           subject = [ "group:admin" ];
         }
         {
           policy = "one_factor";
-          domain = [ "blobs.${config.custom.mainDomain}" ];
+          domain = [ "blobs.${config.domains.main}" ];
           resources = [
             "^/private/?$"
             "^/private/.*$"
@@ -105,7 +105,7 @@ let
         # Deny any other request to blobs
         # {
         #   policy = "deny";
-        #   domain = [ "blobs.${config.custom.mainDomain}" ];
+        #   domain = [ "blobs.${config.domains.main}" ];
         #   subject = [ "group:github-actions" ];
         # }
       ];

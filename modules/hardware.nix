@@ -1,39 +1,55 @@
 { lib, ... }:
 {
-  options.hardware =
-    let
-      deviceType = lib.types.nullOr (
-        lib.types.enum [
-          "laptop"
-          "server"
-          "installation-media"
-          "rpi"
-        ]
-      );
-    in
-    {
-      type = lib.mkOption {
-        type = deviceType;
-        default = null;
-        description = "Device category for this host.";
+  options = {
+    hardware =
+      let
+        deviceType = lib.types.nullOr (
+          lib.types.enum [
+            "laptop"
+            "server"
+            "installation-media"
+            "rpi"
+          ]
+        );
+      in
+      {
+        type = lib.mkOption {
+          type = deviceType;
+          default = null;
+          description = "Device category for this host.";
+        };
+
+        biosBoot = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Use BIOS instead of UEFI";
+        };
+
+        kvmGuest = lib.mkOption {
+          type = lib.types.bool;
+          default = true;
+          description = "Whether this is cloud-based server";
+        };
+
+        highDpi = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Whether this host has a high DPI screen";
+        };
       };
 
-      biosBoot = lib.mkOption {
+    custom = {
+      server = lib.mkOption {
         type = lib.types.bool;
         default = false;
-        description = "Use BIOS instead of UEFI";
+        description = "Whether or not this is a server";
       };
 
-      kvmGuest = lib.mkOption {
+      cattle = lib.mkOption {
         type = lib.types.bool;
         default = true;
-        description = "Whether this is cloud-based server";
-      };
-
-      highDpi = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether this host has a high DPI screen";
+        description = "Whether this is a cattle/throw-away server";
       };
     };
+  };
 }

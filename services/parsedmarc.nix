@@ -4,7 +4,7 @@ let
     "geoip/licenseKey"
     "parsedmarc/imap/password"
   ];
-  grafanaHost = "grafana.${config.networking.hostName}.${config.custom.mainDomain}";
+  grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
 in
 {
   sops.secrets = builtins.listToAttrs (

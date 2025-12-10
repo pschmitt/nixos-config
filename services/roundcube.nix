@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let
-  roundcubeHostName = "webmail.${config.custom.mainDomain}";
-  mailHostName = "mail.${config.custom.mainDomain}";
+  roundcubeHostName = "webmail.${config.domains.main}";
+  mailHostName = "mail.${config.domains.main}";
 in
 {
   services.roundcube = {

@@ -7,8 +7,8 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9091;
-  publicHost = "to.arr.${config.custom.mainDomain}";
-  serverAliases = [ "to.${config.custom.mainDomain}" ];
+  publicHost = "to.arr.${config.domains.main}";
+  serverAliases = [ "to.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
   downloadDir =
     config.services.transmission.settings."download-dir"

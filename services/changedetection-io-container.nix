@@ -5,7 +5,7 @@
   ...
 }:
 let
-  domain = "changes.${config.custom.mainDomain}";
+  domain = "changes.${config.domains.main}";
   dataDir = "/mnt/data/srv/changedetection-io";
   listenPort = 24264;
   networkName = "changedetection-io";

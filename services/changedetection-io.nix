@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 let
-  domain = "changes.${config.custom.mainDomain}";
+  domain = "changes.${config.domains.main}";
 in
 {
   services.changedetection-io = {

@@ -10,7 +10,7 @@ let
   gcontactsStateDir = "${stateDir}/google-contacts";
   fsDir = "${gcontactsStateDir}/data";
 
-  nextcloudHost = "c.${config.custom.mainDomain}";
+  nextcloudHost = "c.${config.domains.main}";
   nextcloudRootUrl = "https://${nextcloudHost}/remote.php/dav/addressbooks/users/${
     config.sops.placeholder."vdirsyncer/nextcloud/username"
   }/";

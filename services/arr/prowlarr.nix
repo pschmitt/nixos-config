@@ -2,7 +2,7 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9696;
-  publicHost = "prowl.arr.${config.custom.mainDomain}";
+  publicHost = "prowl.arr.${config.domains.main}";
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {

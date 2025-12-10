@@ -18,9 +18,9 @@ let
   ];
 
   # tsDomain = "snake-eagle.ts.net";
-  # tsDomain = "ts.${config.custom.mainDomain}";
-  # netbirdDomain = "nb.${config.custom.mainDomain}";
-  vpnDomain = "vpn.${config.custom.mainDomain}";
+  # tsDomain = config.domains.tailscaleDomain;
+  # netbirdDomain = config.domains.netbirdDomain;
+  vpnDomain = "vpn.${config.domains.main}";
 in
 {
   # NOTE Arch Linux equivalent /etc/fstab entry:

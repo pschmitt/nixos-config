@@ -1,6 +1,6 @@
 { config, ... }:
 let
-  autheliaDomain = "auth.${config.custom.mainDomain}";
+  autheliaDomain = "auth.${config.domains.main}";
   authzURL = "https://${autheliaDomain}/api/authz/auth-request";
 in
 {

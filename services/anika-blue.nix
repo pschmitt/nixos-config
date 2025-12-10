@@ -8,7 +8,7 @@
 let
   mainHost = "anika.blue";
   serverAliases = [
-    "anika-blue.${config.custom.mainDomain}"
+    "anika-blue.${config.domains.main}"
     "anika-blue.bergmann-schmitt.de"
     "blue.bergmann-schmitt.de"
   ];
@@ -45,7 +45,7 @@ in
     };
 
     monit.config = lib.mkAfter ''
-      check host "anika-blue" with address "anika-blue.${config.custom.mainDomain}"
+      check host "anika-blue" with address "anika-blue.${config.domains.main}"
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart anika-blue"
         if failed

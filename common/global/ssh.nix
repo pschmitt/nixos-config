@@ -9,10 +9,10 @@ let
   mkHostnames = host: [
     host
     "${host}.lan"
-    "${host}.${config.custom.mainDomain}"
-    "${host}.vpn.${config.custom.mainDomain}"
-    "${host}.nb.${config.custom.mainDomain}"
-    "${host}.ts.${config.custom.mainDomain}"
+    "${host}.${config.domains.main}"
+    "${host}.vpn.${config.domains.main}"
+    "${host}.${config.domains.netbirdDomain}"
+    "${host}.${config.domains.tailscaleDomain}"
     "${host}.snake-eagle.ts.net"
     "${host}.netbird.cloud"
   ];
