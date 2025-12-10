@@ -28,44 +28,45 @@ PY
 }
 
 main() {
-  local repo_root
   local script_dir
-  local relative_script_dir
-  local sources_json
-  local -a urls
-  local aarch64_url
-  local x86_64_url
-  local version
-  local release
-  local hash_aarch64
-  local hash_x86_64
-  local yum_repo
-  local docker_run_timeout
-
-  if [[ -f /etc/profile.d/nix.sh ]]
-  then
-    # shellcheck disable=SC1091
-    source /etc/profile.d/nix.sh
-  fi
-
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)
 
-  if [[ -z "$repo_root" ]]; then
-    repo_root=$(git -C . rev-parse --show-toplevel 2>/dev/null || true)
+  local git_root
+  if [[ -n "${GIT_ROOT:-}" ]]
+  then
+    git_root="$GIT_ROOT"
+  else
+    git_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)
+
+    if [[ -z "$git_root" ]]
+    then
+      git_root=$(git -C . rev-parse --show-toplevel 2>/dev/null || true)
+    fi
+
+    if [[ -z "$git_root" && -f "flake.nix" ]]
+    then
+      git_root=$(pwd)
+    fi
   fi
 
-  if [[ -n $repo_root ]]
+  local sources_json
+
+  if [[ -n $git_root ]]
   then
-    if [[ "${script_dir}/" == "${repo_root}/"* ]]
+    if [[ "${script_dir}/" == "${git_root}/"* ]]
     then
-      relative_script_dir=${script_dir#"$repo_root"/}
-      sources_json="${SOURCES_JSON_PATH:-$repo_root/$relative_script_dir/sources.json}"
+      local relative_script_dir=${script_dir#"$git_root"/}
+      sources_json="${SOURCES_JSON_PATH:-$git_root/$relative_script_dir/sources.json}"
     else
-      sources_json="${SOURCES_JSON_PATH:-$repo_root/pkgs/oci/oracle-cloud-agent/sources.json}"
+      sources_json="${SOURCES_JSON_PATH:-$git_root/pkgs/oci/oracle-cloud-agent/sources.json}"
     fi
   else
-    sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
+    if [[ "$script_dir" == /nix/store/* ]]
+    then
+       sources_json="${SOURCES_JSON_PATH:-./pkgs/oci/oracle-cloud-agent/sources.json}"
+    else
+       sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
+    fi
   fi
 
   if ! mkdir -p "$(dirname "$sources_json")" 2>/dev/null || ! touch "${sources_json}.tmp" 2>/dev/null
@@ -75,12 +76,13 @@ main() {
   fi
   rm -f "${sources_json}.tmp"
 
-  yum_repo="${YUM_REPO:-yum.eu-frankfurt-1.oci.oraclecloud.com}"
-  docker_run_timeout="${DOCKER_RUN_TIMEOUT:-300}"
+  local yum_repo="${YUM_REPO:-yum.eu-frankfurt-1.oci.oraclecloud.com}"
+  local docker_run_timeout="${DOCKER_RUN_TIMEOUT:-300}"
 
   export YUM_REPO="$yum_repo" DOCKER_RUN_TIMEOUT="$docker_run_timeout"
 
   echo "Fetching oracle-cloud-agent download URLs (requires Docker/netbird connectivity)..." >&2
+  local -a urls
   mapfile -t urls < <(
     "$script_dir/get-download-urls.sh" |
       grep -Eo 'https?://[^[:space:]]*oracle-cloud-agent-[0-9][^[:space:]]*\.rpm' |
@@ -93,13 +95,14 @@ main() {
     exit 1
   fi
 
+  local aarch64_url x86_64_url
   for url in "${urls[@]}"
   do
     case "$url" in
-      *aarch64.rpm)
+      *aarch64*)
         aarch64_url="$url"
         ;;
-      *x86_64.rpm)
+      *x86_64*)
         x86_64_url="$url"
         ;;
     esac
@@ -111,20 +114,26 @@ main() {
     exit 1
   fi
 
+  local version release
   read -r version release <<<"$(parse_version_release "$x86_64_url")"
 
   echo "Prefetching hashes..." >&2
+  local hash_aarch64 hash_x86_64
   hash_aarch64="$(prefetch_hash "$aarch64_url")"
   hash_x86_64="$(prefetch_hash "$x86_64_url")"
 
-  cat >"$sources_json" <<EOF
-{
-  "version": "${version}",
-  "release": "${release}",
-  "hashAarch64": "${hash_aarch64}",
-  "hashX86_64": "${hash_x86_64}"
-}
-EOF
+  jq -ner \
+    --arg version "$version" \
+    --arg release "$release" \
+    --arg hashAarch64 "$hash_aarch64" \
+    --arg hashX86_64 "$hash_x86_64" '
+      {
+        version: $version,
+        release: $release,
+        hashAarch64: $hashAarch64,
+        hashX86_64: $hashX86_64
+      }
+  ' > "$sources_json"
 
   echo "Updated sources.json to version ${version}-${release}" >&2
 }

@@ -174,6 +174,9 @@ run_update() {
   echo "Updating ${package_name} for ${target_system}" >&2
 
   export NIXPKGS_ALLOW_UNFREE=1
+  local git_root
+  git_root="$(git rev-parse --show-toplevel)"
+  export GIT_ROOT="$git_root"
   nix run --impure nixpkgs#nix-update -- "${args[@]}"
 }
 
