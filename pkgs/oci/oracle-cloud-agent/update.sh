@@ -30,6 +30,8 @@ PY
 main() {
   local repo_root
   local script_dir
+  local relative_script_dir
+  local sources_json
   local -a urls
   local aarch64_url
   local x86_64_url
@@ -47,8 +49,27 @@ main() {
   fi
 
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  repo_root=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)
 
-  cd "$script_dir"
+  if [[ -n $repo_root ]]
+  then
+    if [[ "${script_dir}/" == "${repo_root}/"* ]]
+    then
+      relative_script_dir=${script_dir#"$repo_root"/}
+      sources_json="${SOURCES_JSON_PATH:-$repo_root/$relative_script_dir/sources.json}"
+    else
+      sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
+    fi
+  else
+    sources_json="${SOURCES_JSON_PATH:-$script_dir/sources.json}"
+  fi
+
+  if ! mkdir -p "$(dirname "$sources_json")" 2>/dev/null || ! touch "${sources_json}.tmp" 2>/dev/null
+  then
+    echo "Unable to write to ${sources_json}. Set SOURCES_JSON_PATH to a writable location." >&2
+    exit 1
+  fi
+  rm -f "${sources_json}.tmp"
 
   yum_repo="${YUM_REPO:-yum.eu-frankfurt-1.oci.oraclecloud.com}"
   docker_run_timeout="${DOCKER_RUN_TIMEOUT:-300}"
@@ -57,7 +78,7 @@ main() {
 
   echo "Fetching oracle-cloud-agent download URLs (requires Docker/netbird connectivity)..." >&2
   mapfile -t urls < <(
-    ./get-download-urls.sh |
+    "$script_dir/get-download-urls.sh" |
       grep -Eo 'https?://[^[:space:]]*oracle-cloud-agent-[0-9][^[:space:]]*\.rpm' |
       sort -u
   )
@@ -92,7 +113,7 @@ main() {
   hash_aarch64="$(prefetch_hash "$aarch64_url")"
   hash_x86_64="$(prefetch_hash "$x86_64_url")"
 
-  cat >"$script_dir/sources.json" <<EOF
+  cat >"$sources_json" <<EOF
 {
   "version": "${version}",
   "release": "${release}",
@@ -106,6 +127,5 @@ EOF
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
   main "$@"
 fi
