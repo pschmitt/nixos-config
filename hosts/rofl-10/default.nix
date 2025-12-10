@@ -25,6 +25,7 @@
     ../../services/luks-ssh-unlock-homelab.nix
     # ../../services/mealie.nix # it's a container now!
     ../../services/paperless-ngx.nix
+    ../../services/pinchflat.nix
     ../../services/podsync.nix
     ../../services/poor-tools.nix
     ../../services/postgresql.nix

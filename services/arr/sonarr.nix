@@ -4,7 +4,7 @@ let
   port = 8989;
   publicHost = "son.arr.${config.custom.mainDomain}";
   serverAliases = [ "snr.${config.custom.mainDomain}" ];
-  autheliaConfig = import ./authelia.nix { inherit config; };
+  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   sops = {

@@ -3,7 +3,7 @@ let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8084;
   publicHost = "cwabd.arr.${config.custom.mainDomain}";
-  autheliaConfig = import ./authelia.nix { inherit config; };
+  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   virtualisation.oci-containers.containers.cwabd = {

@@ -4,7 +4,7 @@ let
   port = 7878;
   publicHost = "rad.arr.${config.custom.mainDomain}";
   serverAliases = [ "rdr.${config.custom.mainDomain}" ];
-  autheliaConfig = import ./authelia.nix { inherit config; };
+  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   sops = {
