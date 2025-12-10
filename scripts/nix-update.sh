@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 usage() {
-  cat <<'USAGE'
-Usage: nix-update.sh [OPTIONS]
+  cat <<USAGE
+Usage: $(basename "$0") [OPTIONS]
 
 Options:
   -p, --package NAME   Update only the specified package (can be repeated)
@@ -10,14 +10,15 @@ Options:
   --no-update-script   Do not invoke passthru.updateScript even if present
   --build              Build each package after updating
   --commit             Let nix-update commit individual updates
+  --fail               Stop on first failure (default: continue on failure)
   --proprietary        Include proprietary packages in the update
   --list               Print the package list
   -h, --help           Show this help message
 
 Examples:
-  ./scripts/nix-update.sh --list
-  ./scripts/nix-update.sh --package go-hass-agent --build
-  ./scripts/nix-update.sh --system aarch64-linux
+  $(basename "$0") --list
+  $(basename "$0") --package go-hass-agent --build
+  $(basename "$0") --system aarch64-linux
 USAGE
 }
 
@@ -158,6 +159,17 @@ run_update() {
 
   if has_update_script "$package_name" "$target_system"
   then
+    if [[ "$package_name" == "oracle-cloud-agent" ]]
+    then
+      local repo_root
+      repo_root="$(git rev-parse --show-toplevel)"
+
+      GIT_ROOT="$repo_root" \
+        SOURCES_JSON_PATH="$repo_root/pkgs/oci/oracle-cloud-agent/sources.json" \
+        "$repo_root/pkgs/oci/oracle-cloud-agent/update.sh"
+      return
+    fi
+
     args+=(--use-update-script)
   fi
 
