@@ -340,11 +340,7 @@
       ];
 
       commonModules = [
-        ./modules/custom.nix
-        ./modules/main-user.nix
-        ./modules/domains.nix
-        ./modules/hardware.nix
-
+        ./modules # custom modules
         inputs.disko.nixosModules.disko
         inputs.sops-nix.nixosModules.sops
       ];
@@ -504,10 +500,7 @@
             modules = [
               "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
               inputs.sops-nix.nixosModules.sops
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/pica4
               { hardware.type = "rpi"; }
             ];
@@ -519,10 +512,7 @@
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/iso
               { hardware.type = "installation-media"; }
             ];
@@ -534,10 +524,7 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
 
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/iso
               { hardware.type = "installation-media"; }
             ];
@@ -547,10 +534,7 @@
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/iso-xmr
               { hardware.type = "installation-media"; }
             ];
@@ -562,10 +546,7 @@
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/iso
               ./workarounds/no-efi.nix
               { hardware.type = "installation-media"; }
@@ -576,10 +557,7 @@
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules/custom.nix
-              ./modules/domains.nix
-              ./modules/hardware.nix
-              ./modules/main-user.nix
+              ./modules
               ./hosts/iso-xmr
               ./workarounds/no-efi.nix
               { hardware.type = "installation-media"; }
