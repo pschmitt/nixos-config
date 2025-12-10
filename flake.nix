@@ -135,7 +135,7 @@
       # NOTE commit bcbe929cca73f273f3a5927298851662c31ef27c introduces
       # compilation issues with hyprland 0.52.x
       # https://github.com/horriblename/hyprgrass/commits/main/
-      url = "github:horriblename/hyprgrass/8c57cc1cb13361774ddde67bfc75ab04e9b13f28";
+      url = "github:horriblename/hyprgrass/bb6e154f5f696ed2035d8e456e9ca3c06dfe4e0d";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
