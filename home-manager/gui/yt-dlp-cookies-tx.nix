@@ -1,13 +1,22 @@
 { osConfig, pkgs, ... }:
 let
-  serviceName = "podsync-cookies-tx";
+  serviceName = "yt-dlp-cookies-tx";
+  installForPinchflat = ''
+    ${pkgs.openssh}/bin/ssh "$TARGET_HOST" \
+      sudo install --verbose -D \
+        --mode=600 \
+        --owner=pinchflat \
+        --group=pinchflat \
+        "$DEST" \
+        /var/lib/pinchflat/extras/cookies.txt
+  '';
 in
 {
   systemd.user = {
     services."${serviceName}" = {
       Unit = {
-        description = "Export yt-dl cookies from Firefox and copy to rofl-10, for podsync";
-        documentation = [
+        Description = "Export yt-dl cookies from Firefox and copy to rofl-10, for pinchflat";
+        Documentation = [
           "https://github.com/mxpv/podsync"
           "https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp"
         ];
@@ -32,27 +41,22 @@ in
             --cookies "$TMP_COOKIES" || true
 
           ${pkgs.openssh}/bin/scp "$TMP_COOKIES" "''${TARGET_HOST}:''${DEST}"
+          ${installForPinchflat}
         '';
-      };
-
-      Install = {
-        wantedBy = [ "default.target" ];
       };
     };
 
     timers.${serviceName} = {
-      Unit = {
-        Description = "Regularly transfer cookies.txt to podsync";
-      };
+      Unit.Description = "Regularly transfer cookies.txt to rofl-10 for pinchflat";
+
       Timer = {
         OnCalendar = "hourly";
         RandomizedDelaySec = "30m";
         Persistent = true;
         AccuracySec = "30m";
       };
-      Install = {
-        WantedBy = [ "timers.target" ];
-      };
+
+      Install.WantedBy = [ "timers.target" ];
     };
   };
 }
