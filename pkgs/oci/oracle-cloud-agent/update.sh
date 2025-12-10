@@ -10,21 +10,14 @@ prefetch_hash() {
 
 parse_version_release() {
   local url="$1"
+  local regex="oracle-cloud-agent-([^-]+)-([^.]+\.el[0-9]+)\.x86_64\.rpm"
 
-  python - "$url" <<'PY'
-import re
-import sys
-
-url = sys.argv[1]
-match = re.search(
-    r"oracle-cloud-agent-([^-]+)-([^.]+\.el[0-9]+)\.x86_64\.rpm",
-    url,
-)
-if not match:
-    raise SystemExit(f"Unable to parse version/release from URL: {url}")
-
-print(f"{match.group(1)} {match.group(2)}")
-PY
+  if [[ $url =~ $regex ]]; then
+    echo "${BASH_REMATCH[1]} ${BASH_REMATCH[2]}"
+  else
+    echo "Unable to parse version/release from URL: $url" >&2
+    exit 1
+  fi
 }
 
 main() {
