@@ -3,7 +3,7 @@ let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9117;
   publicHost = "jackett.arr.${config.custom.mainDomain}";
-  autheliaConfig = import ./authelia.nix { inherit config; };
+  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   services = {

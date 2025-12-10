@@ -9,7 +9,7 @@ let
   port = 9091;
   publicHost = "to.arr.${config.custom.mainDomain}";
   serverAliases = [ "to.${config.custom.mainDomain}" ];
-  autheliaConfig = import ./authelia.nix { inherit config; };
+  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
   downloadDir =
     config.services.transmission.settings."download-dir"
       or "${config.services.transmission.home}/Downloads";
