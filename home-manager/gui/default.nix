@@ -10,7 +10,7 @@
     ./gnome-keyring.nix
     ./media.nix
     ./profile-picture.nix
-    ./podsync-cookies-tx.nix
+    ./yt-dlp-cookies-tx.nix
     ./soundboard.nix
     ./theme.nix
     ./xdg-portal.nix
