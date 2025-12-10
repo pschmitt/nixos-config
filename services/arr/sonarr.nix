@@ -2,8 +2,8 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8989;
-  publicHost = "son.arr.${config.custom.mainDomain}";
-  serverAliases = [ "snr.${config.custom.mainDomain}" ];
+  publicHost = "son.arr.${config.domains.main}";
+  serverAliases = [ "snr.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {

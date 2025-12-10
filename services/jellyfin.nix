@@ -6,17 +6,17 @@
 let
   hostnames = [
     # main
-    "tv.${config.custom.mainDomain}"
+    "tv.${config.domains.main}"
 
     # alt
-    "media.${config.custom.mainDomain}"
-    "jellyfin.${config.custom.mainDomain}"
-    "jelly.${config.custom.mainDomain}"
+    "media.${config.domains.main}"
+    "jellyfin.${config.domains.main}"
+    "jelly.${config.domains.main}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
 
-  jellyseerHost = "jellyseer.${config.custom.mainDomain}";
+  jellyseerHost = "jellyseer.${config.domains.main}";
 in
 {
   services = {

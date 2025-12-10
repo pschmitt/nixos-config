@@ -1,7 +1,7 @@
 { config, ... }:
 
 let
-  domain = config.custom.mainDomain;
+  domain = config.domains.main;
   inherit (config.networking) hostName;
   mkHost = subdomain: "${subdomain}.${domain}";
   mkHostWithNode = subdomain: "${subdomain}.${hostName}.${domain}";

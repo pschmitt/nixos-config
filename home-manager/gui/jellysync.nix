@@ -15,7 +15,7 @@
 
     settings = {
       remote = {
-        hostname = "tv.${osConfig.custom.mainDomain}";
+        hostname = "tv.${osConfig.domains.main}";
         inherit (config.home) username;
         port = 22;
         root = "/mnt/data/videos";

@@ -19,7 +19,7 @@ let
     plugins = "${calibreWebAutomatedRoot}/plugins";
   };
   calibreWebAutomatedHostnames = [
-    "books.${config.custom.mainDomain}"
+    "books.${config.domains.main}"
   ];
   calibreWebAutomatedVirtualHosts = builtins.listToAttrs (
     map (hostname: {

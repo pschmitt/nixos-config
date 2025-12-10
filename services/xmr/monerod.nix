@@ -42,10 +42,10 @@
         # TODO add a public endpoint, with basic auth?
         hostNames = [
           # public
-          # "xmr.${config.custom.mainDomain}"
+          # "xmr.${config.domains.main}"
           # vpn
-          "xmr.${config.networking.hostName}.nb.${config.custom.mainDomain}"
-          "xmr.${config.networking.hostName}.ts.${config.custom.mainDomain}"
+          "xmr.${config.networking.hostName}.${config.domains.netbirdDomain}"
+          "xmr.${config.networking.hostName}.${config.domains.tailscaleDomain}"
         ];
         virtualHosts = builtins.listToAttrs (
           map (hostName: {

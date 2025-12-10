@@ -5,13 +5,13 @@
 
 let
   baseHostName = config.networking.hostName;
-  inherit (config.custom) mainDomain;
+  inherit (config.domains) main netbirdDomain tailscaleDomain;
   hostnames = [
-    "xmrig-proxy.${baseHostName}.nb.${mainDomain}"
-    "xmrig-proxy.${baseHostName}.ts.${mainDomain}"
-    "xmrig-proxy.${baseHostName}.${mainDomain}"
-    "xp.${baseHostName}.${mainDomain}"
-    "xp.${mainDomain}"
+    "xmrig-proxy.${baseHostName}.${netbirdDomain}"
+    "xmrig-proxy.${baseHostName}.${tailscaleDomain}"
+    "xmrig-proxy.${baseHostName}.${main}"
+    "xp.${baseHostName}.${main}"
+    "xp.${main}"
   ];
   hostname = builtins.head hostnames;
   extraHostnames = builtins.tail hostnames;

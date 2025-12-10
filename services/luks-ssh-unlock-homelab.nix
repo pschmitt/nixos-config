@@ -35,7 +35,7 @@ let
     emailNotifications = {
       enable = true;
       recipient = config.custom.email;
-      sender = "luks-ssh-unlock <${config.networking.hostName}@${config.custom.mainDomain}>";
+      sender = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
       subject = "LUKS SSH Unlocker: ${instance.name} -> #event_type";
     };
   };

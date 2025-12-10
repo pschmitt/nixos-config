@@ -2,8 +2,8 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 7878;
-  publicHost = "rad.arr.${config.custom.mainDomain}";
-  serverAliases = [ "rdr.${config.custom.mainDomain}" ];
+  publicHost = "rad.arr.${config.domains.main}";
+  serverAliases = [ "rdr.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
