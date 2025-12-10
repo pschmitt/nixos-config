@@ -11,7 +11,7 @@ Options:
   --build              Build each package after updating
   --commit             Let nix-update commit individual updates
   --proprietary        Include proprietary packages in the update
-  --list               Print the package list and exit
+  --list               Print the package list
   -h, --help           Show this help message
 
 Examples:
@@ -173,10 +173,15 @@ run_update() {
 
   echo "Updating ${package_name} for ${target_system}" >&2
 
-  export NIXPKGS_ALLOW_UNFREE=1
   local git_root
-  git_root="$(git rev-parse --show-toplevel)"
+  if ! git_root="$(git rev-parse --show-toplevel)" || [[ -z "$git_root" ]]
+  then
+    echo "Error: Could not determine git root" >&2
+    return 1
+  fi
   export GIT_ROOT="$git_root"
+
+  export NIXPKGS_ALLOW_UNFREE=1
   nix run --impure nixpkgs#nix-update -- "${args[@]}"
 }
 
@@ -202,7 +207,7 @@ main() {
         then
           echo "Error: --package requires an argument" >&2
           usage >&2
-          exit 2
+          return 2
         fi
         packages+=("$2")
         shift 2
@@ -212,7 +217,7 @@ main() {
         then
           echo "Error: --system requires an argument" >&2
           usage >&2
-          exit 2
+          return 2
         fi
         systems+=("$2")
         shift 2
@@ -239,12 +244,12 @@ main() {
         ;;
       -h|--help)
         usage
-        exit 0
+        return 0
         ;;
       *)
         echo "Error: Unknown option '$1'" >&2
         usage >&2
-        exit 2
+        return 2
         ;;
     esac
   done
@@ -311,13 +316,13 @@ main() {
   if [[ -n ${list_only:-} ]]
   then
     printf "%s\n" "${packages[@]}"
-    exit 0
+    return 0
   fi
 
   if [[ ${#packages[@]} -eq 0 ]]
   then
     echo "No packages found for system(s) '${systems[*]}'" >&2
-    exit 1
+    return 1
   fi
 
   local pkg
