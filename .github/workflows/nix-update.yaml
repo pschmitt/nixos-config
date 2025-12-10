@@ -81,7 +81,7 @@ jobs:
           ./scripts/nix-update.sh --package "${{ matrix.package }}" --system x86_64-linux --system aarch64-linux
 
       - name: Create pull request for ${{ matrix.package }}
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           branch: chore/nix-update/${{ matrix.package }}
@@ -183,7 +183,7 @@ jobs:
           ./scripts/nix-update.sh --package "${{ matrix.package }}" --system x86_64-linux --system aarch64-linux
 
       - name: Create pull request for ${{ matrix.package }}
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           branch: chore/nix-update/${{ matrix.package }}
