@@ -391,6 +391,15 @@
         customPackages
       );
 
+      # below is to make "nix fmt" work
+      formatter = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        pkgs.nixfmt-rfc-style
+      );
+
       checks = forAllSystems (system: {
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
