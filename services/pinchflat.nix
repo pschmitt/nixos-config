@@ -53,6 +53,12 @@ in
         recommendedProxySettings = true;
         extraConfig = autheliaConfig.location;
       };
+      locations."~* (^/sources/[^/]+/feed(_image)?|^/media/[^/]+/(stream|episode_image))(\\.[a-zA-Z0-9]+)?$" =
+        {
+          proxyPass = "http://127.0.0.1:${toString pinchflatPort}";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+        };
     };
 
     monit.config = lib.mkAfter ''
