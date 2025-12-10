@@ -2,12 +2,12 @@
 {
   imports = [ ../../services/restic ];
 
-  config = lib.mkIf (!config.custom.cattle) {
+  config = lib.mkIf (!config.hardware.cattle) {
     services.restic.backups.main = {
       paths = [
         "/etc"
         "/var/lib"
-        "${config.custom.homeDirectory}"
+        "${config.mainUser.homeDirectory}"
       ];
       exclude = [
         "/var/lib/docker"

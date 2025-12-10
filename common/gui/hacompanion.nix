@@ -15,9 +15,9 @@
     documentation = [ "https://github.com/tobias-kuendig/hacompanion" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = [
-      "${config.custom.homeDirectory}"
+      "${config.mainUser.homeDirectory}"
       "/run/current-system/sw"
-      "/etc/profiles/per-user/${config.custom.username}"
+      "/etc/profiles/per-user/${config.mainUser.username}"
     ];
 
     # NOTE We probably need these 2 vars for playerctl
@@ -28,9 +28,9 @@
     };
 
     serviceConfig = {
-      User = "${config.custom.username}";
+      User = "${config.mainUser.username}";
       # NOTE We can't use %E here since we are running as a system service
-      EnvironmentFile = "${config.custom.homeDirectory}/.config/hacompanion/secrets";
+      EnvironmentFile = "${config.mainUser.homeDirectory}/.config/hacompanion/secrets";
       ExecStart = "${pkgs.hacompanion}/bin/hacompanion -quiet -config ~/.config/hacompanion/hacompanion.toml";
 
       Restart = "always";

@@ -18,7 +18,7 @@
     ../../services/***REMOVED***/***REMOVED***.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
   custom.promptColor = "#ff6600";
 
   # Enable networking

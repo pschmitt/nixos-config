@@ -19,7 +19,7 @@
     # ../../services/github-runner.nix
   ];
 
-  custom.cattle = true;
+  hardware.cattle = true;
   custom.promptColor = "magenta";
 
   # Enable networking

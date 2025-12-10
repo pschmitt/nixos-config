@@ -13,9 +13,9 @@ in
     description = "An application to control your Elgato Stream Deck on Linux";
     documentation = [ "https://github.com/muesli/deckmaster" ];
     path = [
-      "${config.custom.homeDirectory}"
+      "${config.mainUser.homeDirectory}"
       "/run/current-system/sw"
-      "/etc/profiles/per-user/${config.custom.username}"
+      "/etc/profiles/per-user/${config.mainUser.username}"
     ];
     serviceConfig = {
       ExecStart = "${pkgs.deckmaster}/bin/deckmaster --verbose --deck %E/deckmaster/main.deck --brightness 33";
@@ -30,9 +30,9 @@ in
     description = "An elegant Linux app for the Elgato Stream Deck with support for plugins";
     documentation = [ "https://github.com/StreamController/StreamController" ];
     path = [
-      "${config.custom.homeDirectory}"
+      "${config.mainUser.homeDirectory}"
       "/run/current-system/sw"
-      "/etc/profiles/per-user/${config.custom.username}"
+      "/etc/profiles/per-user/${config.mainUser.username}"
     ];
     serviceConfig =
       let

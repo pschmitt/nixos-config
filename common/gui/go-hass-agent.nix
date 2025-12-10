@@ -10,11 +10,11 @@
 
   sops.secrets = {
     "home-assistant/server" = {
-      owner = config.custom.username;
+      owner = config.mainUser.username;
     };
     "home-assistant/token" = {
       inherit (config.custom) sopsFile;
-      owner = config.custom.username;
+      owner = config.mainUser.username;
     };
     "home-assistant/mqtt/host" = { };
     "home-assistant/mqtt/username".sopsFile = config.custom.sopsFile;
@@ -40,9 +40,9 @@
     documentation = [ "https://github.com/joshuar/go-hass-agent" ];
     after = [ "NetworkManager-wait-online.service" ];
     path = [
-      "/etc/profiles/per-user/${config.custom.username}"
+      "/etc/profiles/per-user/${config.mainUser.username}"
       "/run/current-system/sw"
-      config.custom.homeDirectory
+      config.mainUser.homeDirectory
       pkgs.chrony
       pkgs.coreutils
       pkgs.gawk
@@ -63,14 +63,14 @@
         goHassAgent = "${pkgs.go-hass-agent}/bin/go-hass-agent";
       in
       {
-        User = "${config.custom.username}";
+        User = "${config.mainUser.username}";
         EnvironmentFile = config.sops.templates."go-hass-agent.env".path;
 
         # Alternatively we could use security.wrappers:
         # security.wrappers.go-hass-agent = {
         #   source = goHassBin;
         #   capabilities = "cap_sys_rawio,cap_sys_admin,cap_mknod,cap_dac_override=+ep";
-        #   owner = config.custom.username;
+        #   owner = config.mainUser.username;
         #   group = "users";
         # };
         AmbientCapabilities = [
@@ -88,7 +88,7 @@
         ];
 
         # NOTE We can't use %E here since we are running as a system service
-        # EnvironmentFile = "${config.custom.homeDirectory}/.config/go-hass-agent/secrets";
+        # EnvironmentFile = "${config.mainUser.homeDirectory}/.config/go-hass-agent/secrets";
         ExecStart = "${goHassAgent} run";
 
         Restart = "always";

@@ -1,7 +1,7 @@
 { lib, ... }:
 
 {
-  options.custom = {
+  options.mainUser = {
     username = lib.mkOption {
       type = lib.types.str;
       default = "pschmitt";

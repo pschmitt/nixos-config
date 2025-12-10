@@ -10,7 +10,7 @@ let
   # All files are owned by root, which makes sops-nix unhappy
   fixSshOwnership = pkgs.writeShellScript "hm-fix-ssh-ownership" ''
     SUDO_BIN="/run/wrappers/bin/sudo"
-    DIR='${osConfig.custom.homeDirectory}/.ssh'
+    DIR='${osConfig.mainUser.homeDirectory}/.ssh'
 
     if [[ ! -d "$DIR" ]]
     then
@@ -19,7 +19,7 @@ let
 
     echo "Ensuring ownership on $DIR"
     if ! "$SUDO_BIN" -n ${pkgs.coreutils}/bin/chown \
-       -R "${osConfig.custom.username}:${osConfig.custom.username}" "$DIR"
+       -R "${osConfig.mainUser.username}:${osConfig.mainUser.username}" "$DIR"
     then
       echo "Could not change ownership on $DIR (needs passwordless sudo)" >&2
       exit 1
@@ -34,7 +34,7 @@ in
     inherit (osConfig.sops) defaultSopsFile;
     age = {
       generateKey = false;
-      sshKeyPaths = [ "${osConfig.custom.homeDirectory}/.ssh/id_ed25519" ];
+      sshKeyPaths = [ "${osConfig.mainUser.homeDirectory}/.ssh/id_ed25519" ];
     };
   };
 

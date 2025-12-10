@@ -24,7 +24,7 @@
     ./snapper.nix
   ];
 
-  custom.server = true;
+  hardware.server = true;
   hardware.biosBoot = lib.mkDefault true;
 
   boot.kernel.sysctl = {

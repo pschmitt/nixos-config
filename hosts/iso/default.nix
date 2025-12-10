@@ -5,7 +5,7 @@
   ...
 }:
 let
-  installerAuthorizedKeys = config.custom.authorizedKeys ++ [
+  installerAuthorizedKeys = config.mainUser.authorizedKeys ++ [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
   ];
 in
@@ -20,7 +20,7 @@ in
     nixos.openssh.authorizedKeys.keys = installerAuthorizedKeys;
     root.openssh.authorizedKeys.keys = installerAuthorizedKeys;
 
-    "${config.custom.username}" = {
+    "${config.mainUser.username}" = {
       isNormalUser = true;
       group = "users";
       extraGroups = [

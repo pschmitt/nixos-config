@@ -11,7 +11,7 @@
       "docker"
       "wheel"
     ];
-    openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
+    openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
       # Github Actions
       # https://github.com/pschmitt/nixos-config/settings/secrets/actions
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN6Luwh05e39m7lx9CDyZNicRpHYerLx8fXMwn3o5xHW github-actions@nixos-config"

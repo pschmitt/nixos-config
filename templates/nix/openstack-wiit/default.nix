@@ -7,7 +7,7 @@
     ../../common/server
   ];
 
-  custom.cattle = true;
+  hardware.cattle = true;
 
   # Enable networking
   networking = {

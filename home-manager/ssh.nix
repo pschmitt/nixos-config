@@ -1,7 +1,7 @@
 { config, osConfig, ... }:
 
 let
-  user = osConfig.custom.username;
+  user = osConfig.mainUser.username;
   inherit (osConfig.custom) sopsFile;
 
   algs = [
