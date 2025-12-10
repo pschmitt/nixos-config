@@ -24,6 +24,13 @@ stdenvNoCC.mkDerivation {
     ];
   };
 
+  dontConfigure = true;
+  dontBuild = true;
+
+  postPatch = ''
+    patchShebangs bin/yank
+  '';
+
   installPhase = ''
     install -Dm755 bin/yank $out/bin/yank
   '';
