@@ -25,8 +25,8 @@ Options:
 Examples:
   $(basename "$0") repl
   $(basename "$0") repl x13
-  $(basename "$0") eval --host x13 custom.username
-  $(basename "$0") custom.username
+  $(basename "$0") eval --host x13 mainUser.username
+  $(basename "$0") mainUser.username
   $(basename "$0") --home-manager wayland.windowManager.hyprland.settings
 EOF
 }

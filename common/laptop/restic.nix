@@ -7,14 +7,14 @@
     "/var/lib/fprint"
 
     # homedir
-    "${config.custom.homeDirectory}/bin"
-    "${config.custom.homeDirectory}/devel"
-    "${config.custom.homeDirectory}/Documents"
-    "${config.custom.homeDirectory}/Pictures"
+    "${config.mainUser.homeDirectory}/bin"
+    "${config.mainUser.homeDirectory}/devel"
+    "${config.mainUser.homeDirectory}/Documents"
+    "${config.mainUser.homeDirectory}/Pictures"
 
     # config directories
-    "${config.custom.homeDirectory}/.android" # adb
-    "${config.custom.homeDirectory}/.config"
-    "${config.custom.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
+    "${config.mainUser.homeDirectory}/.android" # adb
+    "${config.mainUser.homeDirectory}/.config"
+    "${config.mainUser.homeDirectory}/.var/app/com.obsproject.Studio/config/obs-studio"
   ];
 }

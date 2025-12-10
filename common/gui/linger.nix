@@ -1,9 +1,9 @@
 { config, ... }:
 {
   # Enable lingering
-  systemd.tmpfiles.rules = [ "f /var/lib/systemd/linger/${config.custom.username}" ];
+  systemd.tmpfiles.rules = [ "f /var/lib/systemd/linger/${config.mainUser.username}" ];
 
-  users.users."${config.custom.username}" = {
+  users.users."${config.mainUser.username}" = {
     linger = true;
 
     extraGroups = [

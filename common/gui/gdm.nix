@@ -10,7 +10,7 @@
   services.displayManager = {
     autoLogin = {
       enable = true;
-      user = config.custom.username;
+      user = config.mainUser.username;
     };
 
     defaultSession = lib.mkDefault "hyprland-uwsm";

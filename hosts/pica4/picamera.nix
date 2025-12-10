@@ -23,5 +23,5 @@ in
     v4l-utils
   ];
 
-  users.users."${config.custom.username}".extraGroups = [ "video" ];
+  users.users."${config.mainUser.username}".extraGroups = [ "video" ];
 }

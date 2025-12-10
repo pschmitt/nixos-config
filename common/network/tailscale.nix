@@ -10,7 +10,7 @@ let
   tailscaleFlags = [
     "--advertise-exit-node"
     "--accept-dns"
-    "--operator=${config.custom.username}"
+    "--operator=${config.mainUser.username}"
   ];
 in
 {

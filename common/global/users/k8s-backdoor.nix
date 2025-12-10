@@ -7,7 +7,7 @@
     shell = pkgs.bash;
     home = "/var/lib/k8s-backdoor";
     createHome = true;
-    openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
+    openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINB37ME2xN0LzQYHToxtTlOCwhaZVlyQ9pfknEusZWuL k8s-backdoor"
     ];
   };

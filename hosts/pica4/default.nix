@@ -30,7 +30,7 @@
     ../../services/mediamtx.nix
   ];
 
-  custom.cattle = true;
+  hardware.cattle = true;
   hardware.kvmGuest = false;
 
   networking = {
@@ -64,5 +64,5 @@
     inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
-  users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
+  users.users."${config.mainUser.username}".extraGroups = [ "networkmanager" ];
 }

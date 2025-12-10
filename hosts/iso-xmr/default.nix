@@ -14,7 +14,7 @@
 
   # Enable SSH in the boot process.
   systemd.services.sshd.wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
-  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
+  users.users.root.openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGvVATHmFG1p5JqPkM2lE7wxCO2JGX3N5h9DEN3T2fKM nixos-anywhere"
   ];
   networking = {

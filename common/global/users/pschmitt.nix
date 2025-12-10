@@ -2,11 +2,11 @@
 {
   sops.secrets."users/pschmitt/password".neededForUsers = true;
 
-  users.users."${config.custom.username}" = {
+  users.users."${config.mainUser.username}" = {
     uid = 1000;
     isNormalUser = true;
-    description = config.custom.fullName;
-    group = config.custom.username;
+    description = config.mainUser.fullName;
+    group = config.mainUser.username;
     # Below requires mutableUsers = false (set in users.nix)
     hashedPasswordFile = config.sops.secrets."users/pschmitt/password".path;
     extraGroups = [
@@ -19,7 +19,7 @@
       "wheel"
       "wireshark"
     ];
-    openssh.authorizedKeys.keys = config.custom.authorizedKeys ++ [
+    openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
       # hass-fnuc
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7"
     ];
@@ -27,7 +27,7 @@
   };
 
   # Below is required for some reason when using greetd with autologin
-  users.groups."${config.custom.username}" = { };
+  users.groups."${config.mainUser.username}" = { };
 
   # Set GDM user profile picture
   # https://discourse.nixos.org/t/setting-the-user-profile-image-under-gnome/36233/7
@@ -44,7 +44,7 @@
     in
     [
       # notice the "\\n" we don't want nix to insert a new line in our string, just pass it as \n to systemd
-      "f+ /var/lib/AccountsService/users/${config.custom.username}  0600 root root - [User]\\nIcon=/var/lib/AccountsService/icons/${config.custom.username}\\n"
-      "L+ /var/lib/AccountsService/icons/${config.custom.username}  - - - - ${profilepic}"
+      "f+ /var/lib/AccountsService/users/${config.mainUser.username}  0600 root root - [User]\\nIcon=/var/lib/AccountsService/icons/${config.mainUser.username}\\n"
+      "L+ /var/lib/AccountsService/icons/${config.mainUser.username}  - - - - ${profilepic}"
     ];
 }

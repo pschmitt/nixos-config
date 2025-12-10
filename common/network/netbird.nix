@@ -18,7 +18,7 @@ in
     mode = "0440";
   };
 
-  users.users."${config.custom.username}".extraGroups = [
+  users.users."${config.mainUser.username}".extraGroups = [
     "netbird-${netbirdClientName}"
   ];
 

@@ -91,7 +91,7 @@ in
   };
 
   # Add ourselves to the netbird-wiit groups
-  users.users."${config.custom.username}".extraGroups = [
+  users.users."${config.mainUser.username}".extraGroups = [
     "netbird-wiit"
     "netbird-wiit-test"
   ];

@@ -17,7 +17,7 @@
     })
   ];
 
-  custom.cattle = true;
+  hardware.cattle = true;
   custom.promptColor = "yellow";
 
   # Enable networking

@@ -98,7 +98,7 @@ in
 
       # https://docs.paperless-ngx.com/configuration/
       settings = {
-        PAPERLESS_ADMIN_USER = config.custom.username;
+        PAPERLESS_ADMIN_USER = config.mainUser.username;
 
         PAPERLESS_ALLOWED_HOSTS = lib.concatStringsSep "," hostnames;
         PAPERLESS_CORS_ALLOWED_HOSTS = lib.concatStringsSep "," hostnamesWithSchema;
@@ -145,7 +145,7 @@ in
     '';
   };
 
-  users.users."${config.custom.username}" = {
+  users.users."${config.mainUser.username}" = {
     extraGroups = [ "paperless" ];
   };
 

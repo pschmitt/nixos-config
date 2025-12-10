@@ -148,7 +148,7 @@ in
     };
   };
 
-  users.users."${config.custom.username}" = {
+  users.users."${config.mainUser.username}" = {
     extraGroups = lib.mkAfter [ "${syncGroup}" ];
   };
 

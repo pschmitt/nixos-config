@@ -14,13 +14,13 @@
   sops = {
     secrets = {
       "nix/credentials/username" = {
-        owner = config.custom.username;
+        owner = config.mainUser.username;
       };
       "nix/credentials/password" = {
-        owner = config.custom.username;
+        owner = config.mainUser.username;
       };
       "nix/github_token" = {
-        owner = config.custom.username;
+        owner = config.mainUser.username;
       };
       "ssh/nix-remote-builder/privkey" = { };
     };

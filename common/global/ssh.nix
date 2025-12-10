@@ -114,7 +114,7 @@ in
     sshpass
   ];
 
-  users.users.root.openssh.authorizedKeys.keys = config.custom.authorizedKeys;
+  users.users.root.openssh.authorizedKeys.keys = config.mainUser.authorizedKeys;
 
   # started in user sessions.
   # programs.mtr.enable = true;

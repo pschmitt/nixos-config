@@ -69,7 +69,7 @@ in
     settings = {
       initial_session = {
         command = "${uwsm-run}/bin/hyprland";
-        user = config.custom.username;
+        user = config.mainUser.username;
       };
 
       default_session = {

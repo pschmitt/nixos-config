@@ -13,7 +13,7 @@
     };
   };
 
-  users.users."${config.custom.username}".extraGroups = [ "networkmanager" ];
+  users.users."${config.mainUser.username}".extraGroups = [ "networkmanager" ];
 
   custom.netbirdSetupKey = lib.mkForce "laptop";
 

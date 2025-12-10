@@ -15,7 +15,7 @@
         if [[ -z "$(ls -A /etc/nixos)" ]]
         then
           ${pkgs.git}/bin/git clone https://github.com/pschmitt/nixos-config /etc/nixos
-          ${pkgs.coreutils}/bin/chown -R ${config.custom.username} /etc/nixos
+          ${pkgs.coreutils}/bin/chown -R ${config.mainUser.username} /etc/nixos
         fi
       ''}/bin/git-clone-nixos-config";
     };

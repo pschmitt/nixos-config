@@ -33,7 +33,7 @@
     ./restic.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
   custom.promptColor = "#9C62C5"; # jellyfin purple
 
   # Enable networking

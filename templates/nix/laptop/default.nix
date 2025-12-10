@@ -13,7 +13,7 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  custom.cattle = false;
+  hardware.cattle = false;
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);

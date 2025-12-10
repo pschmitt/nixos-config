@@ -17,7 +17,7 @@ in
       data = lib.mkDefault {
         FSTYPE = "btrfs";
         SUBVOLUME = dataDir;
-        ALLOW_USERS = [ config.custom.username ];
+        ALLOW_USERS = [ config.mainUser.username ];
         TIMELINE_CREATE = true;
         TIMELINE_CLEANUP = true;
       };

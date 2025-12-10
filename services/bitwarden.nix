@@ -2,7 +2,7 @@
 {
   sops.secrets."bitwarden/password" = {
     inherit (config.custom) sopsFile;
-    owner = config.custom.username;
+    owner = config.mainUser.username;
   };
 
   # NOTE For the biometrics to work, the bitwarden-deskop pkg must be installed
