@@ -5,6 +5,9 @@ let
   publicHost = "rad.arr.${config.domains.main}";
   serverAliases = [ "rdr.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
+  downloadDir =
+    config.services.transmission.settings."download-dir"
+      or "${config.services.transmission.home}/Downloads";
 in
 {
   sops = {
@@ -21,6 +24,10 @@ in
   };
 
   users.users.radarr.extraGroups = [ "media" ];
+
+  systemd.tmpfiles.rules = [
+    "d ${downloadDir}/radarr 2770 ${config.services.transmission.user} ${config.services.radarr.group} - -"
+  ];
 
   services = {
     radarr = {

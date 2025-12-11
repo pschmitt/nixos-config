@@ -10,11 +10,14 @@ let
     config.services.transmission.settings."download-dir"
       or "${config.services.transmission.home}/Downloads";
   audiobooksDir = "/mnt/data/audiobooks";
+  uid = 1001;
+  gid = uid;
 in
 {
   systemd.tmpfiles.rules = [
-    "d ${dataDir} 0750 1001 1001 - -"
-    "d ${audiobooksDir} 0755 1001 1001 - -"
+    "d ${dataDir} 0750 ${toString uid} ${toString gid} - -"
+    "d ${audiobooksDir} 0755 ${toString uid} ${toString gid} - -"
+    "d ${transmissionDownloadDir}/listenarr 2770 ${config.services.transmission.user} 1001 - -"
   ];
 
   virtualisation.oci-containers.containers.listenarr = {
