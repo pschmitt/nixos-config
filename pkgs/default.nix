@@ -15,6 +15,7 @@ in
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
+  systemd-service-exec = pkgs.callPackage ./local/systemd-service-exec { };
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
 
   # external pkgs
