@@ -1,14 +1,14 @@
 { config, pkgs, ... }:
 
 # NOTE to connect:
-# sudo , xmrig -o xmrig-proxy.<hostname>.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD" --rig-id "$HOSTNAME"
+# sudo , xmrig -o xmrig-proxy.rofl-xx.nb.brkn.lol:8443 --tls --nicehash -p "$XMRIG_PROXY_PASSWORD" --rig-id "$HOSTNAME"
 
 let
   baseHostName = config.networking.hostName;
-  inherit (config.domains) main netbirdDomain tailscaleDomain;
+  inherit (config.domains) main netbird tailscale;
   hostnames = [
-    "xmrig-proxy.${baseHostName}.${netbirdDomain}"
-    "xmrig-proxy.${baseHostName}.${tailscaleDomain}"
+    "xmrig-proxy.${baseHostName}.${netbird}"
+    "xmrig-proxy.${baseHostName}.${tailscale}"
     "xmrig-proxy.${baseHostName}.${main}"
     "xp.${baseHostName}.${main}"
     "xp.${main}"

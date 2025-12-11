@@ -11,8 +11,8 @@ let
     "${host}.lan"
     "${host}.${config.domains.main}"
     "${host}.vpn.${config.domains.main}"
-    "${host}.${config.domains.netbirdDomain}"
-    "${host}.${config.domains.tailscaleDomain}"
+    "${host}.${config.domains.netbird}"
+    "${host}.${config.domains.tailscale}"
     "${host}.snake-eagle.ts.net"
     "${host}.netbird.cloud"
   ];

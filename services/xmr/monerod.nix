@@ -44,8 +44,8 @@
           # public
           # "xmr.${config.domains.main}"
           # vpn
-          "xmr.${config.networking.hostName}.${config.domains.netbirdDomain}"
-          "xmr.${config.networking.hostName}.${config.domains.tailscaleDomain}"
+          "xmr.${config.networking.hostName}.${config.domains.netbird}"
+          "xmr.${config.networking.hostName}.${config.domains.tailscale}"
         ];
         virtualHosts = builtins.listToAttrs (
           map (hostName: {

@@ -46,7 +46,13 @@
         enable = true;
         port = 22;
         inherit (config.mainUser) authorizedKeys;
-        # authorizedKeys = with lib; concatLists (mapAttrsToList (name: user: if elem "wheel" user.extraGroups then user.openssh.authorizedKeys.keys else [ ]) config.users.users);
+        # authorizedKeys =
+        #   with lib;
+        #   concatLists (
+        #     mapAttrsToList (
+        #       name: user: if elem "wheel" user.extraGroups then user.openssh.authorizedKeys.keys else [ ]
+        #     ) config.users.users
+        #   );
         hostKeys = [
           # WARNING the host keys in initrd are stored in plain text
           # "/etc/ssh/ssh_host_rsa_key"

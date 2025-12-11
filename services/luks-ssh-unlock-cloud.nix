@@ -19,7 +19,7 @@ let
   # Define a function to create an instance with common defaults
   createInstance = name: {
     type = "dracut";
-    hostname = "${name}.brkn.lol";
+    hostname = "${name}.${config.domains.main}";
     key = "/home/pschmitt/.ssh/id_ed25519";
     passphraseFile = config.sops.secrets.${"luks/" + name}.path;
     sleepInterval = 30;
