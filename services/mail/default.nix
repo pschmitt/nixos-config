@@ -29,12 +29,12 @@ in
       };
       accounts = {
         default = {
-          host = "mail.brkn.lol";
+          host = "mail.${config.domains.main}";
           port = 587;
           tls_starttls = true;
           tls_certcheck = false;
-          from = "${config.networking.hostName}@brkn.lol";
-          user = "${config.networking.hostName}@brkn.lol";
+          from = "${config.networking.hostName}@${config.domains.main}";
+          user = "${config.networking.hostName}@${config.domains.main}";
           passwordeval = "cat ${config.sops.secrets."mail/brkn-lol".path}";
         };
         gmail = {

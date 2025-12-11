@@ -5,7 +5,7 @@
   ...
 }:
 let
-  xmrigWalletUrl = "https://blobs.brkn.lol/xmr";
+  xmrigWalletUrl = "https://blobs.${config.domains.main}/xmr";
   xmrigWalletFile = "/tmp/xmrig.txt";
 in
 {

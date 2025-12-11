@@ -40,7 +40,7 @@ in
         };
         general = {
           debug = false;
-          instance_name = "SearXNG@brkn.lol";
+          instance_name = "SearXNG@${config.domains.main}";
           donation_url = false;
           contact_url = false;
           privacypolicy_url = false;

@@ -1,12 +1,14 @@
 {
+  config,
   lib,
   pkgs,
   ...
 }:
 let
+  mainDomain = config.domains.main;
   hostnames = [
-    "abs.brkn.lol"
-    "audiobookshelf.brkn.lol"
+    "abs.${mainDomain}"
+    "audiobookshelf.${mainDomain}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
