@@ -19,13 +19,13 @@ in
     secrets = {
       "transmission/username" = {
         inherit (config.custom) sopsFile;
-        owner = "transmission";
-        group = "transmission";
+        owner = config.services.transmission.user;
+        inherit (config.services.transmission) group;
       };
       "transmission/password" = {
         inherit (config.custom) sopsFile;
-        owner = "transmission";
-        group = "transmission";
+        owner = config.services.transmission.user;
+        inherit (config.services.transmission) group;
       };
     };
 
@@ -36,15 +36,13 @@ in
           "rpc-password": "${config.sops.placeholder."transmission/password"}"
         }
       '';
-      owner = "transmission";
-      group = "transmission";
+      owner = config.services.transmission.user;
+      inherit (config.services.transmission) group;
     };
   };
 
-  users.users.transmission.extraGroups = [ "media" ];
-
   systemd.tmpfiles.rules = [
-    "d ${downloadDir} 2775 transmission media - -"
+    "d ${downloadDir} 2775 ${config.services.transmission.user} ${config.services.transmission.group} - -"
   ];
 
   services = {
@@ -89,6 +87,9 @@ in
   };
 
   fakeHosts.transmission.port = port;
+
+  # add main user to transmission group
+  users.users."${config.mainUser.username}".extraGroups = [ config.services.transmission.group ];
 
   systemd.services.transmission = {
     vpnConfinement = {

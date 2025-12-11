@@ -20,7 +20,7 @@ in
     };
   };
 
-  users.users.sonarr.extraGroups = [ "media" ];
+  users.users.sonarr.extraGroups = [ config.services.transmission.group ];
 
   services = {
     sonarr = {

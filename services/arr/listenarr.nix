@@ -24,7 +24,7 @@ in
   users.users.${listenarrUser} = {
     isSystemUser = true;
     group = listenarrGroup;
-    extraGroups = [ "media" ];
+    extraGroups = [ config.services.transmission.group ];
   };
 
   virtualisation.oci-containers.containers.listenarr = {
