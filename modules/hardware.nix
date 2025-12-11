@@ -64,7 +64,8 @@
             "softdog"
             "virtio"
           ];
-          default = "softdog";
+          default = if config.hardware.type == "rpi" then "hardware" else "softdog";
+          defaultText = "if hardware.type == \"rpi\" then \"hardware\" else \"softdog\"";
           description = "Watchdog driver to use";
         };
       };
