@@ -30,7 +30,7 @@
   };
 
   networking.extraHosts = ''
-    ${config.vpnNamespaces.mullvad.namespaceAddress} mullvad.local
+    ${config.vpnNamespaces.mullvad.namespaceAddress} mullvad.internal
   '';
   services.monit.config = lib.mkAfter ''
     check file "mullvad-netns" with path "/run/netns/mullvad"
