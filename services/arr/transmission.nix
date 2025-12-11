@@ -92,6 +92,8 @@ in
   users.users."${config.mainUser.username}".extraGroups = [ config.services.transmission.group ];
 
   systemd.services.transmission = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     vpnConfinement = {
       enable = true;
       vpnNamespace = "mullvad";

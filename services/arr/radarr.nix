@@ -63,6 +63,8 @@ in
   fakeHosts.radarr.port = port;
 
   systemd.services.radarr = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     environment = {
       RADARR__SERVER__BINDADDRESS = internalIP;
       # NOTE comment the 2 lines below when doing the initial setup

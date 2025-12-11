@@ -55,6 +55,8 @@ in
   ];
 
   systemd.services."${containerService}" = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     after = [ "mullvad.service" ];
     requires = [ "mullvad.service" ];
   };

@@ -20,6 +20,8 @@ in
   '';
 
   systemd.services.microsocks = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     vpnConfinement = {
       enable = true;
       vpnNamespace = "mullvad";

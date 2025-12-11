@@ -31,6 +31,8 @@ in
   '';
 
   systemd.services.shadowsocks-libev = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     vpnConfinement = {
       enable = true;
       vpnNamespace = "mullvad";

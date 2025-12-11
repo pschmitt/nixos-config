@@ -37,6 +37,8 @@ in
   ];
 
   systemd.services."${config.virtualisation.oci-containers.containers.cwabd.serviceName}" = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     after = [ "mullvad.service" ];
     requires = [ "mullvad.service" ];
   };
