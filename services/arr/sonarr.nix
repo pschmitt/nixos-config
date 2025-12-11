@@ -74,4 +74,14 @@ in
       to = port;
     }
   ];
+
+  systemd.tmpfiles.rules =
+    let
+      downloadDir =
+        config.services.transmission.settings."download-dir"
+          or "${config.services.transmission.home}/Downloads";
+    in
+    [
+      "d ${downloadDir}/sonarr 2770 ${config.services.transmission.user} ${config.services.sonarr.group} - -"
+    ];
 }
