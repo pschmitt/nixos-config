@@ -7,7 +7,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "yank-osc52";
-  version = "0-unstable-2025-12-02";
+  version = "unstable-2025-12-02";
 
   src = fetchFromGitHub {
     owner = "sunaku";
