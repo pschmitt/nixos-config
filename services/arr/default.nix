@@ -6,13 +6,14 @@
     # services
     ./cwabd.nix
     ./fake-hosts.nix
+    ./flaresolverr.nix
     ./jackett.nix
     ./listenarr.nix
     ./microsocks.nix
     ./podman-net.nix
-    ./shadowsocks.nix
     ./prowlarr.nix
     ./radarr.nix
+    ./shadowsocks.nix
     ./sonarr.nix
     ./transmission.nix
   ];
