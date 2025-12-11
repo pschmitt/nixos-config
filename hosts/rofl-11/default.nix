@@ -18,7 +18,7 @@
       ];
     })
     (import ./../../services/nfs/nfs-client.nix {
-      server = "rofl-10.${config.domains.netbirdDomain}";
+      server = "rofl-10.${config.domains.netbird}";
       exports = [ "books" ];
       mountPoint = "/mnt/data";
     })

@@ -36,7 +36,7 @@
         PGID = "1000";
         UMASK_SET = "002";
         nodeName = "${config.networking.hostName}";
-        serverIP = "rofl-11.${config.domains.tailscaleDomain}";
+        serverIP = "rofl-11.${config.domains.tailscale}";
         serverPort = "8266";
         inContainer = "true";
         ffmpegVersion = "7";
