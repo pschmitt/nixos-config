@@ -12,7 +12,7 @@
 
 python3.pkgs.buildPythonApplication {
   pname = "hints";
-  version = "0-unstable-2025-11-15";
+  version = "unstable-2025-11-15";
   format = "setuptools";
 
   src = fetchFromGitHub {

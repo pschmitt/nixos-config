@@ -11,7 +11,7 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "waypoint";
-  version = "0-unstable-2025-06-10";
+  version = "unstable-2025-06-10";
 
   src = fetchFromGitHub {
     owner = "tadeokondrak";

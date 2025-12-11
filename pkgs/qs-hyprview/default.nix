@@ -10,7 +10,7 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "qs-hyprview";
-  version = "0-unstable-2025-12-07";
+  version = "unstable-2025-12-07";
 
   src = fetchFromGitHub {
     owner = "dom0";
