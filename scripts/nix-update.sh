@@ -76,6 +76,43 @@ get_proprietary_packages() {
   " | jq -r '.[]'
 }
 
+get_package_position() {
+  local package_name="$1"
+  local target_system="$2"
+
+  NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure --expr "
+    let
+      flake = builtins.getFlake (builtins.toString ./.);
+      pkg = flake.packages.${target_system}.${package_name};
+    in
+      pkg.meta.position or null
+  " 2>/dev/null
+}
+
+is_local_package() {
+  local package_name="$1"
+  local target_system="$2"
+
+  local position
+  if ! position="$(get_package_position "$package_name" "$target_system" | jq -r '.')"
+  then
+    echo "Warning: could not detect source path for ${package_name} (${target_system}); continuing." >&2
+    return 1
+  fi
+
+  if [[ -z "$position" || "$position" == "null" ]]
+  then
+    return 1
+  fi
+
+  if [[ "$position" == */pkgs/local/* ]]
+  then
+    return 0
+  fi
+
+  return 1
+}
+
 is_ignored_package() {
   local package_name="$1"
   shift
@@ -318,6 +355,12 @@ main() {
         echo "Skipping proprietary package (no update script): $pkg" >&2
         continue
       fi
+    fi
+
+    if is_local_package "$pkg" "$primary_system"
+    then
+      echo "Skipping local package: $pkg" >&2
+      continue
     fi
 
     filtered_packages+=("$pkg")

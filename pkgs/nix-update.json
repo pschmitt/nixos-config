@@ -1,10 +1,3 @@
 {
-  "ignoredPackages": [
-    "bluez-headset-callback",
-    "custom-keymaps",
-    "davcli",
-    "docker-compose-wrapper",
-    "oci-consistent-device-naming",
-    "udev-custom-callback"
-  ]
+  "ignoredPackages": []
 }
