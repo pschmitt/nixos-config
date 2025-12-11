@@ -1,5 +1,9 @@
-{ lib, ... }:
+{ lib, config, ... }:
 {
+  imports = [
+    ../hardware/watchdog.nix
+  ];
+
   options = {
     hardware = {
       type = lib.mkOption {
@@ -44,6 +48,25 @@
         type = lib.types.bool;
         default = false;
         description = "Whether or not this is a server";
+      };
+
+      watchdog = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = config.hardware.server;
+          defaultText = "hardware.server";
+          description = "Enable watchdog support for this host.";
+        };
+
+        implementation = lib.mkOption {
+          type = lib.types.enum [
+            "hardware"
+            "softdog"
+            "virtio"
+          ];
+          default = "softdog";
+          description = "Watchdog driver to use";
+        };
       };
     };
   };
