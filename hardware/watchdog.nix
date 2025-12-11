@@ -1,18 +1,18 @@
 { config, lib, ... }:
 let
   cfg = config.hardware.watchdog;
+  isPhysical = cfg.implementation == "hardware";
+  moduleName = if cfg.implementation == "softdog" then "softdog" else "virtio_watchdog";
 in
 {
   config = lib.mkIf cfg.enable (
     lib.mkMerge [
-      (lib.mkIf (cfg.implementation == "hardware") {
+      (lib.mkIf isPhysical {
         services.watchdogd.enable = true;
       })
 
-      (lib.mkIf (cfg.implementation != "hardware") {
-        boot.kernelModules = [
-          (if cfg.implementation == "softdog" then "softdog" else "virtio_watchdog")
-        ];
+      (lib.mkIf (!isPhysical) {
+        boot.kernelModules = [ moduleName ];
 
         systemd.settings.Manager = {
           RuntimeWatchdogSec = "30s";
