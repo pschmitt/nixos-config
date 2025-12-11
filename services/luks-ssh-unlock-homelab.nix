@@ -24,7 +24,7 @@ let
 
     jumpHost = {
       enable = true;
-      hostname = "turris.${config.domains.netbirdDomain}";
+      hostname = "turris.${config.domains.netbird}";
     };
 
     healthcheck = {

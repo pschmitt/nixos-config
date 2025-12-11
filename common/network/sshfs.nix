@@ -18,8 +18,8 @@ let
   ];
 
   # tsDomain = "snake-eagle.ts.net";
-  # tsDomain = config.domains.tailscaleDomain;
-  # netbirdDomain = config.domains.netbirdDomain;
+  # tsDomain = config.domains.tailscale;
+  # netbird = config.domains.netbird;
   vpnDomain = "vpn.${config.domains.main}";
 in
 {

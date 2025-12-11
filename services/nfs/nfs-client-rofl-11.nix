@@ -2,7 +2,7 @@
 {
   imports = [
     (import ./nfs-client.nix {
-      server = "rofl-11.${config.domains.netbirdDomain}";
+      server = "rofl-11.${config.domains.netbird}";
       exports = [ "videos" ];
       mountPoint = "/mnt/data";
     })
