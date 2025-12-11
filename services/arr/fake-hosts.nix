@@ -68,6 +68,7 @@ in
     networking.extraHosts = lib.mkAfter (
       "# Provided by services/arr/fake-hosts.nix\n"
       + lib.concatStringsSep "\n" (map (h: "${localBind} " + h) hostEntries)
+      + "\n"
     );
 
     services.nginx.virtualHosts = vhosts;
