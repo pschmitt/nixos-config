@@ -52,7 +52,7 @@
     hwatch
     pinentry-curses
     pwgen
-    systemd-service-exec
+    systemctl-service-exec
     tmux
     inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
     yank-osc52
