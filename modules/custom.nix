@@ -21,7 +21,5 @@
         description = "Host-specific SOPS configuration file";
       };
     };
-
-    home-manager.enabled = lib.mkEnableOption "home-manager for this host";
   };
 }

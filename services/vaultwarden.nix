@@ -5,8 +5,8 @@
   ...
 }:
 let
-  primaryHost = "vault.brkn.lol";
-  serverAliases = [ "bw.brkn.lol" ];
+  primaryHost = "vault.${config.domains.main}";
+  serverAliases = [ "bw.${config.domains.main}" ];
   vaultwardenPort = 8222;
   websocketPort = 3012;
 
