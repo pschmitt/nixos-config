@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ lib, ... }:
 {
   imports = [
     ./vpn.nix
@@ -19,7 +19,4 @@
   ];
 
   virtualisation.oci-containers.backend = lib.mkForce "podman";
-
-  users.groups.media = { };
-  users.users."${config.mainUser.username}".extraGroups = [ "media" ];
 }

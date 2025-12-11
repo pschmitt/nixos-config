@@ -23,7 +23,7 @@ in
     };
   };
 
-  users.users.radarr.extraGroups = [ "media" ];
+  users.users.radarr.extraGroups = [ config.services.transmission.group ];
 
   systemd.tmpfiles.rules = [
     "d ${downloadDir}/radarr 2770 ${config.services.transmission.user} ${config.services.radarr.group} - -"
