@@ -43,7 +43,7 @@ in
           options = {
             host = lib.mkOption {
               type = lib.types.str;
-              default = "${name}.local";
+              default = "${name}.internal";
               description = "Hostname for the local proxy.";
             };
             address = lib.mkOption {
