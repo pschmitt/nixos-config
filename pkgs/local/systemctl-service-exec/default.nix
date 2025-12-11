@@ -10,19 +10,19 @@
 }:
 
 stdenvNoCC.mkDerivation {
-  pname = "systemd-service-exec";
+  pname = "systemctl-service-exec";
   version = "unstable-2025-12-11";
 
-  src = ./systemd-service-exec.sh;
+  src = ./systemctl-service-exec.sh;
 
   phases = [ "installPhase" ];
 
   nativeBuildInputs = [ makeWrapper ];
 
   installPhase = ''
-    install -Dm755 $src $out/bin/systemd-service-exec
+    install -Dm755 $src $out/bin/systemctl-service-exec
 
-    wrapProgram $out/bin/systemd-service-exec \
+    wrapProgram $out/bin/systemctl-service-exec \
       --prefix PATH : "/run/wrappers/bin:${
         lib.makeBinPath [
           bash
@@ -39,6 +39,6 @@ stdenvNoCC.mkDerivation {
     platforms = platforms.linux;
     license = licenses.gpl3Only;
     maintainers = with maintainers; [ pschmitt ];
-    mainProgram = "systemd-service-exec";
+    mainProgram = "systemctl-service-exec";
   };
 }
