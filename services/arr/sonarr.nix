@@ -54,6 +54,8 @@ in
   };
 
   systemd.services.sonarr = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     environment = {
       SONARR__SERVER__BINDADDRESS = internalIP;
       # NOTE comment the 2 lines below when doing the initial setup

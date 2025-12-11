@@ -22,9 +22,13 @@ in
 
   fakeHosts.flaresolverr.port = port;
 
-  systemd.services.flaresolverr.vpnConfinement = {
-    enable = true;
-    vpnNamespace = "mullvad";
+  systemd.services.flaresolverr = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
+    vpnConfinement = {
+      enable = true;
+      vpnNamespace = "mullvad";
+    };
   };
 
   vpnNamespaces.mullvad.portMappings = [

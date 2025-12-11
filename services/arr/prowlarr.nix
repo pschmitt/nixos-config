@@ -52,6 +52,8 @@ in
   fakeHosts.prowlarr.port = port;
 
   systemd.services.prowlarr = {
+    wantedBy = [ "arr.target" ];
+    partOf = [ "arr.target" ];
     environment = {
       PROWLARR__SERVER__BINDADDRESS = internalIP;
       # NOTE comment the 2 lines below when doing the initial setup

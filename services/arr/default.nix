@@ -18,5 +18,7 @@
     ./transmission.nix
   ];
 
+  systemd.targets.arr.description = "Bundle target for arr services";
+
   virtualisation.oci-containers.backend = lib.mkForce "podman";
 }
