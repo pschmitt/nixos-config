@@ -145,7 +145,10 @@
     };
 
     hypr-dynamic-cursors = {
-      url = "github:VirtCode/hypr-dynamic-cursors";
+      # NOTE commit 2a3b46dd4ba7903f5626f311638a0023d782483f breaks compact
+      # with hyprland 0.52.x
+      # https://github.com/VirtCode/hypr-dynamic-cursors/commits/main/
+      url = "github:VirtCode/hypr-dynamic-cursors/8c1679b87c54e97145cae83e622956d720e88bef";
       inputs.hyprland.follows = "hyprland";
     };
 
