@@ -5,19 +5,22 @@
   ...
 }:
 let
+  mainDomain = config.domains.main;
+  netbirdDomain = config.domains.netbirdDomain;
+
   # List of Harmonia hosts with their respective configurations
   harmonia_hosts = [
     {
-      domain = "cache.${config.networking.hostName}.nb.brkn.lol";
+      domain = "cache.${config.networking.hostName}.${netbirdDomain}";
       basicAuth = false;
     }
-    { domain = "cache.${config.networking.hostName}.brkn.lol"; }
+    { domain = "cache.${config.networking.hostName}.${mainDomain}"; }
   ];
 
   # primary host
   conditional_hosts = lib.optional (config.networking.hostName == "rofl-10") [
-    { domain = "cache.brkn.lol"; }
-    { domain = "nix-cache.brkn.lol"; }
+    { domain = "cache.${mainDomain}"; }
+    { domain = "nix-cache.${mainDomain}"; }
   ];
 
   # Function to generate virtual host configuration
@@ -77,7 +80,7 @@ in
     nginx.virtualHosts = virtualHosts;
 
     monit.config = lib.mkAfter ''
-      check host "harmonia" with address "cache.${config.networking.hostName}.brkn.lol"
+      check host "harmonia" with address "cache.${config.networking.hostName}.${mainDomain}"
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
         if failed
