@@ -10,7 +10,7 @@
   };
 
   services.nginx.virtualHosts = {
-    "whoami.${config.networking.hostName}.brkn.lol" = {
+    "whoami.${config.networking.hostName}.${config.domains.main}" = {
       enableACME = true;
       # FIXME https://github.com/NixOS/nixpkgs/issues/210807
       acmeRoot = null;
