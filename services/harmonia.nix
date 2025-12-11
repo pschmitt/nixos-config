@@ -6,12 +6,12 @@
 }:
 let
   mainDomain = config.domains.main;
-  netbird = config.domains.netbird;
+  netbirdDomain = config.domains.netbird;
 
   # List of Harmonia hosts with their respective configurations
   harmonia_hosts = [
     {
-      domain = "cache.${config.networking.hostName}.${netbird}";
+      domain = "cache.${config.networking.hostName}.${netbirdDomain}";
       basicAuth = false;
     }
     { domain = "cache.${config.networking.hostName}.${mainDomain}"; }
