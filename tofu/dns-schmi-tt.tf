@@ -25,3 +25,21 @@ resource "cloudflare_record" "bluesky-schmi-tt" {
   proxied = false
   ttl     = 1
 }
+
+resource "cloudflare_record" "dieppe-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "dieppe"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_record" "wildcard-dieppe-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "*.dieppe"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}

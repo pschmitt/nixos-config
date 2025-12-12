@@ -19,5 +19,11 @@
       default = "ts.${config.domains.main}";
       description = "Domain used for Tailscale hosts";
     };
+
+    vpn = lib.mkOption {
+      type = lib.types.str;
+      default = "vpn.${config.domains.main}";
+      description = "Domain used for VPN hosts";
+    };
   };
 }
