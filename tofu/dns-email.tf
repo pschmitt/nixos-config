@@ -248,9 +248,9 @@ resource "cloudflare_dns_record" "srv-autodiscover" {
   name    = "_autodiscover._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
+  priority = 0
 
   data = {
-    priority = 0
     weight   = 0
     port     = 443
     target   = "autoconfig.${each.key}"
@@ -267,9 +267,9 @@ resource "cloudflare_dns_record" "srv-imap" { # starttls
   name    = "_imap._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
+  priority = 0
 
   data = {
-    priority = 0
     weight   = 0
     port     = 143
     target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
@@ -286,9 +286,9 @@ resource "cloudflare_dns_record" "srv-imaps" {
   name    = "_imaps._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
+  priority = 0
 
   data = {
-    priority = 0
     weight   = 0
     port     = 993
     target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
@@ -305,9 +305,9 @@ resource "cloudflare_dns_record" "srv-imaps" {
 #   name    = "_pop3s._tcp"
 #   ttl     = 3600
 #   comment = var.dns_email_comment
+#   priority = 0
 #
 #   data = {
-#     priority = 0
 #     weight   = 0
 #     port     = 995
 #     target   = each.value.mx_provider == "google" ? local.pop_google : var.main_mail_domain
@@ -324,9 +324,9 @@ resource "cloudflare_dns_record" "srv-submission" { # starttls
   name    = "_submission._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
+  priority = 0
 
   data = {
-    priority = 0
     weight   = 0
     port     = 587
     target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
@@ -343,9 +343,9 @@ resource "cloudflare_dns_record" "srv-submissions" {
   name    = "_submissions._tcp"
   ttl     = 3600
   comment = var.dns_email_comment
+  priority = 0
 
   data = {
-    priority = 0
     weight   = 0
     port     = 465
     target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
