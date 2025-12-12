@@ -3,81 +3,81 @@ resource "cloudflare_account" "me" {
 }
 
 resource "cloudflare_zone" "anika_blue" {
-  zone       = "anika.blue"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "anika.blue"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "bergmann_schmitt_de" {
-  zone       = "bergmann-schmitt.de"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "bergmann-schmitt.de"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "brkn_lol" {
-  zone       = "brkn.lol"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "brkn.lol"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "curl-pipe-sh" {
-  zone       = "curl-pipe.sh"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "curl-pipe.sh"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "poor-tools" {
-  zone       = "poor.tools"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "poor.tools"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "pschmitt_dev" {
-  zone       = "pschmitt.dev"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "pschmitt.dev"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "ovm5_de" {
-  zone       = "ovm5.de"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "ovm5.de"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "schmitt_co" {
-  zone       = "schmitt.co"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "schmitt.co"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }
 }
 
 resource "cloudflare_zone" "schmi-tt" {
-  zone       = "schmi.tt"
-  plan       = "free"
-  account_id = cloudflare_account.me.id
+  name       = "schmi.tt"
+  # plan = "free"
+  account = { id = cloudflare_account.me.id }
   lifecycle {
     prevent_destroy = true
   }

@@ -93,8 +93,8 @@ module "nix-rofl-12" {
   depends_on = [
     openstack_compute_instance_v2.rofl-12,
     openstack_networking_floatingip_associate_v2.rofl-12_fip_associate,
-    cloudflare_record.records["rofl-12.brkn.lol"],
-    cloudflare_record.records["*.rofl-12.brkn.lol"],
+    cloudflare_dns_record.records["rofl-12.brkn.lol"],
+    cloudflare_dns_record.records["*.rofl-12.brkn.lol"],
     local_file.nixos_vars_rofl-12,
   ]
 
