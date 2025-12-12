@@ -104,8 +104,8 @@ module "nix-rofl-10" {
   depends_on = [
     openstack_compute_instance_v2.rofl-10,
     openstack_networking_floatingip_associate_v2.rofl-10_fip_associate,
-    cloudflare_record.records["rofl-10.brkn.lol"],
-    cloudflare_record.records["*.rofl-10.brkn.lol"],
+    cloudflare_dns_record.records["rofl-10.brkn.lol"],
+    cloudflare_dns_record.records["*.rofl-10.brkn.lol"],
     local_file.nixos_vars_rofl-10,
   ]
 

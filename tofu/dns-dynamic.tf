@@ -54,7 +54,7 @@ locals {
   ])
 }
 
-resource "cloudflare_record" "records" {
+resource "cloudflare_dns_record" "records" {
   for_each = {
     for entry in local.combined_entries : "${entry.record}.${entry.zone_name}" => entry
   }

@@ -1,4 +1,4 @@
-resource "cloudflare_record" "wildcard-brkn-lol" {
+resource "cloudflare_dns_record" "wildcard-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "*"
   type    = "A"
@@ -6,7 +6,7 @@ resource "cloudflare_record" "wildcard-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-10_fip.address
 }
 
-resource "cloudflare_record" "gitea-brkn-lol" {
+resource "cloudflare_dns_record" "gitea-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "gitea"
   type    = "A"
@@ -14,7 +14,7 @@ resource "cloudflare_record" "gitea-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "healthchecks-brkn-lol" {
+resource "cloudflare_dns_record" "healthchecks-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "healthchecks"
   type    = "A"
@@ -22,7 +22,7 @@ resource "cloudflare_record" "healthchecks-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "hc-brkn-lol" {
+resource "cloudflare_dns_record" "hc-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "hc"
   type    = "A"
@@ -30,7 +30,7 @@ resource "cloudflare_record" "hc-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "img-brkn-lol" {
+resource "cloudflare_dns_record" "img-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "img"
   type    = "A"
@@ -38,7 +38,7 @@ resource "cloudflare_record" "img-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-10_fip.address
 }
 
-resource "cloudflare_record" "immich-brkn-lol" {
+resource "cloudflare_dns_record" "immich-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "immich"
   type    = "A"
@@ -46,7 +46,7 @@ resource "cloudflare_record" "immich-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-10_fip.address
 }
 
-resource "cloudflare_record" "mmonit-brkn-lol" {
+resource "cloudflare_dns_record" "mmonit-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "mmonit"
   type    = "A"
@@ -54,7 +54,7 @@ resource "cloudflare_record" "mmonit-brkn-lol" {
   content = oci_core_instance.oci_03.public_ip
 }
 
-resource "cloudflare_record" "oci-yum-brkn-lol" {
+resource "cloudflare_dns_record" "oci-yum-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "oci-yum"
   type    = "A"
@@ -62,7 +62,7 @@ resource "cloudflare_record" "oci-yum-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
-resource "cloudflare_record" "traefik-brkn-lol" {
+resource "cloudflare_dns_record" "traefik-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "traefik"
   content = oci_core_instance.oci_01.public_ip
@@ -70,7 +70,7 @@ resource "cloudflare_record" "traefik-brkn-lol" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "webmail-brkn-lol" {
+resource "cloudflare_dns_record" "webmail-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "webmail"
@@ -78,7 +78,7 @@ resource "cloudflare_record" "webmail-brkn-lol" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "xmr-brkn-lol" {
+resource "cloudflare_dns_record" "xmr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "xmr"
@@ -86,7 +86,7 @@ resource "cloudflare_record" "xmr-brkn-lol" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "x-brkn-lol" {
+resource "cloudflare_dns_record" "x-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "x"
@@ -94,7 +94,7 @@ resource "cloudflare_record" "x-brkn-lol" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "xp-brkn-lol" {
+resource "cloudflare_dns_record" "xp-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
   name    = "xp"
@@ -102,7 +102,7 @@ resource "cloudflare_record" "xp-brkn-lol" {
   ttl     = 3600
 }
 
-resource "cloudflare_record" "cwabd-brkn-lol" {
+resource "cloudflare_dns_record" "cwabd-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "cwabd"
   type    = "A"
@@ -111,7 +111,7 @@ resource "cloudflare_record" "cwabd-brkn-lol" {
 }
 
 # jellyfin
-resource "cloudflare_record" "media-brkn-lol" {
+resource "cloudflare_dns_record" "media-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "media"
   type    = "A"
@@ -119,7 +119,7 @@ resource "cloudflare_record" "media-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "jelly-brkn-lol" {
+resource "cloudflare_dns_record" "jelly-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "jelly"
   type    = "A"
@@ -127,7 +127,7 @@ resource "cloudflare_record" "jelly-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "jellyfin-brkn-lol" {
+resource "cloudflare_dns_record" "jellyfin-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "jellyfin"
   type    = "A"
@@ -135,7 +135,7 @@ resource "cloudflare_record" "jellyfin-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "jellyseer-brkn-lol" {
+resource "cloudflare_dns_record" "jellyseer-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "jellyseer"
   type    = "A"
@@ -143,7 +143,7 @@ resource "cloudflare_record" "jellyseer-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "pp-brkn-lol" {
+resource "cloudflare_dns_record" "pp-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "pp"
   type    = "A"
@@ -151,7 +151,7 @@ resource "cloudflare_record" "pp-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "tv-brkn-lol" {
+resource "cloudflare_dns_record" "tv-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "tv"
   type    = "A"
@@ -160,7 +160,7 @@ resource "cloudflare_record" "tv-brkn-lol" {
 }
 
 # arr
-resource "cloudflare_record" "ll-brkn-lol" {
+resource "cloudflare_dns_record" "ll-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "ll"
   type    = "A"
@@ -168,7 +168,7 @@ resource "cloudflare_record" "ll-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "snr-brkn-lol" {
+resource "cloudflare_dns_record" "snr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "snr"
   type    = "CNAME"
@@ -176,7 +176,7 @@ resource "cloudflare_record" "snr-brkn-lol" {
   content = "son.arr.brkn.lol"
 }
 
-resource "cloudflare_record" "rdr-brkn-lol" {
+resource "cloudflare_dns_record" "rdr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "rdr"
   type    = "CNAME"
@@ -184,7 +184,7 @@ resource "cloudflare_record" "rdr-brkn-lol" {
   content = "rad.arr.brkn.lol"
 }
 
-resource "cloudflare_record" "to-brkn-lol" {
+resource "cloudflare_dns_record" "to-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "to"
   type    = "CNAME"
@@ -192,7 +192,7 @@ resource "cloudflare_record" "to-brkn-lol" {
   content = "to.arr.brkn.lol"
 }
 
-resource "cloudflare_record" "tdarr-brkn-lol" {
+resource "cloudflare_dns_record" "tdarr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "tdarr"
   type    = "A"
@@ -200,7 +200,7 @@ resource "cloudflare_record" "tdarr-brkn-lol" {
   content = openstack_networking_floatingip_v2.rofl-11_fip.address
 }
 
-resource "cloudflare_record" "wildcard-arr-brkn-lol" {
+resource "cloudflare_dns_record" "wildcard-arr-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "*.arr"
   type    = "A"
