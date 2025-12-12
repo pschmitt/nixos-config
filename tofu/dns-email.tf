@@ -254,6 +254,12 @@ resource "cloudflare_dns_record" "srv-autodiscover" {
     port     = 443
     target   = "autoconfig.${each.key}"
   }
+
+  # FIXME We should not need to do this...
+  # https://github.com/cloudflare/terraform-provider-cloudflare/issues/5405
+  lifecycle {
+    ignore_changes = [priority]
+  }
 }
 
 resource "cloudflare_dns_record" "srv-imap" { # starttls
@@ -272,6 +278,12 @@ resource "cloudflare_dns_record" "srv-imap" { # starttls
     port     = 143
     target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
   }
+
+  # FIXME We should not need to do this...
+  # https://github.com/cloudflare/terraform-provider-cloudflare/issues/5405
+  lifecycle {
+    ignore_changes = [priority]
+  }
 }
 
 resource "cloudflare_dns_record" "srv-imaps" {
@@ -289,6 +301,12 @@ resource "cloudflare_dns_record" "srv-imaps" {
     weight   = 0
     port     = 993
     target   = each.value.mx_provider == "google" ? local.imap_google : var.main_mail_domain
+  }
+
+  # FIXME We should not need to do this...
+  # https://github.com/cloudflare/terraform-provider-cloudflare/issues/5405
+  lifecycle {
+    ignore_changes = [priority]
   }
 }
 
@@ -327,6 +345,12 @@ resource "cloudflare_dns_record" "srv-submission" { # starttls
     port     = 587
     target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
   }
+
+  # FIXME We should not need to do this...
+  # https://github.com/cloudflare/terraform-provider-cloudflare/issues/5405
+  lifecycle {
+    ignore_changes = [priority]
+  }
 }
 
 resource "cloudflare_dns_record" "srv-submissions" {
@@ -344,6 +368,12 @@ resource "cloudflare_dns_record" "srv-submissions" {
     weight   = 0
     port     = 465
     target   = each.value.mx_provider == "google" ? local.smtp_google : var.main_mail_domain
+  }
+
+  # FIXME We should not need to do this...
+  # https://github.com/cloudflare/terraform-provider-cloudflare/issues/5405
+  lifecycle {
+    ignore_changes = [priority]
   }
 }
 
