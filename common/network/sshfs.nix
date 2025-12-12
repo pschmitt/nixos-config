@@ -17,9 +17,6 @@ let
     "ServerAliveInterval=10"
   ];
 
-  # tsDomain = "snake-eagle.ts.net";
-  # tsDomain = config.domains.tailscale;
-  # netbird = config.domains.netbird;
   vpnDomain = config.domains.vpn;
 in
 {
