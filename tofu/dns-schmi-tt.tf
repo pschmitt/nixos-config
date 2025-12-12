@@ -1,4 +1,4 @@
-resource "cloudflare_record" "wildcard_schmi-tt" {
+resource "cloudflare_dns_record" "wildcard_schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   name    = "*"
   content = oci_core_instance.oci_01.public_ip
@@ -7,7 +7,7 @@ resource "cloudflare_record" "wildcard_schmi-tt" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "schmi-tt" {
+resource "cloudflare_dns_record" "schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   name    = "@"
   content = oci_core_instance.oci_01.public_ip
@@ -17,7 +17,7 @@ resource "cloudflare_record" "schmi-tt" {
 }
 
 # bluesky verification
-resource "cloudflare_record" "bluesky-schmi-tt" {
+resource "cloudflare_dns_record" "bluesky-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   name    = "_atproto.p"
   content = "did=did:plc:xnruav2mf2nhyysfpvpwflbu"
@@ -26,7 +26,7 @@ resource "cloudflare_record" "bluesky-schmi-tt" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "dieppe-schmi-tt" {
+resource "cloudflare_dns_record" "dieppe-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
   name    = "dieppe"
@@ -35,7 +35,7 @@ resource "cloudflare_record" "dieppe-schmi-tt" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "wildcard-dieppe-schmi-tt" {
+resource "cloudflare_dns_record" "wildcard-dieppe-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
   name    = "*.dieppe"

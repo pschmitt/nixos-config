@@ -1,4 +1,4 @@
-resource "cloudflare_record" "wildcard_poor-tools" {
+resource "cloudflare_dns_record" "wildcard_poor-tools" {
   zone_id = cloudflare_zone.poor-tools.id
   name    = "*"
   content = openstack_networking_floatingip_v2.rofl-10_fip.address
@@ -7,7 +7,7 @@ resource "cloudflare_record" "wildcard_poor-tools" {
   ttl     = 1
 }
 
-resource "cloudflare_record" "poor-tools" {
+resource "cloudflare_dns_record" "poor-tools" {
   zone_id = cloudflare_zone.poor-tools.id
   name    = "@"
   content = openstack_networking_floatingip_v2.rofl-10_fip.address
