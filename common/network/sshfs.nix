@@ -20,7 +20,7 @@ let
   # tsDomain = "snake-eagle.ts.net";
   # tsDomain = config.domains.tailscale;
   # netbird = config.domains.netbird;
-  vpnDomain = "vpn.${config.domains.main}";
+  vpnDomain = config.domains.vpn;
 in
 {
   # NOTE Arch Linux equivalent /etc/fstab entry:
@@ -40,6 +40,13 @@ in
       fsType = "fuse";
       # NOTE We cannot use /config here since it is a symlink to /homeassistant
       device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
+      options = opts;
+    };
+
+    "/mnt/hass-dieppe" = {
+      fsType = "fuse";
+      # NOTE We cannot use /config here since it is a symlink to /homeassistant
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@homeassistant-dieppe.${vpnDomain}:/homeassistant";
       options = opts;
     };
 
