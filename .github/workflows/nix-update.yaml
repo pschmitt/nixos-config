@@ -202,7 +202,7 @@ jobs:
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
-          branch: chore/nix-update/${{ matrix.package }}
+          branch: nix-update/${{ matrix.package }}
           delete-branch: true
           commit-message: "chore: update ${{ matrix.package }}"
           title: "chore: update ${{ matrix.package }}"
