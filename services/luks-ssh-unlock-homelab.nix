@@ -14,17 +14,30 @@ let
     }
   ];
 
+  secretSuffixes = [
+    "passphrase"
+    "knownHosts"
+    "initrdKnownHosts"
+  ];
+
   # Define a function to create an instance with common defaults
   createInstance = instance: {
     type = "systemd";
     hostname = instance.host;
     passphraseFile = config.sops.secrets.${"luks/" + instance.name + "/passphrase"}.path;
+    sshKnownHostsFile = config.sops.secrets.${"luks/" + instance.name + "/knownHosts"}.path;
+    initrdKnownHostsFile = config.sops.secrets.${"luks/" + instance.name + "/initrdKnownHosts"}.path;
+
     forceIpv4 = true;
     sleepInterval = 30;
 
+    initrdCheck = {
+      enable = false;
+    };
+
     jumpHost = {
       enable = true;
-      hostname = "turris.${config.domains.netbird}";
+      hostname = "turris.${config.domains.vpn}";
     };
 
     healthcheck = {
@@ -32,22 +45,28 @@ let
       command = "mount | grep -v tmpfs | grep luks";
     };
 
-    emailNotifications = {
+    notifications = {
       enable = true;
-      recipient = config.mainUser.email;
-      sender = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
-      subject = "LUKS SSH Unlocker: ${instance.name} -> #event_type";
+      mail = {
+        enable = true;
+        recipient = config.mainUser.email;
+        from = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
+        subject = "LUKS SSH Unlocker: ${instance.name} -> #event_type";
+      };
     };
   };
 
   # Helper to define sops secrets for each instance
   defineSopsSecrets = lib.listToAttrs (
-    lib.lists.map (instance: {
-      name = "luks/${instance.name}/passphrase";
-      value = {
-        inherit (config.custom) sopsFile;
-      };
-    }) instances
+    lib.lists.concatMap (
+      instance:
+      lib.lists.map (suffix: {
+        name = "luks/${instance.name}/${suffix}";
+        value = {
+          inherit (config.custom) sopsFile;
+        };
+      }) secretSuffixes
+    ) instances
   );
 in
 {
