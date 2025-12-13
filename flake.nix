@@ -38,6 +38,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    bw-backup = {
+      # url = "path:/home/pschmitt/devel/private/pschmitt/bw-backup.git";
+      url = "github:pschmitt/bw-backup";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     fenix = {
       url = "github:nix-community/fenix/monthly";
       inputs.nixpkgs.follows = "nixpkgs";

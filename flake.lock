@@ -70,6 +70,23 @@
         "type": "github"
       }
     },
+    "bw-backup": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1765660452,
+        "narHash": "sha256-p6GNdpPjFN7SWmYcuT2ffaJYcRiB/mJKqAfPPUgLf74=",
+        "path": "/home/pschmitt/devel/private/pschmitt/bw-backup.git",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/pschmitt/devel/private/pschmitt/bw-backup.git",
+        "type": "path"
+      }
+    },
     "catppuccin": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -2654,6 +2671,7 @@
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
+        "bw-backup": "bw-backup",
         "catppuccin": "catppuccin",
         "disko": "disko",
         "docker-compose-bulk": "docker-compose-bulk",
