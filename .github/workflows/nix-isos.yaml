@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch: # allows manual triggering
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
