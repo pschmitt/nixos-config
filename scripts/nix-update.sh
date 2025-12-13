@@ -2,10 +2,9 @@
 
 usage() {
   cat <<USAGE
-Usage: $(basename "$0") [OPTIONS]
+Usage: $(basename "$0") [OPTIONS] [PACKAGE…]
 
 Options:
-  -p, --package NAME   Update only the specified package (can be repeated)
   -s, --system NAME    Target system for flake evaluation (can be repeated; default: x86_64-linux)
   --no-update-script   Do not invoke passthru.updateScript even if present
   --build              Build each package after updating
@@ -17,7 +16,7 @@ Options:
 
 Examples:
   $(basename "$0") --list
-  $(basename "$0") --package go-hass-agent --build
+  $(basename "$0") --build go-hass-agent
   $(basename "$0") --system aarch64-linux
 USAGE
 }
@@ -235,7 +234,6 @@ run_update() {
 }
 
 main() {
-  local -a packages=()
   local repo_root
   local build_flag
   local commit_flag
@@ -246,21 +244,10 @@ main() {
   local ignore_config_path
   local -a ignored_packages
   local -a proprietary_packages
-  local primary_system
 
   while [[ $# -gt 0 ]]
   do
     case "$1" in
-      -p|--package)
-        if [[ -z ${2:-} ]]
-        then
-          echo "Error: --package requires an argument" >&2
-          usage >&2
-          return 2
-        fi
-        packages+=("$2")
-        shift 2
-        ;;
       -s|--system)
         if [[ -z ${2:-} ]]
         then
@@ -296,9 +283,7 @@ main() {
         return 0
         ;;
       *)
-        echo "Error: Unknown option '$1'" >&2
-        usage >&2
-        return 2
+        break
         ;;
     esac
   done
@@ -320,12 +305,14 @@ main() {
     ' "$ignore_config_path")
   fi
 
-  primary_system="${systems[0]}"
+  local primary_system="${systems[0]}"
 
   if [[ -z ${include_proprietary:-} ]]
   then
     mapfile -t proprietary_packages < <(get_proprietary_packages "$primary_system")
   fi
+
+  local packages=("$@")
 
   case "${#packages[@]}" in
     0)
