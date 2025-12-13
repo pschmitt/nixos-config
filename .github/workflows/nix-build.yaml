@@ -4,6 +4,10 @@ on:
   push:
   workflow_dispatch: # allows manual triggering
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
   NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} aarch64-linux,i686-linux,x86_64-linux /home/runner/.ssh/id_ed25519 - - - - -"
