@@ -18,7 +18,7 @@ let
   createInstance = instance: {
     type = "systemd";
     hostname = instance.host;
-    passphraseFile = config.sops.secrets.${"luks/" + instance.name}.path;
+    passphraseFile = config.sops.secrets.${"luks/" + instance.name + "/passphrase"}.path;
     forceIpv4 = true;
     sleepInterval = 30;
 
@@ -43,7 +43,7 @@ let
   # Helper to define sops secrets for each instance
   defineSopsSecrets = lib.listToAttrs (
     lib.lists.map (instance: {
-      name = "luks/${instance.name}";
+      name = "luks/${instance.name}/passphrase";
       value = {
         inherit (config.custom) sopsFile;
       };
