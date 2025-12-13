@@ -14,21 +14,19 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      - uses: crazy-max/ghaction-import-gpg@v6
-        with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          git_user_signingkey: true
-          git_commit_gpgsign: true
-
-      - name: List GPG keys
-        run: gpg -K
-
       - name: Update flake.lock
         uses: DeterminateSystems/update-flake-lock@main
+        env:
+          GIT_AUTHOR_EMAIL: github@brkn.lol
+          GIT_AUTHOR_NAME: gh-brkn-lol
+          GIT_COMMITTER_EMAIL: github@brkn.lol
+          GIT_COMMITTER_NAME: gh-brkn-lol
         with:
           pr-title: "Update flake.lock" # Title of PR to be created
           pr-labels: | # Labels to be set on the PR
             flake-lock
           # https://github.com/DeterminateSystems/update-flake-lock?tab=readme-ov-file#with-a-personal-authentication-token
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
+          sign-commits: true
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
