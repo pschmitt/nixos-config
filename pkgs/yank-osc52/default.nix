@@ -21,6 +21,8 @@ stdenvNoCC.mkDerivation {
       "--flake"
       "--version"
       "branch"
+      "--version-regex"
+      "(?:0-)?(unstable-[0-9]{4}-[0-9]{2}-[0-9]{2})"
     ];
   };
 
