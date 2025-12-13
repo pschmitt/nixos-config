@@ -203,7 +203,7 @@ run_update() {
       GIT_ROOT="$repo_root" \
         SOURCES_JSON_PATH="$repo_root/pkgs/oci/oracle-cloud-agent/sources.json" \
         "$repo_root/pkgs/oci/oracle-cloud-agent/update.sh"
-      return
+      return "$?"
     fi
 
     args+=(--use-update-script)
@@ -230,6 +230,7 @@ run_update() {
   export GIT_ROOT="$git_root"
 
   export NIXPKGS_ALLOW_UNFREE=1
+  echo "Running: nix run --impure 'nixpkgs#nix-update' -- ${args[*]}" >&2
   nix run --impure nixpkgs#nix-update -- "${args[@]}"
 }
 
