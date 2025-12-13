@@ -78,7 +78,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ./scripts/nix-update.sh --package "${{ matrix.package }}" --system x86_64-linux --system aarch64-linux
+          ./scripts/nix-update.sh --system x86_64-linux --system aarch64-linux "${{ matrix.package }}"
 
       - name: Create pull request for ${{ matrix.package }}
         uses: peter-evans/create-pull-request@v8
@@ -180,7 +180,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ./scripts/nix-update.sh --package "${{ matrix.package }}" --system x86_64-linux --system aarch64-linux
+          ./scripts/nix-update.sh --system x86_64-linux --system aarch64-linux "${{ matrix.package }}"
 
       - name: Create pull request for ${{ matrix.package }}
         uses: peter-evans/create-pull-request@v8
