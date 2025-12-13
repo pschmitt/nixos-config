@@ -77,14 +77,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1765660452,
-        "narHash": "sha256-p6GNdpPjFN7SWmYcuT2ffaJYcRiB/mJKqAfPPUgLf74=",
-        "path": "/home/pschmitt/devel/private/pschmitt/bw-backup.git",
-        "type": "path"
+        "lastModified": 1765661379,
+        "narHash": "sha256-ZyFTGRHGD1jD5c1LP0//40Lrp1dA/MnpGSvneRZGCKA=",
+        "owner": "pschmitt",
+        "repo": "bw-backup",
+        "rev": "9d102090c3e17d05335d949a8730976f7dac79d9",
+        "type": "github"
       },
       "original": {
-        "path": "/home/pschmitt/devel/private/pschmitt/bw-backup.git",
-        "type": "path"
+        "owner": "pschmitt",
+        "repo": "bw-backup",
+        "type": "github"
       }
     },
     "catppuccin": {
