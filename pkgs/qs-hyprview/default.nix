@@ -10,13 +10,13 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "qs-hyprview";
-  version = "unstable-2025-12-07";
+  version = "0-unstable-2025-12-12";
 
   src = fetchFromGitHub {
     owner = "dom0";
     repo = "qs-hyprview";
-    rev = "8354f99a26ca6e88b105bf86b886d6b1399deed7"; # TODO: pin a real commit
-    hash = "sha256-7nmHhI5pkHq1Ln76TatqhAB6XPQ52Zut1gc9tyLBVUQ=";
+    rev = "97a8681f40b5cbd22ca3852bc8b7b98981283b0d"; # TODO: pin a real commit
+    hash = "sha256-3oVlj5htrRlxdgubcH0y+Fn+HmOqgG0GsR8jyhF5ui4=";
   };
 
   dontConfigure = true;
