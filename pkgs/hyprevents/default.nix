@@ -14,7 +14,7 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "hyprevents";
-  version = "unstable-2024-10-15";
+  version = "0-unstable-2024-10-15";
 
   src = fetchFromGitHub {
     owner = "vilari-mickopf";
