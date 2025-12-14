@@ -8,6 +8,7 @@
     ./default-apps.nix
     ./dotool.nix
     ./gnome-keyring.nix
+    ./clipcascade.nix
     ./media.nix
     ./profile-picture.nix
     ./yt-dlp-cookies-tx.nix
