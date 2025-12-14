@@ -47,8 +47,6 @@ in
     ports = [ "0.0.0.0:${toString listenPort}:${toString internalPort}" ];
   };
 
-  networking.firewall.allowedTCPPorts = [ listenPort ];
-
   services.monit.config = lib.mkAfter ''
     check host "clipcascade" with address "127.0.0.1"
       group services
