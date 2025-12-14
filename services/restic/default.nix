@@ -44,7 +44,7 @@
       createWrapper = true;
       exclude = [ ];
       backupPrepareCommand = ''
-        ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+        ${pkgs.curl}/bin/curl -fsSL -m 10 --retry 5 -X POST \
           -H "Content-Type: text/plain" \
           --data "Starting backup (nix restic-main)" \
           "$HEALTHCHECK_URL/start"
@@ -55,7 +55,7 @@
         if ! ${pkgs.restic}/bin/restic list keys
         then
           echo "List keys failed, repo is probably locked." >&2
-          ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+          ${pkgs.curl}/bin/curl -fsSL -m 10 --retry 5 -X POST \
             -H "Content-Type: text/plain" \
             --data "Backup failed: repo locked? (nix restic-main)" \
             "$HEALTHCHECK_URL/fail"
@@ -69,7 +69,7 @@
             .[] | select(.time | startswith($today))
           ' >/dev/null
         then
-          ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+          ${pkgs.curl}/bin/curl -fsSL -m 10 --retry 5 -X POST \
             -H "Content-Type: text/plain" \
             --data "Backup failed: no backup on $TODAY (nix restic-main)" \
             "$HEALTHCHECK_URL/fail"
@@ -80,7 +80,7 @@
         ${pkgs.coreutils}/bin/mkdir -p /var/lib/restic
         ${pkgs.coreutils}/bin/date +%s > /var/lib/restic/last-backup
 
-        ${pkgs.curl}/bin/curl -m 10 --retry 5 -X POST \
+        ${pkgs.curl}/bin/curl -fsSL -m 10 --retry 5 -X POST \
           -H "Content-Type: text/plain" \
           --data "Backup successful (nix restic-main)" \
           "$HEALTHCHECK_URL"
