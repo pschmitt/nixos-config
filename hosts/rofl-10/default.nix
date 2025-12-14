@@ -17,6 +17,7 @@
     ../../services/backups/evernote.nix
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
+    ../../services/clipcascade.nix
     ../../services/harmonia.nix
     ../../services/forgejo.nix
     ../../services/http.nix

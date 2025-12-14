@@ -20,7 +20,7 @@ in
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
-  native-client = pkgs.callPackage ./native-client { };
+  clipcascade = pkgs.callPackage ./clipcascade { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
@@ -31,13 +31,12 @@ in
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   linkding-cli = pkgs.callPackage ./linkding-cli { };
   mmonit = pkgs.callPackage ./mmonit { };
+  native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   waypoint = pkgs.callPackage ./waypoint { };
   withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
-
-  # custom packages, that should be flakes
 
   # oci pkgs
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
