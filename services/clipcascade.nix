@@ -26,8 +26,8 @@ in
   };
 
   systemd.tmpfiles.rules = [
-    "d ${stateDir} 0750 clipcascade clipcascade - -"
-    "d ${dataDir} 0750 clipcascade clipcascade - -"
+    "d ${stateDir} 0750 ${user} ${group} - -"
+    "d ${dataDir} 0750 ${user} ${group} - -"
   ];
 
   virtualisation.oci-containers.containers.clipcascade = {
