@@ -40,6 +40,7 @@ in
       CC_PORT = "${toString internalPort}";
       CC_SIGNUP_ENABLED = "false";
       CC_ALLOWED_ORIGINS = "*";
+      CC_MAX_MESSAGE_SIZE_IN_MiB = "10";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
       TZ = config.time.timeZone;
