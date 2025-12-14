@@ -1,0 +1,42 @@
+diff --git a/core/constants.py b/core/constants.py
+index e4f2f91..1a2b3c4 100644
+--- a/core/constants.py
++++ b/core/constants.py
+@@
+ def get_program_files_directory():
+     """
+     Get the directory containing the program files.
+     """
+     if PLATFORM == MACOS:
+         app_dir = os.path.join(
+             get_user_home_directory(), "Library", "Application Support", "ClipCascade"
+         )
+         if not os.path.exists(app_dir):
+             try:
+                 os.makedirs(app_dir)
+             except Exception as e:
+                 raise e
+ 
+         return app_dir
+-    else:
+-        if getattr(sys, "frozen", False):  # Running as a PyInstaller executable
+-            return os.path.dirname(sys.executable)
+-        else:  # Running as a regular Python script
+-            running_dir = os.path.dirname(os.path.abspath(__file__))
+-            parent_dir = os.path.dirname(running_dir)  # Go one folder up
+-            return parent_dir
++    elif PLATFORM.startswith(LINUX):
++        data_dir = os.environ.get(
++            "XDG_STATE_HOME", os.path.join(get_user_home_directory(), ".local", "state")
++        )
++        app_dir = os.path.join(data_dir, "clipcascade")
++        if not os.path.exists(app_dir):
++            os.makedirs(app_dir, exist_ok=True)
++        return app_dir
++    else:
++        if getattr(sys, "frozen", False):  # Running as a PyInstaller executable
++            return os.path.dirname(sys.executable)
++        else:  # Running as a regular Python script
++            running_dir = os.path.dirname(os.path.abspath(__file__))
++            parent_dir = os.path.dirname(running_dir)  # Go one folder up
++            return parent_dir
