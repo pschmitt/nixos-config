@@ -55,6 +55,7 @@ in
       if failed
         port ${toString listenPort}
         protocol http
+        request "/health"
         with timeout 15 seconds
       then restart
       if 5 restarts within 10 cycles then alert
