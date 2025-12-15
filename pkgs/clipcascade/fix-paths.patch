@@ -1,0 +1,18 @@
+--- a/core/constants.py
++++ b/core/constants.py
+@@ -128,7 +128,14 @@
+                 raise e
+ 
+         return app_dir
+-    else:
++    elif PLATFORM.startswith(LINUX):
++        data_dir = os.environ.get(
++            "XDG_STATE_HOME", os.path.join(get_user_home_directory(), ".local", "state")
++        )
++        app_dir = os.path.join(data_dir, "clipcascade")
++        os.makedirs(app_dir, exist_ok=True)
++        return app_dir
++    else:
+         if getattr(sys, "frozen", False):  # Running as a PyInstaller executable
+             return os.path.dirname(sys.executable)
+         else:  # Running as a regular Python script
