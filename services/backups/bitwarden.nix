@@ -18,7 +18,7 @@
   bw-backup = {
     backup = {
       enable = true;
-      backupPath = "/srv/bw-backup";
+      backupPath = "/srv/bw-backup/data";
       environmentFiles = [ config.sops.secrets."bw-backup".path ];
     };
     monit = {
