@@ -16,10 +16,14 @@
   };
 
   bw-backup = {
-    backupPath = "/srv/bw-backup";
-    backup.enable = true;
-    backup.environmentFiles = [ config.sops.secrets."bw-backup".path ];
-    monit.enable = true;
-    monit.thresholdSeconds = 86400;
+    backup = {
+      enable = true;
+      backupPath = "/srv/bw-backup";
+      environmentFiles = [ config.sops.secrets."bw-backup".path ];
+    };
+    monit = {
+      enable = true;
+      thresholdSeconds = 86400;
+    };
   };
 }
