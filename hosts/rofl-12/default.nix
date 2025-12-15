@@ -2,7 +2,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ./restic.nix
 
     ../../common/server
 
