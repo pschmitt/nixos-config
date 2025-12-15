@@ -36,6 +36,7 @@
 
     bw-sync = {
       enable = true;
+      purgeDestination = true;
       environmentFiles = [ config.sops.secrets."bw-sync".path ];
     };
   };
