@@ -20,6 +20,7 @@
       enable = true;
       backupPath = "/srv/bw-backup/data";
       environmentFiles = [ config.sops.secrets."bw-backup".path ];
+      retention = 30;
     };
     monit = {
       enable = true;
