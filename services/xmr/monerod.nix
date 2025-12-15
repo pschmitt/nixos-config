@@ -85,4 +85,6 @@
   };
 
   networking.firewall.allowedTCPPorts = lib.mkAfter [ 18080 ];
+
+  services.restic.backups.main.exclude = [ config.users.users.monero.home ];
 }
