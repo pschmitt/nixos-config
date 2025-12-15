@@ -38,6 +38,10 @@
       enable = true;
       purgeDestination = true;
       environmentFiles = [ config.sops.secrets."bw-sync".path ];
+      monit = {
+        enable = true;
+        thresholdSeconds = 86400;
+      };
     };
   };
 }
