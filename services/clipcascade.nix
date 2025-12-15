@@ -32,8 +32,6 @@ in
 
   virtualisation.oci-containers.containers.clipcascade = {
     image = "sathvikrao/clipcascade:latest";
-    containerName = "clipcascade";
-    hostname = "clipcascade";
     autoStart = true;
     pull = "always";
     volumes = [ "${dataDir}:/database" ];
