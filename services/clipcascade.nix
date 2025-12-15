@@ -32,15 +32,17 @@ in
 
   virtualisation.oci-containers.containers.clipcascade = {
     image = "sathvikrao/clipcascade:latest";
-    autoStart = true;
+    containerName = "clipcascade";
     hostname = "clipcascade";
+    autoStart = true;
     pull = "always";
     volumes = [ "${dataDir}:/database" ];
     environment = {
-      CC_PORT = "${toString internalPort}";
-      CC_SIGNUP_ENABLED = "false";
       CC_ALLOWED_ORIGINS = "*";
       CC_MAX_MESSAGE_SIZE_IN_MiB = "10";
+      CC_P2P_ENABLED = "true";
+      CC_PORT = "${toString internalPort}";
+      CC_SIGNUP_ENABLED = "false";
     }
     // lib.optionalAttrs (config.time.timeZone != null) {
       TZ = config.time.timeZone;
