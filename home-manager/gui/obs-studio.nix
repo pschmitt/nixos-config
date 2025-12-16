@@ -13,11 +13,8 @@ let
       name = "obs-hyprland-autostart";
       runtimeInputs = with pkgs; [
         coreutils
-        findutils
-        flatpak
-        gawk
-        gnugrep
         procps
+        systemd
       ];
       text = builtins.readFile ./obs-autostart.sh;
     }
