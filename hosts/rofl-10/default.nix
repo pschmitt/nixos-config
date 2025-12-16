@@ -47,8 +47,10 @@
     ../../common/global/users/k8s-backdoor.nix
   ];
 
-  hardware.cattle = false;
-  hardware.serverType = "openstack";
+  hardware = {
+    cattle = false;
+    serverType = "openstack";
+  };
   custom.promptColor = "#0B87CA"; # nextcloud blue
 
   # Enable networking
