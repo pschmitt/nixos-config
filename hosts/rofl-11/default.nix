@@ -34,6 +34,7 @@
   ];
 
   hardware.cattle = false;
+  hardware.serverType = "openstack";
   custom.promptColor = "#9C62C5"; # jellyfin purple
 
   # Enable networking
