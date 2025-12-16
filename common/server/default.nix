@@ -17,14 +17,15 @@
     ../../services/git-clone-nixos-config.nix
     ../../services/initrd-luks-ssh-unlock.nix
 
+    ../../hardware/openstack-wiit.nix
+    ../../hardware/oci.nix
+
     ./dotfiles.nix
     ./firewall.nix
     ./monit.nix
     ./restic.nix
     ./snapper.nix
-  ]
-  ++ lib.optionals (config.hardware.serverType == "openstack") [ ../../hardware/openstack-wiit.nix ]
-  ++ lib.optionals (config.hardware.serverType == "oci") [ ../../hardware/oci.nix ];
+  ];
 
   hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;

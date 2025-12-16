@@ -1,5 +1,10 @@
-{ lib, modulesPath, ... }:
 {
+  lib,
+  config,
+  modulesPath,
+  ...
+}:
+lib.mkIf (config.hardware.serverType == "openstack") {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 
   hardware.kvmGuest = true;
