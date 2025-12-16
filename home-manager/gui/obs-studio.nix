@@ -17,14 +17,13 @@ let
         flatpak
         gawk
         gnugrep
-        obs-studio
         procps
       ];
       text = builtins.readFile ./obs-autostart.sh;
     }
   }/bin/obs-hyprland-autostart";
   obs-nvidia = pkgs.writeShellScriptBin "obs-nvidia" ''
-    nvidia-offload ${pkgs.obs-studio}/bin/obs "$@"
+    nvidia-offload obs "$@"
   '';
   obs-nvidia-custom = pkgs.writeShellScriptBin "obs-nvidia-custom" ''
     ${obs-nvidia}/bin/obs-nvidia \
