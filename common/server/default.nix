@@ -22,9 +22,11 @@
     ./monit.nix
     ./restic.nix
     ./snapper.nix
-  ];
+  ]
+  ++ lib.optionals (config.hardware.serverType == "openstack") [ ../../hardware/openstack-wiit.nix ]
+  ++ lib.optionals (config.hardware.serverType == "oci") [ ../../hardware/oci.nix ];
 
-  hardware.server = true;
+  hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;
 
   boot.kernel.sysctl = {

@@ -4,7 +4,6 @@
     ./hardware-configuration.nix
 
     ../../common/server
-    ../../hardware/oci.nix
 
     ../../services/restic
     ../../services/http.nix
@@ -16,5 +15,6 @@
   ];
 
   hardware.cattle = false;
+  hardware.serverType = "oci";
   networking.hostName = "oci-03";
 }
