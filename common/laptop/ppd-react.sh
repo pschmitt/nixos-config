@@ -35,36 +35,17 @@ notify_all_sessions() {
   local summary="$1"
   local body="$2"
 
-  local sessions
-  if ! sessions="$(loginctl list-sessions --no-legend --no-pager 2>/dev/null)"
+  local sessions_json
+  if ! sessions_json="$(loginctl list-sessions --no-pager -j 2>/dev/null)"
   then
     log_warn "loginctl list-sessions failed"
     return 0
   fi
 
-  local line
-  while IFS= read -r line
+  local uid user
+  while IFS=$'\t' read -r uid user
   do
-    local session_id
-    if ! session_id="$(printf '%s' "$line" | awk '{print $1}')" || \
-       [[ -z $session_id ]]
-    then
-      continue
-    fi
-
-    local uid
-    if ! uid="$(loginctl show-session "$session_id" -p User --value 2>/dev/null)"
-    then
-      continue
-    fi
-
-    local display
-    if ! display="$(loginctl show-session "$session_id" -p Display --value 2>/dev/null)"
-    then
-      display=""
-    fi
-
-    if [[ -z "$uid" ]]
+    if [[ -z "$uid" || -z "$user" ]]
     then
       continue
     fi
@@ -76,24 +57,24 @@ notify_all_sessions() {
       continue
     fi
 
-    if [[ -n "$display" ]]
+    if ! XDG_RUNTIME_DIR="$runtime_dir" \
+      DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
+      runuser -u "$user" -- notify-send -a "$NOTIFY_APP_NAME" "$summary" "$body"
     then
-      if ! DISPLAY="$display" \
-        XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
-        runuser -u "#$uid" -- notify-send -a "$NOTIFY_APP_NAME" "$summary" "$body"
-      then
-        :
-      fi
-    else
-      if ! XDG_RUNTIME_DIR="$runtime_dir" \
-        DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
-        runuser -u "#$uid" -- notify-send -a "$NOTIFY_APP_NAME" "$summary" "$body"
-      then
-        :
-      fi
+      log_warn "notify-send failed for user $user (uid $uid)"
     fi
-  done <<<"$sessions"
+  done < <(
+    jq -r '
+      [
+        .[]
+        | select(.class == "user")
+        | { uid, user }
+      ]
+      | unique_by(.uid)
+      | .[]
+      | "\(.uid)\t\(.user)"
+    ' <<<"$sessions_json"
+  )
 }
 
 apply_profile() {
