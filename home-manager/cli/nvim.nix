@@ -43,6 +43,10 @@ in
       codespell
       tree-sitter
 
+      # for random plugins that need to compile native extensions
+      # eg: luasnip
+      gcc
+
       # vimPlugins.nvim-treesitter.withAllGrammars
       shellcheck
       shfmt
@@ -54,12 +58,16 @@ in
       # jssonnet
       jsonnet-language-server
 
+      # markdown
+      marksmanWrapped
+
+      # lua
       luajit
       stylua
 
       nodejs # for copilot
 
-      imagemagick # for image.nvim
+      imagemagick # for image.nvim, snacks.images etc.
     ];
 
     viAlias = false;
