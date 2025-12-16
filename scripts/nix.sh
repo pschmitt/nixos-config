@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-# Ensure we are in the script's directory (repo root)
-cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+# Ensure we are in the repo root
+SCRIPT_DIR="$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)"
+cd "${SCRIPT_DIR}/.." || exit 9
 
 HOSTNAME="${HOSTNAME:-$(hostname)}"
 
@@ -102,7 +103,7 @@ cmd_eval() {
 
   if [[ -n ${home_manager:-} ]]
   then
-    config_path="\"home-manager\".users.${USER:-pschmitt}.${config_path}"
+    config_path="config.home-manager.users.${USER:-pschmitt}.${args[0]}"
   fi
 
   echo "Evaluating attribute '${config_path}' for host '${target_host}'" >&2
