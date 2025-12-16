@@ -412,7 +412,7 @@
           src = ./.;
           hooks = {
             nixfmt-rfc-style.enable = true;
-            statix.enable = false;
+            statix.enable = true;
             pre-commit-hook-ensure-sops = {
               enable = true;
               files = ".+.sops.yaml$";
