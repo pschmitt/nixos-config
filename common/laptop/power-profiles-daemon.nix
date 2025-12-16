@@ -32,6 +32,7 @@ in
       "power-profiles-daemon.service"
     ];
     wants = [ "power-profiles-daemon.service" ];
+    environment.NOTIFY = "1";
 
     serviceConfig = {
       ExecStart = "${ppdReact}/bin/ppd-react";
