@@ -14,7 +14,9 @@
     ./restic.nix
   ];
 
-  hardware.cattle = false;
-  hardware.serverType = "oci";
+  hardware = {
+    cattle = false;
+    serverType = "oci";
+  };
   networking.hostName = "oci-03";
 }
