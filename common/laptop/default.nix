@@ -16,6 +16,7 @@
     ./media.nix
     ./network.nix
     ./restic.nix
+    ./waydroid.nix
     ./wireshark.nix
   ];
 
