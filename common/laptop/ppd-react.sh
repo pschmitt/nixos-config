@@ -8,6 +8,10 @@ log_warn() {
   printf '%s\n' "warning: $*" >&2
 }
 
+should_notify() {
+  [[ -n "${NOTIFY:-}" ]]
+}
+
 get_active_profile() {
   local json
 
@@ -34,6 +38,11 @@ get_active_profile() {
 notify_all_sessions() {
   local summary="$1"
   local body="$2"
+
+  if ! should_notify
+  then
+    return 0
+  fi
 
   local sessions_json
   if ! sessions_json="$(loginctl list-sessions --no-pager -j 2>/dev/null)"
@@ -72,7 +81,7 @@ notify_all_sessions() {
       ]
       | unique_by(.uid)
       | .[]
-      | "\(.uid)\t\(.user)"
+      | @tsv
     ' <<<"$sessions_json"
   )
 }
