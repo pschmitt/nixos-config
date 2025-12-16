@@ -196,7 +196,7 @@
 
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system = {
-    stateVersion = "25.05";
+    stateVersion = "25.11";
     # autoUpgrade = {
     #   enable = true;
     #   channel = "https://nixos.org/channels/nixos-23.05";
