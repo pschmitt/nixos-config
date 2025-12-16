@@ -142,25 +142,25 @@
           width = 500;
         };
 
-        "category=info" = {
+        "urgency=normal category=info" = {
           "border-color" = "#6EC9F5";
         };
 
-        "category=success" = {
+        "urgency=normal category=success" = {
           "border-color" = "#A8D38D";
         };
 
-        "category=warning" = {
+        "urgency=normal category=warning" = {
           "border-color" = "#F3BD6A";
         };
 
-        "category=error" = {
+        "urgency=normal category=error" = {
           "border-radius" = 10;
           "border-color" = "#bf616a";
           "background-color" = "#bf616a";
         };
 
-        "category=failure" = {
+        "urgency=normal category=failure" = {
           "border-radius" = 10;
           "border-color" = "#F1705F";
         };
