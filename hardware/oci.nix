@@ -1,10 +1,11 @@
 # https://github.com/NixOS/nixpkgs/pull/119856/
 {
   lib,
+  config,
   pkgs,
   ...
 }:
-{
+lib.mkIf (config.hardware.serverType == "oci") {
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   custom.netbirdSetupKey = lib.mkForce "oci";
   hardware = {
