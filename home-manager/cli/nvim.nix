@@ -59,7 +59,7 @@ in
       jsonnet-language-server
 
       # markdown
-      marksmanWrapped
+      marksman
 
       # lua
       luajit
