@@ -6,7 +6,7 @@
 
 ## Deployment
 - Do not *EVER* commit or push changes from this environment.
-- To deploy changes to a host, run `~/bin/zhj nixos::rebuild --target-host TARGET_HOST`.
+- To deploy changes to a host, run `just deploy TARGET_HOST`.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt-rfc-style`.
