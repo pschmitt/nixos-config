@@ -25,7 +25,7 @@
           lib.types.enum [
             "openstack"
             "oci"
-            "hardware"
+            "bare-metal"
           ]
         );
         default = null;
