@@ -2,6 +2,8 @@
 {
   imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
 
+  hardware.kvmGuest = true;
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   custom.netbirdSetupKey = lib.mkForce "optimist";
 
