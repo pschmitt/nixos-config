@@ -1,4 +1,5 @@
 {
+  config,
   inputs,
   lib,
   osConfig,
@@ -12,6 +13,7 @@ let
     pkgs.writeShellApplication {
       name = "obs-hyprland-autostart";
       runtimeInputs = with pkgs; [
+        config.programs.obs-studio.finalPackage
         coreutils
         procps
         systemd
@@ -20,7 +22,7 @@ let
     }
   }/bin/obs-hyprland-autostart";
   obs-nvidia = pkgs.writeShellScriptBin "obs-nvidia" ''
-    nvidia-offload obs "$@"
+    nvidia-offload ${config.programs.obs-studio.finalPackage}/bin/obs "$@"
   '';
   obs-nvidia-custom = pkgs.writeShellScriptBin "obs-nvidia-custom" ''
     ${obs-nvidia}/bin/obs-nvidia \
