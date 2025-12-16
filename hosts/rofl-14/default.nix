@@ -19,8 +19,10 @@
     # ../../services/github-runner.nix
   ];
 
-  hardware.cattle = true;
-  hardware.serverType = "openstack";
+  hardware = {
+    cattle = true;
+    serverType = "openstack";
+  };
   custom.promptColor = "magenta";
 
   # Enable networking

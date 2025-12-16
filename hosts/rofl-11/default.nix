@@ -33,8 +33,10 @@
     ./restic.nix
   ];
 
-  hardware.cattle = false;
-  hardware.serverType = "openstack";
+  hardware = {
+    cattle = false;
+    serverType = "openstack";
+  };
   custom.promptColor = "#9C62C5"; # jellyfin purple
 
   # Enable networking

@@ -18,8 +18,10 @@
     ../../services/xmr/xmrig.nix
   ];
 
-  hardware.cattle = false;
-  hardware.serverType = "openstack";
+  hardware = {
+    cattle = false;
+    serverType = "openstack";
+  };
   custom.promptColor = "#ff6600";
 
   # Enable networking
