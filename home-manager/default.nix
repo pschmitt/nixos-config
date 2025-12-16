@@ -1,4 +1,8 @@
-{ inputs, ... }:
+{
+  config,
+  inputs,
+  ...
+}:
 {
   imports = [
     # Import home-manager's NixOS module
@@ -13,7 +17,7 @@
     useGlobalPkgs = true;
     useUserPackages = true;
 
-    users.pschmitt = {
+    users.${config.mainUser.username} = {
       imports = [
         ./home.nix
       ];
