@@ -81,7 +81,7 @@ notify_all_sessions() {
       ]
       | unique_by(.uid)
       | .[]
-      | @tsv
+      | "\(.uid)\t\(.user)"
     ' <<<"$sessions_json"
   )
 }
