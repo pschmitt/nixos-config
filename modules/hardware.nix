@@ -20,6 +20,18 @@
         description = "Device category for this host.";
       };
 
+      serverType = lib.mkOption {
+        type = lib.types.nullOr (
+          lib.types.enum [
+            "openstack"
+            "oci"
+            "hardware"
+          ]
+        );
+        default = null;
+        description = "Server environment type (cloud/hardware).";
+      };
+
       biosBoot = lib.mkOption {
         type = lib.types.bool;
         default = false;
@@ -44,17 +56,11 @@
         description = "Whether this is cloud-based server";
       };
 
-      server = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether or not this is a server";
-      };
-
       watchdog = {
         enable = lib.mkOption {
           type = lib.types.bool;
-          default = config.hardware.server;
-          defaultText = "hardware.server";
+          default = config.hardware.type == "server";
+          defaultText = "hardware.type == \"server\"";
           description = "Enable watchdog support for this host.";
         };
 

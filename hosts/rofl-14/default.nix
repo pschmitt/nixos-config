@@ -20,6 +20,7 @@
   ];
 
   hardware.cattle = true;
+  hardware.serverType = "openstack";
   custom.promptColor = "magenta";
 
   # Enable networking

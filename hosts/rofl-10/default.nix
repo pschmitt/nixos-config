@@ -48,6 +48,7 @@
   ];
 
   hardware.cattle = false;
+  hardware.serverType = "openstack";
   custom.promptColor = "#0B87CA"; # nextcloud blue
 
   # Enable networking
