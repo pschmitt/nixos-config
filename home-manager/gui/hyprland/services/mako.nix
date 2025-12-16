@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  config,
+  lib,
+  ...
+}:
 {
   home.packages = [
     pkgs.libnotify # notify-send
@@ -28,6 +33,44 @@
         layer = "overlay";
         history = 1;
         icons = true;
+        icon-path =
+          let
+            dataHome = lib.attrByPath [
+              "xdg"
+              "dataHome"
+            ] "${config.home.homeDirectory}/.local/share" config;
+            profileDir = config.home.profileDirectory;
+            gtkIconThemeName = config.gtk.iconTheme.name;
+            gtkIconThemePackage = config.gtk.iconTheme.package;
+
+            maybeIconRoot = base: name: if name == null then null else "${base}/${name}";
+            maybeShareIconsThemeRoot = base: name: if name == null then null else "${base}/share/icons/${name}";
+          in
+          lib.concatStringsSep ":" (
+            lib.filter (p: p != null) [
+              (maybeIconRoot "${dataHome}/icons" gtkIconThemeName)
+              (maybeIconRoot "${config.home.homeDirectory}/.icons" gtkIconThemeName)
+
+              (maybeShareIconsThemeRoot profileDir gtkIconThemeName)
+              "${profileDir}/share/icons/hicolor"
+              "${profileDir}/share/icons/Adwaita"
+
+              (
+                if gtkIconThemePackage == null then
+                  null
+                else
+                  "${gtkIconThemePackage}/share/icons/${gtkIconThemeName}"
+              )
+              "${pkgs.hicolor-icon-theme}/share/icons/hicolor"
+              "${pkgs.adwaita-icon-theme}/share/icons/Adwaita"
+
+              "/run/current-system/sw/share/icons/hicolor"
+              "/run/current-system/sw/share/icons/Adwaita"
+
+              "${profileDir}/share/pixmaps"
+              "/run/current-system/sw/share/pixmaps"
+            ]
+          );
         actions = true;
         "default-timeout" = 10000;
         width = 400;
