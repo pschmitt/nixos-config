@@ -33,44 +33,20 @@
         layer = "overlay";
         history = 1;
         icons = true;
-        icon-path =
-          let
-            dataHome = lib.attrByPath [
-              "xdg"
-              "dataHome"
-            ] "${config.home.homeDirectory}/.local/share" config;
-            profileDir = config.home.profileDirectory;
-            gtkIconThemeName = config.gtk.iconTheme.name;
-            gtkIconThemePackage = config.gtk.iconTheme.package;
+        icon-path = lib.concatStringsSep ":" (
+          lib.filter (p: p != null) [
+            "${config.gtk.iconTheme.package}/share/icons/${config.gtk.iconTheme.name}"
+            "${pkgs.adwaita-icon-theme}/share/icons/Adwaita"
+            "${pkgs.hicolor-icon-theme}/share/icons/hicolor"
 
-            maybeIconRoot = base: name: if name == null then null else "${base}/${name}";
-            maybeShareIconsThemeRoot = base: name: if name == null then null else "${base}/share/icons/${name}";
-          in
-          lib.concatStringsSep ":" (
-            lib.filter (p: p != null) [
-              (maybeIconRoot "${dataHome}/icons" gtkIconThemeName)
-              (maybeIconRoot "${config.home.homeDirectory}/.icons" gtkIconThemeName)
+            "/run/current-system/sw/share/icons/Adwaita"
+            "/run/current-system/sw/share/icons/hicolor"
 
-              (maybeShareIconsThemeRoot profileDir gtkIconThemeName)
-              "${profileDir}/share/icons/hicolor"
-              "${profileDir}/share/icons/Adwaita"
+            "${config.home.profileDirectory}/share/pixmaps"
+            "/run/current-system/sw/share/pixmaps"
+          ]
+        );
 
-              (
-                if gtkIconThemePackage == null then
-                  null
-                else
-                  "${gtkIconThemePackage}/share/icons/${gtkIconThemeName}"
-              )
-              "${pkgs.hicolor-icon-theme}/share/icons/hicolor"
-              "${pkgs.adwaita-icon-theme}/share/icons/Adwaita"
-
-              "/run/current-system/sw/share/icons/hicolor"
-              "/run/current-system/sw/share/icons/Adwaita"
-
-              "${profileDir}/share/pixmaps"
-              "/run/current-system/sw/share/pixmaps"
-            ]
-          );
         actions = true;
         "default-timeout" = 10000;
         width = 400;
@@ -92,7 +68,7 @@
 
         "urgency=normal" = {
           "background-color" = "#202020";
-          "border-color" = "#FFFFFF";
+          "border-color" = "#202020";
           "default-timeout" = 10000;
         };
 
@@ -176,6 +152,12 @@
 
         "category=warning" = {
           "border-color" = "#F3BD6A";
+        };
+
+        "category=error" = {
+          "border-radius" = 10;
+          "border-color" = "#bf616a";
+          "background-color" = "#bf616a";
         };
 
         "category=failure" = {
