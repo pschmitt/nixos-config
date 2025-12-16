@@ -4,13 +4,13 @@
   pkgs,
   ...
 }:
-# let
-#   snapPkg = inputs.snapd.packages.${pkgs.stdenv.hostPlatform.system}.default;
-# in
 {
   nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
   custom.netbirdSetupKey = lib.mkForce "oci";
-  hardware.biosBoot = false;
+  hardware = {
+    # kvmGuest = true;
+    biosBoot = false;
+  };
 
   boot.kernelParams = [
     "nvme.shutdown_timeout=10"

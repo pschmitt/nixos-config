@@ -4,7 +4,7 @@
     ./hardware-configuration.nix
 
     ../../common/server
-    ../../common/server/oci.nix
+    ../../hardware/oci.nix
 
     ../../services/restic
     ../../services/http.nix
