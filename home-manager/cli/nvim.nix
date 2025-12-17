@@ -40,6 +40,7 @@ in
     withPython3 = false;
 
     extraPackages = with pkgs; [
+      # vimPlugins.nvim-treesitter.withAllGrammars
       codespell
       tree-sitter
 
@@ -47,27 +48,51 @@ in
       # eg: luasnip
       gcc
 
-      # vimPlugins.nvim-treesitter.withAllGrammars
-      shellcheck
-      shfmt
+      # for copilot
+      nodejs
+
+      # for image.nvim, snacks.images etc.
+      imagemagick
+
+      # ansible
+      ansible-lint
+      # ansible-language-server
+
+      # docker
+      docker-language-server
+      dockerfile-language-server
+      hadolint
+
+      # jsonnet
+      jsonnet-language-server
+
+      # lua
+      luajit
+      lua-language-server
+      stylua
+
+      # markdown
+      marksman
+      markdown-toc
+      markdownlint
 
       # nix
       nil
       nixpkgs-fmt
 
-      # jssonnet
-      jsonnet-language-server
+      # python
+      pyright
 
-      # markdown
-      marksman
+      # shell
+      bash-language-server
+      shellcheck
+      shfmt
 
-      # lua
-      luajit
-      stylua
+      # tofu/terraform
+      terraform-ls
 
-      nodejs # for copilot
-
-      imagemagick # for image.nvim, snacks.images etc.
+      # toml
+      taplo
     ];
 
     viAlias = false;
