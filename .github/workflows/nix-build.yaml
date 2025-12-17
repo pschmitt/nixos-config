@@ -99,7 +99,10 @@ jobs:
 
             umask 077
             printf '%s' "${{ secrets.NIX_STORE_PRIVKEY }}" > /tmp/nix-store-privkey.pem
-            nix copy --to "$NIX_DEST_STORE_URL" --sign --key-file /tmp/nix-store-privkey.pem \
+            nix path-info --recursive \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}' | \
+              nix store sign --key-file /tmp/nix-store-privkey.pem --stdin
+            nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-pkgs-oci:
@@ -231,7 +234,11 @@ jobs:
 
             umask 077
             printf '%s' "${{ secrets.NIX_STORE_PRIVKEY }}" > /tmp/nix-store-privkey.pem
-            nix copy --to "$NIX_DEST_STORE_URL" --sign --key-file /tmp/nix-store-privkey.pem \
+            nix path-info --recursive \
+              '.#packages.aarch64-linux.${{ matrix.pkg }}' \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}' | \
+              nix store sign --key-file /tmp/nix-store-privkey.pem --stdin
+            nix copy --to "$NIX_DEST_STORE_URL" \
               '.#packages.aarch64-linux.${{ matrix.pkg }}' \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
@@ -313,7 +320,10 @@ jobs:
 
             umask 077
             printf '%s' "${{ secrets.NIX_STORE_PRIVKEY }}" > /tmp/nix-store-privkey.pem
-            nix copy --to "$NIX_DEST_STORE_URL" --sign --key-file /tmp/nix-store-privkey.pem --impure \
+            nix path-info --recursive --impure \
+              '.#packages.x86_64-linux.${{ matrix.pkg }}' | \
+              nix store sign --key-file /tmp/nix-store-privkey.pem --stdin
+            nix copy --to "$NIX_DEST_STORE_URL" --impure \
               '.#packages.x86_64-linux.${{ matrix.pkg }}'
 
   build-hosts-x86_64:
@@ -406,7 +416,10 @@ jobs:
 
             umask 077
             printf '%s' "${{ secrets.NIX_STORE_PRIVKEY }}" > /tmp/nix-store-privkey.pem
-            nix copy --to "$NIX_DEST_STORE_URL" --sign --key-file /tmp/nix-store-privkey.pem \
+            nix path-info --recursive \
+              '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel' | \
+              nix store sign --key-file /tmp/nix-store-privkey.pem --stdin
+            nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
   build-hosts-aarch64:
@@ -571,5 +584,8 @@ jobs:
 
             umask 077
             printf '%s' "${{ secrets.NIX_STORE_PRIVKEY }}" > /tmp/nix-store-privkey.pem
-            nix copy --to "$NIX_DEST_STORE_URL" --sign --key-file /tmp/nix-store-privkey.pem \
+            nix path-info --recursive \
+              '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel' | \
+              nix store sign --key-file /tmp/nix-store-privkey.pem --stdin
+            nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
