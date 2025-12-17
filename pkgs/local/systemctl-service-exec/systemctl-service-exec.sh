@@ -200,18 +200,50 @@ main() {
           esac
         done < "/proc/${SERVICE_PID}/environ"
 
+        cleanup() {
+          if [[ -n "$TMP_STARSHIP_DIR" ]]
+          then
+            rm -rf "$TMP_STARSHIP_DIR"
+          fi
+        }
+
+        trap cleanup EXIT INT TERM
+
+        # DynamicUser=true frequently results in HOME=/var/empty (read-only), which causes
+        # tooling like starship to error e.g.:
+        # Unable to create log dir "/var/empty/.cache/starship": Os { code: 30, kind: ReadOnlyFilesystem, message: "Read-only file system" }!
+        # Avoid overriding HOME; instead, point starship cache to a per-session temp dir
+        # and clean it up on exit.
+
+        if [[ "${HOME:-}" == "/var/empty" || "${HOME:-}" == "/var/empty/"* ]] || \
+           [[ "${XDG_CACHE_HOME:-}" == "/var/empty" || "${XDG_CACHE_HOME:-}" == "/var/empty/"* ]] || \
+           [[ "${STARSHIP_CACHE:-}" == "/var/empty" || "${STARSHIP_CACHE:-}" == "/var/empty/"* ]]
+        then
+          TMP_STARSHIP_DIR="$(mktemp -d -p "${TMPDIR:-/tmp}" "systemctl-service-exec.${SERVICE_PID}.XXXXXXXX")"
+
+          chmod 0700 "$TMP_STARSHIP_DIR"
+          chown "${SERVICE_UID}:${SERVICE_GID}" "$TMP_STARSHIP_DIR"
+
+          export STARSHIP_CACHE="$TMP_STARSHIP_DIR/cache"
+
+          mkdir -p "$STARSHIP_CACHE"
+          chown "${SERVICE_UID}:${SERVICE_GID}" "$STARSHIP_CACHE"
+        fi
+
         # Drop privileges to the service user
         if [[ -n "$SETPRIV" && -x "$SETPRIV" ]]
         then
-          exec "$SETPRIV" \
+          "$SETPRIV" \
             --reuid "$SERVICE_UID" \
             --regid "$SERVICE_GID" \
             --groups "$SERVICE_GROUPS" \
             "$BASH"
+          exit $?
         fi
 
         # Fallback: su, using numeric uid if no username
-        exec /run/wrappers/bin/su -s "$BASH" "#${SERVICE_UID}"
+        /run/wrappers/bin/su -s "$BASH" "#${SERVICE_UID}"
+        exit $?
       '
 }
 
