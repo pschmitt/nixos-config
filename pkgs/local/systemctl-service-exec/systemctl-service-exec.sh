@@ -59,28 +59,30 @@ get_uid_gid_from_pid() {
   fi
 
   local uid
-  uid="$(
+  if ! uid="$(
     awk '
       $1 == "Uid:" {
         print $2
         exit
       }
     ' "/proc/${pid}/status"
-  )"
+  )" || [[ -z $uid ]]
+  then
+    echo "could not extract uid from /proc/${pid}/status" >&2
+    return 1
+  fi
 
   local gid
-  gid="$(
+  if ! gid="$(
     awk '
       $1 == "Gid:" {
         print $2
         exit
       }
     ' "/proc/${pid}/status"
-  )"
-
-  if [[ -z "$uid" || -z "$gid" ]]
+  )" || [[ -z $gid ]]
   then
-    echo "could not extract uid/gid from /proc/${pid}/status" >&2
+    echo "could not extract gid from /proc/${pid}/status" >&2
     return 1
   fi
 
@@ -97,7 +99,7 @@ get_groups_from_pid() {
   fi
 
   local groups
-  groups="$(
+  if ! groups="$(
     awk '
       $1 == "Groups:" {
         for (i = 2; i <= NF; i++) {
@@ -111,6 +113,10 @@ get_groups_from_pid() {
       }
     ' "/proc/${pid}/status"
   )"
+  then
+    echo "could not extract groups from /proc/${pid}/status" >&2
+    return 1
+  fi
 
   echo "$groups"
 }
@@ -200,7 +206,7 @@ main() {
           exec "$SETPRIV" \
             --reuid "$SERVICE_UID" \
             --regid "$SERVICE_GID" \
-            --groups "${SERVICE_GROUPS:-}" \
+            --groups "$SERVICE_GROUPS" \
             "$BASH"
         fi
 
