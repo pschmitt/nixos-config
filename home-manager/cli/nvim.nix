@@ -63,6 +63,10 @@ in
       dockerfile-language-server
       hadolint
 
+      # golang
+      go
+      gopls
+
       # jsonnet
       jsonnet-language-server
 
@@ -82,6 +86,7 @@ in
 
       # python
       pyright
+      ruff
 
       # shell
       bash-language-server
