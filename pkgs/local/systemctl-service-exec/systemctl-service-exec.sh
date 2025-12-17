@@ -7,6 +7,8 @@ Usage: ${0##*/} <unit>
 Get an interactive shell inside the namespace + environment of a systemd service,
 similar to "docker exec -it <container> bash".
 
+Supports services with DynamicUser=true (uses the running MainPID's uid/gid).
+
 Examples:
   ${0##*/} radarr
   ${0##*/} radarr.service
@@ -47,6 +49,72 @@ get_uid_gid() {
   echo "$uid $gid"
 }
 
+get_uid_gid_from_pid() {
+  local pid="$1"
+
+  if [[ ! -r "/proc/${pid}/status" ]]
+  then
+    echo "could not read /proc/${pid}/status" >&2
+    return 1
+  fi
+
+  local uid
+  uid="$(
+    awk '
+      $1 == "Uid:" {
+        print $2
+        exit
+      }
+    ' "/proc/${pid}/status"
+  )"
+
+  local gid
+  gid="$(
+    awk '
+      $1 == "Gid:" {
+        print $2
+        exit
+      }
+    ' "/proc/${pid}/status"
+  )"
+
+  if [[ -z "$uid" || -z "$gid" ]]
+  then
+    echo "could not extract uid/gid from /proc/${pid}/status" >&2
+    return 1
+  fi
+
+  echo "$uid $gid"
+}
+
+get_groups_from_pid() {
+  local pid="$1"
+
+  if [[ ! -r "/proc/${pid}/status" ]]
+  then
+    echo "could not read /proc/${pid}/status" >&2
+    return 1
+  fi
+
+  local groups
+  groups="$(
+    awk '
+      $1 == "Groups:" {
+        for (i = 2; i <= NF; i++) {
+          if ($i != "") {
+            printf "%s%s", sep, $i
+            sep = ","
+          }
+        }
+        print ""
+        exit
+      }
+    ' "/proc/${pid}/status"
+  )"
+
+  echo "$groups"
+}
+
 main() {
   case "$1" in
     -h|--help)
@@ -76,13 +144,27 @@ main() {
   fi
 
   local user
-  if ! user="$(systemctl show -p User --value "$unit" 2>/dev/null)" || [[ -z $user ]]
+  if ! user="$(systemctl show -p User --value "$unit" 2>/dev/null)" || \
+     [[ -z "$user" ]]
   then
     user=root
   fi
 
-  local uid gid
-  read -r uid gid <<< "$(get_uid_gid "$user")"
+  local uid gid uid_gid
+  if uid_gid="$(get_uid_gid "$user" 2>/dev/null)"
+  then
+    read -r uid gid <<< "$uid_gid"
+  else
+    # For DynamicUser=true services, User= often does not exist in NSS (/etc/passwd),
+    # but the running process still has a real numeric uid/gid.
+    read -r uid gid <<< "$(get_uid_gid_from_pid "$pid")"
+  fi
+
+  local groups
+  groups="$(get_groups_from_pid "$pid")"
+
+  local bash
+  bash=$(command -v bash)
 
   # Shell inside the service's namespaces.
   # We pass SERVICE_* via env, then inside:
@@ -94,11 +176,13 @@ main() {
     "SERVICE_UID=$uid" \
     "SERVICE_GID=$gid" \
     "SERVICE_USER=$user" \
-    "BASH=$(command -v bash)" \
+    "SERVICE_GROUPS=$groups" \
+    "BASH=$bash" \
+    "SETPRIV=$(command -v setpriv)" \
     nsenter \
       --target "$pid" \
       --mount --uts --ipc --net --pid \
-      "$(command -v bash)" --noprofile --norc -c '
+      "$bash" --noprofile --norc -c '
         # Import the service environment from /proc/<pid>/environ
         # Each entry is "KEY=VALUE" separated by NUL
         while IFS= read -r -d "" LINE
@@ -111,17 +195,17 @@ main() {
         done < "/proc/${SERVICE_PID}/environ"
 
         # Drop privileges to the service user
-        if command -v setpriv &>/dev/null
+        if [[ -n "$SETPRIV" && -x "$SETPRIV" ]]
         then
-          exec setpriv \
+          exec "$SETPRIV" \
             --reuid "$SERVICE_UID" \
             --regid "$SERVICE_GID" \
-            --init-groups \
+            --groups "${SERVICE_GROUPS:-}" \
             "$BASH"
         fi
 
         # Fallback: su, using numeric uid if no username
-        exec /run/wrappers/bin/su -s "$BASH" "${SERVICE_USER:-#${SERVICE_UID}}"
+        exec /run/wrappers/bin/su -s "$BASH" "#${SERVICE_UID}"
       '
 }
 
