@@ -75,6 +75,8 @@ in
       enable = true;
       vpnNamespace = "mullvad";
     };
+    # Fix for systemd-resolved atomic updates breaking bind mounts
+    serviceConfig.TemporaryFileSystem = "/run/systemd/resolve";
   };
 
   vpnNamespaces.mullvad.portMappings = [
