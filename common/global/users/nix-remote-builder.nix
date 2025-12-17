@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   # See also:
   # https://github.com/nix-community/srvos/blob/main/nixos/roles/nix-remote-builder.nix
@@ -15,5 +20,5 @@
   };
 
   users.groups.nix-remote-builder = { };
-  nix.settings.trusted-users = [ "nix-remote-builder" ];
+  nix.settings.trusted-users = lib.mkAfter [ "nix-remote-builder" ];
 }

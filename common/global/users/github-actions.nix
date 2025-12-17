@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   users.users.github-actions = {
     isSystemUser = true;
@@ -19,5 +24,5 @@
   };
 
   users.groups.github-actions = { };
-  nix.settings.trusted-users = [ "github-actions" ];
+  nix.settings.trusted-users = lib.mkAfter [ "github-actions" ];
 }
