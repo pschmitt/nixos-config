@@ -74,7 +74,7 @@ in
       # markdown
       marksman
       markdown-toc
-      markdownlint
+      markdownlint-cli2
 
       # nix
       nil
