@@ -10,6 +10,7 @@
     ./gnome-keyring.nix
     ./clipcascade.nix
     ./media.nix
+    ./notes.nix
     ./profile-picture.nix
     ./yt-dlp-cookies-tx.nix
     ./soundboard.nix
