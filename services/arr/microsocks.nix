@@ -26,6 +26,8 @@ in
       enable = true;
       vpnNamespace = "mullvad";
     };
+    # Fix for systemd-resolved atomic updates breaking bind mounts
+    serviceConfig.TemporaryFileSystem = "/run/systemd/resolve";
   };
 
   # Firewall still limits exposure to the tailscale/netbird interfaces.

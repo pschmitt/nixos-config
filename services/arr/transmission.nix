@@ -98,6 +98,9 @@ in
       enable = true;
       vpnNamespace = "mullvad";
     };
+    # Fix for systemd-resolved atomic updates breaking bind mounts
+    serviceConfig.TemporaryFileSystem = "/run/systemd/resolve";
+
     serviceConfig = {
       # Fuck ipv6, all my homies use ipv4
       IPAddressDeny = lib.mkForce [ "::/0" ];
