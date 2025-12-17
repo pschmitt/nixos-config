@@ -37,7 +37,7 @@
         Fallout = {
           directory = "tv_shows";
           wildcard = true;
-          seasons = "2";
+          seasons = "latest";
         };
 
         # Sync all of pluribus
