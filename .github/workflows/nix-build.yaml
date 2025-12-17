@@ -11,12 +11,12 @@ concurrency:
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
   NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} aarch64-linux,i686-linux,x86_64-linux /home/runner/.ssh/id_ed25519 - - - - -"
-  NIX_DEST_STORE_URL: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
+  NIX_DEST_STORE_URL: "ssh-ng://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
     extra-experimental-features = nix-command flakes
     accept-flake-config = true
-    substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-community.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
+    substituters = https://cache.garnix.io https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-community.cachix.org ssh-ng://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
     trusted-public-keys = cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=
     extra-platforms = aarch64-linux i686-linux
     builders-use-substitutes = true
