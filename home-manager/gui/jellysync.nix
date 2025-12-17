@@ -34,6 +34,12 @@
       };
 
       jobs = {
+        Fallout = {
+          directory = "tv_shows";
+          wildcard = true;
+          seasons = "2";
+        };
+
         # Sync all of pluribus
         Pluribus = {
           directory = "tv_shows";
