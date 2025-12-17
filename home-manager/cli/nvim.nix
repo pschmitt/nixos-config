@@ -52,6 +52,7 @@ in
       nodejs
 
       # for image.nvim, snacks.images etc.
+      ghostscript
       imagemagick
 
       # ansible
