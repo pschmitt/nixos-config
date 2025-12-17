@@ -33,6 +33,7 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
+  tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   waypoint = pkgs.callPackage ./waypoint { };
   withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };

@@ -6,13 +6,32 @@
 }:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
-  port = 9091;
+  defaultRpcPort = 9091;
+  rpcHost = config.services.transmission.settings."rpc-bind-address" or internalIP;
+  rpcPort = config.services.transmission.settings."rpc-port" or defaultRpcPort;
   publicHost = "to.arr.${config.domains.main}";
   serverAliases = [ "to.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
   downloadDir =
     config.services.transmission.settings."download-dir"
       or "${config.services.transmission.home}/Downloads";
+
+  tewiWrapped = pkgs.writeShellScriptBin "tewi" ''
+    set -euo pipefail
+
+    username_file='${config.sops.secrets."transmission/username".path}'
+    password_file='${config.sops.secrets."transmission/password".path}'
+
+    username="$(tr -d '\n' < "$username_file")"
+    password="$(tr -d '\n' < "$password_file")"
+
+    exec '${lib.getExe pkgs.tewi}' \
+      --host '${rpcHost}' \
+      --port '${toString rpcPort}' \
+      --username "$username" \
+      --password "$password" \
+      "$@"
+  '';
 in
 {
   sops = {
@@ -21,11 +40,13 @@ in
         inherit (config.custom) sopsFile;
         owner = config.services.transmission.user;
         inherit (config.services.transmission) group;
+        mode = "0440";
       };
       "transmission/password" = {
         inherit (config.custom) sopsFile;
         owner = config.services.transmission.user;
         inherit (config.services.transmission) group;
+        mode = "0440";
       };
     };
 
@@ -52,6 +73,7 @@ in
       credentialsFile = config.sops.templates."transmission-credentials.json".path;
       settings = {
         rpc-bind-address = internalIP;
+        rpc-port = lib.mkDefault defaultRpcPort;
         rpc-whitelist-enabled = false;
         rpc-host-whitelist-enabled = false;
         rpc-authentication-required = true;
@@ -69,7 +91,7 @@ in
       forceSSL = true;
       extraConfig = autheliaConfig.server;
       locations."/" = {
-        proxyPass = "http://${internalIP}:${toString port}";
+        proxyPass = "http://${internalIP}:${toString rpcPort}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
         extraConfig = autheliaConfig.location;
@@ -81,12 +103,12 @@ in
         group piracy
         depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart transmission"
-        if failed port ${toString port} protocol http status 401 then restart
+        if failed port ${toString rpcPort} protocol http status 401 then restart
         if 5 restarts within 5 cycles then alert
     '';
   };
 
-  fakeHosts.transmission.port = port;
+  fakeHosts.transmission.port = rpcPort;
 
   # add main user to transmission group
   users.users."${config.mainUser.username}".extraGroups = [ config.services.transmission.group ];
@@ -113,8 +135,10 @@ in
 
   vpnNamespaces.mullvad.portMappings = [
     {
-      from = port;
-      to = port;
+      from = rpcPort;
+      to = rpcPort;
     }
   ];
+
+  environment.systemPackages = [ tewiWrapped ];
 }
