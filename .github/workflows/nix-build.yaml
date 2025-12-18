@@ -36,9 +36,10 @@ jobs:
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
 
-      # magic cache is back!
-      # https://determinate.systems/posts/bringing-back-magic-nix-cache-action/
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Generate build matrix
         id: set-matrix
@@ -63,7 +64,10 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Store SSH key on disk
         run: |-
@@ -123,7 +127,10 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Store SSH key on disk
         run: |-
@@ -267,7 +274,10 @@ jobs:
       # technically redistribute our proprietary packages (by putting them in
       # the GitHub Actions cache). Luckily this should is not available outside
       # of GH Actions run from within this repo.
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Store SSH key on disk
         run: |-
@@ -357,7 +367,10 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Store SSH key on disk
         run: |-
@@ -456,7 +469,10 @@ jobs:
         with:
           extra-conf: ${{ env.nix-conf }}
 
-      # - uses: DeterminateSystems/magic-nix-cache-action@main
+      - uses: nix-community/cache-nix-action@v5
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
 
       - name: Store SSH key on disk
         run: |-
