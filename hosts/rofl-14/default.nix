@@ -12,7 +12,7 @@
     # ../../services/xmr/xmrig.nix
     (import ../../services/xmr/xmrig.nix {
       inherit config lib;
-      useProxy = true;
+      useProxy = false;
       cpuUsage = 50;
     })
 
