@@ -12,7 +12,7 @@
 
     (import ../../services/***REMOVED***/***REMOVED***.nix {
       inherit config lib;
-      useProxy = true;
+      useProxy = false;
       cpuUsage = 50;
     })
   ];
