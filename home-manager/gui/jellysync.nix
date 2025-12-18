@@ -11,7 +11,7 @@
   ];
 
   services.jellysync = {
-    enable = osConfig.networking.hostName == "gk4";
+    enable = lib.mkDefault false;
 
     settings = {
       remote = {

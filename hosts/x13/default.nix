@@ -1,4 +1,4 @@
-{ ... }:
+{ config, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -11,6 +11,8 @@
 
     ../../services/nixos-installer-boot-entry.nix
   ];
+
+  home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
 
   hardware = {
     cattle = false;
