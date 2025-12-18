@@ -71,9 +71,15 @@ in
       };
   };
 
-  networking.firewall.trustedInterfaces = lib.mkAfter (
-    map (c: c.interface) (builtins.attrValues config.services.netbird.clients)
-  );
+  # HACK Fix netbird port forwarding
+  networking =
+    let
+      netbirdInterfaces = map (c: c.interface) (builtins.attrValues config.services.netbird.clients);
+    in
+    {
+      nat.internalInterfaces = lib.mkAfter netbirdInterfaces;
+      firewall.trustedInterfaces = lib.mkAfter netbirdInterfaces;
+    };
 
   systemd.services."${netbirdClientName}-login".postStart = ''
     NB_BIN="/run/current-system/sw/bin/netbird-${netbirdClientName}"
