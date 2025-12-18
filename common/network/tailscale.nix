@@ -32,9 +32,13 @@ in
     authKeyFile = config.sops.secrets."tailscale/auth-key".path;
   };
 
-  networking.firewall.trustedInterfaces = lib.mkAfter [
-    config.services.tailscale.interfaceName
-  ];
+  # HACK Fix netbird port forwarding
+  networking = {
+    nat.internalInterfaces = [ config.services.tailscale.interfaceName ];
+    firewall.trustedInterfaces = lib.mkAfter [
+      config.services.tailscale.interfaceName
+    ];
+  };
 
   systemd.services.tailscaled-autoconnect.postStart = ''
     # Store Tailscale IP address in /etc/containers/env/tailscale.env
