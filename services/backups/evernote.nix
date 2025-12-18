@@ -1,20 +1,21 @@
 { lib, pkgs, ... }:
 let
   evernoteLastBackup = pkgs.writeShellScript "evernote-last-backup" ''
-    #!/usr/bin/env bash
     set -euo pipefail
 
     THRESHOLD=''${1:-129600} # 36h by default
     BACKUP_DIR="/srv/evernote-backup/data/backups"
     LATEST_LINK="$BACKUP_DIR/latest"
 
-    if [[ ! -L "$LATEST_LINK" ]]; then
+    if [[ ! -L "$LATEST_LINK" ]]
+    then
       echo "🚨 latest symlink missing in $BACKUP_DIR"
       exit 1
     fi
 
     TARGET=$(readlink -f "$LATEST_LINK")
-    if [[ -z "$TARGET" || ! -d "$TARGET" ]]; then
+    if [[ -z "$TARGET" || ! -d "$TARGET" ]]
+    then
       echo "🚨 latest does not point to a directory: ''${TARGET:-<empty>}"
       exit 1
     fi
@@ -22,7 +23,8 @@ let
     MTIME=$(stat -c %Y "$TARGET")
     NOW=$(date +%s)
 
-    if [[ $((NOW - MTIME)) -gt $THRESHOLD ]]; then
+    if [[ $((NOW - MTIME)) -gt $THRESHOLD ]]
+    then
       echo "🚨 Last backup is stale"
       echo -e "📅 $(date -d "@$MTIME")"
       exit 1
@@ -41,25 +43,27 @@ let
   '';
 in
 {
-  systemd.services.evernote-backup = {
-    description = "Evernote Backup Service";
-    path = with pkgs; [
-      bash
-      coreutils
-      docker
-    ];
-    script = ''
-      /srv/evernote-backup/bin/evernote-backup-all.sh
-    '';
-  };
+  systemd = {
+    services.evernote-backup = {
+      description = "Evernote Backup Service";
+      path = with pkgs; [
+        bash
+        coreutils
+        docker
+      ];
+      script = ''
+        /srv/evernote-backup/bin/evernote-backup-all.sh
+      '';
+    };
 
-  systemd.timers.evernote-backup = {
-    description = "Daily Evernote Backup";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "daily";
-      RandomizedDelaySec = "600"; # 10min
-      Persistent = true;
+    timers.evernote-backup = {
+      description = "Daily Evernote Backup";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        RandomizedDelaySec = "7200"; # 2h
+        Persistent = true;
+      };
     };
   };
 
