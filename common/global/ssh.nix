@@ -62,7 +62,6 @@ let
   );
 in
 {
-
   # OpenSSH server
   services.openssh = {
     enable = true;
