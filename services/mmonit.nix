@@ -4,6 +4,10 @@
   pkgs,
   ...
 }:
+let
+  primaryHost = "mmonit.${config.domains.main}";
+  serverAliases = [ "mm.${config.domains.main}" ];
+in
 {
   environment.systemPackages = with pkgs; [ mmonit ];
   systemd.packages = [ pkgs.mmonit ];
@@ -46,6 +50,8 @@
     in
     {
       "mmonit.${config.networking.hostName}.${config.domains.main}" = commonConfig;
-      "mmonit.${config.domains.main}" = commonConfig;
+      ${primaryHost} = commonConfig // {
+        inherit serverAliases;
+      };
     };
 }
