@@ -12,7 +12,13 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  hardware.cattle = false;
+  hardware = {
+    cattle = false;
+    fprintd.autoreset = {
+      enable = true;
+      deviceName = "Synaptics, Inc. Prometheus MIS Touch Fingerprint Reader";
+    };
+  };
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -29,6 +35,4 @@
       # allowedUDPPorts = [ ... ];
     };
   };
-
-  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 }

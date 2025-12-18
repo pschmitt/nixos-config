@@ -50,6 +50,20 @@
         description = "Whether this host has a high DPI screen";
       };
 
+      fprintd.autoreset = {
+        enable = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Whether to automatically USB reset the fingerprint reader when fprintd does not detect it.";
+        };
+
+        deviceName = lib.mkOption {
+          type = lib.types.str;
+          default = "Fingerprint";
+          description = "USB device name (as shown by lsusb) of the fingerprint reader.";
+        };
+      };
+
       kvmGuest = lib.mkOption {
         type = lib.types.bool;
         default = false;
