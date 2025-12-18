@@ -9,7 +9,7 @@
           grub = {
             enable = true;
             configurationLimit = 10;
-            # efiSupport = true;
+            efiSupport = true;
           };
         }
       else
