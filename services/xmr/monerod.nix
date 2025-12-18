@@ -12,46 +12,24 @@
 # sudo systemctl start monero.service monit.service
 
 let
-  monerodSyncCheck = pkgs.writeShellScript "monerod-sync-check" ''
-    RPC_URL="http://127.0.0.1:${toString config.services.monero.rpc.port}/get_info"
-    THRESHOLD_BP=9000
+  monerodSyncStatusImpl = pkgs.writeShellScript "monerod-sync-status-impl" (
+    builtins.readFile ./monerod-sync-status.sh
+  );
+  monerodSyncStatus = pkgs.writeShellScriptBin "monerod-sync-status" ''
+    set -euo pipefail
 
-    INFO=$(${pkgs.curl}/bin/curl -sS --max-time 15 "$RPC_URL")
+    export PATH="${
+      lib.makeBinPath [
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.jq
+      ]
+    }"
+    export MONEROD_RPC_URL_DEFAULT="http://127.0.0.1:${toString config.services.monero.rpc.port}/get_info"
+    export MONEROD_THRESHOLD_BP_DEFAULT="9000"
 
-    LINE=$(
-      echo "$INFO" | ${pkgs.jq}/bin/jq -er '
-        if (.target_height // 0) > 0
-        then
-          ((.height * 10000) / .target_height | floor) as $bp
-          | [$bp, (.height | tostring), (.target_height | tostring)]
-          | @tsv
-        else
-          [-1, (.height | tostring), 0]
-          | @tsv
-        end
-      '
-    )
-
-    IFS=$'\t' read -r SYNC_BP HEIGHT TARGET_HEIGHT <<< "$LINE"
-
-    if [[ "$TARGET_HEIGHT" -gt 0 ]]
-    then
-      printf "sync=%d.%02d%% height=%s target=%s\n" \
-        "$((SYNC_BP / 100))" \
-        "$((SYNC_BP % 100))" \
-        "$HEIGHT" \
-        "$TARGET_HEIGHT"
-
-      if [[ "$SYNC_BP" -lt "$THRESHOLD_BP" ]]
-      then
-        exit 1
-      fi
-
-      exit 0
-    fi
-
-    echo "sync=unknown height=''${HEIGHT:-0} target=''${TARGET_HEIGHT:-0}"
-    exit 1
+    exec ${monerodSyncStatusImpl} "$@"
   '';
 in
 {
@@ -98,7 +76,7 @@ in
         then restart
         if 5 restarts within 10 cycles then alert
 
-      check program "monerod sync" with path "${monerodSyncCheck}"
+      check program "monerod sync" with path "${monerodSyncStatus}/bin/monerod-sync-status"
         group monero
         group services
         if status > 0 then alert
@@ -140,6 +118,8 @@ in
 
     restic.backups.main.exclude = [ config.users.users.monero.home ];
   };
+
+  environment.systemPackages = lib.mkAfter [ monerodSyncStatus ];
 
   networking.firewall.allowedTCPPorts = lib.mkAfter [ 18080 ];
 }
