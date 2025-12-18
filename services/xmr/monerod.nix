@@ -4,6 +4,13 @@
   pkgs,
   ...
 }:
+
+# NOTE To quickly load the blockchain, consider this bootstrap procedure:
+# wget https://downloads.getmonero.org/blockchain.raw
+# sudo systemctl stop monero.service monit.service
+# sudo -u monero monero-blockchain-import --input-file blockchain.raw --data-dir /var/lib/monero
+# sudo systemctl start monero.service monit.service
+
 let
   monerodSyncCheck = pkgs.writeShellScript "monerod-sync-check" ''
     RPC_URL="http://127.0.0.1:${toString config.services.monero.rpc.port}/get_info"
