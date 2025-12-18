@@ -54,6 +54,14 @@ resource "cloudflare_dns_record" "mmonit-brkn-lol" {
   content = oci_core_instance.oci_03.public_ip
 }
 
+resource "cloudflare_dns_record" "mm-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "mm"
+  type    = "A"
+  ttl     = 3600
+  content = oci_core_instance.oci_03.public_ip
+}
+
 resource "cloudflare_dns_record" "oci-yum-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "oci-yum"
