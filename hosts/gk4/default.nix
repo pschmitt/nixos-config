@@ -1,4 +1,8 @@
-{ lib, ... }:
+{
+  lib,
+  config,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -12,6 +16,8 @@
     ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix
   ];
+
+  home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
 
   hardware.cattle = false;
   console.keyMap = lib.mkForce "custom/gpdpocket4-de";
