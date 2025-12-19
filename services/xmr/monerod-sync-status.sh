@@ -5,6 +5,10 @@ set -euo pipefail
 RPC_URL="${MONEROD_RPC_URL_DEFAULT:-http://127.0.0.1:18081/get_info}"
 THRESHOLD_BP="${MONEROD_THRESHOLD_BP_DEFAULT:-9000}"
 OUTPUT_JSON=""
+RPC_USERNAME="${MONEROD_RPC_USERNAME_DEFAULT:-}"
+RPC_PASSWORD="${MONEROD_RPC_PASSWORD_DEFAULT:-}"
+RPC_USERNAME_FILE="${MONEROD_RPC_USERNAME_FILE_DEFAULT:-}"
+RPC_PASSWORD_FILE="${MONEROD_RPC_PASSWORD_FILE_DEFAULT:-}"
 
 usage() {
   cat <<'EOF'
@@ -66,7 +70,49 @@ parse_cli_args() {
 }
 
 fetch_monerod_get_info() {
-  curl -sS --max-time 15 "$RPC_URL"
+  if [[ -n "${RPC_USERNAME:-}" && -z "${RPC_PASSWORD:-}" ]]
+  then
+    echo "RPC username is set but RPC password is missing" >&2
+    return 2
+  fi
+  if [[ -z "${RPC_USERNAME:-}" && -n "${RPC_PASSWORD:-}" ]]
+  then
+    echo "RPC password is set but RPC username is missing" >&2
+    return 2
+  fi
+
+  if [[ -z "${RPC_USERNAME:-}" && -n "${RPC_USERNAME_FILE:-}" ]]
+  then
+    RPC_USERNAME="$(head -n1 "$RPC_USERNAME_FILE")"
+  fi
+  if [[ -z "${RPC_PASSWORD:-}" && -n "${RPC_PASSWORD_FILE:-}" ]]
+  then
+    RPC_PASSWORD="$(head -n1 "$RPC_PASSWORD_FILE")"
+  fi
+
+  if [[ -n "${RPC_USERNAME:-}" && -z "${RPC_PASSWORD:-}" ]]
+  then
+    echo "RPC username file is set but RPC password is missing" >&2
+    return 2
+  fi
+  if [[ -z "${RPC_USERNAME:-}" && -n "${RPC_PASSWORD:-}" ]]
+  then
+    echo "RPC password file is set but RPC username is missing" >&2
+    return 2
+  fi
+
+  local curl_args=(
+    -sS
+    --fail
+    --max-time 15
+  )
+
+  if [[ -n "${RPC_USERNAME:-}" && -n "${RPC_PASSWORD:-}" ]]
+  then
+    curl_args+=(--digest --user "${RPC_USERNAME}:${RPC_PASSWORD}")
+  fi
+
+  curl "${curl_args[@]}" "$RPC_URL"
 }
 
 get_info_json_to_status_tsv() {
