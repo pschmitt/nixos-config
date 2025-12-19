@@ -12,7 +12,7 @@ xkb_symbols "basic" {
 
   // ` / ~ key becomes dead grave / (dead) tilde
   // key <TLDE> { [ dead_grave, dead_tilde ] };
-  key <TLDE> { [ dead_grave, tilde ] };
+  key <TLDE> { [ dead_grave, asciitilde, U2032, U2033 ] };
 
   // Right Shift becomes AltGr / level3 chooser.
   key <RTSH> { [ ISO_Level3_Shift ] };
@@ -22,6 +22,9 @@ xkb_symbols "basic" {
 
   // c / C / ç / Ç
   key <AB03> { [ c, C, ccedilla, Ccedilla ] };
+
+  // p / P / hashtag / ...
+  key <AD10> { [ p, P, numbersign, any ] };
 
   // e / E / é / É
   key <AD03> { [ e, E, eacute, Eacute ] };
