@@ -28,16 +28,32 @@ let
     }"
     export MONEROD_RPC_URL_DEFAULT="http://127.0.0.1:${toString config.services.monero.rpc.port}/get_info"
     export MONEROD_THRESHOLD_BP_DEFAULT="9000"
+    export MONEROD_RPC_USERNAME_FILE_DEFAULT="${config.sops.secrets."monerod/rpc/username".path}"
+    export MONEROD_RPC_PASSWORD_FILE_DEFAULT="${config.sops.secrets."monerod/rpc/password".path}"
 
     exec ${monerodSyncStatusImpl} "$@"
   '';
 in
 {
-  # sops.secrets = {
-  #   "monerod/htpasswd" = {
-  #     owner = "nginx";
-  #   };
-  # };
+  sops = {
+    secrets = {
+      "monerod/rpc/username".sopsFile = config.custom.sopsFile;
+      "monerod/rpc/password".sopsFile = config.custom.sopsFile;
+    };
+
+    templates."monerod/rpc.env" = {
+      content = ''
+        MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
+        MONEROD_RPC_PASSWORD=${config.sops.placeholder."monerod/rpc/password"}
+      '';
+      owner = "monero";
+      group = "monero";
+      mode = "0400";
+      restartUnits = [
+        "monero.service"
+      ];
+    };
+  };
 
   services = {
     monero = {
@@ -55,14 +71,43 @@ in
         address = "127.0.0.1";
         port = 18081;
         restricted = false;
-        # user = "fart";
-        # password = "fart";
+        user = "$MONEROD_RPC_USERNAME";
+        password = "$MONEROD_RPC_PASSWORD";
       };
       mining = {
         enable = false;
         threads = 0;
         address = "";
       };
+    };
+
+    tor.relay.onionServices = {
+      "monerod/p2p" = {
+        map = [
+          {
+            port = 18080;
+            target = {
+              addr = "127.0.0.1";
+              port = 18080;
+            };
+          }
+        ];
+      };
+      "monerod/rpc" =
+        let
+          inherit (config.services.monero) rpc;
+        in
+        {
+          map = [
+            {
+              inherit (rpc) port;
+              target = {
+                addr = rpc.address;
+                inherit (rpc) port;
+              };
+            }
+          ];
+        };
     };
 
     monit.config = lib.mkAfter ''
@@ -118,6 +163,8 @@ in
 
     restic.backups.main.exclude = [ config.users.users.monero.home ];
   };
+
+  services.monero.environmentFile = config.sops.templates."monerod/rpc.env".path;
 
   environment.systemPackages = lib.mkAfter [ monerodSyncStatus ];
 
