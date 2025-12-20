@@ -154,7 +154,7 @@
       # NOTE commit 2a3b46dd4ba7903f5626f311638a0023d782483f breaks compact
       # with hyprland 0.52.x
       # https://github.com/VirtCode/hypr-dynamic-cursors/commits/main/
-      url = "github:VirtCode/hypr-dynamic-cursors/8c1679b87c54e97145cae83e622956d720e88bef";
+      url = "github:VirtCode/hypr-dynamic-cursors/b852d97a7184d88c4cd6a031fcfa5f61dbb79f4a";
       inputs.hyprland.follows = "hyprland";
     };
 
