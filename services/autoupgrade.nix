@@ -15,7 +15,7 @@ _: {
     randomizedDelaySec = "7200";
     fixedRandomDelay = true;
 
-    allowReboot = true;
+    allowReboot = false;
     rebootWindow = {
       lower = "02:00";
       upper = "07:00";
