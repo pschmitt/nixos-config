@@ -47,6 +47,12 @@ in
       options = opts;
     };
 
+    "/mnt/oci-01" = {
+      fsType = "fuse";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@oci-01.${vpnDomain}:/";
+      options = opts;
+    };
+
     "/mnt/turris" = {
       fsType = "fuse";
       device = "${pkgs.sshfs-fuse}/bin/sshfs#root@turris.${vpnDomain}:/";
