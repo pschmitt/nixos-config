@@ -26,6 +26,24 @@ resource "cloudflare_dns_record" "bluesky-schmi-tt" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "fra-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "fra"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "wildcard-fra-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "*.fra"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "dieppe-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
@@ -39,6 +57,24 @@ resource "cloudflare_dns_record" "wildcard-dieppe-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
   name    = "*.dieppe"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "dpe-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "dpe"
+  content = oci_core_instance.oci_01.public_ip
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "wildcard-dpe-schmi-tt" {
+  zone_id = cloudflare_zone.schmi-tt.id
+  type    = "A"
+  name    = "*.dpe"
   content = oci_core_instance.oci_01.public_ip
   proxied = false
   ttl     = 1
