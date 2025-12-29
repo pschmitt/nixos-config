@@ -31,10 +31,10 @@
         "special:alttab, gapsout:200, gapsin:200, bordersize:0"
       ];
       windowrule = [
-        "noanim, class:alttab"
-        "stayfocused, class:alttab"
-        "workspace special:alttab, class:alttab"
-        "bordersize 0, class:alttab"
+        "no_anim on, match:class alttab"
+        "stay_focused on, match:class alttab"
+        "workspace special:alttab, match:class alttab"
+        "border_size 0, match:class alttab"
       ];
     };
 

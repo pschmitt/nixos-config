@@ -94,7 +94,7 @@
 
     # Hyprland and cie {{{
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.52.2";
+      url = "github:hyprwm/Hyprland/v0.53.0";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -115,7 +115,7 @@
 
     # hyprland plugins
     hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins/v0.52.0";
+      url = "github:hyprwm/hyprland-plugins/v0.53.0";
       inputs.hyprland.follows = "hyprland";
     };
 
@@ -138,10 +138,7 @@
     };
 
     hyprgrass = {
-      # NOTE commit bcbe929cca73f273f3a5927298851662c31ef27c introduces
-      # compilation issues with hyprland 0.52.x
-      # https://github.com/horriblename/hyprgrass/commits/main/
-      url = "github:horriblename/hyprgrass/8c57cc1cb13361774ddde67bfc75ab04e9b13f28";
+      url = "github:horriblename/hyprgrass";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
@@ -151,10 +148,7 @@
     };
 
     hypr-dynamic-cursors = {
-      # NOTE commit 2a3b46dd4ba7903f5626f311638a0023d782483f breaks compact
-      # with hyprland 0.52.x
-      # https://github.com/VirtCode/hypr-dynamic-cursors/commits/main/
-      url = "github:VirtCode/hypr-dynamic-cursors/8c1679b87c54e97145cae83e622956d720e88bef";
+      url = "github:VirtCode/hypr-dynamic-cursors";
       inputs.hyprland.follows = "hyprland";
     };
 

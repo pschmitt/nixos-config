@@ -25,6 +25,7 @@
     decoration = {
       dim_around = 0.8;
     };
-    layerrule = "dimaround, quickshell:expose";
+    # FIXME This yields a condfiguration error in Hyprland 0.53.0
+    # layerrule = "dim_around, on, quickshell:expose";
   };
 }
