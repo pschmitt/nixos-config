@@ -16,10 +16,10 @@
     ];
 
     windowrule = [
-      "idleinhibit fullscreen, class:^(firefox)$"
-      "idleinhibit always, title:^(Picture-in-Picture)$"
-      "idleinhibit fullscreen, class:^(Google-chrome)$"
-      "idleinhibit fullscreen, class:^(Chromium)$"
+      "idle_inhibit fullscreen, match:class ^(firefox)$"
+      "idle_inhibit always, match:title ^(Picture-in-Picture)$"
+      "idle_inhibit fullscreen, match:class ^(Google-chrome)$"
+      "idle_inhibit fullscreen, match:class ^(Chromium)$"
     ];
   };
 }

@@ -62,7 +62,6 @@
         animate_manual_resizes = true;
         animate_mouse_windowdragging = true;
         focus_on_activate = false;
-        new_window_takes_over_fullscreen = 2;
         exit_window_retains_fullscreen = true;
       };
     };
