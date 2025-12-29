@@ -7,13 +7,13 @@
 
 stdenvNoCC.mkDerivation {
   pname = "yank-osc52";
-  version = "unstable-2025-12-02";
+  version = "unstable-2025-12-24";
 
   src = fetchFromGitHub {
     owner = "sunaku";
     repo = "home";
-    rev = "16952560fcb4ee1090185ecbfc78eff26a7cec3c";
-    hash = "sha256-QuWwnlxhaHxQve++PhFjLrYTnKzjmM8GcK00zWn4f4M=";
+    rev = "8d98366cd3d7f3d9de32b6664d01556efbdfb1a8";
+    hash = "sha256-VXyX6eoNxtW7WfNInOU8ZyzgLd9pfbmxz71O06n5BrY=";
   };
 
   passthru.updateScript = nix-update-script {
