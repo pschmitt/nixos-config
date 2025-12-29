@@ -21,6 +21,9 @@ let
     g4p = {
       priority = -100;
     };
+    dieppe = {
+      autoconnect = true;
+    };
   };
 
   names = builtins.attrNames nets;
