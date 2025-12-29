@@ -7,7 +7,7 @@
 
     ./hyprgrass.nix
     ./hypr-dynamic-cursors.nix
-    ./qs-hyprview.nix
+    ./quickshell-overview.nix
     ./xtra-dispatchers.nix
   ];
 }
