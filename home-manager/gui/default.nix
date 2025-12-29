@@ -8,7 +8,7 @@
     ./default-apps.nix
     ./dotool.nix
     ./gnome-keyring.nix
-    ./clipcascade.nix
+    # ./clipcascade.nix
     ./media.nix
     ./notes.nix
     ./profile-picture.nix
