@@ -34,6 +34,11 @@
       };
 
       jobs = {
+        Counterpart = {
+          directory = "tv_shows";
+          wildcard = true;
+        };
+
         Fallout = {
           directory = "tv_shows";
           wildcard = true;
@@ -43,6 +48,12 @@
         # Sync all of pluribus
         Pluribus = {
           directory = "tv_shows";
+        };
+
+        "South Park" = {
+          directory = "tv_shows";
+          wildcard = true;
+          seasons = "latest";
         };
 
         "The Paper" = {
