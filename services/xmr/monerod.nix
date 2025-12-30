@@ -46,8 +46,8 @@ in
         MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
         MONEROD_RPC_PASSWORD=${config.sops.placeholder."monerod/rpc/password"}
       '';
-      owner = "monero";
-      group = "monero";
+      owner = config.systemd.services.monero.serviceConfig.User;
+      group = config.systemd.services.monero.serviceConfig.Group;
       mode = "0400";
       restartUnits = [
         "monero.service"
@@ -150,7 +150,7 @@ in
                 recommendedProxySettings = true;
                 proxyWebsockets = true;
               };
-              # FIXME basic auth does not work
+              # WARN basic auth won't work
               # with monero-wallet-cli --daemon-login
               # basicAuthFile = config.sops.secrets."monerod/htpasswd".path;
             };
