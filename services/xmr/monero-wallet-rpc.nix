@@ -16,6 +16,13 @@ let
   svcGroup = "monero-wallet-rpc";
 
   unitFile = "monero-wallet-rpc.service";
+
+  ensureWalletOwnership = pkgs.writeShellScript "monero-wallet-rpc-ensure-ownership" ''
+    if ! ${pkgs.coreutils}/bin/chown --recursive "${svcUser}:${svcGroup}" "${walletHostDir}"
+    then
+      echo "Warning: failed to chown ${walletHostDir}" >&2
+    fi
+  '';
 in
 {
   sops = {
@@ -47,6 +54,9 @@ in
 
         # Point to your remote/full node
         daemon-address = ${monerodAddr}
+        daemon-login = ${config.sops.placeholder."monerod/rpc/username"}:${
+          config.sops.placeholder."monerod/rpc/password"
+        }
 
         # RPC authentication username:password
         rpc-login = ${config.sops.placeholder."monero-wallet-rpc/username"}:${
@@ -97,7 +107,9 @@ in
         #   install -d -m 0750 -o ${svcUser} -g ${svcGroup} ${walletFileDir}
         # '';
         serviceConfig = {
+          ExecStartPre = ensureWalletOwnership;
           ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile} --confirm-external-bind";
+          PermissionsStartOnly = true;
           Restart = "always";
           RestartSec = "10s";
           User = svcUser;
