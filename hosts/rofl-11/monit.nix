@@ -16,23 +16,18 @@ let
     ${builtins.readFile ../../services/monit/mullvad-expiration.sh}
   '';
 
-  monitExtraConfig =
-    let
-      composeFile = "/srv/piracy/docker-compose.yaml";
-      restartCmd = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f ${composeFile} restart";
-    in
-    ''
-      check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
-        group docker
-        if status > 0 then alert
+  monitExtraConfig = ''
+    check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
+      group docker
+      if status > 0 then alert
 
-      check program mullvad with path "${mullvadExpiration} --warning 15 ${
-        config.sops.secrets."mullvad/account".path
-      }"
-        group piracy
-        every "11-13 3,6,12,18,23 * * *"
-        if status != 0 then alert
-    '';
+    check program mullvad with path "${mullvadExpiration} --warning 15 ${
+      config.sops.secrets."mullvad/account".path
+    }"
+      group piracy
+      every "11-13 3,6,12,18,23 * * *"
+      if status != 0 then alert
+  '';
 in
 {
   sops.secrets."mullvad/account".sopsFile = config.custom.sopsFile;
