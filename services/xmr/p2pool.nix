@@ -155,6 +155,12 @@ in
 
       walletFromSops = cfg.walletSecret != null && cfg.sopsFile != null;
 
+      moneroRpcSecretsAvailable =
+        (config ? sops)
+        && (config.sops ? secrets)
+        && (lib.hasAttr "monerod/rpc/username" config.sops.secrets)
+        && (lib.hasAttr "monerod/rpc/password" config.sops.secrets);
+
       commonArgs = [
         "--host"
         cfg.moneroRpcAddress
@@ -174,14 +180,18 @@ in
       ++ modeFlag
       ++ cfg.extraArgs;
 
+      commonArgsEscaped = escapeShellArgs commonArgs;
+
+      rpcLoginArg = lib.optionalString moneroRpcSecretsAvailable "--rpc-login \${MONEROD_RPC_USERNAME}:\${MONEROD_RPC_PASSWORD}";
+
       exec =
         if walletFromSops then
           # Use env file with WALLET=... to avoid putting the address in the unit
-          "${cfg.package}/bin/p2pool --wallet $WALLET ${escapeShellArgs commonArgs}"
+          "${cfg.package}/bin/p2pool --wallet $WALLET ${commonArgsEscaped} ${rpcLoginArg}"
         else
           "${cfg.package}/bin/p2pool --wallet ${
-            escapeShellArgs [ (cfg.walletAddress or "") ]
-          } ${escapeShellArgs commonArgs}";
+            lib.escapeShellArg (cfg.walletAddress or "")
+          } ${commonArgsEscaped} ${rpcLoginArg}";
     in
     mkIf cfg.enable {
       assertions = [
@@ -199,18 +209,28 @@ in
         createHome = true;
       };
 
-      # If SOPS is used, create a tiny env file with WALLET=...
-      # (keeps the address out of the ExecStart line)
-      sops = lib.mkIf walletFromSops {
-        secrets."${cfg.walletSecret}" = {
-          inherit (cfg) sopsFile group;
-          restartUnits = [ "p2pool.service" ];
-          owner = cfg.user;
+      # If SOPS is used, create a tiny env file (WALLET=..., MONEROD_RPC_*).
+      sops = lib.mkIf (walletFromSops || moneroRpcSecretsAvailable) {
+        secrets = lib.mkIf walletFromSops {
+          "${cfg.walletSecret}" = {
+            inherit (cfg) sopsFile group;
+            restartUnits = [ "p2pool.service" ];
+            owner = cfg.user;
+          };
         };
 
         templates.p2poolEnv = {
+          owner = cfg.user;
+          inherit (cfg) group;
+          mode = "0400";
           content = ''
-            WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
+            ${lib.optionalString walletFromSops ''
+              WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
+            ''}
+            ${lib.optionalString moneroRpcSecretsAvailable ''
+              MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
+              MONEROD_RPC_PASSWORD=${config.sops.placeholder."monerod/rpc/password"}
+            ''}
           '';
           restartUnits = [ "p2pool.service" ];
         };
@@ -232,7 +252,9 @@ in
           StateDirectory = "p2pool";
           WorkingDirectory = cfg.dataDir;
           ExecStart = exec;
-          EnvironmentFile = lib.mkIf walletFromSops config.sops.templates.p2poolEnv.path;
+          EnvironmentFile = lib.mkIf (
+            walletFromSops || moneroRpcSecretsAvailable
+          ) config.sops.templates.p2poolEnv.path;
 
           Restart = "on-failure";
           RestartSec = 5;
