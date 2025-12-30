@@ -124,6 +124,10 @@ get_info_json_to_status_tsv() {
       ((.height * 10000) / .target_height | floor) as $bp
       | [$bp, (.height // 0), (.target_height // 0)]
       | @tsv
+    elif (.synchronized // false)
+    then
+      [10000, (.height // 0), (.height // 0)]
+      | @tsv
     else
       [-1, (.height // 0), 0]
       | @tsv
