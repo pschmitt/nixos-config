@@ -30,6 +30,8 @@ in
       group services
       depends on postgresql
       restart program = "${pkgs.systemd}/bin/systemctl restart phpfpm-roundcube.service"
+      # TODO monitor the *INTERNAL* port/socket used by roundcube/phpfpm
+      # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/mail/roundcube.nix
       if failed
         port 443
         protocol https
