@@ -112,7 +112,7 @@ in
       passwordFile = config.sops.secrets."paperless-ngx/adminPassword".path;
     };
 
-    # networking.firewall.allowedTCPPorts = [ 28981 ];
+    # networking.firewall.allowedTCPPorts = [ config.services.paperless.port ];
 
     nginx.virtualHosts."${primaryHost}" = {
       inherit serverAliases;
@@ -135,6 +135,8 @@ in
         if failed
           port ${toString config.services.paperless.port}
           protocol http
+          request "/"
+          with hostheader "${primaryHost}"
           with timeout 15 seconds
         then restart
 
