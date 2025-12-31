@@ -130,7 +130,7 @@ in
     monit.config = lib.mkAfter ''
       check host "paperless-ngx" with address "${config.services.paperless.address}"
         group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart paperless-web.service"
+        restart program = "${pkgs.systemd}/bin/systemctl restart paperless-consumer.service paperless-scheduler.service paperless-task-queue.service paperless-web.service redis-paperless.service"
 
         if failed
           port ${toString config.services.paperless.port}
