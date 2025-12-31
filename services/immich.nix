@@ -52,6 +52,7 @@ in
     monit.config = lib.mkAfter ''
       check host "immich" with address "${primaryHost}"
         group services
+        depends on postgresql
         restart program = "${pkgs.systemd}/bin/systemctl restart immich-server"
         if failed
           port 443
