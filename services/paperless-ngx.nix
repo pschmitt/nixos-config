@@ -114,33 +114,30 @@ in
 
     # networking.firewall.allowedTCPPorts = [ 28981 ];
 
-    nginx = {
-      virtualHosts = {
-        "${primaryHost}" = {
-          inherit serverAliases;
-          enableACME = true;
-          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-          acmeRoot = null;
-          forceSSL = true;
-          locations."/" = {
-            proxyPass = "http://${config.services.paperless.address}:${toString config.services.paperless.port}";
-            proxyWebsockets = true;
-            recommendedProxySettings = true;
-          };
-        };
+    nginx.virtualHosts."${primaryHost}" = {
+      inherit serverAliases;
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      locations."/" = {
+        proxyPass = "http://${config.services.paperless.address}:${toString config.services.paperless.port}";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
       };
     };
 
     monit.config = lib.mkAfter ''
-      check host "paperless-ngx" with address "${primaryHost}"
+      check host "paperless-ngx" with address "${config.services.paperless.address}"
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart paperless-web.service"
+
         if failed
-          port 443
-          protocol https
+          port ${toString config.services.paperless.port}
+          protocol http
           with timeout 15 seconds
-          and certificate valid for 5 days
         then restart
+
         if 5 restarts within 10 cycles then alert
     '';
   };
@@ -148,5 +145,4 @@ in
   users.users."${config.mainUser.username}" = {
     extraGroups = [ "paperless" ];
   };
-
 }
