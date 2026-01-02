@@ -26,6 +26,9 @@ xkb_symbols "basic" {
   // p / P / hashtag / ...
   key <AD10> { [ p, P, numbersign, any ] };
 
+  // l / L / ' / ...
+  key <AC09> { [ l, L, apostrophe, Apotrophe ] };
+
   // e / E / é / É
   key <AD03> { [ e, E, eacute, Eacute ] };
 
