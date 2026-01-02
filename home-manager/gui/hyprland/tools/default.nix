@@ -11,8 +11,8 @@
     grim
     satty
     slurp
+    still
     swappy
-    wayfreeze
     wf-recorder
   ];
 }

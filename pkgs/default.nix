@@ -33,6 +33,7 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
+  still = pkgs.callPackage ./still { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   waypoint = pkgs.callPackage ./waypoint { };
