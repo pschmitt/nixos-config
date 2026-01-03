@@ -71,10 +71,7 @@ in
           "localhost"
         ]
       );
-      SESSION_COOKIE_SECURE = "true";
-      LANGUAGE_COOKIE_SECURE = "true";
-      THEME_COOKIE_SECURE = "true";
-      COOKIE_SAMESITE = "lax";
+      COOKIE_SAMESITE = "strict";
       FEATURE_SIGNUP_ENABLED = "false";
     };
     serviceConfig = {
