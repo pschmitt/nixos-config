@@ -80,10 +80,6 @@ in
       #     (mkHost "memos")
       #   ];
       # };
-      n8n = {
-        port = 5678;
-        hosts = [ (mkHost "n8n") ];
-      };
       nextcloud = {
         port = 63982;
         tls = true;

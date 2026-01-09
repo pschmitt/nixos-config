@@ -43,6 +43,17 @@
   # nixos-unstable
   inherit (inputs.nixpkgs-jackett.legacyPackages.${final.stdenv.hostPlatform.system}) jackett;
 
+  # TODO Remove once https://github.com/NixOS/nixpkgs/pull/477422 reaches
+  # nixos-unstable
+  n8n =
+    let
+      n8nPkgs = import inputs.nixpkgs-n8n {
+        inherit (final.stdenv.hostPlatform) system;
+        config.allowUnfree = true;
+      };
+    in
+    n8nPkgs.n8n;
+
   # Ensure python313Packages uses the modified interpreter
   # python313Packages = final.python313.pkgs;
 }
