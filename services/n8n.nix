@@ -7,6 +7,7 @@
 let
   n8nHost = "n8n.${config.domains.main}";
   n8nPort = 5678;
+  n8nRunnerBrokerListenAddress = "127.0.0.1";
   n8nRunnerBrokerPort = 5679;
   n8nDataDir = "/srv/n8n/data/n8n";
   n8nStateDir = "/var/lib/n8n";
@@ -50,7 +51,7 @@ in
         N8N_RUNNERS_ENABLED = true;
         N8N_RUNNERS_MODE = "external";
         N8N_RUNNERS_AUTH_TOKEN_FILE = config.sops.secrets."n8n/runners/authToken".path;
-        N8N_RUNNERS_BROKER_LISTEN_ADDRESS = "127.0.0.1";
+        N8N_RUNNERS_BROKER_LISTEN_ADDRESS = n8nRunnerBrokerListenAddress;
         N8N_RUNNERS_BROKER_PORT = n8nRunnerBrokerPort;
         N8N_NATIVE_PYTHON_RUNNER = true;
       };
@@ -103,7 +104,7 @@ in
       "--network=host"
     ];
     environment = {
-      N8N_RUNNERS_TASK_BROKER_URI = "http://127.0.0.1:${toString n8nRunnerBrokerPort}";
+      N8N_RUNNERS_TASK_BROKER_URI = "http://${n8nRunnerBrokerListenAddress}:${toString n8nRunnerBrokerPort}";
     };
     environmentFiles = [
       config.sops.templates."${runnerEnvFile}".path
