@@ -25,5 +25,8 @@
   services.logind.settings.Login = {
     HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
     HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+
+    # firmware updates
+    fwupd.enable = true;
   };
 }
