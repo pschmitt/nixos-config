@@ -94,9 +94,9 @@
 
     # Hyprland and cie {{{
     hyprland = {
-      url = "github:hyprwm/Hyprland";
-      # url = "github:hyprwm/Hyprland/v0.53.1";
-      inputs.nixpkgs.follows = "nixpkgs";
+      # url = "github:hyprwm/Hyprland";
+      url = "github:hyprwm/Hyprland/v0.53.1";
+      # inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hyprdynamicmonitors = {
@@ -139,7 +139,7 @@
     };
 
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
+      url = "github:horriblename/hyprgrass/72c4133a2bf679bda9c179a8f24e3867536ed9c7";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
