@@ -61,8 +61,6 @@
     tesseract
     zbar # provides zbarimg, for reading qr codes
   ];
-
-  programs.adb.enable = true;
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
