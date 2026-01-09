@@ -328,6 +328,9 @@
     nixpkgs-openbao = {
       url = "github:NixOS/nixpkgs?ref=refs/pull/478004/head";
     };
+    nixpkgs-***REMOVED*** = {
+      url = "github:NixOS/nixpkgs?ref=refs/pull/478300/head";
+    };
   };
 
   outputs =
