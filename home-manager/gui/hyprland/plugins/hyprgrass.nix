@@ -6,6 +6,7 @@
 }:
 {
   wayland.windowManager.hyprland.plugins = [
+    # pkgs.hyprlandPlugins.hyprgrass
     inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
