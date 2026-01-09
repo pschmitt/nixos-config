@@ -1,6 +1,6 @@
 {
-  # final,
-  # inputs,
+  final,
+  inputs,
   prev,
   ...
 }:
@@ -34,6 +34,10 @@
         --add-flags "--disable-features=WaylandWpColorManagerV1"
     '';
   });
+
+  # TODO Remove once https://github.com/NixOS/nixpkgs/pull/478004 reaches
+  # nixos-unstable
+  inherit (inputs.nixpkgs-openbao.legacyPackages.${final.stdenv.hostPlatform.system}) openbao;
 
   # Ensure python313Packages uses the modified interpreter
   # python313Packages = final.python313.pkgs;

@@ -9,6 +9,6 @@
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
 
 ## Code Style
-- Nix code changes should be formatted correctly with `nixfmt-rfc-style`.
+- Nix code changes should be formatted correctly with `nixfmt`.
 - `statix` checks should pass.
 - Tofu code changes should be formatted with `tofu fmt`.
