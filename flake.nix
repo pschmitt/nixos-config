@@ -94,8 +94,9 @@
 
     # Hyprland and cie {{{
     hyprland = {
-      url = "github:hyprwm/Hyprland/v0.53.1";
-      # inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:hyprwm/Hyprland";
+      # url = "github:hyprwm/Hyprland/v0.53.1";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     hyprdynamicmonitors = {
@@ -324,6 +325,9 @@
 
     # HOTFIXES: Overrides, pending PRs, etc
     # droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
+    nixpkgs-openbao = {
+      url = "github:NixOS/nixpkgs?ref=refs/pull/478004/head";
+    };
   };
 
   outputs =
@@ -398,14 +402,14 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
         in
-        pkgs.nixfmt-rfc-style
+        pkgs.nixfmt
       );
 
       checks = forAllSystems (system: {
         pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
           src = ./.;
           hooks = {
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
             statix.enable = true;
             pre-commit-hook-ensure-sops = {
               enable = true;

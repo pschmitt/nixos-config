@@ -40,7 +40,7 @@ nixfmt:
   mapfile -t files < <(find . -name '*.nix' -print)
   if [[ ${#files[@]} -gt 0 ]]
   then
-    nix run nixpkgs#nixfmt-rfc-style -- "${files[@]}"
+    nix run nixpkgs#nixfmt -- "${files[@]}"
   else
     echo "No .nix files to format"
   fi

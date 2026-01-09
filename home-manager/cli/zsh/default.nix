@@ -42,7 +42,9 @@
     "zsh/completions/source-me.zsh".text = ''
       # bashcompinit is not needed here since we already do this in zinit
       # autoload -U +X bashcompinit && bashcompinit
-      complete -C "${pkgs.openbao}/bin/bao" bao
+      # FIXME openbao is broken as of 2026-01-09
+      # https://github.com/NixOS/nixpkgs/pull/478004
+      # complete -C "${pkgs.openbao}/bin/bao" bao
       complete -C "${pkgs.vault}/bin/vault" vault
     '';
   };

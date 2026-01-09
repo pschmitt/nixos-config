@@ -23,7 +23,7 @@
       nix
 
       # lint
-      nixfmt-rfc-style
+      nixfmt
       statix
 
       # task runner
