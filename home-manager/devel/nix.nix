@@ -5,7 +5,7 @@
     cachix
     niv
     nix-init
-    nixfmt-rfc-style
+    nixfmt
     nixos-anywhere
     nixos-generators
     nixpkgs-fmt
