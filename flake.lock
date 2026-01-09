@@ -2342,6 +2342,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-jackett": {
+      "locked": {
+        "lastModified": 1767936801,
+        "narHash": "sha256-V5wuDow25wHXI2rCLgpeCJhnt8XAFjoRXaIDnjVElAg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b2ae519feaea4b56211746d5a1bbed07ef9f1293",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "refs/pull/478300/head",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1761765539,
@@ -2753,6 +2769,7 @@
         "nixos-needsreboot": "nixos-needsreboot",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_5",
+        "nixpkgs-jackett": "nixpkgs-jackett",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-openbao": "nixpkgs-openbao",
         "nixpkgs-stable": "nixpkgs-stable",

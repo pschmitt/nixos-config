@@ -328,6 +328,9 @@
     nixpkgs-openbao = {
       url = "github:NixOS/nixpkgs?ref=refs/pull/478004/head";
     };
+    nixpkgs-jackett = {
+      url = "github:NixOS/nixpkgs?ref=refs/pull/478300/head";
+    };
   };
 
   outputs =
