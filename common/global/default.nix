@@ -103,15 +103,10 @@
   # Disable password prompts for wheel users when sudo'ing
   security.sudo.wheelNeedsPassword = false;
 
-  services = {
-    # firmware updates
-    fwupd.enable = true;
-
-    # mlocate
-    locate = {
-      enable = true;
-      package = pkgs.plocate;
-      interval = "daily";
-    };
+  # mlocate
+  services.locate = {
+    enable = true;
+    package = pkgs.plocate;
+    interval = "daily";
   };
 }
