@@ -70,12 +70,12 @@ in
     };
 
     monit.config = lib.mkAfter ''
-      check host "n8n" with address "${n8nHost}"
+      check host "n8n" with address "127.0.0.1"
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart n8n.service"
         if failed
-          port 443
-          protocol https
+          port ${toString n8nPort}
+          protocol http
           with timeout 15 seconds
         then restart
         if 5 restarts within 10 cycles then alert
