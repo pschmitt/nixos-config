@@ -39,6 +39,10 @@
   # nixos-unstable
   inherit (inputs.nixpkgs-openbao.legacyPackages.${final.stdenv.hostPlatform.system}) openbao;
 
+  # TODO Remove once https://github.com/NixOS/nixpkgs/pull/478300 reaches
+  # nixos-unstable
+  inherit (inputs.nixpkgs-jackett.legacyPackages.${final.stdenv.hostPlatform.system}) jackett;
+
   # Ensure python313Packages uses the modified interpreter
   # python313Packages = final.python313.pkgs;
 }
