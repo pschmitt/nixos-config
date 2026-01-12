@@ -22,9 +22,11 @@
   ];
 
   # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
-  services.logind.settings.Login = {
-    HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
-    HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+  services = {
+    logind.settings.Login = {
+      HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
+      HandleLidSwitchExternalPower = lib.mkDefault "suspend";
+    };
 
     # firmware updates
     fwupd.enable = true;
