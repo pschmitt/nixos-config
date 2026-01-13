@@ -157,13 +157,13 @@ let
   '';
 
   monitFailedTimers = ''
-    check program "Systemd timers" with path "${failedTimers}"
+    check program "systemd timers" with path "${failedTimers}"
       group system
       if status > 0 then alert
   '';
 
   monitFailedServices = ''
-    check program "Systemd services" with path "${failedServices}"
+    check program "systemd services" with path "${failedServices}"
       group system
       if status > 0 then alert
   '';
