@@ -91,8 +91,8 @@ let
       --type=service \
       --output=json \
       --no-pager \
-      | ${pkgs.jq}/bin/jq -r '
-        .[] | select((.active // "") == "failed" or (.sub // "") == "failed")) | .unit
+      | ${pkgs.jq}/bin/jq -er '
+        .[] | select((.active // "") == "failed" or (.sub // "") == "failed") | .unit
       ' \
     )
 
