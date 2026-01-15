@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
-  port = 5000;
+  port = 4545;
   publicHost = "listen.arr.${config.domains.main}";
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
   containerService = config.virtualisation.oci-containers.containers.listenarr.serviceName;
