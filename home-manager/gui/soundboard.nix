@@ -41,11 +41,11 @@ in
 
   systemd.user.timers.${serviceName} = {
     Unit = {
-      Description = "Play Tagesschau Jingle at 10:00 AM";
+      Description = "Play Tagesschau Jingle at 09:30 AM";
     };
 
     Timer = {
-      OnCalendar = "10:00";
+      OnCalendar = "09:30";
       Persistent = true;
     };
 
