@@ -35,12 +35,14 @@ in
     # and uwsm is already starting it (app-nm\\x2dapplet@autostart.service)
     # nm-applet.enable = true;
 
+    # DIRTYFIX This should not necessary as Hyprland ships hyprland-uwsm already
+    # ... but for some reason gdm isn't picking it up
     uwsm = {
       enable = true;
       waylandCompositors.hyprland = {
         prettyName = "Hyprland (UWSM)";
         comment = "Hyprland compositor managed by UWSM";
-        binPath = "${hyprlandPkg}/bin/Hyprland";
+        binPath = "${hyprlandPkg}/bin/start-hyprland";
       };
     };
   };
