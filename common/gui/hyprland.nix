@@ -34,6 +34,15 @@ in
     # FIXME This fails with .nm-applet-wrap[16214]: cannot open display:
     # and uwsm is already starting it (app-nm\\x2dapplet@autostart.service)
     # nm-applet.enable = true;
+
+    uwsm = {
+      enable = true;
+      waylandCompositors.hyprland = {
+        prettyName = "Hyprland (UWSM)";
+        comment = "Hyprland compositor managed by UWSM";
+        binPath = "${hyprlandPkg}/bin/Hyprland";
+      };
+    };
   };
 
   services.displayManager.defaultSession = lib.mkForce "hyprland-uwsm";

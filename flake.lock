@@ -1308,11 +1308,11 @@
         "xdph": "xdph"
       },
       "locked": {
-        "lastModified": 1768492847,
-        "narHash": "sha256-ZrCazve+KUM47OK5rey/3wp54n/M3f4pZ9dUEbOrNdI=",
+        "lastModified": 1768579186,
+        "narHash": "sha256-Is2h3l7X9bqBoOviY6BibzBHz3c4QztxmmSt9Us57NA=",
         "owner": "hyprwm",
         "repo": "Hyprland",
-        "rev": "ac9df44788492fd1d12da8ec0fbbf691386c45a4",
+        "rev": "36aa465a216002169879a60416d2f10c28741162",
         "type": "github"
       },
       "original": {
