@@ -37,6 +37,7 @@ in
   services = {
     n8n = {
       enable = true;
+      package = pkgs.master.n8n;
       environment = {
         GENERIC_TIMEZONE = "Europe/Berlin";
         N8N_BASIC_AUTH_ACTIVE = true;
