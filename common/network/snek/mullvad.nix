@@ -11,7 +11,7 @@
   };
 
   environment.systemPackages = with pkgs; [
-    mullvad-closest
+    master.mullvad-compass
     mullvad-browser
   ];
 }
