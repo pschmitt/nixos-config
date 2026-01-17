@@ -67,18 +67,13 @@
       # Falcon uses bubblewrap for sandboxing which conflicts with strict filesystem isolation
 
       # Block access to sensitive directories using InaccessiblePaths
-      # NOTE: We cannot block /run/secrets.d entirely because Falcon needs its own CID secret
       InaccessiblePaths = [
         "/home" # User home directories
         "/root" # Root home directory
+        "/run/secrets" # ALL secrets - Falcon CID is set by init service before hardening
+        "/run/secrets.d" # Sops secret storage
         "/run/secrets-for-users.d" # User secrets
         "/run/user" # User runtime directories (includes Firefox, etc)
-      ];
-
-      # Make Falcon's secret read-only (can't modify it)
-      ReadOnlyPaths = [
-        "/run/secrets"
-        "/run/secrets.d"
       ];
 
       # Kernel/system protections (these should work)
