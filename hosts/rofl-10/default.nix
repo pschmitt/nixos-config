@@ -9,6 +9,7 @@
     # services
     # backups services
     ../../services/anika-blue.nix
+    ../../services/atuin.nix
     ../../services/stricknani.nix
     ../../services/authelia.nix
     ../../services/audiobookshelf.nix
