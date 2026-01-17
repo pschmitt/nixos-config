@@ -26,13 +26,14 @@ let
     src = requireFile source;
 
     nativeBuildInputs = [
-      dpkg
       autoPatchelfHook
+      dpkg
     ];
+
     buildInputs = [
-      zlib
-      openssl
       libnl
+      openssl
+      zlib
     ];
 
     sourceRoot = ".";
@@ -54,7 +55,7 @@ in
 wrapped.overrideAttrs (old: {
   passthru = (old.passthru or { }) // {
     inherit unwrapped;
-    # NOTE: This is required for us to be able to get the urls set programatically in the fetch-garbage script
+    # NOTE: This is required for us to be able to get the urls set programmatically in the fetch-garbage script
     proprietarySource = source;
   };
 })
