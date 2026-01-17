@@ -24,9 +24,9 @@
     postgresqlBackup = {
       enable = true;
       backupAll = true;
-      location = "/srv/postgresql/backups";
+      location = "/mnt/data/srv/postgresql/backups";
       startAt = "*-*-* 02:00:00"; # Daily at 2 AM
-      compression = "zstd";
+      compression = "gzip";
     };
   };
 
