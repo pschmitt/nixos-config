@@ -15,9 +15,19 @@
     "L+ /var/lib/postgresql       -    -  -  - /mnt/data/srv/postgresql"
   ];
 
-  services.postgresql = {
-    package = pkgs.postgresql_16;
-    dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
+  services = {
+    postgresql = {
+      package = pkgs.postgresql_16;
+      dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
+    };
+
+    postgresqlBackup = {
+      enable = true;
+      backupAll = true;
+      location = "/srv/postgresql/backups";
+      startAt = "*-*-* 02:00:00"; # Daily at 2 AM
+      compression = "zstd";
+    };
   };
 
   # FIXME This only *kinda* works
