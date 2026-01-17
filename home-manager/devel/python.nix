@@ -4,7 +4,7 @@
     black
     isort
     pipx
-    poetry
+    # poetry
     python3Packages.flake8
     python3Packages.ipython
     uv
