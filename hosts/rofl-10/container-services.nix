@@ -90,10 +90,6 @@ in
           (mkHostWithNode "nextcloud")
         ];
       };
-      open-webui = {
-        port = 6736;
-        hosts = [ (mkHost "ai") ];
-      };
       podsync = {
         port = 7637;
         hosts = [
