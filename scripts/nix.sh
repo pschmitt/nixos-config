@@ -45,7 +45,6 @@ cmd_repl() {
 
 cmd_eval() {
   local target_host="$HOSTNAME"
-  local config_path
   local home_manager
   local jq_args=()
   local args=()
@@ -99,7 +98,16 @@ cmd_eval() {
     exit 2
   fi
 
-  config_path="config.${args[0]}"
+  local config_path
+  case "${args[0]}" in
+    # Make sure we do not use config.config.xxx
+    config\.*)
+      config_path="${args[0]}"
+      ;;
+    *)
+      config_path="config.${args[0]}"
+      ;;
+  esac
 
   if [[ -n ${home_manager:-} ]]
   then
