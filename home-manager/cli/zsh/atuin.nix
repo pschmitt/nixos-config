@@ -8,12 +8,13 @@
   programs.atuin = {
     enable = true;
     enableZshIntegration = false; # We manage this manually below
+    forceOverwriteSettings = true;
     settings = {
       dialect = "uk";
       auto_sync = true;
       update_check = true;
       sync_address = "https://atuin.${osConfig.domains.main}";
-      sync_frequency = "1h";
+      sync_frequency = "15m";
       search_mode = "fuzzy";
     };
   };
