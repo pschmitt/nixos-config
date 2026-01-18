@@ -53,12 +53,6 @@ in
           (mkHost "endurian") # common typo ;)
         ];
       };
-      # hoarder = {
-      #   port = 46273;
-      #   hosts = [
-      #     (mkHost "hoarder")
-      #   ];
-      # };
       linkding = {
         port = 54653;
         hosts = [
@@ -66,12 +60,6 @@ in
           (mkHost "linkding")
         ];
       };
-      # memos = {
-      #   port = 63667;
-      #   hosts = [
-      #     (mkHost "memos")
-      #   ];
-      # };
       nextcloud = {
         port = 63982;
         tls = true;
@@ -94,10 +82,6 @@ in
       #   port = 8723; # http: 18723
       #   default = true;
       # };
-      wallos = {
-        port = 8282;
-        hosts = [ (mkHost "subs") ];
-      };
       whoami = {
         port = 19462;
         hosts = [ (mkHost "whoami") ];
