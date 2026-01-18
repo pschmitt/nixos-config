@@ -45,7 +45,7 @@ in
         '';
       };
 
-      rclone-bisync = {
+      rclone-bisync-documents = {
         description = "Rclone bisync - Documents sync";
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
@@ -60,8 +60,8 @@ in
         script = bisyncCmd "";
       };
 
-      rclone-bisync-resync = {
-        description = "Rclone bisync - Full resync";
+      rclone-bisync-documents-resync = {
+        description = "Rclone bisync - Documents full resync";
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
 
@@ -86,7 +86,7 @@ in
         };
       };
 
-      rclone-bisync = {
+      rclone-bisync-documents = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
           OnCalendar = "hourly";
@@ -95,7 +95,7 @@ in
         };
       };
 
-      rclone-bisync-resync = {
+      rclone-bisync-documents-resync = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
           OnCalendar = "05:00:00";
