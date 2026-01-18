@@ -113,11 +113,11 @@ in
             "x-systemd.device-timeout=10s"
             "x-systemd.mount-timeout=10s"
             "IdentityFile=${instance.identityFile}"
-            "StrictHostKeyChecking=no"
             "UserKnownHostsFile=/dev/null"
             "ServerAliveInterval=10"
             "BatchMode=yes"
             "PasswordAuthentication=no"
+            # "StrictHostKeyChecking=no"
           ];
         };
       }) cfg.instances
@@ -155,46 +155,44 @@ in
             ;
           paths = backupPaths;
           exclude = excludePaths;
+
+          timerConfig = {
+            OnCalendar = instance.timer;
+            RandomizedDelaySec = "600";
+            Persistent = true;
+          };
+
+          backupPrepareCommand = ''
+            # Ensure mount directory exists
+            mkdir -p ${mountDir}
+
+            # Wait for mount to be ready (automount should handle this)
+            for i in {1..30}; do
+              if mountpoint -q ${mountDir}; then
+                echo "Mount ${mountDir} is ready"
+                break
+              fi
+              echo "Waiting for mount ${mountDir}... ($i/30)"
+              # Trigger automount by accessing the directory
+              ls ${mountDir} > /dev/null 2>&1 || true
+              sleep 2
+            done
+
+            if ! mountpoint -q ${mountDir}; then
+              echo "ERROR: Mount ${mountDir} is not available after 60 seconds"
+              ${healthcheckScript "/fail"}
+              exit 1
+            fi
+
+            ${healthcheckScript "/start"}
+          '';
+
+          backupCleanupCommand = healthcheckScript "";
         }
         // lib.optionalAttrs (instance.repositoryFile != null) {
           inherit (instance) repositoryFile;
         }
       )
-      // {
-
-        timerConfig = {
-          OnCalendar = instance.timer;
-          RandomizedDelaySec = "600";
-          Persistent = true;
-        };
-
-        backupPrepareCommand = ''
-          # Ensure mount directory exists
-          mkdir -p ${mountDir}
-
-          # Wait for mount to be ready (automount should handle this)
-          for i in {1..30}; do
-            if mountpoint -q ${mountDir}; then
-              echo "Mount ${mountDir} is ready"
-              break
-            fi
-            echo "Waiting for mount ${mountDir}... ($i/30)"
-            # Trigger automount by accessing the directory
-            ls ${mountDir} > /dev/null 2>&1 || true
-            sleep 2
-          done
-
-          if ! mountpoint -q ${mountDir}; then
-            echo "ERROR: Mount ${mountDir} is not available after 60 seconds"
-            ${healthcheckScript "/fail"}
-            exit 1
-          fi
-
-          ${healthcheckScript "/start"}
-        '';
-
-        backupCleanupCommand = healthcheckScript "";
-      }
     ) cfg.instances;
 
     # Override the systemd service to add failure handling and create failure notification services
