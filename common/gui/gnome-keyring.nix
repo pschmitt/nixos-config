@@ -16,5 +16,6 @@
     gnome.gcr-ssh-agent.enable = true;
   };
 
+  # programs.seahorse.enable = true;
   environment.systemPackages = [ pkgs.seahorse ];
 }
