@@ -8,12 +8,10 @@
 
     # services
     # backups services
-    # ../../services/mealie.nix # it's a container now!
     ../../services/anika-blue.nix
     ../../services/atuin.nix
     ../../services/audiobookshelf.nix
     ../../services/authelia.nix
-    ../../services/restic-remote.nix
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote.nix
     ../../services/calibre.nix
@@ -25,11 +23,13 @@
     ../../services/http.nix
     ../../services/immich.nix
     ../../services/luks-ssh-unlock-homelab.nix
+    ../../services/mealie.nix
     ../../services/n8n.nix
     ../../services/open-webui.nix
     ../../services/paperless-ngx.nix
     ../../services/pinchflat.nix
     ../../services/podsync.nix
+    ../../services/restic-remote.nix
     ../../services/poor-tools.nix
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix

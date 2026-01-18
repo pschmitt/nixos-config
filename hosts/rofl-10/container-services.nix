@@ -32,10 +32,6 @@ in
           (mkHostWithNode "archivebox")
         ];
       };
-      bentopdf = {
-        port = 23686;
-        hosts = [ (mkHost "pdf") ];
-      };
       changedetection = {
         port = 24264;
         hosts = [ (mkHost "changes") ];
@@ -69,10 +65,6 @@ in
           (mkHost "ld")
           (mkHost "linkding")
         ];
-      };
-      mealie = {
-        port = 63254;
-        hosts = [ (mkHost "nom") ];
       };
       # memos = {
       #   port = 63667;
