@@ -8,24 +8,23 @@
 
     # services
     # backups services
+    # ../../services/mealie.nix # it's a container now!
     ../../services/anika-blue.nix
     ../../services/atuin.nix
-    ../../services/stricknani.nix
-    ../../services/authelia.nix
     ../../services/audiobookshelf.nix
-    ../../services/backups/autorestic.nix
+    ../../services/authelia.nix
+    ../../services/restic-remote.nix
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote.nix
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
-    ../../services/harmonia.nix
     ../../services/forgejo.nix
-    ../../services/http.nix
+    ../../services/harmonia.nix
     ../../services/http-static.nix
+    ../../services/http.nix
     ../../services/immich.nix
     ../../services/luks-ssh-unlock-homelab.nix
-    # ../../services/mealie.nix # it's a container now!
     ../../services/n8n.nix
     ../../services/open-webui.nix
     ../../services/paperless-ngx.nix
@@ -35,10 +34,12 @@
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
     ../../services/searxng.nix
+    ../../services/stricknani.nix
     ../../services/turris-ssh-tunnel.nix
     ../../services/vaultwarden.nix
     ../../services/vdirsyncer.nix
     ../../services/wishlist.nix
+
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
     ../../services/nfs/nfs-client-rofl-11.nix
 
