@@ -156,6 +156,11 @@ in
           paths = backupPaths;
           exclude = excludePaths;
 
+          extraBackupArgs = [
+            "--host"
+            instance.host
+          ];
+
           timerConfig = {
             OnCalendar = instance.timer;
             RandomizedDelaySec = "600";
