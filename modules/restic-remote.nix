@@ -168,7 +168,8 @@ in
 
             # Wait for mount to be ready (automount should handle this)
             for i in {1..30}; do
-              if mountpoint -q ${mountDir}; then
+              if ${pkgs.util-linux}/bin/mountpoint -q ${mountDir}
+              then
                 echo "Mount ${mountDir} is ready"
                 break
               fi
@@ -178,7 +179,8 @@ in
               sleep 2
             done
 
-            if ! mountpoint -q ${mountDir}; then
+            if ! ${pkgs.util-linux}/bin/mountpoint -q ${mountDir}
+            then
               echo "ERROR: Mount ${mountDir} is not available after 60 seconds"
               ${healthcheckScript "/fail"}
               exit 1
