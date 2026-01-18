@@ -14,6 +14,7 @@
     ../../services/authelia.nix
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote.nix
+    ../../services/bentopdf.nix
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
@@ -38,6 +39,7 @@
     ../../services/turris-ssh-tunnel.nix
     ../../services/vaultwarden.nix
     ../../services/vdirsyncer.nix
+    ../../services/wallos.nix
     ../../services/wishlist.nix
 
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
