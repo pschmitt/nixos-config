@@ -1,1 +1,1 @@
-{"disks":{"data":{"az":"sz1","device":"/dev/sdb","id":"6f12491f-cfb2-4cda-9854-819c8b6baaed","name":"rofl-data"},"root":{"az":"sz1","id":"d023ef34-9456-4825-bf93-eead44ae218d","name":"rofl-10-boot-volume"}},"network":{"floating_ip":"89.163.172.112"}}
+{"disks":{"data":{"az":"sz1","device":"/dev/sdb","id":"6f12491f-cfb2-4cda-9854-819c8b6baaed","name":"rofl-data"},"root":{"az":"sz1","id":"a30bfbb3-1988-494d-92b2-35e0f3919ea5","name":"rofl-10-boot-volume"}},"network":{"floating_ip":"89.163.172.112"}}
