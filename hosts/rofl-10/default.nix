@@ -53,6 +53,7 @@
   hardware = {
     cattle = false;
     serverType = "openstack";
+    biosBoot = lib.mkForce false;
   };
   custom.promptColor = "#0B87CA"; # nextcloud blue
 
