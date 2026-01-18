@@ -7,7 +7,7 @@ in
     enable = true;
     settings = {
       preload = [ wallpaperPath ];
-      wallpaper = [ ",${wallpaperPath}" ];
+      wallpaper = [ "*,${wallpaperPath}" ];
     };
   };
 }
