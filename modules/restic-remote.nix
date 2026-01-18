@@ -157,7 +157,7 @@ in
           exclude = excludePaths;
         }
         // lib.optionalAttrs (instance.repositoryFile != null) {
-          inherit (instance) respositoryFile;
+          inherit (instance) repositoryFile;
         }
       )
       // {
