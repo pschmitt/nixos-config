@@ -26,6 +26,11 @@ in
   # Explicitly allow ssh
   networking.firewall.allowedTCPPorts = lib.mkBefore [ 22 ];
 
+  # Fix permissions after UID changes (e.g., after reinstall)
+  systemd.tmpfiles.rules = [
+    "Z ${config.services.forgejo.stateDir} 0750 ${config.services.forgejo.user} ${config.services.forgejo.group} - -"
+  ];
+
   services = {
     forgejo = {
       enable = true;

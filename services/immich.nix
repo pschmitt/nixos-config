@@ -17,6 +17,11 @@ in
 {
   imports = [ ./immich-face-to-album.nix ];
 
+  # Fix permissions after UID changes (e.g., after reinstall)
+  systemd.tmpfiles.rules = [
+    "Z ${config.services.immich.mediaLocation} 0750 ${config.services.immich.user} ${config.services.immich.group} - -"
+  ];
+
   services = {
     immich = {
       enable = true;
