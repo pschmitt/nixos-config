@@ -1,19 +1,21 @@
-args:
+{
+  server ? null,
+  exportPath ? "/export",
+  mountPoint ? "/mnt/data",
+  exports ? [
+    "backups"
+    "blobs"
+    "books"
+    "documents"
+    "mnt"
+    "srv"
+    "tmp"
+    # "videos" # lives on rofl-11 now
+  ],
+}:
+{ config, ... }:
 let
-  server = args.server or "rofl-10.netbird.cloud";
-  exportPath = args.exportPath or "/export";
-  mountPoint = args.mountPoint or "/mnt/data";
-  exports =
-    args.exports or [
-      "backups"
-      "blobs"
-      "books"
-      "documents"
-      "mnt"
-      "srv"
-      "tmp"
-      # "videos" # lives on rofl-11 now
-    ];
+  resolvedServer = if server == null then "rofl-10.${config.domains.netbird}" else server;
 in
 
 {
@@ -21,7 +23,7 @@ in
     map (dir: {
       name = "${mountPoint}/${dir}";
       value = {
-        device = "${server}:${exportPath}/${dir}";
+        device = "${resolvedServer}:${exportPath}/${dir}";
         fsType = "nfs";
         options = [
           "noauto"
