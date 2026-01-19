@@ -74,11 +74,6 @@ in
       #   port = 8723; # http: 18723
       #   default = true;
       # };
-      whoami = {
-        port = 19462;
-        hosts = [ (mkHost "whoami") ];
-        default = true;
-      };
       wikijs = {
         port = 9454;
         hosts = [ (mkHost "wiki") ];
