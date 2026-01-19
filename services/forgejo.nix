@@ -47,8 +47,8 @@ in
     gitea-actions-runner.instances.main = {
       # TODO Enable once we figure out how to feed the credentials to the runner
       # The service uses DynamicUser=true
-      # https://github.com/Mic92/sops-nix/issues/198
       # This looks like the way to go:
+      # https://github.com/Mic92/sops-nix/issues/198
       enable = false;
       name = config.networking.hostName;
       url = config.services.forgejo.settings.server.ROOT_URL;
