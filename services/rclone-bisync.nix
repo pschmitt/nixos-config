@@ -27,24 +27,6 @@ in
 
   systemd = {
     services = {
-      rclone-scansnap-move = {
-        description = "Rclone - Move ScanSnap files";
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-
-        serviceConfig = {
-          Type = "oneshot";
-          StateDirectory = "rclone";
-          User = "root";
-        };
-
-        script = ''
-          ${pkgs.rclone}/bin/rclone move drive:ScanSnap drive:Documents/Incoming \
-            --config ${rcloneConfig} \
-            --verbose
-        '';
-      };
-
       rclone-bisync-documents = {
         description = "Rclone bisync - Documents sync";
         wants = [ "network-online.target" ];
@@ -77,15 +59,6 @@ in
     };
 
     timers = {
-      rclone-scansnap-move = {
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnCalendar = "hourly";
-          RandomizedDelaySec = "600"; # 10min
-          Persistent = true;
-        };
-      };
-
       rclone-bisync-documents = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
