@@ -15,10 +15,17 @@ locals {
   autorestic_hosts = [
     "fnuc",
     "oci-01",
+  ]
+
+  restic_remote_hosts = [
     "turris",
   ]
 
-  all_restic_hosts = sort(distinct(concat(local.restic_hosts, local.autorestic_hosts)))
+  all_restic_hosts = sort(distinct(concat(
+    local.restic_hosts,
+    local.autorestic_hosts,
+    local.restic_remote_hosts,
+  )))
 }
 
 module "restic_wasabi" {
@@ -30,8 +37,8 @@ module "restic_wasabi" {
 resource "healthchecksio_check" "restic_backup" {
   for_each = toset(local.all_restic_hosts)
 
-  name = "${contains(local.autorestic_hosts, each.value) ? "Autorestic" : "Restic"} Backup ${each.value}"
-  slug = "${contains(local.autorestic_hosts, each.value) ? "autorestic" : "restic"}-backup-${replace(each.value, "_", "-")}"
+  name = "${contains(local.restic_remote_hosts, each.value) ? "Restic Remote" : contains(local.autorestic_hosts, each.value) ? "Autorestic" : "Restic"} Backup ${each.value}"
+  slug = "restic-backup-${replace(each.value, "_", "-")}"
 
   channels = [
     # email + discord
@@ -39,10 +46,11 @@ resource "healthchecksio_check" "restic_backup" {
     "7fdca605-8eee-48bf-87d3-e5546346cb41",
   ]
 
-  tags = [
+  tags = compact([
     contains(local.autorestic_hosts, each.value) ? "autorestic" : "restic",
+    contains(local.restic_remote_hosts, each.value) ? "restic-remote" : null,
     each.value,
-  ]
+  ])
 
   # 2 days timeout + 1 day grace period
   timeout = 2 * 24 * 3600
