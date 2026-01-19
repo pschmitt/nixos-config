@@ -70,14 +70,6 @@ in
           (mkHostWithNode "nextcloud")
         ];
       };
-      podsync = {
-        port = 7637;
-        hosts = [
-          (mkHost "podcasts")
-          (mkHost "podsync")
-          (mkHostWithNode "podsync")
-        ];
-      };
       # traefik = {
       #   port = 8723; # http: 18723
       #   default = true;
