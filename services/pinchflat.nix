@@ -10,6 +10,8 @@ let
   pinchflatUser = "pinchflat";
   pinchflatGroup = pinchflatUser;
   pinchflatMediaDir = "/mnt/data/srv/pinchflat/data";
+  cookiesDir = "/srv/yt-dlp";
+  pinchflatExtrasDir = "/var/lib/pinchflat/extras";
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 in
 {
@@ -23,6 +25,9 @@ in
 
   systemd.tmpfiles.rules = [
     "d ${pinchflatMediaDir} 0750 ${pinchflatUser} ${pinchflatGroup} -"
+    "d ${cookiesDir} 0750 root ${pinchflatGroup} -"
+    "d ${pinchflatExtrasDir} 0750 ${pinchflatUser} ${pinchflatGroup} -"
+    "L+ ${pinchflatExtrasDir}/cookies.txt - - - - ${cookiesDir}/cookies.txt"
   ];
 
   services = {
