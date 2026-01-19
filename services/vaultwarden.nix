@@ -104,11 +104,18 @@ in
   };
 
   systemd = {
-    tmpfiles.rules = [
-      "d ${rootDir}   0750 vaultwarden vaultwarden -"
-      "d ${dataDir}   0750 vaultwarden vaultwarden -"
-      "d ${backupDir} 0770 vaultwarden vaultwarden -"
-    ];
+    tmpfiles.rules =
+      let
+        user = config.systemd.services.vaultwarden.serviceConfig.User;
+        group = config.systemd.services.vaultwarden.serviceConfig.Group;
+      in
+      [
+        "d ${rootDir}   0750 ${user} ${group} -"
+        "d ${dataDir}   0750 ${user} ${group} -"
+        "d ${backupDir} 0770 ${user} ${group} -"
+        # Fix permissions after UID changes (e.g., after reinstall)
+        "Z ${rootDir}   0750 ${user} ${group} - -"
+      ];
 
     services = {
       vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];

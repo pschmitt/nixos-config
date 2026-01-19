@@ -21,6 +21,18 @@ let
   '';
 in
 {
+  # Fix permissions after UID changes (e.g., after reinstall)
+  systemd.tmpfiles.rules =
+    let
+      user = config.users.users.github-actions.name;
+      inherit (config.services.nginx) group;
+    in
+    [
+      # Fix ISO/IMG upload directory ownership (readable by nginx)
+      "Z /mnt/data/blobs/iso 0750 ${user} ${group} - -"
+      "Z /mnt/data/blobs/img 0750 ${user} ${group} - -"
+    ];
+
   services.nginx.virtualHosts = {
     "blobs.${config.domains.main}" = {
       enableACME = true;
