@@ -23,7 +23,7 @@ unlock() {
 ACTION="$1"
 shift
 
-notify "Hypridle callback: $ACTION"
+# notify "Hypridle callback: $ACTION"
 
 case "$ACTION" in
   resume|after-sleep)
