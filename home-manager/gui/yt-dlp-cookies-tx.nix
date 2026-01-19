@@ -1,15 +1,6 @@
 { osConfig, pkgs, ... }:
 let
   serviceName = "yt-dlp-cookies-tx";
-  installForPinchflat = ''
-    ${pkgs.openssh}/bin/ssh "$TARGET_HOST" \
-      sudo install --verbose -D \
-        --mode=600 \
-        --owner=pinchflat \
-        --group=pinchflat \
-        "$DEST" \
-        /var/lib/pinchflat/extras/cookies.txt
-  '';
 in
 {
   systemd.user = {
@@ -24,15 +15,15 @@ in
 
       Service = {
         Environment = [
-          "DEST=/srv/podsync/data/yt-dlp/cookies.txt"
+          "DEST=/srv/yt-dlp/cookies.txt"
           "SRC_BROWSER=firefox"
           "TARGET_HOST=rofl-10.${osConfig.domains.main}"
         ];
 
         ExecStart = pkgs.writeShellScript "${serviceName}.sh" ''
-          set -x
+          set -eu
 
-          TMP_COOKIES=$(mktemp --dry-run --suffix=.txt)
+          TMP_COOKIES=$(mktemp --suffix=.txt)
           trap 'rm -f $TMP_COOKIES' EXIT
 
           # NOTE yt-dlp will complain about a missing url, but the cookies will still be exported
@@ -40,8 +31,22 @@ in
             --cookies-from-browser "$SRC_BROWSER" \
             --cookies "$TMP_COOKIES" || true
 
-          ${pkgs.openssh}/bin/scp "$TMP_COOKIES" "''${TARGET_HOST}:''${DEST}"
-          ${installForPinchflat}
+          REMOTE_TMP=$(${pkgs.openssh}/bin/ssh "$TARGET_HOST" mktemp --suffix=.txt)
+          if [ -z "$REMOTE_TMP" ]
+          then
+            echo "Failed to allocate a remote temp file." >&2
+            exit 1
+          fi
+
+          ${pkgs.openssh}/bin/scp "$TMP_COOKIES" "''${TARGET_HOST}:''${REMOTE_TMP}"
+          ${pkgs.openssh}/bin/ssh "$TARGET_HOST" \
+            sudo install --verbose -D \
+              --mode=640 \
+              --owner=pinchflat \
+              --group=pinchflat \
+              "$REMOTE_TMP" \
+              "$DEST"
+          ${pkgs.openssh}/bin/ssh "$TARGET_HOST" rm -f "$REMOTE_TMP"
         '';
       };
     };
