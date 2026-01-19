@@ -19,6 +19,7 @@
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
     ../../services/forgejo.nix
+    ../../services/github-backup.nix
     ../../services/harmonia.nix
     ../../services/http-static.nix
     ../../services/http.nix
@@ -46,7 +47,6 @@
 
     # host-specific service config
     ./container-services.nix
-    ./monit.nix
     ./restic.nix
 
     ../../common/global/users/k8s-backdoor.nix
