@@ -8,7 +8,9 @@ notify-send-unique() {
   local app_id
   app_id="$(basename "$0")"
   zhj notification::dismiss "$app_id"
-  notify-send --app-name="$app_id" "$@"
+  notify-send --app-name="$app_id" \
+    --hint "string:x-canonical-private-synchronous:${app_id}" \
+    "$@"
 }
 
 log() {
@@ -61,6 +63,10 @@ get_screencasting_apps() {
   # jq -er '.app' "$STATEFILE" 2>/dev/null
 }
 
+has_screencasting_apps() {
+  get_screencasting_apps | jq -er 'length > 0' &>/dev/null
+}
+
 state_is_recent() {
   local now ts
 
@@ -103,11 +109,18 @@ screencast_on() {
 }
 
 screencast_off() {
-  if get_screencasting_apps
+  if has_screencasting_apps
   then
     log "Screencast not stopped because there are still screencasting apps"
     store_state "on"
     return 1
+  fi
+
+  if ! screencast_running || ! state_is_recent
+  then
+    log "Screencast already off or state is stale"
+    store_state "off"
+    return 0
   fi
   # Store state
   store_state "off"
