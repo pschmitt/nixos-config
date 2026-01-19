@@ -19,6 +19,7 @@
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
     ../../services/forgejo.nix
+    ../../services/gitea-mirror.nix
     ../../services/github-backup.nix
     ../../services/harmonia.nix
     ../../services/http-static.nix
