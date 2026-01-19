@@ -41,32 +41,15 @@ variable "cloudflare_api_key" {
   type        = string
 }
 
-variable "openstack_cloud_legacy" {
-  description = "Openstack *LEGACY* cloud name (OS_CLOUD)"
-  type        = string
-}
-
 variable "openstack_cloud" {
   description = "Openstack cloud name (OS_CLOUD)"
   type        = string
-}
-
-variable "availability_zone_legacy" {
-  description = "Default availability zone for VMs and volumes (LEGACY)"
-  type        = string
-  default     = "es1"
 }
 
 variable "availability_zone" {
   description = "Default availability zone for VMs and volumes"
   type        = string
   default     = "sz1"
-}
-
-variable "provider_network_id_legacy" {
-  description = "Network ID of the provider network (legacy, optimist)"
-  type        = string
-  default     = "54258498-a513-47da-9369-1a644e4be692"
 }
 
 variable "provider_network_id" {
