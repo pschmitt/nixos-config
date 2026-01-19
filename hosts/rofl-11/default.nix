@@ -27,6 +27,8 @@
     ../../services/tdarr-server.nix
     ../../services/tor.nix
     ../../services/***REMOVED***
+    ../../services/jellyfin.nix
+    ../../services/seerr.nix
 
     ./container-services.nix
     ./monit.nix
