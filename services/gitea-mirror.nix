@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   ...
 }:
 let
@@ -7,6 +8,16 @@ let
   listenPort = 54439;
   containerUid = 1000;
   containerGid = 1000;
+  inherit (config.networking) hostName;
+  netbirdHost = "${hostName}.${config.domains.netbird}";
+  tailscaleHost = "${hostName}.${config.domains.tailscale}";
+  vpnHost = "${hostName}.${config.domains.vpn}";
+  primaryOrigin = "http://${netbirdHost}:${toString listenPort}";
+  trustedOrigins = lib.strings.concatStringsSep "," [
+    primaryOrigin
+    "http://${tailscaleHost}:${toString listenPort}"
+    "http://${vpnHost}:${toString listenPort}"
+  ];
 in
 {
   sops.secrets = {
@@ -36,6 +47,8 @@ in
       config.sops.secrets."gitea-mirror/env".path
     ];
     environment = {
+      BETTER_AUTH_URL = primaryOrigin;
+      BETTER_AUTH_TRUSTED_ORIGINS = trustedOrigins;
       NODE_ENV = "production";
       DATABASE_URL = "file:data/gitea-mirror.db";
       HOST = "0.0.0.0";
