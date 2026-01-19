@@ -9,12 +9,14 @@ let
   containerUid = 1000;
   containerGid = 1000;
   inherit (config.networking) hostName;
+  mainHost = "mirror.${config.domains.main}";
   netbirdHost = "${hostName}.${config.domains.netbird}";
   tailscaleHost = "${hostName}.${config.domains.tailscale}";
   vpnHost = "${hostName}.${config.domains.vpn}";
-  primaryOrigin = "http://${netbirdHost}:${toString listenPort}";
+  primaryOrigin = "https://${mainHost}";
   trustedOrigins = lib.strings.concatStringsSep "," [
     primaryOrigin
+    "http://${netbirdHost}:${toString listenPort}"
     "http://${tailscaleHost}:${toString listenPort}"
     "http://${vpnHost}:${toString listenPort}"
   ];
@@ -32,13 +34,15 @@ in
     "d ${dataDir}/data 0750 ${toString containerUid} ${toString containerGid} - -"
   ];
 
+  # TODO There's a nix module for gitea-mirror!
+  # https://github.com/RayLabsHQ/gitea-mirror/blob/main/docs/NIX_DEPLOYMENT.md
   virtualisation.oci-containers.containers.gitea-mirror = {
     autoStart = true;
     image = "ghcr.io/raylabshq/gitea-mirror:latest";
     pull = "always";
     user = "${toString containerUid}:${toString containerGid}";
     ports = [
-      "0.0.0.0:${toString listenPort}:${toString listenPort}"
+      "127.0.0.1:${toString listenPort}:${toString listenPort}"
     ];
     volumes = [
       "${dataDir}/data:/app/data"
@@ -53,6 +57,19 @@ in
       DATABASE_URL = "file:data/gitea-mirror.db";
       HOST = "0.0.0.0";
       PORT = toString listenPort;
+    };
+  };
+
+  services.nginx.virtualHosts."${mainHost}" = {
+    enableACME = true;
+    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+    acmeRoot = null;
+    forceSSL = true;
+
+    locations."/" = {
+      proxyPass = "http://127.0.0.1:${toString listenPort}";
+      proxyWebsockets = true;
+      recommendedProxySettings = true;
     };
   };
 }
