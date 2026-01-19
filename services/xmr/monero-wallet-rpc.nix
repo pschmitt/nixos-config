@@ -17,6 +17,18 @@ let
 
   unitFile = "monero-wallet-rpc.service";
 
+  healthCheckScript = pkgs.writeShellScript "monero-wallet-rpc-health-check" ''
+    USERNAME=$(cat ${config.sops.secrets."monero-wallet-rpc/username".path})
+    PASSWORD=$(cat ${config.sops.secrets."monero-wallet-rpc/password".path})
+
+    ${pkgs.curl}/bin/curl -s -f --max-time 10 \
+      -u "$USERNAME:$PASSWORD" \
+      --digest \
+      -X POST http://127.0.0.1:${toString walletRpcBindPort}/json_rpc \
+      -d '{"jsonrpc":"2.0","id":"0","method":"get_version"}' \
+      -H "Content-Type: application/json"
+  '';
+
   ensureWalletOwnership = pkgs.writeShellScript "monero-wallet-rpc-ensure-ownership" ''
     if ! ${pkgs.coreutils}/bin/chown --recursive "${svcUser}:${svcGroup}" "${walletHostDir}"
     then
@@ -42,39 +54,41 @@ in
       };
     };
 
-    templates.moneroWalletRpcConfig = {
-      owner = svcUser;
-      # mode = "0400";
-      restartUnits = [ unitFile ];
-      content = ''
-        # Listen on all interfaces, praise the firewall
-        rpc-bind-ip = 0.0.0.0
-        # Which port to bind the RPC server on
-        rpc-bind-port = ${toString walletRpcBindPort}
+    templates = {
+      moneroWalletRpcConfig = {
+        owner = svcUser;
+        # mode = "0400";
+        restartUnits = [ unitFile ];
+        content = ''
+          # Listen on all interfaces, praise the firewall
+          rpc-bind-ip = 0.0.0.0
+          # Which port to bind the RPC server on
+          rpc-bind-port = ${toString walletRpcBindPort}
 
-        # Point to your remote/full node
-        daemon-address = ${monerodAddr}
-        daemon-login = ${config.sops.placeholder."monerod/rpc/username"}:${
-          config.sops.placeholder."monerod/rpc/password"
-        }
+          # Point to your remote/full node
+          daemon-address = ${monerodAddr}
+          daemon-login = ${config.sops.placeholder."monerod/rpc/username"}:${
+            config.sops.placeholder."monerod/rpc/password"
+          }
 
-        # RPC authentication username:password
-        rpc-login = ${config.sops.placeholder."monero-wallet-rpc/username"}:${
-          config.sops.placeholder."monero-wallet-rpc/password"
-        }
+          # RPC authentication username:password
+          rpc-login = ${config.sops.placeholder."monero-wallet-rpc/username"}:${
+            config.sops.placeholder."monero-wallet-rpc/password"
+          }
 
-        # If your node is untrusted (e.g. remote), set this
-        # untrusted-daemon = 1
+          # If your node is untrusted (e.g. remote), set this
+          # untrusted-daemon = 1
 
-        # Disable any RPC calls that require a trusted daemon
-        # restricted-rpc = 1
+          # Disable any RPC calls that require a trusted daemon
+          # restricted-rpc = 1
 
-        # Where the wallet file lives
-        wallet-file = ${walletFile}
+          # Where the wallet file lives
+          wallet-file = ${walletFile}
 
-        # File that contains your wallet password
-        password-file = ${config.sops.secrets."monero-wallet-rpc/wallet/password".path}
-      '';
+          # File that contains your wallet password
+          password-file = ${config.sops.secrets."monero-wallet-rpc/wallet/password".path}
+        '';
+      };
     };
   };
 
@@ -142,16 +156,12 @@ in
   services.restic.backups.main.paths = [ walletHostDir ];
 
   services.monit.config = lib.mkAfter ''
-    check host "monero-wallet-rpc" with address "127.0.0.1"
+    check program monero-wallet-rpc with path "${healthCheckScript}"
       group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${unitFile}"
-      if failed
-        port ${toString walletRpcBindPort}
-        type tcp
-        with timeout 30 seconds
-        for 5 cycles
-      then restart
-      if 2 restarts within 10 cycles then alert
+      start program = "${pkgs.systemd}/bin/systemctl start ${unitFile}"
+      stop program = "${pkgs.systemd}/bin/systemctl stop ${unitFile}"
+      if status != 0 for 5 cycles then restart
+      if 5 restarts within 15 cycles then alert
   '';
 
 }
