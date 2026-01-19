@@ -148,9 +148,10 @@ in
       if failed
         port ${toString walletRpcBindPort}
         type tcp
-        with timeout 15 seconds
+        with timeout 30 seconds
+        for 5 cycles
       then restart
-      if 5 restarts within 10 cycles then alert
+      if 2 restarts within 10 cycles then alert
   '';
 
 }
