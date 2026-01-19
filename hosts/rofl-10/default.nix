@@ -41,6 +41,7 @@
     ../../services/vaultwarden.nix
     ../../services/vdirsyncer.nix
     ../../services/wallos.nix
+    ../../services/whoami.nix
     ../../services/wishlist.nix
 
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
