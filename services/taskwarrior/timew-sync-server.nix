@@ -47,7 +47,9 @@ in
       restart program = "${pkgs.systemd}/bin/systemctl restart timew-sync-server.service"
       if failed
         port ${toString listenPort}
-        protocol http
+        # TODO the next release (> 1.2.0) has a /api/health endpoint we can
+        # use instead, it should repond with "OK" and a 200 status
+        protocol http request "/api/sync" status 400
         with timeout 15 seconds
       then restart
       if 5 restarts within 10 cycles then alert
