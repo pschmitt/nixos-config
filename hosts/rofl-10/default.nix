@@ -37,6 +37,7 @@
     ../../services/rclone-bisync.nix
     ../../services/searxng.nix
     ../../services/stricknani.nix
+    ../../services/taskwarrior
     ../../services/turris-ssh-tunnel.nix
     ../../services/vaultwarden.nix
     ../../services/vdirsyncer.nix
