@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -14,6 +15,51 @@ let
     "podcasts.${config.domains.main}"
     "podsync.${config.networking.hostName}.${config.domains.main}"
   ];
+  feedDefaults = {
+    opml = true;
+    private_feed = true;
+    update_period = "1h";
+    playlist_sort = "asc";
+    page_size = 10;
+    format = "video";
+    max_height = 720;
+    quality = "high";
+    clean = {
+      keep_last = 10;
+    };
+    youtube_dl_args = [
+      "--cookies"
+      "/yt-dlp/cookies.txt"
+    ];
+  };
+  podsyncConfig = {
+    server = {
+      port = containerPort;
+      hostname = "https://${primaryHost}";
+    };
+    storage = {
+      local = {
+        data_dir = "/app/data";
+      };
+    };
+    downloader = {
+      self_update = true;
+      timeout = 30;
+    };
+    feeds = {
+      level1linkswithfriends = feedDefaults // {
+        url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA";
+        filters = {
+          title = "Level1 Links With Friends";
+        };
+      };
+      meinungsmache = feedDefaults // {
+        url = "https://www.youtube.com/playlist?list=PL2BEOktlDRHxwsLFu7HlvaDI3Zy7MErFs";
+      };
+    };
+  };
+  tomlFormat = pkgs.formats.toml { };
+  podsyncConfigFile = tomlFormat.generate "podsync.toml" podsyncConfig;
 in
 {
   sops = {
@@ -23,55 +69,13 @@ in
         restartUnits = [ "${config.virtualisation.oci-containers.backend}-podsync.service" ];
       };
     };
-    templates."podsync/config.toml" = {
+    templates."podsync/env" = {
       owner = "root";
       group = "root";
       mode = "0400";
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-podsync.service" ];
       content = ''
-        [server]
-        port = ${toString containerPort}
-        hostname = "https://${primaryHost}"
-
-        [storage]
-          [storage.local]
-          data_dir = "/app/data"
-
-        [tokens]
-        youtube = "${config.sops.placeholder."podsync/youtubeApiKey"}"
-
-        [downloader]
-        self_update = true
-        timeout = 30
-
-        [feeds]
-            [feeds.level1linkswithfriends]
-            url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA"
-            filters = { title = "Level1 Links With Friends" }
-            opml = true
-            private_feed = true
-            update_period = "1h"
-            playlist_sort = "asc"
-            page_size = 50
-            format = "video"
-            max_height = 720
-            quality = "high"
-            clean = { keep_last = 10 }
-            youtube_dl_args = [ "--cookies", "/yt-dlp/cookies.txt" ]
-
-            [feeds.meinungsmache]
-            url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA"
-            # filters = { title = "NEWS" }
-            opml = true
-            private_feed = true
-            update_period = "1h"
-            playlist_sort = "asc"
-            page_size = 50
-            format = "video"
-            max_height = 720
-            quality = "high"
-            clean = { keep_last = 10 }
-            youtube_dl_args = [ "--cookies", "/yt-dlp/cookies.txt" ]
+        PODSYNC_YOUTUBE_API_KEY=${config.sops.placeholder."podsync/youtubeApiKey"}
       '';
     };
   };
@@ -92,7 +96,10 @@ in
     volumes = [
       "${podsyncDataDir}:/app/data"
       "${cookiesDir}:/yt-dlp"
-      "${config.sops.templates."podsync/config.toml".path}:/app/config.toml:ro"
+      "${podsyncConfigFile}:/app/config.toml:ro"
+    ];
+    environmentFiles = [
+      config.sops.templates."podsync/env".path
     ];
   };
 
