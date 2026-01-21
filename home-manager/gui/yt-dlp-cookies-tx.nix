@@ -18,6 +18,7 @@ in
           "DEST=/srv/yt-dlp/cookies.txt"
           "SRC_BROWSER=firefox"
           "TARGET_HOST=rofl-10.${osConfig.domains.main}"
+          "RESTART_SERVICES=docker-podsync.service pinchflat.service"
         ];
 
         ExecStart = pkgs.writeShellScript "${serviceName}.sh" ''
@@ -53,6 +54,7 @@ in
               "$REMOTE_TMP" \
               "$DEST"
           ${pkgs.openssh}/bin/ssh "$TARGET_HOST" rm -f "$REMOTE_TMP"
+          ${pkgs.openssh}/bin/ssh "$TARGET_HOST" sudo systemctl restart $RESTART_SERVICES
         '';
       };
     };
