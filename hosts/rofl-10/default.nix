@@ -13,7 +13,7 @@
     ../../services/audiobookshelf.nix
     ../../services/authelia.nix
     ../../services/backups/bitwarden.nix
-    ../../services/backups/evernote.nix
+    ../../services/backups/evernote
     ../../services/bentopdf.nix
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
