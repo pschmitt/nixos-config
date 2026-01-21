@@ -8,6 +8,7 @@ let
   podsyncDataDir = "${dataDir}/data/podsync";
   cookiesDir = "/srv/yt-dlp";
   listenPort = 7637;
+  containerPort = 8080;
   primaryHost = "podsync.${config.domains.main}";
   serverAliases = [
     "podcasts.${config.domains.main}"
@@ -29,7 +30,7 @@ in
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-podsync.service" ];
       content = ''
         [server]
-        port = 8080
+        port = ${toString containerPort}
         hostname = "https://${primaryHost}"
 
         [storage]
@@ -44,9 +45,9 @@ in
         timeout = 30
 
         [feeds]
-            [feeds.level1techs]
-            url = "https://www.youtube.com/channel/UC4w1YQAJMWOz4qtxinq55LQ"
-            filters = { title = "(L|Level)1.*Links.*Friends" }
+            [feeds.level1linkswithfriends]
+            url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA"
+            filters = { title = "Level1 Links With Friends" }
             opml = true
             private_feed = true
             update_period = "1h"
@@ -58,9 +59,9 @@ in
             clean = { keep_last = 10 }
             youtube_dl_args = [ "--cookies", "/yt-dlp/cookies.txt" ]
 
-            [feeds.level1linkswithfriends]
+            [feeds.meinungsmache]
             url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA"
-            filters = { title = "Level1 Links With Friends" }
+            # filters = { title = "NEWS" }
             opml = true
             private_feed = true
             update_period = "1h"
@@ -86,7 +87,7 @@ in
     image = "ghcr.io/mxpv/podsync:nightly";
     pull = "always";
     ports = [
-      "127.0.0.1:${toString listenPort}:8080"
+      "127.0.0.1:${toString listenPort}:${toString containerPort}"
     ];
     volumes = [
       "${podsyncDataDir}:/app/data"
