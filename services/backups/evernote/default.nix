@@ -1,10 +1,29 @@
 { lib, pkgs, ... }:
 let
+  dataDir = "/srv/evernote-backup/data";
+  backupDir = "${dataDir}/backups";
+
+  evernoteBackup = pkgs.writeShellApplication {
+    name = "evernote-backup";
+    runtimeInputs = [ pkgs.docker ];
+    text = builtins.readFile ./evernote-backup.sh;
+  };
+
+  evernoteBackupAll = pkgs.writeShellApplication {
+    name = "evernote-backup-all";
+    runtimeInputs = [
+      evernoteBackup
+      pkgs.coreutils
+      pkgs.findutils
+    ];
+    text = builtins.readFile ./evernote-backup-all.sh;
+  };
+
   evernoteLastBackup = pkgs.writeShellScript "evernote-last-backup" ''
     set -euo pipefail
 
     THRESHOLD=''${1:-129600} # 36h by default
-    BACKUP_DIR="/srv/evernote-backup/data/backups"
+    BACKUP_DIR="${backupDir}"
     LATEST_LINK="$BACKUP_DIR/latest"
 
     if [[ ! -L "$LATEST_LINK" ]]
@@ -46,13 +65,11 @@ in
   systemd = {
     services.evernote-backup = {
       description = "Evernote Backup Service";
-      path = with pkgs; [
-        bash
-        coreutils
-        docker
-      ];
+      environment = {
+        BACKUP_DIR = backupDir;
+      };
       script = ''
-        /srv/evernote-backup/bin/evernote-backup-all.sh
+        ${evernoteBackupAll}/bin/evernote-backup-all
       '';
     };
 
