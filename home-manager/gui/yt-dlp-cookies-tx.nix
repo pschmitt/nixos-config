@@ -23,13 +23,19 @@ in
         ExecStart = pkgs.writeShellScript "${serviceName}.sh" ''
           set -eu
 
-          TMP_COOKIES=$(mktemp --suffix=.txt)
-          trap 'rm -f $TMP_COOKIES' EXIT
+          TMP_COOKIES=$(mktemp --suffix=.txt --dry-run)
+          trap 'rm -f "$TMP_COOKIES"' EXIT
 
           # NOTE yt-dlp will complain about a missing url, but the cookies will still be exported
           ${pkgs.yt-dlp}/bin/yt-dlp \
             --cookies-from-browser "$SRC_BROWSER" \
             --cookies "$TMP_COOKIES" || true
+
+          if [ ! -s "$TMP_COOKIES" ]
+          then
+            echo "No cookies exported; refusing to upload." >&2
+            exit 1
+          fi
 
           REMOTE_TMP=$(${pkgs.openssh}/bin/ssh "$TARGET_HOST" mktemp --suffix=.txt)
           if [ -z "$REMOTE_TMP" ]
