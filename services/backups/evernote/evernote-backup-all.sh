@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-BACKUP_DIR="${BACKUP_DIR:-/srv/evernote-backup/data/backups}"
+DATA_DIR="${DATA_DIR:-/srv/evernote-backup/data}"
+BACKUP_DIR="${BACKUP_DIR:-${DATA_DIR}/backups}"
 
 set -x
 

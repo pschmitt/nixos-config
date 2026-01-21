@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-DATA_DIR="/srv/evernote-backup/data"
+DATA_DIR="${DATA_DIR:-/srv/evernote-backup/data}"
 
 docker run --rm \
   -v "${DATA_DIR}:${DATA_DIR}" \
