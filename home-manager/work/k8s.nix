@@ -16,6 +16,7 @@
     kubernetes-helm
     rancher
     skopeo
+    sonobuoy
     stern
     velero
   ];
