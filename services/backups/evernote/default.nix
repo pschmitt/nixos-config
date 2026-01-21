@@ -22,7 +22,7 @@ let
   evernoteLastBackup = pkgs.writeShellScript "evernote-last-backup" ''
     set -euo pipefail
 
-    THRESHOLD=''${1:-129600} # 36h by default
+    THRESHOLD=''${1:-172800} # 48h by default
     BACKUP_DIR="${backupDir}"
     LATEST_LINK="$BACKUP_DIR/latest"
 
