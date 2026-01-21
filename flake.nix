@@ -140,7 +140,7 @@
     };
 
     hyprgrass = {
-      url = "github:horriblename/hyprgrass/72c4133a2bf679bda9c179a8f24e3867536ed9c7";
+      url = "github:horriblename/hyprgrass/4c4a219a082832b7d3b7c52a2600e730a8d78575";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
