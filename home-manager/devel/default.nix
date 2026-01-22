@@ -11,6 +11,7 @@ in
     ./android.nix
     ./cloud.nix
     ./git.nix
+    ./golang.nix
     ./jq.nix
     ./mani.nix
     ./nix.nix
