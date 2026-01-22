@@ -36,7 +36,7 @@ in
     environment = {
       PUID = "1000";
       PGID = "1000";
-      TZ = "Europe/Berlin";
+      TZ = config.time.timeZone;
     };
     volumes = [
       "${jellyfinConfigDir}:/config"

@@ -14,7 +14,7 @@ in
       LOG_LEVEL = "info";
       BOOK_LANGUAGE = "en";
       USE_BOOK_TITLE = "true";
-      TZ = "Europe/Berlin";
+      TZ = config.time.timeZone;
       APP_ENV = "prod";
       UID = "1000";
       GID = "100";

@@ -31,7 +31,7 @@
       autoStart = true;
       environmentFiles = [ config.sops.templates."tdarr-api-key".path ];
       environment = {
-        TZ = "Europe/Berlin";
+        TZ = config.time.timeZone;
         PUID = "1000";
         PGID = "1000";
         UMASK_SET = "002";

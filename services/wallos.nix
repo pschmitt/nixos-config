@@ -15,7 +15,7 @@ in
       "/srv/wallos/data/logos:/var/www/html/images/uploads/logos"
     ];
     environment = {
-      TZ = "Europe/Berlin";
+      TZ = config.time.timeZone;
     };
   };
 
