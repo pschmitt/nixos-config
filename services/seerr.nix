@@ -35,7 +35,7 @@ in
     ];
     environment = {
       LOG_LEVEL = "debug";
-      TZ = "Europe/Berlin";
+      TZ = config.time.timeZone;
       PORT = toString seerrPort;
     };
     volumes = [

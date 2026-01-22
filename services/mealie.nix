@@ -22,7 +22,7 @@ in
       ALLOW_SIGNUP = "false";
       PUID = "1000";
       PGID = "1000";
-      TZ = "Europe/Berlin";
+      TZ = config.time.timeZone;
       BASE_URL = "https://${mealieHost}";
     };
     environmentFiles = [
