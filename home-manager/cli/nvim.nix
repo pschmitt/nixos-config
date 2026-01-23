@@ -105,6 +105,11 @@ in
     vimAlias = true;
 
     extraLuaPackages = ps: [ ps.magick ];
+
+    # DIRTYFIX load our regular init.lua (yadm-managed)
+    extraLuaConfig = ''
+      dofile(vim.fn.stdpath("config") .. "/init.lua##class.notnixos")
+    '';
   };
 
   home.packages = [ nvimNightlyWrapped ];
