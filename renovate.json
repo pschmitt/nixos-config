@@ -25,13 +25,11 @@
   "regexManagers": [
     {
       "fileMatch": [
-        "^services/n8n\\.nix$"
+        "\\.nix$"
       ],
       "matchStrings": [
-        "n8nVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
-      ],
-      "depNameTemplate": "n8nio/n8n",
-      "datasourceTemplate": "docker"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
+      ]
     }
   ],
   "includePaths": [
