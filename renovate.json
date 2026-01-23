@@ -22,6 +22,18 @@
       "separateMinorPatch": true
     }
   ],
+  "regexManagers": [
+    {
+      "fileMatch": [
+        "^services/n8n\\.nix$"
+      ],
+      "matchStrings": [
+        "n8nVersion\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
+      ],
+      "depNameTemplate": "n8nio/n8n",
+      "datasourceTemplate": "docker"
+    }
+  ],
   "includePaths": [
     "**/*.nix"
   ]
