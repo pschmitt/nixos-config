@@ -15,7 +15,7 @@ let
   containerBackend = config.virtualisation.oci-containers.backend;
   systemdUnit = "${containerBackend}-n8n";
 
-  n8nVersion = "2.5.0";
+  n8nVersion = "2.5.1";
   containerNetworkName = "n8n";
 
   authTokenPath = config.sops.secrets."n8n/runners/authToken".path;
