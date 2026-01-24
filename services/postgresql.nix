@@ -4,27 +4,29 @@
   lib,
   ...
 }:
+let
+  psqlDir = "/mnt/data/srv/postgresql";
+in
 {
   # NOTE Do we really need this? Isn't the module crearing the dir already?
   # NOTE The postgres user's home gets set to services.postgresql.dataDir
   systemd.tmpfiles.rules = [
-    #                             perm id gid
-    "d  /mnt/data/srv/postgresql  0755 71 71 - -"
+    "d  ${psqlDir}  0755 ${config.users.users.postgres.uid} ${config.users.groups.postgres.gid} - -"
 
     # symlink
-    "L+ /var/lib/postgresql       -    -  -  - /mnt/data/srv/postgresql"
+    "L+ /var/lib/postgresql       -    -  -  - ${psqlDir}"
   ];
 
   services = {
     postgresql = {
       package = pkgs.postgresql_16;
-      dataDir = "/mnt/data/srv/postgresql/${config.services.postgresql.package.psqlSchema}";
+      dataDir = "${psqlDir}/${config.services.postgresql.package.psqlSchema}";
     };
 
     postgresqlBackup = {
       enable = true;
       backupAll = true;
-      location = "/mnt/data/srv/postgresql/backups";
+      location = "${psqlDir}/backups";
       startAt = "*-*-* 02:00:00"; # Daily at 2 AM
       compression = "gzip";
     };
@@ -54,7 +56,11 @@
         export OLDDATA="${cfg.dataDir}"
         export OLDBIN="${cfg.finalPackage}/bin"
 
-        install -d -m 0700 -o postgres -g postgres "$NEWDATA"
+        install -d -m 0700 \
+          -o "${config.users.users.postgres.uid}" \
+          -g "${config.users.groups.postgres.gid}" \
+          "$NEWDATA"
+
         cd "$NEWDATA"
         sudo -u postgres "$NEWBIN/initdb" -D "$NEWDATA" ${lib.escapeShellArgs cfg.initdbArgs}
 
