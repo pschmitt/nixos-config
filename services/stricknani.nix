@@ -35,6 +35,9 @@ in
       "stricknani/openaiApiKey" = {
         inherit (config.custom) sopsFile;
       };
+      "stricknani/sentryDsn" = {
+        inherit (config.custom) sopsFile;
+      };
     };
 
     templates."${envFileName}" = {
@@ -43,6 +46,7 @@ in
         INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
         INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
         OPENAI_API_KEY="${config.sops.placeholder."stricknani/openaiApiKey"}"
+        SENTRY_DSN="${config.sops.placeholder."stricknani/sentryDsn"}"
       '';
       owner = "stricknani";
       group = "stricknani";
