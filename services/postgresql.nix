@@ -11,7 +11,7 @@ in
   # NOTE Do we really need this? Isn't the module crearing the dir already?
   # NOTE The postgres user's home gets set to services.postgresql.dataDir
   systemd.tmpfiles.rules = [
-    "d  ${psqlDir}  0755 ${config.users.users.postgres.uid} ${config.users.groups.postgres.gid} - -"
+    "d  ${psqlDir}  0755 ${toString config.users.users.postgres.uid} ${toString config.users.groups.postgres.gid} - -"
 
     # symlink
     "L+ /var/lib/postgresql       -    -  -  - ${psqlDir}"
@@ -57,8 +57,8 @@ in
         export OLDBIN="${cfg.finalPackage}/bin"
 
         install -d -m 0700 \
-          -o "${config.users.users.postgres.uid}" \
-          -g "${config.users.groups.postgres.gid}" \
+          -o "${toString config.users.users.postgres.uid}" \
+          -g "${toString config.users.groups.postgres.gid}" \
           "$NEWDATA"
 
         cd "$NEWDATA"
