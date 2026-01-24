@@ -107,7 +107,7 @@ in
     extraLuaPackages = ps: [ ps.magick ];
 
     # DIRTYFIX load our regular init.lua (yadm-managed)
-    extraLuaConfig = ''
+    initLua = ''
       dofile(vim.fn.stdpath("config") .. "/init.lua##class.notnixos")
     '';
   };
