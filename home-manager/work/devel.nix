@@ -31,6 +31,7 @@
 
   home.packages = with pkgs; [
     lefthook
+    meld
     sqlfluff
     yamlfmt
     ytt
