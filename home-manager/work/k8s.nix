@@ -5,8 +5,10 @@
     argocd-vault-plugin
     cmctl
     ketall # kubectl get-all
+    kbld
     krew
     kubecolor
+    kubeconform
     kubectl
     (writeShellScriptBin "kubectl-1.23" ''
       ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
