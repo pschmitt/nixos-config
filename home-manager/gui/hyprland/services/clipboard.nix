@@ -15,7 +15,10 @@ in
 
   services.wl-clip-persist = {
     enable = true;
-    clipboardType = "both";
+    # NOTE Setting the clipboardType to "both" causes issues with GTK apps such
+    # nautilus and meld where text becomes impossible to select.
+    # https://github.com/hyprwm/Hyprland/issues/2619
+    clipboardType = "regular";
     systemdTargets = [ target ];
   };
 }
