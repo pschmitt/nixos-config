@@ -46,13 +46,6 @@ in
           restartAll = true;
         };
       };
-      endurain = {
-        port = 36387;
-        hosts = [
-          (mkHost "endurain")
-          (mkHost "endurian") # common typo ;)
-        ];
-      };
       linkding = {
         port = 54653;
         hosts = [
