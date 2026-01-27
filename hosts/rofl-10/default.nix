@@ -18,6 +18,7 @@
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
+    ../../services/endurain.nix
     ../../services/forgejo.nix
     ../../services/gitea-mirror.nix
     ../../services/github-backup.nix
