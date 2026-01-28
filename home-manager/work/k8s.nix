@@ -17,6 +17,7 @@
     kubectl-rook-ceph
     kubernetes-helm
     kustomize
+    ksops
     rancher
     skopeo
     sonobuoy

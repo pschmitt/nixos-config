@@ -28,6 +28,7 @@ in
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ketall = pkgs.callPackage ./ketall { };
+  ksops = pkgs.callPackage ./ksops { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   linkding-cli = pkgs.callPackage ./linkding-cli { };
   mmonit = pkgs.callPackage ./mmonit { };
