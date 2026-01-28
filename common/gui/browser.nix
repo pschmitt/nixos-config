@@ -7,9 +7,7 @@
     # See home-manager/home.nix for the dirty but working solution.
     nativeMessagingHosts.packages = with pkgs; [
       brotab
-      # inputs.nix-agordoj.packages.${pkgs.stdenv.hostPlatform.system}.vdhcoapp
       tridactyl-native
-      vdhcoapp
     ];
     preferences = {
       # Enable custom css (userChrome.css)
@@ -29,7 +27,6 @@
   environment.systemPackages = with pkgs; [
     firefox
     google-chrome
-    vdhcoapp
   ];
 }
 
