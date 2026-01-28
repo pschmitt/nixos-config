@@ -16,6 +16,7 @@
     kubectl-neat
     kubectl-rook-ceph
     kubernetes-helm
+    kustomize
     rancher
     skopeo
     sonobuoy
