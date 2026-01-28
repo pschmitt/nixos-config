@@ -24,4 +24,8 @@
     stern
     velero
   ];
+
+  # Kustomize exec plugins are discovered under $XDG_CONFIG_HOME/kustomize/plugin
+  # with a group/version/kind layout; symlink ksops here so kustomize can find it.
+  home.file.".config/kustomize/plugin/viaduct.ai/v1/ksops/ksops".source = "${pkgs.ksops}/bin/ksops";
 }
