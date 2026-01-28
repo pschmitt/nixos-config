@@ -24,6 +24,7 @@
     code-cursor
 
     # cli
+    claude-code
     cursor-cli
     gemini-cli
     github-copilot-cli
