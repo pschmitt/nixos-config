@@ -18,11 +18,14 @@
     '';
   };
 
-  home.packages = with pkgs; [
-    # ai
-    aichat
-    master.gemini-cli
-    master.github-copilot-cli
-    tgpt
+  home.packages = with pkgs.master; [
+    # vscode forks
+    antigravity
+    code-cursor
+
+    # cli
+    cursor-cli
+    gemini-cli
+    github-copilot-cli
   ];
 }
