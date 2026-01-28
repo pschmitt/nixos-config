@@ -16,7 +16,7 @@ let
   systemdUnit = "${containerBackend}-n8n";
 
   # renovate: datasource=docker depName=n8nio/n8n
-  n8nVersion = "2.6.1";
+  n8nVersion = "2.6.2";
   containerNetworkName = "n8n";
 
   authTokenPath = config.sops.secrets."n8n/runners/authToken".path;
