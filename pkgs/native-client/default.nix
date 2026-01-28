@@ -9,13 +9,13 @@
 
 stdenv.mkDerivation rec {
   pname = "native-client";
-  version = "1.0.6";
+  version = "1.0.7";
 
   src = fetchFromGitHub {
     owner = "andy-portmen";
     repo = "native-client";
-    rev = version;
-    hash = "sha256-631W4yKXqhEikSSCN4Vll7FZJ0qbs0OpnUYQH0qUXM4=";
+    rev = "v${version}";
+    hash = "sha256-azCdJS6gwHeqBQgIsAhjX/J5NpoqeFt7nwtBoqB/56Y=";
   };
 
   nativeBuildInputs = [
