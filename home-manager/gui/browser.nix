@@ -15,7 +15,6 @@
       fx-cast-bridge
       native-client # external-application-button
       tridactyl-native
-      vdhcoapp
     ];
 
     profiles.default = {
@@ -226,7 +225,6 @@
   # programs.chromium.nativeMessagingHosts = with pkgs; [
   #   brotab
   #   native-client # external-application-button
-  #   vdhcoapp
   # ];
 
   # programs.google-chrome.nativeMessagingHosts for poor people
