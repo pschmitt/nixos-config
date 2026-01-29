@@ -30,12 +30,26 @@
       enable = true;
       package = pkgs.master.gemini-cli;
       settings = {
-        context.fileName = [
-          "AGENTS.md"
-          "CLAUDE.md"
-          "CONTEXT.md"
-          "GEMINI.md"
-        ];
+        general = {
+          preferredEditor = "nvim";
+          previewFeatures = true;
+          vimMode = true;
+        };
+
+        security = {
+          auth = {
+            selectedType = "oauth-personal";
+          };
+        };
+        context = {
+          loadMemoryFromIncludeDirectories = true;
+          fileName = [
+            "AGENTS.md"
+            "CLAUDE.md"
+            "CONTEXT.md"
+            "GEMINI.md"
+          ];
+        };
       };
     };
   };
