@@ -44,6 +44,14 @@
         tools.shell.showColor = true;
       };
     };
+
+    opencode = {
+      enable = true;
+      package = pkgs.master.opencode;
+      enableMcpIntegration = true;
+      rules = builtins.readFile ./CODESTYLE.md;
+      web.enable = true;
+    };
   };
 
   home.packages = with pkgs.master; [
