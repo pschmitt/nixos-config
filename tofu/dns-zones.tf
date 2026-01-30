@@ -3,7 +3,7 @@ resource "cloudflare_account" "me" {
 }
 
 resource "cloudflare_zone" "anika_blue" {
-  name       = "anika.blue"
+  name = "anika.blue"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -12,7 +12,7 @@ resource "cloudflare_zone" "anika_blue" {
 }
 
 resource "cloudflare_zone" "bergmann_schmitt_de" {
-  name       = "bergmann-schmitt.de"
+  name = "bergmann-schmitt.de"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -21,7 +21,7 @@ resource "cloudflare_zone" "bergmann_schmitt_de" {
 }
 
 resource "cloudflare_zone" "brkn_lol" {
-  name       = "brkn.lol"
+  name = "brkn.lol"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -30,7 +30,7 @@ resource "cloudflare_zone" "brkn_lol" {
 }
 
 resource "cloudflare_zone" "curl-pipe-sh" {
-  name       = "curl-pipe.sh"
+  name = "curl-pipe.sh"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -39,7 +39,7 @@ resource "cloudflare_zone" "curl-pipe-sh" {
 }
 
 resource "cloudflare_zone" "poor-tools" {
-  name       = "poor.tools"
+  name = "poor.tools"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -48,7 +48,7 @@ resource "cloudflare_zone" "poor-tools" {
 }
 
 resource "cloudflare_zone" "pschmitt_dev" {
-  name       = "pschmitt.dev"
+  name = "pschmitt.dev"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -57,7 +57,7 @@ resource "cloudflare_zone" "pschmitt_dev" {
 }
 
 resource "cloudflare_zone" "ovm5_de" {
-  name       = "ovm5.de"
+  name = "ovm5.de"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -66,7 +66,7 @@ resource "cloudflare_zone" "ovm5_de" {
 }
 
 resource "cloudflare_zone" "schmitt_co" {
-  name       = "schmitt.co"
+  name = "schmitt.co"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
@@ -75,7 +75,7 @@ resource "cloudflare_zone" "schmitt_co" {
 }
 
 resource "cloudflare_zone" "schmi-tt" {
-  name       = "schmi.tt"
+  name = "schmi.tt"
   # plan = "free"
   account = { id = cloudflare_account.me.id }
   lifecycle {
