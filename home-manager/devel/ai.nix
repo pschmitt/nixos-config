@@ -50,7 +50,7 @@
       package = pkgs.master.opencode;
       enableMcpIntegration = true;
       rules = builtins.readFile ./CODESTYLE.md;
-      web.enable = true;
+      web.enable = false;
     };
   };
 
