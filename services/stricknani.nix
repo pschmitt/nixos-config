@@ -16,6 +16,14 @@ let
   port = 7674;
   envFileName = "stricknani.env";
   stricknaniPkg = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
+  stricknaniCliWrapper = pkgs.writeShellScriptBin "stricknani-cli" ''
+    exec sudo -u "${user}" -- env \
+      DATABASE_URL="${config.systemd.services.stricknani.environment.DATABASE_URL}" \
+      ${pkgs.runtimeShell} -c '
+        cd "${dataDir}"
+        exec ${stricknaniPkg}/bin/stricknani-cli "$@"
+      ' -- "$@"
+  '';
 
   user = "stricknani";
   group = user;
@@ -121,4 +129,8 @@ in
       then restart
       if 5 restarts within 10 cycles then alert
   '';
+
+  environment.systemPackages = [
+    stricknaniCliWrapper
+  ];
 }
