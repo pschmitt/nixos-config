@@ -90,6 +90,7 @@ in
       COOKIE_SAMESITE = "strict";
       FEATURE_SIGNUP_ENABLED = "false";
       FEATURE_WAYBACK_ENABLED = "true";
+      FEATURE_AI_IMPORT_ENABLED = "true";
     };
     serviceConfig = {
       EnvironmentFile = config.sops.templates."${envFileName}".path;
