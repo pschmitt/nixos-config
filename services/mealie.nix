@@ -10,6 +10,7 @@ in
   };
 
   virtualisation.oci-containers.containers.mealie = {
+    # renovate: datasource=docker depName=ghcr.io/mealie-recipes/mealie
     image = "ghcr.io/mealie-recipes/mealie:v3.9.2";
     autoStart = true;
     ports = [
