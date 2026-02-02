@@ -2,6 +2,8 @@
 let
   mealieHost = "nom.${config.domains.main}";
   mealiePort = 63254;
+  # renovate: datasource=docker depName=ghcr.io/mealie-recipes/mealie
+  mealieVersion = "v3.9.2";
 in
 {
   sops.secrets."mealie/openai-api-key" = {
@@ -10,8 +12,7 @@ in
   };
 
   virtualisation.oci-containers.containers.mealie = {
-    # renovate: datasource=docker depName=ghcr.io/mealie-recipes/mealie
-    image = "ghcr.io/mealie-recipes/mealie:v3.9.2";
+    image = "ghcr.io/mealie-recipes/mealie:${mealieVersion}";
     autoStart = true;
     ports = [
       "127.0.0.1:${toString mealiePort}:9000"
