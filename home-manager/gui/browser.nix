@@ -48,6 +48,11 @@
         zoom-redirector
       ];
 
+      settings = {
+        # Disable the "Summarize page" button in the ChatGPT sidebar
+        "browser.ml.chat.page" = false;
+      };
+
       search = {
         force = true;
         default = "Unduck";
