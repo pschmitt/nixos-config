@@ -24,7 +24,10 @@ in
 
   sops = {
     secrets = {
-      "stricknani/secretKey" = {
+      "stricknani/secrets/secretKey" = {
+        inherit (config.custom) sopsFile;
+      };
+      "stricknani/secrets/csrfSecretKey" = {
         inherit (config.custom) sopsFile;
       };
       "stricknani/initialAdmin/password" = {
@@ -36,18 +39,23 @@ in
       "stricknani/openaiApiKey" = {
         inherit (config.custom) sopsFile;
       };
-      "stricknani/sentryDsn" = {
+      "stricknani/sentry/dsnBackend" = {
+        inherit (config.custom) sopsFile;
+      };
+      "stricknani/sentry/dsnFrontend" = {
         inherit (config.custom) sopsFile;
       };
     };
 
     templates."${envFileName}" = {
       content = ''
-        SECRET_KEY="${config.sops.placeholder."stricknani/secretKey"}"
+        SECRET_KEY="${config.sops.placeholder."stricknani/secrets/secretKey"}"
+        CSRF_SECRET_KEY="${config.sops.placeholder."stricknani/secrets/csrfSecretKey"}"
         INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
         INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
         OPENAI_API_KEY="${config.sops.placeholder."stricknani/openaiApiKey"}"
-        SENTRY_DSN="${config.sops.placeholder."stricknani/sentryDsn"}"
+        SENTRY_DSN_BACKEND="${config.sops.placeholder."stricknani/sentry/dsnBackend"}"
+        SENTRY_DSN_FRONTEND="${config.sops.placeholder."stricknani/sentry/dsnFrontend"}"
       '';
       owner = user;
       group = user;
