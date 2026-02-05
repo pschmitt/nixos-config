@@ -29,7 +29,6 @@
       in
       {
         "poor.tools" = nginxConfig;
-        "poor.curl-pipe.sh" = nginxConfig;
         "poor.${config.domains.main}" = nginxConfig;
       };
 
