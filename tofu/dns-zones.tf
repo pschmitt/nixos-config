@@ -29,15 +29,6 @@ resource "cloudflare_zone" "brkn_lol" {
   }
 }
 
-resource "cloudflare_zone" "curl-pipe-sh" {
-  name = "curl-pipe.sh"
-  # plan = "free"
-  account = { id = cloudflare_account.me.id }
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "cloudflare_zone" "poor-tools" {
   name = "poor.tools"
   # plan = "free"
