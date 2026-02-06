@@ -10,6 +10,22 @@ The following applies to bash, sh and zsh.
   inside conditionals or loops.
 - **Functions**: Define functions with the `name() { ... }` form. Avoid anonymous functions and keep function bodies focused on
   a single responsibility.
+- **Entrypoint**: Define a `main()` function and guard execution so the script can be sourced without side effects. In bash, for
+  example:
+
+```bash
+main() {
+  :
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
+```
+
+- **Usage/help**: For interactive scripts, define a `usage()` function and support `-h|--help`. Do not hardcode the script name
+  or path in usage text; use `$(basename "$0")` (bash) instead.
 - **Booleans**: Do not use `"true"` and `"false"` string values for "bool" variables. Use `1` for true and unset/empty for false.
 
 ```sh
