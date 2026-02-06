@@ -1,0 +1,76 @@
+name: NixOS systemPackages diff
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "**/*.nix"
+      - "common/**"
+      - "hardware/**"
+      - "home-manager/**"
+      - "hosts/**"
+      - "modules/**"
+      - "overlays/**"
+      - "pkgs/**"
+      - "services/**"
+      - "workarounds/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  nix-conf: |-
+    extra-experimental-features = nix-command flakes
+    accept-flake-config = true
+
+jobs:
+  pr-systempackages-diff:
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code (PR head)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
+
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+
+      - name: Generate comment body
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MAX_LINES: "400"
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./.github/workflows/scripts/pr-systempackages-comment.sh > /tmp/pr-systempackages-diff.md
+
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: /tmp/pr-systempackages-diff.md
+          body-includes: "pr-systempackages-diff"
+          edit-mode: replace
+
