@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export NIXPKGS_ALLOW_UNFREE=1
+export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
+
 BASE_SHA="${BASE_SHA:-}"
 HEAD_SHA="${HEAD_SHA:-}"
 HOSTS="${HOSTS:-}"
+FULL_DIFF="${FULL_DIFF:-0}"
+PER_HOST="${PER_HOST:-0}"
 
 if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]
 then
@@ -45,14 +50,18 @@ discover_hosts() {
 BASE_WORKTREE="$(mktemp -d)"
 git worktree add "$BASE_WORKTREE" "$BASE_SHA" >/dev/null
 
-nvd_store_path="$(nix build --no-link --print-out-paths nixpkgs#nvd)"
-nvd_bin="$nvd_store_path/bin/nvd"
+if [[ "$FULL_DIFF" == "1" ]]
+then
+  nix_diff_store_path="$(nix build --no-link --print-out-paths nixpkgs#nix-diff)"
+  nix_diff_bin="$nix_diff_store_path/bin/nix-diff"
+fi
 
-build_toplevel() {
+eval_toplevel_drvpath() {
   local flake_path="$1"
   local host="$2"
 
-  nix build --no-link --print-out-paths "${flake_path}#nixosConfigurations.${host}.config.system.build.toplevel"
+  nix eval --impure --raw \
+    "${flake_path}#nixosConfigurations.${host}.config.system.build.toplevel.drvPath"
 }
 
 trim_output() {
@@ -71,13 +80,90 @@ trim_output() {
   printf "%s" "$output"
 }
 
+flake_lock_inputs_diff() {
+  local base_lock head_lock
+  base_lock="${BASE_WORKTREE}/flake.lock"
+  head_lock="./flake.lock"
+
+  if [[ ! -f "$base_lock" || ! -f "$head_lock" ]]
+  then
+    printf '%s\n' 'flake.lock missing in base or head, skipping input diff.'
+    return 0
+  fi
+
+  jq -nr \
+    --slurpfile base "$base_lock" \
+    --slurpfile head "$head_lock" \
+    '
+      def lockInfo($x):
+        ($x.nodes // {}) as $nodes
+        | $nodes
+        | to_entries
+        | map({
+            key: .key,
+            type: (.value.locked.type // ""),
+            owner: (.value.locked.owner // ""),
+            repo: (.value.locked.repo // ""),
+            rev: (.value.locked.rev // ""),
+            ref: (.value.locked.ref // ""),
+            lastModified: (.value.locked.lastModified // null)
+          })
+        | from_entries;
+
+      (lockInfo($base[0])) as $b
+      | (lockInfo($head[0])) as $h
+      | (
+          ($b | keys_unsorted) + ($h | keys_unsorted)
+        ) | unique | sort as $keys
+      | [
+          $keys[]
+          | . as $k
+          | ($b[$k] // {}) as $bv
+          | ($h[$k] // {}) as $hv
+          | select($bv.rev != $hv.rev or $bv.ref != $hv.ref or $bv.lastModified != $hv.lastModified)
+          | {
+              key: $k,
+              from: ($bv.rev // $bv.ref // ""),
+              to: ($hv.rev // $hv.ref // ""),
+              fromTs: ($bv.lastModified // null),
+              toTs: ($hv.lastModified // null)
+            }
+        ]
+      | if length == 0 then
+          "No flake inputs changed (unexpected if flake.lock changed)."
+        else
+          (
+            "## Flake inputs changed\n\n"
+            + "| Input | From | To |\\n"
+            + "|---|---|---|\\n"
+            + (
+              map("| `\(.key)` | `\(.from)` | `\(.to)` |")
+              | join("\\n")
+            )
+          )
+        end
+    '
+}
+
 printf '%s\n' '<!-- flake-lock-diff -->'
-printf '%s\n' '## Flake lock update: per-host diffs'
+printf '%s\n' '## Flake lock update'
 printf '\n'
 printf 'Base: %s\n' "$BASE_SHA"
 printf '\n'
 printf 'Head: %s\n' "$HEAD_SHA"
 printf '\n'
+
+flake_lock_inputs_diff
+printf '\n'
+
+if [[ "$PER_HOST" != "1" ]]
+then
+  printf '%s\n' '## Per-host diffs'
+  printf '\n'
+  printf '%s\n' 'Per-host diffs are disabled by default (they are expensive even without builds).'
+  printf '%s\n' 'Set PER_HOST=1 to enable, and optionally set HOSTS="ge2 gk4" to limit.'
+  exit 0
+fi
 
 mapfile -t hosts < <(discover_hosts)
 if (( ${#hosts[@]} == 0 ))
@@ -86,26 +172,41 @@ then
   exit 0
 fi
 
+printf '%s\n' '## Per-host summary (no builds)'
+printf '\n'
+
 for host in "${hosts[@]}"
 do
   printf '### %s\n' "$host"
   printf '\n'
 
-  if ! base_out="$(build_toplevel "$BASE_WORKTREE" "$host" 2>/dev/null)"
+  if ! base_drv="$(eval_toplevel_drvpath "$BASE_WORKTREE" "$host" 2>/dev/null)"
   then
-    printf '%s\n' 'Build failed for base revision.'
+    printf '%s\n' 'Eval failed for base revision.'
     printf '\n'
     continue
   fi
 
-  if ! head_out="$(build_toplevel "." "$host" 2>/dev/null)"
+  if ! head_drv="$(eval_toplevel_drvpath "." "$host" 2>/dev/null)"
   then
-    printf '%s\n' 'Build failed for head revision.'
+    printf '%s\n' 'Eval failed for head revision.'
     printf '\n'
     continue
   fi
 
-  diff_output="$("$nvd_bin" diff "$base_out" "$head_out" 2>/dev/null || true)"
+  if [[ "$base_drv" == "$head_drv" ]]
+  then
+    diff_output="(toplevel derivation unchanged)"
+  else
+    diff_output="$(printf 'Base: %s\nHead: %s\n\n' "$base_drv" "$head_drv")"
+    if [[ "$FULL_DIFF" == "1" ]]
+    then
+      diff_output="$("$nix_diff_bin" "$base_drv" "$head_drv" --color never --skip-already-compared 2>/dev/null || true)"
+    else
+      diff_output="${diff_output}Set FULL_DIFF=1 to include nix-diff output."
+    fi
+  fi
+
   if [[ -z "$diff_output" ]]
   then
     diff_output="(no output)"
