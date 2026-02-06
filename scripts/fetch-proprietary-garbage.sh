@@ -58,13 +58,14 @@ fetch_package_source() {
   # Simple check: if we don't have credentials, we might not be able to download.
   if [[ -z "${BLOBS_BASIC_AUTH:-}" ]]
   then
-     echo "⚠️ BLOBS_BASIC_AUTH not set, download might fail for $name"
+    echo "⚠️ BLOBS_BASIC_AUTH not set, download might fail for $name"
   fi
 
   echo "Downloading $name from $url"
 
-  local tmp_file
-  tmp_file="$(mktemp "${name}.XXXXXX")"
+  local tmp_dir tmp_file
+  tmp_dir="$(mktemp -d)"
+  tmp_file="${tmp_dir}/${name}"
 
   local -a curl_args=(
     --fail
@@ -79,22 +80,39 @@ fetch_package_source() {
   if ! curl "${curl_args[@]}" "$url" --output "$tmp_file"
   then
     echo "❌ Failed to download $url"
-    rm -f "$tmp_file"
+    rm -rf "$tmp_dir"
     return 1
   fi
 
+  local actual_hash_sri
+  actual_hash_sri="$(nix hash file --type sha256 "$tmp_file")"
+
   echo "nix hash of our downloaded file (${tmp_file}):"
-  nix hash file --type sha256 "$tmp_file"
+  echo "$actual_hash_sri"
+
+  if [[ "$sha256" == sha256-* ]]
+  then
+    if [[ "$actual_hash_sri" != "$sha256" ]]
+    then
+      echo "❌ Hash mismatch for $name"
+      echo "Expected: $sha256"
+      echo "Actual:   $actual_hash_sri"
+      rm -rf "$tmp_dir"
+      return 1
+    fi
+  else
+    echo "⚠️ Expected hash is not SRI form (sha256-...), skipping hash verification for $name"
+  fi
 
   echo "Adding $tmp_file to Nix store"
   if ! nix-store --add-fixed sha256 "$tmp_file"
   then
     echo "❌ Failed to add to Nix store"
-    rm -f "$tmp_file"
+    rm -rf "$tmp_dir"
     return 1
   fi
 
-  rm -f "$tmp_file"
+  rm -rf "$tmp_dir"
   echo "✅ Successfully added $name"
 }
 
