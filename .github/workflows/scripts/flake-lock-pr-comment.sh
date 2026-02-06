@@ -8,7 +8,7 @@ BASE_SHA="${BASE_SHA:-}"
 HEAD_SHA="${HEAD_SHA:-}"
 HOSTS="${HOSTS:-}"
 FULL_DIFF="${FULL_DIFF:-0}"
-PER_HOST="${PER_HOST:-0}"
+PER_HOST="${PER_HOST:-1}"
 
 if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]
 then
@@ -25,6 +25,28 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+changed_files() {
+  git diff --name-only "$BASE_SHA" "$HEAD_SHA"
+}
+
+is_nix_related_change() {
+  local file
+
+  while IFS= read -r file
+  do
+    case "$file" in
+      flake.nix|flake.lock|*.nix)
+        return 0
+        ;;
+      common/*|hardware/*|home-manager/*|hosts/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*)
+        return 0
+        ;;
+    esac
+  done < <(changed_files)
+
+  return 1
+}
 
 discover_hosts() {
   if [[ -n "$HOSTS" ]]
@@ -45,6 +67,51 @@ discover_hosts() {
   comm -12 \
     <(jq -r '.nixosConfigurations | keys[]' <<<"$head_json" | sort -u) \
     <(jq -r '.nixosConfigurations | keys[]' <<<"$base_json" | sort -u)
+}
+
+select_hosts() {
+	local -a all_hosts
+	local -a changed
+	local file host
+	local global_change=
+	declare -A wanted=()
+
+  mapfile -t all_hosts < <(discover_hosts)
+  mapfile -t changed < <(changed_files)
+
+  for file in "${changed[@]}"
+  do
+    case "$file" in
+      hosts/*/*)
+        host="${file#hosts/}"
+        host="${host%%/*}"
+        wanted["$host"]=1
+        ;;
+	  flake.nix|flake.lock|common/*|hardware/*|home-manager/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*|*.nix)
+	    global_change=1
+	    ;;
+	esac
+  done
+
+  if (( ${#wanted[@]} > 0 ))
+  then
+    for host in "${all_hosts[@]}"
+    do
+      if [[ -n "${wanted[$host]:-}" ]]
+      then
+        printf '%s\n' "$host"
+      fi
+    done
+    return 0
+  fi
+
+  if [[ -n "${global_change:-}" ]]
+  then
+    printf '%s\n' "${all_hosts[@]}"
+    return 0
+  fi
+
+  return 0
 }
 
 BASE_WORKTREE="$(mktemp -d)"
@@ -81,6 +148,11 @@ trim_output() {
 }
 
 flake_lock_inputs_diff() {
+  if ! changed_files | grep -qx 'flake.lock'
+  then
+    return 0
+  fi
+
   local base_lock head_lock
   base_lock="${BASE_WORKTREE}/flake.lock"
   head_lock="./flake.lock"
@@ -156,6 +228,12 @@ printf '\n'
 flake_lock_inputs_diff
 printf '\n'
 
+if ! is_nix_related_change
+then
+  printf '%s\n' 'No Nix-related files changed, skipping.'
+  exit 0
+fi
+
 if [[ "$PER_HOST" != "1" ]]
 then
   printf '%s\n' '## Per-host diffs'
@@ -165,10 +243,10 @@ then
   exit 0
 fi
 
-mapfile -t hosts < <(discover_hosts)
+mapfile -t hosts < <(select_hosts)
 if (( ${#hosts[@]} == 0 ))
 then
-  printf '%s\n' 'No shared hosts found between base and head flake.'
+  printf '%s\n' 'No hosts selected for per-host diff.'
   exit 0
 fi
 

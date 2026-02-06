@@ -146,12 +146,12 @@ jobs:
               continue
             fi
 
-            READY=true
+            READY=1
             for ip in "${ips[@]}"
             do
               if ! route_json=$(ip -j route get "$ip" 2>/dev/null)
               then
-                READY=false
+                READY=
                 break
               fi
 
@@ -159,12 +159,12 @@ jobs:
                 .[0].dev == $iface
               ' <<<"$route_json" >/dev/null
               then
-                READY=false
+                READY=
                 break
               fi
             done
 
-            if [[ "$READY" == true ]]
+            if [[ -n "${READY:-}" ]]
             then
               echo "All $YUM_DOMAIN routes go via $NB_INTERFACE"
               exit 0
