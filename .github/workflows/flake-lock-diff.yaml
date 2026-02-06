@@ -1,9 +1,7 @@
-name: flake-lock diff
+name: nix pr diff (disabled)
 
 on:
-  pull_request:
-    paths:
-      - flake.lock
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -11,7 +9,7 @@ permissions:
 
 jobs:
   nvd-diff:
-    if: startsWith(github.head_ref, 'chore/update-flake-lock')
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -33,6 +31,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           MAX_LINES: "200"
+          PER_HOST: "1"
         run: |
           ./.github/workflows/scripts/flake-lock-pr-comment.sh > /tmp/flake-lock-diff.md
 
