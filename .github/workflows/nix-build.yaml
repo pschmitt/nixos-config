@@ -618,61 +618,6 @@ jobs:
             nix copy --to "$NIX_DEST_STORE_URL" \
               '.#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel'
 
-  pr-nvd-diff:
-    needs:
-      - setup-matrix
-      - build-hosts-x86_64
-      - build-hosts-aarch64
-    if: ${{ always() && github.event_name == 'pull_request' && !github.event.pull_request.draft && (needs.setup-matrix.result == 'success') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code (PR head)
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
-
-      - name: Generate comment body
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MAX_LINES: "120"
-        run: |
-          set -euo pipefail
-          ./.github/workflows/scripts/pr-nvd-comment.sh > /tmp/pr-nvd-diff.md
-
-      - name: Comment on PR
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: /tmp/pr-nvd-diff.md
-          body-includes: "pr-nvd-diff"
-          edit-mode: replace
+  # pr-nvd-diff was intentionally removed.
+  # A dedicated PR workflow now handles per-host diffs without builds:
+  # `.github/workflows/nix-systempackages-diff.yaml`.
