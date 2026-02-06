@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
 export NIXPKGS_ALLOW_UNFREE=1
 export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
 
-BASE_SHA="${BASE_SHA:-}"
-HEAD_SHA="${HEAD_SHA:-}"
-TARGET_HOSTS_INPUT="${TARGET_HOSTS:-}"
-MAX_LINES="${MAX_LINES:-400}"
-INCLUDE_ISO="${INCLUDE_ISO:-1}"
+BASE_SHA=
+HEAD_SHA=
+TARGET_HOSTS_INPUT=
+MAX_LINES=
+INCLUDE_ISO=
 
 usage() {
   local prog
@@ -32,7 +33,7 @@ Environment:
 EOF
 }
 
-declare -a TARGET_HOSTS=()
+declare -a TARGET_HOSTS_ARR=()
 
 append_host() {
   local host="$1"
@@ -42,20 +43,19 @@ append_host() {
     return 0
   fi
 
-  TARGET_HOSTS+=("$host")
+  TARGET_HOSTS_ARR+=("$host")
 }
 
 load_target_hosts_env() {
-  local env_str="$TARGET_HOSTS_INPUT"
-  local -a _hosts
-  local h
-
-  if [[ -z "$env_str" ]]
+  if [[ -z "${TARGET_HOSTS_INPUT:-}" ]]
   then
     return 0
   fi
 
-  read -r -a _hosts <<<"$env_str"
+  local -a _hosts
+  read -r -a _hosts <<<"$TARGET_HOSTS_INPUT"
+
+  local h
   for h in "${_hosts[@]}"
   do
     append_host "$h"
@@ -91,7 +91,7 @@ parse_args() {
     shift
   done
 
-  if (( ${#TARGET_HOSTS[@]} == 0 ))
+  if (( ${#TARGET_HOSTS_ARR[@]} == 0 ))
   then
     load_target_hosts_env
   fi
@@ -166,16 +166,17 @@ is_nix_related_change() {
 }
 
 discover_hosts() {
-  if (( ${#TARGET_HOSTS[@]} > 0 ))
+  if (( ${#TARGET_HOSTS_ARR[@]} > 0 ))
   then
-    printf '%s\n' "${TARGET_HOSTS[@]}" | sort -u
+    printf '%s\n' "${TARGET_HOSTS_ARR[@]}" | sort -u
     return 0
   fi
 
   # Use the intersection between base and head to avoid noisy "missing attr" failures.
-  local head_json base_json
-
+  local head_json
   head_json="$(nix flake show --json 2>/dev/null)"
+
+  local base_json
   base_json="$(cd "$BASE_WORKTREE" && nix flake show --json 2>/dev/null)"
 
   comm -12 \
@@ -198,18 +199,20 @@ filter_hosts() {
 
 select_hosts() {
   local -a all_hosts
-  local -a changed
-  local file host
-  local global_change=
-  declare -A wanted=()
-
   mapfile -t all_hosts < <(discover_hosts | filter_hosts)
+
+  local -a changed
   mapfile -t changed < <(changed_files)
 
+  declare -A wanted=()
+  local global_change=
+
+  local file
   for file in "${changed[@]}"
   do
     case "$file" in
       hosts/*/*)
+        local host
         host="${file#hosts/}"
         host="${host%%/*}"
         wanted["$host"]=1
@@ -222,6 +225,7 @@ select_hosts() {
 
   if (( ${#wanted[@]} > 0 ))
   then
+    local host
     for host in "${all_hosts[@]}"
     do
       if [[ -n "${wanted[$host]:-}" ]]
@@ -245,8 +249,8 @@ select_hosts() {
 trim_output() {
   local output="$1"
   local max_lines="$2"
-  local line_count
 
+  local line_count
   line_count="$(printf "%s\n" "$output" | wc -l | tr -d ' ')"
   if (( line_count > max_lines ))
   then
@@ -262,7 +266,6 @@ print_eval_error() {
   local label="$1"
   local err_file="$2"
   local max_lines="$3"
-  local err
 
   if [[ ! -s "$err_file" ]]
   then
@@ -270,6 +273,7 @@ print_eval_error() {
     return 0
   fi
 
+  local err
   err="$(cat "$err_file")"
   err="$(trim_output "$err" "$max_lines")"
 
@@ -325,8 +329,8 @@ write_home_manager_packages() {
   local host="$2"
   local out_file="$3"
   local err_file="$4"
-  local json_file hm_json enabled
 
+  local json_file
   json_file="$(mktemp)"
 
   if ! nix eval --json \
@@ -390,11 +394,11 @@ write_home_manager_packages() {
     return 1
   fi
 
+  local hm_json
   hm_json="$(cat "$json_file")"
   rm -f "$json_file"
 
-  enabled="$(jq -r '.enabled' <<<"$hm_json")"
-  if [[ "$enabled" != "true" ]]
+  if ! jq -e '.enabled' <<<"$hm_json" >/dev/null
   then
     : >"$out_file"
     return 2
@@ -407,20 +411,20 @@ write_home_manager_packages() {
 
 diff_for_host() {
   local host="$1"
-  local base_pkgs head_pkgs
-  local base_hm head_hm
-  local hm_base_status hm_head_status
-  local added removed
-  local diff_output
-  local base_err head_err
-  local hm_base_err hm_head_err
 
   printf '%s\n' '#### systemPackages'
   printf '\n'
 
+  local base_pkgs
   base_pkgs="$(mktemp)"
+
+  local head_pkgs
   head_pkgs="$(mktemp)"
+
+  local base_err
   base_err="$(mktemp)"
+
+  local head_err
   head_err="$(mktemp)"
 
   if ! write_system_packages "$BASE_WORKTREE" "$host" "$base_pkgs" "$base_err"
@@ -435,12 +439,16 @@ diff_for_host() {
     return 0
   fi
 
+  local added
   added="$(comm -13 "$base_pkgs" "$head_pkgs" | wc -l | tr -d ' ')"
+
+  local removed
   removed="$(comm -23 "$base_pkgs" "$head_pkgs" | wc -l | tr -d ' ')"
 
   printf '%s\n' "Added: ${added}, removed: ${removed}"
   printf '\n'
 
+  local diff_output
   diff_output="$(diff -u "$base_pkgs" "$head_pkgs" || true)"
   if [[ -z "$diff_output" ]]
   then
@@ -457,14 +465,21 @@ diff_for_host() {
   printf '%s\n' '#### home-manager `home.packages`'
   printf '\n'
 
+  local base_hm
   base_hm="$(mktemp)"
+
+  local head_hm
   head_hm="$(mktemp)"
+
+  local hm_base_err
   hm_base_err="$(mktemp)"
+
+  local hm_head_err
   hm_head_err="$(mktemp)"
 
   set +e
   write_home_manager_packages "$BASE_WORKTREE" "$host" "$base_hm" "$hm_base_err"
-  hm_base_status="$?"
+  local hm_base_status="$?"
   set -e
   if [[ "$hm_base_status" != "0" && "$hm_base_status" != "2" ]]
   then
@@ -474,7 +489,7 @@ diff_for_host() {
 
   set +e
   write_home_manager_packages "." "$host" "$head_hm" "$hm_head_err"
-  hm_head_status="$?"
+  local hm_head_status="$?"
   set -e
   if [[ "$hm_head_status" != "0" && "$hm_head_status" != "2" ]]
   then
@@ -508,6 +523,12 @@ diff_for_host() {
 }
 
 main() {
+  BASE_SHA="${BASE_SHA:-}"
+  HEAD_SHA="${HEAD_SHA:-}"
+  TARGET_HOSTS_INPUT="${TARGET_HOSTS:-}"
+  MAX_LINES="${MAX_LINES:-400}"
+  INCLUDE_ISO="${INCLUDE_ISO:-1}"
+
   parse_args "$@"
 
   default_shas
