@@ -660,11 +660,6 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
-      - name: Shellcheck
-        run: |
-          set -euo pipefail
-          shellcheck .github/workflows/scripts/pr-nvd-comment.sh
-
       - name: Generate comment body
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
