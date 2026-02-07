@@ -10,12 +10,71 @@ The following applies to bash, sh and zsh.
   inside conditionals or loops.
 - **Functions**: Define functions with the `name() { ... }` form. Avoid anonymous functions and keep function bodies focused on
   a single responsibility.
-- **Entrypoint**: Define a `main()` function and guard execution so the script can be sourced without side effects. In bash, for
-  example:
+- **Entrypoint**: Define a `main()` function and guard execution so the script can be sourced without side effects. Prefer the
+  same overall structure as `test.sh` (usage, optional actions, flag parsing, action dispatch):
 
 ```bash
+#!/usr/bin/env bash
+
+usage() {
+  cat <<EOF
+  Usage: $(basename "$0") ACTION [OPTIONS]
+
+  Actions:
+    action1    Description for action 1
+    action2    Description for action 2
+EOF
+}
+
+action1() {
+  echo "Action 1 executed"
+}
+
+action2() {
+  echo "Action 2 executed"
+}
+
 main() {
-  :
+  local debug
+
+  # global flags
+  while [[ -n $* ]]
+  do
+    case "$1" in
+      -h|--help)
+        usage
+        return 0
+        ;;
+      --debug)
+        debug=1
+        shift
+        ;;
+      --trace)
+        set -x
+        shift
+        ;;
+      *)
+        break
+        ;;
+    esac
+  done
+
+  local action="${1:-action1}" # default action
+
+  case "$action" in
+    action1|a1|1)
+      [[ -n "${debug:-}" ]] && echo "Performing Action 1"
+      action1
+      ;;
+    action2|a2|2)
+      [[ -n "${debug:-}" ]] && echo "Performing Action 2"
+      action2
+      ;;
+    *)
+      echo "Unknown action: '$action'" >&2
+      return 2
+      ;;
+  esac
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
