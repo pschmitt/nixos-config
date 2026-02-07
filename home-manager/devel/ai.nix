@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 {
 
   programs = {
@@ -52,6 +57,19 @@
       rules = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
     };
+  };
+
+  sops.secrets = {
+    "mistral-vibe/env" = {
+      mode = "0600";
+    };
+  };
+
+  # Create ~/.vibe directory and .env file
+  home.file = {
+    ".vibe/.env".source =
+      config.lib.file.mkOutOfStoreSymlink
+        config.sops.secrets."mistral-vibe/env".path;
   };
 
   home.packages = with pkgs.master; [
