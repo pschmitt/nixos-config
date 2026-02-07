@@ -62,5 +62,6 @@
     # cli
     cursor-cli
     github-copilot-cli
+    mistral-vibe
   ];
 }
