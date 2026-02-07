@@ -65,9 +65,9 @@
     };
   };
 
-  # Create ~/.vibe directory and .env file
-  home.file = {
-    ".vibe/.env".source =
+  # Create ~/.config/vibe directory and .env file
+  xdg.configFile = {
+    "vibe/.env".source =
       config.lib.file.mkOutOfStoreSymlink
         config.sops.secrets."mistral-vibe/env".path;
   };
@@ -80,6 +80,10 @@
     # cli
     cursor-cli
     github-copilot-cli
-    mistral-vibe
+    (pkgs.writeShellScriptBin "vibe" ''
+      export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
+
+      exec ${mistral-vibe}/bin/vibe "$@"
+    '')
   ];
 }
