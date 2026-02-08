@@ -64,7 +64,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./.github/workflows/scripts/pr-systempackages-comment.sh > /tmp/pr-systempackages-diff.md
+          ./.github/workflows/scripts/pr-packages-diff-comment.sh > /tmp/pr-systempackages-diff.md
 
       - name: Comment on PR
         uses: peter-evans/create-or-update-comment@v4
