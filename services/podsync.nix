@@ -48,7 +48,8 @@ let
     };
     feeds = {
       level1linkswithfriends = feedDefaults // {
-        url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA";
+        # url = "https://www.youtube.com/channel/UCw_X9HgNg2J9p7wRM0FD4bA";
+        url = "https://www.youtube.com/playlist?list=PLcq4cFFv50gtSUtKIRKv7ssIrWgV6nQg0";
         filters = {
           title = "Level1 Links With Friends";
         };
