@@ -28,6 +28,8 @@ let
       keep_last = 10;
     };
     youtube_dl_args = [
+      "--proxy"
+      "socks5h://turris.${config.domains.netbird}:1081"
       "--cookies"
       "/yt-dlp/cookies.txt"
     ];
