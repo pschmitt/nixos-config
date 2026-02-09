@@ -14,7 +14,7 @@ in
   programs = {
     claude-code = {
       enable = true;
-      package = pkgs.master.codex;
+      package = pkgs.master.claude-code;
       enableMcpIntegration = true;
     };
 
