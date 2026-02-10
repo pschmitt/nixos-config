@@ -1,17 +1,59 @@
-## Shell code
+# Shell Code Style Guide
 
 The following applies to bash, sh and zsh.
 
-### Style and Structure
+## Basic Requirements
+
+- **Shebang**: Use `#!/usr/bin/env bash` as the shebang
+- **ShellCheck**: Ensure scripts always pass shellcheck
+- **Vim modeline**: Add a vim modeline at the bottom to enforce 2-space indentation
+
+## Style and Structure
+
+### Indentation and Formatting
 
 - **Indentation**: Use two spaces per indentation level. Do not mix tabs and spaces.
-- **Control structures**: Place keywords on separate lines—e.g. write `if condition` followed by `then` on the next line, and do
-  the same for `elif`, `else`, `for`, `while`, and `until` blocks. Never combine multiple statements on one line with semicolons
-  inside conditionals or loops.
-- **Functions**: Define functions with the `name() { ... }` form. Avoid anonymous functions and keep function bodies focused on
-  a single responsibility.
-- **Entrypoint**: Define a `main()` function and guard execution so the script can be sourced without side effects. Prefer the
-  same overall structure as `test.sh` (usage, optional actions, flag parsing, action dispatch):
+- **Statement formatting**: Put every statement on its own line (especially "then" and "do"):
+
+```sh
+# Bad
+if xxx; then
+  :
+fi
+
+while yyy; do
+  :
+done
+
+# Good
+if xxx
+then
+  :
+fi
+
+while yyy
+do
+  :
+done
+```
+
+### Control Structures
+
+- Place keywords on separate lines for `if`, `elif`, `else`, `for`, `while`, and `until` blocks
+- Never combine multiple statements on one line with semicolons inside conditionals or loops
+- Use `[[ test ]]` instead of `[ test ]`
+
+### Functions
+
+- Define functions with the `name() { ... }` form
+- Avoid anonymous functions
+- Keep function bodies focused on a single responsibility
+- Never `exit` from functions - they should use `return`
+- Only the main block should contain `exit` statements
+
+### Entrypoint Pattern
+
+Define a `main()` function and guard execution so the script can be sourced without side effects:
 
 ```bash
 #!/usr/bin/env bash
@@ -83,8 +125,27 @@ then
 fi
 ```
 
-- **Usage/help**: For interactive scripts, define a `usage()` function and support `-h|--help`. Do not hardcode the script name
-  or path in usage text; use `$(basename "$0")` (bash) instead.
+## Usage and Help
+
+- **Usage function**: Place the usage function first in the script
+- For interactive scripts, define a `usage()` function and support `-h|--help`
+- Do not hardcode the script name or path in usage text; use `$(basename "$0")` (bash) instead
+- Output usage to stderr for invalid arguments
+
+## Error Handling
+
+- Include proper error handling
+- Print error messages to stderr
+- Exit with code 2 when required parameters are missing
+
+## Best Practices
+
+- **Avoid useless echos**: Prefer `bar <<< "foo"` over `echo foo | bar`
+- **Argument parsing**: Avoid using getopts, prefer a simple while loop over arguments
+- Use functions extensively
+
+## Variables and Booleans
+
 - **Booleans**: Do not use `"true"` and `"false"` string values for "bool" variables. Use `1` for true and unset/empty for false.
 
 ```sh
