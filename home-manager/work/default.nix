@@ -34,6 +34,7 @@
 
     # cloud
     openstackclient-full
+    openstack-rs
   ];
 
 }
