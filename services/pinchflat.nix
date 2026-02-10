@@ -12,9 +12,15 @@ let
   pinchflatMediaDir = "/mnt/data/srv/pinchflat/data";
   cookiesDir = "/srv/yt-dlp";
   pinchflatExtrasDir = "/var/lib/pinchflat/extras";
+  pinchflatYtDlpConfigDir = "${pinchflatExtrasDir}/yt-dlp-configs";
+  pinchflatYtDlpProxy = "socks5h://turris.${config.domains.netbird}:1081";
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 in
 {
+  environment.etc."pinchflat/yt-dlp-configs/base-config.txt".text = ''
+    --proxy ${pinchflatYtDlpProxy}
+  '';
+
   sops.secrets."pinchflat/env" = {
     inherit (config.custom) sopsFile;
     owner = pinchflatUser;
@@ -27,7 +33,9 @@ in
     "d ${pinchflatMediaDir} 0750 ${pinchflatUser} ${pinchflatGroup} -"
     "d ${cookiesDir} 0750 root ${pinchflatGroup} -"
     "d ${pinchflatExtrasDir} 0750 ${pinchflatUser} ${pinchflatGroup} -"
+    "d ${pinchflatYtDlpConfigDir} 0750 ${pinchflatUser} ${pinchflatGroup} -"
     "L+ ${pinchflatExtrasDir}/cookies.txt - - - - ${cookiesDir}/cookies.txt"
+    "L+ ${pinchflatYtDlpConfigDir}/base-config.txt - - - - /etc/pinchflat/yt-dlp-configs/base-config.txt"
   ];
 
   services = {
