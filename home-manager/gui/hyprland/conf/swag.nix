@@ -39,12 +39,19 @@
         };
 
         group = {
+          "col.border_active" = "rgba(1e1e1eff)";
+          "col.border_inactive" = "rgba(2a2a2aff)";
+          "col.border_locked_active" = "rgba(1e1e1eff)";
+          "col.border_locked_inactive" = "rgba(2a2a2aff)";
           groupbar = {
             enabled = true;
             gradients = false;
             height = 14;
-            indicator_height = 16;
+            indicator_height = 14;
             indicator_gap = -14;
+            gaps_in = 0;
+            gaps_out = 0;
+            rounding = 0;
             "col.active" = "rgba(1e1e1eff)";
             "col.inactive" = "rgba(2a2a2aff)";
             "col.locked_active" = "rgba(1e1e1eff)";
