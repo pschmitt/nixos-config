@@ -242,6 +242,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    mq = {
+      url = "github:harehare/mq";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     obs-cli = {
       url = "github:pschmitt/obs-cli";
       inputs.nixpkgs.follows = "nixpkgs";
