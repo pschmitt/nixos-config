@@ -126,7 +126,7 @@ in
       restart program = "${config.virtualisation.oci-containers.backend}-podsync.service"
       if failed
         port ${toString listenPort}
-        protocol http
+        protocol http request "/health" status 200
         with timeout 15 seconds
       then restart
       if 5 restarts within 10 cycles then alert
