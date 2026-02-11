@@ -115,6 +115,12 @@ let
               description = "Optional expected HTTP status code for health checks.";
             };
 
+            path = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Optional HTTP request path for health checks.";
+            };
+
             composeYaml = mkOption {
               type = types.nullOr types.str;
               default = null;
@@ -247,14 +253,17 @@ let
     let
       inherit (service.monitoring)
         expectedHttpStatusCode
+        path
         composeYaml
         restartAll
         restartComposeService
         dependsOn
         group
         ;
-      extraClause =
-        if expectedHttpStatusCode != null then "status " + toString expectedHttpStatusCode else "";
+      monitorClauses =
+        optional (path != null) "request \"${path}\""
+        ++ optional (expectedHttpStatusCode != null) "status ${toString expectedHttpStatusCode}";
+      extraClause = concatStringsSep " " monitorClauses;
       composePath = if composeYaml != null then composeYaml else serviceName;
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
