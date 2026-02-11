@@ -52,6 +52,9 @@ in
   services = {
     vaultwarden = {
       enable = true;
+      # NOTE we need vaultwarden 1.35.3+ for the bw cli to be able to connect to
+      # the server, which is required for the bw-sync service.
+      package = pkgs.master.vaultwarden;
       inherit backupDir;
       environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
       config = {
