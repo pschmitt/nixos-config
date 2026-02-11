@@ -43,6 +43,7 @@ in
           (mkHost "location")
         ];
         monitoring = {
+          path = "/api/v1/health";
           restartAll = true;
         };
       };
