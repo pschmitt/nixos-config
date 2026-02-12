@@ -7,9 +7,6 @@
 let
   host = "obsidian.${config.domains.main}";
   listenPort = 35984;
-  dataDir = "/mnt/data/srv/obsidian-livesync";
-  containerBackend = config.virtualisation.oci-containers.backend;
-  systemdUnit = "${containerBackend}-obsidian-livesync";
 in
 {
   sops = {
@@ -22,57 +19,77 @@ in
       };
     };
 
-    templates."obsidian-livesync/env" = {
+    templates."obsidian-livesync/admin.ini" = {
       content = ''
-        COUCHDB_USER=${config.sops.placeholder."obsidian-livesync/username"}
-        COUCHDB_PASSWORD=${config.sops.placeholder."obsidian-livesync/password"}
+        [admins]
+        ${config.sops.placeholder."obsidian-livesync/username"} = ${
+          config.sops.placeholder."obsidian-livesync/password"
+        }
       '';
-      restartUnits = [ "${systemdUnit}.service" ];
+      owner = config.services.couchdb.user;
+      inherit (config.services.couchdb) group;
+      mode = "0440";
+      restartUnits = [ "couchdb.service" ];
     };
   };
 
-  systemd.tmpfiles.rules = [
-    "d ${dataDir} 0750 root root - -"
-  ];
-
-  virtualisation.oci-containers.containers.obsidian-livesync = {
-    # renovate: datasource=docker depName=oleduc/docker-obsidian-livesync-couchdb
-    image = "oleduc/docker-obsidian-livesync-couchdb:latest";
-    autoStart = true;
-    pull = "always";
-    ports = [ "127.0.0.1:${toString listenPort}:5984" ];
-    volumes = [ "${dataDir}:/opt/couchdb/data" ];
-    environment = {
-      SERVER_DOMAIN = host;
-      PUID = "1000";
-      PGID = "1000";
+  services = {
+    couchdb = {
+      enable = true;
+      bindAddress = "127.0.0.1";
+      port = listenPort;
+      extraConfig = {
+        couchdb = {
+          single_node = "true";
+          max_document_size = "5000000000"; # 500MB
+        };
+        chttpd = {
+          require_valid_user = "true";
+          enable_cors = "true";
+          max_http_request_size = "4294967296";
+        };
+        chttpd_auth = {
+          require_valid_user = "true";
+          authentication_redirect = "/_utils/session.html";
+        };
+        httpd = {
+          WWW-Authenticate = ''Basic realm="couchdb"'';
+        };
+        cors = {
+          origins = "app://obsidian.md,capacitor://localhost,http://localhost,https://${host}";
+          credentials = "true";
+          methods = "GET, PUT, POST, HEAD, DELETE";
+          headers = "accept, authorization, content-type, origin, referer";
+          max_age = "3600";
+        };
+      };
+      extraConfigFiles = [ config.sops.templates."obsidian-livesync/admin.ini".path ];
     };
-    environmentFiles = [ config.sops.templates."obsidian-livesync/env".path ];
-  };
 
-  services.nginx.virtualHosts."${host}" = {
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString listenPort}";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+    nginx.virtualHosts."${host}" = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:${toString listenPort}";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
+      };
     };
-  };
 
-  services.monit.config = lib.mkAfter ''
-    check host "obsidian-livesync" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${systemdUnit}.service"
-      if failed
-        port ${toString listenPort}
-        protocol http
-        request "/"
-        status 401
-        with timeout 15 seconds
-      then restart
-      if 5 restarts within 10 cycles then alert
-  '';
+    monit.config = lib.mkAfter ''
+      check host "obsidian-livesync" with address "127.0.0.1"
+        group container-services
+        restart program = "${pkgs.systemd}/bin/systemctl restart couchdb.service"
+        if failed
+          port ${toString listenPort}
+          protocol http
+          request "/"
+          status 401
+          with timeout 15 seconds
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+  };
 }
