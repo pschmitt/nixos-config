@@ -30,6 +30,8 @@
   hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;
 
+  custom.syncthing.server = true;
+
   boot.kernel.sysctl = {
     # Raise inotify limits
     "fs.inotify.max_user_instances" = lib.mkForce 524288;

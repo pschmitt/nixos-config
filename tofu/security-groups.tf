@@ -28,6 +28,12 @@ resource "openstack_networking_secgroup_v2" "secgroup_xmr" {
   description = "Allow xmr traffic"
 }
 
+resource "openstack_networking_secgroup_v2" "secgroup_syncthing" {
+  provider    = openstack.openstack-wiit
+  name        = "allow-syncthing"
+  description = "Allow Syncthing traffic"
+}
+
 resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_icmp_v4" {
   provider          = openstack.openstack-wiit
   direction         = "ingress"
@@ -374,6 +380,50 @@ resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_stratum_alt_v6" 
   port_range_max    = 13333
   remote_ip_prefix  = "::/0"
   security_group_id = openstack_networking_secgroup_v2.secgroup_xmr.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_syncthing_tcp_v4" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 22000
+  port_range_max    = 22000
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_syncthing.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_syncthing_tcp_v6" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "tcp"
+  port_range_min    = 22000
+  port_range_max    = 22000
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_syncthing.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_syncthing_udp_v4" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 21027
+  port_range_max    = 21027
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_syncthing.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "secgroup_rule_syncthing_udp_v6" {
+  provider          = openstack.openstack-wiit
+  direction         = "ingress"
+  ethertype         = "IPv6"
+  protocol          = "udp"
+  port_range_min    = 21027
+  port_range_max    = 21027
+  remote_ip_prefix  = "::/0"
+  security_group_id = openstack_networking_secgroup_v2.secgroup_syncthing.id
 }
 
 # vim: set ft=terraform
