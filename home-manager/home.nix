@@ -18,6 +18,7 @@
       ./network.nix
       ./nix-index-database.nix
       ./nrf.nix
+      ./openclaw.nix
       ./gpg.nix
       ./sops.nix
       ./ssh.nix

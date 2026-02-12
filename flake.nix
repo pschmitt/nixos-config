@@ -225,12 +225,16 @@
       # NOTE Caching is nice, maybe don't override nixpkgs here
       # inputs.nixpkgs.follows = "nixpkgs";
     };
-
     nixpkgs-wayland = {
       url = "github:nix-community/nixpkgs-wayland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # the myl family
     myl = {
       url = "github:pschmitt/myl";
