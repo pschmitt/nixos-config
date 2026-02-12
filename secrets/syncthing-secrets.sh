@@ -22,12 +22,15 @@ EOF
 }
 
 require_cmd() {
-  local cmd="$1"
-  if ! command -v "$cmd" >/dev/null 2>&1
-  then
-    printf 'Error: missing required command: %s\n' "$cmd" >&2
-    return 2
-  fi
+  local cmd
+  for cmd in "$@"
+  do
+    if ! command -v "$cmd" >/dev/null 2>&1
+    then
+      printf 'Error: missing required command: %s\n' "$cmd" >&2
+      return 2
+    fi
+  done
 }
 
 repo_root() {
@@ -146,9 +149,7 @@ main() {
     return 2
   fi
 
-  require_cmd jq
-  require_cmd sops
-  require_cmd syncthing
+  require_cmd jq sops syncthing
 
   local root
   root="$(repo_root)"
