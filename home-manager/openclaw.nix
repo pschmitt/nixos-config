@@ -43,7 +43,11 @@
   systemd.user.services.${config.programs.openclaw.systemd.unitName} =
     lib.mkIf config.programs.openclaw.enable
       {
-        Service.EnvironmentFile = [ config.sops.templates.openclaw-gateway-env.path ];
+        Service = {
+          EnvironmentFile = [ config.sops.templates.openclaw-gateway-env.path ];
+          StandardOutput = lib.mkForce "journal";
+          StandardError = lib.mkForce "journal";
+        };
       };
 
   home.packages = [
