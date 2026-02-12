@@ -50,6 +50,8 @@
     (import ../../services/nfs/nfs-server.nix { inherit lib; })
     ../../services/nfs/nfs-client-rofl-11.nix
 
+    ./syncthing.nix
+
     # host-specific service config
     ./container-services.nix
     ./restic.nix

@@ -17,6 +17,7 @@
     ./network.nix
     ./power-profiles-daemon.nix
     ./restic.nix
+    ./syncthing.nix
     ./waydroid.nix
     ./wireshark.nix
   ];

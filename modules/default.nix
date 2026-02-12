@@ -5,5 +5,6 @@
     ./hardware.nix
     ./home-manager.nix
     ./main-user.nix
+    ./syncthing.nix
   ];
 }

@@ -15,7 +15,8 @@ resource "openstack_compute_instance_v2" "rofl-10" {
     "default",
     openstack_networking_secgroup_v2.secgroup_http.name,
     openstack_networking_secgroup_v2.secgroup_icmp.name,
-    openstack_networking_secgroup_v2.secgroup_ssh.name
+    openstack_networking_secgroup_v2.secgroup_ssh.name,
+    openstack_networking_secgroup_v2.secgroup_syncthing.name
   ]
 
   block_device {
