@@ -1,6 +1,7 @@
 {
   pkgs,
   config,
+  inputs,
   ...
 }:
 let
@@ -20,7 +21,7 @@ in
 
     codex = {
       enable = true;
-      package = pkgs.master.codex;
+      package = inputs.codex-cli-nix.packages.${pkgs.system}.default;
       custom-instructions = builtins.readFile ./CODESTYLE.md;
     };
 
@@ -91,6 +92,7 @@ in
     # cli
     cursor-cli
     github-copilot-cli
+    # kilocode-cli
     (pkgs.writeShellScriptBin "vibe" ''
       export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
 
