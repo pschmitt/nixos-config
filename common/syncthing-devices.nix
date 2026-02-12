@@ -14,7 +14,9 @@ in
 {
   custom.syncthing.devices = lib.mapAttrs (host: device: {
     inherit (device) id;
-    addresses = mkAddresses host;
+    # Allow non-NixOS/external devices to specify their own addresses in JSON.
+    # If omitted, default to the VPN hostname + dynamic discovery.
+    addresses = device.addresses or (mkAddresses host);
     introducer = device.introducer or false;
   }) devices;
 }
