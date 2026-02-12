@@ -15,6 +15,7 @@ in
     ./jq.nix
     ./mani.nix
     ./nix.nix
+    ./nodejs.nix
     ./python.nix
     ./rust.nix
     ./sh.nix
