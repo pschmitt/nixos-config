@@ -150,7 +150,7 @@
     };
 
     hypr-dynamic-cursors = {
-      url = "github:VirtCode/hypr-dynamic-cursors/7e9b7bc9fbcbb2f7f8985ec1f435b43021609639";
+      url = "github:VirtCode/hypr-dynamic-cursors/bf761c322dbd675399e6e33628d9fb4545c59ad3";
       inputs.hyprland.follows = "hyprland";
     };
 
