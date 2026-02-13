@@ -1,4 +1,9 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   secrets = [
     "geoip/licenseKey"
@@ -84,4 +89,17 @@ in
       };
     };
   };
+
+  services.monit.config = lib.mkAfter ''
+    check host "grafana" with address "127.0.0.1"
+      group services
+      restart program = "${pkgs.systemd}/bin/systemctl restart grafana.service"
+      if failed
+        port ${toString config.services.grafana.settings.server.http_port}
+        protocol http
+        request "/api/health"
+        with timeout 15 seconds
+      then restart
+      if 5 restarts within 10 cycles then alert
+  '';
 }
