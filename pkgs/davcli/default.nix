@@ -10,16 +10,16 @@
 rustPlatform.buildRustPackage rec {
   pname = "davcli";
   version = "unstable-${lib.strings.substring 0 10 rev}";
-  rev = "90e0e8da68eaf6ca3747f48a6d1bdf597e837af7";
+  rev = "6a11363464c5d59ff52b42a389fa233f6f8a3e3f";
 
   src = fetchFromSourcehut {
     owner = "~whynothugo";
     repo = "davcli";
     inherit rev;
-    hash = "sha256-skGNDmEACmMSep685JfVM2uJqOpxEaeDi5LwiL02jBw=";
+    hash = "sha256-TkgD0WdQlGONP5pU2NYy8KzVSmT71A4pDDabrmJbub0=";
   };
 
-  cargoHash = "sha256-/bp/Zs16oe2879NeWKVSmPdbLO+IERaZ8lL6Ov6EAT4=";
+  cargoHash = "sha256-wosrU2/FmwoPFiBFm96RRadGj4U6rmvokm3JrnV7v5M=";
 
   passthru.updateScript = nix-update-script {
     extraArgs = [
