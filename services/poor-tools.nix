@@ -15,6 +15,8 @@
       let
         nginxConfig = {
           enableACME = true;
+          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+          acmeRoot = null;
           forceSSL = false; # disabled on purpose! tls is a luxury
           addSSL = true; # required to actually respond to https requests
 
