@@ -9,16 +9,14 @@
   imports = [ inputs.poor-tools.nixosModules.default ];
 
   services = {
-    poor-installer-web = {
-      enable = true;
-    };
+    poor-installer-web.enable = true;
 
     nginx.virtualHosts =
       let
         nginxConfig = {
           enableACME = true;
-          forceSSL = false; # disabled on purpose!
-          addSSL = true; # required to actually response on https requests
+          forceSSL = false; # disabled on purpose! tls is a luxury
+          addSSL = true; # required to actually respond to https requests
 
           locations."/" = {
             proxyPass = "http://${toString config.services.poor-installer-web.bindHost}:${toString config.services.poor-installer-web.bindPort}";
