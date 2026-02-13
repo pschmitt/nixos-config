@@ -298,6 +298,7 @@ write_system_packages() {
 
   json_file="$(mktemp)"
 
+  # shellcheck disable=SC2016
   if ! nix eval --json \
     "${flake_path}#nixosConfigurations.${host}.config.environment.systemPackages" \
     --apply '
@@ -329,6 +330,74 @@ write_system_packages() {
   rm -f "$json_file"
 }
 
+write_kernel_info() {
+  local flake_path="$1"
+  local host="$2"
+  local out_json_file="$3"
+  local out_human_file="$4"
+  local err_file="$5"
+  local json_file
+
+  json_file="$(mktemp)"
+
+  # shellcheck disable=SC2016
+  if ! nix eval --json \
+    "${flake_path}#nixosConfigurations.${host}.config.boot.kernelPackages.kernel" \
+    --apply '
+      k:
+        {
+          pname =
+            if builtins.isAttrs k && k ? pname then
+              k.pname
+            else if builtins.isAttrs k && k ? name then
+              k.name
+            else
+              builtins.toString k;
+          version =
+            if builtins.isAttrs k && k ? version then
+              k.version
+            else
+              "";
+          modDirVersion =
+            if builtins.isAttrs k && k ? modDirVersion then
+              k.modDirVersion
+            else
+              "";
+        }
+    ' >"$json_file" 2>"$err_file"
+  then
+    rm -f "$json_file"
+    return 1
+  fi
+
+  if ! jq -cS '.' <"$json_file" >"$out_json_file" 2>>"$err_file"
+  then
+    rm -f "$json_file"
+    return 1
+  fi
+
+  if ! jq -r '
+      . as $o
+      | [
+          ($o.pname // "" | tostring),
+          ($o.version // "" | tostring)
+        ]
+      | map(select(length > 0))
+      | join(" ") as $base
+      | if ($o.modDirVersion // "") != "" and ($o.modDirVersion // "") != ($o.version // "") then
+          ($base + " (modDirVersion " + ($o.modDirVersion | tostring) + ")")
+        else
+          $base
+        end
+    ' <"$json_file" >"$out_human_file" 2>>"$err_file"
+  then
+    rm -f "$json_file"
+    return 1
+  fi
+
+  rm -f "$json_file"
+}
+
 write_home_manager_packages() {
   local flake_path="$1"
   local host="$2"
@@ -338,6 +407,7 @@ write_home_manager_packages() {
   local json_file
   json_file="$(mktemp)"
 
+  # shellcheck disable=SC2016
   if ! nix eval --json \
     "${flake_path}#nixosConfigurations.${host}.config" \
     --apply '
@@ -624,6 +694,68 @@ print_common_summary() {
   printf '\n'
 }
 
+print_kernel_updates() {
+  local groups_dir="$1"
+  local ok_hosts_file="$2"
+  local excluded_count="$3"
+
+  if ! ls "$groups_dir"/*.hosts >/dev/null 2>&1
+  then
+    return 0
+  fi
+
+  local ok_count
+  ok_count="$(wc -l <"$ok_hosts_file" | tr -d ' ')"
+
+  printf '%s\n' '## Kernel updates (boot.kernelPackages.kernel)'
+  printf '\n'
+  printf 'Hosts evaluated: %s\n' "$ok_count"
+  printf '\n'
+
+  if (( excluded_count > 0 ))
+  then
+    printf 'Note: failed to evaluate kernel for %s host(s).\n' "$excluded_count"
+    printf '\n'
+  fi
+
+  local tmp_list
+  tmp_list="$(mktemp)"
+
+  local hosts_file
+  for hosts_file in "$groups_dir"/*.hosts
+  do
+    if [[ ! -f "$hosts_file" ]]
+    then
+      continue
+    fi
+    local count
+    count="$(wc -l <"$hosts_file" | tr -d ' ')"
+    printf '%s\t%s\n' "$count" "$hosts_file" >>"$tmp_list"
+  done
+
+  while IFS=$'\t' read -r _count file
+  do
+    local sig
+    sig="$(basename "$file" .hosts)"
+
+    local rep_dir
+    rep_dir="$(cat "$groups_dir/${sig}.repdir")"
+
+    local hosts_csv
+    hosts_csv="$(join_hosts_csv "$file")"
+
+    printf '### Hosts: %s\n' "$hosts_csv"
+    printf '\n'
+    printf '%s\n' '```diff'
+    printf -- '- %s\n' "$(cat "${rep_dir}/kernel.base")"
+    printf -- '+ %s\n' "$(cat "${rep_dir}/kernel.head")"
+    printf '%s\n' '```'
+    printf '\n'
+  done < <(sort -rn "$tmp_list")
+
+  rm -f "$tmp_list"
+}
+
 print_group_extras() {
   local groups_dir="$1"
   local common_added="$2"
@@ -745,6 +877,16 @@ main() {
   groups_dir="${RUN_DIR}/groups"
   mkdir -p "$groups_dir"
 
+  local kernel_groups_dir
+  kernel_groups_dir="${RUN_DIR}/kernel.groups"
+  mkdir -p "$kernel_groups_dir"
+
+  local kernel_ok_hosts_file
+  kernel_ok_hosts_file="${RUN_DIR}/kernel.ok.hosts"
+  : >"$kernel_ok_hosts_file"
+
+  local kernel_excluded_count=0
+
   local ok_hosts_file
   ok_hosts_file="${RUN_DIR}/ok.hosts"
   : >"$ok_hosts_file"
@@ -766,6 +908,37 @@ main() {
     local host_dir
     host_dir="${RUN_DIR}/hosts/${host}"
     mkdir -p "$host_dir"
+
+    local kernel_base_ok=
+    local kernel_head_ok=
+
+    if write_kernel_info "$BASE_WORKTREE" "$host" "${host_dir}/kernel.base.json" "${host_dir}/kernel.base" "${host_dir}/kernel.base.err"
+    then
+      kernel_base_ok=1
+    fi
+
+    if write_kernel_info "." "$host" "${host_dir}/kernel.head.json" "${host_dir}/kernel.head" "${host_dir}/kernel.head.err"
+    then
+      kernel_head_ok=1
+    fi
+
+    if [[ -n "${kernel_base_ok:-}" && -n "${kernel_head_ok:-}" ]]
+    then
+      printf '%s\n' "$host" >>"$kernel_ok_hosts_file"
+
+      if ! cmp -s "${host_dir}/kernel.base.json" "${host_dir}/kernel.head.json"
+      then
+        local kernel_sig
+        kernel_sig="$(sha256sum "${host_dir}/kernel.base.json" "${host_dir}/kernel.head.json" | sha256sum | awk '{print $1}')"
+        printf '%s\n' "$host" >>"${kernel_groups_dir}/${kernel_sig}.hosts"
+        if [[ ! -f "${kernel_groups_dir}/${kernel_sig}.repdir" ]]
+        then
+          printf '%s\n' "$host_dir" >"${kernel_groups_dir}/${kernel_sig}.repdir"
+        fi
+      fi
+    else
+      kernel_excluded_count=$((kernel_excluded_count + 1))
+    fi
 
     if ! write_host_packages_norm "$BASE_WORKTREE" "$host" "${host_dir}/base.pkgs" "${host_dir}/base.err"
     then
@@ -817,6 +990,7 @@ main() {
     exit 0
   fi
 
+  print_kernel_updates "$kernel_groups_dir" "$kernel_ok_hosts_file" "$kernel_excluded_count"
   print_common_summary "$ok_hosts_file" "$excluded_count" "$common_added" "$common_removed" "$common_upgrades"
   print_group_extras "$groups_dir" "$common_added" "$common_removed" "$common_upgrades"
 
@@ -830,6 +1004,28 @@ main() {
     printf '\n'
     local host_dir
     host_dir="${RUN_DIR}/hosts/${host}"
+
+    if [[ -s "${host_dir}/kernel.base" && -s "${host_dir}/kernel.head" ]]
+    then
+      if cmp -s "${host_dir}/kernel.base" "${host_dir}/kernel.head"
+      then
+        printf 'Kernel: %s (unchanged)\n' "$(cat "${host_dir}/kernel.head")"
+      else
+        printf 'Kernel: %s -> %s\n' "$(cat "${host_dir}/kernel.base")" "$(cat "${host_dir}/kernel.head")"
+      fi
+      printf '\n'
+    else
+      if [[ -s "${host_dir}/kernel.base.err" ]]
+      then
+        print_eval_error 'Failed to eval base kernel' "${host_dir}/kernel.base.err" 30
+        printf '\n'
+      fi
+      if [[ -s "${host_dir}/kernel.head.err" ]]
+      then
+        print_eval_error 'Failed to eval head kernel' "${host_dir}/kernel.head.err" 30
+        printf '\n'
+      fi
+    fi
 
     if [[ ! -d "$host_dir" || ! -f "${host_dir}/status" ]]
     then
@@ -875,3 +1071,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   main "$@"
 fi
+
+# vim: set shiftwidth=2 softtabstop=2 expandtab :
