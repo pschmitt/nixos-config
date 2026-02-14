@@ -77,6 +77,14 @@
             # Server should not be authoritative; it’s the backup/receiver by default.
             type = if cfg.server then "receiveonly" else "sendreceive";
             ignorePerms = false;
+
+            # ignore files created by nextcloud desktop client
+            ignorePatterns = [
+              ".sync_*.db"
+              ".sync"
+              ".sync-conflict-*"
+              ".nextcloudsync.log"
+            ];
           };
 
           gui = {
