@@ -81,6 +81,7 @@
             # ignore files created by nextcloud desktop client
             ignorePatterns = [
               ".sync_*.db"
+              ".sync_*.db-wal"
               ".sync"
               ".sync-conflict-*"
               ".nextcloudsync.log"
