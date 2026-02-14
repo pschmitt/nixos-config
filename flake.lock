@@ -2501,22 +2501,6 @@
         "type": "github"
       }
     },
-    "nixpkgs-jackett": {
-      "locked": {
-        "lastModified": 1767936801,
-        "narHash": "sha256-V5wuDow25wHXI2rCLgpeCJhnt8XAFjoRXaIDnjVElAg=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "b2ae519feaea4b56211746d5a1bbed07ef9f1293",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/478300/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
     "nixpkgs-lib": {
       "locked": {
         "lastModified": 1761765539,
@@ -2605,22 +2589,6 @@
       "original": {
         "owner": "NixOS",
         "ref": "pull/477422/head",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-openbao": {
-      "locked": {
-        "lastModified": 1767862703,
-        "narHash": "sha256-8OC+8S9KbG5ql3VAr+A92sAvlnilPN31Kxe+UHfD8a0=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "3b50b8538b07d3d046813347a10159f8d7124d1a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/478004/head",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -2999,10 +2967,8 @@
         "nixos-needsreboot": "nixos-needsreboot",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_6",
-        "nixpkgs-jackett": "nixpkgs-jackett",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-n8n": "nixpkgs-n8n",
-        "nixpkgs-openbao": "nixpkgs-openbao",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",
         "nixpkgs-unstable": "nixpkgs-unstable",
