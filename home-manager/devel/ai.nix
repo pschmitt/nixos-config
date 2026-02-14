@@ -21,7 +21,7 @@ in
 
     codex = {
       enable = true;
-      package = inputs.codex-cli-nix.packages.${pkgs.system}.default;
+      package = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
       custom-instructions = builtins.readFile ./CODESTYLE.md;
     };
 
