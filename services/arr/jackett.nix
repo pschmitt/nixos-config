@@ -7,9 +7,7 @@ let
 in
 {
   services = {
-    jackett = {
-      enable = true;
-    };
+    jackett.enable = true;
 
     nginx.virtualHosts."${publicHost}" = {
       enableACME = true;
