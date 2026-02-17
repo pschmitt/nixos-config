@@ -3,7 +3,7 @@ let
   mealieHost = "nom.${config.domains.main}";
   mealiePort = 63254;
   # renovate: datasource=docker depName=ghcr.io/mealie-recipes/mealie
-  mealieVersion = "v3.10.2";
+  mealieVersion = "v3.11.0";
 in
 {
   sops.secrets."mealie/openai-api-key" = {
