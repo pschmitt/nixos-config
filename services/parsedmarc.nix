@@ -8,6 +8,7 @@ let
   secrets = [
     "geoip/licenseKey"
     "parsedmarc/imap/password"
+    "grafana/secretKey"
   ];
   grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
 in
@@ -42,6 +43,7 @@ in
           domain = grafanaHost;
           enable_gzip = true;
         };
+        security.secret_key = "$__file{${config.sops.secrets."grafana/secretKey".path}}";
       };
     };
 
