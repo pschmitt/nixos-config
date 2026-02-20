@@ -49,13 +49,18 @@
     };
   };
 
-  flakes = final: prev: {
-    firefox-addons = import inputs.firefox-addons {
-      inherit (final) fetchurl;
-      inherit (final) lib;
-      inherit (final) stdenv;
+  flakes =
+    final: prev:
+    let
+      libMozilla = import (inputs.firefox-addons + "/../../lib/mozilla.nix") { inherit (final) lib; };
+      buildMozillaXpiAddon = libMozilla.mkBuildMozillaXpiAddon { inherit (final) fetchurl stdenv; };
+    in
+    {
+      firefox-addons = import inputs.firefox-addons {
+        inherit buildMozillaXpiAddon;
+        inherit (final) fetchurl lib stdenv;
+      };
     };
-  };
 
   old-packages = final: prev: {
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
