@@ -20,6 +20,7 @@ in
     "grafana/secretKey" = {
       inherit (config.custom) sopsFile;
       owner = config.systemd.services.grafana.serviceConfig.User;
+      path = "${config.users.user.grafana.home}/secretKey";
     };
   };
 
