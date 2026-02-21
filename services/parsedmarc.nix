@@ -11,13 +11,9 @@ in
   sops.secrets = {
     "geoip/licenseKey" = {
       inherit (config.custom) sopsFile;
-      owner = "geoip";
-      group = "geoip";
     };
     "parsedmarc/imap/password" = {
       inherit (config.custom) sopsFile;
-      owner = "parsedmarc";
-      group = "parsedmarc";
     };
     "grafana/secretKey" = {
       inherit (config.custom) sopsFile;
