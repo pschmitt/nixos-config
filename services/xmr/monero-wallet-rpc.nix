@@ -122,15 +122,13 @@ in
         # '';
         serviceConfig = {
           ExecStartPre = ensureWalletOwnership;
-          ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile} --confirm-external-bind --detach --pidfile /run/monero-wallet-rpc.pid";
+          ExecStart = "${pkgs.monero-cli}/bin/monero-wallet-rpc --config-file ${walletRpcConfigFile} --confirm-external-bind";
           PermissionsStartOnly = true;
           Restart = "always";
           RestartSec = "10s";
           User = svcUser;
           Group = svcGroup;
           WorkingDirectory = walletHostDir;
-          Type = "forking";
-          PIDFile = "/run/monero-wallet-rpc.pid";
         };
       };
 
