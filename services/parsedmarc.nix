@@ -17,8 +17,7 @@ in
     };
     "grafana/secretKey" = {
       inherit (config.custom) sopsFile;
-      owner = "grafana";
-      group = "grafana";
+      owner = config.systemd.services.grafana.serviceConfig.User;
     };
   };
 
