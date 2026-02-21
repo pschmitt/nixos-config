@@ -11,15 +11,15 @@ in
   sops.secrets = {
     "geoip/licenseKey" = {
       inherit (config.custom) sopsFile;
-      owner = config.services.geoipupdate.user;
+      owner = config.systemd.services.geoipupdate.serviceConfig.User;
     };
     "parsedmarc/imap/password" = {
       inherit (config.custom) sopsFile;
-      owner = config.services.parsedmarc.user;
+      owner = config.systemd.services.parsedmarc.serviceConfig.User;
     };
     "grafana/secretKey" = {
       inherit (config.custom) sopsFile;
-      owner = config.services.grafana.user;
+      owner = config.systemd.services.grafana.serviceConfig.User;
     };
   };
 
