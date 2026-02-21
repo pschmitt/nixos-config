@@ -5,22 +5,23 @@
   ...
 }:
 let
-  secrets = [
-    "geoip/licenseKey"
-    "parsedmarc/imap/password"
-    "grafana/secretKey"
-  ];
   grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
 in
 {
-  sops.secrets = builtins.listToAttrs (
-    map (secret: {
-      name = secret;
-      value = {
-        inherit (config.custom) sopsFile;
-      };
-    }) secrets
-  );
+  sops.secrets = {
+    "geoip/licenseKey" = {
+      inherit (config.custom) sopsFile;
+      owner = config.services.geoipupdate.user;
+    };
+    "parsedmarc/imap/password" = {
+      inherit (config.custom) sopsFile;
+      owner = config.services.parsedmarc.user;
+    };
+    "grafana/secretKey" = {
+      inherit (config.custom) sopsFile;
+      owner = config.services.grafana.user;
+    };
+  };
 
   services = {
     geoipupdate = {
