@@ -1,7 +1,7 @@
 {
   lib,
   rustPlatform,
-  fetchFromSourcehut,
+  fetchgit,
   stdenv,
   darwin,
   nix-update-script,
@@ -12,11 +12,11 @@ rustPlatform.buildRustPackage rec {
   version = "unstable-${lib.strings.substring 0 10 rev}";
   rev = "6a11363464c5d59ff52b42a389fa233f6f8a3e3f";
 
-  src = fetchFromSourcehut {
-    owner = "~whynothugo";
-    repo = "davcli";
+  src = fetchgit {
+    url = "https://git.sr.ht/~whynothugo/davcli";
     inherit rev;
-    hash = "sha256-TkgD0WdQlGONP5pU2NYy8KzVSmT71A4pDDabrmJbub0=";
+    fetchSubmodules = true;
+    hash = "sha256-LwuKfEDlpTbwo3rw+3kzGvlmnKeXbPKEQ82v+d86VVE=";
   };
 
   cargoHash = "sha256-wosrU2/FmwoPFiBFm96RRadGj4U6rmvokm3JrnV7v5M=";
