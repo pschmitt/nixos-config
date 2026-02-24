@@ -30,7 +30,7 @@ let
   networkName = "endurain";
 
   # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
-  endurainVersion = "v0.17.4";
+  endurainVersion = "v0.17.5";
 
   runtimePkg =
     if containerBackend == "docker" then
