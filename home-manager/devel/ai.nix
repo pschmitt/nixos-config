@@ -1,15 +1,8 @@
 {
   pkgs,
-  config,
   inputs,
   ...
 }:
-let
-  tomlFormat = pkgs.formats.toml { };
-  vibeUpstreamCliPrompt = builtins.readFile "${pkgs.master.mistral-vibe.src}/vibe/core/prompts/cli.md";
-  vibeCustomPromptId = "cli_codestyle";
-  vibeCustomPrompt = vibeUpstreamCliPrompt + "\n\n" + builtins.readFile ./CODESTYLE.md;
-in
 {
 
   programs = {
@@ -71,18 +64,26 @@ in
     };
   };
 
+  # FIXME vibe-cli is broken as of 2026-02-25
   # Create ~/.config/vibe directory and .env file
-  xdg.configFile = {
-    "vibe/.env".source =
-      config.lib.file.mkOutOfStoreSymlink
-        config.sops.secrets."mistral-vibe/env".path;
-
-    "vibe/config.toml".source = tomlFormat.generate "config.toml" {
-      system_prompt_id = vibeCustomPromptId;
-    };
-
-    "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
-  };
+  # xdg.configFile =
+  #   let
+  #     tomlFormat = pkgs.formats.toml { };
+  #     vibeUpstreamCliPrompt = builtins.readFile "${pkgs.master.mistral-vibe.src}/vibe/core/prompts/cli.md";
+  #     vibeCustomPromptId = "cli_codestyle";
+  #     vibeCustomPrompt = vibeUpstreamCliPrompt + "\n\n" + builtins.readFile ./CODESTYLE.md;
+  #   in
+  #   {
+  #     "vibe/.env".source =
+  #       config.lib.file.mkOutOfStoreSymlink
+  #         config.sops.secrets."mistral-vibe/env".path;
+  #
+  #     "vibe/config.toml".source = tomlFormat.generate "config.toml" {
+  #       system_prompt_id = vibeCustomPromptId;
+  #     };
+  #
+  #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
+  #   };
 
   home.packages = with pkgs.master; [
     # vscode forks
@@ -93,10 +94,12 @@ in
     cursor-cli
     github-copilot-cli
     # kilocode-cli
-    (pkgs.writeShellScriptBin "vibe" ''
-      export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
 
-      exec ${mistral-vibe}/bin/vibe "$@"
-    '')
+    # FIXME vibe-cli is broken as of 2026-02-25
+    # (pkgs.writeShellScriptBin "vibe" ''
+    #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
+    #
+    #   exec ${mistral-vibe}/bin/vibe "$@"
+    # '')
   ];
 }
