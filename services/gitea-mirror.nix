@@ -26,7 +26,7 @@ let
   mirrorHealthCheckScript = pkgs.writeShellScript "gitea-mirror-health-check" ''
     if ! health="$(${pkgs.curl}/bin/curl --silent --show-error --fail --max-time 10 "http://127.0.0.1:${toString listenPort}/api/health")"
     then
-      printf '%s\n' 'fetch_failed path=/api/health' >&2
+      printf '%s\n' '❌ fetch_failed path=/api/health' >&2
       exit 1
     fi
 
@@ -45,9 +45,18 @@ let
         "timestamp=\(.timestamp // "null")",
         "version=\(.version // "null")"
       ' <<<"$health" 2>/dev/null || printf '%s' 'invalid_health_payload')"
-      printf 'health_assertion_failed\n%s\n' "$details" >&2
+      printf '❌ health_assertion_failed\n%s\n' "$details" >&2
       exit 1
     fi
+
+    summary="$(${pkgs.jq}/bin/jq -r '
+      "status=\(.status // "null")",
+      "dbConnected=\(.database.connected // "null")",
+      "recoveryStatus=\(.recovery.status // "null")",
+      "recoveryInProgress=\(.recovery.inProgress // "null")",
+      "version=\(.version // "null")"
+    ' <<<"$health")"
+    printf '✅ gitea-mirror health ok\n%s\n' "$summary"
   '';
 in
 {
