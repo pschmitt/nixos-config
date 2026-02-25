@@ -92,6 +92,10 @@ in
     '';
   };
 
+  # HOTFIX: Use nixpkgs package instead of the flake's overridden one,
+  # which has a PREFIX env/derivation argument conflict.
+  programs.update-systemd-resolved.package = pkgs.update-systemd-resolved;
+
   programs.update-systemd-resolved.servers = {
     wiit = {
       includeAutomatically = true;
