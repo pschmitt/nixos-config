@@ -32,6 +32,10 @@ in
           (mkHostWithNode "archivebox")
         ];
       };
+      bichon = {
+        port = 15630;
+        hosts = [ (mkHost "bichon") ];
+      };
       changedetection = {
         port = 24264;
         hosts = [ (mkHost "changes") ];
