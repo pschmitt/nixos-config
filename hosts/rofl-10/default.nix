@@ -15,6 +15,7 @@
     ../../services/backups/bitwarden.nix
     ../../services/backups/evernote
     ../../services/bentopdf.nix
+    ../../services/bichon.nix
     ../../services/calibre.nix
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
