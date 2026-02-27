@@ -8,14 +8,29 @@ let
   netboxHost = "netbox.${config.domains.main}";
 in
 {
-  sops.secrets."netbox/secretKey" = {
-    inherit (config.custom) sopsFile;
-    owner = "netbox";
-    group = "netbox";
-    mode = "0400";
-    restartUnits = [ "netbox.service" ];
+  sops.secrets = {
+    "netbox/secretKey" = {
+      inherit (config.custom) sopsFile;
+      owner = "netbox";
+      group = "netbox";
+      mode = "0400";
+      restartUnits = [ "netbox.service" ];
+    };
+    # TODO once netbox 4.5 is available
+    # https://netboxlabs.com/docs/netbox/configuration/required-parameters/#api_token_peppers
+    # "netbox/apiTokenPeppers" = {
+    #   inherit (config.custom) sopsFile;
+    #   owner = "netbox";
+    #   group = "netbox";
+    #   mode = "0400";
+    #   restartUnits = [ "netbox.service" ];
+    # };
   };
 
+  # TODO once netbox 4.5 is available on nixos-unstable
+  # we should remove the netbox-attachments custom pkg
+  # and add apiTokenPeppersFile
+  # https://github.com/NixOS/nixpkgs/pull/485109
   services = {
     netbox = {
       enable = true;
@@ -23,6 +38,7 @@ in
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
+      # apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
         (ps.netbox-attachments.overridePythonAttrs (_: {
           version = "10.0.1";
