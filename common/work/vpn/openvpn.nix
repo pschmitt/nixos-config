@@ -42,6 +42,21 @@ let
 
   # WIIT
   wiitUsername = "philipp.schmitt";
+
+  updateSystemdResolvedPackageCompat = pkgs.symlinkJoin {
+    name = "update-systemd-resolved-with-openvpn-conf";
+    paths = [ pkgs.update-systemd-resolved ];
+    postBuild = ''
+      mkdir -p "$out/share/doc/openvpn"
+      cat > "$out/share/doc/openvpn/update-systemd-resolved.conf" <<EOF
+      script-security 2
+      up $out/libexec/openvpn/update-systemd-resolved
+      up-restart
+      down $out/libexec/openvpn/update-systemd-resolved
+      down-pre
+      EOF
+    '';
+  };
 in
 {
   imports = [ inputs.update-systemd-resolved.nixosModules.update-systemd-resolved ];
@@ -92,9 +107,8 @@ in
     '';
   };
 
-  # HOTFIX: Use nixpkgs package instead of the flake's overridden one,
-  # which has a PREFIX env/derivation argument conflict.
-  programs.update-systemd-resolved.package = pkgs.update-systemd-resolved;
+  # nixpkgs' package lacks share/doc/openvpn/update-systemd-resolved.conf.
+  programs.update-systemd-resolved.package = updateSystemdResolvedPackageCompat;
 
   programs.update-systemd-resolved.servers = {
     wiit = {
