@@ -11,6 +11,7 @@
     # prs
     nixpkgs-streamcontroller.url = "github:NixOS/nixpkgs/pull/416567/head";
     nixpkgs-n8n.url = "github:NixOS/nixpkgs/pull/477422/head";
+    nixpkgs-netbox.url = "github:NixOS/nixpkgs/pull/485109/head";
 
     # attic = {
     #   url = "github:zhaofengli/attic";
