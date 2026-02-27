@@ -23,7 +23,17 @@ in
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
-      plugins = _: [ pkgs.netbox-pr.python313Packages.netbox-attachments ];
+      plugins = ps: [
+        (ps.netbox-attachments.overridePythonAttrs (_: {
+          version = "10.0.1";
+          src = pkgs.fetchFromGitHub {
+            owner = "Kani999";
+            repo = "netbox-attachments";
+            tag = "v10.0.1";
+            hash = "sha256-ZsK6RKYkfzn6YSS9ern9QxLsRdcwzt8BmMdYGJTMOKM=";
+          };
+        }))
+      ];
       settings = {
         ALLOWED_HOSTS = [
           netboxHost
