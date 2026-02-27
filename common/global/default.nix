@@ -17,6 +17,7 @@
     ./dotfiles.nix
     ./locales.nix
     ./nix.nix
+    ./ntp.nix
     ./sops.nix
     ./ssh.nix
     ./users.nix
