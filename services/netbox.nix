@@ -19,13 +19,18 @@ in
   services = {
     netbox = {
       enable = true;
+      package = pkgs.netbox-pr.netbox_4_5;
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
-      settings.ALLOWED_HOSTS = [
-        netboxHost
-        "127.0.0.1"
-      ];
+      plugins = _: [ pkgs.netbox-pr.python313Packages.netbox-attachments ];
+      settings = {
+        ALLOWED_HOSTS = [
+          netboxHost
+          "127.0.0.1"
+        ];
+        PLUGINS = [ "netbox_attachments" ];
+      };
     };
 
     nginx.virtualHosts."${netboxHost}" = {
