@@ -22,14 +22,10 @@ in
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
-      plugins = python3Packages: with python3Packages; [ netbox-attachments ];
-      settings = {
-        ALLOWED_HOSTS = [
-          netboxHost
-          "127.0.0.1"
-        ];
-        PLUGINS = [ "netbox_attachments" ];
-      };
+      settings.ALLOWED_HOSTS = [
+        netboxHost
+        "127.0.0.1"
+      ];
     };
 
     nginx.virtualHosts."${netboxHost}" = {
