@@ -2593,6 +2593,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-netbox": {
+      "locked": {
+        "lastModified": 1771353697,
+        "narHash": "sha256-lQQIEZag50k/BUcGIHEdB1a/5BUIwdFTApH4Oz19BI8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "db8ba626f6e137800ff685a63af488138747fe57",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "pull/485109/head",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1771903837,
@@ -2969,6 +2985,7 @@
         "nixpkgs": "nixpkgs_6",
         "nixpkgs-master": "nixpkgs-master",
         "nixpkgs-n8n": "nixpkgs-n8n",
+        "nixpkgs-netbox": "nixpkgs-netbox",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-streamcontroller": "nixpkgs-streamcontroller",
         "nixpkgs-unstable": "nixpkgs-unstable",
