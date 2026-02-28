@@ -49,7 +49,15 @@ in
             hash = "sha256-ZsK6RKYkfzn6YSS9ern9QxLsRdcwzt8BmMdYGJTMOKM=";
           };
         }))
-        ps.netbox-topology-views
+        (ps.netbox-topology-views.overridePythonAttrs (_: {
+          version = "4.5.0";
+          src = pkgs.fetchFromGitHub {
+            owner = "netbox-community";
+            repo = "netbox-topology-views";
+            tag = "v4.5.0";
+            hash = "sha256-1KEkNfo++lX0uF0xS9JOyG7dQBQYYo2cSGkjicJ5+vE=";
+          };
+        }))
       ];
       settings = {
         ALLOWED_HOSTS = [
