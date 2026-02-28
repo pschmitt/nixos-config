@@ -49,13 +49,17 @@ in
             hash = "sha256-ZsK6RKYkfzn6YSS9ern9QxLsRdcwzt8BmMdYGJTMOKM=";
           };
         }))
+        ps.netbox-topology-views
       ];
       settings = {
         ALLOWED_HOSTS = [
           netboxHost
           "127.0.0.1"
         ];
-        PLUGINS = [ "netbox_attachments" ];
+        PLUGINS = [
+          "netbox_attachments"
+          "netbox_topology_views"
+        ];
       };
     };
 
