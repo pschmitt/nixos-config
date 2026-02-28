@@ -7,6 +7,11 @@ let
   # The unwrapped nightly binary from your flake input.
   nvimNightly = inputs.neovim-nightly.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
 
+  # DIRTYFIX load our regular init.lua (yadm-managed)
+  sharedInitLua = ''
+    dofile(vim.fn.stdpath("config") .. "/init.lua##class.notnixos")
+  '';
+
   # Define common configuration to avoid duplication.
   commonConfig = {
     withRuby = false;
@@ -80,9 +85,7 @@ let
   # Prepare the configuration for the wrapper.
   neovimConfig = pkgs.neovimUtils.makeNeovimConfig {
     inherit (commonConfig) withPython3 withRuby extraLuaPackages;
-    customLuaRC = ''
-      dofile(vim.fn.stdpath("config") .. "/init.lua##class.notnixos")
-    '';
+    customLuaRC = sharedInitLua;
   };
 
   # Wrap the nightly binary with the same environment as stable.
@@ -103,11 +106,8 @@ in
     enable = true;
     viAlias = false;
     vimAlias = true;
-
     # DIRTYFIX load our regular init.lua (yadm-managed)
-    initLua = ''
-      dofile(vim.fn.stdpath("config") .. "/init.lua##class.notnixos")
-    '';
+    initLua = sharedInitLua;
   };
 
   # Provide the nvim-nightly command.
