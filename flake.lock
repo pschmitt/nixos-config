@@ -2375,6 +2375,31 @@
         "type": "github"
       }
     },
+    "nbx_2": {
+      "inputs": {
+        "flake-utils": [
+          "printlabel",
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "printlabel",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772380905,
+        "narHash": "sha256-pk6QzNI6J/3bUU6Jl/A2DwG9hwvMR4RZ1CqHPtq7cJY=",
+        "owner": "pschmitt",
+        "repo": "nbx",
+        "rev": "3d7f3216cf7d4f9585b1a5e680ffbb487b758a22",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "nbx",
+        "type": "github"
+      }
+    },
     "neovim-nightly": {
       "inputs": {
         "flake-parts": "flake-parts_3",
@@ -2982,16 +3007,17 @@
     "printlabel": {
       "inputs": {
         "flake-utils": "flake-utils_18",
+        "nbx": "nbx_2",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1772383186,
-        "narHash": "sha256-BmPWAQhdQIMemURFnrX6zdNQcOGv9leIuuXz04X5Ubk=",
+        "lastModified": 1772386629,
+        "narHash": "sha256-TzN6ZGAbh1exI2mEqC9NQcLVWup5gpxHvJkRLAH10V0=",
         "owner": "pschmitt",
         "repo": "printlabel",
-        "rev": "f3f97d51ef8a4f9d9ac3490062d56dbe0193220d",
+        "rev": "f2e2cbe998349ca8df557d32a24a2411691d36d0",
         "type": "github"
       },
       "original": {
