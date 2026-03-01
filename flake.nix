@@ -257,6 +257,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nbx = {
+      url = "path:/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     mq = {
       url = "github:harehare/mq";
       inputs.nixpkgs.follows = "nixpkgs";
