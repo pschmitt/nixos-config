@@ -2362,14 +2362,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1772380912,
-        "narHash": "sha256-6iFyi8NRLZuBR3zv5wR5GJ8n3Ty8lzuUFLzasUw9bxo=",
-        "path": "/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx",
-        "type": "path"
+        "lastModified": 1772380905,
+        "narHash": "sha256-pk6QzNI6J/3bUU6Jl/A2DwG9hwvMR4RZ1CqHPtq7cJY=",
+        "owner": "pschmitt",
+        "repo": "nbx",
+        "rev": "3d7f3216cf7d4f9585b1a5e680ffbb487b758a22",
+        "type": "github"
       },
       "original": {
-        "path": "/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx",
-        "type": "path"
+        "owner": "pschmitt",
+        "repo": "nbx",
+        "type": "github"
       }
     },
     "neovim-nightly": {

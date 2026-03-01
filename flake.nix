@@ -258,7 +258,7 @@
     };
 
     nbx = {
-      url = "path:/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx";
+      url = "github:pschmitt/nbx";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
