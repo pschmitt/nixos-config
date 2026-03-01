@@ -57,6 +57,15 @@ in
             hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
           };
         }))
+        (ps.netbox-qrcode.overridePythonAttrs (_: {
+          version = "0.0.20";
+          src = pkgs.fetchFromGitHub {
+            owner = "netbox-community";
+            repo = "netbox-qrcode";
+            tag = "v0.0.20";
+            hash = "sha256-7dPMpuJ2nuj9rRmVrfthD+xrEHoUaLFqDJWC6cGGCwY=";
+          };
+        }))
       ];
       settings = {
         ALLOWED_HOSTS = [
@@ -65,9 +74,28 @@ in
         ];
         PLUGINS = [
           "netbox_documents"
+          "netbox_qrcode"
           "netbox_topology_views"
         ];
       };
+      extraConfig = ''
+        PLUGINS_CONFIG = {
+            'netbox_qrcode': {
+                'device': {
+                    'label_height': '12mm',
+                    'label_qr_width': '10mm',
+                    'label_qr_height': '10mm',
+                    'label_qr_text_distance': '0.5mm',
+                    'label_edge_top': '0.5mm',
+                    'label_edge_bottom': '0.5mm',
+                    'label_edge_left': '1mm',
+                    'label_edge_right': '0.5mm',
+                    'font_size': '2mm',
+                    'text_fields': ['name', 'asset_tag', 'serial'],
+                },
+            },
+        }
+      '';
     };
 
     nginx.virtualHosts."${netboxHost}" = {
