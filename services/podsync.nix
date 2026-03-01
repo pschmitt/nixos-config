@@ -123,7 +123,7 @@ in
   services.monit.config = lib.mkAfter ''
     check host "podsync" with address "127.0.0.1"
       group container-services
-      restart program = "${config.virtualisation.oci-containers.backend}-podsync.service"
+      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-podsync.service"
       if failed
         port ${toString listenPort}
         protocol http request "/health" status 200
