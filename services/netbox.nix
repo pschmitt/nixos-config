@@ -28,8 +28,7 @@ in
   };
 
   # TODO once netbox 4.5 is available on nixos-unstable
-  # we should remove the netbox-attachments custom pkg
-  # and add apiTokenPeppersFile
+  # we should add apiTokenPeppersFile
   # https://github.com/NixOS/nixpkgs/pull/485109
   services = {
     netbox = {
@@ -40,15 +39,6 @@ in
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       # apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
-        (ps.netbox-attachments.overridePythonAttrs (_: {
-          version = "10.0.1";
-          src = pkgs.fetchFromGitHub {
-            owner = "Kani999";
-            repo = "netbox-attachments";
-            tag = "v10.0.1";
-            hash = "sha256-ZsK6RKYkfzn6YSS9ern9QxLsRdcwzt8BmMdYGJTMOKM=";
-          };
-        }))
         (ps.netbox-topology-views.overridePythonAttrs (_: {
           version = "4.5.0";
           src = pkgs.fetchFromGitHub {
@@ -58,6 +48,15 @@ in
             hash = "sha256-1KEkNfo++lX0uF0xS9JOyG7dQBQYYo2cSGkjicJ5+vE=";
           };
         }))
+        (ps.netbox-documents.overridePythonAttrs (_: {
+          version = "0.8.2";
+          src = pkgs.fetchFromGitHub {
+            owner = "jasonyates";
+            repo = "netbox-documents";
+            tag = "v0.8.2";
+            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
+          };
+        }))
       ];
       settings = {
         ALLOWED_HOSTS = [
@@ -65,7 +64,7 @@ in
           "127.0.0.1"
         ];
         PLUGINS = [
-          "netbox_attachments"
+          "netbox_documents"
           "netbox_topology_views"
         ];
       };
