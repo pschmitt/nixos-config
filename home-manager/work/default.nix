@@ -5,6 +5,7 @@
 }:
 {
   imports = [
+    ./netbox.nix
     ./browser.nix
     ./devel.nix
     ./gui.nix

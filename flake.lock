@@ -818,6 +818,24 @@
         "type": "github"
       }
     },
+    "flake-utils_27": {
+      "inputs": {
+        "systems": "systems_32"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "flake-utils_3": {
       "inputs": {
         "systems": "systems_3"
@@ -2152,7 +2170,7 @@
     },
     "lib-aggregate": {
       "inputs": {
-        "flake-utils": "flake-utils_15",
+        "flake-utils": "flake-utils_16",
         "nixpkgs-lib": "nixpkgs-lib_2"
       },
       "locked": {
@@ -2316,7 +2334,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-        "flake-utils": "flake-utils_20",
+        "flake-utils": "flake-utils_21",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2334,6 +2352,24 @@
         "owner": "pschmitt",
         "repo": "myl-discovery",
         "type": "github"
+      }
+    },
+    "nbx": {
+      "inputs": {
+        "flake-utils": "flake-utils_14",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1772380912,
+        "narHash": "sha256-6iFyi8NRLZuBR3zv5wR5GJ8n3Ty8lzuUFLzasUw9bxo=",
+        "path": "/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx",
+        "type": "path"
+      },
+      "original": {
+        "path": "/home/pschmitt/.local/share/zinit/plugins/pschmitt---nbx",
+        "type": "path"
       }
     },
     "neovim-nightly": {
@@ -2396,7 +2432,7 @@
     },
     "nix-openclaw": {
       "inputs": {
-        "flake-utils": "flake-utils_14",
+        "flake-utils": "flake-utils_15",
         "home-manager": [
           "home-manager"
         ],
@@ -2811,7 +2847,7 @@
     },
     "obs-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_16",
+        "flake-utils": "flake-utils_17",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2942,7 +2978,7 @@
     },
     "printlabel": {
       "inputs": {
-        "flake-utils": "flake-utils_17",
+        "flake-utils": "flake-utils_18",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3016,6 +3052,7 @@
         "mq": "mq",
         "myl": "myl",
         "myl-discovery": "myl-discovery_2",
+        "nbx": "nbx",
         "neovim-nightly": "neovim-nightly",
         "nix-index-database": "nix-index-database",
         "nix-openclaw": "nix-openclaw",
@@ -3052,7 +3089,7 @@
     },
     "ruamel-fmt": {
       "inputs": {
-        "flake-utils": "flake-utils_18",
+        "flake-utils": "flake-utils_19",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3153,7 +3190,7 @@
     },
     "sendmyl": {
       "inputs": {
-        "flake-utils": "flake-utils_19",
+        "flake-utils": "flake-utils_20",
         "myl-discovery": "myl-discovery_3",
         "nixpkgs": [
           "nixpkgs"
@@ -3175,7 +3212,7 @@
     },
     "slack-react": {
       "inputs": {
-        "flake-utils": "flake-utils_21",
+        "flake-utils": "flake-utils_22",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3236,7 +3273,7 @@
     },
     "stricknani": {
       "inputs": {
-        "flake-utils": "flake-utils_22",
+        "flake-utils": "flake-utils_23",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -3633,6 +3670,21 @@
     },
     "systems_32": {
       "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_33": {
+      "locked": {
         "lastModified": 1689347949,
         "narHash": "sha256-12tWmuL2zgBgZkdoB6qXZsgJEH9LR3oUgpaQq2RbI80=",
         "owner": "nix-systems",
@@ -3738,7 +3790,7 @@
     },
     "tdc": {
       "inputs": {
-        "flake-utils": "flake-utils_23",
+        "flake-utils": "flake-utils_24",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3759,7 +3811,7 @@
     },
     "tmux-slay": {
       "inputs": {
-        "flake-utils": "flake-utils_24",
+        "flake-utils": "flake-utils_25",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3824,7 +3876,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-        "flake-utils": "flake-utils_25",
+        "flake-utils": "flake-utils_26",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3860,7 +3912,7 @@
     },
     "wezterm": {
       "inputs": {
-        "flake-utils": "flake-utils_26",
+        "flake-utils": "flake-utils_27",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
@@ -3934,7 +3986,7 @@
         "nixpkgs": [
           "hyprland"
         ],
-        "systems": "systems_32"
+        "systems": "systems_33"
       },
       "locked": {
         "lastModified": 1767905474,
