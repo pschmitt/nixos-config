@@ -241,6 +241,11 @@
       inputs.home-manager.follows = "home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    printlabel = {
+      url = "github:pschmitt/printlabel";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     # the myl family
     myl = {
       url = "github:pschmitt/myl";

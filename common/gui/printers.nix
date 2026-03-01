@@ -1,13 +1,15 @@
 {
   inputs,
-  outputs,
-  lib,
-  config,
   pkgs,
   ...
 }:
 
 {
+  # Brother PT3000BT label printer
+  environment.systemPackages = [
+    inputs.printlabel.packages.${pkgs.stdenv.hostPlatform.system}.default
+  ];
+
   services.printing = {
     enable = true;
     drivers = with pkgs; [ cups-brother-hll2340dw ];
