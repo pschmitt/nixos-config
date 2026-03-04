@@ -50,7 +50,7 @@
 
     wireless = {
       enable = true;
-      userControlled.enable = true;
+      userControlled = true;
     };
   };
 
