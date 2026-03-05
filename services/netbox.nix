@@ -48,7 +48,7 @@ in
             hash = "sha256-1KEkNfo++lX0uF0xS9JOyG7dQBQYYo2cSGkjicJ5+vE=";
           };
         }))
-        (ps.netbox-documents.overridePythonAttrs (_: {
+        (ps.netbox-documents.overridePythonAttrs (old: {
           version = "0.8.2";
           src = pkgs.fetchFromGitHub {
             owner = "jasonyates";
@@ -56,6 +56,10 @@ in
             tag = "v0.8.2";
             hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
           };
+          postPatch = (old.postPatch or "") + ''
+            substituteInPlace netbox_documents/forms.py \
+              --replace-fail "all_choices = list(DocTypeChoices.choices)" "all_choices = [(c[0], c[1]) for c in DocTypeChoices.CHOICES]"
+          '';
         }))
         (ps.netbox-qrcode.overridePythonAttrs (_: {
           version = "0.0.20";
