@@ -161,7 +161,7 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
         id: netbird
@@ -526,7 +526,7 @@ jobs:
           done
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
         id: netbird
