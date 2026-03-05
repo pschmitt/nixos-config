@@ -17,6 +17,45 @@
     '';
   });
 
+  python313Packages = prev.python313Packages.overrideScope (
+    finalPy: prevPy:
+    let
+      msgraph-core-022 = finalPy.buildPythonPackage rec {
+        pname = "msgraph-core";
+        version = "0.2.2";
+        format = "setuptools";
+
+        src = prev.fetchPypi {
+          inherit pname version;
+          hash = "sha256-FHMkJGeIq+jtfgVTTNnk4OyYszsw4BFpO40BTOv5f2M=";
+        };
+
+        nativeBuildInputs = [ finalPy.setuptools ];
+        dependencies = [ finalPy.requests ];
+        pythonImportsCheck = [ "msgraph.core" ];
+      };
+    in
+    {
+      parsedmarc =
+        (prevPy.parsedmarc.override {
+          msgraph-core = msgraph-core-022;
+        }).overridePythonAttrs
+          (old: {
+            version = "9.1.1";
+            src = prev.fetchFromGitHub {
+              owner = "domainaware";
+              repo = "parsedmarc";
+              tag = "9.1.1";
+              hash = "sha256-T2TcO3KkNbM37O59aXtDPfrLAktKjSJfZTITcS2SYM0=";
+            };
+            dependencies = (old.dependencies or [ ]) ++ [ finalPy.pyyaml ];
+            postPatch = (old.postPatch or "") + ''
+              sed -i '/^requires_python = /d' pyproject.toml
+            '';
+          });
+    }
+  );
+
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
   # inherit (inputs.nixpkgs-xxx.legacyPackages.${final.stdenv.hostPlatform.system}) PKGNAME;
