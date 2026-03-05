@@ -33,6 +33,20 @@
   hardware.cattle = true;
   hardware.kvmGuest = false;
 
+  # NOTE The leds conflict with the bluetooth device tree overlay, so we need
+  # to disable them to keep bluetooth working.
+  # hardware.raspberry-pi."4".bluetooth.enable = true;
+  # hardware.bluetooth = {
+  #   enable = true;
+  # };
+  # Keep bluetooth enabled while disabling LED overrides that conflict on
+  # hardware.deviceTree.filter.
+  # hardware.raspberry-pi."4".leds = {
+  #   act.disable = lib.mkForce false;
+  #   eth.disable = lib.mkForce false;
+  #   pwr.disable = lib.mkForce false;
+  # };
+
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
 
