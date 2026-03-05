@@ -1,5 +1,5 @@
 {
-  # final,
+  final,
   # inputs,
   prev,
   ...
@@ -55,6 +55,9 @@
           });
     }
   );
+
+  # NixOS module uses pkgs.parsedmarc, not pkgs.python313Packages.parsedmarc.
+  inherit (final.python313Packages) parsedmarc;
 
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
