@@ -80,6 +80,18 @@ in
       };
       extraConfig = ''
         PLUGINS_CONFIG = {
+            'netbox_documents': {
+                'documents_location': 'right',
+                'allowed_doc_types': {
+                    '__all__': [
+                        'manual',
+                        'purchaseorder',
+                        'floorplan',
+                        'supportcontract',
+                        'other',
+                    ],
+                },
+            },
             'netbox_qrcode': {
                 'device': {
                     'label_height': '12mm',
