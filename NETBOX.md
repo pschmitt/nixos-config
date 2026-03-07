@@ -37,6 +37,12 @@ API access:
 zhj rbw::get --field "API Token" bichon.brkn.lol
 ```
 
+- API specification:
+
+```text
+https://bichon.brkn.lol/api-docs/spec.yaml
+```
+
 Use these custom fields:
 - `purchase_store`
 - `purchase_order_number`
@@ -212,6 +218,43 @@ Conventions used in this inventory:
   NetBox wireless links can be used.
 
 ## Notes
+
+When a user says "refer to my notes":
+- treat that as a reference to files under `~/Documents/notes`
+- prefer those files over older note archives unless the active notes link to them
+
+When placing small IoT devices in racks:
+- set rack height to `0U`, not `1U`
+- do not mark them as full-depth unless they physically are
+- exclude them from rack utilization so they do not distort capacity reporting
+
+When recording MAC addresses:
+- add the MAC address object to the correct interface instead of only writing it in comments
+- set that MAC as the interface's primary MAC
+- set the same MAC as the device's primary MAC when it is the main hardware address for the device
+
+When a device has an IP address:
+- always try to determine its DNS name
+- set the DNS name on the corresponding IP address object in NetBox when known
+- prefer the actual hostname/FQDN used on the network over leaving DNS details only in comments or notes
+
+Default wireless network assignments:
+- Wi-Fi IoT devices should default to wireless LAN `brkn-iot`
+- Wi-Fi media devices, laptops, smartphones, and other non-IoT clients should default to wireless LAN `brkn-lan` (the main Wi-Fi served by `brkn-ap`)
+- Bluetooth devices should default to wireless LAN `hass-bluetooth`
+- Zigbee devices should default to wireless LAN `zha`
+- Thread devices should default to wireless LAN `thread`
+
+Wireless links:
+- create a wireless link between the coordinator and the end device for Bluetooth, Zigbee, and Thread when the relationship is known
+- for Bluetooth, the default coordinator interface is `fnuc:bluetooth0`
+- for Zigbee, the default coordinator interface is `Home Assistant Connect ZBT-2:zigbee0`
+- for Thread at `ovm5`, the current coordinator / border router interface is `wolfgang-der-iii:thread0`
+- always set a description on wireless links
+- follow the existing description pattern: `<coordinator device> ↔ <end device>` for generic coordinator/end-device links
+- example: `wolfgang-der-iii ↔ ALPSTUGA CO2 Sensor`
+- when the network is proprietary or the link needs extra context, append a short qualifier in parentheses or use a concise technology-specific description matching existing links
+- keep descriptions short and concrete; they should identify both endpoints without requiring the interface details in the description text
 
 When changing existing purchase or asset-tag data:
 - prefer a dry-run first if many objects are affected
