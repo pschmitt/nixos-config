@@ -90,7 +90,8 @@ let
     if isGk4 then "preferred,auto,1.666,transform,3" else "preferred,auto,1";
   laptopMonitorOriginSettings =
     if isGk4 then "preferred,0x0,1.666,transform,3" else "preferred,0x0,1";
-  lenovoRightOfLaptopPosition = if isGk4 then "1600x0" else "1920x0";
+  laptopMonitorExternalPlacementSettings =
+    if isGk4 then "preferred,auto-right,1.666,transform,3" else "preferred,auto-right,1";
 
   callbackCommand = profile: "${callbackScriptEscaped} set ${escapeShellArg profile}";
 
@@ -153,7 +154,7 @@ let
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
         monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
-        monitor={{$lenovo.Name}},preferred,${lenovoRightOfLaptopPosition},1
+        monitor={{$lenovo.Name}},preferred,auto-right,1
       '';
     };
     "laptop-lg-wqhd" = {
@@ -165,7 +166,7 @@ let
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
         monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$laptop.Name}},${laptopMonitorAutoSettings}
+        monitor={{$laptop.Name}},${laptopMonitorExternalPlacementSettings}
       '';
     };
     "dual-display" = {
