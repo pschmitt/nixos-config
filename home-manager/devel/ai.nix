@@ -26,6 +26,12 @@
           preferredEditor = "nvim";
           previewFeatures = true;
           vimMode = false;
+
+          sessionRetention = {
+            enabled = true;
+            maxAge = "30d";
+            maxCount = 50;
+          };
         };
 
         security = {
