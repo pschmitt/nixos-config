@@ -159,7 +159,7 @@ Current prefixes:
 - `FLS` = FlexiSpot
 - `FUJ` = Fujitsu
 - `GEN` = Generic
-- `GGL` = Google
+- `GOG` = Google
 - `GPD` = GPD
 - `ICY` = ICY BOX
 - `IKE` = IKEA of Sweden
