@@ -223,7 +223,7 @@ When a user says "refer to my notes":
 - treat that as a reference to files under `~/Documents/notes`
 - prefer those files over older note archives unless the active notes link to them
 
-When placing small IoT devices in racks:
+When creating small-ish device types (such as IoT devices):
 - set rack height to `0U`, not `1U`
 - do not mark them as full-depth unless they physically are
 - exclude them from rack utilization so they do not distort capacity reporting
