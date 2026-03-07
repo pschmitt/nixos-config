@@ -22,12 +22,22 @@ Purchase metadata is stored in NetBox custom fields, not in the top-level device
 attributes.
 
 Use these custom fields:
-- `purchase_info`
+- `purchase_store`
+- `purchase_order_number`
 - `purchase_date`
 - `purchase_price`
 - `purchase_currency`
+- `purchase_notes`
 
-`purchase_info` should use this Markdown structure:
+Display order:
+- `purchase_store`
+- `purchase_order_number`
+- `purchase_date`
+- `purchase_price`
+- `purchase_currency`
+- `purchase_notes`
+
+`purchase_notes` should use this Markdown structure:
 
 ```md
 - Store: example.com
@@ -40,13 +50,36 @@ Use these custom fields:
 Rules:
 - Prefer a linked `Order number` over putting the order URL in `Notes`.
 - Omit `Order number` if none is known.
+- `purchase_store` should contain the `Store` line value from `purchase_notes`,
+  preserving a Markdown link when present and using plain text otherwise.
+- `purchase_order_number` should contain the `Order number` line value from
+  `purchase_notes`, preserving the Markdown link.
 - `Notes` is optional and should only be present when there is relevant extra
   information that does not fit the standard fields.
 - Do not hide store/order details inside a `- Notes:` block if they can be
   normalized into `Store` and `Order number`.
 - Normalize dates as `YYYY-MM-DD`.
-- Keep the currency code in `purchase_info` aligned with
+- Keep the currency code in `purchase_notes` aligned with
   `purchase_currency`.
+
+## Product Information
+
+Official product and support URLs are stored in these custom fields on:
+- `dcim.devicetype`
+- `dcim.moduletype`
+
+Both fields belong to the `Product Information` group in NetBox.
+- `product_url`
+- `support_url`
+
+Rules:
+- Prefer the official manufacturer product page over reseller or marketplace
+  pages.
+- Prefer the English-language version of the product page when available.
+- Use `support_url` for official manufacturer support, documentation, or
+  knowledge base pages when a product page is unavailable or additional support
+  context is useful.
+- Keep `product_url` before `support_url` in the grouped display order.
 
 ## Asset Tags
 
@@ -150,3 +183,11 @@ When changing existing purchase or asset-tag data:
 - prefer a dry-run first if many objects are affected
 - take a backup before bulk normalization
 - avoid rewriting ambiguous freeform notes without review
+
+## Documents
+
+When uploading files via the `netbox-documents` plugin:
+- Keep the original file extension in the uploaded document name.
+- Never strip the file extension from uploaded filenames.
+- For example, upload a PDF manual as `Some Device Manual.pdf`, not
+  `Some Device Manual`.
