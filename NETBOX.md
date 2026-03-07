@@ -1,5 +1,21 @@
 # NetBox Conventions
 
+## Access
+
+NetBox is available at:
+- `https://netbox.brkn.lol`
+
+Credentials can be retrieved from the password manager with:
+
+```bash
+zhj rbw::get --json "Netbox (AI Agent)"
+```
+
+Notes:
+- The `API Token` field contains the NetBox API token.
+- Handle retrieved credentials as secrets and do not commit them to the
+  repository.
+
 ## Purchase Information
 
 Purchase metadata is stored in NetBox custom fields, not in the top-level device
