@@ -21,6 +21,22 @@ Notes:
 Purchase metadata is stored in NetBox custom fields, not in the top-level device
 attributes.
 
+When purchase details or bills are missing, you can and should search the
+mailbox via `bichon.brkn.lol` for order confirmations, invoices, and related
+purchase emails. The service configuration lives in
+[`services/bichon.nix`](/etc/nixos/services/bichon.nix).
+
+Safety rule:
+- Under no circumstances perform destructive actions in `bichon.brkn.lol`.
+- Use it for read-only lookup of purchase information and documents.
+
+API access:
+- Retrieve the API token with:
+
+```bash
+zhj rbw::get --field "API Token" bichon.brkn.lol
+```
+
 Use these custom fields:
 - `purchase_store`
 - `purchase_order_number`
@@ -209,3 +225,15 @@ When uploading files via the `netbox-documents` plugin:
 - Never strip the file extension from uploaded filenames.
 - For example, upload a PDF manual as `Some Device Manual.pdf`, not
   `Some Device Manual`.
+
+When adding new device types:
+- Try to find an official manual, user guide, installation guide, or similar
+  vendor documentation and upload it to the device type as a `Manual`
+  document when available.
+
+When adding new devices:
+- If a bill, invoice, order confirmation, or similar purchase document is
+  available, upload it to the device as a `Purchase Order` document.
+- Upload purchase documents to devices, not device types.
+- Re-uploading the same bill to multiple devices from the same order is fine
+  and expected when that document applies to each device.
