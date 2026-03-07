@@ -13,3 +13,6 @@
 - `statix` checks should pass.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
+
+## NetBox
+- When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.
