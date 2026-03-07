@@ -81,6 +81,23 @@ Rules:
   context is useful.
 - Keep `product_url` before `support_url` in the grouped display order.
 
+## Device Type Synchronization
+
+Device types should stay in sync with the physical connectivity modeled on
+devices that use them.
+
+Rules:
+- When adding or changing physical interfaces, power ports, power outlets,
+  console ports, rear ports, front ports, device bays, or module bays on a
+  device, update the corresponding device type templates as well.
+- Model the common physical shape on the device type first, then keep concrete
+  devices aligned with that template.
+- Do not add per-device-only logical or virtual constructs to the device type.
+  Examples include VLAN-only interfaces, software-defined interfaces, temporary
+  overlays, or similar non-physical endpoints.
+- If a device intentionally deviates from its type because of a real physical
+  difference, document the reason in the device comments or description.
+
 ## Asset Tags
 
 Asset tags use this format:
@@ -128,6 +145,7 @@ Current prefixes:
 - `IRO` = iRobot
 - `ITL` = Intellinet
 - `KEY` = Keyestudio
+- `KSM` = KingSmith
 - `KIN` = Kingston
 - `KIO` = Kioxia
 - `LEN` = Lenovo
