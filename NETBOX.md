@@ -157,6 +157,7 @@ Current prefixes:
 - `EYO` = Eyoyo
 - `FIB` = Fibaro
 - `FLS` = FlexiSpot
+ - `FLC` = Flic / Shortcut Labs
 - `FUJ` = Fujitsu
 - `GEN` = Generic
 - `GOG` = Google
@@ -172,6 +173,7 @@ Current prefixes:
 - `KIO` = Kioxia
 - `LEN` = Lenovo
 - `LGC` = LG
+- `LTX` = Lantronix
 - `LNK` = Linksys
 - `MER` = Meross
 - `NOU` = Nous
@@ -180,6 +182,7 @@ Current prefixes:
 - `NET` = Netac
 - `NTG` = Netgear
 - `NUK` = Nuki
+- `ORB` = Oral-B
 - `ORI` = ORICO
 - `PKV` = PiKVM
 - `POE` = PoE injectors and PoE splitters
