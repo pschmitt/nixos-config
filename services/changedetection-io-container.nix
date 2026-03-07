@@ -42,6 +42,7 @@ in
 
     changedetection-io = {
       image = "ghcr.io/dgtlmoon/changedetection.io:latest";
+      pull = "always";
       autoStart = true;
       hostname = "changedetection";
       dependsOn = [ "changedetection-io-playwright" ];
