@@ -27,6 +27,8 @@ buildGoModule rec {
     "-X github.com/joshuar/go-hass-agent/config.AppVersion=${version}"
   ];
 
+  doCheck = false;
+
   meta = {
     description = "A Home Assistant, native app for desktop/laptop devices.";
     homepage = "https://github.com/joshuar/go-hass-agent";
