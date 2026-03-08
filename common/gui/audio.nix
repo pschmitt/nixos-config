@@ -31,7 +31,6 @@
     })
 
     # patching
-    helvum
     qpwgraph
   ];
 }
