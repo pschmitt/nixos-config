@@ -1,11 +1,8 @@
 { pkgs, config, ... }:
-let
-  streamcontrollerPkg = pkgs.streamcontroller.streamcontroller;
-in
 {
   environment.systemPackages = with pkgs; [
     deckmaster
-    streamcontrollerPkg
+    streamcontroller
   ];
 
   systemd.user.services.deckmaster = {
@@ -36,7 +33,7 @@ in
     ];
     serviceConfig =
       let
-        streamcontrollerBin = "${streamcontrollerPkg}/bin/streamcontroller --data %E/streamcontroller";
+        streamcontrollerBin = "${pkgs.streamcontroller}/bin/streamcontroller --data %E/streamcontroller";
       in
       {
         # ExecStartPre = "-${streamcontrollerBin} --close-running";
