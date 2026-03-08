@@ -195,6 +195,7 @@ Current prefixes:
 - `RVT` = Revotech
 - `SAL` = Salcar
 - `SAM` = Samsung
+- `SSM` = Samson
 - `SDK` = SanDisk
 - `SEA` = Seagate
 - `SED` = Seeed Studio
