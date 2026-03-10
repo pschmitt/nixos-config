@@ -16,6 +16,20 @@ list_nixos_configurations() {
   nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.attrNames configs'
 }
 
+list_x86_64_package_names() {
+  nix eval --impure --json '.#packages.x86_64-linux' --apply 'pkgs: builtins.attrNames pkgs'
+}
+
+json_array_from_values() {
+  if (( $# == 0 ))
+  then
+    printf '%s\n' '[]'
+    return 0
+  fi
+
+  printf '%s\0' "$@" | jq -Rs 'split("\u0000")[:-1]'
+}
+
 list_x86_64_packages() {
   # shellcheck disable=SC2016
   nix eval --impure --json '.#packages.x86_64-linux' --apply '
@@ -42,8 +56,14 @@ list_x86_64_packages() {
   '
 }
 
-NIX_FLAKE_SHOW=$(nix flake show --json)
-mapfile -t PKGS < <(jq -er '.packages["x86_64-linux"] | keys[]' <<< "$NIX_FLAKE_SHOW")
+PACKAGE_NAMES_JSON="$(list_x86_64_package_names)"
+if ! jq -e 'type == "array"' <<< "$PACKAGE_NAMES_JSON" >/dev/null
+then
+  echo "Failed to list x86_64-linux packages" >&2
+  exit 1
+fi
+
+mapfile -t PKGS < <(jq -er '.[]' <<< "$PACKAGE_NAMES_JSON")
 PACKAGE_METADATA_JSON="$(list_x86_64_packages)"
 
 PKGS_FREE=()
@@ -69,7 +89,14 @@ do
   fi
 done
 
-mapfile -t NIXOS_CONFIGS < <(list_nixos_configurations | jq -er '.[]')
+NIXOS_CONFIGS_JSON="$(list_nixos_configurations)"
+if ! jq -e 'type == "array"' <<< "$NIXOS_CONFIGS_JSON" >/dev/null
+then
+  echo "Failed to list nixosConfigurations" >&2
+  exit 1
+fi
+
+mapfile -t NIXOS_CONFIGS < <(jq -er '.[]' <<< "$NIXOS_CONFIGS_JSON")
 for h in "${NIXOS_CONFIGS[@]}"
 do
   case "$(nix_host_architecture "$h")" in
@@ -89,10 +116,10 @@ do
 done
 
 
-JSON_PKGS=$(printf '%s\n' "${PKGS[@]}" | jq -Rcn '[inputs]')
-JSON_PKGS_FREE=$(printf '%s\n' "${PKGS_FREE[@]}" | jq -Rcn '[inputs]')
-JSON_PKGS_NONFREE=$(printf '%s\n' "${PKGS_NONFREE[@]}" | jq -Rcn '[inputs]')
-JSON_PKGS_OCI=$(printf '%s\n' "${PKGS_OCI[@]}" | jq -Rcn '[inputs]')
+JSON_PKGS="$(json_array_from_values "${PKGS[@]}")"
+JSON_PKGS_FREE="$(json_array_from_values "${PKGS_FREE[@]}")"
+JSON_PKGS_NONFREE="$(json_array_from_values "${PKGS_NONFREE[@]}")"
+JSON_PKGS_OCI="$(json_array_from_values "${PKGS_OCI[@]}")"
 
 jq -cn \
   --argjson hosts_x86_64 "$JSON_NIXOS_CONFIGS_X86_64" \
