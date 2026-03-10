@@ -177,16 +177,33 @@ discover_hosts() {
     return 0
   fi
 
-  # Use the intersection between base and head to avoid noisy "missing attr" failures.
-  local head_json
-  head_json="$(nix flake show --json 2>/dev/null)"
+  local -a head_hosts=()
+  mapfile -t head_hosts < <(list_nixos_configurations ".")
 
-  local base_json
-  base_json="$(cd "$BASE_WORKTREE" && nix flake show --json 2>/dev/null)"
+  local -a base_hosts=()
+  mapfile -t base_hosts < <(list_nixos_configurations "$BASE_WORKTREE")
 
   comm -12 \
-    <(jq -r '.nixosConfigurations | keys[]' <<<"$head_json" | sort -u) \
-    <(jq -r '.nixosConfigurations | keys[]' <<<"$base_json" | sort -u)
+    <(printf '%s\n' "${head_hosts[@]}" | sort -u) \
+    <(printf '%s\n' "${base_hosts[@]}" | sort -u)
+}
+
+list_nixos_configurations() {
+  local flake_path="$1"
+  local hosts_json
+
+  if ! hosts_json="$(
+    nix eval \
+      --json \
+      "${flake_path}#nixosConfigurations" \
+      --apply 'configs: builtins.attrNames configs' \
+      2>/dev/null
+  )"
+  then
+    return 0
+  fi
+
+  jq -er '.[]' <<<"$hosts_json"
 }
 
 filter_hosts() {
