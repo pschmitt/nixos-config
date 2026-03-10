@@ -60,6 +60,7 @@ jobs:
             >> $GITHUB_OUTPUT
 
   build-pkgs-free:
+    name: build-pkg ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
@@ -131,6 +132,7 @@ jobs:
               --copy
 
   build-pkgs-nonfree:
+    name: build-nonfree-pkg ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
     runs-on: ubuntu-latest
     env:
@@ -224,6 +226,7 @@ jobs:
               --copy
 
   build-pkgs-oci:
+    name: build-oci-pkg ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
     runs-on: ubuntu-latest
     strategy:
