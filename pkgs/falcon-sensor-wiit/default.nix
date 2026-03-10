@@ -44,7 +44,7 @@ let
     meta = with lib; {
       description = "Crowdstrike Falcon Sensor";
       license = licenses.unfree;
-      platforms = platforms.linux;
+      platforms = [ "x86_64-linux" ];
     };
   };
 
@@ -53,6 +53,9 @@ let
   };
 in
 wrapped.overrideAttrs (old: {
+  meta = (old.meta or { }) // {
+    platforms = [ "x86_64-linux" ];
+  };
   passthru = (old.passthru or { }) // {
     inherit unwrapped;
     # NOTE: This is required for us to be able to get the urls set programmatically in the fetch-garbage script
