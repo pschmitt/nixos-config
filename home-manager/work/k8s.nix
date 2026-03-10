@@ -14,6 +14,7 @@
       ${pkgs.kubectl-123.kubectl}/bin/kubectl "$@"
     '')
     kubectl-neat
+    kubectl-oidc-login
     kubectl-rook-ceph
     kubernetes-helm
     kustomize
