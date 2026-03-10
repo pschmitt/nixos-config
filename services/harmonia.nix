@@ -69,7 +69,7 @@ in
   };
 
   services = {
-    harmonia = {
+    harmonia.cache = {
       enable = true;
       signKeyPaths = [ config.sops.secrets."nix/store/privkey".path ];
       settings = {
