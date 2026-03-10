@@ -34,7 +34,7 @@ do
   esac
 
   # Skip proprietary packages
-  if nix eval --impure --json ".#${p}.meta.license" | jq -er '.free' >/dev/null
+  if nix eval --impure --json ".#packages.x86_64-linux.${p}.meta.license" | jq -er '.free' >/dev/null
   then
     PKGS_FREE+=("$p")
   else
