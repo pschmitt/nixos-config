@@ -110,6 +110,10 @@ jobs:
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Set up QEMU
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
+        uses: docker/setup-qemu-action@v4
+
       - name: Build package
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
@@ -185,6 +189,10 @@ jobs:
             set -o pipefail
             ssh-keyscan "${{ secrets.SSH_HOST }}" | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+
+      - name: Set up QEMU
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
+        uses: docker/setup-qemu-action@v4
 
       - name: Fetch proprietary garbage
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
