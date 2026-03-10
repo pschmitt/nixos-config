@@ -101,15 +101,20 @@ python3.pkgs.buildPythonApplication rec {
     "linkding_cli"
   ];
 
-  postInstall =
-    ""
-    + lib.optionalString (!stdenv.hostPlatform.isAarch64) ''
-      installShellCompletion --cmd linkding --bash <($out/bin/linkding --show-completion bash)
-      installShellCompletion --cmd linkding --zsh <($out/bin/linkding --show-completion zsh)
-    ''
-    + lib.optionalString stdenv.hostPlatform.isAarch64 ''
-      echo "Skipping shell completion generation for linkding-cli on aarch64-linux" >&2
-    '';
+  postInstall = ''
+    installShellCompletion --cmd linkding --bash <(
+      env _TYPER_COMPLETE_TEST_DISABLE_SHELL_DETECTION=1 \
+        $out/bin/linkding --show-completion bash
+    )
+    installShellCompletion --cmd linkding --zsh <(
+      env _TYPER_COMPLETE_TEST_DISABLE_SHELL_DETECTION=1 \
+        $out/bin/linkding --show-completion zsh
+    )
+    installShellCompletion --cmd linkding --fish <(
+      env _TYPER_COMPLETE_TEST_DISABLE_SHELL_DETECTION=1 \
+        $out/bin/linkding --show-completion fish
+    )
+  '';
 
   meta = {
     description = "A CLI to interface with an instance of linkding";
