@@ -36,6 +36,32 @@ list_package_metadata() {
             license.free
           else
             false;
+        supportsSystem = pkg:
+          let
+            platforms =
+              if pkg ? meta && pkg.meta ? platforms then
+                pkg.meta.platforms
+              else
+                null;
+            badPlatforms =
+              if pkg ? meta && pkg.meta ? badPlatforms then
+                pkg.meta.badPlatforms
+              else
+                [ ];
+            inPlatforms =
+              if platforms == null then
+                true
+              else if builtins.isList platforms then
+                builtins.elem "'"$system"'" platforms
+              else
+                false;
+            inBadPlatforms =
+              if builtins.isList badPlatforms then
+                builtins.elem "'"$system"'" badPlatforms
+              else
+                false;
+          in
+            inPlatforms && (!inBadPlatforms);
       in
         builtins.map
           (name: {
@@ -45,6 +71,7 @@ list_package_metadata() {
                 isFree pkgs.${name}.meta.license
               else
                 false;
+            supported = supportsSystem pkgs.${name};
           })
           (builtins.attrNames pkgs)
   '
@@ -70,7 +97,7 @@ categorize_packages() {
   local -n out_oci="${out_prefix}_oci"
   local name
 
-  mapfile -t out_all < <(jq -er '.[].name' <<< "$metadata_json")
+  mapfile -t out_all < <(jq -er '.[] | select(.supported == true) | .name' <<< "$metadata_json")
   out_free=()
   out_nonfree=()
   out_oci=()
