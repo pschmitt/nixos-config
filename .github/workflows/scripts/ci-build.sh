@@ -123,7 +123,8 @@ copy_refs() {
   fi
 
   key_file="$(mktemp)"
-  trap 'rm -f "${key_file:-}"' RETURN
+  # shellcheck disable=SC2064
+  trap "rm -f '$key_file'" RETURN
 
   umask 077
   printf '%s' "$NIX_STORE_PRIVKEY" > "$key_file"
