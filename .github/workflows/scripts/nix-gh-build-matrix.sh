@@ -4,9 +4,16 @@ set -euo pipefail
 
 export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
 
+JSON_NIXOS_CONFIGS_X86_64='[]'
+JSON_NIXOS_CONFIGS_AARCH64='[]'
+
 nix_host_architecture() {
   local host="$1"
   nix eval --raw ".#nixosConfigurations.${host}.config.nixpkgs.system"
+}
+
+list_nixos_configurations() {
+  nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.attrNames configs'
 }
 
 NIX_FLAKE_SHOW=$(nix flake show --json)
@@ -35,18 +42,19 @@ do
   fi
 done
 
-for h in $(jq -r '.nixosConfigurations | keys[]' <<< "$NIX_FLAKE_SHOW")
+mapfile -t NIXOS_CONFIGS < <(list_nixos_configurations | jq -er '.[]')
+for h in "${NIXOS_CONFIGS[@]}"
 do
   case "$(nix_host_architecture "$h")" in
     x86_64-linux)
       JSON_NIXOS_CONFIGS_X86_64=$(jq -cn \
-        --argjson arr "${JSON_NIXOS_CONFIGS_X86_64:-[]}" \
+        --argjson arr "$JSON_NIXOS_CONFIGS_X86_64" \
         --arg h "$h" \
         '$arr + [$h]')
       ;;
     aarch64-linux)
       JSON_NIXOS_CONFIGS_AARCH64=$(jq -cn \
-        --argjson arr "${JSON_NIXOS_CONFIGS_AARCH64:-[]}" \
+        --argjson arr "$JSON_NIXOS_CONFIGS_AARCH64" \
         --arg h "$h" \
         '$arr + [$h]')
       ;;
