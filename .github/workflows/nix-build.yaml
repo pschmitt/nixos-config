@@ -63,6 +63,8 @@ jobs:
     name: build-pkg ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
     runs-on: ubuntu-latest
+    env:
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -137,6 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NIXPKGS_ALLOW_UNFREE: 1
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
       fail-fast: false
@@ -229,6 +232,8 @@ jobs:
     name: build-oci-pkg ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
     runs-on: ubuntu-latest
+    env:
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -378,6 +383,8 @@ jobs:
       - build-pkgs-oci
     if: ${{ always() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
+    env:
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -475,6 +482,8 @@ jobs:
       - build-pkgs-oci
     if: ${{ always() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
+    env:
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     # runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
