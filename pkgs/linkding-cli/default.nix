@@ -1,6 +1,7 @@
 {
   lib,
   python3,
+  stdenv,
   fetchPypi,
   fetchFromGitHub,
   installShellFiles,
@@ -100,10 +101,15 @@ python3.pkgs.buildPythonApplication rec {
     "linkding_cli"
   ];
 
-  postInstall = ''
-    installShellCompletion --cmd linkding --bash <($out/bin/linkding --show-completion bash)
-    installShellCompletion --cmd linkding --zsh <($out/bin/linkding --show-completion zsh)
-  '';
+  postInstall =
+    ""
+    + lib.optionalString (!stdenv.hostPlatform.isAarch64) ''
+      installShellCompletion --cmd linkding --bash <($out/bin/linkding --show-completion bash)
+      installShellCompletion --cmd linkding --zsh <($out/bin/linkding --show-completion zsh)
+    ''
+    + lib.optionalString stdenv.hostPlatform.isAarch64 ''
+      echo "Skipping shell completion generation for linkding-cli on aarch64-linux" >&2
+    '';
 
   meta = {
     description = "A CLI to interface with an instance of linkding";
