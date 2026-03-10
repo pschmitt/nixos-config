@@ -61,7 +61,6 @@ jobs:
 
   build-pkgs-free:
     needs: setup-matrix
-    if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -72,20 +71,24 @@ jobs:
           - aarch64-linux
     steps:
       - name: Checkout code
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v6
 
       - name: Install Nix
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -93,6 +96,7 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 1
@@ -104,12 +108,14 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Build package
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
             --system '${{ matrix.system }}'
 
       - name: "Nix copy package"
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
@@ -126,7 +132,6 @@ jobs:
 
   build-pkgs-nonfree:
     needs: setup-matrix
-    if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
     runs-on: ubuntu-latest
     env:
       NIXPKGS_ALLOW_UNFREE: 1
@@ -140,20 +145,24 @@ jobs:
           - aarch64-linux
     steps:
       - name: Checkout code
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v6
 
       - name: Install Nix
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -161,6 +170,7 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 1
@@ -172,6 +182,7 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Fetch proprietary garbage
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -183,10 +194,12 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           git add --intent-to-add --force .
 
       - name: Build package
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
@@ -194,6 +207,7 @@ jobs:
             --nonfree
 
       - name: "Nix copy package"
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
@@ -211,7 +225,6 @@ jobs:
 
   build-pkgs-oci:
     needs: setup-matrix
-    if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -222,20 +235,24 @@ jobs:
           - aarch64-linux
     steps:
       - name: Checkout code
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v6
 
       - name: Install Nix
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -243,6 +260,7 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 1
@@ -254,16 +272,18 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
-        if: ${{ matrix.system == 'aarch64-linux' }}
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         id: netbird
         uses: Alemiz112/netbird-connect@v1
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
@@ -323,6 +343,7 @@ jobs:
           exit 1
 
       - name: Build package
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
@@ -330,6 +351,7 @@ jobs:
             --oci
 
       - name: "Nix copy package"
+        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 10
