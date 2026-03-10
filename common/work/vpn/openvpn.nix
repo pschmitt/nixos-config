@@ -118,8 +118,8 @@ in
   };
 
   # XXX Once connected to the VPN inno-cloud.de is not resolving correctly
-  # dig git.mgmt.innovo-cloud.de @1.1.1.1 A +short
-  # networking.extraHosts = "185.32.80.217 git.mgmt.innovo-cloud.de";
+  # dig git.wiit.one @1.1.1.1 A +short
+  # networking.extraHosts = "185.32.80.217 git.wiit.one";
   networking.extraHosts = ''
     2001:4ba0:133b:39::2b0 2001:4ba0:133b:39::1f6 docker-hub-proxy.prod.capp.wiit-cloud.io
   '';

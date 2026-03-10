@@ -16,7 +16,7 @@
               inherit name;
               urls = [
                 {
-                  template = "https://git.mgmt.innovo-cloud.de/search";
+                  template = "https://git.wiit.one/search";
                   params = [
                     {
                       name = "scope";
@@ -40,7 +40,7 @@
                   ];
                 }
               ];
-              icon = "https://git.mgmt.innovo-cloud.de/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png";
+              icon = "https://git.wiit.one/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png";
               updateInterval = 24 * 60 * 60 * 1000; # every day
               definedAliases = [ alias ];
             };
