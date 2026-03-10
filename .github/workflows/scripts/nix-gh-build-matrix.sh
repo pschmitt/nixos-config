@@ -16,8 +16,35 @@ list_nixos_configurations() {
   nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.attrNames configs'
 }
 
+list_x86_64_packages() {
+  # shellcheck disable=SC2016
+  nix eval --impure --json '.#packages.x86_64-linux' --apply '
+    pkgs:
+      let
+        isFree = license:
+          if builtins.isList license then
+            builtins.any isFree license
+          else if builtins.isAttrs license && license ? free then
+            license.free
+          else
+            false;
+      in
+        builtins.map
+          (name: {
+            inherit name;
+            free =
+              if pkgs.${name} ? meta && pkgs.${name}.meta ? license then
+                isFree pkgs.${name}.meta.license
+              else
+                false;
+          })
+          (builtins.attrNames pkgs)
+  '
+}
+
 NIX_FLAKE_SHOW=$(nix flake show --json)
 mapfile -t PKGS < <(jq -er '.packages["x86_64-linux"] | keys[]' <<< "$NIX_FLAKE_SHOW")
+PACKAGE_METADATA_JSON="$(list_x86_64_packages)"
 
 PKGS_FREE=()
 PKGS_NONFREE=()
@@ -34,7 +61,7 @@ do
   esac
 
   # Skip proprietary packages
-  if nix eval --impure --json ".#packages.x86_64-linux.${p}.meta.license" | jq -er '.free' >/dev/null
+  if jq -e --arg pkg "$p" '.[] | select(.name == $pkg and .free == true)' <<< "$PACKAGE_METADATA_JSON" >/dev/null
   then
     PKGS_FREE+=("$p")
   else
