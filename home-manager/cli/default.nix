@@ -28,6 +28,7 @@
     '')
 
     inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.slack-react
+    inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq
 
     # todoist cli
     inputs.tdc.packages."${pkgs.stdenv.hostPlatform.system}".tdc
