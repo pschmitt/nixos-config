@@ -141,6 +141,7 @@ Current prefixes:
 - `AHL` = Adam Hall
 - `AQA` = Aqara
 - `AUK` = Aukey
+- `AYW` = AYWHP
 - `BRO` = Brother
 - `CRU` = Crucial
 - `CZN` = CZ.NIC
