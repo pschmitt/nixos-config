@@ -277,11 +277,11 @@
       },
       "locked": {
         "dir": "pkgs/firefox-addons",
-        "lastModified": 1773374581,
-        "narHash": "sha256-cqbRdYEmO8FNoaUtoc6+GLR4EGU1f24cGJiQUPJJmxI=",
+        "lastModified": 1773460974,
+        "narHash": "sha256-ub9lQJZOgj9351Rv7YrmrimlocUj45AmWi5/vxOkrug=",
         "owner": "rycee",
         "repo": "nur-expressions",
-        "rev": "c73146d00a2a01e2ac844ceed9640e0f314a5dda",
+        "rev": "cc0fa04294fb230b831e0b0d0d842d6ddb40806f",
         "type": "gitlab"
       },
       "original": {
@@ -839,7 +839,7 @@
         "type": "github"
       }
     },
-    "flake-utils_28": {
+    "flake-utils_27": {
       "inputs": {
         "systems": "systems_33"
       },
@@ -859,7 +859,7 @@
     },
     "flake-utils_3": {
       "inputs": {
-        "systems": "systems_5"
+        "systems": "systems_3"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -877,11 +877,7 @@
     },
     "flake-utils_4": {
       "inputs": {
-<<<<<<< Updated upstream
         "systems": "systems_6"
-=======
-        "systems": "systems_4"
->>>>>>> Stashed changes
       },
       "locked": {
         "lastModified": 1731533236,
@@ -899,7 +895,7 @@
     },
     "flake-utils_5": {
       "inputs": {
-        "systems": "systems_11"
+        "systems": "systems_7"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -917,11 +913,7 @@
     },
     "flake-utils_6": {
       "inputs": {
-<<<<<<< Updated upstream
         "systems": "systems_12"
-=======
-        "systems": "systems_7"
->>>>>>> Stashed changes
       },
       "locked": {
         "lastModified": 1731533236,
@@ -1027,10 +1019,6 @@
     "ghostty": {
       "inputs": {
         "flake-compat": "flake-compat",
-<<<<<<< Updated upstream
-=======
-        "flake-utils": "flake-utils_4",
->>>>>>> Stashed changes
         "home-manager": "home-manager",
         "nixpkgs": [
           "nixpkgs"
@@ -1162,11 +1150,7 @@
     },
     "hacompanion": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_3",
-=======
-        "flake-utils": "flake-utils_5",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_4",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -1331,11 +1315,7 @@
     },
     "hyprdynamicmonitors": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_4",
-=======
-        "flake-utils": "flake-utils_6",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_5",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2123,11 +2103,7 @@
     },
     "jcalapi": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_5",
-=======
-        "flake-utils": "flake-utils_7",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_6",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2148,11 +2124,7 @@
     },
     "jellysync": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_6",
-=======
-        "flake-utils": "flake-utils_8",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_7",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2194,11 +2166,7 @@
     },
     "ldifj": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_7",
-=======
-        "flake-utils": "flake-utils_9",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_8",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2219,11 +2187,7 @@
     },
     "lib-aggregate": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_15",
-=======
-        "flake-utils": "flake-utils_17",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_16",
         "nixpkgs-lib": "nixpkgs-lib_2"
       },
       "locked": {
@@ -2259,11 +2223,7 @@
     },
     "luks-mount": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_8",
-=======
-        "flake-utils": "flake-utils_10",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_9",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2284,11 +2244,7 @@
     },
     "luks-ssh-unlock": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_9",
-=======
-        "flake-utils": "flake-utils_11",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_10",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2330,11 +2286,7 @@
     },
     "myl": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_10",
-=======
-        "flake-utils": "flake-utils_12",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_11",
         "myl-discovery": "myl-discovery",
         "nixpkgs": [
           "nixpkgs"
@@ -2356,11 +2308,7 @@
     },
     "myl-discovery": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_11",
-=======
-        "flake-utils": "flake-utils_13",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_12",
         "nixpkgs": [
           "myl",
           "nixpkgs"
@@ -2382,11 +2330,7 @@
     },
     "myl-discovery_2": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_12",
-=======
-        "flake-utils": "flake-utils_14",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_13",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2407,11 +2351,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_20",
-=======
-        "flake-utils": "flake-utils_22",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_21",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2433,11 +2373,7 @@
     },
     "nbx": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_13",
-=======
-        "flake-utils": "flake-utils_15",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_14",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -2541,11 +2477,7 @@
     },
     "nix-openclaw": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_14",
-=======
-        "flake-utils": "flake-utils_16",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_15",
         "home-manager": [
           "home-manager"
         ],
@@ -2555,11 +2487,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1773456636,
-        "narHash": "sha256-GqBQ98JJ746UifmEbDsI7QJRV4Xm3PMU0KdSY7HAfPA=",
+        "lastModified": 1773467963,
+        "narHash": "sha256-NiWLSqkEpR+GSW6u1AExJNbXJeIk8aKvP5lixBU9Q3A=",
         "owner": "openclaw",
         "repo": "nix-openclaw",
-        "rev": "7b621d7f292a7b1bece1411e37a2688ef4a7cbe1",
+        "rev": "f1efd50ca7a95efd764d4728cb51cfb109d38264",
         "type": "github"
       },
       "original": {
@@ -2730,11 +2662,11 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1773459105,
-        "narHash": "sha256-EQZ7rMiWwvYw17dNTg4jL6WCeq9tU66PlOeP/HdNAlo=",
+        "lastModified": 1773466836,
+        "narHash": "sha256-UxByIwD19SUBt2QilH81H1auV+Wz5emQFJhgeBP59YQ=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "a500004e25b2fee814c6d66c8fdfeec04e96a9fa",
+        "rev": "add63bd0f4449805daac4f08229e7e0168d5b0e6",
         "type": "github"
       },
       "original": {
@@ -2928,11 +2860,7 @@
     },
     "obs-cli": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_16",
-=======
-        "flake-utils": "flake-utils_18",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_17",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3063,11 +2991,7 @@
     },
     "printlabel": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_17",
-=======
-        "flake-utils": "flake-utils_19",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_18",
         "nbx": "nbx_2",
         "nixpkgs": [
           "nixpkgs"
@@ -3178,11 +3102,7 @@
     },
     "ruamel-fmt": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_18",
-=======
-        "flake-utils": "flake-utils_20",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_19",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3283,11 +3203,7 @@
     },
     "sendmyl": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_19",
-=======
-        "flake-utils": "flake-utils_21",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_20",
         "myl-discovery": "myl-discovery_3",
         "nixpkgs": [
           "nixpkgs"
@@ -3309,11 +3225,7 @@
     },
     "slack-react": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_21",
-=======
-        "flake-utils": "flake-utils_23",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_22",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3374,11 +3286,7 @@
     },
     "stricknani": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_22",
-=======
-        "flake-utils": "flake-utils_24",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_23",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -3729,7 +3637,6 @@
       }
     },
     "systems_3": {
-      "flake": false,
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -3820,6 +3727,7 @@
       }
     },
     "systems_4": {
+      "flake": false,
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
@@ -3911,11 +3819,7 @@
     },
     "tdc": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_23",
-=======
-        "flake-utils": "flake-utils_25",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_24",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3936,11 +3840,7 @@
     },
     "tmux-slay": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_24",
-=======
-        "flake-utils": "flake-utils_26",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_25",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -4005,11 +3905,7 @@
     },
     "vodafone-station-cli": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_25",
-=======
-        "flake-utils": "flake-utils_27",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_26",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -4045,11 +3941,7 @@
     },
     "wezterm": {
       "inputs": {
-<<<<<<< Updated upstream
-        "flake-utils": "flake-utils_26",
-=======
-        "flake-utils": "flake-utils_28",
->>>>>>> Stashed changes
+        "flake-utils": "flake-utils_27",
         "freetype2": "freetype2",
         "harfbuzz": "harfbuzz",
         "libpng": "libpng",
@@ -4171,7 +4063,7 @@
           "ghostty",
           "nixpkgs"
         ],
-        "systems": "systems_3"
+        "systems": "systems_4"
       },
       "locked": {
         "lastModified": 1773145353,
