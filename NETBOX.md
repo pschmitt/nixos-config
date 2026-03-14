@@ -161,12 +161,14 @@ Current prefixes:
  - `FLC` = Flic / Shortcut Labs
 - `FUJ` = Fujitsu
 - `GEN` = Generic
+- `GLI` = GL.iNet
 - `GOG` = Google
 - `GPD` = GPD
 - `ICY` = ICY BOX
 - `IKE` = IKEA of Sweden
 - `INT` = Intel
 - `IRO` = iRobot
+- `I36` = Insta360
 - `ITL` = Intellinet
 - `KEY` = Keyestudio
 - `KSM` = KingSmith
@@ -174,6 +176,7 @@ Current prefixes:
 - `KIO` = Kioxia
 - `LEN` = Lenovo
 - `LGC` = LG
+- `LOG` = Logitech
 - `LTX` = Lantronix
 - `LNK` = Linksys
 - `MER` = Meross
@@ -185,8 +188,11 @@ Current prefixes:
 - `NUK` = Nuki
 - `ORB` = Oral-B
 - `ORI` = ORICO
+- `APL` = Apple
+- `PFU` = PFU
 - `PKV` = PiKVM
 - `POE` = PoE injectors and PoE splitters
+- `WAV` = WAVLINK
 - `PRC` = PROCET
 - `QUE` = Quectel
 - `REO` = Reolink
@@ -219,6 +225,9 @@ Exceptions:
 Conventions used in this inventory:
 - Zigbee IEEE goes in the `zigbee_ieee` custom field.
 - LoRaWAN DevEUI goes in the `lorawan_eui` custom field.
+- USB VID:PID and product string go in the markdown-enabled `usb_id`
+  custom field on the device type, module type, or inventory item, not the
+  device.
 - 433.92 MHz devices may be modeled as `other (wireless)` interfaces so
   NetBox wireless links can be used.
 
