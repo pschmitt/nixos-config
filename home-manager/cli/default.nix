@@ -15,6 +15,9 @@
     fd
     fzf
     linkding-cli
+
+    # img background removal tools
+    backgroundremover
     withoutbg
 
     # iot
