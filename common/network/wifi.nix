@@ -25,10 +25,14 @@ let
       # autoconnect = false; # never auto-connect
       priority = -9;
     };
+
+    dieppe = {
+      autoconnect = true;
+    };
     g4p = {
       priority = -100;
     };
-    dieppe = {
+    wiit-guests = {
       autoconnect = true;
     };
   };
