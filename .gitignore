@@ -30,3 +30,4 @@ libfprint*.install
 # nix-update
 update-git-commits.txt
 cookies.txt
+tmp/
