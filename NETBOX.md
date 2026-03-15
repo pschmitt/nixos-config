@@ -140,6 +140,7 @@ Current prefixes:
 - `AEO` = Aeotec / Everspring
 - `AHL` = Adam Hall
 - `AQA` = Aqara
+- `ANK` = Anker
 - `AUK` = Aukey
 - `AYW` = AYWHP
 - `BRO` = Brother
