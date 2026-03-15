@@ -38,5 +38,15 @@
     };
   };
 
+  services.upower = {
+    criticalPowerAction = "PowerOff";
+    percentageCritical = 10;
+    percentageAction = 5;
+  };
+
+  systemd.sleep.settings.Sleep = {
+    MemorySleepMode = "deep";
+  };
+
   systemd.services.go-hass-agent.enable = lib.mkForce false;
 }
