@@ -228,6 +228,7 @@ Conventions used in this inventory:
 - USB VID:PID and product string go in the markdown-enabled `usb_id`
   custom field on the device type, module type, or inventory item, not the
   device.
+- Thread EUI-64 goes in the `thread_eui64` custom field.
 - 433.92 MHz devices may be modeled as `other (wireless)` interfaces so
   NetBox wireless links can be used.
 
