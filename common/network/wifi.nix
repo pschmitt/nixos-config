@@ -25,6 +25,10 @@ let
       # autoconnect = false; # never auto-connect
       priority = -9;
     };
+    home-wwan-tk = {
+      # autoconnect = false; # never auto-connect
+      priority = -20;
+    };
 
     dieppe = {
       autoconnect = true;
