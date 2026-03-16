@@ -10,18 +10,29 @@ let
       # routeMetric4 = 500;           # optional
       # routeMetric6 = 500;           # optional
     };
-    home-wwan = {
-      # autoconnect = false; # never auto-connect
-      priority = -10;
+    home-vodafone = {
+      priority = -101;
     };
     home-vpn = {
       # autoconnect = false; # never auto-connect
       priority = -10;
     };
+    home-wwan = {
+      # autoconnect = false; # never auto-connect
+      priority = -10;
+    };
+    home-wwan-direct = {
+      # autoconnect = false; # never auto-connect
+      priority = -9;
+    };
+
+    dieppe = {
+      autoconnect = true;
+    };
     g4p = {
       priority = -100;
     };
-    dieppe = {
+    wiit-guests = {
       autoconnect = true;
     };
   };
