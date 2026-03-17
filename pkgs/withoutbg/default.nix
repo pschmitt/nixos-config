@@ -27,7 +27,7 @@ let
 in
 buildPythonApplication {
   pname = "withoutbg";
-  version = "1.2.0";
+  version = "1.2.1";
 
   src = fetchFromGitHub {
     owner = "withoutbg";
