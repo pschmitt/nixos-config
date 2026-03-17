@@ -39,6 +39,20 @@ in
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       # apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
+        (ps.buildPythonPackage rec {
+          pname = "netbox-inventory";
+          version = "2.5.0";
+          pyproject = true;
+
+          src = pkgs.fetchPypi {
+            inherit pname version;
+            hash = "sha256-/8QV4VRDyX+D32+BxgYFE1gzPRhlMaqrvQH1Mqa13bM=";
+          };
+
+          build-system = [ ps.setuptools ];
+
+          pythonImportsCheck = [ "netbox_inventory" ];
+        })
         (ps.netbox-topology-views.overridePythonAttrs (_: {
           version = "4.5.0";
           src = pkgs.fetchFromGitHub {
@@ -78,6 +92,7 @@ in
         ];
         PLUGINS = [
           "netbox_documents"
+          "netbox_inventory"
           "netbox_qrcode"
           "netbox_topology_views"
         ];
@@ -96,6 +111,7 @@ in
                     ],
                 },
             },
+            'netbox_inventory': {},
             'netbox_qrcode': {
                 'device': {
                     'label_height': '12mm',
