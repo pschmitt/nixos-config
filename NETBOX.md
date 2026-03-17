@@ -197,6 +197,7 @@ Current prefixes:
 - `PRC` = PROCET
 - `QUE` = Quectel
 - `REO` = Reolink
+- `RBR` = Roborock
 - `RFX` = RFXtrx
 - `RKM` = Rackmatic
 - `RPI` = Raspberry Pi
@@ -217,6 +218,7 @@ Current prefixes:
 - `WDC` = Western Digital
 - `XIA` = Xiaomi
 - `YEL` = Yeelight
+- `ZTE` = ZTE
 
 Exceptions:
 - `Rack Bottom (U1)` is a virtual grouping device and should stay untagged.
