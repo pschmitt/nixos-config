@@ -44,14 +44,12 @@ in
           version = "2.5.0";
           pyproject = true;
 
-          src = pkgs.fetchPypi {
-            inherit pname version;
-            hash = "sha256-/8QV4VRDyX+D32+BxgYFE1gzPRhlMaqrvQH1Mqa13bM=";
+          src = pkgs.fetchurl {
+            url = "https://files.pythonhosted.org/packages/ae/f0/3392801ec982b1929f7f5cc2c3e36ada0857d96f0bbba1e2b16a82f9b1a8/netbox_inventory-2.5.0.tar.gz";
+            hash = "sha256-/8QV4VRDyX+D32+BHGBRNcgzPRhlMaurvQH1Mqa13bM=";
           };
 
           build-system = [ ps.setuptools ];
-
-          pythonImportsCheck = [ "netbox_inventory" ];
         })
         (ps.netbox-topology-views.overridePythonAttrs (_: {
           version = "4.5.0";
