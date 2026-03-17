@@ -141,6 +141,7 @@ Current prefixes:
 - `AHL` = Adam Hall
 - `AQA` = Aqara
 - `ANK` = Anker
+- `ASU` = ASUS
 - `AUK` = Aukey
 - `AYW` = AYWHP
 - `BRO` = Brother
@@ -155,6 +156,8 @@ Current prefixes:
 - `EBD` = ebusd.eu
 - `ECO` = EcoFlow
 - `ELG` = Elgato
+- `ESS` = Essential
+- `FAI` = Fairphone
 - `ESP` = Espressif / LOLIN / D1 Mini family
 - `EYO` = Eyoyo
 - `FIB` = Fibaro
@@ -181,6 +184,7 @@ Current prefixes:
 - `LTX` = Lantronix
 - `LNK` = Linksys
 - `MER` = Meross
+- `MOT` = Motorola
 - `NOU` = Nous
 - `NBC` = Nabu Casa
 - `NEL` = nello
@@ -190,6 +194,7 @@ Current prefixes:
 - `ORB` = Oral-B
 - `ORI` = ORICO
 - `APL` = Apple
+- `APB` = Appbot
 - `PFU` = PFU
 - `PKV` = PiKVM
 - `POE` = PoE injectors and PoE splitters
@@ -282,8 +287,12 @@ When changing existing purchase or asset-tag data:
 ## Documents
 
 When uploading files via the `netbox-documents` plugin:
+- Use the exact source filename, including extension, as the document `name`
+  when uploading binary files.
 - Keep the original file extension in the uploaded document name.
 - Never strip the file extension from uploaded filenames.
+- Do not replace the basename with a prettified title, because the plugin may
+  derive the stored filename from the upload name.
 - For example, upload a PDF manual as `Some Device Manual.pdf`, not
   `Some Device Manual`.
 
