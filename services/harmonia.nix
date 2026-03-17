@@ -37,7 +37,7 @@ let
       basicAuthFile = if basicAuth then config.sops.secrets."nix/credentials/htpasswd".path else null;
 
       locations."/" = {
-        proxyPass = "http://${config.services.harmonia.settings.bind}";
+        proxyPass = "http://${config.services.harmonia.cache.settings.bind}";
         recommendedProxySettings = true;
         proxyWebsockets = true;
         extraConfig = ''
