@@ -221,6 +221,7 @@ Current prefixes:
 - `VDF` = Vodafone
 - `WAV` = WAVLINK
 - `WDC` = Western Digital
+- `WIT` = Withings / Nokia (legacy branding)
 - `XIA` = Xiaomi
 - `YEL` = Yeelight
 - `ZTE` = ZTE

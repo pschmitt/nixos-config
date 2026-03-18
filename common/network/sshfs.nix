@@ -32,7 +32,7 @@ in
     #   device = "${pkgs.sshfs-fuse}/bin/sshfs#root@fnuc.${vpnDomain}:/";
     #   options = opts;
     # };
-    #
+
     # "/mnt/hass" = {
     #   fsType = "fuse";
     #   # NOTE We cannot use /config here since it is a symlink to /homeassistant
