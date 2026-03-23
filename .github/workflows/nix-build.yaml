@@ -100,7 +100,7 @@ jobs:
 
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
           max_attempts: 3
@@ -123,7 +123,7 @@ jobs:
 
       - name: "Nix copy package"
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
@@ -180,7 +180,7 @@ jobs:
 
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
           max_attempts: 3
@@ -196,7 +196,7 @@ jobs:
 
       - name: Fetch proprietary garbage
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
         with:
@@ -221,7 +221,7 @@ jobs:
 
       - name: "Nix copy package"
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
@@ -277,7 +277,7 @@ jobs:
 
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
           max_attempts: 3
@@ -368,7 +368,7 @@ jobs:
 
       - name: "Nix copy package"
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
@@ -429,7 +429,7 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
           max_attempts: 3
@@ -440,7 +440,7 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Fetch proprietary garbage
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
         with:
@@ -468,7 +468,7 @@ jobs:
             --host '${{ matrix.host }}'
 
       - name: "Nix copy package"
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
@@ -530,7 +530,7 @@ jobs:
           chmod 400 "$KEY_PATH"
 
       - name: Setup known_hosts
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
           max_attempts: 3
@@ -541,7 +541,7 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Fetch proprietary garbage
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
         with:
@@ -638,7 +638,7 @@ jobs:
             --host '${{ matrix.host }}'
 
       - name: "Nix copy package"
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
           max_attempts: 3
