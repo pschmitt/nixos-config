@@ -211,6 +211,7 @@ Current prefixes:
 - `SDK` = SanDisk
 - `SEA` = Seagate
 - `SED` = Seeed Studio
+- `SLY` = Shelly
 - `SMP` = Smappee
 - `SNF` = Sonoff / ITEAD
 - `SSM` = Samson
