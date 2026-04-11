@@ -49,7 +49,9 @@
               hash = "sha256-T2TcO3KkNbM37O59aXtDPfrLAktKjSJfZTITcS2SYM0=";
             };
             dependencies = (old.dependencies or [ ]) ++ [ finalPy.pyyaml ];
-            postPatch = (old.postPatch or "") + ''
+            # nixpkgs carries a version-specific substitution that no longer
+            # matches against the GitHub tag source.
+            postPatch = ''
               sed -i '/^requires_python = /d' pyproject.toml
             '';
           });
