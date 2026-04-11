@@ -16,62 +16,30 @@ in
       mode = "0400";
       restartUnits = [ "netbox.service" ];
     };
-    # TODO once netbox 4.5 is available
-    # https://netboxlabs.com/docs/netbox/configuration/required-parameters/#api_token_peppers
-    # "netbox/apiTokenPeppers" = {
-    #   inherit (config.custom) sopsFile;
-    #   owner = "netbox";
-    #   group = "netbox";
-    #   mode = "0400";
-    #   restartUnits = [ "netbox.service" ];
-    # };
+    "netbox/apiTokenPeppers" = {
+      inherit (config.custom) sopsFile;
+      owner = "netbox";
+      group = "netbox";
+      mode = "0400";
+      restartUnits = [ "netbox.service" ];
+    };
   };
 
-  # TODO once netbox 4.5 is available on nixos-unstable
-  # we should add apiTokenPeppersFile
-  # https://github.com/NixOS/nixpkgs/pull/485109
   services = {
     netbox = {
       enable = true;
-      package = pkgs.netbox-pr.netbox_4_5;
+      package = pkgs.netbox;
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
-      # apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
-      plugins = ps: [
-        ps.netbox-interface-synchronization
-        (ps.netbox-topology-views.overridePythonAttrs (_: {
-          version = "4.5.0";
-          src = pkgs.fetchFromGitHub {
-            owner = "netbox-community";
-            repo = "netbox-topology-views";
-            tag = "v4.5.0";
-            hash = "sha256-1KEkNfo++lX0uF0xS9JOyG7dQBQYYo2cSGkjicJ5+vE=";
-          };
-        }))
-        (ps.netbox-documents.overridePythonAttrs (old: {
-          version = "0.8.2";
-          src = pkgs.fetchFromGitHub {
-            owner = "jasonyates";
-            repo = "netbox-documents";
-            tag = "v0.8.2";
-            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
-          };
-          postPatch = (old.postPatch or "") + ''
-            substituteInPlace netbox_documents/forms.py \
-              --replace-fail "all_choices = list(DocTypeChoices.choices)" "all_choices = [(c[0], c[1]) for c in DocTypeChoices.CHOICES]"
-          '';
-        }))
-        (ps.netbox-qrcode.overridePythonAttrs (_: {
-          version = "0.0.20";
-          src = pkgs.fetchFromGitHub {
-            owner = "netbox-community";
-            repo = "netbox-qrcode";
-            tag = "v0.0.20";
-            hash = "sha256-7dPMpuJ2nuj9rRmVrfthD+xrEHoUaLFqDJWC6cGGCwY=";
-          };
-        }))
-      ];
+      apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
+      plugins =
+        ps: with ps; [
+          netbox-documents
+          netbox-interface-synchronization
+          netbox-qrcode
+          netbox-topology-views
+        ];
       settings = {
         ALLOWED_HOSTS = [
           netboxHost
