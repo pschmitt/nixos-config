@@ -36,6 +36,16 @@
       };
     in
     {
+      netbox-documents = prevPy.netbox-documents.overridePythonAttrs (old: rec {
+        version = "0.8.2";
+        src = prev.fetchFromGitHub {
+          owner = "jasonyates";
+          repo = "netbox-documents";
+          tag = "v${version}";
+          hash = "sha256-qde7s84d81Np5EwQgxFI3PGDSZ2b/ELKOJfYeFdJ6BE=";
+        };
+      });
+
       parsedmarc =
         (prevPy.parsedmarc.override {
           msgraph-core = msgraph-core-022;
