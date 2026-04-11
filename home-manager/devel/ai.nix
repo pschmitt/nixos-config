@@ -3,6 +3,14 @@
   inputs,
   ...
 }:
+let
+  codeCursor = pkgs.master.code-cursor.overrideAttrs (_old: {
+    src = pkgs.fetchurl {
+      url = "https://downloads.cursor.com/production/475871d112608994deb2e3065dfb7c6b0baa0c54/linux/x64/Cursor-3.0.16-x86_64.AppImage";
+      hash = "sha256-dN8tFSppIpO/P0Thst5uaNzlmfWZDh0Y81Lx1BuSYt0=";
+    };
+  });
+in
 {
 
   programs = {
@@ -94,7 +102,7 @@
   home.packages = with pkgs.master; [
     # vscode forks
     antigravity
-    code-cursor
+    codeCursor
 
     # cli
     cursor-cli
