@@ -229,6 +229,21 @@ let
         monitor={{$laptop.Name}},disable
       '';
     };
+    "triple-display-stacked" = {
+      tags = [
+        "laptop"
+        "lenovo_m14"
+        "lg_wqhd"
+      ];
+      content = ''
+        {{- $laptop := index .MonitorsByTag "laptop" -}}
+        {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
+        {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
+        monitor={{$laptop.Name}},1920x1200@48,0x240,1
+        monitor={{$lg.Name}},3440x1440@59,1920x0,1
+        monitor={{$lenovo.Name}},1920x1080@60,986x1440,1
+      '';
+    };
   };
 
   profiles = lib.mapAttrs (name: cfg: {
