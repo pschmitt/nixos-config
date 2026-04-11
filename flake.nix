@@ -8,9 +8,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
-    # prs
-    nixpkgs-netbox.url = "github:NixOS/nixpkgs/pull/485109/head";
-
     # attic = {
     #   url = "github:zhaofengli/attic";
     #   inputs.nixpkgs.follows = "nixpkgs";
