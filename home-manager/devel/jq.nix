@@ -4,7 +4,7 @@
     jc
     jq
     jsonrepair
-    inputs.mq.packages.${pkgs.stdenv.hostPlatform.system}.mq
+    # inputs.mq.packages.${pkgs.stdenv.hostPlatform.system}.mq
     yq-go
   ];
 }
