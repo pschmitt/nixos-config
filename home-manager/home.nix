@@ -34,6 +34,7 @@
   systemd.user.startServices = "sd-switch";
 
   home.preferXdgDirectories = true;
+  xdg.userDirs.setSessionVariables = true;
 
   home = {
     # The home.stateVersion option does not have a default and must be set
