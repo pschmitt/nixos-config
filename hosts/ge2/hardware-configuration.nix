@@ -45,11 +45,10 @@
   hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   services.thermald.enable = true; # intel only
 
-  # FIXME MIPI Camera
-  # hardware.ipu6 = {
-  #   enable = true;
-  #   # NOTE ipu6ep is for Raptor Lake
-  #   platform = "ipu6ep";
-  # };
+  # Precision 5680 uses a Raptor Lake IPU6 camera.
+  hardware.ipu6 = {
+    enable = true;
+    platform = "ipu6ep";
+  };
 
 }
