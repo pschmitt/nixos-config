@@ -20,8 +20,11 @@ in
   fileSystems = builtins.listToAttrs (
     map (dir: {
       name = "${exportPath}/${dir}";
-      value.device = "${basePath}/${dir}";
-      value.options = [ "bind" ];
+      value = {
+        device = "${basePath}/${dir}";
+        fsType = "none";
+        options = [ "bind" ];
+      };
     }) exports
   );
 

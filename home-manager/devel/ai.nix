@@ -94,10 +94,10 @@
   home.packages = with pkgs.master; [
     # vscode forks
     antigravity
-    code-cursor
+    # code-cursor
 
     # cli
-    cursor-cli
+    # cursor-cli
     github-copilot-cli
     # kilocode-cli
 

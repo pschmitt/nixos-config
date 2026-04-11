@@ -82,24 +82,17 @@ let
     extraLuaPackages = ps: [ ps.magick ];
   };
 
-  # Prepare the configuration for the wrapper.
-  neovimConfig = pkgs.neovimUtils.makeNeovimConfig {
-    inherit (commonConfig) withPython3 withRuby extraLuaPackages;
-    customLuaRC = sharedInitLua;
-  };
-
   # Wrap the nightly binary with the same environment as stable.
-  nvimNightlyWrapped = pkgs.wrapNeovimUnstable nvimNightly (
-    neovimConfig
-    // {
-      wrapperArgs = neovimConfig.wrapperArgs ++ [
-        "--prefix"
-        "PATH"
-        ":"
-        (pkgs.lib.makeBinPath commonConfig.extraPackages)
-      ];
-    }
-  );
+  nvimNightlyWrapped = pkgs.wrapNeovimUnstable nvimNightly {
+    inherit (commonConfig) withPython3 withRuby extraLuaPackages;
+    luaRcContent = sharedInitLua;
+    wrapperArgs = [
+      "--prefix"
+      "PATH"
+      ":"
+      (pkgs.lib.makeBinPath commonConfig.extraPackages)
+    ];
+  };
 in
 {
   programs.neovim = commonConfig // {
