@@ -157,7 +157,7 @@
 
     hypr-dynamic-cursors = {
       # `main` fails against Hyprland v0.54.3; this commit includes the newer hook/render API updates.
-      url = "github:VirtCode/hypr-dynamic-cursors/4f8447d19c71f34738b17d8bbe6c4aef1cc9450f";
+      url = "github:VirtCode/hypr-dynamic-cursors/b736d61794650a5f6162381dfd1ba8c5efe865d9";
       inputs.hyprland.follows = "hyprland";
     };
 
