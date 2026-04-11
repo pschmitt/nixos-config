@@ -8,9 +8,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
-    # prs
-    nixpkgs-netbox.url = "github:NixOS/nixpkgs/pull/485109/head";
-
     # attic = {
     #   url = "github:zhaofengli/attic";
     #   inputs.nixpkgs.follows = "nixpkgs";
@@ -159,7 +156,8 @@
     };
 
     hypr-dynamic-cursors = {
-      url = "github:VirtCode/hypr-dynamic-cursors";
+      # `main` fails against Hyprland v0.54.3; this commit includes the newer hook/render API updates.
+      url = "github:VirtCode/hypr-dynamic-cursors/4f8447d19c71f34738b17d8bbe6c4aef1cc9450f";
       inputs.hyprland.follows = "hyprland";
     };
 

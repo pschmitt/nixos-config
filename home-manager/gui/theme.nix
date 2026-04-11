@@ -1,4 +1,9 @@
-{ inputs, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 
 let
   theme = "Colloid-Dark";
@@ -75,7 +80,10 @@ in
 
     # https://hoverbear.org/blog/declarative-gnome-configuration-in-nixos/
     gtk3.extraConfig.gtk-application-prefer-dark-theme = "1";
-    gtk4.extraConfig.gtk-application-prefer-dark-theme = "1";
+    gtk4 = {
+      extraConfig.gtk-application-prefer-dark-theme = "1";
+      inherit (config.gtk) theme;
+    };
   };
 
   qt = {
