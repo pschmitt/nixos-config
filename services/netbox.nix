@@ -119,6 +119,26 @@ in
 
   users.users.nginx.extraGroups = [ "netbox" ];
 
+  systemd.services.netbox.preStart = lib.mkForce ''
+    # On the first run, or on upgrade / downgrade, run the required NetBox
+    # maintenance steps. Skip remove_stale_contenttypes because protected
+    # object change rows from plugins can make it fail and block startup.
+    versionFile="${config.services.netbox.dataDir}/version"
+
+    if [[ -h "$versionFile" && "$(readlink -- "$versionFile")" == "${config.services.netbox.package.outPath}" ]]
+    then
+      exit 0
+    fi
+
+    ${config.services.netbox.package}/bin/netbox migrate
+    ${config.services.netbox.package}/bin/netbox trace_paths --no-input
+    ${config.services.netbox.package}/bin/netbox collectstatic --clear --no-input
+    ${config.services.netbox.package}/bin/netbox reindex --lazy
+    ${config.services.netbox.package}/bin/netbox clearsessions
+
+    ln -sfn "${config.services.netbox.package.outPath}" "$versionFile"
+  '';
+
   # Fix permissions after UID changes (e.g., after reinstall)
   systemd.tmpfiles.rules = [
     "d ${config.services.netbox.dataDir} 0750 netbox netbox - -"
