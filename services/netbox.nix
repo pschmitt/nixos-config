@@ -52,13 +52,20 @@ in
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
-      plugins =
-        ps: with ps; [
-          netbox-documents
-          netbox-interface-synchronization
-          netbox-qrcode
-          netbox-topology-views
-        ];
+      plugins = ps: [
+        (ps.netbox-documents.overridePythonAttrs (_: {
+          version = "0.8.2";
+          src = pkgs.fetchFromGitHub {
+            owner = "jasonyates";
+            repo = "netbox-documents";
+            tag = "v0.8.2";
+            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
+          };
+        }))
+        ps.netbox-interface-synchronization
+        ps.netbox-qrcode
+        ps.netbox-topology-views
+      ];
       settings = {
         ALLOWED_HOSTS = [
           netboxHost
