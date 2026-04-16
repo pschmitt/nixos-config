@@ -15,7 +15,7 @@
     codex = {
       enable = true;
       package = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      custom-instructions = builtins.readFile ./CODESTYLE.md;
+      context = builtins.readFile ./CODESTYLE.md;
     };
 
     gemini-cli = {
@@ -59,7 +59,7 @@
       enable = true;
       package = pkgs.master.opencode;
       enableMcpIntegration = true;
-      rules = builtins.readFile ./CODESTYLE.md;
+      context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
     };
   };
