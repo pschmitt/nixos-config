@@ -82,16 +82,35 @@ let
     extraLuaPackages = ps: [ ps.magick ];
   };
 
-  # Wrap the nightly binary with the same environment as stable.
-  nvimNightlyWrapped = pkgs.wrapNeovimUnstable nvimNightly {
-    inherit (commonConfig) withPython3 withRuby extraLuaPackages;
-    luaRcContent = sharedInitLua;
-    wrapperArgs = [
-      "--prefix"
-      "PATH"
-      ":"
-      (pkgs.lib.makeBinPath commonConfig.extraPackages)
-    ];
+  nvimNightlyLua = nvimNightly.lua.withPackages commonConfig.extraLuaPackages;
+
+  nvimNightlyInitLua = pkgs.writeText "nvim-nightly-init.lua" sharedInitLua;
+
+  nvimNightlyProviderLua = pkgs.neovimUtils.generateProviderRc {
+    inherit (commonConfig) withPython3 withRuby;
+    withNodeJs = false;
+    withPerl = false;
+  };
+
+  nvimNightlyWrapped = pkgs.symlinkJoin {
+    name = "nvim-nightly-wrapped";
+    paths = [ nvimNightly ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      rm -f "$out/bin/nvim"
+      makeWrapper ${nvimNightly}/bin/nvim "$out/bin/nvim" \
+        --add-flags "--cmd" \
+        --add-flags "lua ${nvimNightlyProviderLua}" \
+        --set-default VIMINIT "lua dofile('${nvimNightlyInitLua}')" \
+        --prefix PATH : ${
+          pkgs.lib.makeBinPath (
+            commonConfig.extraPackages
+            ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ pkgs.wl-clipboard ]
+          )
+        } \
+        --prefix LUA_PATH ';' '${nvimNightly.lua.pkgs.luaLib.genLuaPathAbsStr nvimNightlyLua}' \
+        --prefix LUA_CPATH ';' '${nvimNightly.lua.pkgs.luaLib.genLuaCPathAbsStr nvimNightlyLua}'
+    '';
   };
 in
 {
