@@ -17,7 +17,8 @@ let
     "ServerAliveInterval=10"
   ];
 
-  vpnDomain = "netbird.cloud"; # config.domains.vpn;
+  # vpnDomain = "netbird.cloud";
+  vpnDomain = config.domains.vpn;
 in
 {
   # NOTE Arch Linux equivalent /etc/fstab entry:
