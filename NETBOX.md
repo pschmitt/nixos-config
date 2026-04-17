@@ -145,6 +145,7 @@ Current prefixes:
 - `AQA` = Aqara
 - `ASU` = ASUS
 - `AUK` = Aukey
+- `AVM` = AVM
 - `AYW` = AYWHP
 - `BRO` = Brother
 - `CRU` = Crucial
