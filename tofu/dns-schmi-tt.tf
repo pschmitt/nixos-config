@@ -26,19 +26,19 @@ resource "cloudflare_dns_record" "bluesky-schmi-tt" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "fra-schmi-tt" {
+resource "cloudflare_dns_record" "ber-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
-  name    = "fra"
+  name    = "ber"
   content = oci_core_instance.oci_01.public_ip
   proxied = false
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "wildcard-fra-schmi-tt" {
+resource "cloudflare_dns_record" "wildcard-ber-schmi-tt" {
   zone_id = cloudflare_zone.schmi-tt.id
   type    = "A"
-  name    = "*.fra"
+  name    = "*.ber"
   content = oci_core_instance.oci_01.public_ip
   proxied = false
   ttl     = 1
