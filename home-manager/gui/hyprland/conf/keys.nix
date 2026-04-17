@@ -137,7 +137,7 @@ let
     "$mod ALT, Z, exec, $bin_dir/ms-teams-join-room.sh home-room"
     "$mod ALT, T, exec, $bin_dir/ms-teams-join-room.sh home-room"
     "$mod SHIFT, Z, exec, zhj 'hyprctl::bring-window --fullscreen chrome'"
-    "$mod ALT, H, exec, $bin_dir/browser-run-or-raise.sh --url https://hass.ovm5.de --alt http://10.5.1.1:8123"
+    "$mod ALT, H, exec, $bin_dir/browser-run-or-raise.sh --url https://ha.brkn.lol --alt http://10.5.1.1:8123"
     # the '#' key!
     "$mod ALT, numbersign, exec, $bin_dir/browser-rbw.sh"
     ", F1, exec, $bin_dir/scratchpad.sh term"
