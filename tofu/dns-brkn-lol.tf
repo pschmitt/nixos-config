@@ -14,6 +14,24 @@ resource "cloudflare_dns_record" "gitea-brkn-lol" {
   content = oci_core_instance.oci_01.public_ip
 }
 
+resource "cloudflare_dns_record" "ha-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "ha"
+  content = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hass-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "hass"
+  content = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "healthchecks-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "healthchecks"
