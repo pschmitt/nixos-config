@@ -11,13 +11,14 @@ Use this skill for Home Assistant configuration and inspection work.
 
 1. Read `references/conventions.md` before making changes.
 2. Prefer `hass-cli` for shell-driven inspection and API calls.
-3. If authentication is needed, prefer:
+3. On most hosts, the Home Assistant filesystem is mounted at `/mnt/hass`.
+4. If authentication is needed, prefer:
 
 ```bash
 zhj hass-cli
 ```
 
-4. If a Home Assistant token is needed, use:
+5. If a Home Assistant token is needed, use:
 
 ```bash
 zhj hass::secrets-gu5a
