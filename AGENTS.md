@@ -3,6 +3,7 @@
 ## Environment preparation
 - Before invoking the `nix` CLI inside this repository, run `source /etc/profile.d/nix.sh` **only when working in the cloud environment**. Do not source it when running from the Codex CLI or GitHub Copilot context.
 - After sourcing (cloud only), verify the installation with `nix --version` if needed.
+- When suggesting commands that use a flake selector, always single-quote the selector. Example: use `'.#fnuc'`, not `.#fnuc`.
 
 ## Deployment
 - Do not *EVER* commit or push changes from this environment.
