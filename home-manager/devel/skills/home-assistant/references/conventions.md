@@ -4,6 +4,7 @@
 
 This repository contains the Home Assistant configuration for the `hv` VM.
 Keep changes narrow and avoid unrelated formatting churn in YAML-heavy files.
+On most of your hosts, the Home Assistant filesystem is mounted at `/mnt/hass`.
 
 ## Home Assistant Access
 
