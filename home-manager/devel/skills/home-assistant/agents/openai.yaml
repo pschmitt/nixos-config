@@ -1,0 +1,7 @@
+interface:
+  display_name: "Home Assistant"
+  short_description: "Work safely with this Home Assistant config"
+  default_prompt: "Use $home-assistant to inspect or update this Home Assistant configuration, prefer hass-cli for validation, and follow the local repository conventions before making changes."
+
+policy:
+  allow_implicit_invocation: true
