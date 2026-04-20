@@ -1,0 +1,7 @@
+interface:
+  display_name: "NetBox"
+  short_description: "Work safely with this NetBox inventory"
+  default_prompt: "Use $netbox to inspect or update the NetBox inventory, normalize device metadata, and follow the local NetBox conventions before making changes."
+
+policy:
+  allow_implicit_invocation: true

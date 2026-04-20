@@ -15,7 +15,8 @@
     codex = {
       enable = true;
       package = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
-      context = builtins.readFile ./CODESTYLE.md;
+      context = ./CODESTYLE.md;
+      skills = ./skills;
     };
 
     gemini-cli = {
