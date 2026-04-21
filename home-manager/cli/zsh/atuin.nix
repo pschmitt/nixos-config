@@ -1,9 +1,16 @@
 {
   lib,
-  osConfig,
   pkgs,
+  osConfig ? null,
   ...
 }:
+let
+  domain =
+    if osConfig != null && osConfig ? domains && osConfig.domains ? main then
+      osConfig.domains.main
+    else
+      "brkn.lol";
+in
 {
   programs.atuin = {
     enable = true;
@@ -13,7 +20,7 @@
       dialect = "uk";
       auto_sync = true;
       update_check = true;
-      sync_address = "https://atuin.${osConfig.domains.main}";
+      sync_address = "https://atuin.${domain}";
       sync_frequency = "15m";
       search_mode = "fuzzy";
     };
