@@ -426,7 +426,7 @@
             inherit inputs outputs;
           };
 
-          modules = modules ++ [ ./home-manager/hosts/${hostname}.nix ];
+          modules = modules ++ [ ./hosts/${hostname} ];
         };
     in
     {
