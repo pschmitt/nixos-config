@@ -68,6 +68,7 @@
   sops.secrets = {
     "mistral-vibe/env" = {
       mode = "0600";
+      sopsFile = ../../secrets/shared.sops.yaml;
     };
   };
 
