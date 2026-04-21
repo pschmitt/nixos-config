@@ -58,6 +58,19 @@ eval *args:
 eval-hm *args:
   ./scripts/nix.sh eval --home-manager {{args}}
 
+alias hm := home-manager
+home-manager host='fnuc':
+  #!/usr/bin/env bash
+  set -euo pipefail
+  TARGET_HOST="{{host}}"
+  LC_ALL=C.UTF-8 \
+  LANG=C.UTF-8 \
+  NIX_CONFIG='experimental-features = nix-command flakes' \
+    nix run github:nix-community/home-manager -- \
+      -b hm-backup \
+      switch \
+      --flake ".#${TARGET_HOST}"
+
 nix-update *args:
   ./scripts/nix-update.sh {{args}}
 
