@@ -206,6 +206,42 @@ list_nixos_configurations() {
   jq -er '.[]' <<<"$hosts_json"
 }
 
+discover_homes() {
+  if (( ${#TARGET_HOSTS_ARR[@]} > 0 ))
+  then
+    printf '%s\n' "${TARGET_HOSTS_ARR[@]}" | sort -u
+    return 0
+  fi
+
+  local -a head_homes=()
+  mapfile -t head_homes < <(list_home_configurations ".")
+
+  local -a base_homes=()
+  mapfile -t base_homes < <(list_home_configurations "$BASE_WORKTREE")
+
+  comm -12 \
+    <(printf '%s\n' "${head_homes[@]}" | sort -u) \
+    <(printf '%s\n' "${base_homes[@]}" | sort -u)
+}
+
+list_home_configurations() {
+  local flake_path="$1"
+  local homes_json
+
+  if ! homes_json="$(
+    nix eval \
+      --json \
+      "${flake_path}#homeConfigurations" \
+      --apply 'configs: builtins.attrNames configs' \
+      2>/dev/null
+  )"
+  then
+    return 0
+  fi
+
+  jq -er '.[]' <<<"$homes_json"
+}
+
 filter_hosts() {
   local host
 
@@ -266,6 +302,54 @@ select_hosts() {
 
   # No host-scoped changes found; default to all discovered hosts.
   printf '%s\n' "${all_hosts[@]}"
+}
+
+select_homes() {
+  local -a all_homes
+  mapfile -t all_homes < <(discover_homes)
+
+  local -a changed
+  mapfile -t changed < <(changed_files)
+
+  declare -A wanted=()
+  local global_change=
+
+  local file
+  for file in "${changed[@]}"
+  do
+    case "$file" in
+      hosts/*/*)
+        local home
+        home="${file#hosts/}"
+        home="${home%%/*}"
+        wanted["$home"]=1
+        ;;
+      flake.nix|flake.lock|common/*|hardware/*|home-manager/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*|*.nix)
+        global_change=1
+        ;;
+    esac
+  done
+
+  if (( ${#wanted[@]} > 0 ))
+  then
+    local home
+    for home in "${all_homes[@]}"
+    do
+      if [[ -n "${wanted[$home]:-}" ]]
+      then
+        printf '%s\n' "$home"
+      fi
+    done
+    return 0
+  fi
+
+  if [[ -n "${global_change:-}" ]]
+  then
+    printf '%s\n' "${all_homes[@]}"
+    return 0
+  fi
+
+  printf '%s\n' "${all_homes[@]}"
 }
 
 trim_output() {
@@ -547,6 +631,47 @@ write_host_packages_norm() {
   rm -f "$sys_file" "$hm_file" "$hm_err"
 }
 
+write_home_packages_norm() {
+  local flake_path="$1"
+  local home="$2"
+  local out_file="$3"
+  local err_file="$4"
+  local json_file
+
+  json_file="$(mktemp)"
+
+  # shellcheck disable=SC2016
+  if ! nix eval --json \
+    "${flake_path}#homeConfigurations.${home}.config.home.packages" \
+    --apply '
+      pkgs:
+        let
+          norm = p:
+            if builtins.isAttrs p then
+              {
+                name =
+                  if p ? pname then p.pname else
+                  if p ? name then p.name else
+                  builtins.toString p;
+                version =
+                  if p ? version then p.version else "";
+              }
+            else
+              { name = builtins.toString p; version = ""; };
+        in builtins.map norm pkgs
+    ' >"$json_file" 2>"$err_file"
+  then
+    rm -f "$json_file"
+    return 1
+  fi
+
+  jq -r '.[] | "\(.name) \(.version)"' <"$json_file" | \
+    sed 's/ $//' | \
+    sort -u >"$out_file"
+
+  rm -f "$json_file"
+}
+
 compute_changes() {
   local base_file="$1"
   local head_file="$2"
@@ -691,14 +816,16 @@ print_common_summary() {
   local common_added="$3"
   local common_removed="$4"
   local common_upgrades="$5"
+  local label="${6:-Hosts}"
+  local kind="${7:-host(s)}"
 
   local ok_count
   ok_count="$(wc -l <"$ok_hosts_file" | tr -d ' ')"
 
-  printf '### Common changes (across %s host(s))\n' "$ok_count"
+  printf '### Common changes (across %s %s)\n' "$ok_count" "$kind"
   printf '\n'
 
-  printf 'Hosts: %s\n' "$(join_hosts_csv "$ok_hosts_file")"
+  printf '%s: %s\n' "$label" "$(join_hosts_csv "$ok_hosts_file")"
   printf '\n'
 
   if (( excluded_count > 0 ))
@@ -778,6 +905,7 @@ print_group_extras() {
   local common_added="$2"
   local common_removed="$3"
   local common_upgrades="$4"
+  local label="${5:-Hosts}"
 
   local tmp_list
   tmp_list="$(mktemp)"
@@ -827,7 +955,7 @@ print_group_extras() {
         printf '\n'
       fi
 
-      printf '#### Hosts: %s\n' "$hosts_csv"
+      printf '#### %s: %s\n' "$label" "$hosts_csv"
       printf '\n'
       print_changes_diff "$extra_added" "$extra_removed" "$extra_upgrades"
       printf '\n'
@@ -863,7 +991,7 @@ main() {
   git worktree add "$BASE_WORKTREE" "$BASE_SHA" >/dev/null
 
   printf '%s\n' '<!-- pr-systempackages-diff -->'
-  printf '%s\n' '## NixOS packages diff (system + home-manager, no builds)'
+  printf '%s\n' '## Packages diff (no builds)'
   printf '\n'
   printf 'Base: %s\n' "$BASE_SHA"
   printf '\n'
@@ -882,46 +1010,49 @@ main() {
   fi
 
   mapfile -t hosts < <(select_hosts)
-  if (( ${#hosts[@]} == 0 ))
+  mapfile -t homes < <(select_homes)
+  if (( ${#hosts[@]} == 0 && ${#homes[@]} == 0 ))
   then
-    printf '%s\n' 'No hosts found.'
+    printf '%s\n' 'No NixOS hosts or standalone Home Manager configs found.'
     exit 0
   fi
 
-  local excluded_count=0
+  if (( ${#hosts[@]} > 0 ))
+  then
+    local excluded_count=0
 
-  local groups_dir
-  groups_dir="${RUN_DIR}/groups"
-  mkdir -p "$groups_dir"
+    local groups_dir
+    groups_dir="${RUN_DIR}/groups"
+    mkdir -p "$groups_dir"
 
-  local kernel_groups_dir
-  kernel_groups_dir="${RUN_DIR}/kernel.groups"
-  mkdir -p "$kernel_groups_dir"
+    local kernel_groups_dir
+    kernel_groups_dir="${RUN_DIR}/kernel.groups"
+    mkdir -p "$kernel_groups_dir"
 
-  local kernel_ok_hosts_file
-  kernel_ok_hosts_file="${RUN_DIR}/kernel.ok.hosts"
-  : >"$kernel_ok_hosts_file"
+    local kernel_ok_hosts_file
+    kernel_ok_hosts_file="${RUN_DIR}/kernel.ok.hosts"
+    : >"$kernel_ok_hosts_file"
 
-  local kernel_excluded_count=0
+    local kernel_excluded_count=0
 
-  local ok_hosts_file
-  ok_hosts_file="${RUN_DIR}/ok.hosts"
-  : >"$ok_hosts_file"
+    local ok_hosts_file
+    ok_hosts_file="${RUN_DIR}/ok.hosts"
+    : >"$ok_hosts_file"
 
-  local common_added
-  common_added="${RUN_DIR}/common.added"
+    local common_added
+    common_added="${RUN_DIR}/common.added"
 
-  local common_removed
-  common_removed="${RUN_DIR}/common.removed"
+    local common_removed
+    common_removed="${RUN_DIR}/common.removed"
 
-  local common_upgrades
-  common_upgrades="${RUN_DIR}/common.upgrades"
+    local common_upgrades
+    common_upgrades="${RUN_DIR}/common.upgrades"
 
-  local first_ok=1
+    local first_ok=1
 
-  local host
-  for host in "${hosts[@]}"
-  do
+    local host
+    for host in "${hosts[@]}"
+    do
     local host_dir
     host_dir="${RUN_DIR}/hosts/${host}"
     mkdir -p "$host_dir"
@@ -999,24 +1130,22 @@ main() {
     then
       printf '%s\n' "$host_dir" >"${groups_dir}/${sig}.repdir"
     fi
-  done
+    done
 
-  if ! ls "$groups_dir"/*.hosts >/dev/null 2>&1
-  then
-    printf '%s\n' 'Failed to evaluate packages for all selected hosts.'
-    exit 0
-  fi
+    if ls "$groups_dir"/*.hosts >/dev/null 2>&1
+    then
+      print_kernel_updates "$kernel_groups_dir" "$kernel_ok_hosts_file" "$kernel_excluded_count"
+      printf '%s\n' '## NixOS packages diff (system + home-manager, no builds)'
+      printf '\n'
+      print_common_summary "$ok_hosts_file" "$excluded_count" "$common_added" "$common_removed" "$common_upgrades" 'Hosts' 'host(s)'
+      print_group_extras "$groups_dir" "$common_added" "$common_removed" "$common_upgrades" 'Hosts'
 
-  print_kernel_updates "$kernel_groups_dir" "$kernel_ok_hosts_file" "$kernel_excluded_count"
-  print_common_summary "$ok_hosts_file" "$excluded_count" "$common_added" "$common_removed" "$common_upgrades"
-  print_group_extras "$groups_dir" "$common_added" "$common_removed" "$common_upgrades"
+      printf '%s\n' '<details>'
+      printf '  <summary>Per-host details (%s host(s))</summary>\n' "${#hosts[@]}"
+      printf '\n'
 
-  printf '%s\n' '<details>'
-  printf '  <summary>Per-host details (%s host(s))</summary>\n' "${#hosts[@]}"
-  printf '\n'
-
-  for host in "${hosts[@]}"
-  do
+      for host in "${hosts[@]}"
+      do
     printf '### %s\n' "$host"
     printf '\n'
     local host_dir
@@ -1079,9 +1208,146 @@ main() {
 
     print_changes_diff "${host_dir}/added" "${host_dir}/removed" "${host_dir}/upgrades"
     printf '\n'
-  done
+      done
 
-  printf '%s\n' '</details>'
+      printf '%s\n' '</details>'
+    else
+      printf '%s\n' '## NixOS packages diff (system + home-manager, no builds)'
+      printf '\n'
+      printf '%s\n' 'Failed to evaluate packages for all selected hosts.'
+      printf '\n'
+    fi
+  fi
+
+  if (( ${#homes[@]} > 0 ))
+  then
+    local hm_run_dir
+    hm_run_dir="${RUN_DIR}/homes"
+    mkdir -p "$hm_run_dir"
+
+    local hm_groups_dir
+    hm_groups_dir="${RUN_DIR}/home.groups"
+    mkdir -p "$hm_groups_dir"
+
+    local hm_ok_file
+    hm_ok_file="${RUN_DIR}/home.ok"
+    : >"$hm_ok_file"
+
+    local hm_excluded_count=0
+    local hm_common_added="${RUN_DIR}/home.common.added"
+    local hm_common_removed="${RUN_DIR}/home.common.removed"
+    local hm_common_upgrades="${RUN_DIR}/home.common.upgrades"
+    local hm_first_ok=1
+
+    local home
+    for home in "${homes[@]}"
+    do
+      local home_dir
+      home_dir="${hm_run_dir}/${home}"
+      mkdir -p "$home_dir"
+
+      if ! write_home_packages_norm "$BASE_WORKTREE" "$home" "${home_dir}/base.pkgs" "${home_dir}/base.err"
+      then
+        hm_excluded_count=$((hm_excluded_count + 1))
+        printf '%s\n' 'fail' >"${home_dir}/status"
+        continue
+      fi
+
+      if ! write_home_packages_norm "." "$home" "${home_dir}/head.pkgs" "${home_dir}/head.err"
+      then
+        hm_excluded_count=$((hm_excluded_count + 1))
+        printf '%s\n' 'fail' >"${home_dir}/status"
+        continue
+      fi
+
+      compute_changes "${home_dir}/base.pkgs" "${home_dir}/head.pkgs" "${home_dir}/added" "${home_dir}/removed" "${home_dir}/upgrades"
+      printf '%s\n' 'ok' >"${home_dir}/status"
+      printf '%s\n' "$home" >>"$hm_ok_file"
+
+      if [[ -n "${hm_first_ok:-}" ]]
+      then
+        cat "${home_dir}/added" >"$hm_common_added"
+        cat "${home_dir}/removed" >"$hm_common_removed"
+        cat "${home_dir}/upgrades" >"$hm_common_upgrades"
+        hm_first_ok=
+      else
+        comm -12 "$hm_common_added" "${home_dir}/added" >"${hm_common_added}.tmp" || true
+        mv "${hm_common_added}.tmp" "$hm_common_added"
+        comm -12 "$hm_common_removed" "${home_dir}/removed" >"${hm_common_removed}.tmp" || true
+        mv "${hm_common_removed}.tmp" "$hm_common_removed"
+        comm -12 "$hm_common_upgrades" "${home_dir}/upgrades" >"${hm_common_upgrades}.tmp" || true
+        mv "${hm_common_upgrades}.tmp" "$hm_common_upgrades"
+      fi
+
+      local hm_sig
+      hm_sig="$(changes_signature "${home_dir}/added" "${home_dir}/removed" "${home_dir}/upgrades")"
+      printf '%s\n' "$home" >>"${hm_groups_dir}/${hm_sig}.hosts"
+      if [[ ! -f "${hm_groups_dir}/${hm_sig}.repdir" ]]
+      then
+        printf '%s\n' "$home_dir" >"${hm_groups_dir}/${hm_sig}.repdir"
+      fi
+    done
+
+    if ls "$hm_groups_dir"/*.hosts >/dev/null 2>&1
+    then
+      printf '%s\n' '## Standalone Home Manager packages diff (home.packages only, no builds)'
+      printf '\n'
+      print_common_summary "$hm_ok_file" "$hm_excluded_count" "$hm_common_added" "$hm_common_removed" "$hm_common_upgrades" 'Homes' 'home(s)'
+      print_group_extras "$hm_groups_dir" "$hm_common_added" "$hm_common_removed" "$hm_common_upgrades" 'Homes'
+
+      printf '%s\n' '<details>'
+      printf '  <summary>Per-home details (%s home(s))</summary>\n' "${#homes[@]}"
+      printf '\n'
+
+      for home in "${homes[@]}"
+      do
+        printf '### %s\n' "$home"
+        printf '\n'
+        local home_dir
+        home_dir="${hm_run_dir}/${home}"
+
+        if [[ ! -d "$home_dir" || ! -f "${home_dir}/status" ]]
+        then
+          printf '%s\n' '(no data)'
+          printf '\n'
+          continue
+        fi
+
+        if [[ "$(cat "${home_dir}/status")" != "ok" ]]
+        then
+          if [[ -s "${home_dir}/base.err" ]]
+          then
+            print_eval_error 'Failed to eval base home packages' "${home_dir}/base.err" 60
+          fi
+          if [[ -s "${home_dir}/head.err" ]]
+          then
+            print_eval_error 'Failed to eval head home packages' "${home_dir}/head.err" 60
+          fi
+          printf '\n'
+          continue
+        fi
+
+        local added_count
+        added_count="$(wc -l <"${home_dir}/added" | tr -d ' ')"
+        local removed_count
+        removed_count="$(wc -l <"${home_dir}/removed" | tr -d ' ')"
+        local upgrades_count
+        upgrades_count="$(wc -l <"${home_dir}/upgrades" | tr -d ' ')"
+
+        printf '%s\n' "Upgrades: ${upgrades_count}, added: ${added_count}, removed: ${removed_count}"
+        printf '\n'
+        print_changes_diff "${home_dir}/added" "${home_dir}/removed" "${home_dir}/upgrades"
+        printf '\n'
+      done
+
+      printf '%s\n' '</details>'
+    else
+      printf '%s\n' '## Standalone Home Manager packages diff (home.packages only, no builds)'
+      printf '\n'
+      printf '%s\n' 'Failed to evaluate packages for all selected standalone Home Manager configs.'
+      printf '\n'
+    fi
+  fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
