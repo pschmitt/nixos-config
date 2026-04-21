@@ -4,11 +4,12 @@ set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--pkg NAME --system SYSTEM | --host NAME] [--copy] [OPTIONS]
+Usage: $(basename "$0") [--pkg NAME --system SYSTEM | --host NAME | --home NAME] [--copy] [OPTIONS]
 
 Targets:
   --pkg NAME            Build or copy a package
   --host NAME           Build or copy a host configuration
+  --home NAME           Build or copy a standalone Home Manager configuration
 
 Package options:
   --system SYSTEM       Nix system for the package
@@ -44,10 +45,22 @@ host_ref() {
   printf '.#nixosConfigurations.%s.config.system.build.toplevel\n' "$host"
 }
 
+home_ref() {
+  local home="$1"
+
+  printf '.#homeConfigurations.%s.activationPackage\n' "$home"
+}
+
 host_system() {
   local host="$1"
 
   nix eval --raw ".#nixosConfigurations.${host}.config.nixpkgs.system"
+}
+
+home_system() {
+  local home="$1"
+
+  nix eval --raw ".#homeConfigurations.${home}.pkgs.stdenv.hostPlatform.system"
 }
 
 show_result_tree() {
@@ -178,12 +191,34 @@ copy_host() {
   copy_refs "" "$(host_ref "$host")"
 }
 
+build_home() {
+  local home="$1"
+  local system
+  local use_builders
+
+  system="$(home_system "$home")"
+  use_builders=
+  if [[ "$system" == "aarch64-linux" ]]
+  then
+    use_builders=1
+  fi
+
+  build_ref "$(home_ref "$home")" "$use_builders" ""
+}
+
+copy_home() {
+  local home="$1"
+
+  copy_refs "" "$(home_ref "$home")"
+}
+
 main() {
   local copy
   local nonfree
   local oci
   local pkg=""
   local host=""
+  local home=""
   local system=""
 
   copy=
@@ -199,6 +234,10 @@ main() {
         ;;
       --host)
         host="${2:-}"
+        shift 2
+        ;;
+      --home)
+        home="${2:-}"
         shift 2
         ;;
       --system)
@@ -231,15 +270,15 @@ main() {
 
   require_command nix
 
-  if [[ -n "$pkg" && -n "$host" ]]
+  if [[ -n "$pkg" && ( -n "$host" || -n "$home" ) ]]
   then
-    echo "Choose either --pkg or --host" >&2
+    echo "Choose exactly one of --pkg, --host or --home" >&2
     return 2
   fi
 
-  if [[ -z "$pkg" && -z "$host" ]]
+  if [[ -z "$pkg" && -z "$host" && -z "$home" ]]
   then
-    echo "Missing --pkg or --host" >&2
+    echo "Missing --pkg, --host or --home" >&2
     usage >&2
     return 2
   fi
@@ -268,11 +307,23 @@ main() {
     return 2
   fi
 
+  if [[ -n "$host" ]]
+  then
+    if [[ -n "$copy" ]]
+    then
+      copy_host "$host"
+    else
+      build_host "$host"
+    fi
+
+    return 0
+  fi
+
   if [[ -n "$copy" ]]
   then
-    copy_host "$host"
+    copy_home "$home"
   else
-    build_host "$host"
+    build_home "$home"
   fi
 }
 
