@@ -3,7 +3,7 @@
   imports = [
     ../../modules/main-user.nix
 
-    ../../home-manager/server-base.nix
+    ../../home-manager/base.nix
     ../../home-manager/sops-standalone.nix
   ];
 
