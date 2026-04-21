@@ -67,8 +67,6 @@ home-manager host='':
   then
     TARGET_HOST="${HOSTNAME:-$(hostname)}"
   fi
-  LC_ALL=C.UTF-8 \
-  LANG=C.UTF-8 \
   NIX_CONFIG='experimental-features = nix-command flakes' \
     nix run github:nix-community/home-manager -- \
       -b hm-backup \
