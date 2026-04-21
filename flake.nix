@@ -408,6 +408,26 @@
               inputs.srvos.nixosModules.mixins-terminfo
             ];
         };
+
+      mkHome =
+        hostname:
+        {
+          system,
+          modules ? [ ],
+        }:
+        inputs.home-manager.lib.homeManagerConfiguration {
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+            overlays = builtins.attrValues outputs.overlays;
+          };
+
+          extraSpecialArgs = {
+            inherit inputs outputs;
+          };
+
+          modules = modules ++ [ ./home-manager/hosts/${hostname}.nix ];
+        };
     in
     {
       # Your custom packages
@@ -465,6 +485,12 @@
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
       # homeManagerModules = import ./modules/home-manager;
+
+      homeConfigurations = {
+        fnuc = mkHome "fnuc" {
+          system = "x86_64-linux";
+        };
+      };
 
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'

@@ -1,0 +1,46 @@
+{
+  inputs,
+  pkgs,
+  ...
+}:
+let
+  httpasswdPkg = pkgs.writeShellScriptBin "htpasswd" ''
+    exec ${pkgs.apacheHttpd}/bin/htpasswd "$@"
+  '';
+in
+{
+  imports = [
+    ./android.nix
+    ./cloud.nix
+    ./git.nix
+    ./golang.nix
+    ./jq.nix
+    ./mani.nix
+    ./nix.nix
+    ./nodejs.nix
+    ./python.nix
+    ./rust.nix
+    ./sh.nix
+    ./zsh.nix
+  ];
+
+  home.packages = with pkgs; [
+    envsubst
+    flarectl
+    httpasswdPkg
+    inotify-tools
+    sqlite
+    tmux-xpanes
+    websocat
+
+    inputs.ruamel-fmt.packages.${pkgs.stdenv.hostPlatform.system}.ruamel-fmt
+
+    gnumake
+    go-task
+    just
+
+    age
+    sops
+    ssh-to-age
+  ];
+}
