@@ -59,10 +59,14 @@ eval-hm *args:
   ./scripts/nix.sh eval --home-manager {{args}}
 
 alias hm := home-manager
-home-manager host='fnuc':
+home-manager host='':
   #!/usr/bin/env bash
   set -euo pipefail
   TARGET_HOST="{{host}}"
+  if [[ -z "$TARGET_HOST" ]]
+  then
+    TARGET_HOST="${HOSTNAME:-$(hostname)}"
+  fi
   LC_ALL=C.UTF-8 \
   LANG=C.UTF-8 \
   NIX_CONFIG='experimental-features = nix-command flakes' \
