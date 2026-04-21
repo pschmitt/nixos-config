@@ -7,12 +7,10 @@
   imports = lib.concatLists [
     (
       [
-        ./common.nix
+        ./base.nix
       ]
-      ++ import ./main-modules.nix { develModule = ./devel; }
       ++ [
         # ./openclaw.nix
-        ./gpg.nix
         ./sops.nix
         ./ssh.nix
         ./work
