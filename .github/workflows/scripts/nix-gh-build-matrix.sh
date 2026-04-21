@@ -6,6 +6,8 @@ export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
 
 JSON_NIXOS_CONFIGS_X86_64='[]'
 JSON_NIXOS_CONFIGS_AARCH64='[]'
+JSON_HOME_CONFIGS_X86_64='[]'
+JSON_HOME_CONFIGS_AARCH64='[]'
 
 nix_host_architecture() {
   local host="$1"
@@ -14,6 +16,15 @@ nix_host_architecture() {
 
 list_nixos_configurations() {
   nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.attrNames configs'
+}
+
+list_home_configurations() {
+  nix eval --json '.#homeConfigurations' --apply 'configs: builtins.attrNames configs'
+}
+
+home_configuration_architecture() {
+  local home="$1"
+  nix eval --raw ".#homeConfigurations.${home}.pkgs.stdenv.hostPlatform.system"
 }
 
 list_package_names() {
@@ -172,6 +183,32 @@ do
   esac
 done
 
+HOME_CONFIGS_JSON="$(list_home_configurations)"
+if ! jq -e 'type == "array"' <<< "$HOME_CONFIGS_JSON" >/dev/null
+then
+  echo "Failed to list homeConfigurations" >&2
+  exit 1
+fi
+
+mapfile -t HOME_CONFIGS < <(jq -er '.[]' <<< "$HOME_CONFIGS_JSON")
+for h in "${HOME_CONFIGS[@]}"
+do
+  case "$(home_configuration_architecture "$h")" in
+    x86_64-linux)
+      JSON_HOME_CONFIGS_X86_64=$(jq -cn \
+        --argjson arr "$JSON_HOME_CONFIGS_X86_64" \
+        --arg h "$h" \
+        '$arr + [$h]')
+      ;;
+    aarch64-linux)
+      JSON_HOME_CONFIGS_AARCH64=$(jq -cn \
+        --argjson arr "$JSON_HOME_CONFIGS_AARCH64" \
+        --arg h "$h" \
+        '$arr + [$h]')
+      ;;
+  esac
+done
+
 
 JSON_PKGS_X86_64_ALL="$(json_array_from_values "${PKGS_X86_64_all[@]}")"
 JSON_PKGS_X86_64_FREE="$(json_array_from_values "${PKGS_X86_64_free[@]}")"
@@ -225,6 +262,8 @@ JSON_PKGS_OCI="$(jq -cn \
 jq -cn \
   --argjson hosts_x86_64 "$JSON_NIXOS_CONFIGS_X86_64" \
   --argjson hosts_aarch64 "$JSON_NIXOS_CONFIGS_AARCH64" \
+  --argjson homes_x86_64 "$JSON_HOME_CONFIGS_X86_64" \
+  --argjson homes_aarch64 "$JSON_HOME_CONFIGS_AARCH64" \
   --argjson pkgs_all "$JSON_PKGS_ALL" \
   --argjson pkgs_free "$JSON_PKGS_FREE" \
   --argjson pkgs_nonfree "$JSON_PKGS_NONFREE" \
@@ -262,6 +301,10 @@ jq -cn \
     hosts: {
       amd64: $hosts_x86_64,
       aarch64: $hosts_aarch64
+    },
+    homes: {
+      amd64: $homes_x86_64,
+      aarch64: $homes_aarch64
     }
   }
 '
