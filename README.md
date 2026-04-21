@@ -2,6 +2,23 @@
 
 Description: tdb.
 
+## Home Manager on `fnuc`
+
+`fnuc` is a standalone Home Manager target for a headless Fedora host.
+
+Apply it with:
+
+```shell
+NIX_CONFIG='experimental-features = nix-command flakes' \
+nix run github:nix-community/home-manager -- switch --flake '.#fnuc'
+```
+
+To verify that the configuration evaluates:
+
+```shell
+nix --extra-experimental-features 'nix-command flakes' \
+  eval '.#homeConfigurations.fnuc.activationPackage.drvPath'
+```
 
 ## Deploying a new host
 
