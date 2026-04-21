@@ -39,6 +39,5 @@
   home = {
     # The home.stateVersion option does not have a default and must be set
     inherit (osConfig.system) stateVersion;
-    packages = [ pkgs.home-manager ];
   };
 }
