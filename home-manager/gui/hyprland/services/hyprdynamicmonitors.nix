@@ -165,8 +165,8 @@ let
       content = ''
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
-        monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$laptop.Name}},${laptopMonitorExternalPlacementSettings}
+        monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
+        monitor={{$lg.Name}},3440x1440@60,auto-right,1
       '';
     };
     "dual-display" = {
