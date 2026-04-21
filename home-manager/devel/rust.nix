@@ -1,7 +1,11 @@
-{ pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 {
   home.packages = with pkgs; [
-    (fenix.complete.withComponents [
+    (inputs.fenix.packages.${pkgs.stdenv.hostPlatform.system}.complete.withComponents [
       "cargo"
       # "clippy"
       # "rust-src"
