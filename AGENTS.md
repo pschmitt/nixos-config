@@ -12,6 +12,7 @@
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
 - `statix` checks should pass.
+- After Nix code changes, run `statix check` from within `nix develop`.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 
