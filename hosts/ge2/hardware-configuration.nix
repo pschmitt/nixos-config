@@ -47,7 +47,7 @@
 
   # Precision 5680 uses a Raptor Lake IPU6 camera.
   hardware.ipu6 = {
-    enable = true;
+    enable = false;
     platform = "ipu6ep";
   };
 
