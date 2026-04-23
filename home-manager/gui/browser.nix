@@ -255,22 +255,25 @@ in
     };
   };
 
-  # Side-load BruvTab for Chromium.
-  xdg.configFile =
-    let
-      chromiumDest = "chromium/External Extensions";
-      jsonContent = {
-        external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
-        external_version = bruvtabPkg.version;
-      };
-    in
-    {
-      "${chromiumDest}/${bruvtabChromeExtensionId}.json".text = builtins.toJSON jsonContent;
-
-      # Native messaging host manifests
-      "chromium/NativeMessagingHosts/bruvtab_mediator.json".source =
-        "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
-    };
+  programs.chromium = {
+    enable = true;
+    extensions = [
+      {
+        id = bruvtabChromeExtensionId;
+        crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
+        inherit (bruvtabPkg) version;
+      }
+      {
+        id = "cjpalhdlnbpafiamejdnhcphjbkeiagm";
+      }
+      {
+        id = "nngceckbapebfimnlniiiahkandclblb";
+      }
+    ];
+    nativeMessagingHosts = [
+      bruvtabPkg
+    ];
+  };
 
   systemd.user.services.fx-cast = {
     Unit = {
