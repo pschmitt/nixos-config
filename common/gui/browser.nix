@@ -10,10 +10,12 @@ let
   bruvtabChromeExtensionId = lib.removeSuffix "\n" (
     builtins.readFile "${bruvtabChromeCrx}/extension-id"
   );
-  bruvtabChromeExtensionJson = pkgs.writeText "${bruvtabChromeExtensionId}.json" (
+  bruvtabChromeExternalExtensionsJson = pkgs.writeText "external_extensions.json" (
     builtins.toJSON {
-      external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
-      external_version = bruvtabPkg.version;
+      "${bruvtabChromeExtensionId}" = {
+        external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
+        external_version = bruvtabPkg.version;
+      };
     }
   );
 in
@@ -49,21 +51,22 @@ in
   ];
 
   systemd.tmpfiles.rules = [
-    "d /opt/google/chrome/extensions 0755 root root - -"
+    "d /usr/share/google-chrome/extensions 0755 root root - -"
   ];
 
   system.activationScripts.bruvtabChromeExtension = {
     text = ''
-      install -d -m0755 /opt/google/chrome/extensions
-      for json in /opt/google/chrome/extensions/*.json
+      install -d -m0755 /usr/share/google-chrome/extensions
+      for json in /usr/share/google-chrome/extensions/*.json
       do
         if [[ -f "$json" ]] && grep -Fq '/bruvtab.crx' "$json"
         then
           rm -f "$json"
         fi
       done
-      install -m0444 ${bruvtabChromeExtensionJson} \
-        /opt/google/chrome/extensions/${bruvtabChromeExtensionId}.json
+      install -m0444 ${bruvtabChromeExternalExtensionsJson} \
+        /usr/share/google-chrome/extensions/external_extensions.json
+      rm -f /opt/google/chrome/extensions/*.json
     '';
   };
 }
