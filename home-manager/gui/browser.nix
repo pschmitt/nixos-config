@@ -1,7 +1,16 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
 let
   bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
   bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
+  bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
+  bruvtabChromeExtensionId = lib.removeSuffix "\n" (
+    builtins.readFile "${bruvtabChromeCrx}/extension-id"
+  );
 in
 {
 
@@ -246,23 +255,28 @@ in
     };
   };
 
-  # NOTE Below is *only* for chromium, not google-chrome-stable!
-  # programs.chromium.nativeMessagingHosts = with pkgs; [
-  #   brotab
-  #   native-client # external-application-button
-  # ];
-
-  # programs.google-chrome.nativeMessagingHosts for poor people
+  # Side-load BruvTab for Chromium. Google Chrome only reads system-level
+  # external extension metadata on Linux, so that piece lives in
+  # common/gui/browser.nix.
   xdg.configFile =
     let
-      dest = "google-chrome/NativeMessagingHosts";
+      chromiumDest = "chromium/External Extensions";
+      jsonContent = {
+        external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
+        external_version = bruvtabPkg.version;
+      };
     in
     {
-      # BroTab for Google Chrome
-      "${dest}/bruvtab_mediator.json".source =
+      "${chromiumDest}/${bruvtabChromeExtensionId}.json".text = builtins.toJSON jsonContent;
+
+      # Native messaging host manifests
+      "chromium/NativeMessagingHosts/bruvtab_mediator.json".source =
         "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
+      "google-chrome/NativeMessagingHosts/bruvtab_mediator.json".source =
+        "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
+
       # Native Addon (for open in firefox)
-      "${dest}/com.add0n.node.json".source =
+      "google-chrome/NativeMessagingHosts/com.add0n.node.json".source =
         "${pkgs.native-client}/lib/chromium/NativeMessagingHosts/com.add0n.node.json";
     };
 

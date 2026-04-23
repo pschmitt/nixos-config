@@ -1,4 +1,22 @@
-{ pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  lib,
+  ...
+}:
+let
+  bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
+  bruvtabChromeExtensionId = lib.removeSuffix "\n" (
+    builtins.readFile "${bruvtabChromeCrx}/extension-id"
+  );
+  bruvtabChromeExtensionJson = pkgs.writeText "${bruvtabChromeExtensionId}.json" (
+    builtins.toJSON {
+      external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
+      external_version = bruvtabPkg.version;
+    }
+  );
+in
 {
 
   # NOTE see also home-manager/gui/browser.nix
@@ -29,6 +47,21 @@
     firefox
     google-chrome
   ];
+
+  systemd.tmpfiles.rules = [
+    "d /opt/google/chrome/extensions 0755 root root - -"
+  ];
+
+  system.activationScripts.bruvtabChromeExtension = {
+    text = ''
+      install -d -m0755 /opt/google/chrome/extensions
+      rm -f \
+        /opt/google/chrome/extensions/gcbobllgbdnjilcobohhdkaddibbjidl.json \
+        /opt/google/chrome/extensions/edpgjheobdplebiikjgjgpmonakingef.json
+      install -m0444 ${bruvtabChromeExtensionJson} \
+        /opt/google/chrome/extensions/${bruvtabChromeExtensionId}.json
+    '';
+  };
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
