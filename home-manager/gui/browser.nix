@@ -258,16 +258,21 @@ in
   programs.chromium = {
     enable = true;
     extensions = [
+      # Bitwarden
+      {
+        id = "nngceckbapebfimnlniiiahkandclblb";
+      }
+
+      # BruvTab
       {
         id = bruvtabChromeExtensionId;
         crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
         inherit (bruvtabPkg) version;
       }
+
+      # uBlock Origin Lite
       {
         id = "cjpalhdlnbpafiamejdnhcphjbkeiagm";
-      }
-      {
-        id = "nngceckbapebfimnlniiiahkandclblb";
       }
     ];
     nativeMessagingHosts = [
