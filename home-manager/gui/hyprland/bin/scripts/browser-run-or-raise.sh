@@ -65,10 +65,10 @@ then
   source run-or-raise.sh
 
   BROWSER_BIN=$(cut -d' ' -f1 <<< "$BROWSER")
-  # NOTE google-chrome-stable's application name is google-chrome
+  # Normalize Chromium-family binaries to the actual window class.
   case "$BROWSER_BIN" in
     google-chrome*|chromium*)
-      BROWSER_BIN=google-chrome
+      BROWSER_BIN=chromium
       ;;
   esac
 
