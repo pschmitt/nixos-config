@@ -1,8 +1,12 @@
 { inputs, pkgs, ... }:
+let
+  bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
+  bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
+in
 {
 
   home.packages = with pkgs; [
-    brotab
+    bruvtabPkg
     tor-browser
     inputs.zen-browser.packages."${pkgs.stdenv.hostPlatform.system}".default
   ];
@@ -11,42 +15,46 @@
     enable = true;
 
     nativeMessagingHosts = with pkgs; [
-      brotab
+      bruvtabPkg
       fx-cast-bridge
       native-client # external-application-button
       tridactyl-native
     ];
 
     profiles.default = {
-      extensions.packages = with pkgs.firefox-addons; [
-        # https://gitlab.com/rycee/nur-expressions
-        auto-tab-discard
-        bitwarden
-        brotab
-        # bypass-paywalls-clean
-        consent-o-matic
-        don-t-fuck-with-paste
-        external-application
-        firefox-translations
-        foxyproxy-standard
-        french-dictionary
-        fx_cast
-        # header-editor
-        # istilldontcareaboutcookies
-        languagetool
-        # link-cleaner # leads to issues on github
-        linkding-extension
-        linkding-injector
-        multi-account-containers
-        refined-github
-        re-enable-right-click
-        single-file
-        sponsorblock
-        # tridactyl
-        ublock-origin
-        video-downloadhelper
-        zoom-redirector
-      ];
+      extensions.packages =
+        with pkgs.firefox-addons;
+        [
+          # https://gitlab.com/rycee/nur-expressions
+          auto-tab-discard
+          bitwarden
+          # bypass-paywalls-clean
+          consent-o-matic
+          don-t-fuck-with-paste
+          external-application
+          firefox-translations
+          foxyproxy-standard
+          french-dictionary
+          fx_cast
+          # header-editor
+          # istilldontcareaboutcookies
+          languagetool
+          # link-cleaner # leads to issues on github
+          linkding-extension
+          linkding-injector
+          multi-account-containers
+          refined-github
+          re-enable-right-click
+          single-file
+          sponsorblock
+          # tridactyl
+          ublock-origin
+          video-downloadhelper
+          zoom-redirector
+        ]
+        ++ [
+          bruvtabFirefoxAddon
+        ];
 
       # about:config
       settings = {
@@ -251,8 +259,8 @@
     in
     {
       # BroTab for Google Chrome
-      "${dest}/brotab_mediator.json".source =
-        "${pkgs.brotab}/lib/chromium/NativeMessagingHosts/brotab_mediator.json";
+      "${dest}/bruvtab_mediator.json".source =
+        "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
       # Native Addon (for open in firefox)
       "${dest}/com.add0n.node.json".source =
         "${pkgs.native-client}/lib/chromium/NativeMessagingHosts/com.add0n.node.json";

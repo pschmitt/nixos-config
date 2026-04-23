@@ -20,8 +20,7 @@
   # https://nixos.wiki/wiki/Overlays
   modifications =
     final: prev:
-    (import ./brotab.nix { inherit final prev; })
-    // (import ./hass-cli.nix { inherit final prev; })
+    (import ./hass-cli.nix { inherit final prev; })
     // (import ./go-task.nix { inherit final prev; })
     # // (import ./netbird.nix { inherit final prev; })
     // (import ./rbw.nix { inherit final prev; })

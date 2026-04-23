@@ -92,7 +92,7 @@ then
     }
 
     echo "Activating first matching tab"
-    brotab activate --focused "$(awk '{print $1}' <<< "${TABS[0]}")"
+    bruvtab activate --focused "$(awk '{print $1}' <<< "${TABS[0]}")"
     exit "$?"
   fi
 

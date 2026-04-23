@@ -23,6 +23,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    bruvtab = {
+      url = "github:pschmitt/bruvtab";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     stricknani = {
       url = "github:pschmitt/stricknani";
       inputs.nixpkgs.follows = "nixpkgs";
