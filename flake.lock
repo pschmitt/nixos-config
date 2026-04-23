@@ -70,6 +70,26 @@
         "type": "github"
       }
     },
+    "bruvtab": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1776929200,
+        "narHash": "sha256-oGmesl2N92yfn9w//JNosH0I+dSLeJFirdI7esW+Q1w=",
+        "owner": "pschmitt",
+        "repo": "bruvtab",
+        "rev": "e169a26ad05b276bff6183dbb05036640dfd3f27",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "bruvtab",
+        "type": "github"
+      }
+    },
     "bunq-sh": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -3020,6 +3040,7 @@
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
+        "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "bw-backup": "bw-backup",
         "catppuccin": "catppuccin",
