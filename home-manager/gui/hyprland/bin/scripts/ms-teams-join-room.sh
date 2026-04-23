@@ -7,7 +7,7 @@ zhj() {
 }
 
 # BROWSER=firefox
-BROWSER=google-chrome-stable
+BROWSER=chromium
 
 # Edge Stack
 HOME_ROOM_URL=$(zhj ms-teams::get-url "home room")

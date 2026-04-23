@@ -255,9 +255,7 @@ in
     };
   };
 
-  # Side-load BruvTab for Chromium. Google Chrome only reads system-level
-  # external extension metadata on Linux, so that piece lives in
-  # common/gui/browser.nix.
+  # Side-load BruvTab for Chromium.
   xdg.configFile =
     let
       chromiumDest = "chromium/External Extensions";
@@ -272,12 +270,6 @@ in
       # Native messaging host manifests
       "chromium/NativeMessagingHosts/bruvtab_mediator.json".source =
         "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
-      "google-chrome/NativeMessagingHosts/bruvtab_mediator.json".source =
-        "${bruvtabPkg}/lib/chromium/NativeMessagingHosts/bruvtab_mediator.json";
-
-      # Native Addon (for open in firefox)
-      "google-chrome/NativeMessagingHosts/com.add0n.node.json".source =
-        "${pkgs.native-client}/lib/chromium/NativeMessagingHosts/com.add0n.node.json";
     };
 
   systemd.user.services.fx-cast = {
