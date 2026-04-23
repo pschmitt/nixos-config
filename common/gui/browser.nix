@@ -55,9 +55,13 @@ in
   system.activationScripts.bruvtabChromeExtension = {
     text = ''
       install -d -m0755 /opt/google/chrome/extensions
-      rm -f \
-        /opt/google/chrome/extensions/gcbobllgbdnjilcobohhdkaddibbjidl.json \
-        /opt/google/chrome/extensions/edpgjheobdplebiikjgjgpmonakingef.json
+      for json in /opt/google/chrome/extensions/*.json
+      do
+        if [[ -f "$json" ]] && grep -Fq '/bruvtab.crx' "$json"
+        then
+          rm -f "$json"
+        fi
+      done
       install -m0444 ${bruvtabChromeExtensionJson} \
         /opt/google/chrome/extensions/${bruvtabChromeExtensionId}.json
     '';
