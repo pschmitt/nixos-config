@@ -10,12 +10,10 @@ let
   bruvtabChromeExtensionId = lib.removeSuffix "\n" (
     builtins.readFile "${bruvtabChromeCrx}/extension-id"
   );
-  bruvtabChromeExternalExtensionsJson = pkgs.writeText "external_extensions.json" (
+  bruvtabChromeExtensionJson = pkgs.writeText "${bruvtabChromeExtensionId}.json" (
     builtins.toJSON {
-      "${bruvtabChromeExtensionId}" = {
-        external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
-        external_version = bruvtabPkg.version;
-      };
+      external_crx = "${bruvtabChromeCrx}/bruvtab.crx";
+      external_version = bruvtabPkg.version;
     }
   );
 in
@@ -64,8 +62,10 @@ in
           rm -f "$json"
         fi
       done
-      install -m0444 ${bruvtabChromeExternalExtensionsJson} \
-        /usr/share/google-chrome/extensions/external_extensions.json
+      install -m0444 ${bruvtabChromeExtensionJson} \
+        /usr/share/google-chrome/extensions/${bruvtabChromeExtensionId}.json
+      rm -f /usr/share/google-chrome/extensions/external_extensions.json
+      rm -f /usr/share/google-chrome/extensions/${bruvtabChromeExtensionId}.crx
       rm -f /opt/google/chrome/extensions/*.json
     '';
   };
