@@ -259,6 +259,7 @@ in
     enable = true;
     extensions = [
       # Bitwarden
+      # https://chromewebstore.google.com/detail/bitwarden-passwortmanager/nngceckbapebfimnlniiiahkandclblb
       {
         id = "nngceckbapebfimnlniiiahkandclblb";
       }
@@ -271,8 +272,9 @@ in
       }
 
       # uBlock Origin Lite
+      # https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh
       {
-        id = "cjpalhdlnbpafiamejdnhcphjbkeiagm";
+        id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
       }
     ];
     nativeMessagingHosts = [
