@@ -5,6 +5,20 @@
   ...
 }:
 
+let
+  # GitLab's v4.6.5 archive was repacked upstream, so the fixed-output hash in
+  # nixpkgs no longer matches the downloaded source tarball.
+  fixWiresharkHash =
+    pkg:
+    pkg.overrideAttrs (old: {
+      src = prev.fetchFromGitLab {
+        owner = "wireshark";
+        repo = "wireshark";
+        tag = "v${old.version}";
+        hash = "sha256-Zvrwxjp4LK2J3QnxmPxKKrU01YHQvPyp54UWzeGNCjA=";
+      };
+    });
+in
 {
   # FIX For google-chrome crashing on Hyprland when moving the window from
   # one monitor to another.
@@ -70,6 +84,9 @@
 
   # NixOS module uses pkgs.parsedmarc, not pkgs.python313Packages.parsedmarc.
   inherit (final.python313Packages) parsedmarc;
+
+  wireshark = fixWiresharkHash prev.wireshark;
+  wireshark-cli = fixWiresharkHash prev.wireshark-cli;
 
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
