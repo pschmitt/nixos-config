@@ -151,7 +151,9 @@
     };
 
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
+      # Keep this pinned to the last commit before the newer Hyprland API
+      # adaptation series; our Hyprland input stays on v0.54.3.
+      url = "github:horriblename/hyprgrass/416f0171e1d9379b84742ff4c1234f897ef698b4";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
