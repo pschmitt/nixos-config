@@ -53,14 +53,18 @@ in
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
-        (ps.netbox-documents.overridePythonAttrs (_: {
+        (ps.netbox-documents.overridePythonAttrs (old: {
           version = "0.8.2";
           src = pkgs.fetchFromGitHub {
             owner = "jasonyates";
             repo = "netbox-documents";
             tag = "v0.8.2";
-            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
+            hash = "sha256-qde7s84d81Np5EwQgxFI3PGDSZ2b/ELKOJfYeFdJ6BE=";
           };
+          postPatch = (old.postPatch or "") + ''
+            substituteInPlace netbox_documents/forms.py \
+              --replace "list(DocTypeChoices.choices)" "list(DocTypeChoices)"
+          '';
         }))
         ps.netbox-interface-synchronization
         ps.netbox-qrcode
