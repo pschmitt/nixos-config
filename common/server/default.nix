@@ -56,6 +56,8 @@
 
   networking.useNetworkd = lib.mkDefault true;
 
+  services.dbus.implementation = "broker";
+
   # Prefer Cloudflare DNS on servers (also used by some container modules that
   # read `config.networking.nameservers` to populate container resolv.conf).
   networking.nameservers = lib.mkDefault [
