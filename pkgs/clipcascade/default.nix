@@ -30,14 +30,14 @@ let
 in
 python3.pkgs.buildPythonApplication rec {
   pname = "clipcascade";
-  version = "3.1.0";
+  version = "3.2.0";
   format = "other";
 
   src = fetchFromGitHub {
     owner = "Sathvik-Rao";
     repo = "ClipCascade";
     rev = version;
-    hash = "sha256-+csAEPCdPHxWz7gp4ES4r5bOnVUKDw3oo8lt4MXqKyo=";
+    hash = "sha256-xGJZ0rkGtqQz+mngFPj9Nd1guNzokcvr2k7QNDPeRDo=";
   };
 
   sourceRoot = "source/ClipCascade_Desktop/src";
