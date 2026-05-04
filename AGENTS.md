@@ -18,3 +18,11 @@
 
 ## NetBox
 - When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.
+
+## Home Assistant
+- For authenticated Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
+- `zhj hass-cli` is the reliable path for service calls in this environment. Example:
+  `zsh -lc 'zhj hass-cli service call light.turn_on --arguments entity_id=light.zha_hue_bedroom_light,brightness_pct=80,color_temp_kelvin=2518'`
+- After editing Home Assistant YAML directly, reload the affected domain via `zhj hass::reload ...`.
+- For automations, use `zsh -lc 'zhj hass::reload automation'`.
+- Apply the same pattern to other HA domains after direct edits, for example scripts via `zsh -lc 'zhj hass::reload script'`.
