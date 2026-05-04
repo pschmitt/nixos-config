@@ -3,6 +3,13 @@
   inputs,
   ...
 }:
+let
+  opencodeHotfix = pkgs.master.opencode.overrideAttrs (old: {
+    node_modules = old.node_modules.overrideAttrs {
+      outputHash = "sha256-Zfgx97up2qPnDSGYFTIjdEioLHp4YCZSIgMGR5Zi6k8=";
+    };
+  });
+in
 {
 
   programs = {
@@ -58,7 +65,7 @@
 
     opencode = {
       enable = true;
-      package = pkgs.master.opencode;
+      package = opencodeHotfix;
       enableMcpIntegration = true;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
