@@ -6,16 +6,6 @@
 }:
 
 let
-  django-tables2-28 = prev.python3Packages."django-tables2".overridePythonAttrs (_: rec {
-    version = "2.8.0";
-    src = prev.fetchFromGitHub {
-      owner = "jieter";
-      repo = "django-tables2";
-      tag = "v${version}";
-      hash = "sha256-gEURC3LUBdqebd4+TAJcbgn4SpY1oTI+tg9p2GGKClE=";
-    };
-  });
-
   # GitLab's v4.6.5 archive was repacked upstream, so the fixed-output hash in
   # nixpkgs no longer matches the downloaded source tarball.
   fixWiresharkHash =
@@ -44,11 +34,21 @@ in
   # FIXME Remove once NetBox's django-tables2 dependency is pinned correctly in
   # nixpkgs.
   # https://github.com/NixOS/nixpkgs/issues/512843
-  netbox = prev.netbox.overrideAttrs (old: {
-    propagatedBuildInputs = map (
-      dependency: if dependency.pname or null == "django-tables2" then django-tables2-28 else dependency
-    ) old.propagatedBuildInputs;
-  });
+  netbox = prev.lib.makeOverridable (
+    args:
+    (prev.netbox.override args).overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        for f in netbox/templates/inc/table.html \
+                 netbox/templates/inc/table_htmx.html; do
+          if [ -f "$f" ]; then
+            substituteInPlace "$f" \
+              --replace "querystring table.prefixed_order_by_field=" \
+                        "querystring_replace table.prefixed_order_by_field="
+          fi
+        done
+      '';
+    })
+  ) { };
 
   python313Packages = prev.python313Packages.overrideScope (
     finalPy: prevPy:
