@@ -59,7 +59,7 @@ in
             owner = "jasonyates";
             repo = "netbox-documents";
             tag = "v0.8.2";
-            hash = "sha256-qde7s84d81Np5EwQgxFI3PGDSZ2b/ELKOJfYeFdJ6BE=";
+            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
           };
           postPatch = (old.postPatch or "") + ''
             substituteInPlace netbox_documents/forms.py \
