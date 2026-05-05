@@ -33,39 +33,35 @@ in
     ];
 
     profiles.default = {
-      extensions.packages =
-        with pkgs.firefox-addons;
-        [
-          # https://gitlab.com/rycee/nur-expressions
-          auto-tab-discard
-          bitwarden
-          # bypass-paywalls-clean
-          consent-o-matic
-          don-t-fuck-with-paste
-          external-application
-          firefox-translations
-          foxyproxy-standard
-          french-dictionary
-          fx_cast
-          # header-editor
-          # istilldontcareaboutcookies
-          languagetool
-          # link-cleaner # leads to issues on github
-          linkding-extension
-          linkding-injector
-          multi-account-containers
-          refined-github
-          re-enable-right-click
-          single-file
-          sponsorblock
-          # tridactyl
-          ublock-origin
-          video-downloadhelper
-          zoom-redirector
-        ]
-        ++ [
-          bruvtabFirefoxAddon
-        ];
+      extensions.packages = with pkgs.firefox-addons; [
+        # https://gitlab.com/rycee/nur-expressions
+        auto-tab-discard
+        bitwarden
+        bruvtabFirefoxAddon
+        # bypass-paywalls-clean
+        consent-o-matic
+        don-t-fuck-with-paste
+        external-application
+        firefox-translations
+        foxyproxy-standard
+        french-dictionary
+        fx_cast
+        # header-editor
+        # istilldontcareaboutcookies
+        languagetool
+        # link-cleaner # leads to issues on github
+        linkding-extension
+        linkding-injector
+        multi-account-containers
+        refined-github
+        re-enable-right-click
+        single-file
+        sponsorblock
+        # tridactyl
+        ublock-origin
+        video-downloadhelper
+        zoom-redirector
+      ];
 
       # about:config
       settings = {
