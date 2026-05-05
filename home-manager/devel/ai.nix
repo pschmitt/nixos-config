@@ -16,6 +16,7 @@ in
     claude-code = {
       enable = true;
       package = pkgs.master.claude-code;
+      skills = ./skills;
       enableMcpIntegration = true;
     };
 
@@ -29,6 +30,7 @@ in
     gemini-cli = {
       enable = true;
       package = pkgs.master.gemini-cli;
+      skills = ./skills;
       settings = {
         general = {
           preferredEditor = "nvim";
@@ -66,6 +68,7 @@ in
     opencode = {
       enable = true;
       package = opencodeHotfix;
+      skills = ./skills;
       enableMcpIntegration = true;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
