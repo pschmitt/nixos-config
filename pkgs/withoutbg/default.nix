@@ -25,14 +25,14 @@ let
     sha256 = "0yw4lzrjl2373xag1043k254hi0qh600yf6nq7mdbjir2pcqjnfa";
   };
 in
-buildPythonApplication {
+buildPythonApplication rec {
   pname = "withoutbg";
   version = "1.4.0";
 
   src = fetchFromGitHub {
     owner = "withoutbg";
     repo = "withoutbg";
-    rev = "8885808fbcd9dbe9e8b1c14f044902e819dc3724";
+    rev = "v${version}";
     hash = "sha256-hTrdL8hIFTkB1EHrIULZVE8MTo0SXoBGhaGwRU7VGS4=";
   };
 
@@ -55,7 +55,9 @@ buildPythonApplication {
 
   postPatch = ''
     substituteInPlace pyproject.toml \
-      --replace 'onnxruntime>=1.12.0,<1.20.0' 'onnxruntime>=1.12.0'
+      --replace-fail 'onnxruntime>=1.12.0,<1.20.0' 'onnxruntime>=1.12.0'
+    substituteInPlace src/withoutbg/__version__.py \
+      --replace-fail '1.0.0' '${version}'
   '';
 
   postInstall = ''
