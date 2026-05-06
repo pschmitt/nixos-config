@@ -6,25 +6,6 @@
 }:
 let
   netboxHost = "netbox.${config.domains.main}";
-  pythonFmt = pkgs.formats.pythonVars { };
-  settingsFile = pythonFmt.generate "netbox-settings.py" config.services.netbox.settings;
-  extraConfigFile = pkgs.writeTextFile {
-    name = "netbox-extraConfig.py";
-    text = config.services.netbox.extraConfig;
-  };
-  configFile = pkgs.concatText "configuration.py" [
-    settingsFile
-    extraConfigFile
-  ];
-  netboxPkg =
-    (config.services.netbox.package.overrideAttrs (old: {
-      installPhase = old.installPhase + ''
-        ln -s ${configFile} $out/opt/netbox/netbox/netbox/configuration.py
-      '';
-    })).override
-      {
-        inherit (config.services.netbox) plugins;
-      };
 in
 {
   sops.secrets = {
@@ -47,20 +28,13 @@ in
   services = {
     netbox = {
       enable = true;
-      package = pkgs.netbox;
+      package = pkgs.master.netbox;
       listenAddress = "127.0.0.1";
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
         (ps.netbox-documents.overridePythonAttrs (old: {
-          version = "0.8.2";
-          src = pkgs.fetchFromGitHub {
-            owner = "jasonyates";
-            repo = "netbox-documents";
-            tag = "v0.8.2";
-            hash = "sha256-XFVfNLU9a/0tQAVTrN2B1Oia/isOD8G5BdA3fVUn2sM=";
-          };
           postPatch = (old.postPatch or "") + ''
             substituteInPlace netbox_documents/forms.py \
               --replace "list(DocTypeChoices.choices)" "list(DocTypeChoices)"
@@ -148,26 +122,6 @@ in
   };
 
   users.users.nginx.extraGroups = [ "netbox" ];
-
-  systemd.services.netbox.preStart = lib.mkForce ''
-    # On the first run, or on upgrade / downgrade, run the required NetBox
-    # maintenance steps. Skip remove_stale_contenttypes because protected
-    # object change rows from plugins can make it fail and block startup.
-    versionFile="${config.services.netbox.dataDir}/version"
-
-    if [[ -h "$versionFile" && "$(readlink -- "$versionFile")" == "${netboxPkg}" ]]
-    then
-      exit 0
-    fi
-
-    ${netboxPkg}/bin/netbox migrate
-    ${netboxPkg}/bin/netbox trace_paths --no-input
-    ${netboxPkg}/bin/netbox collectstatic --clear --no-input
-    ${netboxPkg}/bin/netbox reindex --lazy
-    ${netboxPkg}/bin/netbox clearsessions
-
-    ln -sfn "${netboxPkg}" "$versionFile"
-  '';
 
   # Fix permissions after UID changes (e.g., after reinstall)
   systemd.tmpfiles.rules = [
