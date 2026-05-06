@@ -12,6 +12,19 @@ let
   bruvtabChromeExtensionId = lib.removeSuffix "\n" (
     builtins.readFile "${bruvtabChromeCrx}/extension-id"
   );
+  linkdingExtensionId = "{61a05c39-ad45-4086-946f-32adb0a40a9d}";
+  linkdingInjectorId = "{19561335-5a63-4b4e-8182-1eced17f9b47}";
+  linkdingStorage = builtins.toJSON {
+    ld_ext_config = builtins.toJSON {
+      baseUrl = config.sops.placeholder."firefox/addons/linkding/url";
+      token = config.sops.placeholder."firefox/addons/linkding/token";
+    };
+  };
+  mkLinkdingFirefoxStorageTemplate = addonId: {
+    path = "${config.programs.firefox.configPath}/default/browser-extension-data/${addonId}/storage.js";
+    mode = "0600";
+    content = linkdingStorage;
+  };
 in
 {
 
@@ -20,6 +33,20 @@ in
     tor-browser
     inputs.zen-browser.packages."${pkgs.stdenv.hostPlatform.system}".default
   ];
+
+  sops = {
+    secrets = {
+      "firefox/addons/linkding/url".sopsFile = ../../secrets/shared.sops.yaml;
+      "firefox/addons/linkding/token".sopsFile = ../../secrets/shared.sops.yaml;
+    };
+
+    # programs.firefox.profiles.default.extensions.settings writes this same
+    # storage.js path, but SOPS placeholders are only substituted in templates.
+    templates = {
+      "firefox-linkding-extension-storage" = mkLinkdingFirefoxStorageTemplate linkdingExtensionId;
+      "firefox-linkding-injector-storage" = mkLinkdingFirefoxStorageTemplate linkdingInjectorId;
+    };
+  };
 
   programs.firefox = {
     enable = true;
