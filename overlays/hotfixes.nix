@@ -20,36 +20,6 @@ let
     });
 in
 {
-  # FIX For google-chrome crashing on Hyprland when moving the window from
-  # one monitor to another.
-  # https://github.com/hyprwm/Hyprland/discussions/11843
-  google-chrome = prev.google-chrome.overrideAttrs (old: {
-    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ prev.makeWrapper ];
-    postFixup = (old.postFixup or "") + ''
-      wrapProgram $out/bin/google-chrome-stable \
-        --add-flags "--disable-features=WaylandWpColorManagerV1"
-    '';
-  });
-
-  # FIXME Remove once NetBox's django-tables2 dependency is pinned correctly in
-  # nixpkgs.
-  # https://github.com/NixOS/nixpkgs/issues/512843
-  netbox = prev.lib.makeOverridable (
-    args:
-    (prev.netbox.override args).overrideAttrs (old: {
-      postPatch = (old.postPatch or "") + ''
-        for f in netbox/templates/inc/table.html \
-                 netbox/templates/inc/table_htmx.html; do
-          if [ -f "$f" ]; then
-            substituteInPlace "$f" \
-              --replace "querystring table.prefixed_order_by_field=" \
-                        "querystring_replace table.prefixed_order_by_field="
-          fi
-        done
-      '';
-    })
-  ) { };
-
   python313Packages = prev.python313Packages.overrideScope (
     finalPy: prevPy:
     let
