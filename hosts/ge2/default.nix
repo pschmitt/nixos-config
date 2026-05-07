@@ -20,6 +20,10 @@
   ];
 
   hardware.cattle = false;
+  initrd.wifi = {
+    enable = true;
+    interfaceName = "wlp0s20f3";
+  };
 
   # don't go to sleep when lid is closed
   services.logind.settings.Login = {
