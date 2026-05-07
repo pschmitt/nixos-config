@@ -10,6 +10,8 @@ let
   supplicantConfig = "/etc/wpa_supplicant/wpa_supplicant-${cfg.interfaceName}.conf";
   encryptedSecretsPath = "/etc/initrd-wifi.sops.yaml";
   initrdSshAgePrivateKeyPath = "/etc/ssh/initrd/ssh_host_ed25519_key";
+  encryptedSecretsSourcePath = "/.initrd-secrets${encryptedSecretsPath}";
+  initrdSshAgePrivateKeySourcePath = "/.initrd-secrets${initrdSshAgePrivateKeyPath}";
   intelWifiFirmware =
     let
       firmwareDir = "${pkgs.linux-firmware}/lib/firmware";
@@ -89,14 +91,20 @@ in
           systemd = {
             packages = [
               pkgs.sops
+              pkgs.ssh-to-age
               pkgs.wpa_supplicant
             ];
             initrdBin = [
               pkgs.sops
+              pkgs.ssh-to-age
               pkgs.wpa_supplicant
             ];
             targets.initrd.wants = [ "wpa_supplicant@${cfg.interfaceName}.service" ];
-            services."wpa_supplicant@".unitConfig.DefaultDependencies = false;
+            services."wpa_supplicant@".unitConfig = {
+              DefaultDependencies = false;
+              Requires = [ "initrdWifiSupplicant.service" ];
+              After = [ "initrdWifiSupplicant.service" ];
+            };
             services.initrdWifiSupplicant = {
               unitConfig.DefaultDependencies = false;
               before = [ "wpa_supplicant@${cfg.interfaceName}.service" ];
@@ -107,20 +115,25 @@ in
               };
               script = ''
                 ${pkgs.coreutils}/bin/install -d -m 0755 /etc/wpa_supplicant
+                ${pkgs.ssh-to-age}/bin/ssh-to-age \
+                  -private-key \
+                  -i ${lib.escapeShellArg initrdSshAgePrivateKeySourcePath} \
+                  -o /run/initrd-wifi.age-key
+                ${pkgs.coreutils}/bin/chmod 0400 /run/initrd-wifi.age-key
 
                 ssid="$(
                   HOME=/var/empty \
-                    SOPS_AGE_SSH_PRIVATE_KEY_FILE=${initrdSshAgePrivateKeyPath} \
+                    SOPS_AGE_KEY_FILE=/run/initrd-wifi.age-key \
                     ${pkgs.sops}/bin/sops --decrypt \
                     --extract '${sopsExtractExpr cfg.sops.keys.ssid}' \
-                    ${lib.escapeShellArg encryptedSecretsPath}
+                    ${lib.escapeShellArg encryptedSecretsSourcePath}
                 )"
                 psk="$(
                   HOME=/var/empty \
-                    SOPS_AGE_SSH_PRIVATE_KEY_FILE=${initrdSshAgePrivateKeyPath} \
+                    SOPS_AGE_KEY_FILE=/run/initrd-wifi.age-key \
                     ${pkgs.sops}/bin/sops --decrypt \
                     --extract '${sopsExtractExpr cfg.sops.keys.psk}' \
-                    ${lib.escapeShellArg encryptedSecretsPath}
+                    ${lib.escapeShellArg encryptedSecretsSourcePath}
                 )"
 
                 ${pkgs.wpa_supplicant}/bin/wpa_passphrase "$ssid" "$psk" > ${lib.escapeShellArg supplicantConfig}
