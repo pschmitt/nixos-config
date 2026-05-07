@@ -37,4 +37,7 @@
     # Disable the firewall altogether.
     firewall.enable = false;
   };
+
+  # We are tight on space on ge2, /boot is only 512MB
+  boot.loader.systemd-boot.configurationLimit = lib.mkForce 5;
 }
