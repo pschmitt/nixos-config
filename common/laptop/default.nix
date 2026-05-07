@@ -13,6 +13,7 @@
     ../network/wifi.nix
     ./a11y.nix
     ./initrd-network.nix
+    ./initrd-wifi.nix
     ./media.nix
     ./network.nix
     ./power-profiles-daemon.nix

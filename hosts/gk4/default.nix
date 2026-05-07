@@ -20,6 +20,10 @@
   home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
 
   hardware.cattle = false;
+  initrd.wifi = {
+    enable = true;
+    interfaceName = "wlp195s0";
+  };
   console.keyMap = lib.mkForce "custom/gpdpocket4-de";
 
   # Configure network proxy if necessary
