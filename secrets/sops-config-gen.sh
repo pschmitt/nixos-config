@@ -46,6 +46,20 @@ hm_host_age_keys_yaml() {
   done
 }
 
+initrd_host_age_keys_yaml() {
+  local -a hosts
+  mapfile -t hosts < <(nix_host_configs)
+
+  local host initrd_age_key
+  for host in "${hosts[@]}"
+  do
+    if initrd_age_key=$(initrd_host_age_key "$host" 2>/dev/null)
+    then
+      echo "- ${initrd_age_key} # initrd host key of ${host}"
+    fi
+  done
+}
+
 host_pubkey() {
   local host="$1"
 
@@ -66,6 +80,17 @@ host_age_key() {
   host_pubkey "$1" | ssh-to-age
 }
 
+initrd_host_pubkey() {
+  local host="$1"
+
+  sops --decrypt --extract '["ssh"]["initrd_host_keys"]["ed25519"]["pubkey"]' \
+    "./hosts/${host}/secrets.sops.yaml"
+}
+
+initrd_host_age_key() {
+  initrd_host_pubkey "$1" | ssh-to-age
+}
+
 sops_config_gen() {
   local hosts
   mapfile -t hosts < <(nix_host_configs)
@@ -82,13 +107,20 @@ sops_config_gen() {
   local hm_keys
   hm_keys=$(hm_host_age_keys_yaml)
 
+  local initrd_host_keys
+  initrd_host_keys=$(initrd_host_age_keys_yaml)
+
   local sops_config
-  sops_config=$(gh_keys="$gh_keys" hm_keys="$hm_keys" yq -n '
+  sops_config=$(gh_keys="$gh_keys" hm_keys="$hm_keys" initrd_host_keys="$initrd_host_keys" yq -n '
     {
       "creation_rules": [
         {
           "path_regex": "secrets/shared.*",
           "key_groups": [{"age": env(gh_keys)}]
+        },
+        {
+          "path_regex": "secrets/initrd-wifi.sops.yaml",
+          "key_groups": [{"age": env(gh_keys) + env(initrd_host_keys)}]
         },
         {
           "path_regex": "secrets/gpg.sops.yaml",
@@ -97,7 +129,6 @@ sops_config_gen() {
       ]
     }
   ')
-
 
   local host creation_rules host_age_key
   for host in "${hosts[@]}"
@@ -111,9 +142,9 @@ sops_config_gen() {
           "age": [
             strenv(host_age_key)
           ] + env(gh_keys)
-        }
-      ]
-    } | .key_groups[0].age[0] line_comment="host key of " + strenv(host)')
+         }
+       ]
+     } | .key_groups[0].age[0] line_comment="host key of " + strenv(host)')
 
     # Add host-specific creation rules and append current host age key to the
     # list of shared secret recipients
@@ -123,6 +154,7 @@ sops_config_gen() {
         .creation_rules[0].key_groups[0].age += [strenv(host_age_key)] |
         .creation_rules[0].key_groups[0].age[-1] line_comment="host key of " + strenv(host)
       ')
+
   done
 
   # append default config
