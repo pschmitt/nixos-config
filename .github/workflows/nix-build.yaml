@@ -296,7 +296,7 @@ jobs:
       - name: Netbird Connect
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         id: netbird
-        uses: Alemiz112/netbird-connect@v1
+        uses: Alemiz112/netbird-connect@v1.0.1
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
@@ -570,7 +570,7 @@ jobs:
 
       - name: Netbird Connect
         id: netbird
-        uses: Alemiz112/netbird-connect@v1
+        uses: Alemiz112/netbird-connect@v1.0.1
         with:
           # management-url: https://api.netbird.io:443
           setup-key: ${{ secrets.NB_SETUP_KEY }}
