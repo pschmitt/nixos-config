@@ -1,25 +1,17 @@
-{ lib, ... }:
-{
-  # Mirrors ~/.config/hypr/config.d/lock.conf (lock binds + idle rules).
-  wayland.windowManager.hyprland.settings = {
-    # Lock helpers from lock.conf.
-    "$lock" = "$bin_dir/lock.sh";
+_: {
+  xdg.configFile."hypr/lua/lock.lua".text = ''
+    local lock = "~/.config/hypr/bin/lock.sh"
 
-    bind = [
-      "$mod ALT, L, exec, $lock --now"
-    ];
+    hl.bind("SUPER + ALT + L", hl.dsp.exec_cmd(lock .. " --now"))
 
-    bindl = [
-      "$mod CONTROL ALT, L, exec, ~/bin/zhj \"lockscreen::restart\""
-      ", switch:off:Lid Switch, exec, $lock"
-      ", switch:on:Lid Switch, exec, hyprctl dispatch dpms on"
-    ];
+    -- locked = fires even when screen is locked
+    hl.bind("SUPER + CTRL + ALT + L", hl.dsp.exec_cmd([[~/bin/zhj "lockscreen::restart"]]), { locked = true })
+    hl.bind("switch:off:Lid Switch",  hl.dsp.exec_cmd(lock),                               { locked = true })
+    hl.bind("switch:on:Lid Switch",   hl.dsp.dpms({ action = "on" }),                      { locked = true })
 
-    windowrule = [
-      "idle_inhibit fullscreen, match:class ^(firefox)$"
-      "idle_inhibit always, match:title ^(Picture-in-Picture)$"
-      "idle_inhibit fullscreen, match:class ^(Google-chrome)$"
-      "idle_inhibit fullscreen, match:class ^(Chromium)$"
-    ];
-  };
+    hl.window_rule({ match = { class = "^(firefox)$" },     idle_inhibit = "fullscreen" })
+    hl.window_rule({ match = { title = "^(Picture-in-Picture)$" }, idle_inhibit = "always" })
+    hl.window_rule({ match = { class = "^(Google-chrome)$" }, idle_inhibit = "fullscreen" })
+    hl.window_rule({ match = { class = "^(Chromium)$" },    idle_inhibit = "fullscreen" })
+  '';
 }

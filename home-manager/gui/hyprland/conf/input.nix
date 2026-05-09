@@ -1,66 +1,48 @@
-{ lib, ... }:
-let
-  mkHhkbDevice = name: {
-    inherit name;
-    kb_layout = "hhkb-de,de,us";
-  };
-in
-{
-  # Mirrors ~/.config/hypr/config.d/input.conf (device + gesture tuning).
-  # Docs: https://wiki.hyprland.org/Configuring/Variables/#input.
-  wayland.windowManager.hyprland.settings = lib.mkMerge [
-    {
-      # Device-specific overrides from input.conf.
-      device = [
-        # HHKB (USB variants).
-        (mkHhkbDevice "pfu-limited-hhkb-hybrid")
-        (mkHhkbDevice "pfu-limited-hhkb-hybrid-keyboard")
-        (mkHhkbDevice "pfu-limited-hhkb-hybrid-consumer-control")
-        # HHKB over Bluetooth (multiple slots).
-        (mkHhkbDevice "hhkb-hybrid_1-keyboard")
-        (mkHhkbDevice "hhkb-hybrid_2-keyboard")
-        (mkHhkbDevice "hhkb-hybrid_3-keyboard")
-        (mkHhkbDevice "hhkb-hybrid_4-keyboard")
+_: {
+  xdg.configFile."hypr/lua/input.lua".text = ''
+    local function hhkb(name)
+        hl.device({ name = name, kb_layout = "hhkb-de,de,us" })
+    end
 
-        # Magic Trackpad tuning.
-        {
-          name = "apple-inc.-magic-trackpad-usb-c";
-          sensitivity = 0.3;
-          accel_profile = "adaptive";
-          scroll_factor = 1.8;
-        }
+    -- HHKB USB variants
+    hhkb("pfu-limited-hhkb-hybrid")
+    hhkb("pfu-limited-hhkb-hybrid-keyboard")
+    hhkb("pfu-limited-hhkb-hybrid-consumer-control")
 
-        # GPD Pocket 4 keyboard and touchpad.
-        # NOTE These are relevant even on other hosts because of the KVM module!
-        {
-          name = "hailuck-co.-ltd-usb-keyboard";
-          kb_layout = "gpdpocket4-de,gpdpocket4-us,us,de";
-        }
-        {
-          # Enable inverted scrolling for the built-in touchpad.
-          name = "hailuck-co.-ltd-usb-keyboard-mouse";
-          natural_scroll = true;
-        }
-      ];
+    -- HHKB Bluetooth slots
+    hhkb("hhkb-hybrid_1-keyboard")
+    hhkb("hhkb-hybrid_2-keyboard")
+    hhkb("hhkb-hybrid_3-keyboard")
+    hhkb("hhkb-hybrid_4-keyboard")
 
-      input = {
-        kb_layout = "de,us";
-        kb_variant = "";
-        kb_model = "";
-        kb_options = "";
-        kb_rules = "";
-        follow_mouse = 2;
-        sensitivity = 0;
-        touchpad.natural_scroll = false;
-      };
+    hl.device({
+        name         = "apple-inc.-magic-trackpad-usb-c",
+        sensitivity  = 0.3,
+        accel_profile = "adaptive",
+        scroll_factor = 1.8,
+    })
 
-      gesture = [
-        "3, horizontal, workspace"
-        "3, up, scale: 1.5, fullscreen"
-        "3, down, scale: 1.5, fullscreen"
-      ];
+    -- GPD Pocket 4 keyboard and touchpad.
+    -- NOTE: Relevant even on other hosts because of the KVM module.
+    hl.device({ name = "hailuck-co.-ltd-usb-keyboard",       kb_layout = "gpdpocket4-de,gpdpocket4-us,us,de" })
+    hl.device({ name = "hailuck-co.-ltd-usb-keyboard-mouse", natural_scroll = true })
 
-      "gestures:workspace_swipe_invert" = false;
-    }
-  ];
+    hl.config({
+        input = {
+            kb_layout  = "de,us",
+            kb_variant = "",
+            kb_model   = "",
+            kb_options = "",
+            kb_rules   = "",
+            follow_mouse = 2,
+            sensitivity  = 0,
+            touchpad = { natural_scroll = false },
+        },
+        gestures = { workspace_swipe_invert = false },
+    })
+
+    hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace"               })
+    hl.gesture({ fingers = 3, direction = "up",         action = "scale: 1.5, fullscreen"  })
+    hl.gesture({ fingers = 3, direction = "down",       action = "scale: 1.5, fullscreen"  })
+  '';
 }

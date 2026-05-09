@@ -1,42 +1,29 @@
-{ lib, ... }:
-{
-  # Mirrors ~/.config/hypr/config.d/env.conf (Wayland env overrides).
-  # See https://wiki.hyprland.org/Configuring/Environment-variables/ for reference.
-  wayland.windowManager.hyprland.settings = lib.mkMerge [
-    {
-      # Propagate the graphical session environment to systemd/DBus.
-      "exec-once" = [
-        "dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP"
-      ];
+_: {
+  xdg.configFile."hypr/lua/env.lua".text = ''
+    -- Propagate graphical session to systemd/DBus on startup.
+    -- (dbus-update-activation-environment lives in autostart.lua)
 
-      # Toolkit/env overrides from env.conf.
-      env = [
-        # "MOZ_ENABLE_WAYLAND,1"
-        # https://wiki.archlinux.org/title/Firefox/Tweaks#:~:text=MOZ%5FUSE%5FXINPUT2%3D1
-        "MOZ_USE_XINPUT2,1"
+    -- https://wiki.archlinux.org/title/Firefox/Tweaks#MOZ_USE_XINPUT2
+    hl.env("MOZ_USE_XINPUT2", "1")
 
-        # Force Wayland (with xcb fallback) for Qt apps.
-        "QT_QPA_PLATFORM,wayland;xcb"
+    -- Force Wayland (with xcb fallback) for Qt apps.
+    hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 
-        # SDL + Clutter should default to Wayland.
-        "SDL_VIDEODRIVER,wayland"
-        "CLUTTER_BACKEND,wayland"
+    -- SDL + Clutter default to Wayland.
+    hl.env("SDL_VIDEODRIVER", "wayland")
+    hl.env("CLUTTER_BACKEND", "wayland")
 
-        # Identify the Hyprland desktop/session.
-        "XDG_CURRENT_DESKTOP,Hyprland"
-        "XDG_SESSION_TYPE,wayland"
-        "XDG_SESSION_DESKTOP,Hyprland"
+    -- Hyprland desktop identity.
+    hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
+    hl.env("XDG_SESSION_TYPE",    "wayland")
+    hl.env("XDG_SESSION_DESKTOP", "Hyprland")
 
-        # Preferred terminal for helpers (xdg-terminal-exec/autostart, etc.).
-        "TERMINAL,kitty"
-      ];
+    -- Preferred terminal for xdg-terminal-exec / autostart helpers.
+    hl.env("TERMINAL", "kitty")
 
-      # Optional overrides kept from env.conf for future toggling:
-      #   env = MOZ_ENABLE_WAYLAND,1
-      #   env = XCURSOR_THEME,Bibata-Modern-Ice
-      #   env = XCURSOR_SIZE,24
-      #   env = GTK_THEME,Colloid-nord-dark
-      #   env = QT_QPA_PLATFORMTHEME,qt5ct
-    }
-  ];
+    -- Optional (commented out to match env.conf):
+    -- hl.env("MOZ_ENABLE_WAYLAND", "1")
+    -- hl.env("GTK_THEME",          "Colloid-nord-dark")
+    -- hl.env("QT_QPA_PLATFORMTHEME", "qt5ct")
+  '';
 }

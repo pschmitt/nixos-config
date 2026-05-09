@@ -1,299 +1,201 @@
-{ lib, ... }:
-let
-  mouseSubmap = "🖱️ mouse";
-  resizeSubmap = "↔️ resize";
+_: {
+  xdg.configFile."hypr/lua/keys.lua".text = ''
+    local bin      = "~/.config/hypr/bin"
+    local swayBin  = "~/.config/sway/bin"
+    local barify   = swayBin .. "/barify"
+    local playerctl = swayBin .. "/playerctl-wrapper.sh"
 
-  hyprBinds = [
-    # Core Hyprland management helpers.
-    "$mod SHIFT, C, exec, $bin_dir/kill-active.sh"
-    "$mod SHIFT, K, exec, hyprctl kill"
-    "$mod SHIFT, Q, exec, $bin_dir/leave.sh"
-    "$mod SHIFT, R, exec, $bin_dir/reload-config.sh"
-  ];
+    local brightUp   = barify .. " brightness up"
+    local brightDown = barify .. " brightness down"
+    local volUp      = barify .. " sink up"
+    local volDown    = barify .. " sink down"
+    local volMute    = barify .. " sink mute"
 
-  tilingBinds = [
-    # Tiling / layout controls.
-    "$mod SHIFT, space, togglefloating,"
-    "$mod ALT, space, layoutmsg, togglesplit"
-    "$mod, minus, layoutmsg, togglesplit"
-    "$mod, P, pseudo,"
-    "$mod SHIFT, comma, exec, $bin_dir/switch-layout.sh"
-    "$mod, T, togglegroup"
-    "$mod SHIFT, T, moveoutofgroup"
-    "$mod, comma, changegroupactive"
-  ];
+    local mouseSubmap  = "🖱️ mouse"
+    local resizeSubmap = "↔️ resize"
 
-  workspaceScrollBinds = [
-    # Scroll through workspaces with mod + mouse wheel.
-    "$mod, mouse_down, workspace, e+1"
-    "$mod, mouse_up, workspace, e-1"
-  ];
+    -- ── Core Hyprland management ───────────────────────────────────────────
+    hl.bind("SUPER + SHIFT + C", hl.dsp.exec_cmd(bin .. "/kill-active.sh"))
+    hl.bind("SUPER + SHIFT + K", hl.dsp.window.kill())
+    hl.bind("SUPER + SHIFT + Q", hl.dsp.exec_cmd(bin .. "/leave.sh"))
+    hl.bind("SUPER + SHIFT + R", hl.dsp.exec_cmd(bin .. "/reload-config.sh"))
 
-  mouseMoveResizeBinds = [
-    # Drag to move/resize with the mouse.
-    "$mod, mouse:272, movewindow"
-    "$mod, mouse:273, resizewindow"
-  ];
+    -- ── Tiling / layout ───────────────────────────────────────────────────
+    hl.bind("SUPER + SHIFT + space", hl.dsp.window.float({ action = "toggle" }))
+    hl.bind("SUPER + ALT + space",   hl.dsp.layout("togglesplit"))
+    hl.bind("SUPER + minus",         hl.dsp.layout("togglesplit"))
+    hl.bind("SUPER + P",             hl.dsp.window.pseudo())
+    hl.bind("SUPER + SHIFT + comma", hl.dsp.exec_cmd(bin .. "/switch-layout.sh"))
+    hl.bind("SUPER + T",             hl.dsp.group.toggle())
+    hl.bind("SUPER + SHIFT + T",     hl.dsp.group.move_window())
+    hl.bind("SUPER + comma",         hl.dsp.group.next())
 
-  fullscreenBinds = [
-    "$mod, F, fullscreen,"
-    "$mod, M, fullscreen, 1"
-    "$mod SHIFT, F, fullscreenstate, -1, 2"
-  ];
+    -- ── Fullscreen ────────────────────────────────────────────────────────
+    hl.bind("SUPER + F",         hl.dsp.window.fullscreen({ mode = 0 }))
+    hl.bind("SUPER + M",         hl.dsp.window.fullscreen({ mode = 1 }))
+    -- fullscreenstate: keep internal state, set client state to fake-fullscreen (2)
+    hl.bind("SUPER + SHIFT + F", hl.dsp.window.fullscreen_state({ internal = -1, client = 2 }))
 
-  windowMoveExecBinds = [
-    "$mod, left, exec, $bin_dir/move-window.sh l"
-    "$mod, right, exec, $bin_dir/move-window.sh r"
-    "$mod, up, exec, $bin_dir/move-window.sh u"
-    "$mod, down, exec, $bin_dir/move-window.sh d"
-    "$mod, s, swapnext,"
-    "$mod SHIFT, up, movewindow, mon:+1"
-    "$mod SHIFT, up, focusmonitor, +1"
-    "$mod SHIFT, up, movecursortocorner, 4"
-    "$mod SHIFT, down, movewindow, mon:-1"
-    "$mod SHIFT, down, focusmonitor, -1"
-    "$mod SHIFT, down, movecursortocorner, 3"
-    "$mod SHIFT, left, movetoworkspacesilent, -1"
-    "$mod SHIFT, right, movetoworkspacesilent, +1"
-  ];
+    -- ── Window movement ───────────────────────────────────────────────────
+    hl.bind("SUPER + left",  hl.dsp.exec_cmd(bin .. "/move-window.sh l"))
+    hl.bind("SUPER + right", hl.dsp.exec_cmd(bin .. "/move-window.sh r"))
+    hl.bind("SUPER + up",    hl.dsp.exec_cmd(bin .. "/move-window.sh u"))
+    hl.bind("SUPER + down",  hl.dsp.exec_cmd(bin .. "/move-window.sh d"))
+    hl.bind("SUPER + s",     hl.dsp.window.swap({ next = true }))
 
-  focusBinds = [
-    "$mod, h, movefocus, l"
-    "$mod, l, movefocus, r"
-    "$mod, k, movefocus, u"
-    "$mod, j, movefocus, d"
-    "$mod SHIFT, tab, exec, $bin_dir/switch-workspace.sh previous"
-    "$mod ALT, left, workspace, -1"
-    "$mod ALT, right, workspace, +1"
-  ];
+    -- Move window to monitor and follow it
+    hl.bind("SUPER + SHIFT + up",   hl.dsp.window.move({ monitor = "+1" }))
+    hl.bind("SUPER + SHIFT + up",   hl.dsp.focus({ monitor = "+1" }))
+    hl.bind("SUPER + SHIFT + up",   hl.dsp.cursor.move_to_corner({ corner = 4 }))
+    hl.bind("SUPER + SHIFT + down", hl.dsp.window.move({ monitor = "-1" }))
+    hl.bind("SUPER + SHIFT + down", hl.dsp.focus({ monitor = "-1" }))
+    hl.bind("SUPER + SHIFT + down", hl.dsp.cursor.move_to_corner({ corner = 3 }))
 
-  workspaceKeys = [
-    {
-      key = "1";
-      workspace = "1";
+    hl.bind("SUPER + SHIFT + left",  hl.dsp.window.move({ workspace = "e-1", silent = true }))
+    hl.bind("SUPER + SHIFT + right", hl.dsp.window.move({ workspace = "e+1", silent = true }))
+
+    -- ── Focus ─────────────────────────────────────────────────────────────
+    hl.bind("SUPER + h", hl.dsp.focus({ direction = "left"  }))
+    hl.bind("SUPER + l", hl.dsp.focus({ direction = "right" }))
+    hl.bind("SUPER + k", hl.dsp.focus({ direction = "up"    }))
+    hl.bind("SUPER + j", hl.dsp.focus({ direction = "down"  }))
+    hl.bind("SUPER + SHIFT + tab", hl.dsp.exec_cmd(bin .. "/switch-workspace.sh previous"))
+    hl.bind("SUPER + ALT + left",  hl.dsp.focus({ workspace = "-1" }))
+    hl.bind("SUPER + ALT + right", hl.dsp.focus({ workspace = "+1" }))
+
+    -- ── Workspace scroll (mouse wheel) ────────────────────────────────────
+    hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
+    hl.bind("SUPER + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+    -- ── Mouse drag / resize ───────────────────────────────────────────────
+    hl.bind("SUPER + mouse:272", hl.dsp.window.drag(),   { mouse = true })
+    hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
+
+    -- ── Workspace switching (1–10, with moveworkspacetomonitor) ──────────
+    local wkeys = {
+        { "1", 1 }, { "2", 2 }, { "3", 3 }, { "4", 4 }, { "5", 5 },
+        { "6", 6 }, { "7", 7 }, { "8", 8 }, { "9", 9 }, { "0", 10 },
     }
-    {
-      key = "2";
-      workspace = "2";
-    }
-    {
-      key = "3";
-      workspace = "3";
-    }
-    {
-      key = "4";
-      workspace = "4";
-    }
-    {
-      key = "5";
-      workspace = "5";
-    }
-    {
-      key = "6";
-      workspace = "6";
-    }
-    {
-      key = "7";
-      workspace = "7";
-    }
-    {
-      key = "8";
-      workspace = "8";
-    }
-    {
-      key = "9";
-      workspace = "9";
-    }
-    {
-      key = "0";
-      workspace = "10";
-    }
-  ];
+    for _, entry in ipairs(wkeys) do
+        local key, ws = entry[1], entry[2]
+        hl.bind("SUPER + " .. key, hl.dsp.exec_cmd("hyprctl dispatch moveworkspacetomonitor " .. ws .. " current"))
+        hl.bind("SUPER + " .. key, hl.dsp.exec_cmd(bin .. "/switch-workspace.sh " .. ws))
+        hl.bind("SUPER + SHIFT + " .. key, hl.dsp.window.move({ workspace = ws }))
+    end
 
-  workspaceNumberBinds = lib.flatten (
-    map (entry: [
-      "$mod, ${entry.key}, moveworkspacetomonitor, ${entry.workspace} current"
-      "$mod, ${entry.key}, exec, $bin_dir/switch-workspace.sh ${entry.workspace}"
-    ]) workspaceKeys
-  );
+    -- ── Resize (hold-to-repeat) ───────────────────────────────────────────
+    hl.bind("SUPER + SHIFT + h", hl.dsp.window.resize({ direction = "left",  amount = 25 }), { repeating = true })
+    hl.bind("SUPER + SHIFT + j", hl.dsp.window.resize({ direction = "down",  amount = 25 }), { repeating = true })
+    hl.bind("SUPER + SHIFT + k", hl.dsp.window.resize({ direction = "up",    amount = 25 }), { repeating = true })
+    hl.bind("SUPER + SHIFT + l", hl.dsp.window.resize({ direction = "right", amount = 25 }), { repeating = true })
 
-  workspaceMoveBinds = map (
-    entry: "$mod SHIFT, ${entry.key}, movetoworkspace, ${entry.workspace}"
-  ) workspaceKeys;
+    -- ── Applications ──────────────────────────────────────────────────────
+    hl.bind("Print",               hl.dsp.exec_cmd(bin .. "/screenshot.sh"))
+    hl.bind("SUPER + Return",      hl.dsp.exec_cmd(bin .. "/term.sh"))
+    hl.bind("SUPER + SHIFT + Return", hl.dsp.exec_cmd(bin .. "/term.sh"))
+    hl.bind("SUPER + W",           hl.dsp.exec_cmd(bin .. "/run-or-raise.sh firefox"))
+    hl.bind("SUPER + ALT + Y",     hl.dsp.exec_cmd(bin .. "/browser-run-or-raise.sh --title youtube --url https://www.youtube.com"))
+    hl.bind("SUPER + ALT + Z",     hl.dsp.exec_cmd(bin .. "/ms-teams-join-room.sh home-room"))
+    hl.bind("SUPER + ALT + T",     hl.dsp.exec_cmd(bin .. "/ms-teams-join-room.sh home-room"))
+    hl.bind("SUPER + SHIFT + Z",   hl.dsp.exec_cmd([[zhj 'hyprctl::bring-window --fullscreen chrome']]))
+    hl.bind("SUPER + ALT + H",     hl.dsp.exec_cmd(bin .. "/browser-run-or-raise.sh --url https://ha.brkn.lol --alt http://10.5.1.1:8123"))
+    hl.bind("SUPER + ALT + numbersign", hl.dsp.exec_cmd(bin .. "/browser-rbw.sh"))  -- the '#' key
+    hl.bind("F1",                  hl.dsp.exec_cmd(bin .. "/scratchpad.sh term"))
+    hl.bind("SUPER + E",           hl.dsp.exec_cmd(bin .. "/scratchpad.sh files"))
+    hl.bind("SUPER + SHIFT + V",   hl.dsp.exec_cmd(bin .. "/scratchpad.sh audio"))
+    hl.bind("SUPER + ALT + a",     hl.dsp.exec_cmd("~/bin/obs.zsh alt"))
+    hl.bind("SUPER + ALT + w",     hl.dsp.exec_cmd("~/bin/obs.zsh webcam"))
+    hl.bind("SUPER + ALT + f",     hl.dsp.exec_cmd("~/bin/obs.zsh freeze"))
+    hl.bind("SUPER + ALT + up",    hl.dsp.exec_cmd("~/bin/obs.zsh thumbs-up"))
+    hl.bind("SUPER + ALT + down",  hl.dsp.exec_cmd("~/bin/obs.zsh thumbs-down"))
+    hl.bind("SUPER + ALT + period", hl.dsp.exec_cmd("~/bin/obs.zsh emoji"))
+    hl.bind("SUPER + R",           hl.dsp.exec_cmd("~/bin/wofi.zsh run"))
+    hl.bind("SUPER + period",      hl.dsp.exec_cmd("~/bin/wofi.zsh emoji"))
+    hl.bind("SUPER + ALT + c",     hl.dsp.exec_cmd("~/.config/waybar/custom_modules/clipboard.sh"))
+    hl.bind("SUPER + ALT + v",     hl.dsp.exec_cmd("zhj clipboard::revert --notify"))
+    hl.bind("SUPER + ALT + p",     hl.dsp.exec_cmd("~/bin/wofi.zsh bitwarden"))
+    hl.bind("SUPER + ALT + m",     hl.dsp.exec_cmd("~/bin/wofi.zsh misc"))
+    hl.bind("SUPER + ALT + j",     hl.dsp.exec_cmd("~/bin/wofi.zsh meetings"))
+    hl.bind("SUPER + ALT + g",     hl.dsp.exec_cmd("~/bin/wofi.zsh bitwarden-work"))
+    hl.bind("SUPER + ALT + s",     hl.dsp.exec_cmd("~/bin/wofi.zsh soundboard"))
+    hl.bind("SUPER + SHIFT + s",   hl.dsp.exec_cmd("~/bin/wofi.zsh soundboard stop"))
 
-  globalBinde = [
-    "$mod SHIFT, h, resizeactive, -25 0"
-    "$mod SHIFT, j, resizeactive, 0 25"
-    "$mod SHIFT, k, resizeactive, 0 -25"
-    "$mod SHIFT, l, resizeactive, 25 0"
-  ];
+    -- ── Mouse / hints / submap entry ──────────────────────────────────────
+    hl.bind("SUPER + SHIFT + M",   hl.dsp.submap(mouseSubmap))
+    hl.bind("SUPER + numbersign",  hl.dsp.exec_cmd("waypoint"))
+    hl.bind("SUPER + SHIFT + H",   hl.dsp.exec_cmd("killall hints; hints"))
+    hl.bind("SUPER + ALT + R",     hl.dsp.submap(resizeSubmap))
 
-  appBinds = [
-    ", Print, exec, $bin_dir/screenshot.sh"
-    "$mod, Return, exec, $bin_dir/term.sh"
-    "$mod SHIFT, Return, exec, $bin_dir/term.sh"
-    "$mod, W, exec, $bin_dir/run-or-raise.sh firefox"
-    "$mod ALT, Y, exec, $bin_dir/browser-run-or-raise.sh --title youtube --url https://www.youtube.com"
-    "$mod ALT, Z, exec, $bin_dir/ms-teams-join-room.sh home-room"
-    "$mod ALT, T, exec, $bin_dir/ms-teams-join-room.sh home-room"
-    "$mod SHIFT, Z, exec, zhj 'hyprctl::bring-window --fullscreen chrome'"
-    "$mod ALT, H, exec, $bin_dir/browser-run-or-raise.sh --url https://ha.brkn.lol --alt http://10.5.1.1:8123"
-    # the '#' key!
-    "$mod ALT, numbersign, exec, $bin_dir/browser-rbw.sh"
-    ", F1, exec, $bin_dir/scratchpad.sh term"
-    "$mod, E, exec, $bin_dir/scratchpad.sh files"
-    "$mod SHIFT, V, exec, $bin_dir/scratchpad.sh audio"
-    "$mod ALT, a, exec, ~/bin/obs.zsh alt"
-    "$mod ALT, w, exec, ~/bin/obs.zsh webcam"
-    "$mod ALT, f, exec, ~/bin/obs.zsh freeze"
-    "$mod ALT, up, exec, ~/bin/obs.zsh thumbs-up"
-    "$mod ALT, down, exec, ~/bin/obs.zsh thumbs-down"
-    "$mod ALT, period, exec, ~/bin/obs.zsh emoji"
-    "$mod, R, exec, ~/bin/wofi.zsh run"
-    "$mod, period, exec, ~/bin/wofi.zsh emoji"
-    "$mod ALT, c, exec, ~/.config/waybar/custom_modules/clipboard.sh"
-    "$mod ALT, v, exec, zhj clipboard::revert --notify"
-    "$mod ALT, p, exec, ~/bin/wofi.zsh bitwarden"
-    "$mod ALT, m, exec, ~/bin/wofi.zsh misc"
-    "$mod ALT, j, exec, ~/bin/wofi.zsh meetings"
-    "$mod ALT, g, exec, ~/bin/wofi.zsh bitwarden-work"
-    "$mod ALT, s, exec, ~/bin/wofi.zsh soundboard"
-    "$mod SHIFT, s, exec, ~/bin/wofi.zsh soundboard stop"
-  ];
+    -- ── Media / brightness (locked = works on lock screen) ────────────────
+    hl.bind("XF86MonBrightnessUp",   hl.dsp.exec_cmd(brightUp),   { locked = true })
+    hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd(brightDown), { locked = true })
+    hl.bind("XF86AudioRaiseVolume",  hl.dsp.exec_cmd(volUp),      { locked = true })
+    hl.bind("XF86AudioLowerVolume",  hl.dsp.exec_cmd(volDown),    { locked = true })
+    hl.bind("XF86AudioMute",         hl.dsp.exec_cmd(volMute),    { locked = true })
+    hl.bind("XF86AudioMicMute",      hl.dsp.exec_cmd("~/bin/obs.zsh toggle-mute"), { locked = true })
+    hl.bind("SUPER + space",         hl.dsp.exec_cmd("~/bin/obs.zsh toggle-mute"), { locked = true })
+    hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd(playerctl .. " toggle"), { locked = true })
+    hl.bind("XF86AudioPause", hl.dsp.exec_cmd(playerctl .. " pause"),  { locked = true })
+    hl.bind("XF86AudioNext",  hl.dsp.exec_cmd(playerctl .. " next"),   { locked = true })
+    hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd(playerctl .. " previous"), { locked = true })
+    hl.bind("CTRL + ALT + up",    hl.dsp.exec_cmd(playerctl .. " toggle"),   { locked = true })
+    hl.bind("CTRL + ALT + right", hl.dsp.exec_cmd(playerctl .. " next"),     { locked = true })
+    hl.bind("CTRL + ALT + left",  hl.dsp.exec_cmd(playerctl .. " previous"), { locked = true })
+    hl.bind("SUPER + ALT + b",    hl.dsp.exec_cmd("~/bin/obs.zsh brb --mute"), { locked = true })
 
-  mouseModeBinds = [
-    "$mod SHIFT, M, submap, $submap_mouse"
-    "$mod, numbersign, exec, waypoint"
-    "$mod SHIFT, H, exec, killall hints; hints"
-  ];
+    -- ── Submap: mouse mode ────────────────────────────────────────────────
+    hl.define_submap(mouseSubmap, function()
+        local function mv(args) return hl.dsp.exec_cmd("zhj mouse::move " .. args) end
+        local function cl(btn)  return hl.dsp.exec_cmd("zhj mouse::click" .. (btn and (" " .. btn) or "")) end
 
-  resizeModeBind = [ "$mod ALT, R, submap, $submap_resize" ];
+        hl.bind("right", mv("+25"),    { repeating = true })
+        hl.bind("left",  mv("-25"),    { repeating = true })
+        hl.bind("up",    mv("-y -25"), { repeating = true })
+        hl.bind("down",  mv("-y +25"), { repeating = true })
+        hl.bind("SHIFT + right", mv("+50"),    { repeating = true })
+        hl.bind("SHIFT + left",  mv("-50"),    { repeating = true })
+        hl.bind("SHIFT + up",    mv("-y -50"), { repeating = true })
+        hl.bind("SHIFT + down",  mv("-y +50"), { repeating = true })
+        hl.bind("ALT + right", mv("+5"),   { repeating = true })
+        hl.bind("ALT + left",  mv("-5"),   { repeating = true })
+        hl.bind("ALT + up",    mv("-y -5"), { repeating = true })
+        hl.bind("ALT + down",  mv("-y +5"), { repeating = true })
 
-  brightnessBinds = [
-    ", XF86MonBrightnessUp, exec, $brightness_up"
-    ", XF86MonBrightnessDown, exec, $brightness_down"
-  ];
+        hl.bind("return", cl(nil))
+        hl.bind("space",  cl(nil))
+        hl.bind("SHIFT + return", cl("right"))
+        hl.bind("SHIFT + space",  cl("right"))
+        hl.bind("ALT + return",   cl("middle"))
+        hl.bind("ALT + space",    cl("middle"))
 
-  audioBinds = [
-    ", XF86AudioRaiseVolume, exec, $volume_sink_up"
-    ", XF86AudioLowerVolume, exec, $volume_sink_down"
-    ", XF86AudioMute, exec, $volume_sink_mute"
-    ", XF86AudioMicMute, exec, ~/bin/obs.zsh toggle-mute"
-    "$mod, space, exec, ~/bin/obs.zsh toggle-mute"
-  ];
+        local function mouseto(x, y) return hl.dsp.exec_cmd("dotoolc <<< 'mouseto " .. x .. " " .. y .. "'") end
+        hl.bind("SHIFT + 0", mouseto("0",    "0"))
+        hl.bind("SHIFT + 1", mouseto("1",    "0"))
+        hl.bind("SHIFT + 2", mouseto("1",    "1"))
+        hl.bind("SHIFT + 3", mouseto("0",    "1"))
+        hl.bind("0",         mouseto("0.25", "0.25"))
+        hl.bind("1",         mouseto("0.75", "0.25"))
+        hl.bind("2",         mouseto("0.75", "0.75"))
+        hl.bind("3",         mouseto("0.25", "0.75"))
 
-  playerctlBinds = [
-    ", XF86AudioPlay, exec, $playerctl_toggle"
-    ", XF86AudioPause, exec, $playerctl_pause"
-    ", XF86AudioNext, exec, $playerctl_next"
-    ", XF86AudioPrev, exec, $playerctl_previous"
-    "CONTROL ALT, up, exec, $playerctl_toggle"
-    "CONTROL ALT, right, exec, $playerctl_next"
-    "CONTROL ALT, left, exec, $playerctl_previous"
-  ];
+        local function btn(action) return hl.dsp.exec_cmd("dotoolc <<< 'button" .. action .. " left'") end
+        hl.bind("SUPER + SHIFT + space",  btn("down"))
+        hl.bind("SUPER + SHIFT + return", btn("down"))
+        hl.bind("SUPER + space",          btn("up"))
+        hl.bind("SUPER + return",         btn("up"))
 
-  obsBindl = [ "$mod ALT, b, exec, ~/bin/obs.zsh brb --mute" ];
-in
-{
-  # Mirrors ~/.config/hypr/config.d/keys.conf (all binds/submaps).
-  # Docs: https://wiki.hyprland.org/Configuring/Binds/.
-  wayland.windowManager.hyprland = {
-    settings = lib.mkMerge [
-      {
-        # Convenience variables from keys.conf.
-        "$mod" = "SUPER";
-        "$submap_mouse" = mouseSubmap;
-        "$submap_resize" = resizeSubmap;
-        "$barify" = "$sway_bin_dir/barify";
-        "$brightness_up" = "$barify brightness up";
-        "$brightness_down" = "$barify brightness down";
-        "$volume_sink_up" = "$barify sink up";
-        "$volume_sink_down" = "$barify sink down";
-        "$volume_sink_mute" = "$barify sink mute";
-        "$volume_source_up" = "$barify source up";
-        "$volume_source_down" = "$barify source down";
-        "$volume_source_mute" = "$barify source mute";
-        "$playerctl_toggle" = "$sway_bin_dir/playerctl-wrapper.sh toggle";
-        "$playerctl_play" = "$sway_bin_dir/playerctl-wrapper.sh play";
-        "$playerctl_pause" = "$sway_bin_dir/playerctl-wrapper.sh pause";
-        "$playerctl_next" = "$sway_bin_dir/playerctl-wrapper.sh next";
-        "$playerctl_previous" = "$sway_bin_dir/playerctl-wrapper.sh previous";
+        hl.bind("escape", hl.dsp.submap("reset"))
+        hl.bind("q",      hl.dsp.submap("reset"))
+    end)
 
-        bind =
-          hyprBinds
-          ++ tilingBinds
-          ++ workspaceScrollBinds
-          ++ fullscreenBinds
-          ++ windowMoveExecBinds
-          ++ focusBinds
-          ++ workspaceNumberBinds
-          ++ workspaceMoveBinds
-          ++ mouseModeBinds
-          ++ resizeModeBind
-          ++ appBinds;
-
-        bindm = mouseMoveResizeBinds;
-
-        binde = globalBinde;
-
-        bindl = brightnessBinds ++ audioBinds ++ playerctlBinds ++ obsBindl;
-      }
-    ];
-
-    submaps = {
-      # Mouse helper submap from keys.conf.
-      "${mouseSubmap}".settings = {
-        binde = [
-          ", right, exec, zhj mouse::move +25"
-          ", left, exec, zhj mouse::move -25"
-          ", up, exec, zhj mouse::move -y -25"
-          ", down, exec, zhj mouse::move -y +25"
-          "shift, right, exec, zhj mouse::move +50"
-          "shift, left, exec, zhj mouse::move -50"
-          "shift, up, exec, zhj mouse::move -y -50"
-          "shift, down, exec, zhj mouse::move -y +50"
-          "alt, right, exec, zhj mouse::move +5"
-          "alt, left, exec, zhj mouse::move -5"
-          "alt, up, exec, zhj mouse::move -y -5"
-          "alt, down, exec, zhj mouse::move -y +5"
-          ", return, exec, zhj mouse::click"
-          ", space, exec, zhj mouse::click"
-          "shift, return, exec, zhj mouse::click right"
-          "shift, space, exec, zhj mouse::click right"
-          "alt, return, exec, zhj mouse::click middle"
-          "alt, space, exec, zhj mouse::click middle"
-          "SHIFT, 0, exec, dotoolc <<< 'mouseto 0 0'"
-          "SHIFT, 1, exec, dotoolc <<< 'mouseto 1 0'"
-          "SHIFT, 2, exec, dotoolc <<< 'mouseto 1 1'"
-          "SHIFT, 3, exec, dotoolc <<< 'mouseto 0 1'"
-          ", 0, exec, dotoolc <<< 'mouseto 0.25 0.25'"
-          ", 1, exec, dotoolc <<< 'mouseto 0.75 0.25'"
-          ", 2, exec, dotoolc <<< 'mouseto 0.75 0.75'"
-          ", 3, exec, dotoolc <<< 'mouseto 0.25 0.75'"
-          "$mod SHIFT, space, exec, dotoolc <<< 'buttondown left'"
-          "$mod SHIFT, return, exec, dotoolc <<< 'buttondown left'"
-          "$mod, space, exec, dotoolc <<< 'buttonup left'"
-          "$mod, return, exec, dotoolc <<< 'buttonup left'"
-        ];
-        bind = [
-          ", escape, submap, reset"
-          ", q, submap, reset"
-        ];
-      };
-
-      # Resize helper submap.
-      "${resizeSubmap}".settings = {
-        binde = [
-          ", right, resizeactive, 25 0"
-          ", left, resizeactive, -25 0"
-          ", up, resizeactive, 0 -25"
-          ", down, resizeactive, 0 25"
-        ];
-        bind = [
-          ", escape, submap, reset"
-          ", return, submap, reset"
-        ];
-      };
-    };
-  };
+    -- ── Submap: resize mode ───────────────────────────────────────────────
+    hl.define_submap(resizeSubmap, function()
+        hl.bind("right", hl.dsp.window.resize({ direction = "right", amount = 25 }), { repeating = true })
+        hl.bind("left",  hl.dsp.window.resize({ direction = "left",  amount = 25 }), { repeating = true })
+        hl.bind("up",    hl.dsp.window.resize({ direction = "up",    amount = 25 }), { repeating = true })
+        hl.bind("down",  hl.dsp.window.resize({ direction = "down",  amount = 25 }), { repeating = true })
+        hl.bind("escape", hl.dsp.submap("reset"))
+        hl.bind("return", hl.dsp.submap("reset"))
+    end)
+  '';
 }
