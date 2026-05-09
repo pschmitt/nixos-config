@@ -4,7 +4,6 @@
   wayland.windowManager.hyprland.settings = {
     # Layout tweaks from layouts.conf.
     dwindle = {
-      pseudotile = true;
       preserve_split = true;
       smart_split = true;
     };
