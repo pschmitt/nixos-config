@@ -4,6 +4,7 @@ let
     export PATH=${
       pkgs.lib.makeBinPath [
         pkgs.curl
+        pkgs.gnugrep
         pkgs.jq
         pkgs.mmonit
       ]
