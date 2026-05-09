@@ -6,10 +6,10 @@ mmonit_version() {
     if grep -q "NixOS" /etc/os-release
     then
       local mmonit
-      if ! mmonit=$(pgrep -aof "mmonit start" | awk '{ print $2 }') || \
+      if ! mmonit=$(pgrep -aof "mmonit.*start" | awk '{ print $2 }') || \
         [[ -z $mmonit ]]
       then
-        mmonit="mmonit.wrapped"
+        mmonit=$(command -v mmonit.wrapped 2>/dev/null || command -v mmonit)
         echo "Failed to determine the path to the running mmonit executable" >&2
         echo "Defaulting to $mmonit" >&2
       fi
