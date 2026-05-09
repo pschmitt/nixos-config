@@ -8,6 +8,18 @@ let
   primaryHost = "mmonit.${config.domains.main}";
   serverAliases = [ "mm.${config.domains.main}" ];
 
+  startScript = pkgs.writeShellScript "mmonit-start" ''
+    ${pkgs.mmonit}/bin/mmonit start
+    # Type=forking: systemd reads PIDFile the moment ExecStart exits, but mmonit
+    # takes a few seconds to write it after forking. Spin here until it appears
+    # so systemd never gets ENOENT on the first check.
+    i=0
+    while [ $i -lt 100 ] && ! test -s /var/lib/mmonit/mmonit.pid; do
+      sleep 0.1
+      i=$((i + 1))
+    done
+  '';
+
   initScript = pkgs.writeShellScript "mmonit-init" ''
     # Create required runtime directories
     mkdir -p /var/lib/mmonit/logs
@@ -54,7 +66,7 @@ in
       StateDirectoryMode = "0700";
       PIDFile = "/var/lib/mmonit/mmonit.pid";
       ExecStartPre = "${initScript}";
-      ExecStart = "${pkgs.mmonit}/bin/mmonit start";
+      ExecStart = "${startScript}";
       KillMode = "process";
       Restart = "on-abnormal";
       RestartSec = 30;
