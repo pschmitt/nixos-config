@@ -5,7 +5,7 @@
 }:
 
 let
-  version = "0.10.0";
+  version = "0.12.0";
 in
 
 python3.pkgs.buildPythonApplication {
@@ -19,7 +19,7 @@ python3.pkgs.buildPythonApplication {
   src = fetchgit {
     url = "https://github.com/noahp/emoji-fzf.git";
     rev = version;
-    sha256 = "sha256-W1lCzV+RjhjjbD2sHPQayGB7iu9eIcvy7EPrxFkORv4=";
+    sha256 = "sha256-IMBf0WsGjqyFGdef5plaiJn64LErHLFyCANk7XkRqtE=";
     fetchSubmodules = true;
   };
 
