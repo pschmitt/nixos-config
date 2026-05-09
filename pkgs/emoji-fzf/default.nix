@@ -1,11 +1,11 @@
 {
   lib,
   python3,
-  fetchgit,
+  fetchPypi,
 }:
 
 let
-  version = "0.10.0";
+  version = "0.12.0";
 in
 
 python3.pkgs.buildPythonApplication {
@@ -13,21 +13,13 @@ python3.pkgs.buildPythonApplication {
   inherit version;
   pyproject = true;
 
-  # NOTE The build fails missing data when using fetchFromPypi
-  # and fetchFromGitHub does not seem to clone recursively, even
-  # with fetchSubmodules=true
-  src = fetchgit {
-    url = "https://github.com/noahp/emoji-fzf.git";
-    rev = version;
-    sha256 = "sha256-W1lCzV+RjhjjbD2sHPQayGB7iu9eIcvy7EPrxFkORv4=";
-    fetchSubmodules = true;
+  src = fetchPypi {
+    pname = "emoji_fzf";
+    inherit version;
+    sha256 = "sha256-E0GquaRS0joI/vWx5SIU1Wu6YGI8nU9ZWg4FvLxLEPU=";
   };
 
-  build-system = [
-    python3.pkgs.setuptools
-    python3.pkgs.wheel
-    python3.pkgs.twine
-  ];
+  build-system = [ python3.pkgs.hatchling ];
 
   dependencies = with python3.pkgs; [ click ];
 
