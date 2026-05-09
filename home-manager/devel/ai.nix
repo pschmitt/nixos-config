@@ -11,6 +11,9 @@
       package = pkgs.master.claude-code;
       skills = ./skills;
       enableMcpIntegration = true;
+      rules = {
+        code-style = ./CODESTYLE.md;
+      };
     };
 
     codex = {
