@@ -34,7 +34,7 @@ let
       .status == "ok"
       and .database.connected == true
       and .recovery.status == "healthy"
-      and .recovery.inProgress == false
+      and (.recovery.inProgress == false or .recovery.inProgress == null)
     ' <<<"$health" >/dev/null
     then
       details="$(${pkgs.jq}/bin/jq -r '
