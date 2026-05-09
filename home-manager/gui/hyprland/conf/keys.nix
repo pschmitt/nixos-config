@@ -14,8 +14,8 @@ let
   tilingBinds = [
     # Tiling / layout controls.
     "$mod SHIFT, space, togglefloating,"
-    "$mod ALT, space, togglesplit,"
-    "$mod, minus, togglesplit,"
+    "$mod ALT, space, layoutmsg, togglesplit"
+    "$mod, minus, layoutmsg, togglesplit"
     "$mod, P, pseudo,"
     "$mod SHIFT, comma, exec, $bin_dir/switch-layout.sh"
     "$mod, T, togglegroup"
