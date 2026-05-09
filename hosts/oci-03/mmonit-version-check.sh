@@ -1,24 +1,7 @@
 #!/usr/bin/env bash
 
 mmonit_version() {
-  {
-    # NixOS
-    if grep -q "NixOS" /etc/os-release
-    then
-      local mmonit
-      if ! mmonit=$(pgrep -aof "mmonit.*start" | awk '{ print $2 }') || \
-        [[ -z $mmonit ]]
-      then
-        mmonit=$(command -v mmonit.wrapped 2>/dev/null || command -v mmonit)
-        echo "Failed to determine the path to the running mmonit executable" >&2
-        echo "Defaulting to $mmonit" >&2
-      fi
-
-      "$mmonit" --version
-    else
-      mmonit --version
-    fi
-  } | grep -P -m 1 -o "([0-9]{1,}\.)+[0-9]{1,}"
+  mmonit --version | grep -P -m 1 -o "([0-9]{1,}\.)+[0-9]{1,}"
 }
 
 mmonit_latest_version() {
