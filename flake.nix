@@ -107,7 +107,7 @@
     # Hyprland and cie {{{
     hyprland = {
       # url = "github:hyprwm/Hyprland";
-      url = "github:hyprwm/Hyprland/v0.54.3";
+      url = "github:hyprwm/Hyprland/v0.55.0";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -128,7 +128,7 @@
 
     # hyprland plugins
     hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins/473804b3594dd829295484f1f479a560b8114f2d";
+      url = "github:hyprwm/hyprland-plugins";
       inputs.hyprland.follows = "hyprland";
     };
 
@@ -151,9 +151,7 @@
     };
 
     hyprgrass = {
-      # Keep this pinned to the last commit before the newer Hyprland API
-      # adaptation series; our Hyprland input stays on v0.54.3.
-      url = "github:horriblename/hyprgrass/416f0171e1d9379b84742ff4c1234f897ef698b4";
+      url = "github:horriblename/hyprgrass";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
@@ -163,8 +161,7 @@
     };
 
     hypr-dynamic-cursors = {
-      # `main` fails against Hyprland v0.54.3; this commit includes the newer hook/render API updates.
-      url = "github:VirtCode/hypr-dynamic-cursors/4f8447d19c71f34738b17d8bbe6c4aef1cc9450f";
+      url = "github:VirtCode/hypr-dynamic-cursors";
       inputs.hyprland.follows = "hyprland";
     };
 
