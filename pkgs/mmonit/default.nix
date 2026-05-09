@@ -2,12 +2,10 @@
   autoPatchelfHook,
   coreutils,
   cacert,
-  curl,
   fetchurl,
   gawk,
   gnused,
   lib,
-  makeWrapper,
   stdenv,
   systemd,
   port ? 8080,
@@ -34,10 +32,7 @@ stdenv.mkDerivation rec {
     hash = "${checksum}";
   };
 
-  buildInputs = [
-    autoPatchelfHook
-    makeWrapper
-  ];
+  nativeBuildInputs = [ autoPatchelfHook ];
 
   installPhase = ''
     mkdir -p $out
@@ -45,8 +40,8 @@ stdenv.mkDerivation rec {
     mv $out/db $out/db.og
     ln -sfv ${mmonitHome}/db $out/db
 
-    # M/Monit tries to write to this pidfile on startup
-    ln -sfv /var/lib/mmonit/mmonit.pid $out/logs/mmonit.pid
+    # Redirect PID file to writable location (nix store is read-only)
+    ln -sfv ${mmonitHome}/mmonit.pid $out/logs/mmonit.pid
 
     # Patch default server configuration
     # https://mmonit.com/documentation/mmonit_manual.pdf#page=67
@@ -57,22 +52,6 @@ stdenv.mkDerivation rec {
       --replace-fail '<Connector address="*" port="8080"' '<Connector address="127.0.0.1" port="${toString port}"' \
       --replace-fail '<CACertificatePath path="/path/to/ca/certs" />' '--><CACertificatePath path="${cacert}/etc/ssl/certs/ca-bundle.crt" /><!--' \
       --replace-fail '<Context path="" docBase="docroot" sessionTimeout="30 min"' '<Context path="" docBase="docroot" sessionTimeout="${sessionTimeout}"'
-
-    # Create systemd service
-    mkdir -p $out/lib/systemd/system
-
-    # Wrapper to handle DB initial copy and license
-    makeWrapper $out/bin/mmonit $out/bin/mmonit.wrapped \
-      --prefix PATH : ${
-        lib.makeBinPath [
-          curl
-          coreutils
-        ]
-      } \
-      --run "mkdir -p ${mmonitHome}/logs" \
-      --run "if ! test -f ${mmonitHome}/conf || test -L ${mmonitHome}/conf; then rm -f ${mmonitHome}/conf; ln -sfv $out/conf ${mmonitHome}/conf; fi" \
-      --run "if ! test -f ${mmonitHome}/db/mmonit.db; then mkdir -p ${mmonitHome}/db && cp -v $out/db.og/mmonit.db ${mmonitHome}/db/mmonit.db; fi" \
-      --run "if ! test -f ${mmonitHome}/license.xml; then test -f /etc/mmonit/license.xml && ln -sfv /etc/mmonit/license.xml ${mmonitHome}/license.xml; fi"
 
     # M/Monitor upgrade script
     substituteInPlace $out/upgrade/script/data.sh \
@@ -136,27 +115,6 @@ stdenv.mkDerivation rec {
     fi
     EOF
     chmod +x $out/bin/mmonit-upgrade
-
-    # systemd service - https://mmonit.com/wiki/MMonit/Setup
-    cat > $out/lib/systemd/system/mmonit.service <<EOF
-    [Unit]
-    Description = Easy, proactive monitoring of Unix systems, network and cloud services
-    Documentation= https://mmonit.com/documentation/
-    After=network.target
-
-    [Service]
-    Type=simple
-    KillMode=process
-    ExecStart=$out/bin/mmonit.wrapped start -i
-    ExecStop=$out/bin/mmonit.wrapped stop
-    PIDFile=/var/lib/mmonit/logs/mmonit.pid
-    Restart=on-abnormal
-    RestartSec=30
-    User=${user}
-
-    [Install]
-    WantedBy=multi-user.target
-    EOF
   '';
 
   meta = {
