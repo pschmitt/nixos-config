@@ -2578,13 +2578,15 @@
       "locked": {
         "lastModified": 1778263321,
         "narHash": "sha256-RqVXgqneZOaYJxWgwym04IqIS8j7sOw52GzDNHnn3ik=",
+        "ref": "refs/heads/main",
         "rev": "bf4cf45a7223efa8ee6dc442425f87927def7df0",
-        "type": "tarball",
-        "url": "https://codeberg.org/api/v1/repos/Mynacol/nixos-needsreboot/archive/bf4cf45a7223efa8ee6dc442425f87927def7df0.tar.gz"
+        "revCount": 81,
+        "type": "git",
+        "url": "https://codeberg.org/Mynacol/nixos-needsreboot.git"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://codeberg.org/Mynacol/nixos-needsreboot/archive/main.tar.gz"
+        "type": "git",
+        "url": "https://codeberg.org/Mynacol/nixos-needsreboot.git"
       }
     },
     "nixos-raspberrypi": {
