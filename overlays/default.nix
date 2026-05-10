@@ -27,6 +27,7 @@
     // (import ./wireguard-tools.nix { inherit final prev; })
     // (import ./hotfixes.nix { inherit inputs final prev; })
     # // (import ./tmux.nix { inherit final prev; })
+    // (import ./xdph.nix { inherit inputs final prev; })
     // { }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'

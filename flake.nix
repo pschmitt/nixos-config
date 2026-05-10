@@ -169,10 +169,9 @@
 
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
 
-    xdph = {
-      # url = "github:hyprwm/xdg-desktop-portal-hyprland";
-      url = "github:SamSaffron/xdg-desktop-portal-hyprland/better-picker";
-      inputs.nixpkgs.follows = "hyprland";
+    cpuguy83-nixcfg = {
+      url = "github:cpuguy83/nixcfg";
+      flake = false;
     };
 
     # hyprland end }}}
