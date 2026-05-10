@@ -9,7 +9,7 @@ let
   # xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
   # hyprlandPkg = pkgs.master.hyprland;
   hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-  xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  xdphPkg = pkgs.xdg-desktop-portal-hyprland;
 in
 {
   imports = [ inputs.hyprland.nixosModules.default ];
