@@ -85,6 +85,83 @@ Rules:
 - Keep the currency code in `purchase_notes` aligned with
   `purchase_currency`.
 
+## Document Uploads (netbox-documents plugin)
+
+NetBox has the `netbox-documents` plugin installed. Use it to attach purchase
+orders, manuals, and other files to devices and other objects.
+
+**Do not use the REST API to upload files.** The plugin's `document` field only
+accepts base64-encoded strings, not multipart file uploads. When a file is sent
+as base64 the plugin discards the original filename and saves the file under a
+random UUID with no extension — the filename shown in NetBox will be wrong.
+
+Use the **web UI form** instead. This preserves the original filename.
+
+### Procedure
+
+1. Get a session cookie and CSRF token by logging in:
+
+```bash
+# Credentials: username/password from rbw (same entry as the API token)
+curl -sc /tmp/nb_cookies.txt -s "https://netbox.brkn.lol/login/" > /dev/null
+CSRF=$(grep csrftoken /tmp/nb_cookies.txt | awk '{print $NF}')
+
+curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
+  -X POST "https://netbox.brkn.lol/login/" \
+  -H "Referer: https://netbox.brkn.lol/login/" \
+  -F "csrfmiddlewaretoken=$CSRF" \
+  -F "username=ai-agent" \
+  -F "password=<password from rbw>" \
+  -F "next=/" -o /dev/null
+```
+
+2. Find the content type ID for the target object type from its NetBox detail
+   page. The "add document" button URL contains `?content_type=<id>&object_id=<id>`.
+   Known IDs:
+   - `dcim.device` → `12`
+
+3. Refresh the CSRF token, then POST the file:
+
+```bash
+# Refresh CSRF
+curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
+  "https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" > /dev/null
+CSRF=$(grep csrftoken /tmp/nb_cookies.txt | awk '{print $NF}')
+
+# Upload — filename in the -F value is what gets stored
+curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt \
+  -X POST "https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" \
+  -H "Referer: https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" \
+  -F "csrfmiddlewaretoken=$CSRF" \
+  -F "name=" \
+  -F "document=@/path/to/file.pdf;type=application/pdf;filename=file.pdf" \
+  -F "external_url=" \
+  -F "document_type=purchaseorder" \
+  -F "comments=" \
+  -F "_create=" \
+  -w "%{http_code} -> %{redirect_url}\n" -o /dev/null
+# Expect: 302 -> https://netbox.brkn.lol/dcim/devices/<DEVICE_ID>
+```
+
+4. Verify via API:
+
+```bash
+curl -sf -H "Authorization: Token $NB_TOKEN" \
+  "https://netbox.brkn.lol/api/plugins/documents/documents/?object_id=<DEVICE_ID>" \
+  | jq '.results[] | {id, filename, document_type}'
+```
+
+### document_type values
+
+- `purchaseorder` — Purchase Order
+- `manual` — Manual
+- `diagram` — Network Diagram
+- `floorplan` — Floor Plan
+- `quote` — Quote
+- `supportcontract` — Support Contract
+- `contract` — Contract
+- `other` — Other
+
 ## Product Information
 
 Official product and support URLs are stored in these custom fields on:
