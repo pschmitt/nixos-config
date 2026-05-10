@@ -4,11 +4,10 @@ let
     export PATH=${
       pkgs.lib.makeBinPath [
         pkgs.curl
-        pkgs.gnugrep
         pkgs.jq
-        pkgs.mmonit
       ]
     }
+    export MMONIT_PACKAGE_VERSION=${lib.escapeShellArg pkgs.mmonit.version}
     ${builtins.readFile ./mmonit-version-check.sh}
   '';
 
