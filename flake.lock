@@ -2042,11 +2042,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778430029,
-        "narHash": "sha256-CrK7M6GdcyvbG+ejaYr8RXdB9jAMle9eI/31sMmR1/M=",
+        "lastModified": 1778480061,
+        "narHash": "sha256-w6bBcB2Px+NPztXzntNaST+d/G67f6HhxHXlfnBxKMk=",
         "owner": "pschmitt",
         "repo": "jcalapi",
-        "rev": "a94dabb7147969b698789f2af75330186c9e5c43",
+        "rev": "4df77c5769e4cb1c8c167e5b453f7a8963732aaf",
         "type": "github"
       },
       "original": {
