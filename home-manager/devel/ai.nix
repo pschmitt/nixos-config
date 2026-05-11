@@ -69,6 +69,14 @@
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
     };
+
+    github-copilot-cli = {
+      enable = true;
+      package = pkgs.master.github-copilot-cli;
+      skills = ./skills;
+      enableMcpIntegration = true;
+      context = ./CODESTYLE.md;
+    };
   };
 
   sops.secrets = {
@@ -106,7 +114,6 @@
 
     # cli
     # cursor-cli
-    github-copilot-cli
     # kilocode-cli
 
     # FIXME vibe-cli is broken as of 2026-02-25
