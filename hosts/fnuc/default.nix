@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   imports = [
     ../../modules/main-user.nix
@@ -14,5 +14,19 @@
   home = {
     inherit (config.mainUser) username homeDirectory;
     stateVersion = "25.11";
+  };
+
+  services.home-manager.autoUpgrade = {
+    enable = true;
+    frequency = "02:30";
+    useFlake = true;
+    flakeDir = "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
+    flags = [
+      "-b"
+      "hm-backup"
+    ];
+    preSwitchCommands = [
+      "${pkgs.gitMinimal}/bin/git pull"
+    ];
   };
 }
