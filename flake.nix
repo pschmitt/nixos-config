@@ -486,10 +486,11 @@
       # These are usually stuff you would upstream into home-manager
       # homeManagerModules = import ./modules/home-manager;
 
-      homeConfigurations = {
+      homeConfigurations = rec {
         fnuc = mkHome "fnuc" {
           system = "x86_64-linux";
         };
+        pschmitt = fnuc;
       };
 
       # NixOS configuration entrypoint
