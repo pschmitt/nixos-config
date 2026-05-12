@@ -168,7 +168,7 @@ jobs:
 
       - name: Netbird Connect
         id: netbird
-        uses: Alemiz112/netbird-connect@v1.0.1
+        uses: Alemiz112/netbird-connect@master
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
