@@ -136,7 +136,6 @@
       url = "github:H3rmt/hyprshell?ref=hyprshell-release";
       inputs = {
         home-manager.follows = "home-manager";
-        hyprland.follows = "hyprland";
         nixpkgs.follows = "nixpkgs";
       };
     };
