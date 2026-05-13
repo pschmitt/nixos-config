@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ansible Stuff"
+  short_description: "Work safely in the ansible-stuff repo"
+  default_prompt: "Use $ansible-stuff when editing or validating the ansible-stuff repository; enter the Nix dev shell, follow AGENTS.md, and run Ansible validation through the flake-provided tools."
+
+policy:
+  allow_implicit_invocation: true
