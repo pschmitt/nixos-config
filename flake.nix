@@ -127,11 +127,6 @@
     };
 
     # hyprland plugins
-    hyprland-plugins = {
-      url = "github:hyprwm/hyprland-plugins";
-      inputs.hyprland.follows = "hyprland";
-    };
-
     hyprshell = {
       url = "github:H3rmt/hyprshell?ref=hyprshell-release";
       inputs = {
