@@ -260,6 +260,14 @@ in
             definedAliases = [ "y" ];
           };
 
+          amazon-de = {
+            name = "Amazon.de";
+            urls = [ { template = "https://www.amazon.de/s?k={searchTerms}"; } ];
+            icon = "https://www.amazon.de/favicon.ico";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "am" ];
+          };
+
           gmail = {
             name = "GMail";
             urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
