@@ -31,3 +31,4 @@ libfprint*.install
 update-git-commits.txt
 cookies.txt
 tmp/
+.claude
