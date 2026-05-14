@@ -10,6 +10,10 @@ let
       # routeMetric4 = 500;           # optional
       # routeMetric6 = 500;           # optional
     };
+
+    home-dsl = {
+      priority = -101;
+    };
     home-vodafone = {
       priority = -101;
     };
