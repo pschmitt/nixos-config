@@ -57,6 +57,8 @@
       };
     };
 
+  llm-agents = inputs.llm-agents.overlays.default;
+
   old-packages = final: prev: {
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
     kubectl-123 = import (builtins.fetchTarball {
