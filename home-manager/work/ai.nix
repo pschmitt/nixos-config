@@ -1,0 +1,29 @@
+{
+  pkgs,
+  ...
+}:
+let
+  claudeWork = pkgs.writeShellApplication {
+    name = "claude-work";
+
+    text = ''
+      : "''${HOME:?HOME must be set}"
+
+      export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
+      export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+
+      exec ${pkgs.llm-agents.claude-code}/bin/claude "$@"
+    '';
+  };
+in
+{
+  home.file = {
+    ".config/claude-work/rules/code-style.md".source = ../devel/CODESTYLE.md;
+    ".config/claude-work/skills" = {
+      source = ../devel/skills;
+      recursive = true;
+    };
+  };
+
+  home.packages = [ claudeWork ];
+}
