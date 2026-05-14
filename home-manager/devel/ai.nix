@@ -3,6 +3,20 @@
   inputs,
   ...
 }:
+let
+  claudeWork = pkgs.writeShellApplication {
+    name = "claude-work";
+
+    text = ''
+      : "''${HOME:?HOME must be set}"
+
+      export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
+      export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+
+      exec ${pkgs.master.claude-code}/bin/claude "$@"
+    '';
+  };
+in
 {
 
   programs = {
@@ -107,7 +121,17 @@
   #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
   #   };
 
+  home.file = {
+    ".config/claude-work/rules/code-style.md".source = ./CODESTYLE.md;
+    ".config/claude-work/skills" = {
+      source = ./skills;
+      recursive = true;
+    };
+  };
+
   home.packages = with pkgs.master; [
+    claudeWork
+
     # vscode forks
     antigravity
     # code-cursor
