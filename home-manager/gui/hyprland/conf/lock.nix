@@ -1,21 +1,19 @@
 { lib, ... }:
+let
+  luaBind = import ../lib/lua-bind.nix { inherit lib; };
+  binDir = "~/.config/hypr/bin";
+  lock = "${binDir}/lock.sh";
+in
 {
-  # Mirrors ~/.config/hypr/config.d/lock.conf (lock binds + idle rules).
   wayland.windowManager.hyprland.settings = {
-    # Lock helpers from lock.conf.
-    "$lock" = "$bin_dir/lock.sh";
-
     bind = [
-      "$mod ALT, L, exec, $lock --now"
+      (luaBind.mkBind "SUPER ALT, L, exec, ${lock} --now")
+      (luaBind.mkLockedBind "SUPER CONTROL ALT, L, exec, ~/bin/zhj \"lockscreen::restart\"")
+      (luaBind.mkLockedBind ", switch:off:Lid Switch, exec, ${lock}")
+      (luaBind.mkLockedBind ", switch:on:Lid Switch, exec, hyprctl dispatch dpms on")
     ];
 
-    bindl = [
-      "$mod CONTROL ALT, L, exec, ~/bin/zhj \"lockscreen::restart\""
-      ", switch:off:Lid Switch, exec, $lock"
-      ", switch:on:Lid Switch, exec, hyprctl dispatch dpms on"
-    ];
-
-    windowrule = [
+    window_rule = map luaBind.mkWindowRule [
       "idle_inhibit fullscreen, match:class ^(firefox)$"
       "idle_inhibit always, match:title ^(Picture-in-Picture)$"
       "idle_inhibit fullscreen, match:class ^(Google-chrome)$"

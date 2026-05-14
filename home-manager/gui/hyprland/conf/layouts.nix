@@ -1,8 +1,5 @@
 {
-  # Mirrors ~/.config/hypr/config.d/layouts.conf.
-  # Docs: https://wiki.hyprland.org/Configuring/Dwindle-Layout/ and /Master-Layout/.
-  wayland.windowManager.hyprland.settings = {
-    # Layout tweaks from layouts.conf.
+  wayland.windowManager.hyprland.settings.config = {
     dwindle = {
       preserve_split = true;
       smart_split = true;

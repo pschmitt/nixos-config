@@ -36,10 +36,12 @@ in
     pkgs.xhost
   ];
 
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "systemd-cat --identifier=hyprland-startup ${hyprSymlink}/bin/hypr-symlink-runtime"
-    "systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env"
-    "systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock"
-    "systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui"
-  ];
+  wayland.windowManager.hyprland.extraConfig = ''
+    hl.on("hyprland.start", function()
+      hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprSymlink}/bin/hypr-symlink-runtime")
+      hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env")
+      hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock")
+      hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui")
+    end)
+  '';
 }

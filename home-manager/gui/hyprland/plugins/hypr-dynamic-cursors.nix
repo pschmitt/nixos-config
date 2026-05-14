@@ -1,4 +1,10 @@
-{ inputs, pkgs, ... }:
+{
+  config,
+  lib,
+  inputs,
+  pkgs,
+  ...
+}:
 {
   wayland.windowManager.hyprland = {
     enable = true;
@@ -7,10 +13,12 @@
     ];
   };
 
-  wayland.windowManager.hyprland.settings = {
-    plugin.dynamic-cursors = {
-      enabled = true;
-      mode = "rotate";
-    };
-  };
+  wayland.windowManager.hyprland.settings =
+    lib.mkIf (config.wayland.windowManager.hyprland.configType != "lua")
+      {
+        config.plugin.dynamic-cursors = {
+          enabled = true;
+          mode = "rotate";
+        };
+      };
 }

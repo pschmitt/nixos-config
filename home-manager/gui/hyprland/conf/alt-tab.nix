@@ -1,8 +1,13 @@
 {
   inputs,
+  lib,
   pkgs,
   ...
 }:
+let
+  binDir = "~/.config/hypr/bin";
+  luaBind = import ../lib/lua-bind.nix { inherit lib; };
+in
 {
   # Docs: https://wiki.hyprland.org/Configuring/Uncommon-tips--tricks/#alt-tab-behaviour
 
@@ -14,23 +19,25 @@
 
   wayland.windowManager.hyprland = {
     settings = {
-      # Alt-tab helper bindings from alt-tab.conf.
       bind = [
-        "ALT, TAB, exec, $bin_dir/alt-tab.sh enable 'down'"
-        "ALT SHIFT, TAB, exec, $bin_dir/alt-tab.sh enable 'up'"
-        "ALT, Return, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return, class:alttab"
-        "ALT SHIFT, Return, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return, class:alttab"
-        "ALT, escape, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab"
-        "ALT SHIFT, escape, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab"
+        (luaBind.mkBind "ALT, TAB, exec, ${binDir}/alt-tab.sh enable 'down'")
+        (luaBind.mkBind "ALT SHIFT, TAB, exec, ${binDir}/alt-tab.sh enable 'up'")
+        (luaBind.mkBind "ALT, Return, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return, class:alttab")
+        (luaBind.mkBind "ALT SHIFT, Return, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return, class:alttab")
+        (luaBind.mkBind "ALT, escape, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab")
+        (luaBind.mkBind "ALT SHIFT, escape, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , escape,class:alttab")
+        (luaBind.mkReleaseTransparentBind "ALT, ALT_L, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab")
+        (luaBind.mkReleaseTransparentBind "ALT SHIFT, ALT_L, exec, ${binDir}/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab")
       ];
-      bindrt = [
-        "ALT, ALT_L, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab"
-        "ALT SHIFT, ALT_L, exec, $bin_dir/alt-tab.sh disable ; hyprctl -q dispatch sendshortcut , return,class:alttab"
+      workspace_rule = [
+        {
+          workspace = "special:alttab";
+          gaps_out = 200;
+          gaps_in = 200;
+          border_size = 0;
+        }
       ];
-      workspace = [
-        "special:alttab, gapsout:200, gapsin:200, bordersize:0"
-      ];
-      windowrule = [
+      window_rule = map luaBind.mkWindowRule [
         "no_anim on, match:class alttab"
         "stay_focused on, match:class alttab"
         "workspace special:alttab, match:class alttab"
@@ -39,8 +46,18 @@
     };
 
     submaps.alttab.settings.bind = [
-      "ALT, tab, sendshortcut, , tab, class:alttab"
-      "ALT SHIFT, tab, sendshortcut, shift, tab, class:alttab"
+      {
+        _args = [
+          "ALT + tab"
+          (luaBind.sendShortcut "" "tab" "class:alttab")
+        ];
+      }
+      {
+        _args = [
+          "ALT + SHIFT + tab"
+          (luaBind.sendShortcut "shift" "tab" "class:alttab")
+        ];
+      }
     ];
   };
 }

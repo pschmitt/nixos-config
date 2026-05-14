@@ -3,7 +3,7 @@
   imports = [
     ./clipboard.nix
     ./hints.nix
-    ./hyprdynamicmonitors.nix
+    ./monitor-manager.nix
     ./hyprevents.nix
     ./hypridle.nix
     ./hyprlock.nix

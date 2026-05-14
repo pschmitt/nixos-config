@@ -1,12 +1,11 @@
 {
   imports = [
-    # NOTE Below plugins conflict with one another!
+    # Plugins disabled temporarily while migrating to Lua config.
     # ./hyprexpo.nix
     # ./hyprspace.nix
     # ./hyprtasking.nix
-
-    ./hyprgrass.nix
-    ./hypr-dynamic-cursors.nix
+    # ./hyprgrass.nix
+    # ./hypr-dynamic-cursors.nix
     ./quickshell-overview.nix
   ];
 }

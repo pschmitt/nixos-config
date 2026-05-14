@@ -1,17 +1,12 @@
 { lib, ... }:
 {
-  wayland.windowManager.hyprland.settings = {
-    "exec-once" = lib.mkBefore (
-      let
-        workspaceDispatches = [
-          "moveworkspacetomonitor 1 desc:LG"
-          "moveworkspacetomonitor 2 desc:Lenovo"
-          "focusmonitor desc:LG"
-          "workspace 1"
-        ];
-      in
-      (map (cmd: "hyprctl dispatch ${cmd}") workspaceDispatches)
-      ++ [ "zhj pulseaudio::mute-default-source" ]
-    );
-  };
+  wayland.windowManager.hyprland.extraConfig = lib.mkBefore ''
+    hl.on("hyprland.start", function()
+      hl.exec_cmd("hyprctl dispatch moveworkspacetomonitor 1 desc:LG")
+      hl.exec_cmd("hyprctl dispatch moveworkspacetomonitor 2 desc:Lenovo")
+      hl.exec_cmd("hyprctl dispatch focusmonitor desc:LG")
+      hl.exec_cmd("hyprctl dispatch workspace 1")
+      hl.exec_cmd("zhj pulseaudio::mute-default-source")
+    end)
+  '';
 }

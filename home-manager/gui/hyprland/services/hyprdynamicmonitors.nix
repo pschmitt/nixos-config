@@ -15,7 +15,7 @@ let
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
   hyprConfigAutoreloadDisabled =
-    config.wayland.windowManager.hyprland.settings.misc.disable_autoreload or false;
+    config.wayland.windowManager.hyprland.settings.config.misc.disable_autoreload or false;
 
   callbackScript = pkgs.writeShellScript "hyprdynamicmonitors-profile-callback.sh" ''
     set -euo pipefail
@@ -296,8 +296,7 @@ in
     };
   };
 
-  wayland.windowManager.hyprland.settings.source = [
-    # Include HyprDynamicMonitors output so Hyprland uses the generated layout.
-    "$config_dir/monitors.conf"
-  ];
+  # Monitor config is applied at runtime via hyprctl reload triggered by the
+  # hyprdynamicmonitors callback — source directives are hyprlang-only and
+  # not available in Lua config mode.
 }

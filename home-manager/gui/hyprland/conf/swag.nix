@@ -1,80 +1,164 @@
 { config, lib, ... }:
 {
-  # See https://wiki.hyprland.org/Configuring/Variables/ and /Animations/ for docs.
-  wayland.windowManager.hyprland.settings =
+  wayland.windowManager.hyprland =
     let
       cursorTheme = config.gtk.cursorTheme.name;
       cursorSize = "24";
     in
-    lib.mkMerge [
-      {
-        env = [
-          "HYPRCURSOR_THEME,${cursorTheme}"
-          "HYPRCURSOR_SIZE,${cursorSize}"
-
-          # legacy
-          "XCURSOR_THEME,${cursorTheme}"
-          "XCURSOR_SIZE,${cursorSize}"
-        ];
-
-        # Decoration/animation tuning from swag.conf.
-        decoration = {
-          rounding = 2;
-          dim_inactive = true;
-          dim_strength = 0.1;
-
-          shadow = {
-            enabled = true;
-            range = 4;
-            render_power = 3;
-            color = "rgba(1a1a1aee)";
-          };
-
-          blur = {
-            enabled = false;
-            size = 3;
-            passes = 1;
-            new_optimizations = true;
-          };
-        };
-
-        group = {
-          "col.border_active" = "rgba(1e1e1eff)";
-          "col.border_inactive" = "rgba(2a2a2aff)";
-          "col.border_locked_active" = "rgba(1e1e1eff)";
-          "col.border_locked_inactive" = "rgba(2a2a2aff)";
-          groupbar = {
-            enabled = true;
-            gradients = false;
-            height = 14;
-            indicator_height = 14;
-            indicator_gap = -14;
-            gaps_in = 0;
-            gaps_out = 0;
-            rounding = 0;
-            "col.active" = "rgba(1e1e1eff)";
-            "col.inactive" = "rgba(2a2a2aff)";
-            "col.locked_active" = "rgba(1e1e1eff)";
-            "col.locked_inactive" = "rgba(2a2a2aff)";
-          };
-        };
-
-        animations = {
-          enabled = true;
-          bezier = [ "myBezier, 0.05, 0.9, 0.1, 1.05" ];
-          animation = [
-            "windows, 1, 3, myBezier"
-            "windowsOut, 1, 3, default, popin 80%"
-            "border, 1, 10, default"
-            "borderangle, 1, 8, default"
-            "fade, 1, 3, default"
-            "workspaces, 1, 2, default"
-            "layersIn, 1, 1.5, default, popin"
+    {
+      settings = lib.mkMerge [
+        {
+          env = [
+            {
+              _args = [
+                "HYPRCURSOR_THEME"
+                cursorTheme
+              ];
+            }
+            {
+              _args = [
+                "HYPRCURSOR_SIZE"
+                cursorSize
+              ];
+            }
+            {
+              _args = [
+                "XCURSOR_THEME"
+                cursorTheme
+              ];
+            }
+            {
+              _args = [
+                "XCURSOR_SIZE"
+                cursorSize
+              ];
+            }
           ];
-        };
 
-        # GTK settings import helper script.
-        exec = [ "$sway_bin_dir/import-gsettings.sh" ];
-      }
-    ];
+          config = {
+            decoration = {
+              rounding = 2;
+              dim_inactive = true;
+              dim_strength = 0.1;
+
+              shadow = {
+                enabled = true;
+                range = 4;
+                render_power = 3;
+                color = "rgba(1a1a1aee)";
+              };
+
+              blur = {
+                enabled = false;
+                size = 3;
+                passes = 1;
+                new_optimizations = true;
+              };
+            };
+
+            group = {
+              col = {
+                border_active = "rgba(1e1e1eff)";
+                border_inactive = "rgba(2a2a2aff)";
+                border_locked_active = "rgba(1e1e1eff)";
+                border_locked_inactive = "rgba(2a2a2aff)";
+              };
+              groupbar = {
+                enabled = true;
+                gradients = false;
+                height = 14;
+                indicator_height = 14;
+                indicator_gap = -14;
+                gaps_in = 0;
+                gaps_out = 0;
+                rounding = 0;
+                col = {
+                  active = "rgba(1e1e1eff)";
+                  inactive = "rgba(2a2a2aff)";
+                  locked_active = "rgba(1e1e1eff)";
+                  locked_inactive = "rgba(2a2a2aff)";
+                };
+              };
+            };
+
+            animations = {
+              enabled = true;
+            };
+          };
+
+          curve = [
+            {
+              _args = [
+                "myBezier"
+                {
+                  type = "bezier";
+                  points = [
+                    [
+                      0.05
+                      0.9
+                    ]
+                    [
+                      0.1
+                      1.05
+                    ]
+                  ];
+                }
+              ];
+            }
+          ];
+
+          animation = [
+            {
+              leaf = "windows";
+              enabled = true;
+              speed = 3;
+              bezier = "myBezier";
+            }
+            {
+              leaf = "windowsOut";
+              enabled = true;
+              speed = 3;
+              bezier = "default";
+              style = "popin 80%";
+            }
+            {
+              leaf = "border";
+              enabled = true;
+              speed = 10;
+              bezier = "default";
+            }
+            {
+              leaf = "borderangle";
+              enabled = true;
+              speed = 8;
+              bezier = "default";
+            }
+            {
+              leaf = "fade";
+              enabled = true;
+              speed = 3;
+              bezier = "default";
+            }
+            {
+              leaf = "workspaces";
+              enabled = true;
+              speed = 2;
+              bezier = "default";
+            }
+            {
+              leaf = "layersIn";
+              enabled = true;
+              speed = 1.5;
+              bezier = "default";
+              style = "popin";
+            }
+          ];
+
+        }
+      ];
+
+      extraConfig = ''
+        hl.exec_cmd("~/.config/sway/bin/import-gsettings.sh")
+      '';
+    };
 }
