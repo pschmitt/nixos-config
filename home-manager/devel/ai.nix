@@ -1,28 +1,13 @@
 {
   pkgs,
-  inputs,
   ...
 }:
-let
-  claudeWork = pkgs.writeShellApplication {
-    name = "claude-work";
-
-    text = ''
-      : "''${HOME:?HOME must be set}"
-
-      export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
-      export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
-
-      exec ${pkgs.master.claude-code}/bin/claude "$@"
-    '';
-  };
-in
 {
 
   programs = {
     claude-code = {
       enable = true;
-      package = pkgs.master.claude-code;
+      package = pkgs.llm-agents.claude-code;
       skills = ./skills;
       enableMcpIntegration = true;
       rules = {
@@ -32,14 +17,14 @@ in
 
     codex = {
       enable = true;
-      package = inputs.codex-cli-nix.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      package = pkgs.llm-agents.codex;
       context = ./CODESTYLE.md;
       skills = ./skills;
     };
 
     gemini-cli = {
       enable = true;
-      package = pkgs.master.gemini-cli;
+      package = pkgs.llm-agents.gemini-cli;
       skills = ./skills;
       settings = {
         general = {
@@ -77,7 +62,7 @@ in
 
     opencode = {
       enable = true;
-      package = pkgs.master.opencode;
+      package = pkgs.llm-agents.opencode;
       skills = ./skills;
       enableMcpIntegration = true;
       context = builtins.readFile ./CODESTYLE.md;
@@ -86,7 +71,7 @@ in
 
     github-copilot-cli = {
       enable = true;
-      package = pkgs.master.github-copilot-cli;
+      package = pkgs.llm-agents.copilot-cli;
       skills = ./skills;
       enableMcpIntegration = true;
       context = ./CODESTYLE.md;
@@ -121,17 +106,7 @@ in
   #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
   #   };
 
-  home.file = {
-    ".config/claude-work/rules/code-style.md".source = ./CODESTYLE.md;
-    ".config/claude-work/skills" = {
-      source = ./skills;
-      recursive = true;
-    };
-  };
-
   home.packages = with pkgs.master; [
-    claudeWork
-
     # vscode forks
     antigravity
     # code-cursor
