@@ -126,14 +126,6 @@
     };
 
     # hyprland plugins
-    hyprshell = {
-      url = "github:H3rmt/hyprshell?ref=hyprshell-release";
-      inputs = {
-        home-manager.follows = "home-manager";
-        nixpkgs.follows = "nixpkgs";
-      };
-    };
-
     hyprtasking = {
       # upstream url
       # url = "github:raybbian/hyprtasking";
