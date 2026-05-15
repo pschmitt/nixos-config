@@ -8,12 +8,6 @@ The private Ansible repository is located at:
 ~/devel/private/pschmitt/ansible-stuff.git
 ```
 
-Use this expanded path in shell commands when needed:
-
-```text
-/home/pschmitt/devel/private/pschmitt/ansible-stuff.git
-```
-
 ## Environment
 
 - Nix is available and is the expected way to run project tooling.
