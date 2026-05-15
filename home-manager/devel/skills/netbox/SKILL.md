@@ -1,6 +1,6 @@
 ---
 name: netbox
-description: Use when working with the NetBox inventory at netbox.brkn.lol, especially for device metadata, purchase data, product/support URLs, asset tags, device type synchronization, and radio or MAC-address modeling. Read `references/conventions.md` before making NetBox changes and treat mailbox lookups on bichon.brkn.lol as read-only.
+description: Use when working with the NetBox inventory at netbox.brkn.lol, especially for device metadata, purchase data, product/support URLs, asset tags, device type synchronization, and radio or MAC-address modeling. Read `references/conventions.md` before making NetBox changes.
 ---
 
 # NetBox
@@ -24,7 +24,7 @@ zhj rbw::get --json "Netbox (AI Agent)"
    purchase information, or product links.
 2. Read `references/conventions.md` and load only the relevant sections for the
    task.
-3. When purchase details are missing, use `bichon.brkn.lol` only for read-only
+3. When purchase details are missing, use the `bichon` skill for read-only
    lookup of invoices, order confirmations, and related email records.
 4. Normalize the NetBox data to the conventions in the reference file before
    writing changes.
@@ -38,5 +38,4 @@ zhj rbw::get --json "Netbox (AI Agent)"
 ## Safety rules
 
 - Never commit credentials, tokens, or exported secrets.
-- Do not perform destructive actions in `bichon.brkn.lol`.
 - Prefer normalized custom fields over hiding important data in comments.

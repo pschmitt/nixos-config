@@ -21,27 +21,8 @@ Notes:
 Purchase metadata is stored in NetBox custom fields, not in the top-level
 device attributes.
 
-When purchase details or bills are missing, you can and should search the
-mailbox via `bichon.brkn.lol` for order confirmations, invoices, and related
-purchase emails. The service configuration lives in
-[`services/bichon.nix`](/etc/nixos/services/bichon.nix).
-
-Safety rule:
-- Under no circumstances perform destructive actions in `bichon.brkn.lol`.
-- Use it for read-only lookup of purchase information and documents.
-
-API access:
-- Retrieve the API token with:
-
-```bash
-zhj rbw::get --field "API Token" bichon.brkn.lol
-```
-
-- API specification:
-
-```text
-https://bichon.brkn.lol/api-docs/spec.yaml
-```
+When purchase details or bills are missing, you can and should use the `bichon`
+skill to search for order confirmations, invoices, and related purchase emails.
 
 Use these custom fields:
 - `purchase_store`
