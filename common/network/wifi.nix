@@ -43,6 +43,11 @@ let
     wiit-guests = {
       autoconnect = true;
     };
+    hotspot = {
+      autoconnect = false;
+      priority = -1000;
+      generateProfile = false;
+    };
   };
 
   names = builtins.attrNames nets;
@@ -81,7 +86,7 @@ let
     + "\n";
 
   # generate profiles
-  nmProfiles = lib.genAttrs names (
+  nmProfiles = lib.genAttrs (lib.filter (n: nets.${n}.generateProfile or true) names) (
     n:
     let
       a = nets.${n};

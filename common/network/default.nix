@@ -3,6 +3,7 @@
   imports = [
     ./dns.nix
     ./netbird.nix
+    ./nm-shared.nix
     ./snek/proxychains.nix
     ./tailscale.nix
     ./zerotier.nix
