@@ -797,6 +797,79 @@ jobs:
               --home '${{ matrix.home }}' \
               --copy
 
+  build-droids-aarch64:
+    needs:
+      - setup-matrix
+      - build-pkgs-free
+      - build-pkgs-nonfree
+      - build-pkgs-oci
+    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
+    runs-on: ubuntu-latest
+    env:
+      NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        droid: [ "zf10" ]
+    steps:
+      - uses: wimpysworld/nothing-but-nix@main
+        with:
+          hatchet-protocol: 'carve'
+
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          extra-conf: ${{ env.nix-conf }}
+
+      - uses: nix-community/cache-nix-action@v7
+        with:
+          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+          restore-prefixes-first-match: nix-${{ runner.os }}-
+          save: false
+
+      - name: Store SSH key on disk
+        run: |-
+          mkdir -p "${HOME}/.ssh"
+          KEY_PATH="${HOME}/.ssh/id_ed25519"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
+          chmod 400 "$KEY_PATH"
+
+      - name: Setup known_hosts
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 1
+          max_attempts: 3
+          shell: bash
+          command: |
+            set -o pipefail
+            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+             sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Build nixOnDroidConfiguration
+        run: |-
+          ./.github/workflows/scripts/ci-build.sh \
+            --droid '${{ matrix.droid }}'
+
+      - name: "Nix copy nixOnDroidConfiguration"
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            echo "Known hosts:"
+            cat /etc/ssh/ssh_known_hosts
+
+            ./.github/workflows/scripts/ci-build.sh \
+             --droid '${{ matrix.droid }}' \
+             --copy
+
   # pr-nvd-diff was intentionally removed.
   # A dedicated PR workflow now handles per-host diffs without builds:
   # `.github/workflows/nix-systempackages-diff.yaml`.
