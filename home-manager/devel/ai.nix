@@ -1,15 +1,90 @@
 {
+  config,
+  osConfig,
+  lib,
   pkgs,
   ...
 }:
+let
+  # External n8n skill set — https://github.com/czlonkowski/n8n-skills
+  n8nSkillsSrc = pkgs.fetchFromGitHub {
+    owner = "czlonkowski";
+    repo = "n8n-skills";
+    rev = "27e9d0ab92cccfc46db4f147497b173f214b69c5";
+    hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
+  };
+
+  # Merge local skills with the upstream n8n skill set so all AI tools get both.
+  # toString coerces the derivation to its store-path string, which the skills
+  # option type accepts (it rejects raw derivations as it matches the attrsOf branch).
+  allSkills = toString (
+    pkgs.symlinkJoin {
+      name = "ai-skills";
+      paths = [
+        ./skills
+        "${n8nSkillsSrc}/skills"
+      ];
+    }
+  );
+
+  n8nMcpTokenFile = config.sops.secrets."n8n/mcp/token".path;
+
+  wrapAiToolWithN8nMcp =
+    {
+      package,
+      binary,
+    }:
+    pkgs.symlinkJoin {
+      name = "${lib.getName package}-with-n8n-mcp";
+      paths = [ package ];
+      nativeBuildInputs = [ pkgs.makeWrapper ];
+      postBuild = ''
+        wrapProgram "$out/bin/${binary}" \
+          --set-default N8N_MCP_TOKEN_FILE ${lib.escapeShellArg n8nMcpTokenFile} \
+          --run 'if [[ -r "$N8N_MCP_TOKEN_FILE" ]]; then export N8N_MCP_TOKEN="$(<"$N8N_MCP_TOKEN_FILE")"; fi'
+      '';
+      inherit (package) meta;
+    };
+in
 {
+  sops = {
+    secrets = {
+      "mistral-vibe/env" = {
+        mode = "0600";
+        sopsFile = ../../secrets/shared.sops.yaml;
+      };
+      "n8n/mcp/token" = {
+        mode = "0600";
+        sopsFile = ../../secrets/shared.sops.yaml;
+      };
+    };
+  };
+
+  programs.mcp = {
+    enable = true;
+    servers = {
+      n8n-mcp = {
+        url = "https://n8n.${osConfig.domain.main}/mcp-server/http";
+        headers = {
+          Authorization = "Bearer {env:N8N_MCP_TOKEN}";
+        };
+      };
+    };
+  };
 
   programs = {
     claude-code = {
       enable = true;
-      package = pkgs.llm-agents.claude-code;
-      skills = ./skills;
+      package = wrapAiToolWithN8nMcp {
+        package = pkgs.llm-agents.claude-code;
+        binary = "claude";
+      };
+      skills = allSkills;
       enableMcpIntegration = true;
+      settings = {
+        skipDangerousModePermissionPrompt = true;
+        theme = "dark";
+      };
       rules = {
         code-style = ./CODESTYLE.md;
       };
@@ -17,15 +92,23 @@
 
     codex = {
       enable = true;
-      package = pkgs.llm-agents.codex;
+      package = wrapAiToolWithN8nMcp {
+        package = pkgs.llm-agents.codex;
+        binary = "codex";
+      };
       context = ./CODESTYLE.md;
-      skills = ./skills;
+      skills = allSkills;
+      enableMcpIntegration = true;
     };
 
     gemini-cli = {
       enable = true;
-      package = pkgs.llm-agents.gemini-cli;
-      skills = ./skills;
+      package = wrapAiToolWithN8nMcp {
+        package = pkgs.llm-agents.gemini-cli;
+        binary = "gemini";
+      };
+      skills = allSkills;
+      enableMcpIntegration = true;
       settings = {
         general = {
           preferredEditor = "nvim";
@@ -62,26 +145,25 @@
 
     opencode = {
       enable = true;
-      package = pkgs.llm-agents.opencode;
-      skills = ./skills;
-      enableMcpIntegration = true;
+      package = wrapAiToolWithN8nMcp {
+        package = pkgs.llm-agents.opencode;
+        binary = "opencode";
+      };
+      skills = allSkills;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
+      enableMcpIntegration = true;
     };
 
     github-copilot-cli = {
       enable = true;
-      package = pkgs.llm-agents.copilot-cli;
-      skills = ./skills;
-      enableMcpIntegration = true;
+      package = wrapAiToolWithN8nMcp {
+        package = pkgs.llm-agents.copilot-cli;
+        binary = "copilot";
+      };
+      skills = allSkills;
       context = ./CODESTYLE.md;
-    };
-  };
-
-  sops.secrets = {
-    "mistral-vibe/env" = {
-      mode = "0600";
-      sopsFile = ../../secrets/shared.sops.yaml;
+      enableMcpIntegration = true;
     };
   };
 
