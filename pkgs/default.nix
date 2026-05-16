@@ -36,6 +36,7 @@ in
   still = pkgs.callPackage ./still { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
+  todoist-cli = pkgs.callPackage ./todoist-cli { };
   waypoint = pkgs.callPackage ./waypoint { };
   withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
