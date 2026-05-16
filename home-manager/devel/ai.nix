@@ -14,16 +14,27 @@ let
     hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
   };
 
-  # Generate the todoist-cli skill from the installed td binary so it always
-  # matches the deployed version. Uses the universal installer (no agent-dir
-  # existence check) with --local so it writes into $TMPDIR without needing
-  # a live home directory.
+  # Generate the todoist-cli skill by importing only content.js (pure
+  # constants, no side-effects) via node directly. Avoids running td itself
+  # which triggers migrate-auth.js → network call → sandbox hang.
   tdSkill = pkgs.runCommand "todoist-cli-skill" { } ''
-    export HOME="$TMPDIR"
-    cd "$TMPDIR"
-    ${pkgs.todoist-cli}/bin/td skill install universal --local --force
     mkdir -p "$out/todoist-cli"
-    cp .agents/skills/todoist-cli/SKILL.md "$out/todoist-cli/SKILL.md"
+    TD_SKILL_OUT="$out/todoist-cli/SKILL.md" \
+    ${pkgs.nodejs}/bin/node --input-type=module << 'JSEOF'
+    import { SKILL_NAME, SKILL_DESCRIPTION, SKILL_COMPATIBILITY, SKILL_CONTENT } from '${pkgs.todoist-cli}/lib/node_modules/@doist/todoist-cli/dist/lib/skills/content.js';
+    import { readFileSync, writeFileSync } from 'node:fs';
+    const pkg = JSON.parse(readFileSync('${pkgs.todoist-cli}/lib/node_modules/@doist/todoist-cli/package.json', 'utf-8'));
+    const frontmatter = '---\n'
+      + 'name: ' + SKILL_NAME + '\n'
+      + 'description: ' + JSON.stringify(SKILL_DESCRIPTION) + '\n'
+      + 'compatibility: ' + JSON.stringify(SKILL_COMPATIBILITY) + '\n'
+      + 'license: ' + pkg.license + '\n'
+      + 'metadata:\n'
+      + '  author: Doist\n'
+      + '  version: ' + JSON.stringify(pkg.version) + '\n'
+      + '---\n\n';
+    writeFileSync(process.env.TD_SKILL_OUT, frontmatter + SKILL_CONTENT, 'utf-8');
+    JSEOF
   '';
 
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
