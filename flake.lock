@@ -2771,11 +2771,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778163822,
-        "narHash": "sha256-S+IOECi+aqbh/6CAYn10zwPsU7MVSV1rIygfVjE8uL0=",
+        "lastModified": 1778925561,
+        "narHash": "sha256-KqJwWOLIkoS0tZEBAHncX885M36zAyl8CTpxit1KfK8=",
         "owner": "pschmitt",
         "repo": "obs-cli",
-        "rev": "d0b9259b59639059618772f62ee5541346a33020",
+        "rev": "3f25850f8f7084cd6ee515d0d2af0b664d683951",
         "type": "github"
       },
       "original": {
