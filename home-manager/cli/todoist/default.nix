@@ -1,9 +1,16 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 {
-  sops.secrets."todoist/api_token" = { };
+  sops = {
+    secrets."todoist/api_token" = {
+      sopsFile = ../../../secrets/shared.sops.yaml;
+    };
 
-  home.sessionVariables = {
-    TODOIST_API_TOKEN =
-      "$(${pkgs.coreutils}/bin/cat " + config.sops.secrets."todoist/api_token".path + ")";
+    templates."todoist-cli-config" = {
+      path = "${config.xdg.configHome}/todoist-cli/config.json";
+      mode = "0600";
+      content = ''
+        {"api_token":"${config.sops.placeholder."todoist/api_token"}"}
+      '';
+    };
   };
 }
