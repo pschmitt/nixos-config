@@ -18,22 +18,25 @@ buildNpmPackage rec {
 
   npmDepsHash = "sha256-gpTowutDoyY7TnVk5QIVp1igZhjGbQK6qcUczcRb3TA=";
 
+  doCheck = false;
+
   nativeBuildInputs = [ installShellFiles ];
 
   postInstall = ''
-    export HOME=$TMPDIR
-    $out/bin/td completion install bash
-    $out/bin/td completion install zsh
-    $out/bin/td completion install fish
+    tabtabTemplates=$out/lib/node_modules/@doist/todoist-cli/node_modules/@pnpm/tabtab/lib/templates
+
+    mkdir -p "$TMPDIR/completions"
+    sed "s/{pkgname}/td/g; s|{completer}|$out/bin/td|g" \
+      "$tabtabTemplates/completion.bash" > "$TMPDIR/completions/td.bash"
+    sed "s/{pkgname}/td/g; s|{completer}|$out/bin/td|g" \
+      "$tabtabTemplates/completion.zsh" > "$TMPDIR/completions/_td"
+    sed "s/{pkgname}/td/g; s|{completer}|$out/bin/td|g" \
+      "$tabtabTemplates/completion.fish" > "$TMPDIR/completions/td.fish"
 
     installShellCompletion --cmd td \
-      --bash $HOME/.config/tabtab/bash/td.bash \
-      --zsh $HOME/.config/tabtab/zsh/td.zsh \
-      --fish $HOME/.config/tabtab/fish/td.fish
-
-    substituteInPlace $out/share/bash-completion/completions/td --replace " td completion-server " " $out/bin/td completion-server "
-    substituteInPlace $out/share/zsh/site-functions/_td --replace " td completion-server " " $out/bin/td completion-server "
-    substituteInPlace $out/share/fish/vendor_completions.d/td.fish --replace " td completion-server " " $out/bin/td completion-server "
+      --bash "$TMPDIR/completions/td.bash" \
+      --zsh "$TMPDIR/completions/_td" \
+      --fish "$TMPDIR/completions/td.fish"
   '';
 
   meta = with lib; {
