@@ -35,6 +35,29 @@ Follow the repo shell style (see CODESTYLE.md):
 - Use `zparseopts` for argument parsing — not `getopts`, not manual `while` loops
 - Every function that accepts arguments **must** support `-h`/`--help` and print usage to stderr
 
+## Output functions (echo.zsh)
+
+Always use these instead of bare `echo` or `print`. All write to stderr.
+
+| Function | Colour | Prefix | When to use |
+|---|---|---|---|
+| `echo::error` | red | `ERR` | fatal/unexpected errors |
+| `echo::warning` | yellow | `WRN` | non-fatal issues |
+| `echo::info` | blue | `INF` | general status messages |
+| `echo::success` | green | `OK` | operation succeeded |
+| `echo::pending` | teal | `PND` | operation in progress |
+| `echo::debug` | magenta | `DBG` | verbose/debug output |
+| `echo::dryrun` | cyan | `DRY` | dry-run mode messages |
+| `echo::done` | green | `OK` | shorthand for `echo::success "Done!"` |
+| `echo::confirm` | — | — | interactive yes/no prompt |
+
+`echo::debug` is suppressed unless `$DEBUG` is set or `$ECHO_LEVEL` allows it.
+Pass `--debug-only` / `-d` to make a message only appear when `$DEBUG=1`.
+
+`fancify <cmd>` wraps a command showing pending → success/error output inline.
+
+Aliases exist for convenience: `echo::err`, `echo::warn`, `echo::ok`, `echo::i`, `echo::d`, `echo::p` and the `echo_*` variants (e.g. `echo_error`).
+
 ## Workflow
 
 - Edit files directly with standard file tools — no build step
