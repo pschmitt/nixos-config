@@ -35,5 +35,6 @@
 
     # todoist cli
     inputs.tdc.packages."${pkgs.stdenv.hostPlatform.system}".tdc
+    todoist-cli
   ];
 }
