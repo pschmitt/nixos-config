@@ -6,7 +6,6 @@
     ./nm-shared.nix
     ./snek/proxychains.nix
     ./tailscale.nix
-    ./zerotier.nix
   ];
 
   environment.systemPackages = with pkgs; [

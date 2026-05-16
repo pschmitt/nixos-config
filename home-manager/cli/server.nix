@@ -4,7 +4,10 @@
   ...
 }:
 {
-  imports = [ ./zsh ];
+  imports = [
+    ./zsh
+    ./todoist
+  ];
 
   home.packages = with pkgs; [
     atuin
