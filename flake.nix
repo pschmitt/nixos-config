@@ -98,6 +98,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nix-on-droid = {
+      url = "github:nix-community/nix-on-droid";
+      inputs.home-manager.follows = "home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     hacompanion = {
       url = "github:tobias-kuendig/hacompanion";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -413,6 +419,27 @@
 
           modules = modules ++ [ ./hosts/${hostname} ];
         };
+
+      mkNixOnDroid =
+        hostname:
+        {
+          system ? "aarch64-linux",
+          modules ? [ ],
+        }:
+        inputs.nix-on-droid.lib.nixOnDroidConfiguration {
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+            overlays = [ inputs.nix-on-droid.overlays.default ] ++ builtins.attrValues outputs.overlays;
+          };
+
+          extraSpecialArgs = {
+            inherit inputs outputs;
+          };
+
+          modules = modules ++ [ ./hosts/${hostname} ];
+          home-manager-path = inputs.home-manager.outPath;
+        };
     in
     {
       # Your custom packages
@@ -476,6 +503,12 @@
           system = "x86_64-linux";
         };
         pschmitt = fnuc;
+      };
+
+      nixOnDroidConfigurations = rec {
+        zf10 = mkNixOnDroid "zf10" { };
+        default = zf10;
+        phone = zf10;
       };
 
       # NixOS configuration entrypoint
@@ -615,10 +648,12 @@
     extra-substituters = [
       "https://nixos-raspberrypi.cachix.org"
       "https://cache.numtide.com"
+      "https://nix-on-droid.cachix.org"
     ];
     extra-trusted-public-keys = [
       "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
+      "nix-on-droid.cachix.org-1:56snoMJTXmDRC1Ei24CmKoUqvHJ9XCp+nidK7qkMQrU="
     ];
   };
 }

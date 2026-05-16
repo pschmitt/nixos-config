@@ -4,12 +4,13 @@ set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--pkg NAME --system SYSTEM | --host NAME | --home NAME] [--copy] [OPTIONS]
+Usage: $(basename "$0") [--pkg NAME --system SYSTEM | --host NAME | --home NAME | --droid NAME] [--copy] [OPTIONS]
 
 Targets:
   --pkg NAME            Build or copy a package
   --host NAME           Build or copy a host configuration
   --home NAME           Build or copy a standalone Home Manager configuration
+  --droid NAME          Build or copy a nix-on-droid configuration
 
 Package options:
   --system SYSTEM       Nix system for the package
@@ -51,6 +52,12 @@ home_ref() {
   printf '.#homeConfigurations.%s.activationPackage\n' "$home"
 }
 
+droid_ref() {
+  local droid="$1"
+
+  printf '.#nixOnDroidConfigurations.%s.activationPackage\n' "$droid"
+}
+
 host_system() {
   local host="$1"
 
@@ -61,6 +68,12 @@ home_system() {
   local home="$1"
 
   nix eval --raw ".#homeConfigurations.${home}.pkgs.stdenv.hostPlatform.system"
+}
+
+droid_system() {
+  local droid="$1"
+
+  nix eval --impure --raw ".#nixOnDroidConfigurations.${droid}.pkgs.stdenv.hostPlatform.system"
 }
 
 show_result_tree() {
@@ -212,6 +225,27 @@ copy_home() {
   copy_refs "" "$(home_ref "$home")"
 }
 
+build_droid() {
+  local droid="$1"
+  local system
+  local use_builders
+
+  system="$(droid_system "$droid")"
+  use_builders=
+  if [[ "$system" == "aarch64-linux" ]]
+  then
+    use_builders=1
+  fi
+
+  build_ref "$(droid_ref "$droid")" "$use_builders" 1
+}
+
+copy_droid() {
+  local droid="$1"
+
+  copy_refs 1 "$(droid_ref "$droid")"
+}
+
 main() {
   local copy
   local nonfree
@@ -219,6 +253,7 @@ main() {
   local pkg=""
   local host=""
   local home=""
+  local droid=""
   local system=""
 
   copy=
@@ -238,6 +273,10 @@ main() {
         ;;
       --home)
         home="${2:-}"
+        shift 2
+        ;;
+      --droid)
+        droid="${2:-}"
         shift 2
         ;;
       --system)
@@ -270,15 +309,15 @@ main() {
 
   require_command nix
 
-  if [[ -n "$pkg" && ( -n "$host" || -n "$home" ) ]]
+  if [[ -n "$pkg" && ( -n "$host" || -n "$home" || -n "$droid" ) ]]
   then
-    echo "Choose exactly one of --pkg, --host or --home" >&2
+    echo "Choose exactly one of --pkg, --host, --home or --droid" >&2
     return 2
   fi
 
-  if [[ -z "$pkg" && -z "$host" && -z "$home" ]]
+  if [[ -z "$pkg" && -z "$host" && -z "$home" && -z "$droid" ]]
   then
-    echo "Missing --pkg, --host or --home" >&2
+    echo "Missing --pkg, --host, --home or --droid" >&2
     usage >&2
     return 2
   fi
@@ -319,11 +358,23 @@ main() {
     return 0
   fi
 
+  if [[ -n "$home" ]]
+  then
+    if [[ -n "$copy" ]]
+    then
+      copy_home "$home"
+    else
+      build_home "$home"
+    fi
+
+    return 0
+  fi
+
   if [[ -n "$copy" ]]
   then
-    copy_home "$home"
+    copy_droid "$droid"
   else
-    build_home "$home"
+    build_droid "$droid"
   fi
 }
 
