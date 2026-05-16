@@ -3,6 +3,20 @@
   networking.networkmanager.ensureProfiles = {
     environmentFiles = [ config.sops.templates."nm.env".path ];
     profiles = {
+      "Auto Ethernet" = {
+        connection = {
+          id = "Auto Ethernet";
+          type = "ethernet";
+          autoconnect = true;
+        };
+        ipv4 = {
+          method = "auto";
+        };
+        ipv6 = {
+          method = "auto";
+          addr-gen-mode = "stable-privacy";
+        };
+      };
       "DHCP Server" = {
         connection = {
           id = "DHCP Server";
