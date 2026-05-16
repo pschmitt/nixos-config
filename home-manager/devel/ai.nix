@@ -64,7 +64,7 @@ in
     enable = true;
     servers = {
       n8n-mcp = {
-        url = "https://n8n.${osConfig.domain.main}/mcp-server/http";
+        url = "https://n8n.${osConfig.domains.main}/mcp-server/http";
         headers = {
           Authorization = "Bearer {env:N8N_MCP_TOKEN}";
         };
