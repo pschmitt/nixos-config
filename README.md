@@ -20,6 +20,40 @@ nix --extra-experimental-features 'nix-command flakes' \
   eval '.#homeConfigurations.fnuc.activationPackage.drvPath'
 ```
 
+## Nix-on-Droid on `zf10`
+
+`zf10` is a minimal phone profile wired through `nixOnDroidConfigurations`. It
+keeps Home Manager as the main layer and reuses the portable CLI/devel modules
+instead of trying to mirror the full desktop stack from day one.
+
+### First switch on the phone
+
+1. Install Nix-on-Droid from F-Droid and let the bootstrap finish.
+2. Activate the profile straight from GitHub:
+
+```shell
+nix-on-droid switch --flake 'github:pschmitt/nixos-config#zf10'
+```
+
+Because `default` points to the same config, this also works:
+
+```shell
+nix-on-droid switch --flake 'github:pschmitt/nixos-config'
+```
+
+### Working from a local checkout on Android
+
+```shell
+git clone https://github.com/pschmitt/nixos-config.git ~/devel/private/pschmitt/nixos-config.git
+cd ~/devel/private/pschmitt/nixos-config.git
+nix-on-droid switch --flake '.#zf10'
+```
+
+The Home Manager profile lives in
+[./home-manager/nix-on-droid.nix](./home-manager/nix-on-droid.nix) and the
+device entrypoint lives in
+[./hosts/zf10/default.nix](./hosts/zf10/default.nix).
+
 ## Deploying a new host
 
 To create a new host:
