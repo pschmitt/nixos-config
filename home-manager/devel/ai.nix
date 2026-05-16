@@ -93,6 +93,11 @@ in
           Authorization = "Bearer {env:N8N_MCP_TOKEN}";
         };
       };
+
+      obsidian = {
+        command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+        args = [ "/home/pschmitt/Documents/notes" ];
+      };
     };
   };
 
