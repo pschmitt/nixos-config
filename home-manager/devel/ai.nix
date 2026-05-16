@@ -14,6 +14,18 @@ let
     hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
   };
 
+  # Generate the todoist-cli skill from the installed td binary so it always
+  # matches the deployed version. Uses the universal installer (no agent-dir
+  # existence check) with --local so it writes into $TMPDIR without needing
+  # a live home directory.
+  tdSkill = pkgs.runCommand "todoist-cli-skill" { } ''
+    export HOME="$TMPDIR"
+    cd "$TMPDIR"
+    ${pkgs.todoist-cli}/bin/td skill install universal --local --force
+    mkdir -p "$out/todoist-cli"
+    cp .agents/skills/todoist-cli/SKILL.md "$out/todoist-cli/SKILL.md"
+  '';
+
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
   # toString coerces the derivation to its store-path string, which the skills
   # option type accepts (it rejects raw derivations as it matches the attrsOf branch).
@@ -23,6 +35,7 @@ let
       paths = [
         ./skills
         "${n8nSkillsSrc}/skills"
+        tdSkill
       ];
     }
   );
