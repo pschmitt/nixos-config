@@ -58,8 +58,38 @@ Pass `--debug-only` / `-d` to make a message only appear when `$DEBUG=1`.
 
 Aliases exist for convenience: `echo::err`, `echo::warn`, `echo::ok`, `echo::i`, `echo::d`, `echo::p` and the `echo_*` variants (e.g. `echo_error`).
 
+## Tabular output
+
+Use `tsvtool` (`~/bin/tsvtool`) to render tables — never implement column
+alignment by hand. Emit TSV to stdout and pipe through `tsvtool pretty`:
+
+```zsh
+# basic table
+printf "Name\tStatus\n"
+printf "%s\t%s\n" "$name" "$status"
+} | tsvtool pretty
+
+# useful flags
+tsvtool pretty -z          # zebra striping
+tsvtool pretty -H          # no header row
+tsvtool pretty -e "none"   # custom empty message
+tsvtool header Field1 Field2  # print a bold header line standalone
+```
+
+`tsvtool pretty` auto-detects TSV, JSON, YAML, and TOML input. Use
+`-o tsv/json/yaml/toml` to convert between formats.
+
+## Colorizing output
+
+For human-facing output, use `$fg[color]` / `$fg_bold[color]` and
+`$reset_color` (zsh color variables from `colors`). Prefer the `echo::*`
+functions above over manual ANSI codes — they handle color, emoji, and level
+filtering automatically.
+
 ## Workflow
 
+- This directory is managed by **yadm**, not git. Stage/commit with `yadm add`,
+  `yadm commit`, etc.
 - Edit files directly with standard file tools — no build step
 - Test immediately: `source ~/.config/zsh/plugins/local/<file>.zsh`
 - Or reload the full plugin set: `exec zsh`
