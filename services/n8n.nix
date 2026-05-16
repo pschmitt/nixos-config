@@ -101,6 +101,7 @@ in
       };
       volumes = [
         "${n8nDataDir}:/data:rw"
+        "${n8nHomeDir}/n8n-files:/home/node/.n8n-files:rw"
         "${authTokenPath}:${authTokenPath}:ro"
       ];
       ports = [
