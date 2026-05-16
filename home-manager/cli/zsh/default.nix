@@ -21,6 +21,10 @@
   home = {
     shell.enableZshIntegration = true;
 
+    activation.clearZshCompDump = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      run rm -f ${config.xdg.cacheHome}/zcompdump
+    '';
+
     packages = with pkgs; [
       gitstatus # used by p10k
       nix-your-shell
