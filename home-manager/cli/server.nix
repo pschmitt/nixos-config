@@ -16,6 +16,7 @@
     fzf
     inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq
     inputs.tdc.packages.${pkgs.stdenv.hostPlatform.system}.tdc
+    todoist-cli
     linkding-cli
   ];
 }
