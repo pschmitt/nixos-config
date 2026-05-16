@@ -2,8 +2,14 @@
 {
   imports = [
     ./env.nix
-    ./devel/portable.nix
     ./network.nix
+
+    ./devel/android.nix
+    ./devel/git.nix
+    ./devel/nix.nix
+    ./devel/nodejs.nix
+    ./devel/sh.nix
+    ./devel/zsh.nix
   ];
 
   programs.home-manager.enable = true;
