@@ -26,8 +26,12 @@ in
       group piracy
       depends on mullvad-netns
       restart program = "${pkgs.systemd}/bin/systemctl restart shadowsocks-libev"
-      if failed port ${toString port} protocol default for 2 cycles then restart
-      if 2 restarts within 6 cycles then alert
+      if failed port ${toString port}
+        protocol default
+        with timeout 15 seconds
+        for 3 cycles
+      then restart
+      if 3 restarts within 5 cycles then alert
   '';
 
   systemd.services.shadowsocks-libev = {

@@ -103,8 +103,13 @@ in
         group piracy
         depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart transmission"
-        if failed port ${toString rpcPort} protocol http status 401 then restart
-        if 5 restarts within 5 cycles then alert
+        if failed port ${toString rpcPort}
+          protocol http
+          status 401
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 5 cycles then alert
     '';
   };
 
