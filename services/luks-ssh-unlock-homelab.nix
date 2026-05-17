@@ -28,9 +28,6 @@ let
     sshKnownHostsFile = config.sops.secrets.${"luks/" + instance.name + "/knownHosts"}.path;
     initrdKnownHostsFile = config.sops.secrets.${"luks/" + instance.name + "/initrdKnownHosts"}.path;
 
-    debug = true;
-    eventsFile = "/var/log/luks-ssh-unlock/${instance.name}.events.log";
-
     forceIpv4 = true;
     sleepInterval = 30;
 
@@ -87,25 +84,4 @@ in
       }) instances
     );
   };
-
-  systemd.services = lib.listToAttrs (
-    lib.lists.map (instance: {
-      name = "luks-ssh-unlock-${instance.name}";
-      value = {
-        wants = [
-          "network-online.target"
-          "sops-install-secrets.service"
-        ];
-        after = [
-          "network-online.target"
-          "sops-install-secrets.service"
-        ];
-        serviceConfig = {
-          LogsDirectory = "luks-ssh-unlock";
-          Restart = "always";
-          RestartSec = "10s";
-        };
-      };
-    }) instances
-  );
 }
