@@ -45,7 +45,10 @@ in
         };
       };
       lfs.enable = true;
-      dump.enable = true;
+      dump = {
+        enable = true;
+        age = "10d";
+      };
       stateDir = "/srv/forgejo";
     };
 
