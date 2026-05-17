@@ -20,6 +20,7 @@
     ../../hardware/openstack-wiit.nix
     ../../hardware/oci.nix
 
+    ./ansible.nix
     ./dotfiles.nix
     ./firewall.nix
     ./monit.nix
