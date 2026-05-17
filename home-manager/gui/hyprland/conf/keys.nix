@@ -47,14 +47,10 @@ let
     "$mod, up, exec, $bin_dir/move-window.sh u"
     "$mod, down, exec, $bin_dir/move-window.sh d"
     "$mod, s, swapnext,"
-    "$mod SHIFT, up, movewindow, mon:+1"
-    "$mod SHIFT, up, focusmonitor, +1"
-    "$mod SHIFT, up, movecursortocorner, 4"
-    "$mod SHIFT, down, movewindow, mon:-1"
-    "$mod SHIFT, down, focusmonitor, -1"
-    "$mod SHIFT, down, movecursortocorner, 3"
-    "$mod SHIFT, left, movetoworkspacesilent, -1"
-    "$mod SHIFT, right, movetoworkspacesilent, +1"
+    "$mod SHIFT, left, exec, $bin_dir/send-window.sh l"
+    "$mod SHIFT, right, exec, $bin_dir/send-window.sh r"
+    "$mod SHIFT, up, exec, $bin_dir/send-window.sh u"
+    "$mod SHIFT, down, exec, $bin_dir/send-window.sh d"
   ];
 
   focusBinds = [
