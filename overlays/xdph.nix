@@ -22,6 +22,17 @@ in
       substituteInPlace hyprland-share-picker/CMakeLists.txt \
         --replace-fail "/usr/share/wayland/wayland.xml" \
         "${final.wayland-scanner}/share/wayland/wayland.xml"
+
+      # 0003 hides the restore-token checkbox behind an env var; always show it
+      substituteInPlace hyprland-share-picker/main.cpp \
+        --replace-fail \
+          'getenv("XDPH_PICKER_ALLOW_TOKEN_SELECTION") != nullptr' \
+          'true'
+
+      # 0005 defaults live-preview to 500 ms (2 fps); use 100 ms (10 fps) instead
+      substituteInPlace hyprland-share-picker/waylandcapture.h \
+        --replace-fail 'int intervalMs = 500' 'int intervalMs = 100' \
+        --replace-fail 'int m_liveIntervalMs = 500' 'int m_liveIntervalMs = 100'
     '';
   });
 }
