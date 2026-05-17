@@ -122,6 +122,8 @@ in
     initLua = sharedInitLua;
   };
 
+  xdg.configFile."nvim/init.lua".force = true;
+
   # Provide the nvim-nightly command.
   home.packages = [
     (pkgs.runCommand "nvim-nightly" { } ''
