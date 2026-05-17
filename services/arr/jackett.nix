@@ -28,8 +28,12 @@ in
         group piracy
         depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart jackett"
-        if failed port ${toString port} protocol http then restart
-        if 5 restarts within 5 cycles then alert
+        if failed port ${toString port}
+          protocol http
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 5 cycles then alert
     '';
   };
 
