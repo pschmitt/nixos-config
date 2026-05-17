@@ -2,12 +2,14 @@
 {
   imports = [
     ../../modules/main-user.nix
+    ../../modules/domains.nix
 
     ../../home-manager/base.nix
     ../../home-manager/sops-standalone.nix
   ];
 
   sops.defaultSopsFile = ./secrets.sops.yaml;
+  domains.main = "brkn.lol";
 
   targets.genericLinux.enable = true;
 

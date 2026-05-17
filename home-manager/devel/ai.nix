@@ -6,6 +6,14 @@
   ...
 }:
 let
+  domainName =
+    if osConfig != null && osConfig ? domains && osConfig.domains ? main then
+      osConfig.domains.main
+    else if config ? domains && config.domains ? main then
+      config.domains.main
+    else
+      null;
+
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
   n8nSkillsSrc = pkgs.fetchFromGitHub {
     owner = "czlonkowski";
@@ -71,6 +79,16 @@ let
     };
 in
 {
+  assertions = [
+    {
+      assertion = domainName != null;
+      message = ''
+        Unable to determine the main domain for AI MCP configuration.
+        Define `domains.main` in the standalone Home Manager host module or run this config under NixOS-backed Home Manager.
+      '';
+    }
+  ];
+
   sops = {
     secrets = {
       "mistral-vibe/env" = {
@@ -86,19 +104,21 @@ in
 
   programs.mcp = {
     enable = true;
-    servers = {
-      n8n-mcp = {
-        url = "https://n8n.${osConfig.domains.main}/mcp-server/http";
-        headers = {
-          Authorization = "Bearer {env:N8N_MCP_TOKEN}";
+    servers =
+      lib.optionalAttrs (domainName != null) {
+        n8n-mcp = {
+          url = "https://n8n.${domainName}/mcp-server/http";
+          headers = {
+            Authorization = "Bearer {env:N8N_MCP_TOKEN}";
+          };
+        };
+      }
+      // {
+        obsidian = {
+          command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+          args = [ "/home/pschmitt/Documents/notes" ];
         };
       };
-
-      obsidian = {
-        command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-        args = [ "/home/pschmitt/Documents/notes" ];
-      };
-    };
   };
 
   programs = {
