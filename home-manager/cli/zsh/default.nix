@@ -141,7 +141,7 @@
             return 1
           fi
 
-          if nvd diff "$current_target" "$new_target" >"$diff_log" 2>&1
+          if nvd diff "$current_target" "$new_target" >|"$diff_log" 2>&1
           then
             if [[ -s "$diff_log" ]]
             then
