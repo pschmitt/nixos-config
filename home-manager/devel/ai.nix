@@ -172,6 +172,10 @@ in
       context = ./CODESTYLE.md;
       skills = allSkills;
       enableMcpIntegration = true;
+      settings = {
+        model = "gpt-5.4";
+        model_reasoning_effort = "medium";
+      };
     };
 
     gemini-cli = {
