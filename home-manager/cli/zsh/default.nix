@@ -163,18 +163,8 @@
           current_gen=""
         fi
 
-        local nix_tmpdir="/nix/tmp"
-        local build_parent_dir="$nix_tmpdir/build"
-        if [[ ! -d "$build_parent_dir" ]]
-        then
-          if [[ -w "$nix_tmpdir" ]]
-          then
-            mkdir -p "$build_parent_dir"
-          else
-            build_parent_dir="''${TMPDIR:-/tmp}/hm-builds"
-            mkdir -p "$build_parent_dir"
-          fi
-        fi
+        local build_parent_dir="/nix/tmp/hm-builds"
+        mkdir -p "$build_parent_dir"
 
         local build_dir
         if ! build_dir=$(mktemp -d -p "$build_parent_dir" "hm-build-XXXXX")
