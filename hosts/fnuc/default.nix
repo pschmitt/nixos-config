@@ -5,6 +5,7 @@
     ../../modules/domains.nix
 
     ../../home-manager/base.nix
+    # ../../home-manager/work
     ../../home-manager/sops-standalone.nix
   ];
 
@@ -15,7 +16,7 @@
 
   home = {
     inherit (config.mainUser) username homeDirectory;
-    stateVersion = "25.11";
+    stateVersion = "26.05";
   };
 
   services.home-manager.autoUpgrade = {
