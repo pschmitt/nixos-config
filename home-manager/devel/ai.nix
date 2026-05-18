@@ -63,24 +63,59 @@ let
   homeAssistantMcpTokenFile = config.sops.secrets."home-assistant/mcp/token".path;
   homeAssistantMcpUrl = "https://ha.${domainName}/api/mcp";
 
-  wrapAiToolWithMcpEnv =
+  mcpHttpProxy =
+    name:
     {
-      package,
-      binary,
+      url,
+      tokenFile,
     }:
-    pkgs.symlinkJoin {
-      name = "${lib.getName package}-with-mcp-env";
-      paths = [ package ];
-      nativeBuildInputs = [ pkgs.makeWrapper ];
-      postBuild = ''
-        wrapProgram "$out/bin/${binary}" \
-          --set-default N8N_MCP_TOKEN_FILE ${lib.escapeShellArg n8nMcpTokenFile} \
-          --set-default HASS_TOKEN_FILE ${lib.escapeShellArg homeAssistantMcpTokenFile} \
-          --run 'if [[ -r "$N8N_MCP_TOKEN_FILE" ]]; then export N8N_MCP_TOKEN="$(<"$N8N_MCP_TOKEN_FILE")"; fi' \
-          --run 'if [[ -r "$HASS_TOKEN_FILE" ]]; then export HASS_TOKEN="$(<"$HASS_TOKEN_FILE")"; fi'
+    pkgs.writeShellApplication {
+      name = "${name}-mcp";
+      runtimeInputs = [ pkgs.mcp-proxy ];
+      text = ''
+        token_file=${lib.escapeShellArg tokenFile}
+
+        if [[ ! -r "$token_file" ]]; then
+          printf 'MCP token file is not readable: %s\n' "$token_file" >&2
+          exit 1
+        fi
+
+        API_ACCESS_TOKEN="$(<"$token_file")"
+        export API_ACCESS_TOKEN
+
+        exec mcp-proxy \
+          "$@" \
+          --transport streamablehttp \
+          ${lib.escapeShellArg url}
       '';
-      inherit (package) meta;
     };
+
+  mcpServers =
+    lib.optionalAttrs (domainName != null) {
+      n8n-mcp = {
+        command = "${
+          mcpHttpProxy "n8n" {
+            url = "https://n8n.${domainName}/mcp-server/http";
+            tokenFile = n8nMcpTokenFile;
+          }
+        }/bin/n8n-mcp";
+      };
+      home-assistant = {
+        command = "${
+          mcpHttpProxy "home-assistant" {
+            url = homeAssistantMcpUrl;
+            tokenFile = homeAssistantMcpTokenFile;
+          }
+        }/bin/home-assistant-mcp";
+      };
+    }
+    // {
+      obsidian = {
+        command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+        args = [ "/home/pschmitt/Documents/notes" ];
+      };
+    };
+
 in
 {
   assertions = [
@@ -112,40 +147,15 @@ in
 
   programs.mcp = {
     enable = true;
-    servers =
-      lib.optionalAttrs (domainName != null) {
-        n8n-mcp = {
-          url = "https://n8n.${domainName}/mcp-server/http";
-          headers = {
-            Authorization = "Bearer {env:N8N_MCP_TOKEN}";
-          };
-        };
-        home-assistant = {
-          url = homeAssistantMcpUrl;
-          headers = {
-            Authorization = "Bearer {env:HASS_TOKEN}";
-          };
-        };
-      }
-      // {
-        obsidian = {
-          command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-          args = [ "/home/pschmitt/Documents/notes" ];
-        };
-      };
+    servers = mcpServers;
   };
 
   programs = {
     claude-code = {
       enable = true;
-      package = wrapAiToolWithMcpEnv {
-        package = pkgs.llm-agents.claude-code;
-        binary = "claude";
-      };
+      package = pkgs.llm-agents.claude-code;
       skills = allSkills;
-      enableMcpIntegration = false;
-      # MCP servers are written via home.activation (see below) because
-      # {env:VAR} substitution does not work in plugin-dir .mcp.json files.
+      enableMcpIntegration = true;
       settings = {
         skipDangerousModePermissionPrompt = true;
         theme = "dark";
@@ -157,10 +167,7 @@ in
 
     codex = {
       enable = true;
-      package = wrapAiToolWithMcpEnv {
-        package = pkgs.llm-agents.codex;
-        binary = "codex";
-      };
+      package = pkgs.llm-agents.codex;
       context = ./CODESTYLE.md;
       skills = allSkills;
       enableMcpIntegration = true;
@@ -168,14 +175,9 @@ in
 
     gemini-cli = {
       enable = true;
-      package = wrapAiToolWithMcpEnv {
-        package = pkgs.llm-agents.gemini-cli;
-        binary = "gemini";
-      };
+      package = pkgs.llm-agents.gemini-cli;
       skills = allSkills;
-      # Gemini requires httpUrl (not url+type) and ${VAR} env syntax.
-      # programs.mcp produces the wrong schema, so wire MCP directly here.
-      enableMcpIntegration = false;
+      enableMcpIntegration = true;
       settings = {
         general = {
           preferredEditor = "nvim";
@@ -207,33 +209,12 @@ in
         };
 
         tools.shell.showColor = true;
-
-        mcpServers =
-          lib.optionalAttrs (domainName != null) {
-            home-assistant = {
-              httpUrl = homeAssistantMcpUrl;
-              headers.Authorization = "Bearer \${HASS_TOKEN}";
-            };
-            n8n-mcp = {
-              httpUrl = "https://n8n.${domainName}/mcp-server/http";
-              headers.Authorization = "Bearer \${N8N_MCP_TOKEN}";
-            };
-          }
-          // {
-            obsidian = {
-              command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-              args = [ "/home/pschmitt/Documents/notes" ];
-            };
-          };
       };
     };
 
     opencode = {
       enable = true;
-      package = wrapAiToolWithMcpEnv {
-        package = pkgs.llm-agents.opencode;
-        binary = "opencode";
-      };
+      package = pkgs.llm-agents.opencode;
       skills = allSkills;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
@@ -242,10 +223,7 @@ in
 
     github-copilot-cli = {
       enable = true;
-      package = wrapAiToolWithMcpEnv {
-        package = pkgs.llm-agents.copilot-cli;
-        binary = "copilot";
-      };
+      package = pkgs.llm-agents.copilot-cli;
       skills = allSkills;
       context = ./CODESTYLE.md;
       enableMcpIntegration = true;
@@ -274,125 +252,6 @@ in
   #   };
 
   home = {
-    # Write MCP servers directly to ~/.claude.json user-scope so that Claude
-    # Code can authenticate with real token values. {env:VAR} substitution does
-    # not work in plugin-dir .mcp.json health checks, causing servers to be
-    # marked as needing OAuth. home.activation reads the sops-decrypted tokens
-    # at switch time and embeds the actual values in the mutable config file.
-    activation.claudeCodeMcpServers = lib.hm.dag.entryAfter [ "writeBoundary" ] (
-      let
-        obsidianJson = builtins.toJSON {
-          type = "stdio";
-          command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-          args = [ "/home/pschmitt/Documents/notes" ];
-        };
-        haUrl = lib.optionalString (domainName != null) homeAssistantMcpUrl;
-        n8nUrl = lib.optionalString (domainName != null) "https://n8n.${domainName}/mcp-server/http";
-      in
-      ''
-        CLAUDE_JSON="$HOME/.claude.json"
-
-        N8N_TOKEN=""
-        HASS_TOKEN=""
-        if [[ -r "${n8nMcpTokenFile}" ]]; then
-          N8N_TOKEN="$(<"${n8nMcpTokenFile}")"
-        fi
-        if [[ -r "${homeAssistantMcpTokenFile}" ]]; then
-          HASS_TOKEN="$(<"${homeAssistantMcpTokenFile}")"
-        fi
-
-        MCP_SERVERS=$(${pkgs.jq}/bin/jq -n \
-          --argjson obsidian ${lib.escapeShellArg obsidianJson} \
-          --arg ha_url ${lib.escapeShellArg haUrl} \
-          --arg n8n_url ${lib.escapeShellArg n8nUrl} \
-          --arg n8n_token "$N8N_TOKEN" \
-          --arg hass_token "$HASS_TOKEN" \
-          '{
-            "obsidian": $obsidian,
-            "home-assistant": {
-              "type": "http",
-              "url": $ha_url,
-              "headers": {"Authorization": ("Bearer " + $hass_token)}
-            },
-            "n8n-mcp": {
-              "type": "http",
-              "url": $n8n_url,
-              "headers": {"Authorization": ("Bearer " + $n8n_token)}
-            }
-          }')
-
-        if [[ -f "$CLAUDE_JSON" ]]; then
-          ${pkgs.jq}/bin/jq --argjson mcp "$MCP_SERVERS" '.mcpServers = $mcp' \
-            "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" \
-            && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
-        else
-          ${pkgs.jq}/bin/jq -n --argjson mcp "$MCP_SERVERS" '{mcpServers: $mcp}' \
-            > "$CLAUDE_JSON"
-        fi
-      ''
-    );
-
-    # Write MCP servers to Codex's actual config at ~/.config/codex/config.toml.
-    # The HM codex module writes to ~/.codex/config.yaml (non-XDG path) because
-    # the llm-agents codex package has no version attribute (lib.getVersion
-    # returns ""), so isTomlConfig=false and useXdgDirectories=false. In a fresh
-    # shell, Codex uses XDG_CONFIG_HOME/codex (~/.config/codex), ignoring the HM
-    # config. pkgs.writeText keeps the TOML template at correct indentation
-    # regardless of nixfmt; sed substitutes token placeholders at runtime.
-    activation.codexMcpServers = lib.hm.dag.entryAfter [ "writeBoundary" ] (
-      let
-        haUrl = lib.optionalString (domainName != null) homeAssistantMcpUrl;
-        n8nUrl = lib.optionalString (domainName != null) "https://n8n.${domainName}/mcp-server/http";
-        obsidianCmd = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-        obsidianArg = "/home/pschmitt/Documents/notes";
-        mcpTomlTemplate = pkgs.writeText "codex-mcp-servers.toml" ''
-          [mcp_servers.home-assistant]
-          enabled = true
-          url = "${haUrl}"
-
-          [mcp_servers.home-assistant.http_headers]
-          Authorization = "Bearer __HASS_TOKEN__"
-
-          [mcp_servers.n8n-mcp]
-          enabled = true
-          url = "${n8nUrl}"
-
-          [mcp_servers.n8n-mcp.http_headers]
-          Authorization = "Bearer __N8N_TOKEN__"
-
-          [mcp_servers.obsidian]
-          enabled = true
-          command = "${obsidianCmd}"
-          args = ["${obsidianArg}"]
-        '';
-      in
-      ''
-        CODEX_TOML="${"\${CODEX_HOME:-$HOME/.config/codex}"}/config.toml"
-        mkdir -p "$(dirname "$CODEX_TOML")"
-        [[ -f "$CODEX_TOML" ]] || touch "$CODEX_TOML"
-
-        N8N_TOKEN=""
-        HASS_TOKEN=""
-        if [[ -r "${n8nMcpTokenFile}" ]]; then
-          N8N_TOKEN="$(<"${n8nMcpTokenFile}")"
-        fi
-        if [[ -r "${homeAssistantMcpTokenFile}" ]]; then
-          HASS_TOKEN="$(<"${homeAssistantMcpTokenFile}")"
-        fi
-
-        ${pkgs.gawk}/bin/awk '
-          /^\[mcp_servers/ { skip = 1 }
-          /^\[/ && !/^\[mcp_servers/ { skip = 0 }
-          !skip { print }
-        ' "$CODEX_TOML" > "$CODEX_TOML.tmp" && mv "$CODEX_TOML.tmp" "$CODEX_TOML"
-
-        ${pkgs.gnused}/bin/sed \
-          -e "s|__HASS_TOKEN__|$HASS_TOKEN|" \
-          -e "s|__N8N_TOKEN__|$N8N_TOKEN|" \
-          "${mcpTomlTemplate}" >> "$CODEX_TOML"
-      ''
-    );
-
     packages = with pkgs.master; [
       # vscode forks
       antigravity
