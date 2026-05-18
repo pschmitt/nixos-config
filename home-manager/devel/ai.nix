@@ -143,7 +143,9 @@ in
         binary = "claude";
       };
       skills = allSkills;
-      enableMcpIntegration = true;
+      enableMcpIntegration = false;
+      # MCP servers are written via home.activation (see below) because
+      # {env:VAR} substitution does not work in plugin-dir .mcp.json files.
       settings = {
         skipDangerousModePermissionPrompt = true;
         theme = "dark";
@@ -171,7 +173,9 @@ in
         binary = "gemini";
       };
       skills = allSkills;
-      enableMcpIntegration = true;
+      # Gemini requires httpUrl (not url+type) and ${VAR} env syntax.
+      # programs.mcp produces the wrong schema, so wire MCP directly here.
+      enableMcpIntegration = false;
       settings = {
         general = {
           preferredEditor = "nvim";
@@ -203,6 +207,24 @@ in
         };
 
         tools.shell.showColor = true;
+
+        mcpServers =
+          lib.optionalAttrs (domainName != null) {
+            home-assistant = {
+              httpUrl = homeAssistantMcpUrl;
+              headers.Authorization = "Bearer \${HASS_TOKEN}";
+            };
+            n8n-mcp = {
+              httpUrl = "https://n8n.${domainName}/mcp-server/http";
+              headers.Authorization = "Bearer \${N8N_MCP_TOKEN}";
+            };
+          }
+          // {
+            obsidian = {
+              command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+              args = [ "/home/pschmitt/Documents/notes" ];
+            };
+          };
       };
     };
 
@@ -251,20 +273,141 @@ in
   #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
   #   };
 
-  home.packages = with pkgs.master; [
-    # vscode forks
-    antigravity
-    # code-cursor
+  home = {
+    # Write MCP servers directly to ~/.claude.json user-scope so that Claude
+    # Code can authenticate with real token values. {env:VAR} substitution does
+    # not work in plugin-dir .mcp.json health checks, causing servers to be
+    # marked as needing OAuth. home.activation reads the sops-decrypted tokens
+    # at switch time and embeds the actual values in the mutable config file.
+    activation.claudeCodeMcpServers = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      let
+        obsidianJson = builtins.toJSON {
+          type = "stdio";
+          command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+          args = [ "/home/pschmitt/Documents/notes" ];
+        };
+        haUrl = lib.optionalString (domainName != null) homeAssistantMcpUrl;
+        n8nUrl = lib.optionalString (domainName != null) "https://n8n.${domainName}/mcp-server/http";
+      in
+      ''
+        CLAUDE_JSON="$HOME/.claude.json"
 
-    # cli
-    # cursor-cli
-    # kilocode-cli
+        N8N_TOKEN=""
+        HASS_TOKEN=""
+        if [[ -r "${n8nMcpTokenFile}" ]]; then
+          N8N_TOKEN="$(<"${n8nMcpTokenFile}")"
+        fi
+        if [[ -r "${homeAssistantMcpTokenFile}" ]]; then
+          HASS_TOKEN="$(<"${homeAssistantMcpTokenFile}")"
+        fi
 
-    # FIXME vibe-cli is broken as of 2026-02-25
-    # (pkgs.writeShellScriptBin "vibe" ''
-    #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
-    #
-    #   exec ${mistral-vibe}/bin/vibe "$@"
-    # '')
-  ];
+        MCP_SERVERS=$(${pkgs.jq}/bin/jq -n \
+          --argjson obsidian ${lib.escapeShellArg obsidianJson} \
+          --arg ha_url ${lib.escapeShellArg haUrl} \
+          --arg n8n_url ${lib.escapeShellArg n8nUrl} \
+          --arg n8n_token "$N8N_TOKEN" \
+          --arg hass_token "$HASS_TOKEN" \
+          '{
+            "obsidian": $obsidian,
+            "home-assistant": {
+              "type": "http",
+              "url": $ha_url,
+              "headers": {"Authorization": ("Bearer " + $hass_token)}
+            },
+            "n8n-mcp": {
+              "type": "http",
+              "url": $n8n_url,
+              "headers": {"Authorization": ("Bearer " + $n8n_token)}
+            }
+          }')
+
+        if [[ -f "$CLAUDE_JSON" ]]; then
+          ${pkgs.jq}/bin/jq --argjson mcp "$MCP_SERVERS" '.mcpServers = $mcp' \
+            "$CLAUDE_JSON" > "$CLAUDE_JSON.tmp" \
+            && mv "$CLAUDE_JSON.tmp" "$CLAUDE_JSON"
+        else
+          ${pkgs.jq}/bin/jq -n --argjson mcp "$MCP_SERVERS" '{mcpServers: $mcp}' \
+            > "$CLAUDE_JSON"
+        fi
+      ''
+    );
+
+    # Write MCP servers to Codex's actual config at ~/.config/codex/config.toml.
+    # The HM codex module writes to ~/.codex/config.yaml (non-XDG path) because
+    # the llm-agents codex package has no version attribute (lib.getVersion
+    # returns ""), so isTomlConfig=false and useXdgDirectories=false. In a fresh
+    # shell, Codex uses XDG_CONFIG_HOME/codex (~/.config/codex), ignoring the HM
+    # config. pkgs.writeText keeps the TOML template at correct indentation
+    # regardless of nixfmt; sed substitutes token placeholders at runtime.
+    activation.codexMcpServers = lib.hm.dag.entryAfter [ "writeBoundary" ] (
+      let
+        haUrl = lib.optionalString (domainName != null) homeAssistantMcpUrl;
+        n8nUrl = lib.optionalString (domainName != null) "https://n8n.${domainName}/mcp-server/http";
+        obsidianCmd = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+        obsidianArg = "/home/pschmitt/Documents/notes";
+        mcpTomlTemplate = pkgs.writeText "codex-mcp-servers.toml" ''
+          [mcp_servers.home-assistant]
+          enabled = true
+          url = "${haUrl}"
+
+          [mcp_servers.home-assistant.http_headers]
+          Authorization = "Bearer __HASS_TOKEN__"
+
+          [mcp_servers.n8n-mcp]
+          enabled = true
+          url = "${n8nUrl}"
+
+          [mcp_servers.n8n-mcp.http_headers]
+          Authorization = "Bearer __N8N_TOKEN__"
+
+          [mcp_servers.obsidian]
+          enabled = true
+          command = "${obsidianCmd}"
+          args = ["${obsidianArg}"]
+        '';
+      in
+      ''
+        CODEX_TOML="${"\${CODEX_HOME:-$HOME/.config/codex}"}/config.toml"
+        mkdir -p "$(dirname "$CODEX_TOML")"
+        [[ -f "$CODEX_TOML" ]] || touch "$CODEX_TOML"
+
+        N8N_TOKEN=""
+        HASS_TOKEN=""
+        if [[ -r "${n8nMcpTokenFile}" ]]; then
+          N8N_TOKEN="$(<"${n8nMcpTokenFile}")"
+        fi
+        if [[ -r "${homeAssistantMcpTokenFile}" ]]; then
+          HASS_TOKEN="$(<"${homeAssistantMcpTokenFile}")"
+        fi
+
+        ${pkgs.gawk}/bin/awk '
+          /^\[mcp_servers/ { skip = 1 }
+          /^\[/ && !/^\[mcp_servers/ { skip = 0 }
+          !skip { print }
+        ' "$CODEX_TOML" > "$CODEX_TOML.tmp" && mv "$CODEX_TOML.tmp" "$CODEX_TOML"
+
+        ${pkgs.gnused}/bin/sed \
+          -e "s|__HASS_TOKEN__|$HASS_TOKEN|" \
+          -e "s|__N8N_TOKEN__|$N8N_TOKEN|" \
+          "${mcpTomlTemplate}" >> "$CODEX_TOML"
+      ''
+    );
+
+    packages = with pkgs.master; [
+      # vscode forks
+      antigravity
+      # code-cursor
+
+      # cli
+      # cursor-cli
+      # kilocode-cli
+
+      # FIXME vibe-cli is broken as of 2026-02-25
+      # (pkgs.writeShellScriptBin "vibe" ''
+      #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
+      #
+      #   exec ${mistral-vibe}/bin/vibe "$@"
+      # '')
+    ];
+  };
 }
