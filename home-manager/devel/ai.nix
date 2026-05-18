@@ -86,6 +86,7 @@ let
         exec mcp-proxy \
           "$@" \
           --transport streamablehttp \
+          --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
           ${lib.escapeShellArg url}
       '';
     };
