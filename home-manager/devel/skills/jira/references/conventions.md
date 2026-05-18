@@ -30,15 +30,30 @@ Never commit or expose the token.
 | REST API v2    | `https://jira.wiit.one/rest/api/2/`         |
 | Agile API v1   | `https://jira.wiit.one/rest/agile/1.0/`     |
 
-## Default project and boards
+## Projects and boards
 
-| Resource              | Value                |
-|-----------------------|----------------------|
-| Default project       | CKS                  |
-| Sprint board          | 617 (CKS Development, scrum) |
-| Helpdesk/kanban board | 1200 (CKS HELPDESK, kanban) |
+The user works across two projects simultaneously:
+
+### CKS
+
+| Resource              | Value                              |
+|-----------------------|------------------------------------|
+| Project key           | CKS                                |
+| Sprint board          | 617 — "CKS Development" (scrum)    |
+| Helpdesk/kanban board | 1200 — "CKS HELPDESK" (kanban)     |
 
 Sprint naming convention: `CKS Sprint YYWW` (year + calendar week, e.g. `CKS Sprint 2606`).
+
+### EDGE
+
+| Resource      | Value                           |
+|---------------|---------------------------------|
+| Project key   | EDGE                            |
+| Kanban board  | 966 — "🐉 EDGE board" (kanban)  |
+
+The EDGE board filter also pulls in HELPDESK and IMGT issues assigned to the
+WIIT Edge Stack group or labelled `edge-stack-others`, in addition to all
+`project = EDGE` issues.
 
 ## Common API calls
 
@@ -63,10 +78,18 @@ curl -fsSL \
 ### List boards for a project
 
 ```bash
+# CKS boards
 curl -fsSL \
   -H "Authorization: Bearer $JIRA_API_TOKEN" \
   --get \
   --data-urlencode "projectKeyOrId=CKS" \
+  "https://jira.wiit.one/rest/agile/1.0/board"
+
+# EDGE boards
+curl -fsSL \
+  -H "Authorization: Bearer $JIRA_API_TOKEN" \
+  --get \
+  --data-urlencode "projectKeyOrId=EDGE" \
   "https://jira.wiit.one/rest/agile/1.0/board"
 ```
 
@@ -118,24 +141,27 @@ curl -fsSL -X POST \
 
 ## Issue key format
 
-- Keys follow `PROJECT-NUMBER` (e.g. `CKS-42`).
-- Bare numbers default to the `CKS` project (e.g. `42` → `CKS-42`).
+- Keys follow `PROJECT-NUMBER` (e.g. `CKS-42`, `EDGE-123`).
+- Bare numbers are ambiguous — always ask the user which project they mean.
 - Subtask keys are indented under their parent in board views.
 
 ## Common JQL patterns
 
 ```
-# My open issues in the current sprint
+# My open CKS issues in the current sprint
 project = CKS AND assignee = currentUser() AND sprint in openSprints() AND statusCategory != Done
 
-# All open items in the current sprint
+# All open CKS items in the current sprint
 project = CKS AND sprint in openSprints() AND statusCategory != Done ORDER BY rank ASC
 
-# Issues flagged / impediments
+# Flagged / impediment CKS issues
 project = CKS AND flagged is not EMPTY AND sprint in openSprints()
 
-# Issues by status
-project = CKS AND status = "In Progress" ORDER BY rank ASC
+# My open EDGE issues
+project = EDGE AND assignee = currentUser() AND statusCategory != Done ORDER BY rank ASC
+
+# All my open issues across both projects
+project in (CKS, EDGE) AND assignee = currentUser() AND statusCategory != Done ORDER BY rank ASC
 ```
 
 ## Safety rules
