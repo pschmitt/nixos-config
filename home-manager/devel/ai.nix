@@ -60,20 +60,24 @@ let
   );
 
   n8nMcpTokenFile = config.sops.secrets."n8n/mcp/token".path;
+  homeAssistantMcpTokenFile = config.sops.secrets."home-assistant/mcp/token".path;
+  homeAssistantMcpUrl = "https://ha.${domainName}/api/mcp";
 
-  wrapAiToolWithN8nMcp =
+  wrapAiToolWithMcpEnv =
     {
       package,
       binary,
     }:
     pkgs.symlinkJoin {
-      name = "${lib.getName package}-with-n8n-mcp";
+      name = "${lib.getName package}-with-mcp-env";
       paths = [ package ];
       nativeBuildInputs = [ pkgs.makeWrapper ];
       postBuild = ''
         wrapProgram "$out/bin/${binary}" \
           --set-default N8N_MCP_TOKEN_FILE ${lib.escapeShellArg n8nMcpTokenFile} \
-          --run 'if [[ -r "$N8N_MCP_TOKEN_FILE" ]]; then export N8N_MCP_TOKEN="$(<"$N8N_MCP_TOKEN_FILE")"; fi'
+          --set-default HASS_TOKEN_FILE ${lib.escapeShellArg homeAssistantMcpTokenFile} \
+          --run 'if [[ -r "$N8N_MCP_TOKEN_FILE" ]]; then export N8N_MCP_TOKEN="$(<"$N8N_MCP_TOKEN_FILE")"; fi' \
+          --run 'if [[ -r "$HASS_TOKEN_FILE" ]]; then export HASS_TOKEN="$(<"$HASS_TOKEN_FILE")"; fi'
       '';
       inherit (package) meta;
     };
@@ -99,6 +103,10 @@ in
         mode = "0600";
         sopsFile = ../../secrets/shared.sops.yaml;
       };
+      "home-assistant/mcp/token" = {
+        mode = "0600";
+        sopsFile = ../../secrets/shared.sops.yaml;
+      };
     };
   };
 
@@ -110,6 +118,12 @@ in
           url = "https://n8n.${domainName}/mcp-server/http";
           headers = {
             Authorization = "Bearer {env:N8N_MCP_TOKEN}";
+          };
+        };
+        home-assistant = {
+          url = homeAssistantMcpUrl;
+          headers = {
+            Authorization = "Bearer {env:HASS_TOKEN}";
           };
         };
       }
@@ -124,7 +138,7 @@ in
   programs = {
     claude-code = {
       enable = true;
-      package = wrapAiToolWithN8nMcp {
+      package = wrapAiToolWithMcpEnv {
         package = pkgs.llm-agents.claude-code;
         binary = "claude";
       };
@@ -141,7 +155,7 @@ in
 
     codex = {
       enable = true;
-      package = wrapAiToolWithN8nMcp {
+      package = wrapAiToolWithMcpEnv {
         package = pkgs.llm-agents.codex;
         binary = "codex";
       };
@@ -152,7 +166,7 @@ in
 
     gemini-cli = {
       enable = true;
-      package = wrapAiToolWithN8nMcp {
+      package = wrapAiToolWithMcpEnv {
         package = pkgs.llm-agents.gemini-cli;
         binary = "gemini";
       };
@@ -194,7 +208,7 @@ in
 
     opencode = {
       enable = true;
-      package = wrapAiToolWithN8nMcp {
+      package = wrapAiToolWithMcpEnv {
         package = pkgs.llm-agents.opencode;
         binary = "opencode";
       };
@@ -206,7 +220,7 @@ in
 
     github-copilot-cli = {
       enable = true;
-      package = wrapAiToolWithN8nMcp {
+      package = wrapAiToolWithMcpEnv {
         package = pkgs.llm-agents.copilot-cli;
         binary = "copilot";
       };
