@@ -5,11 +5,10 @@
     ../../modules/domains.nix
 
     ../../home-manager/base.nix
-    # ../../home-manager/work
+    ../../home-manager/work
     ../../home-manager/sops-standalone.nix
   ];
 
-  sops.defaultSopsFile = ./secrets.sops.yaml;
   domains.main = "brkn.lol";
 
   targets.genericLinux.enable = true;
