@@ -164,7 +164,34 @@
         fi
 
         local build_parent_dir="/nix/tmp/hm-builds"
-        mkdir -p "$build_parent_dir"
+        local build_group
+        build_group=$(id -gn)
+
+        if [[ ! -d "$build_parent_dir" ]]
+        then
+          if ! mkdir -p "$build_parent_dir" 2>/dev/null
+          then
+            if (( ! $+commands[sudo] ))
+            then
+              echo "Failed to create $build_parent_dir and sudo is unavailable" >&2
+              return 1
+            fi
+
+            sudo install -d -m 0775 -o "$USER" -g "$build_group" "$build_parent_dir"
+          fi
+        fi
+
+        if [[ ! -w "$build_parent_dir" ]]
+        then
+          if (( ! $+commands[sudo] ))
+          then
+            echo "$build_parent_dir is not writable and sudo is unavailable" >&2
+            return 1
+          fi
+
+          sudo chown "$USER:$build_group" "$build_parent_dir"
+          sudo chmod 0775 "$build_parent_dir"
+        fi
 
         local build_dir
         if ! build_dir=$(mktemp -d -p "$build_parent_dir" "hm-build-XXXXX")
