@@ -75,6 +75,17 @@
         unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
       fi
 
+      hm_profile_link() {
+        local profile="$HOME/.local/state/nix/profiles/home-manager"
+
+        if [[ ! -e "$profile" ]]
+        then
+          return 1
+        fi
+
+        readlink "$profile"
+      }
+
       hm_profile_target() {
         local profile="$HOME/.local/state/nix/profiles/home-manager"
 
@@ -87,25 +98,40 @@
       }
 
       hm_show_generation_diff() {
-        local current_gen="$1"
-        local new_gen="$2"
+        local current_link="$1"
+        local current_target="$2"
+        local new_link="$3"
+        local new_target="$4"
         local diff_log
 
-        if [[ -z "$current_gen" || -z "$new_gen" ]]
+        if [[ -z "$current_target" || -z "$new_target" ]]
         then
           echo "Unable to determine Home Manager generations for diff" >&2
           return 1
         fi
 
-        if [[ "$current_gen" == "$new_gen" ]]
+        if [[ "$current_link" == "$new_link" && "$current_target" == "$new_target" ]]
         then
-          echo "Home Manager generation unchanged: $new_gen"
+          echo "Home Manager profile unchanged:"
+          echo "  link: $new_link"
+          echo "  target: $new_target"
+          return 0
+        fi
+
+        if [[ "$current_target" == "$new_target" ]]
+        then
+          echo "Home Manager generation advanced, but the built result is unchanged:"
+          echo "  old link: $current_link"
+          echo "  new link: $new_link"
+          echo "  target: $new_target"
           return 0
         fi
 
         echo "Home Manager generation changed:"
-        echo "  old: $current_gen"
-        echo "  new: $new_gen"
+        echo "  old link: $current_link"
+        echo "  new link: $new_link"
+        echo "  old target: $current_target"
+        echo "  new target: $new_target"
 
         if (( $+commands[nvd] ))
         then
@@ -115,7 +141,7 @@
             return 1
           fi
 
-          if nvd diff "$current_gen" "$new_gen" >"$diff_log" 2>&1
+          if nvd diff "$current_target" "$new_target" >"$diff_log" 2>&1
           then
             if [[ -s "$diff_log" ]]
             then
@@ -133,13 +159,15 @@
           rm -f "$diff_log"
         fi
 
-        nix store diff-closures "$current_gen" "$new_gen"
+        nix store diff-closures "$current_target" "$new_target"
       }
 
       nrb() {
         local repo="$HOME/devel/private/pschmitt/nixos-config.git"
         local target_host
+        local current_link=""
         local current_gen=""
+        local new_link=""
         local new_gen=""
 
         if [[ ! -d "$repo" ]]
@@ -154,6 +182,13 @@
           shift
         else
           target_host="''${HOSTNAME:-$(hostname)}"
+        fi
+
+        if current_link=$(hm_profile_link)
+        then
+          :
+        else
+          current_link=""
         fi
 
         if current_gen=$(hm_profile_target)
@@ -232,6 +267,13 @@
           return "$rc"
         fi
 
+        if new_link=$(hm_profile_link)
+        then
+          :
+        else
+          new_link=""
+        fi
+
         if new_gen=$(hm_profile_target)
         then
           :
@@ -241,7 +283,7 @@
 
         if [[ -n "$current_gen" && -n "$new_gen" ]]
         then
-          hm_show_generation_diff "$current_gen" "$new_gen"
+          hm_show_generation_diff "$current_link" "$current_gen" "$new_link" "$new_gen"
         elif [[ -n "$new_gen" ]]
         then
           echo "Activated Home Manager generation: $new_gen"
