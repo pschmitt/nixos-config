@@ -3,16 +3,18 @@
   buildNpmPackage,
   fetchFromGitHub,
   installShellFiles,
+  nodejs,
+  runCommand,
 }:
 
-buildNpmPackage rec {
+buildNpmPackage (finalAttrs: {
   pname = "todoist-cli";
   version = "1.64.0";
 
   src = fetchFromGitHub {
     owner = "Doist";
-    repo = pname;
-    rev = "v${version}";
+    repo = finalAttrs.pname;
+    rev = "v${finalAttrs.version}";
     hash = "sha256-mTN6Ep5D4GEEiv5SFDSesZzpYI8Cbem9bZzp+00YOis=";
   };
 
@@ -39,6 +41,26 @@ buildNpmPackage rec {
       --fish "$TMPDIR/completions/td.fish"
   '';
 
+  passthru.skill = runCommand "todoist-cli-skill" { } ''
+    mkdir -p "$out/todoist-cli"
+    TD_SKILL_OUT="$out/todoist-cli/SKILL.md" \
+    ${nodejs}/bin/node --input-type=module << 'JSEOF'
+    import { SKILL_NAME, SKILL_DESCRIPTION, SKILL_COMPATIBILITY, SKILL_CONTENT } from '${finalAttrs.finalPackage}/lib/node_modules/@doist/todoist-cli/dist/lib/skills/content.js';
+    import { readFileSync, writeFileSync } from 'node:fs';
+    const pkg = JSON.parse(readFileSync('${finalAttrs.finalPackage}/lib/node_modules/@doist/todoist-cli/package.json', 'utf-8'));
+    const frontmatter = '---\n'
+      + 'name: ' + SKILL_NAME + '\n'
+      + 'description: ' + JSON.stringify(SKILL_DESCRIPTION) + '\n'
+      + 'compatibility: ' + JSON.stringify(SKILL_COMPATIBILITY) + '\n'
+      + 'license: ' + pkg.license + '\n'
+      + 'metadata:\n'
+      + '  author: Doist\n'
+      + '  version: ' + JSON.stringify(pkg.version) + '\n'
+      + '---\n\n';
+    writeFileSync(process.env.TD_SKILL_OUT, frontmatter + SKILL_CONTENT, 'utf-8');
+    JSEOF
+  '';
+
   meta = with lib; {
     description = "Command-line interface for Todoist";
     homepage = "https://github.com/Doist/todoist-cli";
@@ -46,4 +68,4 @@ buildNpmPackage rec {
     maintainers = with maintainers; [ pschmitt ];
     mainProgram = "td";
   };
-}
+})
