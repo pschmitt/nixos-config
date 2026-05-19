@@ -19,7 +19,7 @@ let
 in
 {
   home.file = {
-    ".config/claude-work/rules/code-style.md".source = ../devel/CODESTYLE.md;
+    ".config/claude-work/rules/context.md".source = ../devel/CONTEXT.md;
     ".config/claude-work/skills" = {
       source = ../devel/skills;
       recursive = true;

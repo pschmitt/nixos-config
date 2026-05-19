@@ -26,7 +26,7 @@ Files are sourced automatically by zinit on shell startup — no registration st
 
 ## Code style
 
-Follow the repo shell style (see CODESTYLE.md):
+Follow the `shell` skill for baseline shell conventions. ZPL-specific additions:
 - 2-space indentation
 - `[[` not `[`
 - `then` / `do` on their own line
