@@ -145,22 +145,42 @@ curl -sf -H "Authorization: Token $NB_TOKEN" \
 
 ## Product Information
 
-Official product and support URLs are stored in these custom fields on:
-- `dcim.devicetype`
-- `dcim.moduletype`
+The following custom fields are available on `dcim.devicetype` and
+`dcim.moduletype`. All belong to the `Product Information` group in NetBox
+and are displayed in this order:
 
-Both fields belong to the `Product Information` group in NetBox.
-- `product_url`
-- `support_url`
+| Field         | Type | Purpose |
+|---------------|------|---------|
+| `sku`         | text | Manufacturer or retailer Stock Keeping Unit — the catalog code used to order or identify the specific product variant (e.g. `SHSW-1`, `SC0194`, `910-005448`). |
+| `product_url` | URL  | Official English-language product page from the manufacturer. |
+| `support_url` | URL  | Official manufacturer support, documentation, or knowledge base URL. |
 
-Rules:
+### SKU field rules
+
+- A SKU is the manufacturer's own catalog/model code as used by retailers and
+  distributors — not a marketing name, not an EAN barcode, and not a long
+  internal configuration code.
+- For many devices the model name and SKU are the same string (e.g. Arlo
+  `VMA4600`, Fibaro `FGSD-002`). That is correct — record the string anyway.
+- When the manufacturer uses a shorter product code than the full model name,
+  prefer the shorter code (e.g. Shelly Dimmer 2 → `SHDM-2`, not `Dimmer 2`).
+- For products with many hardware variants sharing one device type (e.g.
+  Raspberry Pi CM4 with different RAM/eMMC options), leave `sku` blank rather
+  than picking an arbitrary variant.
+- Do not record EAN-13 barcodes as SKUs — those belong in comments if at all.
+- Regional suffixes (e.g. `-US`, `-EU`) are acceptable when the manufacturer
+  publishes them and no region-neutral code exists.
+- When searching for an unknown SKU, check the manufacturer's official store
+  or product page first, then major retailer listings.
+
+### product_url / support_url rules
+
 - Prefer the official manufacturer product page over reseller or marketplace
   pages.
 - Prefer the English-language version of the product page when available.
 - Use `support_url` for official manufacturer support, documentation, or
   knowledge base pages when a product page is unavailable or additional support
   context is useful.
-- Keep `product_url` before `support_url` in the grouped display order.
 
 ## Device Type Synchronization
 
