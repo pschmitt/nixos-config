@@ -22,29 +22,6 @@ let
     hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
   };
 
-  # Generate the todoist-cli skill by importing only content.js (pure
-  # constants, no side-effects) via node directly. Avoids running td itself
-  # which triggers migrate-auth.js → network call → sandbox hang.
-  tdSkill = pkgs.runCommand "todoist-cli-skill" { } ''
-    mkdir -p "$out/todoist-cli"
-    TD_SKILL_OUT="$out/todoist-cli/SKILL.md" \
-    ${pkgs.nodejs}/bin/node --input-type=module << 'JSEOF'
-    import { SKILL_NAME, SKILL_DESCRIPTION, SKILL_COMPATIBILITY, SKILL_CONTENT } from '${pkgs.todoist-cli}/lib/node_modules/@doist/todoist-cli/dist/lib/skills/content.js';
-    import { readFileSync, writeFileSync } from 'node:fs';
-    const pkg = JSON.parse(readFileSync('${pkgs.todoist-cli}/lib/node_modules/@doist/todoist-cli/package.json', 'utf-8'));
-    const frontmatter = '---\n'
-      + 'name: ' + SKILL_NAME + '\n'
-      + 'description: ' + JSON.stringify(SKILL_DESCRIPTION) + '\n'
-      + 'compatibility: ' + JSON.stringify(SKILL_COMPATIBILITY) + '\n'
-      + 'license: ' + pkg.license + '\n'
-      + 'metadata:\n'
-      + '  author: Doist\n'
-      + '  version: ' + JSON.stringify(pkg.version) + '\n'
-      + '---\n\n';
-    writeFileSync(process.env.TD_SKILL_OUT, frontmatter + SKILL_CONTENT, 'utf-8');
-    JSEOF
-  '';
-
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
   # toString coerces the derivation to its store-path string, which the skills
   # option type accepts (it rejects raw derivations as it matches the attrsOf branch).
@@ -54,14 +31,10 @@ let
       paths = [
         ./skills
         "${n8nSkillsSrc}/skills"
-        tdSkill
+        pkgs.todoist-cli.skill
       ];
     }
   );
-
-  n8nMcpTokenFile = config.sops.secrets."n8n/mcp/token".path;
-  homeAssistantMcpTokenFile = config.sops.secrets."home-assistant/mcp/token".path;
-  homeAssistantMcpUrl = "https://ha.${domainName}/api/mcp";
 
   mcpHttpProxy =
     name:
@@ -91,61 +64,6 @@ let
       '';
     };
 
-  withEnv =
-    pkg:
-    pkgs.symlinkJoin {
-      name = "${pkg.name}-with-env";
-      paths = [ pkg ];
-      buildInputs = [ pkgs.makeWrapper ];
-      postBuild = ''
-        for bin in $out/bin/*; do
-          wrapProgram "$bin" \
-            --run 'set -a; [ -f "${config.sops.templates."gmail-mcp.env".path}" ] && source "${
-              config.sops.templates."gmail-mcp.env".path
-            }"; set +a'
-        done
-      '';
-    };
-
-  mcpServers =
-    lib.optionalAttrs (domainName != null) {
-      n8n-mcp = {
-        command = "${
-          mcpHttpProxy "n8n" {
-            url = "https://n8n.${domainName}/mcp-server/http";
-            tokenFile = n8nMcpTokenFile;
-          }
-        }/bin/n8n-mcp";
-      };
-      home-assistant = {
-        command = "${
-          mcpHttpProxy "home-assistant" {
-            url = homeAssistantMcpUrl;
-            tokenFile = homeAssistantMcpTokenFile;
-          }
-        }/bin/home-assistant-mcp";
-      };
-    }
-    // {
-      obsidian = {
-        command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
-        args = [ "/home/pschmitt/Documents/notes" ];
-      };
-      gmail = {
-        url = "https://gmailmcp.googleapis.com/mcp/v1";
-        oauth = {
-          enabled = true;
-          clientId = "\${GMAIL_MCP_CLIENT_ID}";
-          clientSecret = "\${GMAIL_MCP_CLIENT_SECRET}";
-          scopes = [
-            "https://www.googleapis.com/auth/gmail.readonly"
-            "https://www.googleapis.com/auth/gmail.compose"
-            "https://www.googleapis.com/auth/gmail.modify"
-          ];
-        };
-      };
-    };
-
 in
 {
   assertions = [
@@ -159,10 +77,6 @@ in
   ];
 
   sops = {
-    templates."gmail-mcp.env".content = ''
-      GMAIL_MCP_CLIENT_ID="${config.sops.placeholder."gmail/mcp/client_id"}"
-      GMAIL_MCP_CLIENT_SECRET="${config.sops.placeholder."gmail/mcp/client_secret"}"
-    '';
     secrets = {
       "mistral-vibe/env" = {
         mode = "0600";
@@ -176,26 +90,39 @@ in
         mode = "0600";
         sopsFile = ../../secrets/shared.sops.yaml;
       };
-      "gmail/mcp/client_id" = {
-        mode = "0600";
-        sopsFile = ../../secrets/shared.sops.yaml;
-      };
-      "gmail/mcp/client_secret" = {
-        mode = "0600";
-        sopsFile = ../../secrets/shared.sops.yaml;
-      };
     };
   };
 
   programs.mcp = {
     enable = true;
-    servers = mcpServers;
+    servers = {
+      n8n-mcp = {
+        command = "${
+          mcpHttpProxy "n8n" {
+            url = "https://n8n.${domainName}/mcp-server/http";
+            tokenFile = config.sops.secrets."n8n/mcp/token".path;
+          }
+        }/bin/n8n-mcp";
+      };
+      home-assistant = {
+        command = "${
+          mcpHttpProxy "home-assistant" {
+            url = "https://ha.${domainName}/api/mcp";
+            tokenFile = config.sops.secrets."home-assistant/mcp/token".path;
+          }
+        }/bin/home-assistant-mcp";
+      };
+      obsidian = {
+        command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
+        args = [ "${config.xdg.userDirs.documents}/notes" ];
+      };
+    };
   };
 
   programs = {
     claude-code = {
       enable = true;
-      package = withEnv pkgs.llm-agents.claude-code;
+      package = pkgs.llm-agents.claude-code;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
@@ -209,7 +136,7 @@ in
 
     codex = {
       enable = true;
-      package = withEnv pkgs.llm-agents.codex;
+      package = pkgs.llm-agents.codex;
       context = ./CODESTYLE.md;
       skills = allSkills;
       enableMcpIntegration = true;
@@ -221,7 +148,7 @@ in
 
     gemini-cli = {
       enable = true;
-      package = withEnv pkgs.llm-agents.gemini-cli;
+      package = pkgs.llm-agents.gemini-cli;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
@@ -260,7 +187,7 @@ in
 
     opencode = {
       enable = true;
-      package = withEnv pkgs.llm-agents.opencode;
+      package = pkgs.llm-agents.opencode;
       skills = allSkills;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
@@ -269,7 +196,7 @@ in
 
     github-copilot-cli = {
       enable = true;
-      package = withEnv pkgs.llm-agents.copilot-cli;
+      package = pkgs.llm-agents.copilot-cli;
       skills = allSkills;
       context = ./CODESTYLE.md;
       enableMcpIntegration = true;

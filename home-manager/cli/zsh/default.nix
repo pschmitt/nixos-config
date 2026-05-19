@@ -145,23 +145,7 @@
           return 1
         fi
 
-        if ${pkgs.nvd}/bin/nvd diff "$current_target" "$new_target" >|"$diff_log" 2>&1
-        then
-          if [[ -s "$diff_log" ]]
-          then
-            ${pkgs.coreutils}/bin/cat "$diff_log"
-            ${pkgs.coreutils}/bin/rm -f "$diff_log"
-            return 0
-          fi
-
-          echo_warn "nvd produced no diff output; falling back to nix store diff-closures"
-        else
-          ${pkgs.coreutils}/bin/cat "$diff_log"
-          echo_warn "nvd diff failed; falling back to nix store diff-closures"
-        fi
-
-        ${pkgs.coreutils}/bin/rm -f "$diff_log"
-        ${pkgs.nix}/bin/nix store diff-closures "$current_target" "$new_target"
+        ${pkgs.nvd}/bin/nvd diff "$current_target" "$new_target"
       }
 
       hm::rebuild() {
