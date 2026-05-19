@@ -108,7 +108,6 @@
         local current_target="$2"
         local new_link="$3"
         local new_target="$4"
-        local diff_log
 
         if [[ -z "$current_target" || -z "$new_target" ]]
         then
@@ -139,13 +138,7 @@
         echo "  old target: $current_target"
         echo "  new target: $new_target"
 
-        if ! diff_log=$(${pkgs.coreutils}/bin/mktemp)
-        then
-          echo_error "Failed to create temporary file for nvd output"
-          return 1
-        fi
-
-        ${pkgs.nvd}/bin/nvd diff "$current_target" "$new_target"
+        ${pkgs.nvd}/bin/nvd diff --color=auto "$current_target" "$new_target"
       }
 
       hm::rebuild() {
