@@ -135,8 +135,8 @@ let
         url = "https://gmailmcp.googleapis.com/mcp/v1";
         oauth = {
           enabled = true;
-          clientId = "$GMAIL_MCP_CLIENT_ID";
-          clientSecret = "$GMAIL_MCP_CLIENT_SECRET";
+          clientId = "\${GMAIL_MCP_CLIENT_ID}";
+          clientSecret = "\${GMAIL_MCP_CLIENT_SECRET}";
           scopes = [
             "https://www.googleapis.com/auth/gmail.readonly"
             "https://www.googleapis.com/auth/gmail.compose"
