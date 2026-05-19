@@ -138,7 +138,7 @@
         echo "  old target: $current_target"
         echo "  new target: $new_target"
 
-        ${pkgs.nvd}/bin/nvd diff --color=auto "$current_target" "$new_target"
+        ${pkgs.nvd}/bin/nvd --color auto diff "$current_target" "$new_target"
       }
 
       hm::rebuild() {
