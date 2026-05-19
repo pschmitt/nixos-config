@@ -33,16 +33,19 @@
 
   xdg.configFile = {
     "zsh/custom/os/nixos/system.zsh".text = ''
-      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]; then
+      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
+      then
         source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
       fi
 
       # On non-NixOS hosts, prefer the system locale data.
-      if [[ -f /usr/lib/locale/locale-archive ]]; then
+      if [[ -f /usr/lib/locale/locale-archive ]]
+      then
         export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
         export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
         unset LOCPATH
-      elif [[ -d /usr/lib/locale ]]; then
+      elif [[ -d /usr/lib/locale ]]
+      then
         export LOCPATH=/usr/lib/locale
         unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
       fi
@@ -62,20 +65,23 @@
       source /etc/profile.d/nix.sh &>/dev/null
       (( $+commands[nix] )) || return
 
-      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]; then
+      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
+      then
         source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
       fi
 
-      if [[ -f /usr/lib/locale/locale-archive ]]; then
+      if [[ -f /usr/lib/locale/locale-archive ]]
+      then
         export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
         export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
         unset LOCPATH
-      elif [[ -d /usr/lib/locale ]]; then
+      elif [[ -d /usr/lib/locale ]]
+      then
         export LOCPATH=/usr/lib/locale
         unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
       fi
 
-      hm_profile_link() {
+      hm::profile-link() {
         local profile="$HOME/.local/state/nix/profiles/home-manager"
 
         if [[ ! -e "$profile" ]]
@@ -83,10 +89,10 @@
           return 1
         fi
 
-        readlink "$profile"
+        ${pkgs.coreutils}/bin/readlink "$profile"
       }
 
-      hm_profile_target() {
+      hm::profile-target() {
         local profile="$HOME/.local/state/nix/profiles/home-manager"
 
         if [[ ! -e "$profile" ]]
@@ -94,10 +100,10 @@
           return 1
         fi
 
-        readlink -f "$profile"
+        ${pkgs.coreutils}/bin/readlink -f "$profile"
       }
 
-      hm_show_generation_diff() {
+      hm::show-generation-diff() {
         local current_link="$1"
         local current_target="$2"
         local new_link="$3"
@@ -106,13 +112,13 @@
 
         if [[ -z "$current_target" || -z "$new_target" ]]
         then
-          echo "Unable to determine Home Manager generations for diff" >&2
+          echo_error "Unable to determine Home Manager generations for diff"
           return 1
         fi
 
         if [[ "$current_link" == "$new_link" && "$current_target" == "$new_target" ]]
         then
-          echo "Home Manager profile unchanged:"
+          echo_info "Home Manager profile unchanged:"
           echo "  link: $new_link"
           echo "  target: $new_target"
           return 0
@@ -120,124 +126,98 @@
 
         if [[ "$current_target" == "$new_target" ]]
         then
-          echo "Home Manager generation advanced, but the built result is unchanged:"
+          echo_info "Home Manager generation advanced, but the built result is unchanged:"
           echo "  old link: $current_link"
           echo "  new link: $new_link"
           echo "  target: $new_target"
           return 0
         fi
 
-        echo "Home Manager generation changed:"
+        echo_info "Home Manager generation changed:"
         echo "  old link: $current_link"
         echo "  new link: $new_link"
         echo "  old target: $current_target"
         echo "  new target: $new_target"
 
-        if (( $+commands[nvd] ))
+        if ! diff_log=$(${pkgs.coreutils}/bin/mktemp)
         then
-          if ! diff_log=$(mktemp)
-          then
-            echo "Failed to create temporary file for nvd output" >&2
-            return 1
-          fi
-
-          if nvd diff "$current_target" "$new_target" >|"$diff_log" 2>&1
-          then
-            if [[ -s "$diff_log" ]]
-            then
-              cat "$diff_log"
-              rm -f "$diff_log"
-              return 0
-            fi
-
-            echo "nvd produced no diff output; falling back to nix store diff-closures" >&2
-          else
-            cat "$diff_log" >&2
-            echo "nvd diff failed; falling back to nix store diff-closures" >&2
-          fi
-
-          rm -f "$diff_log"
-        fi
-
-        nix store diff-closures "$current_target" "$new_target"
-      }
-
-      nrb() {
-        local repo="$HOME/devel/private/pschmitt/nixos-config.git"
-        local target_host
-        local current_link=""
-        local current_gen=""
-        local new_link=""
-        local new_gen=""
-
-        if [[ ! -d "$repo" ]]
-        then
-          echo "nixos-config repo not found at $repo" >&2
+          echo_error "Failed to create temporary file for nvd output"
           return 1
         fi
 
-        if [[ $# -gt 0 && "$1" != -* ]]
+        if ${pkgs.nvd}/bin/nvd diff "$current_target" "$new_target" >|"$diff_log" 2>&1
         then
-          target_host="$1"
-          shift
+          if [[ -s "$diff_log" ]]
+          then
+            ${pkgs.coreutils}/bin/cat "$diff_log"
+            ${pkgs.coreutils}/bin/rm -f "$diff_log"
+            return 0
+          fi
+
+          echo_warn "nvd produced no diff output; falling back to nix store diff-closures"
         else
-          target_host="''${HOSTNAME:-$(hostname)}"
+          ${pkgs.coreutils}/bin/cat "$diff_log"
+          echo_warn "nvd diff failed; falling back to nix store diff-closures"
         fi
 
-        if current_link=$(hm_profile_link)
+        ${pkgs.coreutils}/bin/rm -f "$diff_log"
+        ${pkgs.nix}/bin/nix store diff-closures "$current_target" "$new_target"
+      }
+
+      hm::rebuild() {
+        local repo="$HOME/devel/private/pschmitt/nixos-config.git"
+        local target_host
+        local current_link current_gen new_link new_gen
+
+        zparseopts -D -E -K -- \
+          {-host,-target,-target-host}:=target_host
+
+        target_host="''${target_host[2]}"
+
+        if [[ -z "$target_host" ]]
         then
-          :
-        else
-          current_link=""
+          if [[ $# -gt 0 && "$1" != -* ]]
+          then
+            target_host="$1"
+            shift
+          else
+            target_host="''${HOSTNAME:-$(hostname)}"
+          fi
         fi
 
-        if current_gen=$(hm_profile_target)
-        then
-          :
-        else
-          current_gen=""
-        fi
+        current_link=$(hm::profile-link) || current_link=""
+        current_gen=$(hm::profile-target) || current_gen=""
 
         local build_parent_dir="/nix/tmp/hm-builds"
         local build_group
-        build_group=$(id -gn)
+        build_group=$(${pkgs.coreutils}/bin/id -gn)
 
         if [[ ! -d "$build_parent_dir" ]]
         then
-          if ! mkdir -p "$build_parent_dir" 2>/dev/null
+          if ! ${pkgs.coreutils}/bin/mkdir -p "$build_parent_dir" 2>/dev/null
           then
-            if (( ! $+commands[sudo] ))
-            then
-              echo "Failed to create $build_parent_dir and sudo is unavailable" >&2
-              return 1
-            fi
-
-            sudo install -d -m 0775 -o "$USER" -g "$build_group" "$build_parent_dir"
+            sudo ${pkgs.coreutils}/bin/install -d -m 0775 -o "$USER" -g "$build_group" "$build_parent_dir"
           fi
         fi
 
         if [[ ! -w "$build_parent_dir" ]]
         then
-          if (( ! $+commands[sudo] ))
-          then
-            echo "$build_parent_dir is not writable and sudo is unavailable" >&2
-            return 1
-          fi
-
-          sudo chown "$USER:$build_group" "$build_parent_dir"
-          sudo chmod 0775 "$build_parent_dir"
+          sudo ${pkgs.coreutils}/bin/chown "$USER:$build_group" "$build_parent_dir"
+          sudo ${pkgs.coreutils}/bin/chmod 0775 "$build_parent_dir"
         fi
 
         local build_dir
-        if ! build_dir=$(mktemp -d -p "$build_parent_dir" "hm-build-XXXXX")
+        if ! build_dir=$(${pkgs.coreutils}/bin/mktemp -d -p "$build_parent_dir" "hm-build-XXXXX")
         then
-          echo "Failed to create temporary build directory in $build_parent_dir" >&2
+          echo_error "Failed to create temporary build directory in $build_parent_dir"
           return 1
         fi
 
+        trap "${pkgs.coreutils}/bin/rm -rf '$build_dir'" EXIT
+
         # Use rsync to copy the repo, excluding .git and other build artifacts,
         # similar to nixos::clone-config.
-        rsync -az \
+        ${pkgs.rsync}/bin/rsync -az \
           --delete --delete-excluded \
           --exclude '.git*' \
           --exclude 'build/' \
@@ -246,51 +226,39 @@
         local rsync_rc=$?
         if [[ "$rsync_rc" -ne 0 ]]
         then
-          rm -rf "$build_dir"
           return "$rsync_rc"
         fi
 
         (
           cd "$build_dir"
           NIX_CONFIG='experimental-features = nix-command flakes' \
-            nix run github:nix-community/home-manager -- \
+            ${pkgs.nix}/bin/nix run github:nix-community/home-manager -- \
               -b hm-backup \
               switch \
               --flake ".#''${target_host}" \
               "$@"
         )
-        local rc=$?
-        rm -rf "$build_dir"
 
+        local rc=$?
         if [[ "$rc" -ne 0 ]]
         then
           return "$rc"
         fi
 
-        if new_link=$(hm_profile_link)
-        then
-          :
-        else
-          new_link=""
-        fi
-
-        if new_gen=$(hm_profile_target)
-        then
-          :
-        else
-          new_gen=""
-        fi
+        new_link=$(hm::profile-link) || new_link=""
+        new_gen=$(hm::profile-target) || new_gen=""
 
         if [[ -n "$current_gen" && -n "$new_gen" ]]
         then
-          hm_show_generation_diff "$current_link" "$current_gen" "$new_link" "$new_gen"
+          hm::show-generation-diff "$current_link" "$current_gen" "$new_link" "$new_gen"
         elif [[ -n "$new_gen" ]]
         then
-          echo "Activated Home Manager generation: $new_gen"
+          echo_info "Activated Home Manager generation: $new_gen"
         fi
 
         return "$rc"
       }
+      alias nrb="hm::rebuild"
     '';
 
     # completions
