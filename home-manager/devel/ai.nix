@@ -130,14 +130,14 @@ in
         theme = "dark";
       };
       rules = {
-        code-style = ./CODESTYLE.md;
+        context = ./CONTEXT.md;
       };
     };
 
     codex = {
       enable = true;
       package = pkgs.llm-agents.codex;
-      context = ./CODESTYLE.md;
+      context = ./CONTEXT.md;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
@@ -176,7 +176,6 @@ in
             "AGENTS.md"
             "CLAUDE.md"
             "CONTEXT.md"
-            "CODESTYLE.md"
             "GEMINI.md"
           ];
         };
@@ -189,7 +188,7 @@ in
       enable = true;
       package = pkgs.llm-agents.opencode;
       skills = allSkills;
-      context = builtins.readFile ./CODESTYLE.md;
+      context = builtins.readFile ./CONTEXT.md;
       web.enable = false;
       enableMcpIntegration = true;
     };
@@ -198,7 +197,7 @@ in
       enable = true;
       package = pkgs.llm-agents.copilot-cli;
       skills = allSkills;
-      context = ./CODESTYLE.md;
+      context = ./CONTEXT.md;
       enableMcpIntegration = true;
     };
   };
@@ -209,8 +208,8 @@ in
   #   let
   #     tomlFormat = pkgs.formats.toml { };
   #     vibeUpstreamCliPrompt = builtins.readFile "${pkgs.master.mistral-vibe.src}/vibe/core/prompts/cli.md";
-  #     vibeCustomPromptId = "cli_codestyle";
-  #     vibeCustomPrompt = vibeUpstreamCliPrompt + "\n\n" + builtins.readFile ./CODESTYLE.md;
+  #     vibeCustomPromptId = "cli_context";
+  #     vibeCustomPrompt = vibeUpstreamCliPrompt + "\n\n" + builtins.readFile ./CONTEXT.md;
   #   in
   #   {
   #     "vibe/.env".source =
