@@ -91,6 +91,22 @@ let
       '';
     };
 
+  withEnv =
+    pkg:
+    pkgs.symlinkJoin {
+      name = "${pkg.name}-with-env";
+      paths = [ pkg ];
+      buildInputs = [ pkgs.makeWrapper ];
+      postBuild = ''
+        for bin in $out/bin/*; do
+          wrapProgram "$bin" \
+            --run 'set -a; [ -f "${config.sops.templates."gmail-mcp.env".path}" ] && source "${
+              config.sops.templates."gmail-mcp.env".path
+            }"; set +a'
+        done
+      '';
+    };
+
   mcpServers =
     lib.optionalAttrs (domainName != null) {
       n8n-mcp = {
@@ -115,6 +131,19 @@ let
         command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
         args = [ "/home/pschmitt/Documents/notes" ];
       };
+      gmail = {
+        httpUrl = "https://gmailmcp.googleapis.com/mcp/v1";
+        oauth = {
+          enabled = true;
+          clientId = "$GMAIL_MCP_CLIENT_ID";
+          clientSecret = "$GMAIL_MCP_CLIENT_SECRET";
+          scopes = [
+            "https://www.googleapis.com/auth/gmail.readonly"
+            "https://www.googleapis.com/auth/gmail.compose"
+            "https://www.googleapis.com/auth/gmail.modify"
+          ];
+        };
+      };
     };
 
 in
@@ -130,6 +159,10 @@ in
   ];
 
   sops = {
+    templates."gmail-mcp.env".content = ''
+      GMAIL_MCP_CLIENT_ID="${config.sops.placeholder."gmail/mcp/client_id"}"
+      GMAIL_MCP_CLIENT_SECRET="${config.sops.placeholder."gmail/mcp/client_secret"}"
+    '';
     secrets = {
       "mistral-vibe/env" = {
         mode = "0600";
@@ -140,6 +173,14 @@ in
         sopsFile = ../../secrets/shared.sops.yaml;
       };
       "home-assistant/mcp/token" = {
+        mode = "0600";
+        sopsFile = ../../secrets/shared.sops.yaml;
+      };
+      "gmail/mcp/client_id" = {
+        mode = "0600";
+        sopsFile = ../../secrets/shared.sops.yaml;
+      };
+      "gmail/mcp/client_secret" = {
         mode = "0600";
         sopsFile = ../../secrets/shared.sops.yaml;
       };
@@ -154,7 +195,7 @@ in
   programs = {
     claude-code = {
       enable = true;
-      package = pkgs.llm-agents.claude-code;
+      package = withEnv pkgs.llm-agents.claude-code;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
@@ -168,7 +209,7 @@ in
 
     codex = {
       enable = true;
-      package = pkgs.llm-agents.codex;
+      package = withEnv pkgs.llm-agents.codex;
       context = ./CODESTYLE.md;
       skills = allSkills;
       enableMcpIntegration = true;
@@ -180,7 +221,7 @@ in
 
     gemini-cli = {
       enable = true;
-      package = pkgs.llm-agents.gemini-cli;
+      package = withEnv pkgs.llm-agents.gemini-cli;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
@@ -219,7 +260,7 @@ in
 
     opencode = {
       enable = true;
-      package = pkgs.llm-agents.opencode;
+      package = withEnv pkgs.llm-agents.opencode;
       skills = allSkills;
       context = builtins.readFile ./CODESTYLE.md;
       web.enable = false;
@@ -228,7 +269,7 @@ in
 
     github-copilot-cli = {
       enable = true;
-      package = pkgs.llm-agents.copilot-cli;
+      package = withEnv pkgs.llm-agents.copilot-cli;
       skills = allSkills;
       context = ./CODESTYLE.md;
       enableMcpIntegration = true;
