@@ -213,15 +213,12 @@
           return "$rsync_rc"
         fi
 
-        (
-          cd "$build_dir"
-          NIX_CONFIG='experimental-features = nix-command flakes' \
-            ${pkgs.nix}/bin/nix run github:nix-community/home-manager -- \
-              -b hm-backup \
-              switch \
-              --flake ".#''${target_host}" \
-              "$@"
-        )
+        NIX_CONFIG='experimental-features = nix-command flakes' \
+          ${pkgs.nix}/bin/nix run github:nix-community/home-manager -- \
+            -b hm-backup \
+            switch \
+            --flake "''${build_dir}#''${target_host}" \
+            "$@"
 
         local rc=$?
         if [[ "$rc" -ne 0 ]]
