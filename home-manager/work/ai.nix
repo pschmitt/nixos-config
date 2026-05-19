@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   ...
 }:
@@ -12,7 +13,7 @@ let
       export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
       export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
 
-      exec ${pkgs.llm-agents.claude-code}/bin/claude "$@"
+      exec ${config.programs.claude-code.finalPackage}/bin/claude "$@"
     '';
   };
 in
