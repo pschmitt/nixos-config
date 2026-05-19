@@ -132,7 +132,7 @@ let
         args = [ "/home/pschmitt/Documents/notes" ];
       };
       gmail = {
-        httpUrl = "https://gmailmcp.googleapis.com/mcp/v1";
+        url = "https://gmailmcp.googleapis.com/mcp/v1";
         oauth = {
           enabled = true;
           clientId = "$GMAIL_MCP_CLIENT_ID";
