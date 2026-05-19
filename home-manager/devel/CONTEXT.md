@@ -5,7 +5,6 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## General rules
 
 - Read `AGENTS.md` and follow it as the primary repository instruction source.
-- Do not commit or push changes from this environment.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
