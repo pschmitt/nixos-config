@@ -191,7 +191,7 @@ run_update() {
   local target_system="$2"
 
   # NOTE We need to set pure-eval to false to allow building nonfree pkgs
-  local args=(--flake "$package_name" --format --option pure-eval false)
+  local args=(--flake "$package_name" --format --version stable --option pure-eval false)
 
   if has_update_script "$package_name" "$target_system"
   then

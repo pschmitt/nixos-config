@@ -126,8 +126,20 @@ jobs:
 
           echo "title=${title}" >>"$GITHUB_OUTPUT"
           echo "commit_message=${title}" >>"$GITHUB_OUTPUT"
+          echo "new_version=${new_version}" >>"$GITHUB_OUTPUT"
+
+      - name: Detect prerelease for ${{ matrix.package }}
+        id: prerelease_check
+        run: |
+          new_version="${{ steps.prmeta.outputs.new_version }}"
+          if [[ "$new_version" =~ [-](alpha|beta|rc|pre|dev|next|snapshot) ]]
+          then
+            echo "Skipping prerelease version: ${new_version}" >&2
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+          fi
 
       - name: Create pull request for ${{ matrix.package }}
+        if: steps.prerelease_check.outputs.skip != 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
@@ -275,6 +287,17 @@ jobs:
 
           echo "title=${title}" >>"$GITHUB_OUTPUT"
           echo "commit_message=${title}" >>"$GITHUB_OUTPUT"
+          echo "new_version=${new_version}" >>"$GITHUB_OUTPUT"
+
+      - name: Detect prerelease for ${{ matrix.package }}
+        id: prerelease_check
+        run: |
+          new_version="${{ steps.prmeta.outputs.new_version }}"
+          if [[ "$new_version" =~ [-](alpha|beta|rc|pre|dev|next|snapshot) ]]
+          then
+            echo "Skipping prerelease version: ${new_version}" >&2
+            echo "skip=true" >>"$GITHUB_OUTPUT"
+          fi
 
       - uses: crazy-max/ghaction-import-gpg@v7
         with:
@@ -287,6 +310,7 @@ jobs:
         run: gpg -K
 
       - name: Create pull request for ${{ matrix.package }}
+        if: steps.prerelease_check.outputs.skip != 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
