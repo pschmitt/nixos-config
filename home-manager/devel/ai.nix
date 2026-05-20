@@ -48,6 +48,13 @@ let
     ''
   );
 
+  codexTrustedProjects = [
+    "${config.xdg.configHome}/codex"
+    "/etc/nixos"
+    "${config.home.homeDirectory}/devel/private/pschmitt"
+    "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git"
+  ];
+
   mcpHttpProxy =
     name:
     {
@@ -155,6 +162,9 @@ in
       settings = {
         model = "gpt-5.4";
         model_reasoning_effort = "medium";
+        projects = lib.genAttrs codexTrustedProjects (_: {
+          trust_level = "trusted";
+        });
       };
     };
 
