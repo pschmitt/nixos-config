@@ -62,20 +62,27 @@ alias hm := home-manager
 home-manager host='':
   #!/usr/bin/env bash
   set -euo pipefail
-  if [[ -f /etc/profile.d/nix.sh ]]; then source /etc/profile.d/nix.sh; fi
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    source /etc/profile.d/nix.sh
+  fi
   TARGET_HOST="{{host}}"
-  if [[ -z "$TARGET_HOST" ]]; then
+  if [[ -z "$TARGET_HOST" ]]
+  then
     TARGET_HOST="${HOSTNAME:-$(hostname)}"
   fi
 
   BUILD_PARENT="/nix/tmp/hm-builds"
   BUILD_GROUP="$(id -gn)"
-  if [[ ! -d "$BUILD_PARENT" ]]; then
-    if ! mkdir -p "$BUILD_PARENT" 2>/dev/null; then
+  if [[ ! -d "$BUILD_PARENT" ]]
+  then
+    if ! mkdir -p "$BUILD_PARENT" 2>/dev/null
+    then
       sudo install -d -m 0775 -o "$USER" -g "$BUILD_GROUP" "$BUILD_PARENT"
     fi
   fi
-  if [[ ! -w "$BUILD_PARENT" ]]; then
+  if [[ ! -w "$BUILD_PARENT" ]]
+  then
     sudo chown "$USER:$BUILD_GROUP" "$BUILD_PARENT"
     sudo chmod 0775 "$BUILD_PARENT"
   fi
