@@ -8,6 +8,7 @@
 ## Deployment
 - Do not *EVER* commit or push changes from this environment.
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
+- To apply standalone Home Manager changes on fnuc (non-NixOS), run `zhj nrb`.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
