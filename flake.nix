@@ -414,7 +414,7 @@
           };
 
           extraSpecialArgs = {
-            inherit inputs outputs;
+            inherit inputs outputs hostname;
           };
 
           modules = modules ++ [ ./hosts/${hostname} ];
