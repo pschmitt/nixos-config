@@ -36,6 +36,18 @@ let
     }
   );
 
+  # Codex does not appear to discover skills reliably when the top-level skill
+  # directories are symlinks. Materialize a real directory tree for Codex while
+  # keeping the shared symlinkJoin for the other AI clients.
+  codexSkills = toString (
+    pkgs.runCommand "codex-skills" { } ''
+      mkdir -p "$out"
+      cp -rL ${./skills}/. "$out"/
+      cp -rL ${n8nSkillsSrc}/skills/. "$out"/
+      cp -rL ${pkgs.todoist-cli.skill}/. "$out"/
+    ''
+  );
+
   mcpHttpProxy =
     name:
     {
@@ -138,7 +150,7 @@ in
       enable = true;
       package = pkgs.llm-agents.codex;
       context = ./CONTEXT.md;
-      skills = allSkills;
+      skills = codexSkills;
       enableMcpIntegration = true;
       settings = {
         model = "gpt-5.4";
