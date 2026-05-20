@@ -328,6 +328,12 @@ Conventions used in this inventory:
 
 ## Notes
 
+Default location behavior:
+- When a task needs a location assignment and the user does not specify one,
+  prefer `gu5a`.
+- Do not assume `ovm5`; it is historical and should not be used as the default
+  location anymore.
+
 When a user says "refer to my notes":
 - Treat that as a reference to files under `~/Documents/notes`.
 - Prefer those files over older note archives unless the active notes link to
