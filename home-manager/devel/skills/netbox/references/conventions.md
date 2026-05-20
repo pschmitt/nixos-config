@@ -313,6 +313,10 @@ Exceptions:
 ## Radio And Wireless Modeling
 
 Conventions used in this inventory:
+- Generic app- or integration-level IDs go in the `device_identifier` custom
+  field when there is no better hardware identifier to match on.
+- Store the exact canonical identifier value exposed by the integration unless
+  there is a documented namespaced convention for that integration.
 - Zigbee IEEE goes in the `zigbee_ieee` custom field.
 - LoRaWAN DevEUI goes in the `lorawan_eui` custom field.
 - USB VID:PID and product string go in the markdown-enabled `usb_id`
