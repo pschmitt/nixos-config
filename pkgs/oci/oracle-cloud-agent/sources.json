@@ -1,6 +1,6 @@
 {
-  "version": "1.58.0",
-  "release": "10.el9",
-  "hashAarch64": "sha256-kNzf4yuZMu9JJ+gz/efPJu+yCZ6f89sAGdUoFyX47hk=",
-  "hashX86_64": "sha256-YLVAem9j/Tf4bhsy/JHUjkCTOEYVE2ZzolPeoA6p4UU="
+  "version": "1.59.0",
+  "release": "12.el9",
+  "hashAarch64": "sha256-bSPqb3DjhjwOpVp80lAZKr1ZQTQU+9kCZUt8F4E9sIs=",
+  "hashX86_64": "sha256-4wTKGtP70te5YfAcR6LLZfIhXwLx1HY/NNz2xEdF8lQ="
 }
