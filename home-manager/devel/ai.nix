@@ -22,17 +22,19 @@ let
     hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
   };
 
+  skillSources = [
+    ./skills
+    "${n8nSkillsSrc}/skills"
+    pkgs.todoist-cli.skill
+  ];
+
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
   # toString coerces the derivation to its store-path string, which the skills
   # option type accepts (it rejects raw derivations as it matches the attrsOf branch).
   allSkills = toString (
     pkgs.symlinkJoin {
       name = "ai-skills";
-      paths = [
-        ./skills
-        "${n8nSkillsSrc}/skills"
-        pkgs.todoist-cli.skill
-      ];
+      paths = skillSources;
     }
   );
 
@@ -42,9 +44,7 @@ let
   codexSkills = toString (
     pkgs.runCommand "codex-skills" { } ''
       mkdir -p "$out"
-      cp -rL ${./skills}/. "$out"/
-      cp -rL ${n8nSkillsSrc}/skills/. "$out"/
-      cp -rL ${pkgs.todoist-cli.skill}/. "$out"/
+      ${lib.concatMapStringsSep "\n" (path: "cp -rL ${path}/. \"$out\"/") skillSources}
     ''
   );
 
