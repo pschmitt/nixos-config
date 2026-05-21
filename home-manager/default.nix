@@ -1,5 +1,6 @@
 {
   config,
+  hostname,
   inputs,
   ...
 }:
@@ -11,7 +12,7 @@
 
   home-manager = {
     extraSpecialArgs = {
-      inherit inputs;
+      inherit inputs hostname;
     };
 
     useGlobalPkgs = true;
