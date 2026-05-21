@@ -3878,11 +3878,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1779383218,
-        "narHash": "sha256-a7ZkSv0Iq5akvgCrQc1bFyrwChuuUWzKIl8WvrB6y+0=",
+        "lastModified": 1779385098,
+        "narHash": "sha256-gAciASVHWklHJWTF9ScOYDYCGIFOb6X/Cila2w7my6g=",
         "owner": "pschmitt",
         "repo": "tdc",
-        "rev": "c4ced45846ea877595e30802519d3c6e7fd24f2b",
+        "rev": "d9e2a6115ef3ac5eb5d547789e94f826cc76044d",
         "type": "github"
       },
       "original": {
