@@ -6,7 +6,8 @@
 - When suggesting commands that use a flake selector, always single-quote the selector. Example: use `'.#fnuc'`, not `.#fnuc`.
 
 ## Deployment
-- Do not *EVER* commit or push changes from this environment.
+- Avoid committing or pushing changes from this environment unless the user explicitly asks.
+- Prefer committing only verified, working changes.
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
 - To apply standalone Home Manager changes on fnuc (non-NixOS), run `just hm` (or `just hm <hostname>` for a specific host). This rsyncs the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem.
 
