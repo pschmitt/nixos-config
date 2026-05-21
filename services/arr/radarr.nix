@@ -77,7 +77,9 @@ in
     api_key = config.sops.placeholder."radarr/apiKey";
     delete_old_custom_formats = true;
     quality_definition.type = "movie";
-    # TODO: add custom_formats with trash_ids and assign_scores_to your quality profile(s)
+    # "Bad Release - SCR" (CF id 1) was created manually via API with score -10000
+    # on all quality profiles to block torrents containing .scr in the title.
+    # TODO: add TRaSH custom_formats with trash_ids and assign_scores_to profiles
   };
 
   # Back up Radarr config/db alongside the rest of the system
