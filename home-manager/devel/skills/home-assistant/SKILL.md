@@ -1,6 +1,6 @@
 ---
 name: home-assistant
-description: Use when working with the Home Assistant configuration for the `hv` VM, especially for YAML config changes, `config.d/` edits, MCP-backed inspection or control, hass-cli inspection, API calls, Lovelace-facing text, and validation before or after changes. Read `references/conventions.md` before editing and avoid direct `.storage/` changes unless the user explicitly approves them.
+description: Use when working with the Home Assistant configuration for the `hv` VM, especially for YAML config changes, `config.d/` edits, MCP-backed inspection or control, hass-cli inspection, API calls, Lovelace dashboard editing (`.storage/lovelace.*`), and validation before or after changes. Read `references/conventions.md` before editing.
 ---
 
 # Home Assistant
@@ -33,7 +33,12 @@ zhj hass::secrets-gu5a
 4. Use `zhj hass-cli` or raw API calls when MCP is unavailable, insufficient, or when validation needs shell output.
 5. Prefer focused edits in `config.d/` and avoid unrelated formatting churn in YAML-heavy files.
 6. Validate Home Assistant changes before and after editing when practical.
-7. Avoid `.storage/` changes unless the user explicitly approves them.
+7. For Lovelace dashboard edits, go directly to `.storage/lovelace.*` — no
+   extra confirmation needed when the user asks to change a dashboard. After
+   writing the file, push changes live via the `lovelace/config/save`
+   WebSocket call (see `references/conventions.md` → "Lovelace / Dashboard
+   Editing" for the snippet). Avoid all other `.storage/` changes unless the
+   user explicitly approves them.
 
 ## Reference map
 
@@ -45,5 +50,5 @@ zhj hass::secrets-gu5a
 - Do not rewrite generated or unrelated sections just to normalize formatting.
 - Expect unrelated local changes in the repo and do not revert them unless the
   user explicitly asks.
-- Treat `.storage/` as a last resort and require explicit user confirmation
-  before touching it.
+- `.storage/lovelace.*` edits are fine when the user asks to change a
+  dashboard. All other `.storage/` changes require explicit user confirmation.

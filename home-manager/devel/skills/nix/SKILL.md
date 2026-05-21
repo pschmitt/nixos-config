@@ -10,9 +10,8 @@ Use this skill for system-level NixOS and Home Manager configuration tasks.
 ## Quick start
 
 1.  **Foundational Rules**: Read and follow the core mandates in `AGENTS.md` before proceeding.
-2.  **Repository Locations**:
-    *   **NixOS**: `/etc/nixos`
-    *   **Other OS**: `~/devel/private/pschmitt/nixos-config.git`
+2.  **Repository Location**: `~/devel/private/pschmitt/nixos-config.git`
+    (this is the authoritative source on all hosts — `/etc/nixos` is not used)
 3.  **Scope**: This skill is specifically for modifications to host configurations, modules, and system/user profiles.
 
 ## Workflow
