@@ -83,7 +83,8 @@ in
   fakeHosts.sonarr.port = port;
 
   services.recyclarr.configuration.sonarr.main = {
-    base_url = "http://sonarr.internal";
+    # Recyclarr now runs inside the Mullvad namespace with Sonarr.
+    base_url = "http://${internalIP}:${toString port}";
     api_key._secret = config.sops.secrets."sonarr/apiKey".path;
     delete_old_custom_formats = true;
     quality_definition.type = "series";
