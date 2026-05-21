@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -18,6 +18,11 @@
 
     ../../services/initrd-luks-ssh-unlock.nix
   ];
+
+  home-manager.users.${config.mainUser.username} = {
+    imports = [ ../../home-manager/devel/claude-remote.nix ];
+    services.claude-remote-control.configDir = "${config.mainUser.homeDirectory}/.config/claude-work";
+  };
 
   hardware.cattle = false;
   initrd.wifi = {
