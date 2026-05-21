@@ -9,6 +9,7 @@
     ./flaresolverr.nix
     ./jackett.nix
     ./listenarr.nix
+    ./malware-filter.nix
     ./microsocks.nix
     ./podman-net.nix
     ./prowlarr.nix
