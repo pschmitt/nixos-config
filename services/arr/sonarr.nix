@@ -82,17 +82,14 @@ in
 
   fakeHosts.sonarr.port = port;
 
-  services.recyclarr = {
-    enable = true;
-    configuration.sonarr.main = {
-      base_url = "http://sonarr.internal";
-      api_key._secret = config.sops.secrets."sonarr/apiKey".path;
-      delete_old_custom_formats = true;
-      quality_definition.type = "series";
-      # "Bad Release - SCR" (CF id 2) was created manually via API with score -10000
-      # on all quality profiles to block torrents containing .scr in the title.
-      # TODO: add TRaSH custom_formats with trash_ids and assign_scores_to profiles
-    };
+  services.recyclarr.configuration.sonarr.main = {
+    base_url = "http://sonarr.internal";
+    api_key._secret = config.sops.secrets."sonarr/apiKey".path;
+    delete_old_custom_formats = true;
+    quality_definition.type = "series";
+    # "Bad Release - SCR" (CF id 2) was created manually via API with score -10000
+    # on all quality profiles to block torrents containing .scr in the title.
+    # TODO: add TRaSH custom_formats with trash_ids and assign_scores_to profiles
   };
 
   # Back up Sonarr config/db alongside the rest of the system
