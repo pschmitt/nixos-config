@@ -381,7 +381,7 @@
         nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
-            inherit inputs outputs;
+            inherit inputs outputs hostname;
           };
           modules =
             commonModules
