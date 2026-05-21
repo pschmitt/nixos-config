@@ -32,3 +32,4 @@ update-git-commits.txt
 cookies.txt
 tmp/
 .claude
+__pycache__/
