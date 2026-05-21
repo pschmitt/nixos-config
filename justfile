@@ -72,29 +72,8 @@ home-manager host='':
     TARGET_HOST="${HOSTNAME:-$(hostname)}"
   fi
 
-  BUILD_PARENT="/nix/tmp/hm-builds"
-  BUILD_GROUP="$(id -gn)"
-  if [[ ! -d "$BUILD_PARENT" ]]
-  then
-    if ! mkdir -p "$BUILD_PARENT" 2>/dev/null
-    then
-      sudo install -d -m 0775 -o "$USER" -g "$BUILD_GROUP" "$BUILD_PARENT"
-    fi
-  fi
-  if [[ ! -w "$BUILD_PARENT" ]]
-  then
-    sudo chown "$USER:$BUILD_GROUP" "$BUILD_PARENT"
-    sudo chmod 0775 "$BUILD_PARENT"
-  fi
-
-  BUILD_DIR="$(mktemp -d -p "$BUILD_PARENT" "hm-build-XXXXX")"
+  BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh hm)"
   trap "rm -rf '$BUILD_DIR'" EXIT
-
-  rsync -az --delete --delete-excluded \
-    --exclude '.git*' \
-    --exclude 'build/' \
-    --exclude 'result' \
-    ./ "$BUILD_DIR/"
 
   NIX_CONFIG='experimental-features = nix-command flakes' \
     nix run github:nix-community/home-manager -- \
@@ -108,13 +87,22 @@ nix-update *args:
 deploy host='' *args:
   #!/usr/bin/env bash
   set -euxo pipefail
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    source /etc/profile.d/nix.sh
+  fi
   TARGET_HOST="{{host}}"
   set -- {{args}}
   if [[ -n "$TARGET_HOST" ]]
   then
-    zhj nixos::rebuild --target-host "$TARGET_HOST" "$@"
+    BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh --host "$TARGET_HOST" nixos)"
+    trap "ssh '$TARGET_HOST' rm -rf '$BUILD_DIR'" EXIT
+    ssh "$TARGET_HOST" sudo nixos-rebuild switch --flake "${BUILD_DIR}#${TARGET_HOST}" --use-substitutes "$@"
   else
-    zhj nixos::rebuild "$@"
+    TARGET_HOST="${HOSTNAME:-$(hostname)}"
+    BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh nixos)"
+    trap "rm -rf '$BUILD_DIR'" EXIT
+    sudo nix run nixpkgs#nixos-rebuild -- switch --flake "${BUILD_DIR}#${TARGET_HOST}" "$@"
   fi
 
 renovate *args:
