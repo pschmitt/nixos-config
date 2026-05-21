@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 7878;
@@ -66,6 +71,19 @@ in
   };
 
   fakeHosts.radarr.port = port;
+
+  services.recyclarr.radarrInstances.main = {
+    base_url = "http://radarr.internal";
+    api_key = config.sops.placeholder."radarr/apiKey";
+    delete_old_custom_formats = true;
+    quality_definition.type = "movie";
+    # TODO: add custom_formats with trash_ids and assign_scores_to your quality profile(s)
+  };
+
+  # Back up Radarr config/db alongside the rest of the system
+  services.restic.backups.main.paths = lib.mkIf (!config.hardware.cattle) [
+    config.services.radarr.dataDir
+  ];
 
   systemd.services.radarr = {
     wantedBy = [ "arr.target" ];

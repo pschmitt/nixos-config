@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8989;
@@ -76,6 +81,19 @@ in
   };
 
   fakeHosts.sonarr.port = port;
+
+  services.recyclarr.sonarrInstances.main = {
+    base_url = "http://sonarr.internal";
+    api_key = config.sops.placeholder."sonarr/apiKey";
+    delete_old_custom_formats = true;
+    quality_definition.type = "series";
+    # TODO: add custom_formats with trash_ids and assign_scores_to your quality profile(s)
+  };
+
+  # Back up Sonarr config/db alongside the rest of the system
+  services.restic.backups.main.paths = lib.mkIf (!config.hardware.cattle) [
+    config.services.sonarr.dataDir
+  ];
 
   vpnNamespaces.mullvad.portMappings = [
     {
