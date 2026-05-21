@@ -14,6 +14,9 @@
 
   targets.genericLinux.enable = true;
 
+  xdg.configFile."home-manager".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
+
   home = {
     inherit (config.mainUser) username homeDirectory;
     stateVersion = "26.05";
