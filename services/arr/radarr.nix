@@ -72,14 +72,17 @@ in
 
   fakeHosts.radarr.port = port;
 
-  services.recyclarr.radarrInstances.main = {
-    base_url = "http://radarr.internal";
-    api_key = config.sops.placeholder."radarr/apiKey";
-    delete_old_custom_formats = true;
-    quality_definition.type = "movie";
-    # "Bad Release - SCR" (CF id 1) was created manually via API with score -10000
-    # on all quality profiles to block torrents containing .scr in the title.
-    # TODO: add TRaSH custom_formats with trash_ids and assign_scores_to profiles
+  services.recyclarr = {
+    enable = true;
+    configuration.radarr.main = {
+      base_url = "http://radarr.internal";
+      api_key._secret = config.sops.secrets."radarr/apiKey".path;
+      delete_old_custom_formats = true;
+      quality_definition.type = "movie";
+      # "Bad Release - SCR" (CF id 1) was created manually via API with score -10000
+      # on all quality profiles to block torrents containing .scr in the title.
+      # TODO: add TRaSH custom_formats with trash_ids and assign_scores_to profiles
+    };
   };
 
   # Back up Radarr config/db alongside the rest of the system

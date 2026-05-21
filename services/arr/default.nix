@@ -13,7 +13,6 @@
     ./podman-net.nix
     ./prowlarr.nix
     ./radarr.nix
-    ./recyclarr.nix
     ./shadowsocks.nix
     ./sonarr.nix
     ./transmission.nix
