@@ -6,6 +6,9 @@
 - When suggesting commands that use a flake selector, always single-quote the selector. Example: use `'.#fnuc'`, not `.#fnuc`.
 - To decrypt SOPS files in this repo from Codex/CLI contexts that do not have `~/.config/sops/age/keys.txt`, export an age key derived from the main SSH key first:
   `export SOPS_AGE_KEY="$(ssh-to-age --private-key -i ~/.ssh/id_ed25519)"`
+- Prefer updating SOPS values with `sops set`. Example:
+  `sops set ~/git/svc/sops/example.yaml '["app2"]["key"]' '"app2keystringvalue"'`
+- After any SOPS change, always verify the diff by decrypting the previous version and the new version, then diffing the plaintexts.
 
 ## Deployment
 - Avoid committing or pushing changes from this environment unless the user explicitly asks.
