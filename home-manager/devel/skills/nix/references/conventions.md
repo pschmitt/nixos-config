@@ -11,10 +11,10 @@ Refer to these directories when making system-level changes:
 - `overlays/`: Nixpkgs overlays.
 - `hardware/`: Hardware-specific configuration snippets.
 
-## Locations
+## Location
 
-- On NixOS systems: `/etc/nixos`
-- On other systems: `~/devel/private/pschmitt/nixos-config.git`
+The authoritative repository is always `~/devel/private/pschmitt/nixos-config.git`,
+regardless of the host OS. `/etc/nixos` is not used.
 
 ## Standards & Deployment
 
