@@ -143,7 +143,7 @@ in
         "format" = "{}°C";
         "tooltip" = true;
         "interval" = 3600;
-        "exec" = "wttrbar --location 'Frankfurt am Main, Germany'";
+        "exec" = "wttrbar --location 'Berlin, Germany'";
         "return-type" = "json";
       };
       "tray" = {
