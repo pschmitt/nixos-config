@@ -8,6 +8,7 @@
     ../../home-manager/work
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
+    ../../home-manager/codex-ha-bridge.nix
   ];
 
   domains.main = "brkn.lol";

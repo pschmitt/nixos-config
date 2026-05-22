@@ -20,6 +20,7 @@ in
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
+  codex-ha-bridge = pkgs.callPackage ./codex-ha-bridge { };
   clipcascade = pkgs.callPackage ./clipcascade { };
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
