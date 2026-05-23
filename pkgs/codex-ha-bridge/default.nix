@@ -3,7 +3,7 @@
   stdenv,
   fetchFromGitHub,
   makeWrapper,
-  nodejs_20,
+  nodejs,
 }:
 
 stdenv.mkDerivation {
@@ -23,7 +23,7 @@ stdenv.mkDerivation {
     runHook preInstall
     mkdir -p $out/lib/codex-ha-bridge
     cp -r src package.json $out/lib/codex-ha-bridge/
-    makeWrapper ${nodejs_20}/bin/node $out/bin/codex-ha-bridge \
+    makeWrapper ${nodejs}/bin/node $out/bin/codex-ha-bridge \
       --add-flags "$out/lib/codex-ha-bridge/src/index.js"
     runHook postInstall
   '';
