@@ -39,6 +39,16 @@ in
       };
     in
     {
+      pipx = prevPy.pipx.overridePythonAttrs (old: {
+        # pipx 1.8.0 has Python 3.13 test expectation mismatches for
+        # package-specifier normalization; keep the package buildable until
+        # the nixpkgs fix lands.
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_fix_package_name"
+          "test_parse_specifier_for_metadata"
+        ];
+      });
+
       parsedmarc =
         (prevPy.parsedmarc.override {
           msgraph-core = msgraph-core-022;
@@ -62,7 +72,7 @@ in
   );
 
   # NixOS module uses pkgs.parsedmarc, not pkgs.python313Packages.parsedmarc.
-  inherit (final.python313Packages) parsedmarc;
+  inherit (final.python313Packages) parsedmarc pipx;
 
   wireshark = fixWiresharkHash prev.wireshark;
   wireshark-cli = fixWiresharkHash prev.wireshark-cli;
