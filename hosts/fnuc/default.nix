@@ -9,6 +9,7 @@
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
     ../../home-manager/codex-ha-bridge.nix
+    ../../services/nix-distributed-build.nix
   ];
 
   domains.main = "brkn.lol";
@@ -22,6 +23,11 @@
     inherit (config.mainUser) username homeDirectory;
     stateVersion = "26.05";
   };
+
+  nix.package = pkgs.nix;
+  nix.settings.max-jobs = 0;
+
+  sops.secrets."ssh/nix-remote-builder/privkey".mode = "0400";
 
   services.home-manager.autoUpgrade = {
     enable = true;
