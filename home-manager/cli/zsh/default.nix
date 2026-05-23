@@ -32,6 +32,10 @@
   };
 
   xdg.configFile = {
+    "zsh/custom/os/home-manager/system.zsh".text = ''
+      [[ -o interactive ]] || return
+    '';
+
     "zsh/custom/os/nixos/system.zsh".text = ''
       if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
       then
@@ -58,6 +62,8 @@
       # FIXME the osc7 shell func produces output which p10k complains about
       # on startup (hence the WEZTERM_SHELL_SKIP_CWD)
       # WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
+
+      source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
     '';
 
     "zsh/custom/os/not-nixos/nix.zsh".text = lib.mkAfter ''
@@ -80,6 +86,7 @@
         export LOCPATH=/usr/lib/locale
         unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
       fi
+      source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
       source "${config.xdg.configHome}/zsh/custom/os/not-nixos/hm.zsh"
     '';
 

@@ -14,7 +14,7 @@
     silent = true;
   };
 
-  xdg.configFile."zsh/custom/os/nixos/system.zsh".text = lib.mkAfter ''
+  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
     # direnv
     source ${
       (pkgs.runCommand "direnv-init" { } ''
