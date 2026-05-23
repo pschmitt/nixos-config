@@ -8,7 +8,7 @@
     fzf
   ];
 
-  xdg.configFile."zsh/custom/os/nixos/system.zsh".text = lib.mkAfter ''
+  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
     # fzf
     source ${
       (pkgs.runCommand "fzf-init" { } ''
