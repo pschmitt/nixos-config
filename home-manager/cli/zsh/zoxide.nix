@@ -8,7 +8,7 @@
     zoxide
   ];
 
-  xdg.configFile."zsh/custom/os/nixos/system.zsh".text = lib.mkAfter ''
+  xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
     # zoxide
     source ${
       (pkgs.runCommand "zoxide-init" { } ''
