@@ -288,7 +288,7 @@ in
           netbox = {
             name = "NetBox";
             urls = [ { template = "https://netbox.${osConfig.domains.main}/search/?q={searchTerms}"; } ];
-            icon = "https://netbox.${osConfig.domains.main}/static/img/netbox_icon.svg";
+            icon = "https://netbox.${osConfig.domains.main}/static/netbox_touch-icon-180.png";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "nb" ];
           };
