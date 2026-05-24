@@ -3,6 +3,7 @@
   inputs,
   pkgs,
   lib,
+  osConfig,
   ...
 }:
 let
@@ -282,6 +283,14 @@ in
             icon = "https://unduck.link/search.svg";
             updateInterval = 24 * 60 * 60 * 1000; # every day
             definedAliases = [ "ud" ];
+          };
+
+          netbox = {
+            name = "NetBox";
+            urls = [ { template = "https://netbox.${osConfig.domains.main}/search/?q={searchTerms}"; } ];
+            icon = "https://netbox.${osConfig.domains.main}/static/img/netbox_icon.svg";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "nb" ];
           };
         };
       };
