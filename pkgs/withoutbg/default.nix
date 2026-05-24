@@ -54,10 +54,7 @@ buildPythonApplication rec {
   ];
 
   postPatch = ''
-    substituteInPlace pyproject.toml \
-      --replace-fail 'onnxruntime>=1.12.0,<1.20.0' 'onnxruntime>=1.12.0'
-    substituteInPlace src/withoutbg/__version__.py \
-      --replace-fail '1.0.0' '${version}'
+    sed -i 's/__version__ = ".*"/__version__ = "${version}"/' src/withoutbg/__version__.py
   '';
 
   postInstall = ''
