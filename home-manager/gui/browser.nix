@@ -269,6 +269,14 @@ in
             definedAliases = [ "am" ];
           };
 
+          amazon-de-orders = {
+            name = "Amazon.de Orders";
+            urls = [ { template = "https://www.amazon.de/your-orders/search?search={searchTerms}"; } ];
+            icon = "https://www.amazon.de/favicon.ico";
+            updateInterval = 24 * 60 * 60 * 1000; # every day
+            definedAliases = [ "amo" ];
+          };
+
           gmail = {
             name = "GMail";
             urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
