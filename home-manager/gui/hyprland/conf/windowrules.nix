@@ -1,4 +1,4 @@
-{ lib, osConfig, ... }:
+{ lib, ... }:
 {
   # Docs: https://wiki.hyprland.org/Configuring/Window-Rules/.
   wayland.windowManager.hyprland.settings = lib.mkMerge [
@@ -35,9 +35,9 @@
         "no_screen_share on, $porn"
         "no_screen_share on, $bitwarden"
       ]
-      ++ lib.optionals (osConfig.networking.hostName != "ge2") [
-        # Place Firefox on workspace 2 by default (except ge2 which has custom layout).
-        "workspace 2, match:class ^(firefox)$"
+      ++ [
+        # Both kitty and Firefox land on workspace 1 at startup (kitty left, Firefox right).
+        "workspace 1 silent, match:class ^(firefox)$"
       ];
     }
   ];
