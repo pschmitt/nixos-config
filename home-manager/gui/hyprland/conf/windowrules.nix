@@ -34,10 +34,6 @@
         "no_screen_share on, $peeppee"
         "no_screen_share on, $porn"
         "no_screen_share on, $bitwarden"
-      ]
-      ++ [
-        # Both kitty and Firefox land on workspace 1 at startup (kitty left, Firefox right).
-        "workspace 1 silent, match:class ^(firefox)$"
       ];
     }
   ];
