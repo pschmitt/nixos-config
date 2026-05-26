@@ -41,5 +41,8 @@ in
     "systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env"
     "systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock"
     "systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui"
+    # Workspace 1 layout: kitty left, Firefox right (dwindle splits horizontally on first window pair).
+    "[workspace 1 silent] kitty"
+    "sleep 2 && firefox"
   ];
 }
