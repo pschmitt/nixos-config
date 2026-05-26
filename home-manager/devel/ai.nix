@@ -128,6 +128,9 @@ in
         command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
         args = [ "${config.xdg.userDirs.documents}/notes" ];
       };
+      tmux = {
+        command = "${pkgs.tmux-mcp}/bin/tmux-mcp-rs";
+      };
     };
   };
 
