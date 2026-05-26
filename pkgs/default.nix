@@ -58,6 +58,8 @@ in
   # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
   # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
 
+  tmux-mcp = pkgs.callPackage ./tmux-mcp { };
+
   # Lab
   davcli = pkgs.callPackage ./davcli { };
   hints = pkgs.callPackage ./hints { };
