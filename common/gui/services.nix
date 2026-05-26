@@ -18,7 +18,6 @@
     };
 
     gvfs.enable = true;
-    seatd.enable = true;
     tumbler.enable = true;
   };
 }

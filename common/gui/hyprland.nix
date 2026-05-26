@@ -62,7 +62,7 @@ in
       ];
     in
     ''
-      DefaultEnvironment="PATH=${builtins.concatStringsSep ":" paths}:\$PATH"
+      DefaultEnvironment="PATH=${builtins.concatStringsSep ":" paths}"
     '';
 
   security.pam = {
