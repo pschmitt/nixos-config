@@ -41,9 +41,5 @@ in
     "systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env"
     "systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock"
     "systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui"
-    # Workspace 1 layout: kitty left, Firefox right.
-    # focuswindow puts focus (and ws1) active so layoutmsg preselect r targets the right workspace.
-    "[workspace 1 silent] kitty"
-    "sleep 2 && hyprctl dispatch focuswindow class:^(kitty)$ && hyprctl dispatch layoutmsg preselect r && firefox"
   ];
 }
