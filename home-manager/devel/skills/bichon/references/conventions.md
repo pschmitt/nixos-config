@@ -11,6 +11,8 @@ Credentials can be retrieved from the password manager with:
 zhj rbw::get --field "API Token" bichon.brkn.lol
 ```
 
+If rbw is locked, invoke the `rbw` skill to unlock it first.
+
 Notes:
 - Handle retrieved credentials as secrets and do not commit them to the
   repository.

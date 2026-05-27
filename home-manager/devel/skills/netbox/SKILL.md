@@ -16,6 +16,8 @@ Use this skill for NetBox inventory and metadata work.
 zhj rbw::get --json "Netbox (AI Agent)"
 ```
 
+   If rbw is locked, invoke the `rbw` skill to unlock it first.
+
 3. Treat retrieved credentials as secrets and never commit them.
 
 ## Workflow
