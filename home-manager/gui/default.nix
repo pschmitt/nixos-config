@@ -7,6 +7,7 @@
     ./chat.nix
     ./default-apps.nix
     ./dotool.nix
+    ./go-hass-agent
     ./gnome-keyring.nix
     # ./clipcascade.nix
     ./media.nix
