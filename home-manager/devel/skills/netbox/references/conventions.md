@@ -295,6 +295,7 @@ Current prefixes:
 - `SMP` = Smappee
 - `SNF` = Sonoff / ITEAD
 - `SSM` = Samson
+- `3RA` = THIRDREALITY
 - `TLD` = Telldus
 - `TOS` = Toshiba
 - `TPL` = TP-Link
