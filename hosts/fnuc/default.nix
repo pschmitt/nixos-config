@@ -5,6 +5,7 @@
     ../../modules/domains.nix
 
     ../../home-manager/base.nix
+    ../../home-manager/gui/go-hass-agent
     ../../home-manager/work
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
@@ -24,10 +25,25 @@
     stateVersion = "26.05";
   };
 
+  services.go-hass-agent = {
+    enable = true;
+    enableDesktopScripts = false;
+    mqttUsernameSecret = "home-assistant/mqtt/username";
+    mqttPasswordSecret = "home-assistant/mqtt/password";
+    scriptPackages = with pkgs; [
+      jq
+      rbw
+    ];
+  };
+
   nix.package = pkgs.nix;
   nix.settings.max-jobs = 0;
 
-  sops.secrets."ssh/nix-remote-builder/privkey".mode = "0400";
+  sops.secrets = {
+    "home-assistant/mqtt/username".sopsFile = ./secrets.sops.yaml;
+    "home-assistant/mqtt/password".sopsFile = ./secrets.sops.yaml;
+    "ssh/nix-remote-builder/privkey".mode = "0400";
+  };
 
   services.home-manager.autoUpgrade = {
     enable = true;
