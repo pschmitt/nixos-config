@@ -6,20 +6,39 @@
 }:
 let
   cfg = config.services.go-hass-agent;
+  desktopScriptNames = [
+    "desktop-clients.sh"
+    "desktop-environment.sh"
+    "gnome-keyring.sh"
+    "lockscreen.sh"
+    "monitors.sh"
+    "ms-teams.sh"
+    "obs.sh"
+    "online-meeting.sh"
+    "screencast.sh"
+  ];
 
   mkRegularFiles =
     prefix: dir:
     let
       files = lib.filterAttrs (_: type: type == "regular") (builtins.readDir dir);
+      selectedFiles =
+        if prefix == "go-hass-agent/scripts" && !cfg.enableDesktopScripts then
+          lib.filterAttrs (name: _: !(builtins.elem name desktopScriptNames)) files
+        else
+          files;
       mkFile = name: {
         name = "${prefix}/${name}";
         value = {
-          source = dir + "/${name}";
+          source = pkgs.writeShellScript name ''
+            export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
+            exec ${pkgs.bash}/bin/bash ${dir + "/${name}"} "$@"
+          '';
           executable = true;
         };
       };
     in
-    lib.listToAttrs (map mkFile (builtins.attrNames files));
+    lib.listToAttrs (map mkFile (builtins.attrNames selectedFiles));
 
   mkNamedFilesNoExec =
     prefix: dir: names:
@@ -52,6 +71,18 @@ in
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = "Optional SOPS secret name for the MQTT password.";
+    };
+
+    scriptPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = with pkgs; [ jq ];
+      description = "Packages whose bin directories are injected into wrapped go-hass-agent scripts and commands.";
+    };
+
+    enableDesktopScripts = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to install desktop-session specific go-hass-agent scripts.";
     };
   };
 
