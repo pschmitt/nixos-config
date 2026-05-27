@@ -17,6 +17,8 @@ Use this skill for documentation and wiki work on the Confluence instance at
 zhj rbw::get --field 'Confluence Personal Access Token' "Atlassian (wiit.one)" 2>/dev/null | tail -1
 ```
 
+   If rbw is locked, invoke the `rbw` skill to unlock it first.
+
 3. Use the token as a Bearer token in all requests:
 
 ```bash
