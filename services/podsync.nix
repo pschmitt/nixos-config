@@ -8,8 +8,7 @@ let
   dataDir = "/srv/podsync";
   podsyncDataDir = "${dataDir}/data/podsync";
   cookiesDir = "/srv/yt-dlp";
-  listenPort = 7637;
-  containerPort = 8080;
+  listenPort = 8080;
   primaryHost = "podsync.${config.domains.main}";
   serverAliases = [
     "podcasts.${config.domains.main}"
@@ -36,7 +35,7 @@ let
   };
   podsyncConfig = {
     server = {
-      port = containerPort;
+      port = listenPort;
       hostname = "https://${primaryHost}";
     };
     storage = {
@@ -93,9 +92,7 @@ in
     autoStart = true;
     image = "ghcr.io/mxpv/podsync:nightly";
     pull = "always";
-    ports = [
-      "127.0.0.1:${toString listenPort}:${toString containerPort}"
-    ];
+    extraOptions = [ "--network=host" ];
     volumes = [
       "${podsyncDataDir}:/app/data"
       "${cookiesDir}:/yt-dlp"

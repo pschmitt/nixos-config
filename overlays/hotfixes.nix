@@ -81,6 +81,17 @@ in
   # nixos-unstable
   # inherit (inputs.nixpkgs-xxx.legacyPackages.${final.stdenv.hostPlatform.system}) PKGNAME;
 
+  # https://github.com/NixOS/nixpkgs/pull/522784 — termite removed (dead
+  # upstream); vte 0.84.0 fails to build in the meantime.  The NixOS
+  # terminfo module does `map (x: x.terminfo)` over all packages, so the
+  # stub must carry a `terminfo` attribute (an empty dir is fine).
+  # TODO: Remove once nixpkgs#522784 reaches nixos-unstable.
+  termite =
+    let
+      terminfo = prev.runCommand "termite-noop-terminfo" { } "mkdir -p $out/share/terminfo";
+    in
+    (prev.runCommand "termite-noop" { } "mkdir $out") // { inherit terminfo; };
+
   # Ensure python313Packages uses the modified interpreter
   # python313Packages = final.python313.pkgs;
 }
