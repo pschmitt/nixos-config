@@ -28,7 +28,7 @@ let
     };
     youtube_dl_args = [
       "--proxy"
-      "socks5h://turris.${config.domains.netbird}:1081"
+      "socks5h://turris.${config.domains.tailscale}:1081"
       "--cookies"
       "/yt-dlp/cookies.txt"
     ];
