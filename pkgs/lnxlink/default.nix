@@ -1,0 +1,79 @@
+{
+  lib,
+  buildPythonApplication,
+  fetchFromGitHub,
+  setuptools,
+  wheel,
+  distro,
+  pyyaml,
+  paho-mqtt,
+  requests,
+  psutil,
+  inotify,
+  jeepney,
+  aiohttp,
+  beaupy,
+}:
+
+buildPythonApplication rec {
+  pname = "lnxlink";
+  version = "2026.2.0";
+
+  src = fetchFromGitHub {
+    owner = "bkbilly";
+    repo = "lnxlink";
+    rev = version;
+    hash = "sha256-PyonUBCeEiXQWsW9v5F3XiQE30xPOkRJTNmtaktg0Sw=";
+  };
+
+  pyproject = true;
+
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+      --replace-fail '"setuptools~=68.0.0"' '"setuptools"' \
+      --replace-fail '"wheel~=0.40.0"' '"wheel"'
+    sed -i '/"asyncio>=/d' pyproject.toml
+    # Backport fix: LNXLINK_MQTT_PORT must be cast to int (fixed in upstream main)
+    substituteInPlace lnxlink/files_setup.py \
+      --replace-fail \
+        'conf["mqtt"]["port"] = os.environ.get("LNXLINK_MQTT_PORT")' \
+        'conf["mqtt"]["port"] = int(os.environ.get("LNXLINK_MQTT_PORT"))'
+    # Filter br-* (Docker bridge) interfaces alongside veth* in both modules
+    substituteInPlace lnxlink/modules/interfaces.py \
+      --replace-fail \
+        'if interf.startswith("veth"):' \
+        'if interf.startswith(("veth", "br-")):'
+    substituteInPlace lnxlink/modules/wol.py \
+      --replace-fail \
+        'if interf.startswith("veth"):' \
+        'if interf.startswith(("veth", "br-")):'
+  '';
+
+  nativeBuildInputs = [
+    setuptools
+    wheel
+  ];
+
+  propagatedBuildInputs = [
+    distro
+    pyyaml
+    paho-mqtt
+    requests
+    psutil
+    inotify
+    jeepney
+    aiohttp
+    beaupy
+  ];
+
+  doCheck = false;
+
+  meta = {
+    description = "Internet of Things (IoT) integration with Linux using MQTT";
+    homepage = "https://github.com/bkbilly/lnxlink";
+    changelog = "https://github.com/bkbilly/lnxlink/releases/tag/${version}";
+    license = lib.licenses.mit;
+    maintainers = with lib.maintainers; [ pschmitt ];
+    mainProgram = "lnxlink";
+  };
+}
