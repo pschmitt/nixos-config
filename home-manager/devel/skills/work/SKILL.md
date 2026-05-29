@@ -22,7 +22,7 @@ Use this skill when working on anything related to wiit.cloud — repos, team st
 
 For issue tracking, use the `jira` skill (`jira.wiit.one`).
 For documentation, use the `confluence` skill (`wiki.wiit.one`).
-For on-call / alerts, use `opsgenie::alerts` (zsh) or query `https://api.eu.opsgenie.com/v2/` directly with the team API key from `zhj rbw::get -f "opsgenie api key (<team>)" "Atlassian (WIIT)"`. Teams: `edge-stack`, `gksv3-on-call`, `gksv3-support-schedule`. If rbw is locked, invoke the `rbw` skill first.
+For on-call / alerts, use the `opsgenie` skill (`api.eu.opsgenie.com`).
 
 ## Teams
 
