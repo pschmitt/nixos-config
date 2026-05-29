@@ -31,6 +31,7 @@ in
   ketall = pkgs.callPackage ./ketall { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
   linkding-cli = pkgs.callPackage ./linkding-cli { };
+  lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };

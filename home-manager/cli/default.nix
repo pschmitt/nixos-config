@@ -1,6 +1,7 @@
 { inputs, pkgs, ... }:
 {
   imports = [
+    ./lnxlink.nix
     ./nvim.nix
     ./zsh
     ./todoist
