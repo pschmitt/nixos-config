@@ -26,61 +26,61 @@
   };
 
   services = {
-    lnxlink = {
-      enable = true;
-      clientId = "fnuc";
-      mqttUsernameSecret = "home-assistant/mqtt/username";
-      mqttPasswordSecret = "home-assistant/mqtt/password";
-      exclude = [
-        "audio_select"
-        "beacondb"
-        "boot_select"
-        "brightness"
-        "camera_used"
-        "clipboard"
-        "display_env"
-        "fullscreen"
-        "gamepad"
-        "gpio"
-        "gpu"
-        "idle"
-        "inference_time"
-        "ir_remote"
-        "keyboard_hotkeys"
-        "media"
-        "microphone_used"
-        "mouse"
-        "power_profile"
-        "restful"
-        "screen_onoff"
-        "screenshot"
-        "send_keys"
-        "speaker_used"
-        "speech_recognition"
-        "steam"
-        "webcam"
-      ];
-      scriptPackages = with pkgs; [
-        gnupg
-        rbw
-      ];
-      bashExpose = [
-        {
-          name = "RBW";
-          command = "${config.xdg.configHome}/lnxlink/scripts/rbw.sh";
-          type = "binary_sensor";
-          icon = "mdi:vault";
-          update_interval = 30;
-        }
-        {
-          name = "GPG Main Key";
-          command = "${config.xdg.configHome}/lnxlink/scripts/gpg-main-key.sh";
-          type = "binary_sensor";
-          icon = "mdi:key-variant";
-          update_interval = 60;
-        }
-      ];
-    };
+    # lnxlink = {
+    #   enable = true;
+    #   clientId = "fnuc";
+    #   mqttUsernameSecret = "home-assistant/mqtt/username";
+    #   mqttPasswordSecret = "home-assistant/mqtt/password";
+    #   exclude = [
+    #     "audio_select"
+    #     "beacondb"
+    #     "boot_select"
+    #     "brightness"
+    #     "camera_used"
+    #     "clipboard"
+    #     "display_env"
+    #     "fullscreen"
+    #     "gamepad"
+    #     "gpio"
+    #     "gpu"
+    #     "idle"
+    #     "inference_time"
+    #     "ir_remote"
+    #     "keyboard_hotkeys"
+    #     "media"
+    #     "microphone_used"
+    #     "mouse"
+    #     "power_profile"
+    #     "restful"
+    #     "screen_onoff"
+    #     "screenshot"
+    #     "send_keys"
+    #     "speaker_used"
+    #     "speech_recognition"
+    #     "steam"
+    #     "webcam"
+    #   ];
+    #   scriptPackages = with pkgs; [
+    #     gnupg
+    #     rbw
+    #   ];
+    #   bashExpose = [
+    #     {
+    #       name = "RBW";
+    #       command = "${config.xdg.configHome}/lnxlink/scripts/rbw.sh";
+    #       type = "binary_sensor";
+    #       icon = "mdi:vault";
+    #       update_interval = 30;
+    #     }
+    #     {
+    #       name = "GPG Main Key";
+    #       command = "${config.xdg.configHome}/lnxlink/scripts/gpg-main-key.sh";
+    #       type = "binary_sensor";
+    #       icon = "mdi:key-variant";
+    #       update_interval = 60;
+    #     }
+    #   ];
+    # };
 
     go-hass-agent = {
       enable = true;
