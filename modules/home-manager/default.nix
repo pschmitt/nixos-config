@@ -1,0 +1,3 @@
+{
+  glab = import ./glab.nix;
+}
