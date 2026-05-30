@@ -1,4 +1,8 @@
-{ inputs, pkgs, ... }:
+{
+  inputs,
+  pkgs,
+  ...
+}:
 let
   httpasswdPkg = pkgs.writeShellScriptBin "htpasswd" ''
     exec ${pkgs.apacheHttpd}/bin/htpasswd "$@"
@@ -11,6 +15,7 @@ in
     ./android.nix
     ./cloud.nix
     ./git.nix
+    ../../modules/home-manager/glab.nix
     ./golang.nix
     ./jq.nix
     ./mani.nix
