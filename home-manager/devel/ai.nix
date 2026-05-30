@@ -155,10 +155,10 @@ in
       context = ./CONTEXT.md;
       skills = codexSkills;
       enableMcpIntegration = true;
-      settings = {
-        model = "gpt-5.4";
-        model_reasoning_effort = "medium";
-      };
+      # settings = {
+      #   model = "gpt-5.4";
+      #   model_reasoning_effort = "medium";
+      # };
     };
 
     gemini-cli = {
