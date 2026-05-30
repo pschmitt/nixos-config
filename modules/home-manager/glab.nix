@@ -119,12 +119,16 @@ in
       home.activation.glab-config = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
         glab_config_dir="${config.xdg.configHome}/glab-cli"
         glab_config_file="$glab_config_dir/config.yml"
+        glab_config_json="$glab_config_dir/config.json"
 
         $DRY_RUN_CMD mkdir -p "$glab_config_dir"
         $DRY_RUN_CMD rm -f "$glab_config_file"
+        $DRY_RUN_CMD rm -f "$glab_config_json"
         if [[ -z "''${DRY_RUN_CMD:-}" ]]
         then
-          ${utils.genJqSecretsReplacementSnippet glabConfig "${config.xdg.configHome}/glab-cli/config.yml"}
+          ${utils.genJqSecretsReplacementSnippet glabConfig "${config.xdg.configHome}/glab-cli/config.json"}
+          ${pkgs.yq-go}/bin/yq -P -p=json < "$glab_config_json" > "$glab_config_file"
+          rm -f "$glab_config_json"
           chmod 600 "$glab_config_file"
         fi
       '';
