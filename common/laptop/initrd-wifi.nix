@@ -29,6 +29,12 @@ in
       description = "Wireless interface to use in initrd.";
     };
 
+    hidden = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Enable active scanning for hidden initrd Wi-Fi SSIDs.";
+    };
+
     sops = {
       file = lib.mkOption {
         type = lib.types.path;
@@ -90,11 +96,13 @@ in
 
           systemd = {
             packages = [
+              pkgs.gnused
               pkgs.sops
               pkgs.ssh-to-age
               pkgs.wpa_supplicant
             ];
             initrdBin = [
+              pkgs.gnused
               pkgs.sops
               pkgs.ssh-to-age
               pkgs.wpa_supplicant
@@ -137,6 +145,9 @@ in
                 )"
 
                 ${pkgs.wpa_supplicant}/bin/wpa_passphrase "$ssid" "$psk" > ${lib.escapeShellArg supplicantConfig}
+                ${lib.optionalString cfg.hidden ''
+                  ${pkgs.gnused}/bin/sed -i '/^[[:space:]]*ssid=/a\    scan_ssid=1' ${lib.escapeShellArg supplicantConfig}
+                ''}
                 ${pkgs.coreutils}/bin/chmod 0400 ${lib.escapeShellArg supplicantConfig}
               '';
             };
