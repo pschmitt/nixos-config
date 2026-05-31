@@ -10,7 +10,7 @@ let
   containerUid = 1000;
   containerGid = 1000;
   # renovate: datasource=docker depName=rustmailer/bichon
-  bichonVersion = "1.4.2";
+  bichonVersion = "1.4.3";
 in
 {
   systemd.tmpfiles.rules = [
