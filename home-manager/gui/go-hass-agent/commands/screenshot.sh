@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 # Takes a screenshot via `zhj screenshot` and syncs it to the remote PiKVM share.
 
-import_graphical_environment() {
-  local key value
+import_user_environment() {
+  local line
 
-  while IFS='=' read -r key value
+  while IFS= read -r line
   do
-    case "$key" in
-      DBUS_SESSION_BUS_ADDRESS|DISPLAY|HYPRLAND_INSTANCE_SIGNATURE|SWAYSOCK|WAYLAND_DISPLAY|XDG_CURRENT_DESKTOP|XDG_RUNTIME_DIR|XDG_SESSION_TYPE)
-        [[ -n "$value" ]] && export "$key=$value"
-        ;;
-    esac
+    [[ -z "$line" || "$line" == PATH=* ]] && continue
+    export "$line"
   done < <(systemctl --user show-environment 2>/dev/null || true)
 }
 
@@ -33,7 +30,7 @@ main() {
   set -euo pipefail
 
   # SSH-triggered executions need the active user session environment to talk to Wayland.
-  import_graphical_environment
+  import_user_environment
 
   local dest="${HOME}/Pictures/Screenshots/auto"
   mkdir -p "$dest"
