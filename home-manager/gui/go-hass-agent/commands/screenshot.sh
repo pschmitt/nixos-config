@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Takes a screenshot via `zhj screenshot` and syncs it to the remote PiKVM share.
 
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [--quiet]
+EOF
+}
+
 import_user_environment() {
   local line
 
@@ -28,6 +34,26 @@ scp_screenshot() {
 
 main() {
   set -euo pipefail
+  local quiet=""
+
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      -h|--help)
+        usage
+        return 0
+        ;;
+      -q|--quiet)
+        quiet=1
+        shift
+        ;;
+      *)
+        printf 'Unknown argument: %s\n' "$1" >&2
+        usage >&2
+        return 2
+        ;;
+    esac
+  done
 
   # SSH-triggered executions need the active user session environment to talk to Wayland.
   import_user_environment
@@ -39,7 +65,10 @@ main() {
   local file=""
   file="${dest}/${hostname}-$(date -Iseconds).png"
 
-  notify-send "TOOK A SCREENSHOT"
+  if [[ -z "${quiet}" ]]
+  then
+    notify-send "TOOK A SCREENSHOT"
+  fi
   screenshot "$file"
   ln -sf "$file" "$dest/latest-${hostname}.png"
 
@@ -53,3 +82,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   main "$@"
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :
