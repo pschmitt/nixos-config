@@ -28,6 +28,11 @@ in
 {
   imports = [ inputs.catppuccin.homeModules.catppuccin ];
 
+  catppuccin = {
+    enable = true;
+    autoEnable = true;
+  };
+
   # catppuccin = {
   #   enable = true;
   #   flavor = osConfig.catppuccin.flavor;
