@@ -4,8 +4,11 @@
     inputs.catppuccin.nixosModules.catppuccin
   ];
 
-  catppuccin.enable = true;
-  catppuccin.flavor = "mocha";
+  catppuccin = {
+    enable = true;
+    autoEnable = true;
+    flavor = "mocha";
+  };
 
   # environment.sessionVariables = {
   #   GTK_THEME = "Colloid-Dark";
