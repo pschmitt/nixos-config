@@ -18,4 +18,6 @@
 
   # programs.seahorse.enable = true;
   environment.systemPackages = [ pkgs.seahorse ];
+
+  xdg.portal.extraPortals = [ pkgs.gnome-keyring ];
 }
