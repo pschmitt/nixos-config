@@ -30,7 +30,7 @@ in
 
   catppuccin = {
     enable = true;
-    autoEnable = true;
+    autoEnable = false;
   };
 
   # catppuccin = {
