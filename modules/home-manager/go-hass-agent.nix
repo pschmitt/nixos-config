@@ -16,6 +16,7 @@ let
     "ms-teams.sh"
     "obs.sh"
     "online-meeting.sh"
+    "playerctl.sh"
     "screencast.sh"
   ];
 
