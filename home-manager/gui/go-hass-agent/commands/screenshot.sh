@@ -29,7 +29,7 @@ prune_old_screenshots() {
 scp_screenshot() {
   local file="$1"
   local remote_file="${2:-$(basename "$1")}"
-  scp "$file" "hv:/media/hacompanion/${remote_file}" >&2
+  scp "$file" "hv:/media/go-hass-agent/${remote_file}" >&2
 }
 
 main() {
