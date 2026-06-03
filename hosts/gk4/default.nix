@@ -52,5 +52,4 @@
     MemorySleepMode = "deep";
   };
 
-  systemd.services.go-hass-agent.enable = lib.mkForce false;
 }
