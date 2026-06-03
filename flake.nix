@@ -104,11 +104,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hacompanion = {
-      url = "github:tobias-kuendig/hacompanion";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     # Hyprland and cie {{{
     hyprland = {
       # url = "github:hyprwm/Hyprland";
