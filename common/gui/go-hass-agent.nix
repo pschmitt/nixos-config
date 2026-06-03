@@ -38,7 +38,14 @@
     enable = true;
     description = "A Home Assistant, native app for desktop/laptop devices.";
     documentation = [ "https://github.com/joshuar/go-hass-agent" ];
-    after = [ "NetworkManager-wait-online.service" ];
+    after = [
+      "NetworkManager-wait-online.service"
+      # Wait for the user session manager so the D-Bus session bus socket
+      # (/run/user/1000/bus) exists before go-hass-agent starts. Without this
+      # the MPRIS worker and playerctl scripts cannot connect to the session bus.
+      "user@1000.service"
+    ];
+    wants = [ "user@1000.service" ];
     path = [
       "/etc/profiles/per-user/${config.mainUser.username}"
       "/run/current-system/sw"
@@ -47,12 +54,11 @@
       pkgs.coreutils
       pkgs.gawk
       pkgs.gnugrep
+      pkgs.playerctl
       pkgs.smartmontools
       pkgs.util-linux
     ];
 
-    # NOTE We probably need these 2 vars for playerctl
-    # We might also need to restart the service once the user session has started
     environment = {
       XDG_RUNTIME_DIR = "/run/user/1000";
       DBUS_SESSION_BUS_ADDRESS = "unix:path=/run/user/1000/bus";
