@@ -29,6 +29,7 @@ prune_old_screenshots() {
 scp_screenshot() {
   local file="$1"
   local remote_file="${2:-$(basename "$1")}"
+  ssh -o BatchMode=yes hv "mkdir -p /media/go-hass-agent" >&2
   scp "$file" "hv:/media/go-hass-agent/${remote_file}" >&2
 }
 
