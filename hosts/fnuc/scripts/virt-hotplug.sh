@@ -1,5 +1,9 @@
 #!/usr/bin/bash
 
+# Default to the system libvirt instance — required when running as a user
+# (user services otherwise connect to the session daemon, qemu:///session).
+export LIBVIRT_DEFAULT_URI="${LIBVIRT_DEFAULT_URI:-qemu:///system}"
+
 usage() {
   echo "Usage: $0 [--dry-run] [--force] [--domain DOMAIN] <add|remove> VENDOR_ID MODEL_ID"
 }
