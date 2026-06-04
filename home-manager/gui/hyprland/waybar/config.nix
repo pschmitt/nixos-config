@@ -41,8 +41,8 @@ in
         "on-click" = "activate";
         "all-outputs" = false;
         "sort-by-number" = true;
-        "on-scroll-up" = "hyprctl dispatch workspace e+1";
-        "on-scroll-down" = "hyprctl dispatch workspace e-1";
+        "on-scroll-up" = "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e+1\" })'";
+        "on-scroll-down" = "hyprctl dispatch 'hl.dsp.focus({ workspace = \"e-1\" })'";
         "persistent_workspaces" = {
           "1" = [ ];
           "2" = [ ];

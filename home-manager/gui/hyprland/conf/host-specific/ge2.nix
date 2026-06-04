@@ -1,17 +1,23 @@
 { lib, ... }:
+let
+  inherit (lib.generators) mkLuaInline;
+in
 {
-  wayland.windowManager.hyprland.settings = {
-    "exec-once" = lib.mkBefore (
-      let
-        workspaceDispatches = [
-          "moveworkspacetomonitor 1 desc:LG"
-          "moveworkspacetomonitor 2 desc:Lenovo"
-          "focusmonitor desc:LG"
-          "workspace 1"
-        ];
-      in
-      (map (cmd: "hyprctl dispatch ${cmd}") workspaceDispatches)
-      ++ [ "zhj pulseaudio::mute-default-source" ]
-    );
-  };
+  # ge2: pin workspaces to the right monitors on startup.
+  wayland.windowManager.hyprland.settings.on = [
+    {
+      _args = [
+        "hyprland.start"
+        (mkLuaInline ''
+          function()
+              hl.dispatch(hl.dsp.workspace.move({ workspace = 1, monitor = "desc:LG" }))
+              hl.dispatch(hl.dsp.workspace.move({ workspace = 2, monitor = "desc:Lenovo" }))
+              hl.dispatch(hl.dsp.focus({ monitor = "desc:LG" }))
+              hl.dispatch(hl.dsp.focus({ workspace = 1 }))
+              hl.exec_cmd("zhj pulseaudio::mute-default-source")
+          end
+        '')
+      ];
+    }
+  ];
 }

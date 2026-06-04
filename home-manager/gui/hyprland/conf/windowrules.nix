@@ -1,40 +1,88 @@
-{ lib, ... }:
 {
-  # Docs: https://wiki.hyprland.org/Configuring/Window-Rules/.
-  wayland.windowManager.hyprland.settings = lib.mkMerge [
-    {
-      # Helpful aliases for window classes/titles (from windowrules.conf).
-      "$firefox_pip" = "match:class ^(firefox)$, match:title ^(Picture-in-Picture)$";
-      "$firefox_sharing" = "match:class ^(firefox)$, match:title ^(.*Sharing Indicator)$";
-      "$xdph" = "match:class ^(hyprland-share-picker)$";
-      "$zoom" = "match:class ^(zoom)$";
-      "$gcr" = "match:class ^(gcr-prompter)$";
-      "$peeppee" = "match:class ^.*(-peepee)$";
-      "$porn" = "match:title (?i).*porn.*";
-      "$bitwarden" = "match:title (?i).*bitwarden.*";
+  # Window rules -> hl.window_rule({ match = { ... }, ... }).
+  # Docs: https://wiki.hypr.land/Configuring/Window-Rules/
+  wayland.windowManager.hyprland.settings.window_rule =
+    let
+      pip = {
+        class = "^(firefox)$";
+        title = "^(Picture-in-Picture)$";
+      };
+      sharing = {
+        class = "^(firefox)$";
+        title = "^(.*Sharing Indicator)$";
+      };
+      xdph.class = "^(hyprland-share-picker)$";
+      zoom.class = "^(zoom)$";
+      gcr.class = "^(gcr-prompter)$";
+      peeppee.class = "^.*(-peepee)$";
+      porn.title = "(?i).*porn.*";
+      bitwarden.title = "(?i).*bitwarden.*";
+    in
+    [
+      # Firefox PiP: float + pin
+      {
+        match = pip;
+        float = true;
+      }
+      {
+        match = pip;
+        pin = true;
+      }
 
-      windowrule = [
-        # Floating/PiP helpers.
-        "float on, $firefox_pip"
-        "pin on, $firefox_pip"
-        # Firefox sharing indicator should never steal focus or resize things.
-        "float on, $firefox_sharing"
-        "suppress_event fullscreen, $firefox_sharing"
-        "suppress_event maximize, $firefox_sharing"
-        # windowrulev2 pin for $firefox_sharing stayed commented-out upstream.
-        # Share-picker + Zoom quirks.
-        "pin on, $xdph"
-        "suppress_event fullscreen, $zoom"
-        # GNOME keyring prompt rules.
-        "pin on, $gcr"
-        "stay_focused on, $gcr"
-        "no_screen_share on, $gcr"
-        # Sensitive applications should never be shared.
-        "no_screen_share on, match:tag noscreenshare"
-        "no_screen_share on, $peeppee"
-        "no_screen_share on, $porn"
-        "no_screen_share on, $bitwarden"
-      ];
-    }
-  ];
+      # Firefox sharing indicator: never steal focus or trigger fullscreen
+      {
+        match = sharing;
+        float = true;
+      }
+      {
+        match = sharing;
+        suppress_event = "fullscreen";
+      }
+      {
+        match = sharing;
+        suppress_event = "maximize";
+      }
+
+      # Share picker + Zoom quirks
+      {
+        match = xdph;
+        pin = true;
+      }
+      {
+        match = zoom;
+        suppress_event = "fullscreen";
+      }
+
+      # GNOME keyring prompt
+      {
+        match = gcr;
+        pin = true;
+      }
+      {
+        match = gcr;
+        stay_focused = true;
+      }
+      {
+        match = gcr;
+        no_screen_share = true;
+      }
+
+      # Sensitive applications should never be shared
+      {
+        match.tag = "noscreenshare";
+        no_screen_share = true;
+      }
+      {
+        match = peeppee;
+        no_screen_share = true;
+      }
+      {
+        match = porn;
+        no_screen_share = true;
+      }
+      {
+        match = bitwarden;
+        no_screen_share = true;
+      }
+    ];
 }
