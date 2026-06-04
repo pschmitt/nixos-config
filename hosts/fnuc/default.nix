@@ -11,6 +11,8 @@
     ../../home-manager/devel/claude-remote.nix
     ../../home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
+
+    ./kvm-usb.nix
   ];
 
   domains.main = "brkn.lol";
