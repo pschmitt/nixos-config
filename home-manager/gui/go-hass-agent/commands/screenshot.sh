@@ -3,7 +3,7 @@
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--quiet]
+Usage: $(basename "$0") [--notify]
 EOF
 }
 
@@ -35,7 +35,7 @@ scp_screenshot() {
 
 main() {
   set -euo pipefail
-  local quiet=""
+  local notify=""
 
   while [[ -n "${1:-}" ]]
   do
@@ -44,8 +44,8 @@ main() {
         usage
         return 0
         ;;
-      -q|--quiet)
-        quiet=1
+      -n|--notify)
+        notify=1
         shift
         ;;
       *)
@@ -66,11 +66,11 @@ main() {
   local file=""
   file="${dest}/${hostname}-$(date -Iseconds).png"
 
-  if [[ -z "${quiet}" ]]
-  then
-    notify-send "TOOK A SCREENSHOT"
-  fi
   screenshot "$file"
+  if [[ -n "${notify}" ]]
+  then
+    notify-send "Screenshot saved"
+  fi
   ln -sf "$file" "$dest/latest-${hostname}.png"
 
   local remote_file="${hostname}.png"
