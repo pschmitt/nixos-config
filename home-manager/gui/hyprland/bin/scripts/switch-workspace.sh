@@ -18,11 +18,11 @@ switch_to_previous_ws() {
 
   if [[ -z "$previous_ws" ]]
   then
-    echo "No previous workspace found, defaulting to hyprctl dispatch workspace previous" >&2
+    echo "No previous workspace found, defaulting to the 'previous' workspace selector" >&2
     previous_ws="previous"
   fi
 
-  hyprctl dispatch workspace "$previous_ws"
+  hyprctl dispatch "hl.dsp.focus({ workspace = '$previous_ws' })"
 }
 
 switch_to_ws() {
@@ -35,7 +35,7 @@ switch_to_ws() {
     return "$?"
   fi
 
-  hyprctl dispatch workspace "$1"
+  hyprctl dispatch "hl.dsp.focus({ workspace = $1 })"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

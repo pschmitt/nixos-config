@@ -150,7 +150,7 @@ toggle_scratchpad() {
     # --batch does not work with exec rules
     # https://github.com/hyprwm/Hyprland/issues/1820
     # hyprctl --batch "dispatch exec [${rules_str}] ${cmd}${batch[*]}"
-    hyprctl dispatch exec -- "[${rules_str}] ${cmd[*]@Q}"
+    hyprctl dispatch "hl.dsp.exec_cmd([=[[${rules_str}] ${cmd[*]@Q}]=])"
     local rc="$?"
 
     if [[ -n "${batch[*]}" ]]
@@ -190,7 +190,7 @@ toggle_scratchpad() {
     for addr in "${win_addrs[@]}"
     do
       echo "Setting window $addr to floating"
-      hyprctl dispatch togglefloating "address:$addr"
+      hyprctl dispatch "hl.dsp.window.float({ action = 'toggle', window = 'address:$addr' })"
     done
   fi
 
@@ -199,7 +199,7 @@ toggle_scratchpad() {
     for addr in "${win_addrs[@]}"
     do
       echo "Hiding windows of class '$class' (addr: $addr)"
-      hyprctl dispatch movetoworkspacesilent "special,address:$addr"
+      hyprctl dispatch "hl.dsp.window.move({ workspace = 'special', window = 'address:$addr', follow = false })"
     done
     return "$?"
   fi
@@ -215,12 +215,12 @@ toggle_scratchpad() {
 
   for addr in "${win_addrs[@]}"
   do
-    batch+=("dispatch movetoworkspace ${current_ws},address:${addr}")
+    batch+=("dispatch hl.dsp.window.move({ workspace = ${current_ws}, window = 'address:${addr}' })")
   done
 
   if [[ -n "$center" ]]
   then
-    batch+=("dispatch centerwindow")
+    batch+=("dispatch hl.dsp.window.center()")
   fi
 
   if [[ -n "$alpha" ]]

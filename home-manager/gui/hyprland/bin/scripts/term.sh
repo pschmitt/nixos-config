@@ -6,7 +6,7 @@ hyprctl() {
 }
 
 hyprctl::exec() {
-  hyprctl dispatch exec -- "$@"
+  hyprctl dispatch "hl.dsp.exec_cmd([[$*]])"
 }
 
 has() {

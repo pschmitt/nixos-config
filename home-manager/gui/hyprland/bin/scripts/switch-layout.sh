@@ -9,7 +9,8 @@ switch_to_layout() {
 
   echo "Switching to $layout"
 
-  hyprctl keyword general:layout "$layout"
+  # "keyword" only works with legacy (hyprlang) configs, use eval
+  hyprctl eval "hl.config({ general = { layout = '$layout' } })"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

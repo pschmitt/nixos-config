@@ -2,7 +2,7 @@
 
 pypr_reset() {
   killall pypr
-  hyprctl dispatch exec -- pypr
+  hyprctl dispatch "hl.dsp.exec_cmd('pypr')"
 }
 
 hyprctl() {
@@ -23,7 +23,7 @@ source_file() {
   focus="$(awk -F ' ?= ?' '/^focusmonitor/ { print $2; exit }' "$config_file")"
   if [[ -n "$focus" ]]
   then
-    hyprctl dispatch focusmonitor "$focus"
+    hyprctl dispatch "hl.dsp.focus({ monitor = '$focus' })"
   fi
 }
 
