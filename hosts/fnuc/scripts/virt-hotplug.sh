@@ -5,7 +5,7 @@ usage() {
 }
 
 device_is_attached() {
-  sudo virsh dumpxml "$VIRSH_DOMAIN" | \
+  virsh dumpxml "$VIRSH_DOMAIN" | \
     tr -d '[:space:]' | \
     rg -q "<vendorid='0x${VENDOR_ID}'/><productid='0x${MODEL_ID}'/>"
 }
@@ -40,11 +40,11 @@ attach_device() {
   if [[ -n $FORCE ]]
   then
     echo "Force reattaching USB device: $VENDOR_ID:$MODEL_ID on domain: $VIRSH_DOMAIN" >&2
-    sudo virsh detach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML" || true
+    virsh detach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML" || true
   fi
 
   echo "Attaching USB device: $VENDOR_ID:$MODEL_ID to domain: $VIRSH_DOMAIN" >&2
-  sudo virsh attach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML"
+  virsh attach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML"
 }
 
 detach_device() {
@@ -61,7 +61,7 @@ detach_device() {
   fi
 
   echo "Removing USB device: $VENDOR_ID:$MODEL_ID from domain: $VIRSH_DOMAIN" >&2
-  sudo virsh detach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML"
+  virsh detach-device --live "$VIRSH_DOMAIN" /dev/stdin <<< "$XML"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
