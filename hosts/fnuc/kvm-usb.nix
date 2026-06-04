@@ -71,6 +71,12 @@ let
 
       VIRSH_DOMAIN="''${VIRSH_DOMAIN:-${virshDomain}}"
       SLEEP_INTERVAL="''${SLEEP_INTERVAL:-${toString checkInterval}}"
+
+      # Must be exported so every virsh call (including direct ones in
+      # list_attached_usb_devices) hits the system daemon, not the user
+      # session daemon (qemu:///session) that would be the default for a
+      # user service.
+      export LIBVIRT_DEFAULT_URI="''${LIBVIRT_DEFAULT_URI:-qemu:///system}"
       # -----------------------------------------------------------------------
 
       ${builtins.readFile ./scripts/kvm-usb-passthrough-logic.sh}
