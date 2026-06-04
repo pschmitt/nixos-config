@@ -9,6 +9,7 @@
     ./dotool.nix
     ./go-hass-agent
     ./gnome-keyring.nix
+    ./home-assistant-secrets.nix
     # ./clipcascade.nix
     ./media.nix
     ./notes.nix
