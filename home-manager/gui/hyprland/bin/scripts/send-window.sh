@@ -45,15 +45,15 @@ send_window() {
   then
     local win_addr
     win_addr=$(hyprctl -j activewindow | jq -r .address)
-    hyprctl dispatch movewindow "mon:$target_monitor"
-    hyprctl dispatch focuswindow "address:$win_addr"
+    hyprctl dispatch "hl.dsp.window.move({ monitor = '$target_monitor' })"
+    hyprctl dispatch "hl.dsp.focus({ window = 'address:$win_addr' })"
   else
     case "$direction" in
       l|u)
-        hyprctl dispatch movetoworkspace -1
+        hyprctl dispatch "hl.dsp.window.move({ workspace = '-1' })"
         ;;
       r|d)
-        hyprctl dispatch movetoworkspace +1
+        hyprctl dispatch "hl.dsp.window.move({ workspace = '+1' })"
         ;;
     esac
   fi

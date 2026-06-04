@@ -109,7 +109,7 @@ then
 
   if [[ -n "$FLOAT" || -n "$CENTER" ]] && ! is_floating <<< "$WINDOW_DATA"
   then
-    hyprctl dispatch togglefloating "address:$WINDOW_ADDR"
+    hyprctl dispatch "hl.dsp.window.float({ action = 'toggle', window = 'address:$WINDOW_ADDR' })"
   fi
 
   read -r \
@@ -121,8 +121,7 @@ then
   # width and height are percentages
   WINDOW_WIDTH="$(awk -v mw="$MONITOR_WIDTH" -v pct="$WIDTH" 'BEGIN { printf("%.0f", mw * pct / 100) }')"
   WINDOW_HEIGHT="$(awk -v mh="$MONITOR_HEIGHT" -v pct="$HEIGHT" 'BEGIN { printf("%.0f", mh * pct / 100) }')"
-  # NOTE Do not put a space after the comma!
-  hyprctl dispatch "resizewindowpixel exact $WINDOW_WIDTH $WINDOW_HEIGHT,address:$WINDOW_ADDR"
+  hyprctl dispatch "hl.dsp.window.resize({ x = $WINDOW_WIDTH, y = $WINDOW_HEIGHT, window = 'address:$WINDOW_ADDR' })"
 
   if [[ -n "$CENTER" ]]
   then
@@ -149,6 +148,6 @@ then
 
   if [[ -n "$WINDOW_POS_X" && -n "$WINDOW_POS_Y" ]]
   then
-    hyprctl dispatch "movewindowpixel exact ${WINDOW_POS_X} ${WINDOW_POS_Y},address:${WINDOW_ADDR}"
+    hyprctl dispatch "hl.dsp.window.move({ x = ${WINDOW_POS_X}, y = ${WINDOW_POS_Y}, window = 'address:${WINDOW_ADDR}' })"
   fi
 fi
