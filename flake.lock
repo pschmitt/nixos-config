@@ -1409,15 +1409,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1779120423,
-        "narHash": "sha256-rVLdIs67in1fhaatayWrLu+kCOJ0cveKze/BRjYtxRw=",
+        "lastModified": 1780539343,
+        "narHash": "sha256-6mNS5ksSzlRctDn7diSuCWcBSzDxgKCHifcaIBBgVh8=",
         "owner": "horriblename",
         "repo": "hyprgrass",
-        "rev": "c9968ba79b3537eff127d6ab6df767d76f17544a",
+        "rev": "b8dbb39dedd7f6e9221ca8823447cfd39495e9f2",
         "type": "github"
       },
       "original": {
         "owner": "horriblename",
+        "ref": "lua-func",
         "repo": "hyprgrass",
         "type": "github"
       }

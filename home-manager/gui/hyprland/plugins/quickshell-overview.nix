@@ -1,4 +1,8 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
+let
+  h = import ../lua-helpers.nix { inherit lib; };
+  inherit (h) execBind;
+in
 {
   systemd.user.services.quickshell-overview = {
     Unit = {
@@ -19,12 +23,12 @@
   };
 
   wayland.windowManager.hyprland.settings = {
-    bind = [ "$mod, tab, exec, ${pkgs.quickshell-overview}/bin/quickshell-overview-ipc" ];
+    bind = [
+      (execBind "SUPER + tab" "${pkgs.quickshell-overview}/bin/quickshell-overview-ipc")
+    ];
 
     # dim around the preview
-    decoration = {
-      dim_around = 0.8;
-    };
+    config.decoration.dim_around = 0.8;
     # layerrule = "dimaround, quickshell:overview";
   };
 }

@@ -109,7 +109,7 @@ move_window() {
 
   if has_window_on_workspace_in_direction "$direction"
   then
-    hyprctl dispatch swapwindow "$direction"
+    hyprctl dispatch "hl.dsp.window.swap({ direction = '$direction' })"
     return
   fi
 
@@ -117,7 +117,7 @@ move_window() {
   then
     local geom_before geom_after
     geom_before=$(hyprctl -j activewindow | jq -r '"\(.at[0]) \(.at[1]) \(.size[0]) \(.size[1])"')
-    hyprctl dispatch movewindow "$direction"
+    hyprctl dispatch "hl.dsp.window.move({ direction = '$direction' })"
     geom_after=$(hyprctl -j activewindow | jq -r '"\(.at[0]) \(.at[1]) \(.size[0]) \(.size[1])"')
     [[ "$geom_before" != "$geom_after" ]] && return
   fi
@@ -126,13 +126,13 @@ move_window() {
   then
     local x_before y_before x_after y_after
     read -r x_before y_before < <(hyprctl -j activewindow | jq -r '"\(.at[0]) \(.at[1])"')
-    hyprctl dispatch layoutmsg togglesplit
+    hyprctl dispatch "hl.dsp.layout('togglesplit')"
     read -r x_after y_after < <(hyprctl -j activewindow | jq -r '"\(.at[0]) \(.at[1])"')
     case "$direction" in
-      l) [[ "$x_after" -gt "$x_before" ]] && hyprctl dispatch swapwindow l ;;
-      r) [[ "$x_after" -lt "$x_before" ]] && hyprctl dispatch swapwindow r ;;
-      u) [[ "$y_after" -gt "$y_before" ]] && hyprctl dispatch swapwindow u ;;
-      d) [[ "$y_after" -lt "$y_before" ]] && hyprctl dispatch swapwindow d ;;
+      l) [[ "$x_after" -gt "$x_before" ]] && hyprctl dispatch "hl.dsp.window.swap({ direction = 'l' })" ;;
+      r) [[ "$x_after" -lt "$x_before" ]] && hyprctl dispatch "hl.dsp.window.swap({ direction = 'r' })" ;;
+      u) [[ "$y_after" -gt "$y_before" ]] && hyprctl dispatch "hl.dsp.window.swap({ direction = 'u' })" ;;
+      d) [[ "$y_after" -lt "$y_before" ]] && hyprctl dispatch "hl.dsp.window.swap({ direction = 'd' })" ;;
     esac
   fi
 }
