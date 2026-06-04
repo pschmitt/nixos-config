@@ -155,10 +155,17 @@ in
       context = ./CONTEXT.md;
       skills = codexSkills;
       enableMcpIntegration = true;
-      # settings = {
-      #   model = "gpt-5.4";
-      #   model_reasoning_effort = "medium";
-      # };
+      settings = {
+        projects = {
+          "/etc/nixos".trust_level = "trusted";
+          "/mnt/hass".trust_level = "trusted";
+          "${config.home.homeDirectory}".trust_level = "trusted";
+          "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
+        };
+
+        # model = "gpt-5.4";
+        # model_reasoning_effort = "medium";
+      };
     };
 
     gemini-cli = {
