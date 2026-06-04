@@ -58,7 +58,7 @@ let
     runtimeInputs = [
       pkgs.jq
       pkgs.usbutils
-      pkgs.yq
+      pkgs.yq-go
       virtHotplug
     ];
     # SC2294: eval is intentional for user-supplied callback strings
