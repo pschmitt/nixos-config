@@ -1,4 +1,8 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -20,5 +24,5 @@
     firewall.enable = false;
   };
 
-  systemd.services.go-hass-agent.enable = lib.mkForce false;
+  home-manager.users.${config.mainUser.username}.services.go-hass-agent.enable = lib.mkForce false;
 }

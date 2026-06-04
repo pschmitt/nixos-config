@@ -5,13 +5,13 @@ main() {
   set -uo pipefail
 
   local state=false
-  local icon="mdi:vault-lock"
+  # NOTE cbi: requires the custom-brand-icons HACS frontend module
+  local icon="cbi:bitwarden"
   local message="rbw is locked"
 
   if ECHO_NO_COLOR=1 ECHO_NO_EMOJI=1 rbw unlocked >/dev/null 2>&1
   then
     state=true
-    icon="mdi:vault"
     message="rbw is unlocked"
   fi
 

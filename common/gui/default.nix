@@ -15,7 +15,6 @@
     # services
     ./flatpak.nix
     ./gnome-keyring.nix
-    ./go-hass-agent.nix
     ./libvirt.nix
     ./services.nix
     ./snapper.nix
