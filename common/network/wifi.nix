@@ -1,4 +1,9 @@
-{ lib, config, ... }:
+{
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 let
   # define your networks once
@@ -131,6 +136,8 @@ let
 in
 {
   networking.networkmanager.enable = true;
+
+  environment.systemPackages = [ pkgs.iw ];
 
   sops.secrets = nmSecrets;
 
