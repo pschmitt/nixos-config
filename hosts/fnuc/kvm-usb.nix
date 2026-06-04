@@ -1,11 +1,86 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 let
-  # Core virsh hotplug helper — vendored from ~/devel/kvm/usb/virt-hotplug.sh.
-  # Uses `sudo virsh` which must be in sudo's secure_path on fnuc.
+  # ---------------------------------------------------------------------------
+  # USB device registry
+  # Edit here to add/remove devices — no need to touch any shell script.
+  # ---------------------------------------------------------------------------
+  virshDomain = "home-assistant";
+  checkInterval = 10; # seconds between passthrough checks
+
+  usbDevices = {
+    eaton-ups = "0463:ffff";
+    # Google Coral changes USB ID depending on firmware state:
+    # https://github.com/google-coral/edgetpu/issues/536
+    google-coral-1 = "1a6e:089a";
+    google-coral-2 = "18d1:9302";
+    # Home Assistant Connect ZBT-2 (Zigbee)
+    zbt-2 = "303a:831a";
+    # Home Assistant Connect ZWA-2 (Z-Wave)
+    zwa-2 = "303a:4001";
+    # Sonoff Zigbee 3.0 USB Dongle Plus-E (running Thread firmware)
+    zbdongle-e = "1a86:55d4";
+    # Everspring SA413-1 Z-Wave Plus dongle
+    zwave-stick = "0658:0200";
+  };
+
+  # Callbacks run after a device is successfully (re-)attached.
+  # Keys must match a key in usbDevices exactly.
+  # Example: callbacks = { zbdongle-e = "zhj hass::reload-integration sms"; };
+  callbacks = { };
+
+  # ---------------------------------------------------------------------------
+  # Helpers
+  # ---------------------------------------------------------------------------
+
+  # Prerequisite: pschmitt must be in the 'libvirt' group so virsh works
+  # without sudo.  Run once on fnuc:
+  #   sudo usermod -aG libvirt pschmitt
+  # Also enable lingering so the user service survives without an active
+  # login session:
+  #   loginctl enable-linger pschmitt
   virtHotplug = pkgs.writeShellScriptBin "virt-hotplug" (builtins.readFile ./scripts/virt-hotplug.sh);
 
+  # Generates a bash `declare -A name=( [key]="val" ... )` block.
+  mkBashAssocArray =
+    name: attrs:
+    let
+      entries = lib.mapAttrsToList (k: v: "  [${k}]=\"${v}\"") attrs;
+    in
+    "declare -A ${name}=(\n${lib.concatStringsSep "\n" entries}\n)";
+
+  # ---------------------------------------------------------------------------
+  # kvm-usb-ensure-passthrough
+  # Checks that every device in usbDevices is connected to the host and
+  # attached to the KVM domain; re-attaches any that are missing.
+  # ---------------------------------------------------------------------------
+  ensurePassthrough = pkgs.writeShellApplication {
+    name = "kvm-usb-ensure-passthrough";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.usbutils
+      pkgs.yq
+      virtHotplug
+    ];
+    # SC2294: eval is intentional for user-supplied callback strings
+    excludeShellChecks = [ "SC2294" ];
+    text = ''
+      # --- generated from kvm-usb.nix — edit there, not here ----------------
+      ${mkBashAssocArray "USB_DEVICES" usbDevices}
+
+      ${mkBashAssocArray "CALLBACKS" callbacks}
+
+      VIRSH_DOMAIN="''${VIRSH_DOMAIN:-${virshDomain}}"
+      SLEEP_INTERVAL="''${SLEEP_INTERVAL:-${toString checkInterval}}"
+      # -----------------------------------------------------------------------
+
+      ${builtins.readFile ./scripts/kvm-usb-passthrough-logic.sh}
+    '';
+  };
+
+  # ---------------------------------------------------------------------------
   # Generic replug: kvm-usb-replug [-d DOMAIN] [vendor:product...]
   # With no device IDs and a TTY: interactive fzf picker from lsusb output.
+  # ---------------------------------------------------------------------------
   kvmUsbReplug = pkgs.writeShellApplication {
     name = "kvm-usb-replug";
     runtimeInputs = [
@@ -28,7 +103,7 @@ let
         echo ""
         echo "Options:"
         echo "  -h, --help            Show this help"
-        echo "  -d, --domain DOMAIN   KVM domain name (default: home-assistant)"
+        echo "  -d, --domain DOMAIN   KVM domain name (default: ${virshDomain})"
         echo ""
         echo "Examples:"
         echo "  $0                              # interactive fzf picker"
@@ -37,7 +112,7 @@ let
         echo "  $0 --domain my-vm 303a:4001     # replug in a different KVM domain"
       }
 
-      VIRSH_DOMAIN="''${VIRSH_DOMAIN:-home-assistant}"
+      VIRSH_DOMAIN="''${VIRSH_DOMAIN:-${virshDomain}}"
 
       while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -98,11 +173,11 @@ let
           -h | --help)
             echo "Usage: $0 [-h|--help] [-d|--domain DOMAIN]"
             echo ""
-            echo "Re-plug USB device ${id} passed through to the home-assistant KVM domain on fnuc."
+            echo "Re-plug USB device ${id} passed through to the ${virshDomain} KVM domain on fnuc."
             echo ""
             echo "Options:"
             echo "  -h, --help            Show this help"
-            echo "  -d, --domain DOMAIN   KVM domain name (default: home-assistant)"
+            echo "  -d, --domain DOMAIN   KVM domain name (default: ${virshDomain})"
             exit 0
             ;;
         esac
@@ -124,7 +199,7 @@ let
           echo ""
           echo "Options:"
           echo "  -h, --help            Show this help"
-          echo "  -d, --domain DOMAIN   KVM domain name (default: home-assistant)"
+          echo "  -d, --domain DOMAIN   KVM domain name (default: ${virshDomain})"
           exit 0
           ;;
       esac
@@ -141,6 +216,7 @@ in
 {
   home.packages = [
     virtHotplug
+    ensurePassthrough
     kvmUsbReplug
     replugCoral
     replugUps
@@ -148,4 +224,23 @@ in
     replugZbt2
     replugZwa2
   ];
+
+  # Systemd user service — replaces /etc/systemd/system/home-assistant-usb-passthrough.service.
+  # Requires:
+  #   sudo usermod -aG libvirt pschmitt   (virsh without sudo)
+  #   loginctl enable-linger pschmitt     (service survives without active session)
+  systemd.user.services.kvm-usb-passthrough = {
+    Unit = {
+      Description = "Home Assistant KVM USB Passthrough";
+      After = [ "default.target" ];
+    };
+    Service = {
+      ExecStart = "${ensurePassthrough}/bin/kvm-usb-ensure-passthrough --loop";
+      Restart = "always";
+      RestartSec = "30s";
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
 }
