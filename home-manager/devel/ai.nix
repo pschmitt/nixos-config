@@ -239,12 +239,13 @@ in
   #   };
 
   home = {
-    packages = with pkgs.master; [
+    packages = with pkgs.llm-agents; [
       # vscode forks
-      antigravity
+      # antigravity
       # code-cursor
 
       # cli
+      antigravity-cli
       # cursor-cli
       # kilocode-cli
 
