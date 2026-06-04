@@ -1,38 +1,38 @@
 {
   inputs,
-  lib,
   pkgs,
   ...
 }:
 {
+  # Touchscreen gestures (https://github.com/horriblename/hyprgrass), Lua API via
+  # PR #381 (lua-func branch).
+  #
+  # Load the plugin at RUNTIME via home-manager (hyprctl plugin load in the
+  # hyprland.start hook), NOT with hl.plugin.load at config-parse time — loading
+  # during parse blocks compositor init and makes the uwsm session time out.
+  # Loading a plugin triggers a config reload (PluginSystem.cpp), so the guarded
+  # block below re-runs once hl.plugin.hyprgrass exists and the config applies.
   wayland.windowManager.hyprland.plugins = [
-    # pkgs.hyprlandPlugins.hyprgrass
     inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 
-  wayland.windowManager.hyprland.settings.plugin.touch_gestures = lib.mkMerge [
-    (lib.mkDefault {
-      sensitivity = 6.0;
-      workspace_swipe_fingers = 3;
-      workspace_swipe_edge = "d";
-      long_press_delay = 400;
-      resize_on_border_long_press = true;
-      edge_margin = 10;
-      emulate_touchpad_swipe = true;
-    })
-    {
-      hyprgrass-bind = [
-        ", edge:d:u, exec, $bin_dir/toggle-soft-keyboard.sh"
-        ", swipe:4:d, killactive"
-        ", swipe:4:u, exec, kitty"
-        # FIXME
-        # ", pinch:3:i, killactive"
-        # ", pinch:3:o, exec, kitty"
-      ];
-      hyprgrass-bindm = [
-        ", longpress:2, movewindow"
-        ", longpress:3, resizewindow"
-      ];
-    }
-  ];
+  wayland.windowManager.hyprland.extraConfig = ''
+    if hl.plugin.hyprgrass then
+        hl.config({ plugin = { hyprgrass = {
+            sensitivity             = 6.0,
+            workspace_swipe_fingers = 3,
+            workspace_swipe_edge    = "d",
+            long_press_delay        = 400,
+            edge_margin             = 10,
+            resize_on_border_long_press = true,
+        } } })
+
+        hl.plugin.hyprgrass.bind({ gesture = "edge:d:u",  action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
+        hl.plugin.hyprgrass.bind({ gesture = "swipe:4:d", action = hl.dsp.window.kill() })
+        hl.plugin.hyprgrass.bind({ gesture = "swipe:4:u", action = hl.dsp.exec_cmd("kitty") })
+
+        hl.plugin.hyprgrass.bind({ gesture = "longpress:2", action = hl.dsp.window.drag(),   mouse = true })
+        hl.plugin.hyprgrass.bind({ gesture = "longpress:3", action = hl.dsp.window.resize(), mouse = true })
+    end
+  '';
 }
