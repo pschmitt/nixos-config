@@ -75,11 +75,19 @@ home-manager host='':
   BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh hm)"
   trap "rm -rf '$BUILD_DIR'" EXIT
 
+  OLD_PROFILE="$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null || true)"
+
   NIX_CONFIG='experimental-features = nix-command flakes' \
     nix run github:nix-community/home-manager -- \
       -b hm-backup \
       switch \
       --flake "${BUILD_DIR}#${TARGET_HOST}"
+
+  NEW_PROFILE="$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null || true)"
+  if [[ -n "$OLD_PROFILE" && -n "$NEW_PROFILE" && "$OLD_PROFILE" != "$NEW_PROFILE" ]]
+  then
+    nvd --color always diff "$OLD_PROFILE" "$NEW_PROFILE"
+  fi
 
 nix-update *args:
   ./scripts/nix-update.sh {{args}}
