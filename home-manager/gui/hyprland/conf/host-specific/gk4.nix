@@ -1,21 +1,22 @@
 { lib, ... }:
+let
+  h = import ../../lua-helpers.nix { inherit lib; };
+  inherit (h) execBind;
+in
 {
-  wayland.windowManager.hyprland.settings = lib.mkMerge [
-    {
-      bind = [
-        # fake f1 -> scratchpad terminal
-        # NOTE We might want to consider to set:
-        # resolve_binds_by_sym = 1
-        # -> would make this keybind less keymap-dependent.
-        # We'd then map on "grave" instead of dead_circumflex.
-        "CTRL, dead_circumflex, exec, $bin_dir/scratchpad.sh term"
-        "CTRL, escape, exec, $bin_dir/scratchpad.sh term"
-      ];
-      input.touchdevice = {
-        enabled = true;
-        output = "eDP-1";
-        transform = 3;
-      };
-    }
-  ];
+  wayland.windowManager.hyprland.settings = {
+    # fake F1 (dead_circumflex) -> scratchpad terminal.
+    # NOTE: resolve_binds_by_sym = 1 would make this less keymap-dependent
+    #       (bind "grave" instead of dead_circumflex).
+    bind = [
+      (execBind "CTRL + dead_circumflex" "~/.config/hypr/bin/scratchpad.sh term")
+      (execBind "CTRL + escape" "~/.config/hypr/bin/scratchpad.sh term")
+    ];
+
+    config.input.touchdevice = {
+      enabled = true;
+      output = "eDP-1";
+      transform = 3;
+    };
+  };
 }
