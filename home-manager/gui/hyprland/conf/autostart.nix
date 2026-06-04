@@ -1,5 +1,7 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 let
+  inherit (lib.generators) mkLuaInline;
+
   hyprSymlink = pkgs.writeShellScriptBin "hypr-symlink-runtime" ''
     if [[ -z "''${HYPRLAND_INSTANCE_SIGNATURE:-}" || -z "''${XDG_RUNTIME_DIR:-}" ]]
     then
@@ -36,10 +38,26 @@ in
     pkgs.xhost
   ];
 
-  wayland.windowManager.hyprland.settings."exec-once" = [
-    "systemd-cat --identifier=hyprland-startup ${hyprSymlink}/bin/hypr-symlink-runtime"
-    "systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env"
-    "systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock"
-    "systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui"
+  # exec-once equivalent: run helpers once when the compositor starts.
+  wayland.windowManager.hyprland.settings.on = [
+    {
+      _args = [
+        "hyprland.start"
+        (mkLuaInline ''
+          function()
+              -- Propagate graphical session variables to systemd/DBus.
+              hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
+              -- Symlink the Hyprland runtime socket dir into XDG_DATA_HOME.
+              hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprSymlink}/bin/hypr-symlink-runtime")
+              -- Re-export Wayland env into the running tmux session.
+              hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprTmuxEnv}/bin/hypr-tmux-env")
+              -- Auto-unlock the GNOME keyring.
+              hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock")
+              -- Allow root GUI apps access to the X display.
+              hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui")
+          end
+        '')
+      ];
+    }
   ];
 }

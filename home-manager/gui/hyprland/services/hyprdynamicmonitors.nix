@@ -14,8 +14,6 @@ let
     inputs.hyprdynamicmonitors.packages.${pkgs.stdenv.hostPlatform.system}.default;
   callbackScriptPath = "${config.home.homeDirectory}/.config/hyprdynamicmonitors/profile-callback.sh";
   callbackScriptEscaped = escapeShellArg callbackScriptPath;
-  hyprConfigAutoreloadDisabled =
-    config.wayland.windowManager.hyprland.settings.misc.disable_autoreload or false;
 
   callbackScript = pkgs.writeShellScript "hyprdynamicmonitors-profile-callback.sh" ''
     set -euo pipefail
@@ -23,7 +21,6 @@ let
     STATE_BASE="''${XDG_CACHE_HOME:-''${HOME}/.cache}"
     STATEFILE="$STATE_BASE/hyprdynamicmonitors/current-state.json"
     JQ_BIN=${pkgs.jq}/bin/jq
-    MANUAL_RELOAD_REQUIRED="${if hyprConfigAutoreloadDisabled then "1" else ""}"
 
     usage() {
       echo "Usage: $0 save|get [STATE]"
@@ -65,10 +62,9 @@ let
             exit 2
           fi
           save-state "$2"
-          if [[ -n "$MANUAL_RELOAD_REQUIRED" ]]
-          then
-            hyprctl reload
-          fi
+          # monitors.lua is loaded via require(); Hyprland's autoreload does not
+          # watch required Lua modules, so reload explicitly on profile switch.
+          hyprctl reload
           ;;
         get|retrieve)
           get-state
@@ -86,12 +82,17 @@ let
   hostName = if osConfig != null then osConfig.networking.hostName or "" else "";
   isGk4 = hostName == "gk4";
 
-  laptopMonitorAutoSettings =
-    if isGk4 then "preferred,auto,1.666,transform,3" else "preferred,auto,1";
-  laptopMonitorOriginSettings =
-    if isGk4 then "preferred,0x0,1.666,transform,3" else "preferred,0x0,1";
-  laptopMonitorExternalPlacementSettings =
-    if isGk4 then "preferred,auto-right,1.666,transform,3" else "preferred,auto-right,1";
+  # Lua table fields for laptop monitor modes (injected into hl.monitor({...})).
+  laptopMonitorAuto =
+    if isGk4 then
+      ''mode = "preferred", position = "auto",       scale = 1.666, transform = 3''
+    else
+      ''mode = "preferred", position = "auto",       scale = 1'';
+  laptopMonitorOrigin =
+    if isGk4 then
+      ''mode = "preferred", position = "0x0",        scale = 1.666, transform = 3''
+    else
+      ''mode = "preferred", position = "0x0",        scale = 1'';
 
   callbackCommand = profile: "${callbackScriptEscaped} set ${escapeShellArg profile}";
 
@@ -122,18 +123,18 @@ let
     };
   };
 
-  # Helper to create templates with common suffix to disable extra monitors
+  # Lua template; appends disable rules for any extra monitors.
   mkTmpl =
     name: content:
     tmpl "${name}.go.tmpl" ''
       ${content}
       {{- range .ExtraMonitors }}
-      monitor={{.Name}},disable
+      hl.monitor({ output = "{{.Name}}", disabled = true })
       {{- end }}
     '';
 
-  fallbackConfig = tmpl "hyprdynamicmonitors-fallback.conf" ''
-    monitor=,preferred,auto,1
+  fallbackConfig = tmpl "hyprdynamicmonitors-fallback.lua" ''
+    hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
   '';
 
   # Profile configurations: name -> { tags, content }
@@ -142,7 +143,7 @@ let
       tags = [ "laptop" ];
       content = ''
         {{- $laptop := index .MonitorsByTag "laptop" -}}
-        monitor={{$laptop.Name}},${laptopMonitorAutoSettings}
+        hl.monitor({ output = "{{$laptop.Name}}", ${laptopMonitorAuto} })
       '';
     };
     "laptop-edp-m14" = {
@@ -153,8 +154,8 @@ let
       content = ''
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
-        monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
-        monitor={{$lenovo.Name}},preferred,auto-right,1
+        hl.monitor({ output = "{{$laptop.Name}}", ${laptopMonitorOrigin} })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "preferred", position = "auto-right", scale = 1 })
       '';
     };
     "laptop-lg-wqhd" = {
@@ -165,8 +166,8 @@ let
       content = ''
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
-        monitor={{$laptop.Name}},${laptopMonitorOriginSettings}
-        monitor={{$lg.Name}},3440x1440@60,auto-right,1
+        hl.monitor({ output = "{{$laptop.Name}}", ${laptopMonitorOrigin} })
+        hl.monitor({ output = "{{$lg.Name}}", mode = "3440x1440@60", position = "auto-right", scale = 1 })
       '';
     };
     "dual-display" = {
@@ -177,8 +178,8 @@ let
       content = ''
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
-        monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
+        hl.monitor({ output = "{{$lg.Name}}",     mode = "3440x1440@60", position = "0x0",     scale = 1 })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "1920x1080@60", position = "-1920x0", scale = 1 })
       '';
     };
     "dual-display-pikvm" = {
@@ -191,9 +192,9 @@ let
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
         {{- $pikvm := index .MonitorsByTag "pikvm" -}}
-        monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
-        monitor={{$pikvm.Name}},disable
+        hl.monitor({ output = "{{$lg.Name}}",     mode = "3440x1440@60", position = "0x0",     scale = 1 })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "1920x1080@60", position = "-1920x0", scale = 1 })
+        hl.monitor({ output = "{{$pikvm.Name}}", disabled = true })
       '';
     };
     "dual-display-pikvm-with-internal" = {
@@ -208,10 +209,10 @@ let
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
         {{- $pikvm := index .MonitorsByTag "pikvm" -}}
         {{- $laptop := index .MonitorsByTag "laptop" -}}
-        monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
-        monitor={{$pikvm.Name}},disable
-        monitor={{$laptop.Name}},disable
+        hl.monitor({ output = "{{$lg.Name}}",     mode = "3440x1440@60", position = "0x0",     scale = 1 })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "1920x1080@60", position = "-1920x0", scale = 1 })
+        hl.monitor({ output = "{{$pikvm.Name}}",  disabled = true })
+        hl.monitor({ output = "{{$laptop.Name}}", disabled = true })
       '';
     };
     "dual-display-no-internal" = {
@@ -224,9 +225,9 @@ let
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
         {{- $laptop := index .MonitorsByTag "laptop" -}}
-        monitor={{$lg.Name}},3440x1440@60,0x0,1
-        monitor={{$lenovo.Name}},1920x1080@60,-1920x0,1
-        monitor={{$laptop.Name}},disable
+        hl.monitor({ output = "{{$lg.Name}}",     mode = "3440x1440@60", position = "0x0",     scale = 1 })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "1920x1080@60", position = "-1920x0", scale = 1 })
+        hl.monitor({ output = "{{$laptop.Name}}", disabled = true })
       '';
     };
     "triple-display-stacked" = {
@@ -239,9 +240,9 @@ let
         {{- $laptop := index .MonitorsByTag "laptop" -}}
         {{- $lenovo := index .MonitorsByTag "lenovo_m14" -}}
         {{- $lg := index .MonitorsByTag "lg_wqhd" -}}
-        monitor={{$laptop.Name}},1920x1200@48,0x240,1
-        monitor={{$lg.Name}},3440x1440@59,1920x0,1
-        monitor={{$lenovo.Name}},1920x1080@60,986x1440,1
+        hl.monitor({ output = "{{$laptop.Name}}", mode = "1920x1200@48", position = "0x240",    scale = 1 })
+        hl.monitor({ output = "{{$lg.Name}}",     mode = "3440x1440@59", position = "1920x0",   scale = 1 })
+        hl.monitor({ output = "{{$lenovo.Name}}", mode = "1920x1080@60", position = "986x1440", scale = 1 })
       '';
     };
   };
@@ -259,7 +260,7 @@ let
       lib.nameValuePair "hyprdynamicmonitors/hyprconfigs/${name}.go.tmpl" (mkTmpl name cfg.content)
     ) profileConfigs)
     // {
-      "hyprdynamicmonitors/hyprconfigs/default.conf" = fallbackConfig;
+      "hyprdynamicmonitors/hyprconfigs/default.lua" = fallbackConfig;
     };
 in
 {
@@ -283,10 +284,11 @@ in
       enable = true;
       package = hyprdynamicmonitorsPkg;
       configFile = (pkgs.formats.toml { }).generate "hyprdynamicmonitors-config.toml" {
-        general.destination = "${config.xdg.configHome}/hypr/config.d/monitors.conf";
+        # Output Lua so hyprland.lua can pcall(require, "monitors").
+        general.destination = "${config.xdg.configHome}/hypr/monitors.lua";
         inherit profiles;
         fallback_profile = {
-          config_file = "hyprconfigs/default.conf";
+          config_file = "hyprconfigs/default.lua";
           config_file_type = "static";
           post_apply_exec = callbackCommand "default";
         };
@@ -295,9 +297,4 @@ in
       inherit extraFiles;
     };
   };
-
-  wayland.windowManager.hyprland.settings.source = [
-    # Include HyprDynamicMonitors output so Hyprland uses the generated layout.
-    "$config_dir/monitors.conf"
-  ];
 }
