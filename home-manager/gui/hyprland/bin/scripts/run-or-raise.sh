@@ -28,14 +28,14 @@ app_is_running() {
 
 focus_app() {
   # local class="$1" title="$2"
-  # hyprctl dispatch focuswindow "^(${class})\$"
+  # hyprctl dispatch "hl.dsp.focus({ window = '^(${class})\$' })"
   local addr="$1"
-  hyprctl dispatch focuswindow "address:$addr"
+  hyprctl dispatch "hl.dsp.focus({ window = 'address:$addr' })"
 }
 
 launch_app() {
   local cmd="$1"
-  hyprctl dispatch exec -- "$cmd"
+  hyprctl dispatch "hl.dsp.exec_cmd([[${cmd}]])"
 }
 
 

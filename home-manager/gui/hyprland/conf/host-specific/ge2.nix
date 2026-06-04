@@ -10,10 +10,10 @@ in
         "hyprland.start"
         (mkLuaInline ''
           function()
-              hl.exec_cmd("hyprctl dispatch moveworkspacetomonitor 1 desc:LG")
-              hl.exec_cmd("hyprctl dispatch moveworkspacetomonitor 2 desc:Lenovo")
-              hl.exec_cmd("hyprctl dispatch focusmonitor desc:LG")
-              hl.exec_cmd("hyprctl dispatch workspace 1")
+              hl.dispatch(hl.dsp.workspace.move({ workspace = 1, monitor = "desc:LG" }))
+              hl.dispatch(hl.dsp.workspace.move({ workspace = 2, monitor = "desc:Lenovo" }))
+              hl.dispatch(hl.dsp.focus({ monitor = "desc:LG" }))
+              hl.dispatch(hl.dsp.focus({ workspace = 1 }))
               hl.exec_cmd("zhj pulseaudio::mute-default-source")
           end
         '')

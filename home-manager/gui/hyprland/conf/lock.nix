@@ -1,7 +1,7 @@
 { lib, ... }:
 let
   h = import ../lua-helpers.nix { inherit lib; };
-  inherit (h) execBind execBindLocked;
+  inherit (h) bindOpts execBind execBindLocked;
   lock = "~/.config/hypr/bin/lock.sh";
 in
 {
@@ -12,7 +12,7 @@ in
       # locked = fires even while the screen is locked
       (execBindLocked "SUPER + CONTROL + ALT + L" ''~/bin/zhj "lockscreen::restart"'')
       (execBindLocked "switch:off:Lid Switch" lock)
-      (execBindLocked "switch:on:Lid Switch" "hyprctl dispatch dpms on")
+      (bindOpts "switch:on:Lid Switch" ''hl.dsp.dpms({ action = "on" })'' { locked = true; })
     ];
 
     window_rule = [

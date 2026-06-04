@@ -38,7 +38,7 @@ let
       ws = if key == "0" then 10 else lib.toInt key;
     in
     [
-      (execBind "SUPER + ${key}" "hyprctl dispatch moveworkspacetomonitor ${toString ws} current")
+      (bind "SUPER + ${key}" ''hl.dsp.workspace.move({ workspace = ${toString ws}, monitor = "current" })'')
       (execBind "SUPER + ${key}" "${bin}/switch-workspace.sh ${toString ws}")
       (bind "SUPER + SHIFT + ${key}" "hl.dsp.window.move({ workspace = ${toString ws} })")
     ]
@@ -70,8 +70,8 @@ in
       (bind "SUPER + P" "hl.dsp.window.pseudo()")
       (execBind "SUPER + SHIFT + comma" "${bin}/switch-layout.sh")
       (bind "SUPER + T" "hl.dsp.group.toggle()")
-      (execBind "SUPER + SHIFT + T" "hyprctl dispatch moveoutofgroup")
-      (execBind "SUPER + comma" "hyprctl dispatch changegroupactive")
+      (bind "SUPER + SHIFT + T" "hl.dsp.window.move({ out_of_group = true })")
+      (bind "SUPER + comma" "hl.dsp.group.next()")
 
       # ── Fullscreen ────────────────────────────────────────────────────
       (bind "SUPER + F" "hl.dsp.window.fullscreen({ mode = 0 })")

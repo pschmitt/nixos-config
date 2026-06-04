@@ -75,7 +75,7 @@ then
   APP_ADDRESS="$(app_address "${BROWSER_BIN}")"
   if [[ -z "$APP_ADDRESS" ]]
   then
-    hyprctl dispatch exec -- "${BROWSER}" "$URL"
+    hyprctl dispatch "hl.dsp.exec_cmd([[${BROWSER} ${URL}]])"
     sleep 2
   fi
 
@@ -98,5 +98,5 @@ then
 
   # append space so that we do not mess up the command
   [[ -n "$RULES" ]] && RULES="${RULES} "
-  hyprctl dispatch exec -- "${RULES}${BROWSER}" "${EXTRA_ARGS[@]}" "$URL"
+  hyprctl dispatch "hl.dsp.exec_cmd([[${RULES}${BROWSER} ${EXTRA_ARGS[*]} ${URL}]])"
 fi
