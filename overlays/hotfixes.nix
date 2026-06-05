@@ -77,6 +77,34 @@ in
   wireshark = fixWiresharkHash prev.wireshark;
   wireshark-cli = fixWiresharkHash prev.wireshark-cli;
 
+  # Waybar's hyprland/workspaces module hard-codes old Hyprlang-style
+  # dispatchers ("dispatch workspace N") which are invalid Lua and fail
+  # in Hyprland Lua config mode (configType = "lua").
+  # TODO: remove once Waybar ships native Lua dispatch support.
+  waybar = prev.waybar.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace src/modules/hyprland/workspace.cpp \
+        --replace-fail \
+          'dispatch focusworkspaceoncurrentmonitor " + std::to_string(id())' \
+          'dispatch hl.dsp.focus({ workspace = " + std::to_string(id()) + ", monitor = \"current\" })"' \
+        --replace-fail \
+          'dispatch workspace " + std::to_string(id())' \
+          'dispatch hl.dsp.focus({ workspace = " + std::to_string(id()) + " })"' \
+        --replace-fail \
+          'dispatch focusworkspaceoncurrentmonitor name:" + name()' \
+          'dispatch hl.dsp.focus({ workspace = \"name:" + name() + "\", monitor = \"current\" })"' \
+        --replace-fail \
+          'dispatch workspace name:" + name()' \
+          'dispatch hl.dsp.focus({ workspace = \"name:" + name() + "\" })"' \
+        --replace-fail \
+          'dispatch togglespecialworkspace " + name()' \
+          'dispatch hl.dsp.workspace.toggle_special({ name = \"" + name() + "\" })"' \
+        --replace-fail \
+          '"dispatch togglespecialworkspace"' \
+          '"dispatch hl.dsp.workspace.toggle_special()"'
+    '';
+  });
+
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
   # inherit (inputs.nixpkgs-xxx.legacyPackages.${final.stdenv.hostPlatform.system}) PKGNAME;
