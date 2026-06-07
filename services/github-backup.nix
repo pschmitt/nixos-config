@@ -67,7 +67,8 @@ in
   };
 
   services.monit.config = lib.mkAfter ''
-    check program "github-backup" with path "${githubLastBackup}"
+    # Alert when the last backup is older than 48h
+    check program "github-backup" with path "${githubLastBackup} 172800"
       group backup
       every 2 cycles
       if status > 0 then alert
