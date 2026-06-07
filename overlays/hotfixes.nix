@@ -25,6 +25,16 @@
       };
     in
     {
+      pipx = prevPy.pipx.overridePythonAttrs (old: {
+        # pipx 1.8.0 has Python 3.13 test expectation mismatches for
+        # package-specifier normalization; keep the package buildable until
+        # the nixpkgs fix lands.
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_fix_package_name"
+          "test_parse_specifier_for_metadata"
+        ];
+      });
+
       # parsedmarc is incompatible with (and marked broken against)
       # msgraph-core >= 1.0; pin the old msgraph-core just for it.
       # https://github.com/domainaware/parsedmarc/issues/464
@@ -35,7 +45,7 @@
   );
 
   # NixOS module uses pkgs.parsedmarc, not pkgs.python313Packages.parsedmarc.
-  inherit (final.python313Packages) parsedmarc;
+  inherit (final.python313Packages) parsedmarc pipx;
 
   # Waybar's hyprland/workspaces module hard-codes old Hyprlang-style
   # dispatchers ("dispatch workspace N") which are invalid Lua and fail
