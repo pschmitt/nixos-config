@@ -138,7 +138,10 @@ in
 
     scriptPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = with pkgs; [ jq ];
+      default = with pkgs; [
+        grim
+        jq
+      ];
       description = "Packages whose bin directories are injected into wrapped go-hass-agent scripts and commands.";
     };
 
