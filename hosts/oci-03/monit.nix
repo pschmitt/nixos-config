@@ -22,7 +22,8 @@ let
       group monit
       every 1 cycles
       restart program = "${pkgs.systemd}/bin/systemctl restart mmonit"
-      if status != 0 then restart
+      # NOTE: "for 2 cycles" avoids restart loops with async program checks
+      if status != 0 for 2 cycles then restart
       if status != 0 for 5 cycles then alert
   '';
 in

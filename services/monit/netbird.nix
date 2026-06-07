@@ -57,7 +57,11 @@ let
       group "network"
       group "netbird"
       restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
-      if status != 0 then restart
+      # NOTE: Program checks run async: monit evaluates the *previous* run's
+      # exit code each cycle. With a bare "then restart" a single transient
+      # failure restarts the service, the next run executes while it is still
+      # coming up, fails and restarts it again -- forever.
+      if status != 0 for 2 cycles then restart
       # recovery
       else if succeeded then exec "${pkgs.coreutils}/bin/true"
 
@@ -73,7 +77,8 @@ let
       group "netbird"
       depends on "netbird login"
       restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io-autoconnect"
-      if status != 0 then restart
+      # NOTE: "for 2 cycles" avoids restart loops (see "netbird login" above)
+      if status != 0 for 2 cycles then restart
       # recovery
       else if succeeded then exec "${pkgs.coreutils}/bin/true"
       if 5 restarts within 10 cycles then alert
