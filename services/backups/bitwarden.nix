@@ -44,4 +44,12 @@
       };
     };
   };
+
+  # A single hung `bw get attachment` download (no network timeout) can wedge
+  # these oneshot units in "activating" forever, which also blocks the daily
+  # timers. Fail instead so the next timer run retries and monit alerts.
+  systemd.services = {
+    bw-sync.serviceConfig.TimeoutStartSec = "2h";
+    bw-backup.serviceConfig.TimeoutStartSec = "2h";
+  };
 }
