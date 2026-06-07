@@ -20,16 +20,19 @@
     if hl.plugin.hyprgrass then
         hl.config({ plugin = { hyprgrass = {
             sensitivity             = 6.0,
-            workspace_swipe_fingers = 3,
-            workspace_swipe_edge    = "d",
             long_press_delay        = 400,
             edge_margin             = 10,
             resize_on_border_long_press = true,
         } } })
 
-        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",      edge = "d", direction = "u"}, action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
-        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4, direction = "d"}, action = hl.dsp.window.kill() })
-        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4, direction = "u"}, action = hl.dsp.exec_cmd("kitty") })
+        -- workspace_swipe_fingers/workspace_swipe_edge are legacy-only options;
+        -- in Lua mode use hyprgrass.gesture (docs/lua_migration.md).
+        hl.plugin.hyprgrass.gesture({ pattern = {kind = "swipe", fingers = 3,     direction = "horizontal"}, action = "workspace" })
+        hl.plugin.hyprgrass.gesture({ pattern = {kind = "edge",  origin = "down", direction = "horizontal"}, action = "workspace" })
+
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",  origin = "down", direction = "up"},   action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4,     direction = "down"}, action = hl.dsp.window.kill() })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4,     direction = "up"},   action = hl.dsp.exec_cmd("kitty") })
 
         hl.plugin.hyprgrass.bind({ pattern = {kind = "longpress", fingers = 2}, action = hl.dsp.window.drag(),   mouse = true })
         hl.plugin.hyprgrass.bind({ pattern = {kind = "longpress", fingers = 3}, action = hl.dsp.window.resize(), mouse = true })
