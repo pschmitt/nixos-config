@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Takes a screenshot via `zhj screenshot` and syncs it to the remote PiKVM share.
+# Takes a screenshot via grim and syncs it to the remote PiKVM share.
 
 usage() {
   cat <<EOF
@@ -13,12 +13,12 @@ import_user_environment() {
   while IFS= read -r line
   do
     [[ -z "$line" || "$line" == PATH=* ]] && continue
-    export "$line"
+    export "${line?}"
   done < <(systemctl --user show-environment 2>/dev/null || true)
 }
 
 screenshot() {
-  zhj screenshot "$1"
+  grim "$1"
 }
 
 prune_old_screenshots() {
