@@ -7,26 +7,6 @@
 }:
 # Inspired by https://github.com/dschrempf/blog/blob/7d88061796fb790f0d5b984b62629a68e6882c99/hugo/content/Linux/2024-02-14-Monitoring-a-home-server.md
 let
-  resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
-    THRESHOLD=''${1:-86400}
-    NOW=$(${pkgs.coreutils}/bin/date '+%s')
-
-    LAST_BACKUP=$(/run/current-system/sw/bin/restic-main snapshots --json | \
-      ${pkgs.jq}/bin/jq -r '.[-1].time' | \
-      ${pkgs.findutils}/bin/xargs -I {} ${pkgs.coreutils}/bin/date -d '{}' '+%s')
-
-    if [[ $((NOW - LAST_BACKUP)) -gt $THRESHOLD ]]
-    then
-      echo "🚨 Last backup was more than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 1
-    else
-      echo -e "✅ Last backup was less than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 0
-    fi
-  '';
-
   needsReboot = pkgs.writeShellScript "needs-reboot" ''
     OUTPUT=$(${
       inputs.nixos-needsreboot.packages.${pkgs.stdenv.hostPlatform.system}.default
@@ -179,13 +159,6 @@ let
   mountPoints = lib.mapAttrsToList (name: fs: fs.mountPoint) nonNFSFileSystems;
   monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
 
-  monitRestic = ''
-    check program "restic backup status" with path "${resticLastBackup}"
-      group storage
-      every 5 cycles
-      if status > 0 then alert
-  '';
-
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
     MONIT_CONF_DIR=/etc/monit/conf.d
     mkdir -p "$MONIT_CONF_DIR"
@@ -245,6 +218,8 @@ in
     # monit runs on every server; cattle servers merely skip the M/Monit
     # registration (see the sops template above) to stay off the license.
     enable = true;
+    # NOTE The restic check lives in restic.nix so that hosts without
+    # restic backups (cattle) do not get a permanently failing check.
     config = lib.strings.concatStringsSep "\n" [
       monitGeneral
       monitSystem
@@ -252,7 +227,6 @@ in
       monitFailedTimers
       monitFailedServices
       monitFilesystems
-      monitRestic
     ];
   };
 
