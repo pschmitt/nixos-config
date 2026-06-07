@@ -1,4 +1,0 @@
-[[button]]
-name = "Take Screenshot"
-exec = "/home/pschmitt/.config/go-hass-agent/commands/screenshot.sh"
-icon = "mdi:camera"

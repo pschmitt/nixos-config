@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.services.go-hass-agent;
+  tomlFormat = pkgs.formats.toml { };
   root = ../../home-manager/gui/go-hass-agent;
   desktopScriptNames = [
     "desktop-clients.sh"
@@ -20,47 +21,43 @@ let
     "screencast.sh"
   ];
 
-  mkRegularFiles =
-    prefix: dir:
+  # NOTE Interpolating the whole directory (instead of the single file) keeps
+  # sibling files like lib.sh next to the script in the nix store, so relative
+  # source statements keep working.
+  wrapScript =
+    dir: name:
+    pkgs.writeShellScript name ''
+      export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
+      exec ${pkgs.bash}/bin/bash ${dir}/${name} "$@"
+    '';
+
+  wrapDirScripts =
+    dir: filterPred:
     let
       files = lib.filterAttrs (_: type: type == "regular") (builtins.readDir dir);
       selectedFiles = lib.filterAttrs (
         name: _:
         # lib.sh is sourced by the other scripts and must not be installed as
         # an executable script sensor (go-hass-agent would try to schedule it)
-        name != "lib.sh"
-        && (
-          prefix != "go-hass-agent/scripts"
-          || cfg.enableDesktopScripts
-          || !(builtins.elem name desktopScriptNames)
-        )
+        name != "lib.sh" && filterPred name
       ) files;
-      mkFile = name: {
-        name = "${prefix}/${name}";
-        value = {
-          # NOTE Interpolating the whole directory (instead of the single
-          # file) keeps sibling files like lib.sh next to the script in the
-          # nix store, so relative source statements keep working.
-          source = pkgs.writeShellScript name ''
-            export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
-            exec ${pkgs.bash}/bin/bash ${dir}/${name} "$@"
-          '';
-          executable = true;
-        };
-      };
     in
-    lib.listToAttrs (map mkFile (builtins.attrNames selectedFiles));
+    lib.mapAttrs (name: _: wrapScript dir name) selectedFiles;
 
-  mkNamedFilesNoExec =
-    prefix: dir: names:
-    lib.listToAttrs (
-      map (name: {
-        name = "${prefix}/${name}";
-        value = {
-          source = dir + "/${name}";
-        };
-      }) names
-    );
+  mkRegularFiles =
+    prefix: scripts:
+    lib.mapAttrs' (name: script: {
+      name = "${prefix}/${name}";
+      value = {
+        source = script;
+        executable = true;
+      };
+    }) scripts;
+
+  sensorScripts = wrapDirScripts (root + "/scripts") (
+    name: cfg.enableDesktopScripts || !(builtins.elem name desktopScriptNames)
+  );
+  commandScripts = wrapDirScripts (root + "/commands") (_: true);
 in
 {
   options.services.go-hass-agent = {
@@ -150,16 +147,47 @@ in
       default = true;
       description = "Whether to install desktop-session specific go-hass-agent scripts.";
     };
+
+    commandScripts = lib.mkOption {
+      type = lib.types.attrsOf lib.types.path;
+      readOnly = true;
+      default = commandScripts;
+      description = ''
+        Wrapped command scripts (script file name -> nix store path), for
+        referencing in the exec field of `commands` without relying on the
+        ~/.config symlinks.
+      '';
+    };
+
+    commands = lib.mkOption {
+      inherit (tomlFormat) type;
+      default = { };
+      example = {
+        button = [
+          {
+            name = "Take Screenshot";
+            exec = "/path/to/screenshot.sh";
+            icon = "mdi:camera";
+          }
+        ];
+      };
+      description = ''
+        Contents of commands.toml, as a Nix attribute set. See
+        <https://github.com/joshuar/go-hass-agent/blob/main/docs/agent/commands.md>
+        for the schema (top-level button/switch/number lists).
+      '';
+    };
   };
 
   config = lib.mkMerge [
     {
       xdg.configFile = lib.mkMerge [
-        (mkRegularFiles "go-hass-agent/scripts" (root + "/scripts"))
-        (mkRegularFiles "go-hass-agent/commands" (root + "/commands"))
-        (mkNamedFilesNoExec "go-hass-agent" root [
-          "commands.toml"
-        ])
+        (mkRegularFiles "go-hass-agent/scripts" sensorScripts)
+        (mkRegularFiles "go-hass-agent/commands" commandScripts)
+        (lib.mkIf (cfg.commands != { }) {
+          "go-hass-agent/commands.toml".source =
+            tomlFormat.generate "go-hass-agent-commands.toml" cfg.commands;
+        })
       ];
     }
 
