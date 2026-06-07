@@ -27,12 +27,12 @@
             resize_on_border_long_press = true,
         } } })
 
-        hl.plugin.hyprgrass.bind({ gesture = "edge:d:u",  action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
-        hl.plugin.hyprgrass.bind({ gesture = "swipe:4:d", action = hl.dsp.window.kill() })
-        hl.plugin.hyprgrass.bind({ gesture = "swipe:4:u", action = hl.dsp.exec_cmd("kitty") })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",      edge = "d", direction = "u"}, action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4, direction = "d"}, action = hl.dsp.window.kill() })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4, direction = "u"}, action = hl.dsp.exec_cmd("kitty") })
 
-        hl.plugin.hyprgrass.bind({ gesture = "longpress:2", action = hl.dsp.window.drag(),   mouse = true })
-        hl.plugin.hyprgrass.bind({ gesture = "longpress:3", action = hl.dsp.window.resize(), mouse = true })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "longpress", fingers = 2}, action = hl.dsp.window.drag(),   mouse = true })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "longpress", fingers = 3}, action = hl.dsp.window.resize(), mouse = true })
     end
   '';
 }
