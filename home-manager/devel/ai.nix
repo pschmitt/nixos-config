@@ -168,9 +168,9 @@ in
       };
     };
 
-    gemini-cli = {
+    antigravity-cli = {
       enable = true;
-      package = pkgs.llm-agents.gemini-cli;
+      package = pkgs.llm-agents.antigravity-cli;
       skills = allSkills;
       enableMcpIntegration = true;
       settings = {
