@@ -242,7 +242,8 @@ in
   };
 
   services.monit = {
-    # Do not enable monit if cattle if this is a cattle server
+    # monit runs on every server; cattle servers merely skip the M/Monit
+    # registration (see the sops template above) to stay off the license.
     enable = true;
     config = lib.strings.concatStringsSep "\n" [
       monitGeneral
