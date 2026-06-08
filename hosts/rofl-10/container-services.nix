@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 
 let
   domain = config.domains.main;
@@ -6,6 +6,18 @@ let
   mkHost = subdomain: "${subdomain}.${domain}";
   mkHostWithNode = subdomain: "${subdomain}.${hostName}.${domain}";
   wildcardCert = "wildcard.${domain}";
+  nextcloudHealthCheck = pkgs.writeShellScript "nextcloud-health-check" ''
+    exec ${pkgs.curl}/bin/curl \
+      --silent \
+      --show-error \
+      --fail \
+      --insecure \
+      --max-time 20 \
+      --noproxy '*' \
+      --resolve nextcloud.${domain}:63982:127.0.0.1 \
+      "https://nextcloud.${domain}:63982/status.php" \
+      >/dev/null
+  '';
 in
 {
   imports = [
@@ -61,6 +73,7 @@ in
       nextcloud = {
         port = 63982;
         tls = true;
+        monitoring.program = "${nextcloudHealthCheck}";
         hosts = [
           (mkHost "c")
           (mkHost "nextcloud")
