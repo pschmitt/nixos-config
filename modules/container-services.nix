@@ -150,6 +150,12 @@ let
               default = null;
               description = "Monit group name";
             };
+
+            program = mkOption {
+              type = types.nullOr types.str;
+              default = null;
+              description = "Optional program path for a custom Monit check.";
+            };
           };
         });
       };
@@ -248,6 +254,28 @@ let
         if 5 restarts within 10 cycles then alert
     '';
 
+  monitProgramCheckText =
+    {
+      serviceName,
+      composePath,
+      restartTarget,
+      program,
+      dependsOn,
+      group,
+    }:
+    ''
+      check program "${serviceName}" with path "${program}"
+        group container-services
+        ${optionalString (group != null) "group ${group}"}
+        ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
+        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --no-deps${
+          optionalString (restartTarget != null) " ${restartTarget}"
+        }"
+          with timeout 180 seconds
+        if status != 0 then restart
+        if 5 restarts within 10 cycles then alert
+    '';
+
   generateMonitCheck =
     serviceName: service:
     let
@@ -259,6 +287,7 @@ let
         restartComposeService
         dependsOn
         group
+        program
         ;
       monitorClauses =
         optional (path != null) "request \"${path}\""
@@ -273,18 +302,30 @@ let
         else
           (if restartComposeService != null then restartComposeService else serviceName);
     in
-    monitCheckText {
-      inherit
-        serviceName
-        composePath
-        restartTarget
-        monitoredPort
-        proto
-        extraClause
-        dependsOn
-        group
-        ;
-    };
+    if program != null then
+      monitProgramCheckText {
+        inherit
+          serviceName
+          composePath
+          restartTarget
+          program
+          dependsOn
+          group
+          ;
+      }
+    else
+      monitCheckText {
+        inherit
+          serviceName
+          composePath
+          restartTarget
+          monitoredPort
+          proto
+          extraClause
+          dependsOn
+          group
+          ;
+      };
 
   monitExtraConfig =
     let
