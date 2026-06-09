@@ -44,28 +44,36 @@ main() {
   local icon="mdi:video-off"
   local reason=""
   local scene=""
+  local obs_bin=""
 
-  if ! zhj obs::is-running >/dev/null
+  if ! obs_bin=$(command -v obs 2>/dev/null) || [[ -z "$obs_bin" ]]
+  then
+    reason="OBS Studio is not installed"
+    emit_obs_sensor "$state" "$icon" "$scene" "$reason"
+    return
+  fi
+
+  if ! pgrep -f "$(readlink -e "$obs_bin")" >/dev/null 2>&1
   then
     reason="OBS Studio not running"
     emit_obs_sensor "$state" "$icon" "$scene" "$reason"
     return
   fi
 
-  state=true
-  icon="mdi:video-check"
-
-  if ! zhj gnome-keyring::status >/dev/null
+  if ! command -v obs-cli >/dev/null 2>&1
   then
-    reason="GNOME Keyring locked"
+    reason="obs-cli is not installed"
     emit_obs_sensor "$state" "$icon" "$scene" "$reason"
     return
   fi
 
-  if ! scene=$(zhj obs::get-current-scene)
+  if ! scene=$(OBS_API_HOST="${OBS_API_HOST:-localhost}" OBS_API_PORT="${OBS_API_PORT:-6277}" obs-cli -q scene current 2>/dev/null)
   then
     reason="Failed to query OBS scene"
     scene=""
+  else
+    state=true
+    icon="mdi:video-check"
   fi
 
   emit_obs_sensor "$state" "$icon" "$scene" "$reason"
