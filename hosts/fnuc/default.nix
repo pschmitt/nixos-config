@@ -9,6 +9,7 @@
     ../../home-manager/work
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
+    ../../modules/home-manager/codex-remote-control.nix
     ../../home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
 

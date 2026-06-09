@@ -156,15 +156,21 @@ in
       skills = codexSkills;
       enableMcpIntegration = true;
       settings = {
+        approval_policy = "never";
+        approvals_reviewer = "user";
+        model = "gpt-5.4";
+        model_reasoning_effort = "medium";
+
         projects = {
           "/etc/nixos".trust_level = "trusted";
           "/mnt/hass".trust_level = "trusted";
+          "/mnt/turris".trust_level = "trusted";
           "${config.home.homeDirectory}".trust_level = "trusted";
           "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
         };
 
-        # model = "gpt-5.4";
-        # model_reasoning_effort = "medium";
+        sandbox_mode = "danger-full-access";
+        features.remote_control = true;
       };
     };
 
