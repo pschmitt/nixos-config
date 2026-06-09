@@ -27,7 +27,7 @@ let
   wrapScript =
     dir: name:
     pkgs.writeShellScript name ''
-      export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
+      export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
       exec ${pkgs.bash}/bin/bash ${dir}/${name} "$@"
     '';
 
@@ -79,6 +79,12 @@ in
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = "Optional SOPS secret name for the MQTT password.";
+    };
+
+    obsPasswordSecret = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Optional SOPS secret name for the OBS websocket password.";
     };
 
     disabledSensors = lib.mkOption {
@@ -231,6 +237,9 @@ in
       }
       // lib.optionalAttrs (cfg.mqttPasswordSecret != null) {
         "${cfg.mqttPasswordSecret}".mode = lib.mkDefault "0400";
+      }
+      // lib.optionalAttrs (cfg.obsPasswordSecret != null) {
+        "${cfg.obsPasswordSecret}".mode = lib.mkDefault "0400";
       };
 
       sops.templates."go-hass-agent.env" = {
@@ -246,6 +255,9 @@ in
         ''
         + lib.optionalString (cfg.mqttPasswordSecret != null) ''
           MQTT_PASSWORD=${builtins.getAttr cfg.mqttPasswordSecret config.sops.placeholder}
+        ''
+        + lib.optionalString (cfg.obsPasswordSecret != null) ''
+          OBS_API_PASSWORD=${builtins.getAttr cfg.obsPasswordSecret config.sops.placeholder}
         '';
       };
 
