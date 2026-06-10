@@ -48,32 +48,26 @@ let
     ''
   );
 
+  # Remote (streamable-HTTP) MCP server reached through mcp-proxy. The bearer
+  # token is injected via `env.API_ACCESS_TOKEN.file`: home-manager's MCP module
+  # generates a wrapper that reads the sops secret at startup (see
+  # lib.hm.mcp.wrapEnvFilesCommand), so no hand-rolled token-reading script is
+  # needed.
   mcpHttpProxy =
-    name:
     {
       url,
       tokenFile,
     }:
-    pkgs.writeShellApplication {
-      name = "${name}-mcp";
-      runtimeInputs = [ pkgs.mcp-proxy ];
-      text = ''
-        token_file=${lib.escapeShellArg tokenFile}
-
-        if [[ ! -r "$token_file" ]]; then
-          printf 'MCP token file is not readable: %s\n' "$token_file" >&2
-          exit 1
-        fi
-
-        API_ACCESS_TOKEN="$(<"$token_file")"
-        export API_ACCESS_TOKEN
-
-        exec mcp-proxy \
-          "$@" \
-          --transport streamablehttp \
-          --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
-          ${lib.escapeShellArg url}
-      '';
+    {
+      command = "${pkgs.mcp-proxy}/bin/mcp-proxy";
+      args = [
+        "--transport"
+        "streamablehttp"
+        "--verify-ssl"
+        "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+        url
+      ];
+      env.API_ACCESS_TOKEN.file = tokenFile;
     };
 
 in
@@ -108,21 +102,13 @@ in
   programs.mcp = {
     enable = true;
     servers = {
-      n8n-mcp = {
-        command = "${
-          mcpHttpProxy "n8n" {
-            url = "https://n8n.${domainName}/mcp-server/http";
-            tokenFile = config.sops.secrets."n8n/mcp/token".path;
-          }
-        }/bin/n8n-mcp";
+      n8n-mcp = mcpHttpProxy {
+        url = "https://n8n.${domainName}/mcp-server/http";
+        tokenFile = config.sops.secrets."n8n/mcp/token".path;
       };
-      home-assistant = {
-        command = "${
-          mcpHttpProxy "home-assistant" {
-            url = "https://ha.${domainName}/api/mcp";
-            tokenFile = config.sops.secrets."home-assistant/mcp/token".path;
-          }
-        }/bin/home-assistant-mcp";
+      home-assistant = mcpHttpProxy {
+        url = "https://ha.${domainName}/api/mcp";
+        tokenFile = config.sops.secrets."home-assistant/mcp/token".path;
       };
       obsidian = {
         command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
