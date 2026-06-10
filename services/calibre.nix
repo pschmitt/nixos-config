@@ -72,6 +72,7 @@ in
   virtualisation.oci-containers.containers.calibre-web-automated = {
     image = "docker.io/crocodilestick/calibre-web-automated:latest";
     autoStart = true;
+    pull = "always";
     ports = [
       "${calibreWebAutomatedListen.ip}:${toString calibreWebAutomatedListen.port}:8083"
     ];
