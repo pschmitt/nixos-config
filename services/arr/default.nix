@@ -2,6 +2,7 @@
 {
   imports = [
     ./vpn.nix
+    ./arr-service.nix
 
     # services
     ./cwabd.nix

@@ -1,9 +1,7 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 9696;
-  publicHost = "prowl.arr.${config.domains.main}";
-  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   sops = {
@@ -18,64 +16,20 @@ in
     };
   };
 
-  services = {
-    prowlarr = {
-      enable = true;
-      environmentFiles = [ config.sops.templates."prowlarr-env".path ];
-    };
-
-    nginx.virtualHosts."${publicHost}" = {
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      extraConfig = autheliaConfig.server;
-      locations."/" = {
-        proxyPass = "http://${internalIP}:${toString port}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
-      };
-    };
-
-    monit.config = ''
-      check host "prowlarr" with address ${internalIP}
-        group piracy
-        depends on mullvad-netns
-        restart program = "${pkgs.systemd}/bin/systemctl restart prowlarr"
-        if failed port ${toString port}
-          protocol http
-          request "/ping"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 5 cycles then alert
-    '';
+  arr.services.prowlarr = {
+    inherit port;
+    host = "prowl.arr.${config.domains.main}";
   };
 
-  fakeHosts.prowlarr.port = port;
-
-  systemd.services.prowlarr = {
-    wantedBy = [ "arr.target" ];
-    partOf = [ "arr.target" ];
-    environment = {
-      PROWLARR__SERVER__BINDADDRESS = internalIP;
-      # NOTE comment the 2 lines below when doing the initial setup
-      PROWLARR__AUTH__METHOD = "Forms";
-      PROWLARR__AUTH__REQUIRED = "Enabled";
-    };
-    vpnConfinement = {
-      enable = true;
-      vpnNamespace = "mullvad";
-    };
-    # Fix for systemd-resolved atomic updates breaking bind mounts
-    serviceConfig.TemporaryFileSystem = "/run/systemd/resolve";
+  services.prowlarr = {
+    enable = true;
+    environmentFiles = [ config.sops.templates."prowlarr-env".path ];
   };
 
-  vpnNamespaces.mullvad.portMappings = [
-    {
-      from = port;
-      to = port;
-    }
-  ];
+  systemd.services.prowlarr.environment = {
+    PROWLARR__SERVER__BINDADDRESS = internalIP;
+    # NOTE comment the 2 lines below when doing the initial setup
+    PROWLARR__AUTH__METHOD = "Forms";
+    PROWLARR__AUTH__REQUIRED = "Enabled";
+  };
 }

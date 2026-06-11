@@ -1,9 +1,6 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
-  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8084;
-  publicHost = "cwabd.arr.${config.domains.main}";
-  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
 in
 {
   virtualisation.oci-containers.containers.cwabd = {
@@ -29,49 +26,11 @@ in
     ];
   };
 
-  vpnNamespaces.mullvad.portMappings = [
-    {
-      from = port;
-      to = port;
-    }
-  ];
-
-  systemd.services."${config.virtualisation.oci-containers.containers.cwabd.serviceName}" = {
-    wantedBy = [ "arr.target" ];
-    partOf = [ "arr.target" ];
-    after = [ "mullvad.service" ];
-    requires = [ "mullvad.service" ];
+  arr.services.cwabd = {
+    inherit port;
+    host = "cwabd.arr.${config.domains.main}";
+    container = "cwabd";
+    # The book downloader exposes its UI at "/", not a dedicated health path.
+    monit.request = "/";
   };
-
-  services = {
-    nginx.virtualHosts."${publicHost}" = {
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      extraConfig = autheliaConfig.server;
-      locations."/" = {
-        proxyPass = "http://${internalIP}:${toString port}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
-      };
-    };
-
-    monit.config = ''
-      check host "cwabd" with address ${internalIP}
-        group piracy
-        depends on mullvad-netns
-        restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.containers.cwabd.serviceName}"
-        if failed port ${toString port}
-          protocol http
-          request "/"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 5 cycles then alert
-    '';
-  };
-
-  fakeHosts.cwabd.port = port;
 }
