@@ -21,8 +21,7 @@ in
     --proxy ${pinchflatYtDlpProxy}
   '';
 
-  sops.secrets."pinchflat/env" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."pinchflat/env" = config.custom.mkSecret {
     owner = pinchflatUser;
     group = pinchflatGroup;
     mode = "0400";

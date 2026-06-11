@@ -7,6 +7,8 @@
 let
   cfg = config.services.lnxlink;
   scriptsDir = ../../home-manager/cli/lnxlink/scripts;
+  scriptLib = import ./script-lib.nix { inherit lib pkgs; };
+  yamlFormat = pkgs.formats.yaml { };
 
   nixConfigJson = builtins.toJSON {
     inherit (cfg) modules exclude;
@@ -40,68 +42,58 @@ let
       ${nixConfigUpdaterPy} "$@"
   '';
 
-  mkScriptFiles =
-    dir:
-    let
-      files = lib.filterAttrs (_: type: type == "regular") (builtins.readDir dir);
-      mkFile = name: {
-        name = "lnxlink/scripts/${name}";
-        value = {
-          source = pkgs.writeShellScript name ''
-            export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
-            exec ${pkgs.bash}/bin/bash ${dir + "/${name}"} "$@"
-          '';
-          executable = true;
-        };
-      };
-    in
-    lib.listToAttrs (map mkFile (builtins.attrNames files));
-
-  initialConfig = pkgs.writeText "lnxlink-initial.yaml" (
-    ''
-      mqtt:
-        transport: "mqtt"
-        prefix: 'lnxlink'
-        clientId: 'lnxlink'
-        server: '192.168.1.1'
-        port: 1883
-        auth:
-          user: 'user'
-          pass: 'pass'
-          tls: false
-          keyfile: ""
-          certfile: ""
-          ca_certs: ""
-        discovery:
-          enabled: true
-          prefix: "homeassistant"
-        lwt:
-          enabled: true
-          qos: 1
-        clear_on_off: true
-        homeassistant:
-          url: ""
-          token: ""
-          token_env: ""
-          token_file: ""
-          timeout: 20
-          verify_ssl: true
-          subscribe_commands: true
-      update_interval: ${toString cfg.updateInterval}
-      update_on_change: ${if cfg.updateOnChange then "true" else "false"}
-      modules:
-    ''
-    + lib.optionalString (cfg.modules != [ ]) (lib.concatMapStrings (m: "  - ${m}\n") cfg.modules)
-    + ''
-      custom_modules:
-      exclude:
-    ''
-    + lib.optionalString (cfg.exclude != [ ]) (lib.concatMapStrings (m: "  - ${m}\n") cfg.exclude)
-    + ''
-      settings:
-        statistics: "https://analyzer.bkbilly.workers.dev"
-    ''
+  scriptFiles = scriptLib.toFiles "lnxlink/scripts" (
+    scriptLib.wrapDir {
+      dir = scriptsDir;
+      runtimeInputs = cfg.scriptPackages;
+      extraPath = [
+        "${config.home.profileDirectory}/bin"
+        "${config.home.homeDirectory}/.local/bin"
+      ];
+    }
   );
+
+  initialConfig = yamlFormat.generate "lnxlink-initial.yaml" {
+    mqtt = {
+      transport = "mqtt";
+      prefix = "lnxlink";
+      clientId = "lnxlink";
+      server = "192.168.1.1";
+      port = 1883;
+      auth = {
+        user = "user";
+        pass = "pass";
+        tls = false;
+        keyfile = "";
+        certfile = "";
+        ca_certs = "";
+      };
+      discovery = {
+        enabled = true;
+        prefix = "homeassistant";
+      };
+      lwt = {
+        enabled = true;
+        qos = 1;
+      };
+      clear_on_off = true;
+      homeassistant = {
+        url = "";
+        token = "";
+        token_env = "";
+        token_file = "";
+        timeout = 20;
+        verify_ssl = true;
+        subscribe_commands = true;
+      };
+    };
+    update_interval = cfg.updateInterval;
+    update_on_change = cfg.updateOnChange;
+    inherit (cfg) modules;
+    custom_modules = null;
+    inherit (cfg) exclude;
+    settings.statistics = "https://analyzer.bkbilly.workers.dev";
+  };
 in
 {
   options.services.lnxlink = {
@@ -212,7 +204,7 @@ in
         ) "LNXLINK_MQTT_PASS=${builtins.getAttr cfg.mqttPasswordSecret config.sops.placeholder}\n";
     };
 
-    xdg.configFile = mkScriptFiles scriptsDir;
+    xdg.configFile = scriptFiles;
 
     home.activation.lnxlink-config = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       lnxlink_config_dir="${config.xdg.configHome}/lnxlink"

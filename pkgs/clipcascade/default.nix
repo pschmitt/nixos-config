@@ -101,12 +101,12 @@ python3.pkgs.buildPythonApplication rec {
 
   doCheck = false;
 
-  meta = with lib; {
+  meta = {
     description = "Clipboard syncing utility for desktop platforms";
     homepage = "https://github.com/Sathvik-Rao/ClipCascade";
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "clipcascade";
-    platforms = platforms.linux;
+    platforms = lib.platforms.linux;
   };
 }

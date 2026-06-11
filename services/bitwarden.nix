@@ -1,7 +1,6 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 {
-  sops.secrets."bitwarden/password" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."bitwarden/password" = config.custom.mkSecret {
     owner = config.mainUser.username;
   };
 

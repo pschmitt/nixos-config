@@ -14,8 +14,7 @@ let
   dataDir = "${rootDir}/data";
   backupDir = "${rootDir}/backups";
   vaultwardenUser = "vaultwarden";
-  secretAttrs = {
-    inherit (config.custom) sopsFile;
+  secretAttrs = config.custom.mkSecret {
     owner = vaultwardenUser;
     group = vaultwardenUser;
     mode = "0400";

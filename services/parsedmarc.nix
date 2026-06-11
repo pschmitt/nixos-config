@@ -9,14 +9,11 @@ let
 in
 {
   sops.secrets = {
-    "geoip/licenseKey" = {
-      inherit (config.custom) sopsFile;
+    "geoip/licenseKey" = config.custom.mkSecret {
     };
-    "parsedmarc/imap/password" = {
-      inherit (config.custom) sopsFile;
+    "parsedmarc/imap/password" = config.custom.mkSecret {
     };
-    "grafana/secretKey" = {
-      inherit (config.custom) sopsFile;
+    "grafana/secretKey" = config.custom.mkSecret {
       owner = config.systemd.services.grafana.serviceConfig.User;
     };
   };

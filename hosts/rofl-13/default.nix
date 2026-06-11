@@ -1,20 +1,10 @@
-{ config, lib, ... }:
+{ lib, ... }:
 {
   imports = [
     ./hardware-configuration.nix
 
     ../../common/server
-
-    ../../services/harmonia.nix
-    ../../services/http.nix
-    ../../services/nfs/nfs-client-rofl-11.nix
-    ../../services/tdarr-node.nix
-
-    (import ../../services/***REMOVED***/***REMOVED***.nix {
-      inherit config lib;
-      useProxy = true;
-      cpuUsage = 50;
-    })
+    ../../common/profiles/tdarr-node.nix
   ];
 
   hardware = {

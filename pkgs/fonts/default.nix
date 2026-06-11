@@ -16,10 +16,10 @@ pkgs.stdenv.mkDerivation rec {
     find extracted -iname '*.otf' -exec mv {} $out/share/fonts/opentype \;
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Comic Code TTF Font (with NerdFont patches)";
     homepage = "https://tosche.net/fonts/comic-code";
-    license = licenses.unfree;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.unfree;
+    maintainers = with lib.maintainers; [ pschmitt ];
   };
 }

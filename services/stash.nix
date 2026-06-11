@@ -82,11 +82,9 @@ let
   '';
 in
 {
-  sops.secrets."stash/api-key" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."stash/api-key" = config.custom.mkSecret {
   };
-  sops.secrets."stash/host" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."stash/host" = config.custom.mkSecret {
   };
 
   systemd.services.stash-scan = {

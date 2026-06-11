@@ -11,8 +11,7 @@ in
   sops.secrets = builtins.listToAttrs (
     map (secret: {
       name = secret;
-      value = {
-        inherit (config.custom) sopsFile;
+      value = config.custom.mkSecret {
       };
     }) secrets
   );

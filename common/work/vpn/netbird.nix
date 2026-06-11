@@ -1,65 +1,20 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
 let
-  netbirdForceRoutes = pkgs.writeShellScriptBin "netbird-force-routes" ''
-    set -x
-
-    PATH="${
-      lib.makeBinPath (
-        with pkgs;
-        [
-          coreutils # sort
-          findutils # xargs
-          gawk
-          iproute2
-          jq
-        ]
-      )
-    }:$PATH"
-
-    NB_INSTANCE_NAME="''${NB_INSTANCE_NAME:-wiit}"
-    NB_INTERFACE_NAME="''${NB_INTERFACE_NAME:-nb-$NB_INSTANCE_NAME}"
-    NB_BIN="/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME"
-
-    # Default action
-    ACTION="add"
-
-    case "$1" in
-      -h|--help)
-        echo "Usage: $(basename "$0") [--delete]"
-        exit 0
-        ;;
-      *undo|*remove|*del*|*rm*|*clear*)
-        ACTION="delete"
-        ;;
-    esac
-
-    case "$ACTION" in
-      add)
-        $NB_BIN routes list
-        ROUTES=$($NB_BIN routes list | \
-          awk '/Network: 10\./ { print $2 }' | \
-          sort -u)
-
-        echo "Adding routes over $NB_INTERFACE_NAME for:"
-        echo "''${ROUTES:-N/A}"
-
-        <<< "$ROUTES" xargs --verbose -I {} \
-            ip route add '{}' dev "$NB_INTERFACE_NAME"
-        ;;
-      delete)
-        ip -j route show | \
-          jq -er --arg nb "$NB_INTERFACE_NAME" '
-            .[] | select(.dev == $nb and (.dst | test("^10\\."))) | .dst
-          ' | xargs --verbose -I {} \
-            ip route delete '{}' dev "$NB_INTERFACE_NAME"
-        ;;
-    esac
-  '';
+  netbirdForceRoutes = pkgs.writeShellApplication {
+    name = "netbird-force-routes";
+    runtimeInputs = with pkgs; [
+      coreutils # sort
+      findutils # xargs
+      gawk
+      iproute2
+      jq
+    ];
+    text = builtins.readFile ./scripts/netbird-force-routes.sh;
+  };
 in
 {
   services.netbird = {

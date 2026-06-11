@@ -62,8 +62,7 @@ let
       instance:
       lib.lists.map (suffix: {
         name = "luks/${instance.name}/${suffix}";
-        value = {
-          inherit (config.custom) sopsFile;
+        value = config.custom.mkSecret {
         };
       }) secretSuffixes
     ) instances

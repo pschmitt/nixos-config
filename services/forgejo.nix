@@ -8,8 +8,7 @@ let
   forgejoHostName = "git.${config.domains.main}";
 in
 {
-  sops.secrets."forgejo/runner/token" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."forgejo/runner/token" = config.custom.mkSecret {
     # FIXME The gitea-runner is dynamic. It won't exist at build time.
     # owner = "gitea-runner";
   };

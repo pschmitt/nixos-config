@@ -24,11 +24,11 @@ buildNpmPackage rec {
     rm -rf $out/lib/node_modules/opsgenie/node_modules/.bin
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Command-line tool for interacting with Opsgenie";
     homepage = "https://github.com/Skedulo/opsgenie-cli";
-    license = licenses.mit;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.mit;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "opsgenie";
   };
 }

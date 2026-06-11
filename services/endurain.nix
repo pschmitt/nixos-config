@@ -51,8 +51,7 @@ in
 {
   sops = {
     secrets = {
-      "endurain/env" = {
-        inherit (config.custom) sopsFile;
+      "endurain/env" = config.custom.mkSecret {
         restartUnits = [
           endurainUnit
           postgresUnit

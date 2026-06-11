@@ -32,10 +32,10 @@ stdenvNoCC.mkDerivation {
     rm -f $out/share/fonts/opentype/*Demo*
   '';
 
-  meta = with lib; {
+  meta = {
     homepage = "https://tosche.net/fonts/comic-code";
     description = "Comic Code is a monospaced adaptation of the most infamous yet most popular casual font";
-    license = licenses.unfree;
-    platforms = platforms.all;
+    license = lib.licenses.unfree;
+    platforms = lib.platforms.all;
   };
 }

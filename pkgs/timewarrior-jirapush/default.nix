@@ -25,11 +25,11 @@ rustPlatform.buildRustPackage rec {
 
   cargoHash = "sha256-8HQPeaH/wWIBZvu/hmgwduXaFfLHXzVzfAFXW9844AY=";
 
-  meta = with lib; {
+  meta = {
     description = "A configurable TimeWarrior Extension that uploads timewarrior intervals to Jira as work logs.";
     homepage = "https://gitlab.com/FoxAmes/timewarrior-jirapush";
-    license = licenses.mit;
-    maintainers = [ maintainers.pschmitt ];
+    license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "jirapush";
   };
 }

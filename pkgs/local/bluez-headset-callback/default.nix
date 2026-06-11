@@ -36,10 +36,10 @@ stdenvNoCC.mkDerivation {
       }"
   '';
 
-  meta = with lib; {
+  meta = {
     description = "custom bluez dbus listener for headset setup";
-    license = licenses.gpl3Only;
-    platforms = platforms.linux;
+    license = lib.licenses.gpl3Only;
+    platforms = lib.platforms.linux;
     mainProgram = "bluez-headset-callback.sh";
   };
 }

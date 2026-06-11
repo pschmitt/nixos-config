@@ -34,8 +34,7 @@ let
   defineSopsSecrets = lib.listToAttrs (
     lib.lists.map (name: {
       name = "luks/${name}";
-      value = {
-        inherit (config.custom) sopsFile;
+      value = config.custom.mkSecret {
       };
     }) instanceNames
   );

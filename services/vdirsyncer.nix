@@ -17,32 +17,27 @@ let
 in
 {
   sops.secrets = {
-    "vdirsyncer/google/client-id" = {
-      inherit (config.custom) sopsFile;
+    "vdirsyncer/google/client-id" = config.custom.mkSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/google/client-secret" = {
-      inherit (config.custom) sopsFile;
+    "vdirsyncer/google/client-secret" = config.custom.mkSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/google/token" = {
-      inherit (config.custom) sopsFile;
+    "vdirsyncer/google/token" = config.custom.mkSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/nextcloud/username" = {
-      inherit (config.custom) sopsFile;
+    "vdirsyncer/nextcloud/username" = config.custom.mkSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/nextcloud/password" = {
-      inherit (config.custom) sopsFile;
+    "vdirsyncer/nextcloud/password" = config.custom.mkSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";

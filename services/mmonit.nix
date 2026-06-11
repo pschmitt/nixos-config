@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -69,8 +68,7 @@ in
   users.groups.mmonit = { };
 
   # license
-  sops.secrets."mmonit/license" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."mmonit/license" = config.custom.mkSecret {
     owner = "mmonit";
   };
 

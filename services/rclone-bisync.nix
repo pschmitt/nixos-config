@@ -20,8 +20,7 @@ let
   '';
 in
 {
-  sops.secrets."rclone/config" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."rclone/config" = config.custom.mkSecret {
     mode = "0600";
   };
 

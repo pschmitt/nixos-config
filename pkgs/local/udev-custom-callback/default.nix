@@ -37,10 +37,10 @@ stdenvNoCC.mkDerivation {
       }"
   '';
 
-  meta = with lib; {
+  meta = {
     description = "custom udev callback";
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pschmitt ];
-    platforms = platforms.linux;
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
+    platforms = lib.platforms.linux;
   };
 }
