@@ -373,6 +373,17 @@ let
                 -e 's/\bfailed\b/\x1b[1;31m&\x1b[0m/g' \
                 -e 's/\bunknown\b/\x1b[33m&\x1b[0m/g'
 
+          # Build per-node color sed args from cluster membership
+          _node_color_sed_args=()
+          while IFS= read -r _sed_expr
+          do
+            _node_color_sed_args+=("-e" "$_sed_expr")
+          done < <(${pkgs.jq}/bin/jq -r \
+            --argjson colors '${builtins.toJSON clusterColorMap}' '
+            .[] | .cluster as $c | .nodes[] | .node |
+            "s/" + . + "/" + $colors[$c] + "&\\x1b[0m/g"
+          ' <<< "$_combined_json" 2>/dev/null)
+
           echo ""
           printf '\e[1mMINERS\e[0m\n'
           ${pkgs.jq}/bin/jq -r '
@@ -383,15 +394,15 @@ let
               else
                 ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
                 | [
-                    (["CLUSTER", "NODE", "NAME", "STATUS"] +
+                    (["NODE", "POD NAME", "STATUS"] +
                      (if $has_restarts then ["RESTARTS"] else [] end) +
                      ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
                     ($rows[] |
-                     [.cluster, .node, .pod_name, .status] +
+                     [.node, .pod_name, .status] +
                      (if $has_restarts then [.restarts | tostring] else [] end) +
                      [.age, fmt(.r1m), fmt(.r10m), fmt(.r1h)]),
                     (["TOTAL"] +
-                     (if $has_restarts then ["", "", "", "", ""] else ["", "", "", ""] end) +
+                     (if $has_restarts then ["", "", "", ""] else ["", "", ""] end) +
                      [fmt([$rows[] | .r1m] | add // 0),
                       fmt([$rows[] | .r10m] | add // 0),
                       fmt([$rows[] | .r1h] | add // 0)])
@@ -401,7 +412,7 @@ let
             | ${pkgs.util-linux}/bin/column -t -s $'\t' \
             | sed \
                 -e '1s/.*/\x1b[1m&\x1b[0m/' \
-                ${clusterColorSed} \
+                "''${_node_color_sed_args[@]}" \
                 -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
                 -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
                 -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
@@ -557,7 +568,7 @@ let
               }] as $rows
             | ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
             | [
-                (["NODE", "NAME", "STATUS"] +
+                (["NODE", "POD NAME", "STATUS"] +
                  (if $has_restarts then ["RESTARTS"] else [] end) +
                  ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
                 ($rows[] |
