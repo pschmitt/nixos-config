@@ -7,7 +7,6 @@
     ../../services/nfs/nfs-client-all.nix
     ../../services/nix-distributed-build.nix
 
-    ../../common/network/snek
     ../../common/network/sshfs.nix
 
     ../network/wifi.nix
@@ -19,8 +18,6 @@
     ./power-profiles-daemon.nix
     ./restic.nix
     ./syncthing.nix
-    ./waydroid.nix
-    ./wireshark.nix
   ];
 
   # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
