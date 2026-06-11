@@ -16,6 +16,7 @@
     ../../services/xmr/p2pool.nix
     ../../services/xmr/xmrig-p2pool.nix
     ../../services/xmr/xmrig-proxy.nix
+    ../../services/xmr/ktunnel-xmrig-proxy.nix
     ../../services/xmr/xmrig.nix
   ];
 
@@ -32,6 +33,8 @@
   };
 
   services = {
+    ktunnel-xmrig-proxy.enable = true;
+
     xmrig.settings.cpu.max-threads-hint = lib.mkForce 15;
 
     p2pool = {

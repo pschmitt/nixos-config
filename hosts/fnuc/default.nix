@@ -10,11 +10,22 @@
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
     ../../modules/home-manager/codex-remote-control.nix
+    ../../modules/home-manager/xmr-mining.nix
     ../../home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
   ];
+
+  xmr.mining = {
+    enable = true;
+    clusters.wiit-edge-001 = {
+      kubeContext = "🐮 wiit-edge-001 (rancher-legacy)";
+      kubeconfig = "${config.home.homeDirectory}/.config/kube/rancher-cli/wiit-edge-001_rancher-legacy.yaml";
+      targetHost = "rofl-12";
+      ktunnelService = "ktunnel-wiit-xmrig-proxy.service";
+    };
+  };
 
   domains.main = "brkn.lol";
 
