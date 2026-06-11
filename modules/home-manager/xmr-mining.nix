@@ -307,10 +307,17 @@ let
         fi
 
         echo ""
-        kube \
+        kubectl \
           --kubeconfig "$kube_config" \
           --context "$kube_context" \
-          get pods -n "$namespace" 2>/dev/null || echo "(no pods)"
+          get pods -n "$namespace" -o wide 2>/dev/null \
+          | awk '{print $1, $2, $3, $4, $5, $7}' \
+          | ${pkgs.util-linux}/bin/column -t \
+          | sed \
+              -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
+              -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
+              -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
+          || echo "(no pods)"
 
         echo ""
         _nodes_json=$(
