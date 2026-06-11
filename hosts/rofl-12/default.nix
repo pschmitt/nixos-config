@@ -33,7 +33,16 @@
   };
 
   services = {
-    ktunnel-***REMOVED***-proxy.enable = true;
+    ktunnel-***REMOVED***-proxy = {
+      cluster-01 = {
+        enable = true;
+        tunnelPort = 28688;
+      };
+      cluster-02 = {
+        enable = true;
+        tunnelPort = 28689;
+      };
+    };
 
     ***REMOVED***.settings.cpu.max-threads-hint = lib.mkForce 15;
 

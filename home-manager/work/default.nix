@@ -15,6 +15,8 @@
     ./jcalapi.nix
     ./k8s.nix
     ./timetracking.nix
+    ../../modules/home-manager/***REMOVED***.nix
+    ./xmr.nix
   ];
 
   home.packages = with pkgs; [
