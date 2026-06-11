@@ -19,11 +19,19 @@
 
   ***REMOVED*** = {
     enable = true;
-    clusters.cluster-01 = {
-      kubeContext = "REMOVED";
-      kubeconfig = "${config.home.homeDirectory}/.config/kube/rancher-cli/REMOVED.yaml";
-      targetHost = "rofl-12";
-      ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+    clusters = {
+      cluster-01 = {
+        kubeContextFile = config.sops.secrets."***REMOVED***/kube-context".path;
+        kubeconfigFile = config.sops.secrets."***REMOVED***/kubeconfig".path;
+        targetHost = "rofl-12";
+        ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+      };
+      cluster-02 = {
+        kubeContextFile = config.sops.secrets."***REMOVED***/kube-context-002".path;
+        kubeconfigFile = config.sops.secrets."***REMOVED***/kubeconfig-002".path;
+        targetHost = "rofl-12";
+        ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+      };
     };
   };
 
@@ -129,5 +137,9 @@
     "home-assistant/mqtt/username".sopsFile = ./secrets.sops.yaml;
     "home-assistant/mqtt/password".sopsFile = ./secrets.sops.yaml;
     "ssh/nix-remote-builder/privkey".mode = "0400";
+    "***REMOVED***/kube-context".sopsFile = ./secrets.sops.yaml;
+    "***REMOVED***/kube-context-002".sopsFile = ./secrets.sops.yaml;
+    "***REMOVED***/kubeconfig".sopsFile = ./secrets.sops.yaml;
+    "***REMOVED***/kubeconfig-002".sopsFile = ./secrets.sops.yaml;
   };
 }
