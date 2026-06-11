@@ -25,18 +25,12 @@
     ./logitech-mouse.nix
     ./printers.nix
     ./touchpad.nix
-
-    # Display Manager
-    ./gdm.nix
-    # ./greetd.nix
-
-    # Desktops
-    ./gnome.nix
-    ./hyprland.nix
-    ./niri.nix
-    ./sway.nix
   ];
 
+  # Display managers and desktop environments are opt-in roles — see
+  # profiles/display-manager-*.nix and profiles/desktop-*.nix. Hosts compose the
+  # ones they actually run (e.g. the workstation profile picks hyprland + gnome
+  # + gdm).
 }
 
 # vim: set ft=nix et ts=2 sw=2 :
