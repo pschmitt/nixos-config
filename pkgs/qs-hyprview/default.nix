@@ -113,10 +113,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     ];
   };
 
-  meta = with lib; {
+  meta = {
     description = "QML-based window switcher/Exposé for Hyprland powered by Quickshell";
     homepage = "https://github.com/dom0/qs-hyprview";
-    license = licenses.gpl3Only;
-    platforms = platforms.linux;
+    license = lib.licenses.gpl3Only;
+    platforms = lib.platforms.linux;
   };
 })

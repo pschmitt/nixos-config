@@ -37,12 +37,12 @@ stdenvNoCC.mkDerivation {
     install -Dm755 bin/yank $out/bin/yank
   '';
 
-  meta = with lib; {
+  meta = {
     description = "OSC52 clipboard helper that works in terminals, tmux, and X11";
     homepage = "https://sunaku.github.io/tmux-yank-osc52.html";
-    license = licenses.isc;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.isc;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "yank";
-    platforms = platforms.all;
+    platforms = lib.platforms.all;
   };
 }

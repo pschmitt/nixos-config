@@ -11,11 +11,9 @@ in
 {
   sops = {
     secrets = {
-      "obsidian-livesync/username" = {
-        inherit (config.custom) sopsFile;
+      "obsidian-livesync/username" = config.custom.mkSecret {
       };
-      "obsidian-livesync/password" = {
-        inherit (config.custom) sopsFile;
+      "obsidian-livesync/password" = config.custom.mkSecret {
       };
     };
 

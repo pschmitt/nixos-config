@@ -30,10 +30,10 @@ stdenv.mkDerivation {
       }
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Wrapper around docker-compose that loads /etc/containers/env/*.env";
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pschmitt ];
-    platforms = platforms.all;
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
+    platforms = lib.platforms.all;
   };
 }

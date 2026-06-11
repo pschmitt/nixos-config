@@ -97,10 +97,10 @@ stdenv.mkDerivation rec {
     rm -rf $out/var $out/etc/systemd $out/etc/yum $out/usr/lib
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Oracle Cloud Agent";
     homepage = "https://docs.cloud.oracle.com/iaas/";
-    license = licenses.upl;
+    license = lib.licenses.upl;
     platforms = [
       "aarch64-linux"
       "x86_64-linux"

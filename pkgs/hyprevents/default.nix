@@ -64,12 +64,12 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       }
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Hyprland event loader shim and helper scripts";
     homepage = "https://github.com/vilari-mickopf/hyprevents";
-    license = licenses.mit;
-    platforms = platforms.unix;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.mit;
+    platforms = lib.platforms.unix;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "hyprevents";
   };
 })

@@ -5,8 +5,6 @@
   ...
 }:
 
-with lib;
-
 let
   cfg = config.services.restic-remote;
 
@@ -14,47 +12,47 @@ let
     { name, config, ... }:
     {
       options = {
-        user = mkOption {
-          type = types.str;
+        user = lib.mkOption {
+          type = lib.types.str;
           default = "root";
           description = "SSH User";
         };
 
-        host = mkOption {
-          type = types.str;
+        host = lib.mkOption {
+          type = lib.types.str;
           description = "SSH Host";
         };
 
-        identityFile = mkOption {
-          type = types.path;
+        identityFile = lib.mkOption {
+          type = lib.types.path;
           description = "Path to SSH private key";
         };
 
-        timer = mkOption {
-          type = types.str;
+        timer = lib.mkOption {
+          type = lib.types.str;
           default = "daily";
           description = "Systemd timer schedule (OnCalendar)";
         };
 
-        environmentFile = mkOption {
-          type = types.path;
+        environmentFile = lib.mkOption {
+          type = lib.types.path;
           description = "File containing secrets (env vars). Should include RESTIC_REPOSITORY, RESTIC_PASSWORD, AWS credentials, and optionally HEALTHCHECK_URL.";
         };
 
-        repositoryFile = mkOption {
-          type = types.nullOr types.path;
+        repositoryFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.path;
           default = null;
           description = "Path to file containing restic repository URL. If null, RESTIC_REPOSITORY must be set in environmentFile.";
         };
 
-        exclude = mkOption {
-          type = types.listOf types.str;
+        exclude = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [ ];
           description = "Paths to exclude from backup";
         };
 
-        pruneOpts = mkOption {
-          type = types.listOf types.str;
+        pruneOpts = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [
             "--keep-last 5"
             "--keep-daily 1"
@@ -66,8 +64,8 @@ let
           description = "Prune options for restic";
         };
 
-        extraOptions = mkOption {
-          type = types.listOf types.str;
+        extraOptions = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
           default = [ ];
           description = "Extra options to pass to restic";
         };
@@ -76,30 +74,28 @@ let
 in
 {
   options.services.restic-remote = {
-    enable = mkEnableOption "restic-remote backup service";
+    enable = lib.mkEnableOption "restic-remote backup service";
 
-    instances = mkOption {
-      type = types.attrsOf (types.submodule instanceOptions);
+    instances = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule instanceOptions);
       default = { };
       description = "Backup instances";
     };
   };
 
-  config = mkIf cfg.enable {
+  config = lib.mkIf cfg.enable {
     # Secrets configuration
     sops.secrets = lib.mkMerge (
-      mapAttrsToList (name: instance: {
-        "restic-remote/${name}/env" = {
-          inherit (config.custom) sopsFile;
+      lib.mapAttrsToList (name: _instance: {
+        "restic-remote/${name}/env" = config.custom.mkSecret {
         };
-        "restic-remote/${name}/sshkey" = {
-          inherit (config.custom) sopsFile;
+        "restic-remote/${name}/sshkey" = config.custom.mkSecret {
         };
       }) cfg.instances
     );
 
     fileSystems = lib.mkMerge (
-      mapAttrsToList (name: instance: {
+      lib.mapAttrsToList (name: instance: {
         "/var/lib/restic-remote/mounts/${name}" = {
           fsType = "fuse";
           device = "${pkgs.sshfs-fuse}/bin/sshfs#${instance.user}@${instance.host}:/";
@@ -128,7 +124,7 @@ in
       pkgs.sshfs
     ];
 
-    services.restic.backups = mapAttrs' (
+    services.restic.backups = lib.mapAttrs' (
       name: instance:
       let
         mountDir = "/var/lib/restic-remote/mounts/${name}";
@@ -146,7 +142,7 @@ in
           fi
         '';
       in
-      nameValuePair name (
+      lib.nameValuePair name (
         {
           inherit (instance)
             pruneOpts
@@ -203,18 +199,18 @@ in
     ) cfg.instances;
 
     # Override the systemd service to add failure handling and create failure notification services
-    systemd.services = mkMerge [
-      (mapAttrs' (
+    systemd.services = lib.mkMerge [
+      (lib.mapAttrs' (
         name: instance:
-        nameValuePair "restic-backups-${name}" {
+        lib.nameValuePair "restic-backups-${name}" {
           serviceConfig = {
             TimeoutStartSec = "4h";
           };
           onFailure = [ "restic-backups-${name}-failure.service" ];
         }
       ) cfg.instances)
-      (mkMerge (
-        mapAttrsToList (name: instance: {
+      (lib.mkMerge (
+        lib.mapAttrsToList (name: instance: {
           "restic-backups-${name}-failure" = {
             description = "Healthcheck notification for failed ${name} backup";
             serviceConfig = {

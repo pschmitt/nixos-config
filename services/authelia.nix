@@ -22,13 +22,14 @@ let
       managedTrustedNetworksFile;
   trustedHosts = [ "turris.${config.domains.main}" ];
   trustedHostsEnv = lib.concatStringsSep " " trustedHosts;
-  secretsAttrs = owner: {
-    inherit (config.custom) sopsFile;
-    inherit owner;
-    group = autheliaGroup;
-    mode = "0400";
-    restartUnits = [ autheliaService ];
-  };
+  secretsAttrs =
+    owner:
+    config.custom.mkSecret {
+      inherit owner;
+      group = autheliaGroup;
+      mode = "0400";
+      restartUnits = [ autheliaService ];
+    };
   bypassNetworks = [
     "127.0.0.1/32"
     "::1/128"

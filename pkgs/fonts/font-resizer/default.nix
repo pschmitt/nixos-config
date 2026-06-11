@@ -31,11 +31,11 @@ buildPythonApplication rec {
 
   pythonImportsCheck = [ "font_resizer" ];
 
-  meta = with lib; {
+  meta = {
     description = "CLI for controlling OBS Studio";
     homepage = "https://github.com/pschmitt/font-resizer";
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "font-resizer";
   };
 }

@@ -1,8 +1,7 @@
 { config, pkgs, ... }:
 {
 
-  sops.secrets."github-runners/nixos-config/token" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."github-runners/nixos-config/token" = config.custom.mkSecret {
   };
 
   services.github-runners.nixos-config = {

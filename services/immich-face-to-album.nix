@@ -20,11 +20,9 @@ let
         in
         {
           sopsSecrets = acc.sopsSecrets // {
-            "${baseSecretPath}/faces/${name}" = {
-              inherit (config.custom) sopsFile;
+            "${baseSecretPath}/faces/${name}" = config.custom.mkSecret {
             };
-            "${baseSecretPath}/albums/${name}" = {
-              inherit (config.custom) sopsFile;
+            "${baseSecretPath}/albums/${name}" = config.custom.mkSecret {
             };
           };
 
@@ -73,8 +71,7 @@ let
       )
       {
         sopsSecrets = {
-          "${baseSecretPath}/apiKey" = {
-            inherit (config.custom) sopsFile;
+          "${baseSecretPath}/apiKey" = config.custom.mkSecret {
           };
         };
         sopsTemplates = { };

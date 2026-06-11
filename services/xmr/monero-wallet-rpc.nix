@@ -39,16 +39,13 @@ in
 {
   sops = {
     secrets = {
-      "monero-wallet-rpc/username" = {
-        inherit (config.custom) sopsFile;
+      "monero-wallet-rpc/username" = config.custom.mkSecret {
         restartUnits = [ unitFile ];
       };
-      "monero-wallet-rpc/password" = {
-        inherit (config.custom) sopsFile;
+      "monero-wallet-rpc/password" = config.custom.mkSecret {
         restartUnits = [ unitFile ];
       };
-      "monero-wallet-rpc/wallet/password" = {
-        inherit (config.custom) sopsFile;
+      "monero-wallet-rpc/wallet/password" = config.custom.mkSecret {
         owner = svcUser;
         restartUnits = [ unitFile ];
       };

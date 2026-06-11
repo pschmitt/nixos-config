@@ -13,8 +13,7 @@ let
 in
 {
   sops = {
-    secrets."sonarr/apiKey" = {
-      inherit (config.custom) sopsFile;
+    secrets."sonarr/apiKey" = config.custom.mkSecret {
       restartUnits = [ "sonarr.service" ];
     };
     templates."sonarr-env" = {

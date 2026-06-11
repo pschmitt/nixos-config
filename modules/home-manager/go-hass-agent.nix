@@ -7,6 +7,7 @@
 let
   cfg = config.services.go-hass-agent;
   tomlFormat = pkgs.formats.toml { };
+  scriptLib = import ./script-lib.nix { inherit lib pkgs; };
   root = ../../home-manager/gui/go-hass-agent;
   desktopScriptNames = [
     "desktop-clients.sh"
@@ -21,43 +22,28 @@ let
     "screencast.sh"
   ];
 
-  # NOTE Interpolating the whole directory (instead of the single file) keeps
-  # sibling files like lib.sh next to the script in the nix store, so relative
-  # source statements keep working.
-  wrapScript =
-    dir: name:
-    pkgs.writeShellScript name ''
-      export PATH="${lib.makeBinPath cfg.scriptPackages}:${config.home.profileDirectory}/bin:${config.home.homeDirectory}/bin:${config.home.homeDirectory}/.local/bin:$PATH"
-      exec ${pkgs.bash}/bin/bash ${dir}/${name} "$@"
-    '';
+  # Runtime PATH for wrapped scripts: script packages + the user profile and
+  # personal bin dirs.
+  scriptPath = [
+    "${config.home.profileDirectory}/bin"
+    "${config.home.homeDirectory}/bin"
+    "${config.home.homeDirectory}/.local/bin"
+  ];
 
-  wrapDirScripts =
-    dir: filterPred:
-    let
-      files = lib.filterAttrs (_: type: type == "regular") (builtins.readDir dir);
-      selectedFiles = lib.filterAttrs (
-        name: _:
-        # lib.sh is sourced by the other scripts and must not be installed as
-        # an executable script sensor (go-hass-agent would try to schedule it)
-        name != "lib.sh" && filterPred name
-      ) files;
-    in
-    lib.mapAttrs (name: _: wrapScript dir name) selectedFiles;
+  wrapScripts =
+    dir: filter:
+    scriptLib.wrapDir {
+      inherit dir filter;
+      runtimeInputs = cfg.scriptPackages;
+      extraPath = scriptPath;
+    };
 
-  mkRegularFiles =
-    prefix: scripts:
-    lib.mapAttrs' (name: script: {
-      name = "${prefix}/${name}";
-      value = {
-        source = script;
-        executable = true;
-      };
-    }) scripts;
-
-  sensorScripts = wrapDirScripts (root + "/scripts") (
-    name: cfg.enableDesktopScripts || !(builtins.elem name desktopScriptNames)
+  # lib.sh is sourced by the other scripts and must not be installed as an
+  # executable script sensor (go-hass-agent would try to schedule it).
+  sensorScripts = wrapScripts (root + "/scripts") (
+    name: name != "lib.sh" && (cfg.enableDesktopScripts || !(builtins.elem name desktopScriptNames))
   );
-  commandScripts = wrapDirScripts (root + "/commands") (_: true);
+  commandScripts = wrapScripts (root + "/commands") (name: name != "lib.sh");
 in
 {
   options.services.go-hass-agent = {
@@ -191,8 +177,8 @@ in
   config = lib.mkMerge [
     {
       xdg.configFile = lib.mkMerge [
-        (mkRegularFiles "go-hass-agent/scripts" sensorScripts)
-        (mkRegularFiles "go-hass-agent/commands" commandScripts)
+        (scriptLib.toFiles "go-hass-agent/scripts" sensorScripts)
+        (scriptLib.toFiles "go-hass-agent/commands" commandScripts)
         (lib.mkIf (cfg.commands != { }) {
           "go-hass-agent/commands.toml".source =
             tomlFormat.generate "go-hass-agent-commands.toml" cfg.commands;

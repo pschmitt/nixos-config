@@ -66,12 +66,12 @@ python3.pkgs.buildPythonApplication {
   # Importing 'hints' can pull GI; leave empty to avoid headless import flakiness during build.
   pythonImportsCheck = [ ];
 
-  meta = with lib; {
+  meta = {
     description = "Keyboard-driven GUI navigation via on-screen hints";
     homepage = "https://github.com/AlfredoSequeida/hints";
-    license = licenses.gpl3Only;
-    maintainers = [ maintainers.pschmitt ];
+    license = lib.licenses.gpl3Only;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "hints";
-    platforms = platforms.linux;
+    platforms = lib.platforms.linux;
   };
 }

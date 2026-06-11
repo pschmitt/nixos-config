@@ -24,8 +24,7 @@ in
 {
   sops = {
     secrets = {
-      "n8n/runners/authToken" = {
-        inherit (config.custom) sopsFile;
+      "n8n/runners/authToken" = config.custom.mkSecret {
         path = "/run/secrets/n8n-runners-authToken";
         mode = "0400";
         # Below needs to match the user inside the n8n container

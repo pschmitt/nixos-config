@@ -17,6 +17,7 @@ let
     types
     ;
   cfg = config.xmr.mining;
+  yamlFormat = pkgs.formats.yaml { };
 
   clusterOptions =
     { name, ... }:
@@ -86,54 +87,65 @@ let
 
   makeDaemonsetYaml =
     name: cluster:
-    pkgs.writeText "xmrig-daemonset-${name}.yaml" ''
-      apiVersion: apps/v1
-      kind: DaemonSet
-      metadata:
-        name: xmrig
-        namespace: ${cluster.namespace}
-        labels:
-          app: xmrig
-      spec:
-        selector:
-          matchLabels:
-            app: xmrig
-        template:
-          metadata:
-            labels:
-              app: xmrig
-          spec:
-            affinity:
-              nodeAffinity:
-                requiredDuringSchedulingIgnoredDuringExecution:
-                  nodeSelectorTerms:
-                    - matchExpressions:
-                        - key: node-role.kubernetes.io/compute
-                          operator: Exists
-            containers:
-              - name: xmrig
-                image: artifactory.prod.capp.wiit-cloud.io/docker-ghcr-io-remote/metal3d/xmrig:latest
-                command:
-                  - /bin/bash
-                  - -c
-                  - |
+    yamlFormat.generate "xmrig-daemonset-${name}.yaml" {
+      apiVersion = "apps/v1";
+      kind = "DaemonSet";
+      metadata = {
+        name = "xmrig";
+        inherit (cluster) namespace;
+        labels.app = "xmrig";
+      };
+      spec = {
+        selector.matchLabels.app = "xmrig";
+        template = {
+          metadata.labels.app = "xmrig";
+          spec = {
+            affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms = [
+              {
+                matchExpressions = [
+                  {
+                    key = "node-role.kubernetes.io/compute";
+                    operator = "Exists";
+                  }
+                ];
+              }
+            ];
+            containers = [
+              {
+                name = "xmrig";
+                image = "artifactory.prod.capp.wiit-cloud.io/docker-ghcr-io-remote/metal3d/xmrig:latest";
+                command = [
+                  "/bin/bash"
+                  "-c"
+                  ''
                     node_name="''${NODE_NAME:-''${HOSTNAME:-$(hostname)}}"
                     exec xmrig -o "''${POOL_URL}" --nicehash -p "''${POOL_PASS}" --rig-id "''${node_name}" --donate-level 1
-                securityContext:
-                  privileged: true
-                env:
-                  - name: NODE_NAME
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: spec.nodeName
-                  - name: POOL_URL
-                    value: xmrig-proxy.${cluster.namespace}.svc.cluster.local:3333
-                  - name: POOL_PASS
-                    valueFrom:
-                      secretKeyRef:
-                        name: xmrig-proxy-password
-                        key: password
-    '';
+                  ''
+                ];
+                securityContext.privileged = true;
+                env = [
+                  {
+                    name = "NODE_NAME";
+                    valueFrom.fieldRef.fieldPath = "spec.nodeName";
+                  }
+                  {
+                    name = "POOL_URL";
+                    value = "xmrig-proxy.${cluster.namespace}.svc.cluster.local:3333";
+                  }
+                  {
+                    name = "POOL_PASS";
+                    valueFrom.secretKeyRef = {
+                      name = "xmrig-proxy-password";
+                      key = "password";
+                    };
+                  }
+                ];
+              }
+            ];
+          };
+        };
+      };
+    };
 
   makeSyncScript =
     name: cluster:

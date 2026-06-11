@@ -108,10 +108,10 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     ];
   };
 
-  meta = with lib; {
+  meta = {
     description = "Quickshell overview module for Hyprland";
     homepage = "https://github.com/Shanu-Kumawat/quickshell-overview";
-    license = licenses.gpl3Only;
-    platforms = platforms.linux;
+    license = lib.licenses.gpl3Only;
+    platforms = lib.platforms.linux;
   };
 })

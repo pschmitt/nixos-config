@@ -34,12 +34,12 @@ stdenv.mkDerivation rec {
     cp hhg "$out/bin"
   '';
 
-  meta = with lib; {
+  meta = {
     description = "A free, open-source alternative to the HHKB Keymap Tool provided by PFU";
     homepage = "https://gitlab.com/dom/happy-hacking-gnu";
-    license = licenses.unlicense;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.unlicense;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "hhg";
-    platforms = platforms.all;
+    platforms = lib.platforms.all;
   };
 }

@@ -10,8 +10,7 @@ in
 {
   sops = {
     secrets = {
-      "searxng/secret-key" = {
-        inherit (config.custom) sopsFile;
+      "searxng/secret-key" = config.custom.mkSecret {
         restartUnits = [ "searx.service" ];
       };
     };

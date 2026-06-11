@@ -16,8 +16,7 @@ let
 in
 {
   sops = {
-    secrets."radarr/apiKey" = {
-      inherit (config.custom) sopsFile;
+    secrets."radarr/apiKey" = config.custom.mkSecret {
       restartUnits = [ "radarr.service" ];
     };
     templates."radarr-env" = {

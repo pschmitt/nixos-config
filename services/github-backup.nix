@@ -28,16 +28,13 @@ let
 in
 {
   sops.secrets = {
-    "github-backup/env" = {
-      inherit (config.custom) sopsFile;
+    "github-backup/env" = config.custom.mkSecret {
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-github-backup.service" ];
     };
-    "github-backup/ssh/privkey" = {
-      inherit (config.custom) sopsFile;
+    "github-backup/ssh/privkey" = config.custom.mkSecret {
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-github-backup.service" ];
     };
-    "github-backup/ssh/pubkey" = {
-      inherit (config.custom) sopsFile;
+    "github-backup/ssh/pubkey" = config.custom.mkSecret {
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-github-backup.service" ];
     };
   };
