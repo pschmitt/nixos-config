@@ -1,10 +1,7 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
-  internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 4545;
   publicHost = "listen.arr.${config.domains.main}";
-  autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
-  containerService = config.virtualisation.oci-containers.containers.listenarr.serviceName;
   dataDir = "/mnt/data/srv/listenarr/config";
   transmissionDownloadDir =
     config.services.transmission.settings."download-dir"
@@ -47,49 +44,9 @@ in
     ];
   };
 
-  vpnNamespaces.mullvad.portMappings = [
-    {
-      from = port;
-      to = port;
-    }
-  ];
-
-  systemd.services."${containerService}" = {
-    wantedBy = [ "arr.target" ];
-    partOf = [ "arr.target" ];
-    after = [ "mullvad.service" ];
-    requires = [ "mullvad.service" ];
+  arr.services.listenarr = {
+    inherit port;
+    host = publicHost;
+    container = "listenarr";
   };
-
-  services = {
-    nginx.virtualHosts."${publicHost}" = {
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      extraConfig = autheliaConfig.server;
-      locations."/" = {
-        proxyPass = "http://${internalIP}:${toString port}";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
-      };
-    };
-
-    monit.config = ''
-      check host "listenarr" with address ${internalIP}
-        group piracy
-        depends on mullvad-netns
-        restart program = "${pkgs.systemd}/bin/systemctl restart ${containerService}"
-        if failed port ${toString port}
-          protocol http
-          request "/ping"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 5 cycles then alert
-    '';
-  };
-
-  fakeHosts.listenarr.port = port;
 }
