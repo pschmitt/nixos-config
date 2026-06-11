@@ -24,11 +24,23 @@ let
       options = {
         kubeContext = mkOption {
           type = types.str;
-          description = "Full kubectl context name for this cluster.";
+          default = "";
+          description = "Full kubectl context name. Leave empty and set kubeContextFile to read from a secret at runtime.";
+        };
+        kubeContextFile = mkOption {
+          type = types.str;
+          default = "";
+          description = "Path to a file containing the kubectl context name (e.g., a sops-nix secret path).";
         };
         kubeconfig = mkOption {
           type = types.str;
-          description = "Path to the kubeconfig file containing the cluster context.";
+          default = "";
+          description = "Path to the kubeconfig file. Leave empty and set kubeconfigFile to read from a secret at runtime.";
+        };
+        kubeconfigFile = mkOption {
+          type = types.str;
+          default = "";
+          description = "Path to a file containing the kubeconfig path (e.g., a sops-nix secret).";
         };
         targetHost = mkOption {
           type = types.str;
@@ -57,6 +69,20 @@ let
     };
 
   syncServiceName = name: "xmrig-sync-${name}";
+
+  kubeContextArg =
+    cluster:
+    if cluster.kubeContextFile != "" then
+      ''"$(cat ${escapeShellArg cluster.kubeContextFile})"''
+    else
+      escapeShellArg cluster.kubeContext;
+
+  kubeconfigArg =
+    cluster:
+    if cluster.kubeconfigFile != "" then
+      ''"$(cat ${escapeShellArg cluster.kubeconfigFile})"''
+    else
+      escapeShellArg cluster.kubeconfig;
 
   makeDaemonsetYaml =
     name: cluster:
@@ -117,11 +143,14 @@ let
       ssh() { ${pkgs.openssh}/bin/ssh $SSH_OPTS "$@"; }
       scp() { ${pkgs.openssh}/bin/scp $SSH_OPTS "$@"; }
 
+      KUBE_CONTEXT=${kubeContextArg cluster}
+      export KUBECONFIG=${kubeconfigArg cluster}
+
       TMP_KUBECONFIG=$(mktemp)
       trap 'rm -f "$TMP_KUBECONFIG"' EXIT
 
       ${pkgs.kubectl}/bin/kubectl config view \
-        --minify --context '${cluster.kubeContext}' --raw \
+        --minify --context "$KUBE_CONTEXT" --raw \
         > "$TMP_KUBECONFIG"
 
       REMOTE_TMP=$(ssh '${cluster.targetHost}' mktemp)
@@ -133,22 +162,22 @@ let
       ssh '${cluster.targetHost}' rm -f "$REMOTE_TMP"
 
       ${pkgs.kubectl}/bin/kubectl \
-        --context '${cluster.kubeContext}' \
+        --context "$KUBE_CONTEXT" \
         create namespace '${cluster.namespace}' \
         --dry-run=client -o yaml | \
-        ${pkgs.kubectl}/bin/kubectl --context '${cluster.kubeContext}' apply -f -
+        ${pkgs.kubectl}/bin/kubectl --context "$KUBE_CONTEXT" apply -f -
 
       PROXY_PASS=$(ssh '${cluster.targetHost}' sudo cat '${cluster.remoteProxyPasswordPath}')
       ${pkgs.kubectl}/bin/kubectl \
-        --context '${cluster.kubeContext}' \
+        --context "$KUBE_CONTEXT" \
         create secret generic xmrig-proxy-password \
         --namespace '${cluster.namespace}' \
         --from-literal=password="$PROXY_PASS" \
         --dry-run=client -o yaml | \
-        ${pkgs.kubectl}/bin/kubectl --context '${cluster.kubeContext}' apply -f -
+        ${pkgs.kubectl}/bin/kubectl --context "$KUBE_CONTEXT" apply -f -
 
       ${pkgs.kubectl}/bin/kubectl get secret artifactory \
-        --context '${cluster.kubeContext}' \
+        --context "$KUBE_CONTEXT" \
         --namespace kube-system \
         -o json | \
         ${pkgs.python3}/bin/python3 -c "
@@ -161,16 +190,16 @@ let
         'type': d['type'],
         'data': d['data'],
       }))" | \
-        ${pkgs.kubectl}/bin/kubectl --context '${cluster.kubeContext}' apply -f -
+        ${pkgs.kubectl}/bin/kubectl --context "$KUBE_CONTEXT" apply -f -
 
       ${pkgs.kubectl}/bin/kubectl \
-        --context '${cluster.kubeContext}' \
+        --context "$KUBE_CONTEXT" \
         patch serviceaccount default \
         --namespace '${cluster.namespace}' \
         -p '{"imagePullSecrets": [{"name": "artifactory"}]}'
 
       ${pkgs.kubectl}/bin/kubectl \
-        --context '${cluster.kubeContext}' \
+        --context "$KUBE_CONTEXT" \
         apply -f ${daemonset}
 
       ssh '${cluster.targetHost}' sudo systemctl restart '${cluster.ktunnelService}' || true
@@ -181,8 +210,8 @@ let
 
   mkCtxCase = name: cluster: ''
     ${escapeShellArg name})
-      kube_context=${escapeShellArg cluster.kubeContext}
-      kube_config=${escapeShellArg cluster.kubeconfig}
+      kube_context=${kubeContextArg cluster}
+      kube_config=${kubeconfigArg cluster}
       target_host=${escapeShellArg cluster.targetHost}
       ktunnel_svc=${escapeShellArg cluster.ktunnelService}
       namespace=${escapeShellArg cluster.namespace}
@@ -197,9 +226,11 @@ let
     kubectl() { ${pkgs.kubectl}/bin/kubectl "$@"; }
     kube() { KUBECTL_COMMAND=${pkgs.kubectl}/bin/kubectl ${pkgs.kubecolor}/bin/kubecolor "$@"; }
 
+    all_ctx_names=(${lib.concatStringsSep " " (map escapeShellArg clusterNames)})
+
     usage() {
       cat >&2 <<EOF
-    Usage: $(basename "$0") [--context CTX] ACTION
+    Usage: $(basename "$0") [--context CTX|-A] ACTION
 
     Actions:
       start   sync kubeconfig, bootstrap secrets, deploy miners
@@ -209,6 +240,7 @@ let
 
     Options:
       -c, --context CTX   cluster context  (${lib.concatStringsSep "|" clusterNames})
+      -A, --all           run action across all clusters
       -n, --namespace NS  override kubernetes namespace
       -h, --help          show this help
     EOF
@@ -217,6 +249,7 @@ let
     ctx=${escapeShellArg defaultCtx}
     cmd=
     ns_override=
+    all_clusters=
 
     while [[ -n "''${1:-}" ]]
     do
@@ -224,6 +257,10 @@ let
         -c|--context)
           ctx="$2"
           shift 2
+          ;;
+        -A|--all)
+          all_clusters=1
+          shift
           ;;
         -n|--namespace)
           ns_override="$2"
@@ -244,10 +281,42 @@ let
       esac
     done
 
-    if [[ -z "$ctx" || -z "$cmd" ]]
+    if [[ -z "$cmd" ]]
     then
       usage
       exit 2
+    fi
+
+    if [[ -z "$ctx" && -z "$all_clusters" ]]
+    then
+      usage
+      exit 2
+    fi
+
+    if [[ -n "$all_clusters" ]]
+    then
+      case "$cmd" in
+        start|stop)
+          for _ctx in "''${all_ctx_names[@]}"
+          do
+            "$0" --context "$_ctx" "$cmd" ''${ns_override:+--namespace "$ns_override"}
+          done
+          exit 0
+          ;;
+        status|show)
+          for _ctx in "''${all_ctx_names[@]}"
+          do
+            printf '\n\e[1;35m=== %s ===\e[0m\n' "$_ctx"
+            "$0" --context "$_ctx" status ''${ns_override:+--namespace "$ns_override"}
+          done
+          exit 0
+          ;;
+        *)
+          printf 'Action "%s" does not support --all\n' "$cmd" >&2
+          usage
+          exit 2
+          ;;
+      esac
     fi
 
     case "$ctx" in
@@ -307,56 +376,61 @@ let
         fi
 
         echo ""
-        kubectl \
-          --kubeconfig "$kube_config" \
-          --context "$kube_context" \
-          get pods -n "$namespace" -o wide 2>/dev/null \
-          | awk '{print $1, $2, $3, $4, $5, $7}' \
-          | ${pkgs.util-linux}/bin/column -t \
-          | sed \
-              -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
-              -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
-              -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
-          || echo "(no pods)"
-
-        echo ""
-        _nodes_json=$(
+        _pods_json=$(
           kubectl \
             --kubeconfig "$kube_config" \
             --context "$kube_context" \
             get pods -l app=xmrig -n "$namespace" -o json 2>/dev/null \
-          | ${pkgs.jq}/bin/jq '[.items[].spec.nodeName] | unique' \
-          || echo '[]'
+          || echo '{"items":[]}'
         )
         _workers_json=$(
           ssh "$target_host" \
             "curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null" 2>/dev/null \
-          || true
+          || echo '{"workers":[]}'
         )
-        if [[ -z "$_workers_json" ]]
-        then
-          echo "(proxy unavailable)"
-        else
-          ${pkgs.jq}/bin/jq -r --argjson nodes "$_nodes_json" '
-            def nth($a; $i): if ($a | type) == "array" then ($a[$i] // 0) else 0 end;
-            def rates($w): if ($w[8]? | type) == "array" then $w[8] else ($w[8:] // []) end;
-            def fmt($n): ($n * 100 | round) / 100 | tostring;
-            [.workers[] | select(.[0] as $n | $nodes | index($n) != null)] as $fw
-            | [
-                ["NAME", "1M", "10M", "1H"],
-                ($fw[] | [.[0],
-                  (rates(.) | fmt(nth(.; 0))),
-                  (rates(.) | fmt(nth(.; 1))),
-                  (rates(.) | fmt(nth(.; 2)))]),
-                ["TOTAL",
-                  fmt([$fw[] | rates(.) | nth(.; 0)] | add // 0),
-                  fmt([$fw[] | rates(.) | nth(.; 1)] | add // 0),
-                  fmt([$fw[] | rates(.) | nth(.; 2)] | add // 0)]
-              ][] | @tsv
-          ' <<< "$_workers_json" \
-            | ${pkgs.util-linux}/bin/column -t \
-            | sed -e '1s/.*/\x1b[1m&\x1b[0m/' -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
-        fi
+        ${pkgs.jq}/bin/jq -r --argjson workers "$_workers_json" '
+          def fmt($n): ($n * 100 | round) / 100 | tostring;
+          def age($ts):
+            (now - ($ts | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) as $s
+            | if $s < 60 then ($s | round | tostring) + "s"
+              elif $s < 3600 then ($s / 60 | floor | tostring) + "m"
+              elif $s < 86400 then ($s / 3600 | floor | tostring) + "h"
+              else ($s / 86400 | floor | tostring) + "d"
+              end;
+          ($workers.workers | map({key: .[0], value: .}) | from_entries) as $wmap
+          | [.items[] | {
+              name: .metadata.name,
+              status: (.status.phase // "Unknown"),
+              restarts: (.status.containerStatuses[0]?.restartCount // 0),
+              age: age(.metadata.creationTimestamp),
+              node: (.spec.nodeName // "<none>"),
+              r1m: ($wmap[.spec.nodeName][8] // 0),
+              r10m: ($wmap[.spec.nodeName][9] // 0),
+              r1h: ($wmap[.spec.nodeName][10] // 0)
+            }] as $rows
+          | ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
+          | [
+              (["NODE", "NAME", "STATUS"] +
+               (if $has_restarts then ["RESTARTS"] else [] end) +
+               ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
+              ($rows[] |
+               [.node, .name, .status] +
+               (if $has_restarts then [.restarts | tostring] else [] end) +
+               [.age, fmt(.r1m), fmt(.r10m), fmt(.r1h)]),
+              (["TOTAL"] +
+               (if $has_restarts then ["", "", "", ""] else ["", "", ""] end) +
+               [fmt([$rows[] | .r1m] | add // 0),
+                fmt([$rows[] | .r10m] | add // 0),
+                fmt([$rows[] | .r1h] | add // 0)])
+            ][] | @tsv
+        ' <<< "$_pods_json" \
+          | ${pkgs.util-linux}/bin/column -t -s $'\t' \
+          | sed \
+              -e '1s/.*/\x1b[1m&\x1b[0m/' \
+              -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
+              -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
+              -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
+              -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
         ;;
 
       logs)
@@ -435,8 +509,8 @@ in
           Environment = [
             "LANG=en_US.UTF-8"
             "LC_ALL=en_US.UTF-8"
-            "KUBECONFIG=${cluster.kubeconfig}"
-          ];
+          ]
+          ++ (if cluster.kubeconfig != "" then [ "KUBECONFIG=${cluster.kubeconfig}" ] else [ ]);
           ExecStart = makeSyncScript name cluster;
         };
       }
