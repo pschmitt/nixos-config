@@ -68,7 +68,7 @@ let
       };
     };
 
-  syncServiceName = name: "xmrig-sync-${name}";
+  syncServiceName = name: "xmrig-sync-kubeconfig-${name}";
 
   kubeContextArg =
     cluster:
@@ -266,6 +266,7 @@ let
       -c, --context CTX   cluster context  (${lib.concatStringsSep "|" clusterNames})
       -a, -A, --all       run action across all clusters
       -j, --json          output status as JSON
+      -f, --follow        follow log output (logs command only)
       -n, --namespace NS  override kubernetes namespace
       -h, --help          show this help
     EOF
@@ -276,6 +277,7 @@ let
     ns_override=
     all_clusters=
     json_output=
+    follow=
 
     while [[ -n "''${1:-}" ]]
     do
@@ -290,6 +292,10 @@ let
           ;;
         -j|--json)
           json_output=1
+          shift
+          ;;
+        -f|--follow)
+          follow=1
           shift
           ;;
         -n|--namespace)
@@ -320,7 +326,7 @@ let
     if [[ -z "$ctx" && -z "$all_clusters" ]]
     then
       case "$cmd" in
-        start|stop|status|show)
+        start|stop|status|show|logs)
           all_clusters=1
           ;;
         *)
@@ -338,6 +344,18 @@ let
           do
             "$0" --context "$_ctx" "$cmd" ''${ns_override:+--namespace "$ns_override"}
           done
+          exit 0
+          ;;
+        logs)
+          _pids=()
+          for _ctx in "''${all_ctx_names[@]}"
+          do
+            "$0" --context "$_ctx" logs \
+              ''${ns_override:+--namespace "$ns_override"} \
+              ''${follow:+--follow} &
+            _pids+=($!)
+          done
+          wait "''${_pids[@]}"
           exit 0
           ;;
         status|show)
@@ -462,7 +480,7 @@ let
 
       status|show)
         _ktunnel_state=$(
-          ssh "$target_host" "systemctl is-active '$ktunnel_svc'" 2>/dev/null \
+          ssh "$target_host" "systemctl is-active '$ktunnel_svc'; true" 2>/dev/null \
             || echo "unknown"
         )
         _pods_json=$(
@@ -593,43 +611,48 @@ let
         ;;
 
       logs)
-        echo "=== xmrig pod logs ($namespace) ==="
+        echo "=== xmrig pod logs ($ctx / $namespace) ==="
         kubectl \
           --kubeconfig "$kube_config" \
           --context "$kube_context" \
-          logs -l app=xmrig -n "$namespace" --tail=50 --prefix 2>/dev/null \
+          logs -l app=xmrig -n "$namespace" \
+          --tail=50 --prefix \
+          ''${follow:+--follow} 2>/dev/null \
           || echo "(no logs)"
 
-        echo ""
-        echo "=== ktunnel server pod logs ($namespace) ==="
-        _pod_json=$(
-          kubectl \
-            --kubeconfig "$kube_config" \
-            --context "$kube_context" \
-            get pods -n "$namespace" -o json 2>/dev/null \
-            || echo '{"items":[]}'
-        )
-        _ktunnel_pod=$(
-          ${pkgs.jq}/bin/jq -r \
-            'first(.items[] | select(.metadata.name | test("(?i)ktunnel")) | .metadata.name) // ""' \
-            <<< "$_pod_json"
-        )
-        if [[ -n "$_ktunnel_pod" ]]
+        if [[ -z "$follow" ]]
         then
-          kubectl \
-            --kubeconfig "$kube_config" \
-            --context "$kube_context" \
-            logs "$_ktunnel_pod" -n "$namespace" --tail=50 2>/dev/null \
-            || echo "(no logs)"
-        else
-          echo "(ktunnel pod not found)"
-        fi
+          echo ""
+          echo "=== ktunnel server pod logs ($ctx / $namespace) ==="
+          _pod_json=$(
+            kubectl \
+              --kubeconfig "$kube_config" \
+              --context "$kube_context" \
+              get pods -n "$namespace" -o json 2>/dev/null \
+              || echo '{"items":[]}'
+          )
+          _ktunnel_pod=$(
+            ${pkgs.jq}/bin/jq -r \
+              'first(.items[] | select(.metadata.name | test("(?i)ktunnel")) | .metadata.name) // ""' \
+              <<< "$_pod_json"
+          )
+          if [[ -n "$_ktunnel_pod" ]]
+          then
+            kubectl \
+              --kubeconfig "$kube_config" \
+              --context "$kube_context" \
+              logs "$_ktunnel_pod" -n "$namespace" --tail=50 2>/dev/null \
+              || echo "(no logs)"
+          else
+            echo "(ktunnel pod not found)"
+          fi
 
-        echo ""
-        echo "=== ktunnel journal ($target_host) ==="
-        ssh "$target_host" \
-          "SYSTEMD_COLORS=1 journalctl -u '$ktunnel_svc' -n 50 --no-pager" \
-          2>&1 || echo "(unavailable)"
+          echo ""
+          echo "=== ktunnel journal ($ctx / $target_host) ==="
+          ssh "$target_host" \
+            "SYSTEMD_COLORS=1 journalctl -u '$ktunnel_svc' -n 50 --no-pager" \
+            2>&1 || echo "(unavailable)"
+        fi
         ;;
     esac
 
@@ -647,6 +670,12 @@ in
   options.xmr.mining = {
     enable = mkEnableOption "xmrig mining cluster management";
 
+    enableSync = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable kubeconfig sync services and timers. Only needed on the host that holds the kubeconfig secrets (fnuc).";
+    };
+
     clusters = mkOption {
       type = types.attrsOf (types.submodule clusterOptions);
       default = { };
@@ -655,39 +684,43 @@ in
   };
 
   config = mkIf cfg.enable {
-    systemd.user.services = mapAttrs' (
-      name: cluster:
-      nameValuePair (syncServiceName name) {
-        Unit = {
-          Description = "Sync kubeconfig and bootstrap xmrig mining on ${name}";
-          After = [ "network-online.target" ];
-          Wants = [ "network-online.target" ];
-        };
-        Service = {
-          Type = "oneshot";
-          Environment = [
-            "LANG=en_US.UTF-8"
-            "LC_ALL=en_US.UTF-8"
-          ]
-          ++ (if cluster.kubeconfig != "" then [ "KUBECONFIG=${cluster.kubeconfig}" ] else [ ]);
-          ExecStart = makeSyncScript name cluster;
-        };
-      }
-    ) cfg.clusters;
+    systemd.user.services = mkIf cfg.enableSync (
+      mapAttrs' (
+        name: cluster:
+        nameValuePair (syncServiceName name) {
+          Unit = {
+            Description = "Sync kubeconfig and bootstrap xmrig mining on ${name}";
+            After = [ "network-online.target" ];
+            Wants = [ "network-online.target" ];
+          };
+          Service = {
+            Type = "oneshot";
+            Environment = [
+              "LANG=en_US.UTF-8"
+              "LC_ALL=en_US.UTF-8"
+            ]
+            ++ (if cluster.kubeconfig != "" then [ "KUBECONFIG=${cluster.kubeconfig}" ] else [ ]);
+            ExecStart = makeSyncScript name cluster;
+          };
+        }
+      ) cfg.clusters
+    );
 
-    systemd.user.timers = mapAttrs' (
-      name: cluster:
-      nameValuePair (syncServiceName name) {
-        Unit.Description = "Periodically sync kubeconfig for xmrig mining on ${name}";
-        Timer = {
-          OnBootSec = "5min";
-          OnUnitActiveSec = "1h";
-          RandomizedDelaySec = "5min";
-          Persistent = true;
-        };
-        Install.WantedBy = [ "timers.target" ];
-      }
-    ) cfg.clusters;
+    systemd.user.timers = mkIf cfg.enableSync (
+      mapAttrs' (
+        name: _:
+        nameValuePair (syncServiceName name) {
+          Unit.Description = "Periodically sync kubeconfig for xmrig mining on ${name}";
+          Timer = {
+            OnBootSec = "5min";
+            OnUnitActiveSec = "1h";
+            RandomizedDelaySec = "5min";
+            Persistent = true;
+          };
+          Install.WantedBy = [ "timers.target" ];
+        }
+      ) cfg.clusters
+    );
 
     home.packages = [ minerctl ] ++ perClusterWrappers;
   };

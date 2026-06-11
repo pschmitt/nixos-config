@@ -15,6 +15,8 @@
     ./jcalapi.nix
     ./k8s.nix
     ./timetracking.nix
+    ../../modules/home-manager/xmr-mining.nix
+    ./xmr.nix
   ];
 
   home.packages = with pkgs; [
