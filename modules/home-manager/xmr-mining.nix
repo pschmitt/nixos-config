@@ -320,7 +320,7 @@ let
     if [[ -z "$ctx" && -z "$all_clusters" ]]
     then
       case "$cmd" in
-        status|show)
+        start|stop|status|show)
           all_clusters=1
           ;;
         *)
