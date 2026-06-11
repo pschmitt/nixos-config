@@ -303,16 +303,47 @@ let
           get pods -n "$namespace" 2>/dev/null || echo "(no pods)"
 
         echo ""
-        ssh "$target_host" \
-          "workers=\$(curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null); \
-           summary=\$(curl -sf http://127.0.0.1:9674/1/summary 2>/dev/null); \
-           echo \"\$workers\" | ${pkgs.jq}/bin/jq -r \
-             '.workers[]? | [.id, ((.hashrate[1]//0)/1000000*10|round/10|tostring)+\" MH/s\", \"acc:\"+(.accepted|tostring)+\"  rej:\"+(.rejected//0|tostring)] | join(\"  \")' \
-             2>/dev/null; \
-           echo \"\$summary\" | ${pkgs.jq}/bin/jq -r \
-             '\"total  |  acc: \"+(.results.accepted|tostring)+\"  |  rej: \"+((.results.rejected//0)|tostring)+\"  |  hashes: \"+(.results.hashes_total/1000000000*100|round/100|tostring)+\" GH\"' \
-             2>/dev/null" \
-          2>/dev/null || echo "(proxy unavailable)"
+        _nodes_json=$(
+          kubectl \
+            --kubeconfig "$kube_config" \
+            --context "$kube_context" \
+            get pods -l app=xmrig -n "$namespace" -o json 2>/dev/null \
+          | ${pkgs.jq}/bin/jq '[.items[].spec.nodeName] | unique' \
+          || echo '[]'
+        )
+        _workers_json=$(
+          ssh "$target_host" \
+            "curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null" 2>/dev/null \
+          || true
+        )
+        if [[ -z "$_workers_json" ]]
+        then
+          echo "(proxy unavailable)"
+        else
+          ${pkgs.jq}/bin/jq -r --argjson nodes "$_nodes_json" '
+            def nth($a; $i): if ($a | type) == "array" then ($a[$i] // 0) else 0 end;
+            def rates($w): if ($w[8]? | type) == "array" then $w[8] else ($w[8:] // []) end;
+            def fmt($n): ($n * 100 | round) / 100 | tostring;
+            [.workers[] | select(.[0] as $n | $nodes | index($n) != null)] as $fw
+            | [
+                ["NAME", "1M", "10M", "1H"],
+                ($fw[] | [.[0],
+                  (rates(.) | fmt(nth(.; 0))),
+                  (rates(.) | fmt(nth(.; 1))),
+                  (rates(.) | fmt(nth(.; 2)))]),
+                ["TOTAL",
+                  fmt([$fw[] | rates(.) | nth(.; 0)] | add // 0),
+                  fmt([$fw[] | rates(.) | nth(.; 1)] | add // 0),
+                  fmt([$fw[] | rates(.) | nth(.; 2)] | add // 0)]
+              ][] | @tsv
+          ' <<< "$_workers_json" | ${pkgs.util-linux}/bin/column -t
+          ${pkgs.jq}/bin/jq -r --argjson nodes "$_nodes_json" '
+            [.workers[] | select(.[0] as $n | $nodes | index($n) != null)] as $fw
+            | "acc: " + ([$fw[] | .[3]] | add // 0 | tostring)
+            + "  rej: " + ([$fw[] | .[4]] | add // 0 | tostring)
+            + "  hashes: " + (([$fw[] | .[7]] | add // 0) / 1000000000 * 100 | round / 100 | tostring) + " GH"
+          ' <<< "$_workers_json" || true
+        fi
         ;;
 
       logs)
