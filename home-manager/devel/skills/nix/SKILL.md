@@ -16,4 +16,5 @@ Use this skill for system-level NixOS and Home Manager configuration tasks.
 Read `AGENTS.md` in the repo root for environment setup, code style, and deployment rules.
 See `references/conventions.md` for directory layout, secrets handling, and repo
 idioms (no `with lib;`, `config.custom.mkSecret`, `writeShellApplication` + external
-scripts, `common/profiles/`, `pkgs.formats.*`, and how to verify refactors).
+scripts, `common/` layers vs top-level `profiles/`, `pkgs.formats.*`, and how to
+verify refactors).

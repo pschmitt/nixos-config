@@ -23,6 +23,18 @@
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 
+## Host composition
+- `common/<category>/` holds base **platform layers** — the machine class or
+  capability a host *is* (`global`, `server`, `gui`, `laptop`, `network`,
+  `work`). They are imported explicitly and form a transitive hierarchy
+  (`server` imports `global`; `global` imports `network`).
+- `profiles/<role>.nix` (top-level) holds **role bundles** — what a host *does*.
+  A profile is a pure `imports` aggregator with a one-line header comment,
+  grouping service imports shared by **2+ hosts** (e.g. `profiles/workstation.nix`
+  for the ge2/gk4/x13 laptops, `profiles/tdarr-node.nix` for rofl-13/rofl-14).
+- Don't create a profile for a single-host stack — that is just indirection;
+  keep those imports inline in the host's `default.nix`.
+
 ## NetBox
 - When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.
 

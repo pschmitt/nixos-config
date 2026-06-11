@@ -4,7 +4,7 @@
     ./hardware-configuration.nix
 
     ../../common/server
-    ../../common/profiles/tdarr-node.nix
+    ../../profiles/tdarr-node.nix
   ];
 
   hardware = {
