@@ -24,13 +24,13 @@
         kubeContextFile = config.sops.secrets."***REMOVED***/kube-context".path;
         kubeconfigFile = config.sops.secrets."***REMOVED***/kubeconfig".path;
         targetHost = "rofl-12";
-        ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+        ktunnelService = "ktunnel-***REMOVED***-proxy.service";
       };
       cluster-02 = {
         kubeContextFile = config.sops.secrets."***REMOVED***/kube-context-002".path;
         kubeconfigFile = config.sops.secrets."***REMOVED***/kubeconfig-002".path;
         targetHost = "rofl-12";
-        ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+        ktunnelService = "ktunnel-***REMOVED***-proxy.service";
       };
     };
   };
