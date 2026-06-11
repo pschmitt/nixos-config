@@ -1,7 +1,7 @@
 {
+  hostname,
   lib,
   pkgs,
-  osConfig ? null,
   ...
 }:
 let
@@ -16,7 +16,6 @@ let
     };
   };
 
-  inherit (osConfig.networking) hostName;
 in
 {
   programs.waybar = {
@@ -24,7 +23,7 @@ in
     systemd.enable = true;
     systemd.enableDebug = true;
     style = builtins.readFile ./style.css;
-    settings = import ./config.nix { inherit hostName; };
+    settings = import ./config.nix { hostName = hostname; };
   };
 
   xdg.configFile = {

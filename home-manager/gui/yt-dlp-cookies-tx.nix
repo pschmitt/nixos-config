@@ -1,4 +1,4 @@
-{ osConfig, pkgs, ... }:
+{ config, pkgs, ... }:
 let
   serviceName = "yt-dlp-cookies-tx";
 in
@@ -17,7 +17,7 @@ in
         Environment = [
           "DEST=/srv/yt-dlp/cookies.txt"
           "SRC_BROWSER=firefox"
-          "TARGET_HOST=rofl-10.${osConfig.domains.main}"
+          "TARGET_HOST=rofl-10.${config.domains.main}"
           "RESTART_SERVICES=docker-podsync.service pinchflat.service"
         ];
 
