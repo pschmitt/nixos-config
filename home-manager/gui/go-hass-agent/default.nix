@@ -1,10 +1,7 @@
-# NOTE osConfig is only set when home-manager runs as a NixOS module. On
-# standalone home-manager hosts (eg. fnuc) it defaults to null and the service
-# must be enabled and wired up manually.
 {
   config,
+  hostname,
   lib,
-  osConfig ? null,
   ...
 }:
 let
@@ -28,7 +25,7 @@ in
             icon = "mdi:lock-open-variant";
           }
         ]
-        ++ lib.optionals (osConfig != null && osConfig.networking.hostName == "ge2") [
+        ++ lib.optionals (hostname == "ge2") [
           {
             name = "OBS BRB";
             exec = "${commandScripts."obs-brb.sh"}";
@@ -58,7 +55,7 @@ in
       };
     }
 
-    (lib.mkIf (osConfig != null) {
+    {
       services.go-hass-agent = {
         enable = lib.mkDefault true;
         mqttUsernameSecret = lib.mkDefault "home-assistant/mqtt/username";
@@ -67,16 +64,16 @@ in
 
       # The MQTT credentials are host-specific
       sops.secrets = lib.mkIf config.services.go-hass-agent.enable {
-        "home-assistant/mqtt/username".sopsFile = osConfig.custom.sopsFile;
-        "home-assistant/mqtt/password".sopsFile = osConfig.custom.sopsFile;
+        "home-assistant/mqtt/username".sopsFile = config.host.sopsFile;
+        "home-assistant/mqtt/password".sopsFile = config.host.sopsFile;
       };
-    })
+    }
 
-    (lib.mkIf (osConfig != null && osConfig.networking.hostName == "ge2") {
+    (lib.mkIf (hostname == "ge2") {
       services.go-hass-agent.obsPasswordSecret = lib.mkDefault "obs/websocket/password";
 
       sops.secrets = lib.mkIf config.services.go-hass-agent.enable {
-        "obs/websocket/password".sopsFile = osConfig.custom.sopsFile;
+        "obs/websocket/password".sopsFile = config.host.sopsFile;
       };
     })
   ];

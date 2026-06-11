@@ -2,13 +2,12 @@
   config,
   inputs,
   lib,
-  osConfig,
   pkgs,
   ...
 }:
 
 let
-  enableNvidiaOffload = osConfig.hardware.nvidia.prime.offload.enable;
+  enableNvidiaOffload = config.host.nvidiaPrimeOffload;
   obsAutostartExec = "${
     pkgs.writeShellApplication {
       name = "obs-hyprland-autostart";

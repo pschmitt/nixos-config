@@ -2,7 +2,6 @@
   inputs,
   lib,
   config,
-  osConfig,
   ...
 }:
 {
@@ -15,7 +14,7 @@
 
     settings = {
       remote = {
-        hostname = "tv.${osConfig.domains.main}";
+        hostname = "tv.${config.domains.main}";
         inherit (config.home) username;
         port = 22;
         root = "/mnt/data/videos";

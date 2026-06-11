@@ -1,8 +1,9 @@
-{ osConfig, pkgs, ... }:
+{ pkgs, ... }:
 {
   imports = [ ./nrf.nix ];
 
-  services.mpris-proxy.enable = osConfig.hardware.bluetooth.enable;
+  # Only imported on Bluetooth hosts (see home.nix import gating).
+  services.mpris-proxy.enable = true;
 
   systemd.user.services.bluez-headset-callback = {
     Unit = {

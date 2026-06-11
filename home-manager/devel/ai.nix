@@ -1,18 +1,11 @@
 {
   config,
-  osConfig,
   lib,
   pkgs,
   ...
 }:
 let
-  domainName =
-    if osConfig != null && osConfig ? domains && osConfig.domains ? main then
-      osConfig.domains.main
-    else if config ? domains && config.domains ? main then
-      config.domains.main
-    else
-      null;
+  domainName = config.domains.main;
 
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
   n8nSkillsSrc = pkgs.fetchFromGitHub {

@@ -386,7 +386,6 @@
               ./hosts/${hostname}
               {
                 hardware.type = deviceType;
-                home-manager.enabled = homeManager;
               }
             ]
             ++ nixpkgs.lib.optionals homeManager [
@@ -402,6 +401,10 @@
         {
           system,
           modules ? [ ],
+          # Import-gating facts (mirrors the NixOS bridge in
+          # home-manager/default.nix); standalone hosts default to headless.
+          guiEnable ? false,
+          bluetoothEnable ? false,
         }:
         inputs.home-manager.lib.homeManagerConfiguration {
           pkgs = import nixpkgs {
@@ -411,7 +414,13 @@
           };
 
           extraSpecialArgs = {
-            inherit inputs outputs hostname;
+            inherit
+              inputs
+              outputs
+              hostname
+              guiEnable
+              bluetoothEnable
+              ;
           };
 
           modules = modules ++ [ ./hosts/${hostname} ];

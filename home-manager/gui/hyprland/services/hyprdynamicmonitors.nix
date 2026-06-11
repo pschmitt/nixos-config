@@ -1,8 +1,8 @@
 {
   config,
+  hostname,
   inputs,
   lib,
-  osConfig ? null,
   pkgs,
   ...
 }:
@@ -79,7 +79,7 @@ let
 
   tmpl = name: text: pkgs.writeText name text;
 
-  hostName = if osConfig != null then osConfig.networking.hostName or "" else "";
+  hostName = hostname;
   isGk4 = hostName == "gk4";
 
   # Lua table fields for laptop monitor modes (injected into hl.monitor({...})).

@@ -2,29 +2,12 @@
   config,
   lib,
   pkgs,
-  osConfig ? null,
   ...
 }:
 let
-  domain =
-    if osConfig != null && osConfig ? domains && osConfig.domains ? main then
-      osConfig.domains.main
-    else if config ? domains && config.domains ? main then
-      config.domains.main
-    else
-      null;
+  domain = config.domains.main;
 in
 {
-  assertions = [
-    {
-      assertion = domain != null;
-      message = ''
-        Unable to determine the main domain for Atuin.
-        Define `domains.main` in the standalone Home Manager host module or run this config under NixOS-backed Home Manager.
-      '';
-    }
-  ];
-
   programs.atuin = {
     enable = true;
     enableZshIntegration = false; # We manage this manually below
