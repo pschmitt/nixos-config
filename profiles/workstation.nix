@@ -12,7 +12,15 @@
     ./display-manager-gdm.nix
 
     ../common/laptop
-    ../common/work
+
+    # Role features (opt-in) currently run by all three laptops.
+    ./vpn-mullvad.nix
+    ./privacy-tor.nix
+    ./net-debug.nix
+    ./nrf-dev.nix
+    ./android-waydroid.nix
+    ./work-wiit.nix
+
     ../services/restic
   ];
 }
