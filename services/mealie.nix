@@ -6,8 +6,7 @@ let
   mealieVersion = "v3.19.2";
 in
 {
-  sops.secrets."mealie/openai-api-key" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."mealie/openai-api-key" = config.custom.mkSecret {
     restartUnits = [ "${config.virtualisation.oci-containers.backend}-mealie.service" ];
   };
 

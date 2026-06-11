@@ -7,14 +7,12 @@
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
     in
     lib.mkIf cfg.enable {
-      sops.secrets."syncthing/cert" = {
-        inherit (config.custom) sopsFile;
+      sops.secrets."syncthing/cert" = config.custom.mkSecret {
         owner = syncthingUser;
         group = syncthingUser;
         mode = "0400";
       };
-      sops.secrets."syncthing/key" = {
-        inherit (config.custom) sopsFile;
+      sops.secrets."syncthing/key" = config.custom.mkSecret {
         owner = syncthingUser;
         group = syncthingUser;
         mode = "0400";

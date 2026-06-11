@@ -4,8 +4,7 @@ let
   port = 8388;
 in
 {
-  sops.secrets."shadowsocks/password" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."shadowsocks/password" = config.custom.mkSecret {
   };
 
   # NOTE To connect, run:

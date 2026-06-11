@@ -71,10 +71,10 @@ buildPythonApplication rec {
     extraArgs = [ "--flake" ];
   };
 
-  meta = with lib; {
+  meta = {
     description = "AI-powered background removal with local and cloud options";
     homepage = "https://withoutbg.com";
-    license = licenses.asl20;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.asl20;
+    maintainers = with lib.maintainers; [ pschmitt ];
   };
 }

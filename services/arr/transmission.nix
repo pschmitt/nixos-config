@@ -36,14 +36,12 @@ in
 {
   sops = {
     secrets = {
-      "transmission/username" = {
-        inherit (config.custom) sopsFile;
+      "transmission/username" = config.custom.mkSecret {
         owner = config.services.transmission.user;
         inherit (config.services.transmission) group;
         mode = "0440";
       };
-      "transmission/password" = {
-        inherit (config.custom) sopsFile;
+      "transmission/password" = config.custom.mkSecret {
         owner = config.services.transmission.user;
         inherit (config.services.transmission) group;
         mode = "0440";

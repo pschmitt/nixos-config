@@ -24,26 +24,19 @@ in
 
   sops = {
     secrets = {
-      "stricknani/secrets/secretKey" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/secrets/secretKey" = config.custom.mkSecret {
       };
-      "stricknani/secrets/csrfSecretKey" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/secrets/csrfSecretKey" = config.custom.mkSecret {
       };
-      "stricknani/initialAdmin/password" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/initialAdmin/password" = config.custom.mkSecret {
       };
-      "stricknani/initialAdmin/username" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/initialAdmin/username" = config.custom.mkSecret {
       };
-      "stricknani/openaiApiKey" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/openaiApiKey" = config.custom.mkSecret {
       };
-      "stricknani/sentry/dsnBackend" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/sentry/dsnBackend" = config.custom.mkSecret {
       };
-      "stricknani/sentry/dsnFrontend" = {
-        inherit (config.custom) sopsFile;
+      "stricknani/sentry/dsnFrontend" = config.custom.mkSecret {
       };
     };
 

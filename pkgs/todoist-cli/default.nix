@@ -61,11 +61,11 @@ buildNpmPackage (finalAttrs: {
     JSEOF
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Command-line interface for Todoist";
     homepage = "https://github.com/Doist/todoist-cli";
-    license = licenses.mit;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.mit;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "td";
   };
 })

@@ -10,12 +10,10 @@ let
 in
 {
   config = lib.mkIf (!config.hardware.cattle) {
-    sops.secrets."mail/brkn-lol" = {
-      inherit (config.custom) sopsFile;
+    sops.secrets."mail/brkn-lol" = config.custom.mkSecret {
       owner = config.mainUser.username;
     };
-    sops.secrets."mail/gmail" = {
-      inherit (config.custom) sopsFile;
+    sops.secrets."mail/gmail" = config.custom.mkSecret {
       owner = config.mainUser.username;
     };
 

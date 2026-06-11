@@ -154,9 +154,9 @@ let
       if space usage > 85% then alert'';
   # Below will exclude NFS and bind mounts
   nonNFSFileSystems = lib.filterAttrs (
-    name: fs: fs.fsType != "nfs" && !lib.elem "bind" (fs.options or [ ])
+    _name: fs: fs.fsType != "nfs" && !lib.elem "bind" (fs.options or [ ])
   ) config.fileSystems;
-  mountPoints = lib.mapAttrsToList (name: fs: fs.mountPoint) nonNFSFileSystems;
+  mountPoints = lib.mapAttrsToList (_name: fs: fs.mountPoint) nonNFSFileSystems;
   monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
 
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''

@@ -22,11 +22,11 @@ buildNpmPackage rec {
 
   # NODE_OPTIONS = "--openssl-legacy-provider";
 
-  meta = with lib; {
+  meta = {
     description = "Repair invalid JSON documents";
     homepage = "https://josdejong.github.io/jsonrepair/";
-    license = licenses.isc;
-    maintainers = with maintainers; [ pschmitt ];
+    license = lib.licenses.isc;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "jsonrepair";
   };
 }

@@ -7,14 +7,11 @@
 {
   config = lib.mkIf (!config.hardware.cattle) {
     sops.secrets = {
-      "restic/env" = {
-        inherit (config.custom) sopsFile;
+      "restic/env" = config.custom.mkSecret {
       };
-      "restic/password" = {
-        inherit (config.custom) sopsFile;
+      "restic/password" = config.custom.mkSecret {
       };
-      "restic/repository" = {
-        inherit (config.custom) sopsFile;
+      "restic/repository" = config.custom.mkSecret {
       };
     };
 

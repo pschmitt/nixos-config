@@ -14,8 +14,7 @@ let
   hostnamesWithSchema = map (host: "https://${host}") hostnames;
 in
 {
-  sops.secrets."paperless-ngx/adminPassword" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."paperless-ngx/adminPassword" = config.custom.mkSecret {
   };
 
   # FIXME THIS LOCKS THE FUCKING ROOT USER WHEN APPLIED

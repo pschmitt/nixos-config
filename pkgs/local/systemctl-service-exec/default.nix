@@ -34,11 +34,11 @@ stdenvNoCC.mkDerivation {
       }"
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Shell helper to enter a systemd service namespace";
-    platforms = platforms.linux;
-    license = licenses.gpl3Only;
-    maintainers = with maintainers; [ pschmitt ];
+    platforms = lib.platforms.linux;
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "systemctl-service-exec";
   };
 }

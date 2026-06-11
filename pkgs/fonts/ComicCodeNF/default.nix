@@ -61,10 +61,10 @@ stdenvNoCC.mkDerivation {
     find "$out" -type f \( -name '*Nerd*' -and -not -name '*-resized*' \) -exec rm -f {} \;
   '';
 
-  meta = with lib; {
+  meta = {
     homepage = "https://tosche.net/fonts/comic-code";
     description = "Comic Code is a monospaced adaptation of the most infamous yet most popular casual font";
-    license = licenses.unfree;
-    platforms = platforms.all;
+    license = lib.licenses.unfree;
+    platforms = lib.platforms.all;
   };
 }

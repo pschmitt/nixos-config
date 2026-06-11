@@ -60,8 +60,7 @@ let
 in
 {
   sops.secrets = {
-    "nix/store/privkey" = {
-      inherit (config.custom) sopsFile;
+    "nix/store/privkey" = config.custom.mkSecret {
     };
     "nix/credentials/htpasswd" = {
       owner = "nginx";

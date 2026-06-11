@@ -353,7 +353,7 @@ let
   ) (attrNames cfg.services);
 
   createVirtualHost =
-    serviceName: service: hostname:
+    _serviceName: service: hostname:
     let
       baseLocation = {
         proxyPass = "http${if service.tls then "s" else ""}://127.0.0.1:${toString service.port}";

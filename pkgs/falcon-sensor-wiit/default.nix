@@ -41,9 +41,9 @@ let
 
     installPhase = "cp -r ./ $out/";
 
-    meta = with lib; {
+    meta = {
       description = "Crowdstrike Falcon Sensor";
-      license = licenses.unfree;
+      license = lib.licenses.unfree;
       platforms = [ "x86_64-linux" ];
     };
   };

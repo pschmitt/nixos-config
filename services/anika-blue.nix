@@ -16,8 +16,7 @@ in
 {
   imports = [ inputs.anika-blue.nixosModules.default ];
 
-  sops.secrets."anika-blue/secretKey" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."anika-blue/secretKey" = config.custom.mkSecret {
   };
 
   services = {

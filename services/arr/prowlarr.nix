@@ -7,8 +7,7 @@ let
 in
 {
   sops = {
-    secrets."prowlarr/apiKey" = {
-      inherit (config.custom) sopsFile;
+    secrets."prowlarr/apiKey" = config.custom.mkSecret {
       restartUnits = [ "prowlarr.service" ];
     };
     templates."prowlarr-env" = {

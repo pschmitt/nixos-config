@@ -1,5 +1,4 @@
 {
-  lib,
   stdenv,
   fetchFromGitHub,
   makeWrapper,
@@ -28,7 +27,7 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
-  meta = with lib; {
+  meta = {
     description = "Publish OpenAI Codex usage limits to Home Assistant over MQTT";
     homepage = "https://github.com/ofilis/codex-ha-bridge";
     mainProgram = "codex-ha-bridge";

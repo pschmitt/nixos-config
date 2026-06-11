@@ -14,12 +14,6 @@
         default = "white";
         description = "Main user's prompt color";
       };
-
-      sopsFile = lib.mkOption {
-        type = lib.types.path;
-        default = ../hosts/${config.networking.hostName}/secrets.sops.yaml;
-        description = "Host-specific SOPS configuration file";
-      };
     };
   };
 }

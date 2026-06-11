@@ -10,13 +10,11 @@
   ];
 
   sops.secrets = {
-    "bw-backup" = {
-      inherit (config.custom) sopsFile;
+    "bw-backup" = config.custom.mkSecret {
       owner = config.services.bw-backup.user;
       inherit (config.services.bw-backup) group;
     };
-    "bw-sync" = {
-      inherit (config.custom) sopsFile;
+    "bw-sync" = config.custom.mkSecret {
       owner = config.services.bw-sync.user;
       inherit (config.services.bw-sync) group;
     };

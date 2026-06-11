@@ -23,11 +23,11 @@ stdenv.mkDerivation rec {
   # postInstall = ''
   # '';
 
-  meta = with lib; {
+  meta = {
     description = "Free open-source CEA608 / CEA708 closed-caption encoder/decoder";
     homepage = "https://github.com/szatmary/libcaption";
-    license = licenses.mit;
-    platforms = platforms.linux;
+    license = lib.licenses.mit;
+    platforms = lib.platforms.linux;
     # never built on aarch64-linux since first introduction in nixpkgs
     broken = stdenv.isLinux && stdenv.isAarch64;
   };

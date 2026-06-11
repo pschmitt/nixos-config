@@ -30,12 +30,10 @@ in
 
   sops = {
     secrets = {
-      "xmrig-proxy/wallet" = {
-        inherit (config.custom) sopsFile;
+      "xmrig-proxy/wallet" = config.custom.mkSecret {
         restartUnits = [ "xmrig-proxy.service" ];
       };
-      "xmrig-proxy/password" = {
-        inherit (config.custom) sopsFile;
+      "xmrig-proxy/password" = config.custom.mkSecret {
         restartUnits = [ "xmrig-proxy.service" ];
       };
     };

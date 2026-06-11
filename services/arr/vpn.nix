@@ -10,8 +10,7 @@
     ../../common/network/snek/am-i-mullvad.nix
   ];
 
-  sops.secrets."mullvad/config" = {
-    inherit (config.custom) sopsFile;
+  sops.secrets."mullvad/config" = config.custom.mkSecret {
   };
 
   vpnNamespaces.mullvad = {

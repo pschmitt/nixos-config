@@ -40,10 +40,10 @@ stdenvNoCC.mkDerivation {
     done
   '';
 
-  meta = with lib; {
+  meta = {
     homepage = "https://www.monolisa.dev";
     description = "font follows function";
-    license = licenses.unfree;
-    platforms = platforms.all;
+    license = lib.licenses.unfree;
+    platforms = lib.platforms.all;
   };
 }

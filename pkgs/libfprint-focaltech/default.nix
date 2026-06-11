@@ -106,10 +106,10 @@ stdenv.mkDerivation rec {
     runHook postInstall
   '';
 
-  meta = with lib; {
+  meta = {
     description = "FocalTech libfprint driver (Fedora variant)";
     homepage = "https://github.com/ftfpteams/focaltech-linux-fingerprint-driver";
     platforms = [ "x86_64-linux" ];
-    license = licenses.unfree; # Sadly
+    license = lib.licenses.unfree; # Sadly
   };
 }

@@ -9,15 +9,13 @@ let
 in
 {
   sops.secrets = {
-    "netbox/secretKey" = {
-      inherit (config.custom) sopsFile;
+    "netbox/secretKey" = config.custom.mkSecret {
       owner = "netbox";
       group = "netbox";
       mode = "0400";
       restartUnits = [ "netbox.service" ];
     };
-    "netbox/apiTokenPeppers" = {
-      inherit (config.custom) sopsFile;
+    "netbox/apiTokenPeppers" = config.custom.mkSecret {
       owner = "netbox";
       group = "netbox";
       mode = "0400";
