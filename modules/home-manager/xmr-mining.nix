@@ -103,8 +103,13 @@ let
             labels:
               app: xmrig
           spec:
-            nodeSelector:
-              node-role.kubernetes.io/compute: "true"
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                    - matchExpressions:
+                        - key: node-role.kubernetes.io/compute
+                          operator: Exists
             containers:
               - name: xmrig
                 image: artifactory.prod.capp.wiit-cloud.io/docker-ghcr-io-remote/metal3d/xmrig:latest
