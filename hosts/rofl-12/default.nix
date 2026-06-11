@@ -16,6 +16,7 @@
     ../../services/***REMOVED***/***REMOVED***.nix
     ../../services/***REMOVED***/***REMOVED***-***REMOVED***.nix
     ../../services/***REMOVED***/***REMOVED***-proxy.nix
+    ../../services/***REMOVED***/ktunnel-***REMOVED***-proxy.nix
     ../../services/***REMOVED***/***REMOVED***.nix
   ];
 
@@ -32,6 +33,8 @@
   };
 
   services = {
+    ktunnel-***REMOVED***-proxy.enable = true;
+
     ***REMOVED***.settings.cpu.max-threads-hint = lib.mkForce 15;
 
     ***REMOVED*** = {

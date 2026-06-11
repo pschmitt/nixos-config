@@ -10,11 +10,22 @@
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
     ../../modules/home-manager/codex-remote-control.nix
+    ../../modules/home-manager/***REMOVED***.nix
     ../../home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
   ];
+
+  ***REMOVED*** = {
+    enable = true;
+    clusters.cluster-01 = {
+      kubeContext = "REMOVED";
+      kubeconfig = "${config.home.homeDirectory}/.config/kube/rancher-cli/REMOVED.yaml";
+      targetHost = "rofl-12";
+      ktunnelService = "ktunnel-wiit-***REMOVED***-proxy.service";
+    };
+  };
 
   domains.main = "brkn.lol";
 
