@@ -276,6 +276,7 @@ Current prefixes:
 - `ORB` = Oral-B
 - `ORI` = ORICO
 - `PFU` = PFU
+- `PHX` = PHIXERO
 - `PKV` = PiKVM
 - `POE` = PoE injectors and PoE splitters
 - `PRC` = PROCET
