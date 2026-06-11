@@ -3,12 +3,12 @@
 { config, lib, ... }:
 {
   imports = [
-    ../../services/harmonia.nix
-    ../../services/http.nix
-    ../../services/nfs/nfs-client-rofl-11.nix
-    ../../services/tdarr-node.nix
+    ../services/harmonia.nix
+    ../services/http.nix
+    ../services/nfs/nfs-client-rofl-11.nix
+    ../services/tdarr-node.nix
 
-    (import ../../services/xmr/xmrig.nix {
+    (import ../services/xmr/xmrig.nix {
       inherit config lib;
       useProxy = true;
       cpuUsage = 50;

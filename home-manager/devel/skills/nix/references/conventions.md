@@ -6,8 +6,10 @@
 - `modules/`: Shared NixOS modules and custom option definitions.
 - `modules/home-manager/`: Shared Home Manager modules.
 - `home-manager/`: User-level Home Manager configurations.
-- `common/`: Shared configuration snippets.
-- `common/profiles/`: Reusable host *roles* — groupings of service imports shared
+- `common/`: Shared base *platform layers* — the machine class/capability a host
+  *is* (`global`, `server`, `gui`, `laptop`, `network`, `work`), imported
+  explicitly and forming a transitive hierarchy.
+- `profiles/`: Reusable host *roles* — groupings of service imports shared
   by more than one host (see "Host composition" below).
 - `pkgs/`: Custom package definitions.
 - `overlays/`: Nixpkgs overlays.
@@ -82,9 +84,11 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
 
 - Hosts import `common/<category>` snippets plus the services they run.
 - When **two or more hosts share a service grouping**, extract it into
-  `common/profiles/<role>.nix` and have those hosts import the profile (e.g.
-  `common/profiles/tdarr-node.nix` shared by rofl-13/rofl-14). Don't create a
-  profile for a single-host stack — that is just indirection.
+  `profiles/<role>.nix` (top-level) and have those hosts import the profile (e.g.
+  `profiles/tdarr-node.nix` shared by rofl-13/rofl-14, `profiles/workstation.nix`
+  shared by ge2/gk4/x13). A profile is a pure `imports` aggregator with a
+  one-line header comment. Don't create a profile for a single-host stack — that
+  is just indirection.
 
 ## Verifying refactors are behaviour-preserving
 

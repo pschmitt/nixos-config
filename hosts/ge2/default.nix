@@ -10,11 +10,7 @@
     ../../common/work/elgato-stream-deck.nix
     ../../common/work/crowdstrike-falcon-sensor.nix
 
-    ../../common/global
-    ../../common/gui
-    ../../common/laptop
-    ../../services/restic
-    ../../common/work
+    ../../profiles/workstation.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
   ];
