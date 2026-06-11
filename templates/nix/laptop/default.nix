@@ -7,11 +7,10 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/global
-    ../../common/gui
-    ../../common/laptop
-    ../../services/restic
-    ../../common/work
+    # Interactive laptop base: global + GUI infra + Hyprland/GNOME under GDM +
+    # laptop role features + work bundle + restic. Add extra desktops via
+    # profiles/desktop-*.nix if needed.
+    ../../profiles/workstation.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix
