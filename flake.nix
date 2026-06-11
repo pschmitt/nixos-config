@@ -137,9 +137,7 @@
     };
 
     hyprgrass = {
-      # Lua config support (Hyprland 0.55+ hl.plugin.hyprgrass API).
-      # Tracks https://github.com/horriblename/hyprgrass/pull/381 until it lands.
-      url = "github:horriblename/hyprgrass/lua-func";
+      url = "github:horriblename/hyprgrass";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
