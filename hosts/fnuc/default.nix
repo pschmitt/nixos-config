@@ -10,30 +10,13 @@
     ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
     ../../modules/home-manager/codex-remote-control.nix
-    ../../modules/home-manager/xmr-mining.nix
     ../../home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
   ];
 
-  xmr.mining = {
-    enable = true;
-    clusters = {
-      cluster-01 = {
-        kubeContextFile = config.sops.secrets."xmr/kube-context".path;
-        kubeconfigFile = config.sops.secrets."xmr/kubeconfig".path;
-        targetHost = "rofl-12";
-        ktunnelService = "ktunnel-xmrig-proxy.service";
-      };
-      cluster-02 = {
-        kubeContextFile = config.sops.secrets."xmr/kube-context-002".path;
-        kubeconfigFile = config.sops.secrets."xmr/kubeconfig-002".path;
-        targetHost = "rofl-12";
-        ktunnelService = "ktunnel-xmrig-proxy.service";
-      };
-    };
-  };
+  xmr.mining.enableSync = true;
 
   domains.main = "brkn.lol";
 
@@ -45,6 +28,25 @@
   home = {
     inherit (config.mainUser) username homeDirectory;
     stateVersion = "26.05";
+  };
+
+  systemd.user.services.kubeconfig-update = {
+    Unit.Description = "Update kubeconfigs";
+    Service = {
+      Type = "oneshot";
+      ExecStartPre = "${config.home.homeDirectory}/bin/zhj rancher::login-cli-all";
+      ExecStart = "${config.home.homeDirectory}/bin/zhj kubectl::kubeconfig-export-rancher";
+    };
+  };
+
+  systemd.user.timers.kubeconfig-update = {
+    Unit.Description = "Periodically update kubeconfigs";
+    Timer = {
+      OnCalendar = "12:30:00";
+      RandomizedDelaySec = "30m";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "timers.target" ];
   };
 
   services = {
@@ -137,9 +139,5 @@
     "home-assistant/mqtt/username".sopsFile = ./secrets.sops.yaml;
     "home-assistant/mqtt/password".sopsFile = ./secrets.sops.yaml;
     "ssh/nix-remote-builder/privkey".mode = "0400";
-    "xmr/kube-context".sopsFile = ./secrets.sops.yaml;
-    "xmr/kube-context-002".sopsFile = ./secrets.sops.yaml;
-    "xmr/kubeconfig".sopsFile = ./secrets.sops.yaml;
-    "xmr/kubeconfig-002".sopsFile = ./secrets.sops.yaml;
   };
 }

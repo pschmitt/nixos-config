@@ -33,7 +33,16 @@
   };
 
   services = {
-    ktunnel-xmrig-proxy.enable = true;
+    ktunnel-xmrig-proxy = {
+      cluster-01 = {
+        enable = true;
+        tunnelPort = 28688;
+      };
+      cluster-02 = {
+        enable = true;
+        tunnelPort = 28689;
+      };
+    };
 
     xmrig.settings.cpu.max-threads-hint = lib.mkForce 15;
 
