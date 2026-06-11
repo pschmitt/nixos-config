@@ -6,16 +6,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "tmux-mcp-rs";
-  version = "0.4.0";
+  version = "0.5.0";
 
   src = fetchFromGitHub {
     owner = "bnomei";
     repo = "tmux-mcp";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-s4LiTjgdDUUzpTlql+ajydYb7Psg/G04fKjaGeBoGlY=";
+    hash = "sha256-PYME5/FW/87QrufAM3KD4AlJCut4PSImfBVp7L5aw/g=";
   };
 
-  cargoHash = "sha256-SFsYPyzeMlrIvulZjuXudHOF5qcf1M39W1ZZvkqgvYg=";
+  cargoHash = "sha256-+XHzCGJYrIoiajQ3VkmfIeWNMCaebZT0WJ8qVKwHXkE=";
 
   meta = {
     description = "MCP server for tmux — lets AI assistants create sessions, split panes, run commands, and capture output";
