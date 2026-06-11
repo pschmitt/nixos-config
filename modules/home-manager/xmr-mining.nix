@@ -240,7 +240,8 @@ let
 
     Options:
       -c, --context CTX   cluster context  (${lib.concatStringsSep "|" clusterNames})
-      -A, --all           run action across all clusters
+      -a, -A, --all       run action across all clusters
+      -j, --json          output status as JSON
       -n, --namespace NS  override kubernetes namespace
       -h, --help          show this help
     EOF
@@ -250,6 +251,7 @@ let
     cmd=
     ns_override=
     all_clusters=
+    json_output=
 
     while [[ -n "''${1:-}" ]]
     do
@@ -258,8 +260,12 @@ let
           ctx="$2"
           shift 2
           ;;
-        -A|--all)
+        -a|-A|--all)
           all_clusters=1
+          shift
+          ;;
+        -j|--json)
+          json_output=1
           shift
           ;;
         -n|--namespace)
@@ -304,11 +310,69 @@ let
           exit 0
           ;;
         status|show)
+          _all_json=()
           for _ctx in "''${all_ctx_names[@]}"
           do
-            printf '\n\e[1;35m=== %s ===\e[0m\n' "$_ctx"
-            "$0" --context "$_ctx" status ''${ns_override:+--namespace "$ns_override"}
+            _cj=$(
+              "$0" --context "$_ctx" --json status ''${ns_override:+--namespace "$ns_override"} 2>/dev/null \
+              || printf '{"cluster":"%s","kube_context":"","target_host":"","ktunnel_state":"unknown","nodes":[],"total":{"r1m":0,"r10m":0,"r1h":0}}' "$_ctx"
+            )
+            _all_json+=("$_cj")
           done
+
+          if [[ -n "$json_output" ]]
+          then
+            printf '%s\n' "''${_all_json[@]}" | ${pkgs.jq}/bin/jq -s '.'
+            exit 0
+          fi
+
+          _combined_json=$(printf '%s\n' "''${_all_json[@]}" | ${pkgs.jq}/bin/jq -s '.')
+
+          printf '\e[1mKTUNNEL\e[0m\n'
+          ${pkgs.jq}/bin/jq -r '
+            ["CLUSTER", "CONTEXT", "HOST", "STATE"],
+            (.[] | [.cluster, .kube_context, .target_host, .ktunnel_state])
+            | @tsv
+          ' <<< "$_combined_json" \
+            | ${pkgs.util-linux}/bin/column -t -s $'\t' \
+            | sed \
+                -e '1s/.*/\x1b[1m&\x1b[0m/' \
+                -e 's/\bactive\b/\x1b[32m&\x1b[0m/g' \
+                -e 's/\bfailed\b/\x1b[1;31m&\x1b[0m/g' \
+                -e 's/\bunknown\b/\x1b[33m&\x1b[0m/g'
+
+          echo ""
+          printf '\e[1mMINERS\e[0m\n'
+          ${pkgs.jq}/bin/jq -r '
+            def fmt($n): ($n * 100 | round) / 100 | tostring;
+            [.[] | .cluster as $c | .nodes[] | . + {cluster: $c}] as $rows
+            | if ($rows | length) == 0
+              then "(no miners)"
+              else
+                ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
+                | [
+                    (["CLUSTER", "NODE", "NAME", "STATUS"] +
+                     (if $has_restarts then ["RESTARTS"] else [] end) +
+                     ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
+                    ($rows[] |
+                     [.cluster, .node, .pod_name, .status] +
+                     (if $has_restarts then [.restarts | tostring] else [] end) +
+                     [.age, fmt(.r1m), fmt(.r10m), fmt(.r1h)]),
+                    (["TOTAL"] +
+                     (if $has_restarts then ["", "", "", "", ""] else ["", "", "", ""] end) +
+                     [fmt([$rows[] | .r1m] | add // 0),
+                      fmt([$rows[] | .r10m] | add // 0),
+                      fmt([$rows[] | .r1h] | add // 0)])
+                  ][] | @tsv
+              end
+          ' <<< "$_combined_json" \
+            | ${pkgs.util-linux}/bin/column -t -s $'\t' \
+            | sed \
+                -e '1s/.*/\x1b[1m&\x1b[0m/' \
+                -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
+                -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
+                -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
+                -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
           exit 0
           ;;
         *)
@@ -357,6 +421,63 @@ let
           ssh "$target_host" "systemctl is-active '$ktunnel_svc'" 2>/dev/null \
             || echo "unknown"
         )
+        _pods_json=$(
+          kubectl \
+            --kubeconfig "$kube_config" \
+            --context "$kube_context" \
+            get pods -l app=xmrig -n "$namespace" -o json 2>/dev/null \
+          || echo '{"items":[]}'
+        )
+        _workers_json=$(
+          ssh "$target_host" \
+            "curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null" 2>/dev/null \
+          || echo '{"workers":[]}'
+        )
+
+        if [[ -n "$json_output" ]]
+        then
+          ${pkgs.jq}/bin/jq -n \
+            --arg cluster "$ctx" \
+            --arg kube_context "$kube_context" \
+            --arg target_host "$target_host" \
+            --arg ktunnel_state "$_ktunnel_state" \
+            --argjson pods "$_pods_json" \
+            --argjson workers "$_workers_json" '
+            ($workers.workers | map({key: .[0], value: .}) | from_entries) as $wmap
+            | ($pods.items | map({
+                pod_name: .metadata.name,
+                node: (.spec.nodeName // "<none>"),
+                status: (.status.phase // "Unknown"),
+                restarts: (.status.containerStatuses[0]?.restartCount // 0),
+                age: (
+                  (now - (.metadata.creationTimestamp | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) as $s
+                  | if $s < 60 then ($s | round | tostring) + "s"
+                    elif $s < 3600 then ($s / 60 | floor | tostring) + "m"
+                    elif $s < 86400 then ($s / 3600 | floor | tostring) + "h"
+                    else ($s / 86400 | floor | tostring) + "d"
+                    end
+                ),
+                r1m: ($wmap[.spec.nodeName][8] // 0),
+                r10m: ($wmap[.spec.nodeName][9] // 0),
+                r1h: ($wmap[.spec.nodeName][10] // 0)
+              })) as $nodes
+            | {
+                cluster: $cluster,
+                kube_context: $kube_context,
+                target_host: $target_host,
+                ktunnel_state: $ktunnel_state,
+                nodes: $nodes,
+                total: {
+                  r1m: ([$nodes[] | .r1m] | add // 0),
+                  r10m: ([$nodes[] | .r10m] | add // 0),
+                  r1h: ([$nodes[] | .r1h] | add // 0)
+                }
+              }
+          '
+          exit 0
+        fi
+
+        printf 'Context:  \e[1m%s\e[0m  (%s)\n' "$ctx" "$kube_context"
         case "$_ktunnel_state" in
           active)
             printf 'ktunnel (%s):  \e[32m%s\e[0m\n' "$target_host" "$_ktunnel_state"
@@ -376,61 +497,55 @@ let
         fi
 
         echo ""
-        _pods_json=$(
-          kubectl \
-            --kubeconfig "$kube_config" \
-            --context "$kube_context" \
-            get pods -l app=xmrig -n "$namespace" -o json 2>/dev/null \
-          || echo '{"items":[]}'
-        )
-        _workers_json=$(
-          ssh "$target_host" \
-            "curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null" 2>/dev/null \
-          || echo '{"workers":[]}'
-        )
-        ${pkgs.jq}/bin/jq -r --argjson workers "$_workers_json" '
-          def fmt($n): ($n * 100 | round) / 100 | tostring;
-          def age($ts):
-            (now - ($ts | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) as $s
-            | if $s < 60 then ($s | round | tostring) + "s"
-              elif $s < 3600 then ($s / 60 | floor | tostring) + "m"
-              elif $s < 86400 then ($s / 3600 | floor | tostring) + "h"
-              else ($s / 86400 | floor | tostring) + "d"
-              end;
-          ($workers.workers | map({key: .[0], value: .}) | from_entries) as $wmap
-          | [.items[] | {
-              name: .metadata.name,
-              status: (.status.phase // "Unknown"),
-              restarts: (.status.containerStatuses[0]?.restartCount // 0),
-              age: age(.metadata.creationTimestamp),
-              node: (.spec.nodeName // "<none>"),
-              r1m: ($wmap[.spec.nodeName][8] // 0),
-              r10m: ($wmap[.spec.nodeName][9] // 0),
-              r1h: ($wmap[.spec.nodeName][10] // 0)
-            }] as $rows
-          | ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
-          | [
-              (["NODE", "NAME", "STATUS"] +
-               (if $has_restarts then ["RESTARTS"] else [] end) +
-               ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
-              ($rows[] |
-               [.node, .name, .status] +
-               (if $has_restarts then [.restarts | tostring] else [] end) +
-               [.age, fmt(.r1m), fmt(.r10m), fmt(.r1h)]),
-              (["TOTAL"] +
-               (if $has_restarts then ["", "", "", ""] else ["", "", ""] end) +
-               [fmt([$rows[] | .r1m] | add // 0),
-                fmt([$rows[] | .r10m] | add // 0),
-                fmt([$rows[] | .r1h] | add // 0)])
-            ][] | @tsv
-        ' <<< "$_pods_json" \
-          | ${pkgs.util-linux}/bin/column -t -s $'\t' \
-          | sed \
-              -e '1s/.*/\x1b[1m&\x1b[0m/' \
-              -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
-              -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
-              -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
-              -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
+        _pod_count=$(${pkgs.jq}/bin/jq '.items | length' <<< "$_pods_json")
+        if [[ "$_pod_count" -eq 0 ]]
+        then
+          printf '\e[2m(no miners)\e[0m\n'
+        else
+          ${pkgs.jq}/bin/jq -r --argjson workers "$_workers_json" '
+            def fmt($n): ($n * 100 | round) / 100 | tostring;
+            def age($ts):
+              (now - ($ts | strptime("%Y-%m-%dT%H:%M:%SZ") | mktime)) as $s
+              | if $s < 60 then ($s | round | tostring) + "s"
+                elif $s < 3600 then ($s / 60 | floor | tostring) + "m"
+                elif $s < 86400 then ($s / 3600 | floor | tostring) + "h"
+                else ($s / 86400 | floor | tostring) + "d"
+                end;
+            ($workers.workers | map({key: .[0], value: .}) | from_entries) as $wmap
+            | [.items[] | {
+                name: .metadata.name,
+                status: (.status.phase // "Unknown"),
+                restarts: (.status.containerStatuses[0]?.restartCount // 0),
+                age: age(.metadata.creationTimestamp),
+                node: (.spec.nodeName // "<none>"),
+                r1m: ($wmap[.spec.nodeName][8] // 0),
+                r10m: ($wmap[.spec.nodeName][9] // 0),
+                r1h: ($wmap[.spec.nodeName][10] // 0)
+              }] as $rows
+            | ([$rows[] | .restarts] | any(. > 0)) as $has_restarts
+            | [
+                (["NODE", "NAME", "STATUS"] +
+                 (if $has_restarts then ["RESTARTS"] else [] end) +
+                 ["AGE", "1M(MH/s)", "10M(MH/s)", "1H(MH/s)"]),
+                ($rows[] |
+                 [.node, .name, .status] +
+                 (if $has_restarts then [.restarts | tostring] else [] end) +
+                 [.age, fmt(.r1m), fmt(.r10m), fmt(.r1h)]),
+                (["TOTAL"] +
+                 (if $has_restarts then ["", "", "", ""] else ["", "", ""] end) +
+                 [fmt([$rows[] | .r1m] | add // 0),
+                  fmt([$rows[] | .r10m] | add // 0),
+                  fmt([$rows[] | .r1h] | add // 0)])
+              ][] | @tsv
+          ' <<< "$_pods_json" \
+            | ${pkgs.util-linux}/bin/column -t -s $'\t' \
+            | sed \
+                -e '1s/.*/\x1b[1m&\x1b[0m/' \
+                -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
+                -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
+                -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
+                -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
+        fi
         ;;
 
       logs)
