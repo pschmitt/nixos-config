@@ -7,11 +7,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/global
-    ../../common/gui
-    ../../common/laptop
-    ../../services/restic
-    ../../common/work
+    ../../profiles/workstation.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix

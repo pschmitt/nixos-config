@@ -3,11 +3,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/global
-    ../../common/gui
-    ../../common/laptop
-    ../../services/restic
-    ../../common/work
+    ../../profiles/workstation.nix
 
     ../../services/nixos-installer-boot-entry.nix
   ];
