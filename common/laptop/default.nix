@@ -14,7 +14,7 @@
     ./a11y.nix
     ./initrd-network.nix
     ./initrd-wifi.nix
-    ./media.nix
+    ./noisetorch.nix
     ./network.nix
     ./power-profiles-daemon.nix
     ./restic.nix
