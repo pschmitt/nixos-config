@@ -288,7 +288,17 @@ let
           ssh "$target_host" "systemctl is-active '$ktunnel_svc'" 2>/dev/null \
             || echo "unknown"
         )
-        echo "ktunnel ($target_host):  $_ktunnel_state"
+        case "$_ktunnel_state" in
+          active)
+            printf 'ktunnel (%s):  \e[32m%s\e[0m\n' "$target_host" "$_ktunnel_state"
+            ;;
+          failed)
+            printf 'ktunnel (%s):  \e[1;31m%s\e[0m\n' "$target_host" "$_ktunnel_state"
+            ;;
+          *)
+            printf 'ktunnel (%s):  \e[33m%s\e[0m\n' "$target_host" "$_ktunnel_state"
+            ;;
+        esac
         if [[ "$_ktunnel_state" != "active" ]]
         then
           ssh "$target_host" \
@@ -336,13 +346,9 @@ let
                   fmt([$fw[] | rates(.) | nth(.; 1)] | add // 0),
                   fmt([$fw[] | rates(.) | nth(.; 2)] | add // 0)]
               ][] | @tsv
-          ' <<< "$_workers_json" | ${pkgs.util-linux}/bin/column -t
-          ${pkgs.jq}/bin/jq -r --argjson nodes "$_nodes_json" '
-            [.workers[] | select(.[0] as $n | $nodes | index($n) != null)] as $fw
-            | "acc: " + ([$fw[] | .[3]] | add // 0 | tostring)
-            + "  rej: " + ([$fw[] | .[4]] | add // 0 | tostring)
-            + "  hashes: " + (([$fw[] | .[7]] | add // 0) / 1000000000 * 100 | round / 100 | tostring) + " GH"
-          ' <<< "$_workers_json" || true
+          ' <<< "$_workers_json" \
+            | ${pkgs.util-linux}/bin/column -t \
+            | sed -e '1s/.*/\x1b[1m&\x1b[0m/' -e 's/^TOTAL.*/\x1b[1;36m&\x1b[0m/'
         fi
         ;;
 
