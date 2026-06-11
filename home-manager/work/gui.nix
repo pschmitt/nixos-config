@@ -1,18 +1,11 @@
 {
   lib,
-  osConfig ? null,
   pkgs,
+  guiEnable ? false,
   ...
 }:
-let
-  hasXserver =
-    osConfig != null
-    && osConfig ? services
-    && osConfig.services ? xserver
-    && osConfig.services.xserver.enable;
-in
 {
-  home.packages = lib.optionals hasXserver [
+  home.packages = lib.optionals guiEnable [
     pkgs.onlyoffice-desktopeditors
     pkgs.thunderbird
   ];

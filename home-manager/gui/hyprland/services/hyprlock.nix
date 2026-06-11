@@ -2,11 +2,10 @@
   config,
   pkgs,
   lib,
-  osConfig ? null,
   ...
 }:
 let
-  isHighDpi = if osConfig != null then osConfig.hardware.highDpi else false;
+  isHighDpi = config.host.highDpi;
 
   # Sizes
   imageSize = if isHighDpi then 200 else 120;

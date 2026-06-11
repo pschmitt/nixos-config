@@ -90,6 +90,20 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
   one-line header comment. Don't create a profile for a single-host stack — that
   is just indirection.
 
+## Home Manager
+
+- There is **one** shared home config tree, used both as a NixOS submodule
+  (ge2/gk4/x13/lrz) and standalone (fnuc, non-NixOS). It is **`osConfig`-free**:
+  modules read host facts from `config.host.*`, `config.mainUser`,
+  `config.domains`, or the `hostname` specialArg — never `osConfig`.
+- Host facts (`config.host.*`, declared in `home-manager/host.nix`) are fed by
+  the bridge in `home-manager/default.nix` (integrated, from the NixOS `config`)
+  or set explicitly in the host module (standalone). Add new facts there rather
+  than reaching into system state.
+- A fact that gates an **`import`** (not just config) must be a specialArg (e.g.
+  `guiEnable`, `bluetoothEnable`) — referencing `config` in `imports` causes an
+  infinite recursion. See `home-manager/README.md`.
+
 ## Verifying refactors are behaviour-preserving
 
 Refactors should not change what gets deployed. Prove it by eval-diffing the

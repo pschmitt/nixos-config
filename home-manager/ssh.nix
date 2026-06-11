@@ -1,8 +1,8 @@
-{ config, osConfig, ... }:
+{ config, lib, ... }:
 
 let
-  user = osConfig.mainUser.username;
-  inherit (osConfig.custom) sopsFile;
+  user = config.mainUser.username;
+  sopsFile = config.host.sopsFile;
 
   algs = [
     "ed25519"
@@ -51,7 +51,9 @@ let
     ) algs
   );
 in
-{
+# Per-host SSH key secrets live in host.sopsFile; only hosts that actually hold
+# them opt in via host.provisionSshKeys (set by the bridge / host file).
+lib.mkIf config.host.provisionSshKeys {
   sops.secrets = sopsSecrets;
   home.file = homeFiles;
 }

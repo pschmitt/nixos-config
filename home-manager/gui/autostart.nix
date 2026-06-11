@@ -1,7 +1,7 @@
 {
   config,
+  hostname,
   lib,
-  osConfig,
   pkgs,
   ...
 }:
@@ -35,7 +35,7 @@
         "${pkgs.firefox}/share/applications/firefox.desktop"
         "${pkgs.nextcloud-client}/share/applications/com.nextcloud.desktopclient.nextcloud.desktop"
       ]
-      ++ lib.optionals (osConfig.networking.hostName == "ge2") [
+      ++ lib.optionals (hostname == "ge2") [
         "${config.home.profileDirectory}/share/applications/obs-studio-custom.desktop"
       ];
     };

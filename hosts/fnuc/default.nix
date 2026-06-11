@@ -1,13 +1,10 @@
 { config, pkgs, ... }:
 {
   imports = [
-    ../../modules/main-user.nix
-    ../../modules/domains.nix
+    # Shared home config tree (osConfig-free); host facts set via host.* below.
+    ../../home-manager/home.nix
 
-    ../../home-manager/base.nix
     ../../home-manager/gui/go-hass-agent
-    ../../home-manager/work
-    ../../home-manager/sops-standalone.nix
     ../../home-manager/devel/claude-remote.nix
     ../../modules/home-manager/codex-remote-control.nix
     ../../home-manager/codex-ha-bridge.nix
@@ -27,6 +24,11 @@
 
   home = {
     inherit (config.mainUser) username homeDirectory;
+  };
+
+  host = {
+    # fnuc's host-specific secrets (MQTT creds wired by the go-hass-agent module)
+    sopsFile = ./secrets.sops.yaml;
     stateVersion = "26.05";
   };
 
@@ -136,8 +138,6 @@
   nix.settings.max-jobs = 0;
 
   sops.secrets = {
-    "home-assistant/mqtt/username".sopsFile = ./secrets.sops.yaml;
-    "home-assistant/mqtt/password".sopsFile = ./secrets.sops.yaml;
     "ssh/nix-remote-builder/privkey".mode = "0400";
   };
 }

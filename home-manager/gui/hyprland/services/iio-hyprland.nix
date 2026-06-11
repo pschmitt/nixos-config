@@ -1,11 +1,11 @@
 {
+  config,
   lib,
-  osConfig,
   pkgs,
   ...
 }:
 {
-  systemd.user.services."iio-hyprland" = lib.mkIf osConfig.hardware.sensor.iio.enable {
+  systemd.user.services."iio-hyprland" = lib.mkIf config.host.iioSensor {
     Unit = {
       Description = "Automatic display rotation via iio-hyprland";
       PartOf = [ "graphical-session.target" ];

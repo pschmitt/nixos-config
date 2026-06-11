@@ -1,11 +1,10 @@
 {
+  hostname,
   lib,
-  osConfig ? null,
   ...
 }:
 let
-  inherit (osConfig.networking) hostName;
-  hostModulePath = ./host-specific + "/${hostName}.nix";
+  hostModulePath = ./host-specific + "/${hostname}.nix";
   hostModule = if !(builtins.pathExists hostModulePath) then null else hostModulePath;
 in
 {

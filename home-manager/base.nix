@@ -1,5 +1,11 @@
 {
   imports = [
+    # Option modules providing host facts (osConfig-free): config.mainUser,
+    # config.domains, config.host.*
+    ../modules/main-user.nix
+    ../modules/domains.nix
+    ./host.nix
+
     ./banking.nix
     ./bitwarden.nix
     ./cli

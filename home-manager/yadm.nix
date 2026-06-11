@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  osConfig,
   ...
 }:
 # NOTE to truly force a new clone from scratch, run this as root:
@@ -106,7 +105,7 @@ in
   };
 
   home.activation.yadm-clone = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-    export XDG_RUNTIME_DIR=/run/user/${toString osConfig.users.users.${config.home.username}.uid}
+    export XDG_RUNTIME_DIR=/run/user/${toString config.host.uid}
     export DBUS_SESSION_BUS_ADDRESS=unix:path=''${XDG_RUNTIME_DIR}/bus
 
     # NOTE for this work reliably, we need to have lingering enabled for the user
