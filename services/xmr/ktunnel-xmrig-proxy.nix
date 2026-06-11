@@ -37,7 +37,7 @@ in
 
     kubeconfig = mkOption {
       type = types.path;
-      default = "/var/lib/ktunnel-wiit/kubeconfig";
+      default = "/var/lib/ktunnel/kubeconfig";
       description = "Path to the kubeconfig for the target cluster.";
     };
 
@@ -67,18 +67,18 @@ in
     };
 
     systemd.tmpfiles.rules = [
-      "d /var/lib/ktunnel-wiit 0700 ${cfg.user} ${cfg.group} - -"
+      "d /var/lib/ktunnel 0700 ${cfg.user} ${cfg.group} - -"
     ];
 
-    systemd.services.ktunnel-wiit-xmrig-proxy = {
-      description = "ktunnel: expose xmrig-proxy to k8s cluster (cluster-01)";
+    systemd.services.ktunnel-xmrig-proxy = {
+      description = "ktunnel: expose xmrig-proxy to k8s cluster";
       wants = [ "network-online.target" ];
       after = [
         "network-online.target"
         "xmrig-proxy.service"
       ];
       environment = {
-        HOME = "/var/lib/ktunnel-wiit";
+        HOME = "/var/lib/ktunnel";
         KUBECONFIG = cfg.kubeconfig;
       };
       serviceConfig = {
@@ -93,7 +93,7 @@ in
         PrivateTmp = true;
         ProtectHome = true;
         ProtectSystem = "strict";
-        ReadWritePaths = [ "/var/lib/ktunnel-wiit" ];
+        ReadWritePaths = [ "/var/lib/ktunnel" ];
         CapabilityBoundingSet = "";
         AmbientCapabilities = "";
       };

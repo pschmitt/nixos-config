@@ -52,7 +52,7 @@ let
         };
         remoteKubeconfig = mkOption {
           type = types.str;
-          default = "/var/lib/ktunnel-wiit/kubeconfig";
+          default = "/var/lib/ktunnel/kubeconfig";
           description = "Path to write the synced kubeconfig on targetHost.";
         };
         remoteProxyPasswordPath = mkOption {
@@ -213,6 +213,24 @@ let
   clusterNames = builtins.attrNames cfg.clusters;
   defaultCtx = if builtins.length clusterNames == 1 then builtins.head clusterNames else "";
 
+  clusterColorPalette = [
+    "\\x1b[36m"
+    "\\x1b[35m"
+    "\\x1b[94m"
+    "\\x1b[33m"
+  ];
+
+  clusterColor =
+    i: builtins.elemAt clusterColorPalette (lib.mod i (builtins.length clusterColorPalette));
+
+  clusterColorMap = lib.listToAttrs (
+    lib.imap0 (i: name: nameValuePair name (clusterColor i)) clusterNames
+  );
+
+  clusterColorSed = concatMapStringsSep " " (
+    name: "-e 's/${name}/${clusterColorMap.${name}}&\\x1b[0m/g'"
+  ) clusterNames;
+
   mkCtxCase = name: cluster: ''
     ${escapeShellArg name})
       kube_context=${kubeContextArg cluster}
@@ -221,6 +239,7 @@ let
       ktunnel_svc=${escapeShellArg cluster.ktunnelService}
       namespace=${escapeShellArg cluster.namespace}
       sync_svc=${escapeShellArg (syncServiceName name)}
+      ctx_color='${clusterColorMap.${name}}'
       ;;'';
 
   minerctl = pkgs.writeShellScriptBin "minerctl" ''
@@ -349,6 +368,7 @@ let
             | ${pkgs.util-linux}/bin/column -t -s $'\t' \
             | sed \
                 -e '1s/.*/\x1b[1m&\x1b[0m/' \
+                ${clusterColorSed} \
                 -e 's/\bactive\b/\x1b[32m&\x1b[0m/g' \
                 -e 's/\bfailed\b/\x1b[1;31m&\x1b[0m/g' \
                 -e 's/\bunknown\b/\x1b[33m&\x1b[0m/g'
@@ -381,6 +401,7 @@ let
             | ${pkgs.util-linux}/bin/column -t -s $'\t' \
             | sed \
                 -e '1s/.*/\x1b[1m&\x1b[0m/' \
+                ${clusterColorSed} \
                 -e 's/\bRunning\b/\x1b[32m&\x1b[0m/g' \
                 -e 's/\bPending\b/\x1b[33m&\x1b[0m/g' \
                 -e 's/\bError\b\|\bCrashLoopBackOff\b\|\bOOMKilled\b/\x1b[1;31m&\x1b[0m/g' \
@@ -489,7 +510,7 @@ let
           exit 0
         fi
 
-        printf 'Context:  \e[1m%s\e[0m  (%s)\n' "$ctx" "$kube_context"
+        printf "Context:  ''${ctx_color}\e[1m%s\x1b[0m  (%s)\n" "$ctx" "$kube_context"
         case "$_ktunnel_state" in
           active)
             printf 'ktunnel (%s):  \e[32m%s\e[0m\n' "$target_host" "$_ktunnel_state"

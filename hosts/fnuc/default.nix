@@ -24,13 +24,13 @@
         kubeContextFile = config.sops.secrets."xmr/kube-context".path;
         kubeconfigFile = config.sops.secrets."xmr/kubeconfig".path;
         targetHost = "rofl-12";
-        ktunnelService = "ktunnel-wiit-xmrig-proxy.service";
+        ktunnelService = "ktunnel-xmrig-proxy.service";
       };
       cluster-02 = {
         kubeContextFile = config.sops.secrets."xmr/kube-context-002".path;
         kubeconfigFile = config.sops.secrets."xmr/kubeconfig-002".path;
         targetHost = "rofl-12";
-        ktunnelService = "ktunnel-wiit-xmrig-proxy.service";
+        ktunnelService = "ktunnel-xmrig-proxy.service";
       };
     };
   };
