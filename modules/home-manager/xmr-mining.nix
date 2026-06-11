@@ -300,8 +300,15 @@ let
 
     if [[ -z "$ctx" && -z "$all_clusters" ]]
     then
-      usage
-      exit 2
+      case "$cmd" in
+        status|show)
+          all_clusters=1
+          ;;
+        *)
+          usage
+          exit 2
+          ;;
+      esac
     fi
 
     if [[ -n "$all_clusters" ]]
