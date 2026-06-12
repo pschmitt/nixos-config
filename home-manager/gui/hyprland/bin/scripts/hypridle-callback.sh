@@ -8,8 +8,9 @@ notify() {
 }
 
 gcr-unlock() {
-  zhj \
-    gnome-keyring::auto-unlock --verbose --no-callback
+  # Trigger the gnome-keyring-auto-unlock service (sops-backed on ge2,
+  # zhj fallback elsewhere) rather than calling zhj directly.
+  systemctl --user start gnome-keyring-auto-unlock.service
 }
 
 lock() {

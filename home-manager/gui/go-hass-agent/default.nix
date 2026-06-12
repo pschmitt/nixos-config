@@ -15,12 +15,14 @@ in
     {
       # timew-status provides timew-is-on/timew-total for the timewarrior sensors;
       # obs-control backs the OBS button commands; ms-teams backs the
-      # teams/online-meeting sensors.
+      # teams/online-meeting sensors; systemd provides busctl for the
+      # gnome-keyring status sensor.
       services.go-hass-agent.scriptPackages =
         with pkgs;
         [
           grim
           jq
+          systemd
           timew-status
         ]
         ++ lib.optionals (hostname == "ge2") [

@@ -26,7 +26,9 @@ let
   '';
 
   hyprGnomeKeyring = pkgs.writeShellScriptBin "hypr-gnome-keyring-autounlock" ''
-    "''${HOME}/bin/zhj" gnome-keyring::auto-unlock
+    # Trigger the gnome-keyring-auto-unlock service (sops-backed on ge2,
+    # zhj fallback elsewhere) rather than calling zhj directly.
+    ${pkgs.systemd}/bin/systemctl --user start gnome-keyring-auto-unlock.service
   '';
 
   hyprFixRootGui = pkgs.writeShellScriptBin "hypr-fix-root-gui" ''
