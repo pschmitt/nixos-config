@@ -38,6 +38,34 @@ emit_sensor() {
     '
 }
 
+# Browser Zoom tab (zoom.us/wc) -> canonical join URL, else native client.
+zoom_meeting_url() {
+  local burl mid
+  burl="$(bruvtab list 2>/dev/null | awk -F'\t' 'index(tolower($3), "zoom.us/wc") > 0 { print $3; exit }')"
+  if [[ -n "$burl" ]]
+  then
+    mid="$(sed -rn 's#.*/([0-9]+)/.*#\1#p' <<< "$burl")"
+    if [[ -n "$mid" ]]
+    then
+      echo "https://zoom.us/j/${mid}"
+      return 0
+    fi
+  fi
+  if pgrep -af "zoom zoommtg://" >/dev/null 2>&1
+  then
+    echo "N/A (Client)"
+    return 0
+  fi
+  return 1
+}
+
+jitsi_meeting_url() {
+  local u
+  u="$(bruvtab list 2>/dev/null | awk -F'\t' 'index(tolower($3), "meet.jit.si/") > 0 { print $3; exit }')"
+  [[ -n "$u" ]] || return 1
+  echo "$u"
+}
+
 main() {
   set -uo pipefail
 
@@ -45,11 +73,11 @@ main() {
   local provider=""
   local url=""
 
-  if url="$(zhj zoom::meeting-url 2>/dev/null)"
+  if url="$(zoom_meeting_url 2>/dev/null)"
   then
     state=true
     provider="zoom"
-  elif url="$(zhj jitsi::meeting-url 2>/dev/null)"
+  elif url="$(jitsi_meeting_url 2>/dev/null)"
   then
     state=true
     provider="jitsi"
