@@ -63,20 +63,14 @@ collect_hyprland_clients() {
 
   if ! clients_json=$(hyprctl_wrapper -j clients)
   then
-    if ! clients_json=$(zhj hyprctl -j clients)
-    then
-      ERROR_MSG="Failed to query Hyprland clients"
-      return 1
-    fi
+    ERROR_MSG="Failed to query Hyprland clients"
+    return 1
   fi
 
   if ! active_raw=$(hyprctl_wrapper -j activewindow)
   then
-    if ! active_raw=$(zhj hyprctl -j activewindow)
-    then
-      ERROR_MSG="Failed to query Hyprland active window"
-      active_raw="null"
-    fi
+    ERROR_MSG="Failed to query Hyprland active window"
+    active_raw="null"
   fi
 
   if ! focus_addr=$(jq -r '.address // empty' <<<"$active_raw")

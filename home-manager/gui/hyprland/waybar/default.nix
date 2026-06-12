@@ -41,6 +41,7 @@ in
   home.packages = with pkgs; [
     networkmanagerapplet
     playerctl
+    timew-status # timew-is-on/timew-total for the timewarrior custom module
     waybar
     wttrbar
 

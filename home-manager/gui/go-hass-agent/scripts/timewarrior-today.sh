@@ -35,7 +35,7 @@ main() {
   local human_state=""
   local icon="mdi:briefcase-off"
 
-  if output=$(zhj timewarrior::today-total --seconds 2>/dev/null)
+  if output=$(timew-total --seconds 2>/dev/null)
   then
     if [[ "$output" =~ ^[0-9]+$ ]]
     then
@@ -43,7 +43,7 @@ main() {
     fi
   fi
 
-  if human_output=$(zhj timewarrior::today-total 2>/dev/null)
+  if human_output=$(timew-total 2>/dev/null)
   then
     human_state="$human_output"
   fi
@@ -53,7 +53,7 @@ main() {
     human_state="0s"
   fi
 
-  if zhj timewarrior::is-on >&2
+  if timew-is-on >&2
   then
     icon="mdi:briefcase"
   fi

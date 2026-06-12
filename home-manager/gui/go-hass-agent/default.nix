@@ -2,6 +2,7 @@
   config,
   hostname,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -12,6 +13,13 @@ in
 
   config = lib.mkMerge [
     {
+      # timew-status provides timew-is-on/timew-total for the timewarrior sensors.
+      services.go-hass-agent.scriptPackages = with pkgs; [
+        grim
+        jq
+        timew-status
+      ];
+
       services.go-hass-agent.commands = {
         button = [
           {

@@ -36,11 +36,8 @@ collect_wayland_hyprland() {
   local data
   if ! data=$(hyprctl_wrapper -j monitors 2>/dev/null)
   then
-    if ! data=$(zhj hyprctl -j monitors 2>/dev/null)
-    then
-      ERROR="Failed to query Hyprland monitors"
-      return 1
-    fi
+    ERROR="Failed to query Hyprland monitors"
+    return 1
   fi
 
   MONITORS_JSON=$(jq -cer '[.[] | {

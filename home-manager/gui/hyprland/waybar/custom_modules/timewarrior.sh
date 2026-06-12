@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
-zhj() {
-  "${HOME}/bin/zhj" "$@"
-}
-
 timewarrior_is_on() {
-  zhj timewarrior::is-on
+  timew-is-on
 }
 
 timewarrior_current_time() {
-  zhj timewarrior::today-total --minutes
+  timew-total --minutes
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
