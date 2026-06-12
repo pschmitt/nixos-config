@@ -12,7 +12,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "bluez-headset-callback";
-  version = "0.6";
+  version = "0.7";
 
   src = ./bluez-headset-callback.sh;
 
