@@ -1,0 +1,36 @@
+title = "nixos-config gitleaks config"
+
+# Keep all of gitleaks' built-in rules (API keys, tokens, private keys, …).
+[extend]
+useDefault = true
+
+# Repo-specific rule: catch a secret hardcoded as a quoted literal handed to a
+# credential/unlock command (the gnome-keyring::unlock 'PASSWORD' mistake).
+# Pattern-based, not a hardcoded password. Variable refs ($VAR) are ignored.
+[[rules]]
+id = "hardcoded-shell-credential"
+description = "Quoted literal passed to a credential/unlock/secret command"
+regex = '''(?i)\b(unlock|keyring|passwd|password|secret|token|rbw)[a-z0-9_:.-]*[ \t]+['"][^'"$ \t\n]{6,64}['"]'''
+keywords = [
+  "unlock",
+  "keyring",
+  "passwd",
+  "password",
+  "secret",
+  "token",
+  "rbw",
+]
+
+[allowlist]
+description = "Files / values that legitimately live in the repo"
+paths = [
+  # Encrypted secrets are committed on purpose. Note: we deliberately do NOT
+  # allowlist the whole secrets/ dir — the *.sh tooling there must be scanned.
+  '''\.sops\.ya?ml$''',
+  '''\.age$''',
+]
+regexes = [
+  # base64-encoded SSH *public* keys (start with the b64 of "ssh-"); private
+  # keys live in sops and are path-allowlisted above.
+  '''c3NoLW[A-Za-z0-9+/]+=*''',
+]

@@ -468,19 +468,34 @@
         pkgs.nixfmt
       );
 
-      checks = forAllSystems (system: {
-        pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
-          src = ./.;
-          hooks = {
-            nixfmt.enable = true;
-            statix.enable = true;
-            pre-commit-hook-ensure-sops = {
-              enable = true;
-              files = ".+.sops.yaml$";
+      checks = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
+            src = ./.;
+            hooks = {
+              nixfmt.enable = true;
+              statix.enable = true;
+              # Secret scanner (entropy + patterns, plus a repo-specific rule for
+              # hardcoded shell credentials). Config + allowlist in .gitleaks.toml.
+              gitleaks = {
+                enable = true;
+                name = "gitleaks";
+                language = "system";
+                pass_filenames = false;
+                entry = "${pkgs.gitleaks}/bin/gitleaks git --staged --redact --no-banner --config .gitleaks.toml";
+              };
+              pre-commit-hook-ensure-sops = {
+                enable = true;
+                files = ".+.sops.yaml$";
+              };
             };
           };
-        };
-      });
+        }
+      );
 
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
