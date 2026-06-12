@@ -167,10 +167,13 @@ toggle_mute() {
   if default_source_is_muted
   then
     unmute_all_sources
+    sync_mic_overlay
+    notify "🎤 Unmuted"
   else
     mute_all_sources
+    sync_mic_overlay
+    notify "🔇 Muted"
   fi
-  sync_mic_overlay
 }
 
 # ── Webcam (Insta360 via v4l2) ─────────────────────────────────────────────
@@ -269,6 +272,25 @@ soundboard_play() {
   soundboard play "$1" 2>/dev/null || true
 }
 
+set_roomba_visibility() {
+  local state="$1"
+
+  case "$state" in
+    show)
+      obscli item -s "$DEFAULT_SCENE" show "roomba" 2>/dev/null || true
+      notify "🧹 Show roomba"
+      ;;
+    hide)
+      obscli item -s "$DEFAULT_SCENE" hide "roomba" 2>/dev/null || true
+      notify "🧹 Hide roomba"
+      ;;
+    *)
+      echo "Unknown roomba visibility state: $state" >&2
+      return 2
+      ;;
+  esac
+}
+
 # ── Dispatch ───────────────────────────────────────────────────────────────
 ensure_obs_env
 
@@ -318,6 +340,12 @@ case "$verb" in
     filter_disable "Webcam" "Freeze" &
     fix_webcam &
     notify "📹 Webcam scene"
+    ;;
+  roomba-show)
+    set_roomba_visibility show
+    ;;
+  roomba-hide)
+    set_roomba_visibility hide
     ;;
   thumbs-up | tu | up)
     soundboard_play "ping" &
