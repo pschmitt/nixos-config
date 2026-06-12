@@ -2,8 +2,8 @@
 # Relative mouse move / click via dotool. Replaces the zhj mouse::move and
 # mouse::click keybind helpers.
 #
-#   mouse-ctl.sh move [-y] PIXELS [PIXELS_Y]
-#   mouse-ctl.sh click [BUTTON]
+#   mousectl.sh move [-y] PIXELS [PIXELS_Y]
+#   mousectl.sh click [BUTTON]
 
 cmd="${1:-}"
 shift || true
@@ -21,7 +21,7 @@ case "$cmd" in
     px2="${2:-}"
     if [[ ! "$px1" =~ ^[-+]?[0-9]+$ ]]
     then
-      echo "usage: mouse-ctl.sh move [-y] PIXELS [PIXELS_Y]" >&2
+      echo "usage: mousectl.sh move [-y] PIXELS [PIXELS_Y]" >&2
       exit 2
     fi
 
@@ -45,7 +45,7 @@ case "$cmd" in
     dotoolc <<< "click ${1:-left}"
     ;;
   *)
-    echo "usage: mouse-ctl.sh {move [-y] PIXELS [PIXELS_Y]|click [BUTTON]}" >&2
+    echo "usage: mousectl.sh {move [-y] PIXELS [PIXELS_Y]|click [BUTTON]}" >&2
     exit 2
     ;;
 esac
