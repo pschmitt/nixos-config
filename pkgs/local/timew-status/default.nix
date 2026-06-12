@@ -15,7 +15,11 @@ let
       gnugrep
     ];
     # Exit 0 when Timewarrior is actively tracking, non-zero otherwise.
+    # Default the DB location so this works outside the interactive shell
+    # (e.g. the waybar / go-hass-agent systemd services), where TIMEWARRIORDB
+    # would otherwise be unset and timew would read an empty default DB.
     text = ''
+      export TIMEWARRIORDB="''${TIMEWARRIORDB:-$HOME/.config/timewarrior}"
       timew | grep -vq 'no active time tracking'
     '';
   };
@@ -32,6 +36,7 @@ let
     #   -M/--minutes           : H:MM
     #   (default)              : H:MM:SS
     text = ''
+      export TIMEWARRIORDB="''${TIMEWARRIORDB:-$HOME/.config/timewarrior}"
       raw=0 hours=0 minutes=0
       while [[ $# -gt 0 ]]
       do
