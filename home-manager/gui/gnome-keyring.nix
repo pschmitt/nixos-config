@@ -6,7 +6,12 @@
   ...
 }:
 let
-  isGe2 = hostname == "ge2";
+  # Hosts whose keyring password lives in sops (vs the legacy zhj/rbw path).
+  keyringSopsHosts = [
+    "ge2"
+    "x13"
+  ];
+  useSops = builtins.elem hostname keyringSopsHosts;
 
   gnome-keyring-unlock = pkgs.stdenvNoCC.mkDerivation {
     pname = "gnome-keyring-unlock";
@@ -89,9 +94,9 @@ in
 {
   home.packages = [ gnome-keyring-unlock ];
 
-  # The keyring password lives in this host's sops file (ge2 for now); other
-  # gui hosts still use the zhj/rbw path below until migrated.
-  sops.secrets = lib.mkIf isGe2 {
+  # The keyring password lives in this host's sops file (keyringSopsHosts);
+  # other gui hosts still use the zhj/rbw path below until migrated.
+  sops.secrets = lib.mkIf useSops {
     "gnome-keyring/password".sopsFile = config.host.sopsFile;
   };
 
@@ -101,7 +106,7 @@ in
     Service = {
       Type = "oneshot";
       ExecStart =
-        if isGe2 then
+        if useSops then
           "${autoUnlock}"
         else
           "${config.home.homeDirectory}/bin/zhj gnome-keyring::auto-unlock --verbose --no-callback";

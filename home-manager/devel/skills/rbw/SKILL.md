@@ -31,7 +31,7 @@ curl -fsS -X POST "http://10.5.1.1:8123/api/webhook/rbw_unlock_request" \
 ```
 
 The `host` field is optional and defaults to `fnuc`. Known short names that
-HA maps to SSH targets: `fnuc` (10.5.0.14), `ge2`, `x13`.
+HA maps to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
 
 The `agent` field is shown in the phone notification (defaults to `Claude`
 if omitted).
