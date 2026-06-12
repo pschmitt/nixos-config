@@ -109,6 +109,21 @@ in
             exec = "${commandScripts."stop-gec-vpn.sh"}";
             icon = "mdi:vpn";
           }
+          {
+            name = "Unlock GNOME Keyring";
+            exec = "${commandScripts."gnome-keyring-unlock.sh"}";
+            icon = "mdi:key-chain-variant";
+          }
+          {
+            name = "OBS Show Roomba";
+            exec = "${commandScripts."obs-show-roomba.sh"}";
+            icon = "mdi:robot-vacuum";
+          }
+          {
+            name = "OBS Hide Roomba";
+            exec = "${commandScripts."obs-hide-roomba.sh"}";
+            icon = "mdi:robot-vacuum";
+          }
         ];
       };
     }
