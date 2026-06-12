@@ -131,8 +131,6 @@ in
       (execBind "SUPER + ALT + T" "${bin}/ms-teams-join-room.sh home-room")
       (execBind "SUPER + SHIFT + Z" "zhj 'hyprctl::bring-window --fullscreen chrome'")
       (execBind "SUPER + ALT + H" "${bin}/browser-run-or-raise.sh --url https://ha.brkn.lol --alt http://10.5.1.1:8123")
-      # the '#' key
-      (execBind "SUPER + ALT + numbersign" "${bin}/browser-rbw.sh")
       (execBind "F1" "${bin}/scratchpad.sh term")
       (execBind "SUPER + E" "${bin}/scratchpad.sh files")
       (execBind "SUPER + SHIFT + V" "${bin}/scratchpad.sh audio")
