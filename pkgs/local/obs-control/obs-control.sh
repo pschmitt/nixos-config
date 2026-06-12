@@ -38,7 +38,15 @@ obscli() {
 
 notify() {
   [[ -n "${NO_NOTIFICATION:-}" ]] && return 0
-  notify-send -i "$NOTIFY_ICON" -a obs.zsh "$1" 2>/dev/null || true
+  # Match the original obs.zsh OSD styling: the osd-top-center category is
+  # themed by mako, and the synchronous hint makes rapid notifications
+  # replace one another instead of stacking.
+  notify-send \
+    --app-name obs.zsh \
+    --hint "string:x-canonical-private-synchronous:obs.zsh" \
+    --category osd-top-center \
+    --icon "$NOTIFY_ICON" \
+    "$1" 2>/dev/null || true
 }
 
 # ── Scenes ───────────────────────────────────────────────────────────────
