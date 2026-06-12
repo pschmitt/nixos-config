@@ -14,7 +14,7 @@ in
               hl.dispatch(hl.dsp.workspace.move({ workspace = 2, monitor = "desc:Lenovo" }))
               hl.dispatch(hl.dsp.focus({ monitor = "desc:LG" }))
               hl.dispatch(hl.dsp.focus({ workspace = 1 }))
-              hl.exec_cmd("zhj pulseaudio::mute-default-source")
+              hl.exec_cmd("pactl set-source-mute @DEFAULT_SOURCE@ true")
           end
         '')
       ];
