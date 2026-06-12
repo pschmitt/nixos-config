@@ -45,10 +45,10 @@ let
   ) wsKeys;
 
   # Mouse-mode submap helpers.
-  mv = combo: args: bindOpts combo (exec "${bin}/mouse-ctl.sh move ${args}") { repeating = true; };
+  mv = combo: args: bindOpts combo (exec "${bin}/mousectl.sh move ${args}") { repeating = true; };
   cl =
     combo: btn:
-    execBind combo ("${bin}/mouse-ctl.sh click" + lib.optionalString (btn != null) " ${btn}");
+    execBind combo ("${bin}/mousectl.sh click" + lib.optionalString (btn != null) " ${btn}");
   mouseto =
     combo: x: y:
     execBind combo "dotoolc <<< 'mouseto ${x} ${y}'";
