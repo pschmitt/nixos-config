@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 get_default_source() {
-  zhj pulseaudio::get-default-source
+  pactl get-default-source
 }
 
 write_cava_config() {
