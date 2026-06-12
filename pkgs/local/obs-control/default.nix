@@ -13,6 +13,7 @@
   coreutils,
   emoji-fzf,
   wofi,
+  soundboard,
 }:
 let
   obs-cli = inputs.obs-cli.packages.${stdenv.hostPlatform.system}.obs-cli;
@@ -30,6 +31,7 @@ writeShellApplication {
     coreutils
     emoji-fzf
     wofi
+    soundboard
   ];
   text = builtins.readFile ./obs-control.sh;
   meta = {
