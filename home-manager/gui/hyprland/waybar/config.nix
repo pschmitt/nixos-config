@@ -210,7 +210,7 @@ in
         "format" = "{format_source}";
         "format-source" = "󰍬";
         "format-source-muted" = "<span foreground=\"#e27978\" font-weight=\"bold\"> MUTED</span>";
-        "on-click" = "sh -c '~/bin/obs.zsh toggle-mute; ~/.config/sway/bin/barify source mute'";
+        "on-click" = "sh -c 'obs-control toggle-mute; ~/.config/sway/bin/barify source mute'";
         "on-click-right" = "sh -c 'swaymsg [app_id=\"pavucontrol\"] scratchpad show || exec pavucontrol'";
         "on-scroll-down" = "~/.config/sway/bin/barify source down";
         "on-scroll-up" = "~/.config/sway/bin/barify source up";

@@ -13,12 +13,16 @@ in
 
   config = lib.mkMerge [
     {
-      # timew-status provides timew-is-on/timew-total for the timewarrior sensors.
-      services.go-hass-agent.scriptPackages = with pkgs; [
-        grim
-        jq
-        timew-status
-      ];
+      # timew-status provides timew-is-on/timew-total for the timewarrior sensors;
+      # obs-control backs the OBS button commands.
+      services.go-hass-agent.scriptPackages =
+        with pkgs;
+        [
+          grim
+          jq
+          timew-status
+        ]
+        ++ lib.optional (hostname == "ge2") obs-control;
 
       services.go-hass-agent.commands = {
         button = [
@@ -80,8 +84,17 @@ in
     (lib.mkIf (hostname == "ge2") {
       services.go-hass-agent.obsPasswordSecret = lib.mkDefault "obs/websocket/password";
 
+      # obs-control on PATH for the hyprland keybinds and waybar mic toggle
+      # (the go-hass-agent buttons reach it via scriptPackages above).
+      home.packages = [ pkgs.obs-control ];
+
       sops.secrets = lib.mkIf config.services.go-hass-agent.enable {
-        "obs/websocket/password".sopsFile = config.host.sopsFile;
+        # Rendered to the canonical obs-websocket password path so obs-control
+        # can read it outside the go-hass-agent service env (keybinds/waybar).
+        "obs/websocket/password" = {
+          sopsFile = config.host.sopsFile;
+          path = "${config.xdg.configHome}/obs-studio/obs-websocket.password";
+        };
       };
     })
   ];

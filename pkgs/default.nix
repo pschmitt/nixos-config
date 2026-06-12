@@ -9,6 +9,8 @@
 let
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
+  # Hoisted so obs-control can depend on it (it is not a top-level nixpkgs attr).
+  emoji-fzf = pkgs.callPackage ./emoji-fzf { };
 in
 {
   # local pkgs
@@ -23,11 +25,12 @@ in
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   codex-ha-bridge = pkgs.callPackage ./codex-ha-bridge { };
   clipcascade = pkgs.callPackage ./clipcascade { };
-  emoji-fzf = pkgs.callPackage ./emoji-fzf { };
+  inherit emoji-fzf;
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
+  obs-control = pkgs.callPackage ./local/obs-control { inherit inputs emoji-fzf; };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ketall = pkgs.callPackage ./ketall { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };
