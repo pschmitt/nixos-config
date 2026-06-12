@@ -1,5 +1,6 @@
 # workstation — interactive desktop/laptop hosts (ge2, gk4, x13): the shared
 # GUI + laptop + work base every personal machine runs.
+{ config, ... }:
 {
   imports = [
     ../common/global
@@ -23,4 +24,7 @@
 
     ../services/restic
   ];
+
+  home-manager.users.${config.mainUser.username}.services.go-hass-agent.enableWorkstationCommands =
+    true;
 }
