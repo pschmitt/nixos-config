@@ -14,7 +14,8 @@ in
   config = lib.mkMerge [
     {
       # timew-status provides timew-is-on/timew-total for the timewarrior sensors;
-      # obs-control backs the OBS button commands.
+      # obs-control backs the OBS button commands; ms-teams backs the
+      # teams/online-meeting sensors.
       services.go-hass-agent.scriptPackages =
         with pkgs;
         [
@@ -22,7 +23,10 @@ in
           jq
           timew-status
         ]
-        ++ lib.optional (hostname == "ge2") obs-control;
+        ++ lib.optionals (hostname == "ge2") [
+          obs-control
+          ms-teams
+        ];
 
       services.go-hass-agent.commands = {
         button = [
@@ -84,9 +88,13 @@ in
     (lib.mkIf (hostname == "ge2") {
       services.go-hass-agent.obsPasswordSecret = lib.mkDefault "obs/websocket/password";
 
-      # obs-control on PATH for the hyprland keybinds and waybar mic toggle
-      # (the go-hass-agent buttons reach it via scriptPackages above).
-      home.packages = [ pkgs.obs-control ];
+      # obs-control on PATH for the hyprland keybinds and waybar mic toggle;
+      # ms-teams for the ms-teams-join-room keybind script (the go-hass-agent
+      # buttons/sensors reach them via scriptPackages above).
+      home.packages = [
+        pkgs.obs-control
+        pkgs.ms-teams
+      ];
 
       sops.secrets = lib.mkIf config.services.go-hass-agent.enable {
         # Rendered to the canonical obs-websocket password path so obs-control

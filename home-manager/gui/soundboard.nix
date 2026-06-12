@@ -36,9 +36,7 @@ in
       # FIXME Ideally we would determine if we are currently attending the
       # Daily Meeting but MSTeams isn't giving out too much information via
       # the URL/title of the meeting...
-      # The meeting check still uses the zsh helper (separate subsystem); the
-      # playback now goes through the nix-native soundboard package.
-      ExecStart = "${config.home.homeDirectory}/bin/zhj 'ms-teams::in-a-meeting && ${pkgs.soundboard}/bin/soundboard play tagesschau || echo not in meeting >&2'";
+      ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.ms-teams}/bin/ms-teams in-a-meeting && ${pkgs.soundboard}/bin/soundboard play tagesschau || echo not in meeting >&2'";
     };
   };
 

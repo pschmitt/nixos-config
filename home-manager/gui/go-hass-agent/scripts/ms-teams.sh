@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Emits a Go Hass Agent Script Sensor (binary) for MS Teams "in a meeting".
-# Requirements: `zhj` available in PATH.
+# Requirements: `ms-teams` available in PATH.
 
 emit_sensor() {
   local state="$1"
@@ -28,7 +28,7 @@ main() {
 
   local state=false
 
-  if zhj ms-teams::in-a-meeting >&2
+  if ms-teams in-a-meeting >&2
   then
     state=true
   fi
