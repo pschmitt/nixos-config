@@ -40,7 +40,7 @@ slugify() {
 }
 
 gtk_theme() {
-  zhj theme::current
+  gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'\""
 }
 
 toggle_scratchpad() {

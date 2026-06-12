@@ -13,12 +13,27 @@ usage() {
   echo "  --kill-cmd CMD           Command to run before killing the process"
 }
 
-zhj() {
-  "${HOME}/bin/zhj" "$@"
-}
-
 hyprland_instance_signature() {
-  zhj hyperctl::instance-signature
+  if [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]]
+  then
+    echo "$HYPRLAND_INSTANCE_SIGNATURE"
+    return 0
+  fi
+
+  # Fall back to the newest Hyprland log dir (its name is the signature).
+  local dir logfile
+  for dir in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr" "${TMPDIR:-/tmp}/hypr"
+  do
+    [[ -d "$dir" ]] || continue
+    logfile="$(find "$dir" -type f -name '*.log' -printf '%T@\t%p\n' 2>/dev/null \
+      | sort -nr | awk 'NR==1 {print $2}')"
+    if [[ -n "$logfile" ]]
+    then
+      basename "$(dirname "$logfile")"
+      return 0
+    fi
+  done
+  return 1
 }
 
 # https://unix.stackexchange.com/a/124148
