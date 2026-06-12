@@ -6,7 +6,12 @@ usage() {
 
 find_tab() {
   [[ -z $* ]] && return 0
-  "$HOME/bin/zhj" "browser::tabs -o id '$*'"
+  # Match open browser tabs whose title or URL contains the query
+  # (case-insensitive) and print their bruvtab ids. Replaces the zhj
+  # `browser::tabs -o id` helper, which did the same over `bruvtab list`.
+  bruvtab list 2>/dev/null | awk -F'\t' -v q="$*" '
+    BEGIN { ql = tolower(q) }
+    index(tolower($2), ql) > 0 || index(tolower($3), ql) > 0 { print $1 }'
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
