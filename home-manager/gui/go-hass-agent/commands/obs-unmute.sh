@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 set -euo pipefail
-exec bash "$(dirname "$0")/obs-zhj.sh" unmute
+exec obs-control unmute
