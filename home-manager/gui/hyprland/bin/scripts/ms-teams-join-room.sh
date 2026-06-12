@@ -2,16 +2,12 @@
 
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
-zhj() {
-  ~/bin/zhj "$@"
-}
-
 # BROWSER=firefox
 BROWSER=chromium
 
 # Edge Stack
-HOME_ROOM_URL=$(zhj ms-teams::get-url "home room")
-TITLE="$(zhj ms-teams::get-title "home room") | Microsoft Teams"
+HOME_ROOM_URL=$(ms-teams url "home room")
+TITLE="$(ms-teams title "home room") | Microsoft Teams"
 
 case "$1" in
   https:*)

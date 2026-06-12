@@ -53,7 +53,7 @@ main() {
   then
     state=true
     provider="jitsi"
-  elif zhj ms-teams::in-a-meeting >/dev/null 2>&1
+  elif ms-teams in-a-meeting >/dev/null 2>&1
   then
     state=true
     provider="msteams"

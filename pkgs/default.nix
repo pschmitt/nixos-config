@@ -18,6 +18,7 @@ in
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
+  ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   obs-control = pkgs.callPackage ./local/obs-control { inherit inputs emoji-fzf soundboard; };
   inherit soundboard;
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
