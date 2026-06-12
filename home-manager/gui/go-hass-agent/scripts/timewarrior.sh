@@ -29,7 +29,7 @@ main() {
   local state=false
   local icon="mdi:briefcase-off"
 
-  if zhj timewarrior::is-on >&2
+  if timew-is-on >&2
   then
     state=true
     icon="mdi:briefcase"

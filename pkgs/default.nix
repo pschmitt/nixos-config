@@ -16,6 +16,7 @@ in
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
+  timew-status = pkgs.callPackage ./local/timew-status { };
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
 
   # external pkgs

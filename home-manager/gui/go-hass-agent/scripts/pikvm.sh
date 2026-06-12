@@ -14,12 +14,7 @@ check_display_sway() {
 }
 
 check_display_hyprland() {
-  if hyprctl_wrapper -j monitors 2>/dev/null | jq -e 'map(.description // "" | test("pikvm"; "i")) | any' >/dev/null 2>&1
-  then
-    return 0
-  fi
-
-  zhj hyprctl -j monitors 2>/dev/null | jq -e 'map(.description // "" | test("pikvm"; "i")) | any' >/dev/null 2>&1
+  hyprctl_wrapper -j monitors 2>/dev/null | jq -e 'map(.description // "" | test("pikvm"; "i")) | any' >/dev/null 2>&1
 }
 
 main() {
