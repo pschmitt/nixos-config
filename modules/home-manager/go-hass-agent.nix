@@ -143,6 +143,12 @@ in
       description = "Whether to install desktop-session specific go-hass-agent scripts.";
     };
 
+    enableWorkstationCommands = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether to expose workstation-oriented go-hass-agent command buttons such as media playback controls.";
+    };
+
     commandScripts = lib.mkOption {
       type = lib.types.attrsOf lib.types.path;
       readOnly = true;

@@ -41,6 +41,18 @@ in
             icon = "mdi:lock-open-variant";
           }
         ]
+        ++ lib.optionals config.services.go-hass-agent.enableWorkstationCommands [
+          {
+            name = "Pause Media Playback";
+            exec = "${commandScripts."playerctl-pause.sh"}";
+            icon = "mdi:pause";
+          }
+          {
+            name = "Resume Media Playback";
+            exec = "${commandScripts."playerctl-play.sh"}";
+            icon = "mdi:play";
+          }
+        ]
         ++ lib.optionals (hostname == "ge2") [
           {
             name = "OBS BRB";
@@ -66,6 +78,36 @@ in
             name = "Unmute Microphone";
             exec = "${commandScripts."obs-unmute.sh"}";
             icon = "mdi:microphone";
+          }
+          {
+            name = "Connect Bluetooth Headset";
+            exec = "${commandScripts."bluetooth-headset-connect.sh"}";
+            icon = "mdi:headset";
+          }
+          {
+            name = "Timewarrior Start";
+            exec = "${commandScripts."timewarrior-start.sh"}";
+            icon = "mdi:briefcase";
+          }
+          {
+            name = "Timewarrior Stop";
+            exec = "${commandScripts."timewarrior-stop.sh"}";
+            icon = "mdi:briefcase-off";
+          }
+          {
+            name = "Feierabend Start";
+            exec = "${commandScripts."feierabend-start.sh"}";
+            icon = "mdi:beer";
+          }
+          {
+            name = "Feierabend Stop";
+            exec = "${commandScripts."feierabend-stop.sh"}";
+            icon = "mdi:beer-off";
+          }
+          {
+            name = "Stop GEC VPN";
+            exec = "${commandScripts."stop-gec-vpn.sh"}";
+            icon = "mdi:vpn";
           }
         ];
       };
