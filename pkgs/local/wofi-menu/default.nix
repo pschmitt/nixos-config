@@ -1,4 +1,4 @@
-# Nix-native port of the tractable wofi.zsh menus (run / emoji / soundboard).
+# Nix-native port of the ~/bin/wofi.zsh launcher (run/emoji/soundboard/misc/meetings).
 {
   lib,
   writeShellApplication,
@@ -8,6 +8,8 @@
   libnotify, # notify-send
   wl-clipboard, # wl-copy
   glib, # gsettings
+  curl, # calendar agenda (jcal)
+  jq,
   gawk,
   gnused,
   gnugrep,
@@ -23,6 +25,8 @@ writeShellApplication {
     libnotify
     wl-clipboard
     glib
+    curl
+    jq
     gawk
     gnused
     gnugrep
@@ -31,7 +35,7 @@ writeShellApplication {
   ];
   text = builtins.readFile ./wofi-menu.sh;
   meta = {
-    description = "wofi run/emoji/soundboard menus (subset of ~/bin/wofi.zsh)";
+    description = "wofi run/emoji/soundboard/misc/meetings menus (replaces ~/bin/wofi.zsh)";
     platforms = lib.platforms.linux;
     mainProgram = "wofi-menu";
   };
