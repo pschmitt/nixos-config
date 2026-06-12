@@ -9,14 +9,17 @@
 let
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
-  # Hoisted so obs-control can depend on it (it is not a top-level nixpkgs attr).
+  # Hoisted so obs-control can depend on them (not top-level nixpkgs attrs).
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
+  soundboard = pkgs.callPackage ./local/soundboard { };
 in
 {
   # local pkgs
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
+  obs-control = pkgs.callPackage ./local/obs-control { inherit inputs emoji-fzf soundboard; };
+  inherit soundboard;
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
@@ -30,7 +33,6 @@ in
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
-  obs-control = pkgs.callPackage ./local/obs-control { inherit inputs emoji-fzf; };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ketall = pkgs.callPackage ./ketall { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };

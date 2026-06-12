@@ -7,9 +7,8 @@
 # go-hass-agent service) -> $OBS_PASSWORD_FILE -> the obs-websocket.password
 # file under the OBS config dir.
 #
-# Soundboard sound effects (thumbs-up/down) still delegate to the zsh
-# soundboard:: helpers via ~/bin/zhj: reimplementing the soundboard audio
-# routing is out of scope here.
+# Soundboard sound effects (thumbs-up/down) go through the `soundboard`
+# package (a runtimeInput).
 
 DEFAULT_SCENE="📹 Webcam"
 WEBCAM_NAME="Insta360 Link"
@@ -258,9 +257,8 @@ emoji_react() {
   obscli item -s "$scene" hide "$item" 2>/dev/null || true
 }
 
-# Soundboard playback still lives in the zsh helpers (audio routing).
 soundboard_play() {
-  "${HOME}/bin/zhj" soundboard::play "$1" 2>/dev/null || true
+  soundboard play "$1" 2>/dev/null || true
 }
 
 # ── Dispatch ───────────────────────────────────────────────────────────────

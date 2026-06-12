@@ -1,8 +1,9 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 let
   serviceName = "soundboard-tagesschau";
 in
 {
+  home.packages = [ pkgs.soundboard ];
 
   xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
     "context.objects" = [
@@ -35,7 +36,9 @@ in
       # FIXME Ideally we would determine if we are currently attending the
       # Daily Meeting but MSTeams isn't giving out too much information via
       # the URL/title of the meeting...
-      ExecStart = "${config.home.homeDirectory}/bin/zhj 'ms-teams::in-a-meeting && soundboard::play tagesschau || echo not in meeting >&2'";
+      # The meeting check still uses the zsh helper (separate subsystem); the
+      # playback now goes through the nix-native soundboard package.
+      ExecStart = "${config.home.homeDirectory}/bin/zhj 'ms-teams::in-a-meeting && ${pkgs.soundboard}/bin/soundboard play tagesschau || echo not in meeting >&2'";
     };
   };
 
