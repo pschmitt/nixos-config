@@ -4,10 +4,47 @@ usage() {
   echo "Usage: $(basename "$0") on|off|status"
 }
 
+# Dismiss existing mako notifications from this app (was notification::dismiss).
+notification_dismiss() {
+  local app_name="$1" id
+  for id in $(makoctl list 2>/dev/null \
+    | jq -er --arg n "$app_name" '.data[0][] | select(.["app-name"].data == $n).id.data' 2>/dev/null)
+  do
+    makoctl dismiss -n "$id" 2>/dev/null || true
+  done
+}
+
+# Links touching a PipeWire node (by node.name regex). Was pw::list-links.
+pw_list_links() {
+  local node="$1" data
+  data="$(pw-dump | jq -er '
+    (map(select(.type == "PipeWire:Interface:Node")) | reduce .[] as $item ({}; .[$item.id | tostring] = $item)) as $nodes
+    | (map(select(.type == "PipeWire:Interface:Port")) | reduce .[] as $item ({}; .[$item.id | tostring] = $item)) as $ports
+    | [ .[]
+      | if .type == "PipeWire:Interface:Link" then
+          . + {
+            output_node_info: $nodes[(.info["output-node-id"] | tostring)],
+            input_node_info: $nodes[(.info["input-node-id"] | tostring)],
+            output_port_info: $ports[(.info["output-port-id"] | tostring)],
+            input_port_info: $ports[(.info["input-port-id"] | tostring)]
+          }
+        else . end ]')"
+
+  local node_ids
+  node_ids="$(jq -er --arg node "$node" '[.[] |
+    select(.type == "PipeWire:Interface:Node" and (.info.props["node.name"] | test($node))).id]' <<< "$data")"
+  [[ -z "$node_ids" || "$node_ids" == "[]" ]] && return 2
+
+  jq -er --argjson node_ids "$node_ids" '[.[] |
+    select(.type == "PipeWire:Interface:Link"
+      and ((.info.props["link.input.node"] | inside($node_ids[]))
+        or (.info.props["link.output.node"] | inside($node_ids[]))))]' <<< "$data"
+}
+
 notify-send-unique() {
   local app_id
   app_id="$(basename "$0")"
-  zhj notification::dismiss "$app_id"
+  notification_dismiss "$app_id"
   notify-send --app-name="$app_id" \
     --hint "string:x-canonical-private-synchronous:${app_id}" \
     "$@"
@@ -54,7 +91,7 @@ get_screencasting_apps() {
   # ".xdg-desktop-portal-hyprland-wrapped"
   local portal="xdg-desktop-portal"
 
-  zhj pw::list-links "$portal" | \
+  pw_list_links "$portal" | \
     jq -cer '[
       .[].input_node_info.info.props["node.name"]
     ] | unique' 2>/dev/null
@@ -166,7 +203,7 @@ select_output() {
 
   # FIXME This might return the floating display selection window, instead of
   # the main application window (Firefox, Chrome etc.)
-  app="$(zhj window-manager::active-window -j)"
+  app="$(hyprctl -j activewindow)"
 
   store_state "on" "$output" "$app"
 
