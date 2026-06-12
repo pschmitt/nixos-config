@@ -33,11 +33,6 @@ buildPythonApplication rec {
       --replace-fail '"setuptools~=68.0.0"' '"setuptools"' \
       --replace-fail '"wheel~=0.40.0"' '"wheel"'
     sed -i '/"asyncio>=/d' pyproject.toml
-    # Backport fix: LNXLINK_MQTT_PORT must be cast to int (fixed in upstream main)
-    substituteInPlace lnxlink/files_setup.py \
-      --replace-fail \
-        'conf["mqtt"]["port"] = os.environ.get("LNXLINK_MQTT_PORT")' \
-        'conf["mqtt"]["port"] = int(os.environ.get("LNXLINK_MQTT_PORT"))'
     # Filter br-* (Docker bridge) interfaces alongside veth* in both modules
     substituteInPlace lnxlink/modules/interfaces.py \
       --replace-fail \

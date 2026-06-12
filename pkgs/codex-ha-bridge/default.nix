@@ -1,13 +1,15 @@
 {
+  lib,
   stdenv,
   fetchFromGitHub,
   makeWrapper,
   nodejs,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation {
   pname = "codex-ha-bridge";
-  version = "0-unstable-2026-05-05";
+  version = "unstable-2026-05-05";
 
   src = fetchFromGitHub {
     owner = "ofilis";
@@ -27,9 +29,17 @@ stdenv.mkDerivation {
     runHook postInstall
   '';
 
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--version"
+      "branch"
+    ];
+  };
+
   meta = {
     description = "Publish OpenAI Codex usage limits to Home Assistant over MQTT";
     homepage = "https://github.com/ofilis/codex-ha-bridge";
+    license = lib.licenses.mit;
     mainProgram = "codex-ha-bridge";
   };
 }
