@@ -146,10 +146,8 @@ in
       (execBind "SUPER + period" "wofi-menu emoji")
       (execBind "SUPER + ALT + c" "~/.config/waybar/custom_modules/clipboard.sh")
       (execBind "SUPER + ALT + v" "zhj clipboard::revert --notify")
-      (execBind "SUPER + ALT + p" "~/bin/wofi.zsh bitwarden")
-      (execBind "SUPER + ALT + m" "~/bin/wofi.zsh misc")
-      (execBind "SUPER + ALT + j" "~/bin/wofi.zsh meetings")
-      (execBind "SUPER + ALT + g" "~/bin/wofi.zsh bitwarden-work")
+      (execBind "SUPER + ALT + m" "wofi-menu misc")
+      (execBind "SUPER + ALT + j" "wofi-menu meetings")
       (execBind "SUPER + ALT + s" "wofi-menu soundboard")
       (execBind "SUPER + SHIFT + s" "wofi-menu soundboard stop")
 

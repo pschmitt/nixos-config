@@ -6,7 +6,7 @@
     wev
     wlogout
     wofi
-    wofi-menu # run/emoji/soundboard menus (subset of ~/bin/wofi.zsh)
+    wofi-menu # run/emoji/soundboard/misc/meetings menus (replaces ~/bin/wofi.zsh)
 
     # screenshots
     grim
