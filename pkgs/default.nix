@@ -24,6 +24,7 @@ in
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
+  wofi-menu = pkgs.callPackage ./local/wofi-menu { inherit emoji-fzf soundboard; };
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };

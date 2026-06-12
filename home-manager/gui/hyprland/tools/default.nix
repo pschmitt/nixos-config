@@ -6,6 +6,7 @@
     wev
     wlogout
     wofi
+    wofi-menu # run/emoji/soundboard menus (subset of ~/bin/wofi.zsh)
 
     # screenshots
     grim
