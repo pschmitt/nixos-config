@@ -6,6 +6,12 @@ _: {
     systemd.enable = true;
     settings = {
       app_launch_prefix = "uwsm app -- ";
+      keybinds.quick_activate = [
+        "alt 1"
+        "alt 2"
+        "alt 3"
+        "alt 4"
+      ];
       theme = "nord";
     };
     theme = {
@@ -29,26 +35,27 @@ _: {
         .box-wrapper {
           background: @background;
           border-radius: 12px;
-          padding: 20px;
+          min-width: 960px;
+          padding: 28px;
           border: 1px solid @overlay;
           box-shadow:
             0 19px 38px rgba(0, 0, 0, 0.5),
             0 15px 12px rgba(0, 0, 0, 0.3);
           color: @foreground;
           font-family: "ComicCode Nerd Font", monospace;
-          font-size: 14px;
+          font-size: 18px;
         }
 
         .search-container {
           background: @surface;
           border-radius: 6px;
-          padding: 8px 12px;
-          margin-bottom: 4px;
+          padding: 12px 16px;
+          margin-bottom: 10px;
         }
 
         .input {
           color: @foreground;
-          font-size: 15px;
+          font-size: 20px;
         }
 
         .input placeholder {
@@ -62,12 +69,28 @@ _: {
 
         child {
           border-radius: 6px;
-          margin: 1px 0;
+          margin: 3px 0;
         }
 
         .item-box {
-          padding: 6px 8px;
+          padding: 10px 12px;
           border-radius: 6px;
+        }
+
+        .normal-icons {
+          -gtk-icon-size: 28px;
+        }
+
+        .large-icons {
+          -gtk-icon-size: 48px;
+        }
+
+        .item-image {
+          margin-right: 12px;
+        }
+
+        .item-image-text {
+          font-size: 40px;
         }
 
         child:selected .item-box,
@@ -78,6 +101,7 @@ _: {
         .item-text {
           color: @foreground;
           font-weight: 500;
+          font-size: 24px;
         }
 
         child:selected .item-text,
@@ -87,7 +111,7 @@ _: {
 
         .item-subtext {
           color: @muted;
-          font-size: 0.85em;
+          font-size: 0.95em;
         }
 
         .item-quick-activation {
@@ -101,10 +125,10 @@ _: {
 
         .keybinds {
           color: @muted;
-          font-size: 12px;
-          padding-top: 8px;
+          font-size: 15px;
+          padding-top: 12px;
           border-top: 1px solid @overlay;
-          margin-top: 4px;
+          margin-top: 8px;
         }
 
         .error {

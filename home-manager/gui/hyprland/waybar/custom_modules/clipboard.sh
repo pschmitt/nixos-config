@@ -1,48 +1,31 @@
 #!/usr/bin/env bash
 
-# Check if we are being invoked by waybar
-case "$1" in
-  format)
-    echo '{"text": "📋", "alt": "clipboard", "class": "custom-clipboard", "tooltip": "Clipbard History powered by cliphist. Click me!" }'
-    exit 0
-    ;;
-esac
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") format
+EOF
+}
 
-walker --close 2>/dev/null || true
+main() {
+  case "${1:-}" in
+    format)
+      printf '%s\n' '{"text": "📋", "alt": "clipboard", "class": "custom-clipboard", "tooltip": "Walker clipboard history" }'
+      return 0
+      ;;
+    -h|--help|help)
+      usage
+      return 0
+      ;;
+    *)
+      usage >&2
+      return 2
+      ;;
+  esac
+}
 
-CLIP_HISTORY="$(cliphist list | head -n "${HIST_COUNT:-100}")"
-
-# Strip leading cliphist IDs before presenting to walker, then map back.
-res="$(
-  sed -r 's#^[0-9]+\s+##' <<< "$CLIP_HISTORY" | \
-  walker --dmenu -p "󰅍 Clipboard history"
-)"
-
-if [[ -z "$res" ]]
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  echo "Nothing selected" >&2
-  exit 1
+  main "$@"
 fi
 
-# Get the entire line by matching the stripped text exactly (no regex), so
-# special characters don't break the lookup.
-full_line="$(awk -v sel="$res" '
-  {
-    orig = $0
-    txt = $0
-    sub(/^[0-9]+[[:space:]]+/, "", txt)
-    if (txt == sel) {
-      print orig
-      exit
-    }
-  }
-' <<< "$CLIP_HISTORY")"
-if [[ -z "$full_line" ]]
-then
-  echo "Failed to find full line matching $res in cliphist" >&2
-  # copy whatever we have
-  echo -n "$res" | wl-copy
-  exit 1
-fi
-
-echo -n "$full_line" | cliphist decode | wl-copy
+# vim: set ft=sh et ts=2 sw=2 :

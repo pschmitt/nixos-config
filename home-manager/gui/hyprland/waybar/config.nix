@@ -115,7 +115,7 @@ in
         "exec" = "~/.config/waybar/custom_modules/clipboard.sh format";
         "interval" = "once";
         "return-type" = "json";
-        "on-click" = "~/.config/waybar/custom_modules/clipboard.sh";
+        "on-click" = "walker -m clipboard";
         "spacing" = 5;
       };
       "custom/timewarrior" = {

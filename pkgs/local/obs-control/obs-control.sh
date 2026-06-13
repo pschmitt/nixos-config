@@ -251,7 +251,7 @@ emoji_react() {
 
   if [[ -z "$emoji" ]]
   then
-    emoji="$(emoji-fzf preview --prepend \
+    emoji="$(emoji-fzf --custom-aliases "$HOME/.config/emoji-fzf/emojis.json" preview --prepend \
       | walker --dmenu -p "📹 OBS Studio Emoji reaction" \
       | awk '{print $1}' \
       | tr -d '\n')"
