@@ -4,7 +4,10 @@ _: {
   services.walker = {
     enable = true;
     systemd.enable = true;
-    settings.theme = "nord";
+    settings = {
+      app_launch_prefix = "uwsm app -- ";
+      theme = "nord";
+    };
     theme = {
       name = "nord";
       style = ''
