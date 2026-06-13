@@ -12,10 +12,10 @@ _: {
         "alt 3"
         "alt 4"
       ];
-      theme = "nord";
+      theme = "justgray";
     };
     theme = {
-      name = "nord";
+      name = "justgray";
       style = ''
         @define-color foreground #C7CCD1;
         @define-color background #24282F;
