@@ -19,12 +19,15 @@ in
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
-  obs-control = pkgs.callPackage ./local/obs-control { inherit inputs emoji-fzf soundboard; };
+  obs-control = pkgs.callPackage ./local/obs-control {
+    inherit inputs emoji-fzf soundboard;
+    inherit (pkgs) walker;
+  };
   inherit soundboard;
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
-  wofi-menu = pkgs.callPackage ./local/wofi-menu { inherit emoji-fzf soundboard; };
+  walker-menu = pkgs.callPackage ./local/walker-menu { inherit soundboard; };
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };

@@ -12,7 +12,7 @@
   gawk,
   coreutils,
   emoji-fzf,
-  wofi,
+  walker,
   soundboard,
 }:
 let
@@ -30,7 +30,7 @@ writeShellApplication {
     gawk
     coreutils
     emoji-fzf
-    wofi
+    walker
     soundboard
   ];
   text = builtins.readFile ./obs-control.sh;
