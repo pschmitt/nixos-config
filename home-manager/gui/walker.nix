@@ -17,12 +17,12 @@ _: {
     theme = {
       name = "nord";
       style = ''
-        @define-color foreground #D8DEE9;
+        @define-color foreground #C7CCD1;
         @define-color background #24282F;
-        @define-color surface #2E3440;
-        @define-color overlay #3B4252;
-        @define-color muted #4C566A;
-        @define-color accent #88C0D0;
+        @define-color surface #2E2E2E;
+        @define-color overlay #383838;
+        @define-color muted #717171;
+        @define-color accent #A6A6A6;
 
         * {
           all: unset;
@@ -35,27 +35,27 @@ _: {
         .box-wrapper {
           background: @background;
           border-radius: 12px;
-          min-width: 960px;
-          padding: 28px;
+          min-width: 800px;
+          padding: 20px;
           border: 1px solid @overlay;
           box-shadow:
             0 19px 38px rgba(0, 0, 0, 0.5),
             0 15px 12px rgba(0, 0, 0, 0.3);
           color: @foreground;
           font-family: "ComicCode Nerd Font", monospace;
-          font-size: 18px;
+          font-size: 17px;
         }
 
         .search-container {
           background: @surface;
           border-radius: 6px;
-          padding: 12px 16px;
-          margin-bottom: 10px;
+          padding: 10px 14px;
+          margin-bottom: 8px;
         }
 
         .input {
           color: @foreground;
-          font-size: 20px;
+          font-size: 18px;
         }
 
         .input placeholder {
@@ -69,28 +69,28 @@ _: {
 
         child {
           border-radius: 6px;
-          margin: 3px 0;
+          margin: 2px 0;
         }
 
         .item-box {
-          padding: 10px 12px;
+          padding: 8px 10px;
           border-radius: 6px;
         }
 
         .normal-icons {
-          -gtk-icon-size: 28px;
+          -gtk-icon-size: 24px;
         }
 
         .large-icons {
-          -gtk-icon-size: 48px;
+          -gtk-icon-size: 42px;
         }
 
         .item-image {
-          margin-right: 12px;
+          margin-right: 10px;
         }
 
         .item-image-text {
-          font-size: 40px;
+          font-size: 34px;
         }
 
         child:selected .item-box,
@@ -101,7 +101,7 @@ _: {
         .item-text {
           color: @foreground;
           font-weight: 500;
-          font-size: 24px;
+          font-size: 20px;
         }
 
         child:selected .item-text,
@@ -125,10 +125,10 @@ _: {
 
         .keybinds {
           color: @muted;
-          font-size: 15px;
-          padding-top: 12px;
+          font-size: 14px;
+          padding-top: 10px;
           border-top: 1px solid @overlay;
-          margin-top: 8px;
+          margin-top: 6px;
         }
 
         .error {
