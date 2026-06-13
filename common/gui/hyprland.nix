@@ -50,7 +50,7 @@ in
   services.displayManager.defaultSession = lib.mkForce "hyprland-uwsm";
 
   # This essentially adds ~/bin to the PATH of systemd user services
-  systemd.user.extraConfig =
+  systemd.user.settings.Manager.DefaultEnvironment =
     let
       paths = [
         "%h/bin"
@@ -61,9 +61,7 @@ in
         "/run/current-system/sw/bin"
       ];
     in
-    ''
-      DefaultEnvironment="PATH=${builtins.concatStringsSep ":" paths}"
-    '';
+    "PATH=${builtins.concatStringsSep ":" paths}";
 
   security.pam = {
     # fix for:

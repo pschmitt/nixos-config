@@ -138,6 +138,16 @@
     '';
   });
 
+  # perl5.42.0-DBD-CSV-0.60 fails 3 tests in t/70_csv.t; disable until
+  # upstream fix lands in nixpkgs.
+  perlPackages = prev.perlPackages.overrideScope (
+    _finalPerl: prevPerl: {
+      DBDCSV = prevPerl.DBDCSV.overrideAttrs (_: {
+        doCheck = false;
+      });
+    }
+  );
+
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
   # inherit (inputs.nixpkgs-xxx.legacyPackages.${final.stdenv.hostPlatform.system}) PKGNAME;
