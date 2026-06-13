@@ -3,6 +3,7 @@
   imports = [
     ./autostart.nix
     ./kitty.nix
+    ./walker.nix
     ./bookmarks.nix
     ./browser.nix
     ./chat.nix

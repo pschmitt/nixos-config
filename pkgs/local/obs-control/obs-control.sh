@@ -252,9 +252,8 @@ emoji_react() {
   if [[ -z "$emoji" ]]
   then
     emoji="$(emoji-fzf preview --prepend \
-      | sed -nr 's#([^\s+])\s+(.+)#\1 <span foreground="gray">\2</span>#p' \
-      | wofi --show dmenu -i --allow-markup --prompt "📹 OBS Studio Emoji reaction" \
-      | cut -d ' ' -f 1 \
+      | walker --dmenu -p "📹 OBS Studio Emoji reaction" \
+      | awk '{print $1}' \
       | tr -d '\n')"
   fi
 

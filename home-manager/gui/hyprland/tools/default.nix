@@ -4,9 +4,8 @@
     brightnessctl
     hyprpicker
     wev
+    walker-menu # soundboard/misc/meetings dmenu menus
     wlogout
-    wofi
-    wofi-menu # run/emoji/soundboard/misc/meetings menus (replaces ~/bin/wofi.zsh)
 
     # screenshots
     grim

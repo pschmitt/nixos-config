@@ -118,7 +118,7 @@
           "background-color" = "#77dd77";
         };
 
-        "app-name=wofi-run" = {
+        "app-name=walker-run" = {
           font = "${fontName} 18";
           width = 600;
           anchor = "top-center";

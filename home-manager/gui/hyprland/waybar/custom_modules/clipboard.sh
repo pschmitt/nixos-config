@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-kill_wofi() {
-  killall wofi
-  killall .wofi-wrapped # nixos
-}
-
 # Check if we are being invoked by waybar
 case "$1" in
   format)
@@ -13,20 +8,14 @@ case "$1" in
     ;;
 esac
 
-kill_wofi &>/dev/null
+walker --close 2>/dev/null || true
 
-# Show wofi and update clipboard when entry gets selected
 CLIP_HISTORY="$(cliphist list | head -n "${HIST_COUNT:-100}")"
 
-# FIXME Once --with-nth is implemented in wofi we should no longer need
-# to hide the clipboard entry IDs manually
-# https://todo.sr.ht/~scoopta/wofi/126
-
-# Show wofi clipboard history, without leading IDs. Disable markup so we don't
-# have to escape user data (ampersands, angle brackets, etc.).
+# Strip leading cliphist IDs before presenting to walker, then map back.
 res="$(
   sed -r 's#^[0-9]+\s+##' <<< "$CLIP_HISTORY" | \
-  wofi --show=dmenu --insensitive --allow-markup=false --prompt "󰅍 Clipboard history"
+  walker --dmenu -p "󰅍 Clipboard history"
 )"
 
 if [[ -z "$res" ]]
