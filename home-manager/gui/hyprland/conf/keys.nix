@@ -143,7 +143,7 @@ in
       (execBind "SUPER + ALT + down" "obs-control thumbs-down")
       (execBind "SUPER + ALT + period" "obs-control emoji")
       (execBind "SUPER + R" "walker")
-      (execBind "SUPER + period" "walker -m emojis")
+      (execBind "SUPER + period" "walker -m unicode")
       (execBind "SUPER + ALT + c" "~/.config/waybar/custom_modules/clipboard.sh")
       (execBind "SUPER + ALT + v" "${bin}/clipboard-revert.sh --notify")
       (execBind "SUPER + ALT + m" "walker-menu misc")
