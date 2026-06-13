@@ -2,6 +2,7 @@
 {
   imports = [
     ./autostart.nix
+    ./kitty.nix
     ./bookmarks.nix
     ./browser.nix
     ./chat.nix
