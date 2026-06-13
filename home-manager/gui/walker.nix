@@ -15,146 +15,105 @@ _: {
         @define-color muted #4C566A;
         @define-color accent #88C0D0;
 
-        #window,
-        #box,
-        #aiScroll,
-        #aiList,
-        #search,
-        #password,
-        #input,
-        #prompt,
-        #clear,
-        #typeahead,
-        #list,
-        child,
-        scrollbar,
-        slider,
-        #item,
-        #text,
-        #label,
-        #bar,
-        #sub,
-        #activationlabel {
+        * {
           all: unset;
         }
 
-        #cfgerr {
-          background: rgba(191, 97, 106, 0.4);
-          margin-top: 20px;
-          padding: 8px;
-          font-size: 1.2em;
+        window {
+          background: transparent;
         }
 
-        #window {
-          color: @foreground;
-          font-family: "ComicCode Nerd Font", monospace;
-          font-size: 14px;
-        }
-
-        #box {
-          border-radius: 10px;
+        .box-wrapper {
           background: @background;
+          border-radius: 12px;
           padding: 20px;
           border: 1px solid @overlay;
           box-shadow:
             0 19px 38px rgba(0, 0, 0, 0.5),
             0 15px 12px rgba(0, 0, 0, 0.3);
+          color: @foreground;
+          font-family: "ComicCode Nerd Font", monospace;
+          font-size: 14px;
         }
 
-        #search {
+        .search-container {
           background: @surface;
           border-radius: 6px;
           padding: 8px 12px;
+          margin-bottom: 4px;
         }
 
-        #prompt {
-          margin-right: 10px;
-          color: @muted;
-        }
-
-        #clear {
-          color: @muted;
-        }
-
-        #input {
-          background: none;
+        .input {
           color: @foreground;
           font-size: 15px;
         }
 
-        #input placeholder {
+        .input placeholder {
           color: @muted;
           opacity: 0.8;
         }
 
-        #typeahead {
-          color: @muted;
+        scrollbar {
+          opacity: 0;
         }
 
         child {
-          padding: 6px 8px;
           border-radius: 6px;
           margin: 1px 0;
         }
 
-        child:selected,
-        child:hover {
+        .item-box {
+          padding: 6px 8px;
+          border-radius: 6px;
+        }
+
+        child:selected .item-box,
+        row:selected .item-box {
           background: @overlay;
         }
 
-        child:selected #label {
-          color: @accent;
-        }
-
-        #icon {
-          margin-right: 10px;
-        }
-
-        #label {
+        .item-text {
           color: @foreground;
           font-weight: 500;
         }
 
-        #sub {
-          color: @muted;
-          font-size: 0.8em;
-        }
-
-        #activationlabel {
-          color: @muted;
-        }
-
-        #bar {
-          background: @surface;
-          border-radius: 4px;
-          margin-top: 8px;
-          padding: 4px 8px;
-        }
-
-        .activation #activationlabel {
+        child:selected .item-text,
+        row:selected .item-text {
           color: @accent;
         }
 
-        .activation #text,
-        .activation #icon,
-        .activation #search {
-          opacity: 0.5;
+        .item-subtext {
+          color: @muted;
+          font-size: 0.85em;
         }
 
-        .aiItem {
-          padding: 10px;
-          border-radius: 6px;
+        .item-quick-activation {
+          color: @muted;
+        }
+
+        child:selected .item-quick-activation,
+        row:selected .item-quick-activation {
+          color: @accent;
+        }
+
+        .keybinds {
+          color: @muted;
+          font-size: 12px;
+          padding-top: 8px;
+          border-top: 1px solid @overlay;
+          margin-top: 4px;
+        }
+
+        .error {
+          background: rgba(191, 97, 106, 0.4);
+          border-radius: 4px;
+          padding: 8px;
           color: @foreground;
-          background: @surface;
         }
 
-        .aiItem.user {
-          padding-left: 0;
-          padding-right: 0;
-        }
-
-        .aiItem.assistant {
-          background: @overlay;
+        .placeholder,
+        .elephant-hint {
+          color: @muted;
         }
       '';
     };
