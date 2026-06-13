@@ -4,6 +4,7 @@
   lib,
   writeShellApplication,
   walker,
+  emoji-fzf,
   soundboard,
   libnotify,
   wl-clipboard,
@@ -16,6 +17,7 @@ writeShellApplication {
   name = "walker-menu";
   runtimeInputs = [
     walker
+    emoji-fzf
     soundboard
     libnotify
     wl-clipboard

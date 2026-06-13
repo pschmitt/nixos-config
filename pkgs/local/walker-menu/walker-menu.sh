@@ -1,5 +1,4 @@
-# walker-menu — soundboard/misc/meetings menus backed by walker dmenu.
-# The run and emoji modes are now called directly via walker / walker -m emojis.
+# walker-menu — emoji/soundboard/misc/meetings menus backed by walker dmenu.
 
 DATA_DIR="${XDG_DOCUMENTS_DIR:-$HOME/Documents}/data"
 BANKING_DIR="${HOME}/Documents/Banking"
@@ -9,7 +8,7 @@ JCAL_HOST="${JCAL_HOST:-http://localhost:7042}"
 BROWSER_LAUNCHER="${HOME}/.config/hypr/bin/browser-run-or-raise.sh"
 
 usage() {
-  echo "Usage: walker-menu {soundboard [stop]|misc|meetings}" >&2
+  echo "Usage: walker-menu {emoji|soundboard [stop]|misc|meetings}" >&2
 }
 
 kill_walker() {
@@ -19,11 +18,28 @@ kill_walker() {
 clip() {
   local value="$1" message="$2" icon="${3:-}"
   printf '%s' "$value" | wl-copy
-  if [[ -n "$icon" ]]; then
+  if [[ -n "$icon" ]]
+  then
     notify-send -a walker-menu -i "$icon" "$message"
   else
     notify-send -a walker-menu "$message"
   fi
+}
+
+emoji_menu() {
+  local res emoji
+
+  res="$(
+    emoji-fzf --custom-aliases "$HOME/.config/emoji-fzf/emojis.json" preview --prepend \
+      | walker --dmenu -p "😀 Select emoji"
+  )"
+
+  [[ -z "$res" ]] && return 1
+
+  emoji="${res%% *}"
+  [[ -z "$emoji" ]] && return 1
+
+  clip "$emoji" "📋 Copied $emoji to clipboard"
 }
 
 soundboard_menu() {
@@ -44,8 +60,10 @@ misc_menu() {
   local -A items=()
   local label value
 
-  if compgen -G "$BANKING_DIR/*/accounts.json" >/dev/null 2>&1; then
-    while IFS=$'\t' read -r label value; do
+  if compgen -G "$BANKING_DIR/*/accounts.json" >/dev/null 2>&1
+  then
+    while IFS=$'\t' read -r label value
+    do
       [[ -n "$label" ]] && items["$label"]="iban:$value"
     done < <(cat "$BANKING_DIR"/*/accounts.json 2>/dev/null | jq -rs '
       .[] | . as $bank | .accounts[]?
@@ -53,8 +71,10 @@ misc_menu() {
       | ["\($bank.emoji) \($bank.bank) (\(.name))", .iban] | @tsv')
   fi
 
-  if [[ -f "$PHONE_FILE" ]]; then
-    while IFS=$'\t' read -r label value; do
+  if [[ -f "$PHONE_FILE" ]]
+  then
+    while IFS=$'\t' read -r label value
+    do
       [[ -n "$label" ]] && items["$label"]="phone:$value"
     done < <(jq -r '
       .[]
@@ -64,7 +84,8 @@ misc_menu() {
          else empty end)' "$PHONE_FILE")
   fi
 
-  if [[ "${#items[@]}" -eq 0 ]]; then
+  if [[ "${#items[@]}" -eq 0 ]]
+  then
     notify-send -a walker-menu "📋 No misc entries found"
     return 1
   fi
@@ -89,8 +110,10 @@ meetings_menu() {
   local -A items=()
   local label url
 
-  if [[ -f "$MSTEAMS_FILE" ]]; then
-    while IFS=$'\t' read -r label url; do
+  if [[ -f "$MSTEAMS_FILE" ]]
+  then
+    while IFS=$'\t' read -r label url
+    do
       [[ -n "$label" && -n "$url" ]] && items["$label"]="$url"
     done < <(jq -r '.[] | [.display_name, .url] | @tsv' "$MSTEAMS_FILE")
   fi
@@ -98,14 +121,16 @@ meetings_menu() {
   local endpoint="today" agenda tmrw=""
   [[ "$(date +%H)" -gt 20 ]] && endpoint="tomorrow"
   agenda="$(curl -s "${JCAL_HOST}/${endpoint}" 2>/dev/null || true)"
-  if [[ "$endpoint" == "today" && "$(jq 'length' <<< "$agenda" 2>/dev/null || echo 0)" == "0" ]]; then
+  if [[ "$endpoint" == "today" && "$(jq 'length' <<< "$agenda" 2>/dev/null || echo 0)" == "0" ]]
+  then
     endpoint="tomorrow"
     agenda="$(curl -s "${JCAL_HOST}/tomorrow" 2>/dev/null || true)"
   fi
   [[ "$endpoint" == "tomorrow" ]] && tmrw=" [TMRW]"
 
   local ev start end stime etime summary loc title
-  while IFS= read -r ev; do
+  while IFS= read -r ev
+  do
     [[ -z "$ev" ]] && continue
     loc="$(jq -r '
       def known: [.. | strings
@@ -129,7 +154,8 @@ meetings_menu() {
     items["$title"]="$loc"
   done < <(jq -c '.[]?' <<< "$agenda" 2>/dev/null)
 
-  if [[ "${#items[@]}" -eq 0 ]]; then
+  if [[ "${#items[@]}" -eq 0 ]]
+  then
     notify-send -a walker-menu "🌐 No meetings found"
     return 1
   fi
@@ -139,14 +165,16 @@ meetings_menu() {
   [[ -z "$res" ]] && exit 1
 
   url="${items[$res]}"
-  if [[ -z "$url" || "$url" == "null" ]]; then
+  if [[ -z "$url" || "$url" == "null" ]]
+  then
     notify-send -a walker-menu "❌ No conference URL for $res"
     return 1
   fi
 
   notify-send -a walker-menu "🌐 Joining $res"
 
-  if [[ -x "$BROWSER_LAUNCHER" ]]; then
+  if [[ -x "$BROWSER_LAUNCHER" ]]
+  then
     "$BROWSER_LAUNCHER" \
       --browser chromium \
       --new-window \
@@ -160,6 +188,9 @@ meetings_menu() {
 kill_walker
 
 case "${1:-}" in
+  emoji | emoj* | e)
+    emoji_menu
+    ;;
   soundboard | sb)
     case "${2:-}" in
       stop | halt | end | pause)
