@@ -1,9 +1,7 @@
 { config, ... }:
 
 {
-  imports = [ ../../common/syncthing-devices.nix ];
-
-  custom.syncthing.enable = true;
+  imports = [ ../../profiles/syncthing.nix ];
 
   services.nginx.virtualHosts."sync.${config.domains.main}" = {
     enableACME = true;

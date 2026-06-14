@@ -3,8 +3,8 @@
 { config, ... }:
 {
   imports = [
-    ../common/global
-    ../common/gui
+    ./global
+    ./gui
 
     # Desktop + display manager (opt-in roles); these laptops run Hyprland and
     # GNOME under GDM.
@@ -12,7 +12,7 @@
     ./desktop-gnome.nix
     ./display-manager-gdm.nix
 
-    ../common/laptop
+    ./laptop
 
     # Role features (opt-in) currently run by all three laptops.
     ./vpn-mullvad.nix

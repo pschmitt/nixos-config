@@ -7,7 +7,7 @@
     ../../services/nfs/nfs-client-all.nix
     ../../services/nix-distributed-build.nix
 
-    ../../common/network/sshfs.nix
+    ../network/sshfs.nix
 
     ../network/wifi.nix
     ./a11y.nix

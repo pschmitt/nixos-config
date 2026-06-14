@@ -7,7 +7,7 @@
 {
   imports = [
     inputs.vpn-confinement.nixosModules.default
-    ../../common/network/snek/am-i-mullvad.nix
+    ../../profiles/network/snek/am-i-mullvad.nix
   ];
 
   sops.secrets."mullvad/config" = config.custom.mkSecret {

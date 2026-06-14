@@ -24,14 +24,13 @@
 - **Never** write code with trailing whitespace.
 
 ## Host composition
-- `common/<category>/` holds base **platform layers** — the machine class or
-  capability a host *is* (`global`, `server`, `gui`, `laptop`, `network`,
-  `work`). They are imported explicitly and form a transitive hierarchy
-  (`server` imports `global`; `global` imports `network`).
-- `profiles/<role>.nix` (top-level) holds **role bundles** — what a host *does*.
-  A profile is a pure `imports` aggregator with a one-line header comment,
-  grouping service imports shared by **2+ hosts** (e.g. `profiles/workstation.nix`
-  for the ge2/gk4/x13 laptops, `profiles/tdarr-node.nix` for rofl-13/rofl-14).
+- `profiles/` is the single composition point for everything. It contains both
+  foundational layers (`profiles/global/`, `profiles/network/`) and higher-level
+  bundles: machine-class directories (`profiles/server/`, `profiles/gui/`,
+  `profiles/laptop/`, `profiles/work/`) and role aggregator files
+  (`profiles/workstation.nix`, `profiles/tdarr-node.nix`, etc.). A role
+  aggregator is a pure `imports` list with a one-line header comment, grouping
+  imports shared by **2+ hosts**.
 - Don't create a profile for a single-host stack — that is just indirection;
   keep those imports inline in the host's `default.nix`.
 

@@ -3,7 +3,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../common/server
+    ../../profiles/server
 
     ../../services/restic
     ../../services/http.nix

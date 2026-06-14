@@ -4,7 +4,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../common/server
+    ../../profiles/server
   ];
 
   hardware.cattle = true;

@@ -15,7 +15,7 @@
       description = ''
         Helper for declaring a secret stored in the host-specific sops file
         (`custom.sopsFile`), rather than the shared default set in
-        `common/global/sops.nix`.
+        `profiles/global/sops.nix`.
 
         Usage:
           sops.secrets."foo/bar" = config.custom.mkSecret { };
