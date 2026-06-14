@@ -5,7 +5,7 @@
 export GNUPGHOME="${GNUPGHOME:-${XDG_CONFIG_HOME:-${HOME}/.config}/gnupg}"
 
 # Is the secret key for $1 (email/uid) unlocked in the gpg-agent cache?
-# Replaces the zhj `gpg::key-is-unlocked` helper.
+# Replaces the zhj `gpg::is-unlocked` helper.
 gpg_key_is_unlocked() {
   local email="$1" keygrips kg
   keygrips="$(gpg --fingerprint --with-keygrip "$email" 2>/dev/null \
