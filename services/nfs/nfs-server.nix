@@ -7,12 +7,12 @@ let
     args.exports or [
       "backups"
       "blobs"
-      "books"
       "documents"
       "mnt"
       "srv"
       "tmp"
       # "videos" # lives on rofl-11
+      # "books"  # lives on rofl-11
     ];
   exportOptions = args.exportOptions or "rw,nohide,insecure,no_subtree_check,no_root_squash";
 in

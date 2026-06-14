@@ -128,6 +128,31 @@ resource "cloudflare_dns_record" "xp-brkn-lol" {
   ttl     = 3600
 }
 
+# audiobookshelf + calibre live on rofl-11; explicit records override the wildcard
+resource "cloudflare_dns_record" "abs-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "abs"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+}
+
+resource "cloudflare_dns_record" "audiobookshelf-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "audiobookshelf"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+}
+
+resource "cloudflare_dns_record" "books-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "books"
+  type    = "A"
+  ttl     = 3600
+  content = openstack_networking_floatingip_v2.rofl-11_fip.address
+}
+
 resource "cloudflare_dns_record" "cwabd-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   name    = "cwabd"

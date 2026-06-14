@@ -13,22 +13,19 @@
     (import ../../services/nfs/nfs-server.nix {
       inherit lib;
       exports = [
+        "audiobooks"
+        "books"
         "srv"
         "videos"
       ];
     })
-    (import ./../../services/nfs/nfs-client.nix {
-      server = "rofl-10.${config.domains.netbird}";
-      exports = [ "books" ];
-      mountPoint = "/mnt/data";
-    })
+    ../../profiles/***REMOVED***.nix
+
+    ../../services/audiobookshelf.nix
+    # ../../services/calibre.nix  # superseded by ***REMOVED***
     ../../services/http.nix
     ../../services/stash.nix
-    ../../services/tdarr-server.nix
     ../../services/tor.nix
-    ../../services/***REMOVED***
-    ../../services/jellyfin.nix
-    ../../services/seerr.nix
 
     ./container-services.nix
     ./monit.nix

@@ -5,12 +5,12 @@
   exports ? [
     "backups"
     "blobs"
-    "books"
     "documents"
     "mnt"
     "srv"
     "tmp"
-    # "videos" # lives on rofl-11 now
+    # "videos" # lives on rofl-11
+    # "books"  # lives on rofl-11
   ],
 }:
 { config, ... }:
