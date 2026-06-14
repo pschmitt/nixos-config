@@ -8,17 +8,53 @@ let
       ''
         emoji-fzf --custom-aliases ${./walker/emoji-fzf-aliases.json} preview --prepend > $out
       '';
+
+  elephantRbwUnlock = pkgs.writeShellApplication {
+    name = "elephant-rbw-unlock";
+    runtimeInputs = with pkgs; [
+      coreutils
+      rbw
+    ];
+    text = ''
+      set -euo pipefail
+
+      if rbw unlocked >/dev/null 2>&1
+      then
+        exit 0
+      fi
+
+      secret_file=/run/secrets/bitwarden/password
+      pin_file="''${XDG_CONFIG_HOME:-$HOME/.config}/rbw/bin/.pin"
+      pinentry="''${XDG_CONFIG_HOME:-$HOME/.config}/rbw/bin/pinentry-rbw"
+
+      if [[ ! -r "$secret_file" || ! -x "$pinentry" ]]
+      then
+        exit 0
+      fi
+
+      mkdir -p "$(dirname "$pin_file")"
+      printf '%s' "$(< "$secret_file")" > "$pin_file"
+      rbw config set pinentry "$pinentry" >/dev/null
+      rbw unlock >/dev/null
+    '';
+  };
 in
 {
   services.elephant.enable = true;
 
-  xdg.configFile."elephant/menus/emoji.lua".source = ./walker/emoji.lua;
-  xdg.configFile."elephant/emoji-list.txt".source = emojiList;
+  xdg.configFile = {
+    "elephant/menus/emoji.lua".source = ./walker/emoji.lua;
+    "elephant/menus/obs-reaction.lua".source = ./walker/obs-reaction.lua;
+    "elephant/emoji-list.txt".source = emojiList;
+  };
 
   systemd.user.services.elephant.Unit.X-Restart-Triggers = [
     "${./walker/emoji.lua}"
+    "${./walker/obs-reaction.lua}"
     "${emojiList}"
   ];
+  systemd.user.services.elephant.Service.ExecStartPre =
+    "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
 
   services.walker = {
     enable = true;
@@ -31,6 +67,7 @@ in
         "alt 3"
         "alt 4"
       ];
+
       theme = "justgray";
       modules = [ { name = "menus"; } ];
       providers.actions = {
@@ -46,6 +83,14 @@ in
             bind = "ctrl p";
             label = "📌 Pin / Unpin";
             after = "AsyncReload";
+          }
+        ];
+        "menus:obs-reaction" = [
+          {
+            action = "default";
+            bind = "Return";
+            default = true;
+            after = "Close";
           }
         ];
       };

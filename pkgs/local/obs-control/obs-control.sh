@@ -357,6 +357,9 @@ case "$verb" in
   emoji | reaction)
     emoji_react "" || exit 1
     ;;
+  react)
+    emoji_react "${1:-}" || exit 1
+    ;;
   "")
     echo "Usage: obs-control COMMAND [--mute]" >&2
     exit 2
