@@ -5,6 +5,7 @@
     ./arr-service.nix
 
     # services
+    ./audiobookrequest.nix
     ./fake-hosts.nix
     ./flaresolverr.nix
     ./jackett.nix
