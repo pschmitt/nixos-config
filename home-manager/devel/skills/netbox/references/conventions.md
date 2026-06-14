@@ -264,6 +264,7 @@ Current prefixes:
 - `LGC` = LG
 - `LNK` = Linksys
 - `LOG` = Logitech
+- `M5S` = M5Stack
 - `LTX` = Lantronix
 - `MER` = Meross
 - `MOT` = Motorola
