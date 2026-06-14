@@ -16,6 +16,12 @@ let
   audiobookshelfPort = 8000;
 in
 {
+  systemd.tmpfiles.rules = [
+    # owned by pschmitt so containers (UID 1000) have owner-level write access;
+    # group audiobookshelf so the service itself can write metadata into the library
+    "d /mnt/data/audiobooks 0775 ${config.mainUser.username} audiobookshelf - -"
+  ];
+
   services = {
     audiobookshelf = {
       enable = true;

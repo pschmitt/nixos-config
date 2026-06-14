@@ -5,11 +5,11 @@
     ./arr-service.nix
 
     # services
-    ./cwabd.nix
     ./fake-hosts.nix
     ./flaresolverr.nix
     ./jackett.nix
-    ./listenarr.nix
+    # ./listenarr.nix  # superseded by shelfarr
+    # ./cwabd.nix      # superseded by shelfarr
     ./malware-filter.nix
     ./microsocks.nix
     ./podman-net.nix
@@ -17,6 +17,7 @@
     ./radarr.nix
     ./recyclarr.nix
     ./shadowsocks.nix
+    ./shelfarr.nix
     ./sonarr.nix
     ./transmission.nix
   ];

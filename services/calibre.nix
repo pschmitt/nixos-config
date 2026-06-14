@@ -46,9 +46,12 @@ in
   systemd.tmpfiles.rules = [
     "d ${rootDir} 0750 root root - -"
     "d ${calibreWebAutomatedRoot} 0750 ${config.mainUser.username} ${config.mainUser.username} - -"
+    # 0775 audiobookshelf: service needs group write to store covers alongside epubs
+    "d /mnt/data/books 0775 ${config.mainUser.username} audiobookshelf - -"
+    "Z /mnt/data/books 0775 ${config.mainUser.username} audiobookshelf - -"
     "d ${calibreLibrary} 0750 ${config.mainUser.username} ${config.mainUser.username} - -"
     "d ${calibreWebAutomatedPaths.config} 0750 ${config.mainUser.username} ${config.mainUser.username} - -"
-    "d ${calibreWebAutomatedPaths.ingest} 0750 ${config.mainUser.username} ${config.mainUser.username} - -"
+    "d ${calibreWebAutomatedPaths.ingest} 0775 ${config.mainUser.username} audiobookshelf - -"
     "d ${calibreWebAutomatedPaths.plugins} 0750 ${config.mainUser.username} ${config.mainUser.username} - -"
   ];
 
