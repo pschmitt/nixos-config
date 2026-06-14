@@ -1,10 +1,10 @@
-Name = "emoji"
-NamePretty = "Emoji selector"
-Icon = "face-smile"
+Name = "obs-reaction"
+NamePretty = "OBS Studio Emoji Reaction"
+Icon = "camera-video"
 Terminal = false
 Cache = false
 FixedOrder = true
-Action = "lua:Copy"
+Action = "lua:React"
 
 local CONFIG_DIR = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
 local DATA_DIR   = (os.getenv("XDG_DATA_HOME") or (os.getenv("HOME") .. "/.local/share")) .. "/elephant"
@@ -40,18 +40,9 @@ local function write_list(path, items)
   end
 end
 
-function Copy(value, args, query)
-  -- io.popen:close() blocks until wl-copy exits; run it asynchronously instead
-  local tmp = os.tmpname()
-  local tf = io.open(tmp, "w")
-  if tf then
-    tf:write(value)
-    tf:close()
-    os.execute("(wl-copy <" .. tmp .. " 2>/dev/null; rm -f " .. tmp .. ") &")
-  end
-
+function React(value, args, query)
   ensure_dir(DATA_DIR)
-  local hist = DATA_DIR .. "/emoji-history"
+  local hist = DATA_DIR .. "/obs-reaction-history"
   local items, _ = read_list(hist)
   local new_items = { value }
   for _, e in ipairs(items) do
@@ -62,29 +53,13 @@ function Copy(value, args, query)
   end
   write_list(hist, new_items)
 
-  os.execute("notify-send -a walker-menu " .. string.format("%q", value) .. " 'Copied to clipboard' 2>/dev/null &")
-end
-
-function TogglePin(value, args, query)
-  ensure_dir(DATA_DIR)
-  local pins = DATA_DIR .. "/emoji-pins"
-  local items, _ = read_list(pins)
-
-  local found = false
-  local new_items = {}
-  for _, e in ipairs(items) do
-    if e == value then
-      found = true
-    else
-      table.insert(new_items, e)
-    end
+  local tmp = os.tmpname()
+  local tf = io.open(tmp, "w")
+  if tf then
+    tf:write(value)
+    tf:close()
+    os.execute("(obs-control react " .. string.format("%q", value) .. " 2>/dev/null; rm -f " .. tmp .. ") &")
   end
-
-  if not found then
-    table.insert(new_items, 1, value)
-  end
-
-  write_list(pins, new_items)
 end
 
 local function parse_lines(fh)
@@ -114,15 +89,13 @@ local function make_entry(x, subtext)
     Value   = x.Value,
     Icon    = x.Icon,
     Actions = {
-      ["default"]         = "lua:Copy",
-      ["toggle-pin"] = "lua:TogglePin",
+      ["default"] = "lua:React",
     },
   }
 end
 
 function GetEntries()
-  local favorites, fav_set  = read_list(DATA_DIR .. "/emoji-pins")
-  local history,   hist_set = read_list(DATA_DIR .. "/emoji-history")
+  local history, hist_set = read_list(DATA_DIR .. "/obs-reaction-history")
 
   local f = io.open(EMOJI_LIST, "r")
   local emoji_map, ordered = {}, {}
@@ -133,20 +106,13 @@ function GetEntries()
 
   local result = {}
 
-  for _, e in ipairs(favorites) do
-    local x = emoji_map[e]
-    if x then table.insert(result, make_entry(x, "📌 pinned")) end
-  end
-
   for _, e in ipairs(history) do
-    if not fav_set[e] then
-      local x = emoji_map[e]
-      if x then table.insert(result, make_entry(x, "recently used")) end
-    end
+    local x = emoji_map[e]
+    if x then table.insert(result, make_entry(x, "recently used")) end
   end
 
   for _, e in ipairs(ordered) do
-    if not fav_set[e.Value] and not hist_set[e.Value] then
+    if not hist_set[e.Value] then
       table.insert(result, make_entry(e, e.Subtext))
     end
   end
