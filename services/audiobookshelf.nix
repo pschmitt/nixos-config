@@ -9,6 +9,7 @@ let
   hostnames = [
     "abs.${mainDomain}"
     "audiobookshelf.${mainDomain}"
+    "books.${mainDomain}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
