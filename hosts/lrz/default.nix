@@ -3,10 +3,10 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
-    ../../common/server
+    ../../profiles/server
 
     # home-manager configuration (TEST!)
-    ../../common/gui/linger.nix
+    ../../profiles/gui/linger.nix
   ];
 
   hardware.biosBoot = false;

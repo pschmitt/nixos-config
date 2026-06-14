@@ -3,7 +3,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/server
+    ../../profiles/server
     ../../profiles/tdarr-node.nix
   ];
 

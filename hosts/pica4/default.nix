@@ -9,15 +9,15 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/global
+    ../../profiles/global
     ../../services/mail
-    ../../common/network
-    ../../common/network/wifi.nix
+    ../../profiles/network
+    ../../profiles/network/wifi.nix
 
     # XXX Below imports initrd-luks-ssh-unlock etc
-    # ../../common/server
+    # ../../profiles/server
     # So we only import what we really need here:
-    ../../common/server/dotfiles.nix
+    ../../profiles/server/dotfiles.nix
     # ../../monit.nix
     # ../../netbird.nix
     # ../../restic.nix

@@ -8,7 +8,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/server
+    ../../profiles/server
 
     (import ../../services/nfs/nfs-server.nix {
       inherit lib;

@@ -4,7 +4,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
 
-    ../../common/server
+    ../../profiles/server
 
     # services
     # backups services
@@ -55,7 +55,7 @@
     ./container-services.nix
     ./restic.nix
 
-    ../../common/global/users/k8s-backdoor.nix
+    ../../profiles/global/users/k8s-backdoor.nix
   ];
 
   hardware = {

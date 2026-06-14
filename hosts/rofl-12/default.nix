@@ -3,8 +3,8 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../common/server
-    ../../common/global/users/home-assistant.nix
+    ../../profiles/server
+    ../../profiles/global/users/home-assistant.nix
 
     (import ../../services/nfs/nfs-client.nix { })
 
