@@ -267,6 +267,7 @@ Current prefixes:
 - `M5S` = M5Stack
 - `LTX` = Lantronix
 - `MER` = Meross
+- `MIE` = Miele
 - `MOT` = Motorola
 - `NBC` = Nabu Casa
 - `NEL` = nello
