@@ -57,6 +57,8 @@ in
               hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprGnomeKeyring}/bin/hypr-gnome-keyring-autounlock")
               -- Allow root GUI apps access to the X display.
               hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprFixRootGui}/bin/hypr-fix-root-gui")
+              -- Preload Nautilus as a background service so first open is instant.
+              hl.exec_cmd("systemd-cat --identifier=hyprland-startup nautilus --gapplication-service")
           end
         '')
       ];
