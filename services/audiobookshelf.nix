@@ -15,13 +15,16 @@ let
   serverAliases = lib.remove primaryHost hostnames;
 
   audiobookshelfPort = 8000;
+  absUser = config.services.audiobookshelf.user;
+  absGroup = config.users.users.${absUser}.group;
 in
 {
   systemd.tmpfiles.rules = [
-    # owned by pschmitt so containers (UID 1000) have owner-level write access;
-    # group audiobookshelf so the service itself can write metadata into the library
-    "d /mnt/data/audiobooks 0775 ${config.mainUser.username} audiobookshelf - -"
+    "d /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
+    "Z /mnt/data/audiobooks 2775 ${absUser} ${absGroup} - -"
   ];
+
+  users.users.${config.mainUser.username}.extraGroups = [ absGroup ];
 
   services = {
     audiobookshelf = {
