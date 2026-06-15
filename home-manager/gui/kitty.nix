@@ -11,6 +11,7 @@ _: {
       background = "#24282F";
 
       allow_remote_control = "yes";
+      open_url_with = "firefox";
       confirm_os_window_close = 0;
 
       # Allow reading and writing clipboard and primary selection, do *not* ask
@@ -44,5 +45,8 @@ _: {
       "ctrl+0" = "change_font_size all 0";
       "kitty_mod+p>y" = "kitten hints --type hyperlink";
     };
+    extraConfig = ''
+      mouse_map ctrl+left release ungrabbed mouse_handle_click link
+    '';
   };
 }
