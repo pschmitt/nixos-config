@@ -25,6 +25,8 @@
     ../services/restic
   ];
 
-  home-manager.users.${config.mainUser.username}.services.go-hass-agent.enableWorkstationCommands =
-    true;
+  home-manager.users.${config.mainUser.username} = {
+    imports = [ ../home-manager/nixos-pull.nix ];
+    services.go-hass-agent.enableWorkstationCommands = true;
+  };
 }
