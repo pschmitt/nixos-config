@@ -49,6 +49,9 @@ in
           function()
               -- Propagate graphical session variables to systemd/DBus.
               hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
+              -- Restart the portal so it picks up WAYLAND_DISPLAY (it may have
+              -- started before Hyprland exported the display environment).
+              hl.exec_cmd("systemctl --user restart xdg-desktop-portal")
               -- Symlink the Hyprland runtime socket dir into XDG_DATA_HOME.
               hl.exec_cmd("systemd-cat --identifier=hyprland-startup ${hyprSymlink}/bin/hypr-symlink-runtime")
               -- Re-export Wayland env into the running tmux session.
