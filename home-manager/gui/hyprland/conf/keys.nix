@@ -145,7 +145,6 @@ in
       (execBind "SUPER + R" "walker")
       (execBind "SUPER + period" "walker -m menus:emoji -p '😀 Emoji selector'")
       (execBind "SUPER + ALT + c" "walker -m clipboard")
-      (execBind "SUPER + ALT + v" "${bin}/clipboard-revert.sh --notify")
       (execBind "SUPER + ALT + m" "walker-menu misc")
       (execBind "SUPER + ALT + j" "walker-menu meetings")
       (execBind "SUPER + ALT + s" "walker-menu soundboard")

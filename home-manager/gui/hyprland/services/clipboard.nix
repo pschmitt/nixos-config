@@ -7,12 +7,6 @@ in
     pkgs.wl-clipboard
   ];
 
-  services.cliphist = {
-    enable = true;
-    allowImages = true;
-    systemdTargets = [ target ];
-  };
-
   services.wl-clip-persist = {
     enable = true;
     # NOTE Setting the clipboardType to "both" causes issues with GTK apps such
