@@ -101,6 +101,36 @@ let
       };
 in
 {
+  options.arr.dirs = {
+    audiobooks = mkOption {
+      type = types.str;
+      default = "/mnt/data/audiobooks";
+      description = "Path to the audiobooks library directory.";
+    };
+    books = mkOption {
+      type = types.str;
+      default = "/mnt/data/books";
+      description = "Path to the ebooks library directory.";
+    };
+    downloads = mkOption {
+      type = types.str;
+      description = "Transmission download directory shared by arr services.";
+    };
+    videos = mkOption {
+      type = types.str;
+      default = "/mnt/data/videos";
+      description = "Root directory for video content.";
+    };
+    movies = mkOption {
+      type = types.str;
+      description = "Path to the movies library directory.";
+    };
+    tvShows = mkOption {
+      type = types.str;
+      description = "Path to the TV shows library directory.";
+    };
+  };
+
   options.arr.services = mkOption {
     default = { };
     description = "Arr services sharing the Mullvad namespace scaffold.";
@@ -160,20 +190,32 @@ in
     );
   };
 
-  config = mkIf (enabled != { }) {
-    vpnNamespaces.mullvad.portMappings = lib.mapAttrsToList (_: s: {
-      from = s.port;
-      to = s.port;
-    }) enabled;
+  config = lib.mkMerge [
+    {
+      arr.dirs = {
+        downloads = lib.mkDefault (
+          config.services.transmission.settings."download-dir"
+            or "${config.services.transmission.home}/Downloads"
+        );
+        movies = lib.mkDefault "${config.arr.dirs.videos}/movies";
+        tvShows = lib.mkDefault "${config.arr.dirs.videos}/tv_shows";
+      };
+    }
+    (mkIf (enabled != { }) {
+      vpnNamespaces.mullvad.portMappings = lib.mapAttrsToList (_: s: {
+        from = s.port;
+        to = s.port;
+      }) enabled;
 
-    fakeHosts = lib.mapAttrs (_: s: { inherit (s) port; }) enabled;
+      fakeHosts = lib.mapAttrs (_: s: { inherit (s) port; }) enabled;
 
-    services.nginx.virtualHosts = lib.listToAttrs (
-      lib.mapAttrsToList nginxVhost (lib.filterAttrs (_: s: s.host != null) enabled)
-    );
+      services.nginx.virtualHosts = lib.listToAttrs (
+        lib.mapAttrsToList nginxVhost (lib.filterAttrs (_: s: s.host != null) enabled)
+      );
 
-    services.monit.config = lib.concatStringsSep "\n" (lib.mapAttrsToList monitCheck enabled);
+      services.monit.config = lib.concatStringsSep "\n" (lib.mapAttrsToList monitCheck enabled);
 
-    systemd.services = lib.mkMerge (lib.mapAttrsToList systemdUnit enabled);
-  };
+      systemd.services = lib.mkMerge (lib.mapAttrsToList systemdUnit enabled);
+    })
+  ];
 }

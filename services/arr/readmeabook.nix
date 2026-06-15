@@ -2,10 +2,7 @@
 let
   port = 3030;
   dataDir = "/mnt/data/srv/readmeabook";
-  audiobooksDir = "/mnt/data/audiobooks";
-  transmissionDownloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
+  inherit (config.arr.dirs) audiobooks downloads;
 in
 {
   systemd.tmpfiles.rules = [
@@ -13,7 +10,7 @@ in
     "d ${dataDir}/config 0750 1000 1000 - -"
     "d ${dataDir}/postgres 0750 1000 1000 - -"
     "d ${dataDir}/redis 0750 1000 1000 - -"
-    "d ${transmissionDownloadDir}/readmeabook 2770 1000 ${config.services.transmission.group} - -"
+    "d ${downloads}/readmeabook 2770 1000 ${config.services.transmission.group} - -"
   ];
 
   virtualisation.oci-containers.containers.readmeabook = {
@@ -28,8 +25,8 @@ in
       "${dataDir}/config:/app/config"
       "${dataDir}/postgres:/var/lib/postgresql/data"
       "${dataDir}/redis:/var/lib/redis"
-      "${transmissionDownloadDir}/readmeabook:/downloads"
-      "${audiobooksDir}:/media"
+      "${downloads}/readmeabook:/downloads"
+      "${audiobooks}:/media"
     ];
     extraOptions = [
       "--net=ns:/run/netns/mullvad"

@@ -12,9 +12,7 @@ let
   publicHost = "to.arr.${config.domains.main}";
   serverAliases = [ "to.${config.domains.main}" ];
   autheliaConfig = import ../authelia-nginx-config.nix { inherit config; };
-  downloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
+  downloadDir = config.arr.dirs.downloads;
 
   tewiWrapped = pkgs.writeShellScriptBin "tewi" ''
     set -euo pipefail

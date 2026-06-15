@@ -3,18 +3,15 @@ let
   port = 4545;
   publicHost = "listen.arr.${config.domains.main}";
   dataDir = "/mnt/data/srv/listenarr/config";
-  transmissionDownloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
-  audiobooksDir = "/mnt/data/audiobooks";
+  inherit (config.arr.dirs) audiobooks downloads;
   listenarrUser = "listenarr";
   listenarrGroup = listenarrUser;
 in
 {
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 ${listenarrUser} ${listenarrGroup} - -"
-    "d ${audiobooksDir} 0755 ${listenarrUser} ${listenarrGroup} - -"
-    "d ${transmissionDownloadDir}/listenarr 2770 ${config.services.transmission.user} ${listenarrGroup} - -"
+    "d ${audiobooks} 0755 ${listenarrUser} ${listenarrGroup} - -"
+    "d ${downloads}/listenarr 2770 ${config.services.transmission.user} ${listenarrGroup} - -"
   ];
 
   users.groups.${listenarrGroup} = { };
@@ -36,8 +33,8 @@ in
     };
     volumes = [
       "${dataDir}:/app/config"
-      "${transmissionDownloadDir}:${transmissionDownloadDir}"
-      "${audiobooksDir}:${audiobooksDir}"
+      "${downloads}:${downloads}"
+      "${audiobooks}:${audiobooks}"
     ];
     extraOptions = [
       "--net=ns:/run/netns/mullvad"

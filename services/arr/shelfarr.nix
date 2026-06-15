@@ -2,16 +2,12 @@
 let
   port = 5056;
   dataDir = "/mnt/data/srv/shelfarr";
-  audiobooksDir = "/mnt/data/audiobooks";
-  ebooksDir = "/mnt/data/books";
-  transmissionDownloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
+  inherit (config.arr.dirs) audiobooks books downloads;
 in
 {
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 1000 1000 - -"
-    "d ${transmissionDownloadDir}/shelfarr 2770 1000 ${config.services.transmission.group} - -"
+    "d ${downloads}/shelfarr 2770 1000 ${config.services.transmission.group} - -"
   ];
 
   virtualisation.oci-containers.containers.shelfarr = {
@@ -24,9 +20,9 @@ in
     };
     volumes = [
       "${dataDir}:/rails/storage"
-      "${transmissionDownloadDir}/shelfarr:${transmissionDownloadDir}/shelfarr"
-      "${audiobooksDir}:${audiobooksDir}"
-      "${ebooksDir}:${ebooksDir}"
+      "${downloads}/shelfarr:${downloads}/shelfarr"
+      "${audiobooks}:${audiobooks}"
+      "${books}:${books}"
     ];
     extraOptions = [
       "--net=ns:/run/netns/mullvad"

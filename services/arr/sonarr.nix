@@ -6,9 +6,7 @@
 let
   internalIP = config.vpnNamespaces.mullvad.namespaceAddress;
   port = 8989;
-  downloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
+  downloadDir = config.arr.dirs.downloads;
 in
 {
   sops = {

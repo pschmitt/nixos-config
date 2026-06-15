@@ -2,16 +2,12 @@
 let
   port = 8084;
   dataDir = "/mnt/data/srv/shelfmark";
-  ebooksDir = "/mnt/data/books";
-  audiobooksDir = "/mnt/data/audiobooks";
-  transmissionDownloadDir =
-    config.services.transmission.settings."download-dir"
-      or "${config.services.transmission.home}/Downloads";
+  inherit (config.arr.dirs) audiobooks books downloads;
 in
 {
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 1000 1000 - -"
-    "d ${transmissionDownloadDir}/shelfmark 2770 1000 ${config.services.transmission.group} - -"
+    "d ${downloads}/shelfmark 2770 1000 ${config.services.transmission.group} - -"
   ];
 
   virtualisation.oci-containers.containers.shelfmark = {
@@ -26,9 +22,9 @@ in
     };
     volumes = [
       "${dataDir}:/config"
-      "${ebooksDir}:${ebooksDir}"
-      "${audiobooksDir}:${audiobooksDir}"
-      "${transmissionDownloadDir}/shelfmark:${transmissionDownloadDir}/shelfmark"
+      "${books}:${books}"
+      "${audiobooks}:${audiobooks}"
+      "${downloads}/shelfmark:${downloads}/shelfmark"
     ];
     extraOptions = [
       "--net=ns:/run/netns/mullvad"
