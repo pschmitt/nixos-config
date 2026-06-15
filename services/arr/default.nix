@@ -6,7 +6,7 @@
 
     # services
     # ./audiobookrequest.nix  # superseded by readmeabook
-    ./readmeabook.nix
+    # ./readmeabook.nix
     ./fake-hosts.nix
     ./flaresolverr.nix
     ./jackett.nix
@@ -19,7 +19,8 @@
     ./radarr.nix
     ./recyclarr.nix
     ./shadowsocks.nix
-    ./shelfarr.nix
+    # ./shelfarr.nix  # superseded by shelfmark
+    ./shelfmark.nix
     ./sonarr.nix
     ./transmission.nix
   ];
