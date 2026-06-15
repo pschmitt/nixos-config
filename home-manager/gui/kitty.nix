@@ -13,6 +13,11 @@ _: {
       allow_remote_control = "yes";
       confirm_os_window_close = 0;
 
+      # Allow reading and writing clipboard and primary selection, do *not* ask
+      # for permission
+      # https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---kitty
+      clipboard_control = "write-primary write-clipboard read-clipboard read-primary no-append";
+
       # Tab bar
       tab_bar_edge = "bottom";
       tab_bar_margin_width = 0.0;
