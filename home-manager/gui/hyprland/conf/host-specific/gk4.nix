@@ -2,6 +2,7 @@
 let
   h = import ../../lua-helpers.nix { inherit lib; };
   inherit (h) execBind;
+  layout = import ../layout-helpers.nix { inherit lib; };
 in
 {
   wayland.windowManager.hyprland.settings = {
@@ -18,5 +19,17 @@ in
       output = "eDP-1";
       transform = 3;
     };
+  };
+
+  # Register the window.open subscriber at config-parse time (top-level),
+  # not inside hyprland.start, so it catches early XDG autostart windows.
+  wayland.windowManager.hyprland.extraConfig = layout.mkStartupLayoutLua {
+    rules = [
+      {
+        class = "firefox";
+        workspace = 2;
+        refocus = 1;
+      }
+    ];
   };
 }
