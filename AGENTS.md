@@ -14,6 +14,7 @@
 - Avoid committing or pushing changes from this environment unless the user explicitly asks.
 - Prefer committing only verified, working changes.
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
+  - Check `hostname` first: if the current machine is the target host, omit the argument (`just deploy`) to build and switch locally without SSH/rsync.
 - To apply standalone Home Manager changes on fnuc (non-NixOS), run `just hm` (or `just hm <hostname>` for a specific host). This rsyncs the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem.
 
 ## Code Style

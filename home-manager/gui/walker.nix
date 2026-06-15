@@ -48,13 +48,20 @@ in
     "elephant/emoji-list.txt".source = emojiList;
   };
 
-  systemd.user.services.elephant.Unit.X-Restart-Triggers = [
-    "${./walker/emoji.lua}"
-    "${./walker/obs-reaction.lua}"
-    "${emojiList}"
-  ];
-  systemd.user.services.elephant.Service.ExecStartPre =
-    "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
+  systemd.user.services = {
+    walker.Unit = {
+      After = [ "wayland-wm-app-daemon.service" ];
+      Wants = [ "wayland-wm-app-daemon.service" ];
+    };
+    elephant = {
+      Unit.X-Restart-Triggers = [
+        "${./walker/emoji.lua}"
+        "${./walker/obs-reaction.lua}"
+        "${emojiList}"
+      ];
+      Service.ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
+    };
+  };
 
   services.walker = {
     enable = true;
