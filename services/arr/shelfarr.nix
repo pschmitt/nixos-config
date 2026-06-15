@@ -24,7 +24,7 @@ in
     };
     volumes = [
       "${dataDir}:/rails/storage"
-      "${transmissionDownloadDir}/shelfarr:/downloads"
+      "${transmissionDownloadDir}/shelfarr:${transmissionDownloadDir}/shelfarr"
       "${audiobooksDir}:${audiobooksDir}"
       "${ebooksDir}:${ebooksDir}"
     ];

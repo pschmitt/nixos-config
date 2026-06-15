@@ -5,7 +5,8 @@
     ./arr-service.nix
 
     # services
-    ./audiobookrequest.nix
+    # ./audiobookrequest.nix  # superseded by readmeabook
+    ./readmeabook.nix
     ./fake-hosts.nix
     ./flaresolverr.nix
     ./jackett.nix
