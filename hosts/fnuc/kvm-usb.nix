@@ -21,6 +21,8 @@ let
     zbdongle-e = "1a86:55d4";
     # Everspring SA413-1 Z-Wave Plus dongle
     zwave-stick = "0658:0200";
+    # RFXCOM RFXtrx
+    rfxtrx = "0658:0200";
   };
 
   # Callbacks run after a device is successfully (re-)attached.
