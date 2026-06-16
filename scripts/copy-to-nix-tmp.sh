@@ -118,6 +118,7 @@ then
     --exclude '.git*' \
     --exclude 'build/' \
     --exclude 'result' \
+    --exclude 'tofu/.terraform/' \
     "${REPO_ROOT}/" "${target_host}:${build_dir}/"
 else
   build_dir="$(create_build_dir_local)"
@@ -129,3 +130,5 @@ else
 fi
 
 printf '%s\n' "$build_dir"
+
+# vim: set ft=sh et ts=2 sw=2 :
