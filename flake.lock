@@ -3930,8 +3930,10 @@
       "locked": {
         "dir": "nix",
         "lastModified": 1781562039,
-        "narHash": "sha256-XuUEkF1OtjNpTGmMdoc1gXv9xVIDKPf6DSJ/Cf98seU=",
+        "narHash": "sha256-+OGNxx1J/013nLF0z9aXZS4AzBk2ZsDx0Dh/R8j/wsY=",
+        "ref": "refs/heads/main",
         "rev": "40daec89346f44ca733dbcfa74e144a609d9acba",
+        "revCount": 8596,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/wez/wezterm.git"
