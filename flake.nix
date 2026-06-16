@@ -323,7 +323,7 @@
     };
 
     wezterm = {
-      url = "github:wez/wezterm?dir=nix";
+      url = "git+https://github.com/wez/wezterm.git?dir=nix&submodules=1";
       # https://github.com/NixOS/nixpkgs/issues/348832
       # inputs.nixpkgs.follows = "nixpkgs";
     };

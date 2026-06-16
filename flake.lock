@@ -3931,17 +3931,16 @@
         "dir": "nix",
         "lastModified": 1781562039,
         "narHash": "sha256-XuUEkF1OtjNpTGmMdoc1gXv9xVIDKPf6DSJ/Cf98seU=",
-        "owner": "wez",
-        "repo": "wezterm",
         "rev": "40daec89346f44ca733dbcfa74e144a609d9acba",
         "submodules": true,
-        "type": "github"
+        "type": "git",
+        "url": "https://github.com/wez/wezterm.git"
       },
       "original": {
         "dir": "nix",
-        "owner": "wez",
-        "repo": "wezterm",
-        "type": "github"
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/wez/wezterm.git"
       }
     },
     "xdph": {
