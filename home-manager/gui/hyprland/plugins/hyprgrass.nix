@@ -25,10 +25,13 @@
             resize_on_border_long_press = true,
         } } })
 
-        -- workspace_swipe_fingers/workspace_swipe_edge are legacy-only options;
-        -- in Lua mode use hyprgrass.gesture (docs/lua_migration.md).
-        hl.plugin.hyprgrass.gesture({ pattern = {kind = "swipe", fingers = 3,     direction = "horizontal"}, action = "workspace" })
-        hl.plugin.hyprgrass.gesture({ pattern = {kind = "edge",  origin = "down", direction = "horizontal"}, action = "workspace" })
+        -- Dispatch touchscreen workspace swipes directly. Gesture recognition
+        -- works here, but Hyprgrass' `workspace` / `emulate_touchpad` paths do
+        -- not reliably hand off to the Lua-configured gesture engine.
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 3, direction = "left"},  action = hl.dsp.focus({ workspace = "+1" }) })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 3, direction = "right"}, action = hl.dsp.focus({ workspace = "-1" }) })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge", origin = "down", direction = "left"},  action = hl.dsp.focus({ workspace = "+1" }) })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge", origin = "down", direction = "right"}, action = hl.dsp.focus({ workspace = "-1" }) })
 
         hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",  origin = "down", direction = "up"},   action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
         hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4,     direction = "down"}, action = hl.dsp.window.kill() })
