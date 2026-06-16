@@ -15,4 +15,18 @@ in
     clipboardType = "regular";
     systemdTargets = [ target ];
   };
+
+  # Sync primary selection (selected text) → regular clipboard
+  systemd.user.services.primary-to-clipboard = {
+    Unit = {
+      Description = "Sync Wayland primary selection to clipboard";
+      After = [ target ];
+      PartOf = [ target ];
+    };
+    Service = {
+      ExecStart = "${pkgs.wl-clipboard}/bin/wl-paste --primary --watch ${pkgs.wl-clipboard}/bin/wl-copy";
+      Restart = "on-failure";
+    };
+    Install.WantedBy = [ target ];
+  };
 }

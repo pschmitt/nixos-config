@@ -19,6 +19,10 @@
     };
     # https://docs.docker.com/engine/daemon/live-restore/
     liveRestore = false;
+    daemon.settings = {
+      ipv6 = true;
+      "fixed-cidr-v6" = "fd00::/80";
+    };
   };
 
   # XXX Setting the following env vars has the following effect:
