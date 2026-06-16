@@ -48,7 +48,12 @@ in
         (mkLuaInline ''
           function()
               -- Propagate graphical session variables to systemd/DBus.
-              hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP")
+              hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP XDG_RUNTIME_DIR QT_QPA_PLATFORM SDL_VIDEODRIVER CLUTTER_BACKEND TERMINAL")
+              -- walker and elephant can be activated before the Wayland session
+              -- environment reaches the user manager, leaving their first start
+              -- broken until a manual restart. Refresh them after importing the
+              -- compositor environment so they come up correctly on login.
+              hl.exec_cmd("systemctl --user restart --no-block walker.service elephant.service")
               -- Restart the portal so it picks up WAYLAND_DISPLAY (it may have
               -- started before Hyprland exported the display environment).
               hl.exec_cmd("systemctl --user restart xdg-desktop-portal")
