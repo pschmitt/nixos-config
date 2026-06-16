@@ -21,7 +21,7 @@
     liveRestore = false;
     daemon.settings = {
       ipv6 = true;
-      "fixed-cidr-v6" = "fd00::/80";
+      "fixed-cidr-v6" = "fdb4:ec18:af42::/80";
     };
   };
 

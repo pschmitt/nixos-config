@@ -5,6 +5,7 @@
 
     ../../profiles/server
     ../../profiles/tdarr-node.nix
+    ../../services/esphome.nix
   ];
 
   hardware = {
