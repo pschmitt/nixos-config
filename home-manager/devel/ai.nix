@@ -137,7 +137,6 @@ in
       settings = {
         approval_policy = "never";
         approvals_reviewer = "user";
-        model = "gpt-5.4";
         model_reasoning_effort = "medium";
 
         projects = {
