@@ -1,5 +1,7 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 let
+  hyprlandSessionTarget = "hyprland-session.target";
+
   emojiList =
     pkgs.runCommand "elephant-emoji-list.txt"
       {
@@ -50,15 +52,25 @@ in
 
   systemd.user.services = {
     walker.Unit = {
-      After = [ "wayland-wm-app-daemon.service" ];
-      Wants = [ "wayland-wm-app-daemon.service" ];
-    };
-    elephant = {
-      Unit.X-Restart-Triggers = [
-        "${./walker/emoji.lua}"
-        "${./walker/obs-reaction.lua}"
-        "${emojiList}"
+      After = [
+        "wayland-wm-app-daemon.service"
+        hyprlandSessionTarget
       ];
+      Wants = [ "wayland-wm-app-daemon.service" ];
+      PartOf = [ hyprlandSessionTarget ];
+    };
+    walker.Install.WantedBy = lib.mkForce [ hyprlandSessionTarget ];
+    elephant = {
+      Unit = {
+        After = [ hyprlandSessionTarget ];
+        PartOf = [ hyprlandSessionTarget ];
+        X-Restart-Triggers = [
+          "${./walker/emoji.lua}"
+          "${./walker/obs-reaction.lua}"
+          "${emojiList}"
+        ];
+      };
+      Install.WantedBy = lib.mkForce [ hyprlandSessionTarget ];
       Service.ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
     };
   };
