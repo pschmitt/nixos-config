@@ -137,7 +137,16 @@ in
       settings = {
         approval_policy = "never";
         approvals_reviewer = "user";
+        check_for_update_on_startup = false;
+        model = "gpt-5.4";
         model_reasoning_effort = "medium";
+        notice.model_migrations = {
+          "gpt-5.4" = "gpt-5.5";
+        };
+
+        tui.model_availability_nux = {
+          "gpt-5.5" = 4;
+        };
 
         projects = {
           "/etc/nixos".trust_level = "trusted";
