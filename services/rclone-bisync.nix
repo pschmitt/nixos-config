@@ -1,23 +1,35 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
 
 let
   rcloneConfig = config.sops.secrets."rclone/config".path;
+  rcloneBisyncDocuments = pkgs.writeShellApplication {
+    name = "rclone-bisync-documents";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.jq
+      pkgs.procps
+      pkgs.rclone
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ./scripts/rclone-bisync-documents.sh;
+  };
 
-  bisyncCmd = extraArgs: ''
-    ${pkgs.rclone}/bin/rclone bisync "nextcloud:Documents" "drive:Documents" \
-      --config ${rcloneConfig} \
-      --check-access \
-      --check-filename .rclone-test.empty \
-      --recover \
-      --remove-empty-dirs \
-      --workdir /var/cache/rclone/bisync \
-      --verbose \
-      ${extraArgs}
-  '';
+  bisyncCmd =
+    extraArgs:
+    lib.concatStringsSep " " (
+      [
+        "${rcloneBisyncDocuments}/bin/rclone-bisync-documents"
+        "--config"
+        (lib.escapeShellArg rcloneConfig)
+      ]
+      ++ extraArgs
+    );
 in
 {
   sops.secrets."rclone/config" = config.custom.mkSecret {
@@ -35,10 +47,11 @@ in
           Type = "oneshot";
           StateDirectory = "rclone";
           CacheDirectory = "rclone";
+          TimeoutStartSec = "3h";
           User = "root";
         };
 
-        script = bisyncCmd "";
+        script = bisyncCmd [ ];
       };
 
       rclone-bisync-documents-resync = {
@@ -50,10 +63,11 @@ in
           Type = "oneshot";
           StateDirectory = "rclone";
           CacheDirectory = "rclone";
+          TimeoutStartSec = "3h";
           User = "root";
         };
 
-        script = bisyncCmd "--resync";
+        script = bisyncCmd [ "--resync" ];
       };
     };
 
@@ -70,8 +84,7 @@ in
       rclone-bisync-documents-resync = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
-          OnCalendar = "05:00:00";
-          RandomizedDelaySec = "3600";
+          OnCalendar = "05:45:00";
           Persistent = true;
         };
       };
