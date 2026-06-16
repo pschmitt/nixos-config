@@ -1276,17 +1276,17 @@
         "nixpkgs": "nixpkgs_3"
       },
       "locked": {
-        "lastModified": 1780484690,
-        "narHash": "sha256-G3VOjqBgsnwaYQicqC4zjaUVCdsnzZ5sMPoUOPPnfXQ=",
+        "lastModified": 1781564676,
+        "narHash": "sha256-knAT4UBayK1UE8Nz47439QYyTUovF1n5R1Ej2OoJVQU=",
         "owner": "VirtCode",
         "repo": "hypr-dynamic-cursors",
-        "rev": "da447486c84e0be81f2cdd208af1ef92469f0a88",
+        "rev": "112ae605ee43784bb22a16e03a88224495d171e6",
         "type": "github"
       },
       "original": {
         "owner": "VirtCode",
         "repo": "hypr-dynamic-cursors",
-        "rev": "da447486c84e0be81f2cdd208af1ef92469f0a88",
+        "rev": "112ae605ee43784bb22a16e03a88224495d171e6",
         "type": "github"
       }
     },

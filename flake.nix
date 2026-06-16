@@ -149,7 +149,7 @@
     hypr-dynamic-cursors = {
       # pinned before "fix: use new monitor state tracking like hl" (98abbb6)
       # which broke compat with hyprland 0.55.2 (helpers/Monitor.hpp moved)
-      url = "github:VirtCode/hypr-dynamic-cursors/da447486c84e0be81f2cdd208af1ef92469f0a88";
+      url = "github:VirtCode/hypr-dynamic-cursors/112ae605ee43784bb22a16e03a88224495d171e6";
       inputs.hyprland.follows = "hyprland";
     };
 
