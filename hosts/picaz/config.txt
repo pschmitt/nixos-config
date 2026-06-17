@@ -1,0 +1,13 @@
+[pi0]
+kernel=u-boot-rpi0.bin
+
+[pi1]
+kernel=u-boot-rpi1.bin
+
+[all]
+enable_uart=1
+avoid_warnings=1
+
+# Camera module support (legacy stack via bcm2835-v4l2)
+start_x=1
+gpu_mem=128

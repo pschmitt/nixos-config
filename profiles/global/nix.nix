@@ -16,10 +16,18 @@
     if pkgs.stdenv.hostPlatform.system != "aarch64-linux" then
       [
         "aarch64-linux"
+        "armv6l-linux"
         "i686-linux"
       ]
     else
       [ ];
+
+  # armv6l bootstrap in nixpkgs targets armv6kz (RPi platform gcc arch).
+  # binfmt only auto-adds gccarch-armv6; declare armv6kz explicitly so that
+  # x86_64 build hosts can build RPi Zero W SD images.
+  nix.settings.system-features = lib.optionals (pkgs.stdenv.hostPlatform.system != "aarch64-linux") [
+    "gccarch-armv6kz"
+  ];
 
   nix = {
     # GitHub access token
@@ -52,6 +60,9 @@
         "root"
         "@wheel"
       ];
+
+      # Fallback quickly if substituters are not available.
+      connect-timeout = 5;
 
       substituters = [
         # NOTE cache.nixos.org is enabled by default, adding it here only
