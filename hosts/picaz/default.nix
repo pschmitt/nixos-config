@@ -13,7 +13,8 @@
 
     # Selective subset of profiles/global — skip boot.nix (sets linux_rpi4),
     # containers.nix (docker), and packages.nix (too heavy for 512 MB / ARMv6).
-    ../../profiles/global/locales.nix
+    # locales.nix is skipped because it references pkgs.custom-keymaps (overlay
+    # not available on armv6l); locale/tz are inlined below instead.
     ../../profiles/global/ntp.nix
     ../../profiles/global/sops.nix
     ../../profiles/global/ssh-server.nix
@@ -22,6 +23,10 @@
 
   hardware.cattle = true;
   hardware.kvmGuest = false;
+
+  console.keyMap = "de";
+  i18n.defaultLocale = "en_US.UTF-8";
+  time.timeZone = "Europe/Berlin";
 
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
