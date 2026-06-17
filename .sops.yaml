@@ -113,6 +113,17 @@ creation_rules:
           - age1efl2xnt3767ajnu9xgl9zjycx5exggg6rgv53lj84sefeaqcgplqcrmlzj # github/pschmitt
           - age1z8682uyrqfghn8fgvhp23a6udknlckvl4wcvgnafhqks95xhtu3sn83wrq # github/pschmitt
           - age12uccn3k687ydk5jpmjwh3yp637x7rgy0tsx820t2rg70y7qdxuhqc6madk # github/pschmitt
+  - path_regex: hosts/picaz/secrets.sops.yaml
+    key_groups:
+      - age:
+          - age17epmjz598ke0dae20cu5vy7cg26fyf4x5zufnn3626ed7a6ssg7qvcnvjr # host key of picaz
+          - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
+          - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
+          - age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn # github/pschmitt
+          - age17rl4f347jmnv86cy6pyfd8hu02jj7974jmnq8jrmjz0uj7ecpupstuahy5 # github/pschmitt
+          - age1efl2xnt3767ajnu9xgl9zjycx5exggg6rgv53lj84sefeaqcgplqcrmlzj # github/pschmitt
+          - age1z8682uyrqfghn8fgvhp23a6udknlckvl4wcvgnafhqks95xhtu3sn83wrq # github/pschmitt
+          - age12uccn3k687ydk5jpmjwh3yp637x7rgy0tsx820t2rg70y7qdxuhqc6madk # github/pschmitt
   - path_regex: hosts/pica4/secrets.sops.yaml
     key_groups:
       - age:

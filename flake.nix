@@ -604,6 +604,21 @@
             ];
           };
 
+          # RPi Zero W — ARMv6 (BCM2835), camera + ustreamer only
+          picaz = nixpkgs.lib.nixosSystem {
+            system = "armv6l-linux";
+            specialArgs = {
+              inherit inputs outputs;
+            };
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-raspberrypi.nix"
+              inputs.sops-nix.nixosModules.sops
+              ./modules
+              ./hosts/picaz
+              { hardware.type = "rpi"; }
+            ];
+          };
+
           # installation media
           iso = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
