@@ -34,6 +34,7 @@ _: {
 
     local function reconfigure()
       local ms = classify(hl.get_monitors())
+      local profile
 
       -- PiKVM is always disabled (KVM device, not a usable display)
       if ms.pikvm then
@@ -45,7 +46,7 @@ _: {
         hl.monitor({ output = ms.laptop.name, mode = "1920x1200@48", position = "0x240",    scale = 1 })
         hl.monitor({ output = ms.lg.name,     mode = "3440x1440@59", position = "1920x0",   scale = 1 })
         hl.monitor({ output = ms.lenovo.name, mode = "1920x1080@60", position = "986x1440", scale = 1 })
-        notify("🖥️🖥️🖥️ Triple display")
+        profile = "🖥️🖥️🖥️ Triple display"
       elseif ms.lg and ms.lenovo then
         -- Dual docked: LG primary, M14 to the left; laptop disabled if present
         hl.monitor({ output = ms.lg.name,     mode = "3440x1440@60", position = "0x0",     scale = 1 })
@@ -53,31 +54,34 @@ _: {
         if ms.laptop then
           hl.monitor({ output = ms.laptop.name, disabled = true })
         end
-        notify("🖥️🖥️ Dual docked")
+        profile = "🖥️🖥️ Dual docked"
       elseif ms.laptop and ms.lenovo then
         -- Laptop + M14
         hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "0x0",        scale = 1.666, transform = 3 })
         hl.monitor({ output = ms.lenovo.name, mode = "preferred", position = "auto-right", scale = 1 })
-        notify("💻🖥️ Laptop + M14")
+        profile = "💻🖥️ Laptop + M14"
       elseif ms.laptop and ms.lg then
         -- Laptop + LG ultrawide
         hl.monitor({ output = ms.laptop.name, mode = "preferred",    position = "0x0",        scale = 1.666, transform = 3 })
         hl.monitor({ output = ms.lg.name,     mode = "3440x1440@60", position = "auto-right", scale = 1 })
-        notify("💻🖥️ Laptop + LG")
+        profile = "💻🖥️ Laptop + LG"
       elseif ms.laptop then
-        -- Laptop only
+        -- Laptop only (extras, if any, placed below)
         hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "auto", scale = 1.666, transform = 3 })
-        notify("💻 Laptop only")
+        profile = "💻 Laptop only"
       else
         -- Headless / unrecognised
         hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
-        notify("🔲 Fallback layout")
+        profile = "🔲 Fallback layout"
       end
 
       -- Unrecognised extras go to the right of whatever is already configured
+      local n = #ms.others
       for _, m in ipairs(ms.others) do
         hl.monitor({ output = m.name, mode = "preferred", position = "auto-right", scale = 1 })
       end
+
+      notify(profile .. (n > 0 and (" + " .. n .. " unknown") or ""))
     end
 
     reconfigure()
