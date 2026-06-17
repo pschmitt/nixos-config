@@ -1,4 +1,8 @@
 { pkgs, ... }:
+let
+  # withJanus pulls in janus-gateway → valgrind, which is not available on armv6l
+  ustreamer = pkgs.ustreamer.override { withJanus = false; };
+in
 {
   users.groups.ustreamer = { };
   users.users.ustreamer = {
@@ -18,7 +22,7 @@
 
     serviceConfig = {
       ExecStart = toString [
-        "${pkgs.ustreamer}/bin/ustreamer"
+        "${ustreamer}/bin/ustreamer"
         "--device=/dev/video0"
         "--host=0.0.0.0"
         "--port=8080"
