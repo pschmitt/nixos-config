@@ -101,9 +101,10 @@
       ];
     };
 
-    # Do not attempt to murder the laptop when running nixos rebuild
-    daemonCPUSchedPolicy = "idle";
-    daemonIOSchedClass = "idle";
+    # Keep builds non-interactive without starving rebuilds on busy systems.
+    daemonCPUSchedPolicy = lib.mkDefault "batch";
+    daemonIOSchedClass = lib.mkDefault "idle";
+    daemonIOSchedPriority = lib.mkDefault 7;
   };
 
   programs = {
