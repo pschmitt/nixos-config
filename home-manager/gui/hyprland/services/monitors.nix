@@ -1,8 +1,8 @@
 _: {
   xdg.configFile."hypr/monitors.lua".text = ''
-    -- Dynamic monitor layout — pure Lua replacement for hyprdynamicmonitors.
-    -- Classifies connected monitors by EDID description and reconfigures on
-    -- every hotplug event. Works across all hosts; profiles are EDID-driven.
+    -- Dynamic monitor layout — classifies connected monitors by EDID
+    -- description and reconfigures on every hotplug event.
+    -- Works across all hosts; profiles are EDID-driven.
 
     -- Skip notifications during initial config load to avoid IPC deadlock.
     local _loaded = false
