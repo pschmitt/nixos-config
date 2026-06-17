@@ -78,7 +78,7 @@
           end
       end
 
-      -- Dynamic monitor layout written by hyprdynamicmonitors (optional).
+      -- Dynamic monitor layout (optional, host-specific via xdg.configFile).
       load_optional("monitors")
 
       -- Ad-hoc local overrides without a rebuild: ~/.config/hypr/static.lua
