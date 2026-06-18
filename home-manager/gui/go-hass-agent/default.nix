@@ -57,21 +57,6 @@ in
         ]
         ++ lib.optionals (hostname == "ge2") [
           {
-            name = "OBS BRB";
-            exec = "${commandScripts."obs-brb.sh"}";
-            icon = "mdi:smoking";
-          }
-          {
-            name = "OBS Webcam";
-            exec = "${commandScripts."obs-webcam.sh"}";
-            icon = "mdi:webcam";
-          }
-          {
-            name = "OBS Alternative Camera";
-            exec = "${commandScripts."obs-alt-camera.sh"}";
-            icon = "mdi:camera-flip";
-          }
-          {
             name = "Mute Microphone";
             exec = "${commandScripts."obs-mute.sh"}";
             icon = "mdi:microphone-off";
