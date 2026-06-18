@@ -9,8 +9,10 @@ _: {
 
     local function notify(msg)
       if not _loaded then return end
-      -- Background the call so Lua does not block on the IPC response.
-      os.execute("hyprctl notify -1 5000 0 'fontsize:24 " .. msg .. "' &")
+      os.execute(
+        "notify-send --app-name=hyprland-monitors --urgency=low"
+        .. " --expire-time=5000 -- 'Monitor Layout' '" .. msg .. "' &"
+      )
     end
 
     local function classify(monitors)
