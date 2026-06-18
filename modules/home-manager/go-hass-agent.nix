@@ -149,6 +149,12 @@ in
       description = "Whether to expose workstation-oriented go-hass-agent command buttons such as media playback controls.";
     };
 
+    enableWorkCommands = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether to expose work-machine go-hass-agent buttons (Timewarrior, Feierabend, OBS audio, Bluetooth headset, GEC VPN, GNOME Keyring, OBS Roomba overlay).";
+    };
+
     commandScripts = lib.mkOption {
       type = lib.types.attrsOf lib.types.path;
       readOnly = true;
