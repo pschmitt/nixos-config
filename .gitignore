@@ -33,3 +33,4 @@ cookies.txt
 tmp/
 .claude
 __pycache__/
+nbx-preview.*
