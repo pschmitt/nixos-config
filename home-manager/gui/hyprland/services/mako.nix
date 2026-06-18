@@ -88,6 +88,13 @@
 
         "category=osd" = osdCategory;
 
+        "app-name=hyprland-monitors" = infoBanner // {
+          anchor = "top-center";
+          "default-timeout" = 5000;
+          font = "${fontName} 32";
+          width = 600;
+        };
+
         "app-name=barify" = infoBanner;
         "app-name=barify summary~=Mute" = {
           "text-color" = "#e27978";
