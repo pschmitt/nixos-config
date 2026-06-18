@@ -1,8 +1,18 @@
-_: {
+{ config, lib, ... }:
+{
   xdg.configFile."hypr/monitors.lua".text = ''
     -- Dynamic monitor layout — classifies connected monitors by EDID
     -- description and reconfigures on every hotplug event.
     -- Works across all hosts; profiles are EDID-driven.
+
+    -- Internal monitor overrides (set via host.internalMonitor options).
+    local LAPTOP_SCALE     = ${toString config.host.internalMonitor.scale}
+    local LAPTOP_TRANSFORM = ${
+      if config.host.internalMonitor.transform != null then
+        toString config.host.internalMonitor.transform
+      else
+        "nil"
+    }
 
     -- Skip notifications during initial config load to avoid IPC deadlock.
     local _loaded = false
@@ -59,17 +69,17 @@ _: {
         profile = "🖥️🖥️ Dual docked"
       elseif ms.laptop and ms.lenovo then
         -- Laptop + M14
-        hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "0x0",        scale = 1.666, transform = 3 })
+        hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "0x0",        scale = LAPTOP_SCALE, transform = LAPTOP_TRANSFORM })
         hl.monitor({ output = ms.lenovo.name, mode = "preferred", position = "auto-right", scale = 1 })
         profile = "💻🖥️ Laptop + M14"
       elseif ms.laptop and ms.lg then
         -- Laptop + LG ultrawide
-        hl.monitor({ output = ms.laptop.name, mode = "preferred",    position = "0x0",        scale = 1.666, transform = 3 })
+        hl.monitor({ output = ms.laptop.name, mode = "preferred",    position = "0x0",        scale = LAPTOP_SCALE, transform = LAPTOP_TRANSFORM })
         hl.monitor({ output = ms.lg.name,     mode = "3440x1440@60", position = "auto-right", scale = 1 })
         profile = "💻🖥️ Laptop + LG"
       elseif ms.laptop then
         -- Laptop only (extras, if any, placed below)
-        hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "auto", scale = 1.666, transform = 3 })
+        hl.monitor({ output = ms.laptop.name, mode = "preferred", position = "auto", scale = LAPTOP_SCALE, transform = LAPTOP_TRANSFORM })
         profile = "💻 Laptop only"
       else
         -- Headless / unrecognised

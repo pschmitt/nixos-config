@@ -5,6 +5,12 @@ let
   layout = import ../layout-helpers.nix { inherit lib; };
 in
 {
+  # GK4 (GPD Pocket 4): internal panel is physically rotated 90° and is HiDPI.
+  host.internalMonitor = {
+    transform = 3;
+    scale = 1.666;
+  };
+
   wayland.windowManager.hyprland.settings = {
     # fake F1 (dead_circumflex) -> scratchpad terminal.
     # NOTE: resolve_binds_by_sym = 1 would make this less keymap-dependent
