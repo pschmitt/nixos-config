@@ -18,10 +18,12 @@ let
   unitFile = "monero-wallet-rpc.service";
 
   healthCheckScript = pkgs.writeShellScript "monero-wallet-rpc-health-check" ''
-    USERNAME=$(cat ${config.sops.secrets."monero-wallet-rpc/username".path})
-    PASSWORD=$(cat ${config.sops.secrets."monero-wallet-rpc/password".path})
+    USERNAME=$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."monero-wallet-rpc/username".path})
+    PASSWORD=$(${pkgs.coreutils}/bin/cat ${config.sops.secrets."monero-wallet-rpc/password".path})
 
-    ${pkgs.curl}/bin/curl -s -f --max-time 10 \
+    exec ${pkgs.curl}/bin/curl --silent --show-error --fail \
+      --connect-timeout 5 \
+      --max-time 15 \
       -u "$USERNAME:$PASSWORD" \
       --digest \
       -X POST http://127.0.0.1:${toString walletRpcBindPort}/json_rpc \
@@ -153,11 +155,15 @@ in
   services.restic.backups.main.paths = [ walletHostDir ];
 
   services.monit.config = lib.mkAfter ''
-    check program monero-wallet-rpc with path "${healthCheckScript}"
+    check program "monero-wallet-rpc" with path "${healthCheckScript}"
+      with timeout 20 seconds
       group services
       start program = "${pkgs.systemd}/bin/systemctl start ${unitFile}"
       stop program = "${pkgs.systemd}/bin/systemctl stop ${unitFile}"
-      if status != 0 for 5 cycles then restart
+      # Program checks are asynchronous in Monit; require two consecutive
+      # failures so one bad result does not create a restart loop.
+      if status != 0 for 2 cycles then restart
+      else if succeeded then exec "${pkgs.coreutils}/bin/true"
       if 5 restarts within 15 cycles then alert
   '';
 
