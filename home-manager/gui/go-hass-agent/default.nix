@@ -56,16 +56,6 @@ in
         ]
         ++ lib.optionals config.services.go-hass-agent.enableWorkCommands [
           {
-            name = "Mute Microphone";
-            exec = "${commandScripts."obs-mute.sh"}";
-            icon = "mdi:microphone-off";
-          }
-          {
-            name = "Unmute Microphone";
-            exec = "${commandScripts."obs-unmute.sh"}";
-            icon = "mdi:microphone";
-          }
-          {
             name = "Connect Bluetooth Headset";
             exec = "${commandScripts."bluetooth-headset-connect.sh"}";
             icon = "mdi:headset";
