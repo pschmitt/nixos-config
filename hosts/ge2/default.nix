@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -37,4 +37,8 @@
   # ge2 uses UKIs with ~155 MB initrds, so /boot can only hold two
   # generations comfortably on its 512 MB EFI partition.
   boot.loader.systemd-boot.configurationLimit = lib.mkForce 2;
+
+  home-manager.users.${config.mainUser.username} = {
+    services.go-hass-agent.enableWorkCommands = true;
+  };
 }

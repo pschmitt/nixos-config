@@ -1,6 +1,5 @@
 {
   config,
-  hostname,
   lib,
   pkgs,
   ...
@@ -14,8 +13,8 @@ in
   config = lib.mkMerge [
     {
       # timew-status provides timew-is-on/timew-total for the timewarrior sensors;
-      # obs-control backs the OBS button commands; ms-teams backs the
-      # teams/online-meeting sensors; systemd provides busctl for the
+      # obs-control backs the mic-mute and roomba-overlay buttons (enableWorkCommands);
+      # ms-teams backs the teams/online-meeting sensors; systemd provides busctl for the
       # gnome-keyring status sensor.
       services.go-hass-agent.scriptPackages =
         with pkgs;
@@ -25,7 +24,7 @@ in
           systemd
           timew-status
         ]
-        ++ lib.optionals (hostname == "ge2") [
+        ++ lib.optionals config.services.go-hass-agent.enableWorkCommands [
           obs-control
           ms-teams
         ];
@@ -55,7 +54,7 @@ in
             icon = "mdi:play";
           }
         ]
-        ++ lib.optionals (hostname == "ge2") [
+        ++ lib.optionals config.services.go-hass-agent.enableWorkCommands [
           {
             name = "Mute Microphone";
             exec = "${commandScripts."obs-mute.sh"}";
@@ -129,7 +128,7 @@ in
       };
     }
 
-    (lib.mkIf (hostname == "ge2") {
+    (lib.mkIf config.services.go-hass-agent.enableWorkCommands {
       services.go-hass-agent.obsPasswordSecret = lib.mkDefault "obs/websocket/password";
 
       # obs-control on PATH for the hyprland keybinds and waybar mic toggle;
