@@ -99,6 +99,9 @@ in
         # controls are fed by the audio worker and the agent panics in
         # NumberEntity.MarshalConfig when it is disabled
         "sensors.media.microphone_in_use"
+        # Disable MQTT audio controls (mute switch + volume number) — we use
+        # obs-mute-switch.sh (switch.ge2_microphone_mute) for mute instead
+        "controls.media.audio"
         "sensors.memory.oom_events"
         "sensors.network.connections"
         "sensors.network.links"
