@@ -47,6 +47,8 @@ in
   xdg.configFile = {
     "elephant/menus/emoji.lua".source = ./walker/emoji.lua;
     "elephant/menus/obs-reaction.lua".source = ./walker/obs-reaction.lua;
+    "elephant/menus/soundboard.lua".source = ./walker/soundboard.lua;
+    "elephant/menus/soundboard-tts.lua".source = ./walker/soundboard-tts.lua;
     "elephant/emoji-list.txt".source = emojiList;
   };
 
@@ -67,6 +69,8 @@ in
         X-Restart-Triggers = [
           "${./walker/emoji.lua}"
           "${./walker/obs-reaction.lua}"
+          "${./walker/soundboard.lua}"
+          "${./walker/soundboard-tts.lua}"
           "${emojiList}"
         ];
       };
@@ -89,6 +93,36 @@ in
 
       theme = "justgray";
       modules = [ { name = "menus"; } ];
+      providers.prefixes = [
+        {
+          prefix = ";";
+          provider = "providerlist";
+        }
+        {
+          prefix = ">";
+          provider = "runner";
+        }
+        {
+          prefix = "/";
+          provider = "files";
+        }
+        {
+          prefix = ".";
+          provider = "menus:emoji";
+        }
+        {
+          prefix = "!";
+          provider = "todo";
+        }
+        {
+          prefix = "$";
+          provider = "windows";
+        }
+        {
+          prefix = ",";
+          provider = "menus:soundboard-tts";
+        }
+      ];
       providers.actions = {
         "menus:emoji" = [
           {
@@ -109,6 +143,46 @@ in
             action = "default";
             bind = "Return";
             default = true;
+            after = "Close";
+          }
+        ];
+        "menus:soundboard" = [
+          {
+            action = "default";
+            bind = "Return";
+            default = true;
+            after = "Close";
+          }
+          {
+            action = "tts-en";
+            bind = "ctrl e";
+            label = "🗣️ English";
+            after = "Close";
+          }
+          {
+            action = "tts-de";
+            bind = "ctrl d";
+            label = "🗣️ Deutsch";
+            after = "Close";
+          }
+        ];
+        "menus:soundboard-tts" = [
+          {
+            action = "default";
+            bind = "Return";
+            default = true;
+            after = "Close";
+          }
+          {
+            action = "tts-en";
+            bind = "ctrl e";
+            label = "🗣️ English";
+            after = "Close";
+          }
+          {
+            action = "tts-de";
+            bind = "ctrl d";
+            label = "🗣️ Deutsch";
             after = "Close";
           }
         ];

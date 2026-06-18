@@ -147,7 +147,7 @@ in
       (execBind "SUPER + ALT + c" "walker -m clipboard")
       (execBind "SUPER + ALT + m" "walker-menu misc")
       (execBind "SUPER + ALT + j" "walker-menu meetings")
-      (execBind "SUPER + ALT + s" "walker-menu soundboard")
+      (execBind "SUPER + ALT + s" "walker -m menus:soundboard -p '🎹 Soundboard'")
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
 
       # ── Mouse / hints / submap entry ──────────────────────────────────

@@ -23,6 +23,7 @@
       nix
 
       # lint
+      deadnix
       nixfmt
       statix
 
