@@ -89,6 +89,7 @@ in
         "alt 2"
         "alt 3"
         "alt 4"
+        "alt 5"
       ];
 
       theme = "justgray";
@@ -109,6 +110,10 @@ in
         {
           prefix = ".";
           provider = "menus:emoji";
+        }
+        {
+          prefix = "~";
+          provider = "symbols";
         }
         {
           prefix = "!";
@@ -165,6 +170,12 @@ in
             label = "🗣️ Deutsch";
             after = "Close";
           }
+          {
+            action = "tts-ha";
+            bind = "ctrl h";
+            label = "☁️ HA Cloud";
+            after = "Close";
+          }
         ];
         "menus:soundboard-tts" = [
           {
@@ -183,6 +194,12 @@ in
             action = "tts-de";
             bind = "ctrl d";
             label = "🗣️ Deutsch";
+            after = "Close";
+          }
+          {
+            action = "tts-ha";
+            bind = "ctrl h";
+            label = "☁️ HA Cloud";
             after = "Close";
           }
         ];

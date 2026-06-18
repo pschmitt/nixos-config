@@ -89,6 +89,18 @@ local function speak(lang, text)
   run_async(shell_quote(ZHJ_BIN) .. " soundboard::tts --lang " .. shell_quote(lang) .. " " .. shell_quote(normalized))
 end
 
+local function speak_ha(lang, text)
+  local normalized = trim(text)
+
+  if normalized == "" then
+    return
+  end
+
+  set_tts_lang(lang)
+  notify("☁️ TTS (" .. lang .. "): " .. normalized)
+  run_async(shell_quote(ZHJ_BIN) .. " soundboard::tts --ha --lang " .. shell_quote(lang) .. " " .. shell_quote(normalized))
+end
+
 local function play_sound(name)
   if trim(name) == "" then
     return
@@ -123,6 +135,11 @@ end
 function TtsGerman(value, args, query)
   local kind, payload = split_value(value)
   speak("de", normalize_query(kind == "tts" and payload or query))
+end
+
+function TtsHomeAssistant(value, args, query)
+  local kind, payload = split_value(value)
+  speak_ha(get_tts_lang(), normalize_query(kind == "tts" and payload or query))
 end
 
 local function load_sounds()
@@ -208,6 +225,7 @@ local function make_tts_entry(raw_query, query, lang, has_partial_match)
       ["default"] = "lua:DefaultAction",
       ["tts-en"] = "lua:TtsEnglish",
       ["tts-de"] = "lua:TtsGerman",
+      ["tts-ha"] = "lua:TtsHomeAssistant",
     },
   }
 end
@@ -223,6 +241,7 @@ local function make_tts_hint_entry()
       ["default"] = "lua:DefaultAction",
       ["tts-en"] = "lua:TtsEnglish",
       ["tts-de"] = "lua:TtsGerman",
+      ["tts-ha"] = "lua:TtsHomeAssistant",
     },
   }
 end
