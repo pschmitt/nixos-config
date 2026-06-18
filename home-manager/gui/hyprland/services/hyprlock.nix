@@ -12,6 +12,7 @@ let
   dateFontSize = if isHighDpi then 40 else 25;
   attemptsFontSize = if isHighDpi then 30 else 15;
   batteryFontSize = if isHighDpi then 26 else 14;
+  feierabendFontSize = if isHighDpi then 56 else 36;
 
   hyprlockWidgetsWrapper = pkgs.writeShellApplication {
     name = "hyprlock-widgets";
@@ -111,6 +112,16 @@ in
           position = "-2%, 0";
           halign = "right";
           valign = "bottom";
+        }
+        {
+          monitor = "";
+          text = "cmd[update:1000] cat ${config.home.homeDirectory}/.local/state/feierabend-countdown 2>/dev/null | xargs -I{} printf '🍻 {}s before Feierabend'";
+          color = "rgba(255, 80, 80, 1.0)";
+          font_size = feierabendFontSize;
+          font_family = font;
+          position = "0, -8%";
+          halign = "center";
+          valign = "top";
         }
       ];
       "input-field" = [
