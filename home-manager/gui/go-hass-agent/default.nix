@@ -111,6 +111,15 @@ in
             icon = "mdi:robot-vacuum";
           }
         ];
+      }
+      // lib.optionalAttrs config.services.go-hass-agent.enableWorkCommands {
+        switch = [
+          {
+            name = "Microphone Mute";
+            exec = "${commandScripts."obs-mute-switch.sh"}";
+            icon = "mdi:microphone";
+          }
+        ];
       };
     }
 
