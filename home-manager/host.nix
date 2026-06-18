@@ -51,5 +51,18 @@
       default = "25.11";
       description = "home.stateVersion (NixOS: system.stateVersion).";
     };
+
+    internalMonitor = {
+      scale = lib.mkOption {
+        type = lib.types.float;
+        default = 1.0;
+        description = "HiDPI scale factor for the internal monitor (1.0 = no scaling).";
+      };
+      transform = lib.mkOption {
+        type = lib.types.nullOr lib.types.int;
+        default = null;
+        description = "Hyprland transform (rotation) for the internal monitor. Null means no rotation.";
+      };
+    };
   };
 }
