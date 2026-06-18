@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # walker-menu — emoji/soundboard/misc/meetings menus backed by walker dmenu.
 
 DATA_DIR="${XDG_DOCUMENTS_DIR:-$HOME/Documents}/data"
@@ -8,7 +9,7 @@ JCAL_HOST="${JCAL_HOST:-http://localhost:7042}"
 BROWSER_LAUNCHER="${HOME}/.config/hypr/bin/browser-run-or-raise.sh"
 
 usage() {
-  echo "Usage: walker-menu {emoji|soundboard [stop]|misc|meetings}" >&2
+  echo "Usage: walker-menu {emoji|soundboard [--tts-lang LANG] [stop]|misc|meetings}" >&2
 }
 
 kill_walker() {
@@ -43,6 +44,7 @@ emoji_menu() {
 }
 
 soundboard_menu() {
+  local tts_lang="${1:-${WALKER_MENU_TTS_LANG:-en}}"
   local -a sounds
   mapfile -t sounds < <(soundboard list)
 
@@ -52,7 +54,27 @@ soundboard_menu() {
 
   [[ -z "$res" ]] && return 1
 
-  soundboard play "$res"
+  if printf '%s\n' "${sounds[@]}" | grep -Fxq -- "$res"
+  then
+    soundboard play "$res"
+    return "$?"
+  fi
+
+  soundboard_tts "$tts_lang" "$res"
+}
+
+soundboard_tts() {
+  local tts_lang="$1"
+  local text="$2"
+  local quoted_lang quoted_text
+
+  [[ -z "$text" ]] && return 1
+
+  printf -v quoted_lang '%q' "$tts_lang"
+  printf -v quoted_text '%q' "$text"
+
+  notify-send -a walker-menu "🗣️ TTS (${tts_lang}): ${text}"
+  zsh -lc "zhj soundboard::tts --lang ${quoted_lang} ${quoted_text}"
 }
 
 # IBANs (~/Documents/Banking/*/accounts.json) + phone numbers.
@@ -193,6 +215,26 @@ case "${1:-}" in
     ;;
   soundboard | sb)
     case "${2:-}" in
+      --tts-lang)
+        case "${3:-}" in
+          "" | stop | halt | end | pause)
+            echo "Missing TTS language for soundboard" >&2
+            usage >&2
+            exit 2
+            ;;
+          *)
+            case "${4:-}" in
+              stop | halt | end | pause)
+                notify-send -t 1000 "🎹 Stopping soundboard playback..."
+                soundboard stop
+                ;;
+              *)
+                soundboard_menu "${3:-}"
+                ;;
+            esac
+            ;;
+        esac
+        ;;
       stop | halt | end | pause)
         notify-send -t 1000 "🎹 Stopping soundboard playback..."
         soundboard stop
@@ -218,3 +260,5 @@ case "${1:-}" in
     exit 2
     ;;
 esac
+
+# vim: set ft=sh et ts=2 sw=2 :

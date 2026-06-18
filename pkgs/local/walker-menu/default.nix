@@ -12,6 +12,7 @@
   jq,
   coreutils,
   psmisc,
+  zsh,
 }:
 writeShellApplication {
   name = "walker-menu";
@@ -25,6 +26,7 @@ writeShellApplication {
     jq
     coreutils
     psmisc
+    zsh
   ];
   text = builtins.readFile ./walker-menu.sh;
   meta = {
