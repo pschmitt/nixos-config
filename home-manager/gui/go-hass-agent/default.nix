@@ -81,7 +81,7 @@ in
             icon = "mdi:beer-off";
           }
           {
-            name = "Stop GEC VPN";
+            name = "Stop WIIT VPN";
             exec = "${commandScripts."stop-gec-vpn.sh"}";
             icon = "mdi:vpn";
           }
