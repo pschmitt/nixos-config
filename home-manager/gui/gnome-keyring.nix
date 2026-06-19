@@ -7,8 +7,12 @@
 }:
 let
   # Hosts whose keyring password lives in sops (vs the legacy zhj/rbw path).
+  # gk4 stores the LUKS passphrase (== keyring password) as gnome-keyring/password
+  # in its secrets.sops.yaml; pam_systemd_loadkey unlocks at login, this service
+  # handles mid-session recovery (gnome-keyring-daemon crashes; see gdm.nix).
   keyringSopsHosts = [
     "ge2"
+    "gk4"
     "x13"
   ];
   useSops = builtins.elem hostname keyringSopsHosts;
