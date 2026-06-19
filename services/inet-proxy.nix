@@ -60,7 +60,10 @@ let
             nodePort: ${toString inst.nodePort}
     '';
 
-  externalManifest = inst: if inst.lbPool != null then lbManifest inst else nodePortManifest inst;
+  externalManifests =
+    inst:
+    lib.optional (inst.lbPool != null) (lbManifest inst)
+    ++ lib.optional (inst.nodePort != null) (nodePortManifest inst);
 
   clusterOptions =
     { name, ... }:
@@ -175,9 +178,9 @@ in
           Group = "ktunnel";
           ExecStartPre = "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} create namespace ${inst.namespace}";
           ExecStart = "${pkgs.ktunnel}/bin/ktunnel -p ${toString inst.tunnelPort} expose ${inst.serviceName} ${toString cfg.port} --namespace ${inst.namespace} --server-image ${inst.image} --reuse";
-          ExecStartPost = mkIf (
-            inst.lbPool != null || inst.nodePort != null
-          ) "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${externalManifest inst}";
+          ExecStartPost = map (
+            manifest: "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${manifest}"
+          ) (externalManifests inst);
           Restart = "on-failure";
           RestartSec = "30s";
           NoNewPrivileges = true;

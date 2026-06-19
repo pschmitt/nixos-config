@@ -41,6 +41,7 @@
           enable = true;
           tunnelPort = 28700;
           lbPool = "edge-lb";
+          nodePort = 30128;
         };
       };
     };
