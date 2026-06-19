@@ -9,6 +9,7 @@
     (import ../../services/nfs/nfs-client.nix { })
 
     ../../services/http.nix
+    ../../services/inet-proxy.nix
     ../../services/tor.nix
 
     ../../services/xmr/monero-wallet-rpc.nix
@@ -33,6 +34,17 @@
   };
 
   services = {
+    inet-proxy = {
+      enable = true;
+      clusters = {
+        cluster-02 = {
+          enable = true;
+          tunnelPort = 28700;
+          nodePort = 30128;
+        };
+      };
+    };
+
     ktunnel-xmrig-proxy = {
       cluster-01 = {
         enable = true;
