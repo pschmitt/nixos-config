@@ -66,6 +66,13 @@ in
           },
           "pools": [{
             "coin": "monero",
+            "url": "127.0.0.1:${toString config.services.p2pool.stratum.port}",
+            "user": "x",
+            "pass": "${config.networking.hostName}",
+            "tls": false,
+            "keepalive": true
+          }, {
+            "coin": "monero",
             "url": "pool.hashvault.pro:443",
             "user": "${config.sops.placeholder."xmrig-proxy/wallet"}",
             "pass": "${config.networking.hostName}",

@@ -39,6 +39,12 @@ in
     tcp_read_time_out 15000
     tcp_connect_time_out 8000
 
+    # Connect to loopback directly (Tor refuses private addresses anyway).
+    # Lets services route localhost (e.g. local p2pool stratum) without Tor
+    # while still tunnelling everything else.
+    localnet 127.0.0.0/255.0.0.0
+    localnet ::1/128
+
     [ProxyList]
     socks5 127.0.0.1 9050
   '';
