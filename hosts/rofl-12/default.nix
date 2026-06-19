@@ -40,7 +40,7 @@
         cluster-02 = {
           enable = true;
           tunnelPort = 28700;
-          nodePort = 30128;
+          lbPool = "edge-lb";
         };
       };
     };

@@ -17,8 +17,30 @@ let
   cfg = config.services.inet-proxy;
   enabledClusters = filterAttrs (_: inst: inst.enable) cfg.clusters;
 
-  # Generate a NodePort Service manifest for OpenStack VM access
-  nodePotManifest =
+  # LoadBalancer Service manifest (requires MetalLB or equivalent)
+  lbManifest =
+    inst:
+    pkgs.writeText "inet-proxy-lb.yaml" ''
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: ${inst.serviceName}-lb
+        namespace: ${inst.namespace}
+        annotations:
+          metallb.universe.tf/address-pool: ${inst.lbPool}
+      spec:
+        type: LoadBalancer
+        selector:
+          app.kubernetes.io/instance: ${inst.serviceName}
+          app.kubernetes.io/name: ${inst.serviceName}
+        ports:
+          - name: http-proxy
+            port: ${toString cfg.port}
+            targetPort: ${toString cfg.port}
+    '';
+
+  # Fallback NodePort Service manifest (no MetalLB)
+  nodePortManifest =
     inst:
     pkgs.writeText "inet-proxy-nodeport.yaml" ''
       apiVersion: v1
@@ -37,6 +59,8 @@ let
             targetPort: ${toString cfg.port}
             nodePort: ${toString inst.nodePort}
     '';
+
+  externalManifest = inst: if inst.lbPool != null then lbManifest inst else nodePortManifest inst;
 
   clusterOptions =
     { name, ... }:
@@ -67,10 +91,16 @@ let
           description = "Port used for the ktunnel gRPC control channel. Must be unique per instance.";
         };
 
+        lbPool = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "MetalLB address-pool name for a LoadBalancer Service. Preferred over nodePort when MetalLB is available.";
+        };
+
         nodePort = mkOption {
           type = types.nullOr types.port;
           default = null;
-          description = "If set, also create a NodePort Service exposing the proxy on this port on every k8s node (useful for OpenStack VM access).";
+          description = "Fallback: expose the proxy on this NodePort on every k8s node. Use lbPool instead when MetalLB is available.";
         };
 
         image = mkOption {
@@ -145,9 +175,9 @@ in
           Group = "ktunnel";
           ExecStartPre = "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} create namespace ${inst.namespace}";
           ExecStart = "${pkgs.ktunnel}/bin/ktunnel -p ${toString inst.tunnelPort} expose ${inst.serviceName} ${toString cfg.port} --namespace ${inst.namespace} --server-image ${inst.image} --reuse";
-          ExecStartPost = lib.mkIf (
-            inst.nodePort != null
-          ) "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${nodePotManifest inst}";
+          ExecStartPost = mkIf (
+            inst.lbPool != null || inst.nodePort != null
+          ) "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${externalManifest inst}";
           Restart = "on-failure";
           RestartSec = "30s";
           NoNewPrivileges = true;
