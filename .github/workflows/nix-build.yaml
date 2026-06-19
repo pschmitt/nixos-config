@@ -43,7 +43,7 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -77,7 +77,7 @@ jobs:
     steps:
       - name: Checkout code
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
@@ -157,7 +157,7 @@ jobs:
     steps:
       - name: Checkout code
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
@@ -254,7 +254,7 @@ jobs:
     steps:
       - name: Checkout code
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
@@ -410,7 +410,7 @@ jobs:
           hatchet-protocol: 'cleave'
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -511,7 +511,7 @@ jobs:
           hatchet-protocol: 'carve'
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -674,7 +674,7 @@ jobs:
           hatchet-protocol: 'cleave'
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -744,7 +744,7 @@ jobs:
           hatchet-protocol: 'carve'
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -817,7 +817,7 @@ jobs:
           hatchet-protocol: 'carve'
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
