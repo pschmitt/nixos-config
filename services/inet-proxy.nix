@@ -181,8 +181,11 @@ in
           ExecStartPost = map (
             manifest: "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${manifest}"
           ) (externalManifests inst);
-          Restart = "on-failure";
-          RestartSec = "30s";
+          Restart = "always";
+          RestartSec = "5s";
+          # kubectl port-forward through Rancher times out at ~15 min; restart
+          # proactively every 10 min so the tunnel never goes stale.
+          RuntimeMaxSec = "600s";
           NoNewPrivileges = true;
           PrivateTmp = true;
           ProtectHome = true;
