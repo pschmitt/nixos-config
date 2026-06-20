@@ -38,7 +38,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Once you understand what the current conversation is about, rename the active tmux pane and window to reflect it.
 - Use the tmux MCP tools `rename-pane` and `rename-window` (load via ToolSearch if not yet available).
 - To find the active window and pane: call `get-current-session`, then `list-windows` on the session, then `list-panes` on the active window.
-- **Only rename if the current name looks like a default/generic shell name** (e.g. `claude`, `bash`, `zsh`, `fish`, `sh`, a bare number). If the window or pane already has a meaningful slug title, the user set it manually — leave it unchanged.
+- **Only rename if the current name looks like a default/generic shell name** (e.g. `claude`, `bash`, `zsh`, `fish`, `sh`, a bare number). If the window or pane already has a meaningful slug title, the user set it manually — leave it unchanged. **Exception:** if the AI/harness is running in the only pane in the current window, rename regardless of the existing title — a solo pane means no other user-initiated split is present, so overwriting is safe.
 - Keep names short: max 20 characters, no spaces — use `-` as separator.
 - Examples: `nix-ai-context`, `ha-lights`, `netbox-sync`, `ctx-tmux-rename`, `ha-fints-fix-reauth`
 - Do this once per conversation, as soon as the topic is clear — do not repeat.
