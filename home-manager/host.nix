@@ -34,6 +34,12 @@
       description = "Whether an IIO sensor (accelerometer) is present.";
     };
 
+    touchscreen = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether this host has a touchscreen.";
+    };
+
     provisionSshKeys = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -71,12 +77,5 @@
       description = "Additional XDG autostart desktop files for this host.";
     };
 
-    waybar = {
-      enableSoftKeyboard = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Whether the Waybar config should include the soft keyboard module.";
-      };
-    };
   };
 }
