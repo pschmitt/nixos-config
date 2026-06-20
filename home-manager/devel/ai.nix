@@ -206,6 +206,24 @@ in
       context = builtins.readFile ./CONTEXT.md;
       web.enable = false;
       enableMcpIntegration = true;
+      settings = {
+        provider = {
+          gpu-vm-ollama = {
+            name = "GPU VM Ollama (wiit-edge-002 A100)";
+            npm = "@ai-sdk/openai-compatible";
+            api = "http://localhost:11434/v1";
+            models = {
+              "qwen2.5-coder:32b" = {
+                id = "qwen2.5-coder:32b";
+                name = "Qwen2.5 Coder 32B";
+                tool_call = true;
+                attachment = false;
+                reasoning = false;
+              };
+            };
+          };
+        };
+      };
     };
 
     github-copilot-cli = {
