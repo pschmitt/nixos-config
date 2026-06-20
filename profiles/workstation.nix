@@ -6,21 +6,21 @@
     ./global
     ./gui
 
-    # Desktop + display manager (opt-in roles); these laptops run Hyprland and
-    # GNOME under GDM.
-    ./desktop-hyprland.nix
-    ./desktop-gnome.nix
-    ./display-manager-gdm.nix
+    # Desktop + display manager; these laptops run Hyprland and GNOME under
+    # GDM.
+    ./gui/hyprland.nix
+    ./gui/gnome.nix
+    ./gui/gdm.nix
 
     ./laptop
 
-    # Role features (opt-in) currently run by all three laptops.
-    ./vpn-mullvad.nix
-    ./privacy-tor.nix
-    ./net-debug.nix
-    ./nrf-dev.nix
-    ./android-waydroid.nix
-    ./work-wiit.nix
+    # Extra features currently run by all three laptops.
+    ./network/snek
+    ./laptop/tor.nix
+    ./laptop/wireshark.nix
+    ./laptop/nrf.nix
+    ./laptop/waydroid.nix
+    ./work/vpn/openvpn.nix
 
     ../services/restic
   ];
