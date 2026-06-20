@@ -11,6 +11,7 @@
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
+    ./nix-daemon.nix
   ];
 
   xmr.mining.enableSync = true;
