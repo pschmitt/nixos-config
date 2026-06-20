@@ -1,5 +1,5 @@
 {
-  hostname,
+  config,
   lib,
   pkgs,
   ...
@@ -23,7 +23,9 @@ in
     systemd.enable = true;
     systemd.enableDebug = true;
     style = builtins.readFile ./style.css;
-    settings = import ./config.nix { hostName = hostname; };
+    settings = import ./config.nix {
+      enableSoftKeyboard = config.host.waybar.enableSoftKeyboard;
+    };
   };
 
   xdg.configFile = {

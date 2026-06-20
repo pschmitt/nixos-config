@@ -1,9 +1,6 @@
 {
-  hostName ? null,
+  enableSoftKeyboard ? false,
 }:
-let
-  isGk4 = hostName == "gk4";
-in
 [
   (
     {
@@ -27,7 +24,7 @@ in
         "tray"
         "idle_inhibitor"
       ]
-      ++ (if isGk4 then [ "custom/soft-keyboard" ] else [ ])
+      ++ (if enableSoftKeyboard then [ "custom/soft-keyboard" ] else [ ])
       ++ [
         "pulseaudio#source"
         "custom/media"

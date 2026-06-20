@@ -1,7 +1,5 @@
 {
   config,
-  hostname,
-  lib,
   pkgs,
   ...
 }:
@@ -77,9 +75,7 @@ in
         "${pkgs.firefox}/share/applications/firefox.desktop"
         "${pkgs.nextcloud-client}/share/applications/com.nextcloud.desktopclient.nextcloud.desktop"
       ]
-      ++ lib.optionals (hostname == "ge2") [
-        "${config.home.profileDirectory}/share/applications/obs-studio-custom.desktop"
-      ];
+      ++ config.host.extraAutostartEntries;
     };
   };
 }

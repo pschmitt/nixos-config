@@ -38,7 +38,10 @@
   # generations comfortably on its 512 MB EFI partition.
   boot.loader.systemd-boot.configurationLimit = lib.mkForce 2;
 
-  home-manager.users.${config.mainUser.username} = {
+  home-manager.users.${config.mainUser.username} = { config, ... }: {
+    host.extraAutostartEntries = [
+      "${config.home.profileDirectory}/share/applications/obs-studio-custom.desktop"
+    ];
     services.go-hass-agent.enableWorkCommands = true;
   };
 }

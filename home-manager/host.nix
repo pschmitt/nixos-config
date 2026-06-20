@@ -64,5 +64,19 @@
         description = "Hyprland transform (rotation) for the internal monitor. Null means no rotation.";
       };
     };
+
+    extraAutostartEntries = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Additional XDG autostart desktop files for this host.";
+    };
+
+    waybar = {
+      enableSoftKeyboard = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether the Waybar config should include the soft keyboard module.";
+      };
+    };
   };
 }

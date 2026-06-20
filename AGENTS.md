@@ -34,6 +34,13 @@
   imports shared by **2+ hosts**.
 - Don't create a profile for a single-host stack — that is just indirection;
   keep those imports inline in the host's `default.nix`.
+- Avoid host-specific conditionals in shared modules, profiles, or services.
+  Do not branch on `config.networking.hostName`, Home Manager `hostname`,
+  or similar host facts inside shared module code when the behavior is only for
+  one host.
+- Put host-specific overrides in the relevant `hosts/<host>/default.nix` or
+  standalone Home Manager host entrypoint instead. Shared modules should expose
+  reusable options/defaults, not embed per-host exceptions.
 
 ## NetBox
 - When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.

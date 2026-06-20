@@ -7,6 +7,7 @@
 let
   mainDomain = config.domains.main;
   netbirdDomain = config.domains.netbird;
+  cfg = config.services.harmonia;
 
   # List of Harmonia hosts with their respective configurations
   harmonia_hosts = [
@@ -15,12 +16,6 @@ let
       basicAuth = false;
     }
     { domain = "cache.${config.networking.hostName}.${mainDomain}"; }
-  ];
-
-  # primary host
-  conditional_hosts = lib.optional (config.networking.hostName == "rofl-10") [
-    { domain = "cache.${mainDomain}"; }
-    { domain = "nix-cache.${mainDomain}"; }
   ];
 
   # Function to generate virtual host configuration
@@ -47,8 +42,7 @@ let
       };
     };
 
-  # Merge the common and conditional hosts
-  all_hosts = harmonia_hosts ++ lib.flatten conditional_hosts;
+  all_hosts = harmonia_hosts ++ cfg.extraVirtualHosts;
 
   # Generate virtual hosts for each host
   virtualHosts = builtins.listToAttrs (
@@ -59,6 +53,26 @@ let
   );
 in
 {
+  options.services.harmonia.extraVirtualHosts = lib.mkOption {
+    type = lib.types.listOf (
+      lib.types.submodule {
+        options = {
+          domain = lib.mkOption {
+            type = lib.types.str;
+            description = "Virtual host domain name.";
+          };
+          basicAuth = lib.mkOption {
+            type = lib.types.bool;
+            default = true;
+            description = "Whether to enable HTTP basic auth for this virtual host.";
+          };
+        };
+      }
+    );
+    default = [ ];
+    description = "Additional Harmonia virtual hosts to define on this machine.";
+  };
+
   sops.secrets = {
     "nix/store/privkey" = config.custom.mkSecret {
     };
