@@ -62,8 +62,9 @@ in
           port ${toString n8nPort}
           protocol http
           with timeout 15 seconds
+          for 3 cycles
         then restart
-        if 5 restarts within 10 cycles then alert
+        if 3 restarts within 15 cycles then alert
     '';
   };
 

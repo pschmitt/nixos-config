@@ -118,8 +118,9 @@ in
         port ${toString listenPort}
         protocol http request "/api/health" status 200
         with timeout 15 seconds
+        for 3 cycles
       then restart
-      if 5 restarts within 10 cycles then alert
+      if 3 restarts within 15 cycles then alert
 
     check program "gitea-mirror mirror-health" with path "${mirrorHealthCheckScript}"
       group container-services

@@ -191,8 +191,8 @@ in
       check host "authelia" with address "127.0.0.1"
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart ${autheliaService}"
-        if failed port ${toString autheliaPort} then restart
-        if 5 restarts within 10 cycles then alert
+        if failed port ${toString autheliaPort} for 3 cycles then restart
+        if 3 restarts within 15 cycles then alert
     '';
   };
 
