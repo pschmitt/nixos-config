@@ -85,10 +85,7 @@
 
         # "https://nix-cache.brkn.lol"
       ]
-      # don't use local http cache on the same host
-      ++ lib.optionals (config.networking.hostName != "rofl-10") [ "https://cache.rofl-10.brkn.lol" ]
-      ++ lib.optionals (config.networking.hostName != "rofl-13") [ "https://cache.rofl-13.brkn.lol" ]
-      ++ lib.optionals (config.networking.hostName != "rofl-14") [ "https://cache.rofl-14.brkn.lol" ];
+      ++ config.nixHost.extraSubstituters;
 
       # private caches
       netrc-file = config.sops.templates.nix-cache-netrc.path;

@@ -13,6 +13,7 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
+  home-manager.users.${config.mainUser.username}.host.waybar.enableSoftKeyboard = true;
   home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
 
   hardware.cattle = false;

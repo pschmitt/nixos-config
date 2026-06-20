@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./disk-config.nix
@@ -64,11 +69,20 @@
     biosBoot = lib.mkForce false;
   };
   custom.promptColor = "#0B87CA"; # nextcloud blue
+  nixHost.extraSubstituters = [
+    "https://cache.rofl-13.brkn.lol"
+    "https://cache.rofl-14.brkn.lol"
+  ];
 
   # Enable networking
   networking = {
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
   };
+
+  services.harmonia.extraVirtualHosts = [
+    { domain = "cache.${config.domains.main}"; }
+    { domain = "nix-cache.${config.domains.main}"; }
+  ];
 
   environment.systemPackages = with pkgs; [
     (writeShellScriptBin "rclone-bisync-reset-and-resync" ''
