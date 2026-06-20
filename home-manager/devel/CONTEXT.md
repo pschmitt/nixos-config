@@ -32,3 +32,13 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 - Do not duplicate shell style rules here.
 - For shell scripts, shell snippets, and zsh plugin work, use the `shell` skill as the source of truth.
+
+## Tmux pane and window naming
+
+- Once you understand what the current conversation is about, rename the active tmux pane and window to reflect it.
+- Use the tmux MCP tools `rename-pane` and `rename-window` (load via ToolSearch if not yet available).
+- To find the active window and pane: call `get-current-session`, then `list-windows` on the session, then `list-panes` on the active window.
+- **Only rename if the current name looks like a default/generic shell name** (e.g. `claude`, `bash`, `zsh`, `fish`, `sh`, a bare number). If the window or pane already has a meaningful slug title, the user set it manually — leave it unchanged.
+- Keep names short: max 20 characters, no spaces — use `-` as separator.
+- Examples: `nix-ai-context`, `ha-lights`, `netbox-sync`, `ctx-tmux-rename`, `ha-fints-fix-reauth`
+- Do this once per conversation, as soon as the topic is clear — do not repeat.
