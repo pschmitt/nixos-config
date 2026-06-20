@@ -14,7 +14,7 @@ let
   );
 in
 {
-  options.custom.browser = {
+  options.custom.desktop.browser = {
     enable = lib.mkEnableOption "shared browser stack";
 
     systemPackages = lib.mkOption {

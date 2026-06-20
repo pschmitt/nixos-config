@@ -5,14 +5,14 @@
   ...
 }:
 let
-  cfg = config.custom.theme;
+  cfg = config.custom.desktop.theme;
 in
 {
   imports = [ inputs.catppuccin.nixosModules.catppuccin ];
 
   config = lib.mkMerge [
     {
-      custom.theme.enable = lib.mkDefault true;
+      custom.desktop.theme.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       catppuccin = {

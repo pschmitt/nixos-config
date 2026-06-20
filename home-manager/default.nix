@@ -31,10 +31,12 @@
       # home config. Standalone hosts set these explicitly instead.
       inherit (config) mainUser domains;
       custom = {
-        inherit (config.custom)
-          browser
-          theme
-          ;
+        desktop = {
+          inherit (config.custom.desktop)
+            browser
+            theme
+            ;
+        };
       };
       host = {
         sopsFile = config.custom.sopsFile;

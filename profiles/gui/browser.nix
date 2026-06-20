@@ -4,12 +4,12 @@
   ...
 }:
 let
-  cfg = config.custom.browser;
+  cfg = config.custom.desktop.browser;
 in
 {
   config = lib.mkMerge [
     {
-      custom.browser.enable = lib.mkDefault true;
+      custom.desktop.browser.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       # NOTE see also home-manager/gui/browser.nix
