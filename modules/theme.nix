@@ -20,7 +20,7 @@ let
   };
 in
 {
-  options.custom.theme = {
+  options.custom.desktop.theme = {
     enable = lib.mkEnableOption "shared desktop theme";
 
     flavor = lib.mkOption {

@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.custom.theme;
+  cfg = config.custom.desktop.theme;
   colorScheme = if cfg.preferDark then "prefer-dark" else "default";
   darkTheme = if cfg.preferDark then "1" else "0";
 in
@@ -14,7 +14,7 @@ in
 
   config = lib.mkMerge [
     {
-      custom.theme.enable = lib.mkDefault true;
+      custom.desktop.theme.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       catppuccin = {
