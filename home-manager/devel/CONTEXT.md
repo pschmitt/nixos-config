@@ -35,6 +35,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Tmux pane and window naming
 
+- **Only do this when running inside a tmux session.** Check first: run `echo $TMUX` — if the output is empty, skip the rename entirely and do not attempt any tmux calls.
 - Once you understand what the current conversation is about, rename the active tmux pane and window to reflect it.
 - Use the tmux MCP tools `rename-pane` and `rename-window` (load via ToolSearch if not yet available).
 - To find the active window and pane: call `get-current-session`, then `list-windows` on the session, then `list-panes` on the active window.
