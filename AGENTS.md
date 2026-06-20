@@ -24,6 +24,18 @@
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 
+## Option naming
+- Prefer repo-owned option namespaces over generic top-level names.
+- For cross-layer features shared between NixOS and Home Manager, use
+  `custom.<domain>.*` or `custom.<domain>.<feature>.*` rather than bare names
+  like `theme.*` or `browser.*`.
+- For desktop/user-facing shared features, prefer `custom.desktop.*`.
+- For actual machine capabilities, prefer canonical hardware facts under
+  `hardware.*` and bridge them into Home Manager, rather than introducing
+  ad hoc Home Manager-only host flags.
+- Before adding a new host fact under `home-manager/host.nix`, check whether it
+  should really be a NixOS-side option in `modules/` first.
+
 ## Host composition
 - `profiles/` is the single composition point for everything. It contains both
   foundational layers (`profiles/global/`, `profiles/network/`) and higher-level
@@ -35,9 +47,12 @@
 - Don't create a profile for a single-host stack — that is just indirection;
   keep those imports inline in the host's `default.nix`.
 - Avoid host-specific conditionals in shared modules, profiles, or services.
-  Do not branch on `config.networking.hostName`, Home Manager `hostname`,
-  or similar host facts inside shared module code when the behavior is only for
-  one host.
+  Do not branch on `config.networking.hostName`, expressions like
+  `config.networking.hostName == "..."`, Home Manager `hostname`, or similar
+  host facts inside shared module code when the behavior is only for one host.
+- If shared code needs host-varying behavior, prefer adding a dedicated module
+  option and setting it from the relevant host config instead of inspecting the
+  host identity inside the shared module.
 - Put host-specific overrides in the relevant `hosts/<host>/default.nix` or
   standalone Home Manager host entrypoint instead. Shared modules should expose
   reusable options/defaults, not embed per-host exceptions.
