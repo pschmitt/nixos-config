@@ -50,6 +50,12 @@
         description = "Whether this host has a high DPI screen";
       };
 
+      touchscreen.enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether this host has a touchscreen and should enable touchscreen-specific integrations.";
+      };
+
       fprintd.autoreset = {
         enable = lib.mkOption {
           type = lib.types.bool;

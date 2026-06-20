@@ -1,17 +1,11 @@
 {
   config,
-  inputs,
-  pkgs,
   lib,
+  pkgs,
   ...
 }:
 let
-  bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
-  bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
-  bruvtabChromeExtensionId = lib.removeSuffix "\n" (
-    builtins.readFile "${bruvtabChromeCrx}/extension-id"
-  );
+  cfg = config.custom.browser;
   linkdingExtensionId = "{61a05c39-ad45-4086-946f-32adb0a40a9d}";
   linkdingInjectorId = "{19561335-5a63-4b4e-8182-1eced17f9b47}";
   linkdingStorage = builtins.toJSON {
@@ -27,318 +21,61 @@ let
   };
 in
 {
+  config = lib.mkMerge [
+    {
+      custom.browser.enable = lib.mkDefault true;
+    }
+    (lib.mkIf cfg.enable {
+      home.packages = cfg.userPackages;
 
-  home.packages = with pkgs; [
-    bruvtabPkg
-    tor-browser
-    inputs.zen-browser.packages."${pkgs.stdenv.hostPlatform.system}".default
-  ];
+      sops = {
+        secrets = {
+          "firefox/addons/linkding/url".sopsFile = ../../secrets/shared.sops.yaml;
+          "firefox/addons/linkding/token".sopsFile = ../../secrets/shared.sops.yaml;
+        };
 
-  sops = {
-    secrets = {
-      "firefox/addons/linkding/url".sopsFile = ../../secrets/shared.sops.yaml;
-      "firefox/addons/linkding/token".sopsFile = ../../secrets/shared.sops.yaml;
-    };
-
-    # programs.firefox.profiles.default.extensions.settings writes this same
-    # storage.js path, but SOPS placeholders are only substituted in templates.
-    templates = {
-      "firefox-linkding-extension-storage" = mkLinkdingFirefoxStorageTemplate linkdingExtensionId;
-      "firefox-linkding-injector-storage" = mkLinkdingFirefoxStorageTemplate linkdingInjectorId;
-    };
-  };
-
-  programs.firefox = {
-    enable = true;
-    configPath = "${config.xdg.configHome}/mozilla/firefox";
-
-    nativeMessagingHosts = with pkgs; [
-      bruvtabPkg
-      fx-cast-bridge
-      native-client # external-application-button
-      tridactyl-native
-    ];
-
-    profiles.default = {
-      extensions.packages = with pkgs.firefox-addons; [
-        # https://gitlab.com/rycee/nur-expressions
-        auto-tab-discard
-        bitwarden
-        bruvtabFirefoxAddon
-        # bypass-paywalls-clean
-        consent-o-matic
-        don-t-fuck-with-paste
-        external-application
-        firefox-translations
-        foxyproxy-standard
-        french-dictionary
-        fx_cast
-        # header-editor
-        # istilldontcareaboutcookies
-        languagetool
-        # link-cleaner # leads to issues on github
-        linkding-extension
-        linkding-injector
-        multi-account-containers
-        refined-github
-        re-enable-right-click
-        single-file
-        sponsorblock
-        # tridactyl
-        ublock-origin
-        video-downloadhelper
-        zoom-redirector
-      ];
-
-      # about:config
-      settings = {
-        # Enable custom css (userChrome.css)
-        "toolkit.legacyUserProfileCustomizations.stylesheets" = true;
-
-        # Hide share indicator
-        "privacy.webrtc.legacyGlobalIndicator" = false;
-        "privacy.webrtc.hideGlobalIndicator" = true;
-
-        # Prevent Firefox from Googling .lan addresses and opening them directly
-        "browser.fixup.domainsuffixwhitelist.lan" = true;
-
-        # Hide the "Summarize Page" button in the AI sidebar
-        # https://www.reddit.com/r/firefox/comments/1o8zt65/how_do_i_remove_the_summarize_page_button_below/
-        "browser.ml.chat.page" = false;
+        # programs.firefox.profiles.default.extensions.settings writes this same
+        # storage.js path, but SOPS placeholders are only substituted in templates.
+        templates = {
+          "firefox-linkding-extension-storage" = mkLinkdingFirefoxStorageTemplate linkdingExtensionId;
+          "firefox-linkding-injector-storage" = mkLinkdingFirefoxStorageTemplate linkdingInjectorId;
+        };
       };
 
-      search = {
-        force = true;
-        default = "Unduck";
+      programs.firefox = {
+        enable = cfg.firefox.enable;
+        configPath = "${config.xdg.configHome}/mozilla/firefox";
+        inherit (cfg.firefox) nativeMessagingHosts;
 
-        # https://nix-community.github.io/home-manager/options.xhtml#opt-programs.firefox.profiles._name_.search.engines
-        engines = {
-          ddg = {
-            name = "DuckDuckGo";
-            url = "https://www.duckduckgo.com/?q={searchTerms}";
-            hidden = false;
-            definedAliases = [ "ddg" ];
-          };
-
-          perplexity = {
-            name = "Perplexity";
-            urls = [ { template = "https://www.perplexity.ai/?q={searchTerms}"; } ];
-            icon = "https://www.perplexity.ai/favicon.ico";
-            updateInterval = 24 * 60 * 60 * 1000; # Every day
-            definedAliases = [ "pp" ];
-          };
-
-          nix-packages = {
-            name = "Nix Packages";
-            urls = [
-              {
-                template = "https://search.nixos.org/packages";
-                params = [
-                  {
-                    name = "type";
-                    value = "packages";
-                  }
-                  {
-                    name = "channel";
-                    value = "unstable";
-                  }
-                  {
-                    name = "query";
-                    value = "{searchTerms}";
-                  }
-                ];
-              }
-            ];
-
-            icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-            definedAliases = [ "nixp" ];
-          };
-
-          nix-options = {
-            name = "Nix Options";
-            urls = [
-              {
-                template = "https://search.nixos.org/options";
-                params = [
-                  {
-                    name = "type";
-                    value = "options";
-                  }
-                  {
-                    name = "channel";
-                    value = "unstable";
-                  }
-                  {
-                    name = "query";
-                    value = "{searchTerms}";
-                  }
-                ];
-              }
-            ];
-
-            icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-            definedAliases = [ "nixopt" ];
-          };
-
-          nixos-wiki = {
-            name = "NixOS Wiki";
-            urls = [ { template = "https://nixos.wiki/index.php?search={searchTerms}"; } ];
-            icon = "https://nixos.wiki/favicon.png";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "nixw" ];
-          };
-
-          nixpkgs-prs = {
-            name = "Nixpkgs PRs";
-            urls = [
-              {
-                template = "https://github.com/NixOS/nixpkgs/pulls";
-                params = [
-                  {
-                    name = "q";
-                    # Search in title explicitly
-                    value = "in:title {searchTerms}";
-                  }
-                ];
-              }
-            ];
-
-            icon = "${pkgs.nixos-icons}/share/icons/hicolor/scalable/apps/nix-snowflake.svg";
-            definedAliases = [ "npr" ];
-          };
-
-          archwiki = {
-            name = "ArchWiki";
-            urls = [
-              {
-                template = "https://wiki.archlinux.org/index.php?title=Special%3ASearch&profile=default&fulltext=1&search={searchTerms}";
-              }
-            ];
-            icon = "https://wiki.archlinux.org/favicon.ico";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "aw" ];
-          };
-
-          searXng = {
-            name = "SearxNG@brkn.lol";
-            urls = [
-              {
-                template = "https://search.brkn.lol/search";
-                method = "POST";
-                params = [
-                  {
-                    name = "q";
-                    value = "{searchTerms}";
-                  }
-                ];
-              }
-            ];
-            icon = "https://search.brkn.lol/static/themes/simple/img/favicon.svg";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "sx" ];
-          };
-
-          bing.metaData.hidden = true;
-          # builtin engines only support specifying one additional alias
-          google.metaData.alias = "g";
-          # what's the right id here? wikipedia?
-          wikipedia.metaData.alias = "wiki";
-
-          github = {
-            name = "GitHub";
-            urls = [ { template = "https://github.com/search?q={searchTerms}"; } ];
-            icon = "https://github.com/fluidicon.png";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "gh" ];
-          };
-
-          youtube = {
-            name = "YouTube";
-            urls = [ { template = "https://www.youtube.com/results?search_query={searchTerms}"; } ];
-            icon = "https://www.youtube.com/s/desktop/6ca9d352/img/favicon_144x144.png";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "y" ];
-          };
-
-          amazon-de = {
-            name = "Amazon.de";
-            urls = [ { template = "https://www.amazon.de/s?k={searchTerms}"; } ];
-            icon = "https://www.amazon.de/favicon.ico";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "am" ];
-          };
-
-          amazon-de-orders = {
-            name = "Amazon.de Orders";
-            urls = [ { template = "https://www.amazon.de/your-orders/search?search={searchTerms}"; } ];
-            icon = "https://www.amazon.de/favicon.ico";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "amo" ];
-          };
-
-          gmail = {
-            name = "GMail";
-            urls = [ { template = "https://mail.google.com/mail/u/0/#search/{searchTerms}"; } ];
-            icon = "https://www.google.com/a/cpanel/schmitt.co/images/favicon.ico";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "gm" ];
-          };
-
-          unduck = {
-            name = "Unduck";
-            urls = [ { template = "https://unduck.link?q={searchTerms}"; } ];
-            icon = "https://unduck.link/search.svg";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "ud" ];
-          };
-
-          netbox = {
-            name = "NetBox";
-            urls = [ { template = "https://netbox.${config.domains.main}/search/?q={searchTerms}"; } ];
-            icon = "https://netbox.${config.domains.main}/static/netbox_touch-icon-180.png";
-            updateInterval = 24 * 60 * 60 * 1000; # every day
-            definedAliases = [ "nb" ];
+        profiles.default = {
+          extensions.packages = cfg.firefox.extensions;
+          settings = cfg.firefox.settings;
+          search = {
+            force = true;
+            default = cfg.firefox.search.default;
+            engines = cfg.firefox.search.engines;
           };
         };
       };
-    };
-  };
 
-  programs.chromium = {
-    enable = true;
-    extensions = [
-      # Bitwarden
-      # https://chromewebstore.google.com/detail/bitwarden-passwortmanager/nngceckbapebfimnlniiiahkandclblb
-      {
-        id = "nngceckbapebfimnlniiiahkandclblb";
-      }
+      programs.chromium = {
+        enable = cfg.chromium.enable;
+        inherit (cfg.chromium)
+          extensions
+          nativeMessagingHosts
+          ;
+      };
 
-      # BruvTab
-      {
-        id = bruvtabChromeExtensionId;
-        crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
-        inherit (bruvtabPkg) version;
-      }
+      systemd.user.services.fx-cast = {
+        Unit = {
+          Description = "fx-cast-bridge";
+          Documentation = "https://hensm.github.io/fx_cast/";
+        };
 
-      # uBlock Origin Lite
-      # https://chromewebstore.google.com/detail/ublock-origin-lite/ddkjiahejlhfcafbddmgiahcphecmpfh
-      {
-        id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
-      }
-    ];
-    nativeMessagingHosts = [
-      bruvtabPkg
-    ];
-  };
+        Service.ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
 
-  systemd.user.services.fx-cast = {
-    Unit = {
-      Description = "fx-cast-bridge";
-      Documentation = "https://hensm.github.io/fx_cast/";
-    };
-
-    Service.ExecStart = "${pkgs.fx-cast-bridge}/bin/fx_cast_bridge -d";
-
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
+        Install.WantedBy = [ "graphical-session.target" ];
+      };
+    })
+  ];
 }

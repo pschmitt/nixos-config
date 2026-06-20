@@ -30,12 +30,19 @@
       # Bridge: feed system facts from the NixOS config into the (osConfig-free)
       # home config. Standalone hosts set these explicitly instead.
       inherit (config) mainUser domains;
+      custom = {
+        inherit (config.custom)
+          browser
+          theme
+          ;
+      };
       host = {
         sopsFile = config.custom.sopsFile;
         sopsDefaultFile = config.sops.defaultSopsFile;
         highDpi = config.hardware.highDpi;
         nvidiaPrimeOffload = config.hardware.nvidia.prime.offload.enable;
         iioSensor = config.hardware.sensor.iio.enable;
+        touchscreen = config.hardware.touchscreen.enable;
         provisionSshKeys = true;
         uid =
           let

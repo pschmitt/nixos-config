@@ -1,5 +1,6 @@
 {
   imports = [
+    ./browser.nix
     ./custom.nix
     ./domains.nix
     ./hardware.nix
@@ -7,5 +8,6 @@
     ./nix-host-overrides.nix
     ./sops.nix
     ./syncthing.nix
+    ./theme.nix
   ];
 }

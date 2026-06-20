@@ -1,21 +1,27 @@
-{ inputs, pkgs, ... }:
 {
-  imports = [
-    inputs.catppuccin.nixosModules.catppuccin
-  ];
+  config,
+  inputs,
+  lib,
+  ...
+}:
+let
+  cfg = config.custom.theme;
+in
+{
+  imports = [ inputs.catppuccin.nixosModules.catppuccin ];
 
-  catppuccin = {
-    enable = true;
-    autoEnable = true;
-    flavor = "mocha";
-  };
+  config = lib.mkMerge [
+    {
+      custom.theme.enable = lib.mkDefault true;
+    }
+    (lib.mkIf cfg.enable {
+      catppuccin = {
+        enable = true;
+        autoEnable = true;
+        inherit (cfg) flavor;
+      };
 
-  # environment.sessionVariables = {
-  #   GTK_THEME = "Colloid-Dark";
-  # };
-
-  environment.systemPackages = with pkgs; [
-    gtk3 # gtk-update-icon-cache
-    gtk4 # gtk4-update-icon-cache
+      environment.systemPackages = cfg.systemPackages;
+    })
   ];
 }

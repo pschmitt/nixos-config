@@ -24,7 +24,7 @@ in
     systemd.enableDebug = true;
     style = builtins.readFile ./style.css;
     settings = import ./config.nix {
-      enableSoftKeyboard = config.host.waybar.enableSoftKeyboard;
+      enableSoftKeyboard = config.host.touchscreen;
     };
   };
 

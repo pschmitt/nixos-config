@@ -330,7 +330,7 @@
       };
     }
     // (
-      if isGk4 then
+      if enableSoftKeyboard then
         {
           "custom/soft-keyboard" = {
             "exec" = "~/.config/waybar/custom_modules/soft-keyboard.sh format";
