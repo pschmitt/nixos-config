@@ -3020,6 +3020,26 @@
         "type": "github"
       }
     },
+    "rbw": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1782038481,
+        "narHash": "sha256-grlI0aVeeZTOTHRLmHvDLnCxrSmL973SZABEuXeOf6s=",
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "rev": "8315af3adc6c51310269394a2eb92408f2dd1be2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
@@ -3071,6 +3091,7 @@
         "pre-commit-hooks": "pre-commit-hooks_3",
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
+        "rbw": "rbw",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "slack-react": "slack-react",

@@ -179,6 +179,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    rbw = {
+      url = "github:pschmitt/rbw";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     tmux-slay = {
       url = "github:pschmitt/tmux-slay";
       inputs.nixpkgs.follows = "nixpkgs";
