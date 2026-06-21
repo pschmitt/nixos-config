@@ -12,7 +12,7 @@
   ];
 
   # Newer kernels might not be compatible with the Nvidia crap.
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_7_0;
+  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_7_1;
 
   # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
