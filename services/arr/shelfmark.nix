@@ -40,6 +40,12 @@ in
     host = "shelfmark.arr.${config.domains.main}";
     aliases = [ "shelf.arr.${config.domains.main}" ];
     container = "shelfmark";
-    monit.request = "/";
+    monit.request = "/api/ingress/shelfmark/";
   };
+
+  # URL_BASE makes shelfmark serve only under /api/ingress/shelfmark, so a plain
+  # visit to shelf.arr.brkn.lol/ would 404. Redirect the root to the prefix so
+  # direct access "just works" (Authelia still gates it via the / location).
+  services.nginx.virtualHosts."shelfmark.arr.${config.domains.main}".locations."= /".return =
+    "302 /api/ingress/shelfmark/";
 }
