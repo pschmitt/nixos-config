@@ -298,6 +298,7 @@ Current prefixes:
 - `SMP` = Smappee
 - `SNF` = Sonoff / ITEAD
 - `SSM` = Samson
+- `SUP` = SumUp
 - `3RA` = THIRDREALITY
 - `TLD` = Telldus
 - `TOS` = Toshiba
