@@ -46,23 +46,28 @@ in
     monit.request = "/api/ingress/shelfmark/";
   };
 
+  # Trusted username for shelfmark's AUTH_METHOD=proxy. A map (not a `set`) so it
+  # is evaluated lazily at proxy time, AFTER auth_request_set populates $user — a
+  # plain `set` runs in the rewrite phase before $user exists and would send an
+  # empty header. HA ingress requests carry the bypass token, so trust the
+  # username HA injected ($http_x_auth_user); everyone else gets Authelia's
+  # verified Remote-User ($user). A client-supplied X-Auth-User is always
+  # overridden, so it cannot be spoofed; unauthenticated access yields an empty
+  # user and falls back to shelfmark's own login.
+  services.nginx.appendHttpConfig = ''
+    map $authelia_ha_bypass $shelfmark_user {
+      "1"     $http_x_auth_user;
+      default $user;
+    }
+  '';
+
   services.nginx.virtualHosts."shelfmark.arr.${config.domains.main}".locations = {
     # URL_BASE makes shelfmark serve only under /api/ingress/shelfmark, so a plain
     # visit to shelf.arr.brkn.lol/ would 404. Redirect the root to the prefix so
     # direct access "just works" (Authelia still gates it via the / location).
     "= /".return = "302 /api/ingress/shelfmark/";
 
-    # SSO for shelfmark's AUTH_METHOD=proxy: set X-Auth-User to a trusted value.
-    # HA ingress requests carry the Authelia-bypass token, so trust the username
-    # HA injected ($username -> X-Auth-User). Everyone else gets Authelia's
-    # verified user; a client-supplied X-Auth-User is always overridden here, so
-    # it cannot be spoofed. Unauthenticated LAN access yields an empty user and
-    # falls back to shelfmark's own login.
     "/".extraConfig = lib.mkAfter ''
-      set $shelfmark_user $user;
-      if ($authelia_ha_bypass) {
-        set $shelfmark_user $http_x_auth_user;
-      }
       proxy_set_header X-Auth-User $shelfmark_user;
     '';
   };
