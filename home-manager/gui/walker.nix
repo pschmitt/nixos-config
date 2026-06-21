@@ -26,18 +26,13 @@ let
       fi
 
       secret_file=/run/secrets/bitwarden/password
-      pin_file="''${XDG_CONFIG_HOME:-$HOME/.config}/rbw/bin/.pin"
-      pinentry="''${XDG_CONFIG_HOME:-$HOME/.config}/rbw/bin/pinentry-rbw"
 
-      if [[ ! -r "$secret_file" || ! -x "$pinentry" ]]
+      if [[ ! -r "$secret_file" ]]
       then
         exit 0
       fi
 
-      mkdir -p "$(dirname "$pin_file")"
-      printf '%s' "$(< "$secret_file")" > "$pin_file"
-      rbw config set pinentry "$pinentry" >/dev/null
-      rbw unlock >/dev/null
+      rbw unlock --stdin < "$secret_file" >/dev/null
     '';
   };
 in
