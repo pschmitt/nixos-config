@@ -43,7 +43,8 @@ in
     host = "shelfmark.arr.${config.domains.main}";
     aliases = [ "shelf.arr.${config.domains.main}" ];
     container = "shelfmark";
-    monit.request = "/api/ingress/shelfmark/";
+    monit.protocol = null;
+    monit.request = null;
   };
 
   # Trusted username for shelfmark's AUTH_METHOD=proxy. A map (not a `set`) so it

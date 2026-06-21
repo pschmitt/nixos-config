@@ -60,15 +60,17 @@ let
   monitCheck =
     name: s:
     let
-      requestLine = lib.optionalString (s.monit.request != null) "\n    request \"${s.monit.request}\"";
+      protoLine = lib.optionalString (s.monit.protocol != null) "\n    protocol ${s.monit.protocol}";
+      requestLine = lib.optionalString (
+        s.monit.protocol != null && s.monit.request != null
+      ) "\n    request \"${s.monit.request}\"";
     in
     ''
       check host "${s.monit.name}" with address ${internalIP}
         group piracy
         depends on mullvad-netns
         restart program = "${pkgs.systemd}/bin/systemctl restart ${unitOf name s}"
-        if failed port ${toString s.port}
-          protocol http${requestLine}
+        if failed port ${toString s.port}${protoLine}${requestLine}
           with timeout 15 seconds
           for 3 cycles
         then restart
@@ -182,6 +184,15 @@ in
                 type = types.nullOr types.str;
                 default = "/ping";
                 description = "HTTP path probed by monit; null omits the request line.";
+              };
+              protocol = mkOption {
+                type = types.nullOr types.str;
+                default = "http";
+                description = ''
+                  Application protocol monit speaks for the check. Set to null for a
+                  plain TCP port check (e.g. when the app gates every HTTP path behind
+                  proxy auth and an HTTP probe can't get a clean response).
+                '';
               };
             };
           };
