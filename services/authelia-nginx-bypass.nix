@@ -19,6 +19,7 @@
   };
 
   services.nginx.appendHttpConfig = lib.mkAfter ''
+    map_hash_bucket_size 128;
     include ${config.sops.templates."nginx/ha-ingress-bypass.conf".path};
   '';
 }
