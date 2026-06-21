@@ -184,6 +184,14 @@ in
         proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
         proxyWebsockets = true;
         recommendedProxySettings = true;
+        # Allow auth.brkn.lol to be embedded in the HA sidebar iframe.
+        # Authelia sends X-Frame-Options: DENY and frame-ancestors 'none' by
+        # default; strip both and replace with a targeted CSP.
+        extraConfig = ''
+          proxy_hide_header X-Frame-Options;
+          proxy_hide_header Content-Security-Policy;
+          add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self'; frame-ancestors 'self' https://ha.${config.domains.main}; frame-src 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline';" always;
+        '';
       };
     };
 
