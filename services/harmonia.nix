@@ -73,44 +73,44 @@ in
     description = "Additional Harmonia virtual hosts to define on this machine.";
   };
 
-  sops.secrets = {
-    "nix/store/privkey" = config.custom.mkSecret {
-    };
-    "nix/credentials/htpasswd" = {
-      owner = "nginx";
-    };
-  };
-
-  services = {
-    harmonia.cache = {
-      enable = true;
-      signKeyPaths = [ config.sops.secrets."nix/store/privkey".path ];
-      settings = {
-        bind = "127.0.0.1:42766";
+  config = {
+    sops.secrets = {
+      "nix/store/privkey" = config.custom.mkSecret {
+      };
+      "nix/credentials/htpasswd" = {
+        owner = "nginx";
       };
     };
 
-    nginx.virtualHosts = virtualHosts;
+    services = {
+      harmonia.cache = {
+        enable = true;
+        signKeyPaths = [ config.sops.secrets."nix/store/privkey".path ];
+        settings = {
+          bind = "127.0.0.1:42766";
+        };
+      };
 
-    monit.config = lib.mkAfter ''
-      check host "harmonia" with address "cache.${config.networking.hostName}.${mainDomain}"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
-        if failed
-          port 443
-          protocol https status 401
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
+      nginx.virtualHosts = virtualHosts;
+
+      monit.config = lib.mkAfter ''
+        check host "harmonia" with address "cache.${config.networking.hostName}.${mainDomain}"
+          group services
+          restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
+          if failed
+            port 443
+            protocol https status 401
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+      '';
+    };
+
+    nix.gc.dates = lib.mkForce "monthly";
+
+    nix.extraOptions = ''
+      secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
     '';
   };
-
-  nix.gc.dates = lib.mkForce "monthly";
-
-  # Setup nix store signing key path, so that we can also leverage the nix cache
-  # via ssh (which bypasses harmonia)
-  nix.extraOptions = ''
-    secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
-  '';
 }
