@@ -35,6 +35,7 @@
     ../../services/n8n.nix
     ../../services/netbox.nix
     ../../services/paperless-ngx.nix
+    ../../services/authelia-nginx-bypass.nix
     ../../services/pinchflat.nix
     ../../services/podsync.nix
     ../../services/restic-remote.nix

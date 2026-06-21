@@ -3,6 +3,7 @@
 {
   imports = [
     ../services/arr
+    ../services/authelia-nginx-bypass.nix
     ../services/jellyfin.nix
     ../services/seerr.nix
     ../services/tdarr-server.nix

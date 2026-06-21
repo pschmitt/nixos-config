@@ -36,6 +36,10 @@ in
       if ($http_x_api_key) {
         return 200;
       }
+      ## Bypass Authelia for HA ingress proxy (Bearer token set by HA)
+      if ($authelia_ha_bypass = "1") {
+        return 200;
+      }
 
       ## Essential Proxy Configuration
       internal;
