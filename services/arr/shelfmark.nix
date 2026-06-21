@@ -19,6 +19,10 @@ in
       PUID = "1000";
       PGID = "1000";
       TZ = config.time.timeZone;
+      # Served inside the HA sidebar via the `ingress` integration's proxy at a
+      # stable sub-path; emit asset/API URLs under that prefix so the SPA loads.
+      # Must match the ingress `url` path in HA's config.d/ingress.yaml.
+      URL_BASE = "/api/ingress/shelfmark";
     };
     volumes = [
       "${dataDir}:/config"

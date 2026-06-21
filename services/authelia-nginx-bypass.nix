@@ -8,17 +8,17 @@
     owner = config.services.nginx.user;
   };
 
-  # Bypass keyed on a cookie rather than the Authorization header: browsers
-  # cannot attach custom headers to an <iframe> navigation, but they DO send
-  # cookies on same-site iframe loads. HA sets this cookie on domain=brkn.lol,
-  # so the HA sidebar can iframe the *arr apps directly (no proxy, no SPA
-  # sub-path breakage) and still skip the Authelia login.
+  # HA's ingress integration proxies these apps server-side and attaches a
+  # shared Bearer token (set via the ingress `headers:` config). nginx skips
+  # Authelia when that token is present. The HA *proxy* (not the browser) sends
+  # the header, so this works in the HA mobile app too (same-origin iframe, no
+  # cookie/WebView dependency).
   sops.templates."nginx/ha-ingress-bypass.conf" = {
     owner = config.services.nginx.user;
     content = ''
-      map $cookie_ha_ingress $authelia_ha_bypass {
-        "${config.sops.placeholder."nginx/ha_ingress_key"}" 1;
-        default                                              0;
+      map $http_authorization $authelia_ha_bypass {
+        "Bearer ${config.sops.placeholder."nginx/ha_ingress_key"}" 1;
+        default                                                      0;
       }
     '';
   };
