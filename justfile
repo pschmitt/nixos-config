@@ -1,10 +1,93 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
+set positional-arguments
 
 default:
   @just --list
 
 sops-config-gen *args:
   ./secrets/sops-config-gen.sh {{args}}
+
+# Set/edit a value in a SOPS file by dotted path.
+#   just sops-edit FILE PATH VALUE
+# VALUE is taken literally, or read from a file with the `file:` prefix.
+# Examples:
+#   just sops-edit secrets/shared.sops.yaml httpd.password 'mysecret1234' # gitleaks:allow
+#   just sops-edit secrets/shared.sops.yaml users.pschmitt.password file:./hash.txt
+#   just sops-edit secrets/shared.sops.yaml ssh.hosts.0 'first-array-entry'
+alias sops-set := sops-edit
+sops-edit file path value:
+  #!/usr/bin/env bash
+  set -euo pipefail
+
+  file="$1"
+  path="$2"
+  raw="$3"
+
+  if [[ ! -f "$file" ]]
+  then
+    echo "error: SOPS file not found: $file" >&2
+    exit 1
+  fi
+
+  # Make sure an age key is available, even from CLI contexts without
+  # ~/.config/sops/age/keys.txt (matches CLAUDE.md guidance).
+  if [[ -z "${SOPS_AGE_KEY:-}" && ! -f "${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}" ]]
+  then
+    if command -v ssh-to-age >/dev/null && [[ -f "$HOME/.ssh/id_ed25519" ]]
+    then
+      SOPS_AGE_KEY="$(ssh-to-age --private-key -i "$HOME/.ssh/id_ed25519")"
+      export SOPS_AGE_KEY
+    fi
+  fi
+
+  # Resolve the value. `file:<path>` reads the contents verbatim, otherwise
+  # the argument is used literally. jq turns it into a JSON-encoded string so
+  # quotes, newlines and other special characters are handled correctly.
+  if [[ "$raw" == file:* ]]
+  then
+    valuefile="${raw#file:}"
+    if [[ ! -f "$valuefile" ]]
+    then
+      echo "error: value file not found: $valuefile" >&2
+      exit 1
+    fi
+    json_value="$(jq -Rs . < "$valuefile")"
+  else
+    json_value="$(printf '%s' "$raw" | jq -Rs .)"
+  fi
+
+  # Convert a dotted path (a.b.c) into SOPS index syntax (["a"]["b"]["c"]).
+  # Purely-numeric segments become array indexes ([0]).
+  sops_path=""
+  IFS='.' read -ra segments <<< "$path"
+  for seg in "${segments[@]}"
+  do
+    if [[ "$seg" =~ ^[0-9]+$ ]]
+    then
+      sops_path+="[$seg]"
+    else
+      sops_path+="[\"$seg\"]"
+    fi
+  done
+
+  # Pick a sops that supports the `set` subcommand (added in 3.8.0). Older
+  # versions silently treat `set` as a filename and drop into $EDITOR, which
+  # hangs non-interactively and can clobber the file. Fall back to a pinned
+  # nixpkgs sops when the one on PATH is too old or missing.
+  if [[ -f /etc/profile.d/nix.sh ]]
+  then
+    source /etc/profile.d/nix.sh
+  fi
+  sops_cmd=(sops)
+  have="$(command -v sops >/dev/null && sops --version 2>/dev/null | grep -oE '[0-9]+(\.[0-9]+){2}' | head -1)"
+  if [[ -z "$have" || "$(printf '3.8.0\n%s\n' "$have" | sort -V | head -1)" != "3.8.0" ]]
+  then
+    echo "sops on PATH is too old or missing (${have:-none}); using 'nix run nixpkgs#sops'" >&2
+    sops_cmd=(nix run nixpkgs#sops --)
+  fi
+
+  echo "Setting ${sops_path} in ${file}" >&2
+  "${sops_cmd[@]}" set "$file" "$sops_path" "$json_value"
 
 repl host='':
   ./scripts/nix.sh repl "{{host}}"
