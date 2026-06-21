@@ -19,8 +19,6 @@
   };
 
   services.nginx.appendHttpConfig = lib.mkAfter ''
-    # Bearer token key is ~127 chars; default bucket size (64) is too small.
-    map_hash_bucket_size 128;
     include ${config.sops.templates."nginx/ha-ingress-bypass.conf".path};
   '';
 }
