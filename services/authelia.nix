@@ -139,6 +139,12 @@ in
       "authelia/smtp/username" = secretsAttrs autheliaUser;
       "authelia/smtp/password" = secretsAttrs autheliaUser;
       "authelia/smtp/sender" = secretsAttrs autheliaUser;
+      # OIDC provider (identity_providers.oidc): the HMAC secret and the JWKS
+      # issuer private key are wired via the module's secrets.oidc*File options;
+      # the per-client secret hash is rendered into the oidc.yml template below.
+      "authelia/oidc-hmac-secret" = secretsAttrs autheliaUser;
+      "authelia/oidc-issuer-private-key" = secretsAttrs autheliaUser;
+      "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
     };
     templates = {
       "authelia/duo.yml" = {
@@ -169,6 +175,45 @@ in
         mode = "0400";
         restartUnits = [ autheliaService ];
       };
+      # OIDC clients live in their own settings file so the per-client secret
+      # hash stays in sops. hmac_secret + jwks come from the module's
+      # secrets.oidc*File options; this only adds the clients list. New OIDC
+      # apps get another entry here (+ a secret hash + redirect URIs).
+      "authelia/oidc.yml" = {
+        content = ''
+          identity_providers:
+            oidc:
+              clients:
+                - client_id: 'audiobookshelf'
+                  client_name: 'Audiobookshelf'
+                  client_secret: '${config.sops.placeholder."authelia/oidc-audiobookshelf-secret-hash"}'
+                  public: false
+                  authorization_policy: 'two_factor'
+                  require_pkce: true
+                  pkce_challenge_method: 'S256'
+                  redirect_uris:
+                    - 'https://abs.${config.domains.main}/auth/openid/callback'
+                    - 'https://abs.${config.domains.main}/auth/openid/mobile-redirect'
+                    - 'https://audiobookshelf.${config.domains.main}/auth/openid/callback'
+                    - 'https://books.${config.domains.main}/auth/openid/callback'
+                  scopes:
+                    - 'openid'
+                    - 'profile'
+                    - 'groups'
+                    - 'email'
+                  response_types:
+                    - 'code'
+                  grant_types:
+                    - 'authorization_code'
+                  access_token_signed_response_alg: 'none'
+                  userinfo_signed_response_alg: 'none'
+                  token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+        '';
+        owner = autheliaUser;
+        group = autheliaGroup;
+        mode = "0400";
+        restartUnits = [ autheliaService ];
+      };
     };
   };
 
@@ -180,10 +225,15 @@ in
       settingsFiles = lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile ++ [
         config.sops.templates."authelia/duo.yml".path
         config.sops.templates."authelia/smtp.yml".path
+        config.sops.templates."authelia/oidc.yml".path
       ];
       secrets = {
         jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
         storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
+        # Enables the OIDC provider: HMAC via env, and the module templates the
+        # JWKS issuer key into the generated oidc-jwks config file.
+        oidcHmacSecretFile = config.sops.secrets."authelia/oidc-hmac-secret".path;
+        oidcIssuerPrivateKeyFile = config.sops.secrets."authelia/oidc-issuer-private-key".path;
       };
       settings = autheliaSettings;
     };
