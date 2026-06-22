@@ -199,6 +199,8 @@ in
                     - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/mobile-redirect'
                     - 'https://abs.${config.domains.main}/auth/openid/callback'
                     - 'https://abs.${config.domains.main}/auth/openid/mobile-redirect'
+                    # Native ABS mobile app (Android/iOS) custom-scheme redirect.
+                    - 'audiobookshelf://oauth'
                   scopes:
                     - 'openid'
                     - 'profile'
