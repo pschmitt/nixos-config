@@ -58,8 +58,10 @@ in
 
   systemd.services.radarr.environment = {
     RADARR__SERVER__BINDADDRESS = internalIP;
-    # NOTE comment the 2 lines below when doing the initial setup
-    RADARR__AUTH__METHOD = "Forms";
+    # SSO: delegate UI auth to the reverse proxy (Authelia). The API key still
+    # gates /api, so prowlarr/recyclarr keep working over the internal IPs.
+    # NOTE comment the 2 lines below when doing the initial setup.
+    RADARR__AUTH__METHOD = "External";
     RADARR__AUTH__REQUIRED = "Enabled";
   };
 }

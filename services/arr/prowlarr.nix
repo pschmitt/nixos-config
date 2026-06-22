@@ -28,8 +28,10 @@ in
 
   systemd.services.prowlarr.environment = {
     PROWLARR__SERVER__BINDADDRESS = internalIP;
-    # NOTE comment the 2 lines below when doing the initial setup
-    PROWLARR__AUTH__METHOD = "Forms";
+    # SSO: delegate UI auth to the reverse proxy (Authelia). The API key still
+    # gates /api, so sonarr/radarr/recyclarr keep working over the internal IPs.
+    # NOTE comment the 2 lines below when doing the initial setup.
+    PROWLARR__AUTH__METHOD = "External";
     PROWLARR__AUTH__REQUIRED = "Enabled";
   };
 }
