@@ -192,10 +192,13 @@ in
                   require_pkce: true
                   pkce_challenge_method: 'S256'
                   redirect_uris:
+                    # ABS is served under the /audiobookshelf sub-path, so its
+                    # redirect_uri carries that prefix; root variants kept as a
+                    # fallback in case the sub-path is dropped later.
+                    - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/callback'
+                    - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/mobile-redirect'
                     - 'https://abs.${config.domains.main}/auth/openid/callback'
                     - 'https://abs.${config.domains.main}/auth/openid/mobile-redirect'
-                    - 'https://audiobookshelf.${config.domains.main}/auth/openid/callback'
-                    - 'https://books.${config.domains.main}/auth/openid/callback'
                   scopes:
                     - 'openid'
                     - 'profile'
