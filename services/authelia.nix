@@ -79,16 +79,23 @@ let
           domain = [ autheliaDomain ];
         }
         {
-          # Shelfmark uses proxy auth (X-Auth-User from Authelia's Remote-User),
-          # so it must be authenticated even on trusted networks — otherwise the
-          # network bypass below would skip auth and Authelia would have no user
-          # to identify for SSO. Placed before the bypass so it takes precedence.
+          # These apps have NO login of their own — shelfmark uses proxy auth
+          # (X-Auth-User from Authelia's Remote-User), and the native *arr apps
+          # run with AUTHENTICATIONMETHOD=External (they fully trust the proxy).
+          # So they must be authenticated even on "trusted" networks: otherwise
+          # the *.${domain} network bypass below would skip auth entirely and
+          # leave them wide open (e.g. to anything arriving via the home WAN IP,
+          # which the trusted-networks updater currently trusts). Placed before
+          # the bypass so it takes precedence.
           # (HA-app access is unaffected: nginx short-circuits Authelia via the
           # ingress Bearer token before any rule is evaluated.)
           policy = "one_factor";
           domain = [
             "shelf.arr.${config.domains.main}"
             "shelfmark.arr.${config.domains.main}"
+            "son.arr.${config.domains.main}"
+            "rad.arr.${config.domains.main}"
+            "prowl.arr.${config.domains.main}"
           ];
         }
         {
