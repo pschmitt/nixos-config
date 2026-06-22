@@ -12,16 +12,6 @@ let
   autheliaService = "authelia-${instanceName}.service";
   autheliaPort = 28843;
   stateDir = "/var/lib/${autheliaUser}";
-  runtimeStateDir = "/run/authelia";
-  containerServicesEnabled = lib.attrByPath [ "custom" "containerServices" "enable" ] false config;
-  managedTrustedNetworksFile = "${runtimeStateDir}/trusted-networks.yml";
-  dynamicTrustedNetworksFile =
-    if containerServicesEnabled then
-      "/run/container-services/authelia-trusted-networks.yml"
-    else
-      managedTrustedNetworksFile;
-  trustedHosts = [ "turris.${config.domains.main}" ];
-  trustedHostsEnv = lib.concatStringsSep " " trustedHosts;
   secretsAttrs =
     owner:
     config.custom.mkSecret {
@@ -30,15 +20,16 @@ let
       mode = "0400";
       restartUnits = [ autheliaService ];
     };
+  # Localhost + the Netbird/Tailscale CGNAT mesh are the only networks allowed
+  # to bypass Authelia. We deliberately do NOT trust any dynamically-resolved
+  # host (previously turris.${config.domains.main}): its A record is the home
+  # WAN IP, so hairpinned/NAT-reflected traffic appeared "trusted" and skipped
+  # auth entirely. The mesh range can't be spoofed that way.
   bypassNetworks = [
     "127.0.0.1/32"
     "::1/128"
     "100.64.0.0/10"
   ];
-  autheliaLocalNetworksEnv = lib.concatStringsSep "\n" bypassNetworks;
-  trustedNetworksUpdaterScript = pkgs.writeShellScript "authelia-trusted-networks" (
-    builtins.readFile ./scripts/update-container-trusted-networks.sh
-  );
   autheliaSettings = {
     server.address = "tcp://:${toString autheliaPort}/";
     theme = "auto";
@@ -67,7 +58,7 @@ let
     notifier.disable_startup_check = false;
     access_control = {
       default_policy = "two_factor";
-      networks = lib.mkIf (dynamicTrustedNetworksFile == null) [
+      networks = [
         {
           name = "local";
           networks = bypassNetworks;
@@ -82,11 +73,10 @@ let
           # These apps have NO login of their own — shelfmark uses proxy auth
           # (X-Auth-User from Authelia's Remote-User), and the native *arr apps
           # run with AUTHENTICATIONMETHOD=External (they fully trust the proxy).
-          # So they must be authenticated even on "trusted" networks: otherwise
+          # So they must be authenticated even on the bypass networks: otherwise
           # the *.${domain} network bypass below would skip auth entirely and
-          # leave them wide open (e.g. to anything arriving via the home WAN IP,
-          # which the trusted-networks updater currently trusts). Placed before
-          # the bypass so it takes precedence.
+          # leave them wide open to anything on the mesh range. Placed before the
+          # bypass so it takes precedence.
           # (HA-app access is unaffected: nginx short-circuits Authelia via the
           # ingress Bearer token before any rule is evaluated.)
           policy = "one_factor";
@@ -100,10 +90,7 @@ let
         }
         {
           policy = "bypass";
-          networks = [
-            "local"
-          ]
-          ++ lib.optional (dynamicTrustedNetworksFile != null) "container-services-trusted";
+          networks = [ "local" ];
           domain = [ "*.${config.domains.main}" ];
         }
         {
@@ -234,7 +221,7 @@ in
       enable = true;
       user = autheliaUser;
       group = autheliaGroup;
-      settingsFiles = lib.optional (dynamicTrustedNetworksFile != null) dynamicTrustedNetworksFile ++ [
+      settingsFiles = [
         config.sops.templates."authelia/duo.yml".path
         config.sops.templates."authelia/smtp.yml".path
         config.sops.templates."authelia/oidc.yml".path
@@ -277,41 +264,5 @@ in
         if failed port ${toString autheliaPort} for 3 cycles then restart
         if 3 restarts within 15 cycles then alert
     '';
-  };
-
-  systemd = lib.mkIf (!containerServicesEnabled) {
-    tmpfiles.rules = [
-      "d ${runtimeStateDir} 0755 root root -"
-    ];
-
-    services.authelia-update-trusted-networks = {
-      description = "Update Authelia trusted networks allowlist";
-      wantedBy = [ "multi-user.target" ];
-      path = [
-        pkgs.coreutils
-        pkgs.dnsutils
-        pkgs.diffutils
-        pkgs.systemd
-      ];
-      script = ''
-        set -eu
-
-        resolver_script=${lib.escapeShellArg trustedNetworksUpdaterScript}
-        export AUTHELIA_OUTPUT=${lib.escapeShellArg managedTrustedNetworksFile}
-        export AUTHELIA_UNITS=${lib.escapeShellArg autheliaService}
-        export TRUSTED_HOSTS=${lib.escapeShellArg trustedHostsEnv}
-        export AUTHELIA_LOCAL_NETWORKS=${lib.escapeShellArg autheliaLocalNetworksEnv}
-
-        "$resolver_script"
-      '';
-    };
-
-    timers.authelia-update-trusted-networks = {
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnBootSec = "30s";
-        OnUnitActiveSec = "5m";
-      };
-    };
   };
 }

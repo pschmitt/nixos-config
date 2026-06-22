@@ -28,25 +28,6 @@ let
 
   autheliaDomain = "auth.${config.domains.main}";
 
-  trustedStateDir = "/run/container-services";
-  nginxTrustedNetworksFile = "${trustedStateDir}/trusted-networks.conf";
-  autheliaTrustedNetworksFile = "${trustedStateDir}/authelia-trusted-networks.yml";
-  trustedHosts = [ "turris.${config.domains.main}" ];
-  autheliaLocalNetworks = [
-    "127.0.0.1/32"
-    "::1/128"
-    "100.64.0.0/10"
-  ];
-  autheliaInstanceNames = attrNames config.services.authelia.instances;
-  autheliaServiceNames = map (name: "authelia-${name}.service") autheliaInstanceNames;
-  autheliaUnitsEnv = concatStringsSep " " autheliaServiceNames;
-  trustedHostsEnv = concatStringsSep " " trustedHosts;
-  autheliaLocalNetworksEnv = concatStringsSep "\n" autheliaLocalNetworks;
-  trustedNetworksUpdaterScript = pkgs.writeShellScript "update-container-trusted-networks" (
-    builtins.readFile ../services/scripts/update-container-trusted-networks.sh
-  );
-  nginxServiceName = "nginx.service";
-
   # Effective Authz URL (can be overridden via options below)
   defaultAuthzURL =
     if cfg.authelia.authzURL != null then
@@ -414,9 +395,6 @@ let
         # Netbird + Tailscale IP range (CGNAT)
         allow 100.64.0.0/10;
 
-        # Trusted remote host managed dynamically
-        include ${nginxTrustedNetworksFile};
-
         # Reject all other requests unless basic auth succeeds
         deny all;
       '';
@@ -611,55 +589,6 @@ in
             ) (attrValues cfg.services)}
           }
         '';
-      };
-    };
-
-    systemd = {
-      tmpfiles.rules = [
-        "d ${trustedStateDir} 0755 root root -"
-      ];
-
-      services = {
-        container-services-update-trusted-networks = {
-          description = "Update container trusted networks allowlist";
-          wantedBy = [ "multi-user.target" ];
-          path = [
-            pkgs.coreutils
-            pkgs.dnsutils
-            pkgs.diffutils
-            pkgs.systemd
-          ];
-          script = ''
-            set -eu
-
-            resolver_script=${lib.escapeShellArg trustedNetworksUpdaterScript}
-            export NGINX_OUTPUT=${lib.escapeShellArg nginxTrustedNetworksFile}
-            export AUTHELIA_OUTPUT=${lib.escapeShellArg autheliaTrustedNetworksFile}
-            export NGINX_SERVICE=${lib.escapeShellArg nginxServiceName}
-            export AUTHELIA_UNITS=${lib.escapeShellArg autheliaUnitsEnv}
-            export TRUSTED_HOSTS=${lib.escapeShellArg trustedHostsEnv}
-            export AUTHELIA_LOCAL_NETWORKS=${lib.escapeShellArg autheliaLocalNetworksEnv}
-
-            "$resolver_script"
-          '';
-        };
-
-        nginx = {
-          requires = [ "container-services-update-trusted-networks.service" ];
-          after = [ "container-services-update-trusted-networks.service" ];
-        };
-      }
-      // genAttrs (map (name: "authelia-${name}") autheliaInstanceNames) (_: {
-        requires = [ "container-services-update-trusted-networks.service" ];
-        after = [ "container-services-update-trusted-networks.service" ];
-      });
-
-      timers.container-services-update-trusted-networks = {
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnBootSec = "30s";
-          OnUnitActiveSec = "5m";
-        };
       };
     };
   };
