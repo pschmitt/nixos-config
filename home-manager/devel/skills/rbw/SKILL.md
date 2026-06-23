@@ -21,8 +21,8 @@ Returns 0 if unlocked, non-zero if locked.
 ## Request unlock via Home Assistant
 
 POST to the HA webhook to send an actionable notification to the phone.
-On **Accept**, HA SSHes to the target host and runs `rbw unlock` via a
-custom pinentry that reads the master password from HA secrets.
+On **Accept**, HA SSHes to the target host and pipes the master password
+from HA secrets to `rbw unlock --stdin`.
 
 ```bash
 curl -fsS -X POST "http://10.5.1.1:8123/api/webhook/rbw_unlock_request" \
