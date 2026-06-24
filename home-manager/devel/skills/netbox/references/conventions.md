@@ -232,6 +232,7 @@ Current prefixes:
 - `DDC` = Dodocool
 - `DEL` = Dell
 - `DGT` = Digitus
+- `DJI` = DJI
 - `DLK` = D-Link
 - `DRG` = Dragino
 - `EAT` = Eaton
