@@ -36,7 +36,7 @@
 
   # ge2 uses UKIs with ~155 MB initrds, so /boot can only hold two
   # generations comfortably on its 512 MB EFI partition.
-  boot.loader.systemd-boot.configurationLimit = lib.mkForce 2;
+  boot.loader.systemd-boot.configurationLimit = lib.mkForce 1;
 
   home-manager.users.${config.mainUser.username} = { config, ... }: {
     host.extraAutostartEntries = [
