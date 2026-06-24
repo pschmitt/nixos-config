@@ -14,6 +14,11 @@
     settings =
       let
         fontName = "ComicCode Nerd Font";
+        normalUrgencyStyle = {
+          "background-color" = "#202020";
+          "border-color" = "#202020";
+          "default-timeout" = 10000;
+        };
         infoBanner = {
           font = "${fontName} 24";
           anchor = "center";
@@ -66,11 +71,7 @@
           "default-timeout" = 5000;
         };
 
-        "urgency=normal" = {
-          "background-color" = "#202020";
-          "border-color" = "#202020";
-          "default-timeout" = 10000;
-        };
+        "urgency=normal" = normalUrgencyStyle;
 
         "urgency=high" = {
           "background-color" = "#bf616a";
@@ -87,6 +88,13 @@
         };
 
         "category=osd" = osdCategory;
+
+        # XXX chrome just sends all notifications with urgency="high"..
+        # https://issues.chromium.org/40698954
+        # urgency is criteria-only in mako, can't be overridden as a style property;
+        # match the high-urgency case specifically and apply normal-urgency visuals.
+        "app-name=Google Chrome urgency=high" = normalUrgencyStyle;
+        "app-name=Chromium urgency=high" = normalUrgencyStyle;
 
         "app-name=hyprland-monitors" = infoBanner // {
           anchor = "top-center";
