@@ -1,6 +1,7 @@
 # Self-contained Timewarrior status helpers, replacing the zhj/zsh
 # `timewarrior::is-on` and `timewarrior::summary` functions.
 {
+  lib,
   symlinkJoin,
   writeShellApplication,
   timewarrior,
@@ -111,4 +112,10 @@ symlinkJoin {
     timew-is-on
     timew-total
   ];
+  meta = {
+    description = "Timewarrior status helpers (timew-is-on, timew-total)";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
+    platforms = lib.platforms.linux;
+  };
 }

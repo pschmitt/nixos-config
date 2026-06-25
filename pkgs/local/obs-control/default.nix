@@ -38,5 +38,7 @@ writeShellApplication {
     description = "OBS Studio / mic / webcam control dispatcher (replaces ~/bin/obs.zsh)";
     platforms = lib.platforms.linux;
     mainProgram = "obs-control";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
   };
 }

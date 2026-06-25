@@ -36,6 +36,8 @@ writeShellApplication {
   text = builtins.readFile ./wofi-menu.sh;
   meta = {
     description = "wofi run/emoji/soundboard/misc/meetings menus (replaces ~/bin/wofi.zsh)";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     platforms = lib.platforms.linux;
     mainProgram = "wofi-menu";
   };

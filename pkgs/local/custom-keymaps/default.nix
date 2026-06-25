@@ -44,6 +44,7 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "Custom HHKB and GPD Pocket 4 keymaps for XKB and the Linux console";
     license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     platforms = lib.platforms.linux;
   };
 }
