@@ -26,5 +26,7 @@ writeShellApplication {
     description = "Local soundboard playback + PipeWire routing (replaces soundboard:: zsh helpers)";
     platforms = lib.platforms.linux;
     mainProgram = "soundboard";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
   };
 }

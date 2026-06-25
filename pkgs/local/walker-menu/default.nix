@@ -31,6 +31,8 @@ writeShellApplication {
   text = builtins.readFile ./walker-menu.sh;
   meta = {
     description = "walker dmenu soundboard/misc/meetings menus";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     platforms = lib.platforms.linux;
     mainProgram = "walker-menu";
   };

@@ -39,6 +39,7 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "custom bluez dbus listener for headset setup";
     license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     platforms = lib.platforms.linux;
     mainProgram = "bluez-headset-callback.sh";
   };

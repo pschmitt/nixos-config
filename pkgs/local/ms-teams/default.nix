@@ -24,6 +24,8 @@ writeShellApplication {
   text = builtins.readFile ./ms-teams.sh;
   meta = {
     description = "MS Teams meeting lookup / in-a-meeting check (replaces ms-teams:: zsh helpers)";
+    license = lib.licenses.gpl3Only;
+    maintainers = with lib.maintainers; [ pschmitt ];
     platforms = lib.platforms.linux;
     mainProgram = "ms-teams";
   };
