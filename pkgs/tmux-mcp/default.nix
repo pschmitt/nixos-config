@@ -23,5 +23,6 @@ rustPlatform.buildRustPackage (finalAttrs: {
     license = lib.licenses.mit;
     maintainers = with lib.maintainers; [ pschmitt ];
     mainProgram = "tmux-mcp-rs";
+    platforms = [ "x86_64-linux" ];
   };
 })
