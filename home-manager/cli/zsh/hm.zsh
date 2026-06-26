@@ -1,7 +1,7 @@
 # Minimal fallbacks so this file does not hard-depend on the zhj/zsh function
 # library. When zhj is loaded its richer versions are already defined and win.
-(( $+functions[echo_info] )) || echo_info() { echo -e "\e[34m[INFO]\e[0m $*" >&2; }
-(( $+functions[echo_error] )) || echo_error() { echo -e "\e[31m[ERROR]\e[0m $*" >&2; }
+# (( $+functions[echo_info] )) || echo_info() { echo -e "\e[34m[INFO]\e[0m $*" >&2; }
+# (( $+functions[echo_error] )) || echo_error() { echo -e "\e[31m[ERROR]\e[0m $*" >&2; }
 
 hm::profile-link() {
   local profile="$HOME/.local/state/nix/profiles/home-manager"
