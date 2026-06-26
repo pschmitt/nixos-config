@@ -3027,11 +3027,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1782051509,
-        "narHash": "sha256-n4fD5CFlpV6vD1rewJUp0UZIcproxhyK81QUaPZz3CY=",
+        "lastModified": 1782465810,
+        "narHash": "sha256-+COa9aN28uMVlLeluJgsgBvI+DjxCO4Q1Ia0T5bmA94=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "08419331c0a3238760ab1c25c44e70ba0929f07a",
+        "rev": "90e535fb41835150ed3c2ab92acdc184e4e522e9",
         "type": "github"
       },
       "original": {
