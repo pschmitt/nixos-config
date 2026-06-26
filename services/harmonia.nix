@@ -107,7 +107,7 @@ in
       '';
     };
 
-    nix.gc.dates = lib.mkForce "monthly";
+    nix.gc.dates = lib.mkForce "*-*-1,15";
 
     nix.extraOptions = ''
       secret-key-files = ${config.sops.secrets."nix/store/privkey".path}
