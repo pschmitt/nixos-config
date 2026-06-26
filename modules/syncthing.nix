@@ -10,6 +10,12 @@
       description = "Whether this is the server instance";
     };
 
+    documentsDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Override path for the Documents sync folder. Defaults to /var/lib/syncthing/documents on server, ~/Documents on clients.";
+    };
+
     devices = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {
@@ -43,6 +49,13 @@
       currentHost = config.networking.hostName;
       otherDevices = lib.filterAttrs (name: _: name != currentHost) cfg.devices;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
+      documentsPath =
+        if cfg.documentsDir != null then
+          cfg.documentsDir
+        else if cfg.server then
+          "/var/lib/syncthing/documents"
+        else
+          "${config.mainUser.homeDirectory}/Documents";
     in
     lib.mkIf cfg.enable {
       services.syncthing = {
@@ -71,8 +84,7 @@
           folders.documents = {
             id = "documents";
             label = "Documents";
-            path =
-              if cfg.server then "/var/lib/syncthing/documents" else "${config.mainUser.homeDirectory}/Documents";
+            path = documentsPath;
             devices = lib.attrNames otherDevices;
             # Server should not be authoritative; it’s the backup/receiver by default.
             type = if cfg.server then "receiveonly" else "sendreceive";
@@ -106,7 +118,7 @@
       };
 
       systemd.tmpfiles.rules = lib.optionals cfg.server [
-        "d /var/lib/syncthing/documents 0755 syncthing syncthing -"
+        "d ${documentsPath} 0755 syncthing syncthing -"
       ];
     };
 }

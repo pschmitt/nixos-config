@@ -3,6 +3,8 @@
 {
   imports = [ ../../profiles/syncthing.nix ];
 
+  custom.syncthing.documentsDir = "/mnt/data/srv/syncthing/documents";
+
   services.nginx.virtualHosts."sync.${config.domains.main}" = {
     enableACME = true;
     # FIXME https://github.com/NixOS/nixpkgs/issues/210807
