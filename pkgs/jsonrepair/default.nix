@@ -6,16 +6,16 @@
 
 buildNpmPackage rec {
   pname = "jsonrepair";
-  version = "3.14.0";
+  version = "3.14.1";
 
   src = fetchFromGitHub {
     owner = "josdejong";
     repo = pname;
     rev = "v${version}";
-    hash = "sha256-laA7bU47P6ZzFkO2ubheSYIlMs07Gh3ZtBC2emXlz1M=";
+    hash = "sha256-jP9mOS6m5gP3uIQatui01jeIi1kLFZiZh/eCzr/tSgI=";
   };
 
-  npmDepsHash = "sha256-2KyONy6GUatO9sw1Yq1hYbQx6gNnZxVBkYPnp35aTT0=";
+  npmDepsHash = "sha256-dhEmxiA9pYqFBbTbtvxM618bUiVW9Xrr9etErz58S70=";
 
   # The prepack script runs the build script, which we'd rather do in the build phase.
   # npmPackFlags = [ "--ignore-scripts" ];
