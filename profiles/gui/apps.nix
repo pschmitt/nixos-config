@@ -59,6 +59,7 @@
     chafa
     qrencode
     tesseract
+    timg
     zbar # provides zbarimg, for reading qr codes
   ];
 }
