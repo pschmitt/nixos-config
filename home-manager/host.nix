@@ -69,6 +69,14 @@
         default = null;
         description = "Hyprland transform (rotation) for the internal monitor. Null means no rotation.";
       };
+      iioTransformMap = lib.mkOption {
+        type = lib.types.nullOr (lib.types.listOf lib.types.int);
+        default = null;
+        description = ''
+          Optional `iio-hyprland --transform` mapping for the internal monitor,
+          ordered as normal,left-up,bottom-up,right-up.
+        '';
+      };
     };
 
     extraAutostartEntries = lib.mkOption {

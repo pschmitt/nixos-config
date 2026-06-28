@@ -9,6 +9,14 @@ in
   host.internalMonitor = {
     transform = 3;
     scale = 1.666;
+    # GK4: sensor-proxy already compensates the chassis mount, so keep
+    # iio-hyprland's orientation map neutral here.
+    iioTransformMap = [
+      0
+      1
+      2
+      3
+    ];
   };
 
   wayland.windowManager.hyprland.settings = {
