@@ -12,14 +12,14 @@
 
 python3.pkgs.buildPythonApplication {
   pname = "hints";
-  version = "unstable-2026-06-20";
+  version = "unstable-2026-06-28";
   format = "setuptools";
 
   src = fetchFromGitHub {
     owner = "AlfredoSequeida";
     repo = "hints";
-    rev = "758c7d92ffcfb09561e783404401152919ff5043";
-    hash = "sha256-d2elIronfyymJOzcTbokhLaK9ZROKbgey53QNzyDEB8=";
+    rev = "1b23d729d59f5946426c0dc747cc722b2621b6ca";
+    hash = "sha256-JhHoXnZeGBu9m2o3cRUky6Nc5uSc1DkS9V8420jEw+o=";
   };
 
   passthru.updateScript = nix-update-script {
