@@ -7,24 +7,7 @@
 
 {
   python313Packages = prev.python313Packages.overrideScope (
-    finalPy: prevPy:
-    let
-      msgraph-core-022 = finalPy.buildPythonPackage rec {
-        pname = "msgraph-core";
-        version = "0.2.2";
-        format = "setuptools";
-
-        src = prev.fetchPypi {
-          inherit pname version;
-          hash = "sha256-FHMkJGeIq+jtfgVTTNnk4OyYszsw4BFpO40BTOv5f2M=";
-        };
-
-        nativeBuildInputs = [ finalPy.setuptools ];
-        dependencies = [ finalPy.requests ];
-        pythonImportsCheck = [ "msgraph.core" ];
-      };
-    in
-    {
+    _finalPy: prevPy: {
       pipx = prevPy.pipx.overridePythonAttrs (old: {
         # pipx 1.8.0 has Python 3.13 test expectation mismatches for
         # package-specifier normalization; keep the package buildable until
@@ -34,18 +17,10 @@
           "test_parse_specifier_for_metadata"
         ];
       });
-
-      # parsedmarc is incompatible with (and marked broken against)
-      # msgraph-core >= 1.0; pin the old msgraph-core just for it.
-      # https://github.com/domainaware/parsedmarc/issues/464
-      parsedmarc = prevPy.parsedmarc.override {
-        msgraph-core = msgraph-core-022;
-      };
     }
   );
 
-  # NixOS module uses pkgs.parsedmarc, not pkgs.python313Packages.parsedmarc.
-  inherit (final.python313Packages) parsedmarc pipx;
+  inherit (final.python313Packages) pipx;
 
   pytr = prev.pytr.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
