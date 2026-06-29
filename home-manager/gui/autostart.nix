@@ -5,16 +5,18 @@
   ...
 }:
 let
+  tmuxSessionName = "main";
+
   # Attach to (or create) the main tmux session. Replaces the zhj
   # `tmux::attach` zsh function so this does not depend on the yadm setup.
   tmuxAttach = pkgs.writeShellScript "tmux-attach" ''
-    exec ${pkgs.tmux}/bin/tmux -u new -A -D -s main
+    exec ${pkgs.tmux}/bin/tmux -u new -A -D -s ${tmuxSessionName}
   '';
 
   # Connect to the remote tmux session on fnuc without relying on zsh wrappers.
   remoteTmuxFnuc = pkgs.writeShellScript "remote-tmux-fnuc" ''
     exec ${pkgs.openssh}/bin/ssh -t f \
-      '${pkgs.tmux}/bin/tmux -u new -A -s main'
+      'tmux -u new -A -s ${tmuxSessionName}'
   '';
 
   kittyTmuxSession = pkgs.writeText "kitty-tmux.session" ''
