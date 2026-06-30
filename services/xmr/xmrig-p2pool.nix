@@ -9,7 +9,7 @@ let
   # p2pool first
   p2pool = common // {
     url = "127.0.0.1:${toString config.services.p2pool.stratum.port}";
-    user = "x"; # or "x+<fixed-diff>"
+    user = config.networking.hostName;
     tls = false; # enable only if you gave p2pool TLS
     "rig-id" = config.networking.hostName;
   };

@@ -11,6 +11,7 @@ let
     types
     mkIf
     escapeShellArgs
+    mkMerge
     ;
 in
 {
@@ -116,6 +117,41 @@ in
       default = false;
     };
 
+    dataApi = {
+      enable = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Expose p2pool's JSON data API through generated files.";
+      };
+
+      path = mkOption {
+        type = types.path;
+        default = "${config.services.p2pool.dataDir}/api";
+        description = "Directory where p2pool writes JSON data API files.";
+      };
+
+      exposeNginx = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Serve selected p2pool JSON data API files via the xmr nginx vhosts.";
+      };
+
+      urlPrefix = mkOption {
+        type = types.str;
+        default = "/p2pool";
+        description = "URL prefix used when exposing selected p2pool API files via nginx.";
+      };
+
+      hostNames = mkOption {
+        type = types.listOf types.str;
+        default = [
+          "xmr.${config.networking.hostName}.${config.domains.netbird}"
+          "xmr.${config.networking.hostName}.${config.domains.tailscale}"
+        ];
+        description = "Nginx virtual hosts that should expose selected p2pool API files.";
+      };
+    };
+
     extraArgs = mkOption {
       type = types.listOf types.str;
       default = [ ];
@@ -152,6 +188,8 @@ in
 
       stratumSpec = "${cfg.stratum.bindAddress}:${toString cfg.stratum.port}";
       p2pSpec = "${cfg.p2p.bindAddress}:${toString effectiveP2pPort}";
+      dataApiPath = toString cfg.dataApi.path;
+      dataApiPrefix = lib.removeSuffix "/" cfg.dataApi.urlPrefix;
 
       walletFromSops = cfg.walletSecret != null && cfg.sopsFile != null;
 
@@ -178,6 +216,11 @@ in
         p
       ]) cfg.addPeers)
       ++ modeFlag
+      ++ lib.optionals cfg.dataApi.enable [
+        "--data-api"
+        dataApiPath
+        "--local-api"
+      ]
       ++ cfg.extraArgs;
 
       commonArgsEscaped = escapeShellArgs commonArgs;
@@ -193,88 +236,104 @@ in
             lib.escapeShellArg (cfg.walletAddress or "")
           } ${commonArgsEscaped} ${rpcLoginArg}";
     in
-    mkIf cfg.enable {
-      assertions = [
-        {
-          assertion = walletFromSops || (cfg.walletAddress != null);
-          message = "services.p2pool: set walletAddress OR walletSecret+sopsFile.";
-        }
-      ];
+    mkIf cfg.enable (mkMerge [
+      {
+        assertions = [
+          {
+            assertion = walletFromSops || (cfg.walletAddress != null);
+            message = "services.p2pool: set walletAddress OR walletSecret+sopsFile.";
+          }
+        ];
 
-      users.groups.${cfg.group} = { };
-      users.users.${cfg.user} = {
-        inherit (cfg) group;
-        isSystemUser = true;
-        home = cfg.dataDir;
-        createHome = true;
-      };
+        users.groups.${cfg.group} = { };
+        users.users.${cfg.user} = {
+          inherit (cfg) group;
+          isSystemUser = true;
+          home = cfg.dataDir;
+          createHome = true;
+        };
 
-      # If SOPS is used, create a tiny env file (WALLET=..., MONEROD_RPC_*).
-      sops = lib.mkIf (walletFromSops || moneroRpcSecretsAvailable) {
-        secrets = lib.mkIf walletFromSops {
-          "${cfg.walletSecret}" = {
-            inherit (cfg) sopsFile group;
-            restartUnits = [ "p2pool.service" ];
+        # If SOPS is used, create a tiny env file (WALLET=..., MONEROD_RPC_*).
+        sops = lib.mkIf (walletFromSops || moneroRpcSecretsAvailable) {
+          secrets = lib.mkIf walletFromSops {
+            "${cfg.walletSecret}" = {
+              inherit (cfg) sopsFile group;
+              restartUnits = [ "p2pool.service" ];
+              owner = cfg.user;
+            };
+          };
+
+          templates.p2poolEnv = {
             owner = cfg.user;
+            inherit (cfg) group;
+            mode = "0400";
+            content = ''
+              ${lib.optionalString walletFromSops ''
+                WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
+              ''}
+              ${lib.optionalString moneroRpcSecretsAvailable ''
+                MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
+                MONEROD_RPC_PASSWORD=${config.sops.placeholder."monerod/rpc/password"}
+              ''}
+            '';
+            restartUnits = [ "p2pool.service" ];
           };
         };
 
-        templates.p2poolEnv = {
-          owner = cfg.user;
-          inherit (cfg) group;
-          mode = "0400";
-          content = ''
-            ${lib.optionalString walletFromSops ''
-              WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
-            ''}
-            ${lib.optionalString moneroRpcSecretsAvailable ''
-              MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
-              MONEROD_RPC_PASSWORD=${config.sops.placeholder."monerod/rpc/password"}
-            ''}
-          '';
-          restartUnits = [ "p2pool.service" ];
+        services.monero.extraConfig = ''
+          # add for p2pool's quick template updates
+          zmq-pub=tcp://127.0.0.1:${toString cfg.zmqPort}
+        '';
+
+        systemd.services.p2pool = {
+          description = "Monero p2pool";
+          after = [ "network-online.target" ];
+          wants = [ "network-online.target" ];
+          environment = lib.mkIf (!walletFromSops) { };
+          serviceConfig = {
+            User = cfg.user;
+            Group = cfg.group;
+            StateDirectory = "p2pool";
+            WorkingDirectory = cfg.dataDir;
+            ExecStart = exec;
+            ExecStartPre = lib.mkIf cfg.dataApi.enable "${pkgs.coreutils}/bin/install -d -o ${cfg.user} -g ${cfg.group} -m 0755 ${dataApiPath}";
+            EnvironmentFile = lib.mkIf (
+              walletFromSops || moneroRpcSecretsAvailable
+            ) config.sops.templates.p2poolEnv.path;
+
+            Restart = "on-failure";
+            RestartSec = 5;
+
+            # Hardening
+            NoNewPrivileges = true;
+            PrivateTmp = true;
+            ProtectHome = true;
+            ProtectSystem = "strict";
+            ReadWritePaths = [ cfg.dataDir ];
+            CapabilityBoundingSet = "";
+            AmbientCapabilities = "";
+            LockPersonality = true;
+          };
+          wantedBy = [ "multi-user.target" ];
         };
-      };
 
-      services.monero.extraConfig = ''
-        # add for p2pool's quick template updates
-        zmq-pub=tcp://127.0.0.1:${toString cfg.zmqPort}
-      '';
-
-      systemd.services.p2pool = {
-        description = "Monero p2pool";
-        after = [ "network-online.target" ];
-        wants = [ "network-online.target" ];
-        environment = lib.mkIf (!walletFromSops) { };
-        serviceConfig = {
-          User = cfg.user;
-          Group = cfg.group;
-          StateDirectory = "p2pool";
-          WorkingDirectory = cfg.dataDir;
-          ExecStart = exec;
-          EnvironmentFile = lib.mkIf (
-            walletFromSops || moneroRpcSecretsAvailable
-          ) config.sops.templates.p2poolEnv.path;
-
-          Restart = "on-failure";
-          RestartSec = 5;
-
-          # Hardening
-          NoNewPrivileges = true;
-          PrivateTmp = true;
-          ProtectHome = true;
-          ProtectSystem = "strict";
-          ReadWritePaths = [ cfg.dataDir ];
-          CapabilityBoundingSet = "";
-          AmbientCapabilities = "";
-          LockPersonality = true;
-        };
-        wantedBy = [ "multi-user.target" ];
-      };
-
-      networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [
-        cfg.stratum.port
-        effectiveP2pPort
-      ];
-    };
+        networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [
+          cfg.stratum.port
+          effectiveP2pPort
+        ];
+      }
+      (mkIf (cfg.dataApi.enable && cfg.dataApi.exposeNginx) {
+        users.users.nginx.extraGroups = [ cfg.group ];
+        services.nginx.virtualHosts = lib.genAttrs cfg.dataApi.hostNames (_: {
+          locations = {
+            "${dataApiPrefix}/".return = "404";
+            "= ${dataApiPrefix}/network/stats".alias = "${dataApiPath}/network/stats";
+            "= ${dataApiPrefix}/pool/stats".alias = "${dataApiPath}/pool/stats";
+            "= ${dataApiPrefix}/stats_mod".alias = "${dataApiPath}/stats_mod";
+            "= ${dataApiPrefix}/local/stratum".alias = "${dataApiPath}/local/stratum";
+            "= ${dataApiPrefix}/local/p2p".alias = "${dataApiPath}/local/p2p";
+          };
+        });
+      })
+    ]);
 }

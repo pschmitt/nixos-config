@@ -59,6 +59,8 @@
 
     xmrig.settings.cpu.max-threads-hint = lib.mkForce 15;
 
+    xmrig-proxy.targetPool = "p2pool";
+
     p2pool = {
       enable = true;
       inherit (config.custom) sopsFile;
