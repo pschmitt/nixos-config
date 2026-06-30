@@ -59,6 +59,8 @@
 
     ***REMOVED***.settings.cpu.max-threads-hint = lib.mkForce 15;
 
+    ***REMOVED***-proxy.targetPool = "***REMOVED***";
+
     ***REMOVED*** = {
       enable = true;
       inherit (config.custom) sopsFile;
