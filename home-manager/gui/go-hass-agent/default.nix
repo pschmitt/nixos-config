@@ -15,7 +15,8 @@ in
       # timew-status provides timew-is-on/timew-total for the timewarrior sensors;
       # obs-control backs the mic-mute and roomba-overlay buttons (enableWorkCommands);
       # ms-teams backs the teams/online-meeting sensors; python3+dbus-python backs
-      # the gnome-keyring status sensor (single-process OpenSession + Locked reads).
+      # the gnome-keyring status sensor (single-process OpenSession + Locked reads);
+      # yt-dlp backs the YouTube thumbnail fallback in the playerctl media sensor.
       services.go-hass-agent.scriptPackages =
         with pkgs;
         [
@@ -23,6 +24,7 @@ in
           jq
           (python3.withPackages (ps: [ ps.dbus-python ]))
           timew-status
+          yt-dlp
         ]
         ++ lib.optionals config.services.go-hass-agent.enableWorkCommands [
           obs-control
