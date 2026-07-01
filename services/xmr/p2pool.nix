@@ -145,10 +145,17 @@ in
       hostNames = mkOption {
         type = types.listOf types.str;
         default = [
+          "127.0.0.1"
           "xmr.${config.networking.hostName}.${config.domains.netbird}"
           "xmr.${config.networking.hostName}.${config.domains.tailscale}"
         ];
         description = "Nginx virtual hosts that should expose selected p2pool API files.";
+      };
+
+      extraHostNames = mkOption {
+        type = types.listOf types.str;
+        default = [ ];
+        description = "Additional nginx virtual hosts to expose the p2pool API on (e.g. \"127.0.0.1\").";
       };
     };
 
@@ -294,9 +301,14 @@ in
             User = cfg.user;
             Group = cfg.group;
             StateDirectory = "p2pool";
+            StateDirectoryMode = lib.mkIf (cfg.dataApi.enable && cfg.dataApi.exposeNginx) "0750";
             WorkingDirectory = cfg.dataDir;
             ExecStart = exec;
-            ExecStartPre = lib.mkIf cfg.dataApi.enable "${pkgs.coreutils}/bin/install -d -o ${cfg.user} -g ${cfg.group} -m 0755 ${dataApiPath}";
+            ExecStartPre =
+              lib.optional (
+                cfg.dataApi.enable && cfg.dataApi.exposeNginx
+              ) "${pkgs.coreutils}/bin/chmod 0750 ${cfg.dataDir}"
+              ++ lib.optional cfg.dataApi.enable "${pkgs.coreutils}/bin/install -d -o ${cfg.user} -g ${cfg.group} -m 0755 ${dataApiPath}";
             EnvironmentFile = lib.mkIf (
               walletFromSops || moneroRpcSecretsAvailable
             ) config.sops.templates.p2poolEnv.path;
@@ -324,16 +336,18 @@ in
       }
       (mkIf (cfg.dataApi.enable && cfg.dataApi.exposeNginx) {
         users.users.nginx.extraGroups = [ cfg.group ];
-        services.nginx.virtualHosts = lib.genAttrs cfg.dataApi.hostNames (_: {
-          locations = {
-            "${dataApiPrefix}/".return = "404";
-            "= ${dataApiPrefix}/network/stats".alias = "${dataApiPath}/network/stats";
-            "= ${dataApiPrefix}/pool/stats".alias = "${dataApiPath}/pool/stats";
-            "= ${dataApiPrefix}/stats_mod".alias = "${dataApiPath}/stats_mod";
-            "= ${dataApiPrefix}/local/stratum".alias = "${dataApiPath}/local/stratum";
-            "= ${dataApiPrefix}/local/p2p".alias = "${dataApiPath}/local/p2p";
-          };
-        });
+        services.nginx.virtualHosts =
+          lib.genAttrs (cfg.dataApi.hostNames ++ cfg.dataApi.extraHostNames)
+            (_: {
+              locations = {
+                "${dataApiPrefix}/".return = "404";
+                "= ${dataApiPrefix}/network/stats".alias = "${dataApiPath}/network/stats";
+                "= ${dataApiPrefix}/pool/stats".alias = "${dataApiPath}/pool/stats";
+                "= ${dataApiPrefix}/stats_mod".alias = "${dataApiPath}/stats_mod";
+                "= ${dataApiPrefix}/local/stratum".alias = "${dataApiPath}/local/stratum";
+                "= ${dataApiPrefix}/local/p2p".alias = "${dataApiPath}/local/p2p";
+              };
+            });
       })
     ]);
 }
