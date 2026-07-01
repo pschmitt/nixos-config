@@ -27,6 +27,48 @@ get_active_player() {
   head -1 <<< "$all_players"
 }
 
+extract_youtube_id() {
+  local url="$1"
+
+  if [[ "$url" =~ (youtube\.com/(watch\?v=|embed/|shorts/)|youtu\.be/)([A-Za-z0-9_-]{11}) ]]
+  then
+    echo "${BASH_REMATCH[3]}"
+    return 0
+  fi
+
+  return 1
+}
+
+get_youtube_thumbnail() {
+  local video_id="$1"
+  local cache_file="${XDG_CACHE_HOME:-${HOME}/.cache}/go-hass-agent/youtube-thumb.cache"
+  local cached_id="" cached_thumb=""
+
+  if [[ -r "$cache_file" ]]
+  then
+    read -r cached_id cached_thumb < "$cache_file"
+  fi
+
+  if [[ "$video_id" == "$cached_id" && -n "$cached_thumb" ]]
+  then
+    echo "$cached_thumb"
+    return 0
+  fi
+
+  local thumb
+  thumb="$(timeout 5 yt-dlp --get-thumbnail "https://www.youtube.com/watch?v=${video_id}" 2>/dev/null)" \
+    || return 1
+
+  if [[ -z "$thumb" ]]
+  then
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$cache_file")"
+  printf '%s %s\n' "$video_id" "$thumb" > "$cache_file"
+  echo "$thumb"
+}
+
 main() {
   set -uo pipefail
 
@@ -61,11 +103,21 @@ main() {
   play_state="$(playerctl --player "$player" status 2>/dev/null | tr '[:upper:]' '[:lower:]')" \
     || play_state="unavailable"
 
-  local title album artist art_url
+  local title album artist art_url track_url
   title="$(playerctl --player "$player" metadata title 2>/dev/null || true)"
   album="$(playerctl --player "$player" metadata album 2>/dev/null || true)"
   artist="$(playerctl --player "$player" metadata artist 2>/dev/null || true)"
   art_url="$(playerctl --player "$player" metadata mpris:artUrl 2>/dev/null || true)"
+  track_url="$(playerctl --player "$player" metadata xesam:url 2>/dev/null || true)"
+
+  if [[ -z "${art_url:-}" && -n "${track_url:-}" ]]
+  then
+    local youtube_id
+    if youtube_id="$(extract_youtube_id "$track_url")"
+    then
+      art_url="$(get_youtube_thumbnail "$youtube_id")" || art_url=""
+    fi
+  fi
 
   if [[ "$play_state" == "playing" ]]; then
     state=true
