@@ -218,6 +218,7 @@ Rules:
 Current prefixes:
 - `AEO` = Aeotec / Everspring
 - `AHL` = Adam Hall
+- `AMZ` = Amazon
 - `ANK` = Anker
 - `APB` = Appbot
 - `APL` = Apple
