@@ -19,6 +19,11 @@
       lock_timeout = 86400;
       sync_interval = 3600;
       pinentry = "pinentry";
+      tui_keybindings = {
+        # Matches the <M-Q> "rage quit" mapping in neovim: exit the TUI
+        # immediately from any mode, even mid-dialog.
+        force_quit = [ "alt-Q" ];
+      };
       accounts = {
         default.email = "philipp@schmitt.co";
         wiit = {
