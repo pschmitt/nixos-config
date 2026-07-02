@@ -258,6 +258,12 @@ in
           isSystemUser = true;
           home = cfg.dataDir;
           createHome = true;
+          # Keep in sync with StateDirectoryMode below: this is also the
+          # user's $HOME, and NixOS re-chmods home dirs to homeMode on
+          # every activation (not just creation), which would otherwise
+          # fight the service's StateDirectoryMode/ExecStartPre chmod on
+          # every nixos-rebuild switch.
+          homeMode = lib.mkIf (cfg.dataApi.enable && cfg.dataApi.exposeNginx) "0750";
         };
 
         # If SOPS is used, create a tiny env file (WALLET=..., MONEROD_RPC_*).
