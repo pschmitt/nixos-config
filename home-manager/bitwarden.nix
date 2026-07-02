@@ -24,6 +24,18 @@
         wiit = {
           email = "philipp.schmitt@wiit.cloud";
           base_url = "https://***REMOVED***";
+          credential_source = {
+            account = "default";
+            entry = "***REMOVED***";
+          };
+        };
+        bw = {
+          email = "philipp@schmitt.co";
+          base_url = "https://bw.brkn.lol";
+          credential_source = {
+            account = "default";
+            entry = "Vaultwarden";
+          };
         };
       };
     };
