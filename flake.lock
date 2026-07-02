@@ -1211,6 +1211,27 @@
     "home-manager_3": {
       "inputs": {
         "nixpkgs": [
+          "rbw",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783005591,
+        "narHash": "sha256-NcLHV5uBAeggDUE2wPbKszjfyaSLsoqaYt7izOphkZw=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "f469c79b955609d6a8fdd9e689be76a93b1621d7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "home-manager_4": {
+      "inputs": {
+        "nixpkgs": [
           "zen-browser",
           "nixpkgs"
         ]
@@ -3000,16 +3021,17 @@
     },
     "rbw": {
       "inputs": {
+        "home-manager": "home-manager_3",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1783016918,
-        "narHash": "sha256-Nh0rVPu5X0Cx2ESivcIuP5QPhPEXqiEKWoRyQn2mSos=",
+        "lastModified": 1783017762,
+        "narHash": "sha256-L10d80J4sn3XFE80dtY+IBAurMwfO9BexTDg6wCdcMM=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "63a5d675ec8489fb0c06abfe380fc227b523e2e7",
+        "rev": "c941a2e1b87a4aea2ad8e9124cd277f74a332a31",
         "type": "github"
       },
       "original": {
@@ -3987,7 +4009,7 @@
     },
     "zen-browser": {
       "inputs": {
-        "home-manager": "home-manager_3",
+        "home-manager": "home-manager_4",
         "nixpkgs": [
           "nixpkgs"
         ]
