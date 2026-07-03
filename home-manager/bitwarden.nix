@@ -31,7 +31,6 @@
           base_url = "https://***REMOVED***";
           credential_source = {
             account = "default";
-            entry = "***REMOVED***";
           };
         };
         bw = {
@@ -39,7 +38,6 @@
           base_url = "https://bw.brkn.lol";
           credential_source = {
             account = "default";
-            entry = "Vaultwarden";
           };
         };
       };
