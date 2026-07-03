@@ -65,8 +65,6 @@ buildPythonApplication rec {
       --set WITHOUTBG_REFINER_MODEL_PATH "${focus-refiner-model}"
   '';
 
-  sourceRoot = "source/packages/python";
-
   passthru.updateScript = nix-update-script {
     extraArgs = [ "--flake" ];
   };
