@@ -39,6 +39,10 @@
           credential_source = {
             account = "default";
           };
+          # Mirrors the `default` account; excluded from list/search/get
+          # merges so it doesn't break those by default. Still reachable via
+          # `rbw --account bw ...`.
+          exclude_from_list = true;
         };
       };
     };
