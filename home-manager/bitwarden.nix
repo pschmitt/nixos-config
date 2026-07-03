@@ -31,7 +31,6 @@
           base_url = "https://vault.wiit.one";
           credential_source = {
             account = "default";
-            entry = "vault.wiit.one";
           };
         };
         bw = {
@@ -39,7 +38,6 @@
           base_url = "https://bw.brkn.lol";
           credential_source = {
             account = "default";
-            entry = "Vaultwarden";
           };
         };
       };
