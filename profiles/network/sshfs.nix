@@ -12,6 +12,7 @@ let
     "x-systemd.mount-timeout=10s"
     # "x-gvfs-hide"
     "IdentityFile=${config.mainUser.homeDirectory}/.ssh/id_ed25519"
+    "IdentitiesOnly=yes"
     "StrictHostKeyChecking=no"
     "UserKnownHostsFile=/dev/null"
     "ServerAliveInterval=10"
@@ -34,14 +35,14 @@ in
       options = opts;
     };
 
-    "/mnt/hass" = {
+    "/mnt/ha" = {
       fsType = "fuse";
       # NOTE We cannot use /config here since it is a symlink to /homeassistant
       device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
       options = opts;
     };
 
-    "/mnt/hass-dieppe" = {
+    "/mnt/ha-dieppe" = {
       fsType = "fuse";
       # NOTE We cannot use /config here since it is a symlink to /homeassistant
       device = "${pkgs.sshfs-fuse}/bin/sshfs#root@homeassistant-dieppe.${vpnDomain}:/homeassistant";

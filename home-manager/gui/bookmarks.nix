@@ -18,7 +18,7 @@
         "file:///tmp 🗑 tmp"
         "file:///mnt/data 🖧 data"
         "file:///mnt/turris 🖧 turris"
-        "file:///mnt/hass 🖧 hass"
+        "file:///mnt/ha 🖧 ha"
       ];
     };
   };

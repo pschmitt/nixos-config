@@ -30,7 +30,7 @@ case "$ACTION" in
   resume|after-sleep)
     gcr-unlock
     # NOTE This should fix the issue where zsh hangs forever because of
-    # the /mnt/hass mount
+    # the /mnt/ha mount
     sudo systemctl restart netbird-netbird-io
     ;;
   sleep|before-sleep)
