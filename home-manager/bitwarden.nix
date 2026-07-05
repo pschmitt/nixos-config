@@ -29,20 +29,31 @@
         wiit = {
           email = "philipp.schmitt@wiit.cloud";
           base_url = "https://***REMOVED***";
-          credential_source = {
-            account = "default";
+          unlock = {
+            policy = "always";
+            credentials.account = "default";
           };
         };
         bw = {
           email = "philipp@schmitt.co";
           base_url = "https://bw.brkn.lol";
-          credential_source = {
-            account = "default";
+          unlock = {
+            policy = "always";
+            credentials.account = "default";
           };
-          # Mirrors the `default` account; excluded from list/search/get
-          # merges so it doesn't break those by default. Still reachable via
-          # `rbw --account bw ...`.
-          exclude_from_list = true;
+          # Mirrors the `default` account; excluded from every list/search/
+          # get-style merge so it doesn't break those by default. Not
+          # excluded from `tui`, so it still shows up there. Still reachable
+          # via `rbw --account bw ...`.
+          exclude_from = [
+            "list"
+            "search"
+            "get"
+            "show"
+            "code"
+            "sync"
+            "unlock"
+          ];
         };
       };
     };
