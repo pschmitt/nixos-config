@@ -9,8 +9,6 @@ in
         workspace = "1";
         monitor = "desc:LG";
         default = true;
-        layout = "master";
-        layout_opts.orientation = "left";
       }
       {
         workspace = "2";
