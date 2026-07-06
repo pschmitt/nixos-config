@@ -65,6 +65,9 @@
       enable = true;
       inherit (config.custom) sopsFile;
       walletSecret = "***REMOVED***/wallet";
+      # Dedicated subaddress (labelled "***REMOVED***" in the wallet) so payouts can
+      # be told apart from other incoming transfers to the primary address.
+      subaddressSecret = "***REMOVED***/subaddress";
       mode = "mini"; # or "nano" for faster sync
       stratum.port = 13333; # 3333 is used by ***REMOVED***-proxy!
       openFirewall = true;
