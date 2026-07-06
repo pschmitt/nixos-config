@@ -29,7 +29,7 @@ in
       type = types.nullOr types.str;
       default = null;
       example = "44Affq5kSiGBoZ...";
-      description = "Primary XMR address to mine to (NOT a subaddress).";
+      description = "Main XMR address to mine to (must start with 4, NOT a subaddress). Required by p2pool even when payouts are redirected via `subaddress`.";
     };
 
     walletSecret = mkOption {
@@ -43,6 +43,29 @@ in
       type = types.nullOr types.path;
       default = null;
       description = "SOPS file to read walletSecret from.";
+    };
+
+    # Either set subaddress OR set subaddressSecret (+ sopsFile). Optional either way.
+    subaddress = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "8xyz...";
+      description = ''
+        Optional subaddress to redirect payouts to, passed as p2pool's
+        `--subaddress`. Must belong to the same wallet as `walletAddress` /
+        `walletSecret`. Useful to keep p2pool earnings on a dedicated
+        subaddress instead of the wallet's primary address, so they can be
+        told apart from unrelated incoming transfers. When unset, payouts go
+        directly to the main wallet address. Prefer `subaddressSecret` to
+        avoid committing the address in plain text.
+      '';
+    };
+
+    subaddressSecret = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      example = "p2pool/wallet/subaddress";
+      description = "SOPS secret name that contains the payout subaddress (plain string), read from `sopsFile`.";
     };
 
     dataDir = mkOption {
@@ -199,6 +222,7 @@ in
       dataApiPrefix = lib.removeSuffix "/" cfg.dataApi.urlPrefix;
 
       walletFromSops = cfg.walletSecret != null && cfg.sopsFile != null;
+      subaddressFromSops = cfg.subaddressSecret != null && cfg.sopsFile != null;
 
       moneroRpcSecretsAvailable =
         (config ? sops)
@@ -234,14 +258,20 @@ in
 
       rpcLoginArg = lib.optionalString moneroRpcSecretsAvailable "--rpc-login \${MONEROD_RPC_USERNAME}:\${MONEROD_RPC_PASSWORD}";
 
+      subaddressArg =
+        if subaddressFromSops then
+          "--subaddress $SUBADDRESS"
+        else
+          lib.optionalString (cfg.subaddress != null) "--subaddress ${lib.escapeShellArg cfg.subaddress}";
+
       exec =
         if walletFromSops then
           # Use env file with WALLET=... to avoid putting the address in the unit
-          "${cfg.package}/bin/p2pool --wallet $WALLET ${commonArgsEscaped} ${rpcLoginArg}"
+          "${cfg.package}/bin/p2pool --wallet $WALLET ${subaddressArg} ${commonArgsEscaped} ${rpcLoginArg}"
         else
           "${cfg.package}/bin/p2pool --wallet ${
             lib.escapeShellArg (cfg.walletAddress or "")
-          } ${commonArgsEscaped} ${rpcLoginArg}";
+          } ${subaddressArg} ${commonArgsEscaped} ${rpcLoginArg}";
     in
     mkIf cfg.enable (mkMerge [
       {
@@ -266,15 +296,24 @@ in
           homeMode = lib.mkIf (cfg.dataApi.enable && cfg.dataApi.exposeNginx) "0750";
         };
 
-        # If SOPS is used, create a tiny env file (WALLET=..., MONEROD_RPC_*).
-        sops = lib.mkIf (walletFromSops || moneroRpcSecretsAvailable) {
-          secrets = lib.mkIf walletFromSops {
-            "${cfg.walletSecret}" = {
-              inherit (cfg) sopsFile group;
-              restartUnits = [ "p2pool.service" ];
-              owner = cfg.user;
-            };
-          };
+        # If SOPS is used, create a tiny env file (WALLET=..., SUBADDRESS=..., MONEROD_RPC_*).
+        sops = lib.mkIf (walletFromSops || subaddressFromSops || moneroRpcSecretsAvailable) {
+          secrets = lib.mkMerge [
+            (lib.mkIf walletFromSops {
+              "${cfg.walletSecret}" = {
+                inherit (cfg) sopsFile group;
+                restartUnits = [ "p2pool.service" ];
+                owner = cfg.user;
+              };
+            })
+            (lib.mkIf subaddressFromSops {
+              "${cfg.subaddressSecret}" = {
+                inherit (cfg) sopsFile group;
+                restartUnits = [ "p2pool.service" ];
+                owner = cfg.user;
+              };
+            })
+          ];
 
           templates.p2poolEnv = {
             owner = cfg.user;
@@ -283,6 +322,9 @@ in
             content = ''
               ${lib.optionalString walletFromSops ''
                 WALLET=${config.sops.placeholder."${cfg.walletSecret}"}
+              ''}
+              ${lib.optionalString subaddressFromSops ''
+                SUBADDRESS=${config.sops.placeholder."${cfg.subaddressSecret}"}
               ''}
               ${lib.optionalString moneroRpcSecretsAvailable ''
                 MONEROD_RPC_USERNAME=${config.sops.placeholder."monerod/rpc/username"}
@@ -316,7 +358,7 @@ in
               ) "${pkgs.coreutils}/bin/chmod 0750 ${cfg.dataDir}"
               ++ lib.optional cfg.dataApi.enable "${pkgs.coreutils}/bin/install -d -o ${cfg.user} -g ${cfg.group} -m 0755 ${dataApiPath}";
             EnvironmentFile = lib.mkIf (
-              walletFromSops || moneroRpcSecretsAvailable
+              walletFromSops || subaddressFromSops || moneroRpcSecretsAvailable
             ) config.sops.templates.p2poolEnv.path;
 
             Restart = "on-failure";

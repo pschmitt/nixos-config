@@ -65,6 +65,9 @@
       enable = true;
       inherit (config.custom) sopsFile;
       walletSecret = "p2pool/wallet";
+      # Dedicated subaddress (labelled "p2pool" in the wallet) so payouts can
+      # be told apart from other incoming transfers to the primary address.
+      subaddressSecret = "p2pool/subaddress";
       mode = "mini"; # or "nano" for faster sync
       stratum.port = 13333; # 3333 is used by xmrig-proxy!
       openFirewall = true;
