@@ -160,11 +160,16 @@ in
       group services
       start program = "${pkgs.systemd}/bin/systemctl start ${unitFile}"
       stop program = "${pkgs.systemd}/bin/systemctl stop ${unitFile}"
-      # Program checks are asynchronous in Monit; require two consecutive
-      # failures so one bad result does not create a restart loop.
-      if status != 0 for 2 cycles then restart
+      # After a restart the wallet needs time to reconnect to monerod and
+      # catch up on blocks before it answers RPC calls again; 2 consecutive
+      # failures (2 min) was shorter than that catch-up window, so monit kept
+      # killing the wallet before it ever finished syncing, restarting it
+      # every ~60-70s in a permanent loop (observed 2026-07-06/07: 1360+
+      # restarts over 23h, balance/transactions frozen the whole time).
+      # 5 consecutive failures (5 min) gives it enough headroom to recover.
+      if status != 0 for 5 cycles then restart
       else if succeeded then exec "${pkgs.coreutils}/bin/true"
-      if 5 restarts within 15 cycles then alert
+      if 3 restarts within 30 cycles then alert
   '';
 
 }
