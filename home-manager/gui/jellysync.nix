@@ -61,6 +61,18 @@
           seasons = "latest";
         };
 
+        Silo = {
+          directory = "tv_shows";
+          wildcard = true;
+          seasons = "latest";
+        };
+
+        "House of the dragon" = {
+          directory = "tv_shows";
+          wildcard = true;
+          seasons = "latest";
+        };
+
         # Andor = {
         #   directory = "tv_shows";
         #   seasons = "latest";
