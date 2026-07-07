@@ -132,7 +132,9 @@
     };
 
     hyprgrass = {
-      url = "github:horriblename/hyprgrass";
+      # pinned before an experimental commit switched to unreleased Hyprland
+      # internals (hyprland/src/output/Monitor.hpp doesn't exist in 0.55.x)
+      url = "github:horriblename/hyprgrass/230495900cef1a5681bf8f8abf797939d1d64c1b";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
