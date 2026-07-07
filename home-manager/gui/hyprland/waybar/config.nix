@@ -112,7 +112,7 @@
         "exec" = "~/.config/waybar/custom_modules/clipboard.sh format";
         "interval" = "once";
         "return-type" = "json";
-        "on-click" = "walker -m clipboard";
+        "on-click" = "walker -m clipboard -p '📋 Clipboard'";
         "spacing" = 5;
       };
       "custom/timewarrior" = {
