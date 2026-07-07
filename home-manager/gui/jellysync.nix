@@ -67,7 +67,7 @@
           seasons = "latest";
         };
 
-        "House of the dragon" = {
+        "House of the Dragon" = {
           directory = "tv_shows";
           wildcard = true;
           seasons = "latest";
