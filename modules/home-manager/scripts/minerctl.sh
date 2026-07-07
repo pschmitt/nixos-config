@@ -32,6 +32,7 @@ Usage: $(basename "$0") [--context CTX|-A] ACTION
 Actions:
   start   sync kubeconfig, bootstrap secrets, deploy miners
   stop    delete namespace and stop ktunnel
+  restart stop, then start
   status  brief cluster overview (alias: show)
   logs    tail pod and ktunnel logs
             logs                 xmrig + ktunnel logs (default)
@@ -109,7 +110,7 @@ do
       ns_override="$2"
       shift 2
       ;;
-    start|stop|status|show|logs)
+    start|stop|restart|status|show|logs)
       cmd="$1"
       shift
       ;;
@@ -139,7 +140,7 @@ fi
 if [[ -z "$ctx" && -z "$all_clusters" ]]
 then
   case "$cmd" in
-    start|stop|status|show|logs)
+    start|stop|restart|status|show|logs)
       all_clusters=1
       ;;
     *)
@@ -152,7 +153,7 @@ fi
 if [[ -n "$all_clusters" ]]
 then
   case "$cmd" in
-    start|stop)
+    start|stop|restart)
       for _ctx in "${all_ctx_names[@]}"
       do
         _extra=()
@@ -316,6 +317,16 @@ case "$cmd" in
     # shellcheck disable=SC2029  # $ktunnel_svc is expanded locally on purpose
     ssh "$target_host" sudo systemctl stop "$ktunnel_svc" || true
     echo "[$ctx] Stopped."
+    ;;
+
+  restart)
+    _extra=()
+    if [[ -n "$ns_override" ]]
+    then
+      _extra+=(--namespace "$ns_override")
+    fi
+    "$0" --context "$ctx" stop "${_extra[@]}"
+    "$0" --context "$ctx" start "${_extra[@]}"
     ;;
 
   status|show)
