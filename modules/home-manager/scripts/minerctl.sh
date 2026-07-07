@@ -18,6 +18,10 @@ ssh() {
     "$@"
 }
 
+red() {
+  printf '\e[1;31m%s\e[0m\n' "$*"
+}
+
 # Cluster names and the "a|b|c" form for help text.
 mapfile -t all_ctx_names < <(jq -r 'keys[]' "$CLUSTERS_JSON")
 ctx_list=$(jq -r 'keys | join("|")' "$CLUSTERS_JSON")
@@ -31,7 +35,8 @@ Usage: $(basename "$0") [--context CTX|-A] ACTION
 
 Actions:
   start   sync kubeconfig, bootstrap secrets, deploy miners
-  stop    delete namespace and stop ktunnel
+  stop    stop miners and ktunnel; deletes the namespace unless kept
+            (see --keep-namespace and the deleteNamespaceOnStop option)
   restart stop, then start
   status  brief cluster overview (alias: show)
   logs    tail pod and ktunnel logs
@@ -41,12 +46,15 @@ Actions:
             logs HOSTNAME        only the miner pod on that node
 
 Options:
-  -c, --context CTX   cluster context  (${ctx_list})
-  -a, -A, --all       run action across all clusters
-  -j, --json          output status as JSON
-  -f, --follow        follow log output (logs command only)
-  -n, --namespace NS  override kubernetes namespace
-  -h, --help          show this help
+  -c, --context CTX     cluster context  (${ctx_list})
+  -a, -A, --all         run action across all clusters
+  -j, --json            output status as JSON
+  -f, --follow          follow log output (logs command only)
+  -n, --namespace NS    override kubernetes namespace
+  -k, --keep-namespace  on stop/restart, keep the namespace (delete the
+                         xmrig DaemonSet and its secrets instead);
+                         overrides deleteNamespaceOnStop
+  -h, --help            show this help
 EOF
 }
 
@@ -75,6 +83,8 @@ resolve_context() {
   target_host=$(jq -r '.target_host' <<< "$entry")
   ktunnel_svc=$(jq -r '.ktunnel_svc' <<< "$entry")
   namespace=$(jq -r '.namespace' <<< "$entry")
+  delete_ns_on_stop=$(jq -r '.delete_namespace_on_stop' <<< "$entry")
+  managed_by_label=$(jq -r '.managed_by_label' <<< "$entry")
   sync_svc=$(jq -r '.sync_svc' <<< "$entry")
   ctx_color=$(jq -r '.color' <<< "$entry")
 }
@@ -86,6 +96,7 @@ all_clusters=
 json_output=
 follow=
 log_target=
+keep_ns=
 
 while [[ -n "${1:-}" ]]
 do
@@ -109,6 +120,10 @@ do
     -n|--namespace)
       ns_override="$2"
       shift 2
+      ;;
+    -k|--keep-namespace)
+      keep_ns=1
+      shift
       ;;
     start|stop|restart|status|show|logs)
       cmd="$1"
@@ -160,6 +175,10 @@ then
         if [[ -n "$ns_override" ]]
         then
           _extra+=(--namespace "$ns_override")
+        fi
+        if [[ -n "$keep_ns" ]]
+        then
+          _extra+=(--keep-namespace)
         fi
         "$0" --context "$_ctx" "$cmd" "${_extra[@]}"
       done
@@ -308,11 +327,26 @@ case "$cmd" in
     ;;
 
   stop)
-    echo "[$ctx] Deleting namespace $namespace (removes miners, ktunnel pod, secrets)..."
-    kubectl \
-      --kubeconfig "$kube_config" \
-      --context "$kube_context" \
-      delete namespace "$namespace" --ignore-not-found
+    _delete_ns=1
+    if [[ -n "$keep_ns" || "$delete_ns_on_stop" != "true" ]]
+    then
+      _delete_ns=
+    fi
+
+    if [[ -n "$_delete_ns" ]]
+    then
+      echo "[$ctx] Deleting namespace $namespace (removes miners, ktunnel pod, secrets)..."
+      kubectl \
+        --kubeconfig "$kube_config" \
+        --context "$kube_context" \
+        delete namespace "$namespace" --ignore-not-found
+    else
+      echo "[$ctx] Keeping namespace $namespace; deleting minerctl-managed resources ($managed_by_label)..."
+      kubectl \
+        --kubeconfig "$kube_config" \
+        --context "$kube_context" \
+        delete daemonset,secret -n "$namespace" -l "$managed_by_label" --ignore-not-found
+    fi
     echo "[$ctx] Stopping ktunnel client on $target_host..."
     # shellcheck disable=SC2029  # $ktunnel_svc is expanded locally on purpose
     ssh "$target_host" sudo systemctl stop "$ktunnel_svc" || true
@@ -325,7 +359,12 @@ case "$cmd" in
     then
       _extra+=(--namespace "$ns_override")
     fi
-    "$0" --context "$ctx" stop "${_extra[@]}"
+    _stop_extra=("${_extra[@]}")
+    if [[ -n "$keep_ns" ]]
+    then
+      _stop_extra+=(--keep-namespace)
+    fi
+    "$0" --context "$ctx" stop "${_stop_extra[@]}"
     "$0" --context "$ctx" start "${_extra[@]}"
     ;;
 
@@ -513,14 +552,14 @@ case "$cmd" in
         )
         if [[ -z "$_pod" ]]
         then
-          echo "(no xmrig pod on node $log_target)"
+          red "(no xmrig pod on node $log_target)"
         else
           kubectl \
             --kubeconfig "$kube_config" \
             --context "$kube_context" \
             logs "$_pod" -n "$namespace" --tail=50 \
             "${_follow_args[@]}" 2>/dev/null \
-            || echo "(no logs)"
+            || red "(no logs)"
         fi
       else
         echo "=== xmrig pod logs ($ctx / $namespace) ==="
@@ -530,7 +569,7 @@ case "$cmd" in
           logs -l app=xmrig -n "$namespace" \
           --tail=50 --prefix \
           "${_follow_args[@]}" 2>/dev/null \
-          || echo "(no logs)"
+          || red "(no logs)"
       fi
     fi
 
@@ -548,9 +587,14 @@ case "$cmd" in
           get pods -n "$namespace" -o json 2>/dev/null \
           || echo '{"items":[]}'
       )
+      # The ktunnel server pod isn't ours to name: it's created by the
+      # `ktunnel` binary itself, labelled after the exposed Service (e.g.
+      # app.kubernetes.io/name=xmrig-proxy), not "ktunnel". Rather than
+      # guessing that name, just pick the pod that isn't our own xmrig
+      # DaemonSet worker.
       _ktunnel_pod=$(
         jq -r \
-          'first(.items[] | select(.metadata.name | test("(?i)ktunnel")) | .metadata.name) // ""' \
+          'first(.items[] | select(.metadata.labels.app != "xmrig") | .metadata.name) // ""' \
           <<< "$_pod_json"
       )
       if [[ -n "$_ktunnel_pod" ]]
@@ -560,9 +604,9 @@ case "$cmd" in
           --context "$kube_context" \
           logs "$_ktunnel_pod" -n "$namespace" --tail=50 \
           "${_follow_args[@]}" 2>/dev/null \
-          || echo "(no logs)"
+          || red "(no logs)"
       else
-        echo "(ktunnel pod not found)"
+        red "(ktunnel pod not found)"
       fi
 
       if [[ -z "$follow" ]]
@@ -572,7 +616,7 @@ case "$cmd" in
         # shellcheck disable=SC2029  # $ktunnel_svc is expanded locally on purpose
         ssh "$target_host" \
           "SYSTEMD_COLORS=1 journalctl -u '$ktunnel_svc' -n 50 --no-pager" \
-          2>&1 || echo "(unavailable)"
+          2>&1 || red "(unavailable)"
       fi
     fi
     ;;

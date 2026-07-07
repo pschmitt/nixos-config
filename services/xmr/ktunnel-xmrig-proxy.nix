@@ -30,7 +30,7 @@ let
 
         namespace = mkOption {
           type = types.str;
-          default = "xmr";
+          default = "local-x";
           description = "Kubernetes namespace to deploy the ktunnel server pod into.";
         };
 

@@ -18,6 +18,13 @@ let
   cfg = config.xmr.mining;
   yamlFormat = pkgs.formats.yaml { };
 
+  # Applied to every resource minerctl creates (namespace, secrets,
+  # DaemonSet) so they stay findable/deletable by selector even if we
+  # later rename them.
+  managedByLabelKey = "app.kubernetes.io/managed-by";
+  managedByLabelValue = "minerctl";
+  managedByLabelSelector = "${managedByLabelKey}=${managedByLabelValue}";
+
   clusterOptions =
     { name, ... }:
     {
@@ -62,8 +69,13 @@ let
         };
         namespace = mkOption {
           type = types.str;
-          default = "xmr";
+          default = "local-x";
           description = "Kubernetes namespace to deploy miners into.";
+        };
+        deleteNamespaceOnStop = mkOption {
+          type = types.bool;
+          default = true;
+          description = "Whether `minerctl stop`/`restart` deletes the namespace. When false, stop only removes the xmrig DaemonSet, leaving the namespace (and its secrets) in place; overridable per-invocation with `minerctl --keep-namespace stop`.";
         };
       };
     };
@@ -92,12 +104,18 @@ let
       metadata = {
         name = "xmrig";
         inherit (cluster) namespace;
-        labels.app = "xmrig";
+        labels = {
+          app = "xmrig";
+          ${managedByLabelKey} = managedByLabelValue;
+        };
       };
       spec = {
         selector.matchLabels.app = "xmrig";
         template = {
-          metadata.labels.app = "xmrig";
+          metadata.labels = {
+            app = "xmrig";
+            ${managedByLabelKey} = managedByLabelValue;
+          };
           spec = {
             affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms = [
               {
@@ -182,6 +200,9 @@ let
         create namespace '${cluster.namespace}' \
         --dry-run=client -o yaml | \
         ${pkgs.kubectl}/bin/kubectl --context "$KUBE_CONTEXT" apply -f -
+      ${pkgs.kubectl}/bin/kubectl \
+        --context "$KUBE_CONTEXT" \
+        label namespace '${cluster.namespace}' ${managedByLabelSelector} --overwrite
 
       PROXY_PASS=$(ssh '${cluster.targetHost}' sudo cat '${cluster.remoteProxyPasswordPath}')
       ${pkgs.kubectl}/bin/kubectl \
@@ -191,6 +212,10 @@ let
         --from-literal=password="$PROXY_PASS" \
         --dry-run=client -o yaml | \
         ${pkgs.kubectl}/bin/kubectl --context "$KUBE_CONTEXT" apply -f -
+      ${pkgs.kubectl}/bin/kubectl \
+        --context "$KUBE_CONTEXT" \
+        label secret xmrig-proxy-password \
+        --namespace '${cluster.namespace}' ${managedByLabelSelector} --overwrite
 
       ${pkgs.kubectl}/bin/kubectl get secret artifactory \
         --context "$KUBE_CONTEXT" \
@@ -202,7 +227,11 @@ let
       print(json.dumps({
         'apiVersion': 'v1',
         'kind': 'Secret',
-        'metadata': {'name': 'artifactory', 'namespace': '${cluster.namespace}'},
+        'metadata': {
+          'name': 'artifactory',
+          'namespace': '${cluster.namespace}',
+          'labels': {'${managedByLabelKey}': '${managedByLabelValue}'},
+        },
         'type': d['type'],
         'data': d['data'],
       }))" | \
@@ -248,6 +277,8 @@ let
       target_host = cluster.targetHost;
       ktunnel_svc = cluster.ktunnelService;
       inherit (cluster) namespace;
+      delete_namespace_on_stop = cluster.deleteNamespaceOnStop;
+      managed_by_label = managedByLabelSelector;
       sync_svc = syncServiceName name;
       color = clusterColorMap.${name};
     }) cfg.clusters
