@@ -38,6 +38,12 @@ main() {
     fi
   fi
 
+  if pgrep -f 'mpv-peepee' >/dev/null 2>&1
+  then
+    state=true
+    icon="mdi:incognito"
+  fi
+
   emit_sensor "$icon" "$state"
 }
 
