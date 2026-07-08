@@ -29,9 +29,9 @@ main() {
   local state=false
   local icon="mdi:incognito-off"
 
-  if command -v brotab >/dev/null 2>&1
+  if command -v bruvtab >/dev/null 2>&1
   then
-    if brotab list 2>/dev/null | grep -qi 'porn'
+    if bruvtab list 2>/dev/null | grep -qi 'porn'
     then
       state=true
       icon="mdi:incognito"
