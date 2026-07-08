@@ -19,6 +19,7 @@
     ../../services/***REMOVED***/***REMOVED***-proxy.nix
     ../../services/***REMOVED***/ktunnel-***REMOVED***-proxy.nix
     ../../services/***REMOVED***/***REMOVED***.nix
+    ../../services/monit/ktunnel.nix
   ];
 
   hardware = {
