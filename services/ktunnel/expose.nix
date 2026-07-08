@@ -115,13 +115,23 @@ in
       };
     };
 
+    # NOTE: deliberately no OnBootSec here. On a host that's been up longer
+    # than the interval (the common case — these timers get freshly created
+    # by a `nixos-rebuild switch` on an already-running box, not by an
+    # actual reboot), OnBootSec's deadline is already in the past the moment
+    # the timer is activated, so systemd fires it immediately. That raced
+    # with the main service's own first startup here (kill mid-`ktunnel
+    # expose`, retry, hit "already exists") and would happen again on every
+    # future deploy that touches these units. OnUnitActiveSec alone still
+    # guarantees a first run after `restartInterval`/`healthcheckInterval`
+    # from whenever the timer actually starts, and Persistent=true still
+    # catches up after a real reboot.
     timers =
       lib.optionalAttrs (restartInterval != null) {
         "${restartServiceName}" = {
           description = "Periodically restart ${unitName}";
           timerConfig = {
             OnUnitActiveSec = restartInterval;
-            OnBootSec = restartInterval;
             # Jitter so multiple instances on the same host don't restart in lockstep.
             RandomizedDelaySec = "1h";
             Persistent = true;
@@ -134,7 +144,6 @@ in
           description = "Periodically healthcheck ${unitName}";
           timerConfig = {
             OnUnitActiveSec = healthcheckInterval;
-            OnBootSec = healthcheckInterval;
             RandomizedDelaySec = "1min";
             Persistent = true;
           };
