@@ -36,23 +36,21 @@ let
         if 5 restarts within 10 cycles then alert
     '';
 
-  # Unchanged from before this file gained inet-proxy coverage: same check
-  # names ("ktunnel <cluster>") and groups, so any existing alert
-  # routing/silencing keyed off them keeps working.
+  # Namespaced as "xmrig-proxy-<cluster>"/"inet-proxy-<cluster>" rather than
+  # bare "<cluster>": rofl-12 runs both services.ktunnel-xmrig-proxy and
+  # services.inet-proxy against the same cluster names (e.g. both have a
+  # "cluster-02"), so a bare name would register two monit checks with the
+  # identical name "ktunnel cluster-02".
   xmrigChecks = mapAttrsToList (
     name: inst:
     mkMonitCheck {
-      checkName = name;
+      checkName = "xmrig-proxy-${name}";
       checkScript = xmrigHealthcheck.mkCheckScript name inst xmrigHealthcheck.staleAfterMs;
       restartUnit = "ktunnel-xmrig-proxy-${name}.service";
+      extraGroups = [ "xmrig-proxy" ];
     }
   ) xmrigInstances;
 
-  # Namespaced as "inet-proxy-<cluster>" rather than bare "<cluster>": rofl-12
-  # runs both services.ktunnel-xmrig-proxy and services.inet-proxy against the
-  # same cluster names (e.g. both have a "cluster-02"), so reusing the xmrig
-  # naming scheme here would register two monit checks with the identical
-  # name "ktunnel cluster-02".
   inetProxyChecks = mapAttrsToList (
     name: inst:
     mkMonitCheck {
