@@ -19,6 +19,7 @@
     ../../services/xmr/xmrig-proxy.nix
     ../../services/xmr/ktunnel-xmrig-proxy.nix
     ../../services/xmr/xmrig.nix
+    ../../services/monit/ktunnel.nix
   ];
 
   hardware = {
