@@ -38,6 +38,12 @@
     inet-proxy = {
       enable = true;
       clusters = {
+        cluster-01 = {
+          enable = true;
+          tunnelPort = 28710;
+          lbPool = "edge-lb";
+          nodePort = 30128;
+        };
         cluster-02 = {
           enable = true;
           tunnelPort = 28700;
