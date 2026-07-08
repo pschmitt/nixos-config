@@ -114,47 +114,18 @@ let
   healthcheckServiceName = name: "ktunnel-xmrig-proxy-healthcheck-${name}";
   healthcheckableInstances = lib.filterAttrs (_: inst: inst.healthcheckInterval != null) instances;
 
-  # Considers a worker's last report stale after this long. Generous
-  # relative to the 5min default healthcheckInterval so low-hashrate CPU
-  # workers (which submit shares far less often than GPU ones) don't
-  # trigger a false-positive restart.
-  workerStaleAfterMs = 10 * 60 * 1000;
+  ktunnelHealthcheck = import ./ktunnel-healthcheck.nix { inherit pkgs; };
 
+  # Runs the shared connectivity check and restarts the service if it
+  # reports the tunnel as dead.
   healthcheckScript =
     name: inst:
-    pkgs.writeShellScript "ktunnel-xmrig-proxy-healthcheck-${name}.sh" ''
-      set -u
-      export KUBECONFIG=${inst.kubeconfig}
-
-      nodes_json=$(
-        ${pkgs.kubectl}/bin/kubectl get pods -n ${inst.namespace} -l app=xmrig -o json 2>/dev/null \
-          | ${pkgs.jq}/bin/jq -c '[.items[].spec.nodeName] | unique' \
-          || echo '[]'
-      )
-      workers_json=$(${pkgs.curl}/bin/curl -sf http://127.0.0.1:9674/1/workers 2>/dev/null || echo '{"workers":[]}')
-      now_ms=$(($(date +%s%N) / 1000000))
-
-      healthy=$(
-        ${pkgs.jq}/bin/jq -r \
-          --argjson nodes "$nodes_json" \
-          --argjson now "$now_ms" \
-          --argjson stale_after ${toString workerStaleAfterMs} '
-          (.workers // []) as $ws
-          | ($nodes // []) as $ns
-          | ($ns | length) == 0
-            or any($ns[]; . as $n | $ws | any(.[0] == $n and .[2] == 1 and (($now - .[7]) < $stale_after)))
-        ' <<< "$workers_json"
-      )
-
-      if [ "$healthy" = "true" ]
+    pkgs.writeShellScript "ktunnel-xmrig-proxy-healthcheck-restart-${name}.sh" ''
+      if ${ktunnelHealthcheck.mkCheckScript name inst ktunnelHealthcheck.staleAfterMs}
       then
-        echo "ktunnel-xmrig-proxy-${name}: at least one worker reachable (or no xmrig pods found yet), tunnel looks healthy"
         exit 0
       fi
-
-      echo "ktunnel-xmrig-proxy-${name}: no worker for nodes $nodes_json reported in via the shared proxy in the last ${
-        toString (workerStaleAfterMs / 60000)
-      } minutes; tunnel looks dead, restarting" >&2
+      echo "ktunnel-xmrig-proxy-${name}: restarting due to failed healthcheck" >&2
       exec ${pkgs.systemd}/bin/systemctl restart ktunnel-xmrig-proxy-${name}.service
     '';
 in
