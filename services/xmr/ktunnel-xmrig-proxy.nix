@@ -6,15 +6,16 @@
 }:
 let
   inherit (lib)
-    mapAttrs'
     mkIf
     mkOption
-    nameValuePair
     types
     ;
 
   cfg = config.services.ktunnel-xmrig-proxy;
   instances = lib.filterAttrs (_: inst: inst.enable) cfg;
+
+  ktunnelExpose = import ../ktunnel/expose.nix { inherit pkgs lib; };
+  ktunnelHealthcheck = import ./ktunnel-healthcheck.nix { inherit pkgs; };
 
   instanceOptions =
     { name, ... }:
@@ -107,27 +108,6 @@ let
         };
       };
     };
-
-  restartServiceName = name: "ktunnel-xmrig-proxy-restart-${name}";
-  restartableInstances = lib.filterAttrs (_: inst: inst.restartInterval != null) instances;
-
-  healthcheckServiceName = name: "ktunnel-xmrig-proxy-healthcheck-${name}";
-  healthcheckableInstances = lib.filterAttrs (_: inst: inst.healthcheckInterval != null) instances;
-
-  ktunnelHealthcheck = import ./ktunnel-healthcheck.nix { inherit pkgs; };
-
-  # Runs the shared connectivity check and restarts the service if it
-  # reports the tunnel as dead.
-  healthcheckScript =
-    name: inst:
-    pkgs.writeShellScript "ktunnel-xmrig-proxy-healthcheck-restart-${name}.sh" ''
-      if ${ktunnelHealthcheck.mkCheckScript name inst ktunnelHealthcheck.staleAfterMs}
-      then
-        exit 0
-      fi
-      echo "ktunnel-xmrig-proxy-${name}: restarting due to failed healthcheck" >&2
-      exec ${pkgs.systemd}/bin/systemctl restart ktunnel-xmrig-proxy-${name}.service
-    '';
 in
 {
   options.services.ktunnel-xmrig-proxy = mkOption {
@@ -136,108 +116,47 @@ in
     description = "ktunnel instances keyed by cluster name.";
   };
 
-  config = mkIf (instances != { }) {
-    users.groups.ktunnel = { };
-    users.users.ktunnel = {
-      group = "ktunnel";
-      isSystemUser = true;
-      description = "ktunnel k8s tunnel service account";
-    };
-
-    systemd = {
-      tmpfiles.rules = [
-        "d /var/lib/ktunnel 0700 ktunnel ktunnel - -"
-      ];
-
-      services =
-        mapAttrs' (
-          name: inst:
-          nameValuePair "ktunnel-xmrig-proxy-${name}" {
-            description = "ktunnel: expose xmrig-proxy to k8s cluster (${name})";
-            wants = [ "network-online.target" ];
-            after = [
-              "network-online.target"
-              "xmrig-proxy.service"
-            ];
-            environment = {
-              HOME = "/var/lib/ktunnel";
-              KUBECONFIG = inst.kubeconfig;
-            };
-            serviceConfig = {
-              User = inst.user;
-              Group = inst.group;
-              ExecStartPre = "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} create namespace ${inst.namespace}";
-              # No --reuse: reattaching to an existing server pod can hit a
-              # ktunnel bug where a stale leftover session kills the client's
-              # local tunnel listener without crashing the process (see
-              # restartInterval above). Always provisioning a fresh
-              # Service/Deployment on start avoids that failure mode entirely.
-              ExecStart = "${pkgs.ktunnel}/bin/ktunnel -p ${toString inst.tunnelPort} expose ${inst.serviceName} ${toString inst.localPort} --namespace ${inst.namespace} --server-image ${inst.image}";
-              Restart = "on-failure";
-              RestartSec = "30s";
-              # Hardening
-              NoNewPrivileges = true;
-              PrivateTmp = true;
-              ProtectHome = true;
-              ProtectSystem = "strict";
-              ReadWritePaths = [ "/var/lib/ktunnel" ];
-              CapabilityBoundingSet = "";
-              AmbientCapabilities = "";
-            };
-            wantedBy = [ "multi-user.target" ];
-          }
-        ) instances
-        // mapAttrs' (
-          name: inst:
-          nameValuePair (restartServiceName name) {
-            description = "Periodic self-restart of ktunnel-xmrig-proxy-${name} (self-healing watchdog)";
-            serviceConfig = {
-              Type = "oneshot";
-              ExecStart = "${pkgs.systemd}/bin/systemctl restart ktunnel-xmrig-proxy-${name}.service";
-            };
-          }
-        ) restartableInstances
-        // mapAttrs' (
-          name: inst:
-          nameValuePair (healthcheckServiceName name) {
-            description = "End-to-end healthcheck for ktunnel-xmrig-proxy-${name}, restarts it if dead";
-            serviceConfig = {
-              Type = "oneshot";
-              ExecStart = healthcheckScript name inst;
-            };
-          }
-        ) healthcheckableInstances;
-
-      timers =
-        mapAttrs' (
-          name: inst:
-          nameValuePair (restartServiceName name) {
-            description = "Periodically restart ktunnel-xmrig-proxy-${name}";
-            timerConfig = {
-              OnUnitActiveSec = inst.restartInterval;
-              OnBootSec = inst.restartInterval;
-              # Jitter so cluster-01/02 don't restart in lockstep.
-              RandomizedDelaySec = "1h";
-              Persistent = true;
-            };
-            wantedBy = [ "timers.target" ];
-          }
-        ) restartableInstances
-        // mapAttrs' (
-          name: inst:
-          nameValuePair (healthcheckServiceName name) {
-            description = "Periodically healthcheck ktunnel-xmrig-proxy-${name}";
-            timerConfig = {
-              OnUnitActiveSec = inst.healthcheckInterval;
-              OnBootSec = inst.healthcheckInterval;
-              # Jitter so cluster-01/02 don't both hit the shared proxy's
-              # API at the same instant.
-              RandomizedDelaySec = "1min";
-              Persistent = true;
-            };
-            wantedBy = [ "timers.target" ];
-          }
-        ) healthcheckableInstances;
-    };
-  };
+  # NOTE: deliberately not `mkMerge (mapAttrsToList ... instances)` here.
+  # mkMerge wrapping a list derived from `instances` (itself read from
+  # config.services.ktunnel-xmrig-proxy) triggers a genuine infinite
+  # recursion in the module system's `pushDownProperties` handling of the
+  # mkMerge marker — reproduced with a trivial config body, so it's not
+  # about anything ktunnelExpose does. Each instance's ktunnelExpose result
+  # has uniquely-named systemd.services/timers keys, so a plain
+  # recursiveUpdate fold is equivalent and doesn't trip the module system's
+  # extra handling for mkMerge's "merge" marker.
+  config =
+    let
+      base = import ../ktunnel/base.nix;
+      perInstance = lib.mapAttrsToList (
+        name: inst:
+        ktunnelExpose {
+          unitName = "ktunnel-xmrig-proxy-${name}";
+          description = "ktunnel: expose xmrig-proxy to k8s cluster (${name})";
+          inherit (inst)
+            serviceName
+            namespace
+            localPort
+            kubeconfig
+            tunnelPort
+            image
+            user
+            group
+            restartInterval
+            healthcheckInterval
+            ;
+          afterUnits = [ "xmrig-proxy.service" ];
+          healthCheckScript = ktunnelHealthcheck.mkCheckScript name inst ktunnelHealthcheck.staleAfterMs;
+        }
+      ) instances;
+    in
+    mkIf (instances != { }) (
+      base
+      // {
+        systemd = base.systemd // {
+          services = lib.foldl' (a: b: a // b) { } (map (f: f.systemd.services or { }) perInstance);
+          timers = lib.foldl' (a: b: a // b) { } (map (f: f.systemd.timers or { }) perInstance);
+        };
+      }
+    );
 }

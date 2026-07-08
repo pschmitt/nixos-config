@@ -7,15 +7,17 @@
 let
   inherit (lib)
     filterAttrs
-    mapAttrs'
+    mapAttrsToList
     mkIf
     mkOption
-    nameValuePair
     types
     ;
 
   cfg = config.services.inet-proxy;
   enabledClusters = filterAttrs (_: inst: inst.enable) cfg.clusters;
+
+  ktunnelExpose = import ./ktunnel/expose.nix { inherit pkgs lib; };
+  inetProxyHealthcheck = import ./ktunnel/inet-proxy-healthcheck.nix { inherit pkgs; };
 
   # LoadBalancer Service manifest (requires MetalLB or equivalent)
   lbManifest =
@@ -111,6 +113,32 @@ let
           default = "artifactory.prod.capp.wiit-cloud.io/docker-dockerio-remote/omrieival/ktunnel:v1.6.1";
           description = "ktunnel server image pullable from inside the cluster.";
         };
+
+        restartInterval = mkOption {
+          type = types.nullOr types.str;
+          default = "12h";
+          description = ''
+            Coarse safety-net restart interval for this ktunnel instance, as a
+            systemd time span (e.g. "12h"). Set to null to disable. This is a
+            backstop on top of healthcheckInterval below, not the primary
+            defense against a dead tunnel.
+          '';
+        };
+
+        healthcheckInterval = mkOption {
+          type = types.nullOr types.str;
+          default = "5min";
+          description = ''
+            How often to run an active end-to-end healthcheck for this
+            ktunnel instance, as a systemd time span (e.g. "5min"). Set to
+            null to disable.
+
+            The check runs a real HTTPS request through
+            kubectl port-forward -> ktunnel server pod -> gRPC tunnel ->
+            local tinyproxy -> internet, and restarts the tunnel if that
+            fails. See services/ktunnel/inet-proxy-healthcheck.nix.
+          '';
+        };
       };
     };
 in
@@ -131,71 +159,86 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    services.tinyproxy = {
-      enable = true;
-      settings = {
-        Port = cfg.port;
-        Listen = "127.0.0.1";
-        Timeout = 600;
-        # ktunnel connects from localhost, so this is the only source address
-        Allow = [
-          "127.0.0.1"
-          "::1"
-        ];
-        MaxClients = 100;
-        DisableViaHeader = true;
-        LogLevel = "Warning";
-      };
-    };
+  # NOTE: deliberately not mkMerge/recursiveUpdate here — either one wrapping
+  # values derived from `cfg`/`enabledClusters` (both read from
+  # config.services.inet-proxy) triggers a genuine infinite recursion in this
+  # nixpkgs' module system (reproduced with trivial config bodies, so it's
+  # not about anything ktunnelExpose does; see the identical note in
+  # services/xmr/ktunnel-xmrig-proxy.nix). Every instance's ktunnelExpose
+  # result has uniquely-named systemd.services/timers keys, so plain shallow
+  # `//` at each level is equivalent and doesn't trip it.
+  config =
+    let
+      base = import ./ktunnel/base.nix;
 
-    users.groups.ktunnel = { };
-    users.users.ktunnel = {
-      group = "ktunnel";
-      isSystemUser = true;
-      description = "ktunnel k8s tunnel service account";
-    };
-
-    systemd.tmpfiles.rules = [
-      "d /var/lib/ktunnel 0700 ktunnel ktunnel - -"
-    ];
-
-    systemd.services = mapAttrs' (
-      name: inst:
-      nameValuePair "ktunnel-inet-proxy-${name}" {
-        description = "ktunnel: expose inet-proxy to k8s cluster (${name})";
-        wants = [ "network-online.target" ];
-        after = [
-          "network-online.target"
-          "tinyproxy.service"
-        ];
-        environment = {
-          HOME = "/var/lib/ktunnel";
-          KUBECONFIG = inst.kubeconfig;
+      perInstance = mapAttrsToList (
+        name: inst:
+        let
+          unitName = "ktunnel-inet-proxy-${name}";
+          # Scratch port for the healthcheck's transient `kubectl port-forward`;
+          # offset from tunnelPort (already required unique per instance) so it
+          # can't collide with it or with another instance's check.
+          checkPort = inst.tunnelPort + 1;
+          expose = ktunnelExpose {
+            inherit unitName;
+            description = "ktunnel: expose inet-proxy to k8s cluster (${name})";
+            inherit (inst)
+              serviceName
+              namespace
+              kubeconfig
+              tunnelPort
+              image
+              restartInterval
+              healthcheckInterval
+              ;
+            localPort = cfg.port;
+            afterUnits = [ "tinyproxy.service" ];
+            healthCheckScript = inetProxyHealthcheck.mkCheckScript name {
+              inherit (inst) kubeconfig namespace serviceName;
+              inherit (cfg) port;
+              inherit checkPort;
+            };
+          };
+        in
+        expose
+        // {
+          systemd = expose.systemd // {
+            services = expose.systemd.services // {
+              "${unitName}" = expose.systemd.services."${unitName}" // {
+                serviceConfig = expose.systemd.services."${unitName}".serviceConfig // {
+                  ExecStartPost = map (
+                    manifest: "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${manifest}"
+                  ) (externalManifests inst);
+                };
+              };
+            };
+          };
+        }
+      ) enabledClusters;
+    in
+    mkIf cfg.enable (
+      base
+      // {
+        services.tinyproxy = {
+          enable = true;
+          settings = {
+            Port = cfg.port;
+            Listen = "127.0.0.1";
+            Timeout = 600;
+            # ktunnel connects from localhost, so this is the only source address
+            Allow = [
+              "127.0.0.1"
+              "::1"
+            ];
+            MaxClients = 100;
+            DisableViaHeader = true;
+            LogLevel = "Warning";
+          };
         };
-        serviceConfig = {
-          User = "ktunnel";
-          Group = "ktunnel";
-          ExecStartPre = "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} create namespace ${inst.namespace}";
-          ExecStart = "${pkgs.ktunnel}/bin/ktunnel -p ${toString inst.tunnelPort} expose ${inst.serviceName} ${toString cfg.port} --namespace ${inst.namespace} --server-image ${inst.image} --reuse";
-          ExecStartPost = map (
-            manifest: "${pkgs.kubectl}/bin/kubectl --kubeconfig ${inst.kubeconfig} apply -f ${manifest}"
-          ) (externalManifests inst);
-          Restart = "always";
-          RestartSec = "5s";
-          # kubectl port-forward through Rancher times out at ~15 min; restart
-          # proactively every 10 min so the tunnel never goes stale.
-          RuntimeMaxSec = "600s";
-          NoNewPrivileges = true;
-          PrivateTmp = true;
-          ProtectHome = true;
-          ProtectSystem = "strict";
-          ReadWritePaths = [ "/var/lib/ktunnel" ];
-          CapabilityBoundingSet = "";
-          AmbientCapabilities = "";
+        systemd = base.systemd // {
+          services = lib.foldl' (a: b: a // b) { } (map (f: f.systemd.services or { }) perInstance);
+          timers = lib.foldl' (a: b: a // b) { } (map (f: f.systemd.timers or { }) perInstance);
         };
-        wantedBy = [ "multi-user.target" ];
       }
-    ) enabledClusters;
-  };
+    );
 }
