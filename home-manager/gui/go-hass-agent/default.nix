@@ -20,6 +20,7 @@ in
       services.go-hass-agent.scriptPackages =
         with pkgs;
         [
+          bruvtab
           grim
           jq
           (python3.withPackages (ps: [ ps.dbus-python ]))

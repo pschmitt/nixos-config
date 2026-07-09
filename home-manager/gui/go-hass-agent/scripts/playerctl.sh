@@ -1,6 +1,103 @@
 #!/usr/bin/env bash
 # Emits a Go Hass Agent binary sensor with media player state and metadata via playerctl.
 
+get_mpris_player_json() {
+  python3 <<'PY'
+import json
+import sys
+
+import dbus
+
+PREFIX = "org.mpris.MediaPlayer2."
+IGNORE = {PREFIX + "playerctld"}
+
+
+def unwrap(value):
+    if isinstance(value, dbus.String):
+        return str(value)
+    if isinstance(value, dbus.Boolean):
+        return bool(value)
+    if isinstance(value, (dbus.Int16, dbus.Int32, dbus.Int64, dbus.UInt16, dbus.UInt32, dbus.UInt64)):
+        return int(value)
+    if isinstance(value, dbus.Double):
+        return float(value)
+    if isinstance(value, dbus.Array):
+        return [unwrap(v) for v in value]
+    if isinstance(value, dbus.Dictionary):
+        return {str(k): unwrap(v) for k, v in value.items()}
+    if isinstance(value, dbus.ObjectPath):
+        return str(value)
+    return value
+
+
+def get_player_payload(bus, service):
+    proxy = bus.get_object(service, "/org/mpris/MediaPlayer2")
+    props = dbus.Interface(proxy, "org.freedesktop.DBus.Properties")
+    status = str(props.Get("org.mpris.MediaPlayer2.Player", "PlaybackStatus")).lower()
+    metadata = unwrap(props.Get("org.mpris.MediaPlayer2.Player", "Metadata"))
+    player = service.removeprefix(PREFIX)
+    return {
+        "service": service,
+        "player": player.split(".", 1)[0],
+        "play_state": status,
+        "title": metadata.get("xesam:title", ""),
+        "album": metadata.get("xesam:album", ""),
+        "artist": ", ".join(metadata.get("xesam:artist", [])),
+        "art_url": metadata.get("mpris:artUrl", ""),
+        "track_url": metadata.get("xesam:url", ""),
+    }
+
+
+try:
+    bus = dbus.SessionBus()
+    dbus_proxy = dbus.Interface(
+        bus.get_object("org.freedesktop.DBus", "/org/freedesktop/DBus"),
+        "org.freedesktop.DBus",
+    )
+    services = [
+        name for name in dbus_proxy.ListNames()
+        if name.startswith(PREFIX) and name not in IGNORE
+    ]
+except Exception:
+    sys.exit(1)
+
+players = []
+for service in services:
+    try:
+        players.append(get_player_payload(bus, service))
+    except Exception:
+        continue
+
+if not players:
+    sys.exit(1)
+
+playing = [player for player in players if player["play_state"] == "playing"]
+selected = playing[0] if playing else players[0]
+print(json.dumps(selected))
+PY
+}
+
+get_bruvtab_playing_json() {
+  local bruvtab_json
+  bruvtab_json="$(bruvtab tabs --playing -j 2>/dev/null)" || return 1
+
+  jq -cer '
+    if length == 0 then
+      empty
+    else
+      .[0] | {
+        player: "browser",
+        play_state: "playing",
+        title: (.title // ""),
+        album: "",
+        artist: "",
+        art_url: "",
+        track_url: (.url // "")
+      }
+    end
+  ' <<< "$bruvtab_json"
+}
+
 get_active_player() {
   local all_players
   all_players="$(playerctl --list-all 2>/dev/null)" || return 1
@@ -78,7 +175,37 @@ main() {
   local player
   player="$(get_active_player 2>/dev/null)" || true
 
-  if [[ -z "${player:-}" ]]; then
+  local playername="" play_state="unavailable" title="" album="" artist="" art_url="" track_url=""
+
+  if [[ -n "${player:-}" ]]; then
+    playername="$(awk -F. '{print $1; exit}' <<< "$player")"
+
+    play_state="$(playerctl --player "$player" status 2>/dev/null | tr '[:upper:]' '[:lower:]')" \
+      || play_state="unavailable"
+
+    title="$(playerctl --player "$player" metadata title 2>/dev/null || true)"
+    album="$(playerctl --player "$player" metadata album 2>/dev/null || true)"
+    artist="$(playerctl --player "$player" metadata artist 2>/dev/null || true)"
+    art_url="$(playerctl --player "$player" metadata mpris:artUrl 2>/dev/null || true)"
+    track_url="$(playerctl --player "$player" metadata xesam:url 2>/dev/null || true)"
+  else
+    local fallback_json=""
+    fallback_json="$(get_bruvtab_playing_json 2>/dev/null)" || true
+    if [[ -z "$fallback_json" ]]; then
+      fallback_json="$(get_mpris_player_json 2>/dev/null)" || true
+    fi
+    if [[ -n "$fallback_json" ]]; then
+      playername="$(jq -r '.player // empty' <<< "$fallback_json")"
+      play_state="$(jq -r '.play_state // "unavailable"' <<< "$fallback_json")"
+      title="$(jq -r '.title // empty' <<< "$fallback_json")"
+      album="$(jq -r '.album // empty' <<< "$fallback_json")"
+      artist="$(jq -r '.artist // empty' <<< "$fallback_json")"
+      art_url="$(jq -r '.art_url // empty' <<< "$fallback_json")"
+      track_url="$(jq -r '.track_url // empty' <<< "$fallback_json")"
+    fi
+  fi
+
+  if [[ -z "${playername:-}" ]]; then
     jq -n \
       --argjson state "$state" \
       --arg icon "$icon" \
@@ -95,20 +222,6 @@ main() {
       }'
     return
   fi
-
-  local playername
-  playername="$(awk -F. '{print $1; exit}' <<< "$player")"
-
-  local play_state
-  play_state="$(playerctl --player "$player" status 2>/dev/null | tr '[:upper:]' '[:lower:]')" \
-    || play_state="unavailable"
-
-  local title album artist art_url track_url
-  title="$(playerctl --player "$player" metadata title 2>/dev/null || true)"
-  album="$(playerctl --player "$player" metadata album 2>/dev/null || true)"
-  artist="$(playerctl --player "$player" metadata artist 2>/dev/null || true)"
-  art_url="$(playerctl --player "$player" metadata mpris:artUrl 2>/dev/null || true)"
-  track_url="$(playerctl --player "$player" metadata xesam:url 2>/dev/null || true)"
 
   if [[ -z "${art_url:-}" && -n "${track_url:-}" ]]
   then
