@@ -1,11 +1,13 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   inherit (config.services.go-hass-agent) commandScripts;
+  bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   imports = [ ../../../modules/home-manager/go-hass-agent.nix ];
@@ -20,7 +22,7 @@ in
       services.go-hass-agent.scriptPackages =
         with pkgs;
         [
-          bruvtab
+          bruvtabPkg
           grim
           jq
           (python3.withPackages (ps: [ ps.dbus-python ]))
