@@ -19,8 +19,12 @@ let
   endurainPgdataDir = "/var/lib/postgresql/data/pgdata";
 
   # Gadgetbridge activity export from the phone, synced in via Syncthing and
-  # consumed by the Endurain ingest watcher.
+  # consumed by the Endurain ingest watcher. Syncthing mirrors the whole tree
+  # (gpx/, fit/, backups/, maps/, ...); the ingest watcher only globs flat
+  # files in the dir it's pointed at (no recursion), so it's scoped to the
+  # gpx/ subfolder specifically — Gadgetbridge's GPX auto-export directory.
   gadgetbridgeDir = "${dataDir}/gadgetbridge";
+  gadgetbridgeGpxDir = "${gadgetbridgeDir}/gpx";
   gadgetbridgeSyncId = "6qqtd-3lljl";
   phoneDevice = "zf10";
 
@@ -127,7 +131,7 @@ in
           EnvironmentFile = config.sops.secrets."endurain-ingest/env".path;
           Environment = [
             "ENDURAIN_HOST=${endurainHost}"
-            "ENDURAIN_WATCH_DIR=${gadgetbridgeDir}"
+            "ENDURAIN_WATCH_DIR=${gadgetbridgeGpxDir}"
             "ENDURAIN_STATE_DIR=${ingestStateDir}/markers"
             "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
           ];
@@ -156,7 +160,7 @@ in
     paths.endurain-ingest = {
       description = "Watch for new Gadgetbridge/OpenTracks activity files";
       wantedBy = [ "paths.target" ];
-      pathConfig.PathModified = gadgetbridgeDir;
+      pathConfig.PathModified = gadgetbridgeGpxDir;
     };
 
     # Backstop only: startup catch-up (OnBootSec, for files that arrived while
