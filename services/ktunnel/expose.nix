@@ -81,7 +81,19 @@ in
         serviceConfig = {
           User = user;
           Group = group;
-          ExecStartPre = "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${kubeconfig} create namespace ${namespace}";
+          ExecStartPre = [
+            "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${kubeconfig} create namespace ${namespace}"
+            # `ktunnel expose` always provisions a fresh Deployment/Service
+            # (see the --reuse note above) and fails outright if one is
+            # already there. A prior instance normally deletes its own on a
+            # graceful stop, but an ungraceful exit (OOM, SIGKILL after
+            # StopTimeout, host reboot) can leave one behind, which then
+            # wedges every future start in a permanent AlreadyExists crash
+            # loop -- Restart=on-failure and the healthcheck restart just
+            # repeat the same failure forever. Deleting first makes startup
+            # idempotent regardless of how the previous instance died.
+            "-${pkgs.kubectl}/bin/kubectl --kubeconfig ${kubeconfig} delete deployment,service ${serviceName} --namespace ${namespace} --ignore-not-found --wait --timeout=30s"
+          ];
           ExecStart = "${pkgs.ktunnel}/bin/ktunnel -p ${toString tunnelPort} expose ${serviceName} ${toString localPort} --namespace ${namespace} --server-image ${image}";
           Restart = "on-failure";
           RestartSec = "30s";
