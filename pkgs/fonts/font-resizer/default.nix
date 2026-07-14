@@ -17,8 +17,8 @@ buildPythonApplication rec {
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = pname;
-    rev = version;
-    hash = "sha256-ZZpIS45UNJm5xsJuxgEdsmh2Fuga20QH/YNCaDrufJ0=";
+    rev = "71b63c213efed09dfde190f6271f52ac81d7a76e";
+    hash = "sha256-vP+RjYraNlkJxytqinkHcopTdT/LEZA03ejyV+X6RCc=";
   };
 
   nativeBuildInputs = [
