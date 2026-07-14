@@ -102,22 +102,24 @@ let
               description = "Optional HTTP request path for health checks.";
             };
 
-            composeYaml = mkOption {
-              type = types.nullOr types.str;
-              default = null;
-              description = "Optional docker-compose project directory.";
-            };
+            restart = {
+              systemdUnit = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Systemd unit Monit restarts when this service is unhealthy.";
+              };
 
-            restartAll = mkOption {
-              type = types.bool;
-              default = true;
-              description = "Whether Monit restarts the entire compose stack instead of a single service.";
-            };
+              composePath = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Explicit /srv-relative path to the external Compose project Monit restarts.";
+              };
 
-            restartComposeService = mkOption {
-              type = types.nullOr types.str;
-              default = null;
-              description = "Compose service name to restart when restartAll = false; defaults to the container service name.";
+              composeService = mkOption {
+                type = types.nullOr types.str;
+                default = null;
+                description = "Compose service to restart; when null, restarts the complete project.";
+              };
             };
 
             dependsOn = mkOption {
@@ -210,8 +212,7 @@ let
   monitCheckText =
     {
       serviceName,
-      composePath,
-      restartTarget,
+      restartCommand,
       monitoredPort,
       proto,
       extraClause,
@@ -223,9 +224,7 @@ let
         group container-services
         ${optionalString (group != null) "group ${group}"}
         ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --no-deps${
-          optionalString (restartTarget != null) " ${restartTarget}"
-        }"
+        restart program = "${restartCommand}"
           with timeout 180 seconds
         if failed
           port ${monitoredPort}
@@ -238,8 +237,7 @@ let
   monitProgramCheckText =
     {
       serviceName,
-      composePath,
-      restartTarget,
+      restartCommand,
       program,
       dependsOn,
       group,
@@ -249,13 +247,23 @@ let
         group container-services
         ${optionalString (group != null) "group ${group}"}
         ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
-        restart program = "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${composePath}/docker-compose.yaml up -d --no-deps${
-          optionalString (restartTarget != null) " ${restartTarget}"
-        }"
+        restart program = "${restartCommand}"
           with timeout 180 seconds
         if status != 0 then restart
         if 5 restarts within 10 cycles then alert
     '';
+
+  restartProgram =
+    service:
+    let
+      inherit (service.monitoring) restart;
+    in
+    if restart.systemdUnit != null then
+      "${pkgs.systemd}/bin/systemctl restart ${restart.systemdUnit}"
+    else
+      "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${restart.composePath}/docker-compose.yaml up -d --no-deps${
+        optionalString (restart.composeService != null) " ${restart.composeService}"
+      }";
 
   generateMonitCheck =
     serviceName: service:
@@ -263,9 +271,6 @@ let
       inherit (service.monitoring)
         expectedHttpStatusCode
         path
-        composeYaml
-        restartAll
-        restartComposeService
         dependsOn
         group
         program
@@ -274,21 +279,16 @@ let
         optional (path != null) "request \"${path}\""
         ++ optional (expectedHttpStatusCode != null) "status ${toString expectedHttpStatusCode}";
       extraClause = concatStringsSep " " monitorClauses;
-      composePath = if composeYaml != null then composeYaml else serviceName;
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
-      restartTarget =
-        if restartAll then
-          null
-        else
-          (if restartComposeService != null then restartComposeService else serviceName);
+      inherit (service) monitoring;
+      restartCommand = restartProgram service;
     in
     if program != null then
       monitProgramCheckText {
         inherit
           serviceName
-          composePath
-          restartTarget
+          restartCommand
           program
           dependsOn
           group
@@ -298,8 +298,7 @@ let
       monitCheckText {
         inherit
           serviceName
-          composePath
-          restartTarget
+          restartCommand
           monitoredPort
           proto
           extraClause
@@ -330,6 +329,23 @@ let
     ++ optional (htpasswdFile != null && !wantsBasic) {
       assertion = false;
       message = "Container service '${serviceName}' should only set auth.htpasswdFile when auth.type = \"basic\".";
+    }
+  ) (attrNames cfg.services);
+
+  restartOptionAssertions = concatMap (
+    serviceName:
+    let
+      restart = cfg.services.${serviceName}.monitoring.restart;
+      hasSystemdUnit = restart.systemdUnit != null;
+      hasComposePath = restart.composePath != null;
+    in
+    optional (hasSystemdUnit == hasComposePath) {
+      assertion = false;
+      message = "Container service '${serviceName}' must set exactly one of monitoring.restart.systemdUnit or monitoring.restart.composePath.";
+    }
+    ++ optional (restart.composeService != null && !hasComposePath) {
+      assertion = false;
+      message = "Container service '${serviceName}' may only set monitoring.restart.composeService with monitoring.restart.composePath.";
     }
   ) (attrNames cfg.services);
 
@@ -570,7 +586,7 @@ in
   };
 
   config = mkIf cfg.enable {
-    assertions = authOptionAssertions;
+    assertions = authOptionAssertions ++ restartOptionAssertions;
     services.nginx.virtualHosts = virtualHosts;
     services.monit.config = lib.mkAfter monitExtraConfig;
 

@@ -32,6 +32,7 @@ in
       alby-hub = {
         port = 25294;
         hosts = [ (mkHost "alby") ];
+        monitoring.restart.composePath = "alby-hub";
       };
       archivebox = {
         port = 27244;
@@ -43,14 +44,18 @@ in
           (mkHostWithNode "archive")
           (mkHostWithNode "archivebox")
         ];
+        monitoring.restart.composePath = "archivebox";
       };
       bichon = {
         port = 15630;
         hosts = [ (mkHost "bichon") ];
+        monitoring.restart.systemdUnit = config.virtualisation.oci-containers.containers.bichon.serviceName;
       };
       changedetection = {
         port = 24264;
         hosts = [ (mkHost "changes") ];
+        monitoring.restart.systemdUnit =
+          config.virtualisation.oci-containers.containers.changedetection-io.serviceName;
       };
       dawarich = {
         port = 32927;
@@ -60,7 +65,7 @@ in
         ];
         monitoring = {
           path = "/api/v1/health";
-          restartAll = true;
+          restart.composePath = "dawarich";
         };
       };
       linkding = {
@@ -69,11 +74,15 @@ in
           (mkHost "ld")
           (mkHost "linkding")
         ];
+        monitoring.restart.composePath = "linkding";
       };
       nextcloud = {
         port = 63982;
         tls = true;
-        monitoring.program = "${nextcloudHealthCheck}";
+        monitoring = {
+          program = "${nextcloudHealthCheck}";
+          restart.composePath = "nextcloud";
+        };
         hosts = [
           (mkHost "c")
           (mkHost "nextcloud")
@@ -88,6 +97,7 @@ in
       wikijs = {
         port = 9454;
         hosts = [ (mkHost "wiki") ];
+        monitoring.restart.composePath = "wikijs";
       };
     };
   };
