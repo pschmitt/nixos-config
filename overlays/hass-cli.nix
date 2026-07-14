@@ -1,6 +1,7 @@
 { final, prev }:
 {
-  # XXX Remove this overlay once there's a new hass-cli release (> 0.9.6).
+  # XXX Remove this overlay once there's a new hass-cli release (> 0.9.6)
+  # containing the Python 3.14 asyncio compatibility fix.
   # https://github.com/home-assistant-ecosystem/home-assistant-cli/releases
   home-assistant-cli = prev.home-assistant-cli.overrideAttrs (oldAttrs: {
     version = "0.9.7-dev";
@@ -12,6 +13,10 @@
       hash = "sha256-opuHn7ngSEpUdYkDYzq2QRgkZYfqhG+Uw1DbME6kxwQ=";
     };
     postPatch = (oldAttrs.postPatch or "") + ''
+      substituteInPlace homeassistant_cli/remote.py \
+        --replace-fail "    loop = asyncio.get_event_loop()" "" \
+        --replace-fail '    result = loop.run_until_complete(fetcher())' \
+          '    result = asyncio.run(fetcher())'
       substituteInPlace tests/conftest.py \
         --replace-fail 'import pkg_resources' "" \
         --replace-fail "FIXTURES_PATH = pkg_resources.resource_filename(__name__, 'fixtures/')" \
