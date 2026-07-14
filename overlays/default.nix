@@ -57,7 +57,7 @@
       };
     };
 
-  llm-agents = inputs.llm-agents.overlays.default;
+  llm-agents = inputs.llm-agents.overlays.shared-nixpkgs;
 
   old-packages = final: prev: {
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
