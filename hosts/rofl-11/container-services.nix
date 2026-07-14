@@ -19,7 +19,7 @@ in
         port = 7827;
         hosts = [ (mkHost "pp") ];
         monitoring = {
-          composeYaml = "stash";
+          restart.composePath = "stash";
           group = "piracy";
         };
       };
@@ -29,6 +29,7 @@ in
           (mkHost "tdarr")
           (mkHostWithNode "tdarr")
         ];
+        monitoring.restart.systemdUnit = config.virtualisation.oci-containers.containers.tdarr.serviceName;
       };
     };
   };

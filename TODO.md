@@ -10,11 +10,12 @@ the explicit loopback endpoint, then verify `rofl-10` evaluates.
 
 ## NIX-002: Retire or narrow legacy container-services
 
-Status: Open
+Status: Complete
 
 Audit `modules/container-services.nix` and the `rofl-10`/`rofl-11` registries.
-Remove stale routes and monitoring entries, migrate Nix-managed containers to
-their actual systemd units, and make any remaining Compose lifecycle explicit.
+Migrate Nix-managed containers to their actual systemd units, remove the
+duplicate changedetection check, and make every external Compose lifecycle
+explicit.
 
 ## NIX-003: Separate workstation composition from settings
 
