@@ -6,6 +6,8 @@
 }:
 let
   netboxHost = "netbox.${config.domains.main}";
+  netboxBind = "127.0.0.1:8001";
+  netboxPort = 8001;
 in
 {
   sops.secrets = {
@@ -27,10 +29,10 @@ in
     netbox = {
       enable = true;
       package = pkgs.master.netbox;
-      listenAddress = "127.0.0.1";
+      bind = netboxBind;
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
-      apiTokenPeppersFile = config.sops.secrets."netbox/apiTokenPeppers".path;
+      apiTokenPepperFiles."1" = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins = ps: [
         (ps.netbox-documents.overridePythonAttrs (old: {
           postPatch = (old.postPatch or "") + ''
@@ -97,7 +99,7 @@ in
           alias = "${config.services.netbox.dataDir}/static/";
         };
         "/" = {
-          proxyPass = "http://${config.services.netbox.listenAddress}:${toString config.services.netbox.port}";
+          proxyPass = "http://${netboxBind}";
           proxyWebsockets = true;
           recommendedProxySettings = true;
         };
@@ -109,7 +111,7 @@ in
         group services
         restart program = "${pkgs.systemd}/bin/systemctl restart netbox.service netbox-rq.service"
         if failed
-          port ${toString config.services.netbox.port}
+          port ${toString netboxPort}
           protocol http
           request "/"
           with hostheader "${netboxHost}"
