@@ -546,6 +546,10 @@
                 deviceType = "laptop";
                 homeManager = true;
               };
+              falcon-sensor-vm = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
               gk4 = {
                 system = "x86_64-linux";
                 deviceType = "laptop";
