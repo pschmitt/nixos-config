@@ -70,7 +70,7 @@
       forwardPorts = [
         {
           host.address = "127.0.0.1";
-          host.port = 2222;
+          host.port = 32526;
           guest.port = 22;
         }
       ];
