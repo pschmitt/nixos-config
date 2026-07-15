@@ -17,13 +17,13 @@
 
 buildPythonApplication rec {
   pname = "lnxlink";
-  version = "2026.6.0";
+  version = "2026.7.0";
 
   src = fetchFromGitHub {
     owner = "bkbilly";
     repo = "lnxlink";
     rev = version;
-    hash = "sha256-FdAeEUwVQ4L6bl6x3SpHwo85uy/xPv4wU0NWpimaU/c=";
+    hash = "sha256-kNlhBR/vYGNlBEmHBFYUyDfCPqAb/U19Q4v2U0c+WUQ=";
   };
 
   pyproject = true;
