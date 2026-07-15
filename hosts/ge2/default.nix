@@ -7,8 +7,8 @@
     # custom gdm monitor config
     ./gdm.nix
     ./wacom.nix
+    ./falcon-sensor-vm.nix
     ../../profiles/work/elgato-stream-deck.nix
-    ../../profiles/work/crowdstrike-falcon-sensor.nix
 
     ../../profiles/workstation.nix
 
