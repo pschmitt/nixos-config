@@ -92,6 +92,16 @@ in
         recommendedProxySettings = true;
         extraConfig = autheliaConfig.location;
       };
+      # Transmission enforces its own RPC authentication
+      # (rpc-authentication-required, basic auth via the sops-templated
+      # credentials file above), so gating the RPC endpoint behind Authelia
+      # too is redundant and just gets in the way of scripted/API clients.
+      # The web UI (everything else under "/") stays behind Authelia.
+      locations."/transmission/rpc" = {
+        proxyPass = "http://${internalIP}:${toString rpcPort}";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
+      };
     };
 
     monit.config = ''
