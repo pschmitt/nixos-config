@@ -29,15 +29,11 @@ buildPythonApplication rec {
   pyproject = true;
 
   postPatch = ''
-    substituteInPlace pyproject.toml \
-      --replace-fail '"setuptools~=68.0.0"' '"setuptools"' \
-      --replace-fail '"wheel~=0.40.0"' '"wheel"'
-    sed -i '/"asyncio>=/d' pyproject.toml
     # Filter br-* (Docker bridge) interfaces alongside veth* in both modules
     substituteInPlace lnxlink/modules/interfaces.py \
       --replace-fail \
-        'if interf.startswith("veth"):' \
-        'if interf.startswith(("veth", "br-")):'
+        '"exclude": ["veth"],' \
+        '"exclude": ["veth", "br-"],'
     substituteInPlace lnxlink/modules/wol.py \
       --replace-fail \
         'if interf.startswith("veth"):' \
