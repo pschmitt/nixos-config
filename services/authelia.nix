@@ -93,35 +93,27 @@ let
           networks = [ "local" ];
           domain = [ "*.${config.domains.main}" ];
         }
-        {
-          policy = "one_factor";
-          domain = [ "blobs.${config.domains.main}" ];
-          subject = [ "group:admin" ];
-        }
-        {
-          policy = "one_factor";
-          domain = [ "blobs.${config.domains.main}" ];
-          resources = [
-            "^/private/?$"
-            "^/private/.*$"
-          ];
-          subject = [
-            "group:admin"
-            "group:github-actions"
-          ];
-        }
-        # Deny any other request to blobs
-        # {
-        #   policy = "deny";
-        #   domain = [ "blobs.${config.domains.main}" ];
-        #   subject = [ "group:github-actions" ];
-        # }
-      ];
+      ]
+      ++ config.custom.authelia.extraAccessControlRules;
     };
   };
 in
 {
-  sops = {
+  options.custom.authelia.extraAccessControlRules = lib.mkOption {
+    type = lib.types.listOf lib.types.attrs;
+    default = [ ];
+    description = ''
+      Extra access_control rules appended after the built-in rules above (i.e.
+      after the mesh-wide bypass), for services defined in other modules on
+      this same host (e.g. http-static.nix's blobs.${config.domains.main}
+      rules). Modules on other hosts (the arr stack, audiobookshelf on
+      rofl-11) can't use this: each host builds as an independent NixOS
+      system, so an option set there never reaches this Authelia instance's
+      settings here.
+    '';
+  };
+
+  config.sops = {
     secrets = {
       "authelia/jwt-secret" = secretsAttrs autheliaUser;
       "authelia/storage-encryption-key" = secretsAttrs autheliaUser;
@@ -216,7 +208,7 @@ in
     };
   };
 
-  services = {
+  config.services = {
     authelia.instances.${instanceName} = {
       enable = true;
       user = autheliaUser;

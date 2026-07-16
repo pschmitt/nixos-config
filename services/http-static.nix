@@ -144,6 +144,35 @@ in
     };
   };
 
+  # Authelia (authelia.nix) is on this same host, so these can be spliced
+  # into its access_control rules via the shared extension point instead of
+  # authelia.nix hardcoding blobs-specific policy.
+  custom.authelia.extraAccessControlRules = [
+    {
+      policy = "one_factor";
+      domain = [ "blobs.${config.domains.main}" ];
+      subject = [ "group:admin" ];
+    }
+    {
+      policy = "one_factor";
+      domain = [ "blobs.${config.domains.main}" ];
+      resources = [
+        "^/private/?$"
+        "^/private/.*$"
+      ];
+      subject = [
+        "group:admin"
+        "group:github-actions"
+      ];
+    }
+    # Deny any other request to blobs
+    # {
+    #   policy = "deny";
+    #   domain = [ "blobs.${config.domains.main}" ];
+    #   subject = [ "group:github-actions" ];
+    # }
+  ];
+
   services.monit.config = lib.mkAfter ''
     check host "http-static-blobs" with address "blobs.${config.domains.main}"
       group nginx
