@@ -52,7 +52,16 @@ let
         proxyPass = "http://${internalIP}:${toString s.port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
+        # nginx's 60s proxy_read_timeout default is too short for interactive
+        # searches (Sonarr/Radarr synchronously polling indexers via Prowlarr
+        # can take well over a minute); match the 240s used elsewhere in this
+        # repo (authelia-nginx-config.nix, container-services.nix).
+        extraConfig = autheliaConfig.location + ''
+
+          proxy_read_timeout 240;
+          proxy_send_timeout 240;
+          proxy_connect_timeout 240;
+        '';
       };
     };
   };
