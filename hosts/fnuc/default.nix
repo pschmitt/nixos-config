@@ -5,16 +5,14 @@
     ../../home-manager/home.nix
 
     ../../home-manager/gui/go-hass-agent
-    ../../home-manager/devel/claude-remote.nix
+    ../../modules/home-manager/claude-remote-control.nix
     ../../modules/home-manager/codex-remote-control.nix
-    ../../home-manager/codex-ha-bridge.nix
+    ../../modules/home-manager/codex-ha-bridge.nix
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
     ./nix-daemon.nix
   ];
-
-  ***REMOVED***.enableSync = true;
 
   domains.main = "brkn.lol";
 

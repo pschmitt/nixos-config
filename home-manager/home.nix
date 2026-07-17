@@ -12,7 +12,6 @@
   imports = lib.concatLists [
     [
       ./base.nix
-      # ./openclaw.nix
       ./sops.nix
       ./ssh.nix
       ./work

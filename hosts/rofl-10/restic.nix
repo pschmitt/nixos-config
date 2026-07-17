@@ -5,8 +5,6 @@
       "/mnt/data/blobs"
     ];
     exclude = [
-      "/mnt/data/srv/***REMOVED***d/data"
-
       # ignore nix isos/sd-card images
       "/mnt/data/blobs/img"
       "/mnt/data/blobs/iso"

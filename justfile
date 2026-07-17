@@ -160,7 +160,17 @@ home-manager host='':
 
   OLD_PROFILE="$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null || true)"
 
-  NIX_CONFIG='experimental-features = nix-command flakes' \
+  nix_config='experimental-features = nix-command flakes'
+  if command -v gh >/dev/null 2>&1
+  then
+    github_token="$(gh auth token 2>/dev/null || true)"
+    if [[ -n "$github_token" ]]
+    then
+      nix_config+=$'\naccess-tokens = github.com='"$github_token"
+    fi
+  fi
+
+  NIX_CONFIG="$nix_config" \
     nix run github:nix-community/home-manager -- \
       -b hm-backup \
       switch \

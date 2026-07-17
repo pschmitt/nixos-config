@@ -1,26 +1,23 @@
 # Shared implementation for one `ktunnel expose` instance: the systemd
 # service that runs the tunnel, an optional safety-net restart timer, and an
-# optional active healthcheck timer. Used internally by services/inet-proxy.nix
-# and services/***REMOVED***/ktunnel-***REMOVED***-proxy.nix so both get the same, correctly
-# battle-tested behavior instead of drifting apart.
+# optional active healthcheck timer. Shared by every ktunnel exposure module
+# so all consumers get the same, correctly battle-tested behavior instead of
+# drifting apart.
 #
 # Deliberately does NOT pass `--reuse` to `ktunnel expose`: reattaching to an
 # existing server pod can hit a ktunnel bug where a stale leftover session
 # kills the client's local tunnel listener without crashing the process (the
 # unit stays "active (running)" while every connection through the tunnel is
 # silently refused). Always provisioning a fresh Service/Deployment on start
-# avoids that failure mode entirely — this is what
-# services/***REMOVED***/ktunnel-***REMOVED***-proxy.nix already switched to (see git history:
-# "ktunnel-***REMOVED***-proxy: drop --reuse, add active healthcheck + safety-net
-# restart"); services/inet-proxy.nix used to still have --reuse plus a blind
-# `RuntimeMaxSec=600s` restart-every-10-minutes hammer as a workaround for the
-# same underlying bug, which is what this shared module replaces.
+# avoids that failure mode entirely. Consumers used to carry `--reuse` plus a
+# blind `RuntimeMaxSec=600s` restart-every-10-minutes hammer as a workaround
+# for the same underlying bug, which is what this shared module replaces.
 { pkgs, lib }:
 {
-  # Base name for the generated systemd units, e.g. "ktunnel-inet-proxy-cluster-02"
-  # or "ktunnel-***REMOVED***-proxy-cluster-01". Kept caller-controlled (rather than
-  # derived here) since ktunnel-***REMOVED***-proxy's exact unit-name pattern is
-  # depended on externally by modules/home-manager/***REMOVED***.nix.
+  # Base name for the generated systemd units, e.g.
+  # "ktunnel-<consumer>-<cluster>". Kept caller-controlled (rather than
+  # derived here) since some consumers' exact unit-name patterns are depended
+  # on externally.
   unitName,
   description,
 
@@ -36,7 +33,7 @@
   group ? "ktunnel",
 
   # Extra unit names this tunnel should start after (e.g. the local service
-  # it forwards to, such as "tinyproxy.service" or "***REMOVED***-proxy.service").
+  # it forwards to, such as "tinyproxy.service").
   afterUnits ? [ ],
 
   # Coarse safety-net restart, as a systemd time span (e.g. "12h"). Set to

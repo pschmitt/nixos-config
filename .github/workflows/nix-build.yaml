@@ -34,7 +34,9 @@ env:
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=
     extra-platforms = aarch64-linux i686-linux
     builders-use-substitutes = true
-    access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+    # NOTE needs a PAT (not the workflow's GITHUB_TOKEN, which is scoped to
+    # this repo only) so nix can fetch the private nixos-config-private input
+    access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
 jobs:
   setup-matrix:

@@ -34,6 +34,8 @@ env:
   nix-conf: |-
     extra-experimental-features = nix-command flakes
     accept-flake-config = true
+    # PAT so nix can fetch the private nixos-config-private input
+    access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
 jobs:
   pr-systempackages-diff:

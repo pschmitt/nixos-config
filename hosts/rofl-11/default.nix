@@ -11,12 +11,15 @@
     ../../profiles/server
 
     ../../services/nfs/nfs-server.nix
-    ../../profiles/***REMOVED***.nix
 
     ../../services/audiobookshelf.nix
+    ../../services/authelia-nginx-bypass.nix
     # ../../services/calibre.nix  # superseded by ***REMOVED***
     ../../services/http.nix
+    ../../services/jellyfin.nix
+    ../../services/seerr.nix
     ../../services/stash.nix
+    ../../services/tdarr-server.nix
     ../../services/tor.nix
 
     ./container-services.nix

@@ -6,7 +6,7 @@
 {
   imports = [
     ./zsh
-    ./todoist
+    ../../modules/home-manager/todoist-cli.nix
   ];
 
   home.packages = with pkgs; [
