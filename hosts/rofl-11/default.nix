@@ -10,15 +10,7 @@
 
     ../../profiles/server
 
-    (import ../../services/nfs/nfs-server.nix {
-      inherit lib;
-      exports = [
-        "audiobooks"
-        "books"
-        "srv"
-        "videos"
-      ];
-    })
+    ../../services/nfs/nfs-server.nix
     ../../profiles/***REMOVED***.nix
 
     ../../services/audiobookshelf.nix
@@ -37,6 +29,16 @@
     serverType = "openstack";
   };
   custom.promptColor = "#9C62C5"; # jellyfin purple
+
+  services.nfsExports = {
+    enable = true;
+    exports = [
+      "audiobooks"
+      "books"
+      "srv"
+      "videos"
+    ];
+  };
 
   # Enable networking
   networking = {
