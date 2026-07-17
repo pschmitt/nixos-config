@@ -41,7 +41,17 @@ in
           '';
         }))
         ps.netbox-interface-synchronization
-        ps.netbox-qrcode
+        # Pinned to 0.0.20: 0.0.21 requires NetBox >= 4.6, we're still on 4.5.9
+        # https://github.com/NixOS/nixpkgs/pull/530025
+        (ps.netbox-qrcode.overrideAttrs (old: {
+          version = "0.0.20";
+          src = pkgs.fetchFromGitHub {
+            owner = "netbox-community";
+            repo = "netbox-qrcode";
+            tag = "v0.0.20";
+            hash = "sha256-7dPMpuJ2nuj9rRmVrfthD+xrEHoUaLFqDJWC6cGGCwY=";
+          };
+        }))
         ps.netbox-topology-views
       ];
       settings = {
