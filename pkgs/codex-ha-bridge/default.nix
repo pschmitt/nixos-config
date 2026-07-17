@@ -9,13 +9,13 @@
 
 stdenv.mkDerivation {
   pname = "codex-ha-bridge";
-  version = "unstable-2026-05-05";
+  version = "unstable-2026-07-17";
 
   src = fetchFromGitHub {
-    owner = "ofilis";
+    owner = "pschmitt";
     repo = "codex-ha-bridge";
-    rev = "492e949b8d014f3bf160db846be9522a971d6bfd";
-    hash = "sha256-QPchKcH5GkseS4E4ghhy727ew9EfmYJhaT7mEQXDBNI=";
+    rev = "b722458e83cb407b21449eb33745f0f81823dad6";
+    hash = "sha256-tK1hdC4ZIEhkQKVPhnBZqxJNH6EfFJuX602P86aBu/M=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
@@ -38,7 +38,7 @@ stdenv.mkDerivation {
 
   meta = {
     description = "Publish OpenAI Codex usage limits to Home Assistant over MQTT";
-    homepage = "https://github.com/ofilis/codex-ha-bridge";
+    homepage = "https://github.com/pschmitt/codex-ha-bridge";
     license = lib.licenses.mit;
     mainProgram = "codex-ha-bridge";
   };
