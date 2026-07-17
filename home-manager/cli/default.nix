@@ -3,7 +3,7 @@
   imports = [
     ./nvim.nix
     ./zsh
-    ./todoist
+    ../../modules/home-manager/todoist-cli.nix
   ];
 
   home.packages = with pkgs; [

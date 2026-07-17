@@ -1,6 +1,8 @@
 { ... }:
 {
   imports = [
-    (import ./nfs-client.nix { })
+    ./nfs-client.nix
   ];
+
+  services.nfsMounts.enable = true;
 }
