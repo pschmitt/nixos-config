@@ -52,8 +52,8 @@
     ../../services/whoami.nix
     ../../services/wishlist.nix
 
-    (import ../../services/nfs/nfs-server.nix { inherit lib; })
-    ../../services/nfs/nfs-client-rofl-11.nix
+    ../../services/nfs/nfs-server.nix
+    ../../services/nfs/nfs-client.nix
 
     ./syncthing.nix
 
@@ -70,6 +70,7 @@
     biosBoot = lib.mkForce false;
   };
   custom.promptColor = "#0B87CA"; # nextcloud blue
+
   nixHost.extraSubstituters = [
     "https://cache.rofl-13.brkn.lol"
     "https://cache.rofl-14.brkn.lol"
@@ -80,10 +81,23 @@
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
   };
 
-  services.harmonia.extraVirtualHosts = [
-    { domain = "cache.${config.domains.main}"; }
-    { domain = "nix-cache.${config.domains.main}"; }
-  ];
+  services = {
+    nfsExports.enable = true;
+    nfsMounts = {
+      enable = true;
+      server = "rofl-11.${config.domains.netbird}";
+      exports = [
+        "audiobooks"
+        "books"
+        "videos"
+      ];
+    };
+
+    harmonia.extraVirtualHosts = [
+      { domain = "cache.${config.domains.main}"; }
+      { domain = "nix-cache.${config.domains.main}"; }
+    ];
+  };
 
   environment.systemPackages = with pkgs; [
     (writeShellScriptBin "rclone-bisync-reset-and-resync" ''
