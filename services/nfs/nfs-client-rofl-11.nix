@@ -18,6 +18,9 @@ in
           "noauto"
           "x-systemd.automount"
           "x-systemd.idle-timeout=600"
+          "soft"
+          "timeo=50"
+          "retrans=3"
         ];
       };
     }) exports
