@@ -1,17 +1,21 @@
-# tdarr-node — Tarr transcoding worker that also contributes spare CPU to the
-# xmrig proxy. Shared by the rofl-13 / rofl-14 compute nodes.
-{ config, lib, ... }:
+# tdarr-node — Tdarr transcoding worker. Shared by the rofl-13 / rofl-14
+# compute nodes.
+{ config, ... }:
 {
   imports = [
     ../services/harmonia.nix
     ../services/http.nix
-    ../services/nfs/nfs-client-rofl-11.nix
+    ../services/nfs/nfs-client.nix
     ../services/tdarr-node.nix
-
-    (import ../services/xmr/xmrig.nix {
-      inherit config lib;
-      useProxy = true;
-      cpuUsage = 50;
-    })
   ];
+
+  services.nfsMounts = {
+    enable = true;
+    server = "rofl-11.${config.domains.netbird}";
+    exports = [
+      "audiobooks"
+      "books"
+      "videos"
+    ];
+  };
 }

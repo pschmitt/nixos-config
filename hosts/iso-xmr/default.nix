@@ -5,11 +5,6 @@
   ...
 }:
 {
-
-  imports = [
-    ../../services/xmr/xmrig-iso.nix
-  ];
-
   isoImage.squashfsCompression = "gzip -Xcompression-level 1";
 
   # Enable SSH in the boot process.

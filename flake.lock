@@ -3079,7 +3079,8 @@
         "vodafone-station-cli": "vodafone-station-cli",
         "vpn-confinement": "vpn-confinement",
         "wezterm": "wezterm",
-        "zen-browser": "zen-browser"
+        "zen-browser": "zen-browser",
+        "nixos-config-private": "nixos-config-private"
       }
     },
     "ruamel-fmt": {
@@ -4091,6 +4092,79 @@
         "owner": "jcollie",
         "ref": "main",
         "repo": "zon2nix",
+        "type": "github"
+      }
+    },
+    "nixos-config-private-nixpkgs": {
+      "locked": {
+        "lastModified": 1784120854,
+        "narHash": "sha256-KesHgItiZPgGX740axSiQLcIQ8D24MDqNpkKYWIek8k=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "753cc8a3a87467296ddd1fa93f0cc3e81120ee46",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixos-config-private-flake-compat": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
+    "nixos-config-private-pre-commit-hooks": {
+      "inputs": {
+        "flake-compat": "nixos-config-private-flake-compat",
+        "nixpkgs": [
+          "nixos-config-private",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783008725,
+        "narHash": "sha256-jGiy6+sxjNWXSjp25uoJuNfyH9zBK1PEDY0lVoL4ibQ=",
+        "owner": "cachix",
+        "repo": "pre-commit-hooks.nix",
+        "rev": "bca82caa46d5ec0f5d422c61fb1e30bc51313cbe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cachix",
+        "repo": "pre-commit-hooks.nix",
+        "type": "github"
+      }
+    },
+    "nixos-config-private": {
+      "inputs": {
+        "nixpkgs": "nixos-config-private-nixpkgs",
+        "pre-commit-hooks": "nixos-config-private-pre-commit-hooks"
+      },
+      "locked": {
+        "lastModified": 1784279332,
+        "narHash": "sha256-kmVV+LiZS8kczF0EBPzm95rHHxHjiNPzY6mALcGaZ9Y=",
+        "owner": "pschmitt",
+        "repo": "nixos-config-private",
+        "rev": "ba2aab4b245cefeda8eb6d29cb72d04f3c42e0a2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "nixos-config-private",
         "type": "github"
       }
     }

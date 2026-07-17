@@ -104,6 +104,8 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-config-private.url = "github:pschmitt/nixos-config-private";
+
     # Hyprland and cie {{{
     hyprland = {
       # url = "github:hyprwm/Hyprland";
@@ -365,6 +367,7 @@
         inputs.disko.nixosModules.disko
         inputs.sops-nix.nixosModules.sops
         ./modules/syncthing-sops.nix
+        inputs.nixos-config-private.nixosModules.default
       ];
 
       mkHost =
@@ -381,6 +384,9 @@
           inherit system;
           specialArgs = {
             inherit inputs outputs hostname;
+            # Source tree of this (public) flake, so modules living in
+            # private input flakes can import shared helpers from here.
+            publicSrc = self;
           };
           modules =
             commonModules
@@ -655,6 +661,7 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules
               ./hosts/iso-xmr
+              inputs.nixos-config-private.nixosModules.iso-xmr
               { hardware.type = "installation-media"; }
             ];
           };
@@ -678,6 +685,7 @@
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules
               ./hosts/iso-xmr
+              inputs.nixos-config-private.nixosModules.iso-xmr
               ./workarounds/no-efi.nix
               { hardware.type = "installation-media"; }
             ];
