@@ -14,8 +14,8 @@ stdenv.mkDerivation {
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "codex-ha-bridge";
-    rev = "b722458e83cb407b21449eb33745f0f81823dad6";
-    hash = "sha256-tK1hdC4ZIEhkQKVPhnBZqxJNH6EfFJuX602P86aBu/M=";
+    rev = "91c6fb35e864b43518fe8b0dc3a0224e853e35d2";
+    hash = "sha256-dHylTDb32sXN7UelAqfG8n2jomp6tNFg7d4rd/c0bbI=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
