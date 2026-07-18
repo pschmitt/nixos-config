@@ -27,13 +27,13 @@ let
 in
 buildPythonApplication rec {
   pname = "withoutbg";
-  version = "1.0.6";
+  version = "1.1.0";
 
   src = fetchFromGitHub {
     owner = "withoutbg";
     repo = "withoutbg";
     rev = "v${version}";
-    hash = "sha256-6h52j8O2T9INBOxyYg4ss95qwTdrt++vl/ZLzGn5YD4=";
+    hash = "sha256-I2SKwsiMR8UaRE7dEW267dEXs9zq6KgQbqGkGIpBoOQ=";
   };
 
   pyproject = true;
