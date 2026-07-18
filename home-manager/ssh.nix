@@ -61,6 +61,7 @@ lib.mkMerge [
 
   (lib.mkIf config.host.manageAuthorizedKeys {
     home.file.".ssh/authorized_keys".text =
-      lib.concatStringsSep "\n" config.mainUser.authorizedKeys + "\n";
+      lib.concatStringsSep "\n" (config.mainUser.authorizedKeys ++ config.mainUser.extraAuthorizedKeys)
+      + "\n";
   })
 ]

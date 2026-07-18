@@ -46,5 +46,14 @@
         lib.splitString "\n" authorizedKeysContent;
       description = "Main SSH authorized keys file";
     };
+
+    extraAuthorizedKeys = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [
+        # hass-fnuc
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7"
+      ];
+      description = "Authorized keys not sourced from GitHub (e.g. internal service keys).";
+    };
   };
 }
