@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   user = config.mainUser.username;
@@ -59,9 +64,21 @@ lib.mkMerge [
     home.file = homeFiles;
   })
 
-  (lib.mkIf config.host.manageAuthorizedKeys {
-    home.file.".ssh/authorized_keys".text =
-      lib.concatStringsSep "\n" (config.mainUser.authorizedKeys ++ config.mainUser.extraAuthorizedKeys)
-      + "\n";
-  })
+  (lib.mkIf config.host.manageAuthorizedKeys (
+    let
+      authorizedKeysFile = pkgs.writeText "authorized_keys" (
+        lib.concatStringsSep "\n" (config.mainUser.authorizedKeys ++ config.mainUser.extraAuthorizedKeys)
+        + "\n"
+      );
+    in
+    {
+      # Deliberately not home.file: that symlinks into /nix/store, and
+      # sshd's StrictModes rejects authorized_keys when any ancestor
+      # directory (including /nix/store itself) is group/other-writable,
+      # locking out pubkey auth entirely. Copy a real file instead.
+      home.activation.installAuthorizedKeys = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        install -Dm600 ${authorizedKeysFile} "$HOME/.ssh/authorized_keys"
+      '';
+    }
+  ))
 ]
