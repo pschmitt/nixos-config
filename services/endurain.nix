@@ -26,7 +26,10 @@ let
   gadgetbridgeDir = "${dataDir}/gadgetbridge";
   gadgetbridgeGpxDir = "${gadgetbridgeDir}/gpx";
   gadgetbridgeSyncId = "6qqtd-3lljl";
-  phoneDevice = "zf10";
+  phoneDevices = [
+    "zf10"
+    "px5"
+  ];
 
   ingestUser = "endurain-ingest";
   # Per-file processed markers (content-hash keyed). Lives OUTSIDE the synced
@@ -230,14 +233,14 @@ in
   };
 
   services = {
-    # Receive Gadgetbridge exports from the phone. rofl-10 only receives; the
-    # phone (zf10) is authoritative. The matching device + Syncthing server are
-    # configured in hosts/rofl-10/syncthing.nix.
+    # Receive Gadgetbridge exports from the phones. rofl-10 only receives; the
+    # phones (zf10, px5) are authoritative. The matching devices + Syncthing
+    # server are configured in hosts/rofl-10/syncthing.nix.
     syncthing.settings.folders.gadgetbridge = {
       id = gadgetbridgeSyncId;
       label = "Gadgetbridge";
       path = gadgetbridgeDir;
-      devices = [ phoneDevice ];
+      devices = phoneDevices;
       type = "receiveonly";
     };
 

@@ -18,5 +18,9 @@
   "zf10": {
     "id": "MCYGJN7-CZF6SG2-WVGKCBX-XKEJGQE-AZQQLTJ-2BBHYDO-PTUVWNB-6QAYMQN",
     "addresses": ["dynamic"]
+  },
+  "px5": {
+    "id": "FS4UDBU-JEOBELS-4YDUZWW-YLUCSZG-XERBJZM-RHX5P7T-A7TFBOU-OBO64QT",
+    "addresses": ["dynamic"]
   }
 }
