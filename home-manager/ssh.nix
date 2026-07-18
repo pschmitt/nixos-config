@@ -53,7 +53,14 @@ let
 in
 # Per-host SSH key secrets live in host.sopsFile; only hosts that actually hold
 # them opt in via host.provisionSshKeys (set by the bridge / host file).
-lib.mkIf config.host.provisionSshKeys {
-  sops.secrets = sopsSecrets;
-  home.file = homeFiles;
-}
+lib.mkMerge [
+  (lib.mkIf config.host.provisionSshKeys {
+    sops.secrets = sopsSecrets;
+    home.file = homeFiles;
+  })
+
+  (lib.mkIf config.host.manageAuthorizedKeys {
+    home.file.".ssh/authorized_keys".text =
+      lib.concatStringsSep "\n" config.mainUser.authorizedKeys + "\n";
+  })
+]
