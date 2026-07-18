@@ -19,10 +19,7 @@
       "wheel"
       "wireshark"
     ];
-    openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
-      # hass-fnuc
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7"
-    ];
+    openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ config.mainUser.extraAuthorizedKeys;
     shell = pkgs.zsh;
   };
 
