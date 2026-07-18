@@ -29,6 +29,7 @@
     # fnuc's host-specific secrets (MQTT creds wired by the go-hass-agent module)
     sopsFile = ./secrets.sops.yaml;
     stateVersion = "26.05";
+    manageAuthorizedKeys = true;
   };
 
   systemd.user.services.kubeconfig-update = {

@@ -46,6 +46,16 @@
       description = "Whether per-host SSH key secrets live in host.sopsFile and should be provisioned.";
     };
 
+    manageAuthorizedKeys = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = ''
+        Whether to manage ~/.ssh/authorized_keys from mainUser.authorizedKeys.
+        NixOS hosts already get this via users.users.<name>.openssh.authorizedKeys;
+        enable this only on standalone (non-NixOS) home-manager hosts.
+      '';
+    };
+
     uid = lib.mkOption {
       type = lib.types.int;
       default = 1000;
