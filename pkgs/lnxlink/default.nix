@@ -1,5 +1,6 @@
 {
   lib,
+  stdenv,
   buildPythonApplication,
   fetchFromGitHub,
   setuptools,
@@ -48,7 +49,18 @@ buildPythonApplication rec {
   propagatedBuildInputs = [
     distro
     pyyaml
-    paho-mqtt
+    (
+      # paho-mqtt's test suite has flaky subprocess-teardown tests under
+      # aarch64 qemu emulation (nixpkgs already disables one such test
+      # itself for the same reason); skip checks there so they don't block
+      # our (cross-)build. Leave native builds untouched.
+      if stdenv.hostPlatform.isAarch64 then
+        paho-mqtt.overrideAttrs (_: {
+          doInstallCheck = false;
+        })
+      else
+        paho-mqtt
+    )
     requests
     psutil
     inotify
