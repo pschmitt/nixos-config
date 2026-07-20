@@ -14,7 +14,10 @@ in
       "${patches-src}/patches/xdph/0001-feature-ui-improvements.patch"
       "${patches-src}/patches/xdph/0002-add-icons.patch"
       "${patches-src}/patches/xdph/0003-remove-share-token-ui.patch"
-      "${patches-src}/patches/xdph/0004-show-virtual-desktop.patch"
+      # 0004 upstream (cpuguy83-nixcfg) no longer applies cleanly: xdph now
+      # ships its own `dependency('hyprutils')` in meson.build, so the
+      # meson.build hunk conflicts. Carry a locally-adjusted copy instead.
+      ./patches/xdph/0004-show-virtual-desktop.patch
       "${patches-src}/patches/xdph/0005-live-window-preview.patch"
       "${patches-src}/patches/xdph/0006-screen-preview.patch"
     ];

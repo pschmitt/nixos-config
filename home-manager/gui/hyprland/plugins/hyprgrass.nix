@@ -1,8 +1,4 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 {
   # Touchscreen gestures (https://github.com/horriblename/hyprgrass), Lua API via
   # PR #381 (lua-func branch).
@@ -13,7 +9,7 @@
   # Loading a plugin triggers a config reload (PluginSystem.cpp), so the guarded
   # block below re-runs once hl.plugin.hyprgrass exists and the config applies.
   wayland.windowManager.hyprland.plugins = [
-    inputs.hyprgrass.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs.hyprgrass
   ];
 
   wayland.windowManager.hyprland.extraConfig = ''
