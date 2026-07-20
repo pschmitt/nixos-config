@@ -109,7 +109,7 @@
     # Hyprland and cie {{{
     hyprland = {
       # url = "github:hyprwm/Hyprland";
-      url = "github:hyprwm/Hyprland/v0.55.4";
+      url = "github:hyprwm/Hyprland/v0.56.0";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -134,9 +134,7 @@
     };
 
     hyprgrass = {
-      # pinned before an experimental commit switched to unreleased Hyprland
-      # internals (hyprland/src/output/Monitor.hpp doesn't exist in 0.55.x)
-      url = "github:horriblename/hyprgrass/230495900cef1a5681bf8f8abf797939d1d64c1b";
+      url = "github:horriblename/hyprgrass";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
@@ -146,9 +144,7 @@
     };
 
     hypr-dynamic-cursors = {
-      # pinned before "fix: use new monitor state tracking like hl" (98abbb6)
-      # which broke compat with hyprland 0.55.2 (helpers/Monitor.hpp moved)
-      url = "github:VirtCode/hypr-dynamic-cursors/da447486c84e0be81f2cdd208af1ef92469f0a88";
+      url = "github:VirtCode/hypr-dynamic-cursors";
       inputs.hyprland.follows = "hyprland";
     };
 

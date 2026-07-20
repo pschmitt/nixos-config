@@ -1,0 +1,174 @@
+From 8011c69b6cf1473da3ec2fc5e94f7f568912f79e Mon Sep 17 00:00:00 2001
+From: Sam Saffron <sam.saffron@gmail.com>
+Date: Fri, 9 Jan 2026 07:51:14 +1100
+Subject: [PATCH] show virtual desktop number
+
+---
+ hyprland-share-picker/main.cpp       | 67 ++++++++++++++++++++++++++++
+ hyprland-share-picker/mainpicker.cpp | 12 ++++-
+ hyprland-share-picker/mainpicker.h   |  2 +
+ hyprland-share-picker/meson.build    | 10 ++++-
+ 4 files changed, 87 insertions(+), 4 deletions(-)
+
+diff --git a/hyprland-share-picker/main.cpp b/hyprland-share-picker/main.cpp
+index 7f27d40f..d50472d6 100644
+--- a/hyprland-share-picker/main.cpp
++++ b/hyprland-share-picker/main.cpp
+@@ -19,6 +19,8 @@
+ #include <stdexcept>
+ #include <string>
+ #include <vector>
++#include <unordered_map>
++#include <algorithm>
+ #include <hyprutils/os/Process.hpp>
+ using namespace Hyprutils::OS;
+ 
+@@ -111,6 +113,69 @@ std::vector<SWindowEntry> getWindowsFromHyprctl() {
+     return result;
+ }
+ 
++struct WorkspaceInfo {
++    int currentWorkspaceId = -1;
++    std::unordered_map<uint64_t, std::pair<int, std::string>> windowWorkspaces;
++};
++
++WorkspaceInfo queryWorkspaceInfo() {
++    WorkspaceInfo info;
++
++    // Get active workspace
++    std::string activeWsJson = execAndGet("hyprctl activeworkspace -j");
++    if (activeWsJson != "error" && !activeWsJson.empty()) {
++        QJsonDocument doc = QJsonDocument::fromJson(QByteArray::fromStdString(activeWsJson));
++        if (!doc.isNull() && doc.isObject()) {
++            info.currentWorkspaceId = doc.object()["id"].toInt(-1);
++        }
++    }
++
++    // Get all clients with their workspaces
++    std::string clientsJson = execAndGet("hyprctl clients -j");
++    if (clientsJson != "error" && !clientsJson.empty()) {
++        QJsonDocument doc = QJsonDocument::fromJson(QByteArray::fromStdString(clientsJson));
++        if (!doc.isNull() && doc.isArray()) {
++            for (const auto& val : doc.array()) {
++                QJsonObject obj = val.toObject();
++                QString addrStr = obj["address"].toString();
++                if (addrStr.startsWith("0x")) {
++                    uint64_t addr = addrStr.mid(2).toULongLong(nullptr, 16);
++                    QJsonObject ws = obj["workspace"].toObject();
++                    int wsId = ws["id"].toInt(-1);
++                    std::string wsName = ws["name"].toString().toStdString();
++                    info.windowWorkspaces[addr] = {wsId, wsName};
++                }
++            }
++        }
++    }
++
++    return info;
++}
++
++void enrichAndSortWindows(std::vector<SWindowEntry>& windows) {
++    WorkspaceInfo info = queryWorkspaceInfo();
++
++    // Enrich windows with workspace data
++    for (auto& win : windows) {
++        auto it = info.windowWorkspaces.find(win.handle);
++        if (it != info.windowWorkspaces.end()) {
++            win.workspaceId = it->second.first;
++            win.workspaceName = it->second.second;
++        }
++    }
++
++    // Sort: current workspace first, then by workspace ID
++    int currentWs = info.currentWorkspaceId;
++    std::stable_sort(windows.begin(), windows.end(),
++        [currentWs](const SWindowEntry& a, const SWindowEntry& b) {
++            bool aIsCurrent = (a.workspaceId == currentWs);
++            bool bIsCurrent = (b.workspaceId == currentWs);
++            if (aIsCurrent != bIsCurrent)
++                return aIsCurrent;
++            return a.workspaceId < b.workspaceId;
++        });
++}
++
+ int main(int argc, char* argv[]) {
+     qputenv("QT_LOGGING_RULES", "qml=false");
+ 
+@@ -134,6 +199,8 @@ int main(int argc, char* argv[]) {
+         WINDOWLIST    = getWindows(WINDOWLISTSTR);
+     }
+ 
++    enrichAndSortWindows(WINDOWLIST);
++
+     QApplication picker(argc, argv);
+     QCoreApplication::setApplicationName("org.hyprland.xdg-desktop-portal-hyprland");
+     QCoreApplication::setOrganizationName("hyprland");
+diff --git a/hyprland-share-picker/mainpicker.cpp b/hyprland-share-picker/mainpicker.cpp
+index f96c67bf..2f72e8cb 100644
+--- a/hyprland-share-picker/mainpicker.cpp
++++ b/hyprland-share-picker/mainpicker.cpp
+@@ -54,8 +54,16 @@ void MainPicker::init(const std::vector<SWindowEntry>& windows, bool allowToken,
+ 
+     // Populate windows
+     for (const auto& win : windows) {
+-        QString text = QString::fromStdString(win.clazz + ": " + win.name);
+-        
++        QString text;
++        if (!win.workspaceName.empty()) {
++            text = QString("[%1] %2: %3")
++                .arg(QString::fromStdString(win.workspaceName))
++                .arg(QString::fromStdString(win.clazz))
++                .arg(QString::fromStdString(win.name));
++        } else {
++            text = QString::fromStdString(win.clazz + ": " + win.name);
++        }
++
+         QString clazz = QString::fromStdString(win.clazz);
+         QIcon icon = QIcon::fromTheme(clazz);
+         if (icon.isNull())
+diff --git a/hyprland-share-picker/mainpicker.h b/hyprland-share-picker/mainpicker.h
+index 29526890..91bee074 100644
+--- a/hyprland-share-picker/mainpicker.h
++++ b/hyprland-share-picker/mainpicker.h
+@@ -18,6 +18,8 @@ struct SWindowEntry {
+     std::string        clazz;
+     unsigned long long id = 0;
+     unsigned long long handle = 0;
++    int                workspaceId = -1;
++    std::string        workspaceName;
+ };
+ 
+ class MainPicker : public QDialog
+diff --git a/hyprland-share-picker/meson.build b/hyprland-share-picker/meson.build
+index ef29621e..d8d1f525 100644
+--- a/hyprland-share-picker/meson.build
++++ b/hyprland-share-picker/meson.build
+@@ -3,8 +3,11 @@ qtdep = dependency('qt6', 'qt5', modules: ['Widgets'])
+ qtver = qtdep.version()
+ qt = import('qt' + qtver[0])
+ 
++hyprutils = dependency('hyprutils', version: '>=0.2.6')
++wayland_client = dependency('wayland-client')
++
+ ui_files = qt.compile_ui(sources: 'mainpicker.ui')
+-moc = qt.compile_moc(headers: 'mainpicker.h')
++moc = qt.compile_moc(headers: ['mainpicker.h', 'waylandcapture.h'], dependencies: [client_protos, hyprutils])
+ 
+ sources = files([
+   'main.cpp',
+@@ -12,12 +15,15 @@ sources = files([
+   'mainpicker.h',
+   'elidedbutton.h',
+   'elidedbutton.cpp',
++  'waylandcapture.cpp',
++  'waylandcapture.h',
+ ])
+ 
+ executable('hyprland-share-picker',
+   sources,
+   ui_files,
+   moc,
+-  dependencies: [qtdep, dependency('hyprutils')],
++  include_directories: inc,
++  dependencies: [qtdep, client_protos, hyprutils, wayland_client],
+   install: true
+ )
