@@ -132,6 +132,16 @@ in
     '';
   };
 
+  # NetBox's upstream module hardcodes StateDirectory = "netbox", which only
+  # grants ProtectSystem=strict write access to /var/lib/netbox. Since dataDir
+  # here is a custom path, it must be added explicitly or the service
+  # crash-loops trying to write static/media/reports files.
+  systemd.services = {
+    netbox.serviceConfig.ReadWritePaths = [ config.services.netbox.dataDir ];
+    netbox-rq.serviceConfig.ReadWritePaths = [ config.services.netbox.dataDir ];
+    netbox-housekeeping.serviceConfig.ReadWritePaths = [ config.services.netbox.dataDir ];
+  };
+
   users.users.nginx.extraGroups = [ "netbox" ];
 
   # Fix permissions after UID changes (e.g., after reinstall)
