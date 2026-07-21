@@ -18,7 +18,6 @@
     ../../services/http.nix
     ../../services/jellyfin.nix
     ../../services/seerr.nix
-    ../../services/stash.nix
     ../../services/tdarr-server.nix
     ../../services/tor.nix
 
