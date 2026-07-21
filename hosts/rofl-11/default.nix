@@ -14,7 +14,7 @@
 
     ../../services/audiobookshelf.nix
     ../../services/authelia-nginx-bypass.nix
-    # ../../services/calibre.nix  # superseded by ***REMOVED***
+    # ../../services/calibre.nix  # superseded by a service in the private repo
     ../../services/http.nix
     ../../services/jellyfin.nix
     ../../services/seerr.nix

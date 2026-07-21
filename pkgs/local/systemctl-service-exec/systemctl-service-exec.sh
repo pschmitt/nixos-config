@@ -10,8 +10,8 @@ similar to "docker exec -it <container> bash".
 Supports services with DynamicUser=true (uses the running MainPID's uid/gid).
 
 Examples:
-  ${0##*/} ***REMOVED***
-  ${0##*/} ***REMOVED***.service
+  ${0##*/} myservice
+  ${0##*/} myservice.service
 EOF
 }
 
