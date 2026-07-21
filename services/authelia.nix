@@ -69,25 +69,21 @@ let
           policy = "bypass";
           domain = [ autheliaDomain ];
         }
-        {
-          # These apps have NO login of their own — shelfmark uses proxy auth
-          # (X-Auth-User from Authelia's Remote-User), and the native *arr apps
-          # run with AUTHENTICATIONMETHOD=External (they fully trust the proxy).
-          # So they must be authenticated even on the bypass networks: otherwise
-          # the *.${domain} network bypass below would skip auth entirely and
-          # leave them wide open to anything on the mesh range. Placed before the
-          # bypass so it takes precedence.
-          # (HA-app access is unaffected: nginx short-circuits Authelia via the
-          # ingress Bearer token before any rule is evaluated.)
-          policy = "one_factor";
-          domain = [
-            "shelf.arr.${config.domains.main}"
-            "shelfmark.arr.${config.domains.main}"
-            "son.arr.${config.domains.main}"
-            "rad.arr.${config.domains.main}"
-            "prowl.arr.${config.domains.main}"
-          ];
-        }
+      ]
+      ++ lib.optional (config.custom.authelia.extraAuthenticatedDomains != [ ]) {
+        # Some apps have NO login of their own — they use proxy auth (e.g.
+        # X-Auth-User from Authelia's Remote-User) or run with
+        # AUTHENTICATIONMETHOD=External (fully trusting the proxy). Those
+        # domains must be authenticated even on the bypass networks: otherwise
+        # the *.${domain} network bypass below would skip auth entirely and
+        # leave them wide open to anything on the mesh range. Placed before the
+        # bypass so it takes precedence.
+        # (HA-app access is unaffected: nginx short-circuits Authelia via the
+        # ingress Bearer token before any rule is evaluated.)
+        policy = "one_factor";
+        domain = config.custom.authelia.extraAuthenticatedDomains;
+      }
+      ++ [
         {
           policy = "bypass";
           networks = [ "local" ];
@@ -99,18 +95,35 @@ let
   };
 in
 {
-  options.custom.authelia.extraAccessControlRules = lib.mkOption {
-    type = lib.types.listOf lib.types.attrs;
-    default = [ ];
-    description = ''
-      Extra access_control rules appended after the built-in rules above (i.e.
-      after the mesh-wide bypass), for services defined in other modules on
-      this same host (e.g. http-static.nix's blobs.${config.domains.main}
-      rules). Modules on other hosts (the arr stack, audiobookshelf on
-      rofl-11) can't use this: each host builds as an independent NixOS
-      system, so an option set there never reaches this Authelia instance's
-      settings here.
-    '';
+  options.custom.authelia = {
+    extraAccessControlRules = lib.mkOption {
+      type = lib.types.listOf lib.types.attrs;
+      default = [ ];
+      description = ''
+        Extra access_control rules appended after the built-in rules above (i.e.
+        after the mesh-wide bypass), for services defined in other modules on
+        this same host (e.g. http-static.nix's blobs.${config.domains.main}
+        rules). Modules on other hosts can't use this: each host builds as an
+        independent NixOS system, so an option set there never reaches this
+        Authelia instance's settings here -- but a same-host module (including
+        one contributed by a private flake input also imported on this host)
+        can.
+      '';
+    };
+
+    extraAuthenticatedDomains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Domains that must be authenticated (policy = "one_factor") even on the
+        bypass networks below, for apps with no login of their own that trust
+        the reverse proxy for auth (e.g. AUTHENTICATIONMETHOD=External or
+        X-Auth-User-style proxy auth). Without this, the mesh-wide bypass rule
+        would leave them reachable unauthenticated from anywhere on the mesh.
+        Populated by same-host modules (e.g. a private flake input's per-host
+        file), same caveat as extraAccessControlRules above.
+      '';
+    };
   };
 
   config.sops = {
