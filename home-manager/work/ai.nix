@@ -21,7 +21,7 @@ in
   home.file = {
     ".config/claude-work/rules/context.md".source = ../devel/CONTEXT.md;
     ".config/claude-work/skills" = {
-      source = ../devel/skills;
+      source = config.programs.claude-code.skills;
       recursive = true;
     };
   };
