@@ -198,6 +198,26 @@
         "type": "github"
       }
     },
+    "declaroid": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784646125,
+        "narHash": "sha256-vYqEVXE0U81pYzxKwDvDQEwWLTwcMLzTBYY4P4xYaW4=",
+        "owner": "pschmitt",
+        "repo": "declaroid",
+        "rev": "c5acd62b28e506a9ccd03ab18f27e932c4f7eac7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "declaroid",
+        "type": "github"
+      }
+    },
     "devshell": {
       "inputs": {
         "nixpkgs": [
@@ -3071,6 +3091,7 @@
         "bw-backup": "bw-backup",
         "catppuccin": "catppuccin",
         "cpuguy83-nixcfg": "cpuguy83-nixcfg",
+        "declaroid": "declaroid",
         "disko": "disko",
         "docker-compose-bulk": "docker-compose-bulk",
         "falcon-sensor": "falcon-sensor",
@@ -3124,6 +3145,7 @@
         "stricknani": "stricknani",
         "tdc": "tdc",
         "tmux-slay": "tmux-slay",
+        "tsvtool": "tsvtool",
         "update-systemd-resolved": "update-systemd-resolved",
         "vodafone-station-cli": "vodafone-station-cli",
         "vpn-confinement": "vpn-confinement",
@@ -3900,6 +3922,26 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "tsvtool": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784646089,
+        "narHash": "sha256-CuFAaBH4UOyzbXCc51MOh8kIkjrRecudkMMH8TxhnP4=",
+        "owner": "pschmitt",
+        "repo": "tsvtool",
+        "rev": "65312c6c0dff8e1413e7a4330de08125f1ca26a5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "tsvtool",
         "type": "github"
       }
     },

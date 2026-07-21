@@ -1,0 +1,8 @@
+device: 10.5.0.110:43411
+apps:
+  - name: DB Navigator
+    pkg: de.hafas.android.db
+  - name: Google Maps
+    pkg: com.google.android.apps.maps
+  - name: "SNCF Connect: Trains & routes"
+    pkg: com.vsct.vsc.mobile.horaireetresa.android

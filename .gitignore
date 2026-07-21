@@ -34,3 +34,8 @@ tmp/
 .claude
 __pycache__/
 nbx-preview.*
+
+# Downloaded APKs (android/apps.yaml is the declaroid config, see
+# home-manager/devel/android.nix and https://github.com/pschmitt/declaroid)
+android/*.apk
+android/*.obb
