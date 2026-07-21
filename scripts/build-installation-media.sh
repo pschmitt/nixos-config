@@ -18,7 +18,7 @@ Options:
 
 Examples:
   $(basename "$0") iso
-  $(basename "$0") iso ***REMOVED***
+  $(basename "$0") iso iso-private
   $(basename "$0") sd-image
   $(basename "$0") sd-image pica4
 EOF
