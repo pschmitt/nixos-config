@@ -15,14 +15,6 @@ in
   custom.containerServices = {
     enable = true;
     services = {
-      pp = {
-        port = 7827;
-        hosts = [ (mkHost "pp") ];
-        monitoring = {
-          restart.composePath = "stash";
-          group = "piracy";
-        };
-      };
       tdarr = {
         port = 8265;
         hosts = [
