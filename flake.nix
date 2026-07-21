@@ -650,13 +650,13 @@
               { hardware.type = "installation-media"; }
             ];
           };
-          ***REMOVED*** = nixpkgs.lib.nixosSystem {
+          iso-private = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules
-              ./hosts/***REMOVED***
+              ./hosts/iso-private
               inputs.nixos-config-private.nixosModules.iso-xmr
               { hardware.type = "installation-media"; }
             ];
@@ -674,13 +674,13 @@
               { hardware.type = "installation-media"; }
             ];
           };
-          ***REMOVED***-legacy = nixpkgs.lib.nixosSystem {
+          iso-private-legacy = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             modules = [
               "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
               "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
               ./modules
-              ./hosts/***REMOVED***
+              ./hosts/iso-private
               inputs.nixos-config-private.nixosModules.iso-xmr
               ./workarounds/no-efi.nix
               { hardware.type = "installation-media"; }
