@@ -49,6 +49,10 @@ in
 
   services.displayManager.defaultSession = lib.mkForce "hyprland-uwsm";
 
+  # GNOME enables IBus by default, but its XIM autostart and environment
+  # variables are not valid for the Hyprland Wayland session.
+  i18n.inputMethod.enable = false;
+
   # This essentially adds ~/bin to the PATH of systemd user services
   systemd.user.settings.Manager.DefaultEnvironment =
     let
