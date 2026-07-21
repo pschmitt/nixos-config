@@ -25,106 +25,75 @@ profiles:
 apps:
   - name: "Immich"
     pkg: app.alextran.immich
-    profile: all
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "ADB Clipboard"
   #   pkg: ch.pete.adbclipboard
-  #   profile: all
   - name: "Amazon Shopping"
     pkg: com.amazon.mShop.android.shopping
-    profile: all
   - name: "Keyguard"
     pkg: com.artemchep.keyguard
-    profile: all
   - name: "Drive"
     pkg: com.google.android.apps.docs
-    profile: all
   - name: "Maps"
     pkg: com.google.android.apps.maps
-    profile: all
   - name: "Files by Google"
     pkg: com.google.android.apps.nbu.files
-    profile: all
   - name: "Gmail"
     pkg: com.google.android.gm
-    profile: all
   - name: "Gboard"
     pkg: com.google.android.inputmethod.latin
-    profile: all
   - name: "YouTube"
     pkg: com.google.android.youtube
-    profile: all
   - name: "SumUp Business"
     pkg: com.kaching.merchant
-    profile: all
   - name: "Netflix"
     pkg: com.netflix.mediaclient
-    profile: all
   # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
   # - name: "Termux"
   #   pkg: com.termux
-  #   profile: all
   # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
   # - name: "Termux:API"
   #   pkg: com.termux.api
-  #   profile: all
   # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
   # - name: "Termux:Boot"
   #   pkg: com.termux.boot
-  #   profile: all
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "Magisk"
   #   pkg: com.topjohnwu.magisk
-  #   profile: all
   - name: "X"
     pkg: com.twitter.android
-    profile: all
   - name: "ZDF"
     pkg: com.zdf.android.mediathek
-    profile: all
   - name: "ARD Mediathek"
     pkg: de.swr.avp.ard
-    profile: all
   - name: "Obtainium"
     pkg: dev.imranr.obtainium
     store: github
     repo: ImranR98/Obtainium
     asset: 'app-release\.apk$'
-    profile: all
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "Findroid+"
   #   pkg: dev.pschmitt.findroidplus
-  #   profile: all
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "Findroid+ Debug"
   #   pkg: dev.pschmitt.findroidplus.debug
-  #   profile: all
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
-    profile: all
   - name: "Element X"
     pkg: io.element.android.x
-    profile: all
   - name: "Home Assistant"
     pkg: io.homeassistant.companion.android
-    profile: all
   - name: "F-Droid"
     pkg: org.fdroid.fdroid
     store: url
     url: https://f-droid.org/F-Droid.apk
-    profile: all
   - name: "Yatse"
     pkg: org.leetzone.android.yatsewidgetfree
-    profile: all
   - name: "Firefox Nightly"
     pkg: org.mozilla.fenix
-    profile: all
   - name: "Firefox"
     pkg: org.mozilla.firefox
-    profile: all
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
-    profile: all
   - name: "ARTE"
     pkg: tv.arte.plus7
-    profile: all
