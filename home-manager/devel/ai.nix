@@ -271,6 +271,11 @@ in
     #   };
 
     home = {
+      # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
+      # register in practice, so that binding was dropped; only the ctrl+e
+      # external-editor rebind remains in claude-keybindings.json.
+      file.".claude/keybindings.json".source = ./claude-keybindings.json;
+
       packages = with pkgs.llm-agents; [
         # vscode forks
         # antigravity
