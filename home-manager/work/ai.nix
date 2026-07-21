@@ -20,6 +20,7 @@ in
 {
   home.file = {
     ".config/claude-work/rules/context.md".source = ../devel/CONTEXT.md;
+    ".config/claude-work/keybindings.json".source = ../devel/claude-keybindings.json;
     ".config/claude-work/skills" = {
       source = config.programs.claude-code.skills;
       recursive = true;
