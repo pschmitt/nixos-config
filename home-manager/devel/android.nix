@@ -4,6 +4,7 @@ let
 in
 {
   home.packages = with pkgs; [
+    aapt # aapt2, e.g. `aapt2 dump badging some.apk`
     android-tools # adb + fastboot
     inputs.declaroid.packages.${system}.default # declarative app provisioning, see https://github.com/pschmitt/declaroid
     inputs.tsvtool.packages.${system}.default # pretty TSV/JSON/YAML/TOML tables, used by declaroid's devices/diff output
