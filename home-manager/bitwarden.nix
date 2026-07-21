@@ -1,6 +1,18 @@
-{ pkgs, inputs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 {
   imports = [ inputs.rbw.homeManagerModules.default ];
+
+  sops.secrets = {
+    "rbw/private/email" = { };
+    "rbw/private/base_url" = { };
+    "rbw/work/email" = { };
+    "rbw/work/base_url" = { };
+  };
 
   home.packages = with pkgs; [
     # NOTE For the biometrics to work, the bitwarden-deskop pkg must be installed
@@ -25,18 +37,18 @@
         force_quit = [ "alt-Q" ];
       };
       accounts = {
-        default.email = "philipp@schmitt.co";
+        default.email = config.mainUser.email;
         wiit = {
-          email = "philipp.schmitt@wiit.cloud";
-          base_url = "https://***REMOVED***";
+          email._secret = config.sops.secrets."rbw/work/email".path;
+          base_url._secret = config.sops.secrets."rbw/work/base_url".path;
           unlock = {
             policy = "always";
             credentials.account = "default";
           };
         };
         bw = {
-          email = "philipp@schmitt.co";
-          base_url = "https://bw.brkn.lol";
+          email._secret = config.sops.secrets."rbw/private/email".path;
+          base_url._secret = config.sops.secrets."rbw/private/base_url".path;
           unlock = {
             policy = "always";
             credentials.account = "default";
