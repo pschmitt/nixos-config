@@ -21,8 +21,9 @@ device: redfin
 imports:
   - imports/base.yaml
   - imports/apps.yaml
+  - imports/banking.yaml
   - imports/modules.yaml
-  - imports/root_apps.yaml
+  - imports/root.yaml
   - imports/obtainium.yaml
 adb:
   start_cmd: "zhj adb::connect px5.lan"
@@ -39,28 +40,6 @@ apps:
 
   - name: "Claude"
     pkg: com.anthropic.claude
-
-  # Banking & Finance
-  - name: "bunq"
-    pkg: com.bunq.android
-
-  - name: "Curve Pay"
-    pkg: com.imaginecurve.curve.prd
-
-  - name: "Google Wallet"
-    pkg: com.google.android.apps.walletnfcrel
-
-  - name: "ING"
-    pkg: de.ingdiba.bankingapp
-
-  - name: "norisbank"
-    pkg: com.db.mm.norisbank
-
-  - name: "PayPal"
-    pkg: com.paypal.android.p2pmobile
-
-  - name: "Trade Republic"
-    pkg: de.traderepublic.app
 
   # Chat & Messaging
   - name: "Element X"

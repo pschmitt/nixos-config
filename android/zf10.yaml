@@ -21,6 +21,7 @@ device: EU_AI2302 # R6AIB700W850L7G
 imports:
   - imports/base.yaml
   - imports/apps.yaml
+  - imports/banking.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
@@ -30,31 +31,6 @@ profiles:
 root:
   enabled: false
 apps:
-  # Banking & Finance
-  - name: "BoursoBank"
-    pkg: com.boursorama.android.clients
-
-  - name: "bunq"
-    pkg: com.bunq.android
-
-  - name: "Coinbase"
-    pkg: com.coinbase.android
-
-  - name: "eboo"
-    pkg: lu.post.finance.mobile.eboo
-
-  - name: "Google Wallet"
-    pkg: com.google.android.apps.walletnfcrel
-
-  - name: "ING"
-    pkg: de.ingdiba.bankingapp
-
-  - name: "Mes Comptes - LCL"
-    pkg: fr.lcl.android.customerarea
-
-  - name: "norisbank"
-    pkg: com.db.mm.norisbank
-
   # Chat & Messaging
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
