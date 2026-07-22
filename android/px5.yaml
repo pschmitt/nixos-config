@@ -23,6 +23,7 @@ imports:
   - imports/apps.yaml
   - imports/banking.yaml
   - imports/google.yaml
+  - imports/media.yaml
   - imports/modules.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
@@ -79,13 +80,6 @@ apps:
 
   - name: "Shelly Smart Control"
     pkg: cloud.shelly.smartcontrol
-
-  # Media
-  - name: "ARD Mediathek"
-    pkg: de.swr.avp.ard
-
-  - name: "Pocket Casts"
-    pkg: au.com.shiftyjelly.pocketcasts
 
   # Navigation & Travel
   - name: "DB Navigator"
