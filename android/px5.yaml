@@ -19,6 +19,8 @@
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: redfin
 store: gplay
+adb:
+  start_cmd: "zhj adb::connect px5.lan"
 profiles:
   - name: main
     id: 0
@@ -184,6 +186,9 @@ apps:
   # System
   - name: "Camera"
     pkg: com.google.android.GoogleCamera
+    state:
+      installed: true
+      disabled: true
 
   - name: "Contacts"
     pkg: com.google.android.contacts

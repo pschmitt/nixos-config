@@ -17,7 +17,7 @@
 # Entries marked with a "# TODO" are commented out: reinstalling from this
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
-device: R6AIB700W850L7G
+device: EU_AI2302 # R6AIB700W850L7G
 store: gplay
 profiles:
   - name: main
@@ -159,9 +159,11 @@ apps:
   - name: "hyperion"
     pkg: projekt.launcher
 
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
-  # - name: "hyperion dock"
-  #   pkg: projekt.hyperion.dock
+  - name: "hyperion dock"
+    pkg: projekt.hyperion.dock
+    store: url
+    # FIXME This isn't a valid URL. The APK is hosted on apkmirror.com
+    url: "https://prjkt.io/dock"
 
   - name: "Island"
     pkg: com.oasisfeng.island
