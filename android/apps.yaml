@@ -37,9 +37,7 @@ apps:
 
   - name: "Obtainium"
     pkg: dev.imranr.obtainium.fdroid
-    store: github
-    repo: ImranR98/Obtainium
-    asset: 'app-release\.apk$'
+    store: fdroid
 
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
