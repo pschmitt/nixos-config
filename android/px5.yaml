@@ -23,139 +23,201 @@ profiles:
   - name: main
     id: 0
 apps:
-  - name: "Immich"
-    pkg: app.alextran.immich
-  - name: "Pocket Casts"
-    pkg: au.com.shiftyjelly.pocketcasts
-  - name: "Amazon Shopping"
-    pkg: com.amazon.mShop.android.shopping
+  # AI
+  - name: "ChatGPT"
+    pkg: com.openai.chatgpt
+
   - name: "Claude"
     pkg: com.anthropic.claude
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
+
+  # Banking & Finance
   - name: "bunq"
     pkg: com.bunq.android
+
+  - name: "Curve Pay"
+    pkg: com.imaginecurve.curve.prd
+
+  - name: "Google Wallet"
+    pkg: com.google.android.apps.walletnfcrel
+
+  - name: "ING"
+    pkg: de.ingdiba.bankingapp
+
+  - name: "norisbank"
+    pkg: com.db.mm.norisbank
+
+  - name: "PayPal"
+    pkg: com.paypal.android.p2pmobile
+
+  - name: "Trade Republic"
+    pkg: de.traderepublic.app
+
+  # Chat & Messaging
+  - name: "Element X"
+    pkg: io.element.android.x
+
+  - name: "Gmail"
+    pkg: com.google.android.gm
+
+  - name: "Messages"
+    pkg: com.google.android.apps.messaging
+
+  - name: "Reddit"
+    pkg: com.reddit.frontpage
+
+  - name: "Signal"
+    pkg: org.thoughtcrime.securesms
+
+  - name: "WhatsApp Messenger"
+    pkg: com.whatsapp
+
+  # Development
+  - name: "GitHub"
+    pkg: com.github.android
+
   - name: "RustDesk"
     pkg: com.carriez.flutter_hbb
     store: fdroid
-  - name: "norisbank"
-    pkg: com.db.mm.norisbank
-  - name: "GitHub"
-    pkg: com.github.android
+
   - name: "Syncthing-Fork"
     pkg: com.github.catfriend1.syncthingfork
     store: fdroid
-  - name: "Drive"
-    pkg: com.google.android.apps.docs
-  - name: "Maps"
-    pkg: com.google.android.apps.maps
-  - name: "Messages"
-    pkg: com.google.android.apps.messaging
-  - name: "Google Wallet"
-    pkg: com.google.android.apps.walletnfcrel
-  - name: "Calendar"
-    pkg: com.google.android.calendar
-  - name: "Contacts"
-    pkg: com.google.android.contacts
-  - name: "Phone"
-    pkg: com.google.android.dialer
-  - name: "Gmail"
-    pkg: com.google.android.gm
-  - name: "Camera"
-    pkg: com.google.android.GoogleCamera
-  - name: "Gboard"
-    pkg: com.google.android.inputmethod.latin
-  - name: "YouTube"
-    pkg: com.google.android.youtube
-  - name: "Google Play Services for AR"
-    pkg: com.google.ar.core
-  - name: "Curve Pay"
-    pkg: com.imaginecurve.curve.prd
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Smartspacer"
-  #   pkg: com.kieronquinn.app.smartspacer
-  #   store: github
-  #   repo: ""
-  - name: "Nextcloud"
-    pkg: com.nextcloud.client
-  - name: "ChatGPT"
-    pkg: com.openai.chatgpt
-  - name: "PayPal"
-    pkg: com.paypal.android.p2pmobile
-  - name: "Reddit"
-    pkg: com.reddit.frontpage
+
   - name: "Termux"
     pkg: com.termux
     store: fdroid
+
   - name: "Termux:API"
     pkg: com.termux.api
     store: fdroid
+
   - name: "Termux:Tasker"
     pkg: com.termux.tasker
     store: fdroid
-  - name: "Todoist"
-    pkg: com.todoist
-  - name: "Wolt"
-    pkg: com.wolt.android
-  - name: "Edeka"
-    pkg: de.edeka.genuss
+
+  # Home Automation
+  - name: "Gadgetbridge (Nightly)"
+    pkg: nodomain.freeyourgadget.gadgetbridge.nightly
+    store: github
+    repo: "pschmitt/Gadgetbridge"
+
+  - name: "Home Assistant"
+    pkg: io.homeassistant.companion.android
+
+  - name: "Shelly Smart Control"
+    pkg: cloud.shelly.smartcontrol
+
+  # Media
+  - name: "ARD Mediathek"
+    pkg: de.swr.avp.ard
+
+  - name: "Findroid+"
+    pkg: dev.pschmitt.findroidplus
+    store: github
+    repo: "pschmitt/findroidplus"
+
+  - name: "Immich"
+    pkg: app.alextran.immich
+
+  - name: "Pocket Casts"
+    pkg: au.com.shiftyjelly.pocketcasts
+
+  - name: "YouTube"
+    pkg: com.google.android.youtube
+
+  # Navigation & Travel
   - name: "DB Navigator"
     pkg: de.hafas.android.db
-  - name: "ING"
-    pkg: de.ingdiba.bankingapp
+
+  - name: "Maps"
+    pkg: com.google.android.apps.maps
+
   - name: "OSM Dashboard"
     pkg: de.storchp.opentracks.osmplugin
     store: fdroid
-  - name: "ARD Mediathek"
-    pkg: de.swr.avp.ard
-  - name: "Trade Republic"
-    pkg: de.traderepublic.app
-  - name: "Obtainium"
-    pkg: dev.imranr.obtainium.fdroid
-    store: github
-    repo: ImranR98/Obtainium
-    asset: 'app-release\.apk$'
-  - name: "Play Integrity API Checker"
-    pkg: gr.nikolasspyr.integritycheck
-  - name: "Element X"
-    pkg: io.element.android.x
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
+
+  # Productivity
+  - name: "Calendar"
+    pkg: com.google.android.calendar
+
+  - name: "Drive"
+    pkg: com.google.android.apps.docs
+
+  - name: "Nextcloud"
+    pkg: com.nextcloud.client
+
   - name: "Obsidian"
     pkg: md.obsidian
+
+  - name: "Tasker"
+    pkg: net.dinglisch.android.taskerm
+
+  - name: "Todoist"
+    pkg: com.todoist
+
+  # Security
   - name: "APatch"
     pkg: me.bmax.apatch
     store: fdroid
+
+  - name: "Keyguard"
+    pkg: com.artemchep.keyguard
+
+  - name: "Play Integrity API Checker"
+    pkg: gr.nikolasspyr.integritycheck
+
   - name: "Shizuku"
     pkg: moe.shizuku.privileged.api
     store: github
     repo: thedjchi/Shizuku
 
-  - name: "Tasker"
-    pkg: net.dinglisch.android.taskerm
+  # Shopping
+  - name: "Amazon Shopping"
+    pkg: com.amazon.mShop.android.shopping
 
-  - name: "Gadgetbridge (Nightly)"
-    pkg: nodomain.freeyourgadget.gadgetbridge.nightly
-    store: github
-    repo: "pschmitt/Gadgetbridge"
-  - name: "Breezy Weather"
-    pkg: org.breezyweather
-    store: github
-    repo: "breezy-weather/breezy-weather"
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+"
-  #   pkg: dev.pschmitt.findroidplus
+  - name: "Edeka"
+    pkg: de.edeka.genuss
+
+  - name: "Wolt"
+    pkg: com.wolt.android
+
+  # System
+  - name: "Camera"
+    pkg: com.google.android.GoogleCamera
+
+  - name: "Contacts"
+    pkg: com.google.android.contacts
+
   - name: "F-Droid"
     pkg: org.fdroid.fdroid
     store: url
     url: https://f-droid.org/F-Droid.apk
+
   - name: "Firefox"
     pkg: org.mozilla.firefox
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
+
+  - name: "Gboard"
+    pkg: com.google.android.inputmethod.latin
+
+  - name: "Obtainium"
+    pkg: dev.imranr.obtainium.fdroid
+    store: github
+    repo: ImranR98/Obtainium
+    asset: 'app-release\.apk$'
+
+  - name: "Phone"
+    pkg: com.google.android.dialer
+
+  - name: "Smartspacer"
+    pkg: com.kieronquinn.app.smartspacer
+    store: github
+    repo: "KieronQuinn/Smartspacer"
+
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
-  - name: "Shelly Smart Control"
-    pkg: cloud.shelly.smartcontrol
-  - name: "WhatsApp Messenger"
-    pkg: com.whatsapp
+
+  # Weather
+  - name: "Breezy Weather"
+    pkg: org.breezyweather
+    store: github
+    repo: "breezy-weather/breezy-weather"
