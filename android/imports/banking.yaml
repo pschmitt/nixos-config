@@ -1,0 +1,40 @@
+# Banking/finance apps, shared across every device that imports this --
+# the union of what px5 and zf10 each had device-locally before. Unlike
+# imports/media.yaml, this one *is* shared as one list across both
+# devices: a device that doesn't want a specific entry overrides it with
+# its own `state: {installed: false}` apps: entry for the same pkg
+# (declaroid's apps: merge dedups by pkg, last entry wins) rather than
+# this file staying device-exclusive.
+apps:
+  - name: "BoursoBank"
+    pkg: com.boursorama.android.clients
+
+  - name: "bunq"
+    pkg: com.bunq.android
+
+  - name: "Coinbase"
+    pkg: com.coinbase.android
+
+  - name: "Curve Pay"
+    pkg: com.imaginecurve.curve.prd
+
+  - name: "eboo"
+    pkg: lu.post.finance.mobile.eboo
+
+  - name: "Google Wallet"
+    pkg: com.google.android.apps.walletnfcrel
+
+  - name: "ING"
+    pkg: de.ingdiba.bankingapp
+
+  - name: "Mes Comptes - LCL"
+    pkg: fr.lcl.android.customerarea
+
+  - name: "norisbank"
+    pkg: com.db.mm.norisbank
+
+  - name: "PayPal"
+    pkg: com.paypal.android.p2pmobile
+
+  - name: "Trade Republic"
+    pkg: de.traderepublic.app
