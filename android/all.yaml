@@ -1,0 +1,7 @@
+# Meta-config: fans a single apply/uninstall/diff/modules invocation out
+# over every device's own config, each resolving its own device:/apps:/
+# root:/etc completely independently -- not a merge, unlike imports:.
+configs:
+  - mp4.yaml
+  - px5.yaml
+  - zf10.yaml
