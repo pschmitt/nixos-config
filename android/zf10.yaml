@@ -32,6 +32,15 @@ profiles:
 root:
   enabled: false
 apps:
+  # System -- overrides opting out of imports/google.yaml's Clock (AOSP)
+  # entry: this device never had com.android.deskclock preinstalled (only
+  # Google's own Clock), so the shared entry would otherwise attempt a
+  # doomed gplay install of a pkg with no real Play Store listing.
+  - name: "Clock (AOSP)"
+    pkg: com.android.deskclock
+    state:
+      installed: false
+
   # Banking & Finance -- overrides opting out of a few imports/banking.yaml
   # entries not wanted on this device (relies on declaroid's apps:
   # dedup-by-pkg, last-entry-wins).
