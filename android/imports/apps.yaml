@@ -17,12 +17,6 @@ apps:
   - name: "Firefox"
     pkg: org.mozilla.firefox
 
-  - name: "Gboard"
-    pkg: com.google.android.inputmethod.latin
-
-  - name: "Gmail"
-    pkg: com.google.android.gm
-
   - name: "Home Assistant"
     pkg: io.homeassistant.companion.android
 
@@ -31,9 +25,6 @@ apps:
 
   - name: "Keyguard"
     pkg: com.artemchep.keyguard
-
-  - name: "Maps"
-    pkg: com.google.android.apps.maps
 
   - name: "Shizuku"
     pkg: moe.shizuku.privileged.api
