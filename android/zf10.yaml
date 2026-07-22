@@ -84,14 +84,6 @@ apps:
   - name: "Photos"
     pkg: com.google.android.apps.photos
 
-  # Navigation & Travel
-  - name: "DB Navigator"
-    pkg: de.hafas.android.db
-
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "SNCF Connect"
-  #   pkg: com.vsct.vsc.mobile.horaireetresa.android
-
   # Productivity
   - name: "Nextcloud"
     pkg: com.nextcloud.client
