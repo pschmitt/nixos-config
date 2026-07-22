@@ -20,6 +20,8 @@ obtainium:
 
   - pkg: dev.pschmitt.findroidplus
     url: "https://github.com/pschmitt/findroidplus"
+    settings:
+      includePrereleases: true
 
   - pkg: moe.shizuku.privileged.api
     url: "https://github.com/thedjchi/Shizuku"
