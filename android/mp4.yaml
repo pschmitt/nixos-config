@@ -84,9 +84,3 @@ apps:
 
   - name: "Files by Google"
     pkg: com.google.android.apps.nbu.files
-
-  - name: "Obtainium"
-    pkg: dev.imranr.obtainium
-    store: github
-    repo: ImranR98/Obtainium
-    asset: 'app-release\.apk$'
