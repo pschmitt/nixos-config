@@ -25,115 +25,166 @@ profiles:
   - name: island
     id: 10
 apps:
-  - name: "Immich"
-    pkg: app.alextran.immich
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
-  - name: "Authy"
-    pkg: com.authy.authy
+  # Banking & Finance
   - name: "BoursoBank"
     pkg: com.boursorama.android.clients
+
   - name: "bunq"
     pkg: com.bunq.android
+
   - name: "Coinbase"
     pkg: com.coinbase.android
+
+  - name: "eboo"
+    pkg: lu.post.finance.mobile.eboo
+
+  - name: "Google Wallet"
+    pkg: com.google.android.apps.walletnfcrel
+
+  - name: "ING"
+    pkg: de.ingdiba.bankingapp
+
+  - name: "Mes Comptes - LCL"
+    pkg: fr.lcl.android.customerarea
+
   - name: "norisbank"
     pkg: com.db.mm.norisbank
-  - name: "Duo Mobile"
-    pkg: com.duosecurity.duomobile
-  - name: "ScanSnap Cloud"
-    pkg: com.fujitsu.pfu.scansnapcloudeu
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Syncthing-Fork"
-  #   pkg: com.github.catfriend1.syncthingfork
-  #   store: github
-  #   repo: ""
-  - name: "Sound Amplifier"
-    pkg: com.google.android.accessibility.soundamplifier
-  - name: "Photos"
-    pkg: com.google.android.apps.photos
-  - name: "Google Wallet"
-    pkg: com.google.android.apps.walletnfcrel
-  - name: "Contacts"
-    pkg: com.google.android.contacts
-  - name: "Clock"
-    pkg: com.google.android.deskclock
-  - name: "Phone"
-    pkg: com.google.android.dialer
-  - name: "LuxTrust Mobile"
-    pkg: com.LuxTrustMobile
+
+  # Chat & Messaging
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
     profile: island
-  - name: "Nextcloud"
-    pkg: com.nextcloud.client
-  - name: "Island"
-    pkg: com.oasisfeng.island
-    profile: all
-  - name: "Tailscale"
-    pkg: com.tailscale.ipn
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
-  # - name: "Termux"
-  #   pkg: com.termux
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
-  # - name: "Termux:API"
-  #   pkg: com.termux.api
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
-  # - name: "Termux:Tasker"
-  #   pkg: com.termux.tasker
+
+  - name: "Signal"
+    pkg: org.thoughtcrime.securesms
+
+  - name: "WhatsApp"
+    pkg: com.whatsapp
+
+  # Development
+  - name: "Syncthing-Fork"
+    pkg: com.github.catfriend1.syncthingfork
+    store: fdroid
+
+  - name: "Termux"
+    pkg: com.termux
+    store: fdroid
+
+  - name: "Termux:API"
+    pkg: com.termux.api
+    store: fdroid
+
   # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
   # - name: "Termux:Float"
   #   pkg: com.termux.window
+
+  - name: "Termux:Tasker"
+    pkg: com.termux.tasker
+    store: fdroid
+
+  # Home Automation
+  - name: "Home Assistant"
+    pkg: io.homeassistant.companion.android
+
+  # Insurance & Health
+  - name: "TK"
+    pkg: de.tk.tkapp
+
+  - name: "TK-Ident"
+    pkg: de.tk.apps.android.tkident
+
+  # Media
+  - name: "Findroid+"
+    pkg: dev.pschmitt.findroidplus
+    store: github
+    repo: "pschmitt/findroidplus"
+
+  - name: "Immich"
+    pkg: app.alextran.immich
+
+  - name: "Photos"
+    pkg: com.google.android.apps.photos
+
+  # Navigation & Travel
+  - name: "DB Navigator"
+    pkg: de.hafas.android.db
+
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "SNCF Connect"
   #   pkg: com.vsct.vsc.mobile.horaireetresa.android
-  - name: "WhatsApp"
-    pkg: com.whatsapp
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "DB Navigator"
-  #   pkg: de.hafas.android.db
-  - name: "ING"
-    pkg: de.ingdiba.bankingapp
-  - name: "TK-Ident"
-    pkg: de.tk.apps.android.tkident
-  - name: "TK"
-    pkg: de.tk.tkapp
+
+  # Productivity
+  - name: "Nextcloud"
+    pkg: com.nextcloud.client
+
+  - name: "ScanSnap Cloud"
+    pkg: com.fujitsu.pfu.scansnapcloudeu
+
+  - name: "Tasker"
+    pkg: net.dinglisch.android.taskerm
+
+  # Security
+  - name: "Authy"
+    pkg: com.authy.authy
+
+  - name: "Duo Mobile"
+    pkg: com.duosecurity.duomobile
+
+  - name: "Keyguard"
+    pkg: com.artemchep.keyguard
+
+  - name: "LuxTrust Mobile"
+    pkg: com.LuxTrustMobile
+
+  - name: "Shizuku"
+    pkg: moe.shizuku.privileged.api
+    store: github
+    repo: thedjchi/Shizuku
+
+  # System
+  - name: "Clock"
+    pkg: com.google.android.deskclock
+
+  - name: "Contacts"
+    pkg: com.google.android.contacts
+
+  - name: "F-Droid"
+    pkg: org.fdroid.fdroid
+    store: url
+    url: https://f-droid.org/F-Droid.apk
+
+  - name: "Firefox"
+    pkg: org.mozilla.firefox
+
+  - name: "hyperion"
+    pkg: projekt.launcher
+
+  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
+  # - name: "hyperion dock"
+  #   pkg: projekt.hyperion.dock
+
+  - name: "Island"
+    pkg: com.oasisfeng.island
+    profile: all
+
+  - name: "NetBird"
+    pkg: io.netbird.client
+    profile: all
+
   - name: "Obtainium"
     pkg: dev.imranr.obtainium.fdroid
     store: github
     repo: ImranR98/Obtainium
     asset: 'app-release\.apk$'
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+"
-  #   pkg: dev.pschmitt.findroidplus
-  - name: "Mes Comptes - LCL"
-    pkg: fr.lcl.android.customerarea
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
-  - name: "NetBird"
-    pkg: io.netbird.client
-    profile: all
-  - name: "eboo"
-    pkg: lu.post.finance.mobile.eboo
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Shizuku"
-  #   pkg: moe.shizuku.privileged.api
-  #   store: github
-  #   repo: ""
-  - name: "Tasker"
-    pkg: net.dinglisch.android.taskerm
-  - name: "F-Droid"
-    pkg: org.fdroid.fdroid
-    store: url
-    url: https://f-droid.org/F-Droid.apk
-  - name: "Firefox"
-    pkg: org.mozilla.firefox
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
+
+  - name: "Phone"
+    pkg: com.google.android.dialer
+
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
-  # - name: "hyperion dock"
-  #   pkg: projekt.hyperion.dock
-  - name: "hyperion"
-    pkg: projekt.launcher
+
+  - name: "Sound Amplifier"
+    pkg: com.google.android.accessibility.soundamplifier
+
+  - name: "Tailscale"
+    pkg: com.tailscale.ipn
