@@ -205,11 +205,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784737535,
-        "narHash": "sha256-ouriPKc4LeVvewk+Fn4LPS63L9WBH+I8Qp7boOJLyTA=",
+        "lastModified": 1784747654,
+        "narHash": "sha256-8aeVNgWat45nJV5gufyrP6cXejJiMo4pa6eJTZJ5508=",
         "owner": "pschmitt",
         "repo": "declaroid",
-        "rev": "3264977fe81f60a5925f7e24bfce186a8db8ea6e",
+        "rev": "29d24e8826fe219eb2950d1270d1194be1b29dfd",
         "type": "github"
       },
       "original": {
