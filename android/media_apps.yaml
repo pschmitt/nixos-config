@@ -1,0 +1,14 @@
+# Media/streaming apps, currently only imported by mp4 -- ARD Mediathek
+# also happens to be on px5 (kept as its own separate entry there, not
+# imported from here) but Netflix/ZDF aren't on px5/zf10 today. Add this
+# to another device's imports: list once it should actually get these
+# apps too, rather than assuming every device wants the same media set.
+apps:
+  - name: "ARD Mediathek"
+    pkg: de.swr.avp.ard
+
+  - name: "Netflix"
+    pkg: com.netflix.mediaclient
+
+  - name: "ZDF"
+    pkg: com.zdf.android.mediathek

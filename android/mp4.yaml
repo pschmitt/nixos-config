@@ -22,6 +22,7 @@ store: gplay
 imports:
   - apps.yaml
   - modules.yaml
+  - media_apps.yaml
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
 profiles:
@@ -39,9 +40,6 @@ apps:
   - name: "Element X"
     pkg: io.element.android.x
 
-  - name: "Gmail"
-    pkg: com.google.android.gm
-
   - name: "X"
     pkg: com.twitter.android
 
@@ -51,31 +49,11 @@ apps:
     store: fdroid
 
   # Media
-  - name: "ARD Mediathek"
-    pkg: de.swr.avp.ard
-
   - name: "ARTE"
     pkg: tv.arte.plus7
 
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+ Debug"
-  #   pkg: dev.pschmitt.findroidplus.debug
-
-  - name: "Netflix"
-    pkg: com.netflix.mediaclient
-
-  - name: "Yatse"
-    pkg: org.leetzone.android.yatsewidgetfree
-
   - name: "YouTube"
     pkg: com.google.android.youtube
-
-  - name: "ZDF"
-    pkg: com.zdf.android.mediathek
-
-  # Navigation & Travel
-  - name: "Maps"
-    pkg: com.google.android.apps.maps
 
   # Productivity
   - name: "Drive"
@@ -106,12 +84,6 @@ apps:
 
   - name: "Files by Google"
     pkg: com.google.android.apps.nbu.files
-
-  - name: "Firefox Nightly"
-    pkg: org.mozilla.fenix
-
-  - name: "Gboard"
-    pkg: com.google.android.inputmethod.latin
 
   - name: "Obtainium"
     pkg: dev.imranr.obtainium
