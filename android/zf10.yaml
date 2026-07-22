@@ -23,7 +23,6 @@ imports:
   - imports/apps.yaml
   - imports/banking.yaml
   - imports/google.yaml
-  - imports/media.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
