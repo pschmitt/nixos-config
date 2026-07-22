@@ -1,0 +1,23 @@
+# Obtainium itself, plus repo-tracking entries shared across devices via
+# `imports:` (px5/mp4/zf10 all import this for the app; only px5/mp4 also
+# benefit from the obtainium: list below, which requires root and is
+# skipped entirely on zf10). Only repos actually tracked on every current
+# rooted device live here; device-specific ones stay in that device's own
+# obtainium: list.
+apps:
+  - name: "Obtainium"
+    pkg: dev.imranr.obtainium.fdroid
+    store: fdroid
+
+obtainium:
+  - pkg: com.kieronquinn.app.smartspacer
+    url: "https://github.com/KieronQuinn/Smartspacer"
+
+  - pkg: org.breezyweather
+    url: "https://github.com/breezy-weather/breezy-weather"
+
+  - pkg: dev.pschmitt.findroidplus
+    url: "https://github.com/pschmitt/findroidplus"
+
+  - pkg: moe.shizuku.privileged.api
+    url: "https://github.com/thedjchi/Shizuku"

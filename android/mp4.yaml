@@ -21,10 +21,11 @@ device: clover
 enforce: true
 store: gplay
 imports:
-  - apps.yaml
-  - modules.yaml
-  - media_apps.yaml
-  - root_apps.yaml
+  - imports/apps.yaml
+  - imports/modules.yaml
+  - imports/media_apps.yaml
+  - imports/root_apps.yaml
+  - imports/obtainium.yaml
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
 profiles:
