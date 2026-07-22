@@ -64,9 +64,6 @@ apps:
   - name: "Element X"
     pkg: io.element.android.x
 
-  - name: "Gmail"
-    pkg: com.google.android.gm
-
   - name: "Messages"
     pkg: com.google.android.apps.messaging
 
@@ -117,9 +114,6 @@ apps:
   # Navigation & Travel
   - name: "DB Navigator"
     pkg: de.hafas.android.db
-
-  - name: "Maps"
-    pkg: com.google.android.apps.maps
 
   - name: "OSM Dashboard"
     pkg: de.storchp.opentracks.osmplugin
@@ -176,15 +170,6 @@ apps:
 
   - name: "Contacts"
     pkg: com.google.android.contacts
-
-  - name: "Gboard"
-    pkg: com.google.android.inputmethod.latin
-
-  - name: "Obtainium"
-    pkg: dev.imranr.obtainium.fdroid
-    store: github
-    repo: ImranR98/Obtainium
-    asset: 'app-release\.apk$'
 
   - name: "Phone"
     pkg: com.google.android.dialer

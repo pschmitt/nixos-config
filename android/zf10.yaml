@@ -146,12 +146,6 @@ apps:
     pkg: io.netbird.client
     profile: all
 
-  - name: "Obtainium"
-    pkg: dev.imranr.obtainium.fdroid
-    store: github
-    repo: ImranR98/Obtainium
-    asset: 'app-release\.apk$'
-
   - name: "Phone"
     pkg: com.google.android.dialer
 
