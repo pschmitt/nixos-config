@@ -18,6 +18,12 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - For Nix changes, use `nixfmt` and run `statix check` from within `nix develop`.
 - Never introduce trailing whitespace.
 
+## Command safety
+
+- Do not start unbounded filesystem traversals. Prefer `rg --files` or a targeted `rg` search over `find`, `bfs`, or similar recursive discovery commands.
+- If `find`, `bfs`, or another potentially expensive recursive command is necessary, scope it to the smallest relevant directory, exclude known large/generated paths, and wrap it with `timeout 5m`.
+- Never recursively search broad paths such as `/`, a home directory, or `/nix/store`. If a scoped search times out, refine its scope rather than rerunning it unchanged.
+
 ## Deployment and operations
 
 - To deploy host changes, use `just deploy TARGET_HOST`.
