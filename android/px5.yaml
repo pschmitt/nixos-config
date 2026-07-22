@@ -18,9 +18,8 @@
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: redfin
-enforce: true
-store: gplay
 imports:
+  - imports/base.yaml
   - imports/apps.yaml
   - imports/modules.yaml
   - imports/root_apps.yaml

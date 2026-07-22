@@ -1,0 +1,7 @@
+# Shared top-level scalar defaults, imported first by every device
+# config. Unlike apps:/modules:/profiles:/obtainium:, these cascade in as
+# an override, not a concatenation: a device config's own value always
+# wins if it sets the key at all; this only fills in what it doesn't.
+store: gplay
+enforce: true
+grant_permissions: true
