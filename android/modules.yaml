@@ -1,0 +1,32 @@
+# Root modules, shared across device configs via `imports:` (currently
+# mp4 and px5 are rooted -- zf10 isn't and doesn't import this at all,
+# see its own root.enabled: false). Same on-disk module.prop format works
+# for both Magisk (mp4) and APatch (px5), per declaroid's own README.
+# Add this to a device's own imports: list once that device is actually
+# rooted, rather than copy-pasting the whole list.
+modules:
+  - id: playintegrityfix
+    name: "Play Integrity Fix [INJECT]"
+    source: github
+    repo: KOWX712/PlayIntegrityFix
+    asset: 'PlayIntegrityFix_v.*-1-inject-s\.zip$'
+
+  - id: tricky_store
+    name: "Tricky Store"
+    source: github
+    repo: 5ec1cff/TrickyStore
+
+  - id: YetAnotherBootloopProtector
+    name: "Yet Another Bootloop Protector"
+    source: github
+    repo: Magisk-Modules-Alt-Repo/YetAnotherBootloopProtector
+
+  - id: Yurikey
+    name: "Yurikey Manager"
+    source: github
+    repo: Yurii0307/yurikey
+
+  - id: zygisksu
+    name: "Zygisk Next"
+    source: github
+    repo: Dr-TSNG/ZygiskNext

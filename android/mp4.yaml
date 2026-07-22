@@ -19,6 +19,9 @@
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: clover
 store: gplay
+imports:
+  - apps.yaml
+  - modules.yaml
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
 profiles:
@@ -27,32 +30,6 @@ profiles:
 root:
   enabled: true
   framework: magisk
-modules:
-  - id: playintegrityfix
-    name: "Play Integrity Fix [INJECT]"
-    source: github
-    repo: KOWX712/PlayIntegrityFix
-    asset: 'PlayIntegrityFix_v.*-1-inject-s\.zip$'
-
-  - id: tricky_store
-    name: "Tricky Store"
-    source: github
-    repo: 5ec1cff/TrickyStore
-
-  - id: YetAnotherBootloopProtector
-    name: "Yet Another Bootloop Protector"
-    source: github
-    repo: Magisk-Modules-Alt-Repo/YetAnotherBootloopProtector
-
-  - id: Yurikey
-    name: "Yurikey Manager"
-    source: github
-    repo: Yurii0307/yurikey
-
-  - id: zygisksu
-    name: "Zygisk Next"
-    source: github
-    repo: Dr-TSNG/ZygiskNext
 apps:
   # Banking & Finance
   - name: "SumUp Business"
@@ -69,20 +46,9 @@ apps:
     pkg: com.twitter.android
 
   # Development
-  - name: "Termux"
-    pkg: com.termux
-    store: fdroid
-
-  - name: "Termux:API"
-    pkg: com.termux.api
-
   - name: "Termux:Boot"
     pkg: com.termux.boot
     store: fdroid
-
-  # Home Automation
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
 
   # Media
   - name: "ARD Mediathek"
@@ -91,17 +57,9 @@ apps:
   - name: "ARTE"
     pkg: tv.arte.plus7
 
-  - name: "Findroid+"
-    pkg: dev.pschmitt.findroidplus
-    store: github
-    repo: "pschmitt/findroidplus"
-
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "Findroid+ Debug"
   #   pkg: dev.pschmitt.findroidplus.debug
-
-  - name: "Immich"
-    pkg: app.alextran.immich
 
   - name: "Netflix"
     pkg: com.netflix.mediaclient
@@ -130,9 +88,6 @@ apps:
   #   pkg: me.bmax.apatch
   #   store: fdroid
 
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
-
   - name: "Magisk"
     pkg: com.topjohnwu.magisk
     store: github
@@ -149,16 +104,8 @@ apps:
   - name: "ADB Clipboard"
     pkg: ch.pete.adbclipboard
 
-  - name: "F-Droid"
-    pkg: org.fdroid.fdroid
-    store: url
-    url: https://f-droid.org/F-Droid.apk
-
   - name: "Files by Google"
     pkg: com.google.android.apps.nbu.files
-
-  - name: "Firefox"
-    pkg: org.mozilla.firefox
 
   - name: "Firefox Nightly"
     pkg: org.mozilla.fenix
@@ -171,6 +118,3 @@ apps:
     store: github
     repo: ImranR98/Obtainium
     asset: 'app-release\.apk$'
-
-  - name: "Solid Explorer"
-    pkg: pl.solidexplorer2

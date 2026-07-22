@@ -1,8 +1,38 @@
-device: 10.5.0.110:43411
+# Common apps shared across every device config via `imports:`. Add or
+# remove an entry here to change the shared baseline everywhere at once,
+# instead of copy-pasting into each device's own apps.yaml. Only apps
+# identically configured across all current device configs (px5/mp4/zf10)
+# live here -- anything device-specific stays in that device's own file.
 apps:
-  - name: DB Navigator
-    pkg: de.hafas.android.db
-  - name: Google Maps
-    pkg: com.google.android.apps.maps
-  - name: "SNCF Connect: Trains & routes"
-    pkg: com.vsct.vsc.mobile.horaireetresa.android
+  - name: "F-Droid"
+    pkg: org.fdroid.fdroid
+    store: url
+    url: https://f-droid.org/F-Droid.apk
+
+  - name: "Findroid+"
+    pkg: dev.pschmitt.findroidplus
+    store: github
+    repo: "pschmitt/findroidplus"
+
+  - name: "Firefox"
+    pkg: org.mozilla.firefox
+
+  - name: "Home Assistant"
+    pkg: io.homeassistant.companion.android
+
+  - name: "Immich"
+    pkg: app.alextran.immich
+
+  - name: "Keyguard"
+    pkg: com.artemchep.keyguard
+
+  - name: "Solid Explorer"
+    pkg: pl.solidexplorer2
+
+  - name: "Termux"
+    pkg: com.termux
+    store: fdroid
+
+  - name: "Termux:API"
+    pkg: com.termux.api
+    store: fdroid
