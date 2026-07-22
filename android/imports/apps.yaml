@@ -35,10 +35,6 @@ apps:
   - name: "Maps"
     pkg: com.google.android.apps.maps
 
-  - name: "Obtainium"
-    pkg: dev.imranr.obtainium.fdroid
-    store: fdroid
-
   - name: "Shizuku"
     pkg: moe.shizuku.privileged.api
     store: github

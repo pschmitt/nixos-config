@@ -21,9 +21,10 @@ device: redfin
 enforce: true
 store: gplay
 imports:
-  - apps.yaml
-  - modules.yaml
-  - root_apps.yaml
+  - imports/apps.yaml
+  - imports/modules.yaml
+  - imports/root_apps.yaml
+  - imports/obtainium.yaml
 adb:
   start_cmd: "zhj adb::connect px5.lan"
 profiles:

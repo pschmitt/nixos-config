@@ -11,5 +11,5 @@ in
     pmbootstrap
   ];
 
-  xdg.configFile."declaroid/apps.yaml".source = ../../android/apps.yaml;
+  xdg.configFile."declaroid/apps.yaml".source = ../../android/imports/apps.yaml;
 }

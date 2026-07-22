@@ -21,7 +21,8 @@ device: EU_AI2302 # R6AIB700W850L7G
 enforce: true
 store: gplay
 imports:
-  - apps.yaml
+  - imports/apps.yaml
+  - imports/obtainium.yaml
 profiles:
   - name: main
     id: 0
