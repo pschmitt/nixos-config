@@ -19,11 +19,17 @@
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: redfin
 store: gplay
+imports:
+  - apps.yaml
+  - modules.yaml
 adb:
   start_cmd: "zhj adb::connect px5.lan"
 profiles:
   - name: main
     id: 0
+root:
+  enabled: true
+  framework: apatch
 apps:
   # AI
   - name: "ChatGPT"
@@ -85,14 +91,6 @@ apps:
     pkg: com.github.catfriend1.syncthingfork
     store: fdroid
 
-  - name: "Termux"
-    pkg: com.termux
-    store: fdroid
-
-  - name: "Termux:API"
-    pkg: com.termux.api
-    store: fdroid
-
   - name: "Termux:Tasker"
     pkg: com.termux.tasker
     store: fdroid
@@ -103,23 +101,12 @@ apps:
     store: github
     repo: "pschmitt/Gadgetbridge"
 
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
-
   - name: "Shelly Smart Control"
     pkg: cloud.shelly.smartcontrol
 
   # Media
   - name: "ARD Mediathek"
     pkg: de.swr.avp.ard
-
-  - name: "Findroid+"
-    pkg: dev.pschmitt.findroidplus
-    store: github
-    repo: "pschmitt/findroidplus"
-
-  - name: "Immich"
-    pkg: app.alextran.immich
 
   - name: "Pocket Casts"
     pkg: au.com.shiftyjelly.pocketcasts
@@ -162,9 +149,6 @@ apps:
     pkg: me.bmax.apatch
     store: fdroid
 
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
-
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
 
@@ -193,14 +177,6 @@ apps:
   - name: "Contacts"
     pkg: com.google.android.contacts
 
-  - name: "F-Droid"
-    pkg: org.fdroid.fdroid
-    store: url
-    url: https://f-droid.org/F-Droid.apk
-
-  - name: "Firefox"
-    pkg: org.mozilla.firefox
-
   - name: "Gboard"
     pkg: com.google.android.inputmethod.latin
 
@@ -217,9 +193,6 @@ apps:
     pkg: com.kieronquinn.app.smartspacer
     store: github
     repo: "KieronQuinn/Smartspacer"
-
-  - name: "Solid Explorer"
-    pkg: pl.solidexplorer2
 
   # Weather
   - name: "Breezy Weather"

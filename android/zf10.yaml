@@ -19,11 +19,15 @@
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: EU_AI2302 # R6AIB700W850L7G
 store: gplay
+imports:
+  - apps.yaml
 profiles:
   - name: main
     id: 0
   - name: island
     id: 10
+root:
+  enabled: false
 apps:
   # Banking & Finance
   - name: "BoursoBank"
@@ -66,14 +70,6 @@ apps:
     pkg: com.github.catfriend1.syncthingfork
     store: fdroid
 
-  - name: "Termux"
-    pkg: com.termux
-    store: fdroid
-
-  - name: "Termux:API"
-    pkg: com.termux.api
-    store: fdroid
-
   # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
   # - name: "Termux:Float"
   #   pkg: com.termux.window
@@ -81,10 +77,6 @@ apps:
   - name: "Termux:Tasker"
     pkg: com.termux.tasker
     store: fdroid
-
-  # Home Automation
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
 
   # Insurance & Health
   - name: "TK"
@@ -94,14 +86,6 @@ apps:
     pkg: de.tk.apps.android.tkident
 
   # Media
-  - name: "Findroid+"
-    pkg: dev.pschmitt.findroidplus
-    store: github
-    repo: "pschmitt/findroidplus"
-
-  - name: "Immich"
-    pkg: app.alextran.immich
-
   - name: "Photos"
     pkg: com.google.android.apps.photos
 
@@ -130,9 +114,6 @@ apps:
   - name: "Duo Mobile"
     pkg: com.duosecurity.duomobile
 
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
-
   - name: "LuxTrust Mobile"
     pkg: com.LuxTrustMobile
 
@@ -147,14 +128,6 @@ apps:
 
   - name: "Contacts"
     pkg: com.google.android.contacts
-
-  - name: "F-Droid"
-    pkg: org.fdroid.fdroid
-    store: url
-    url: https://f-droid.org/F-Droid.apk
-
-  - name: "Firefox"
-    pkg: org.mozilla.firefox
 
   - name: "hyperion"
     pkg: projekt.launcher
@@ -181,9 +154,6 @@ apps:
 
   - name: "Phone"
     pkg: com.google.android.dialer
-
-  - name: "Solid Explorer"
-    pkg: pl.solidexplorer2
 
   - name: "Sound Amplifier"
     pkg: com.google.android.accessibility.soundamplifier
