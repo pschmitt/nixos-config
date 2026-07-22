@@ -1,0 +1,5 @@
+# Apps that only make sense on a rooted device, imported by px5/mp4
+# only -- zf10 isn't rooted and doesn't import this.
+apps:
+  - name: "Play Integrity API Checker"
+    pkg: gr.nikolasspyr.integritycheck

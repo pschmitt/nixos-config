@@ -24,6 +24,7 @@ imports:
   - apps.yaml
   - modules.yaml
   - media_apps.yaml
+  - root_apps.yaml
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
 profiles:
@@ -71,9 +72,6 @@ apps:
     pkg: com.topjohnwu.magisk
     store: github
     repo: topjohnwu/Magisk
-
-  - name: "Play Integrity API Checker"
-    pkg: gr.nikolasspyr.integritycheck
 
   # Shopping
   - name: "Amazon Shopping"
