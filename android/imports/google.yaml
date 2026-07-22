@@ -19,6 +19,15 @@ apps:
   - name: "Clock"
     pkg: com.google.android.deskclock
 
+  # A pre-existing AOSP system app on some devices (not something declaroid
+  # ever installed) -- kept installed but disabled in favor of Google's
+  # Clock above, since it's a different pkg and can't be uninstalled.
+  - name: "Clock (AOSP)"
+    pkg: com.android.deskclock
+    state:
+      installed: true
+      disabled: true
+
   - name: "Contacts"
     pkg: com.google.android.contacts
 
