@@ -11,6 +11,7 @@ terraform/etc
 .pre-commit-config.yaml
 .direnv/
 *.iso
+*.img
 *.log
 clouds.yaml
 *.pem
