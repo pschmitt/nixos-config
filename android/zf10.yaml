@@ -31,6 +31,24 @@ profiles:
 root:
   enabled: false
 apps:
+  # Banking & Finance -- overrides opting out of a few imports/banking.yaml
+  # entries not wanted on this device (relies on declaroid's apps:
+  # dedup-by-pkg, last-entry-wins).
+  - name: "Curve Pay"
+    pkg: com.imaginecurve.curve.prd
+    state:
+      installed: false
+
+  - name: "PayPal"
+    pkg: com.paypal.android.p2pmobile
+    state:
+      installed: false
+
+  - name: "Trade Republic"
+    pkg: de.traderepublic.app
+    state:
+      installed: false
+
   # Chat & Messaging
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
