@@ -20,6 +20,7 @@ apps:
 
   - name: "eboo"
     pkg: lu.post.finance.mobile.eboo
+    state: {installed: false}
 
   - name: "Google Wallet"
     pkg: com.google.android.apps.walletnfcrel

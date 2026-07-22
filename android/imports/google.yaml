@@ -10,6 +10,8 @@
 apps:
   - name: "Camera"
     pkg: com.google.android.GoogleCamera
+    state:
+      installed: false
 
   - name: "Calendar"
     pkg: com.google.android.calendar
