@@ -17,7 +17,7 @@
 # Entries marked with a "# TODO" are commented out: reinstalling from this
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
-device: 10.5.0.110:39531
+device: redfin
 store: gplay
 profiles:
   - name: main
@@ -84,24 +84,23 @@ apps:
     pkg: com.paypal.android.p2pmobile
   - name: "Reddit"
     pkg: com.reddit.frontpage
-  # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
-  # - name: "Termux"
-  #   pkg: com.termux
-  # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
-  # - name: "Termux:API"
-  #   pkg: com.termux.api
-  # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
-  # - name: "Termux:Tasker"
-  #   pkg: com.termux.tasker
+  - name: "Termux"
+    pkg: com.termux
+    store: fdroid
+  - name: "Termux:API"
+    pkg: com.termux.api
+    store: fdroid
+  - name: "Termux:Tasker"
+    pkg: com.termux.tasker
+    store: fdroid
   - name: "Todoist"
     pkg: com.todoist
   - name: "Wolt"
     pkg: com.wolt.android
   - name: "Edeka"
     pkg: de.edeka.genuss
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "DB Navigator"
-  #   pkg: de.hafas.android.db
+  - name: "DB Navigator"
+    pkg: de.hafas.android.db
   - name: "ING"
     pkg: de.ingdiba.bankingapp
   - name: "OSM Dashboard"
@@ -116,9 +115,6 @@ apps:
     store: github
     repo: ImranR98/Obtainium
     asset: 'app-release\.apk$'
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+"
-  #   pkg: dev.pschmitt.findroidplus
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
   - name: "Element X"
@@ -130,23 +126,25 @@ apps:
   - name: "APatch"
     pkg: me.bmax.apatch
     store: fdroid
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Shizuku"
-  #   pkg: moe.shizuku.privileged.api
-  #   store: github
-  #   repo: ""
+  - name: "Shizuku"
+    pkg: moe.shizuku.privileged.api
+    store: github
+    repo: thedjchi/Shizuku
+
   - name: "Tasker"
     pkg: net.dinglisch.android.taskerm
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Gadgetbridge (Nightly)"
-  #   pkg: nodomain.freeyourgadget.gadgetbridge.nightly
-  #   store: github
-  #   repo: ""
-  # TODO: installed via Obtainium -- set repo/asset by hand, original repo is unknown
-  # - name: "Breezy Weather"
-  #   pkg: org.breezyweather
-  #   store: github
-  #   repo: ""
+
+  - name: "Gadgetbridge (Nightly)"
+    pkg: nodomain.freeyourgadget.gadgetbridge.nightly
+    store: github
+    repo: "pschmitt/Gadgetbridge"
+  - name: "Breezy Weather"
+    pkg: org.breezyweather
+    store: github
+    repo: "breezy-weather/breezy-weather"
+  # TODO: store unknown (installer=null) -- set store by hand
+  # - name: "Findroid+"
+  #   pkg: dev.pschmitt.findroidplus
   - name: "F-Droid"
     pkg: org.fdroid.fdroid
     store: url
@@ -157,3 +155,7 @@ apps:
     pkg: org.thoughtcrime.securesms
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
+  - name: "Shelly Smart Control"
+    pkg: cloud.shelly.smartcontrol
+  - name: "WhatsApp Messenger"
+    pkg: com.whatsapp
