@@ -21,6 +21,7 @@ device: clover
 imports:
   - imports/base.yaml
   - imports/apps.yaml
+  - imports/google.yaml
   - imports/modules.yaml
   - imports/media.yaml
   - imports/root.yaml
@@ -54,13 +55,6 @@ apps:
   - name: "ARTE"
     pkg: tv.arte.plus7
 
-  - name: "YouTube"
-    pkg: com.google.android.youtube
-
-  # Productivity
-  - name: "Drive"
-    pkg: com.google.android.apps.docs
-
   # Security
   # NOTE apatch fails to patch the boot.img, kernel was probably compiled
   # without KALLSYMS
@@ -80,6 +74,3 @@ apps:
   # System
   - name: "ADB Clipboard"
     pkg: ch.pete.adbclipboard
-
-  - name: "Files by Google"
-    pkg: com.google.android.apps.nbu.files

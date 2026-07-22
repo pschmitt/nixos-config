@@ -22,6 +22,7 @@ imports:
   - imports/base.yaml
   - imports/apps.yaml
   - imports/banking.yaml
+  - imports/google.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
@@ -130,9 +131,6 @@ apps:
 
   - name: "Phone"
     pkg: com.google.android.dialer
-
-  - name: "Sound Amplifier"
-    pkg: com.google.android.accessibility.soundamplifier
 
   - name: "Tailscale"
     pkg: com.tailscale.ipn

@@ -22,6 +22,7 @@ imports:
   - imports/base.yaml
   - imports/apps.yaml
   - imports/banking.yaml
+  - imports/google.yaml
   - imports/modules.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
@@ -44,9 +45,6 @@ apps:
   # Chat & Messaging
   - name: "Element X"
     pkg: io.element.android.x
-
-  - name: "Messages"
-    pkg: com.google.android.apps.messaging
 
   - name: "Reddit"
     pkg: com.reddit.frontpage
@@ -89,9 +87,6 @@ apps:
   - name: "Pocket Casts"
     pkg: au.com.shiftyjelly.pocketcasts
 
-  - name: "YouTube"
-    pkg: com.google.android.youtube
-
   # Navigation & Travel
   - name: "DB Navigator"
     pkg: de.hafas.android.db
@@ -101,12 +96,6 @@ apps:
     store: fdroid
 
   # Productivity
-  - name: "Calendar"
-    pkg: com.google.android.calendar
-
-  - name: "Drive"
-    pkg: com.google.android.apps.docs
-
   - name: "Nextcloud"
     pkg: com.nextcloud.client
 
@@ -134,18 +123,13 @@ apps:
   - name: "Wolt"
     pkg: com.wolt.android
 
-  # System
+  # System -- Camera overrides imports/google.yaml's plain entry (apps:
+  # dedup-by-pkg, last wins) to converge it installed-but-disabled here.
   - name: "Camera"
     pkg: com.google.android.GoogleCamera
     state:
       installed: true
       disabled: true
-
-  - name: "Contacts"
-    pkg: com.google.android.contacts
-
-  - name: "Phone"
-    pkg: com.google.android.dialer
 
   - name: "Smartspacer"
     pkg: com.kieronquinn.app.smartspacer
