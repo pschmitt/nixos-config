@@ -118,7 +118,7 @@ apps:
     pkg: com.wolt.android
 
   # System -- Camera overrides imports/google.yaml's plain entry (apps:
-  # dedup-by-pkg, last wins) to converge it installed-but-disabled here.
+  # dedup-by-pkg, last wins) to opt px5 out of it entirely.
   # com.android.deskclock is px5's own AOSP clock (a pre-existing system
   # app, not something declaroid ever installed) -- disabled in favor of
   # imports/google.yaml's com.google.android.deskclock, a different pkg
@@ -126,8 +126,7 @@ apps:
   - name: "Camera"
     pkg: com.google.android.GoogleCamera
     state:
-      installed: true
-      disabled: true
+      installed: false
 
   - name: "Clock (AOSP)"
     pkg: com.android.deskclock
