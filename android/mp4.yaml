@@ -22,6 +22,15 @@ store: gplay
 profiles:
   - name: main
     id: 0
+root:
+  enabled: true
+  framework: magisk
+modules:
+  - id: playintegrityfix
+    name: "Play Integrity Fix [INJECT]"
+    source: github
+    repo: KOWX712/PlayIntegrityFix
+    asset: 'PlayIntegrityFix_v.*-1-inject-s\.zip$'
 apps:
   # Banking & Finance
   - name: "SumUp Business"
