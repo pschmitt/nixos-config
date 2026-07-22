@@ -25,6 +25,8 @@ apps:
 
   - name: "Files by Google"
     pkg: com.google.android.apps.nbu.files
+    state:
+      installed: false
 
   - name: "Gboard"
     pkg: com.google.android.inputmethod.latin
