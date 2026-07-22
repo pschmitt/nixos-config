@@ -8,6 +8,8 @@ apps:
   - name: "Obtainium"
     pkg: dev.imranr.obtainium.fdroid
     store: fdroid
+    # state:
+    #   installed: false
 
 obtainium:
   - pkg: com.kieronquinn.app.smartspacer
