@@ -205,11 +205,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1784716949,
-        "narHash": "sha256-U8E2ugWTICq51S86aYQs7me7czWyx68JXSN+La+KMeY=",
+        "lastModified": 1784719931,
+        "narHash": "sha256-fmHygH9ovcfe5p8fK6LIK/jCKlJVAoLrSJfncaDDj1s=",
         "owner": "pschmitt",
         "repo": "declaroid",
-        "rev": "89f5e1c8869d5c96a69babc6edfe25f23665ad1f",
+        "rev": "5af6ec85186caf9387eb1fa02df0e4d2838889bd",
         "type": "github"
       },
       "original": {
@@ -2392,11 +2392,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1784633424,
-        "narHash": "sha256-d9ZjkHDLtv5Ct1+no6SOqgujRIbxsuumhTay22htAho=",
+        "lastModified": 1784719931,
+        "narHash": "sha256-2ilUK4Ycjfg9NKPGMfvv07kxVSxMLCEjZ1z18rKN+dI=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "ed7424491f6fbfb576d24eaa041215fbb066bf69",
+        "rev": "29d6c435c069ab56c9098f462e27fb73293216e3",
         "type": "github"
       },
       "original": {
