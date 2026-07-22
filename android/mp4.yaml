@@ -23,77 +23,122 @@ profiles:
   - name: main
     id: 0
 apps:
-  - name: "Immich"
-    pkg: app.alextran.immich
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "ADB Clipboard"
-  #   pkg: ch.pete.adbclipboard
-  - name: "Amazon Shopping"
-    pkg: com.amazon.mShop.android.shopping
-  - name: "Keyguard"
-    pkg: com.artemchep.keyguard
-  - name: "Drive"
-    pkg: com.google.android.apps.docs
-  - name: "Maps"
-    pkg: com.google.android.apps.maps
-  - name: "Files by Google"
-    pkg: com.google.android.apps.nbu.files
-  - name: "Gmail"
-    pkg: com.google.android.gm
-  - name: "Gboard"
-    pkg: com.google.android.inputmethod.latin
-  - name: "YouTube"
-    pkg: com.google.android.youtube
+  # Banking & Finance
   - name: "SumUp Business"
     pkg: com.kaching.merchant
-  - name: "Netflix"
-    pkg: com.netflix.mediaclient
-  # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
-  # - name: "Termux"
-  #   pkg: com.termux
-  # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
-  # - name: "Termux:API"
-  #   pkg: com.termux.api
+
+  # Chat & Messaging
+  - name: "Element X"
+    pkg: io.element.android.x
+
+  - name: "Gmail"
+    pkg: com.google.android.gm
+
+  - name: "X"
+    pkg: com.twitter.android
+
+  # Development
+  - name: "Termux"
+    pkg: com.termux
+    store: fdroid
+
+  - name: "Termux:API"
+    pkg: com.termux.api
+    store: fdroid
+
   # TODO: store unknown (installer=com.android.packageinstaller) -- set store by hand
   # - name: "Termux:Boot"
   #   pkg: com.termux.boot
+
+  # Home Automation
+  - name: "Home Assistant"
+    pkg: io.homeassistant.companion.android
+
+  # Media
+  - name: "ARD Mediathek"
+    pkg: de.swr.avp.ard
+
+  - name: "ARTE"
+    pkg: tv.arte.plus7
+
+  - name: "Findroid+"
+    pkg: dev.pschmitt.findroidplus
+    store: github
+    repo: "pschmitt/findroidplus"
+
+  # TODO: store unknown (installer=null) -- set store by hand
+  # - name: "Findroid+ Debug"
+  #   pkg: dev.pschmitt.findroidplus.debug
+
+  - name: "Immich"
+    pkg: app.alextran.immich
+
+  - name: "Netflix"
+    pkg: com.netflix.mediaclient
+
+  - name: "Yatse"
+    pkg: org.leetzone.android.yatsewidgetfree
+
+  - name: "YouTube"
+    pkg: com.google.android.youtube
+
+  - name: "ZDF"
+    pkg: com.zdf.android.mediathek
+
+  # Navigation & Travel
+  - name: "Maps"
+    pkg: com.google.android.apps.maps
+
+  # Productivity
+  - name: "Drive"
+    pkg: com.google.android.apps.docs
+
+  # Security
+  - name: "APatch"
+    pkg: me.bmax.apatch
+    store: fdroid
+
+  - name: "Keyguard"
+    pkg: com.artemchep.keyguard
+
   # TODO: store unknown (installer=null) -- set store by hand
   # - name: "Magisk"
   #   pkg: com.topjohnwu.magisk
-  - name: "X"
-    pkg: com.twitter.android
-  - name: "ZDF"
-    pkg: com.zdf.android.mediathek
-  - name: "ARD Mediathek"
-    pkg: de.swr.avp.ard
+
+  - name: "Play Integrity API Checker"
+    pkg: gr.nikolasspyr.integritycheck
+
+  # Shopping
+  - name: "Amazon Shopping"
+    pkg: com.amazon.mShop.android.shopping
+
+  # System
+  # TODO: store unknown (installer=null) -- set store by hand
+  # - name: "ADB Clipboard"
+  #   pkg: ch.pete.adbclipboard
+
+  - name: "F-Droid"
+    pkg: org.fdroid.fdroid
+    store: url
+    url: https://f-droid.org/F-Droid.apk
+
+  - name: "Files by Google"
+    pkg: com.google.android.apps.nbu.files
+
+  - name: "Firefox"
+    pkg: org.mozilla.firefox
+
+  - name: "Firefox Nightly"
+    pkg: org.mozilla.fenix
+
+  - name: "Gboard"
+    pkg: com.google.android.inputmethod.latin
+
   - name: "Obtainium"
     pkg: dev.imranr.obtainium
     store: github
     repo: ImranR98/Obtainium
     asset: 'app-release\.apk$'
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+"
-  #   pkg: dev.pschmitt.findroidplus
-  # TODO: store unknown (installer=null) -- set store by hand
-  # - name: "Findroid+ Debug"
-  #   pkg: dev.pschmitt.findroidplus.debug
-  - name: "Play Integrity API Checker"
-    pkg: gr.nikolasspyr.integritycheck
-  - name: "Element X"
-    pkg: io.element.android.x
-  - name: "Home Assistant"
-    pkg: io.homeassistant.companion.android
-  - name: "F-Droid"
-    pkg: org.fdroid.fdroid
-    store: url
-    url: https://f-droid.org/F-Droid.apk
-  - name: "Yatse"
-    pkg: org.leetzone.android.yatsewidgetfree
-  - name: "Firefox Nightly"
-    pkg: org.mozilla.fenix
-  - name: "Firefox"
-    pkg: org.mozilla.firefox
+
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
-  - name: "ARTE"
-    pkg: tv.arte.plus7
