@@ -39,6 +39,11 @@ apps:
     pkg: dev.imranr.obtainium.fdroid
     store: fdroid
 
+  - name: "Shizuku"
+    pkg: moe.shizuku.privileged.api
+    store: github
+    repo: thedjchi/Shizuku
+
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
 

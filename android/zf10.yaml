@@ -118,11 +118,6 @@ apps:
   - name: "LuxTrust Mobile"
     pkg: com.LuxTrustMobile
 
-  - name: "Shizuku"
-    pkg: moe.shizuku.privileged.api
-    store: github
-    repo: thedjchi/Shizuku
-
   # System
   - name: "Clock"
     pkg: com.google.android.deskclock

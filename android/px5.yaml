@@ -18,11 +18,12 @@
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: redfin
-ensure: true
+enforce: true
 store: gplay
 imports:
   - apps.yaml
   - modules.yaml
+  - root_apps.yaml
 adb:
   start_cmd: "zhj adb::connect px5.lan"
 profiles:
@@ -143,14 +144,6 @@ apps:
   - name: "APatch"
     pkg: me.bmax.apatch
     store: fdroid
-
-  - name: "Play Integrity API Checker"
-    pkg: gr.nikolasspyr.integritycheck
-
-  - name: "Shizuku"
-    pkg: moe.shizuku.privileged.api
-    store: github
-    repo: thedjchi/Shizuku
 
   # Shopping
   - name: "Amazon Shopping"
