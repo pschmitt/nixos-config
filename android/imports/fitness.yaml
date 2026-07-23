@@ -1,0 +1,19 @@
+# Fitness/health-tracker apps, shared across every device that imports
+# this -- a device that doesn't want a specific entry excludes itself
+# via if:, same pattern as imports/banking.yaml.
+apps:
+  # Only wanted by px5.
+  - name: "Gadgetbridge (Nightly)"
+    pkg: nodomain.freeyourgadget.gadgetbridge.nightly
+    store: github
+    repo: "pschmitt/Gadgetbridge"
+    if:
+      ro.product.device: redfin
+
+  # Only wanted by px5.
+  - name: "Breezy Weather"
+    pkg: org.breezyweather
+    store: github
+    repo: "breezy-weather/breezy-weather"
+    if:
+      ro.product.device: redfin

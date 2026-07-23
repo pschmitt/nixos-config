@@ -18,6 +18,7 @@
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: redfin
+
 imports:
   - imports/base.yaml
   - imports/apps.yaml
@@ -32,14 +33,22 @@ imports:
   - imports/modules.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
+  - imports/shopping.yaml
+  - imports/fitness.yaml
+  - imports/productivity.yaml
+  - imports/iot.yaml
+
 adb:
   start_cmd: "zhj adb::connect px5.lan"
+
 profiles:
   - name: main
     id: 0
+
 root:
   enabled: true
   framework: apatch
+
 apps:
   # Development
   - name: "GitHub"
@@ -49,19 +58,6 @@ apps:
     pkg: com.carriez.flutter_hbb
     store: fdroid
 
-  - name: "Syncthing-Fork"
-    pkg: com.github.catfriend1.syncthingfork
-    store: fdroid
-
-  # Home Automation
-  - name: "Gadgetbridge (Nightly)"
-    pkg: nodomain.freeyourgadget.gadgetbridge.nightly
-    store: github
-    repo: "pschmitt/Gadgetbridge"
-
-  - name: "Shelly Smart Control"
-    pkg: cloud.shelly.smartcontrol
-
   # Navigation & Travel
   - name: "DB Navigator"
     pkg: de.hafas.android.db
@@ -70,29 +66,8 @@ apps:
   - name: "Nextcloud"
     pkg: com.nextcloud.client
 
-  - name: "Obsidian"
-    pkg: md.obsidian
-
-  - name: "Todoist"
-    pkg: com.todoist
-
-  # Shopping
-  - name: "Amazon Shopping"
-    pkg: com.amazon.mShop.android.shopping
-
-  - name: "Edeka"
-    pkg: de.edeka.genuss
-
-  - name: "Wolt"
-    pkg: com.wolt.android
-
+  # Launcher
   - name: "Smartspacer"
     pkg: com.kieronquinn.app.smartspacer
     store: github
     repo: "KieronQuinn/Smartspacer"
-
-  # Weather
-  - name: "Breezy Weather"
-    pkg: org.breezyweather
-    store: github
-    repo: "breezy-weather/breezy-weather"
