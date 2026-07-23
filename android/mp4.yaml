@@ -25,6 +25,7 @@ imports:
   - imports/modules.yaml
   - imports/media.yaml
   - imports/termux.yaml
+  - imports/chat.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
 adb:
@@ -40,19 +41,7 @@ apps:
   - name: "SumUp Business"
     pkg: com.kaching.merchant
 
-  # Chat & Messaging -- overrides opting out of a couple imports/chat.yaml
-  # entries not wanted on this device (relies on declaroid's apps:
-  # dedup-by-pkg, last-entry-wins).
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
-    state:
-      installed: false
-
-  - name: "WhatsApp Messenger"
-    pkg: com.whatsapp
-    state:
-      installed: false
-
+  # Chat & Messaging
   - name: "X"
     pkg: com.twitter.android
 
@@ -64,18 +53,6 @@ apps:
   # Media
   - name: "ARTE"
     pkg: tv.arte.plus7
-
-  # Security
-  # NOTE apatch fails to patch the boot.img, kernel was probably compiled
-  # without KALLSYMS
-  # - name: "APatch"
-  #   pkg: me.bmax.apatch
-  #   store: fdroid
-
-  - name: "Magisk"
-    pkg: com.topjohnwu.magisk
-    store: github
-    repo: topjohnwu/Magisk
 
   # Shopping
   - name: "Amazon Shopping"

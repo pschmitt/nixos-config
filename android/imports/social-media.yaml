@@ -1,0 +1,6 @@
+# Social media apps, imported by px5 -- currently the only device that
+# wants them, split into its own category file rather than assuming every
+# device does.
+apps:
+  - name: "Reddit"
+    pkg: com.reddit.frontpage

@@ -3,3 +3,22 @@
 apps:
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
+
+  # APatch is the default -- it works fine everywhere except mp4 (Mi Pad
+  # 4, codename clover), which fails to patch its boot.img at all (kernel
+  # probably compiled without KALLSYMS) and uses Magisk instead. `not:`
+  # keeps APatch the default for any future device added here too, rather
+  # than needing an explicit allow-list of every device that isn't clover.
+  - name: "APatch"
+    pkg: me.bmax.apatch
+    store: fdroid
+    if:
+      not:
+        ro.product.device: clover
+
+  - name: "Magisk"
+    pkg: com.topjohnwu.magisk
+    store: github
+    repo: topjohnwu/Magisk
+    if:
+      ro.product.device: clover
