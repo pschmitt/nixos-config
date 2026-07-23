@@ -1,15 +1,24 @@
 # Chat/messaging apps, shared across every device that imports this -- the
-# union of what px5/mp4/zf10 each had device-locally before. A device that
-# doesn't want a specific entry overrides it with its own
-# `state: {installed: false}` apps: entry for the same pkg (declaroid's
-# apps: merge dedups by pkg, last entry wins), same pattern as
-# imports/banking.yaml.
+# union of what px5/mp4/zf10 each had device-locally before. A device
+# that doesn't want a specific entry excludes itself via if:, same
+# pattern as imports/banking.yaml.
 apps:
+  # Wanted by px5 (redfin) and mp4 (clover), not zf10 (ASUS_AI2302).
   - name: "Element X"
     pkg: io.element.android.x
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
+  # Only wanted by px5.
   - name: "Signal"
     pkg: org.thoughtcrime.securesms
+    if:
+      ro.product.device: redfin
 
+  # Wanted by px5 and zf10, not mp4 (clover).
   - name: "WhatsApp Messenger"
     pkg: com.whatsapp
+    if:
+      not:
+        ro.product.device: clover

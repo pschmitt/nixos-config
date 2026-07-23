@@ -1,10 +1,9 @@
 # Banking/finance apps, shared across every device that imports this --
 # the union of what px5 and zf10 each had device-locally before. Unlike
 # imports/media.yaml, this one *is* shared as one list across both
-# devices: a device that doesn't want a specific entry overrides it with
-# its own `state: {installed: false}` apps: entry for the same pkg
-# (declaroid's apps: merge dedups by pkg, last entry wins) rather than
-# this file staying device-exclusive.
+# devices: a device that doesn't want a specific entry excludes itself via
+# if: (zf10, codename ASUS_AI2302, for Curve Pay/PayPal/Trade Republic)
+# rather than this file staying device-exclusive.
 apps:
   - name: "BoursoBank"
     pkg: com.boursorama.android.clients
@@ -17,6 +16,9 @@ apps:
 
   - name: "Curve Pay"
     pkg: com.imaginecurve.curve.prd
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
   - name: "eboo"
     pkg: lu.post.finance.mobile.eboo
@@ -36,6 +38,12 @@ apps:
 
   - name: "PayPal"
     pkg: com.paypal.android.p2pmobile
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
   - name: "Trade Republic"
     pkg: de.traderepublic.app
+    if:
+      not:
+        ro.product.device: ASUS_AI2302

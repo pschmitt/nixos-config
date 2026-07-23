@@ -26,6 +26,7 @@ imports:
   - imports/termux.yaml
   - imports/vpn.yaml
   - imports/chat.yaml
+  - imports/tasker.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
@@ -35,55 +36,10 @@ profiles:
 root:
   enabled: false
 apps:
-  # System -- overrides opting out of imports/google.yaml's Clock (AOSP)/
-  # Messages (AOSP) entries: this device never had com.android.deskclock/
-  # com.android.messaging preinstalled (only Google's own Clock/Messages),
-  # so the shared entries would otherwise attempt a doomed gplay install of
-  # a pkg with no real Play Store listing.
-  - name: "Clock (AOSP)"
-    pkg: com.android.deskclock
-    state:
-      installed: false
-
-  - name: "Messages (AOSP)"
-    pkg: com.android.messaging
-    state:
-      installed: false
-
-  # Banking & Finance -- overrides opting out of a few imports/banking.yaml
-  # entries not wanted on this device (relies on declaroid's apps:
-  # dedup-by-pkg, last-entry-wins).
-  - name: "Curve Pay"
-    pkg: com.imaginecurve.curve.prd
-    state:
-      installed: false
-
-  - name: "PayPal"
-    pkg: com.paypal.android.p2pmobile
-    state:
-      installed: false
-
-  - name: "Trade Republic"
-    pkg: de.traderepublic.app
-    state:
-      installed: false
-
-  # Chat & Messaging -- Outlook stays device-local (mail, not chat); Element
-  # X/Signal override opting out of the imports/chat.yaml entries not
-  # wanted on this device.
+  # Chat & Messaging -- Outlook stays device-local (mail, not chat).
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
     profile: island
-
-  - name: "Element X"
-    pkg: io.element.android.x
-    state:
-      installed: false
-
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
-    state:
-      installed: false
 
   # Development
   - name: "Syncthing-Fork"
@@ -103,9 +59,6 @@ apps:
 
   - name: "ScanSnap Cloud"
     pkg: com.fujitsu.pfu.scansnapcloudeu
-
-  - name: "Tasker"
-    pkg: net.dinglisch.android.taskerm
 
   # Security
   - name: "Authy"

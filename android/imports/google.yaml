@@ -22,11 +22,17 @@ apps:
   # A pre-existing AOSP system app on some devices (not something declaroid
   # ever installed) -- kept installed but disabled in favor of Google's
   # Clock above, since it's a different pkg and can't be uninstalled.
+  # zf10 (ASUS_AI2302) never had it preinstalled, so it's excluded via if:
+  # rather than attempting a doomed gplay install of a pkg with no real
+  # Play Store listing.
   - name: "Clock (AOSP)"
     pkg: com.android.deskclock
     state:
       installed: true
       disabled: true
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
   - name: "Contacts"
     pkg: com.google.android.contacts
@@ -54,11 +60,17 @@ apps:
   # A pre-existing AOSP system app on some devices (not something declaroid
   # ever installed) -- kept installed but disabled in favor of Google's
   # Messages above, since it's a different pkg and can't be uninstalled.
+  # zf10 (ASUS_AI2302) never had it preinstalled, so it's excluded via if:
+  # rather than attempting a doomed gplay install of a pkg with no real
+  # Play Store listing.
   - name: "Messages (AOSP)"
     pkg: com.android.messaging
     state:
       installed: true
       disabled: true
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
   - name: "Phone"
     pkg: com.google.android.dialer

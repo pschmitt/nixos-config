@@ -1,0 +1,5 @@
+# Tasker, imported by px5/zf10 -- currently the only devices that want it,
+# split into its own category file rather than assuming every device does.
+apps:
+  - name: "Tasker"
+    pkg: net.dinglisch.android.taskerm
