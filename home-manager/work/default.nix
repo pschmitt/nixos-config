@@ -37,7 +37,7 @@
     openvpn
 
     # cloud
-    openstackclient
+    openstackclient-full
     openstack-rs
   ];
 
