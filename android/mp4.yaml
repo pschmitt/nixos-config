@@ -20,6 +20,7 @@
 device: clover
 
 imports:
+  - imports/adb.yaml
   - imports/apps.yaml
   - imports/base.yaml
   - imports/chat.yaml
@@ -31,6 +32,7 @@ imports:
   - imports/productivity.yaml
   - imports/root.yaml
   - imports/shopping.yaml
+  - imports/social-media.yaml
   - imports/termux.yaml
 
 adb:
@@ -48,20 +50,3 @@ apps:
   # Banking & Finance
   - name: "SumUp Business"
     pkg: com.kaching.merchant
-
-  # Chat & Messaging
-  - name: "X"
-    pkg: com.twitter.android
-
-  # Development
-  - name: "Termux:Boot"
-    pkg: com.termux.boot
-    store: fdroid
-
-  # Media
-  - name: "ARTE"
-    pkg: tv.arte.plus7
-
-  # System
-  - name: "ADB Clipboard"
-    pkg: ch.pete.adbclipboard

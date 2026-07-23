@@ -6,6 +6,13 @@ apps:
     pkg: com.termux
     store: fdroid
 
+  # Only wanted by mp4.
+  - name: "Termux:Boot"
+    pkg: com.termux.boot
+    store: fdroid
+    if:
+      ro.product.device: clover
+
   - name: "Termux:API"
     pkg: com.termux.api
     store: fdroid

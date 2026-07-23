@@ -5,6 +5,12 @@ apps:
   - name: "ARD Mediathek"
     pkg: de.swr.avp.ard
 
+  # Only wanted by mp4.
+  - name: "ARTE"
+    pkg: tv.arte.plus7
+    if:
+      ro.product.device: clover
+
   - name: "Findroid+"
     pkg: dev.pschmitt.findroidplus
     store: github

@@ -20,6 +20,7 @@
 device: EU_AI2302 # R6AIB700W850L7G
 
 imports:
+  - imports/adb.yaml
   - imports/apps.yaml
   - imports/banking.yaml
   - imports/base.yaml
