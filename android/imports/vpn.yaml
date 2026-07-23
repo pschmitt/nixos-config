@@ -1,0 +1,10 @@
+# VPN/mesh-networking apps, imported by zf10 -- currently the only device
+# that wants them, split into its own category file rather than assuming
+# every device does.
+apps:
+  - name: "NetBird"
+    pkg: io.netbird.client
+    profile: all
+
+  - name: "Tailscale"
+    pkg: com.tailscale.ipn
