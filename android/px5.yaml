@@ -20,23 +20,23 @@
 device: redfin
 
 imports:
-  - imports/base.yaml
-  - imports/apps.yaml
   - imports/ai.yaml
+  - imports/apps.yaml
   - imports/banking.yaml
+  - imports/base.yaml
+  - imports/chat.yaml
+  - imports/fitness.yaml
+  - imports/google.yaml
+  - imports/iot.yaml
+  - imports/media.yaml
+  - imports/modules.yaml
+  - imports/obtainium.yaml
+  - imports/productivity.yaml
+  - imports/root.yaml
+  - imports/shopping.yaml
   - imports/social-media.yaml
   - imports/tasker.yaml
-  - imports/chat.yaml
-  - imports/google.yaml
-  - imports/media.yaml
   - imports/termux.yaml
-  - imports/modules.yaml
-  - imports/root.yaml
-  - imports/obtainium.yaml
-  - imports/shopping.yaml
-  - imports/fitness.yaml
-  - imports/productivity.yaml
-  - imports/iot.yaml
 
 adb:
   start_cmd: "zhj adb::connect px5.lan"
