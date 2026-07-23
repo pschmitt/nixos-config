@@ -51,6 +51,15 @@ apps:
   - name: "Messages"
     pkg: com.google.android.apps.messaging
 
+  # A pre-existing AOSP system app on some devices (not something declaroid
+  # ever installed) -- kept installed but disabled in favor of Google's
+  # Messages above, since it's a different pkg and can't be uninstalled.
+  - name: "Messages (AOSP)"
+    pkg: com.android.messaging
+    state:
+      installed: true
+      disabled: true
+
   - name: "Phone"
     pkg: com.google.android.dialer
 

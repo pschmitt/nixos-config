@@ -32,12 +32,18 @@ profiles:
 root:
   enabled: false
 apps:
-  # System -- overrides opting out of imports/google.yaml's Clock (AOSP)
-  # entry: this device never had com.android.deskclock preinstalled (only
-  # Google's own Clock), so the shared entry would otherwise attempt a
-  # doomed gplay install of a pkg with no real Play Store listing.
+  # System -- overrides opting out of imports/google.yaml's Clock (AOSP)/
+  # Messages (AOSP) entries: this device never had com.android.deskclock/
+  # com.android.messaging preinstalled (only Google's own Clock/Messages),
+  # so the shared entries would otherwise attempt a doomed gplay install of
+  # a pkg with no real Play Store listing.
   - name: "Clock (AOSP)"
     pkg: com.android.deskclock
+    state:
+      installed: false
+
+  - name: "Messages (AOSP)"
+    pkg: com.android.messaging
     state:
       installed: false
 
@@ -64,9 +70,6 @@ apps:
     pkg: com.microsoft.office.outlook
     profile: island
 
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
-
   - name: "WhatsApp"
     pkg: com.whatsapp
 
@@ -75,14 +78,9 @@ apps:
     pkg: com.github.catfriend1.syncthingfork
     store: fdroid
 
-  # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
   # - name: "Termux:Float"
   #   pkg: com.termux.window
   #   store: fdroid
-
-  - name: "Termux:Tasker"
-    pkg: com.termux.tasker
-    store: fdroid
 
   # Insurance & Health
   - name: "TK"
@@ -104,9 +102,6 @@ apps:
   # Security
   - name: "Authy"
     pkg: com.authy.authy
-
-  - name: "Duo Mobile"
-    pkg: com.duosecurity.duomobile
 
   - name: "LuxTrust Mobile"
     pkg: com.LuxTrustMobile
