@@ -1,6 +1,21 @@
-# Social media apps, imported by px5 -- currently the only device that
-# wants them, split into its own category file rather than assuming every
-# device does.
+# Social media apps, shared across every device that imports this -- a
+# device that doesn't want a specific entry excludes itself via if:,
+# same pattern as imports/banking.yaml.
 apps:
+  # Only wanted by px5.
   - name: "Reddit"
     pkg: com.reddit.frontpage
+    if:
+      ro.product.device: redfin
+
+  # Only wanted by px5.
+  - name: "Mastodon"
+    pkg: org.joinmastodon.android
+    if:
+      ro.product.device: redfin
+
+  # Only wanted by mp4.
+  - name: "X"
+    pkg: com.twitter.android
+    if:
+      ro.product.device: clover

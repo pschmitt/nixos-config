@@ -1,0 +1,4 @@
+# ADB-related apps, shared across every device via `imports:`.
+apps:
+  - name: "ADB Clipboard"
+    pkg: ch.pete.adbclipboard
