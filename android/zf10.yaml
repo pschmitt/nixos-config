@@ -78,6 +78,7 @@ apps:
   # TODO: store unknown (installer=com.google.android.packageinstaller) -- set store by hand
   # - name: "Termux:Float"
   #   pkg: com.termux.window
+  #   store: fdroid
 
   - name: "Termux:Tasker"
     pkg: com.termux.tasker
