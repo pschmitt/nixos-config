@@ -9,11 +9,6 @@ apps:
     store: url
     url: https://f-droid.org/F-Droid.apk
 
-  - name: "Findroid+"
-    pkg: dev.pschmitt.findroidplus
-    store: github
-    repo: "pschmitt/findroidplus"
-
   - name: "Firefox"
     pkg: org.mozilla.firefox
 
@@ -26,6 +21,9 @@ apps:
   - name: "Keyguard"
     pkg: com.artemchep.keyguard
 
+  - name: "Duo Mobile"
+    pkg: com.duosecurity.duomobile
+
   - name: "Shizuku"
     pkg: moe.shizuku.privileged.api
     store: github
@@ -33,11 +31,3 @@ apps:
 
   - name: "Solid Explorer"
     pkg: pl.solidexplorer2
-
-  - name: "Termux"
-    pkg: com.termux
-    store: fdroid
-
-  - name: "Termux:API"
-    pkg: com.termux.api
-    store: fdroid

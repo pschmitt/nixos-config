@@ -24,6 +24,7 @@ imports:
   - imports/banking.yaml
   - imports/google.yaml
   - imports/media.yaml
+  - imports/termux.yaml
   - imports/modules.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
@@ -66,10 +67,6 @@ apps:
 
   - name: "Syncthing-Fork"
     pkg: com.github.catfriend1.syncthingfork
-    store: fdroid
-
-  - name: "Termux:Tasker"
-    pkg: com.termux.tasker
     store: fdroid
 
   # Home Automation
