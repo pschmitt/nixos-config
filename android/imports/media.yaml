@@ -5,6 +5,11 @@ apps:
   - name: "ARD Mediathek"
     pkg: de.swr.avp.ard
 
+  - name: "Findroid+"
+    pkg: dev.pschmitt.findroidplus
+    store: github
+    repo: "pschmitt/findroidplus"
+
   - name: "Netflix"
     pkg: com.netflix.mediaclient
 

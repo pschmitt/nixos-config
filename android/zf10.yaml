@@ -23,6 +23,7 @@ imports:
   - imports/apps.yaml
   - imports/banking.yaml
   - imports/google.yaml
+  - imports/termux.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
@@ -77,10 +78,6 @@ apps:
   - name: "Syncthing-Fork"
     pkg: com.github.catfriend1.syncthingfork
     store: fdroid
-
-  # - name: "Termux:Float"
-  #   pkg: com.termux.window
-  #   store: fdroid
 
   # Insurance & Health
   - name: "TK"

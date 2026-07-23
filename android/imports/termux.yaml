@@ -1,0 +1,21 @@
+# Termux and its companion/plugin apps, shared across every device via
+# `imports:` -- split out of imports/apps.yaml into its own category file,
+# same split already done for banking/google/media.
+apps:
+  - name: "Termux"
+    pkg: com.termux
+    store: fdroid
+
+  - name: "Termux:API"
+    pkg: com.termux.api
+    store: fdroid
+
+  - name: "Termux:Tasker"
+    pkg: com.termux.tasker
+    store: fdroid
+
+  # TODO: store unknown (installer=com.google.android.packageinstaller) --
+  # set store by hand
+  # - name: "Termux:Float"
+  #   pkg: com.termux.window
+  #   store: fdroid
