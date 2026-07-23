@@ -1,0 +1,6 @@
+# IoT/smart-home apps, imported by px5 -- currently the only device that
+# wants them, split into its own category file rather than assuming
+# every device does, same pattern as imports/social-media.yaml.
+apps:
+  - name: "Shelly Smart Control"
+    pkg: cloud.shelly.smartcontrol

@@ -18,6 +18,7 @@
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: EU_AI2302 # R6AIB700W850L7G
+
 imports:
   - imports/base.yaml
   - imports/apps.yaml
@@ -28,23 +29,24 @@ imports:
   - imports/chat.yaml
   - imports/tasker.yaml
   - imports/obtainium.yaml
+  - imports/shopping.yaml
+  - imports/fitness.yaml
+  - imports/productivity.yaml
+
 profiles:
   - name: main
     id: 0
   - name: island
     id: 10
+
 root:
   enabled: false
+
 apps:
   # Chat & Messaging -- Outlook stays device-local (mail, not chat).
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
     profile: island
-
-  # Development
-  - name: "Syncthing-Fork"
-    pkg: com.github.catfriend1.syncthingfork
-    store: fdroid
 
   # Insurance & Health
   - name: "TK"

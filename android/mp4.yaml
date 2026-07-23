@@ -18,6 +18,7 @@
 # config as-is would fail for them (store could not be determined, or a
 # github repo/asset could not be recovered) -- fix them up and uncomment.
 device: clover
+
 imports:
   - imports/base.yaml
   - imports/apps.yaml
@@ -28,14 +29,21 @@ imports:
   - imports/chat.yaml
   - imports/root.yaml
   - imports/obtainium.yaml
+  - imports/shopping.yaml
+  - imports/fitness.yaml
+  - imports/productivity.yaml
+
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
+
 profiles:
   - name: main
     id: 0
+
 root:
   enabled: true
   framework: magisk
+
 apps:
   # Banking & Finance
   - name: "SumUp Business"
@@ -53,10 +61,6 @@ apps:
   # Media
   - name: "ARTE"
     pkg: tv.arte.plus7
-
-  # Shopping
-  - name: "Amazon Shopping"
-    pkg: com.amazon.mShop.android.shopping
 
   # System
   - name: "ADB Clipboard"
