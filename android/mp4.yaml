@@ -40,9 +40,18 @@ apps:
   - name: "SumUp Business"
     pkg: com.kaching.merchant
 
-  # Chat & Messaging
-  - name: "Element X"
-    pkg: io.element.android.x
+  # Chat & Messaging -- overrides opting out of a couple imports/chat.yaml
+  # entries not wanted on this device (relies on declaroid's apps:
+  # dedup-by-pkg, last-entry-wins).
+  - name: "Signal"
+    pkg: org.thoughtcrime.securesms
+    state:
+      installed: false
+
+  - name: "WhatsApp Messenger"
+    pkg: com.whatsapp
+    state:
+      installed: false
 
   - name: "X"
     pkg: com.twitter.android

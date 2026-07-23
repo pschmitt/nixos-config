@@ -21,7 +21,9 @@ device: redfin
 imports:
   - imports/base.yaml
   - imports/apps.yaml
+  - imports/ai.yaml
   - imports/banking.yaml
+  - imports/chat.yaml
   - imports/google.yaml
   - imports/media.yaml
   - imports/termux.yaml
@@ -37,25 +39,9 @@ root:
   enabled: true
   framework: apatch
 apps:
-  # AI
-  - name: "ChatGPT"
-    pkg: com.openai.chatgpt
-
-  - name: "Claude"
-    pkg: com.anthropic.claude
-
   # Chat & Messaging
-  - name: "Element X"
-    pkg: io.element.android.x
-
   - name: "Reddit"
     pkg: com.reddit.frontpage
-
-  - name: "Signal"
-    pkg: org.thoughtcrime.securesms
-
-  - name: "WhatsApp Messenger"
-    pkg: com.whatsapp
 
   # Development
   - name: "GitHub"

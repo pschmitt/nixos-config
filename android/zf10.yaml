@@ -24,6 +24,8 @@ imports:
   - imports/banking.yaml
   - imports/google.yaml
   - imports/termux.yaml
+  - imports/vpn.yaml
+  - imports/chat.yaml
   - imports/obtainium.yaml
 profiles:
   - name: main
@@ -66,13 +68,22 @@ apps:
     state:
       installed: false
 
-  # Chat & Messaging
+  # Chat & Messaging -- Outlook stays device-local (mail, not chat); Element
+  # X/Signal override opting out of the imports/chat.yaml entries not
+  # wanted on this device.
   - name: "com.microsoft.office.outlook"
     pkg: com.microsoft.office.outlook
     profile: island
 
-  - name: "WhatsApp"
-    pkg: com.whatsapp
+  - name: "Element X"
+    pkg: io.element.android.x
+    state:
+      installed: false
+
+  - name: "Signal"
+    pkg: org.thoughtcrime.securesms
+    state:
+      installed: false
 
   # Development
   - name: "Syncthing-Fork"
@@ -117,9 +128,3 @@ apps:
     pkg: com.oasisfeng.island
     profile: all
 
-  - name: "NetBird"
-    pkg: io.netbird.client
-    profile: all
-
-  - name: "Tailscale"
-    pkg: com.tailscale.ipn

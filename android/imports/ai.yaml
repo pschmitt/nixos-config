@@ -1,0 +1,9 @@
+# AI assistant apps, imported by px5 -- currently the only device that
+# wants them, split into its own category file rather than assuming every
+# device does.
+apps:
+  - name: "ChatGPT"
+    pkg: com.openai.chatgpt
+
+  - name: "Claude"
+    pkg: com.anthropic.claude
