@@ -20,18 +20,18 @@
 device: EU_AI2302 # R6AIB700W850L7G
 
 imports:
-  - imports/base.yaml
   - imports/apps.yaml
   - imports/banking.yaml
+  - imports/base.yaml
+  - imports/chat.yaml
+  - imports/fitness.yaml
   - imports/google.yaml
+  - imports/obtainium.yaml
+  - imports/productivity.yaml
+  - imports/shopping.yaml
+  - imports/tasker.yaml
   - imports/termux.yaml
   - imports/vpn.yaml
-  - imports/chat.yaml
-  - imports/tasker.yaml
-  - imports/obtainium.yaml
-  - imports/shopping.yaml
-  - imports/fitness.yaml
-  - imports/productivity.yaml
 
 profiles:
   - name: main

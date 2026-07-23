@@ -20,18 +20,18 @@
 device: clover
 
 imports:
-  - imports/base.yaml
   - imports/apps.yaml
-  - imports/google.yaml
-  - imports/modules.yaml
-  - imports/media.yaml
-  - imports/termux.yaml
+  - imports/base.yaml
   - imports/chat.yaml
-  - imports/root.yaml
-  - imports/obtainium.yaml
-  - imports/shopping.yaml
   - imports/fitness.yaml
+  - imports/google.yaml
+  - imports/media.yaml
+  - imports/modules.yaml
+  - imports/obtainium.yaml
   - imports/productivity.yaml
+  - imports/root.yaml
+  - imports/shopping.yaml
+  - imports/termux.yaml
 
 adb:
   start_cmd: "zhj adb::connect mi-pad-4.lan"
