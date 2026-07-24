@@ -16,6 +16,25 @@
           "test_fix_package_name"
           "test_parse_specifier_for_metadata"
         ];
+
+        # pipx 1.14.0's tests/test_inject.py has a stray trailing comma in
+        # `@pytest.mark.parametrize("pkg_spec,", ...)`, which breaks
+        # parametrize collection under nixpkgs' newer pytest -- a collection
+        # error, not a deselectable test failure, so nixpkgs' own
+        # disabledTests ("inject" via -k) can't rescue it. Skip the whole
+        # file until upstream fixes the typo.
+        disabledTestPaths = (old.disabledTestPaths or [ ]) ++ [
+          "tests/test_inject.py"
+        ];
+      });
+
+      python-aodhclient = prevPy.python-aodhclient.overridePythonAttrs (old: {
+        # nixpkgs sets pname = "python-aodhclient" (the GitHub repo name),
+        # but upstream's pyproject.toml declares name = "aodhclient", so the
+        # generic pythonMetadataCheckPhase looks up a dist-info that doesn't
+        # exist under that name and fails every build. Pulled in transitively
+        # by openstackclient-full; remove once the nixpkgs pname is fixed.
+        dontCheckPythonMetadata = true;
       });
     }
   );
