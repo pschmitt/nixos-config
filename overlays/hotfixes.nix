@@ -9,14 +9,14 @@
   python313Packages = prev.python313Packages.overrideScope (
     _finalPy: prevPy: {
       pipx = prevPy.pipx.overridePythonAttrs (old: {
-        # pipx 1.8.0 has Python 3.13 test expectation mismatches for
-        # package-specifier normalization; keep the package buildable until
-        # the nixpkgs fix lands.
+        # pipx has Python 3.13 test expectation mismatches for package-specifier
+        # normalization.  Version 1.14.0 also passes a bare string to pytest's
+        # single-parameter parametrization, which pytest 9 rejects during
+        # collection.  Keep the package buildable until the nixpkgs fixes land.
         disabledTests = (old.disabledTests or [ ]) ++ [
           "test_fix_package_name"
           "test_parse_specifier_for_metadata"
         ];
-
         # pipx 1.14.0's tests/test_inject.py has a stray trailing comma in
         # `@pytest.mark.parametrize("pkg_spec,", ...)`, which breaks
         # parametrize collection under nixpkgs' newer pytest -- a collection
@@ -28,7 +28,7 @@
         ];
       });
 
-      python-aodhclient = prevPy.python-aodhclient.overridePythonAttrs (old: {
+      python-aodhclient = prevPy.python-aodhclient.overridePythonAttrs (_: {
         # nixpkgs sets pname = "python-aodhclient" (the GitHub repo name),
         # but upstream's pyproject.toml declares name = "aodhclient", so the
         # generic pythonMetadataCheckPhase looks up a dist-info that doesn't
