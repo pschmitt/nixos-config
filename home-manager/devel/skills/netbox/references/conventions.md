@@ -269,6 +269,7 @@ Current prefixes:
 - `M5S` = M5Stack
 - `LTX` = Lantronix
 - `MER` = Meross
+- `MTH` = Minthouz
 - `MIE` = Miele
 - `MOT` = Motorola
 - `NBC` = Nabu Casa
@@ -290,6 +291,7 @@ Current prefixes:
 - `RFX` = RFXtrx
 - `RKM` = Rackmatic
 - `RPI` = Raspberry Pi
+- `RTK` = Rotek
 - `RVT` = Revotech
 - `SAL` = Salcar
 - `SAM` = Samsung
