@@ -10,6 +10,10 @@ locals {
     "ge2",
     "gk4",
     "x13",
+
+    # android devices
+    "px5",
+    "mp4",
   ]
 
   autorestic_hosts = [
