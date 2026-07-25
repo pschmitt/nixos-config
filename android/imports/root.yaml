@@ -40,9 +40,9 @@ apps:
         type: config
         value: magisk
 
-  - name: "App Manager"
-    pkg: io.github.muntashirakon.AppManager
-    store: fdroid
+  - name: "Thor"
+    pkg: com.valhalla.thor
+    store: gplay
 
   - name: "Restoid"
     pkg: io.github.hddq.restoid
