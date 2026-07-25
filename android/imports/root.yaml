@@ -44,6 +44,10 @@ apps:
     pkg: io.github.muntashirakon.AppManager
     store: fdroid
 
+  - name: "Restoid"
+    pkg: io.github.hddq.restoid
+    store: fdroid
+
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
 
