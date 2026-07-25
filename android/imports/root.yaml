@@ -1,14 +1,6 @@
 # Apps that only make sense on a rooted device, imported by px5/mp4
 # only -- zf10 isn't rooted and doesn't import this.
 apps:
-  - name: "Play Integrity API Checker"
-    pkg: gr.nikolasspyr.integritycheck
-
-  - name: "Duck Detector"
-    pkg: com.eltavine.duckdetector
-    store: github
-    repo: eltavine/Duck-Detector-Refactoring
-
   # Installs whichever root framework this device itself is configured
   # for (mp4: magisk -- fails to patch its boot.img at all, kernel
   # probably compiled without KALLSYMS; px5: apatch), via root.framework:
@@ -47,3 +39,11 @@ apps:
       root.framework:
         type: config
         value: magisk
+
+  - name: "Play Integrity API Checker"
+    pkg: gr.nikolasspyr.integritycheck
+
+  - name: "Duck Detector"
+    pkg: com.eltavine.duckdetector
+    store: github
+    repo: eltavine/Duck-Detector-Refactoring
