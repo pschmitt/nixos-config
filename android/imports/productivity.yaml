@@ -21,3 +21,11 @@ apps:
     if:
       not:
         ro.product.device: clover
+
+  # Wanted by px5 and mp4, not zf10 (ASUS_AI2302).
+  - name: "Pinkt"
+    pkg: com.fibelatti.pinboard
+    store: izzyondroid
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
