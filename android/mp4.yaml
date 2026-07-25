@@ -33,6 +33,7 @@ imports:
   - imports/root.yaml
   - imports/shopping.yaml
   - imports/social-media.yaml
+  - imports/tasker.yaml
   - imports/termux.yaml
 
 adb:
