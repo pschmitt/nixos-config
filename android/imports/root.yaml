@@ -30,10 +30,23 @@ apps:
   # one: the repo's "spoofed" flavor randomizes its applicationId on every
   # single build (evades root-detection package-name blocklists), so
   # there's no stable pkg: for declaroid to track install state against.
-  - name: "WebUI X"
-    pkg: com.dergoogler.mmrl.wx
+  # - name: "WebUI X"
+  #   pkg: com.dergoogler.mmrl.wx
+  #   store: github
+  #   repo: MMRLApp/WebUI-X-Portable
+  #   asset: 'official\.apk$'
+  #   if:
+  #     root.framework:
+  #       type: config
+  #       value: magisk
+
+  # WebUI X's parent app (Magisk module repo/manager) -- same official-vs-
+  # spoofed split and same reasoning for picking "official" (spoofed
+  # randomizes its applicationId every build).
+  - name: "MMRL"
+    pkg: com.dergoogler.mmrl
     store: github
-    repo: MMRLApp/WebUI-X-Portable
+    repo: MMRLApp/MMRL
     asset: 'official\.apk$'
     if:
       root.framework:

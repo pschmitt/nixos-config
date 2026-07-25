@@ -18,6 +18,20 @@ modules:
     source: github
     repo: dpejoh/specter
 
+  # A Tricky Store fork/successor (JingMatrix, a Tricky Store contributor)
+  # -- its own module.prop id is literally "tricky_store" (confirmed by
+  # unzipping a real release), same as the original module this replaced
+  # above, so this occupies that same module directory rather than a new
+  # one. Deliberately kept alongside Specter (which also claims to cover
+  # key/attestation simulation) -- may overlap functionally at runtime,
+  # a known tradeoff, not an oversight. Two release assets per version
+  # (Debug/Release); asset: picks Release.
+  - id: tricky_store
+    name: "TEESimulator-RS"
+    source: github
+    repo: Enginex0/TEESimulator-RS
+    asset: 'Release\.zip$'
+
   - id: YetAnotherBootloopProtector
     name: "Yet Another Bootloop Protector"
     source: github
