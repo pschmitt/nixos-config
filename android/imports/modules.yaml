@@ -11,20 +11,17 @@ modules:
     repo: KOWX712/PlayIntegrityFix
     asset: 'PlayIntegrityFix_v.*-1-inject-s\.zip$'
 
-  - id: tricky_store
-    name: "Tricky Store"
+  # Replaces Tricky Store + Yurikey Manager -- module.prop id is literally
+  # "specter" (confirmed by unzipping a real release).
+  - id: specter
+    name: "Specter"
     source: github
-    repo: 5ec1cff/TrickyStore
+    repo: dpejoh/specter
 
   - id: YetAnotherBootloopProtector
     name: "Yet Another Bootloop Protector"
     source: github
     repo: Magisk-Modules-Alt-Repo/YetAnotherBootloopProtector
-
-  - id: Yurikey
-    name: "Yurikey Manager"
-    source: github
-    repo: Yurii0307/yurikey
 
   - id: zygisksu
     name: "Zygisk Next"
