@@ -25,29 +25,16 @@ apps:
         type: config
         value: magisk
 
-  # Magisk module WebUI viewer -- only makes sense alongside Magisk itself,
-  # not APatch. The "official" asset/applicationId is the only usable
-  # one: the repo's "spoofed" flavor randomizes its applicationId on every
-  # single build (evades root-detection package-name blocklists), so
-  # there's no stable pkg: for declaroid to track install state against.
-  # - name: "WebUI X"
-  #   pkg: com.dergoogler.mmrl.wx
-  #   store: github
-  #   repo: MMRLApp/WebUI-X-Portable
-  #   asset: 'official\.apk$'
-  #   if:
-  #     root.framework:
-  #       type: config
-  #       value: magisk
-
-  # WebUI X's parent app (Magisk module repo/manager) -- same official-vs-
-  # spoofed split and same reasoning for picking "official" (spoofed
-  # randomizes its applicationId every build).
-  - name: "MMRL"
-    pkg: com.dergoogler.mmrl
+  # Replaces WebUI X + MMRL -- a standalone KernelSU WebUI implementation,
+  # same "module WebUI viewer" role, one app instead of two. Only makes
+  # sense alongside Magisk itself, not APatch, same as what it replaced.
+  # Three release assets (debug/release/release-mappings.zip, the last
+  # not even an APK); asset: picks the plain release build.
+  - name: "KsuWebUI"
+    pkg: io.github.a13e300.ksuwebui
     store: github
-    repo: MMRLApp/MMRL
-    asset: 'official\.apk$'
+    repo: adivenxnataly/KsuWebUI
+    asset: 'release\.apk$'
     if:
       root.framework:
         type: config
