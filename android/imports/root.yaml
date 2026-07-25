@@ -4,21 +4,46 @@ apps:
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
 
-  # APatch is the default -- it works fine everywhere except mp4 (Mi Pad
-  # 4, codename clover), which fails to patch its boot.img at all (kernel
-  # probably compiled without KALLSYMS) and uses Magisk instead. `not:`
-  # keeps APatch the default for any future device added here too, rather
-  # than needing an explicit allow-list of every device that isn't clover.
+  - name: "Duck Detector"
+    pkg: com.eltavine.duckdetector
+    store: github
+    repo: eltavine/Duck-Detector-Refactoring
+
+  # Installs whichever root framework this device itself is configured
+  # for (mp4: magisk -- fails to patch its boot.img at all, kernel
+  # probably compiled without KALLSYMS; px5: apatch), via root.framework:
+  # type: config -- reads it from this same resolved config, not a
+  # getprop, so this stays correct for any future device regardless of
+  # its actual codename, unlike matching on ro.product.device the way
+  # this used to. Both mp4.yaml/px5.yaml pin root.framework explicitly.
   - name: "APatch"
     pkg: me.bmax.apatch
     store: fdroid
     if:
-      not:
-        ro.product.device: clover
+      root.framework:
+        type: config
+        value: apatch
 
   - name: "Magisk"
     pkg: com.topjohnwu.magisk
     store: github
     repo: topjohnwu/Magisk
     if:
-      ro.product.device: clover
+      root.framework:
+        type: config
+        value: magisk
+
+  # Magisk module WebUI viewer -- only makes sense alongside Magisk itself,
+  # not APatch. The "official" asset/applicationId is the only usable
+  # one: the repo's "spoofed" flavor randomizes its applicationId on every
+  # single build (evades root-detection package-name blocklists), so
+  # there's no stable pkg: for declaroid to track install state against.
+  - name: "WebUI X"
+    pkg: com.dergoogler.mmrl.wx
+    store: github
+    repo: MMRLApp/WebUI-X-Portable
+    asset: 'official\.apk$'
+    if:
+      root.framework:
+        type: config
+        value: magisk
