@@ -40,6 +40,10 @@ apps:
         type: config
         value: magisk
 
+  - name: "App Manager"
+    pkg: io.github.muntashirakon.AppManager
+    store: fdroid
+
   - name: "Play Integrity API Checker"
     pkg: gr.nikolasspyr.integritycheck
 
