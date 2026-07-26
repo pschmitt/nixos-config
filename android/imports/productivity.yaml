@@ -17,8 +17,11 @@ apps:
   - name: "Nextcloud"
     pkg: com.nextcloud.client
 
+  # Retired from the Play Store; archived APK pulled from px5.
   - name: "ScanSnap Cloud"
     pkg: com.fujitsu.pfu.scansnapcloudeu
+    store: url
+    url: "https://blobs.brkn.lol/android/ScanSnapCloud-1.8.2-55.apk"
 
   # Wanted by px5 (redfin) and zf10 (ASUS_AI2302), not mp4 (clover).
   - name: "Syncthing-Fork"

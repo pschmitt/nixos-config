@@ -5,5 +5,7 @@
     "Z /mnt/data/blobs/iso 0755 github-actions nginx - -"
     # Fix IMG upload directory ownership (readable by nginx)
     "Z /mnt/data/blobs/img 0755 github-actions nginx - -"
+    # Fix Android APK directory ownership (readable by nginx)
+    "Z /mnt/data/blobs/android 0755 pschmitt nginx - -"
   ];
 }
