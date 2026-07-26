@@ -16,6 +16,28 @@ apps:
   - name: "Calendar"
     pkg: com.google.android.calendar
 
+  # A pre-existing org.lineageos.* app on LineageOS devices (not something
+  # declaroid ever installed) -- Etar is LineageOS's own calendar app (fork
+  # of AOSP Calendar, same com.android.calendar.AllInOneActivity but its own
+  # pkg id), kept installed but disabled in favor of Google's Calendar
+  # above since it can't be uninstalled.
+  # Gated on ro.lineage.build.version rather than a device list (unlike the
+  # AOSP-named Contacts/Phone/Clock entries below, which key off "not
+  # zf10" since com.android.* pkgs can show up on any AOSP-derived ROM) --
+  # org.lineageos.* pkgs are LineageOS-specific, so any current or future
+  # LineageOS device in the fleet should match, not just today's px5/mp4.
+  # The "*" glob sentinel matches any non-empty value (px5/mp4 are both on
+  # "23.2" today, but a plain version match would silently stop working the
+  # next time LineageOS is upgraded); ro.lineage.version itself isn't
+  # usable here since it embeds the build date and is unique per device.
+  - name: "Calendar (Etar/LineageOS)"
+    pkg: org.lineageos.etar
+    state:
+      installed: true
+      disabled: true
+    if:
+      ro.lineage.build.version: "*"
+
   - name: "Clock"
     pkg: com.google.android.deskclock
 
@@ -36,6 +58,21 @@ apps:
 
   - name: "Contacts"
     pkg: com.google.android.contacts
+
+  # A pre-existing AOSP system app on some devices (not something declaroid
+  # ever installed) -- kept installed but disabled in favor of Google's
+  # Contacts above, since it's a different pkg and can't be uninstalled.
+  # zf10 (ASUS_AI2302) never had it preinstalled, so it's excluded via if:
+  # rather than attempting a doomed gplay install of a pkg with no real
+  # Play Store listing.
+  - name: "Contacts (AOSP)"
+    pkg: com.android.contacts
+    state:
+      installed: true
+      disabled: true
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
 
   - name: "Drive"
     pkg: com.google.android.apps.docs
@@ -75,8 +112,40 @@ apps:
   - name: "Phone"
     pkg: com.google.android.dialer
 
+  # A pre-existing AOSP system app on some devices (not something declaroid
+  # ever installed) -- kept installed but disabled in favor of Google's
+  # Phone above, since it's a different pkg and can't be uninstalled.
+  # zf10 (ASUS_AI2302) never had it preinstalled, so it's excluded via if:
+  # rather than attempting a doomed gplay install of a pkg with no real
+  # Play Store listing.
+  - name: "Phone (AOSP)"
+    pkg: com.android.dialer
+    state:
+      installed: true
+      disabled: true
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
+
   - name: "Photos"
     pkg: com.google.android.apps.photos
+
+  # A pre-existing org.lineageos.* app on LineageOS devices (not something
+  # declaroid ever installed) -- Glimpse is LineageOS's own gallery app,
+  # kept installed but disabled in favor of Google's Photos above since it
+  # can't be uninstalled. (com.android.gallery3d, the actual legacy AOSP
+  # gallery pkg, is also present but has no launcher activity and is
+  # already disabled out of the box on both px5 and mp4 -- dead weight, not
+  # a real competing app, so it's not declared here.)
+  # Gated on ro.lineage.build.version, same reasoning/caveat as the
+  # Etar entry above.
+  - name: "Photos (Glimpse/LineageOS)"
+    pkg: org.lineageos.glimpse
+    state:
+      installed: true
+      disabled: true
+    if:
+      ro.lineage.build.version: "*"
 
   - name: "YouTube"
     pkg: com.google.android.youtube
