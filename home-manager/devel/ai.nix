@@ -152,8 +152,8 @@ in
           approval_policy = "never";
           approvals_reviewer = "user";
           check_for_update_on_startup = false;
-          model = "gpt-5.4";
-          model_reasoning_effort = "medium";
+          model = "gpt-5.6-luna";
+          model_reasoning_effort = "high";
           notice.model_migrations = {
             "gpt-5.4" = "gpt-5.5";
           };
