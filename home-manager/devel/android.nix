@@ -15,6 +15,7 @@ in
     android-tools # adb + fastboot
     inputs.tsvtool.packages.${system}.default # pretty TSV/JSON/YAML/TOML tables, used by declaroid's devices/diff output
     pmbootstrap
+    scrcpy
   ];
 
   # configPath must be the live checkout, not a Nix-store copy:
