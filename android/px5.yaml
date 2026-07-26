@@ -63,10 +63,6 @@ apps:
   - name: "DB Navigator"
     pkg: de.hafas.android.db
 
-  # Productivity
-  - name: "Nextcloud"
-    pkg: com.nextcloud.client
-
   # Launcher
   - name: "Smartspacer"
     pkg: com.kieronquinn.app.smartspacer
