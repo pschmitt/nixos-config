@@ -31,6 +31,8 @@ in
       # Fix ISO/IMG upload directory ownership (readable by nginx)
       "Z /mnt/data/blobs/iso 0750 ${user} ${group} - -"
       "Z /mnt/data/blobs/img 0750 ${user} ${group} - -"
+      # Fix Android APK directory ownership (readable by nginx)
+      "Z /mnt/data/blobs/android 0755 pschmitt ${group} - -"
     ];
 
   services.nginx.virtualHosts = {
