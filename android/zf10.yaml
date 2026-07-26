@@ -56,13 +56,6 @@ apps:
   - name: "TK-Ident"
     pkg: de.tk.apps.android.tkident
 
-  # Productivity
-  - name: "Nextcloud"
-    pkg: com.nextcloud.client
-
-  - name: "ScanSnap Cloud"
-    pkg: com.fujitsu.pfu.scansnapcloudeu
-
   # Security
   - name: "Authy"
     pkg: com.authy.authy
