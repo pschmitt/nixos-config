@@ -28,7 +28,6 @@ imports:
   - imports/fitness.yaml
   - imports/google.yaml
   - imports/obtainium.yaml
-  - imports/productivity.yaml
   - imports/shopping.yaml
   - imports/tasker.yaml
   - imports/termux.yaml

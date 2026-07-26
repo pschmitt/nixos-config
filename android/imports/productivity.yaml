@@ -20,7 +20,6 @@ apps:
   - name: "ScanSnap Cloud"
     pkg: com.fujitsu.pfu.scansnapcloudeu
 
-
   # Wanted by px5 (redfin) and zf10 (ASUS_AI2302), not mp4 (clover).
   - name: "Syncthing-Fork"
     pkg: com.github.catfriend1.syncthingfork
