@@ -10,6 +10,21 @@ description: >-
 
 Use this skill when rbw needs to be unlocked before a command can run.
 
+## This is a private fork
+
+`rbw` here is built from `github:pschmitt/rbw` (flake input `rbw`), a
+personal fork of the upstream `doy/rbw` project -- not the stock upstream
+build. It carries extra features on top of upstream, notably: item
+archiving (`rbw archive`/`rbw unarchive`, `--archived`/`--include-archived`
+on `list`/`search`), trash restore (`rbw restore`, `--trashed`/
+`--include-trashed`), a `--force` flag on `rbw remove`/`rbw delete` for an
+actual permanent delete (plain `remove` is a safe soft-delete-to-trash),
+`rbw collection <subcommand>` for organization collections, and a TUI
+(`rbw tui`). When in doubt about a command's exact behavior, check
+`rbw <command> --help` or the fork's own `README.md`/`TODO.md`
+(`~/devel/private/pschmitt/rbw.git`) rather than assuming upstream
+`doy/rbw` documentation applies.
+
 ## Hermes Agent
 
 When running in Hermes, prefer the configured `bitwarden` MCP server instead
