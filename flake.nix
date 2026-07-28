@@ -113,6 +113,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    bitwarden-mcp = {
+      url = "github:bitwarden/mcp-server/v2026.7.0";
+      flake = false;
+    };
+
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid";
       inputs.home-manager.follows = "home-manager";
