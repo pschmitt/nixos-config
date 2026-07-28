@@ -129,7 +129,7 @@
     # Hyprland and cie {{{
     hyprland = {
       # url = "github:hyprwm/Hyprland";
-      url = "github:hyprwm/Hyprland/v0.56.0";
+      url = "github:hyprwm/Hyprland/v0.56.1";
       # inputs.nixpkgs.follows = "nixpkgs";
     };
 
