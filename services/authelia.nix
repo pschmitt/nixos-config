@@ -70,6 +70,13 @@ let
           domain = [ autheliaDomain ];
         }
       ]
+      ++ lib.optional (config.custom.authelia.extraTwoFactorDomains != [ ]) {
+        # Like extraAuthenticatedDomains, but require the stronger policy for
+        # applications whose control plane can execute privileged actions.
+        # This precedes the mesh-wide bypass below.
+        policy = "two_factor";
+        domain = config.custom.authelia.extraTwoFactorDomains;
+      }
       ++ lib.optional (config.custom.authelia.extraAuthenticatedDomains != [ ]) {
         # Some apps have NO login of their own — they use proxy auth (e.g.
         # X-Auth-User from Authelia's Remote-User) or run with
@@ -122,6 +129,16 @@ in
         would leave them reachable unauthenticated from anywhere on the mesh.
         Populated by same-host modules (e.g. a private flake input's per-host
         file), same caveat as extraAccessControlRules above.
+      '';
+    };
+
+    extraTwoFactorDomains = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = ''
+        Domains that must require two-factor authentication even on the mesh,
+        for sensitive control-plane applications. These rules are placed before
+        the mesh-wide bypass.
       '';
     };
   };
