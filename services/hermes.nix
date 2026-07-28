@@ -11,12 +11,21 @@ let
   dashboardPort = 9119;
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
-  # Hermes treats external skill directories as read-only and discovers the
-  # agentskills.io-compatible SKILL.md files from this Nix store path.
-  hermesSkills = pkgs.symlinkJoin {
-    name = "hermes-skills";
-    paths = [ ./hermes/skills ];
-  };
+  # Import every agentskills.io-compatible shared skill. This keeps Hermes in
+  # sync with Home Manager without an ever-growing per-skill mapping here.
+  sharedSkillsPath = ../home-manager/devel/skills;
+  hermesSkills = pkgs.linkFarm "hermes-skills" (
+    lib.mapAttrsToList
+      (name: _: {
+        inherit name;
+        path = sharedSkillsPath + "/${name}";
+      })
+      (
+        lib.filterAttrs (
+          name: type: type == "directory" && builtins.pathExists (sharedSkillsPath + "/${name}/SKILL.md")
+        ) (builtins.readDir sharedSkillsPath)
+      )
+  );
 
   bitwardenMcp = pkgs.buildNpmPackage {
     pname = "bitwarden-mcp-server";
@@ -236,6 +245,13 @@ in
   };
 
   systemd.services.hermes-agent = {
+    path = [
+      pkgs.bash
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.git
+      pkgs.jq
+    ];
     serviceConfig = {
       EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
       # The Bitwarden CLI needs its account profile alongside BW_SESSION. Keep

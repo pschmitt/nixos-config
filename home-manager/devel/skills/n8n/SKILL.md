@@ -9,8 +9,9 @@ Use this skill for workflow automation tasks on the n8n instance at `n8n.brkn.lo
 
 ## Quick start
 
-The n8n MCP server is pre-configured and available as `n8n-mcp`. Use MCP tools
-directly to interact with workflows and executions.
+The n8n MCP server is pre-configured. In Hermes it is named `n8n`; use its MCP
+tools directly to interact with workflows and executions. Other clients may
+expose the same server as `n8n-mcp`.
 
 ## Workflow
 

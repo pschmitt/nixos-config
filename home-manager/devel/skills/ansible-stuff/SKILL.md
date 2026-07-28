@@ -7,6 +7,15 @@ description: Use when working in the private Ansible repository at `~/devel/priv
 
 Use this skill for work in the `ansible-stuff.git` repository.
 
+## Hermes Agent
+
+The personal Ansible checkout is not mounted into Hermes. Work only after the
+user has made a checkout available in Hermes's workspace, and use that
+workspace path rather than the `~/devel/...` path below. Do not assume Ansible
+or its dev shell is installed; report the missing capability if it is absent.
+
+The remaining quick-start instructions apply to local Codex and shell use.
+
 ## Quick start
 
 1. Work from:
