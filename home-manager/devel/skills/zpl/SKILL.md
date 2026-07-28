@@ -5,6 +5,12 @@ description: Edit local zsh plugins at ~/.config/zsh/plugins/local. Use when the
 
 # Local Zsh Plugins (zpl)
 
+## Hermes Agent
+
+The local zsh-plugin tree and yadm checkout are not mounted into Hermes. Work
+only after the user provides a checkout in the Hermes workspace, and do not use
+the `~/.config/zsh/...` paths or reload commands below in Hermes.
+
 Plugin root: `~/.config/zsh/plugins/local`
 
 ## Structure

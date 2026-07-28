@@ -5,7 +5,11 @@
 NetBox is available at:
 - `https://netbox.brkn.lol`
 
-Credentials can be retrieved from the password manager with:
+Retrieve credentials with the runtime-appropriate method:
+
+- **Hermes Agent:** use the configured `bitwarden` MCP server to retrieve
+  `Netbox (AI Agent)`. Prefer this over `rbw`.
+- **Local Codex/shell:** use:
 
 ```bash
 zhj rbw::get --json "Netbox (AI Agent)"
@@ -83,7 +87,8 @@ Use the **web UI form** instead. This preserves the original filename.
 1. Get a session cookie and CSRF token by logging in:
 
 ```bash
-# Credentials: username/password from rbw (same entry as the API token)
+# Credentials: username/password from the selected credential flow
+# (the same `Netbox (AI Agent)` entry that contains the API token)
 curl -sc /tmp/nb_cookies.txt -s "https://netbox.brkn.lol/login/" > /dev/null
 CSRF=$(grep csrftoken /tmp/nb_cookies.txt | awk '{print $NF}')
 
@@ -92,7 +97,7 @@ curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
   -H "Referer: https://netbox.brkn.lol/login/" \
   -F "csrfmiddlewaretoken=$CSRF" \
   -F "username=ai-agent" \
-  -F "password=<password from rbw>" \
+  -F "password=<password from the selected credential flow>" \
   -F "next=/" -o /dev/null
 ```
 

@@ -7,6 +7,14 @@ description: Use when working with the Home Assistant configuration for the `hv`
 
 Use this skill for Home Assistant configuration and inspection work on the `hv` VM.
 
+## Hermes Agent
+
+For live inspection and control, use the configured `home-assistant` MCP server
+or the native Home Assistant channel. Hermes does not have the `/mnt/ha`
+checkout, `zhj`, or local HA tokens, so do not use the local paths or fallback
+commands below. For configuration-file or Lovelace edits, ask the user to make
+the repository available in the Hermes workspace first.
+
 ## Repository
 
 The HA config repo is mounted at `/mnt/ha` (SSHFS). Read `AGENTS.md` there for all access details, working conventions, and Lovelace editing procedures.
@@ -23,4 +31,4 @@ Dashboards in storage mode live at `/mnt/ha/.storage/lovelace.<url-slug>` (under
 
 ## MCP
 
-When an MCP client is available, prefer the configured `home-assistant` MCP server for live entity state, tool-driven inspection, and control. Fall back to `zhj hass-cli` or raw API calls otherwise.
+When an MCP client is available, prefer the configured `home-assistant` MCP server for live entity state, tool-driven inspection, and control. The `zhj hass-cli` and raw API fallbacks are for local Codex/shell workflows only.

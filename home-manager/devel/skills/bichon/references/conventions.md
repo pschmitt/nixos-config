@@ -5,13 +5,17 @@
 Bichon is available at:
 - `https://bichon.brkn.lol`
 
-Credentials can be retrieved from the password manager with:
+Retrieve credentials with the runtime-appropriate method:
+
+- **Hermes Agent:** use the configured `bitwarden` MCP server to retrieve the
+  `bichon.brkn.lol` API token. Prefer this over `rbw`.
+- **Local Codex/shell:** use:
 
 ```bash
 zhj rbw::get --field "API Token" bichon.brkn.lol
 ```
 
-If rbw is locked, invoke the `rbw` skill to unlock it first.
+If using local rbw and it is locked, invoke the `rbw` skill first.
 
 Notes:
 - Handle retrieved credentials as secrets and do not commit them to the

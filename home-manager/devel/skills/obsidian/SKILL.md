@@ -5,6 +5,13 @@ description: Read and write Obsidian vault notes at ~/Documents/notes via the fi
 
 # Obsidian Vault
 
+## Hermes Agent
+
+Hermes does not currently have the Obsidian filesystem MCP or the local vault
+mounted. Do not assume the path below exists; ask the user to enable that MCP
+or provide the relevant notes in the Hermes workspace before reading or
+changing notes.
+
 MCP server name: `obsidian`
 Vault root: `/home/pschmitt/Documents/notes`
 

@@ -10,6 +10,16 @@ description: >-
 
 Use this skill when rbw needs to be unlocked before a command can run.
 
+## Hermes Agent
+
+When running in Hermes, prefer the configured `bitwarden` MCP server instead
+of `rbw`. Hermes already receives its Bitwarden session through its protected
+service configuration, so do not invoke the HA phone-unlock webhook or ask for
+the master password. Retrieve only the required vault field and never expose a
+credential in a response, URL, committed file, or command output.
+
+The remaining instructions apply to local Codex and shell workflows.
+
 ## Check unlock status
 
 ```bash
