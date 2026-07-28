@@ -38,6 +38,12 @@ in
       "hermes/home-assistant/llat" = config.custom.mkSecret {
         mode = "0400";
       };
+      "hermes/matrix/password" = config.custom.mkSecret {
+        mode = "0400";
+      };
+      "hermes/matrix/recovery-key" = config.custom.mkSecret {
+        mode = "0400";
+      };
     };
     templates."hermes/mcp.env" = {
       content = ''
@@ -45,9 +51,19 @@ in
         MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/mcp/token"}
         HASS_URL=https://ha.${config.domains.main}
         HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
+        MATRIX_HOMESERVER=https://matrix-client.matrix.org
+        MATRIX_PASSWORD=${config.sops.placeholder."hermes/matrix/password"}
+        MATRIX_USER_ID=@hermes-brkn:matrix.org
+        MATRIX_ALLOWED_USERS=@pschmitt:one.ems.host
+        MATRIX_E2EE_MODE=required
+        MATRIX_DEVICE_ID=HERMESROFL10
+        MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
       '';
       mode = "0400";
-      restartUnits = [ "hermes-agent.service" ];
+      restartUnits = [
+        "hermes-agent.service"
+        "hermes-dashboard.service"
+      ];
     };
   };
 
