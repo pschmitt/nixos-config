@@ -17,6 +17,16 @@ let
     name = "hermes-skills";
     paths = [ ./hermes/skills ];
   };
+
+  bitwardenMcp = pkgs.buildNpmPackage {
+    pname = "bitwarden-mcp-server";
+    version = "2026.7.0";
+    src = inputs.bitwarden-mcp;
+    nodejs = pkgs.nodejs_22;
+    npmDepsHash = "sha256-rCK8vaZdsyOLgWRub54exa8TTgB7NeXjDnhlz5DBTOY=";
+  };
+
+  bitwardenCliDataPath = "${config.services.hermes-agent.stateDir}/.bitwarden-cli/data.json";
 in
 {
   imports = [
@@ -44,6 +54,12 @@ in
       "hermes/matrix/recovery-key" = config.custom.mkSecret {
         mode = "0400";
       };
+      "hermes/bitwarden/session" = config.custom.mkSecret {
+        mode = "0400";
+      };
+      "hermes/bitwarden/data-json" = config.custom.mkSecret {
+        mode = "0400";
+      };
     };
     templates."hermes/mcp.env" = {
       content = ''
@@ -58,12 +74,18 @@ in
         MATRIX_E2EE_MODE=required
         MATRIX_DEVICE_ID=HERMESROFL10
         MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
+        HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
       '';
       mode = "0400";
       restartUnits = [
         "hermes-agent.service"
         "hermes-dashboard.service"
       ];
+    };
+    templates."hermes/bitwarden/data.json" = {
+      content = config.sops.placeholder."hermes/bitwarden/data-json";
+      mode = "0400";
+      restartUnits = [ "hermes-agent.service" ];
     };
   };
 
@@ -95,6 +117,19 @@ in
           home-assistant = {
             url = "https://ha.${config.domains.main}/api/mcp";
             headers.Authorization = "Bearer \${MCP_HOME_ASSISTANT_API_KEY}";
+            connect_timeout = 30;
+            timeout = 90;
+          };
+          bitwarden = {
+            command = "${bitwardenMcp}/bin/mcp-server-bitwarden";
+            env = {
+              BW_SESSION = "\${HERMES_BW_SESSION}";
+              BW_CLI_PATH = "${pkgs.bitwarden-cli}/bin/bw";
+              BITWARDENCLI_APPDATA_DIR = builtins.dirOf bitwardenCliDataPath;
+              # Allow Bitwarden's attachment tools to operate within the Hermes
+              # workspace while retaining systemd's filesystem sandbox.
+              BW_ALLOWED_DIRECTORIES = config.services.hermes-agent.workingDirectory;
+            };
             connect_timeout = 30;
             timeout = 90;
           };
@@ -200,9 +235,20 @@ in
     ];
   };
 
-  systemd.services.hermes-agent.serviceConfig.EnvironmentFile = [
-    config.sops.templates."hermes/mcp.env".path
-  ];
+  systemd.services.hermes-agent = {
+    serviceConfig = {
+      EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
+      # The Bitwarden CLI needs its account profile alongside BW_SESSION. Keep
+      # the SOPS-rendered source root-only and give the Hermes user a private,
+      # writable runtime copy for vault mutations and syncs.
+      ExecStartPre = [
+        "+${pkgs.coreutils}/bin/install -d -m 0700 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${builtins.dirOf bitwardenCliDataPath}"
+        "+${pkgs.coreutils}/bin/install -D -m 0600 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${
+          config.sops.templates."hermes/bitwarden/data.json".path
+        } ${bitwardenCliDataPath}"
+      ];
+    };
+  };
 
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.

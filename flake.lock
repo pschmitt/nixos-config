@@ -70,6 +70,23 @@
         "type": "github"
       }
     },
+    "bitwarden-mcp": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1783443116,
+        "narHash": "sha256-IYXRpqcJBPE9iZFZeTqZGhJUgUjgO8Di93IapXmDmFo=",
+        "owner": "bitwarden",
+        "repo": "mcp-server",
+        "rev": "a53665aa0230c477957414cfa6a93a0e143b9b44",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bitwarden",
+        "ref": "v2026.7.0",
+        "repo": "mcp-server",
+        "type": "github"
+      }
+    },
     "bruvtab": {
       "inputs": {
         "nixpkgs": [
@@ -3204,6 +3221,7 @@
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
+        "bitwarden-mcp": "bitwarden-mcp",
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "bw-backup": "bw-backup",
