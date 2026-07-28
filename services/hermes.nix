@@ -11,22 +11,11 @@ let
   dashboardPort = 9119;
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
-  # Keep Hermes' skill library in the Nix store. Hermes treats external skill
-  # directories as read-only and discovers the agentskills.io-compatible
-  # SKILL.md files from this path.
-  n8nSkillsSrc = pkgs.fetchFromGitHub {
-    owner = "czlonkowski";
-    repo = "n8n-skills";
-    rev = "27e9d0ab92cccfc46db4f147497b173f214b69c5";
-    hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
-  };
+  # Hermes treats external skill directories as read-only and discovers the
+  # agentskills.io-compatible SKILL.md files from this Nix store path.
   hermesSkills = pkgs.symlinkJoin {
     name = "hermes-skills";
-    paths = [
-      ../home-manager/devel/skills
-      "${n8nSkillsSrc}/skills"
-      pkgs.todoist-cli.skill
-    ];
+    paths = [ ./hermes/skills ];
   };
 in
 {
@@ -185,6 +174,7 @@ in
         config.services.hermes-agent.workingDirectory
       ];
       PrivateTmp = true;
+      EnvironmentFile = config.sops.templates."hermes/mcp.env".path;
     };
     path = [
       config.services.hermes-agent.package
