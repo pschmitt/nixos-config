@@ -67,6 +67,33 @@
             "unlock"
           ];
         };
+        # Disposable test account (bw.brkn.lol Vaultwarden) used for rbw
+        # development/smoke-testing -- never anything real. Its master
+        # password lives as a Login item in `default`'s own vault; `item`
+        # is set explicitly since `bw` above also targets bw.brkn.lol and
+        # would otherwise collide on a plain URI match against `default`.
+        # Not sops-secret'd like `bw`/`wiit`: email/base_url for a
+        # throwaway test account aren't sensitive.
+        ai = {
+          email = "ai@brkn.lol";
+          base_url = "https://bw.brkn.lol";
+          unlock = {
+            policy = "always";
+            credentials = {
+              account = "default";
+              item = "Vaultwarden (ai@brkn.lol)";
+            };
+          };
+          exclude_from = [
+            "list"
+            "search"
+            "get"
+            "show"
+            "code"
+            "sync"
+            "unlock"
+          ];
+        };
       };
     };
   };
