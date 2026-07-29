@@ -8,6 +8,9 @@ apps:
   - name: "BoursoBank"
     pkg: com.boursorama.android.clients
 
+  - name: "Mes Comptes - LCL"
+    pkg: fr.lcl.android.customerarea
+
   - name: "bunq"
     pkg: com.bunq.android
 
