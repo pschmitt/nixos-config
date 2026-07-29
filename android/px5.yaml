@@ -24,6 +24,7 @@ imports:
   - imports/ai.yaml
   - imports/apps.yaml
   - imports/banking.yaml
+  - imports/payments.yaml
   - imports/base.yaml
   - imports/chat.yaml
   - imports/fitness.yaml
@@ -68,3 +69,7 @@ apps:
     pkg: com.kieronquinn.app.smartspacer
     store: github
     repo: "KieronQuinn/Smartspacer"
+
+  # Misc
+  - name: "heat it"
+    pkg:  de.ka.kamedi.heat_it
