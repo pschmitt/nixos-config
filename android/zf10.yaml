@@ -22,7 +22,7 @@ device: EU_AI2302 # R6AIB700W850L7G
 imports:
   - imports/adb.yaml
   - imports/apps.yaml
-  - imports/banking.yaml
+  - imports/payments.yaml
   - imports/base.yaml
   - imports/chat.yaml
   - imports/fitness.yaml
@@ -61,6 +61,10 @@ apps:
 
   - name: "LuxTrust Mobile"
     pkg: com.LuxTrustMobile
+
+  # Banking & Finance
+  - name: "Mes Comptes - LCL"
+    pkg: fr.lcl.android.customerarea
 
   # System
   - name: "hyperion"

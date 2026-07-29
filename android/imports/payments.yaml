@@ -1,0 +1,9 @@
+apps:
+  - name: "Curve Pay"
+    pkg: com.imaginecurve.curve.prd
+    if:
+      not:
+        ro.product.device: ASUS_AI2302
+
+  - name: "Google Wallet"
+    pkg: com.google.android.apps.walletnfcrel

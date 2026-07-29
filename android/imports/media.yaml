@@ -24,3 +24,6 @@ apps:
 
   - name: "ZDF"
     pkg: com.zdf.android.mediathek
+
+  - name: "YouTube"
+    pkg: com.google.android.youtube

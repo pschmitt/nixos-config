@@ -146,6 +146,3 @@ apps:
       disabled: true
     if:
       ro.lineage.build.version: "*"
-
-  - name: "YouTube"
-    pkg: com.google.android.youtube
