@@ -30,6 +30,7 @@ in
       "vaultwarden/smtp/username" = secretAttrs;
       "vaultwarden/smtp/password" = secretAttrs;
       "vaultwarden/smtp/from" = secretAttrs;
+      "vaultwarden/admin_token_hash" = secretAttrs;
     };
 
     templates."vaultwarden/smtp.env" = {
@@ -40,6 +41,7 @@ in
         SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/security"}"
         SMTP_USERNAME="${config.sops.placeholder."vaultwarden/smtp/username"}"
         SMTP_PASSWORD="${config.sops.placeholder."vaultwarden/smtp/password"}"
+        ADMIN_TOKEN="${config.sops.placeholder."vaultwarden/admin_token_hash"}"
       '';
       owner = vaultwardenUser;
       group = vaultwardenUser;
@@ -59,6 +61,7 @@ in
       config = {
         DOMAIN = "https://${primaryHost}";
         SIGNUPS_ALLOWED = lib.mkForce false;
+        ORG_CREATION_USERS = config.mainUser.email;
         DATA_FOLDER = dataDir;
         ROCKET_ADDRESS = "127.0.0.1";
         ROCKET_PORT = vaultwardenPort;
