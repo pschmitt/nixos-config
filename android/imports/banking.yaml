@@ -14,36 +14,18 @@ apps:
   - name: "Coinbase"
     pkg: com.coinbase.android
 
-  - name: "Curve Pay"
-    pkg: com.imaginecurve.curve.prd
-    if:
-      not:
-        ro.product.device: ASUS_AI2302
-
   - name: "eboo"
     pkg: lu.post.finance.mobile.eboo
     state: {installed: false}
 
-  - name: "Google Wallet"
-    pkg: com.google.android.apps.walletnfcrel
-
   - name: "ING"
     pkg: de.ingdiba.bankingapp
-
-  - name: "Mes Comptes - LCL"
-    pkg: fr.lcl.android.customerarea
 
   - name: "norisbank"
     pkg: com.db.mm.norisbank
 
   - name: "PayPal"
     pkg: com.paypal.android.p2pmobile
-    if:
-      not:
-        ro.product.device: ASUS_AI2302
 
   - name: "Trade Republic"
     pkg: de.traderepublic.app
-    if:
-      not:
-        ro.product.device: ASUS_AI2302
