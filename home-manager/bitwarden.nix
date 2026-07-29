@@ -51,7 +51,13 @@
           base_url._secret = config.sops.secrets."rbw/private/base_url".path;
           unlock = {
             policy = "always";
-            credentials.account = "default";
+            # `item` is pinned explicitly: `default`'s vault has two
+            # bw.brkn.lol Login items (this one, and the `ai` account's
+            # below), so a plain URI match is ambiguous.
+            credentials = {
+              account = "default";
+              item = "Vaultwarden";
+            };
           };
           # Mirrors the `default` account; excluded from every list/search/
           # get-style merge so it doesn't break those by default. Not
