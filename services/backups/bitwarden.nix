@@ -64,16 +64,21 @@
         thresholdSeconds = 86400;
       };
 
-      # FIXME: leave disabled until the destination organization and its
-      # collections actually exist on the Vaultwarden instance (org
-      # membership/roles for anyone besides destAccount need to be set up
-      # by hand first, e.g. `rbw org invite`/`rbw org confirm` -- this
-      # module only creates the org/collections themselves, not memberships).
-      # collections = {
-      #   enable = true;
-      #   org = "TODO";
-      #   names = [ "default" "TODO" ];
-      # };
+      # Org membership/roles for anyone besides destAccount (e.g. Anika)
+      # still need to be set up by hand -- `rbw org invite`/`rbw org
+      # confirm`, not something this module automates.
+      collections = {
+        enable = true;
+        org = "Bergmann-Schmitt";
+        names = [
+          "default"
+          "Anika hat ihr Passwort vergessen"
+        ];
+        monit = {
+          enable = true;
+          thresholdSeconds = 86400;
+        };
+      };
     };
   };
 
