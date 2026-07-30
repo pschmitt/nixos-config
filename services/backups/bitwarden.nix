@@ -6,22 +6,22 @@
 
 {
   imports = [
-    inputs.bw-backup.nixosModules.default
+    inputs.rbw-auto.nixosModules.default
   ];
 
   sops.secrets = {
     "bw-backup" = config.custom.mkSecret {
-      owner = config.services.bw-backup.user;
-      inherit (config.services.bw-backup) group;
+      owner = config.services.rbw-auto-backup.user;
+      inherit (config.services.rbw-auto-backup) group;
     };
     "bw-sync" = config.custom.mkSecret {
-      owner = config.services.bw-sync.user;
-      inherit (config.services.bw-sync) group;
+      owner = config.services.rbw-auto-sync.user;
+      inherit (config.services.rbw-auto-sync) group;
     };
   };
 
   services = {
-    bw-backup.backups.personal = {
+    rbw-auto-backup.backups.personal = {
       # `environmentFiles` (the sops-managed bw-backup secret) must supply,
       # as plain KEY=value lines: BW_PASSWORD (this account's master
       # password) and, once (only needed if this account has never run
@@ -47,7 +47,7 @@
     # master passwords) and, once per account that needs it,
     # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
     # register step as above).
-    bw-sync.syncs = {
+    rbw-auto-sync.syncs = {
       personal = {
         sourceAccount = {
           name = "personal";
@@ -107,8 +107,8 @@
   # these oneshot units in "activating" forever, which also blocks the daily
   # timers. Fail instead so the next timer run retries and monit alerts.
   systemd.services = {
-    "bw-sync-personal".serviceConfig.TimeoutStartSec = "2h";
-    "bw-sync-org-collections".serviceConfig.TimeoutStartSec = "2h";
-    "bw-backup-personal".serviceConfig.TimeoutStartSec = "2h";
+    "rbw-auto-sync-personal".serviceConfig.TimeoutStartSec = "2h";
+    "rbw-auto-sync-org-collections".serviceConfig.TimeoutStartSec = "2h";
+    "rbw-auto-backup-personal".serviceConfig.TimeoutStartSec = "2h";
   };
 }

@@ -55,9 +55,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    bw-backup = {
-      # url = "path:/home/pschmitt/devel/private/pschmitt/bw-backup.git";
-      url = "github:pschmitt/bw-backup";
+    rbw-auto = {
+      # url = "path:/home/pschmitt/devel/private/pschmitt/rbw-auto.git";
+      url = "github:pschmitt/rbw-auto";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rbw.follows = "rbw";
     };
