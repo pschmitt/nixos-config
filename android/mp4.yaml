@@ -24,7 +24,6 @@ imports:
   - imports/apps.yaml
   - imports/base.yaml
   - imports/chat.yaml
-  - imports/fitness.yaml
   - imports/google.yaml
   - imports/media.yaml
   - imports/modules.yaml
