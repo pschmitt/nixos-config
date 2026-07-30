@@ -161,29 +161,6 @@
         "type": "github"
       }
     },
-    "bw-backup": {
-      "inputs": {
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "rbw": [
-          "rbw"
-        ]
-      },
-      "locked": {
-        "lastModified": 1785406608,
-        "narHash": "sha256-6mw4nrfQuN0YYnic6uaN3Nt4I+FzFX57hPinfvjWEkI=",
-        "owner": "pschmitt",
-        "repo": "bw-backup",
-        "rev": "9437216c38891ab36c4a075173366a4a3ab845a6",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "bw-backup",
-        "type": "github"
-      }
-    },
     "catppuccin": {
       "inputs": {
         "nixpkgs": "nixpkgs"
@@ -3221,13 +3198,35 @@
         "type": "github"
       }
     },
+    "rbw-auto": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rbw": [
+          "rbw"
+        ]
+      },
+      "locked": {
+        "lastModified": 1785408770,
+        "narHash": "sha256-Fe25dtrzb89YySono1xKYgkvHG/0M7TVXgJEd3qnFB4=",
+        "owner": "pschmitt",
+        "repo": "rbw-auto",
+        "rev": "87aed8dc0eb60558a0d18b6d458541369af72e62",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "rbw-auto",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
         "bitwarden-mcp": "bitwarden-mcp",
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
-        "bw-backup": "bw-backup",
         "catppuccin": "catppuccin",
         "cpuguy83-nixcfg": "cpuguy83-nixcfg",
         "declaroid": "declaroid",
@@ -3277,6 +3276,7 @@
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
         "rbw": "rbw",
+        "rbw-auto": "rbw-auto",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "slack-react": "slack-react",
