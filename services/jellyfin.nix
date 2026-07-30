@@ -8,14 +8,14 @@ let
   dataDir = "/srv/jellyfin";
   jellyfinConfigDir = "${dataDir}/config/jellyfin";
   jellyfinPort = 8096;
+  jellyfinUid = 1000;
+  jellyfinGid = 1000;
 
   hostnames = [
     "tv.${config.domains.main}"
     "media.${config.domains.main}"
     "jellyfin.${config.domains.main}"
     "jelly.${config.domains.main}"
-    "jelly.${config.networking.hostName}.${config.domains.main}"
-    "jellyfin.${config.networking.hostName}.${config.domains.main}"
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
@@ -23,7 +23,20 @@ in
 {
   systemd.tmpfiles.rules = [
     "d ${dataDir}             0750 root root - -"
-    "d ${jellyfinConfigDir}   0750 1000 1000 - -"
+    "d ${jellyfinConfigDir}   0750 ${toString jellyfinUid} ${toString jellyfinGid} - -"
+
+    # Sonarr/Radarr own the shows/movies they import (sonarr:sonarr,
+    # radarr:radarr) and only grant themselves a default ACL entry on the
+    # library roots, so jellyfin's PUID falls through to `other` (r-x) on
+    # anything they create - fine for playback, but "Delete from Jellyfin"
+    # needs write on the containing directory and fails with a 500
+    # (UnauthorizedAccessException) instead. Add jellyfin's PUID as its own
+    # default ACL entry so it inherits down to every show/season/movie dir
+    # created from here on, the same way the sonarr/radarr entries already do.
+    "a+ ${config.arr.dirs.tvShows} - - - - u:${toString jellyfinUid}:rwx"
+    "A+ ${config.arr.dirs.tvShows} - - - - u:${toString jellyfinUid}:rwx"
+    "a+ ${config.arr.dirs.movies}  - - - - u:${toString jellyfinUid}:rwx"
+    "A+ ${config.arr.dirs.movies}  - - - - u:${toString jellyfinUid}:rwx"
   ];
 
   virtualisation.oci-containers.containers.jellyfin = {
@@ -34,8 +47,8 @@ in
       "--hostname=${config.networking.hostName}"
     ];
     environment = {
-      PUID = "1000";
-      PGID = "1000";
+      PUID = toString jellyfinUid;
+      PGID = toString jellyfinGid;
       TZ = config.time.timeZone;
     };
     volumes = [
