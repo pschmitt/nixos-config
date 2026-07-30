@@ -21,13 +21,13 @@
   };
 
   services = {
-    # `environmentFiles` (sops secret "bw-backup") must supply, as plain
-    # KEY=value lines: BW_PASSWORD (this account's master password) and,
-    # once (only needed if this account has never run `rbw register`
-    # before), BW_BACKUP_REGISTER_CLIENT_ID/BW_BACKUP_REGISTER_CLIENT_SECRET
-    # (personal API key from https://bitwarden.com/help/article/personal-api-key/).
-    bw-backup = {
-      enable = true;
+    bw-backup.backups.personal = {
+      # `environmentFiles` (the sops-managed bw-backup secret) must supply,
+      # as plain KEY=value lines: BW_PASSWORD (this account's master
+      # password) and, once (only needed if this account has never run
+      # `rbw register` before),
+      # BW_BACKUP_REGISTER_CLIENT_ID/BW_BACKUP_REGISTER_CLIENT_SECRET
+      # (personal API key from https://bitwarden.com/help/article/personal-api-key/).
       account = {
         name = "personal";
         email = "philipp@schmitt.co";
@@ -41,27 +41,29 @@
       };
     };
 
-    # `environmentFiles` (sops secret "bw-sync") must supply, as plain
+    # `environmentFiles` (the sops-managed bw-sync secret, shared by both
+    # jobs below -- same two accounts either way) must supply, as plain
     # KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both accounts'
     # master passwords) and, once per account that needs it,
     # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
     # register step as above).
-    bw-sync = {
-      enable = true;
-      sourceAccount = {
-        name = "personal";
-        email = "philipp@schmitt.co";
-      };
-      destAccount = {
-        name = "vaultwarden";
-        email = "philipp@schmitt.co";
-        baseUrl = "https://vault.brkn.lol";
-      };
-      purgeDestination = true;
-      environmentFiles = [ config.sops.secrets."bw-sync".path ];
-      monit = {
-        enable = true;
-        thresholdSeconds = 86400;
+    bw-sync.syncs = {
+      personal = {
+        sourceAccount = {
+          name = "personal";
+          email = "philipp@schmitt.co";
+        };
+        destAccount = {
+          name = "vaultwarden";
+          email = "philipp@schmitt.co";
+          baseUrl = "https://vault.brkn.lol";
+        };
+        purgeDestination = true;
+        environmentFiles = [ config.sops.secrets."bw-sync".path ];
+        monit = {
+          enable = true;
+          thresholdSeconds = 86400;
+        };
       };
 
       # Org membership/roles for anyone besides destAccount (e.g. Anika)
@@ -73,14 +75,26 @@
       # "Anika hat ihr Passwort vergessen" and "Default collection" are
       # 1:1 mirrors of the equally-named collections that already exist
       # in the source (personal) account.
-      collections = {
-        enable = true;
-        org = "bitwarden.com";
-        names = [
-          "Private vault"
-          "Anika hat ihr Passwort vergessen"
-          "Default collection"
-        ];
+      org-collections = {
+        sourceAccount = {
+          name = "personal";
+          email = "philipp@schmitt.co";
+        };
+        destAccount = {
+          name = "vaultwarden";
+          email = "philipp@schmitt.co";
+          baseUrl = "https://vault.brkn.lol";
+        };
+        mode = "collections";
+        collections = {
+          org = "bitwarden.com";
+          names = [
+            "Private vault"
+            "Anika hat ihr Passwort vergessen"
+            "Default collection"
+          ];
+        };
+        environmentFiles = [ config.sops.secrets."bw-sync".path ];
         monit = {
           enable = true;
           thresholdSeconds = 86400;
@@ -93,7 +107,8 @@
   # these oneshot units in "activating" forever, which also blocks the daily
   # timers. Fail instead so the next timer run retries and monit alerts.
   systemd.services = {
-    bw-sync.serviceConfig.TimeoutStartSec = "2h";
-    bw-backup.serviceConfig.TimeoutStartSec = "2h";
+    "bw-sync-personal".serviceConfig.TimeoutStartSec = "2h";
+    "bw-sync-org-collections".serviceConfig.TimeoutStartSec = "2h";
+    "bw-backup-personal".serviceConfig.TimeoutStartSec = "2h";
   };
 }
