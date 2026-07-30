@@ -67,12 +67,19 @@
       # Org membership/roles for anyone besides destAccount (e.g. Anika)
       # still need to be set up by hand -- `rbw org invite`/`rbw org
       # confirm`, not something this module automates.
+      #
+      # "Private vault" has no same-named source-side collection, so
+      # bw-sync.sh gives it a full mirror of the whole source vault.
+      # "Anika hat ihr Passwort vergessen" and "Default collection" are
+      # 1:1 mirrors of the equally-named collections that already exist
+      # in the source (personal) account.
       collections = {
         enable = true;
-        org = "Bergmann-Schmitt";
+        org = "bitwarden.com";
         names = [
-          "default"
+          "Private vault"
           "Anika hat ihr Passwort vergessen"
+          "Default collection"
         ];
         monit = {
           enable = true;
