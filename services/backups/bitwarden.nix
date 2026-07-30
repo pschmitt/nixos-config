@@ -10,11 +10,11 @@
   ];
 
   sops.secrets = {
-    "bw-backup" = config.custom.mkSecret {
+    "rbw-auto/backup" = config.custom.mkSecret {
       owner = config.services.rbw-auto.backupUser;
       group = config.services.rbw-auto.backupGroup;
     };
-    "bw-sync" = config.custom.mkSecret {
+    "rbw-auto/sync" = config.custom.mkSecret {
       owner = config.services.rbw-auto.syncUser;
       group = config.services.rbw-auto.syncGroup;
     };
