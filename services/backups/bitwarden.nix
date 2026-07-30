@@ -11,17 +11,17 @@
 
   sops.secrets = {
     "bw-backup" = config.custom.mkSecret {
-      owner = config.services.rbw-auto-backup.user;
-      inherit (config.services.rbw-auto-backup) group;
+      owner = config.services.rbw-auto.backupUser;
+      group = config.services.rbw-auto.backupGroup;
     };
     "bw-sync" = config.custom.mkSecret {
-      owner = config.services.rbw-auto-sync.user;
-      inherit (config.services.rbw-auto-sync) group;
+      owner = config.services.rbw-auto.syncUser;
+      group = config.services.rbw-auto.syncGroup;
     };
   };
 
-  services = {
-    rbw-auto-backup.backups.personal = {
+  services.rbw-auto = {
+    backupJobs.personal = {
       # `environmentFiles` (the sops-managed bw-backup secret) must supply,
       # as plain KEY=value lines: BW_PASSWORD (this account's master
       # password) and, once (only needed if this account has never run
@@ -47,7 +47,7 @@
     # master passwords) and, once per account that needs it,
     # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
     # register step as above).
-    rbw-auto-sync.syncs = {
+    syncJobs = {
       personal = {
         sourceAccount = {
           name = "personal";
@@ -75,7 +75,7 @@
       # "Anika hat ihr Passwort vergessen" and "Default collection" are
       # 1:1 mirrors of the equally-named collections that already exist
       # in the source (personal) account.
-      org-collections = {
+      collections = {
         sourceAccount = {
           name = "personal";
           email = "philipp@schmitt.co";
@@ -108,7 +108,7 @@
   # timers. Fail instead so the next timer run retries and monit alerts.
   systemd.services = {
     "rbw-auto-sync-personal".serviceConfig.TimeoutStartSec = "2h";
-    "rbw-auto-sync-org-collections".serviceConfig.TimeoutStartSec = "2h";
+    "rbw-auto-sync-collections".serviceConfig.TimeoutStartSec = "2h";
     "rbw-auto-backup-personal".serviceConfig.TimeoutStartSec = "2h";
   };
 }
