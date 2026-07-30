@@ -40,3 +40,4 @@ nbx-preview.*
 # home-manager/devel/android.nix and https://github.com/pschmitt/declaroid)
 *.apk
 *.obb
+*.ab
