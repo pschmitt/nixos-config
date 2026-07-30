@@ -165,14 +165,15 @@
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
-        ]
+        ],
+        "rbw": "rbw"
       },
       "locked": {
-        "lastModified": 1784579148,
-        "narHash": "sha256-m6mPCasdLUI+HtFcBj7chXgr00a9JbUmErFLXG+DyYg=",
+        "lastModified": 1785392348,
+        "narHash": "sha256-DGA8gESKdWZFyCPCjf15rVEGgOBcWK1vsUyy7iszaGM=",
         "owner": "pschmitt",
         "repo": "bw-backup",
-        "rev": "753707707f1dc0adf99ad767ddb6a3a3c6e29edf",
+        "rev": "65c1ecdab0988f073a1f6dc21b9caf119e90b1eb",
         "type": "github"
       },
       "original": {
@@ -1072,7 +1073,7 @@
     "ghostty": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "home-manager": "home-manager",
+        "home-manager": "home-manager_2",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -1222,6 +1223,28 @@
     "home-manager": {
       "inputs": {
         "nixpkgs": [
+          "bw-backup",
+          "rbw",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1783005591,
+        "narHash": "sha256-NcLHV5uBAeggDUE2wPbKszjfyaSLsoqaYt7izOphkZw=",
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "rev": "f469c79b955609d6a8fdd9e689be76a93b1621d7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "home-manager",
+        "type": "github"
+      }
+    },
+    "home-manager_2": {
+      "inputs": {
+        "nixpkgs": [
           "ghostty",
           "nixpkgs"
         ]
@@ -1240,7 +1263,7 @@
         "type": "github"
       }
     },
-    "home-manager_2": {
+    "home-manager_3": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
@@ -1260,7 +1283,7 @@
         "type": "github"
       }
     },
-    "home-manager_3": {
+    "home-manager_4": {
       "inputs": {
         "nixpkgs": [
           "rbw",
@@ -1281,7 +1304,7 @@
         "type": "github"
       }
     },
-    "home-manager_4": {
+    "home-manager_5": {
       "inputs": {
         "nixpkgs": [
           "zen-browser",
@@ -3199,7 +3222,29 @@
     },
     "rbw": {
       "inputs": {
-        "home-manager": "home-manager_3",
+        "home-manager": "home-manager",
+        "nixpkgs": [
+          "bw-backup",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1785391712,
+        "narHash": "sha256-Bm5QK3vI/VZpdrafkFzei15PtibOSKWEP6+S9LAYS+M=",
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "rev": "c1d2bfb782a49d031919552bdd8e7c427599f2ef",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "rbw",
+        "type": "github"
+      }
+    },
+    "rbw_2": {
+      "inputs": {
+        "home-manager": "home-manager_4",
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -3238,7 +3283,7 @@
         "grim-hyprland": "grim-hyprland",
         "hardware": "hardware",
         "hermes-agent": "hermes-agent",
-        "home-manager": "home-manager_2",
+        "home-manager": "home-manager_3",
         "hypr-dynamic-cursors": "hypr-dynamic-cursors",
         "hyprgrass": "hyprgrass",
         "hypridle": "hypridle",
@@ -3273,7 +3318,7 @@
         "pre-commit-hooks": "pre-commit-hooks_4",
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
-        "rbw": "rbw",
+        "rbw": "rbw_2",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "slack-react": "slack-react",
@@ -4237,7 +4282,7 @@
     },
     "zen-browser": {
       "inputs": {
-        "home-manager": "home-manager_4",
+        "home-manager": "home-manager_5",
         "nixpkgs": [
           "nixpkgs"
         ]
