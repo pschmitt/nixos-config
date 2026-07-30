@@ -166,14 +166,16 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rbw": "rbw"
+        "rbw": [
+          "rbw"
+        ]
       },
       "locked": {
-        "lastModified": 1785401665,
-        "narHash": "sha256-k1Eujh3ME1j8AxRfqvfUXhikR8fPF4tjQfsRaXLMsf4=",
+        "lastModified": 1785405148,
+        "narHash": "sha256-CnLw84ybOcjSHUYzQNkqNSEoQyJvHfMTv7Hg68scVB0=",
         "owner": "pschmitt",
         "repo": "bw-backup",
-        "rev": "41af6d93810b7aa855725ba95cbc5fb4cc3f64df",
+        "rev": "441c5fe5963f7f1694fed287d12ef04338e675f4",
         "type": "github"
       },
       "original": {
@@ -1073,7 +1075,7 @@
     "ghostty": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "home-manager": "home-manager_2",
+        "home-manager": "home-manager",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -1223,28 +1225,6 @@
     "home-manager": {
       "inputs": {
         "nixpkgs": [
-          "bw-backup",
-          "rbw",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1783005591,
-        "narHash": "sha256-NcLHV5uBAeggDUE2wPbKszjfyaSLsoqaYt7izOphkZw=",
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "rev": "f469c79b955609d6a8fdd9e689be76a93b1621d7",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "type": "github"
-      }
-    },
-    "home-manager_2": {
-      "inputs": {
-        "nixpkgs": [
           "ghostty",
           "nixpkgs"
         ]
@@ -1263,7 +1243,7 @@
         "type": "github"
       }
     },
-    "home-manager_3": {
+    "home-manager_2": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
@@ -1283,7 +1263,7 @@
         "type": "github"
       }
     },
-    "home-manager_4": {
+    "home-manager_3": {
       "inputs": {
         "nixpkgs": [
           "rbw",
@@ -1304,7 +1284,7 @@
         "type": "github"
       }
     },
-    "home-manager_5": {
+    "home-manager_4": {
       "inputs": {
         "nixpkgs": [
           "zen-browser",
@@ -3222,39 +3202,17 @@
     },
     "rbw": {
       "inputs": {
-        "home-manager": "home-manager",
-        "nixpkgs": [
-          "bw-backup",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1785391712,
-        "narHash": "sha256-Bm5QK3vI/VZpdrafkFzei15PtibOSKWEP6+S9LAYS+M=",
-        "owner": "pschmitt",
-        "repo": "rbw",
-        "rev": "c1d2bfb782a49d031919552bdd8e7c427599f2ef",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "rbw",
-        "type": "github"
-      }
-    },
-    "rbw_2": {
-      "inputs": {
-        "home-manager": "home-manager_4",
+        "home-manager": "home-manager_3",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1785401274,
-        "narHash": "sha256-r0o3n9YlD8fkoBAY/e+mNI2PMpHX+Ii5nsnHAe3gdIU=",
+        "lastModified": 1785404935,
+        "narHash": "sha256-hToZwZRxe+kZKuN3CuVIjNT9Xdf35JSqW+LzadCnh/o=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "a8b25eacfbe9ca61d2f5478576a97dc4f86b4a70",
+        "rev": "1537a2ab9e7cd27d2a2063aabf1751743598a970",
         "type": "github"
       },
       "original": {
@@ -3283,7 +3241,7 @@
         "grim-hyprland": "grim-hyprland",
         "hardware": "hardware",
         "hermes-agent": "hermes-agent",
-        "home-manager": "home-manager_3",
+        "home-manager": "home-manager_2",
         "hypr-dynamic-cursors": "hypr-dynamic-cursors",
         "hyprgrass": "hyprgrass",
         "hypridle": "hypridle",
@@ -3318,7 +3276,7 @@
         "pre-commit-hooks": "pre-commit-hooks_4",
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
-        "rbw": "rbw_2",
+        "rbw": "rbw",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "slack-react": "slack-react",
@@ -4282,7 +4240,7 @@
     },
     "zen-browser": {
       "inputs": {
-        "home-manager": "home-manager_5",
+        "home-manager": "home-manager_4",
         "nixpkgs": [
           "nixpkgs"
         ]

@@ -59,6 +59,7 @@
       # url = "path:/home/pschmitt/devel/private/pschmitt/bw-backup.git";
       url = "github:pschmitt/bw-backup";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.rbw.follows = "rbw";
     };
 
     llm-agents = {
