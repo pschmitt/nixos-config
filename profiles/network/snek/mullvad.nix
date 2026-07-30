@@ -6,7 +6,7 @@
 
   services.mullvad-vpn = {
     enable = true;
-    package = pkgs.mullvad-vpn; # cli + gui
+    gui.enable = true;
     enableExcludeWrapper = true;
   };
 
