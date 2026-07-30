@@ -99,6 +99,7 @@ in
       # Undo/Redo
       bindkey '^[z' undo  # alt-z
       bindkey '^[y' redo  # alt-y
+      bindkey "^[m" copy-prev-shell-word # alt-m
 
       # ctrl-e to edit current line in editor
       autoload -Uz edit-command-line
