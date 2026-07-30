@@ -169,11 +169,11 @@
         "rbw": "rbw"
       },
       "locked": {
-        "lastModified": 1785397025,
-        "narHash": "sha256-NFIoeNNJpgcyu7wtoFYnfXBsDCTb/hqPq6gzYhJ0vcQ=",
+        "lastModified": 1785397587,
+        "narHash": "sha256-DgKVchsRjTrHcDS0Qf70hwLgA4hrMGn/uf8eeODKyUg=",
         "owner": "pschmitt",
         "repo": "bw-backup",
-        "rev": "b9b09854085fbc44d60498b47061c5a94810347d",
+        "rev": "21cdeff41d9e05b8257d695501958c8abd3462b0",
         "type": "github"
       },
       "original": {
