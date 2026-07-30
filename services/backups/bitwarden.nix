@@ -22,8 +22,8 @@
 
   services.rbw-auto = {
     backupJobs.personal = {
-      # `environmentFiles` (the sops-managed bw-backup secret) must supply,
-      # as plain KEY=value lines: BW_PASSWORD (this account's master
+      # `environmentFiles` (the sops-managed rbw-auto/backup secret) must
+      # supply, as plain KEY=value lines: BW_PASSWORD (this account's master
       # password) and, once (only needed if this account has never run
       # `rbw register` before),
       # BW_BACKUP_REGISTER_CLIENT_ID/BW_BACKUP_REGISTER_CLIENT_SECRET
@@ -33,7 +33,7 @@
         email = "philipp@schmitt.co";
       };
       backupPath = "/srv/bw-backup/data";
-      environmentFiles = [ config.sops.secrets."bw-backup".path ];
+      environmentFiles = [ config.sops.secrets."rbw-auto/backup".path ];
       retention = 30;
       monit = {
         enable = true;
@@ -41,13 +41,17 @@
       };
     };
 
-    # `environmentFiles` (the sops-managed bw-sync secret, shared by both
-    # jobs below -- same two accounts either way) must supply, as plain
-    # KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both accounts'
-    # master passwords) and, once per account that needs it,
+    # `environmentFiles` (the sops-managed rbw-auto/sync secret, shared by
+    # both jobs below -- same two accounts either way) must supply, as
+    # plain KEY=value lines: SRC_BW_PASSWORD/DEST_BW_PASSWORD (both
+    # accounts' master passwords) and, once per account that needs it,
     # SRC_/DEST_REGISTER_CLIENT_ID/_CLIENT_SECRET (same personal-API-key
     # register step as above).
     syncJobs = {
+      # "Personal vault" has no same-named source-side collection, so
+      # bw-sync.sh gives it a full mirror of the whole source vault -- into
+      # the "bitwarden.com" org's "Personal vault" collection rather than
+      # destAccount's own bare personal vault.
       personal = {
         sourceAccount = {
           name = "personal";
@@ -58,8 +62,12 @@
           email = "philipp@schmitt.co";
           baseUrl = "https://vault.brkn.lol";
         };
-        purgeDestination = true;
-        environmentFiles = [ config.sops.secrets."bw-sync".path ];
+        mode = "collections";
+        collections = {
+          org = "bitwarden.com";
+          names = [ "Personal vault" ];
+        };
+        environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
         monit = {
           enable = true;
           thresholdSeconds = 86400;
@@ -70,8 +78,6 @@
       # still need to be set up by hand -- `rbw org invite`/`rbw org
       # confirm`, not something this module automates.
       #
-      # "Personal vault" has no same-named source-side collection, so
-      # bw-sync.sh gives it a full mirror of the whole source vault.
       # "Anika hat ihr Passwort vergessen" and "Default collection" are
       # 1:1 mirrors of the equally-named collections that already exist
       # in the source (personal) account.
@@ -89,12 +95,11 @@
         collections = {
           org = "bitwarden.com";
           names = [
-            "Personal vault"
-            "Anika hat ihr Passwort vergessen"
             "Default collection"
+            "Anika hat ihr Passwort vergessen"
           ];
         };
-        environmentFiles = [ config.sops.secrets."bw-sync".path ];
+        environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
         monit = {
           enable = true;
           thresholdSeconds = 86400;
