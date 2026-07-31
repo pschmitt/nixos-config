@@ -26,6 +26,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Deployment and operations
 
+- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. When possible, build on a `rofl-*` host instead; `rofl-13` and `rofl-14` are preferred.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
 
