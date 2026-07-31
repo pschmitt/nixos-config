@@ -16,6 +16,8 @@
     storageDriver = "btrfs";
     autoPrune = {
       enable = true;
+      dates = "daily";
+      flags = [ "--all" ];
     };
     # https://docs.docker.com/engine/daemon/live-restore/
     liveRestore = false;
