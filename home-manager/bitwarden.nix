@@ -27,20 +27,26 @@
   programs.rbw.declarative = {
     enable = true;
     settings = {
-      primary_account = "default";
-      lock_timeout = 86400;
-      sync_interval = 3600;
-      pinentry = "pinentry";
-      tui_keybindings = {
-        # Matches the <M-Q> "rage quit" mapping in neovim: exit the TUI
-        # immediately from any mode, even mid-dialog.
-        force_quit = [ "alt-Q" ];
+      primaryAccount = "default";
+      agent = {
+        lockTimeout = 86400;
+        syncInterval = 3600;
+      };
+      pinentry = {
+        command = "pinentry";
+      };
+      tui = {
+        keys = {
+          # Matches the <M-Q> "rage quit" mapping in neovim: exit the TUI
+          # immediately from any mode, even mid-dialog.
+          forceQuit = [ "alt-Q" ];
+        };
       };
       accounts = {
         default.email = config.mainUser.email;
         wiit = {
           email._secret = config.sops.secrets."rbw/work/email".path;
-          base_url._secret = config.sops.secrets."rbw/work/base_url".path;
+          baseUrl._secret = config.sops.secrets."rbw/work/base_url".path;
           unlock = {
             policy = "always";
             credentials.account = "default";
@@ -48,7 +54,7 @@
         };
         bw = {
           email._secret = config.sops.secrets."rbw/private/email".path;
-          base_url._secret = config.sops.secrets."rbw/private/base_url".path;
+          baseUrl._secret = config.sops.secrets."rbw/private/base_url".path;
           unlock = {
             policy = "always";
             # `item` is pinned explicitly: `default`'s vault has two
@@ -63,7 +69,7 @@
           # get-style merge so it doesn't break those by default. Not
           # excluded from `tui`, so it still shows up there. Still reachable
           # via `rbw --account bw ...`.
-          exclude_from = [
+          excludeFrom = [
             "list"
             "search"
             "get"
@@ -78,11 +84,11 @@
         # password lives as a Login item in `default`'s own vault; `item`
         # is set explicitly since `bw` above also targets bw.brkn.lol and
         # would otherwise collide on a plain URI match against `default`.
-        # Not sops-secret'd like `bw`/`wiit`: email/base_url for a
+        # Not sops-secret'd like `bw`/`wiit`: email/baseUrl for a
         # throwaway test account aren't sensitive.
         ai = {
           email = "ai@brkn.lol";
-          base_url = "https://bw.brkn.lol";
+          baseUrl = "https://bw.brkn.lol";
           unlock = {
             policy = "always";
             credentials = {
@@ -90,7 +96,7 @@
               item = "Vaultwarden (ai@brkn.lol)";
             };
           };
-          exclude_from = [
+          excludeFrom = [
             "list"
             "search"
             "get"
