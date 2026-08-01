@@ -4,8 +4,9 @@
   ...
 }:
 {
-  # Configure the Neutron DHCP resolver as a link-local DNS scope.  Public DNS
-  # remains the global resolver for all other names.
+  # Configure the provider's recursive resolver as a link-specific DNS scope.
+  # The Neutron gateway at 10.69.46.1 does not listen for DNS; the provider
+  # resolver also serves the private records registered by Neutron.
   systemd.services.roflnet-dns = {
     description = "Configure roflnet split DNS";
     wantedBy = [ "multi-user.target" ];
@@ -29,7 +30,7 @@
         exit 1
       fi
 
-      ${pkgs.systemd}/bin/resolvectl dns "$interface" 10.69.46.1
+      ${pkgs.systemd}/bin/resolvectl dns "$interface" 1.1.1.1
       ${pkgs.systemd}/bin/resolvectl domain "$interface" "~${config.domains.roflnet}"
     '';
   };
