@@ -15,7 +15,7 @@ in
     exportPath = lib.mkOption {
       type = lib.types.path;
       default = "/export";
-      description = "Remote export path on the NFS server";
+      description = "Remote export path on the NFS server; /export is the NFSv4 pseudoroot";
     };
 
     mountPoint = lib.mkOption {
@@ -43,12 +43,15 @@ in
       map (dir: {
         name = "${cfg.mountPoint}/${dir}";
         value = {
-          device = "${cfg.server}:${cfg.exportPath}/${dir}";
+          device = "${cfg.server}:${
+            if toString cfg.exportPath == "/export" then "/${dir}" else "${cfg.exportPath}/${dir}"
+          }";
           fsType = "nfs";
           options = [
             "noauto"
             "x-systemd.automount"
             "x-systemd.idle-timeout=600"
+            "vers=4"
             "soft"
             "timeo=50"
             "retrans=3"
