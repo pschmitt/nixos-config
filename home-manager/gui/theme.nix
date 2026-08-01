@@ -45,7 +45,7 @@ in
         gtk3.extraConfig.gtk-application-prefer-dark-theme = darkTheme;
         gtk4 = {
           extraConfig.gtk-application-prefer-dark-theme = darkTheme;
-          inherit (config.gtk) theme;
+          theme = null;
         };
       };
 

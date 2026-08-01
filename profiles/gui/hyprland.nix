@@ -35,8 +35,8 @@ in
     # and uwsm is already starting it (app-nm\\x2dapplet@autostart.service)
     # nm-applet.enable = true;
 
-    # DIRTYFIX This should not necessary as Hyprland ships hyprland-uwsm already
-    # ... but for some reason gdm isn't picking it up
+    # GDM 50.1 rejects Hyprland's upstream UWSM desktop entry because it
+    # parses TryExec as a command. Generate a GDM-compatible entry instead.
     uwsm = {
       enable = true;
       waylandCompositors.hyprland = {
