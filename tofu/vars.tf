@@ -58,6 +58,12 @@ variable "provider_network_id" {
   default     = "a2424481-1b98-4da4-ab0a-bad0a6479ecf"
 }
 
+variable "provider_ipv6_subnetpool_id" {
+  description = "Subnet pool ID for customer IPv6 subnets on the provider network"
+  type        = string
+  default     = "2e8945c3-1534-4b0d-b242-e49b497c9ece"
+}
+
 variable "ssh_public_key" {
   description = "Public SSH key for accessing the VM"
   type        = string

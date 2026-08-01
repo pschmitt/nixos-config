@@ -40,6 +40,7 @@ resource "openstack_compute_volume_attach_v2" "va_blobarr" {
 resource "openstack_networking_port_v2" "rofl-11_port" {
   provider       = openstack.openstack-wiit
   name           = "rofl-11-port"
+  dns_name       = "rofl-11"
   network_id     = openstack_networking_network_v2.rofl_net.id
   admin_state_up = true
 
@@ -47,9 +48,9 @@ resource "openstack_networking_port_v2" "rofl-11_port" {
     subnet_id = openstack_networking_subnet_v2.rofl_subnet-v4.id
   }
 
-  # fixed_ip {
-  #   subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
-  # }
+  fixed_ip {
+    subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
+  }
 }
 
 resource "openstack_networking_floatingip_v2" "rofl-11_fip" {

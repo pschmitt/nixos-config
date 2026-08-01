@@ -34,6 +34,7 @@ resource "openstack_compute_instance_v2" "rofl-14" {
 resource "openstack_networking_port_v2" "rofl-14_port" {
   provider       = openstack.openstack-wiit
   name           = "rofl-14-port"
+  dns_name       = "rofl-14"
   network_id     = openstack_networking_network_v2.rofl_net.id
   admin_state_up = true
 
@@ -41,9 +42,9 @@ resource "openstack_networking_port_v2" "rofl-14_port" {
     subnet_id = openstack_networking_subnet_v2.rofl_subnet-v4.id
   }
 
-  # fixed_ip {
-  #   subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
-  # }
+  fixed_ip {
+    subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
+  }
 }
 
 resource "openstack_networking_floatingip_v2" "rofl-14_fip" {

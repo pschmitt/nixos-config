@@ -9,6 +9,7 @@
     ./hardware-configuration.nix
 
     ../../profiles/server
+    ../../profiles/network/roflnet.nix
 
     ../../services/nfs/nfs-server.nix
 
@@ -34,6 +35,10 @@
 
   services.nfsExports = {
     enable = true;
+    allowedIps = [
+      "100.64.0.0/10"
+      "10.69.46.0/24"
+    ];
     exports = [
       "audiobooks"
       "books"

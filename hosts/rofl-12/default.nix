@@ -1,9 +1,10 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ./hardware-configuration.nix
 
     ../../profiles/server
+    ../../profiles/network/roflnet.nix
     ../../profiles/global/users/home-assistant.nix
 
     ../../services/nfs/nfs-client.nix
@@ -19,7 +20,10 @@
   };
   custom.promptColor = "#ff6600";
 
-  services.nfsMounts.enable = true;
+  services.nfsMounts = {
+    enable = true;
+    server = "rofl-10.${config.domains.roflnet}";
+  };
 
   # Enable networking
   networking = {

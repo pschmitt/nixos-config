@@ -4,6 +4,7 @@
     ./hardware-configuration.nix
 
     ../../profiles/server
+    ../../profiles/network/roflnet.nix
     ../../profiles/tdarr-node.nix
     ../../services/esphome.nix
   ];

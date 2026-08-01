@@ -2,6 +2,7 @@
 resource "openstack_networking_network_v2" "rofl_net" {
   provider       = openstack.openstack-wiit
   name           = "rofl-net"
+  dns_domain     = "roflnet.internal."
   admin_state_up = true
 }
 
@@ -11,6 +12,18 @@ resource "openstack_networking_subnet_v2" "rofl_subnet-v4" {
   network_id = openstack_networking_network_v2.rofl_net.id
   cidr       = "10.69.46.0/24"
   ip_version = 4
+}
+
+resource "openstack_networking_subnet_v2" "rofl_subnet-v6" {
+  provider      = openstack.openstack-wiit
+  name          = "rofl-subnet-v6"
+  network_id    = openstack_networking_network_v2.rofl_net.id
+  subnetpool_id = var.provider_ipv6_subnetpool_id
+  ip_version    = 6
+  prefix_length = 64
+
+  ipv6_address_mode = "slaac"
+  ipv6_ra_mode      = "slaac"
 }
 
 resource "openstack_networking_router_v2" "rofl_router" {
@@ -24,6 +37,12 @@ resource "openstack_networking_router_interface_v2" "roflrouter-interface-v4" {
   provider  = openstack.openstack-wiit
   router_id = openstack_networking_router_v2.rofl_router.id
   subnet_id = openstack_networking_subnet_v2.rofl_subnet-v4.id
+}
+
+resource "openstack_networking_router_interface_v2" "roflrouter-interface-v6" {
+  provider  = openstack.openstack-wiit
+  router_id = openstack_networking_router_v2.rofl_router.id
+  subnet_id = openstack_networking_subnet_v2.rofl_subnet-v6.id
 }
 
 # vim: set ft=terraform

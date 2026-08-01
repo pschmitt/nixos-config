@@ -10,6 +10,7 @@
     ./hardware-configuration.nix
 
     ../../profiles/server
+    ../../profiles/network/roflnet.nix
 
     # services
     # backups services
@@ -86,13 +87,17 @@
     nfsExports.enable = true;
     nfsMounts = {
       enable = true;
-      server = "rofl-11.${config.domains.netbird}";
+      server = "rofl-11.${config.domains.roflnet}";
       exports = [
         "audiobooks"
         "books"
         "videos"
       ];
     };
+    nfsExports.allowedIps = [
+      "100.64.0.0/10"
+      "10.69.46.0/24"
+    ];
 
     harmonia.extraVirtualHosts = [
       { domain = "cache.${config.domains.main}"; }
