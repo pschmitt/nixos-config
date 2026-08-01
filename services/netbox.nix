@@ -8,6 +8,20 @@ let
   netboxHost = "netbox.${config.domains.main}";
   netboxBind = "127.0.0.1:8001";
   netboxPort = 8001;
+  assetLinks = pkgs.writeText "netbox-assetlinks.json" (
+    builtins.toJSON [
+      {
+        relation = [ "delegate_permission/common.handle_all_urls" ];
+        target = {
+          namespace = "android_app";
+          package_name = "dev.pschmitt.netboxandchill";
+          sha256_cert_fingerprints = [
+            "78:60:64:2E:A3:B6:85:0D:97:CF:5C:F1:05:31:80:8A:2E:FA:5F:1A:68:97:51:77:03:25:B3:73:2F:AB:96:32"
+          ];
+        };
+      }
+    ]
+  );
 in
 {
   sops.secrets = {
@@ -105,6 +119,12 @@ in
       acmeRoot = null;
       forceSSL = true;
       locations = {
+        "= /.well-known/assetlinks.json" = {
+          alias = assetLinks;
+          extraConfig = ''
+            default_type application/json;
+          '';
+        };
         "/static/" = {
           alias = "${config.services.netbox.dataDir}/static/";
         };
