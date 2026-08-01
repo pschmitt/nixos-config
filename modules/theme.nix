@@ -50,13 +50,13 @@ in
     gtk = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "Colloid-Dark";
+        default = "Adwaita-dark";
         description = "GTK theme name.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.colloid-gtk-theme;
+        default = pkgs.gnome-themes-extra;
         description = "GTK theme package.";
       };
     };
