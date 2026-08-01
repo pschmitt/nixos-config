@@ -10,6 +10,9 @@
     nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
     custom.netbirdSetupKey = lib.mkForce "optimist";
 
+    # Accept the router advertisements emitted by the OpenStack IPv6 subnet.
+    systemd.network.networks."99-ethernet-default-dhcp".networkConfig.IPv6AcceptRA = true;
+
     boot = {
       initrd = {
         # From nixpkgs' `profiles/qemu-guest.nix`

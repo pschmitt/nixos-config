@@ -25,5 +25,11 @@
       default = "vpn.${config.domains.main}";
       description = "Domain used for VPN hosts";
     };
+
+    roflnet = lib.mkOption {
+      type = lib.types.str;
+      default = "roflnet.internal";
+      description = "Domain used for hosts on the OpenStack rofl network";
+    };
   };
 }

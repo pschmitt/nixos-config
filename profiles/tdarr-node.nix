@@ -11,7 +11,7 @@
 
   services.nfsMounts = {
     enable = true;
-    server = "rofl-11.${config.domains.netbird}";
+    server = "rofl-11.${config.domains.roflnet}";
     exports = [
       "audiobooks"
       "books"

@@ -7,9 +7,9 @@ in
     enable = lib.mkEnableOption "NFS export server";
 
     allowedIps = lib.mkOption {
-      type = lib.types.str;
-      default = "100.64.0.0/10"; # cg-nat, ie tailscale/netbird
-      description = "CIDR allowed to mount the NFS exports";
+      type = lib.types.listOf lib.types.str;
+      default = [ "100.64.0.0/10" ]; # cg-nat, ie tailscale/netbird
+      description = "CIDRs allowed to mount the NFS exports";
     };
 
     basePath = lib.mkOption {
@@ -58,9 +58,16 @@ in
 
     services.nfs.server.enable = true;
     services.nfs.server.exports = ''
-      ${cfg.exportPath} ${cfg.allowedIps}(rw,fsid=0,no_subtree_check)
+      ${cfg.exportPath} ${
+        lib.concatStringsSep " " (map (ip: "${ip}(rw,fsid=0,no_subtree_check)") cfg.allowedIps)
+      }
       ${lib.concatStringsSep "\n" (
-        map (dir: "${cfg.exportPath}/${dir} ${cfg.allowedIps}(${cfg.exportOptions})") cfg.exports
+        map (
+          dir:
+          "${cfg.exportPath}/${dir} ${
+            lib.concatStringsSep " " (map (ip: "${ip}(${cfg.exportOptions})") cfg.allowedIps)
+          }"
+        ) cfg.exports
       )}
     '';
 
