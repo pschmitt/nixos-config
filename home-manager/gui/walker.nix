@@ -70,7 +70,11 @@ in
         ];
       };
       Install.WantedBy = lib.mkForce [ hyprlandSessionTarget ];
-      Service.ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
+      Service = {
+        ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
+        Restart = "on-failure";
+        RestartSec = 5;
+      };
     };
   };
 
