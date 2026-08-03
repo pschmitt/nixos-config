@@ -283,6 +283,7 @@ in
 
         # cli
         antigravity-cli
+        ccusage
         # cursor-cli
         # kilocode-cli
 
