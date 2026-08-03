@@ -25,6 +25,7 @@ imports:
   - imports/base.yaml
   - imports/chat.yaml
   - imports/google.yaml
+  - imports/homelab.yaml
   - imports/media.yaml
   - imports/modules.yaml
   - imports/obtainium.yaml
