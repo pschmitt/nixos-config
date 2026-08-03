@@ -1,0 +1,9 @@
+# Apps used across the homelab's rooted Android devices. Keep this separate from
+# the general baseline so a device-specific config can opt into the homelab set
+# without installing it on the Zenfone. Both current targets use arm64-v8a.
+apps:
+  - name: "Nyetbox"
+    pkg: dev.pschmitt.nyetbox
+    store: github
+    repo: "pschmitt/nyetbox"
+    asset: '^nyetbox-.*-app-.*-release\\.apk$'

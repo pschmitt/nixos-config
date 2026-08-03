@@ -29,6 +29,7 @@ imports:
   - imports/chat.yaml
   - imports/fitness.yaml
   - imports/google.yaml
+  - imports/homelab.yaml
   - imports/iot.yaml
   - imports/media.yaml
   - imports/modules.yaml
