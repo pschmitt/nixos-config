@@ -1,0 +1,7 @@
+# Small, colorful personal projects that should follow the rooted sign devices.
+# This import is intentionally selected by mp4.yaml and px5.yaml only.
+apps:
+  - name: "aughhhh"
+    pkg: dev.pschmitt.aughhhh
+    store: github
+    repo: pschmitt/aughhhh
