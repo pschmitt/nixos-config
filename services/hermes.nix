@@ -69,6 +69,9 @@ in
       "hermes/bitwarden/data-json" = config.custom.mkSecret {
         mode = "0400";
       };
+      "hermes/github/token" = config.custom.mkSecret {
+        mode = "0400";
+      };
     };
     templates."hermes/mcp.env" = {
       content = ''
@@ -84,6 +87,7 @@ in
         MATRIX_DEVICE_ID=HERMESROFL10
         MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
         HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
+        GH_TOKEN=${config.sops.placeholder."hermes/github/token"}
       '';
       mode = "0400";
       restartUnits = [
@@ -249,6 +253,7 @@ in
       pkgs.bash
       pkgs.coreutils
       pkgs.curl
+      pkgs.gh
       pkgs.git
       pkgs.jq
     ];

@@ -20,6 +20,16 @@ let
           ];
         };
       }
+      {
+        relation = [ "delegate_permission/common.handle_all_urls" ];
+        target = {
+          namespace = "android_app";
+          package_name = "dev.pschmitt.nyetbox.debug";
+          sha256_cert_fingerprints = [
+            "8D:EA:37:C7:65:BA:92:33:F1:A4:F9:72:51:AC:BD:81:A7:B2:E7:FC:B2:32:19:30:6B:68:EA:65:3A:14:89:37"
+          ];
+        };
+      }
     ]
   );
 in
