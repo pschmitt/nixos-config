@@ -27,6 +27,7 @@ let
           package_name = "dev.pschmitt.nyetbox.debug";
           sha256_cert_fingerprints = [
             "8D:EA:37:C7:65:BA:92:33:F1:A4:F9:72:51:AC:BD:81:A7:B2:E7:FC:B2:32:19:30:6B:68:EA:65:3A:14:89:37"
+            "78:60:64:2E:A3:B6:85:0D:97:CF:5C:F1:05:31:80:8A:2E:FA:5F:1A:68:97:51:77:03:25:B3:73:2F:AB:96:32"
           ];
         };
       }
