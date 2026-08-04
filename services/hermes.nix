@@ -146,6 +146,24 @@ in
             connect_timeout = 30;
             timeout = 90;
           };
+          # hermes-agent's terminal/execute_code sandbox unconditionally strips
+          # GH_TOKEN/GITHUB_TOKEN regardless of config (GHSA-rhgp-j443-p4rf), so
+          # raw `gh` in a shell tool call never sees credentials. MCP servers
+          # run in the main gateway process instead and aren't subject to that
+          # strip, so GitHub access goes through the official MCP server here.
+          github = {
+            command = "${pkgs.github-mcp-server}/bin/github-mcp-server";
+            args = [
+              "stdio"
+              "--toolsets"
+              "default,notifications"
+            ];
+            env = {
+              GITHUB_PERSONAL_ACCESS_TOKEN = "\${GH_TOKEN}";
+            };
+            connect_timeout = 30;
+            timeout = 90;
+          };
         };
         skills.external_dirs = [ "${hermesSkills}" ];
       };
@@ -253,7 +271,6 @@ in
       pkgs.bash
       pkgs.coreutils
       pkgs.curl
-      pkgs.gh
       pkgs.git
       pkgs.jq
     ];
