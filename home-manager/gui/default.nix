@@ -13,6 +13,7 @@
     ./gnome-keyring.nix
     ./home-assistant-secrets.nix
     # ./clipcascade.nix
+    ./mcp-browser.nix
     ./media.nix
     ./notes.nix
     ./profile-picture.nix

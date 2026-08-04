@@ -16,6 +16,7 @@ in
 {
   # local pkgs
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
+  browsermcp = pkgs.callPackage ./browsermcp { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
@@ -36,6 +37,7 @@ in
   codex-ha-bridge = pkgs.callPackage ./codex-ha-bridge { };
   clipcascade = pkgs.callPackage ./clipcascade { };
   inherit emoji-fzf;
+  firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprevents = pkgs.callPackage ./hyprevents { };
