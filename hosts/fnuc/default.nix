@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     # Shared home config tree (osConfig-free); host facts set via host.* below.
@@ -17,6 +22,23 @@
   domains.main = "brkn.lol";
 
   targets.genericLinux.enable = true;
+
+  # fnuc has passwordless sudo, and home-manager.autoUpgrade runs unattended
+  # overnight, so pre-fix the GPU driver symlink before upstream's own
+  # checkExistingGpuDrivers check runs. If it's already up to date, upstream
+  # stays silent; if sudo isn't available, this is a no-op and upstream's
+  # original warning still fires.
+  home.activation.autoFixGpuDrivers =
+    let
+      gpuCfg = config.targets.genericLinux.gpu;
+      setupPath = lib.getExe gpuCfg.setupPackage;
+    in
+    lib.hm.dag.entryBefore [ "checkExistingGpuDrivers" ] ''
+      existing=$(readlink /run/opengl-driver || true)
+      if [[ "''${existing}" != "${gpuCfg.drivers}" ]] && /usr/bin/sudo -n true >/dev/null 2>&1; then
+        run /usr/bin/sudo -n ${setupPath}
+      fi
+    '';
 
   xdg.configFile."home-manager".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
