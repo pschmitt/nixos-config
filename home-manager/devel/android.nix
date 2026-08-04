@@ -6,13 +6,44 @@
 }:
 let
   system = pkgs.stdenv.hostPlatform.system;
+
+  gpcConfigPath = "${config.xdg.configHome}/gpc/config.json";
+
+  # playconsole-cli hardcodes $HOME/.playconsole-cli/config.json as its config
+  # default and has no XDG support, so pin --config to an XDG path instead.
+  gpc = pkgs.symlinkJoin {
+    name = "playconsole-cli-xdg";
+    paths = [ pkgs.playconsole-cli ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/gpc --add-flags "--config ${gpcConfigPath}"
+    '';
+  };
 in
 {
   imports = [ inputs.declaroid.homeManagerModules.default ];
 
+  sops.secrets."google-play/service-account-json" = {
+    mode = "0600";
+    sopsFile = ../../secrets/shared.sops.yaml;
+  };
+
+  sops.templates."gpc-config" = {
+    path = gpcConfigPath;
+    mode = "0600";
+    content = builtins.toJSON {
+      default_profile = "default";
+      profiles.default = {
+        name = "default";
+        credentials_path = config.sops.secrets."google-play/service-account-json".path;
+      };
+    };
+  };
+
   home.packages = with pkgs; [
     aapt # aapt2, e.g. `aapt2 dump badging some.apk`
     android-tools # adb + fastboot
+    gpc # playconsole-cli — Google Play Console CLI, wrapped for XDG config
     inputs.tsvtool.packages.${system}.default # pretty TSV/JSON/YAML/TOML tables, used by declaroid's devices/diff output
     pmbootstrap
     scrcpy

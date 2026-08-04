@@ -50,6 +50,7 @@ in
   mmonit = pkgs.callPackage ./mmonit { };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
+  playconsole-cli = pkgs.callPackage ./playconsole-cli { };
   still = pkgs.callPackage ./still { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
