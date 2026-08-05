@@ -10,16 +10,16 @@
 rustPlatform.buildRustPackage rec {
   pname = "davcli";
   version = "unstable-${lib.strings.substring 0 10 rev}";
-  rev = "6a11363464c5d59ff52b42a389fa233f6f8a3e3f";
+  rev = "1019b79b7c0418202709e9dc717720a0e1d5cc0c";
 
   src = fetchgit {
     url = "https://git.sr.ht/~whynothugo/davcli";
     inherit rev;
     fetchSubmodules = true;
-    hash = "sha256-LwuKfEDlpTbwo3rw+3kzGvlmnKeXbPKEQ82v+d86VVE=";
+    hash = "sha256-wHwvXqiELzGFDIu757sZSadguNd2EUvjGPpxEbczm5I=";
   };
 
-  cargoHash = "sha256-wosrU2/FmwoPFiBFm96RRadGj4U6rmvokm3JrnV7v5M=";
+  cargoHash = "sha256-ZmV53NEM8Mz42Mss79Nq3YI40bx5TIng/dCYrV5gEfQ=";
 
   passthru.updateScript = nix-update-script {
     extraArgs = [
