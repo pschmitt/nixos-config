@@ -17,6 +17,7 @@
 
     ./kvm-usb.nix
     ./nix-daemon.nix
+    ./browser-mcp.nix
   ];
 
   domains.main = "brkn.lol";

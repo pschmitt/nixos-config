@@ -18,9 +18,19 @@ buildNpmPackage (finalAttrs: {
   # own"), which npm can't resolve outside that monorepo. Swap in a trimmed
   # package.json (runtime deps only, no scripts) with a matching lockfile
   # generated from it, since dist/index.js already ships prebuilt.
+  #
+  # dist/index.js also has an upstream bug (still present in 0.1.3, the latest
+  # release): its startup port-cleanup runs `lsof -ti:PORT | xargs kill -9`,
+  # and GNU xargs runs `kill -9` with zero arguments when lsof finds nothing
+  # (the common case: nothing's listening yet on first launch). That throws
+  # and aborts the whole server before the MCP stdio handshake completes, so
+  # it silently never shows up as a connected server. `-r` skips the command
+  # entirely when there's no input.
   postPatch = ''
     cp ${./package.json} package.json
     cp ${./package-lock.json} package-lock.json
+    substituteInPlace dist/index.js \
+      --replace-fail 'xargs kill -9' 'xargs -r kill -9'
   '';
 
   npmDepsHash = "sha256-vSm6uYDuYWg/pkomGoByBWmAbQhmOJR6Axby/CoiR4s=";

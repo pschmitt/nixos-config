@@ -7,6 +7,7 @@
     ../../profiles/network/roflnet.nix
     ../../profiles/tdarr-node.nix
     ../../services/esphome.nix
+    ../../services/browser-mcp-chromium-container.nix
   ];
 
   hardware = {
