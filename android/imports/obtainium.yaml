@@ -18,8 +18,8 @@ obtainium:
   - pkg: org.breezyweather
     url: "https://github.com/breezy-weather/breezy-weather"
 
-  - pkg: dev.pschmitt.findroidplus
-    url: "https://github.com/pschmitt/findroidplus"
+  - pkg: dev.pschmitt.jollyfin
+    url: "https://github.com/pschmitt/jollyfin"
     settings:
       includePrereleases: true
 
