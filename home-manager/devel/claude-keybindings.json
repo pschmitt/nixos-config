@@ -6,7 +6,8 @@
       "context": "Chat",
       "bindings": {
         "ctrl+g": null,
-        "ctrl+e": "chat:externalEditor"
+        "ctrl+e": "chat:externalEditor",
+        "alt+z": "chat:undo"
       }
     }
   ]
