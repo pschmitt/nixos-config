@@ -9,6 +9,8 @@ let
   hermesHost = "hermes.${config.domains.main}";
   aiHost = "ai.${config.domains.main}";
   dashboardPort = 9119;
+  signalCliPort = 8712;
+  signalCliDataDir = "${config.services.hermes-agent.stateDir}/.signal-cli";
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
   # Import every agentskills.io-compatible shared skill. This keeps Hermes in
@@ -72,6 +74,12 @@ in
       "hermes/github/token" = config.custom.mkSecret {
         mode = "0400";
       };
+      "hermes/signal/account" = config.custom.mkSecret {
+        mode = "0400";
+      };
+      "hermes/signal/allowed-users" = config.custom.mkSecret {
+        mode = "0400";
+      };
     };
     templates."hermes/mcp.env" = {
       content = ''
@@ -88,11 +96,15 @@ in
         MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
         HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
         GH_TOKEN=${config.sops.placeholder."hermes/github/token"}
+        SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
+        SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
+        SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
       '';
       mode = "0400";
       restartUnits = [
         "hermes-agent.service"
         "hermes-dashboard.service"
+        "signal-cli-daemon.service"
       ];
     };
     templates."hermes/bitwarden/data.json" = {
@@ -222,69 +234,124 @@ in
           with timeout 90 seconds
         then restart
         if 5 restarts within 10 cycles then alert
+
+      check host "hermes-signal-cli" with address "127.0.0.1"
+        group container-services
+        restart program = "${pkgs.systemd}/bin/systemctl restart signal-cli-daemon.service"
+          with timeout 180 seconds
+        if failed
+          port ${toString signalCliPort}
+          protocol http
+          request "/api/v1/check"
+          with timeout 90 seconds
+        then restart
+        if 5 restarts within 10 cycles then alert
     '';
   };
 
-  # The upstream module runs the gateway natively. Its dashboard is a separate
-  # process, bound to loopback and protected by a two-factor Authelia policy.
-  systemd.services.hermes-dashboard = {
-    description = "Hermes Agent Dashboard";
-    wantedBy = [ "multi-user.target" ];
-    after = [
-      "network-online.target"
-      "hermes-agent.service"
-    ];
-    wants = [ "network-online.target" ];
-    environment = {
-      HOME = config.services.hermes-agent.stateDir;
-      HERMES_HOME = "${config.services.hermes-agent.stateDir}/.hermes";
-      HERMES_MANAGED = "true";
-    };
-    serviceConfig = {
-      User = config.services.hermes-agent.user;
-      Group = config.services.hermes-agent.group;
-      WorkingDirectory = config.services.hermes-agent.workingDirectory;
-      ExecStart = "${config.services.hermes-agent.package}/bin/hermes dashboard --host 127.0.0.1 --port ${toString dashboardPort} --no-open";
-      Restart = "always";
-      RestartSec = 5;
-      UMask = "0007";
-      NoNewPrivileges = true;
-      ProtectSystem = "strict";
-      ProtectHome = false;
-      ReadWritePaths = [
-        config.services.hermes-agent.stateDir
-        config.services.hermes-agent.workingDirectory
+  systemd.services = {
+    # The upstream module runs the gateway natively. Its dashboard is a
+    # separate process, bound to loopback and protected by a two-factor
+    # Authelia policy.
+    hermes-dashboard = {
+      description = "Hermes Agent Dashboard";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "network-online.target"
+        "hermes-agent.service"
       ];
-      PrivateTmp = true;
-      EnvironmentFile = config.sops.templates."hermes/mcp.env".path;
+      wants = [ "network-online.target" ];
+      environment = {
+        HOME = config.services.hermes-agent.stateDir;
+        HERMES_HOME = "${config.services.hermes-agent.stateDir}/.hermes";
+        HERMES_MANAGED = "true";
+      };
+      serviceConfig = {
+        User = config.services.hermes-agent.user;
+        Group = config.services.hermes-agent.group;
+        WorkingDirectory = config.services.hermes-agent.workingDirectory;
+        ExecStart = "${config.services.hermes-agent.package}/bin/hermes dashboard --host 127.0.0.1 --port ${toString dashboardPort} --no-open";
+        Restart = "always";
+        RestartSec = 5;
+        UMask = "0007";
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = false;
+        ReadWritePaths = [
+          config.services.hermes-agent.stateDir
+          config.services.hermes-agent.workingDirectory
+        ];
+        PrivateTmp = true;
+        EnvironmentFile = config.sops.templates."hermes/mcp.env".path;
+      };
+      path = [
+        config.services.hermes-agent.package
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.git
+      ];
     };
-    path = [
-      config.services.hermes-agent.package
-      pkgs.bash
-      pkgs.coreutils
-      pkgs.git
-    ];
-  };
 
-  systemd.services.hermes-agent = {
-    path = [
-      pkgs.bash
-      pkgs.coreutils
-      pkgs.curl
-      pkgs.git
-      pkgs.jq
-    ];
-    serviceConfig = {
-      EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
-      # The Bitwarden CLI needs its account profile alongside BW_SESSION. Keep
-      # the SOPS-rendered source root-only and give the Hermes user a private,
-      # writable runtime copy for vault mutations and syncs.
-      ExecStartPre = [
-        "+${pkgs.coreutils}/bin/install -d -m 0700 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${builtins.dirOf bitwardenCliDataPath}"
-        "+${pkgs.coreutils}/bin/install -D -m 0600 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${
-          config.sops.templates."hermes/bitwarden/data.json".path
-        } ${bitwardenCliDataPath}"
+    # signal-cli runs its own daemon (JSON-RPC over HTTP, loopback-only) that
+    # the gateway's Signal adapter talks to; Hermes never calls the Signal
+    # servers directly. Account registration/verification is a one-time
+    # interactive step (needs a real SMS/voice code) run manually against the
+    # same data dir.
+    signal-cli-daemon = {
+      description = "signal-cli JSON-RPC daemon for Hermes";
+      wantedBy = [ "multi-user.target" ];
+      after = [
+        "network-online.target"
       ];
+      wants = [ "network-online.target" ];
+      serviceConfig = {
+        User = config.services.hermes-agent.user;
+        Group = config.services.hermes-agent.group;
+        ExecStartPre = [
+          "+${pkgs.coreutils}/bin/install -d -m 0700 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${signalCliDataDir}"
+        ];
+        # The bot's phone number is a secret (see hermes/signal/account), so
+        # read it from the environment at runtime instead of baking it into
+        # the unit.
+        ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.signal-cli}/bin/signal-cli --scrub-log -a \"$SIGNAL_ACCOUNT\" -d ${signalCliDataDir} daemon --http 127.0.0.1:${toString signalCliPort} --receive-mode on-start'";
+        EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
+        Restart = "always";
+        RestartSec = 5;
+        UMask = "0077";
+        NoNewPrivileges = true;
+        ProtectSystem = "strict";
+        ProtectHome = false;
+        # ReadWritePaths must point at a path that already exists on the host
+        # when the unit's mount namespace is set up (before ExecStartPre
+        # runs), so this targets the stateDir itself rather than the
+        # not-yet-created .signal-cli subdirectory.
+        ReadWritePaths = [ config.services.hermes-agent.stateDir ];
+        PrivateTmp = true;
+      };
+    };
+
+    hermes-agent = {
+      after = [ "signal-cli-daemon.service" ];
+      wants = [ "signal-cli-daemon.service" ];
+      path = [
+        pkgs.bash
+        pkgs.coreutils
+        pkgs.curl
+        pkgs.git
+        pkgs.jq
+      ];
+      serviceConfig = {
+        EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
+        # The Bitwarden CLI needs its account profile alongside BW_SESSION.
+        # Keep the SOPS-rendered source root-only and give the Hermes user a
+        # private, writable runtime copy for vault mutations and syncs.
+        ExecStartPre = [
+          "+${pkgs.coreutils}/bin/install -d -m 0700 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${builtins.dirOf bitwardenCliDataPath}"
+          "+${pkgs.coreutils}/bin/install -D -m 0600 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${
+            config.sops.templates."hermes/bitwarden/data.json".path
+          } ${bitwardenCliDataPath}"
+        ];
+      };
     };
   };
 
