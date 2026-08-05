@@ -161,6 +161,7 @@ in
           tui.keymap = {
             global.open_external_editor = "ctrl-e";
             editor = {
+              delete_backward = "backspace";
               delete_backward_word = [
                 "ctrl-backspace"
                 "ctrl-h"
