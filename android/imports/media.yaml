@@ -11,10 +11,10 @@ apps:
     if:
       ro.product.device: clover
 
-  - name: "Findroid+"
-    pkg: dev.pschmitt.findroidplus
+  - name: "JollyFin"
+    pkg: dev.pschmitt.jollyfin
     store: github
-    repo: "pschmitt/findroidplus"
+    repo: "pschmitt/jollyfin"
 
   - name: "Netflix"
     pkg: com.netflix.mediaclient
