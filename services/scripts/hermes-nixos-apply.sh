@@ -2,9 +2,9 @@
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0")
+Usage: $(basename "$0") [--restart-nixos-upgrade]
 
-Request a privileged NixOS switch for the Hermes host configuration.
+Request a privileged NixOS operation through the Hermes operations service.
 EOF
 }
 
@@ -42,6 +42,7 @@ main() {
   local response_path="$ops_dir/response"
   local request_tmp="$ops_dir/request.$$"
   local timeout_seconds="${HERMES_OPS_TIMEOUT_SECONDS:-1800}"
+  local operation=nixos-apply
 
   if [[ -n "${1:-}" ]]
   then
@@ -49,6 +50,9 @@ main() {
       -h|--help)
         usage
         return 0
+        ;;
+      --restart-nixos-upgrade)
+        operation=nixos-upgrade-restart
         ;;
       *)
         printf 'Unexpected argument: %s\n' "$1" >&2
@@ -65,7 +69,7 @@ main() {
   fi
 
   rm -f "$response_path"
-  printf '%s\n' nixos-apply > "$request_tmp"
+  printf '%s\n' "$operation" > "$request_tmp"
   chmod 0600 "$request_tmp"
   mv "$request_tmp" "$request_path"
 
