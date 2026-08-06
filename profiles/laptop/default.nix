@@ -8,6 +8,7 @@
     ../../services/nix-distributed-build.nix
 
     ../network/sshfs.nix
+    ../network/ha-sshfs.nix
 
     ../network/wifi.nix
     ./a11y.nix
