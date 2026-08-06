@@ -18,6 +18,14 @@ let
   # renovate: datasource=docker depName=n8nio/n8n
   n8nVersion = "2.34.2";
   containerNetworkName = "n8n";
+  # Pinned so it can be trusted by name in the firewall below, instead of a
+  # dynamically-named br-<hash> interface that changes if the network is
+  # recreated.
+  containerNetworkBridgeName = "br-n8n";
+  # Matches the subnet Docker had already auto-assigned to this network.
+  # Pinned so it stays stable if the network is ever recreated -- searxng's
+  # bot-detection allowlist (services/searxng.nix) trusts this exact range.
+  containerNetworkSubnet = "172.21.0.0/16";
 
   authTokenPath = config.sops.secrets."n8n/runners/authToken".path;
 in
@@ -68,6 +76,11 @@ in
     '';
   };
 
+  # Trust the n8n container network like the default docker0 bridge already
+  # is (see profiles/global/docker.nix), so n8n can reach host-only services
+  # (e.g. searxng) via host.docker.internal without exposing them publicly.
+  networking.firewall.trustedInterfaces = lib.mkAfter [ containerNetworkBridgeName ];
+
   virtualisation.oci-containers.containers = {
     n8n = {
       image = "n8nio/n8n:${n8nVersion}";
@@ -108,6 +121,9 @@ in
         "127.0.0.1:${toString n8nPort}:${toString n8nPort}"
       ];
       networks = [ containerNetworkName ];
+      extraOptions = [
+        "--add-host=host.docker.internal:host-gateway"
+      ];
     };
 
     n8n-runner = {
@@ -137,11 +153,15 @@ in
         else
           throw "Unsupported OCI container backend: ${containerBackend}";
       runtimeBin = "${runtimePkg}/bin/${containerBackend}";
+      # Only docker supports pinning the bridge interface name this way.
+      networkCreateOpts = lib.optionalString (
+        containerBackend == "docker"
+      ) "-o com.docker.network.bridge.name=${containerNetworkBridgeName}";
     in
     ''
       if ! ${runtimeBin} network inspect ${containerNetworkName} >/dev/null 2>&1
       then
-        ${runtimeBin} network create ${containerNetworkName}
+        ${runtimeBin} network create --subnet=${containerNetworkSubnet} ${networkCreateOpts} ${containerNetworkName}
       fi
     '';
 }

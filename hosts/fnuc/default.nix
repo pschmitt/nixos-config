@@ -55,6 +55,13 @@
     manageAuthorizedKeys = true;
   };
 
+  # Allow Hermes on rofl-10 to run the Browser MCP stdio server over SSH.
+  # This is the existing dedicated nix-remote-builder key, scoped to FNUC's
+  # managed main-user authorized keys rather than a shared/global account.
+  mainUser.extraAuthorizedKeys = lib.mkAfter [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
+  ];
+
   systemd.user.services.kubeconfig-update = {
     Unit.Description = "Update kubeconfigs";
     Service = {
