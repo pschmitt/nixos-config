@@ -42,6 +42,12 @@ let
           name: type: type == "directory" && builtins.pathExists (sharedSkillsPath + "/${name}/SKILL.md")
         ) (builtins.readDir sharedSkillsPath)
       )
+    ++ [
+      {
+        name = "todoist-cli";
+        path = pkgs.todoist-cli.skill;
+      }
+    ]
   );
 
   bitwardenMcp = pkgs.buildNpmPackage {
@@ -74,6 +80,7 @@ let
       pkgs.git
       pkgs.nix
       pkgs.nixos-rebuild
+      pkgs.systemd
       pkgs.util-linux
     ];
     text = builtins.readFile ./scripts/hermes-ops-dispatch.sh;
@@ -124,6 +131,24 @@ in
         mode = "0400";
       };
       "ssh/nix-remote-builder/privkey" = {
+        sopsFile = ../secrets/shared.sops.yaml;
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        mode = "0400";
+      };
+      "todoist/api_token" = {
+        sopsFile = ../secrets/shared.sops.yaml;
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        mode = "0400";
+      };
+      "todoist/user_id" = {
+        sopsFile = ../secrets/shared.sops.yaml;
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        mode = "0400";
+      };
+      "todoist/email" = {
         sopsFile = ../secrets/shared.sops.yaml;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
@@ -188,6 +213,29 @@ in
       mode = "0400";
       restartUnits = [ "hermes-agent.service" ];
     };
+    templates."todoist-cli/config.json" = {
+      path = "${config.services.hermes-agent.stateDir}/.config/todoist-cli/config.json";
+      owner = config.services.hermes-agent.user;
+      group = config.services.hermes-agent.group;
+      content = ''
+        {
+          "config_version": 2,
+          "users": [
+            {
+              "id": "${config.sops.placeholder."todoist/user_id"}",
+              "email": "${config.sops.placeholder."todoist/email"}",
+              "auth_mode": "unknown",
+              "api_token": "${config.sops.placeholder."todoist/api_token"}"
+            }
+          ],
+          "user": {
+            "defaultUser": "${config.sops.placeholder."todoist/user_id"}"
+          }
+        }
+      '';
+      mode = "0400";
+      restartUnits = [ "hermes-agent.service" ];
+    };
   };
 
   services = {
@@ -203,6 +251,7 @@ in
         pkgs.ssh-to-age
         pkgs.nix
         pkgs.nixos-rebuild
+        pkgs.todoist-cli
         pkgs.tmux
         hermesNixosApply
         hermesNixosInit

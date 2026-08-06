@@ -44,6 +44,26 @@ run_nixos_apply() {
   write_response failed "$message"
 }
 
+run_nixos_upgrade_restart() {
+  local log_path="$HERMES_OPS_DIR/nixos-upgrade-restart.log"
+  local message
+  local output
+
+  : > "$log_path"
+  chown "$HERMES_USER:$HERMES_GROUP" "$log_path"
+  chmod 0640 "$log_path"
+
+  if systemctl restart nixos-upgrade.service > "$log_path" 2>&1
+  then
+    write_response ok "nixos-upgrade.service restart requested"
+    return 0
+  fi
+
+  output="$(tail -n 80 "$log_path")"
+  printf -v message 'nixos-upgrade.service restart failed:\n%s' "$output"
+  write_response failed "$message"
+}
+
 main() {
   local lock_path="$HERMES_OPS_DIR/lock"
   local request_path="$HERMES_OPS_DIR/request"
@@ -66,6 +86,9 @@ main() {
   case "$operation" in
     nixos-apply)
       run_nixos_apply
+      ;;
+    nixos-upgrade-restart)
+      run_nixos_upgrade_restart
       ;;
     *)
       write_response failed "Unsupported Hermes operation: $operation"
