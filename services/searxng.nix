@@ -31,7 +31,12 @@ in
       environmentFile = config.sops.templates.searxngEnvFile.path;
       settings = {
         server = {
-          bind_address = "127.0.0.1";
+          # 0.0.0.0 (not just loopback) so the n8n container can reach it
+          # directly over the trusted n8n docker bridge (see services/n8n.nix)
+          # without going through the public limiter. Still not exposed to
+          # the WAN: nginx is the only public path, and the firewall only
+          # trusts the n8n bridge interface, not the world.
+          bind_address = "0.0.0.0";
           port = 7372;
           public_instance = true;
           limiter = true;
@@ -71,8 +76,9 @@ in
       acmeRoot = null;
 
       locations."/" = {
-        proxyPass = "http://${config.services.searx.settings.server.bind_address}:${toString config.services.searx.settings.server.port}";
-        # proxyPass = "http://127.0.0.1:7372";
+        # NOT server.bind_address (0.0.0.0 -- a bind wildcard, not a valid
+        # dial target). nginx always reaches searx over loopback.
+        proxyPass = "http://127.0.0.1:${toString config.services.searx.settings.server.port}";
         recommendedProxySettings = true;
         proxyWebsockets = true;
       };
@@ -91,4 +97,32 @@ in
         if 3 restarts within 15 cycles then alert
     '';
   };
+
+  # The searx-init unit (services/searx module, upstream) always deletes any
+  # limiter.toml on start, forcing the packaged default bot-detection, which
+  # applies regardless of source interface -- our firewall trust for the n8n
+  # bridge (services/n8n.nix) doesn't exempt it from the app-level limiter.
+  # postStart runs after that deletion, in the same RuntimeDirectory=searx
+  # unit (unlike searx.service, this one has no ReadOnlyPaths), and puts back
+  # a copy with the n8n subnet passlisted for unrestricted API access.
+  systemd.services.searx-init.postStart = ''
+    umask 077
+    cat > /run/searx/limiter.toml <<'EOF'
+    [botdetection]
+    ipv4_prefix = 32
+    ipv6_prefix = 48
+    trusted_proxies = [ '127.0.0.0/8', '::1' ]
+
+    [botdetection.ip_limit]
+    filter_link_local = false
+    link_token = false
+
+    [botdetection.ip_lists]
+    block_ip = []
+    # n8n docker bridge (br-n8n, see services/n8n.nix) -- unrestricted access
+    # for the Todoist Emojifier's product-photo search.
+    pass_ip = [ '172.21.0.0/16' ]
+    pass_searxng_org = true
+    EOF
+  '';
 }
