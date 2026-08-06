@@ -35,13 +35,6 @@ in
       options = opts;
     };
 
-    "/mnt/ha" = {
-      fsType = "fuse";
-      # NOTE We cannot use /config here since it is a symlink to /homeassistant
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${vpnDomain}:/homeassistant";
-      options = opts;
-    };
-
     "/mnt/ha-dieppe" = {
       fsType = "fuse";
       # NOTE We cannot use /config here since it is a symlink to /homeassistant
