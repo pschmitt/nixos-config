@@ -179,62 +179,64 @@ in
         mode = "0400";
       };
     };
-    templates."hermes/mcp.env" = {
-      content = ''
-        MCP_N8N_API_KEY=${config.sops.placeholder."n8n/mcp/token"}
-        MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/mcp/token"}
-        HERMES_AGENT_HELP_GUIDANCE=For GitHub interactions, prefer the gh-brkn-lol account by default: use the github-gh-brkn-lol MCP server or gh-brkn-lol command. Use the github-pschmitt MCP server or gh-pschmitt command only when the pschmitt account is specifically needed; verify identity before account-sensitive actions and do not switch credentials without explicit instruction. For host Nix changes, initialize the checkout with hermes-nixos-init if ${hermesNixFlakeDir} is missing, edit that checkout, run nixos-rebuild dry-build --flake ${hermesNixFlakeDir}#rofl-10, then run hermes-nixos-apply to request the privileged switch.
-        HASS_URL=https://ha.${config.domains.main}
-        HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
-        MATRIX_HOMESERVER=https://matrix-client.matrix.org
-        MATRIX_PASSWORD=${config.sops.placeholder."hermes/matrix/password"}
-        MATRIX_USER_ID=@hermes-brkn:matrix.org
-        MATRIX_ALLOWED_USERS=@pschmitt:one.ems.host
-        MATRIX_E2EE_MODE=required
-        MATRIX_DEVICE_ID=HERMESROFL10
-        MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
-        HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
-        GH_BRKN_LOL_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
-        GH_PSCHMITT_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
-        GH_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
-        SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
-        SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
-        SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
-      '';
-      mode = "0400";
-      restartUnits = [
-        "hermes-agent.service"
-        "hermes-dashboard.service"
-        "signal-cli-daemon.service"
-      ];
-    };
-    templates."hermes/bitwarden/data.json" = {
-      content = config.sops.placeholder."hermes/bitwarden/data-json";
-      mode = "0400";
-      restartUnits = [ "hermes-agent.service" ];
-    };
-    templates."todoist-cli/config.json" = {
-      path = "${config.services.hermes-agent.stateDir}/.config/todoist-cli/config.json";
-      owner = config.services.hermes-agent.user;
-      group = config.services.hermes-agent.group;
-      content = ''
-        {
-          "config_version": 2,
-          "users": [
-            {
-              "id": "${config.sops.placeholder."todoist/user_id"}",
-              "email": "${config.sops.placeholder."todoist/email"}",
-              "auth_mode": "unknown",
-              "api_token": "${config.sops.placeholder."todoist/api_token"}"
+    templates = {
+      "hermes/mcp.env" = {
+        content = ''
+          MCP_N8N_API_KEY=${config.sops.placeholder."n8n/mcp/token"}
+          MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/mcp/token"}
+          HERMES_AGENT_HELP_GUIDANCE=For GitHub interactions, prefer the gh-brkn-lol account by default: use the github-gh-brkn-lol MCP server or gh-brkn-lol command. Use the github-pschmitt MCP server or gh-pschmitt command only when the pschmitt account is specifically needed; verify identity before account-sensitive actions and do not switch credentials without explicit instruction. For host Nix changes, initialize the checkout with hermes-nixos-init if ${hermesNixFlakeDir} is missing, edit that checkout, run nixos-rebuild dry-build --flake ${hermesNixFlakeDir}#rofl-10, then run hermes-nixos-apply to request the privileged switch.
+          HASS_URL=https://ha.${config.domains.main}
+          HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}
+          MATRIX_HOMESERVER=https://matrix-client.matrix.org
+          MATRIX_PASSWORD=${config.sops.placeholder."hermes/matrix/password"}
+          MATRIX_USER_ID=@hermes-brkn:matrix.org
+          MATRIX_ALLOWED_USERS=@pschmitt:one.ems.host
+          MATRIX_E2EE_MODE=required
+          MATRIX_DEVICE_ID=HERMESROFL10
+          MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
+          HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
+          GH_BRKN_LOL_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
+          GH_PSCHMITT_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
+          GH_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
+          SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
+          SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
+          SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
+        '';
+        mode = "0400";
+        restartUnits = [
+          "hermes-agent.service"
+          "hermes-dashboard.service"
+          "signal-cli-daemon.service"
+        ];
+      };
+      "hermes/bitwarden/data.json" = {
+        content = config.sops.placeholder."hermes/bitwarden/data-json";
+        mode = "0400";
+        restartUnits = [ "hermes-agent.service" ];
+      };
+      "todoist-cli/config.json" = {
+        path = "${config.services.hermes-agent.stateDir}/.config/todoist-cli/config.json";
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        content = ''
+          {
+            "config_version": 2,
+            "users": [
+              {
+                "id": "${config.sops.placeholder."todoist/user_id"}",
+                "email": "${config.sops.placeholder."todoist/email"}",
+                "auth_mode": "unknown",
+                "api_token": "${config.sops.placeholder."todoist/api_token"}"
+              }
+            ],
+            "user": {
+              "defaultUser": "${config.sops.placeholder."todoist/user_id"}"
             }
-          ],
-          "user": {
-            "defaultUser": "${config.sops.placeholder."todoist/user_id"}"
           }
-        }
-      '';
-      mode = "0400";
-      restartUnits = [ "hermes-agent.service" ];
+        '';
+        mode = "0400";
+        restartUnits = [ "hermes-agent.service" ];
+      };
     };
   };
 
