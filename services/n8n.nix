@@ -17,6 +17,12 @@ let
 
   # renovate: datasource=docker depName=n8nio/n8n
   n8nVersion = "2.34.2";
+  # Note: as of 2026-08-06, n8nio/runners:2.34.2 has an upstream regression
+  # where the JS Task Runner crash-loops on Node.js v24.16.0 ("Cannot assign
+  # to read only property 'prependListener' of object '#<Socket>'"). Not the
+  # cause of the Todoist Emojifier's stuck-execution issue (which reproduced
+  # identically on 2.34.0 too), so staying on latest rather than pinning
+  # around it. Revisit if the crash-loop resurfaces.
   containerNetworkName = "n8n";
   # Pinned so it can be trusted by name in the firewall below, instead of a
   # dynamically-named br-<hash> interface that changes if the network is

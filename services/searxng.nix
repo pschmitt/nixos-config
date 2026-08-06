@@ -55,6 +55,14 @@ in
           # https://docs.searxng.org/admin/searx.favicons.html
           favicon_resolver = "duckduckgo";
           safe_search = 0; # 0: off, 1: moderate, 2: strict
+          # json is disabled by default on public instances; the Todoist
+          # Emojifier n8n workflow needs it to search product images.
+          # Public json access still runs through the botdetection limiter
+          # above -- only the n8n bridge's passlisted IP is exempt from it.
+          formats = [
+            "html"
+            "json"
+          ];
         };
         ui = {
           query_in_title = true;
