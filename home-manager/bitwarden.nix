@@ -42,6 +42,86 @@
           forceQuit = [ "alt-Q" ];
         };
       };
+      # Shortcut names for `rbw get`, replacing the hand-maintained
+      # name-remapping table that used to live in the `rbw::get` zsh
+      # function (~/.config/zsh/plugins/local/rbw.zsh). TOTP-appending and
+      # tmux-buffer side effects aren't expressible here (they're shell
+      # behavior, not vault data) and stay in that zsh function, keyed by
+      # the same alias names.
+      aliases = {
+        gpg.item = "Private GPG Key";
+        gnupg.item = "Private GPG Key";
+        gpg-gec = {
+          item = "WIIT GPG Key";
+          account = "wiit";
+        };
+        gpg-wiit = {
+          item = "WIIT GPG Key";
+          account = "wiit";
+        };
+        gpg-work = {
+          item = "WIIT GPG Key";
+          account = "wiit";
+        };
+        gec = {
+          item = "desktop.gec.io";
+          account = "wiit";
+        };
+        voffice = {
+          item = "desktop.gec.io";
+          account = "wiit";
+        };
+        gec-mgmt = {
+          item = "gec.io VPN (Sophos)";
+          account = "wiit";
+        };
+        mgmt = {
+          item = "gec.io VPN (Sophos)";
+          account = "wiit";
+        };
+        mgmt-legacy = {
+          item = "gec.io VPN (Sophos)";
+          account = "wiit";
+        };
+        gec-vpn = {
+          item = "gec.io VPN (Sophos)";
+          account = "wiit";
+        };
+        gec-vpn-legacy = {
+          item = "gec.io VPN (Sophos)";
+          account = "wiit";
+        };
+        google.item = "🔖 google.com (${config.mainUser.email})";
+        gmail.item = "🔖 google.com (${config.mainUser.email})";
+        ovpn = {
+          item = "GEC OpenVPN v2";
+          account = "wiit";
+        };
+        gec-ovpn = {
+          item = "GEC OpenVPN v2";
+          account = "wiit";
+        };
+        vpn = {
+          item = "vpn.wiit.one";
+          account = "wiit";
+        };
+        wiit-vpn = {
+          item = "vpn.wiit.one";
+          account = "wiit";
+        };
+        "rancher.wiit-edge.services" = {
+          item = "Rancher (WIIT)";
+          account = "wiit";
+        };
+        "rancher-legacy.wiit-edge.services" = {
+          item = "Rancher (WIIT)";
+          account = "wiit";
+        };
+        "rancher-staging.wiit-edge.services" = {
+          item = "Rancher (WIIT)";
+          account = "wiit";
+        };
+      };
       accounts = {
         default.email = config.mainUser.email;
         wiit = {
