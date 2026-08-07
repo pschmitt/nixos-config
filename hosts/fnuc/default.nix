@@ -18,6 +18,7 @@
     ./kvm-usb.nix
     ./nix-daemon.nix
     ./browser-mcp.nix
+    ./claude-work-warmup.nix
   ];
 
   domains.main = "brkn.lol";
