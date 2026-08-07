@@ -47,80 +47,34 @@
       # function (~/.config/zsh/plugins/local/rbw.zsh). TOTP-appending and
       # tmux-buffer side effects aren't expressible here (they're shell
       # behavior, not vault data) and stay in that zsh function, keyed by
-      # the same alias names.
+      # the same alias names. All target items live in the `default`
+      # account (verified via `rbw -a default list`) despite several of
+      # these names sounding WIIT-specific -- they're the user's own
+      # personal-vault items for a former/current work context, not
+      # entries in the separate `wiit` Vaultwarden account, so no
+      # `account` override is needed here.
       aliases = {
         gpg.item = "Private GPG Key";
         gnupg.item = "Private GPG Key";
-        gpg-gec = {
-          item = "WIIT GPG Key";
-          account = "wiit";
-        };
-        gpg-wiit = {
-          item = "WIIT GPG Key";
-          account = "wiit";
-        };
-        gpg-work = {
-          item = "WIIT GPG Key";
-          account = "wiit";
-        };
-        gec = {
-          item = "desktop.gec.io";
-          account = "wiit";
-        };
-        voffice = {
-          item = "desktop.gec.io";
-          account = "wiit";
-        };
-        gec-mgmt = {
-          item = "gec.io VPN (Sophos)";
-          account = "wiit";
-        };
-        mgmt = {
-          item = "gec.io VPN (Sophos)";
-          account = "wiit";
-        };
-        mgmt-legacy = {
-          item = "gec.io VPN (Sophos)";
-          account = "wiit";
-        };
-        gec-vpn = {
-          item = "gec.io VPN (Sophos)";
-          account = "wiit";
-        };
-        gec-vpn-legacy = {
-          item = "gec.io VPN (Sophos)";
-          account = "wiit";
-        };
+        gpg-gec.item = "WIIT GPG Key";
+        gpg-wiit.item = "WIIT GPG Key";
+        gpg-work.item = "WIIT GPG Key";
+        gec.item = "desktop.gec.io";
+        voffice.item = "desktop.gec.io";
+        gec-mgmt.item = "gec.io VPN (Sophos)";
+        mgmt.item = "gec.io VPN (Sophos)";
+        mgmt-legacy.item = "gec.io VPN (Sophos)";
+        gec-vpn.item = "gec.io VPN (Sophos)";
+        gec-vpn-legacy.item = "gec.io VPN (Sophos)";
         google.item = "🔖 google.com (${config.mainUser.email})";
         gmail.item = "🔖 google.com (${config.mainUser.email})";
-        ovpn = {
-          item = "GEC OpenVPN v2";
-          account = "wiit";
-        };
-        gec-ovpn = {
-          item = "GEC OpenVPN v2";
-          account = "wiit";
-        };
-        vpn = {
-          item = "vpn.wiit.one";
-          account = "wiit";
-        };
-        wiit-vpn = {
-          item = "vpn.wiit.one";
-          account = "wiit";
-        };
-        "rancher.wiit-edge.services" = {
-          item = "Rancher (WIIT)";
-          account = "wiit";
-        };
-        "rancher-legacy.wiit-edge.services" = {
-          item = "Rancher (WIIT)";
-          account = "wiit";
-        };
-        "rancher-staging.wiit-edge.services" = {
-          item = "Rancher (WIIT)";
-          account = "wiit";
-        };
+        ovpn.item = "GEC OpenVPN v2";
+        gec-ovpn.item = "GEC OpenVPN v2";
+        vpn.item = "vpn.wiit.one";
+        wiit-vpn.item = "vpn.wiit.one";
+        "rancher.wiit-edge.services".item = "Rancher (WIIT)";
+        "rancher-legacy.wiit-edge.services".item = "Rancher (WIIT)";
+        "rancher-staging.wiit-edge.services".item = "Rancher (WIIT)";
       };
       accounts = {
         default.email = config.mainUser.email;
