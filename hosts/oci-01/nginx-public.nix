@@ -26,6 +26,7 @@ let
       backend,
       aliases ? [ ],
       extraConfig ? "",
+      proxyHost ? "$host",
       websockets ? false,
     }:
     {
@@ -38,7 +39,7 @@ let
         proxyWebsockets = websockets;
         recommendedProxySettings = false;
         extraConfig = ''
-          proxy_set_header Host $host;
+          proxy_set_header Host ${proxyHost};
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
           proxy_set_header X-Forwarded-Proto https;
@@ -198,10 +199,10 @@ in
           "home-assistant.${mainDomain}"
         ];
         websockets = true;
+        proxyHost = "2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
         extraConfig = ''
           proxy_ssl_server_name on;
           proxy_ssl_name 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
-          proxy_set_header Host 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
         '';
       };
 
@@ -214,10 +215,10 @@ in
           "home-assistant.ber.schmi.tt"
         ];
         websockets = true;
+        proxyHost = "2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
         extraConfig = ''
           proxy_ssl_server_name on;
           proxy_ssl_name 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
-          proxy_set_header Host 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
         '';
       };
 
@@ -241,24 +242,23 @@ in
           "gr.ovm5.de"
         ];
         websockets = true;
+        proxyHost = "hass.snake-eagle.ts.net";
         extraConfig = ''
           proxy_ssl_server_name on;
           proxy_ssl_name hass.snake-eagle.ts.net;
-          proxy_set_header Host hass.snake-eagle.ts.net;
         '';
       };
 
       "oci-yum.${mainDomain}" = publicProxy {
         cert = "oci-01-brkn-lol";
         backend = "https://yum.eu-frankfurt-1.oci.oraclecloud.com";
+        proxyHost = "yum.eu-frankfurt-1.oci.oraclecloud.com";
         extraConfig = ''
           proxy_ssl_server_name on;
           proxy_ssl_name yum.eu-frankfurt-1.oci.oraclecloud.com;
-          proxy_set_header Host yum.eu-frankfurt-1.oci.oraclecloud.com;
           proxy_set_header Accept-Encoding "";
           sub_filter 'yum-eu-frankfurt-1.oracle.com' 'oci-yum.${mainDomain}';
           sub_filter_once off;
-          sub_filter_types text/html;
         '';
       };
 
