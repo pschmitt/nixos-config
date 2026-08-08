@@ -617,6 +617,10 @@
                 system = "aarch64-linux";
                 deviceType = "server";
               };
+              oci-01 = {
+                system = "aarch64-linux";
+                deviceType = "server";
+              };
             };
           in
           nixpkgs.lib.mapAttrs mkHost hostConfigs
