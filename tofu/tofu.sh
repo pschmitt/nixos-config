@@ -43,12 +43,14 @@ sops_decrypt() {
 }
 
 cleanup() {
+  local secrets_dir="${TOFU_DIR:-$PWD}"
+
   if [[ -z "$KEEP_SECRETS" ]]
   then
-    rm -vf "${TD_DIR:-$PWD}/terraform.tfvars.json" \
-           "${TD_DIR:-$PWD}/clouds.yaml" \
-           "${TD_DIR:-$PWD}/oci_private_key.pem" \
-           "${TD_DIR:-$PWD}/nixos-anywhere_id_ed25519"
+    rm -vf "$secrets_dir/terraform.tfvars.json" \
+           "$secrets_dir/clouds.yaml" \
+           "$secrets_dir/oci_private_key.pem" \
+           "$secrets_dir/nixos-anywhere_id_ed25519"
   fi
 
   if [[ -n "$CLONE_CONFIG" ]]
@@ -62,9 +64,11 @@ cleanup() {
 }
 
 main() {
-  cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+  SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd -P)" || return 9
 
-  NIXOS_CONFIG_DIR="${NIXOS_CONFIG_DIR:-/etc/nixos}"
+  cd "$SCRIPT_DIR" || return 9
+
+  NIXOS_CONFIG_DIR="${NIXOS_CONFIG_DIR:-$(dirname -- "$SCRIPT_DIR")}"
   TOFU_DIR="${TOFU_DIR:-${NIXOS_CONFIG_DIR}/tofu}"
   SSH_IDENTITY_FILE="${SSH_IDENTITY_FILE:-${HOME}/.ssh/id_ed25519}"
 
@@ -91,7 +95,7 @@ main() {
 
   trap 'cleanup >&2' EXIT
 
-  sops_decrypt || exit 1
+  sops_decrypt || return 1
   # shellcheck disable=SC2155
   export AWS_ACCESS_KEY_ID=$(jq -er '.s3_access_key_id' terraform.tfvars.json)
   # shellcheck disable=SC2155
@@ -100,7 +104,7 @@ main() {
   if [[ -n "$CLONE_CONFIG" ]]
   then
     echo_info "Cloning nixos config..."
-    NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || exit 3
+    NIXOS_CONFIG_TMP_DIR=$(zhj nix::clone-config) || return 3
     echo_info "NIXOS_CONFIG_TMP_DIR: $NIXOS_CONFIG_TMP_DIR"
     TOFU_DIR="${NIXOS_CONFIG_TMP_DIR}/tofu"
   else
@@ -118,3 +122,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   main "$@"
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :
