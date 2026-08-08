@@ -7,6 +7,7 @@
 
     ../../profiles/server
 
+    ./http-static.nix
     ./legacy-services.nix
     ./restic.nix
   ];
