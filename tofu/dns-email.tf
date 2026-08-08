@@ -197,7 +197,7 @@ resource "cloudflare_dns_record" "dkim_google" {
 
 resource "cloudflare_dns_record" "mailconf" {
   for_each = {
-    for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
+    for domain, config in var.domains : domain => config if !contains(["cloudflare", "stalwart"], config.mx_provider)
   }
 
   zone_id = data.cloudflare_zone.zones[each.key].id
