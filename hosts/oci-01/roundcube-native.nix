@@ -140,14 +140,10 @@ in
   };
 
   systemd.services.phpfpm-roundcube = {
-    # Keep this disabled until the Compose Roundcube container is stopped.
-    wantedBy = [ ];
+    wantedBy = [ "multi-user.target" ];
     after = [ "mnt-data.mount" ];
     requires = [ "mnt-data.mount" ];
-    unitConfig = {
-      ConditionPathExists = [ "/run/oci-01-native-roundcube" ];
-      RequiresMountsFor = [ dataDir ];
-    };
+    unitConfig.RequiresMountsFor = [ dataDir ];
     serviceConfig = {
       ExecStartPre = lib.mkBefore [
         "${pkgs.coreutils}/bin/chown -R ${roundcubeUser}:${roundcubeGroup} ${dataDir}"

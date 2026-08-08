@@ -48,7 +48,4 @@
     '';
   };
 
-  # Keep this disabled until the Compose autodiscover container is stopped.
-  systemd.services.go-autoconfig.wantedBy = lib.mkForce [ ];
-
 }
