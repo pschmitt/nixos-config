@@ -144,7 +144,10 @@ in
     wantedBy = [ ];
     after = [ "mnt-data.mount" ];
     requires = [ "mnt-data.mount" ];
-    unitConfig.RequiresMountsFor = [ dataDir ];
+    unitConfig = {
+      ConditionPathExists = [ "/run/oci-01-native-roundcube" ];
+      RequiresMountsFor = [ dataDir ];
+    };
     serviceConfig = {
       ExecStartPre = lib.mkBefore [
         "${pkgs.coreutils}/bin/chown -R ${roundcubeUser}:${roundcubeGroup} ${dataDir}"
