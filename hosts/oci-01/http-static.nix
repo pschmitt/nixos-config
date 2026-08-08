@@ -5,12 +5,6 @@
   ...
 }:
 let
-  listen = [
-    {
-      addr = "0.0.0.0";
-      port = 2020;
-    }
-  ];
   pschmittDevPackage = inputs.pschmitt-dev.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
@@ -23,7 +17,6 @@ in
     enableDefaultSites = false;
     extraVirtualHosts = {
       "pschmitt.dev" = {
-        inherit listen;
         locations = {
           "/" = {
             root = pschmittDevPackage;
@@ -46,48 +39,29 @@ in
       };
 
       "p.schmi.tt" = {
-        inherit listen;
         locations."/" = {
           root = pschmittDevPackage;
         };
       };
 
       "philipp.schmi.tt" = {
-        inherit listen;
         locations."/" = {
           root = pschmittDevPackage;
         };
       };
 
       "github.pschmitt.dev" = {
-        inherit listen;
         locations."/".return = "301 https://github.com/pschmitt";
       };
 
       "gh.pschmitt.dev" = {
-        inherit listen;
         locations."/".return = "301 https://github.com/pschmitt";
       };
 
       "schmitt.co" = {
-        inherit listen;
-        locations."/" = {
-          root = "/srv/caddy/data/schmitt.co";
-          extraConfig = "autoindex on;";
-        };
+        locations."/".return = "200 'greetings, from schmitt.co'";
       };
     };
-  };
-
-  services.nginx.defaultListen = listen;
-
-  # The public Nginx vhosts proxy to this local backend during the migration.
-  networking.firewall.allowedTCPPorts = [ 2020 ];
-
-  systemd.services.nginx = {
-    requires = [ "mnt-data.mount" ];
-    after = [ "mnt-data.mount" ];
-    unitConfig.RequiresMountsFor = [ "/srv/caddy/data/schmitt.co" ];
   };
 
   services.monit.config = lib.mkAfter ''
