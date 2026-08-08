@@ -59,6 +59,8 @@ in
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 ${roundcubeUser} ${roundcubeGroup} -"
     "d ${dataDir}/db 0750 ${roundcubeUser} ${roundcubeGroup} -"
+    "Z ${dataDir} - ${roundcubeUser} ${roundcubeGroup} - -"
+    "d /tmp/roundcube-temp 0750 ${roundcubeUser} ${roundcubeGroup} -"
   ];
 
   services = {
@@ -133,18 +135,4 @@ in
     '';
   };
 
-  systemd.services.phpfpm-roundcube = {
-    wantedBy = [ "multi-user.target" ];
-    after = [ "mnt-data.mount" ];
-    requires = [ "mnt-data.mount" ];
-    unitConfig.RequiresMountsFor = [ dataDir ];
-    serviceConfig = {
-      ExecStartPre = lib.mkBefore [
-        "${pkgs.coreutils}/bin/test -r ${config.sops.secrets."roundcube/des-key".path}"
-        "${pkgs.coreutils}/bin/mkdir -p /tmp/roundcube-temp"
-        "${pkgs.coreutils}/bin/chown ${roundcubeUser}:${roundcubeGroup} /tmp/roundcube-temp"
-        "${pkgs.coreutils}/bin/chown -R ${roundcubeUser}:${roundcubeGroup} ${dataDir}"
-      ];
-    };
-  };
 }
