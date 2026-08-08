@@ -1,9 +1,12 @@
 {
+  config,
   lib,
   pkgs,
   ...
 }:
 let
+  mainDomain = config.domains.main;
+  mailHost = "mail.${mainDomain}";
   dataDir = "/mnt/data/srv/stalwart/data";
   configFile = (pkgs.formats.json { }).generate "oci-01-stalwart-config.json" {
     "@type" = "Sqlite";
@@ -12,7 +15,7 @@ let
   };
 in
 {
-  security.acme.certs."mail.brkn.lol" = {
+  security.acme.certs."${mailHost}" = {
     group = "stalwart";
     reloadServices = [ "stalwart.service" ];
   };
@@ -29,8 +32,8 @@ in
   systemd.tmpfiles.rules = [
     "d /etc/stalwart 0755 root root -"
     "d /etc/stalwart/certs 0755 root root -"
-    "L+ /etc/stalwart/certs/mail.brkn.lol_ecc/fullchain.cer - - - - /var/lib/acme/mail.brkn.lol/fullchain.pem"
-    "L+ /etc/stalwart/certs/mail.brkn.lol_ecc/mail.brkn.lol.key - - - - /var/lib/acme/mail.brkn.lol/key.pem"
+    "L+ /etc/stalwart/certs/${mailHost}_ecc/fullchain.cer - - - - /var/lib/acme/${mailHost}/fullchain.pem"
+    "L+ /etc/stalwart/certs/${mailHost}_ecc/${mailHost}.key - - - - /var/lib/acme/${mailHost}/key.pem"
   ];
 
   systemd.services.stalwart = {
@@ -39,12 +42,12 @@ in
     wantedBy = [ ];
     wants = [
       "network-online.target"
-      "acme-mail.brkn.lol.service"
+      "acme-${mailHost}.service"
     ];
     after = [
       "mnt-data.mount"
       "network-online.target"
-      "acme-mail.brkn.lol.service"
+      "acme-${mailHost}.service"
     ];
     requires = [ "mnt-data.mount" ];
     unitConfig = {

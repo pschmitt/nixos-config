@@ -1,21 +1,25 @@
 {
+  config,
   lib,
   pkgs,
   ...
 }:
 let
+  mainDomain = config.domains.main;
+  mailHost = "mail.${mainDomain}";
+  stalwartHost = "stalwart.${mainDomain}";
   traefikConfig = (pkgs.formats.yaml { }).generate "oci-01-mail-traefik.yaml" {
     http = {
       routers = {
         stalwart = {
           entryPoints = [ "https" ];
-          rule = "Host(`stalwart.brkn.lol`) || Host(`autoconfig.brkn.lol`) || Host(`autodiscover.brkn.lol`) || Host(`autoconfig.pschmitt.dev`) || Host(`autodiscover.pschmitt.dev`)";
+          rule = "Host(`${stalwartHost}`) || Host(`autoconfig.${mainDomain}`) || Host(`autodiscover.${mainDomain}`) || Host(`autoconfig.pschmitt.dev`) || Host(`autodiscover.pschmitt.dev`)";
           service = "stalwart";
           tls.certResolver = "le";
         };
         roundcube = {
           entryPoints = [ "https" ];
-          rule = "Host(`mail.brkn.lol`) || Host(`mail.pschmitt.dev`)";
+          rule = "Host(`${mailHost}`) || Host(`mail.pschmitt.dev`)";
           service = "roundcube";
           tls.certResolver = "le";
         };

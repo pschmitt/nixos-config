@@ -5,6 +5,7 @@
   ...
 }:
 let
+  mailHost = "mail.${config.domains.main}";
   dataDir = "/mnt/data/srv/stalwart/roundcube";
   roundcubeUser = "roundcube";
   roundcubeGroup = "roundcube";
@@ -51,8 +52,8 @@ in
     $config['enable_spellcheck'] = true;
     $config['spellcheck_engine'] = 'pspell';
     $config['spellcheck_languages'] = ['de', 'en', 'fr'];
-    $config['imap_host'] = 'tls://mail.brkn.lol:143';
-    $config['smtp_host'] = 'tls://mail.brkn.lol:587';
+    $config['imap_host'] = 'tls://${mailHost}:143';
+    $config['smtp_host'] = 'tls://${mailHost}:587';
   '';
 
   systemd.tmpfiles.rules = [
@@ -94,7 +95,7 @@ in
       };
     };
 
-    nginx.virtualHosts."mail.brkn.lol" = {
+    nginx.virtualHosts.${mailHost} = {
       serverAliases = [ "mail.pschmitt.dev" ];
       listen = [
         {
