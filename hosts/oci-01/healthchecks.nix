@@ -107,6 +107,8 @@ in
         if failed
           port ${toString healthchecksPort}
           protocol http
+          with hostheader "${healthchecksHost}"
+          request "/"
           with timeout 10 seconds
         for 3 cycles
         then alert
