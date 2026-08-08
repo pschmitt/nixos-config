@@ -90,6 +90,7 @@ data "oci_core_vnic_attachments" "oci_03" {
 
 resource "oci_core_ipv6" "oci_01" {
   display_name = "oci-01-primary"
+  lifetime     = "RESERVED"
   vnic_id = one([
     for attachment in data.oci_core_vnic_attachments.oci_01.vnic_attachments : attachment.vnic_id
     if attachment.nic_index == 0
@@ -100,6 +101,7 @@ resource "oci_core_ipv6" "oci_01" {
 
 resource "oci_core_ipv6" "oci_03" {
   display_name = "oci-03-primary"
+  lifetime     = "RESERVED"
   vnic_id = one([
     for attachment in data.oci_core_vnic_attachments.oci_03.vnic_attachments : attachment.vnic_id
     if attachment.nic_index == 0
