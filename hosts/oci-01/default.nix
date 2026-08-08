@@ -6,12 +6,10 @@
     ./hardware-configuration.nix
 
     ../../profiles/server
+    ../../profiles/email-server.nix
 
     ./http-static.nix
     ../../services/healthchecks.nix
-    ./stalwart.nix
-    ../../services/roundcube.nix
-    ./mail-autoconfig.nix
     ./nginx-public.nix
     ./restic.nix
   ];

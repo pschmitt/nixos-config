@@ -83,12 +83,6 @@ in
 
     nginx.virtualHosts.${healthchecksHost} = {
       serverAliases = healthchecksAliases;
-      listen = [
-        {
-          addr = "0.0.0.0";
-          port = 2020;
-        }
-      ];
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString healthchecksPort}";
         recommendedProxySettings = false;

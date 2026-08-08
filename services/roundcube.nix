@@ -96,12 +96,6 @@ in
     };
 
     nginx.virtualHosts.${mailHost} = {
-      listen = [
-        {
-          addr = "0.0.0.0";
-          port = 2020;
-        }
-      ];
       root = "${roundcubePackage}/public_html";
       locations."/" = {
         index = "index.php";
