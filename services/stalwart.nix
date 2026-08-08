@@ -16,31 +16,52 @@ let
   dataDir = "/mnt/data/srv/stalwart/data";
   stalwartListeners = {
     http = {
-      bind = [ "0.0.0.0:8080" ];
+      bind = [
+        "0.0.0.0:8080"
+        "[::]:8080"
+      ];
       protocol = "http";
     };
     smtp = {
-      bind = [ "0.0.0.0:25" ];
+      bind = [
+        "0.0.0.0:25"
+        "[::]:25"
+      ];
       protocol = "smtp";
     };
     submission = {
-      bind = [ "0.0.0.0:587" ];
+      bind = [
+        "0.0.0.0:587"
+        "[::]:587"
+      ];
       protocol = "smtp";
     };
     smtps = {
-      bind = [ "0.0.0.0:465" ];
+      bind = [
+        "0.0.0.0:465"
+        "[::]:465"
+      ];
       protocol = "smtp";
     };
     imap = {
-      bind = [ "0.0.0.0:143" ];
+      bind = [
+        "0.0.0.0:143"
+        "[::]:143"
+      ];
       protocol = "imap";
     };
     imaps = {
-      bind = [ "0.0.0.0:993" ];
+      bind = [
+        "0.0.0.0:993"
+        "[::]:993"
+      ];
       protocol = "imap";
     };
     sieve = {
-      bind = [ "0.0.0.0:4190" ];
+      bind = [
+        "0.0.0.0:4190"
+        "[::]:4190"
+      ];
       protocol = "manageSieve";
     };
   };

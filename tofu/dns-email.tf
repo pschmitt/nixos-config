@@ -112,6 +112,19 @@ resource "cloudflare_dns_record" "mail" {
   comment = var.dns_email_comment
 }
 
+resource "cloudflare_dns_record" "mail_ipv6" {
+  for_each = {
+    for domain, config in var.domains : domain => config if contains(["custom", "stalwart"], config.mx_provider)
+  }
+
+  zone_id = data.cloudflare_zone.zones[each.key].id
+  name    = "mail"
+  content = oci_core_ipv6.oci_01.ip_address
+  type    = "AAAA"
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
 resource "cloudflare_dns_record" "mail_google" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider == "google"
@@ -221,6 +234,19 @@ resource "cloudflare_dns_record" "autoconfig" {
   comment = var.dns_email_comment
 }
 
+resource "cloudflare_dns_record" "autoconfig_ipv6" {
+  for_each = {
+    for domain, config in var.domains : domain => config if !contains(["cloudflare", "stalwart"], config.mx_provider)
+  }
+
+  zone_id = data.cloudflare_zone.zones[each.key].id
+  type    = "AAAA"
+  name    = "autoconfig"
+  content = oci_core_ipv6.oci_01.ip_address
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
 resource "cloudflare_dns_record" "autoconfigure" {
   for_each = {
     for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
@@ -230,6 +256,19 @@ resource "cloudflare_dns_record" "autoconfigure" {
   type    = "A"
   name    = "autoconfigure"
   content = oci_core_instance.oci_01.public_ip
+  ttl     = 3600
+  comment = var.dns_email_comment
+}
+
+resource "cloudflare_dns_record" "autoconfigure_ipv6" {
+  for_each = {
+    for domain, config in var.domains : domain => config if config.mx_provider != "cloudflare"
+  }
+
+  zone_id = data.cloudflare_zone.zones[each.key].id
+  type    = "AAAA"
+  name    = "autoconfigure"
+  content = oci_core_ipv6.oci_01.ip_address
   ttl     = 3600
   comment = var.dns_email_comment
 }

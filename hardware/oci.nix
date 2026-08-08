@@ -45,6 +45,7 @@
     # enable systemd service
     systemd = {
       packages = [ pkgs.oracle-cloud-agent ];
+      network.networks."99-ethernet-default-dhcp".networkConfig.IPv6AcceptRA = true;
       services.oracle-cloud-agent = {
         enable = true;
         wantedBy = pkgs.lib.mkForce [ "multi-user.target" ];
