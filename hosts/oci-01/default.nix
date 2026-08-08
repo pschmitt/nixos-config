@@ -12,8 +12,7 @@
     ./stalwart.nix
     ./roundcube-native.nix
     ./mail-autoconfig.nix
-    ./mail-proxy.nix
-    ./legacy-services.nix
+    ./nginx-public.nix
     ./restic.nix
   ];
 

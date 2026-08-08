@@ -19,9 +19,10 @@
   `/usr/local/bin/luks-mount` and `/etc/luks-mount.yaml`, not by `fstab` or
   `crypttab`.
 - Persistent application data is primarily under `/mnt/data/srv`. Stalwart,
-  Roundcube, and Traefik still run from their legacy Docker Compose projects.
-  The static Caddy sites and Healthchecks have been migrated to Nix-managed
-  services; Watchtower and Autoheal remain Docker-side support services.
+  Roundcube, autodiscover, the static sites, and Healthchecks are now
+  Nix-managed services. The final reverse-proxy cutover is implemented with
+  `services.nginx`; the legacy Traefik Compose project is retained only until
+  the controlled runtime cutover is verified.
 - The repository now has an `oci-01` NixOS host configuration following the
   `oci-03` cloud-host pattern. Root is Disko-managed LUKS+Btrfs; the existing
   data disk is also Disko-declared with `destroy = false`, its stable OCI
@@ -126,16 +127,16 @@ part of this migration. The active route set is:
 
 | Route | Current backend | Native-Nginx migration notes |
 | --- | --- | --- |
-| `pschmitt.dev`, `p.schmi.tt`, `philipp.schmi.tt`, `github.pschmitt.dev`, `gh.pschmitt.dev`, `schmitt.co` | Nix Nginx on `127.0.0.1:2020` | Already native; move the existing vhosts to the public TLS listener and let Nginx own ACME. |
-| `hc.brkn.lol`, `healthchecks.brkn.lol` | Nix Healthchecks via Nginx on `127.0.0.1:2020` | Already native; move the existing vhost to the public TLS listener. |
-| `mail.brkn.lol`, `mail.pschmitt.dev` | Docker Roundcube service, port 80 inside `web` | Blocked until Stalwart/Roundcube is native or a stable loopback backend is deliberately exposed. |
-| `stalwart.brkn.lol`, `autoconfig.brkn.lol`, `autodiscover.brkn.lol`, `autoconfig.pschmitt.dev`, `autodiscover.pschmitt.dev` | Docker Stalwart service, port 8080 inside `web` | Same Docker-network blocker; do not use the current `172.18.0.x` container addresses because they are not stable across recreation. |
-| `autoconfig.schmitt.co`, `autodiscover.schmitt.co` | Docker autodiscover service, port 8000 inside `web` | Same Docker-network blocker. |
-| Home Assistant aliases under `ber.schmi.tt`, `ovm5.de`, `brkn.lol`, and `dieppe.schmi.tt` | NetBird, Tailscale, and Nabu Casa failover chain | Nginx can proxy these, but needs runtime DNS resolvers for the overlay domains and only offers passive OSS failover; Traefik currently performs active health checks and nested failover. |
-| `grafana.ovm5.de`, `graphana.ovm5.de`, `graph.ovm5.de`, `gr.ovm5.de` | `https://hass.snake-eagle.ts.net:3000` | Requires Tailscale DNS/runtime resolution and upstream TLS SNI/verification settings. |
-| `oci-yum.brkn.lol` | `https://yum.eu-frankfurt-1.oci.oraclecloud.com` | The Traefik `rewrite-body` plugin needs to be replaced with and tested against Nginx `sub_filter` (including response encoding/content type). |
-| Turris SSH on the `https` entrypoint | Raw TCP `host.docker.internal:22887` | Requires Nginx `stream` with `ssl_preread`: public 443 must multiplex TLS web traffic to an internal TLS listener and non-TLS SSH traffic to the tunnel. |
-| `traefik.brkn.lol` | Traefik dashboard API with basic auth | There is no native Nginx equivalent to the dashboard; either remove this route intentionally or replace it with a separately chosen status/admin endpoint. |
+| `pschmitt.dev`, `p.schmi.tt`, `philipp.schmi.tt`, `github.pschmitt.dev`, `gh.pschmitt.dev`, `schmitt.co` | Nix Nginx static vhosts | Native Nginx owns the public TLS vhosts and ACME certificates. |
+| `hc.brkn.lol`, `healthchecks.brkn.lol` | Nix Healthchecks via loopback | Native Nginx proxies directly to Healthchecks and preserves HTTPS forwarding headers. |
+| `mail.brkn.lol`, `mail.pschmitt.dev` | Native Roundcube/PHP-FPM | Existing SQLite data is reused unchanged; Nginx serves the native Roundcube vhost. |
+| `stalwart.brkn.lol`, `autoconfig.brkn.lol`, `autodiscover.brkn.lol`, `autoconfig.pschmitt.dev`, `autodiscover.pschmitt.dev` | Native Stalwart HTTP listener | Nginx proxies to `127.0.0.1:8080`; no Docker-network address is involved. |
+| `autoconfig.schmitt.co`, `autodiscover.schmitt.co` | Native go-autoconfig | Nginx proxies to the native `127.0.0.1:8081` service. |
+| Home Assistant aliases under `ber.schmi.tt`, `ovm5.de`, `brkn.lol`, and `dieppe.schmi.tt` | Native Nginx HTTPS proxy | Nginx uses the system resolver and reachable upstreams; the old Traefik active failover chain is not retained. |
+| `grafana.ovm5.de`, `graphana.ovm5.de`, `graph.ovm5.de`, `gr.ovm5.de` | Native Nginx HTTPS proxy | Nginx preserves upstream TLS SNI and runtime DNS resolution. |
+| `oci-yum.brkn.lol` | Native Nginx HTTPS proxy | Nginx disables upstream compression and applies the equivalent `sub_filter` rewrite. |
+| Turris SSH on public 443 | Native Nginx `stream` | Nginx uses `ssl_preread` to send TLS to the internal HTTPS listener and non-TLS SSH to `127.0.0.1:22887`. |
+| `traefik.brkn.lol` | Intentionally retired | The old dashboard route returns HTTP 410 after Traefik removal. |
 
 The public DNS check showed that most of these names resolve to the OCI-01
 address `130.61.215.245`, but `homeassistant.brkn.lol` and
@@ -149,24 +150,11 @@ Home Assistant routes are instead available through the local NetBird resolver
 should set `services.nginx.resolver` accordingly and enable
 `proxyResolveWhileRunning` for those dynamic upstreams.
 
-Because the Docker-only mail backends and the 443 TCP multiplexing have not yet
-been converted and tested, no `hosts/oci-01/traefik.nix` replacement was added
-in this investigation. Adding only the easy static routes would make a native
-Nginx cutover appear complete while dropping mail, autodiscover, or Turris
-traffic. The safe implementation order is:
-
-1. Migrate Stalwart, Roundcube, and autodiscover (or explicitly provide stable
-   loopback listener ports without changing their persistent mounts).
-2. Move the existing static and Healthchecks vhosts from port 2020 to the
-   native public HTTP/TLS listeners and configure Nginx ACME using the existing
-   Cloudflare SOPS credentials.
-3. Implement and test the Home Assistant upstreams, OCI Yum response rewrite,
-   and the stream/http 443 multiplexer on an alternate listener before the
-   final port cutover.
-4. Decide explicitly whether the Traefik dashboard route is retired.
-5. Stop the legacy Traefik Compose unit only during the controlled cutover;
-   do not remove its `acme.json` or any application data until all route tests
-   pass.
+The Nix implementation is in `hosts/oci-01/nginx-public.nix`. It keeps the
+public HTTP redirect listener on port 80, terminates TLS on loopback port 8443,
+and uses Nginx `stream`/`ssl_preread` on public port 443 so the existing Turris
+SSH tunnel remains possible. The old Traefik `acme.json` and configuration are
+kept on the data disk as a rollback copy until the route tests are complete.
 
 ## Terraform safety requirements
 
@@ -228,7 +216,10 @@ required for routine changes to this host.
       `schmitt.co` document root.
 - [x] Migrate Healthchecks to the native Nix service, reusing its existing
       SQLite database/configuration and persistent image data.
-- [ ] Verify all remaining persistent services and their data.
+- [x] Verify native Stalwart, Roundcube, and autodiscover units and their
+      persistent SQLite stores.
+- [ ] Verify the native Nginx public routes and remove the legacy Traefik
+      container.
 - [ ] Verify the public IP/PTR and all Cloudflare records.
 - [x] Verify a Nix-managed Restic backup, retention/pruning, and its
       Healthchecks callback.
