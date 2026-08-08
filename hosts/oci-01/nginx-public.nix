@@ -278,6 +278,7 @@ in
       if failed
         port 8443
         protocol https
+        with hostheader "pschmitt.dev"
         request "/"
         with timeout 15 seconds
       for 3 cycles

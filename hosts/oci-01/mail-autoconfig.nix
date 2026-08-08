@@ -42,6 +42,8 @@
         if failed
           port 8081
           protocol http
+          with hostheader "autoconfig.schmitt.co"
+          request "/mail/config-v1.1.xml"
           with timeout 10 seconds
           for 3 cycles
         then alert
