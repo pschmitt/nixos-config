@@ -30,9 +30,12 @@
 - The normal Ubuntu SSH host RSA and Ed25519 keypairs were imported into the
   new host's SOPS file, so the server's normal SSH identity remains stable.
   Separate generated initrd host keys are used for remote LUKS unlocking.
-- The old Ubuntu unlock-manager service is commented out in the `fnuc`
-  compose configuration and a reversible `oci-01-nixos` systemd-unlock entry
-  is staged. The running old container was not restarted during preparation.
+- The old Ubuntu unlock-manager service remains commented out in the `fnuc`
+  compose configuration. The active NixOS unlocker is now the canonical
+  `oci-01` service/container (`luks-ssh-unlock-oci-01`); its NixOS-specific
+  material remains under `config/oci-01-nixos` so it cannot be confused with
+  the old Ubuntu material under `config/oci-01`. The old container was removed
+  only after the renamed container passed its remote health check.
 
 ## Backup status
 
@@ -133,6 +136,11 @@ updates `/etc/nixos` on the remote host before running `nix develop --command
 ./tofu/tofu.sh`; it assumes the desired changes are available on the selected
 branch. Targeted plans/applies are required so unrelated NixOS builds are not
 started.
+
+Now that `oci-01` is running NixOS, a normal committed NixOS configuration
+change can be deployed directly by restarting its `nixos-upgrade.service`.
+The `rofl-10` deployment path remains useful for remote builds, but is not
+required for routine changes to this host.
 
 ## Cutover checklist
 
