@@ -111,7 +111,6 @@ in
       group services
       if failed
         port 25
-        protocol smtp
         with timeout 15 seconds
         for 3 cycles
       then alert
@@ -120,7 +119,6 @@ in
       group services
       if failed
         port 587
-        protocol smtp
         with timeout 15 seconds
         for 3 cycles
       then alert
