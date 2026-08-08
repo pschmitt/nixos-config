@@ -40,6 +40,42 @@ check_dns_mx() {
   dig +short MX "${MAIL_DOMAIN}" | grep -Fq "mail.${MAIL_DOMAIN}."
 }
 
+check_smtp() {
+  local response
+
+  exec 3<>"/dev/tcp/127.0.0.1/25" || return 1
+
+  if ! IFS= read -r -t 10 response <&3
+  then
+    exec 3>&-
+    return 1
+  fi
+
+  if [[ "${response}" != 220* ]]
+  then
+    exec 3>&-
+    return 1
+  fi
+
+  if ! printf 'EHLO %s\r\nQUIT\r\n' "${MAIL_HOST}" >&3
+  then
+    exec 3>&-
+    return 1
+  fi
+
+  while IFS= read -r -t 10 response <&3
+  do
+    if [[ "${response}" == 250* ]]
+    then
+      exec 3>&-
+      return 0
+    fi
+  done
+
+  exec 3>&-
+  return 1
+}
+
 main() {
   if [[ $# -ne 2 ]]
   then
@@ -57,6 +93,7 @@ main() {
     -noout \
     -in "/var/lib/acme/${MAIL_HOST}/fullchain.pem"
 
+  check_smtp
   check_tls "" 465
   check_tls "smtp" 587
   check_tls "" 993
