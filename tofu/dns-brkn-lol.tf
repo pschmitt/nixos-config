@@ -96,6 +96,14 @@ resource "cloudflare_dns_record" "traefik-brkn-lol" {
   ttl     = 3600
 }
 
+resource "cloudflare_dns_record" "stalwart-brkn-lol" {
+  zone_id = cloudflare_zone.brkn_lol.id
+  name    = "stalwart"
+  content = oci_core_instance.oci_01.public_ip
+  type    = "A"
+  ttl     = 3600
+}
+
 resource "cloudflare_dns_record" "webmail-brkn-lol" {
   zone_id = cloudflare_zone.brkn_lol.id
   type    = "A"
