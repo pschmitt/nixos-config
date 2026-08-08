@@ -94,6 +94,7 @@ in
     inherit dataDir;
     user = "stalwart";
     group = "stalwart";
+    openFirewall = true;
   };
 
   # The module creates this account; retain the IDs used by the existing data.
@@ -112,16 +113,6 @@ in
   # The upstream module owns this unit. Only replace its incompatible TOML
   # command and storage preparation with the existing 0.16 JSON bootstrap.
   systemd.services.stalwart = {
-    after = [
-      "mnt-data.mount"
-      "network-online.target"
-      "acme-${mailHost}.service"
-    ];
-    requires = [ "mnt-data.mount" ];
-    wants = [
-      "network-online.target"
-      "acme-${mailHost}.service"
-    ];
     unitConfig = {
       ConditionPathExists = lib.mkForce [
         "${dataDir}/database.sqlite"
@@ -130,7 +121,6 @@ in
       RequiresMountsFor = [ dataDir ];
     };
     serviceConfig = {
-      WorkingDirectory = dataDir;
       ExecStartPre = lib.mkForce [ ];
       ExecStart = lib.mkForce [
         ""
@@ -138,15 +128,6 @@ in
       ];
     };
   };
-
-  networking.firewall.allowedTCPPorts = [
-    25
-    143
-    465
-    587
-    993
-    4190
-  ];
 
   services.monit.config = lib.mkAfter ''
     check host "stalwart" with address "127.0.0.1"
