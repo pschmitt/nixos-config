@@ -8,6 +8,7 @@
     ../../profiles/server
 
     ./http-static.nix
+    ./healthchecks.nix
     ./legacy-services.nix
     ./restic.nix
   ];
