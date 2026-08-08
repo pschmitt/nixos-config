@@ -53,29 +53,69 @@
       # personal-vault items for a former/current work context, not
       # entries in the separate `wiit` Vaultwarden account, so no
       # `account` override is needed here.
-      aliases = {
-        gpg.item = "Private GPG Key";
-        gnupg.item = "Private GPG Key";
-        gpg-gec.item = "WIIT GPG Key";
-        gpg-wiit.item = "WIIT GPG Key";
-        gpg-work.item = "WIIT GPG Key";
-        gec.item = "desktop.gec.io";
-        voffice.item = "desktop.gec.io";
-        gec-mgmt.item = "gec.io VPN (Sophos)";
-        mgmt.item = "gec.io VPN (Sophos)";
-        mgmt-legacy.item = "gec.io VPN (Sophos)";
-        gec-vpn.item = "gec.io VPN (Sophos)";
-        gec-vpn-legacy.item = "gec.io VPN (Sophos)";
-        google.item = "🔖 google.com (${config.mainUser.email})";
-        gmail.item = "🔖 google.com (${config.mainUser.email})";
-        ovpn.item = "GEC OpenVPN v2";
-        gec-ovpn.item = "GEC OpenVPN v2";
-        vpn.item = "vpn.wiit.one";
-        wiit-vpn.item = "vpn.wiit.one";
-        "rancher.wiit-edge.services".item = "Rancher (WIIT)";
-        "rancher-legacy.wiit-edge.services".item = "Rancher (WIIT)";
-        "rancher-staging.wiit-edge.services".item = "Rancher (WIIT)";
-      };
+      aliases = [
+        {
+          alias = [
+            "gpg"
+            "gnupg"
+          ];
+          item = "Private GPG Key";
+        }
+        {
+          alias = [
+            "gpg-gec"
+            "gpg-wiit"
+            "gpg-work"
+          ];
+          item = "WIIT GPG Key";
+        }
+        {
+          alias = [
+            "gec"
+            "voffice"
+          ];
+          item = "desktop.gec.io";
+        }
+        {
+          alias = [
+            "gec-mgmt"
+            "mgmt"
+            "mgmt-legacy"
+            "gec-vpn"
+            "gec-vpn-legacy"
+          ];
+          item = "gec.io VPN (Sophos)";
+        }
+        {
+          alias = [
+            "google"
+            "gmail"
+          ];
+          item = "🔖 google.com (${config.mainUser.email})";
+        }
+        {
+          alias = [
+            "ovpn"
+            "gec-ovpn"
+          ];
+          item = "GEC OpenVPN v2";
+        }
+        {
+          alias = [
+            "vpn"
+            "wiit-vpn"
+          ];
+          item = "vpn.wiit.one";
+        }
+        {
+          alias = [
+            "rancher.wiit-edge.services"
+            "rancher-legacy.wiit-edge.services"
+            "rancher-staging.wiit-edge.services"
+          ];
+          item = "Rancher (WIIT)";
+        }
+      ];
       accounts = {
         default.email = config.mainUser.email;
         wiit = {
