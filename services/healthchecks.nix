@@ -5,13 +5,13 @@
   ...
 }:
 let
-  healthchecksUser = config.mainUser.username;
-  healthchecksGroup = config.users.users.${healthchecksUser}.group;
+  healthchecksUser = config.services.healthchecks.user;
+  healthchecksGroup = config.services.healthchecks.group;
   dataDir = "/mnt/data/srv/healthchecks/config";
   healthchecksHost = "hc.${config.domains.main}";
   healthchecksAliases = [ "healthchecks.${config.domains.main}" ];
   healthchecksEmail = "healthchecks@${config.domains.main}";
-  healthchecksPort = 8000;
+  healthchecksPort = config.services.healthchecks.port;
   csrfTrustedOrigins = map (host: "https://${host}") ([ healthchecksHost ] ++ healthchecksAliases);
 
   localSettings = pkgs.writeText "healthchecks-local-settings.py" ''
@@ -51,14 +51,14 @@ in
     "healthchecks/discord-client-secret" = config.custom.mkSecret secretAttrs;
   };
 
+  systemd.tmpfiles.rules = [
+    "Z ${dataDir} 0750 ${healthchecksUser} ${healthchecksGroup} - -"
+  ];
+
   services = {
     healthchecks = {
       enable = true;
       package = healthchecksPackage;
-      user = healthchecksUser;
-      group = healthchecksGroup;
-      listenAddress = "127.0.0.1";
-      port = healthchecksPort;
       inherit dataDir;
 
       settings = {
