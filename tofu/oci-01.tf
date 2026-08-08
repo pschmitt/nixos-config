@@ -16,8 +16,8 @@ resource "oci_core_instance" "oci_01" {
   }
 
   source_details {
-    source_type = "image"
-    source_id   = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaaj6g2lci5ed7nfhk46olwkhmwkzrobyo3jntnhkk7fnm2vqflorna"
+    source_type = "bootVolume"
+    source_id   = "ocid1.bootvolume.oc1.eu-frankfurt-1.abtheljr4kgcs7gb5twgxwcyeulo2vrfvfquf22a4hppfeshg37py67q6gvq"
   }
 
   # create_vnic_details {
@@ -27,6 +27,36 @@ resource "oci_core_instance" "oci_01" {
   # metadata = {
   #   ssh_authorized_keys = var.ssh_public_key
   # }
+}
+
+module "nix-oci-01" {
+  depends_on             = [oci_core_instance.oci_01]
+  source                 = "github.com/numtide/nixos-anywhere//terraform/all-in-one"
+  nixos_system_attr      = "..#nixosConfigurations.oci-01.config.system.build.toplevel"
+  nixos_partitioner_attr = "..#nixosConfigurations.oci-01.config.system.build.diskoScript"
+  target_host            = oci_core_instance.oci_01.public_ip
+  install_user           = "ubuntu"
+  target_user            = "pschmitt"
+  install_ssh_key        = file("${path.module}/nixos-anywhere_id_ed25519")
+  instance_id            = oci_core_instance.oci_01.id
+  debug_logging          = false
+
+  extra_environment = {
+    TARGET_HOST = "oci-01"
+  }
+
+  disk_encryption_key_scripts = [
+    {
+      path   = "/tmp/disk-1.key"
+      script = "${path.module}/scripts/decrypt-luks-passphrase.sh"
+    },
+    {
+      path   = "/tmp/disk-2.key"
+      script = "${path.module}/scripts/decrypt-luks-passphrase-data.sh"
+    }
+  ]
+
+  extra_files_script = "${path.module}/scripts/decrypt-ssh-secrets.sh"
 }
 
 # vim: set ft=terraform :

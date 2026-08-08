@@ -5,7 +5,7 @@ set -euo pipefail
 # from SOPS host secrets and write it next to ssh.nix.
 
 GIT_ROOT="$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)"
-DEST="$GIT_ROOT/common/global/ssh-hosts.generated.json"
+DEST="$GIT_ROOT/profiles/global/ssh-hosts.generated.json"
 
 echo "Regenerating $DEST" >&2
 

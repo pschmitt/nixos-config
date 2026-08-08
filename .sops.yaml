@@ -24,6 +24,7 @@ creation_rules:
           - age1u6pxpykaj40qnqynt64r7w6l2g67vsjlzzlzt8vwz83n4w2xhqwsd90fa4 # host key of rofl-13
           - age1mvgru6tdr7h5f60pm5z9znlhkdfsvsqn02l0varqwfht22lz3d9schq7yg # host key of rofl-14
           - age1hcvva2dx0k9z6srn7tv22nt7674z5skqsnwr2fu36pdc97ueadgqwznktk # host key of x13
+          - age1gpue3rkdvrfkwkvwm443qm3crthvd30ph86uktwa3wq3jxc7eeyswrvy46 # host key of oci-01
   - path_regex: secrets/initrd-wifi.sops.yaml
     key_groups:
       - age:
@@ -108,6 +109,17 @@ creation_rules:
     key_groups:
       - age:
           - age1h6xwxu5mwdpsx49zzcv6pfetmrmdldkfm66nk7qutq6mmr9l0cqqpjcs0d # host key of oci-03
+          - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
+          - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
+          - age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn # github/pschmitt
+          - age17rl4f347jmnv86cy6pyfd8hu02jj7974jmnq8jrmjz0uj7ecpupstuahy5 # github/pschmitt
+          - age1efl2xnt3767ajnu9xgl9zjycx5exggg6rgv53lj84sefeaqcgplqcrmlzj # github/pschmitt
+          - age1z8682uyrqfghn8fgvhp23a6udknlckvl4wcvgnafhqks95xhtu3sn83wrq # github/pschmitt
+          - age12uccn3k687ydk5jpmjwh3yp637x7rgy0tsx820t2rg70y7qdxuhqc6madk # github/pschmitt
+  - path_regex: hosts/oci-01/secrets.sops.yaml
+    key_groups:
+      - age:
+          - age1gpue3rkdvrfkwkvwm443qm3crthvd30ph86uktwa3wq3jxc7eeyswrvy46 # host key of oci-01
           - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
           - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
           - age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn # github/pschmitt
