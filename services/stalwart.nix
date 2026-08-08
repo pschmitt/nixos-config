@@ -99,6 +99,7 @@ in
 
   services.monit.config = lib.mkAfter ''
     check host "stalwart" with address "127.0.0.1"
+      group mail
       group services
       if failed
         port 8080
@@ -108,7 +109,9 @@ in
       then alert
 
     check host "stalwart-smtp" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 25
         with timeout 15 seconds
@@ -116,7 +119,9 @@ in
       then alert
 
     check host "stalwart-submission" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 587
         with timeout 15 seconds
@@ -124,7 +129,9 @@ in
       then alert
 
     check host "stalwart-smtps" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 465
         protocol smtps
@@ -134,7 +141,9 @@ in
       then alert
 
     check host "stalwart-imap" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 143
         protocol imap
@@ -143,7 +152,9 @@ in
       then alert
 
     check host "stalwart-imaps" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 993
         protocol imaps
@@ -153,7 +164,9 @@ in
       then alert
 
     check host "stalwart-sieve" with address "127.0.0.1"
+      group mail
       group services
+      depends on "stalwart"
       if failed
         port 4190
         with timeout 15 seconds
@@ -161,7 +174,9 @@ in
       then alert
 
     check program "stalwart-mail-health" with path "${mailHealthCheck}/bin/stalwart-mail-health ${mainDomain} ${dkimSelector}"
+      group mail
       group services
+      depends on "stalwart"
       if status != 0 then alert
   '';
 }
