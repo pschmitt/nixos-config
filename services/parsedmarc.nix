@@ -8,6 +8,15 @@ let
   grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
 in
 {
+  # FIXME parsedmarc's provision.elasticsearch pulls in pkgs.elasticsearch
+  # (7.17.27), which nixpkgs now marks insecure (ES7 EOL since 2026-01-15,
+  # multiple 2026 CVEs). There's no ES8/OpenSearch package in nixpkgs and
+  # the parsedmarc module doesn't support an external backend, so allow it
+  # for now. It only listens on 127.0.0.1:9200, not network-exposed. Revisit
+  # by migrating to a self-managed OpenSearch/ES8 instance and disabling
+  # provision.elasticsearch.
+  nixpkgs.config.permittedInsecurePackages = [ "elasticsearch-7.17.27" ];
+
   sops.secrets = {
     "geoip/licenseKey" = config.custom.mkSecret {
     };
