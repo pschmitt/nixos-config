@@ -40,7 +40,7 @@ in
     <?php
 
     $config = [];
-    $config['db_dsnw'] = 'sqlite:////mnt/data/srv/stalwart/roundcube/db/sqlite.db';
+    $config['db_dsnw'] = 'sqlite:////${dataDir}/db/sqlite.db';
     $config['des_key'] = file_get_contents('${config.sops.secrets."roundcube/des-key".path}');
     $config['log_driver'] = 'syslog';
     $config['max_message_size'] = '25M';
@@ -146,6 +146,9 @@ in
     unitConfig.RequiresMountsFor = [ dataDir ];
     serviceConfig = {
       ExecStartPre = lib.mkBefore [
+        "${pkgs.coreutils}/bin/test -r ${config.sops.secrets."roundcube/des-key".path}"
+        "${pkgs.coreutils}/bin/mkdir -p /tmp/roundcube-temp"
+        "${pkgs.coreutils}/bin/chown ${roundcubeUser}:${roundcubeGroup} /tmp/roundcube-temp"
         "${pkgs.coreutils}/bin/chown -R ${roundcubeUser}:${roundcubeGroup} ${dataDir}"
       ];
     };
