@@ -10,6 +10,7 @@ let
   dataDir = "/mnt/data/srv/healthchecks/config";
   healthchecksHost = "hc.${config.domains.main}";
   healthchecksAliases = [ "healthchecks.${config.domains.main}" ];
+  healthchecksEmail = "healthchecks@${config.domains.main}";
   healthchecksPort = 8000;
 
   localSettings = pkgs.writeText "oci-01-healthchecks-local-settings.py" ''
@@ -82,17 +83,17 @@ in
         DB = "sqlite";
         DB_NAME = "${dataDir}/hc.sqlite";
         DEBUG = false;
-        DEFAULT_FROM_EMAIL = "healthchecks@brkn.lol";
+        DEFAULT_FROM_EMAIL = healthchecksEmail;
         DISCORD_CLIENT_ID = "838180668135571466"; # gitleaks:allow - public Discord client ID
         DISCORD_CLIENT_SECRET_FILE = config.sops.secrets."healthchecks/discord-client-secret".path;
         EMAIL_HOST = "127.0.0.1";
         EMAIL_HOST_PASSWORD_FILE = config.sops.secrets."healthchecks/email-host-password".path;
-        EMAIL_HOST_USER = "healthchecks@brkn.lol";
+        EMAIL_HOST_USER = healthchecksEmail;
         EMAIL_PORT = "587";
         EMAIL_USE_TLS = "True";
         REGISTRATION_OPEN = false;
         SECRET_KEY_FILE = config.sops.secrets."healthchecks/secret-key".path;
-        SITE_NAME = "hc.brkn.lol";
+        SITE_NAME = healthchecksHost;
         SITE_ROOT = "https://${healthchecksHost}";
       };
     };
