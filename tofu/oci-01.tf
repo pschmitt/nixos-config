@@ -9,6 +9,12 @@ resource "oci_core_instance" "oci_01" {
     memory_in_gbs = 12
   }
 
+  preserve_boot_volume = true
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
   source_details {
     source_type = "image"
     source_id   = "ocid1.image.oc1.eu-frankfurt-1.aaaaaaaaj6g2lci5ed7nfhk46olwkhmwkzrobyo3jntnhkk7fnm2vqflorna"
