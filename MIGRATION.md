@@ -18,9 +18,10 @@
   Btrfs at `/mnt/data`. The mount is managed by the custom
   `/usr/local/bin/luks-mount` and `/etc/luks-mount.yaml`, not by `fstab` or
   `crypttab`.
-- Persistent application data is primarily under `/mnt/data/srv`. The live
-  machine currently runs Docker services including Stalwart, Roundcube,
-  Traefik, Caddy, Healthchecks, Watchtower, and Autoheal.
+- Persistent application data is primarily under `/mnt/data/srv`. Stalwart,
+  Roundcube, and Traefik still run from their legacy Docker Compose projects.
+  The static Caddy sites and Healthchecks have been migrated to Nix-managed
+  services; Watchtower and Autoheal remain Docker-side support services.
 - The repository now has an `oci-01` NixOS host configuration following the
   `oci-03` cloud-host pattern. Root is Disko-managed LUKS+Btrfs; the existing
   data disk is also Disko-declared with `destroy = false`, its stable OCI
@@ -64,6 +65,11 @@ and password from Ubuntu Autorestic, with the repository URL, OCI credentials,
 and Healthchecks URL populated through the repository's standard Restic secret
 helper. This avoids starting a separate backup repository during cutover.
 
+The first Nix-managed backup was re-run on 2026-08-08 after transferring the
+working Ubuntu Autorestic repository password into the OCI-01 SOPS secret. It
+completed successfully, including the configured retention/prune step; the
+Healthchecks callback also returned `OK`.
+
 ### OCI volume backups
 
 The data volume previously had an OCI `gold` policy with daily, weekly,
@@ -96,8 +102,8 @@ instance:
 4. Install NixOS with `nixos-anywhere`/Disko, targeting the existing root and
    explicitly preserving the existing data disk.
 5. Recreate the LUKS unlock and `/mnt/data` mount explicitly in NixOS.
-6. Start the legacy Caddy, Healthchecks, Stalwart, and Traefik compose projects
-   from `/srv`, then replace them with native Nix services later.
+6. Start the legacy Stalwart and Traefik Compose projects from `/srv`; the
+   static sites and Healthchecks are now native Nix services.
 7. Verify mail, HTTP, Docker/application state, backups, DNS, and monitoring.
 
 The Nix Disko declaration identifies the data disk by its stable OCI SCSI
@@ -168,9 +174,14 @@ required for routine changes to this host.
 
 ### After cutover
 
-- [ ] Verify all persistent services and their data.
+- [x] Migrate the static sites from Caddy to Nix-managed Nginx, preserving the
+      `schmitt.co` document root.
+- [x] Migrate Healthchecks to the native Nix service, reusing its existing
+      SQLite database/configuration and persistent image data.
+- [ ] Verify all remaining persistent services and their data.
 - [ ] Verify the public IP/PTR and all Cloudflare records.
-- [ ] Verify Nix-managed Restic backups and Healthchecks monitoring.
+- [x] Verify a Nix-managed Restic backup, retention/pruning, and its
+      Healthchecks callback.
 - [ ] Keep the boot-volume backup until the migration has been stable for an
       agreed period.
 - [ ] Recheck OCI billing and Always Free resource tags.
