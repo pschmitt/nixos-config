@@ -154,7 +154,7 @@ The Nix implementation is in `hosts/oci-01/nginx-public.nix`. It keeps the
 public HTTP redirect listener on port 80, terminates TLS on loopback port 8443,
 and uses Nginx `stream`/`ssl_preread` on public port 443 so the existing Turris
 SSH tunnel remains possible. The old Traefik `acme.json` and configuration are
-kept on the data disk as a rollback copy until the route tests are complete.
+kept on the data disk only as a rollback copy; no active service uses them.
 
 ## Terraform safety requirements
 

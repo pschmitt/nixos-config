@@ -2,6 +2,7 @@ locals {
   restic_hosts = [
     # nixos servers
     "oci-03",
+    "oci-01",
     "rofl-10",
     "rofl-11",
     "rofl-12",
@@ -18,7 +19,6 @@ locals {
 
   autorestic_hosts = [
     "fnuc",
-    "oci-01",
   ]
 
   restic_remote_hosts = [
