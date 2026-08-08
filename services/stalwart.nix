@@ -14,41 +14,78 @@ let
   mailHost = "mail.${mainDomain}";
   dkimSelector = "mail";
   dataDir = "/mnt/data/srv/stalwart/data";
+  stalwartListeners = {
+    http = {
+      bind = [ "0.0.0.0:8080" ];
+      protocol = "http";
+    };
+    smtp = {
+      bind = [ "0.0.0.0:25" ];
+      protocol = "smtp";
+    };
+    submission = {
+      bind = [ "0.0.0.0:587" ];
+      protocol = "smtp";
+    };
+    smtps = {
+      bind = [ "0.0.0.0:465" ];
+      protocol = "smtp";
+    };
+    imap = {
+      bind = [ "0.0.0.0:143" ];
+      protocol = "imap";
+    };
+    imaps = {
+      bind = [ "0.0.0.0:993" ];
+      protocol = "imap";
+    };
+    sieve = {
+      bind = [ "0.0.0.0:4190" ];
+      protocol = "manageSieve";
+    };
+  };
+  listenerPort =
+    name:
+    let
+      listener = builtins.getAttr name config.services.stalwart.settings.server.listener;
+      address = builtins.head listener.bind;
+    in
+    lib.toInt (lib.last (lib.splitString ":" address));
   mailPortChecks = [
     {
       name = "smtp";
-      port = 25;
+      listener = "smtp";
     }
     {
       name = "submission";
-      port = 587;
+      listener = "submission";
     }
     {
       name = "smtps";
-      port = 465;
+      listener = "smtps";
       protocol = "smtps";
       tls = true;
     }
     {
       name = "imap";
-      port = 143;
+      listener = "imap";
       protocol = "imap";
     }
     {
       name = "imaps";
-      port = 993;
+      listener = "imaps";
       protocol = "imaps";
       tls = true;
     }
     {
       name = "sieve";
-      port = 4190;
+      listener = "sieve";
     }
   ];
   mkMailPortCheck =
     {
       name,
-      port,
+      listener,
       protocol ? null,
       tls ? false,
     }:
@@ -58,7 +95,7 @@ let
         group services
         depends on "stalwart"
         if failed
-          port ${toString port}
+          port ${toString (listenerPort listener)}
           ${lib.optionalString (protocol != null) "protocol ${protocol}\n        "}with timeout 15 seconds
           ${lib.optionalString tls "and certificate valid for 5 days\n        "}for 3 cycles
         then alert
@@ -75,7 +112,7 @@ let
     ];
     text = builtins.readFile ./scripts/stalwart-mail-health.sh;
   };
-  bootstrapConfig = (pkgs.formats.json { }).generate "stalwart-config.json" {
+  datastoreBootstrap = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
     poolMaxConnections = 10;
@@ -95,13 +132,14 @@ in
     user = "stalwart";
     group = "stalwart";
     openFirewall = true;
+    settings.server.listener = stalwartListeners;
   };
 
   # The module creates this account; retain the IDs used by the existing data.
   users.groups.stalwart.gid = 2000;
   users.users.stalwart.uid = 2000;
 
-  environment.etc."stalwart/config.json".source = bootstrapConfig;
+  environment.etc."stalwart/config.json".source = datastoreBootstrap;
 
   systemd.tmpfiles.rules = [
     "d /etc/stalwart 0755 root root -"
@@ -134,7 +172,7 @@ in
       group mail
       group services
       if failed
-        port 8080
+        port ${toString (listenerPort "http")}
         protocol http
         with timeout 15 seconds
         for 3 cycles
