@@ -28,7 +28,7 @@ let
       name = "smtps";
       port = 465;
       protocol = "smtps";
-      certificate = true;
+      tls = true;
     }
     {
       name = "imap";
@@ -39,7 +39,7 @@ let
       name = "imaps";
       port = 993;
       protocol = "imaps";
-      certificate = true;
+      tls = true;
     }
     {
       name = "sieve";
@@ -51,7 +51,7 @@ let
       name,
       port,
       protocol ? null,
-      certificate ? false,
+      tls ? false,
     }:
     ''
       check host "stalwart-${name}" with address "127.0.0.1"
@@ -61,7 +61,7 @@ let
         if failed
           port ${toString port}
           ${lib.optionalString (protocol != null) "protocol ${protocol}\n        "}with timeout 15 seconds
-          ${lib.optionalString certificate "and certificate valid for 5 days\n        "}for 3 cycles
+          ${lib.optionalString tls "and certificate valid for 5 days\n        "}for 3 cycles
         then alert
     '';
   mailPortChecksConfig = lib.concatStringsSep "\n" (map mkMailPortCheck mailPortChecks);
