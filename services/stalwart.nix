@@ -1,9 +1,8 @@
-# NOTE: nixpkgs also provides services.stalwart, but its current module is
-# coupled to pkgs.stalwart (0.15.x). OCI-01's existing database was created
-# and is still served by pkgs.stalwart_0_16, which nixpkgs explicitly marks as
-# incompatible with that module. Keep this compatibility wrapper until the
-# upstream module supports the 0.16 package or we perform an export/import
-# migration between the two storage/configuration formats.
+# NOTE: Use the upstream services.stalwart module for the account, tmpfiles,
+# hardening, and systemd service. Its generated TOML is for pkgs.stalwart
+# 0.15.x, while this host's existing database is served by pkgs.stalwart_0_16
+# and requires the upstream JSON datastore bootstrap. Keep only that narrow
+# compatibility override until the module supports the 0.16 configuration.
 {
   config,
   lib,
@@ -76,7 +75,7 @@ let
     ];
     text = builtins.readFile ./scripts/stalwart-mail-health.sh;
   };
-  configFile = (pkgs.formats.json { }).generate "stalwart-config.json" {
+  bootstrapConfig = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
     poolMaxConnections = 10;
@@ -88,14 +87,20 @@ in
     reloadServices = [ "stalwart.service" ];
   };
 
-  users.groups.stalwart.gid = 2000;
-  users.users.stalwart = {
-    uid = 2000;
+  services.stalwart = {
+    enable = true;
+    package = pkgs.stalwart_0_16;
+    stateVersion = "26.11";
+    inherit dataDir;
+    user = "stalwart";
     group = "stalwart";
-    isSystemUser = true;
   };
 
-  environment.etc."stalwart/config.json".source = configFile;
+  # The module creates this account; retain the IDs used by the existing data.
+  users.groups.stalwart.gid = 2000;
+  users.users.stalwart.uid = 2000;
+
+  environment.etc."stalwart/config.json".source = bootstrapConfig;
 
   systemd.tmpfiles.rules = [
     "d /etc/stalwart 0755 root root -"
@@ -104,37 +109,33 @@ in
     "L+ /etc/stalwart/certs/${mailHost}_ecc/${mailHost}.key - - - - /var/lib/acme/${mailHost}/key.pem"
   ];
 
+  # The upstream module owns this unit. Only replace its incompatible TOML
+  # command and storage preparation with the existing 0.16 JSON bootstrap.
   systemd.services.stalwart = {
-    description = "Stalwart Mail Server";
-    wantedBy = [ "multi-user.target" ];
-    wants = [
-      "network-online.target"
-      "acme-${mailHost}.service"
-    ];
     after = [
       "mnt-data.mount"
       "network-online.target"
       "acme-${mailHost}.service"
     ];
     requires = [ "mnt-data.mount" ];
+    wants = [
+      "network-online.target"
+      "acme-${mailHost}.service"
+    ];
     unitConfig = {
-      ConditionPathExists = [
+      ConditionPathExists = lib.mkForce [
         "${dataDir}/database.sqlite"
         "/etc/stalwart/config.json"
       ];
       RequiresMountsFor = [ dataDir ];
     };
     serviceConfig = {
-      Type = "simple";
-      User = "stalwart";
-      Group = "stalwart";
       WorkingDirectory = dataDir;
-      ExecStart = "${pkgs.stalwart_0_16}/bin/stalwart --config=/etc/stalwart/config.json";
-      Restart = "on-failure";
-      RestartSec = 5;
-      LimitNOFILE = 65536;
-      AmbientCapabilities = [ "CAP_NET_BIND_SERVICE" ];
-      CapabilityBoundingSet = [ "CAP_NET_BIND_SERVICE" ];
+      ExecStartPre = lib.mkForce [ ];
+      ExecStart = lib.mkForce [
+        ""
+        "${pkgs.stalwart_0_16}/bin/stalwart --config=/etc/stalwart/config.json"
+      ];
     };
   };
 
