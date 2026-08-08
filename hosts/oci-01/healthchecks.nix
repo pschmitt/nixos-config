@@ -37,24 +37,6 @@ let
     '';
   });
 
-  traefikConfig = pkgs.writeText "oci-01-healthchecks-traefik.yaml" ''
-    http:
-      routers:
-        healthchecks:
-          entryPoints:
-            - https
-          rule: "Host(`${healthchecksHost}`) || Host(`${lib.head healthchecksAliases}`)"
-          service: healthchecks
-          tls:
-            certResolver: le
-
-      services:
-        healthchecks:
-          loadBalancer:
-            servers:
-              - url: "http://host.docker.internal:${toString 2020}"
-  '';
-
   secretAttrs = {
     owner = healthchecksUser;
     group = healthchecksGroup;
@@ -113,8 +95,8 @@ in
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-          proxy_set_header X-Forwarded-Host $http_x_forwarded_host;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_set_header X-Forwarded-Host $host;
         '';
       };
     };
@@ -143,20 +125,5 @@ in
         after = [ "mnt-data.mount" ];
         requires = [ "mnt-data.mount" ];
         unitConfig.RequiresMountsFor = [ dataDir ];
-      })
-    // {
-      oci-01-healthchecks-traefik-config = {
-        description = "Install the Nix-managed Healthchecks route for Traefik";
-        wantedBy = [ "multi-user.target" ];
-        wants = [ "mnt-data.mount" ];
-        after = [ "mnt-data.mount" ];
-        before = [ "legacy-compose-traefik.service" ];
-        unitConfig.RequiresMountsFor = [ "/srv/traefik/config/dynamic" ];
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          ExecStart = "${pkgs.coreutils}/bin/install -Dm0644 ${traefikConfig} /srv/traefik/config/dynamic/healthchecks.yaml";
-        };
-      };
-    };
+      });
 }

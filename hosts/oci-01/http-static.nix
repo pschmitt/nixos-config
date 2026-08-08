@@ -12,23 +12,6 @@ let
     }
   ];
   pschmittDevPackage = inputs.pschmitt-dev.packages.${pkgs.stdenv.hostPlatform.system}.default;
-  traefikConfig = pkgs.writeText "oci-01-http-static-traefik.yaml" ''
-    http:
-      routers:
-        oci-01-http-static:
-          entryPoints:
-            - https
-          rule: "Host(`pschmitt.dev`) || Host(`p.schmi.tt`) || Host(`philipp.schmi.tt`) || Host(`github.pschmitt.dev`) || Host(`gh.pschmitt.dev`) || Host(`schmitt.co`)"
-          service: oci-01-http-static
-          tls:
-            certResolver: le
-
-      services:
-        oci-01-http-static:
-          loadBalancer:
-            servers:
-              - url: "http://host.docker.internal:2020"
-  '';
 in
 {
   imports = [
@@ -98,9 +81,7 @@ in
 
   services.nginx.defaultListen = listen;
 
-  # Traefik reaches the host backend through host.docker.internal.  OCI's
-  # security rules do not expose this port publicly, but the host firewall
-  # still needs to allow the Docker bridge to reach it.
+  # The public Nginx vhosts proxy to this local backend during the migration.
   networking.firewall.allowedTCPPorts = [ 2020 ];
 
   systemd.services.nginx = {
@@ -114,25 +95,12 @@ in
       group nginx
       group services
       if failed
-        port 2020
-        protocol http
+        port 8443
+        protocol https
         request "/"
         with timeout 10 seconds
       for 3 cycles
       then alert
   '';
 
-  systemd.services.oci-01-http-static-traefik-config = {
-    description = "Install the Nix-managed OCI-01 static-site route for Traefik";
-    wantedBy = [ "multi-user.target" ];
-    wants = [ "mnt-data.mount" ];
-    after = [ "mnt-data.mount" ];
-    before = [ "legacy-compose-traefik.service" ];
-    unitConfig.RequiresMountsFor = [ "/srv/traefik/config/dynamic" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStart = "${pkgs.coreutils}/bin/install -Dm0644 ${traefikConfig} /srv/traefik/config/dynamic/http-static.yaml";
-    };
-  };
 }

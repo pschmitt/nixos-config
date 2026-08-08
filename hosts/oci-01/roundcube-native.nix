@@ -130,8 +130,8 @@ in
       check host "roundcube" with address "127.0.0.1"
         group services
         if failed
-          port 2020
-          protocol http
+          port 8443
+          protocol https
           request "/"
           with timeout 15 seconds
           for 3 cycles
