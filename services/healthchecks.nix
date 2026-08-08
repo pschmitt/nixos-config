@@ -12,11 +12,12 @@ let
   healthchecksAliases = [ "healthchecks.${config.domains.main}" ];
   healthchecksEmail = "healthchecks@${config.domains.main}";
   healthchecksPort = 8000;
+  csrfTrustedOrigins = map (host: "https://${host}") ([ healthchecksHost ] ++ healthchecksAliases);
 
-  localSettings = pkgs.writeText "oci-01-healthchecks-local-settings.py" ''
+  localSettings = pkgs.writeText "healthchecks-local-settings.py" ''
     from pathlib import Path
 
-    CSRF_TRUSTED_ORIGINS = ["https://${healthchecksHost}"]
+    CSRF_TRUSTED_ORIGINS = ${builtins.toJSON csrfTrustedOrigins}
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     STATICFILES_DIRS = [
         Path(__file__).resolve().parent.parent / "static",
@@ -118,7 +119,6 @@ in
   systemd.services =
     lib.genAttrs
       [
-        "healthchecks-migration"
         "healthchecks"
         "healthchecks-sendalerts"
         "healthchecks-sendreports"

@@ -8,9 +8,9 @@
     ../../profiles/server
 
     ./http-static.nix
-    ./healthchecks.nix
+    ../../services/healthchecks.nix
     ./stalwart.nix
-    ./roundcube-native.nix
+    ../../services/roundcube.nix
     ./mail-autoconfig.nix
     ./nginx-public.nix
     ./restic.nix
