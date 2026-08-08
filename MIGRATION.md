@@ -118,6 +118,56 @@ an already-reserved address is available, which would require a new reverse-DNS
 request for the existing mail PTR. A temporary second A1 instance may also
 exceed the tenancy's Always Free compute allocation.
 
+## Traefik to native Nginx investigation
+
+The active Traefik configuration was inspected on `oci-01` on 2026-08-08.
+Archived files under `/srv/traefik/config/archive` are not loaded and are not
+part of this migration. The active route set is:
+
+| Route | Current backend | Native-Nginx migration notes |
+| --- | --- | --- |
+| `pschmitt.dev`, `p.schmi.tt`, `philipp.schmi.tt`, `github.pschmitt.dev`, `gh.pschmitt.dev`, `schmitt.co` | Nix Nginx on `127.0.0.1:2020` | Already native; move the existing vhosts to the public TLS listener and let Nginx own ACME. |
+| `hc.brkn.lol`, `healthchecks.brkn.lol` | Nix Healthchecks via Nginx on `127.0.0.1:2020` | Already native; move the existing vhost to the public TLS listener. |
+| `mail.brkn.lol`, `mail.pschmitt.dev` | Docker Roundcube service, port 80 inside `web` | Blocked until Stalwart/Roundcube is native or a stable loopback backend is deliberately exposed. |
+| `stalwart.brkn.lol`, `autoconfig.brkn.lol`, `autodiscover.brkn.lol`, `autoconfig.pschmitt.dev`, `autodiscover.pschmitt.dev` | Docker Stalwart service, port 8080 inside `web` | Same Docker-network blocker; do not use the current `172.18.0.x` container addresses because they are not stable across recreation. |
+| `autoconfig.schmitt.co`, `autodiscover.schmitt.co` | Docker autodiscover service, port 8000 inside `web` | Same Docker-network blocker. |
+| Home Assistant aliases under `ber.schmi.tt`, `ovm5.de`, `brkn.lol`, and `dieppe.schmi.tt` | NetBird, Tailscale, and Nabu Casa failover chain | Nginx can proxy these, but needs runtime DNS resolvers for the overlay domains and only offers passive OSS failover; Traefik currently performs active health checks and nested failover. |
+| `grafana.ovm5.de`, `graphana.ovm5.de`, `graph.ovm5.de`, `gr.ovm5.de` | `https://hass.snake-eagle.ts.net:3000` | Requires Tailscale DNS/runtime resolution and upstream TLS SNI/verification settings. |
+| `oci-yum.brkn.lol` | `https://yum.eu-frankfurt-1.oci.oraclecloud.com` | The Traefik `rewrite-body` plugin needs to be replaced with and tested against Nginx `sub_filter` (including response encoding/content type). |
+| Turris SSH on the `https` entrypoint | Raw TCP `host.docker.internal:22887` | Requires Nginx `stream` with `ssl_preread`: public 443 must multiplex TLS web traffic to an internal TLS listener and non-TLS SSH traffic to the tunnel. |
+| `traefik.brkn.lol` | Traefik dashboard API with basic auth | There is no native Nginx equivalent to the dashboard; either remove this route intentionally or replace it with a separately chosen status/admin endpoint. |
+
+The public DNS check showed that most of these names resolve to the OCI-01
+address `130.61.215.245`, but `homeassistant.brkn.lol` and
+`home-assistant.brkn.lol` resolve to `89.163.172.112`, while `turris.brkn.lol`
+resolves to `84.173.60.212`. Those names must not be assumed to be served by
+OCI-01 during a cutover.
+
+The current host resolver uses Cloudflare DNS. The overlay names used by the
+Home Assistant routes are instead available through the local NetBird resolver
+(`127.0.0.20`) and Tailscale DNS (`100.100.100.100`). A future Nginx module
+should set `services.nginx.resolver` accordingly and enable
+`proxyResolveWhileRunning` for those dynamic upstreams.
+
+Because the Docker-only mail backends and the 443 TCP multiplexing have not yet
+been converted and tested, no `hosts/oci-01/traefik.nix` replacement was added
+in this investigation. Adding only the easy static routes would make a native
+Nginx cutover appear complete while dropping mail, autodiscover, or Turris
+traffic. The safe implementation order is:
+
+1. Migrate Stalwart, Roundcube, and autodiscover (or explicitly provide stable
+   loopback listener ports without changing their persistent mounts).
+2. Move the existing static and Healthchecks vhosts from port 2020 to the
+   native public HTTP/TLS listeners and configure Nginx ACME using the existing
+   Cloudflare SOPS credentials.
+3. Implement and test the Home Assistant upstreams, OCI Yum response rewrite,
+   and the stream/http 443 multiplexer on an alternate listener before the
+   final port cutover.
+4. Decide explicitly whether the Traefik dashboard route is retired.
+5. Stop the legacy Traefik Compose unit only during the controlled cutover;
+   do not remove its `acme.json` or any application data until all route tests
+   pass.
+
 ## Terraform safety requirements
 
 Before any replacement or termination operation, boot-volume retention is
