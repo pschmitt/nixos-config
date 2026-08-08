@@ -14,6 +14,11 @@ let
       ssl = false;
     }
     {
+      addr = "[::]";
+      port = 80;
+      ssl = false;
+    }
+    {
       addr = "127.0.0.1";
       port = 8443;
       ssl = true;
@@ -123,6 +128,7 @@ in
 
       server {
         listen 443;
+        listen [::]:443;
         proxy_pass $oci_01_public_backend;
         proxy_timeout 1h;
         ssl_preread on;
