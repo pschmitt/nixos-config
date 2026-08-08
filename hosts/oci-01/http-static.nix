@@ -98,6 +98,11 @@ in
 
   services.nginx.defaultListen = listen;
 
+  # Traefik reaches the host backend through host.docker.internal.  OCI's
+  # security rules do not expose this port publicly, but the host firewall
+  # still needs to allow the Docker bridge to reach it.
+  networking.firewall.allowedTCPPorts = [ 2020 ];
+
   systemd.services.nginx = {
     requires = [ "mnt-data.mount" ];
     after = [ "mnt-data.mount" ];
