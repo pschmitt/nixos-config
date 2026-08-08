@@ -15,10 +15,60 @@ let
   mailHost = "mail.${mainDomain}";
   dkimSelector = "mail";
   dataDir = "/mnt/data/srv/stalwart/data";
+  mailPortChecks = [
+    {
+      name = "smtp";
+      port = 25;
+    }
+    {
+      name = "submission";
+      port = 587;
+    }
+    {
+      name = "smtps";
+      port = 465;
+      protocol = "smtps";
+      certificate = true;
+    }
+    {
+      name = "imap";
+      port = 143;
+      protocol = "imap";
+    }
+    {
+      name = "imaps";
+      port = 993;
+      protocol = "imaps";
+      certificate = true;
+    }
+    {
+      name = "sieve";
+      port = 4190;
+    }
+  ];
+  mkMailPortCheck =
+    {
+      name,
+      port,
+      protocol ? null,
+      certificate ? false,
+    }:
+    ''
+      check host "stalwart-${name}" with address "127.0.0.1"
+        group mail
+        group services
+        depends on "stalwart"
+        if failed
+          port ${toString port}
+          ${lib.optionalString (protocol != null) "protocol ${protocol}\n        "}with timeout 15 seconds
+          ${lib.optionalString certificate "and certificate valid for 5 days\n        "}for 3 cycles
+        then alert
+    '';
+  mailPortChecksConfig = lib.concatStringsSep "\n" (map mkMailPortCheck mailPortChecks);
   mailHealthCheck = pkgs.writeShellApplication {
     name = "stalwart-mail-health";
     runtimeInputs = [
-      pkgs.bind
+      pkgs.dnsutils
       pkgs.coreutils
       pkgs.gnugrep
       pkgs.openssl
@@ -108,70 +158,7 @@ in
         for 3 cycles
       then alert
 
-    check host "stalwart-smtp" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 25
-        with timeout 15 seconds
-        for 3 cycles
-      then alert
-
-    check host "stalwart-submission" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 587
-        with timeout 15 seconds
-        for 3 cycles
-      then alert
-
-    check host "stalwart-smtps" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 465
-        protocol smtps
-        with timeout 15 seconds
-        and certificate valid for 5 days
-        for 3 cycles
-      then alert
-
-    check host "stalwart-imap" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 143
-        protocol imap
-        with timeout 15 seconds
-        for 3 cycles
-      then alert
-
-    check host "stalwart-imaps" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 993
-        protocol imaps
-        with timeout 15 seconds
-        and certificate valid for 5 days
-        for 3 cycles
-      then alert
-
-    check host "stalwart-sieve" with address "127.0.0.1"
-      group mail
-      group services
-      depends on "stalwart"
-      if failed
-        port 4190
-        with timeout 15 seconds
-        for 3 cycles
-      then alert
+    ${mailPortChecksConfig}
 
     check program "stalwart-mail-health" with path "${mailHealthCheck}/bin/stalwart-mail-health ${mainDomain} ${dkimSelector}"
       group mail

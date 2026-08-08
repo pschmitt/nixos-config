@@ -91,7 +91,8 @@ main() {
   openssl x509 \
     -checkend 432000 \
     -noout \
-    -in "/var/lib/acme/${MAIL_HOST}/fullchain.pem"
+    -in "/var/lib/acme/${MAIL_HOST}/fullchain.pem" \
+    >/dev/null
 
   check_smtp
   check_tls "" 465
