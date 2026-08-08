@@ -1,7 +1,6 @@
 { lib, pkgs, ... }:
 let
   composeProjects = {
-    stalwart = "/srv/stalwart";
     traefik = "/srv/traefik";
   };
 

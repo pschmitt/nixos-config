@@ -38,8 +38,7 @@ in
 
   systemd.services.stalwart = {
     description = "Stalwart Mail Server";
-    # Keep this disabled until the Compose project is stopped during cutover.
-    wantedBy = [ ];
+    wantedBy = [ "multi-user.target" ];
     wants = [
       "network-online.target"
       "acme-${mailHost}.service"
