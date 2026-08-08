@@ -1,14 +1,19 @@
 {
+  config,
   lib,
   ...
 }:
+let
+  mainDomain = config.domains.main;
+  autoconfigHost = "autoconfig.${mainDomain}";
+in
 {
   services = {
     go-autoconfig = {
       enable = true;
       settings = {
         service_addr = "127.0.0.1:8081";
-        domain = "schmitt.co";
+        domain = mainDomain;
         imap = {
           server = "imap.gmail.com";
           port = 993;
@@ -22,14 +27,8 @@
       };
     };
 
-    nginx.virtualHosts."autoconfig.schmitt.co" = {
-      serverAliases = [ "autodiscover.schmitt.co" ];
-      listen = [
-        {
-          addr = "0.0.0.0";
-          port = 2020;
-        }
-      ];
+    nginx.virtualHosts.${autoconfigHost} = {
+      serverAliases = [ "autodiscover.${mainDomain}" ];
       locations."/" = {
         proxyPass = "http://127.0.0.1:8081";
         recommendedProxySettings = true;
@@ -42,12 +41,11 @@
         if failed
           port 8081
           protocol http
-          with hostheader "autoconfig.schmitt.co"
+          with hostheader "${autoconfigHost}"
           request "/mail/config-v1.1.xml"
           with timeout 10 seconds
           for 3 cycles
         then alert
     '';
   };
-
 }

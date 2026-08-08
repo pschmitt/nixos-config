@@ -1,3 +1,9 @@
+# NOTE: nixpkgs also provides services.stalwart, but its current module is
+# coupled to pkgs.stalwart (0.15.x). OCI-01's existing database was created
+# and is still served by pkgs.stalwart_0_16, which nixpkgs explicitly marks as
+# incompatible with that module. Keep this compatibility wrapper until the
+# upstream module supports the 0.16 package or we perform an export/import
+# migration between the two storage/configuration formats.
 {
   config,
   lib,
@@ -8,7 +14,7 @@ let
   mainDomain = config.domains.main;
   mailHost = "mail.${mainDomain}";
   dataDir = "/mnt/data/srv/stalwart/data";
-  configFile = (pkgs.formats.json { }).generate "oci-01-stalwart-config.json" {
+  configFile = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
     poolMaxConnections = 10;
