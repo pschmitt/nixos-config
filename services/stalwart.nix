@@ -13,7 +13,19 @@
 let
   mainDomain = config.domains.main;
   mailHost = "mail.${mainDomain}";
+  dkimSelector = "mail";
   dataDir = "/mnt/data/srv/stalwart/data";
+  mailHealthCheck = pkgs.writeShellApplication {
+    name = "stalwart-mail-health";
+    runtimeInputs = [
+      pkgs.bind
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.openssl
+      pkgs.systemd
+    ];
+    text = builtins.readFile ./scripts/stalwart-mail-health.sh;
+  };
   configFile = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
@@ -94,5 +106,64 @@ in
         with timeout 15 seconds
         for 3 cycles
       then alert
+
+    check host "stalwart-smtp" with address "127.0.0.1"
+      group services
+      if failed
+        port 25
+        protocol smtp
+        with timeout 15 seconds
+        for 3 cycles
+      then alert
+
+    check host "stalwart-submission" with address "127.0.0.1"
+      group services
+      if failed
+        port 587
+        protocol smtp
+        with timeout 15 seconds
+        for 3 cycles
+      then alert
+
+    check host "stalwart-smtps" with address "127.0.0.1"
+      group services
+      if failed
+        port 465
+        protocol smtps
+        with timeout 15 seconds
+        and certificate valid for 5 days
+        for 3 cycles
+      then alert
+
+    check host "stalwart-imap" with address "127.0.0.1"
+      group services
+      if failed
+        port 143
+        protocol imap
+        with timeout 15 seconds
+        for 3 cycles
+      then alert
+
+    check host "stalwart-imaps" with address "127.0.0.1"
+      group services
+      if failed
+        port 993
+        protocol imaps
+        with timeout 15 seconds
+        and certificate valid for 5 days
+        for 3 cycles
+      then alert
+
+    check host "stalwart-sieve" with address "127.0.0.1"
+      group services
+      if failed
+        port 4190
+        with timeout 15 seconds
+        for 3 cycles
+      then alert
+
+    check program "stalwart-mail-health" with path "${mailHealthCheck}/bin/stalwart-mail-health ${mainDomain} ${dkimSelector}"
+      group services
+      if status != 0 then alert
   '';
 }

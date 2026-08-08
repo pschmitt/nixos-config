@@ -4,16 +4,22 @@
   ...
 }:
 let
-  mainDomain = config.domains.main;
-  autoconfigHost = "autoconfig.${mainDomain}";
+  cfg = config.services.mail-autoconfig;
+  autoconfigHost = "autoconfig.${cfg.domain}";
 in
 {
-  services = {
+  options.services.mail-autoconfig.domain = lib.mkOption {
+    type = lib.types.str;
+    default = config.domains.main;
+    description = "Domain served by the mail client autoconfiguration endpoint.";
+  };
+
+  config.services = {
     go-autoconfig = {
       enable = true;
       settings = {
         service_addr = "127.0.0.1:8081";
-        domain = mainDomain;
+        inherit (cfg) domain;
         imap = {
           server = "imap.gmail.com";
           port = 993;
@@ -28,7 +34,7 @@ in
     };
 
     nginx.virtualHosts.${autoconfigHost} = {
-      serverAliases = [ "autodiscover.${mainDomain}" ];
+      serverAliases = [ "autodiscover.${cfg.domain}" ];
       locations."/" = {
         proxyPass = "http://127.0.0.1:8081";
         recommendedProxySettings = true;
