@@ -1,7 +1,6 @@
 { lib, pkgs, ... }:
 let
   composeProjects = {
-    caddy = "/srv/caddy";
     healthchecks = "/srv/healthchecks";
     stalwart = "/srv/stalwart";
     traefik = "/srv/traefik";
