@@ -120,7 +120,7 @@ let
 in
 {
   security.acme.certs."${mailHost}" = {
-    group = "stalwart";
+    group = config.services.stalwart.group;
     reloadServices = [ "stalwart.service" ];
   };
 
@@ -129,8 +129,6 @@ in
     package = pkgs.stalwart_0_16;
     stateVersion = "26.11";
     inherit dataDir;
-    user = "stalwart";
-    group = "stalwart";
     openFirewall = true;
     settings.server.listener = stalwartListeners;
   };
