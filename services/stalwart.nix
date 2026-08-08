@@ -135,10 +135,6 @@ in
     settings.server.listener = stalwartListeners;
   };
 
-  # The module creates this account; retain the IDs used by the existing data.
-  users.groups.stalwart.gid = 2000;
-  users.users.stalwart.uid = 2000;
-
   environment.etc."stalwart/config.json".source = datastoreBootstrap;
 
   systemd.tmpfiles.rules = [
