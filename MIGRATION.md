@@ -21,8 +21,8 @@
 - Persistent application data is primarily under `/mnt/data/srv`. Stalwart,
   Roundcube, autodiscover, the static sites, and Healthchecks are now
   Nix-managed services. The final reverse-proxy cutover is implemented with
-  `services.nginx`; the legacy Traefik Compose project is retained only until
-  the controlled runtime cutover is verified.
+  `services.nginx`; Traefik and its Compose project are no longer used on
+  `oci-01`.
 - The repository now has an `oci-01` NixOS host configuration following the
   `oci-03` cloud-host pattern. Root is Disko-managed LUKS+Btrfs; the existing
   data disk is also Disko-declared with `destroy = false`, its stable OCI
@@ -103,8 +103,8 @@ instance:
 4. Install NixOS with `nixos-anywhere`/Disko, targeting the existing root and
    explicitly preserving the existing data disk.
 5. Recreate the LUKS unlock and `/mnt/data` mount explicitly in NixOS.
-6. Start the legacy Stalwart and Traefik Compose projects from `/srv`; the
-   static sites and Healthchecks are now native Nix services.
+6. Start the native Stalwart, Roundcube, autodiscover, static-site,
+   Healthchecks, and Nginx services; no legacy Compose service is required.
 7. Verify mail, HTTP, Docker/application state, backups, DNS, and monitoring.
 
 The Nix Disko declaration identifies the data disk by its stable OCI SCSI
@@ -218,7 +218,7 @@ required for routine changes to this host.
       SQLite database/configuration and persistent image data.
 - [x] Verify native Stalwart, Roundcube, and autodiscover units and their
       persistent SQLite stores.
-- [ ] Verify the native Nginx public routes and remove the legacy Traefik
+- [x] Verify the native Nginx public routes and remove the legacy Traefik
       container.
 - [ ] Verify the public IP/PTR and all Cloudflare records.
 - [x] Verify a Nix-managed Restic backup, retention/pruning, and its

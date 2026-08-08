@@ -168,6 +168,7 @@ in
       };
 
       "${mailHost}" = {
+        serverAliases = [ "mail.pschmitt.dev" ];
         listen = lib.mkForce publicListen;
         useACMEHost = "oci-01-mail";
         forceSSL = true;
