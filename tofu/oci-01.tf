@@ -1,4 +1,6 @@
 resource "oci_core_instance" "oci_01" {
+  # FIXME: replace the ephemeral public IPv4 with a reserved OCI public IP
+  # before relying on it for permanent DNS/PTR records.
   display_name        = "oci-01"
   availability_domain = "WMjr:EU-FRANKFURT-1-AD-2"
   compartment_id      = var.oci_compartment_id
