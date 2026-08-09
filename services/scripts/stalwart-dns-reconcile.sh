@@ -48,8 +48,7 @@ done < <(
         .id,
         .name,
         (.dnsManagement.publishRecords // {}
-          | to_entries
-          | map(select(.value == true) | .key)
+          | with_entries(select(.value == true))
           | @json)
       ]
     | @tsv
