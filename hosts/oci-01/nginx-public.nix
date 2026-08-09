@@ -76,6 +76,11 @@ let
   ];
 in
 {
+  systemd.services.nginx = {
+    wants = [ "stalwart-network-config.service" ];
+    after = [ "stalwart-network-config.service" ];
+  };
+
   security.acme.certs = {
     "oci-01-brkn-lol" = {
       domain = mainDomain;
