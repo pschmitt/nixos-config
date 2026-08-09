@@ -22,112 +22,132 @@ let
   };
 in
 {
-  sops = {
-    secrets = {
-      "vaultwarden/smtp/host" = secretAttrs;
-      "vaultwarden/smtp/port" = secretAttrs;
-      "vaultwarden/smtp/security" = secretAttrs;
-      "vaultwarden/smtp/username" = secretAttrs;
-      "vaultwarden/smtp/password" = secretAttrs;
-      "vaultwarden/smtp/from" = secretAttrs;
-      "vaultwarden/admin_token_hash" = secretAttrs;
+  options.vaultwarden = {
+    baseUrl = lib.mkOption {
+      type = lib.types.str;
+      default = "https://bw.${config.domains.main}";
+      description = "Public URL used by clients connecting to Vaultwarden.";
     };
-
-    templates."vaultwarden/smtp.env" = {
-      content = ''
-        SMTP_FROM="${config.sops.placeholder."vaultwarden/smtp/from"}"
-        SMTP_HOST="${config.sops.placeholder."vaultwarden/smtp/host"}"
-        SMTP_PORT="${toString config.sops.placeholder."vaultwarden/smtp/port"}"
-        SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/security"}"
-        SMTP_USERNAME="${config.sops.placeholder."vaultwarden/smtp/username"}"
-        SMTP_PASSWORD="${config.sops.placeholder."vaultwarden/smtp/password"}"
-        ADMIN_TOKEN="${config.sops.placeholder."vaultwarden/admin_token_hash"}"
-      '';
-      owner = vaultwardenUser;
-      group = vaultwardenUser;
-      mode = "0400";
-      restartUnits = [ "vaultwarden.service" ];
+    organization = lib.mkOption {
+      type = lib.types.str;
+      default = "bitwarden.com";
+      description = "Organization used for Vaultwarden-backed synchronization.";
+    };
+    personalCollection = lib.mkOption {
+      type = lib.types.str;
+      default = "Personal vault";
+      description = "Collection used for the full personal-vault mirror.";
     };
   };
 
-  services = {
-    vaultwarden = {
-      enable = true;
-      # NOTE we need vaultwarden 1.35.3+ for the bw cli to be able to connect to
-      # the server, which is required for the bw-sync service.
-      package = pkgs.master.vaultwarden;
-      inherit backupDir;
-      environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
-      config = {
-        DOMAIN = "https://${primaryHost}";
-        SIGNUPS_ALLOWED = lib.mkForce false;
-        ORG_CREATION_USERS = config.mainUser.email;
-        DATA_FOLDER = dataDir;
-        ROCKET_ADDRESS = "127.0.0.1";
-        ROCKET_PORT = vaultwardenPort;
-        WEBSOCKET_ENABLED = true;
-        WEBSOCKET_ADDRESS = "127.0.0.1";
-        WEBSOCKET_PORT = websocketPort;
+  config = {
+    sops = {
+      secrets = {
+        "vaultwarden/smtp/host" = secretAttrs;
+        "vaultwarden/smtp/port" = secretAttrs;
+        "vaultwarden/smtp/security" = secretAttrs;
+        "vaultwarden/smtp/username" = secretAttrs;
+        "vaultwarden/smtp/password" = secretAttrs;
+        "vaultwarden/smtp/from" = secretAttrs;
+        "vaultwarden/admin_token_hash" = secretAttrs;
+      };
+
+      templates."vaultwarden/smtp.env" = {
+        content = ''
+          SMTP_FROM="${config.sops.placeholder."vaultwarden/smtp/from"}"
+          SMTP_HOST="${config.sops.placeholder."vaultwarden/smtp/host"}"
+          SMTP_PORT="${toString config.sops.placeholder."vaultwarden/smtp/port"}"
+          SMTP_SECURITY="${config.sops.placeholder."vaultwarden/smtp/security"}"
+          SMTP_USERNAME="${config.sops.placeholder."vaultwarden/smtp/username"}"
+          SMTP_PASSWORD="${config.sops.placeholder."vaultwarden/smtp/password"}"
+          ADMIN_TOKEN="${config.sops.placeholder."vaultwarden/admin_token_hash"}"
+        '';
+        owner = vaultwardenUser;
+        group = vaultwardenUser;
+        mode = "0400";
+        restartUnits = [ "vaultwarden.service" ];
       };
     };
-
-    nginx.virtualHosts.${primaryHost} = {
-      inherit serverAliases;
-      enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      locations = {
-        "/" = {
-          proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
-          proxyWebsockets = true;
-          recommendedProxySettings = true;
-        };
-        "/notifications/hub" = {
-          proxyPass = "http://127.0.0.1:${toString websocketPort}";
-          proxyWebsockets = true;
-          recommendedProxySettings = true;
-        };
-        "/notifications/hub/negotiate" = {
-          proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
-          recommendedProxySettings = true;
-        };
-      };
-    };
-
-    monit.config = lib.mkAfter ''
-      check host "vaultwarden" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
-        if failed
-          port ${toString vaultwardenPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
-  };
-
-  systemd = {
-    tmpfiles.rules =
-      let
-        user = config.systemd.services.vaultwarden.serviceConfig.User;
-        group = config.systemd.services.vaultwarden.serviceConfig.Group;
-      in
-      [
-        "d ${rootDir}   0750 ${user} ${group} -"
-        "d ${dataDir}   0750 ${user} ${group} -"
-        "d ${backupDir} 0770 ${user} ${group} -"
-        # Fix permissions after UID changes (e.g., after reinstall)
-        "Z ${rootDir}   0750 ${user} ${group} - -"
-      ];
 
     services = {
-      vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];
+      vaultwarden = {
+        enable = true;
+        # NOTE we need vaultwarden 1.35.3+ for the bw cli to be able to connect to
+        # the server, which is required for the bw-sync service.
+        package = pkgs.master.vaultwarden;
+        inherit backupDir;
+        environmentFile = config.sops.templates."vaultwarden/smtp.env".path;
+        config = {
+          DOMAIN = "https://${primaryHost}";
+          SIGNUPS_ALLOWED = lib.mkForce false;
+          ORG_CREATION_USERS = config.mainUser.email;
+          DATA_FOLDER = dataDir;
+          ROCKET_ADDRESS = "127.0.0.1";
+          ROCKET_PORT = vaultwardenPort;
+          WEBSOCKET_ENABLED = true;
+          WEBSOCKET_ADDRESS = "127.0.0.1";
+          WEBSOCKET_PORT = websocketPort;
+        };
+      };
 
-      # Ensure built-in backup service uses the custom data dir.
-      backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
+      nginx.virtualHosts.${primaryHost} = {
+        inherit serverAliases;
+        enableACME = true;
+        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+        acmeRoot = null;
+        forceSSL = true;
+        locations = {
+          "/" = {
+            proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
+            proxyWebsockets = true;
+            recommendedProxySettings = true;
+          };
+          "/notifications/hub" = {
+            proxyPass = "http://127.0.0.1:${toString websocketPort}";
+            proxyWebsockets = true;
+            recommendedProxySettings = true;
+          };
+          "/notifications/hub/negotiate" = {
+            proxyPass = "http://127.0.0.1:${toString vaultwardenPort}";
+            recommendedProxySettings = true;
+          };
+        };
+      };
+
+      monit.config = lib.mkAfter ''
+        check host "vaultwarden" with address "127.0.0.1"
+          group services
+          restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
+          if failed
+            port ${toString vaultwardenPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+      '';
+    };
+
+    systemd = {
+      tmpfiles.rules =
+        let
+          user = config.systemd.services.vaultwarden.serviceConfig.User;
+          group = config.systemd.services.vaultwarden.serviceConfig.Group;
+        in
+        [
+          "d ${rootDir}   0750 ${user} ${group} -"
+          "d ${dataDir}   0750 ${user} ${group} -"
+          "d ${backupDir} 0770 ${user} ${group} -"
+          # Fix permissions after UID changes (e.g., after reinstall)
+          "Z ${rootDir}   0750 ${user} ${group} - -"
+        ];
+
+      services = {
+        vaultwarden.serviceConfig.ReadWritePaths = [ rootDir ];
+
+        # Ensure built-in backup service uses the custom data dir.
+        backup-vaultwarden.environment.DATA_FOLDER = lib.mkForce dataDir;
+      };
     };
   };
 }

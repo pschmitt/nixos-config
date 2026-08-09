@@ -60,12 +60,12 @@
         destAccount = {
           name = "vaultwarden";
           email = "philipp@schmitt.co";
-          baseUrl = "https://bw.brkn.lol";
+          baseUrl = config.vaultwarden.baseUrl;
         };
         mode = "collections";
         collections = {
-          org = "bitwarden.com";
-          names = [ "Personal vault" ];
+          org = config.vaultwarden.organization;
+          names = [ config.vaultwarden.personalCollection ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
         monit = {
@@ -89,11 +89,11 @@
         destAccount = {
           name = "vaultwarden";
           email = "philipp@schmitt.co";
-          baseUrl = "https://bw.brkn.lol";
+          baseUrl = config.vaultwarden.baseUrl;
         };
         mode = "collections";
         collections = {
-          org = "bitwarden.com";
+          org = config.vaultwarden.organization;
           names = [
             "Default collection"
             "Anika hat ihr Passwort vergessen"
