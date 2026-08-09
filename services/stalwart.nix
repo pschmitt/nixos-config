@@ -205,6 +205,8 @@ in
         Type = "oneshot";
         User = "stalwart";
         Group = "stalwart";
+        RuntimeDirectory = "stalwart-dns-reconcile";
+        Environment = "HOME=/run/stalwart-dns-reconcile";
         ExecStart = "${dnsReconcile}/bin/stalwart-dns-reconcile";
         LoadCredential = [
           "api-key:${config.sops.secrets."stalwart/dns-task-api-key".path}"
