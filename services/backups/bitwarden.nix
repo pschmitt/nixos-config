@@ -50,7 +50,7 @@
     syncJobs = {
       # "Personal vault" has no same-named source-side collection, so
       # bw-sync.sh gives it a full mirror of the whole source vault -- into
-      # the "bitwarden.com" org's "Personal vault" collection rather than
+      # the "Bergmann-Schmitt" org's "Personal vault" collection rather than
       # destAccount's own bare personal vault.
       personal = {
         sourceAccount = {
@@ -64,7 +64,7 @@
         };
         mode = "collections";
         collections = {
-          org = "bitwarden.com";
+          org = "Bergmann-Schmitt";
           names = [ "Personal vault" ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
@@ -93,7 +93,7 @@
         };
         mode = "collections";
         collections = {
-          org = "bitwarden.com";
+          org = "Bergmann-Schmitt";
           names = [
             "Default collection"
             "Anika hat ihr Passwort vergessen"
