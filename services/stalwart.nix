@@ -1,8 +1,8 @@
 # NOTE: Use the upstream services.stalwart module for the account, tmpfiles,
 # hardening, and systemd service. Its generated TOML is for pkgs.stalwart
 # 0.15.x, while this host's existing database is served by pkgs.stalwart_0_16
-# and requires the upstream JSON datastore bootstrap. Keep only that narrow
-# compatibility override until the module supports the 0.16 configuration.
+# and requires the upstream JSON datastore bootstrap. The custom Stalwart
+# module reconciles the database-backed listener objects from Nix.
 {
   config,
   lib,
@@ -133,6 +133,21 @@ let
     ];
     text = builtins.readFile ./scripts/stalwart-mail-health.sh;
   };
+  listenerObjectName = {
+    imap = "imap-starttls";
+    smtps = "submissions";
+  };
+  desiredNetworkListeners = lib.mapAttrs (
+    name: listener:
+    listener
+    // {
+      name = listenerObjectName.${name} or name;
+      tlsImplicit = builtins.elem name [
+        "imaps"
+        "smtps"
+      ];
+    }
+  ) stalwartListeners;
   datastoreBootstrap = (pkgs.formats.json { }).generate "stalwart-config.json" {
     "@type" = "Sqlite";
     path = "${dataDir}/database.sqlite";
@@ -153,6 +168,8 @@ in
     openFirewall = true;
     settings.server.listener = stalwartListeners;
   };
+
+  custom.stalwart.networkListeners = desiredNetworkListeners;
 
   environment.etc."stalwart/config.json".source = datastoreBootstrap;
 
