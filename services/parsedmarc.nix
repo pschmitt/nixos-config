@@ -6,6 +6,14 @@
 }:
 let
   grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
+  grafanaElasticsearchPlugin = pkgs.grafanaPlugins.grafanaPlugin {
+    pname = "elasticsearch";
+    version = "12.8.0";
+    zipHash = {
+      aarch64-linux = "sha256-ZM1m/zskQOxQg6zafp5YZrHENXeMxANmzS6rUOystLw=";
+      x86_64-linux = "sha256-3NI+cnxRPUC4fFnfDD4H9vFufrJiiugKy53JTJ2B9P0=";
+    };
+  };
 in
 {
   # FIXME parsedmarc's provision.elasticsearch pulls in pkgs.elasticsearch
@@ -41,6 +49,7 @@ in
 
     grafana = {
       enable = true;
+      declarativePlugins = lib.mkAfter [ grafanaElasticsearchPlugin ];
       settings = {
         server = {
           http_addr = "127.0.0.1";
