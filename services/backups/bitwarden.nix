@@ -60,7 +60,7 @@
         destAccount = {
           name = "vaultwarden";
           email = "philipp@schmitt.co";
-          baseUrl = config.vaultwarden.baseUrl;
+          baseUrl = config.services.vaultwarden.config.DOMAIN;
         };
         mode = "collections";
         collections = {
@@ -89,7 +89,7 @@
         destAccount = {
           name = "vaultwarden";
           email = "philipp@schmitt.co";
-          baseUrl = config.vaultwarden.baseUrl;
+          baseUrl = config.services.vaultwarden.config.DOMAIN;
         };
         mode = "collections";
         collections = {
