@@ -8,10 +8,16 @@ today="$(date -u +%F)"
 domains_json="$(stalwart-cli query Domain --fields id,name,dnsManagement --json)"
 tasks_json="$(stalwart-cli query Task --where @type=DnsManagement --fields domainId,status --json | jq -s '.')"
 
-while IFS=$'\t' read -r domain_id domain_name
+while IFS=$'\t' read -r domain_id domain_name update_records
 do
-  if [[ -z "$domain_id" || -z "$domain_name" ]]
+  if [[ -z "$domain_id" || -z "$domain_name" || -z "$update_records" ]]
   then
+    continue
+  fi
+
+  if [[ "$update_records" == "[]" ]]
+  then
+    printf 'Skipping %s: no DNS record types are enabled for publication\n' "$domain_name"
     continue
   fi
 
@@ -31,11 +37,20 @@ do
   fi
 
   printf 'Creating DNS reconciliation task for %s\n' "$domain_name"
-  stalwart-cli create Task/DnsManagement --field "domainId=$domain_id" --no-color
+  stalwart-cli create Task/DnsManagement \
+    --field "domainId=$domain_id" \
+    --field "updateRecords=$update_records" \
+    --no-color
 done < <(
   jq -r '
     select(.dnsManagement."@type" == "Automatic")
-    | [.id, .name]
+    | [
+        .id,
+        .name,
+        (.dnsManagement.publishRecords // {}
+          | to_entries
+          | map(select(.value == true) | .key))
+      ]
     | @tsv
   ' <<<"$domains_json"
 )
