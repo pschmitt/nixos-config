@@ -1,8 +1,8 @@
 locals {
   restic_hosts = [
     # nixos servers
-    "oci-03",
     "oci-01",
+    "oci-03",
     "rofl-10",
     "rofl-11",
     "rofl-12",
