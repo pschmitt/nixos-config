@@ -49,7 +49,8 @@ done < <(
         .name,
         (.dnsManagement.publishRecords // {}
           | to_entries
-          | map(select(.value == true) | .key))
+          | map(select(.value == true) | .key)
+          | @json)
       ]
     | @tsv
   ' <<<"$domains_json"
