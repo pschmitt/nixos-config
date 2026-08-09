@@ -52,6 +52,8 @@ let
                   --album "$ALBUM"
                 '';
                 User = config.services.immich.user;
+                StateDirectory = "immich-face-to-album";
+                Environment = "HOME=/var/lib/immich-face-to-album";
                 Type = "oneshot";
               };
             };
