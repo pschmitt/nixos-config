@@ -133,6 +133,15 @@ let
     ];
     text = builtins.readFile ./scripts/stalwart-mail-health.sh;
   };
+  dnsReconcile = pkgs.writeShellApplication {
+    name = "stalwart-dns-reconcile";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.stalwart-cli
+    ];
+    text = builtins.readFile ./scripts/stalwart-dns-reconcile.sh;
+  };
   listenerObjectName = {
     imap = "imap-starttls";
     smtps = "submissions";
@@ -171,31 +180,73 @@ in
 
   custom.stalwart.networkListeners = desiredNetworkListeners;
 
+  sops.secrets."stalwart/dns-task-api-key" = config.custom.mkSecret {
+    owner = "stalwart";
+    group = "stalwart";
+    mode = "0400";
+  };
+
   environment.etc."stalwart/config.json".source = datastoreBootstrap;
 
-  systemd.tmpfiles.rules = [
-    "d /etc/stalwart 0755 root root -"
-    "d /etc/stalwart/certs 0755 root root -"
-    "L+ /etc/stalwart/certs/${mailHost}_ecc/fullchain.cer - - - - /var/lib/acme/${mailHost}/fullchain.pem"
-    "L+ /etc/stalwart/certs/${mailHost}_ecc/${mailHost}.key - - - - /var/lib/acme/${mailHost}/key.pem"
-  ];
-
-  # The upstream module owns this unit. Only replace its incompatible TOML
-  # command and storage preparation with the existing 0.16 JSON bootstrap.
-  systemd.services.stalwart = {
-    unitConfig = {
-      ConditionPathExists = lib.mkForce [
-        "${dataDir}/database.sqlite"
-        "/etc/stalwart/config.json"
+  systemd = {
+    services.stalwart-dns-reconcile = {
+      description = "Reconcile Stalwart-managed DNS records";
+      wants = [
+        "network-online.target"
+        "sops-nix.service"
+        "stalwart.service"
       ];
-      RequiresMountsFor = [ dataDir ];
+      after = [
+        "network-online.target"
+        "sops-nix.service"
+        "stalwart.service"
+      ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "stalwart";
+        Group = "stalwart";
+        ExecStart = "${dnsReconcile}/bin/stalwart-dns-reconcile";
+        LoadCredential = [
+          "api-key:${config.sops.secrets."stalwart/dns-task-api-key".path}"
+        ];
+      };
     };
-    serviceConfig = {
-      ExecStartPre = lib.mkForce [ ];
-      ExecStart = lib.mkForce [
-        ""
-        "${pkgs.stalwart_0_16}/bin/stalwart --config=/etc/stalwart/config.json"
-      ];
+
+    timers.stalwart-dns-reconcile = {
+      description = "Daily Stalwart DNS reconciliation";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "*-*-* 03:15:00";
+        Persistent = true;
+        RandomizedDelaySec = "15m";
+        Unit = "stalwart-dns-reconcile.service";
+      };
+    };
+
+    tmpfiles.rules = [
+      "d /etc/stalwart 0755 root root -"
+      "d /etc/stalwart/certs 0755 root root -"
+      "L+ /etc/stalwart/certs/${mailHost}_ecc/fullchain.cer - - - - /var/lib/acme/${mailHost}/fullchain.pem"
+      "L+ /etc/stalwart/certs/${mailHost}_ecc/${mailHost}.key - - - - /var/lib/acme/${mailHost}/key.pem"
+    ];
+
+    # The upstream module owns this unit. Only replace its incompatible TOML
+    # command and storage preparation with the existing 0.16 JSON bootstrap.
+    services.stalwart = {
+      unitConfig = {
+        ConditionPathExists = lib.mkForce [
+          "${dataDir}/database.sqlite"
+          "/etc/stalwart/config.json"
+        ];
+        RequiresMountsFor = [ dataDir ];
+      };
+      serviceConfig = {
+        ExecStartPre = lib.mkForce [ ];
+        ExecStart = lib.mkForce [
+          ""
+          "${pkgs.stalwart_0_16}/bin/stalwart --config=/etc/stalwart/config.json"
+        ];
+      };
     };
   };
 
