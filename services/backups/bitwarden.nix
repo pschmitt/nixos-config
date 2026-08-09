@@ -64,8 +64,8 @@
         };
         mode = "collections";
         collections = {
-          org = config.vaultwarden.organization;
-          names = [ config.vaultwarden.personalCollection ];
+          org = "bitwarden.com";
+          names = [ "Personal vault" ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
         monit = {
@@ -93,7 +93,7 @@
         };
         mode = "collections";
         collections = {
-          org = config.vaultwarden.organization;
+          org = "bitwarden.com";
           names = [
             "Default collection"
             "Anika hat ihr Passwort vergessen"
