@@ -49,11 +49,11 @@ let
                   --server http://${config.services.immich.host}:${toString config.services.immich.port} \
                   --key "$API_KEY" \
                   --face "$FACE" \
-                  --album "$ALBUM"
+                  --album "$ALBUM" \
+                  --state-file "/var/lib/immich-face-to-album/${name}.json"
                 '';
                 User = config.services.immich.user;
                 StateDirectory = "immich-face-to-album";
-                Environment = "HOME=/var/lib/immich-face-to-album";
                 Type = "oneshot";
               };
             };
