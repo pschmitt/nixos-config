@@ -166,7 +166,8 @@ in
                 "ctrl-backspace"
                 "ctrl-h"
               ];
-              move_line_end = [ ];
+              move_line_start = [ "home" ];
+              move_line_end = [ "end" ];
             };
           };
 
