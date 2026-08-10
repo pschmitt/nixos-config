@@ -6,6 +6,25 @@ Usage: $(basename "$0") DOMAIN DKIM_SELECTOR
 EOF
 }
 
+dns_resolvers=(
+  ""
+  "1.1.1.1"
+  "8.8.8.8"
+)
+
+dig_query() {
+  local resolver=$1
+  shift
+  local resolver_args=()
+
+  if [[ -n "${resolver}" ]]
+  then
+    resolver_args=("@${resolver}")
+  fi
+
+  dig +short +time=2 +tries=1 "${resolver_args[@]}" "$@"
+}
+
 check_tls() {
   local mode=$1
   local port=$2
@@ -30,14 +49,45 @@ check_tls() {
 check_dns_txt() {
   local name=$1
   local expected=$2
+  local resolver
   local record
 
-  record="$(dig +short TXT "${name}" | tr -d '"')"
-  [[ "${record}" == *"${expected}"* ]]
+  for resolver in "${dns_resolvers[@]}"
+  do
+    if ! record="$(dig_query "${resolver}" TXT "${name}" | tr -d '"')"
+    then
+      continue
+    fi
+
+    if [[ "${record}" == *"${expected}"* ]]
+    then
+      return 0
+    fi
+  done
+
+  printf 'DNS TXT check failed for %s (expected %s)\n' "${name}" "${expected}" >&2
+  return 1
 }
 
 check_dns_mx() {
-  dig +short MX "${MAIL_DOMAIN}" | grep -Fq "mail.${MAIL_DOMAIN}."
+  local resolver
+  local record
+
+  for resolver in "${dns_resolvers[@]}"
+  do
+    if ! record="$(dig_query "${resolver}" MX "${MAIL_DOMAIN}")"
+    then
+      continue
+    fi
+
+    if grep -Fq "mail.${MAIL_DOMAIN}." <<<"${record}"
+    then
+      return 0
+    fi
+  done
+
+  printf 'DNS MX check failed for %s\n' "${MAIL_DOMAIN}" >&2
+  return 1
 }
 
 check_smtp() {
