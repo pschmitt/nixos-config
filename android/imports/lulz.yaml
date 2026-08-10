@@ -5,3 +5,4 @@ apps:
     pkg: dev.pschmitt.augh
     store: github
     repo: pschmitt/augh
+    asset: 'augh-latest-release\.apk$'

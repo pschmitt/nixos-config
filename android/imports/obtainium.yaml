@@ -1,9 +1,9 @@
 # Obtainium itself, plus repo-tracking entries shared across devices via
-# `imports:` (px5/mp4/zf10 all import this for the app; only px5/mp4 also
-# benefit from the obtainium: list below, which requires root and is
-# skipped entirely on zf10). Only repos actually tracked on every current
-# rooted device live here; device-specific ones stay in that device's own
-# obtainium: list.
+# `imports:`. The auto-tracking setting applies to every device importing
+# this file; device-specific entries can still live in that device's own
+# `obtainium:` list.
+obtainium_auto_track: true
+
 apps:
   - name: "Obtainium"
     pkg: dev.imranr.obtainium.fdroid
@@ -11,14 +11,14 @@ apps:
     # state:
     #   installed: false
 
-obtainium:
-  - pkg: org.breezyweather
-    url: "https://github.com/breezy-weather/breezy-weather"
-
-  - pkg: dev.pschmitt.jollyfin
-    url: "https://github.com/pschmitt/jollyfin"
-    settings:
-      includePrereleases: true
-
-  - pkg: moe.shizuku.privileged.api
-    url: "https://github.com/thedjchi/Shizuku"
+# obtainium:
+#   - pkg: org.breezyweather
+#     url: "https://github.com/breezy-weather/breezy-weather"
+#
+#   - pkg: dev.pschmitt.jollyfin
+#     url: "https://github.com/pschmitt/jollyfin"
+#     settings:
+#       includePrereleases: true
+#
+#   - pkg: moe.shizuku.privileged.api
+#     url: "https://github.com/thedjchi/Shizuku"
