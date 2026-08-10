@@ -269,8 +269,6 @@ in
       group mail
       group services
       depends on "stalwart"
-      # This aggregate probe opens several protocol sessions. Avoid creating
-      a burst of local STARTTLS connections and tolerate transient refusals.
       every 2 cycles
       if status != 0 for 3 cycles then alert
   '';
