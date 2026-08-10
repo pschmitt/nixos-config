@@ -12,9 +12,6 @@ apps:
     #   installed: false
 
 obtainium:
-  - pkg: com.kieronquinn.app.smartspacer
-    url: "https://github.com/KieronQuinn/Smartspacer"
-
   - pkg: org.breezyweather
     url: "https://github.com/breezy-weather/breezy-weather"
 
