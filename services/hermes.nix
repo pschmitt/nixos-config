@@ -74,6 +74,14 @@ let
     ];
     text = builtins.readFile ./scripts/hermes-nixos-init.sh;
   };
+  hermesMountHa = pkgs.writeShellApplication {
+    name = "hermes-mount-ha";
+    runtimeInputs = [ pkgs.systemd ];
+    text = ''
+      exec systemctl start --no-block mnt-ha.mount
+      # vim: set ft=sh et ts=2 sw=2 :
+    '';
+  };
   hermesOpsDispatch = pkgs.writeShellApplication {
     name = "hermes-ops-dispatch";
     runtimeInputs = [
@@ -90,6 +98,18 @@ in
 {
   imports = [
     inputs.hermes-agent.nixosModules.default
+  ];
+
+  security.sudo.extraRules = [
+    {
+      users = [ config.services.hermes-agent.user ];
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/hermes-mount-ha";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
   ];
 
   sops = {
@@ -258,6 +278,7 @@ in
         pkgs.tmux
         hermesNixosApply
         hermesNixosInit
+        hermesMountHa
         ghBrknLol
         ghPschmitt
       ]
