@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monit"
+  short_description: "Inspect and fix live Monit alerts"
+  default_prompt: "Use $monit to inspect live Monit alerts on the rofl and oci hosts, fix low-risk issues, and propose a game plan for complex incidents."
