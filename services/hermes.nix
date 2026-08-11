@@ -8,6 +8,7 @@
 let
   hermesHost = "hermes.${config.domains.main}";
   aiHost = "ai.${config.domains.main}";
+  matrixUser = "@pschmitt:matrix.${config.domains.main}";
   dashboardPort = 9119;
   signalCliPort = 8712;
   signalCliDataDir = "${config.services.hermes-agent.stateDir}/.signal-cli";
@@ -190,7 +191,7 @@ in
           MATRIX_HOMESERVER=https://matrix-client.matrix.org
           MATRIX_PASSWORD=${config.sops.placeholder."hermes/matrix/password"}
           MATRIX_USER_ID=@hermes-brkn:matrix.org
-          MATRIX_ALLOWED_USERS=@pschmitt:one.ems.host
+          MATRIX_ALLOWED_USERS=@pschmitt:one.ems.host,${matrixUser}
           MATRIX_E2EE_MODE=required
           MATRIX_DEVICE_ID=HERMESROFL10
           MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
