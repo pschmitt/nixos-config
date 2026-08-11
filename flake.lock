@@ -3089,11 +3089,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786197946,
-        "narHash": "sha256-t8zrFfSlEkWaADwKDB7A7NkOxk9zuI1OXStj6sf+PoI=",
+        "lastModified": 1786469623,
+        "narHash": "sha256-DbS7+GG2a0SxDJtb4+RYc6lp5jFgmFOiGFy/WhCjMoE=",
         "owner": "pschmitt",
         "repo": "pschmitt.dev",
-        "rev": "5cb3ba78889887caa220f8cef74df69f518089c2",
+        "rev": "6a7bd98e9656fabd5936a7391a971b61cf80c5e9",
         "type": "github"
       },
       "original": {
