@@ -1,9 +1,9 @@
 ---
-name: monit-fix
+name: monit
 description: Inspect live Monit alerts on the rofl-* and oci-* VMs over SSH, identify root causes, immediately fix low-risk reversible service issues, and report unresolved incidents with a concrete game plan. Use when Monit raises alerts, a rofl or oci VM appears unhealthy, or the user asks to check or repair live VM monitoring issues.
 ---
 
-# Monit Fix
+# Monit
 
 Use live SSH inspection as the source of truth for Monit incidents. Check every known
 `rofl-*` and `oci-*` VM, repair only obvious low-risk issues in scope, and clearly
@@ -78,7 +78,28 @@ The game plan must state the evidence, likely cause, proposed steps, backup or
 rollback needs, expected service impact, and validation checks. If execution needs
 user approval or an external choice, stop after the plan.
 
-### 4. Prevent Monit interference during maintenance
+### 4. Reset stale checks safely
+
+When the live service or endpoint is healthy but Monit retains a stale `Timeout`,
+`Status failed`, or similar state, reset only that check. Confirm the underlying
+check independently first; do not use this procedure to hide a current failure.
+
+Run the commands in this order so a reload does not undo the re-monitor request:
+
+```sh
+sudo -n monit unmonitor <check-name>
+sudo -n monit reload
+sudo -n monit monitor <check-name>
+sudo -n monit status <check-name>
+```
+
+The status may be `Initializing` or `Waiting` until the check's next scheduled
+sample, especially for checks using `every N cycles`. Wait for that sample and
+verify both the underlying service and `monitoring status Monitored` with status
+`OK`. If the check remains failed, diagnose it as a real incident. Never finish
+with a check `Not monitored`, `monitor pending`, or otherwise disabled.
+
+### 5. Prevent Monit interference during maintenance
 
 Monit may automatically restart a failing service. During troubleshooting or
 maintenance, that restart mechanism can race the agent, hide the original failure,
@@ -93,12 +114,15 @@ sudo -n monit unmonitor <check-name>
 sudo -n systemctl stop <unit>
 ```
 
-After the service is healthy, re-enable and validate it:
+After the service is healthy, reload Monit's configuration and then re-enable the
+specific check. Keep the `monitor` command after `reload`, because a reload can
+replace a pending monitor request:
 
 ```sh
-sudo -n monit monitor <check-name>
+sudo -n systemctl start <unit>
 sudo -n monit reload
-sudo -n monit summary
+sudo -n monit monitor <check-name>
+sudo -n monit status <check-name>
 ```
 
 Never finish an incident with a check left unmonitored. If the repair fails or the
@@ -109,7 +133,7 @@ Do not stop or unmonitor the whole Monit daemon unless that is itself the diagno
 problem. Leave maintenance backups and migration source data intact until verification
 is complete.
 
-### 5. Report the result
+### 6. Report the result
 
 Return a compact per-host summary containing:
 
