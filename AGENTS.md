@@ -17,6 +17,11 @@
   - Check `hostname` first: if the current machine is the target host, omit the argument (`just deploy`) to build and switch locally without SSH/rsync.
 - To apply standalone Home Manager changes on fnuc (non-NixOS), run `just hm` (or `just hm <hostname>` for a specific host). This rsyncs the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem.
 
+## Private configuration submodule
+- `private/` is a Git submodule tracking `pschmitt/nixos-config-private`; it supplies private modules and secrets used by this flake.
+- Keep the `private/` submodule pointer and the locked `nixos-config-private` flake input in `flake.lock` at the same commit.
+- When updating private configuration, commit and push the private repository first, then update both the parent submodule pointer and its `flake.lock` entry before deploying.
+
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
 - `statix` checks should pass.
