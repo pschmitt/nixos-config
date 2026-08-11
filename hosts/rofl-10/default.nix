@@ -83,16 +83,6 @@
   };
   custom.homeAssistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
 
-  # Give Hermes access to the mounted HA config repo. hermes-agent runs under
-  # ProtectSystem=strict with only its own stateDir/workspace writable (see
-  # services/hermes.nix), so /mnt/ha needs to be added explicitly; the
-  # automount unit also needs to be pulled in since ReadWritePaths alone
-  # doesn't guarantee mount ordering for an x-systemd.automount path.
-  systemd.services.hermes-agent = {
-    unitConfig.RequiresMountsFor = [ "/mnt/ha" ];
-    serviceConfig.ReadWritePaths = [ "/mnt/ha" ];
-  };
-
   nixHost.extraSubstituters = [
     "https://cache.rofl-13.brkn.lol"
     "https://cache.rofl-14.brkn.lol"
