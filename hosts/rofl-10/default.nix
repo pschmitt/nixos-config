@@ -73,15 +73,17 @@
     serverType = "openstack";
     biosBoot = lib.mkForce false;
   };
-  custom.promptColor = "#0B87CA"; # nextcloud blue
-
   # Dedicated key for the /mnt/ha sshfs mount (see profiles/network/ha-sshfs.nix):
   # rofl-10 is a server with no personal user key on disk, unlike workstations,
   # so it gets its own key authorized on the hass side instead.
   sops.secrets."hass/sshfs/private-key" = config.custom.mkSecret {
     mode = "0400";
   };
-  custom.homeAssistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
+  custom = {
+    promptColor = "#0B87CA"; # nextcloud blue
+    homeAssistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
+    homeAssistant.sshfs.host = "homeassistant.snake-eagle.ts.net";
+  };
 
   nixHost.extraSubstituters = [
     "https://cache.rofl-13.brkn.lol"

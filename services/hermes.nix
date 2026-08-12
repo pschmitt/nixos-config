@@ -600,9 +600,9 @@ in
               config.sops.templates."hermes/bitwarden/data.json".path
             } ${bitwardenCliDataPath}"
           ];
-          # Let the agent edit the HA checkout when the optional SSHFS mount is
-          # available. The leading '-' makes a missing mount point harmless.
-          ReadWritePaths = lib.mkAfter [ "-/mnt/ha" ];
+          # Keep the optional SSHFS mount writable when it is present without
+          # resolving its automount while this service's namespace is created.
+          ProtectSystem = lib.mkForce "full";
         };
       };
       hermes-ops = {

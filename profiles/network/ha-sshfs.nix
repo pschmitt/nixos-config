@@ -16,13 +16,19 @@
     '';
   };
 
+  options.custom.homeAssistant.sshfs.host = lib.mkOption {
+    type = lib.types.str;
+    default = "hass.${config.domains.vpn}";
+    description = "SSH host serving the Home Assistant configuration mount.";
+  };
+
   config = {
     # NOTE We cannot use /config here since it is a symlink to /homeassistant
     programs.fuse.userAllowOther = true;
 
     fileSystems."/mnt/ha" = {
       fsType = "fuse";
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@hass.${config.domains.vpn}:/homeassistant";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@${config.custom.homeAssistant.sshfs.host}:/homeassistant";
       options = [
         "noauto"
         "_netdev"
