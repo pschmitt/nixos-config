@@ -156,10 +156,6 @@
       frequency = "02:30";
       useFlake = true;
       flakeDir = "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
-      flags = [
-        "-b"
-        "hm-backup"
-      ];
       preSwitchCommands = [
         "${pkgs.gitMinimal}/bin/git pull"
       ];
