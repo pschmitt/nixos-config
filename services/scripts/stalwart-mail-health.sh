@@ -29,21 +29,28 @@ check_tls() {
   local mode=$1
   local port=$2
   local starttls_args=()
+  local output
 
   if [[ -n "${mode}" ]]
   then
     starttls_args=("-starttls" "${mode}")
   fi
 
-  openssl s_client \
-    "${starttls_args[@]}" \
-    -connect "127.0.0.1:${port}" \
-    -servername "${MAIL_HOST}" \
-    -verify_hostname "${MAIL_HOST}" \
-    -verify_return_error \
-    </dev/null \
-    >/dev/null \
-    2>&1
+  if ! output="$(
+    openssl s_client \
+      "${starttls_args[@]}" \
+      -brief \
+      -connect "127.0.0.1:${port}" \
+      -servername "${MAIL_HOST}" \
+      -verify_hostname "${MAIL_HOST}" \
+      -verify_return_error \
+      </dev/null \
+      2>&1
+  )"
+  then
+    printf 'TLS handshake failed on port %s:\n%s\n' "${port}" "${output}" >&2
+    return 1
+  fi
 }
 
 check_dns_txt() {
@@ -93,23 +100,30 @@ check_dns_mx() {
 check_smtp() {
   local response
 
-  exec 3<>"/dev/tcp/127.0.0.1/25" || return 1
+  if ! exec 3<>"/dev/tcp/127.0.0.1/25"
+  then
+    printf 'Could not connect to SMTP port 25.\n' >&2
+    return 1
+  fi
 
   if ! IFS= read -r -t 10 response <&3
   then
     exec 3>&-
+    printf 'SMTP port 25 did not send a greeting within 10 seconds.\n' >&2
     return 1
   fi
 
   if [[ "${response}" != 220* ]]
   then
     exec 3>&-
+    printf 'SMTP port 25 sent an unexpected greeting: %s\n' "${response}" >&2
     return 1
   fi
 
   if ! printf 'EHLO %s\r\nQUIT\r\n' "${MAIL_HOST}" >&3
   then
     exec 3>&-
+    printf 'SMTP port 25 rejected the EHLO write.\n' >&2
     return 1
   fi
 
@@ -123,7 +137,22 @@ check_smtp() {
   done
 
   exec 3>&-
+  printf 'SMTP port 25 did not return a successful EHLO response.\n' >&2
   return 1
+}
+
+run_check() {
+  local label=$1
+  shift
+
+  printf '%s: ' "${label}"
+  if "$@"
+  then
+    printf 'OK\n'
+  else
+    printf 'FAILED\n'
+    return 1
+  fi
 }
 
 main() {
@@ -137,24 +166,28 @@ main() {
   local DKIM_SELECTOR=$2
   local MAIL_HOST="mail.${MAIL_DOMAIN}"
 
-  systemctl --quiet is-active "acme-${MAIL_HOST}.service"
-  openssl x509 \
+  run_check "ACME service active" \
+    systemctl --quiet is-active "acme-${MAIL_HOST}.service"
+  run_check "Certificate valid for 5 days" openssl x509 \
     -checkend 432000 \
     -noout \
-    -in "/var/lib/acme/${MAIL_HOST}/fullchain.pem" \
-    >/dev/null
+    -in "/var/lib/acme/${MAIL_HOST}/fullchain.pem"
 
-  check_smtp
-  check_tls "" 465
-  check_tls "smtp" 587
-  check_tls "" 993
-  check_tls "imap" 143
+  run_check "SMTP 25" check_smtp
+  run_check "Implicit TLS 465" check_tls "" 465
+  run_check "SMTP STARTTLS 587" check_tls "smtp" 587
+  run_check "Implicit TLS 993" check_tls "" 993
+  run_check "IMAP STARTTLS 143" check_tls "imap" 143
 
-  check_dns_mx
-  check_dns_txt "${MAIL_DOMAIN}" "v=spf1"
-  check_dns_txt "_dmarc.${MAIL_DOMAIN}" "v=DMARC1"
-  check_dns_txt "${DKIM_SELECTOR}._domainkey.${MAIL_DOMAIN}" "v=DKIM1"
-  check_dns_txt "${DKIM_SELECTOR}._domainkey.${MAIL_DOMAIN}" "p="
+  run_check "DNS MX" check_dns_mx
+  run_check "DNS SPF" check_dns_txt "${MAIL_DOMAIN}" "v=spf1"
+  run_check "DNS DMARC" check_dns_txt "_dmarc.${MAIL_DOMAIN}" "v=DMARC1"
+  run_check "DNS DKIM version" check_dns_txt \
+    "${DKIM_SELECTOR}._domainkey.${MAIL_DOMAIN}" "v=DKIM1"
+  run_check "DNS DKIM public key" check_dns_txt \
+    "${DKIM_SELECTOR}._domainkey.${MAIL_DOMAIN}" "p="
+
+  printf 'All Stalwart mail health checks passed.\n'
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
