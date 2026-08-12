@@ -56,10 +56,11 @@
     manageAuthorizedKeys = true;
   };
 
-  # Allow Hermes on rofl-10 to run the Browser MCP stdio server over SSH.
-  # This is the existing dedicated nix-remote-builder key, scoped to FNUC's
-  # managed main-user authorized keys rather than a shared/global account.
+  # Allow Home Assistant's KVM USB watchdog and Hermes on rofl-10 to use
+  # scoped main-user SSH access rather than a shared/global account.
   mainUser.extraAuthorizedKeys = lib.mkAfter [
+    # Home Assistant container on hv, used by the KVM USB replug automation.
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7 root@a0d7b954-ssh"
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
   ];
 
