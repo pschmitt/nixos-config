@@ -17,6 +17,20 @@ let
   sopsAgeKeyFile = config.sops.secrets."age/hermes-sops/keys.txt".path;
   hermesOpsDir = "${config.services.hermes-agent.stateDir}/ops";
   hermesNixFlakeDir = "${config.services.hermes-agent.workingDirectory}/nixos-config";
+
+  # Upstream packaging bug (NousResearch/hermes-agent pyproject.toml,
+  # [tool.setuptools] py-modules): registration_lifecycle.py exists at the
+  # repo root and is imported (unguarded, module-level) by
+  # hermes_cli/plugins.py, but py-modules never got it added alongside its
+  # sibling utils/hermes_constants/etc, so uv2nix's sealed venv never
+  # installs it -- `hermes dashboard` crash-loops with "ModuleNotFoundError:
+  # No module named 'registration_lifecycle'". The module only imports
+  # stdlib, so a plain PYTHONPATH supplement is sufficient until the
+  # one-line py-modules fix lands upstream.
+  hermesRegistrationLifecycleShim = pkgs.runCommand "hermes-registration-lifecycle-shim" { } ''
+    mkdir -p $out
+    cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
+  '';
   ghBrknLol = pkgs.writeShellScriptBin "gh-brkn-lol" ''
     export GH_CONFIG_DIR="${ghConfigRoot}/gh-brkn-lol"
     export GH_TOKEN="''${GH_BRKN_LOL_TOKEN:?GH_BRKN_LOL_TOKEN is not set}"
@@ -502,6 +516,7 @@ in
           HOME = config.services.hermes-agent.stateDir;
           HERMES_HOME = "${config.services.hermes-agent.stateDir}/.hermes";
           HERMES_MANAGED = "true";
+          PYTHONPATH = hermesRegistrationLifecycleShim;
         };
         serviceConfig = {
           User = config.services.hermes-agent.user;
