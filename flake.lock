@@ -3209,11 +3209,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786315144,
-        "narHash": "sha256-/1Pg0RP7sdKHqQm9MVSY+P39QvJHE3aE8VvlgBzQOlk=",
+        "lastModified": 1786609422,
+        "narHash": "sha256-8fnQAm7uFjr/skFlMlgczHJlMfcT2n1mjf5gHy5yg5g=",
         "owner": "pschmitt",
         "repo": "rbw-auto",
-        "rev": "25f6f31b9caaa07420eb1a82439c406bb781c3e1",
+        "rev": "40be9ae0c38abf517fabab55e9aa4890938346fd",
         "type": "github"
       },
       "original": {
