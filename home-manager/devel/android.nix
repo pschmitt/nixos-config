@@ -8,6 +8,7 @@ let
   system = pkgs.stdenv.hostPlatform.system;
 
   gpcConfigPath = "${config.xdg.configHome}/gpc/config.json";
+  zhj = "${config.home.homeDirectory}/bin/zhj";
 
   # playconsole-cli hardcodes $HOME/.playconsole-cli/config.json as its config
   # default and has no XDG support, so pin --config to an XDG path instead.
@@ -48,6 +49,47 @@ in
     pmbootstrap
     scrcpy
   ];
+
+  xdg.desktopEntries = {
+    scrcpy-mp4 = {
+      name = "scrcpy (mp4)";
+      genericName = "Android Remote Control";
+      comment = "Display and control the mp4 Android device";
+      exec = "${zhj} \"scrcpy::mp4 --notify\"";
+      icon = "scrcpy";
+      terminal = false;
+      categories = [
+        "Utility"
+        "RemoteAccess"
+      ];
+    };
+
+    scrcpy-px5 = {
+      name = "scrcpy (px5)";
+      genericName = "Android Remote Control";
+      comment = "Display and control the px5 Android device";
+      exec = "${zhj} \"scrcpy::px5 --notify\"";
+      icon = "scrcpy";
+      terminal = false;
+      categories = [
+        "Utility"
+        "RemoteAccess"
+      ];
+    };
+
+    scrcpy-zf10 = {
+      name = "scrcpy (zf10)";
+      genericName = "Android Remote Control";
+      comment = "Display and control the zf10 Android device";
+      exec = "${zhj} \"scrcpy::zf10 --notify\"";
+      icon = "scrcpy";
+      terminal = false;
+      categories = [
+        "Utility"
+        "RemoteAccess"
+      ];
+    };
+  };
 
   # configPath must be the live checkout, not a Nix-store copy:
   # android/all.yaml's `configs:` entries (mp4.yaml/px5.yaml/zf10.yaml) are
