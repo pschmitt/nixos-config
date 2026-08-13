@@ -501,6 +501,12 @@ in
 
   systemd = {
     services = {
+      # hermes-agent.service itself (the gateway that actually answers
+      # Signal/etc) is defined by the upstream module -- it hits the same
+      # registration_lifecycle gap as hermes-dashboard below, via
+      # gateway/run.py's _install_plugin_message_injector -> hermes_cli.plugins.
+      hermes-agent.environment.PYTHONPATH = hermesRegistrationLifecycleShim;
+
       # The upstream module runs the gateway natively. Its dashboard is a
       # separate process, bound to loopback and protected by a two-factor
       # Authelia policy.
