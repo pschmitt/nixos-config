@@ -23,31 +23,68 @@ let
   # sabre/vobject parses that comma as one multi-valued VALUE parameter and
   # crashes with "TypeError: strtoupper(): ... array given" on PUT, failing
   # the whole contact (and the sync run). vdirsyncer has no item-transform
-  # hook, but every DAV write funnels through DAVStorage._put, so a
-  # PYTHONPATH-injected sitecustomize.py (auto-imported by the interpreter
-  # at startup) can patch just that one method to fix the one known-bad
-  # pattern before the PUT is sent.
+  # hook, but every DAV write funnels through DAVStorage._put, so this
+  # patches just that one method to fix the one known-bad pattern before
+  # the PUT is sent.
+  #
+  # Delivered as a PYTHONPATH-injected sitecustomize.py, auto-imported by
+  # the interpreter at startup -- but at that exact point `vdirsyncer` and
+  # its dependencies aren't on sys.path yet (the venv wrapper's own
+  # site.addsitedir() calls, which add them, run *after* sitecustomize).
+  # So this can't just eagerly `from vdirsyncer.storage import dav`, and
+  # instead registers a sys.meta_path post-import hook that applies the
+  # patch lazily, whenever something later actually imports
+  # vdirsyncer.storage.dav (by which point sys.path is fully populated).
   vdirsyncerDavSanitizeShim = pkgs.runCommand "vdirsyncer-dav-sanitize-shim" { } ''
     mkdir -p $out
     cat > $out/sitecustomize.py <<'EOF'
-    import re
-
-    from vdirsyncer.storage import dav
-    from vdirsyncer.vobject import Item
-
-    _BDAY_PARAM_FIX = re.compile(r"(;VALUE=DATE),(X-APPLE-OMIT-YEAR=)", re.IGNORECASE)
-
-    _orig_put = dav.DAVStorage._put
+    import sys
+    from importlib.abc import MetaPathFinder
+    from importlib.util import find_spec
 
 
-    async def _sanitizing_put(self, href, item, etag):
-        fixed = _BDAY_PARAM_FIX.sub(r"\1;\2", item.raw)
-        if fixed != item.raw:
-            item = Item(fixed)
-        return await _orig_put(self, href, item, etag)
+    def _patch_dav(dav):
+        import re
+
+        from vdirsyncer.vobject import Item
+
+        fix = re.compile(r"(;VALUE=DATE),(X-APPLE-OMIT-YEAR=)", re.IGNORECASE)
+        orig_put = dav.DAVStorage._put
+
+        async def sanitizing_put(self, href, item, etag):
+            fixed = fix.sub(r"\1;\2", item.raw)
+            if fixed != item.raw:
+                item = Item(fixed)
+            return await orig_put(self, href, item, etag)
+
+        dav.DAVStorage._put = sanitizing_put
 
 
-    dav.DAVStorage._put = _sanitizing_put
+    class _DavPatchFinder(MetaPathFinder):
+        def find_spec(self, fullname, path, target=None):
+            if fullname != "vdirsyncer.storage.dav":
+                return None
+            sys.meta_path.remove(self)
+            try:
+                spec = find_spec(fullname)
+            finally:
+                sys.meta_path.insert(0, self)
+            if spec is None or spec.loader is None:
+                return None
+            orig_exec_module = spec.loader.exec_module
+
+            def exec_module(module):
+                orig_exec_module(module)
+                _patch_dav(module)
+
+            spec.loader.exec_module = exec_module
+            return spec
+
+
+    try:
+        sys.meta_path.insert(0, _DavPatchFinder())
+    except Exception:
+        pass
     EOF
   '';
 in
