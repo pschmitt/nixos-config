@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -14,6 +15,41 @@ let
   nextcloudRootUrl = "https://${nextcloudHost}/remote.php/dav/addressbooks/users/${
     config.sops.placeholder."vdirsyncer/nextcloud/username"
   }/";
+
+  # Google's CardDAV export renders BDAY's parameter list for contacts with
+  # a year-omitted birthday (originally from Apple/iCloud) as
+  # `VALUE=DATE,X-APPLE-OMIT-YEAR=...` -- a comma joining two distinct
+  # parameters instead of the required semicolon. Nextcloud's bundled
+  # sabre/vobject parses that comma as one multi-valued VALUE parameter and
+  # crashes with "TypeError: strtoupper(): ... array given" on PUT, failing
+  # the whole contact (and the sync run). vdirsyncer has no item-transform
+  # hook, but every DAV write funnels through DAVStorage._put, so a
+  # PYTHONPATH-injected sitecustomize.py (auto-imported by the interpreter
+  # at startup) can patch just that one method to fix the one known-bad
+  # pattern before the PUT is sent.
+  vdirsyncerDavSanitizeShim = pkgs.runCommand "vdirsyncer-dav-sanitize-shim" { } ''
+    mkdir -p $out
+    cat > $out/sitecustomize.py <<'EOF'
+    import re
+
+    from vdirsyncer.storage import dav
+    from vdirsyncer.vobject import Item
+
+    _BDAY_PARAM_FIX = re.compile(r"(;VALUE=DATE),(X-APPLE-OMIT-YEAR=)", re.IGNORECASE)
+
+    _orig_put = dav.DAVStorage._put
+
+
+    async def _sanitizing_put(self, href, item, etag):
+        fixed = _BDAY_PARAM_FIX.sub(r"\1;\2", item.raw)
+        if fixed != item.raw:
+            item = Item(fixed)
+        return await _orig_put(self, href, item, etag)
+
+
+    dav.DAVStorage._put = _sanitizing_put
+    EOF
+  '';
 in
 {
   sops.secrets = {
@@ -146,6 +182,8 @@ in
   users.users."${config.mainUser.username}" = {
     extraGroups = lib.mkAfter [ "${syncGroup}" ];
   };
+
+  systemd.services."vdirsyncer@google-contacts".environment.PYTHONPATH = vdirsyncerDavSanitizeShim;
 
   # system.activationScripts.vdirsyncerAcls.text = ''
   #   ${pkgs.acl}/bin/setfacl -m u:pschmitt:rx /var/lib/vdirsyncer
