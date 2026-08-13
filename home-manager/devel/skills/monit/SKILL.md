@@ -1,22 +1,24 @@
 ---
 name: monit
-description: Inspect live Monit alerts on the rofl-* and oci-* VMs over SSH, identify root causes, immediately fix low-risk reversible service issues, and report unresolved incidents with a concrete game plan. Use when Monit raises alerts, a rofl or oci VM appears unhealthy, or the user asks to check or repair live VM monitoring issues.
+description: Inspect live Monit alerts on the rofl-* and oci-* VMs, plus fnuc, turris, and brkn-ap, over SSH, identify root causes, immediately fix low-risk reversible service issues, and report unresolved incidents with a concrete game plan. Use when Monit raises alerts, a rofl, oci, fnuc, turris, or brkn-ap host appears unhealthy, or the user asks to check or repair live monitoring issues.
 ---
 
 # Monit
 
 Use live SSH inspection as the source of truth for Monit incidents. Check every known
-`rofl-*` and `oci-*` VM, repair only obvious low-risk issues in scope, and clearly
-separate completed fixes from complex work that needs a plan.
+`rofl-*` and `oci-*` VM, plus `fnuc`, `turris`, and `brkn-ap`, repair only obvious
+low-risk issues in scope, and clearly separate completed fixes from complex work that
+needs a plan.
 
 ## Workflow
 
 ### 1. Establish scope and inventory
 
-Read the repository `AGENTS.md` before making changes. The current VM inventory is
-normally `rofl-10` through `rofl-14`, `oci-01`, and `oci-03`; verify it from the
-repository's generated SSH host inventory and the local SSH configuration instead of
-assuming the list is permanent. Use SSH aliases where available.
+Read the repository `AGENTS.md` before making changes. The current inventory is
+normally `rofl-10` through `rofl-14`, `oci-01`, `oci-03`, `fnuc`, `turris`, and
+`brkn-ap`; verify it from the repository's generated SSH host inventory and the local
+SSH configuration instead of assuming the list is permanent. Use SSH aliases where
+available.
 
 Check hosts in parallel when possible. Use non-interactive SSH with a connection
 timeout and `sudo -n`; never hang waiting for a password. An access failure is an
