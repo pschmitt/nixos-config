@@ -18,6 +18,7 @@
   };
 
   environment.systemPackages = with pkgs; [
+    alsa-ucm-conf # ALSA Use Case Manager profiles for WirePlumber
     ncpamixer
     pamixer
     pavucontrol
