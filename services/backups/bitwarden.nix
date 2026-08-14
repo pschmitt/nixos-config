@@ -111,9 +111,6 @@
   # A single hung `bw get attachment` download (no network timeout) can wedge
   # these oneshot units in "activating" forever, which also blocks the daily
   # timers. Fail instead so the next timer run retries and monit alerts.
-  systemd.services = {
-    "rbw-auto-sync-personal".serviceConfig.TimeoutStartSec = "2h";
-    "rbw-auto-sync-collections".serviceConfig.TimeoutStartSec = "2h";
-    "rbw-auto-backup-personal".serviceConfig.TimeoutStartSec = "2h";
-  };
+  systemd.services."rbw-auto-sync".serviceConfig.TimeoutStartSec = "2h";
+  systemd.services."rbw-auto-backup-personal".serviceConfig.TimeoutStartSec = "2h";
 }
