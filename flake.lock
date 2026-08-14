@@ -2438,7 +2438,7 @@
       },
       "locked": {
         "lastModified": 1786697583,
-        "narHash": "sha256-bwJ50jgqw+Lx1vuw6pwpWPH1zcJLHdADULtANYoOUOY=",
+        "narHash": "sha256-rmTX2puJbW58d6e8GY03LjtSLm7yEFoLhuX8wIHzEu0=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
         "rev": "2eabb1cdf7255e1ad8fb694984b2d642b739d10d",
