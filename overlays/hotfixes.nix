@@ -48,56 +48,40 @@
 
       path = Path("pytr/api.py")
       text = path.read_text()
-      text = text.replace("import subprocess\n", "")
       text = text.replace("import ssl\n", "import shutil\nimport ssl\n")
-      launch_block = """                    browser = p.chromium.launch(
-                              headless=True,
-                              args=[\"--no-sandbox\", \"--disable-setuid-sandbox\"],
-                          )
-      """
-      install_block = """                else:
-                          self.log.warning(\"%s\", e)
-                          self.log.info('Running \"playwright install chromium\"...')
-                          called_playwright_install = True
-                          done = False
-                          subprocess.run([\"playwright\", \"install\", \"chromium\"], check=True)
-                          self.log.info(\"Calling Playwright once more...\")
-      """
-      if launch_block not in text or install_block not in text:
+      launch_block = (
+          "browser = p.chromium.launch(\n"
+          "                    headless=True,\n"
+          "                    args=[\"--no-sandbox\", \"--disable-setuid-sandbox\"],\n"
+          "                )"
+      )
+      if launch_block not in text:
           raise SystemExit("pytr Playwright patch no longer matches upstream source")
       text = text.replace(
           launch_block,
-          """                    browser_executable = next(
-                              (
-                                  executable
-                                  for executable in (
-                                      shutil.which(\"chromium\"),
-                                      shutil.which(\"google-chrome-stable\"),
-                                      shutil.which(\"google-chrome\"),
-                                      shutil.which(\"chrome\"),
-                                  )
-                                  if executable
-                              ),
-                              None,
-                          )
-                          if browser_executable is None:
-                              raise RuntimeError(
-                                  \"No Chromium-compatible browser found on PATH. \"
-                                  \"Install pkgs.chromium instead of running playwright install.\"
-                              )
-                          browser = p.chromium.launch(
-                              executable_path=browser_executable,
-                              headless=True,
-                              args=[\"--no-sandbox\", \"--disable-setuid-sandbox\"],
-                          )
-      """,
-      )
-      text = text.replace(
-          install_block,
-          """                else:
-                          self.log.error(\"Failed to launch Playwright using a browser from PATH.\")
-                          raise
-      """,
+          "browser_executable = next(\n"
+          "                    (\n"
+          "                        executable\n"
+          "                        for executable in (\n"
+          "                            shutil.which(\"chromium\"),\n"
+          "                            shutil.which(\"google-chrome-stable\"),\n"
+          "                            shutil.which(\"google-chrome\"),\n"
+          "                            shutil.which(\"chrome\"),\n"
+          "                        )\n"
+          "                        if executable\n"
+          "                    ),\n"
+          "                    None,\n"
+          "                )\n"
+          "                if browser_executable is None:\n"
+          "                    raise RuntimeError(\n"
+          "                        \"No Chromium-compatible browser found on PATH. \"\n"
+          "                        \"Install pkgs.chromium instead of running playwright install.\"\n"
+          "                    )\n"
+          "                browser = p.chromium.launch(\n"
+          "                    executable_path=browser_executable,\n"
+          "                    headless=True,\n"
+          "                    args=[\"--no-sandbox\", \"--disable-setuid-sandbox\"],\n"
+          "                )\n",
       )
       path.write_text(text)
       PY
