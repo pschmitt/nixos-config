@@ -29,7 +29,7 @@ rustPlatform.buildRustPackage rec {
   buildInputs = [
     libxkbcommon
   ]
-  ++ lib.optionals stdenv.isLinux [
+  ++ lib.optionals stdenv.hostPlatform.isLinux [
     wayland
   ];
 
