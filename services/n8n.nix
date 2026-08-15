@@ -16,7 +16,7 @@ let
   systemdUnit = "${containerBackend}-n8n";
 
   # renovate: datasource=docker depName=n8nio/n8n
-  n8nVersion = "2.35.2";
+  n8nVersion = "2.35.3";
   # Note: as of 2026-08-06, n8nio/runners:2.34.2 has an upstream regression
   # where the JS Task Runner crash-loops on Node.js v24.16.0 ("Cannot assign
   # to read only property 'prependListener' of object '#<Socket>'"). Not the
