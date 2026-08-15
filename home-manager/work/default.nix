@@ -33,6 +33,7 @@
     # misc
     ipmitool
     jira-cli-go
+    inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.slack-react
     opsgenie-cli
     openvpn
 
