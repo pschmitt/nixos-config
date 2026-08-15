@@ -3441,11 +3441,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786808885,
-        "narHash": "sha256-5uu1f/bFHXm3vNk1Z+q/sOTvsFwQzgvpnuIp5lWB0j8=",
+        "lastModified": 1786808977,
+        "narHash": "sha256-1xjJeZZ/ql5rTDrbTy70b61bQDBV0EKlCUGV3iwBVgs=",
         "owner": "pschmitt",
         "repo": "shelly-ble-rpc",
-        "rev": "0d16607151a57bc9d9cf46f9c33e34d61cdf4a0c",
+        "rev": "9557c25fa006c03d56fff77dfde89d251a3fc0b0",
         "type": "github"
       },
       "original": {
