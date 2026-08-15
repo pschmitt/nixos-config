@@ -76,9 +76,11 @@ in
           port ${toString n8nPort}
           protocol http
           with timeout 15 seconds
-          for 3 cycles
+          # Image pulls during upgrades can keep the port unavailable for
+          # several minutes before the container is ready.
+          for 10 cycles
         then restart
-        if 3 restarts within 15 cycles then alert
+        if 3 restarts within 35 cycles then alert
     '';
   };
 
