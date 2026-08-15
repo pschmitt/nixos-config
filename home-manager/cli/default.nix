@@ -1,9 +1,8 @@
-{ inputs, pkgs, ... }:
+{ pkgs, ... }:
 {
   imports = [
     ./nvim.nix
     ./zsh
-    ../../modules/home-manager/todoist-cli.nix
   ];
 
   home.packages = with pkgs; [
@@ -26,9 +25,5 @@
     (pkgs.writeShellScriptBin "addressbook-export" ''
       exec ${pkgs.evolution-data-server}/libexec/evolution-data-server/addressbook-export "$@"
     '')
-
-    # todoist cli
-    inputs.tdc.packages."${pkgs.stdenv.hostPlatform.system}".tdc
-    todoist-cli
   ];
 }

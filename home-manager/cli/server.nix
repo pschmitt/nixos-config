@@ -4,10 +4,7 @@
   ...
 }:
 {
-  imports = [
-    ./zsh
-    ../../modules/home-manager/todoist-cli.nix
-  ];
+  imports = [ ./zsh ];
 
   home.packages = with pkgs; [
     atuin
@@ -18,8 +15,6 @@
     fd
     fzf
     inputs.bunq-sh.packages.${pkgs.stdenv.hostPlatform.system}.bunq
-    inputs.tdc.packages.${pkgs.stdenv.hostPlatform.system}.tdc
-    todoist-cli
     linkding-cli
   ];
 }

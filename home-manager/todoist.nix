@@ -1,18 +1,20 @@
 {
   config,
+  inputs,
+  pkgs,
   ...
 }:
 {
   sops = {
     secrets = {
       "todoist/api_token" = {
-        sopsFile = ../../secrets/shared.sops.yaml;
+        sopsFile = ../secrets/shared.sops.yaml;
       };
       "todoist/user_id" = {
-        sopsFile = ../../secrets/shared.sops.yaml;
+        sopsFile = ../secrets/shared.sops.yaml;
       };
       "todoist/email" = {
-        sopsFile = ../../secrets/shared.sops.yaml;
+        sopsFile = ../secrets/shared.sops.yaml;
       };
     };
 
@@ -37,4 +39,9 @@
       '';
     };
   };
+
+  home.packages = with pkgs; [
+    inputs.tdc.packages.${pkgs.stdenv.hostPlatform.system}.tdc
+    todoist-cli
+  ];
 }
