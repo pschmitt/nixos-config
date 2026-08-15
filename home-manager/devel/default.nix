@@ -17,6 +17,7 @@ in
     ./git.nix
     ../../modules/home-manager/glab.nix
     ./golang.nix
+    ./iot.nix
     ./jq.nix
     ./mani.nix
     ./nix.nix

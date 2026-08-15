@@ -51,6 +51,7 @@ in
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
+  shellyctl = pkgs.callPackage ./shellyctl { };
   still = pkgs.callPackage ./still { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
