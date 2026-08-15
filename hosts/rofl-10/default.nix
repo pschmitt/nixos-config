@@ -19,7 +19,6 @@
     ../../services/atuin.nix
     ../../services/authelia.nix
     ../../services/backups/bitwarden.nix
-    ../../services/backups/evernote
     ../../services/bentopdf.nix
     ../../services/bichon.nix
     ../../services/changedetection-io-container.nix
