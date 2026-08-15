@@ -305,6 +305,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    shelly-ble-rpc = {
+      url = "github:pschmitt/shelly-ble-rpc";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     slack-react = {
       url = "github:pschmitt/slack-react";
       inputs.nixpkgs.follows = "nixpkgs";

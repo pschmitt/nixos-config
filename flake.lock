@@ -3280,6 +3280,7 @@
         "rbw-auto": "rbw-auto",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
+        "shelly-ble-rpc": "shelly-ble-rpc",
         "slack-react": "slack-react",
         "sops-nix": "sops-nix",
         "srvos": "srvos",
@@ -3430,6 +3431,26 @@
       "original": {
         "owner": "pschmitt",
         "repo": "sendmyl",
+        "type": "github"
+      }
+    },
+    "shelly-ble-rpc": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786807662,
+        "narHash": "sha256-5TzH7Ig8OMDHx+/2LthkUjvRQIJ5sCo65rnJNEEqow0=",
+        "owner": "pschmitt",
+        "repo": "shelly-ble-rpc",
+        "rev": "85b9a0bf5e08227078b97c09c8ce1c37509771b8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "shelly-ble-rpc",
         "type": "github"
       }
     },
