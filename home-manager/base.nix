@@ -19,6 +19,7 @@
     ./mail.nix
     ./network.nix
     ./nix-index-database.nix
+    ./todoist.nix
   ];
 
   programs.home-manager.enable = true;
