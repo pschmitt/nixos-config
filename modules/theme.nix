@@ -64,13 +64,13 @@ in
     icons = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "Tela-circle";
+        default = "Papirus-Dark";
         description = "Icon theme name.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.tela-circle-icon-theme;
+        default = pkgs.papirus-icon-theme;
         description = "Icon theme package.";
       };
     };
