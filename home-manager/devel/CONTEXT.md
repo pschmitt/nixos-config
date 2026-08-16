@@ -31,6 +31,10 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
 
+## Version control workflow
+
+- Do not open pull requests unless explicitly requested. Default to working directly on `main` (or the repository's default branch) without creating feature branches or PRs.
+
 ## GPG and commit signing
 
 - If a git commit fails because the GPG key is locked, run `zhj gpg::auto-unlock` to unlock it.
