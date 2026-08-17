@@ -126,13 +126,6 @@
     }
   );
 
-  # wf-recorder 0.6.0 (and current upstream master) still reads the
-  # deprecated AVCodec.sample_fmts field, which ffmpeg 8 removed outright.
-  # Build against ffmpeg_7 (still ships the deprecated field) until
-  # upstream migrates to avcodec_get_supported_config().
-  # https://github.com/ammen99/wf-recorder/issues/323
-  wf-recorder = prev.wf-recorder.override { ffmpeg = final.ffmpeg_7; };
-
   # TODO Remove once https://github.com/NixOS/nixpkgs/pull/xxx reaches
   # nixos-unstable
   # inherit (inputs.nixpkgs-xxx.legacyPackages.${final.stdenv.hostPlatform.system}) PKGNAME;
