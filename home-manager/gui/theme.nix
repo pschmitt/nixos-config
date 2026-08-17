@@ -27,12 +27,12 @@ in
         inherit (cfg) flavor accent;
 
         gtk.icon.enable = true;
-        cursors.enable = true;
-        mako.enable = true;
-        waybar.enable = true;
-        hyprland.enable = true;
-        hyprlock.enable = true;
-        vicinae.enable = true;
+        # cursors.enable = true;
+        # mako.enable = true;
+        # waybar.enable = true;
+        # hyprland.enable = true;
+        # hyprlock.enable = true;
+        # vicinae.enable = true;
       };
 
       home = {
