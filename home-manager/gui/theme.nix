@@ -40,7 +40,10 @@ in
 
         # Let catppuccin's cursors module (home.pointerCursor) drive
         # gtk.cursorTheme too, instead of only Hyprland/X11.
-        pointerCursor.gtk.enable = true;
+        pointerCursor = {
+          enable = true;
+          gtk.enable = true;
+        };
 
         sessionVariables.GTK_THEME = cfg.gtk.name;
       };
