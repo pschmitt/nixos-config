@@ -1,9 +1,12 @@
 {
+  config,
   lib,
   pkgs,
   ...
 }:
 let
+  cfg = config.custom.desktop.theme;
+
   gsettingsWrapper = pkgs.writeTextFile {
     name = "gsettings";
     destination = "/bin/gsettings";
@@ -29,6 +32,12 @@ in
       description = "Catppuccin flavor to use for theme-aware integrations.";
     };
 
+    accent = lib.mkOption {
+      type = lib.types.str;
+      default = "blue";
+      description = "Catppuccin accent color to use for theme-aware integrations.";
+    };
+
     systemPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = with pkgs; [
@@ -50,13 +59,16 @@ in
     gtk = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "Adwaita-dark";
+        default = "catppuccin-${cfg.flavor}-${cfg.accent}-standard";
         description = "GTK theme name.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.gnome-themes-extra;
+        default = pkgs.catppuccin-gtk.override {
+          variant = cfg.flavor;
+          accents = [ cfg.accent ];
+        };
         description = "GTK theme package.";
       };
     };

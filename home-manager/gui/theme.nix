@@ -19,10 +19,31 @@ in
     (lib.mkIf cfg.enable {
       catppuccin = {
         enable = true;
+        # autoEnable reaches into every catppuccin/nix port, including
+        # browsers/terminals/editors we don't want it touching (it broke the
+        # build fighting our Firefox extension config). Opt in per desktop
+        # component instead.
         autoEnable = false;
+        inherit (cfg) flavor accent;
+
+        gtk.icon.enable = true;
+        cursors.enable = true;
+        mako.enable = true;
+        waybar.enable = true;
+        hyprland.enable = true;
+        hyprlock.enable = true;
+        vicinae.enable = true;
       };
 
-      home.packages = cfg.homePackages;
+      home = {
+        packages = cfg.homePackages;
+
+        # Let catppuccin's cursors module (home.pointerCursor) drive
+        # gtk.cursorTheme too, instead of only Hyprland/X11.
+        pointerCursor.gtk.enable = true;
+
+        sessionVariables.GTK_THEME = cfg.gtk.name;
+      };
 
       gtk = {
         enable = true;
@@ -30,7 +51,11 @@ in
           inherit (cfg.gtk) name package;
         };
 
-        iconTheme = {
+        # Catppuccin's gtk module (icons) and cursors module (via
+        # home.pointerCursor.gtk.enable, both set via mkDefault) set these
+        # directly when enabled; keep our values as a weaker fallback so
+        # they only apply if catppuccin theming is turned off.
+        iconTheme = lib.mkDefault {
           inherit (cfg.icons) name package;
         };
 
@@ -38,7 +63,7 @@ in
           inherit (cfg.font) name package;
         };
 
-        cursorTheme = {
+        cursorTheme = lib.mkOptionDefault {
           inherit (cfg.cursor) name package;
         };
 
@@ -60,10 +85,6 @@ in
           color-scheme = colorScheme;
           gtk-theme = cfg.gtk.name;
         };
-      };
-
-      home.sessionVariables = {
-        GTK_THEME = cfg.gtk.name;
       };
     })
   ];
