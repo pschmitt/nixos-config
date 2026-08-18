@@ -16,6 +16,16 @@ let
   port = 7674;
   envFileName = "stricknani.env";
   stricknaniPkg = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
+  aiUserEmail = "ai@${domain}";
+  ensureAiUserScript = pkgs.writeShellScript "stricknani-ensure-ai-user" ''
+    set -euo pipefail
+    cd "${dataDir}"
+    export DATABASE_URL="${config.services.stricknani.databaseUrl}"
+    "${stricknaniPkg}/bin/stricknani-cli" user create \
+      --email "${aiUserEmail}" \
+      --password "$(cat "${config.sops.secrets."stricknani/aiUser/password".path}")" \
+      --no-admin
+  '';
 in
 {
   imports = [
@@ -37,6 +47,10 @@ in
       "stricknani/sentry/dsnBackend" = config.custom.mkSecret {
       };
       "stricknani/sentry/dsnFrontend" = config.custom.mkSecret {
+      };
+      "stricknani/aiUser/password" = config.custom.mkSecret {
+        owner = user;
+        group = user;
       };
     };
 
@@ -75,4 +89,22 @@ in
   };
 
   services.nginx.virtualHosts."${mainHost}".acmeRoot = null;
+
+  # Dedicated non-admin account for AI-assisted testing (Android app end-to-end
+  # verification etc.) so an agent never touches the real users' project/yarn
+  # data. `stricknani-cli user create` upserts (creates or resets the
+  # password), so this is idempotent and safe to run on every activation.
+  systemd.services.stricknani-ensure-ai-user = {
+    description = "Ensure the dedicated Stricknani AI-testing user exists";
+    after = [ "stricknani.service" ];
+    wants = [ "stricknani.service" ];
+    wantedBy = [ "multi-user.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = user;
+      Group = user;
+      ExecStart = ensureAiUserScript;
+    };
+  };
 }
