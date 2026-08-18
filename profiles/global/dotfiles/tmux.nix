@@ -35,7 +35,6 @@
       bind BTab select-pane -t:.-
     '';
     plugins = with pkgs.tmuxPlugins; [
-      catppuccin
       fuzzback # prefix-?
       mode-indicator
       pain-control

@@ -26,18 +26,6 @@ in
   options.custom.desktop.theme = {
     enable = lib.mkEnableOption "shared desktop theme";
 
-    flavor = lib.mkOption {
-      type = lib.types.str;
-      default = "mocha";
-      description = "Catppuccin flavor to use for theme-aware integrations.";
-    };
-
-    accent = lib.mkOption {
-      type = lib.types.str;
-      default = "blue";
-      description = "Catppuccin accent color to use for theme-aware integrations.";
-    };
-
     systemPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = with pkgs; [
@@ -59,16 +47,13 @@ in
     gtk = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "catppuccin-${cfg.flavor}-${cfg.accent}-standard";
+        default = if cfg.preferDark then "adw-gtk3-dark" else "adw-gtk3";
         description = "GTK theme name.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.catppuccin-gtk.override {
-          variant = cfg.flavor;
-          accents = [ cfg.accent ];
-        };
+        default = pkgs.adw-gtk3;
         description = "GTK theme package.";
       };
     };
@@ -76,13 +61,13 @@ in
     icons = {
       name = lib.mkOption {
         type = lib.types.str;
-        default = "Papirus-Dark";
+        default = "Adwaita";
         description = "Icon theme name.";
       };
 
       package = lib.mkOption {
         type = lib.types.package;
-        default = pkgs.papirus-icon-theme;
+        default = pkgs.adwaita-icon-theme;
         description = "Icon theme package.";
       };
     };
