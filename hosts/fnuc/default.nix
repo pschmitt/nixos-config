@@ -64,23 +64,43 @@
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
   ];
 
-  systemd.user.services.kubeconfig-update = {
-    Unit.Description = "Update kubeconfigs";
-    Service = {
-      Type = "oneshot";
-      ExecStartPre = "${config.home.homeDirectory}/bin/zhj rancher::login-cli-all";
-      ExecStart = "${config.home.homeDirectory}/bin/zhj kubectl::kubeconfig-export-rancher";
+  systemd.user = {
+    services.kubeconfig-update = {
+      Unit.Description = "Update kubeconfigs";
+      Service = {
+        Type = "oneshot";
+        ExecStartPre = "${config.home.homeDirectory}/bin/zhj rancher::login-cli-all";
+        ExecStart = "${config.home.homeDirectory}/bin/zhj kubectl::kubeconfig-export-rancher";
+      };
+    };
+
+    timers.kubeconfig-update = {
+      Unit.Description = "Periodically update kubeconfigs";
+      Timer = {
+        OnCalendar = "12:30:00";
+        RandomizedDelaySec = "30m";
+        Persistent = true;
+      };
+      Install.WantedBy = [ "timers.target" ];
     };
   };
 
-  systemd.user.timers.kubeconfig-update = {
-    Unit.Description = "Periodically update kubeconfigs";
-    Timer = {
-      OnCalendar = "12:30:00";
-      RandomizedDelaySec = "30m";
-      Persistent = true;
+  nix = {
+    package = pkgs.nix;
+    settings.max-jobs = 0;
+
+    # home-manager.autoUpgrade (below) switches nightly, creating a new
+    # generation every run with nothing to expire old ones — left unchecked
+    # this pins the entire nix store and fills the disk (see 2026-08-18
+    # incident: 467 unpruned generations, ~250GB reclaimed on cleanup).
+    # --delete-older-than expires generations of every profile (not just
+    # home-manager's) and GCs the store in one pass.
+    gc = {
+      automatic = true;
+      dates = "03:00:00";
+      options = "--delete-older-than 5d";
+      randomizedDelaySec = "30m";
     };
-    Install.WantedBy = [ "timers.target" ];
   };
 
   services = {
@@ -161,9 +181,6 @@
       ];
     };
   };
-
-  nix.package = pkgs.nix;
-  nix.settings.max-jobs = 0;
 
   sops.secrets = {
     "ssh/nix-remote-builder/privkey".mode = "0400";
