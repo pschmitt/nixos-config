@@ -35,6 +35,7 @@
       backupPath = "/srv/bw-backup/data";
       environmentFiles = [ config.sops.secrets."rbw-auto/backup".path ];
       retention = 30;
+      schedule = "0/6:00:00";
       monit = {
         enable = true;
         thresholdSeconds = 86400;
@@ -68,6 +69,7 @@
           names = [ "Personal vault" ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
+        period = "0/6:00:00";
         monit = {
           enable = true;
           thresholdSeconds = 86400;
@@ -100,6 +102,7 @@
           ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
+        period = "0/6:00:00";
         monit = {
           enable = true;
           thresholdSeconds = 86400;
