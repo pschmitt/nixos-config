@@ -251,7 +251,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   # HACK Below forces natilus to use the default gtk theme, for some unknown
   # reason nautilus just doesn't it by default on ge2 (nixos)
-  DEFAULT_GTK_THEME="$(gtk_theme)"
+  DEFAULT_GTK_THEME="${GTK_THEME:-$(gtk_theme)}"
   GTK_APP_CMD=(env GTK_THEME="$DEFAULT_GTK_THEME")
 
   if [[ -z "$1" ]]
