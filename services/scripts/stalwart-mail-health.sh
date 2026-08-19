@@ -30,27 +30,38 @@ check_tls() {
   local port=$2
   local starttls_args=()
   local output
+  local _attempt
 
   if [[ -n "${mode}" ]]
   then
     starttls_args=("-starttls" "${mode}")
   fi
 
-  if ! output="$(
-    openssl s_client \
-      "${starttls_args[@]}" \
-      -brief \
-      -connect "127.0.0.1:${port}" \
-      -servername "${MAIL_HOST}" \
-      -verify_hostname "${MAIL_HOST}" \
-      -verify_return_error \
-      </dev/null \
-      2>&1
-  )"
-  then
-    printf 'TLS handshake failed on port %s:\n%s\n' "${port}" "${output}" >&2
-    return 1
-  fi
+  # openssl's built-in STARTTLS negotiation occasionally races the server's
+  # multi-line EHLO response ("Didn't find STARTTLS in server response,
+  # trying anyway...") and aborts the handshake even though the server is
+  # healthy. Retry a couple of times before treating it as a real failure.
+  for _attempt in 1 2 3
+  do
+    if output="$(
+      openssl s_client \
+        "${starttls_args[@]}" \
+        -brief \
+        -connect "127.0.0.1:${port}" \
+        -servername "${MAIL_HOST}" \
+        -verify_hostname "${MAIL_HOST}" \
+        -verify_return_error \
+        </dev/null \
+        2>&1
+    )"
+    then
+      return 0
+    fi
+    sleep 1
+  done
+
+  printf 'TLS handshake failed on port %s:\n%s\n' "${port}" "${output}" >&2
+  return 1
 }
 
 check_dns_txt() {
