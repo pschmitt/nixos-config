@@ -21,6 +21,16 @@
   };
 
   services.rbw-auto = {
+    # Both the backup and sync timers log into the same "personal" account.
+    # Their default 1h RandomizedDelaySec can put them within the same
+    # second of each other regardless of the 10-minute stagger between
+    # backupJobs.personal.schedule and syncJobs.*.period below, and Bitwarden
+    # rejects a concurrent login's TOTP code as already used. Capping the
+    # jitter at 5m each keeps their possible windows ([0,5m] vs [10,15m])
+    # from ever overlapping.
+    backupRandomizedDelaySec = "5m";
+    syncRandomizedDelaySec = "5m";
+
     backupJobs.personal = {
       # `environmentFiles` (the sops-managed rbw-auto/backup secret) must
       # supply, as plain KEY=value lines: BW_PASSWORD (this account's master
@@ -69,7 +79,10 @@
           names = [ "Personal vault" ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
-        period = "0/6:00:00";
+        # Offset from backupJobs.personal's "0/6:00:00" schedule: both jobs
+        # log into the same "personal" account, and a same-second collision
+        # made Bitwarden reject one job's TOTP code as already used.
+        period = "0/6:10:00";
         monit = {
           enable = true;
           thresholdSeconds = 86400;
@@ -102,7 +115,7 @@
           ];
         };
         environmentFiles = [ config.sops.secrets."rbw-auto/sync".path ];
-        period = "0/6:00:00";
+        period = "0/6:10:00";
         monit = {
           enable = true;
           thresholdSeconds = 86400;
