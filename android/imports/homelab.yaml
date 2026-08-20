@@ -6,4 +6,4 @@ apps:
     pkg: dev.pschmitt.nyetbox
     store: github
     repo: "pschmitt/nyetbox"
-    asset: '^nyetbox-.*-app-.*-release\\.apk$'
+    asset: '^nyetbox-.*-app-arm64-v8a-release\.apk$'
