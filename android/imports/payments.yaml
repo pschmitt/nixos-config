@@ -1,5 +1,5 @@
 apps:
-  - name: "Curve Pay"
+  - name: "Curve"
     pkg: com.imaginecurve.curve.prd
     if:
       not:

@@ -1,6 +1,17 @@
-# IoT/smart-home apps, imported by px5 -- currently the only device that
-# wants them, split into its own category file rather than assuming
-# every device does, same pattern as imports/social-media.yaml.
+# IoT/smart-home apps -- split into its own category file rather than
+# assuming every device does, same pattern as imports/social-media.yaml.
 apps:
   - name: "Shelly Smart Control"
     pkg: cloud.shelly.smartcontrol
+
+  - name: "Nuki Smart Lock"
+    pkg: io.nuki
+
+  - name: "Reolink"
+    pkg: com.mcu.reolink
+
+  - name: "LG ThinQ"
+    pkg: com.lgeha.nuts
+
+  - name: "Domika"
+    pkg: com.devpocket.domika.android

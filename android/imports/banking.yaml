@@ -32,3 +32,7 @@ apps:
 
   - name: "Trade Republic"
     pkg: de.traderepublic.app
+
+  # Not currently wanted -- commented out on purpose.
+  # - name: "Wero"
+  #   pkg: eu.epicompany.wero.wallet
