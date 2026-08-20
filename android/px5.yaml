@@ -28,7 +28,7 @@ imports:
   - imports/base.yaml
   - imports/chat.yaml
   - imports/fitness.yaml
-  - imports/google.yaml
+  - imports/gapps-over-aosp.yaml
   - imports/homelab.yaml
   - imports/iot.yaml
   - imports/lulz.yaml
