@@ -1,0 +1,5 @@
+# Navigation/transit apps.
+apps:
+  # Not currently wanted -- commented out on purpose.
+  # - name: "BVG Tickets"
+  #   pkg: de.bvg.ticket

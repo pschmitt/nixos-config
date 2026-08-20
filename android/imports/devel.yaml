@@ -1,0 +1,9 @@
+# Development tools -- p11 only for now.
+apps:
+  - name: "GitHub"
+    pkg: com.github.android
+
+  - name: "NixOS AVF Image"
+    pkg: io.mkg20001.nixosimage
+    store: github
+    repo: "nix-community/nixos-avf-image-app"

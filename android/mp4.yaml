@@ -24,7 +24,7 @@ imports:
   - imports/apps.yaml
   - imports/base.yaml
   - imports/chat.yaml
-  - imports/gapps-over-aosp.yaml
+  - imports/lineageos.yaml
   - imports/homelab.yaml
   - imports/lulz.yaml
   - imports/media.yaml

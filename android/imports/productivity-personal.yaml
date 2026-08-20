@@ -1,0 +1,13 @@
+# Personal productivity apps -- wanted on px5 and p11 only, so this is
+# selected by those two device configs directly instead of gating entries
+# inside imports/productivity.yaml with if: (that file stays the shared
+# baseline, ungated).
+apps:
+  - name: "Obsidian"
+    pkg: md.obsidian
+
+  - name: "Todoist"
+    pkg: com.todoist
+
+  - name: "DHL Paket"
+    pkg: de.dhl.paket

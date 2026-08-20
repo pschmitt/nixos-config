@@ -28,7 +28,7 @@ imports:
   - imports/base.yaml
   - imports/chat.yaml
   - imports/fitness.yaml
-  - imports/gapps-over-aosp.yaml
+  - imports/lineageos.yaml
   - imports/homelab.yaml
   - imports/iot.yaml
   - imports/lulz.yaml
@@ -36,6 +36,7 @@ imports:
   - imports/modules.yaml
   - imports/obtainium.yaml
   - imports/productivity.yaml
+  - imports/productivity-personal.yaml
   - imports/root.yaml
   - imports/shopping.yaml
   - imports/social-media.yaml

@@ -1,0 +1,32 @@
+# First-party Google/Pixel apps that ship preinstalled on stock Pixel
+# firmware (unlike imports/lineageos.yaml, which is the GApps
+# package overlay + AOSP/Google convergence state for px5/mp4/zf10's
+# custom ROMs) -- exists so a stock Pixel device doesn't show its
+# out-of-the-box app set as "unconfigured" on every diff.
+apps:
+  - name: "Google Docs"
+    pkg: com.google.android.apps.docs.editors.docs
+
+  - name: "Google News"
+    pkg: com.google.android.apps.magazines
+
+  - name: "Google Translate"
+    pkg: com.google.android.apps.translate
+
+  - name: "Google Home"
+    pkg: com.google.android.apps.chromecast.app
+
+  - name: "Wear OS"
+    pkg: com.google.android.apps.wear.companion
+
+  - name: "Google One"
+    pkg: com.google.android.apps.subscriptions.red
+
+  - name: "Pixel Buds"
+    pkg: com.google.android.apps.wearables.maestro.companion
+
+  - name: "Journal"
+    pkg: com.google.android.apps.pixel.aurelius
+
+  - name: "Tailwind"
+    pkg: com.google.android.apps.labs.language.tailwind

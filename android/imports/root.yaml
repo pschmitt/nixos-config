@@ -40,7 +40,7 @@ apps:
         type: config
         value: magisk
 
-  - name: "Thor"
+  - name: "Thor App Manager"
     pkg: com.valhalla.thor
     store: gplay
 

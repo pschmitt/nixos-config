@@ -1,0 +1,4 @@
+# BLE/hardware-tinkering tools.
+apps:
+  - name: "nRF Connect for Mobile"
+    pkg: no.nordicsemi.android.mcp

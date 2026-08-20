@@ -10,14 +10,22 @@ apps:
       not:
         ro.product.device: ASUS_AI2302
 
-  # Only wanted by px5.
+  # Wanted by px5 (redfin) and p11 (grizzly).
   - name: "Edeka"
     pkg: de.edeka.genuss
     if:
-      ro.product.device: redfin
+      or:
+        - ro.product.device: redfin
+        - ro.product.device: grizzly
 
-  # Only wanted by px5.
+  # Wanted by px5 (redfin) and p11 (grizzly).
   - name: "Wolt"
     pkg: com.wolt.android
     if:
-      ro.product.device: redfin
+      or:
+        - ro.product.device: redfin
+        - ro.product.device: grizzly
+
+  # Not currently wanted -- commented out on purpose.
+  # - name: "Flink"
+  #   pkg: com.pickery.app

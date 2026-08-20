@@ -1,12 +1,13 @@
-# Google's own bundled/first-party apps, shared across every device via
-# `imports:` -- consolidates what used to be split between
-# imports/apps.yaml (Gmail/Gboard/Maps, already identically present on
-# every device) and each device's own scattered per-app entries
-# (Contacts/Phone/Calendar/Clock/Photos/Drive/YouTube/Messages/Camera/
-# Files by Google). A device that wants a different convergence state for
-# one of these (e.g. px5's Camera, installed but disabled) overrides it
-# with its own apps: entry for the same pkg (apps: dedup-by-pkg, last
-# entry wins).
+# Google's own bundled/first-party apps, for LineageOS devices running
+# GApps over AOSP (px5/mp4/zf10 -- unlike p11, a regular stock Pixel; see
+# imports/google-pixel.yaml for that). Shared via `imports:` -- consolidates
+# what used to be split between imports/apps.yaml (Gmail/Gboard/Maps,
+# already identically present on every device) and each device's own
+# scattered per-app entries (Contacts/Phone/Calendar/Clock/Photos/Drive/
+# YouTube/Messages/Camera/Files by Google). A device that wants a
+# different convergence state for one of these (e.g. px5's Camera,
+# installed but disabled) overrides it with its own apps: entry for the
+# same pkg (apps: dedup-by-pkg, last entry wins).
 apps:
   - name: "Camera"
     pkg: com.google.android.GoogleCamera
