@@ -166,7 +166,7 @@
 
     hypr-dynamic-cursors = {
       # Match the upstream Hyprland v0.56.1 compatibility pin.
-      url = "github:VirtCode/hypr-dynamic-cursors/f5ba36c7622098b53bf62ddb8ddf03b914abbdf8";
+      url = "github:VirtCode/hypr-dynamic-cursors/e9056fd4f2b229d9924aa853c4763d6bc314bb34";
       inputs.hyprland.follows = "hyprland";
     };
 
