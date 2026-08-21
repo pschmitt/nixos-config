@@ -83,16 +83,31 @@ for f in "${todo[@]}"; do
   marker="$state_dir/$hash"
   base="$(basename "$f")"
 
+  # Endurain's activity-type detection only matches an exact set of known
+  # strings (e.g. "running"); it has no entry for Gadgetbridge/OpenTracks'
+  # own vocabulary (e.g. "OUTDOOR_RUNNING"), so unrecognized GPX <type>
+  # values silently fall back to its generic "Workout" type, which never
+  # gets a default gear assigned. Rewrite known mismatches on a scratch
+  # copy before upload; the synced original is never touched.
+  upload_path="$f"
+  tmp_upload=""
+  if [[ "$f" == *.gpx ]] && grep -q '<type>OUTDOOR_RUNNING</type>' "$f"; then
+    tmp_upload="$(mktemp --suffix=.gpx)"
+    sed 's#<type>OUTDOOR_RUNNING</type>#<type>running</type>#' "$f" >"$tmp_upload"
+    upload_path="$tmp_upload"
+  fi
+
   resp="$(mktemp)"
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
       -H "Authorization: Bearer $token" \
       -H 'X-Client-Type: mobile' \
-      -F "file=@$f" \
+      -F "file=@$upload_path;filename=$base" \
       "https://$host/api/v1/activities/create/upload"
   )" || code='000'
   body="$(head -c 300 "$resp")"
   rm -f "$resp"
+  [ -n "$tmp_upload" ] && rm -f "$tmp_upload"
 
   case "$code" in
     201)
