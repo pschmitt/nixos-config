@@ -22,5 +22,9 @@
   "px5": {
     "id": "FS4UDBU-JEOBELS-4YDUZWW-YLUCSZG-XERBJZM-RHX5P7T-A7TFBOU-OBO64QT",
     "addresses": ["dynamic"]
+  },
+  "p11": {
+    "id": "FIH4WKL-JHBH447-7NLMERY-XWWON2R-DXOMKG7-T7E3WSL-4YWZWQ3-HFUSSQV",
+    "addresses": ["dynamic"]
   }
 }

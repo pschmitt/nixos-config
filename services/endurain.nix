@@ -29,6 +29,7 @@ let
   phoneDevices = [
     "zf10"
     "px5"
+    "p11"
   ];
 
   ingestUser = "endurain-ingest";
@@ -234,7 +235,7 @@ in
 
   services = {
     # Receive Gadgetbridge exports from the phones. rofl-10 only receives; the
-    # phones (zf10, px5) are authoritative. The matching devices + Syncthing
+    # phones (zf10, px5, p11) are authoritative. The matching devices + Syncthing
     # server are configured in hosts/rofl-10/syncthing.nix.
     syncthing.settings.folders.gadgetbridge = {
       id = gadgetbridgeSyncId;
