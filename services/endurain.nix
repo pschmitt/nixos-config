@@ -58,8 +58,8 @@ let
 
   networkName = "endurain";
 
-  # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
-  endurainVersion = "v0.17.7";
+  # renovate: datasource=docker depName=codeberg.org/endurain-project/endurain
+  endurainVersion = "v0.19.0";
 
   runtimePkg =
     if containerBackend == "docker" then
@@ -201,7 +201,7 @@ in
     };
 
     endurain = {
-      image = "ghcr.io/endurain-project/endurain:${endurainVersion}";
+      image = "codeberg.org/endurain-project/endurain:${endurainVersion}";
       pull = "always";
       autoStart = true;
       dependsOn = [ "endurain-postgres" ];
@@ -209,8 +209,6 @@ in
         ENDURAIN_HOST = "https://${endurainHost}";
         BEHIND_PROXY = "true";
         TZ = config.time.timeZone;
-        UID = toString endurainUid;
-        GID = toString endurainGid;
 
         POSTGRES_DB = dbName;
         POSTGRES_USER = dbUser;
