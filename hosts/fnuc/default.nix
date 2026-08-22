@@ -19,6 +19,7 @@
     ./nix-daemon.nix
     ./browser-mcp.nix
     ./claude-work-warmup.nix
+    ./wl-paste-shim.nix
   ];
 
   domains.main = "brkn.lol";
