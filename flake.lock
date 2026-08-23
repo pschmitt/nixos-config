@@ -2643,6 +2643,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-netbox": {
+      "locked": {
+        "lastModified": 1787235823,
+        "narHash": "sha256-ubm1RGZyHcAZYS5MvNsqtcL0+Lwbcuy+WqYqYm4z39g=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "638fbe49f4502d86fb3406363efa6a28fd7b8c23",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "refs/pull/530025/head",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-stable": {
       "locked": {
         "lastModified": 1782847189,
@@ -3258,6 +3274,7 @@
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_8",
         "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-netbox": "nixpkgs-netbox",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",
