@@ -7,6 +7,8 @@
     nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
+    # NetBox 4.6, pending nixpkgs PR #530025.
+    nixpkgs-netbox.url = "github:NixOS/nixpkgs?ref=refs/pull/530025/head";
 
     # attic = {
     #   url = "github:zhaofengli/attic";

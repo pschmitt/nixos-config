@@ -43,6 +43,11 @@
       config.allowUnfree = true;
     };
 
+    netbox = import inputs.nixpkgs-netbox {
+      inherit (final.stdenv.hostPlatform) system;
+      config.allowUnfree = true;
+    };
+
   };
 
   flakes =
