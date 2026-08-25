@@ -369,7 +369,7 @@ in
             connect_timeout = 30;
             timeout = 90;
           };
-          browsermcp-rofl-13 = {
+          playwright-rofl-13 = {
             command = "${pkgs.openssh}/bin/ssh";
             args = [
               "-o"
@@ -383,12 +383,13 @@ in
               "-l"
               "nix-remote-builder"
               "rofl-13"
-              "mcp-server-browsermcp"
+              "${pkgs.playwright-mcp}/bin/playwright-mcp"
+              "--cdp-endpoint=http://127.0.0.1:9222"
             ];
             connect_timeout = 30;
             timeout = 90;
           };
-          browsermcp-rofl-14 = {
+          playwright-rofl-14 = {
             command = "${pkgs.openssh}/bin/ssh";
             args = [
               "-o"
@@ -402,26 +403,8 @@ in
               "-l"
               "nix-remote-builder"
               "rofl-14"
-              "mcp-server-browsermcp"
-            ];
-            connect_timeout = 30;
-            timeout = 90;
-          };
-          browsermcp-fnuc = {
-            command = "${pkgs.openssh}/bin/ssh";
-            args = [
-              "-o"
-              "BatchMode=yes"
-              "-o"
-              "IdentitiesOnly=yes"
-              "-o"
-              "IdentityFile=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
-              "-o"
-              "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
-              "-l"
-              config.mainUser.username
-              "fnuc"
-              "${pkgs.browsermcp}/bin/mcp-server-browsermcp"
+              "${pkgs.playwright-mcp}/bin/playwright-mcp"
+              "--cdp-endpoint=http://127.0.0.1:9222"
             ];
             connect_timeout = 30;
             timeout = 90;

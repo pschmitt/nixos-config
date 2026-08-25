@@ -20,16 +20,16 @@ in
     CUSTOM_HTTPS_PORT=48946
   '';
 
-  # Real desktop Chromium (KasmVNC web UI on :48945/:48946) so the Browser MCP
-  # Chrome extension has something to drive, and a human can VNC in when
-  # manual intervention is needed. --network=host is required: the extension
-  # always dials the MCP server at ws://localhost:9009, and that server runs
-  # as a plain host process (spawned over ssh from fnuc's Claude Code config,
-  # see hosts/fnuc/browser-mcp.nix) rather than inside this container.
+  # Keep a persistent GUI browser for human logins and CAPTCHAs. Playwright MCP
+  # connects over CDP from the same host, so it sees the logged-in profile and
+  # needs no browser extension or manual enablement.
   virtualisation.oci-containers.containers.${containerName} = {
     image = "lscr.io/linuxserver/chromium:latest";
     autoStart = true;
     hostname = containerName;
+    environment = {
+      CHROME_CLI = "--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222";
+    };
     environmentFiles = [ config.sops.templates."${containerName}.env".path ];
     volumes = [ "${dataDir}:/config" ];
     extraOptions = [
@@ -38,5 +38,5 @@ in
     ];
   };
 
-  environment.systemPackages = [ pkgs.browsermcp ];
+  environment.systemPackages = [ pkgs.playwright-mcp ];
 }
