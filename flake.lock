@@ -2629,32 +2629,16 @@
     },
     "nixpkgs-master": {
       "locked": {
-        "lastModified": 1787628788,
-        "narHash": "sha256-XRAYXMl9N9QiL0sFvUSQ49ZUALN+HV7tTs3YK5tArng=",
+        "lastModified": 1787636385,
+        "narHash": "sha256-OdWk20JS9lVXrG2jNl0NZ+TZtaDGFCcUurwlzNr1A3c=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "e2ff8a747e2f2d3d3412640e1191908804a8339d",
+        "rev": "0911641956c2acad8b9cca3955bf23d6fb4dae31",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
         "ref": "master",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs-netbox": {
-      "locked": {
-        "lastModified": 1787515049,
-        "narHash": "sha256-GjY3p/GzjON6IOTvcMY0HJbcgNjdQYHnBdjuv30NLRc=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "6d6f194d992594cfc7b1ab2417b0f8b4984f994d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "refs/pull/530025/head",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -3274,7 +3258,6 @@
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_8",
         "nixpkgs-master": "nixpkgs-master",
-        "nixpkgs-netbox": "nixpkgs-netbox",
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",

@@ -53,7 +53,7 @@ in
   services = {
     netbox = {
       enable = true;
-      package = pkgs.netbox.netbox_4_6;
+      package = pkgs.master.netbox_4_6;
       bind = netboxBind;
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
