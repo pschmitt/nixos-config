@@ -116,7 +116,9 @@ in
         sopsFile = ../../secrets/shared.sops.yaml;
       };
 
-      home.activation.glab-config = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
+      # sops-nix is restarted by its activation node.  Waiting only for
+      # reloadSystemd races that restart and can leave the secret paths absent.
+      home.activation.glab-config = lib.hm.dag.entryAfter [ "reloadSystemd" "sops-nix" ] ''
         glab_config_dir="${config.xdg.configHome}/glab-cli"
         glab_config_file="$glab_config_dir/config.yml"
         glab_config_json="$glab_config_dir/config.json"
