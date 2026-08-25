@@ -9,13 +9,13 @@
 
 stdenv.mkDerivation {
   pname = "codex-ha-bridge";
-  version = "unstable-2026-08-01";
+  version = "unstable-2026-08-25";
 
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "codex-ha-bridge";
-    rev = "8e7ee46c4a85ece9d5d5bbe8ad33f7e5ed00336b";
-    hash = "sha256-hh/ILA4uJ5ASP+woHyLKzobr1wfF/NW1xm/guQJWu+s=";
+    rev = "80027e5454af5881f5982018efd746ecc565d99d";
+    hash = "sha256-Pxe/tLyi9SxI8gwiRAF8wrwgHEL38EeQB6V1dIl43CE=";
   };
 
   nativeBuildInputs = [ makeWrapper ];
