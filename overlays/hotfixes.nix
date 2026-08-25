@@ -116,6 +116,19 @@
     '';
   });
 
+  # obs-replay-source 1.8.1 still uses the deprecated OBS button-property API,
+  # which is an error with OBS Studio 32.2.1.
+  obs-studio-plugins = prev.obs-studio-plugins // {
+    obs-replay-source = prev.obs-studio-plugins.obs-replay-source.overrideAttrs (old: {
+      postPatch = (old.postPatch or "") + ''
+        substituteInPlace replay-source.c \
+          --replace-fail \
+            'obs_properties_add_button(props, "replay_button", obs_module_text("LoadReplay"), replay_button);' \
+            'obs_properties_add_button2(props, "replay_button", obs_module_text("LoadReplay"), replay_button, s);'
+      '';
+    });
+  };
+
   # perl5.42.0-DBD-CSV-0.60 fails 3 tests in t/70_csv.t; disable until
   # upstream fix lands in nixpkgs.
   perlPackages = prev.perlPackages.overrideScope (
