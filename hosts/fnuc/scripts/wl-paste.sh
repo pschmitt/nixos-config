@@ -35,7 +35,7 @@ EOF
 }
 
 set_display() {
-  DISPLAY="${DISPLAY:-:99}"
+  DISPLAY=:99
   export DISPLAY
 }
 
@@ -65,9 +65,23 @@ filtered_targets() {
   done
 }
 
-choose_target() {
+target_is_offered() {
+  local wanted="$1"
+  local targets="$2"
+  local target
+
+  while IFS= read -r target
+  do
+    target="${target//$'\r'/}"
+    [[ "$target" == "$wanted" ]] && return 0
+  done <<< "$targets"
+
+  return 1
+}
+
+candidate_targets() {
   local targets="$1"
-  local preferred target
+  local preferred target duplicate
   local -a preferred_targets=(
     image/png
     image/jpeg
@@ -84,57 +98,95 @@ choose_target() {
 
   for preferred in "${preferred_targets[@]}"
   do
-    while IFS= read -r target
-    do
-      [[ "$target" == "$preferred" ]] && {
-        printf '%s' "$preferred"
-        return 0
-      }
-    done <<< "$targets"
+    target_is_offered "$preferred" "$targets" && printf '%s\n' "$preferred"
   done
 
   while IFS= read -r target
   do
-    [[ -n "$target" ]] && {
-      printf '%s' "$target"
-      return 0
-    }
+    target="${target//$'\r'/}"
+    [[ -z "$target" ]] && continue
+    is_internal_target "$target" && continue
+
+    duplicate=0
+    for preferred in "${preferred_targets[@]}"
+    do
+      if [[ "$target" == "$preferred" ]]
+      then
+        duplicate=1
+        break
+      fi
+    done
+    (( duplicate )) && continue
+
+    printf '%s\n' "$target"
   done <<< "$targets"
+}
+
+read_target() {
+  local target="$1"
+  local output="$2"
+  local -a xclip_args=( -selection "$selection" -target "$target" -out )
+  xclip "${xclip_args[@]}" >"$output"
+}
+
+read_clipboard() {
+  local targets="$1"
+  local output="$2"
+  local target
+
+  if [[ -n "$requested_type" ]]
+  then
+    read_target "$requested_type" "$output"
+    return
+  fi
+
+  while IFS= read -r target
+  do
+    if read_target "$target" "$output" 2>/dev/null
+    then
+      return 0
+    fi
+  done < <(candidate_targets "$targets")
 
   return 1
 }
 
 paste_once() {
-  local targets target
+  local targets temporary rc
   targets="$(offered_targets)" || return 1
+  temporary="$(mktemp)"
 
-  if [[ -n "$requested_type" ]]
+  if ! read_clipboard "$targets" "$temporary"
   then
-    target="$requested_type"
-  else
-    target="$(choose_target "$(printf '%s\n' "$targets" | filtered_targets)")" || {
-      printf 'wl-paste: no compatible clipboard target available\n' >&2
-      return 1
-    }
+    rm -f "$temporary"
+    [[ -n "$requested_type" ]] || printf 'wl-paste: no usable clipboard target available\n' >&2
+    return 1
   fi
 
-  local -a xclip_args=( -selection "$selection" -target "$target" -out )
-  (( no_newline )) && xclip_args+=( -nout )
-  xclip "${xclip_args[@]}"
+  if cat "$temporary"
+  then
+    rc=0
+  else
+    rc=$?
+  fi
+  if (( ! no_newline )) && (( rc == 0 ))
+  then
+    printf '\n'
+  fi
+  rm -f "$temporary"
+  return "$rc"
 }
 
 watch_clipboard() {
-  local temporary previous current targets target
+  local temporary current targets previous=''
   temporary="$(mktemp)"
   trap 'rm -f "$temporary"' EXIT
 
   while true
   do
     targets="$(offered_targets 2>/dev/null || true)"
-    target="$requested_type"
-    [[ -z "$target" ]] && target="$(choose_target "$(printf '%s\n' "$targets" | filtered_targets)" 2>/dev/null || true)"
 
-    if [[ -n "$target" ]] && xclip -selection "$selection" -target "$target" -out >"$temporary" 2>/dev/null
+    if read_clipboard "$targets" "$temporary" 2>/dev/null
     then
       current="$(sha256sum "$temporary")"
       if [[ "$current" != "$previous" ]]
