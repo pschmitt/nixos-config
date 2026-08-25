@@ -20,7 +20,7 @@ let
 
     # --safe-mode disables plugins/MCP/hooks/etc, which avoids the separate
     # one-time "N new MCP servers found in this project" approval dialog that
-    # plugin-provided MCP servers (e.g. browsermcp, home-assistant) trigger.
+    # plugin-provided MCP servers (e.g. Home Assistant) trigger.
     # That dialog swallows the greeting keystrokes the same way the trust
     # dialog did, and this session has no use for any of those tools anyway.
     exec ${config.programs.claude-code.finalPackage}/bin/claude --model haiku --safe-mode
