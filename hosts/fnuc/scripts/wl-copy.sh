@@ -41,7 +41,7 @@ EOF
 }
 
 set_display() {
-  DISPLAY="${DISPLAY:-:99}"
+  DISPLAY=:99
   export DISPLAY
 }
 
