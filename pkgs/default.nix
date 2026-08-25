@@ -16,7 +16,6 @@ in
 {
   # local pkgs
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
-  browsermcp = pkgs.callPackage ./browsermcp { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
