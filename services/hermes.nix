@@ -409,6 +409,26 @@ in
             connect_timeout = 30;
             timeout = 90;
           };
+          playwright-fnuc = {
+            command = "${pkgs.openssh}/bin/ssh";
+            args = [
+              "-o"
+              "BatchMode=yes"
+              "-o"
+              "IdentitiesOnly=yes"
+              "-o"
+              "IdentityFile=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+              "-o"
+              "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
+              "-l"
+              config.mainUser.username
+              "fnuc"
+              "${pkgs.playwright-mcp}/bin/playwright-mcp"
+              "--cdp-endpoint=http://127.0.0.1:9222"
+            ];
+            connect_timeout = 30;
+            timeout = 90;
+          };
         };
         skills.external_dirs = [ "${hermesSkills}" ];
       };
