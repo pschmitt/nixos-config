@@ -11,7 +11,6 @@
     ./hyprpaper.nix
     ./mako.nix
     ./polkit.nix
-    ./ssh-clipboard-bridge.nix
     ./xdg-portal-screencast-watcher.nix
   ];
 }

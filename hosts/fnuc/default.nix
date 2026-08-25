@@ -13,6 +13,7 @@
     ../../modules/home-manager/claude-remote-control.nix
     ../../modules/home-manager/codex-remote-control.nix
     ../../modules/home-manager/codex-ha-bridge.nix
+    ../../home-manager/ssh-clipboard-peers.nix
     ../../services/nix-distributed-build.nix
 
     ./kvm-usb.nix
@@ -21,6 +22,10 @@
     ./claude-work-warmup.nix
     ./wl-paste-shim.nix
   ];
+
+  services.ssh-clipboard = {
+    headlessX11 = true;
+  };
 
   domains.main = "brkn.lol";
 

@@ -32,13 +32,11 @@
   systemd.timers.nixos-upgrade.enable = false;
 
   home-manager.users.${config.mainUser.username} = {
-    imports = [ ../home-manager/nixos-pull.nix ];
+    imports = [
+      ../home-manager/nixos-pull.nix
+      ../home-manager/ssh-clipboard-peers.nix
+    ];
     services.go-hass-agent.enableWorkstationCommands = true;
-    # Exposes the local Wayland clipboard to the wl-paste shim on remote
-    # hosts (fnuc) reached over SSH, so Claude Code there can paste images
-    # via a reverse tunnel instead of a slash-command skill (see
-    # hosts/fnuc/wl-paste-shim.nix).
-    services.ccimgd.enable = true;
   };
 
   # Keep local builds from taking down interactive desktop sessions.

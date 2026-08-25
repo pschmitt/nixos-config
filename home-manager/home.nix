@@ -14,6 +14,7 @@
       ./base.nix
       ./sops.nix
       ./ssh.nix
+      ./ssh-clipboard.nix
       ./work
       ./yadm.nix
     ]
