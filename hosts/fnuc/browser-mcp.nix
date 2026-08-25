@@ -9,14 +9,9 @@ let
   dataDir = "${config.home.homeDirectory}/.local/share/${containerName}/config";
   envFile = config.sops.templates."${containerName}.env".path;
 
-  # fnuc is headless, so the Browser MCP Chrome extension (browsermcp.io) needs
-  # a real, visible desktop browser to drive. lscr.io/linuxserver/chromium
-  # bundles one behind KasmVNC (web UI on :48945/:48946), so it's both
-  # MCP-drivable and manually reachable when the extension needs a human.
-  #
-  # --network host is required: the extension always dials the MCP server's
-  # websocket at ws://localhost:9009, and Docker's default bridge network
-  # doesn't map container "localhost" to the host's.
+  # Keep Chromium visible through KasmVNC so a person can complete logins and
+  # CAPTCHAs. Playwright attaches to its CDP endpoint and therefore uses the
+  # same persisted profile without a browser extension.
   runChromium = pkgs.writeShellApplication {
     name = "${containerName}-run";
     text = ''
@@ -27,6 +22,7 @@ let
         -e PUID="$(id -u)" \
         -e PGID="$(id -g)" \
         -e TZ=Europe/Berlin \
+        -e CHROME_CLI="--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222" \
         --env-file ${envFile} \
         -v ${dataDir}:/config \
         lscr.io/linuxserver/chromium:latest
@@ -54,7 +50,7 @@ in
   # standalone, non-NixOS Home Manager host), not a Nix-managed daemon.
   systemd.user.services.${containerName} = {
     Unit = {
-      Description = "Real desktop Chromium (linuxserver/chromium, KasmVNC) for Browser MCP";
+      Description = "Interactive Chromium with Playwright CDP access";
       After = [ "docker.service" ];
     };
     Service = {
@@ -66,34 +62,33 @@ in
     Install.WantedBy = [ "default.target" ];
   };
 
-  # Same setup also runs on rofl-13/rofl-14 (services/browser-mcp-chromium-container.nix)
-  # for more headroom than fnuc's capped nix-daemon cgroup allows, at the cost of
-  # those hosts being cattle/throwaway (no backups of the browser profile). The
-  # MCP server has to run on whichever host owns the container (extension only
-  # ever dials ws://localhost:9009), so the remote ones are reached by piping
-  # stdio over ssh rather than by exposing the port over the network.
+  # The remote debugging port listens only on the host loopback interface.
+  # rofl-13/rofl-14 are reached over SSH so their CDP ports remain private too.
   programs.mcp.servers = {
-    browsermcp-fnuc = {
-      command = "${pkgs.browsermcp}/bin/mcp-server-browsermcp";
+    playwright-fnuc = {
+      command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+      args = [ "--cdp-endpoint=http://127.0.0.1:9222" ];
     };
 
-    browsermcp-rofl-13 = {
+    playwright-rofl-13 = {
       command = "ssh";
       args = [
         "-o"
         "BatchMode=yes"
         "rofl-13"
-        "mcp-server-browsermcp"
+        "${pkgs.playwright-mcp}/bin/playwright-mcp"
+        "--cdp-endpoint=http://127.0.0.1:9222"
       ];
     };
 
-    browsermcp-rofl-14 = {
+    playwright-rofl-14 = {
       command = "ssh";
       args = [
         "-o"
         "BatchMode=yes"
         "rofl-14"
-        "mcp-server-browsermcp"
+        "${pkgs.playwright-mcp}/bin/playwright-mcp"
+        "--cdp-endpoint=http://127.0.0.1:9222"
       ];
     };
   };

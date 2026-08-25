@@ -297,6 +297,7 @@ in
         # cli
         antigravity-cli
         ccusage
+        pkgs.playwright-mcp
         # cursor-cli
         # kilocode-cli
 
