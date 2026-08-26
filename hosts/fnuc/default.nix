@@ -25,6 +25,7 @@
 
   services.ssh-clipboard = {
     headlessX11 = true;
+    sessionDisplay = ":99";
   };
 
   domains.main = "brkn.lol";
