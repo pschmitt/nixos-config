@@ -118,6 +118,12 @@ in
     };
 
     headlessX11 = lib.mkEnableOption "a private Xvfb clipboard for headless Linux hosts";
+
+    sessionDisplay = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Set DISPLAY to this value in the Home Manager session environment.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -128,9 +134,13 @@ in
       }
     ];
 
-    home.packages = [ cfg.package ];
-
-    home.file.".local/bin/ssh-clipboard".source = "${cfg.package}/bin/ssh-clipboard";
+    home = {
+      packages = [ cfg.package ];
+      sessionVariables = lib.mkIf (cfg.sessionDisplay != null) {
+        DISPLAY = cfg.sessionDisplay;
+      };
+      file.".local/bin/ssh-clipboard".source = "${cfg.package}/bin/ssh-clipboard";
+    };
     xdg.configFile."ssh-clipboard/config.json".source = configFile;
 
     systemd.user.services.ssh-clipboard-xvfb = lib.mkIf cfg.headlessX11 {
