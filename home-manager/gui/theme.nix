@@ -25,9 +25,7 @@ in
           inherit (cfg.cursor) name package;
         };
 
-        # GTK4 needs an explicit variant to activate prefers-color-scheme in
-        # themes such as adw-gtk3.
-        sessionVariables.GTK_THEME = if cfg.preferDark then "${cfg.gtk.name}:dark" else cfg.gtk.name;
+        inherit (cfg) sessionVariables;
       };
 
       gtk = {

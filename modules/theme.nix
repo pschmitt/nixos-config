@@ -119,5 +119,23 @@ in
       default = true;
       description = "Whether GTK and GNOME should prefer dark mode.";
     };
+
+    sessionVariables = lib.mkOption {
+      type = lib.types.attrsOf lib.types.str;
+      default = {
+        # GTK4 needs an explicit variant to activate prefers-color-scheme in
+        # themes such as adw-gtk3.
+        GTK_THEME = if cfg.preferDark then "${cfg.gtk.name}:dark" else cfg.gtk.name;
+        QT_QPA_PLATFORMTHEME = cfg.qt.platformTheme;
+        QT_STYLE_OVERRIDE = cfg.qt.style;
+      };
+      description = ''
+        Theme-derived environment variables. Consumed as home.sessionVariables
+        (home-manager/gui/theme.nix) and re-exported into Hyprland's own
+        process environment (home-manager/gui/hyprland/conf/env.nix) so
+        processes it forks directly — keybinds, waybar on-click, exec-once —
+        are themed too, not just processes started from a login shell.
+      '';
+    };
   };
 }
