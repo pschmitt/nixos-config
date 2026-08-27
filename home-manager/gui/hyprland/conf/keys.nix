@@ -150,10 +150,9 @@ in
       (execBind "SUPER + ALT + s" "walker -m menus:soundboard -p '🎹 Soundboard'")
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
 
-      # ── Mouse / hints / submap entry ──────────────────────────────────
+      # ── Mouse / submap entry ─────────────────────────────────────────
       (bind "SUPER + SHIFT + M" ''hl.dsp.submap("${mouseSubmap}")'')
       (execBind "SUPER + numbersign" "waypoint")
-      (execBind "SUPER + SHIFT + H" "killall hints; hints")
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
       # ── Media / brightness (locked = works on the lock screen) ────────
