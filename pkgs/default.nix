@@ -80,7 +80,6 @@ in
 
   # Lab
   davcli = pkgs.callPackage ./davcli { };
-  hints = pkgs.callPackage ./hints { };
   qs-hyprview = pkgs.callPackage ./qs-hyprview { };
   quickshell-overview = pkgs.callPackage ./quickshell-overview { };
   # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };

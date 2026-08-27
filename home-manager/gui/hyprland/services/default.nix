@@ -2,7 +2,6 @@
 {
   imports = [
     ./clipboard.nix
-    ./hints.nix
     ./monitors.nix
     ./hyprevents.nix
     ./hypridle.nix
