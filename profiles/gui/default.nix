@@ -15,6 +15,7 @@
     # services
     ./flatpak.nix
     ./gnome-keyring.nix
+    # ./kde-connect.nix
     ./libvirt.nix
     ./services.nix
     ./snapper.nix
