@@ -77,7 +77,6 @@ in
           sponsorblock
           ublock-origin
           video-downloadhelper
-          zoom-redirector
         ];
         description = "Firefox extension packages for the default profile.";
       };
