@@ -9,6 +9,7 @@ let
   utils = import "${pkgs.path}/nixos/lib/utils.nix" {
     inherit lib config pkgs;
   };
+  glabConfigDir = "${config.xdg.configHome}/glab-cli";
   glabConfig = {
     git_protocol = cfg.gitProtocol;
     glamour_style = cfg.glamourStyle;
@@ -34,6 +35,20 @@ let
       };
     };
   };
+  glabConfigGenerate = pkgs.writeShellScript "glab-config-generate" ''
+    set -euo pipefail
+
+    glab_config_file="${glabConfigDir}/config.yml"
+    glab_config_json="${glabConfigDir}/config.json"
+
+    mkdir -p "${glabConfigDir}"
+    rm -f "$glab_config_file" "$glab_config_json"
+
+    ${utils.genJqSecretsReplacementSnippet glabConfig "${glabConfigDir}/config.json"}
+    ${pkgs.yq-go}/bin/yq -P -p=json < "$glab_config_json" > "$glab_config_file"
+    rm -f "$glab_config_json"
+    chmod 600 "$glab_config_file"
+  '';
 in
 {
   options.custom.glab = {
@@ -68,7 +83,7 @@ in
 
     displayHyperlinks = lib.mkOption {
       type = lib.types.bool;
-      default = false;
+      default = true;
       description = "Whether glab should display hyperlinks.";
     };
 
@@ -116,24 +131,25 @@ in
         sopsFile = ../../secrets/shared.sops.yaml;
       };
 
-      # sops-nix is restarted by its activation node.  Waiting only for
-      # reloadSystemd races that restart and can leave the secret paths absent.
-      home.activation.glab-config = lib.hm.dag.entryAfter [ "reloadSystemd" "sops-nix" ] ''
-        glab_config_dir="${config.xdg.configHome}/glab-cli"
-        glab_config_file="$glab_config_dir/config.yml"
-        glab_config_json="$glab_config_dir/config.json"
-
-        $DRY_RUN_CMD mkdir -p "$glab_config_dir"
-        $DRY_RUN_CMD rm -f "$glab_config_file"
-        $DRY_RUN_CMD rm -f "$glab_config_json"
-        if [[ -z "''${DRY_RUN_CMD:-}" ]]
-        then
-          ${utils.genJqSecretsReplacementSnippet glabConfig "${config.xdg.configHome}/glab-cli/config.json"}
-          ${pkgs.yq-go}/bin/yq -P -p=json < "$glab_config_json" > "$glab_config_file"
-          rm -f "$glab_config_json"
-          chmod 600 "$glab_config_file"
-        fi
-      '';
+      # Runs as a user-session systemd service (ordered after sops-nix.service)
+      # rather than a home.activation script, so it can never race sops-nix
+      # decrypting secrets at boot -- it simply cannot start before the user
+      # systemd instance (and sops-nix.service within it) exist. reloadSystemd
+      # already restarts changed user units on every home-manager switch, so
+      # this regenerates config.yml whenever glabConfig or the secrets change.
+      systemd.user.services.glab-config = {
+        Unit = {
+          Description = "Generate glab CLI config.yml from sops secrets";
+          After = [ "sops-nix.service" ];
+          Wants = [ "sops-nix.service" ];
+        };
+        Service = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = "${glabConfigGenerate}";
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
     })
   ];
 }
