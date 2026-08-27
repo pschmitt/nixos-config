@@ -155,6 +155,22 @@ home-manager host='':
     TARGET_HOST="${HOSTNAME:-$(hostname)}"
   fi
 
+  # home-manager switch always activates on the machine this recipe runs on
+  # — there is no remote dispatch. Refuse to activate another host's profile
+  # locally (e.g. running 'just hm fnuc' while sitting on a different box).
+  ACTUAL_HOST="${HOSTNAME:-$(hostname)}"
+  RESOLVED_HOST="$TARGET_HOST"
+  if [[ "$RESOLVED_HOST" == "pschmitt" ]]
+  then
+    RESOLVED_HOST="fnuc"
+  fi
+  if [[ "$RESOLVED_HOST" != "$ACTUAL_HOST" ]]
+  then
+    echo "Refusing: 'just hm $TARGET_HOST' would activate that home-manager profile locally on '$ACTUAL_HOST', not on '$TARGET_HOST'." >&2
+    echo "SSH to $TARGET_HOST and run 'just hm' there instead." >&2
+    exit 1
+  fi
+
   BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh hm)"
   trap "rm -rf '$BUILD_DIR'" EXIT
 
