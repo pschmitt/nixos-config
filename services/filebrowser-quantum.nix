@@ -34,6 +34,20 @@ in
           # Backups all live under here) rather than one entry per folder.
           - path: "/srv/syncthing"
             name: "Syncthing"
+      userDefaults:
+        # Read-only by default (view + download only): being in Authelia's
+        # "filebrowser-admin" group only sets Permissions.Admin above, which
+        # is a separate flag from these per-feature ones -- an admin account
+        # still needs modify/share/create/delete granted explicitly (e.g.
+        # from FileBrowser's own Settings > Users page once logged in) to
+        # get write/share access.
+        account:
+          permissions:
+            modify: false
+            share: false
+            create: false
+            delete: false
+            download: true
       http:
         # v1.4.x-v1.5.x needs these listed explicitly (no trustProxyHeaders
         # bool yet) for OIDC redirect/callback URLs to come out https://
@@ -66,7 +80,12 @@ in
             # (see hosts/rofl-10/container-services.nix). Public share links
             # under /public/ are unaffected either way.
             enabled: true
-            adminGroup: "admin"
+            # Authelia's shared "admin" group covers other apps too (e.g.
+            # abergmann is also in it) -- use a dedicated group so FBQ admin
+            # status is scoped to just the Authelia users actually meant to
+            # administer this app (currently only pschmitt; see
+            # authelia/users-database in hosts/rofl-10/secrets.sops.yaml).
+            adminGroup: "filebrowser-admin"
             clientId: "filebrowser-quantum"
             clientSecret: "${config.sops.placeholder."filebrowser-quantum/oidc-client-secret"}"
             issuerUrl: "${autheliaIssuerUrl}"
