@@ -10,12 +10,6 @@
       description = "Whether this is the server instance";
     };
 
-    documentsDir = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = "Override path for the Documents sync folder. Defaults to /var/lib/syncthing/documents on server, ~/Documents on clients.";
-    };
-
     folders = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {
@@ -33,7 +27,7 @@
         }
       );
       default = { };
-      description = "Additional syncthing folders beyond Documents, keyed by folder id.";
+      description = "Syncthing folders to sync, keyed by folder id (e.g. \"documents\", \"music\").";
     };
 
     devices = lib.mkOption {
@@ -70,14 +64,6 @@
       otherDevices = lib.filterAttrs (name: _: name != currentHost) cfg.devices;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
 
-      allFolders = {
-        documents = {
-          label = "Documents";
-          dir = cfg.documentsDir;
-        };
-      }
-      // cfg.folders;
-
       folderPath =
         name: folder:
         if folder.dir != null then
@@ -87,7 +73,7 @@
         else
           "${config.mainUser.homeDirectory}/${folder.label}";
 
-      folderPaths = lib.mapAttrs folderPath allFolders;
+      folderPaths = lib.mapAttrs folderPath cfg.folders;
     in
     lib.mkIf cfg.enable {
       services.syncthing = {
@@ -129,7 +115,7 @@
               ".sync-conflict-*"
               ".nextcloudsync.log"
             ];
-          }) allFolders;
+          }) cfg.folders;
 
           gui = {
             # Authentication is handled by the reverse proxy on the server.
