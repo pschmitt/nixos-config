@@ -21,12 +21,17 @@
     ./browser-mcp.nix
     ./claude-work-warmup.nix
     ./wl-paste-shim.nix
+    ./syncthing.nix
   ];
 
   services.ssh-clipboard = {
     headlessX11 = true;
     sessionDisplay = ":99";
   };
+
+  # Matches every other host (profiles/global/nix/overlays.nix), which fnuc
+  # doesn't import as a standalone home-manager host.
+  nixpkgs.config.allowUnfree = true;
 
   domains.main = "brkn.lol";
 
@@ -54,6 +59,10 @@
 
   home = {
     inherit (config.mainUser) username homeDirectory;
+    packages = [
+      pkgs.syncthingtui
+      pkgs.stui
+    ];
   };
 
   host = {
