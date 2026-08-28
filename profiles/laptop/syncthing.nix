@@ -4,7 +4,17 @@
   ...
 }:
 {
-  imports = [ ../syncthing.nix ];
+  imports = [
+    ../syncthing.nix
+    ../../modules/syncthing-tui.nix
+  ];
+
+  custom.syncthingTui = {
+    enable = true;
+    user = config.mainUser.username;
+    homeDirectory = config.mainUser.homeDirectory;
+    configXml = "${config.mainUser.homeDirectory}/.config/syncthing/config.xml";
+  };
 
   # Folder ids must match the server's (hosts/rofl-10/syncthing.nix) for
   # Syncthing to pair them up automatically -- no manual "accept" step on

@@ -3,12 +3,33 @@
   pkgs,
   ...
 }:
-
+let
+  # syncthingtui auto-discovers its API key/address from a local user's own
+  # config.xml, but rofl-10's Syncthing runs as the system "syncthing" user
+  # -- not reachable that way when pschmitt runs it over SSH. Reuse the
+  # api_key custom.syncthingTui below already resolves into
+  # ~/.config/stui/config.yaml instead of re-deriving it separately.
+  syncthingtuiWrapped = pkgs.writeShellScriptBin "syncthingtui" ''
+    set -euo pipefail
+    api_key=$(${pkgs.gnused}/bin/sed -n 's/^api_key: "\(.*\)"$/\1/p' ~/.config/stui/config.yaml)
+    exec ${pkgs.syncthingtui}/bin/syncthingtui -address 127.0.0.1:8384 -api-key "$api_key" "$@"
+  '';
+in
 {
-  imports = [ ../../profiles/syncthing.nix ];
+  imports = [
+    ../../profiles/syncthing.nix
+    ../../modules/syncthing-tui.nix
+  ];
+
+  custom.syncthingTui = {
+    enable = true;
+    user = config.mainUser.username;
+    homeDirectory = config.mainUser.homeDirectory;
+    configXml = "/var/lib/syncthing/.config/syncthing/config.xml";
+  };
 
   environment.systemPackages = [
-    pkgs.syncthingtui
+    syncthingtuiWrapped
     pkgs.stui
   ];
 

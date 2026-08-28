@@ -24,6 +24,8 @@ let
   };
 in
 {
+  imports = [ ../../modules/home-manager/syncthing-tui.nix ];
+
   services.syncthing = {
     enable = true;
     # ~/.local/state/syncthing is also where the previous Fedora (dnf)
