@@ -2,18 +2,25 @@
 let
   port = 28170;
   externalUrl = "https://files.${config.domains.main}";
+  autheliaIssuerUrl = "https://auth.${config.domains.main}";
   adminUsername = config.mainUser.username;
   stateDir = "/var/lib/filebrowser-quantum";
 in
 {
-  sops.secrets."filebrowser-quantum/admin-password" = config.custom.mkSecret {
-    owner = "syncthing";
-    mode = "0400";
+  sops.secrets = {
+    "filebrowser-quantum/admin-password" = config.custom.mkSecret {
+      owner = "syncthing";
+      mode = "0400";
+    };
+    "filebrowser-quantum/oidc-client-secret" = config.custom.mkSecret {
+      owner = "syncthing";
+      mode = "0400";
+    };
   };
 
-  # Rendered outside the Nix store (unlike pkgs.writeText) so the admin
-  # password below is substituted with the real secret only at activation
-  # time on the target host.
+  # Rendered outside the Nix store (unlike pkgs.writeText) so the secrets
+  # below are substituted with their real values only at activation time on
+  # the target host.
   sops.templates."filebrowser-quantum/config.yaml" = {
     content = ''
       server:
@@ -37,23 +44,29 @@ in
       auth:
         # Set on every boot (backend/cmd/user.go: any existing user matching
         # adminUsername gets promoted to admin and its password reset to
-        # adminPassword) -- this is what makes the Authelia identity
-        # (Remote-User: ${adminUsername}) resolve to an admin account via
-        # proxy auth below, with no separate bootstrap step needed.
+        # adminPassword). Logging in via OIDC as this same Authelia username
+        # resolves to this same admin account -- and adminGroup below does
+        # the same for anyone else in Authelia's "admin" group.
         adminUsername: "${adminUsername}"
         adminPassword: "${config.sops.placeholder."filebrowser-quantum/admin-password"}"
         methods:
           password:
+            # Kept as a local fallback login; not used day-to-day.
             enabled: true
             signup: false
-          proxy:
-            # Trusts the Remote-User header nginx sets from Authelia's
-            # authenticated session (see custom.containerServices auth.type =
-            # "sso"). Only reachable at all once Authelia has already
-            # authenticated the request -- see auth.publicLocations for the
-            # unauthenticated /public/ share-link exception.
+          oidc:
+            # Real OIDC login against Authelia (client registered in
+            # services/authelia.nix's oidc.yml template) -- FileBrowser
+            # Quantum handles its own login/redirect flow end-to-end, so
+            # this service is NOT behind nginx's Authelia auth_request gate
+            # (see hosts/rofl-10/container-services.nix). Public share links
+            # under /public/ are unaffected either way.
             enabled: true
-            header: "Remote-User"
+            adminGroup: "admin"
+            clientId: "filebrowser-quantum"
+            clientSecret: "${config.sops.placeholder."filebrowser-quantum/oidc-client-secret"}"
+            issuerUrl: "${autheliaIssuerUrl}"
+            scopes: "openid email profile groups"
     '';
     owner = "syncthing";
     group = "syncthing";
