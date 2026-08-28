@@ -79,7 +79,14 @@ in
           # behind Authelia.
           publicLocations = [ "/public/" ];
         };
-        monitoring.restart.systemdUnit = "filebrowser-quantum.service";
+        monitoring = {
+          # "/" has no Content-Length (framed by connection-close only),
+          # which Monit's minimal HTTP client can't parse -- it hangs and
+          # reports Timeout despite the response being fine. The JSON health
+          # endpoint sends a real Content-Length, which fixes that.
+          path = "/api/health";
+          restart.systemdUnit = "filebrowser-quantum.service";
+        };
       };
       linkding = {
         port = 54653;
