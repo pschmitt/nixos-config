@@ -16,6 +16,26 @@
       description = "Override path for the Documents sync folder. Defaults to /var/lib/syncthing/documents on server, ~/Documents on clients.";
     };
 
+    folders = lib.mkOption {
+      type = lib.types.attrsOf (
+        lib.types.submodule {
+          options = {
+            label = lib.mkOption {
+              type = lib.types.str;
+              description = "Human-readable folder label shown in the Syncthing GUI.";
+            };
+            dir = lib.mkOption {
+              type = lib.types.nullOr lib.types.str;
+              default = null;
+              description = "Override path for this sync folder. Defaults to /var/lib/syncthing/<name> on server, ~/<label> on clients.";
+            };
+          };
+        }
+      );
+      default = { };
+      description = "Additional syncthing folders beyond Documents, keyed by folder id.";
+    };
+
     devices = lib.mkOption {
       type = lib.types.attrsOf (
         lib.types.submodule {
@@ -49,13 +69,25 @@
       currentHost = config.networking.hostName;
       otherDevices = lib.filterAttrs (name: _: name != currentHost) cfg.devices;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
-      documentsPath =
-        if cfg.documentsDir != null then
-          cfg.documentsDir
+
+      allFolders = {
+        documents = {
+          label = "Documents";
+          dir = cfg.documentsDir;
+        };
+      }
+      // cfg.folders;
+
+      folderPath =
+        name: folder:
+        if folder.dir != null then
+          folder.dir
         else if cfg.server then
-          "/var/lib/syncthing/documents"
+          "/var/lib/syncthing/${name}"
         else
-          "${config.mainUser.homeDirectory}/Documents";
+          "${config.mainUser.homeDirectory}/${folder.label}";
+
+      folderPaths = lib.mapAttrs folderPath allFolders;
     in
     lib.mkIf cfg.enable {
       services.syncthing = {
@@ -81,10 +113,10 @@
             }
           ) otherDevices;
 
-          folders.documents = {
-            id = "documents";
-            label = "Documents";
-            path = documentsPath;
+          folders = lib.mapAttrs (name: folder: {
+            id = name;
+            inherit (folder) label;
+            path = folderPaths.${name};
             devices = lib.attrNames otherDevices;
             # Server should not be authoritative; it’s the backup/receiver by default.
             type = if cfg.server then "receiveonly" else "sendreceive";
@@ -97,7 +129,7 @@
               ".sync-conflict-*"
               ".nextcloudsync.log"
             ];
-          };
+          }) allFolders;
 
           gui = {
             # Authentication is handled by the reverse proxy on the server.
@@ -117,8 +149,8 @@
         };
       };
 
-      systemd.tmpfiles.rules = lib.optionals cfg.server [
-        "d ${documentsPath} 0755 syncthing syncthing -"
-      ];
+      systemd.tmpfiles.rules = lib.optionals cfg.server (
+        lib.mapAttrsToList (_: path: "d ${path} 0755 syncthing syncthing -") folderPaths
+      );
     };
 }

@@ -3,7 +3,23 @@
 {
   imports = [ ../../profiles/syncthing.nix ];
 
-  custom.syncthing.documentsDir = "/mnt/data/srv/syncthing/documents";
+  custom.syncthing = {
+    documentsDir = "/mnt/data/srv/syncthing/documents";
+    folders = {
+      music = {
+        label = "Music";
+        dir = "/mnt/data/srv/syncthing/music";
+      };
+      pictures = {
+        label = "Pictures";
+        dir = "/mnt/data/srv/syncthing/pictures";
+      };
+      backups = {
+        label = "Backups";
+        dir = "/mnt/data/srv/syncthing/backups";
+      };
+    };
+  };
 
   services.nginx.virtualHosts."sync.${config.domains.main}" = {
     enableACME = true;
