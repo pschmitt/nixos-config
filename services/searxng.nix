@@ -129,7 +129,10 @@ in
     block_ip = []
     # n8n docker bridge (br-n8n, see services/n8n.nix) -- unrestricted access
     # for the Todoist Emojifier's product-photo search.
-    pass_ip = [ '172.21.0.0/16' ]
+    # Home Assistant (hv) reaches SearXNG over Tailscale for the AIS ship-photo
+    # camera. Keep this to hv's single Tailscale address rather than bypassing
+    # the limiter for the whole tailnet.
+    pass_ip = [ '172.21.0.0/16', '100.84.129.3/32' ]
     pass_searxng_org = true
     EOF
   '';
