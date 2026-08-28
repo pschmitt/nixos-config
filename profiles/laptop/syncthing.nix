@@ -1,3 +1,4 @@
+{ config, pkgs, ... }:
 {
   imports = [ ../syncthing.nix ];
 
@@ -17,5 +18,12 @@
     backups = {
       label = "Backups";
     };
+  };
+
+  home-manager.users.${config.mainUser.username} = {
+    home.packages = [ pkgs.syncthingtray ];
+    xdg.autostart.entries = [
+      "${pkgs.syncthingtray}/share/applications/syncthingtray.desktop"
+    ];
   };
 }
