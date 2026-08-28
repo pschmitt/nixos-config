@@ -32,6 +32,9 @@ let
     cat > "${config.xdg.configHome}/stui/config.yaml" <<EOF
     api_key: "$api_key"
     base_url: "http://${cfg.guiAddress}"
+    # required despite being documented as optional -- stui's Config struct
+    # has no #[serde(default)] on this field (as of v0.11.1).
+    path_map: {}
     icon_mode: "nerdfont"
     open_command: "xdg-open"
     clipboard_command: "wl-copy"
