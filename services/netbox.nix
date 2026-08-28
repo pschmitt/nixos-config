@@ -60,12 +60,7 @@ in
       apiTokenPepperFiles."1" = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins =
         _ps: with pkgs.master.netbox_4_6.plugins; [
-          (netbox-documents.overridePythonAttrs (old: {
-            postPatch = (old.postPatch or "") + ''
-              substituteInPlace netbox_documents/forms.py \
-                --replace "list(DocTypeChoices.choices)" "list(DocTypeChoices)"
-            '';
-          }))
+          netbox-documents
           netbox-interface-synchronization
           netbox-qrcode
           netbox-topology-views
