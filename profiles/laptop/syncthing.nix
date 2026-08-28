@@ -1,14 +1,10 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
 {
   imports = [ ../syncthing.nix ];
-
-  # stui ships no LICENSE file upstream (see pkgs/stui) -- explicitly opt in.
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "stui" ];
 
   # Folder ids must match the server's (hosts/rofl-10/syncthing.nix) for
   # Syncthing to pair them up automatically -- no manual "accept" step on

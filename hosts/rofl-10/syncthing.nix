@@ -1,15 +1,11 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
 
 {
   imports = [ ../../profiles/syncthing.nix ];
-
-  # stui ships no LICENSE file upstream (see pkgs/stui) -- explicitly opt in.
-  nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "stui" ];
 
   environment.systemPackages = [
     pkgs.syncthingtui
