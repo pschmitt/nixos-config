@@ -68,6 +68,19 @@ in
           restart.composePath = "dawarich";
         };
       };
+      filebrowser-quantum = {
+        port = 28170;
+        hosts = [ (mkHost "files") ];
+        auth = {
+          enable = true;
+          type = "sso";
+          # FileBrowser Quantum's own public share links live under
+          # /public/ (page + API + assets); everything else must stay
+          # behind Authelia.
+          publicLocations = [ "/public/" ];
+        };
+        monitoring.restart.systemdUnit = "filebrowser-quantum.service";
+      };
       linkding = {
         port = 54653;
         hosts = [

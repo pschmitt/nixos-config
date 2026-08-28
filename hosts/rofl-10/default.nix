@@ -24,6 +24,7 @@
     ../../services/changedetection-io-container.nix
     ../../services/clipcascade.nix
     ../../services/endurain.nix
+    ../../services/filebrowser-quantum.nix
     ../../services/forgejo.nix
     ../../services/gitea-mirror.nix
     ../../services/github-backup.nix
