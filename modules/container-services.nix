@@ -197,6 +197,17 @@ let
                 secret). Required when ``type = "basic"``.
               '';
             };
+
+            publicLocations = mkOption {
+              type = types.listOf types.str;
+              default = [ ];
+              description = ''
+                Nginx location prefixes (e.g. "/public/") that bypass this
+                service's authentication entirely, for apps that mix
+                authenticated areas with their own public/share endpoints.
+                Ignored when auth is disabled.
+              '';
+            };
           };
         });
       };
@@ -328,7 +339,7 @@ let
     let
       service = cfg.services.${serviceName};
       inherit (service) auth;
-      inherit (auth) enable htpasswdFile;
+      inherit (auth) enable htpasswdFile publicLocations;
       authType = auth.type;
       wantsBasic = enable && authType == "basic";
     in
@@ -339,6 +350,10 @@ let
     ++ optional (htpasswdFile != null && !wantsBasic) {
       assertion = false;
       message = "Container service '${serviceName}' should only set auth.htpasswdFile when auth.type = \"basic\".";
+    }
+    ++ optional (publicLocations != [ ] && !enable) {
+      assertion = false;
+      message = "Container service '${serviceName}' should only set auth.publicLocations when auth.enable = true.";
     }
   ) (attrNames cfg.services);
 
@@ -442,6 +457,20 @@ let
           extraConfig = locationExtraConfig;
         };
 
+      # Location prefixes that bypass this service's auth entirely (e.g. an
+      # app's own public share links), proxied plain with no auth_request or
+      # basic auth attached. Nginx picks these over "/" by longest-prefix
+      # match, so no explicit ordering/priority modifier is needed.
+      publicLocationAttrs = optionalAttrs auth.enable (
+        genAttrs auth.publicLocations (
+          _:
+          baseLocation
+          // optionalAttrs (service.extraLocationConfig != "") {
+            extraConfig = service.extraLocationConfig;
+          }
+        )
+      );
+
       # Internal location for Authelia authz check
       autheliaServerExtraConfig = optionalString wantsSsoAuth ''
         set $upstream_authelia ${defaultAuthzURL};
@@ -490,7 +519,8 @@ let
         forceSSL = true;
         locations = {
           "/" = locationAttrs;
-        };
+        }
+        // publicLocationAttrs;
         extraConfig = autheliaServerExtraConfig;
       };
     };
