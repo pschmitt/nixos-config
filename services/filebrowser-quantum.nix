@@ -39,8 +39,13 @@ in
           - path: "${config.custom.syncthing.folders.backups.dir}"
             name: "Backups"
       http:
+        # v1.4.x-v1.5.x needs these listed explicitly (no trustProxyHeaders
+        # bool yet) for OIDC redirect/callback URLs to come out https://
+        # instead of http:// behind nginx.
         trustedHeaders:
           - "X-Forwarded-For"
+          - "X-Forwarded-Proto"
+          - "X-Forwarded-Host"
       auth:
         # Set on every boot (backend/cmd/user.go: any existing user matching
         # adminUsername gets promoted to admin and its password reset to
@@ -51,8 +56,11 @@ in
         adminPassword: "${config.sops.placeholder."filebrowser-quantum/admin-password"}"
         methods:
           password:
-            # Kept as a local fallback login; not used day-to-day.
-            enabled: true
+            # adminUsername/adminPassword above are still used to bootstrap
+            # and keep the admin account in sync on every boot regardless;
+            # this only disables the local password *login* method, since
+            # OIDC is the only supported way in.
+            enabled: false
             signup: false
           oidc:
             # Real OIDC login against Authelia (client registered in
