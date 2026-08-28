@@ -27,10 +27,6 @@ let
   '';
 in
 {
-  home.packages = with pkgs; [
-    nextcloud-client
-  ];
-
   xdg = {
     desktopEntries = {
       tmux = {
@@ -76,7 +72,6 @@ in
       entries = [
         "${config.home.profileDirectory}/share/applications/tmux-local-fnuc.desktop"
         "${pkgs.firefox}/share/applications/firefox.desktop"
-        "${pkgs.nextcloud-client}/share/applications/com.nextcloud.desktopclient.nextcloud.desktop"
       ]
       ++ config.host.extraAutostartEntries;
     };

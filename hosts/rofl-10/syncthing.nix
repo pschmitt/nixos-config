@@ -4,8 +4,11 @@
   imports = [ ../../profiles/syncthing.nix ];
 
   custom.syncthing = {
-    documentsDir = "/mnt/data/srv/syncthing/documents";
     folders = {
+      documents = {
+        label = "Documents";
+        dir = "/mnt/data/srv/syncthing/documents";
+      };
       music = {
         label = "Music";
         dir = "/mnt/data/srv/syncthing/music";
