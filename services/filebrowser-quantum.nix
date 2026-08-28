@@ -30,14 +30,10 @@ in
         database: "${stateDir}/filebrowser.sqlite"
         cacheDir: "${stateDir}/cache"
         sources:
-          - path: "${config.custom.syncthing.documentsDir}"
-            name: "Documents"
-          - path: "${config.custom.syncthing.folders.music.dir}"
-            name: "Music"
-          - path: "${config.custom.syncthing.folders.pictures.dir}"
-            name: "Pictures"
-          - path: "${config.custom.syncthing.folders.backups.dir}"
-            name: "Backups"
+          # One source over the whole synced tree (Documents/Music/Pictures/
+          # Backups all live under here) rather than one entry per folder.
+          - path: "/srv/syncthing"
+            name: "Syncthing"
       http:
         # v1.4.x-v1.5.x needs these listed explicitly (no trustProxyHeaders
         # bool yet) for OIDC redirect/callback URLs to come out https://
