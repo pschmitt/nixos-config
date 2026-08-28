@@ -71,14 +71,10 @@ in
       filebrowser-quantum = {
         port = 28170;
         hosts = [ (mkHost "files") ];
-        auth = {
-          enable = true;
-          type = "sso";
-          # FileBrowser Quantum's own public share links live under
-          # /public/ (page + API + assets); everything else must stay
-          # behind Authelia.
-          publicLocations = [ "/public/" ];
-        };
+        # Auth is handled by FileBrowser Quantum itself via a real OIDC
+        # client against Authelia (see services/filebrowser-quantum.nix and
+        # services/authelia.nix's oidc.yml) -- not nginx's Authelia
+        # auth_request gate, which doesn't apply here.
         monitoring = {
           # "/" has no Content-Length (framed by connection-close only),
           # which Monit's minimal HTTP client can't parse -- it hangs and
