@@ -20,10 +20,27 @@
     };
   };
 
-  home-manager.users.${config.mainUser.username} = {
-    home.packages = [ pkgs.syncthingtray ];
-    xdg.autostart.entries = [
-      "${pkgs.syncthingtray}/share/applications/syncthingtray.desktop"
-    ];
-  };
+  home-manager.users.${config.mainUser.username} =
+    { config, ... }:
+    {
+      home.packages = [ pkgs.syncthingtray ];
+
+      # --wait: the system tray isn't up yet this early in a session/login,
+      # without it syncthingtray shows an error instead of waiting for it.
+      xdg.desktopEntries.syncthingtray = {
+        name = "Syncthing Tray";
+        comment = "Tray application for Syncthing";
+        exec = "${pkgs.syncthingtray}/bin/syncthingtray --wait";
+        icon = "syncthingtray";
+        terminal = false;
+        categories = [
+          "Network"
+          "FileTransfer"
+        ];
+      };
+
+      xdg.autostart.entries = [
+        "${config.home.profileDirectory}/share/applications/syncthingtray.desktop"
+      ];
+    };
 }
