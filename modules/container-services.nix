@@ -155,6 +155,16 @@ let
         description = "Override the ACME certificate to reuse for this host.";
       };
 
+      extraLocationConfig = mkOption {
+        type = types.lines;
+        default = "";
+        description = ''
+          Extra raw NGINX directives appended to the service's proxy
+          location block (e.g. to override proxy timeouts for
+          long-running transfers).
+        '';
+      };
+
       auth = mkOption {
         description = "Authentication policy for the container service.";
         default = { };
@@ -419,6 +429,7 @@ let
         filter (cfg: cfg != "") [
           autheliaExtraConfig
           basicAuthExtraConfig
+          service.extraLocationConfig
         ]
       );
 
