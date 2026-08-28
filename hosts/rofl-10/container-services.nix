@@ -89,6 +89,13 @@ in
           (mkHostWithNode "c")
           (mkHostWithNode "nextcloud")
         ];
+        # Large files (e.g. Google Takeout archives) can stall well past
+        # NGINX's default 60s proxy timeout, aborting the download.
+        extraLocationConfig = ''
+          proxy_connect_timeout 3600;
+          proxy_send_timeout 3600;
+          proxy_read_timeout 3600;
+        '';
       };
       # traefik = {
       #   port = 8723; # http: 18723
