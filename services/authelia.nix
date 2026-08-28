@@ -235,8 +235,12 @@ in
                   client_secret: '${config.sops.placeholder."authelia/oidc-filebrowser-secret-hash"}'
                   public: false
                   authorization_policy: 'two_factor'
-                  require_pkce: true
-                  pkce_challenge_method: 'S256'
+                  # FileBrowser Quantum's OIDC client doesn't send a
+                  # code_challenge (confirmed by Authelia rejecting the
+                  # authorization request with "Clients must include a
+                  # 'code_challenge'... but it is missing" once PKCE was
+                  # required), unlike audiobookshelf above.
+                  require_pkce: false
                   redirect_uris:
                     - 'https://files.${config.domains.main}/api/auth/oidc/callback'
                   scopes:
