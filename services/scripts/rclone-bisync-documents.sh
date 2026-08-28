@@ -41,9 +41,13 @@ main() {
   local -a extra_args
 
   config_path=
-  lockfile=/var/cache/rclone/bisync/nextcloud_Documents..drive_Documents.lck
+  # Syncs the real filesystem path directly instead of going through
+  # Nextcloud's WebDAV "Documents" -- that's now a read-only external
+  # storage mount onto this same directory (see FileBrowser Quantum /
+  # Syncthing migration), so bisync needs write access straight to disk.
+  lockfile=/var/cache/rclone/bisync/mnt-data-srv-syncthing-documents..drive_Documents.lck
   rclone_workdir=/var/cache/rclone/bisync
-  system_lockfile=/var/cache/rclone/bisync/nextcloud_Documents..drive_Documents.systemd.lock
+  system_lockfile=/var/cache/rclone/bisync/mnt-data-srv-syncthing-documents..drive_Documents.systemd.lock
   extra_args=()
 
   while [[ -n "${1:-}" ]]
@@ -79,7 +83,7 @@ main() {
 
   wait_for_lock "$lockfile" 10800
 
-  rclone bisync "nextcloud:Documents" "drive:Documents" \
+  rclone bisync "/mnt/data/srv/syncthing/documents" "drive:Documents" \
     --config "$config_path" \
     --check-access \
     --check-filename .rclone-test.empty \
