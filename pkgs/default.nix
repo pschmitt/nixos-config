@@ -53,6 +53,8 @@ in
   shellyctl = pkgs.callPackage ./shellyctl { };
   ssh-clipboard = pkgs.callPackage ./ssh-clipboard { };
   still = pkgs.callPackage ./still { };
+  stui = pkgs.callPackage ./stui { };
+  syncthingtui = pkgs.callPackage ./syncthingtui { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };
