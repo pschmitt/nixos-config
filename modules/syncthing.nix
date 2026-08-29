@@ -23,6 +23,11 @@
               default = null;
               description = "Override path for this sync folder. Defaults to /var/lib/syncthing/<name> on server, ~/<label> on clients.";
             };
+            devices = lib.mkOption {
+              type = lib.types.nullOr (lib.types.listOf lib.types.str);
+              default = null;
+              description = "Device names (keys into custom.syncthing.devices) to share this folder with. Defaults to all other devices when null.";
+            };
           };
         }
       );
@@ -103,7 +108,11 @@
             id = name;
             inherit (folder) label;
             path = folderPaths.${name};
-            devices = lib.attrNames otherDevices;
+            devices =
+              if folder.devices != null then
+                lib.filter (d: otherDevices ? ${d}) folder.devices
+              else
+                lib.attrNames otherDevices;
             # Server should not be authoritative; it’s the backup/receiver by default.
             type = if cfg.server then "receiveonly" else "sendreceive";
             ignorePerms = false;

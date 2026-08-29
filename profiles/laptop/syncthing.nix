@@ -3,6 +3,10 @@
   pkgs,
   ...
 }:
+let
+  deviceGroups = import ../syncthing-device-groups.nix;
+  personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
+in
 {
   imports = [
     ../syncthing.nix
@@ -22,15 +26,19 @@
   custom.syncthing.folders = {
     documents = {
       label = "Documents";
+      devices = personalDevices;
     };
     music = {
       label = "Music";
+      devices = personalDevices;
     };
     pictures = {
       label = "Pictures";
+      devices = personalDevices;
     };
     backups = {
       label = "Backups";
+      devices = personalDevices;
     };
   };
 
