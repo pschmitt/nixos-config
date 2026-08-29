@@ -12,12 +12,15 @@ let
   personalDevices = lib.filter (d: otherDevices ? ${d}) (
     deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones
   );
+  documentsDevices = lib.filter (d: otherDevices ? ${d}) (
+    deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones ++ deviceGroups.documentsPhones
+  );
 
-  mkFolder = name: label: {
+  mkFolder = name: label: devices: {
     id = name;
     inherit label;
     path = "${config.home.homeDirectory}/${label}";
-    devices = personalDevices;
+    inherit devices;
     type = "sendreceive";
     ignorePerms = false;
     ignorePatterns = [
@@ -48,10 +51,10 @@ in
       }) otherDevices;
 
       folders = {
-        documents = mkFolder "documents" "Documents";
-        music = mkFolder "music" "Music";
-        pictures = mkFolder "pictures" "Pictures";
-        backups = mkFolder "backups" "Backups";
+        documents = mkFolder "documents" "Documents" documentsDevices;
+        music = mkFolder "music" "Music" personalDevices;
+        pictures = mkFolder "pictures" "Pictures" personalDevices;
+        backups = mkFolder "backups" "Backups" personalDevices;
       };
 
       gui = {
