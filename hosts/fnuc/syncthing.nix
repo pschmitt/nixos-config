@@ -8,11 +8,16 @@ let
     "dynamic"
   ];
 
+  deviceGroups = import ../../profiles/syncthing-device-groups.nix;
+  personalDevices = lib.filter (d: otherDevices ? ${d}) (
+    deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones
+  );
+
   mkFolder = name: label: {
     id = name;
     inherit label;
     path = "${config.home.homeDirectory}/${label}";
-    devices = lib.attrNames otherDevices;
+    devices = personalDevices;
     type = "sendreceive";
     ignorePerms = false;
     ignorePatterns = [

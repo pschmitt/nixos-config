@@ -14,6 +14,9 @@ let
     api_key=$(${pkgs.gnused}/bin/sed -n 's/^api_key: "\(.*\)"$/\1/p' ~/.config/stui/config.yaml)
     exec ${pkgs.syncthingtui}/bin/syncthingtui -address 127.0.0.1:8384 -api-key "$api_key" "$@"
   '';
+
+  deviceGroups = import ../../profiles/syncthing-device-groups.nix;
+  personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
 in
 {
   imports = [
@@ -38,18 +41,22 @@ in
       documents = {
         label = "Documents";
         dir = "/mnt/data/srv/syncthing/documents";
+        devices = personalDevices;
       };
       music = {
         label = "Music";
         dir = "/mnt/data/srv/syncthing/music";
+        devices = personalDevices;
       };
       pictures = {
         label = "Pictures";
         dir = "/mnt/data/srv/syncthing/pictures";
+        devices = personalDevices;
       };
       backups = {
         label = "Backups";
         dir = "/mnt/data/srv/syncthing/backups";
+        devices = personalDevices;
       };
     };
   };
