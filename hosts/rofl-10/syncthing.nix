@@ -17,6 +17,7 @@ let
 
   deviceGroups = import ../../profiles/syncthing-device-groups.nix;
   personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
+  documentsDevices = personalDevices ++ deviceGroups.documentsPhones;
 in
 {
   imports = [
@@ -41,7 +42,7 @@ in
       documents = {
         label = "Documents";
         dir = "/mnt/data/srv/syncthing/documents";
-        devices = personalDevices;
+        devices = documentsDevices;
       };
       music = {
         label = "Music";
