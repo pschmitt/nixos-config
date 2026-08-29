@@ -8,6 +8,7 @@
     ./gdm.nix
     ./wacom.nix
     ./falcon-sensor-vm.nix
+    ./crash-diagnostics.nix
     ../../profiles/work/elgato-stream-deck.nix
 
     ../../profiles/workstation.nix
