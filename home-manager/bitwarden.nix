@@ -119,16 +119,16 @@
       accounts = {
         default.email = config.mainUser.email;
         wiit = {
-          email._secret = config.sops.secrets."rbw/work/email".path;
-          baseUrl._secret = config.sops.secrets."rbw/work/base_url".path;
+          email.file = config.sops.secrets."rbw/work/email".path;
+          baseUrl.file = config.sops.secrets."rbw/work/base_url".path;
           unlock = {
             policy = "always";
             credentials.account = "default";
           };
         };
         bw = {
-          email._secret = config.sops.secrets."rbw/private/email".path;
-          baseUrl._secret = config.sops.secrets."rbw/private/base_url".path;
+          email.file = config.sops.secrets."rbw/private/email".path;
+          baseUrl.file = config.sops.secrets."rbw/private/base_url".path;
           unlock = {
             policy = "always";
             # `item` is pinned explicitly: `default`'s vault has two
