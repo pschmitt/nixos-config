@@ -6,6 +6,7 @@
 let
   deviceGroups = import ../syncthing-device-groups.nix;
   personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
+  documentsDevices = personalDevices ++ deviceGroups.documentsPhones;
 in
 {
   imports = [
@@ -26,7 +27,7 @@ in
   custom.syncthing.folders = {
     documents = {
       label = "Documents";
-      devices = personalDevices;
+      devices = documentsDevices;
     };
     music = {
       label = "Music";
