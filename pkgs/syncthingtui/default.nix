@@ -6,13 +6,13 @@
 
 buildGoModule rec {
   pname = "syncthingtui";
-  version = "1.0.2";
+  version = "1.0.3";
 
   src = fetchFromGitHub {
     owner = "Evidlo";
     repo = "syncthingtui";
     rev = "v${version}";
-    hash = "sha256-d9CNjOLVKM009jgHuzpBTQyWQDiLv+ZixdxF2QLxZgo=";
+    hash = "sha256-BtikvNJRn6TpxCoq6/U8TUSkH0JsvRDGqr4HQ1rk1Ws=";
   };
 
   vendorHash = "sha256-ryvE7cnGhd9JQRuQwKoyl3f4XUvK4RKwLEeBMozbRwU=";
