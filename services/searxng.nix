@@ -129,11 +129,11 @@ in
     block_ip = []
     # n8n docker bridge (br-n8n, see services/n8n.nix) -- unrestricted access
     # for the Todoist Emojifier's product-photo search.
-    # Home Assistant (hv) reaches SearXNG over Tailscale for the AIS ship-photo
-    # camera. fnuc is also trusted for local debugging. Keep these to the
-    # explicit client addresses rather than bypassing the limiter for the whole
-    # tailnet.
-    pass_ip = [ '172.21.0.0/16', '100.84.129.3/32', '100.94.89.18/32' ]
+    # Home Assistant (hv) and local debugging clients reach SearXNG over
+    # Tailscale. Trust the Tailscale CGNAT range so new tailnet devices do not
+    # need individual entries. This does not bypass the limiter for public
+    # clients.
+    pass_ip = [ '172.21.0.0/16', '100.64.0.0/10' ]
     pass_searxng_org = true
     EOF
   '';
