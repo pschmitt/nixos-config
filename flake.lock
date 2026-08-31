@@ -168,11 +168,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1788176231,
-        "narHash": "sha256-G/jp/R6VXQrzhNOCljSbenAgmtvfzBuc8df1evMLZjk=",
+        "lastModified": 1788177015,
+        "narHash": "sha256-JhbRzj5UdUdAXHRLPK82658Uy217oIoiXr4u86xwLFM=",
         "owner": "pschmitt",
         "repo": "codex-ha-bridge",
-        "rev": "23a6e3a85dfb5610e5b4bce4a6595273d906aa39",
+        "rev": "0defe8cd2580cecf4027d1ccd3030bd1302bf795",
         "type": "github"
       },
       "original": {
