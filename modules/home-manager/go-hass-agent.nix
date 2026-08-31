@@ -52,7 +52,7 @@ in
     tokenSecret = lib.mkOption {
       type = lib.types.str;
       default = "home-assistant/token";
-      description = "SOPS secret name for the Home Assistant token.";
+      description = "SOPS secret name for the host-specific Home Assistant PAT (nixos-config (<HOSTNAME>)).";
     };
 
     mqttUsernameSecret = lib.mkOption {

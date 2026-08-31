@@ -99,6 +99,8 @@ in
           mode = "0600";
           sopsFile = ../../secrets/shared.sops.yaml;
         };
+        # MCP uses the same host-specific Philipp Schmitt PAT:
+        # `nixos-config (<HOSTNAME>)`.
         "home-assistant/token" = {
           mode = "0600";
           sopsFile = config.host.sopsFile;
