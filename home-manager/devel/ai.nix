@@ -99,9 +99,9 @@ in
           mode = "0600";
           sopsFile = ../../secrets/shared.sops.yaml;
         };
-        "home-assistant/mcp/token" = {
+        "home-assistant/token" = {
           mode = "0600";
-          sopsFile = ../../secrets/shared.sops.yaml;
+          sopsFile = config.host.sopsFile;
         };
       };
     };
@@ -115,7 +115,7 @@ in
         };
         home-assistant = mcpHttpProxy {
           url = "https://ha.${domainName}/api/mcp";
-          tokenFile = config.sops.secrets."home-assistant/mcp/token".path;
+          tokenFile = config.sops.secrets."home-assistant/token".path;
         };
         obsidian = {
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";

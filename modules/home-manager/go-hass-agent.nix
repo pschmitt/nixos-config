@@ -51,7 +51,7 @@ in
 
     tokenSecret = lib.mkOption {
       type = lib.types.str;
-      default = "home-assistant/mcp/token";
+      default = "home-assistant/token";
       description = "SOPS secret name for the Home Assistant token.";
     };
 
