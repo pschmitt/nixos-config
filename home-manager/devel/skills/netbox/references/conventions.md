@@ -239,6 +239,7 @@ Current prefixes:
 - `DEL` = Dell
 - `DGT` = Digitus
 - `DJI` = DJI
+- `DLG` = De'Longhi
 - `DLK` = D-Link
 - `DRG` = Dragino
 - `EAT` = Eaton
