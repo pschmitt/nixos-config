@@ -23,6 +23,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    codex-ha-bridge = {
+      url = "github:pschmitt/codex-ha-bridge";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     bruvtab = {
       url = "github:pschmitt/bruvtab";
       inputs.nixpkgs.follows = "nixpkgs";

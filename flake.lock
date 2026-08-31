@@ -161,6 +161,26 @@
         "type": "github"
       }
     },
+    "codex-ha-bridge": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788176231,
+        "narHash": "sha256-G/jp/R6VXQrzhNOCljSbenAgmtvfzBuc8df1evMLZjk=",
+        "owner": "pschmitt",
+        "repo": "codex-ha-bridge",
+        "rev": "23a6e3a85dfb5610e5b4bce4a6595273d906aa39",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "codex-ha-bridge",
+        "type": "github"
+      }
+    },
     "cpuguy83-nixcfg": {
       "flake": false,
       "locked": {
@@ -3214,6 +3234,7 @@
         "bitwarden-mcp": "bitwarden-mcp",
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
+        "codex-ha-bridge": "codex-ha-bridge",
         "cpuguy83-nixcfg": "cpuguy83-nixcfg",
         "declaroid": "declaroid",
         "disko": "disko",
