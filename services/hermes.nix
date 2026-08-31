@@ -127,18 +127,24 @@ in
   ];
 
   sops = {
-    # The existing MCP tokens stay encrypted at rest and are exposed to the
-    # gateway only through a root-owned systemd environment file.
+    # `home-assistant/token` is the canonical Home Assistant token name. The
+    # Home Manager declaration reads it from each host's SOPS file and gives
+    # it to the logged-in user; this service declaration reads the shared
+    # copy only to render the root-owned Hermes environment file.
+    # `hermes/home-assistant/llat` is a separate LLAT stored in rofl-10's
+    # SOPS file and must be owned by the Hermes service account.
     secrets = {
       "n8n/mcp/token" = {
         sopsFile = ../secrets/shared.sops.yaml;
         mode = "0400";
       };
-      "home-assistant/mcp/token" = {
+      "home-assistant/token" = {
         sopsFile = ../secrets/shared.sops.yaml;
         mode = "0400";
       };
       "hermes/home-assistant/llat" = config.custom.mkSecret {
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "hermes/matrix/password" = config.custom.mkSecret {
@@ -218,7 +224,7 @@ in
       "hermes/mcp.env" = {
         content = ''
           MCP_N8N_API_KEY=${config.sops.placeholder."n8n/mcp/token"}
-          MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/mcp/token"}
+          MCP_HOME_ASSISTANT_API_KEY=${config.sops.placeholder."home-assistant/token"}
           HERMES_AGENT_HELP_GUIDANCE=For GitHub interactions, prefer the gh-brkn-lol account by default: use the github-gh-brkn-lol MCP server or gh-brkn-lol command. Use the github-pschmitt MCP server or gh-pschmitt command only when the pschmitt account is specifically needed; verify identity before account-sensitive actions and do not switch credentials without explicit instruction. For host Nix changes, initialize the checkout with hermes-nixos-init if ${hermesNixFlakeDir} is missing, edit that checkout, run nixos-rebuild dry-build --flake ${hermesNixFlakeDir}#rofl-10, then run hermes-nixos-apply to request the privileged switch.
           HASS_URL=https://ha.${config.domains.main}
           HASS_TOKEN=${config.sops.placeholder."hermes/home-assistant/llat"}

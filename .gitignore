@@ -33,6 +33,7 @@ update-git-commits.txt
 cookies.txt
 tmp/
 .claude
+.playwright-mcp/
 __pycache__/
 nbx-preview.*
 
