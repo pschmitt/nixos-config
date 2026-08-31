@@ -33,7 +33,6 @@ in
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
-  codex-ha-bridge = pkgs.callPackage ./codex-ha-bridge { };
   clipcascade = pkgs.callPackage ./clipcascade { };
   inherit emoji-fzf;
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };

@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -12,7 +13,7 @@
     ../../home-manager/gui/go-hass-agent
     ../../modules/home-manager/claude-remote-control.nix
     ../../modules/home-manager/codex-remote-control.nix
-    ../../modules/home-manager/codex-ha-bridge.nix
+    inputs.codex-ha-bridge.homeManagerModules.default
     ../../home-manager/ssh-clipboard-peers.nix
     ../../services/nix-distributed-build.nix
 
