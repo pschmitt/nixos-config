@@ -281,6 +281,7 @@ Current prefixes:
 - `NBC` = Nabu Casa
 - `NEL` = nello
 - `NET` = Netac
+- `NOO` = Nooelec
 - `NOU` = Nous
 - `NTG` = Netgear
 - `NUK` = Nuki
