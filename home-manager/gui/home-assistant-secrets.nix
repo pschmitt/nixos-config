@@ -5,7 +5,8 @@
 {
   sops.secrets = {
     "home-assistant/server" = { };
-    # The long-lived access token is host-specific
+    # Use the Philipp Schmitt PAT named `nixos-config (<HOSTNAME>)`; each host
+    # has its own token.
     "home-assistant/token".sopsFile = config.host.sopsFile;
   };
 }
