@@ -2467,7 +2467,8 @@
       "original": {
         "path": "./private",
         "type": "path"
-      }
+      },
+      "parent": []
     },
     "nixos-images": {
       "inputs": {
