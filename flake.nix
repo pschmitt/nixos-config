@@ -123,7 +123,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    nixos-config-private.url = "github:pschmitt/nixos-config-private";
+    nixos-config-private.url = "path:./private";
 
     # Hyprland and cie {{{
     hyprland = {

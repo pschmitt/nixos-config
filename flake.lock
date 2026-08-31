@@ -2441,18 +2441,12 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1788173612,
-        "narHash": "sha256-DEo5x5PZLiYwOvv7u3+/ypbB6ExMdE/NYciS1pKAwAU=",
-        "ref": "refs/heads/main",
-        "rev": "388ecaa4e6b8f8cb8353f10f3ebceb3393efc050",
-        "revCount": 28,
-        "type": "git",
-        "url": "ssh://git@github.com/pschmitt/nixos-config-private"
+        "path": "./private",
+        "type": "path"
       },
       "original": {
-        "owner": "pschmitt",
-        "repo": "nixos-config-private",
-        "type": "github"
+        "path": "./private",
+        "type": "path"
       }
     },
     "nixos-images": {

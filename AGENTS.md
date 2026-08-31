@@ -19,8 +19,10 @@
 
 ## Private configuration submodule
 - `private/` is a Git submodule tracking `pschmitt/nixos-config-private`; it supplies private modules and secrets used by this flake.
-- Keep the `private/` submodule pointer and the locked `nixos-config-private` flake input in `flake.lock` at the same commit.
-- When updating private configuration, commit and push the private repository first, then update both the parent submodule pointer and its `flake.lock` entry before deploying.
+- The flake references `nixos-config-private` through the local path `path:./private`; the checked-out submodule contents are authoritative for local builds and deployments.
+- Because the deploy helpers copy the repository without `.git` directories, keep using the `path:./private` input and do not replace it with a GitHub URL or local Git transport. The path input is recorded as a local path in `flake.lock`, not as a GitHub revision.
+- Run Nix evaluation and deployment through the repository copy helpers (`just hm`, `just deploy`, or an equivalent copy); direct `nix` commands from the parent Git checkout cannot resolve files inside the submodule-backed path input.
+- When updating private configuration, make the change in the submodule and update the parent submodule pointer as needed. Commit or push the private repository when publishing the change is desired; it is not required to use the local path input.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
