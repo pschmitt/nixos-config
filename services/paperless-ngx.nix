@@ -68,7 +68,7 @@ in
   environment.etc."lsyncd/lsyncd.conf.lua".text = ''
     sync {
       default.rsync,
-      source = "/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Documents",
+      source = "/mnt/data/srv/syncthing/documents",
       target = "${config.services.paperless.consumptionDir}",
       rsync = {
         binary   = "${pkgs.rsync}/bin/rsync",
