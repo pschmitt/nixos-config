@@ -19,10 +19,9 @@
 
 ## Private configuration submodule
 - `private/` is a Git submodule tracking `pschmitt/nixos-config-private`; it supplies private modules and secrets used by this flake.
-- The flake references `nixos-config-private` through the local path `path:./private`; the checked-out submodule contents are authoritative for local builds and deployments.
-- Because the deploy helpers copy the repository without `.git` directories, keep using the `path:./private` input and do not replace it with a GitHub URL or local Git transport. The path input is recorded as a local path in `flake.lock`, not as a GitHub revision.
-- Run Nix evaluation and deployment through the repository copy helpers (`just hm`, `just deploy`, or an equivalent copy); direct `nix` commands from the parent Git checkout cannot resolve files inside the submodule-backed path input.
-- When updating private configuration, make the change in the submodule and update the parent submodule pointer as needed. Commit or push the private repository when publishing the change is desired; it is not required to use the local path input.
+- The flake references `nixos-config-private` as `github:pschmitt/nixos-config-private` (a normal flake input, pinned in `flake.lock`), with `inputs.nixpkgs.follows = "nixpkgs"` so it shares the top-level `nixpkgs`. This repo is private, so fetching it requires a GitHub token — every host gets one via `access-tokens` in `nix.conf` (system-level for root/nix-daemon builds via `profiles/global/nix/secrets.nix`, user-level for unprivileged `nix` commands via `home-manager/devel/nix.nix`); do not remove that plumbing.
+  - Previously this input used `path:./private` to avoid needing network/GitHub access on deploy targets (the copy helpers rsync the repo without `.git`, which made `path:` fail anyway because Nix can't resolve tracked files inside a submodule from the parent checkout — see 2026-09-01). The `github:` input with access-tokens replaced that workaround; do not revert to `path:./private` or route flake operations through copy helpers just to work around private-input resolution.
+- The checked-out `private/` submodule is still used for local editing: make changes there, commit, and push to publish. `nix flake update` (or `nix flake lock --update-input nixos-config-private`) then picks up the new revision for the flake input — the submodule checkout and the flake input are independent and can point at different revisions until you update the lock file.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
