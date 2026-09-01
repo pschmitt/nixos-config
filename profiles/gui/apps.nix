@@ -22,12 +22,12 @@
     inputs.wezterm.packages.${pkgs.stdenv.hostPlatform.system}.default
 
     # files and docs
-    eog
     evince
     ffmpegthumbnailer # for video thumbnails in nautilus
     file-roller
     gnome-font-viewer
     imv # image viewer
+    loupe
     nautilus
     sushi # file previewer for gnome
 

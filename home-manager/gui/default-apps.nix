@@ -12,14 +12,14 @@
       "application/pdf" = "org.gnome.Evince.desktop";
 
       # Image viewers
-      "image/jpeg" = "org.gnome.eog.desktop";
-      "image/png" = "org.gnome.eog.desktop";
-      "image/gif" = "org.gnome.eog.desktop";
-      "image/bmp" = "org.gnome.eog.desktop";
-      "image/webp" = "org.gnome.eog.desktop";
-      "image/tiff" = "org.gnome.eog.desktop";
-      "image/x-portable-pixmap" = "org.gnome.eog.desktop";
-      "image/x-xbitmap" = "org.gnome.eog.desktop";
+      "image/jpeg" = "org.gnome.Loupe.desktop";
+      "image/png" = "org.gnome.Loupe.desktop";
+      "image/gif" = "org.gnome.Loupe.desktop";
+      "image/bmp" = "org.gnome.Loupe.desktop";
+      "image/webp" = "org.gnome.Loupe.desktop";
+      "image/tiff" = "org.gnome.Loupe.desktop";
+      "image/x-portable-pixmap" = "org.gnome.Loupe.desktop";
+      "image/x-xbitmap" = "org.gnome.Loupe.desktop";
     };
   };
 }

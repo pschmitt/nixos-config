@@ -11,7 +11,6 @@
     geary # email reader
     gedit # text editor
     gnome-music
-    gnome-photos
     gnome-terminal
     gnome-tour
     hitori # sudoku game
