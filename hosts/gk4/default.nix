@@ -13,7 +13,21 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
+  home-manager.users.${config.mainUser.username} = {
+    services.jellysync.enable = true;
+    # Trial install of DankMaterialShell as a Waybar alternative (see
+    # home-manager/gui/hyprland/quickshell-bar for the other one). Cycled
+    # in via SUPER+SHIFT+B (toggle-bar.sh) alongside waybar/quickshell-bar;
+    # not in Install.WantedBy so it doesn't autostart on its own.
+    programs.dank-material-shell = {
+      enable = true;
+      systemd.enable = true;
+      # Raw pkgs.glib collides with the gsettings wrapper from
+      # modules/theme.nix; the VPN widget isn't needed for this trial.
+      enableVPN = false;
+    };
+    systemd.user.services.dms.Install.WantedBy = lib.mkForce [ ];
+  };
 
   hardware.cattle = false;
   initrd.wifi = {

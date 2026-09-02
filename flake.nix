@@ -53,6 +53,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    dankMaterialShell = {
+      url = "github:AvengeMedia/DankMaterialShell";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     docker-compose-bulk = {
       url = "github:pschmitt/docker-compose-bulk";
       inputs.nixpkgs.follows = "nixpkgs";
