@@ -3338,6 +3338,7 @@
         "sops-nix": "sops-nix",
         "srvos": "srvos",
         "stricknani": "stricknani",
+        "syncshell-dms": "syncshell-dms",
         "tdc": "tdc",
         "tmux-slay": "tmux-slay",
         "tsvtool": "tsvtool",
@@ -3587,6 +3588,26 @@
       "original": {
         "owner": "pschmitt",
         "repo": "stricknani",
+        "type": "github"
+      }
+    },
+    "syncshell-dms": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788111356,
+        "narHash": "sha256-5F6fXml4hPuQ8+XqcxzVTu9NN++PASNLf4A5NVzGBIM=",
+        "owner": "ChrisLAS",
+        "repo": "syncshell-dms",
+        "rev": "622dbb45392d73324b9416bd3e46fa5f7e046762",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ChrisLAS",
+        "repo": "syncshell-dms",
         "type": "github"
       }
     },
