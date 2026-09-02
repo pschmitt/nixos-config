@@ -13,6 +13,7 @@
     ./bin
     ./conf
     ./plugins
+    ./quickshell-bar
     ./services
     ./tools
     ./waybar
