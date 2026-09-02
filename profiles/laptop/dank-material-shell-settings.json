@@ -6,6 +6,7 @@
   "controlCenterShowMicPercent": true,
   "appIdSubstitutions": [],
   "useAutoLocation": true,
+  "runningAppsCurrentWorkspace": false,
   "cursorSettings": {
     "theme": "System Default",
     "size": 24,
@@ -25,6 +26,7 @@
   "fontFamily": "Comic Code",
   "monoFontFamily": "Comic Code",
   "fontWeight": 700,
+  "fontScale": 1.2,
   "soundNewNotification": false,
   "osdPowerProfileEnabled": true,
   "barConfigs": [

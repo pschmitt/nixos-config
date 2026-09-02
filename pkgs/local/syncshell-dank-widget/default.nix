@@ -1,6 +1,7 @@
-# Overlays a custom SyncshellWidget.qml onto the upstream syncshell-dms
-# plugin package, swapping the generic Material Symbol status glyph for
-# Syncthing's own bundled status icons (assets/status-*.svg).
+# Overlays a custom SyncshellWidget.qml + colored status badges onto the
+# upstream syncshell-dms plugin package, swapping the generic Material
+# Symbol status glyph for the Syncthing logo with a synced (green check)
+# / syncing (blue) / paused (gray) / issue (red) badge.
 {
   lib,
   stdenvNoCC,
@@ -25,6 +26,7 @@ stdenvNoCC.mkDerivation {
     cp -r ${upstream}/share/dms-plugins/syncshell/. "$dest"/
     chmod -R u+w "$dest"
     cp ${./SyncshellWidget.qml} "$dest"/SyncshellWidget.qml
+    cp ${./assets}/*.svg "$dest"/assets/
 
     runHook postInstall
   '';

@@ -35,17 +35,18 @@ PluginComponent {
         }
     }
 
-    // Syncthing's own status icons (default/sync/pause/notify), shipped in
-    // this plugin's assets/ dir — same set syncthing-tray/Nextcloud-style
-    // clients use, rather than a generic Material Symbol glyph.
+    // Syncthing's own logo (assets/status-*.svg, derived from Syncthing's
+    // official icon set) with a colored status badge — same idea
+    // syncthing-tray/Nextcloud-style clients use, rather than a generic
+    // Material Symbol glyph.
     function statusIconSource() {
         if (!state || state.phase === "error" || problemFolders > 0)
-            return "assets/status-notify.svg";
+            return "assets/status-issue.svg";
         if (state.phase !== "ready" || activeFolders > 0)
-            return "assets/status-sync.svg";
+            return "assets/status-syncing.svg";
         if (allPaused)
-            return "assets/status-pause.svg";
-        return "assets/status-default.svg";
+            return "assets/status-paused.svg";
+        return "assets/status-synced.svg";
     }
 
     function statusText() {
