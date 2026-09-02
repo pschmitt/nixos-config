@@ -24,8 +24,11 @@ PluginComponent {
         for (var i = 0; i < folderRows.length; i++) if (folderRows[i].problem) count++
         return count
     }
-    readonly property bool allPaused: folderRows.length > 0
-        && folderRows.every(f => f.paused) && activeFolders === 0
+    readonly property int pausedFolders: {
+        var count = 0
+        for (var i = 0; i < folderRows.length; i++) if (folderRows[i].paused) count++
+        return count
+    }
 
     Connections {
         target: pluginService
@@ -44,7 +47,7 @@ PluginComponent {
             return "assets/status-issue.svg";
         if (state.phase !== "ready" || activeFolders > 0)
             return "assets/status-syncing.svg";
-        if (allPaused)
+        if (pausedFolders > 0)
             return "assets/status-paused.svg";
         return "assets/status-synced.svg";
     }
@@ -52,6 +55,7 @@ PluginComponent {
     function statusText() {
         if (!state || state.phase !== "ready") return ""
         if (problemFolders > 0) return String(problemFolders)
+        if (pausedFolders > 0 && activeFolders === 0) return String(pausedFolders)
         var rate = Number(state.downloadBytesPerSec || 0)
         if (rate >= 1024) return "↓ " + PanelModel.formatRate(rate)
         return ""
@@ -62,6 +66,18 @@ PluginComponent {
         if (folder.syncing || folder.scanning) return Theme.primary
         if (folder.paused) return Theme.surfaceVariantText
         return Theme.success
+    }
+
+    // DMS plugins only get a single right-click callback (no built-in
+    // context-menu primitive), so the multi-action set (Refresh, Rescan
+    // All, Pause/Resume All) lives in the popout's footer instead. Right
+    // click is bound to the one action worth a single gesture: toggling
+    // every folder paused/resumed.
+    pillRightClickAction: () => {
+        Quickshell.execDetached([
+            "dms", "ipc", "call", "syncshell",
+            root.state.allFoldersPaused ? "resumeAll" : "pauseAll"
+        ]);
     }
 
     horizontalBarPill: Component {
@@ -267,24 +283,52 @@ PluginComponent {
                     }
                 }
 
-                Row {
+                Column {
                     id: footer
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     spacing: Theme.spacingS
 
-                    DankButton {
-                        width: (parent.width - parent.spacing) / 2
-                        text: "Refresh"
-                        iconName: "refresh"
-                        onClicked: Quickshell.execDetached(["dms", "ipc", "call", "syncshell", "refresh"])
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DankButton {
+                            width: (parent.width - parent.spacing) / 2
+                            text: "Refresh"
+                            iconName: "refresh"
+                            enabled: !root.state.busy
+                            onClicked: Quickshell.execDetached(["dms", "ipc", "call", "syncshell", "refresh"])
+                        }
+                        DankButton {
+                            width: (parent.width - parent.spacing) / 2
+                            text: "Rescan All"
+                            iconName: "document_scanner"
+                            enabled: !root.state.busy
+                            onClicked: Quickshell.execDetached(["dms", "ipc", "call", "syncshell", "rescanAll"])
+                        }
                     }
-                    DankButton {
-                        width: (parent.width - parent.spacing) / 2
-                        text: "Open Web UI"
-                        iconName: "open_in_new"
-                        onClicked: Quickshell.execDetached(["xdg-open", "http://127.0.0.1:8384"])
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DankButton {
+                            width: (parent.width - parent.spacing) / 2
+                            text: root.state.allFoldersPaused ? "Resume All" : "Pause All"
+                            iconName: root.state.allFoldersPaused ? "play_arrow" : "pause"
+                            enabled: !root.state.busy
+                            onClicked: Quickshell.execDetached([
+                                "dms", "ipc", "call", "syncshell",
+                                root.state.allFoldersPaused ? "resumeAll" : "pauseAll"
+                            ])
+                        }
+                        DankButton {
+                            width: (parent.width - parent.spacing) / 2
+                            text: "Open Web UI"
+                            iconName: "open_in_new"
+                            onClicked: Quickshell.execDetached(["xdg-open", "http://127.0.0.1:8384"])
+                        }
                     }
                 }
             }
@@ -292,5 +336,5 @@ PluginComponent {
     }
 
     popoutWidth: 480
-    popoutHeight: 640
+    popoutHeight: 690
 }
