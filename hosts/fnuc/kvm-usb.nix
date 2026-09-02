@@ -23,6 +23,8 @@ let
     zwave-stick = "0658:0200";
     # RFXCOM RFXtrx
     rfxtrx = "0403:6001";
+    # Nooelec NESDR Smart v5 (RTL2838-based RTL-SDR for AIS)
+    ais-sdr = "0bda:2838";
   };
 
   # Callbacks run after a device is successfully (re-)attached.
@@ -220,6 +222,7 @@ let
   replugSonoffDongle = mkReplugScript "kvm-usb-replug-sonoff-dongle" "1a86:55d4";
   replugZbt2 = mkReplugScript "kvm-usb-replug-zbt2" "303a:831a";
   replugZwa2 = mkReplugScript "kvm-usb-replug-zwa2" "303a:4001";
+  replugAisSdr = mkReplugScript "kvm-usb-replug-ais-sdr" "0bda:2838";
 in
 {
   home.packages = [
@@ -231,6 +234,7 @@ in
     replugSonoffDongle
     replugZbt2
     replugZwa2
+    replugAisSdr
   ];
 
   # Systemd user service — replaces /etc/systemd/system/home-assistant-usb-passthrough.service.
