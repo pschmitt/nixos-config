@@ -1,0 +1,14 @@
+{
+  "id": "timewarrior",
+  "name": "Timewarrior",
+  "description": "Timewarrior tracked-time status, ported from the Waybar/quickshell-bar module.",
+  "version": "0.1.0",
+  "author": "pschmitt",
+  "icon": "timer",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./TimewarriorWidget.qml",
+  "requires": ["timew-is-on", "timew-total"],
+  "permissions": ["process"],
+  "license": "GPL-3.0-only"
+}
