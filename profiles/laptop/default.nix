@@ -12,6 +12,7 @@
 
     ../network/wifi.nix
     ./a11y.nix
+    ./dank-material-shell.nix
     ./initrd-network.nix
     ./initrd-wifi.nix
     ./noisetorch.nix
