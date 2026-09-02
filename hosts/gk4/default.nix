@@ -32,8 +32,19 @@
       plugins.syncshell.src = "${
         inputs.syncshell-dms.packages.${pkgs.system}.default
       }/share/dms-plugins/syncshell";
+      # Declarative snapshot of ~/.config/DankMaterialShell/settings.json
+      # (bar layout, theme, fonts) and plugin_settings.json (enabled
+      # plugins). NOTE: this makes both files Nix-managed symlinks, so the
+      # DMS settings UI / `dms ipc` can no longer save changes to them —
+      # further tweaks have to go through this file + a redeploy.
+      managePluginSettings = true;
+      settings = builtins.fromJSON (builtins.readFile ./dank-material-shell-settings.json);
     };
     systemd.user.services.dms.Install.WantedBy = lib.mkForce [ ];
+    # These existed as plain runtime files from earlier live DMS/plugin
+    # edits; force lets home-manager take over managing them now.
+    xdg.configFile."DankMaterialShell/settings.json".force = true;
+    xdg.configFile."DankMaterialShell/plugin_settings.json".force = true;
   };
 
   hardware.cattle = false;
