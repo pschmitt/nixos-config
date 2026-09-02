@@ -8,6 +8,7 @@
     ../../profiles/tdarr-node.nix
     ../../services/esphome.nix
     ../../services/browser-mcp-chromium-container.nix
+    ../../services/forgejo-runner.nix
   ];
 
   hardware = {
