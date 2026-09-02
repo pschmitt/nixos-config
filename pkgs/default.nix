@@ -27,6 +27,7 @@ in
   };
   quickshell-bar = pkgs.callPackage ./local/quickshell-bar { inherit timew-status; };
   inherit soundboard;
+  syncshell-dank-widget = pkgs.callPackage ./local/syncshell-dank-widget { inherit inputs; };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   inherit timew-status;
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
