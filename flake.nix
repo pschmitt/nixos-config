@@ -346,6 +346,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    syncshell-dms = {
+      url = "github:ChrisLAS/syncshell-dms";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     update-systemd-resolved = {
       url = "github:jonathanio/update-systemd-resolved";
       inputs.nixpkgs.follows = "nixpkgs";

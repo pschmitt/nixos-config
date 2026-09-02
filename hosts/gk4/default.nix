@@ -1,6 +1,8 @@
 {
   lib,
   config,
+  pkgs,
+  inputs,
   ...
 }:
 {
@@ -25,6 +27,11 @@
       # Raw pkgs.glib collides with the gsettings wrapper from
       # modules/theme.nix; the VPN widget isn't needed for this trial.
       enableVPN = false;
+      # Read-only Syncthing widget (syncthing.service already runs system-wide
+      # here via profiles/laptop/syncthing.nix).
+      plugins.syncshell.src = "${
+        inputs.syncshell-dms.packages.${pkgs.system}.default
+      }/share/dms-plugins/syncshell";
     };
     systemd.user.services.dms.Install.WantedBy = lib.mkForce [ ];
   };
