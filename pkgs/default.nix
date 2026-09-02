@@ -12,6 +12,7 @@ let
   # Hoisted so obs-control can depend on them (not top-level nixpkgs attrs).
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   soundboard = pkgs.callPackage ./local/soundboard { };
+  timew-status = pkgs.callPackage ./local/timew-status { };
 in
 {
   # local pkgs
@@ -23,9 +24,10 @@ in
     inherit inputs emoji-fzf soundboard;
     inherit (pkgs) walker;
   };
+  quickshell-bar = pkgs.callPackage ./local/quickshell-bar { inherit timew-status; };
   inherit soundboard;
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
-  timew-status = pkgs.callPackage ./local/timew-status { };
+  inherit timew-status;
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;

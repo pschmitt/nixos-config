@@ -64,6 +64,7 @@ in
       (execBind "SUPER + SHIFT + K" "hyprctl kill")
       (execBind "SUPER + SHIFT + Q" "${bin}/leave.sh")
       (execBind "SUPER + SHIFT + R" "${bin}/reload-config.sh")
+      (execBind "SUPER + SHIFT + B" "${bin}/toggle-bar.sh")
 
       # ── Tiling / layout ───────────────────────────────────────────────
       (bind "SUPER + SHIFT + space" ''hl.dsp.window.float({ action = "toggle" })'')
