@@ -26,7 +26,7 @@
     ./gnome.nix
     ./hyprland
     ./niri.nix
-    # ./dank.nix
+    ./dank.nix
     # ./vicinae.nix
   ];
 }
