@@ -14,6 +14,13 @@ PluginComponent {
         return !isNaN(h) && h > 7;
     }
 
+    Component.onCompleted: setVisibilityOverride(false)
+
+    onActiveChanged: {
+        if (active) clearVisibilityOverride();
+        else setVisibilityOverride(false);
+    }
+
     Process {
         id: isOnProc
         command: ["@timewIsOn@"]
@@ -40,33 +47,27 @@ PluginComponent {
     }
 
     horizontalBarPill: Component {
-        Loader {
-            active: root.active
-            sourceComponent: Row {
-                spacing: Theme.spacingXS
-                DankIcon {
-                    name: "timer"
-                    color: root.overtime ? Theme.error : Theme.surfaceText
-                    size: Theme.iconSize - 5
-                }
-                StyledText {
-                    text: root.durationText
-                    color: root.overtime ? Theme.error : Theme.surfaceText
-                    font.pixelSize: Theme.fontSizeMedium
-                    font.weight: root.overtime ? Font.Bold : Font.Normal
-                }
+        Row {
+            spacing: Theme.spacingXS
+            DankIcon {
+                name: "timer"
+                color: root.overtime ? Theme.error : Theme.surfaceText
+                size: Theme.iconSize - 5
+            }
+            StyledText {
+                text: root.durationText
+                color: root.overtime ? Theme.error : Theme.surfaceText
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: root.overtime ? Font.Bold : Font.Normal
             }
         }
     }
 
     verticalBarPill: Component {
-        Loader {
-            active: root.active
-            sourceComponent: DankIcon {
-                name: "timer"
-                color: root.overtime ? Theme.error : Theme.surfaceText
-                size: Theme.iconSize - 4
-            }
+        DankIcon {
+            name: "timer"
+            color: root.overtime ? Theme.error : Theme.surfaceText
+            size: Theme.iconSize - 4
         }
     }
 }

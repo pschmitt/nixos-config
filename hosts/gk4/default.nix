@@ -2,7 +2,6 @@
   lib,
   config,
   pkgs,
-  inputs,
   ...
 }:
 {
@@ -28,10 +27,10 @@
       enableVPN = false;
       plugins = {
         # Read-only Syncthing widget (syncthing.service already runs
-        # system-wide here via profiles/laptop/syncthing.nix).
-        syncshell.src = "${
-          inputs.syncshell-dms.packages.${pkgs.system}.default
-        }/share/dms-plugins/syncshell";
+        # system-wide here via profiles/laptop/syncthing.nix). Re-themed
+        # with Syncthing's own status icons, see
+        # pkgs/local/syncshell-dank-widget.
+        syncshell.src = "${pkgs.syncshell-dank-widget}/share/dms-plugins/syncshell";
         # Port of the Waybar/quickshell-bar Timewarrior widget.
         timewarrior.src = "${pkgs.dms-timewarrior}/share/dms-plugins/timewarrior";
       };
