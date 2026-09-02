@@ -17,21 +17,24 @@
 
   home-manager.users.${config.mainUser.username} = {
     services.jellysync.enable = true;
-    # Trial install of DankMaterialShell as a Waybar alternative (see
-    # home-manager/gui/hyprland/quickshell-bar for the other one). Cycled
-    # in via SUPER+SHIFT+B (toggle-bar.sh) alongside waybar/quickshell-bar;
-    # not in Install.WantedBy so it doesn't autostart on its own.
+    # DankMaterialShell is now the default bar here (see
+    # home-manager/gui/hyprland/quickshell-bar for the other Waybar
+    # alternative). SUPER+SHIFT+B (toggle-bar.sh) still cycles all three.
     programs.dank-material-shell = {
       enable = true;
       systemd.enable = true;
       # Raw pkgs.glib collides with the gsettings wrapper from
       # modules/theme.nix; the VPN widget isn't needed for this trial.
       enableVPN = false;
-      # Read-only Syncthing widget (syncthing.service already runs system-wide
-      # here via profiles/laptop/syncthing.nix).
-      plugins.syncshell.src = "${
-        inputs.syncshell-dms.packages.${pkgs.system}.default
-      }/share/dms-plugins/syncshell";
+      plugins = {
+        # Read-only Syncthing widget (syncthing.service already runs
+        # system-wide here via profiles/laptop/syncthing.nix).
+        syncshell.src = "${
+          inputs.syncshell-dms.packages.${pkgs.system}.default
+        }/share/dms-plugins/syncshell";
+        # Port of the Waybar/quickshell-bar Timewarrior widget.
+        timewarrior.src = "${pkgs.dms-timewarrior}/share/dms-plugins/timewarrior";
+      };
       # Declarative snapshot of ~/.config/DankMaterialShell/settings.json
       # (bar layout, theme, fonts) and plugin_settings.json (enabled
       # plugins). NOTE: this makes both files Nix-managed symlinks, so the
@@ -40,7 +43,10 @@
       managePluginSettings = true;
       settings = builtins.fromJSON (builtins.readFile ./dank-material-shell-settings.json);
     };
-    systemd.user.services.dms.Install.WantedBy = lib.mkForce [ ];
+    # Waybar was the default; DMS takes over that role now, so flip which
+    # one autostarts with the graphical session. toggle-bar.sh can still
+    # cycle to either at any time regardless of this.
+    systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
     # These existed as plain runtime files from earlier live DMS/plugin
     # edits; force lets home-manager take over managing them now.
     xdg.configFile."DankMaterialShell/settings.json".force = true;

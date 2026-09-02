@@ -18,6 +18,7 @@ in
   # local pkgs
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
+  dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   obs-control = pkgs.callPackage ./local/obs-control {

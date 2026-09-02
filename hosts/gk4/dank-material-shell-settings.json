@@ -38,23 +38,25 @@
       ],
       "showOnLastDisplay": true,
       "leftWidgets": [
-        "launcherButton",
         "workspaceSwitcher",
-        "focusedWindow"
+        "runningApps"
       ],
       "centerWidgets": [
-        "music",
+        {
+          "id": "music",
+          "enabled": true,
+          "mediaSize": 0
+        },
         "clock",
         "weather"
       ],
       "rightWidgets": [
         "systemTray",
         "syncshell",
-        "clipboard",
-        "cpuUsage",
+        "timewarrior",
         "notificationButton",
-        "battery",
-        "controlCenterButton"
+        "controlCenterButton",
+        "battery"
       ],
       "spacing": 0,
       "innerPadding": 0,
