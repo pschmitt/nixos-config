@@ -25,14 +25,16 @@ local lastKey = ""
 -- service (re)starts doesn't trigger the sound — only an actual plug-in
 -- edge does.
 local lastCharging = nil
-local chargingSoundReady = false
+local soundReady = { charging = false, unplug = false }
 
-noctalia.sound.load("charging", "sounds/charging.oga", function(ok, err)
-  chargingSoundReady = ok
-  if not ok then
-    noctalia.log("battery-icon: charging sound failed to load: " .. tostring(err))
-  end
-end)
+for _, name in ipairs({ "charging", "unplug" }) do
+  noctalia.sound.load(name, "sounds/" .. name .. ".oga", function(ok, err)
+    soundReady[name] = ok
+    if not ok then
+      noctalia.log("battery-icon: " .. name .. " sound failed to load: " .. tostring(err))
+    end
+  end)
+end
 
 -- Noctalia's own "color" settings (e.g. bar.color, widget capsule_fill)
 -- accept either a hex value or a palette role name like "on_primary" —
@@ -214,9 +216,11 @@ local function poll()
       local status = trim(statusResult.stdout)
       local charging = status == "Charging" or status == "Full"
 
-      if lastCharging == false and charging and noctalia.getConfig("charging_sound_enabled") then
-        if chargingSoundReady then
+      if noctalia.getConfig("charging_sound_enabled") then
+        if lastCharging == false and charging and soundReady.charging then
           noctalia.sound.play("charging")
+        elseif lastCharging == true and not charging and soundReady.unplug then
+          noctalia.sound.play("unplug")
         end
       end
       lastCharging = charging
@@ -244,6 +248,16 @@ local function poll()
 end
 
 poll()
+
+-- poll_interval is a fallback safety net; the actual trigger is udev itself
+-- -- a plug/unplug fires an immediate "change" event on the power_supply
+-- subsystem (both the AC and battery devices), so this reacts right away
+-- instead of waiting for the next scheduled poll. One monitor line is
+-- enough to re-run poll(); it doesn't matter if a single physical event
+-- produces more than one line, poll() is a no-op once the icon is current.
+noctalia.runStream("@udevadm@ monitor --udev --subsystem-match=power_supply", function(line)
+  poll()
+end)
 
 function update()
   noctalia.setUpdateInterval(settings().pollMs)

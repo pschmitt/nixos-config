@@ -4,6 +4,7 @@
   imagemagick,
   ComicCodeNF,
   sound-theme-freedesktop,
+  systemd,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -33,9 +34,11 @@ stdenvNoCC.mkDerivation {
     cp -r translations "$dest"/
     mkdir -p "$dest"/sounds
     cp -L ${sound-theme-freedesktop}/share/sounds/freedesktop/stereo/power-plug.oga "$dest"/sounds/charging.oga
+    cp -L ${sound-theme-freedesktop}/share/sounds/freedesktop/stereo/power-unplug.oga "$dest"/sounds/unplug.oga
     substitute service.luau "$dest"/service.luau \
       --subst-var-by magick ${imagemagick}/bin/magick \
-      --subst-var-by font ${ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-SemiBold-resized.otf
+      --subst-var-by font ${ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-SemiBold-resized.otf \
+      --subst-var-by udevadm ${systemd}/bin/udevadm
 
     runHook postInstall
   '';

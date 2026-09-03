@@ -41,8 +41,8 @@
       "description": "Fill color for the unfilled portion of the gauge."
     },
     "charging_sound_enabled": {
-      "label": "Play sound when charger connects",
-      "description": "Plays a short sound the moment charging starts. Off by default."
+      "label": "Play sound on plug/unplug",
+      "description": "Plays a short sound the moment the charger connects, and a different one when it's disconnected. Off by default."
     },
     "icon_width": {
       "label": "Icon width",

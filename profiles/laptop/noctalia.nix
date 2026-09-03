@@ -209,6 +209,11 @@
         };
         weather.enabled = true;
         location.auto_locate = true;
+        # Off by default in Noctalia; needed for any UI sound to play at
+        # all, including the battery-icon plugin's opt-in plug/unplug
+        # chimes (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
+        # below is still its own separate gate).
+        audio.enable_sounds = true;
         # Control center, launcher, clipboard, and plugin panels (e.g.
         # syncthing's) felt too small; scale non-bar shell UI up ~15%.
         # Separate from bar.scale/[widget.*].scale, which only affect bar
