@@ -58,7 +58,7 @@ let
   networkName = "endurain";
 
   # renovate: datasource=docker depName=codeberg.org/endurain-project/endurain
-  endurainVersion = "v0.19.0";
+  endurainVersion = "v0.19.2";
 
   runtimePkg =
     if containerBackend == "docker" then
