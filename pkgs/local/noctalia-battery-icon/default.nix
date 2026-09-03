@@ -2,14 +2,15 @@
   lib,
   stdenvNoCC,
   imagemagick,
-  ComicCodeNF,
+  roboto,
+  power-profiles-daemon,
   sound-theme-freedesktop,
   systemd,
 }:
 
 stdenvNoCC.mkDerivation {
   pname = "noctalia-battery-icon";
-  version = "0.1.0";
+  version = "0.2.4";
 
   src = lib.fileset.toSource {
     root = ./.;
@@ -37,16 +38,17 @@ stdenvNoCC.mkDerivation {
     cp -L ${sound-theme-freedesktop}/share/sounds/freedesktop/stereo/power-unplug.oga "$dest"/sounds/unplug.oga
     substitute service.luau "$dest"/service.luau \
       --subst-var-by magick ${imagemagick}/bin/magick \
-      --subst-var-by font ${ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-SemiBold-resized.otf \
+      --subst-var-by font ${roboto}/share/fonts/truetype/Roboto-Bold.ttf \
+      --subst-var-by powerprofilesctl ${power-profiles-daemon}/bin/powerprofilesctl \
       --subst-var-by udevadm ${systemd}/bin/udevadm
 
     runHook postInstall
   '';
 
   meta = {
-    description = "Battery-percentage-inside-icon widget for Noctalia (Android status-bar style)";
+    description = "Material 3 Expressive battery indicator widget for Noctalia";
     license = lib.licenses.gpl3Only;
-    maintainers = with lib.maintainers; [ pschmitt ];
+    maintainers = [ lib.maintainers.pschmitt ];
     platforms = lib.platforms.linux;
   };
 }

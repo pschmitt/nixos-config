@@ -126,6 +126,7 @@
                 "clock"
               ];
               padding = 12;
+              widget_spacing = 20; # gap between weather and clock (only 2 members, so this is just their spacer)
             }
             {
               id = "timewarrior";
@@ -284,9 +285,16 @@
         # active custom palette by pkgs/local/noctalia-battery-icon's
         # service.luau before hitting ImageMagick.
         plugin_settings."pschmitt/battery-icon" = {
-          # Full charge shouldn't be as loud as the low/medium warning tiers.
-          high_color = "on_surface";
-          charging_color = "secondary";
+          # Material 3 Expressive battery colors (Google palette): neutral
+          # normally, green while powered, yellow in Power Saver, and red
+          # at or below the low-battery threshold.
+          low_color = "#EA4335";
+          medium_color = "#9AA0A6";
+          high_color = "#9AA0A6";
+          charging_color = "#34A853";
+          power_saver_color = "#FBBC04";
+          text_color = "#202124";
+          empty_color = "#F1F3F4";
         };
       };
     };

@@ -13,18 +13,18 @@ local function render()
     return
   end
 
-  local width = tonumber(noctalia.getConfig("icon_width")) or 41
+  local width = tonumber(noctalia.getConfig("icon_width")) or 36
   local height = tonumber(noctalia.getConfig("icon_height")) or 18
 
   barWidget.setVisible(true)
   barWidget.render(ui.row({}, {
-    -- fit="contain": the rendered PNG is 144x64 (2.25:1, wider than the
-    -- pill+knob shape itself to leave room for the charging bolt past the
-    -- knob) — without contain, a width/height not matching that ratio
-    -- stretches and blurs it.
+    -- fit="contain": the rendered PNG is 128x64 (2:1, wider than the
+    -- battery body itself to leave room for either the terminal or charging
+    -- bolt) — without contain, a mismatched display box stretches it.
     ui.image({ path = state.path, width = width, height = height, fit = "contain" }),
   }))
-  barWidget.setTooltip(tostring(state.percent) .. "%" .. (state.charging and " (charging)" or ""))
+  local suffix = state.charging and " (charging)" or (state.powerSaver and " (Power Saver)" or "")
+  barWidget.setTooltip(tostring(state.percent) .. "%" .. suffix)
 end
 
 noctalia.state.watch("battery_icon", function(val)
