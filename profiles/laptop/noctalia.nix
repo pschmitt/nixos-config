@@ -87,39 +87,79 @@
           margin_ends = 0; # span the full screen width, matching the DMS bar
           # No font_weight override: the SemiBold family above is already a
           # fixed-weight cut, and synthetic-bolding on top of it looked off.
-          capsule = true; # individual pill/card background per widget
+          # No blanket per-widget capsule anymore: only workspaces/media get
+          # their own ([widget.workspaces]/[widget.media] below), everything
+          # else is either bare or bundled into a capsule_group below.
+          capsule = false;
           capsule_padding = 12;
           start = [
             "workspaces"
             "taskbar"
           ];
           center = [
-            "weather"
-            "clock"
-            "pschmitt/timewarrior:bar"
+            "group:weather-date"
+            "group:timewarrior"
           ];
           end = [
             "media"
+            "media-gap"
+            # "ai_usage" — disabled, see plugins.enabled below.
             "tray"
-            "rylos/syncthing:bar"
-            "pschmitt/battery-icon:bar"
-            "notifications"
+            "pschmitt/syncthing:bar"
+            "network"
+            "group:notif-battery"
+          ];
+          # A plugin widget referenced by its raw "author/plugin:entry" id
+          # (or even given its own named instance) rejects a direct
+          # `capsule = true` override as "unknown setting" — confirmed live,
+          # not just a single-member-group quirk. capsule_group is the only
+          # mechanism that actually applies a capsule to a plugin widget,
+          # single member or not — it sets the spec through a different path
+          # that bypasses that per-key validation.
+          capsule_group = [
+            {
+              id = "weather-date";
+              members = [
+                "weather"
+                "clock"
+              ];
+              padding = 12;
+            }
+            {
+              id = "timewarrior";
+              members = [ "pschmitt/timewarrior:bar" ];
+              padding = 12;
+            }
+            {
+              id = "notif-battery";
+              members = [
+                "pschmitt/battery-icon:bar"
+                "notifications"
+              ];
+              padding = 12;
+            }
           ];
         };
         plugins = {
           enabled = [
-            # Syncthing status/control — same idea as
-            # pkgs/local/syncshell-dank-widget for DMS, but this one ships
-            # upstream (noctalia-dev/community-plugins). Its `url`/`api_key`
-            # plugin settings aren't set here: they persist to Noctalia's
-            # runtime state once entered in Settings -> Plugins, so there's
-            # no secret to manage declaratively for a one-time local setup.
-            "rylos/syncthing"
+            # Syncthing status/control — fork of noctalia-dev/community-plugins'
+            # rylos/syncthing (see pkgs/local/noctalia-syncthing) with a
+            # tray-sized icon and the DMS syncshell widget's composited status
+            # badges instead of a small logo + separate glyph. Its `url`/
+            # `api_key` plugin settings aren't set here: they persist to
+            # Noctalia's runtime state once entered in Settings -> Plugins, so
+            # there's no secret to manage declaratively for a one-time local
+            # setup.
+            "pschmitt/syncthing"
             # Port of pkgs/local/dms-timewarrior — see pkgs/local/noctalia-timewarrior.
             "pschmitt/timewarrior"
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pkgs/local/noctalia-battery-icon.
             "pschmitt/battery-icon"
+            # AI plan quota (community plugin, felipeartur/ai-usagebar) —
+            # tried and disabled again: didn't like the look, and Codex
+            # support wasn't solid. pkgs/local/ai-usagebar is still built
+            # below in case it's worth another look later.
           ];
           # The official/community git sources aren't actually hardcoded —
           # they're seeded into runtime state on first launch, so declaring
@@ -150,6 +190,12 @@
               location = "${pkgs.noctalia-battery-icon}/share/noctalia-plugins";
               enabled = true;
             }
+            {
+              name = "local-syncthing";
+              kind = "path";
+              location = "${pkgs.noctalia-syncthing}/share/noctalia-plugins";
+              enabled = true;
+            }
           ];
         };
         weather.enabled = true;
@@ -177,16 +223,27 @@
           workspaces = {
             style = "minimal";
             show_all_outputs = true;
+            capsule = true;
           };
           # Shorter media pill: no artist line, truncate the title sooner,
           # a smaller album art icon, and scroll the title on hover instead
           # of always/never.
           media = {
             hide_artist = true;
-            max_length = 140;
+            min_length = 120;
+            max_length = 240;
+            capsule = true;
             art_size = 18;
             title_scroll = "on_hover";
+            hide_when_no_media = true;
           };
+          network.show_label = false;
+          media-gap = {
+            type = "spacer";
+            length = 100;
+          };
+          # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
+          # plugins.enabled below.
         };
       };
     };
@@ -194,5 +251,8 @@
     # so flip which one autostarts with the graphical session. toggle-bar.sh
     # can still cycle to any available bar regardless of this.
     systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
+    # CLI kept on PATH for direct terminal use even with the
+    # felipeartur/ai-usagebar bar widget disabled above.
+    home.packages = [ pkgs.ai-usagebar ];
   };
 }

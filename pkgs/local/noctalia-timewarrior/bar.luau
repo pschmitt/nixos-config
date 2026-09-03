@@ -10,7 +10,8 @@ local function isOvertime()
     return false
   end
   local hours = tonumber(string.match(state.duration or "", "^(%d+):"))
-  return hours ~= nil and hours > 7
+  local threshold = tonumber(noctalia.getConfig("overtime_hours")) or 7
+  return hours ~= nil and hours > threshold
 end
 
 local function render()
@@ -20,10 +21,19 @@ local function render()
   end
 
   local overtime = isOvertime()
-  barWidget.setGlyph("clock-hour-3")
+  local iconColor = noctalia.getConfig("icon_color") or "on_surface"
+  local iconOvertimeColor = noctalia.getConfig("icon_overtime_color") or "error"
+  local labelColor = noctalia.getConfig("label_color") or "on_surface"
+  local labelOvertimeColor = noctalia.getConfig("label_overtime_color") or "error"
+  local glyph = noctalia.getConfig("icon_glyph")
+  if glyph == nil or glyph == "" then
+    glyph = "clock-hour-3"
+  end
+
+  barWidget.setGlyph(glyph)
   barWidget.setText(state.duration or "")
-  barWidget.setColor(overtime and "error" or "on_surface")
-  barWidget.setGlyphColor(overtime and "error" or "on_surface")
+  barWidget.setColor(overtime and labelOvertimeColor or labelColor)
+  barWidget.setGlyphColor(overtime and iconOvertimeColor or iconColor)
   barWidget.setTooltip("Timewarrior: tracking")
 end
 
@@ -38,8 +48,4 @@ render()
 
 function update()
   render()
-end
-
-function onClick()
-  noctalia.togglePanel("pschmitt/timewarrior:panel")
 end

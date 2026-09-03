@@ -1,12 +1,90 @@
 id = "pschmitt/battery-icon"
 name = "Battery Icon"
 version = "0.1.0"
-plugin_api = 9
+plugin_api = 14
 author = "pschmitt"
 license = "GPL-3.0-only"
 tags = ["bar", "system", "hardware"]
 icon = "battery-2"
 description = "Battery percentage rendered inside the battery icon itself (Android status-bar style), via a live-generated bitmap — the bar-widget UI framework has no overlay/z-stack primitive for drawing text on top of a shape."
+
+# ── Plugin-level settings (shared by every entry, edited in Settings -> Plugins) ──
+
+[[setting]]
+key = "battery_device"
+type = "string"
+label_key = "settings.battery_device.label"
+description_key = "settings.battery_device.description"
+default = "BAT0"
+
+[[setting]]
+key = "poll_interval"
+type = "int"
+label_key = "settings.poll_interval.label"
+description_key = "settings.poll_interval.description"
+default = 15
+min = 5
+max = 300
+
+[[setting]]
+key = "low_threshold"
+type = "int"
+label_key = "settings.low_threshold.label"
+description_key = "settings.low_threshold.description"
+default = 20
+min = 1
+max = 99
+
+[[setting]]
+key = "medium_threshold"
+type = "int"
+label_key = "settings.medium_threshold.label"
+description_key = "settings.medium_threshold.description"
+default = 50
+min = 1
+max = 99
+
+# Fixed hex, not a theme role name: these feed ImageMagick's -fill directly
+# (service.luau), and magick has no notion of Noctalia's color roles — a
+# role name like "error" fails with "no decode delegate for this image
+# format" since magick tries to read it as a file. Defaults match the
+# Indigo palette's error/primary so they still look consistent out of the
+# box; a role name typed into Settings will fail the same way.
+
+[[setting]]
+key = "low_color"
+type = "color"
+label_key = "settings.low_color.label"
+description_key = "settings.low_color.description"
+default = "#FF6B81"
+
+[[setting]]
+key = "medium_color"
+type = "color"
+label_key = "settings.medium_color.label"
+description_key = "settings.medium_color.description"
+default = "#F2C94C"
+
+[[setting]]
+key = "high_color"
+type = "color"
+label_key = "settings.high_color.label"
+description_key = "settings.high_color.description"
+default = "#6FCF97"
+
+[[setting]]
+key = "charging_color"
+type = "color"
+label_key = "settings.charging_color.label"
+description_key = "settings.charging_color.description"
+default = "#B6C4FF"
+
+[[setting]]
+key = "text_color"
+type = "color"
+label_key = "settings.text_color.label"
+description_key = "settings.text_color.description"
+default = "#11131A"
 
 [[service]]
 id = "poller"
@@ -15,3 +93,30 @@ entry = "service.luau"
 [[widget]]
 id = "bar"
 entry = "bar.luau"
+
+  [[widget.setting]]
+  key = "icon_width"
+  type = "int"
+  label_key = "settings.icon_width.label"
+  description_key = "settings.icon_width.description"
+  default = 41
+  min = 16
+  max = 96
+
+  [[widget.setting]]
+  key = "icon_height"
+  type = "int"
+  label_key = "settings.icon_height.label"
+  description_key = "settings.icon_height.description"
+  default = 18
+  min = 8
+  max = 48
+
+  # Routed through the anchored panel-toggle dispatcher (same one native bar
+  # widgets use) so Control Center opens under the click instead of centered
+  # on the bar — noctalia.togglePanel()/CLI panel-toggle always open
+  # unanchored. Matches the built-in battery widget's default gesture
+  # (widget_gesture_defaults.cpp: kBattery). Users can override or disable it
+  # per-instance in Settings, same as any built-in widget's actions.
+  [widget.actions]
+  left = "panel-toggle control-center power"

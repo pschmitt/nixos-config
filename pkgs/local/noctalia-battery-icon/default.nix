@@ -15,6 +15,7 @@ stdenvNoCC.mkDerivation {
       ./plugin.toml
       ./service.luau
       ./bar.luau
+      ./translations
     ];
   };
 
@@ -28,6 +29,7 @@ stdenvNoCC.mkDerivation {
     mkdir -p "$dest"
 
     cp plugin.toml bar.luau "$dest"/
+    cp -r translations "$dest"/
     substitute service.luau "$dest"/service.luau \
       --subst-var-by magick ${imagemagick}/bin/magick \
       --subst-var-by font ${ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-SemiBold-resized.otf
