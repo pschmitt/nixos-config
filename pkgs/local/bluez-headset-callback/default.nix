@@ -5,9 +5,9 @@
   bash,
   gnused,
   jq,
-  libnotify,
   systemd,
   zsh,
+  osd,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -29,9 +29,9 @@ stdenvNoCC.mkDerivation {
           bash
           gnused
           jq
-          libnotify
           systemd
           zsh
+          osd
         ]
       }"
   '';
