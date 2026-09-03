@@ -205,9 +205,15 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
     .. "' "
 
   if charging then
+    -- fg (textColor) is meant to contrast against the colored pill fill
+    -- behind the digits; the bolt sits outside the pill, in the canvas's
+    -- transparent margin, which composites onto the bar's own dark
+    -- background — a near-black fg bolt there is effectively invisible.
+    -- Use bg (the tier/charging color) instead so it reads as a visible
+    -- colored accent.
     cmd = cmd
       .. "-fill '"
-      .. fg
+      .. bg
       .. "' -draw 'polygon "
       .. BOLT_POLYGON
       .. "' "
