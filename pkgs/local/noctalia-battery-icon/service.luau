@@ -124,8 +124,31 @@ end
 -- charging, so it never competes with the digits for space.
 local BOLT_POLYGON = "130,16 125,30 131,30 124,48 130,32 124,32"
 
-local function regenerate(cfg, percent, charging, dataDir)
-  local bg = tierColor(cfg, percent, charging)
+-- Plug/unplug pulse: the bar has no frame-tick API (setUpdateInterval is
+-- the only clock a widget/service gets), so "animation" here means briefly
+-- driving that interval fast and rendering a couple of extra blended-color
+-- frames before settling on the real icon, instead of a single flat cut.
+local ANIM_FRAME_MS = 110
+local pendingAnim = nil -- { cfg, percent, charging, dataDir, frames, index }
+
+local function hexToRgb(hex)
+  local h = hex:gsub("#", "")
+  return tonumber(h:sub(1, 2), 16), tonumber(h:sub(3, 4), 16), tonumber(h:sub(5, 6), 16)
+end
+
+local function blendHex(fromHex, toHex, t)
+  local r1, g1, b1 = hexToRgb(fromHex)
+  local r2, g2, b2 = hexToRgb(toHex)
+  return string.format(
+    "#%02X%02X%02X",
+    math.clamp(math.round(r1 + (r2 - r1) * t), 0, 255),
+    math.clamp(math.round(g1 + (g2 - g1) * t), 0, 255),
+    math.clamp(math.round(b1 + (b2 - b1) * t), 0, 255)
+  )
+end
+
+local function regenerate(cfg, percent, charging, dataDir, bgOverride)
+  local bg = bgOverride or tierColor(cfg, percent, charging)
   local fg = cfg.textColor
   local label = tostring(percent)
   local outPath = dataDir
@@ -201,6 +224,52 @@ local function regenerate(cfg, percent, charging, dataDir)
   end, 5000)
 end
 
+-- Renders the next queued pulse frame, if any, and reports whether the
+-- caller should keep ticking fast (true) or fall back to normal poll
+-- cadence (false — nothing was pending, or this was the last frame).
+-- The blended frames in anim.frames run first; one further call renders
+-- the *real* tier color (bgOverride = nil) so the icon actually settles
+-- on the true state instead of being left on a blended color forever.
+local function advanceAnim()
+  if pendingAnim == nil then
+    return false
+  end
+  local anim = pendingAnim
+  local bg = anim.index <= #anim.frames and anim.frames[anim.index] or nil
+  anim.index += 1
+  local finished = anim.index > #anim.frames + 1
+  if finished then
+    pendingAnim = nil
+  end
+  regenerate(anim.cfg, anim.percent, anim.charging, anim.dataDir, bg)
+  return not finished
+end
+
+-- A brief flash toward white, easing back to the real tier color, so a
+-- plug/unplug reads as a distinct moment instead of the icon just
+-- snapping to its new state.
+local function startPulse(cfg, percent, charging, dataDir)
+  local target = tierColor(cfg, percent, charging)
+  -- blendHex needs exactly #RRGGBB; ImageMagick (and resolveColor) also
+  -- accept #RGB/#RGBA/#RRGGBBAA, so skip straight to the real icon rather
+  -- than mis-parse a color shorthand into a garbled flash.
+  if not target:match("^#%x%x%x%x%x%x$") then
+    regenerate(cfg, percent, charging, dataDir)
+    return
+  end
+  local flash = blendHex(target, "#FFFFFF", 0.85)
+  pendingAnim = {
+    cfg = cfg,
+    percent = percent,
+    charging = charging,
+    dataDir = dataDir,
+    frames = { flash, blendHex(target, flash, 0.4) },
+    index = 1,
+  }
+  noctalia.setUpdateInterval(ANIM_FRAME_MS)
+  advanceAnim()
+end
+
 local function poll()
   local cfg = settings()
   local capacityPath = "/sys/class/power_supply/" .. cfg.device .. "/capacity"
@@ -215,11 +284,14 @@ local function poll()
     noctalia.runAsync("cat " .. statusPath, function(statusResult)
       local status = trim(statusResult.stdout)
       local charging = status == "Charging" or status == "Full"
+      -- nil lastCharging means this is the first read since (re)start: never
+      -- an edge, so a charger already connected doesn't fire the sound/pulse.
+      local edge = lastCharging ~= nil and lastCharging ~= charging
 
-      if noctalia.getConfig("charging_sound_enabled") then
-        if lastCharging == false and charging and soundReady.charging then
+      if edge and noctalia.getConfig("charging_sound_enabled") then
+        if charging and soundReady.charging then
           noctalia.sound.play("charging")
-        elseif lastCharging == true and not charging and soundReady.unplug then
+        elseif not charging and soundReady.unplug then
           noctalia.sound.play("unplug")
         end
       end
@@ -240,7 +312,13 @@ local function poll()
       lastKey = key
 
       local dataDir = noctalia.pluginDataDir()
-      if dataDir ~= nil then
+      if dataDir == nil then
+        return
+      end
+
+      if edge then
+        startPulse(cfg, percent, charging, dataDir)
+      else
         regenerate(cfg, percent, charging, dataDir)
       end
     end, 5000)
@@ -260,6 +338,13 @@ noctalia.runStream("@udevadm@ monitor --udev --subsystem-match=power_supply", fu
 end)
 
 function update()
+  -- advanceAnim() returns false both when nothing is pending and right
+  -- after it renders the pulse's last (real-color) frame — either way
+  -- normal polling should resume.
+  if advanceAnim() then
+    noctalia.setUpdateInterval(ANIM_FRAME_MS)
+    return
+  end
   noctalia.setUpdateInterval(settings().pollMs)
   poll()
 end
