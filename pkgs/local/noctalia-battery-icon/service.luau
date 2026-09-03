@@ -68,7 +68,7 @@ end
 local function regenerate(cfg, percent, charging, dataDir)
   local bg = tierColor(cfg, percent, charging)
   local fg = cfg.textColor
-  local label = tostring(percent) .. "%"
+  local label = tostring(percent)
   local outPath = dataDir
     .. "/battery-"
     .. tostring(percent)
