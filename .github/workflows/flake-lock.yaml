@@ -2,7 +2,7 @@ name: update flake.lock
 on:
   workflow_dispatch: # allows manual triggering
   schedule:
-    - cron: "0 3 * * *" # runs daily at 03:00 AM (GMT)
+    - cron: "37 2 * * *" # runs daily at ~02:37 AM (UTC); off-the-hour to avoid GH Actions scheduler congestion
 
 jobs:
   lockfile:
