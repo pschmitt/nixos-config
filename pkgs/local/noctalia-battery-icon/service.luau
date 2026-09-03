@@ -121,8 +121,12 @@ end
 
 -- Android-16-style lightning bolt, drawn inside the pill to the right of
 -- the digits (not a separate terminal knob poking out past the shape —
--- that read as a near-invisible sliver at real bar size).
-local BOLT_POLYGON = "116,14 100,34 110,34 98,50 120,28 108,28 120,14"
+-- that read as a near-invisible sliver at real bar size). White fill with
+-- a dark outline (rather than flat fg) so it pops against both the filled
+-- (bg) and unfilled (emptyColor) regions it might land over, instead of
+-- blending into whichever one is currently underneath it.
+local BOLT_POLYGON = "116,10 90,32 104,32 86,54 118,26 102,26 118,10"
+local BOLT_STROKE_WIDTH = 2.5
 
 -- Plug/unplug pulse: the bar has no frame-tick API (setUpdateInterval is
 -- the only clock a widget/service gets), so "animation" here means briefly
@@ -203,12 +207,12 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
     .. "' "
 
   if charging then
-    -- Same fg as the digits: it already contrasts against both the filled
-    -- (bg) and unfilled (emptyColor) regions the bolt might land over.
     cmd = cmd
-      .. "-fill '"
+      .. "-fill white -stroke '"
       .. fg
-      .. "' -draw 'polygon "
+      .. "' -strokewidth "
+      .. tostring(BOLT_STROKE_WIDTH)
+      .. " -draw 'polygon "
       .. BOLT_POLYGON
       .. "' "
   end
