@@ -40,6 +40,11 @@ in
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
         };
+        # Without this, taskbar/dock widgets that match running windows to
+        # a .desktop file by WM class can't find this entry (its exec line
+        # isn't what's matched against), so kitty --class kitty-tmux
+        # windows show a generic/missing icon instead of the tmux logo above.
+        settings.StartupWMClass = "kitty-tmux";
       };
 
       "tmux-local-fnuc" = {
@@ -51,6 +56,11 @@ in
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
         };
+        # Without this, taskbar/dock widgets that match running windows to
+        # a .desktop file by WM class can't find this entry (its exec line
+        # isn't what's matched against), so kitty --class kitty-tmux
+        # windows show a generic/missing icon instead of the tmux logo above.
+        settings.StartupWMClass = "kitty-tmux";
       };
 
       "tmux-fnuc" = {
@@ -62,6 +72,24 @@ in
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
         };
+        # Without this, taskbar/dock widgets that match running windows to
+        # a .desktop file by WM class can't find this entry (its exec line
+        # isn't what's matched against), so kitty --class kitty-tmux
+        # windows show a generic/missing icon instead of the tmux logo above.
+        settings.StartupWMClass = "kitty-tmux";
+      };
+
+      # Not a launcher entry (scratchpad.sh spawns this itself, hence
+      # noDisplay) — exists purely so taskbar/dock widgets can resolve an
+      # icon for `kitty --class kitty-scratchpad` windows via StartupWMClass,
+      # same reasoning as the kitty-tmux entries above.
+      kitty-scratchpad = {
+        name = "kitty (scratchpad)";
+        noDisplay = true;
+        terminal = false;
+        exec = "${pkgs.kitty}/bin/kitty --class kitty-scratchpad";
+        icon = "kitty";
+        settings.StartupWMClass = "kitty-scratchpad";
       };
     };
 
