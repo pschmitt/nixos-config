@@ -7,7 +7,12 @@
     ./hypridle.nix
     ./hyprlock.nix
     ./iio-hyprland.nix
-    ./hyprpaper.nix
+    # hyprpaper.nix is intentionally not imported: Noctalia now manages the
+    # wallpaper natively (profiles/laptop/noctalia.nix, wallpaper.default.path)
+    # on every host that imports this module, so a separate wallpaper daemon
+    # would just fight it for the same output. File kept for reference / a
+    # one-line revert if a host ever drops Noctalia.
+    # ./hyprpaper.nix
     # mako.nix is intentionally not imported: DMS is now the sole
     # bar/notification daemon on every host that imports this module (all
     # three currently also enable programs.dank-material-shell — see

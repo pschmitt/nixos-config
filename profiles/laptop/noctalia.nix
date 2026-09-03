@@ -220,6 +220,13 @@
         };
         weather.enabled = true;
         location.auto_locate = true;
+        # Migrated from hyprpaper (home-manager/gui/hyprland/services/hyprpaper.nix,
+        # now unimported) — same wallpaper, now managed natively by Noctalia
+        # instead of a separate daemon fighting it for the same output.
+        wallpaper = {
+          enabled = true;
+          default.path = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
+        };
         # Off by default in Noctalia; needed for any UI sound to play at
         # all, including the battery-icon plugin's opt-in plug/unplug
         # chimes (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
