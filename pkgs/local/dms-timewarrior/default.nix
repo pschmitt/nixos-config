@@ -28,7 +28,8 @@ stdenvNoCC.mkDerivation {
     cp plugin.json "$dest"/
     substitute TimewarriorWidget.qml "$dest"/TimewarriorWidget.qml \
       --subst-var-by timewIsOn ${timew-status}/bin/timew-is-on \
-      --subst-var-by timewTotal ${timew-status}/bin/timew-total
+      --subst-var-by timewTotal ${timew-status}/bin/timew-total \
+      --subst-var-by timewWeekBreakdown ${timew-status}/bin/timew-week-breakdown
 
     runHook postInstall
   '';

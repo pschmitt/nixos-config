@@ -3,7 +3,13 @@
   "currentThemeCategory": "dynamic",
   "cornerRadius": 12,
   "showSeconds": true,
+  "clockCompactMode": true,
   "controlCenterShowMicPercent": true,
+  "controlCenterShowMicIcon": true,
+  "controlCenterShowAudioPercent": true,
+  "showWorkspaceIndex": true,
+  "osdPosition": 4,
+  "osdMediaPlaybackEnabled": true,
   "appIdSubstitutions": [],
   "useAutoLocation": true,
   "runningAppsCurrentWorkspace": false,
@@ -44,21 +50,21 @@
         "runningApps"
       ],
       "centerWidgets": [
+        "weather",
+        "clock",
+        "timewarrior"
+      ],
+      "rightWidgets": [
         {
           "id": "music",
           "enabled": true,
           "mediaSize": 0
         },
-        "clock",
-        "weather"
-      ],
-      "rightWidgets": [
         "systemTray",
         "syncshell",
-        "timewarrior",
-        "notificationButton",
         "controlCenterButton",
-        "battery"
+        "battery",
+        "notificationButton"
       ],
       "spacing": 0,
       "innerPadding": 0,
