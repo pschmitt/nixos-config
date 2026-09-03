@@ -1,0 +1,26 @@
+id = "pschmitt/timewarrior"
+name = "Timewarrior"
+version = "0.1.0"
+plugin_api = 9
+author = "pschmitt"
+license = "GPL-3.0-only"
+tags = ["bar", "productivity", "time-tracking"]
+icon = "clock-hour-3"
+description = "Currently tracked Timewarrior task duration, ported from the DMS/Waybar widget."
+
+[[service]]
+id = "poller"
+entry = "service.luau"
+
+[[widget]]
+id = "bar"
+entry = "bar.luau"
+
+[[panel]]
+id = "panel"
+entry = "panel.luau"
+width = 320
+height = 420
+placement = "attached"
+position = "auto"
+open_near_click = true
