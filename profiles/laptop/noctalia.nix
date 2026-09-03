@@ -255,6 +255,15 @@
           # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
           # plugins.enabled below.
         };
+        # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
+        # above. Role names here (e.g. "on_surface") are resolved against the
+        # active custom palette by pkgs/local/noctalia-battery-icon's
+        # service.luau before hitting ImageMagick.
+        plugin_settings."pschmitt/battery-icon" = {
+          # Full charge shouldn't be as loud as the low/medium warning tiers.
+          high_color = "on_surface";
+          charging_color = "secondary";
+        };
       };
     };
     # Waybar was the default, then DMS; Noctalia takes over that role now,
