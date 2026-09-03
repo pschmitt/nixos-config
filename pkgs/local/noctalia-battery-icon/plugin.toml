@@ -7,6 +7,9 @@ license = "GPL-3.0-only"
 tags = ["bar", "system", "hardware"]
 icon = "battery-2"
 description = "Battery percentage rendered inside the battery icon itself (Android status-bar style), via a live-generated bitmap — the bar-widget UI framework has no overlay/z-stack primitive for drawing text on top of a shape."
+# magick renders the icon bitmap; udevadm gives instant plug/unplug
+# detection instead of waiting for the next poll_interval tick.
+dependencies = ["imagemagick", "udevadm"]
 
 # ── Plugin-level settings (shared by every entry, edited in Settings -> Plugins) ──
 
