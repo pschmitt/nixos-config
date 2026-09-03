@@ -156,6 +156,9 @@
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pkgs/local/noctalia-battery-icon.
             "pschmitt/battery-icon"
+            # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
+            # pkgs/local/noctalia-osd and pkgs/local/osd/osd.sh.
+            "pschmitt/osd"
             # AI plan quota (community plugin, felipeartur/ai-usagebar) —
             # tried and disabled again: didn't like the look, and Codex
             # support wasn't solid. pkgs/local/ai-usagebar is still built
@@ -194,6 +197,12 @@
               name = "local-syncthing";
               kind = "path";
               location = "${pkgs.noctalia-syncthing}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "local-osd";
+              kind = "path";
+              location = "${pkgs.noctalia-osd}/share/noctalia-plugins";
               enabled = true;
             }
           ];

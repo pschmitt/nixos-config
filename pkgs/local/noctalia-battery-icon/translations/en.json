@@ -36,6 +36,10 @@
       "label": "Text color",
       "description": "Color of the percentage number baked into the icon."
     },
+    "empty_color": {
+      "label": "Empty color",
+      "description": "Fill color for the unfilled portion of the gauge."
+    },
     "icon_width": {
       "label": "Icon width",
       "description": "Bar display width of the rendered icon, in pixels."

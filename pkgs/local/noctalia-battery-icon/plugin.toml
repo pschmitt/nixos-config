@@ -86,6 +86,13 @@ label_key = "settings.text_color.label"
 description_key = "settings.text_color.description"
 default = "#11131A"
 
+[[setting]]
+key = "empty_color"
+type = "color"
+label_key = "settings.empty_color.label"
+description_key = "settings.empty_color.description"
+default = "#33333F"
+
 [[service]]
 id = "poller"
 entry = "service.luau"

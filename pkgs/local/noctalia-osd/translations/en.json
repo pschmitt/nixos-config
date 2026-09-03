@@ -1,0 +1,8 @@
+{
+  "settings": {
+    "default_timeout_ms": {
+      "label": "Default auto-dismiss timeout (ms)",
+      "description": "How long the toast stays up when the caller doesn't pass its own timeout_ms."
+    }
+  }
+}

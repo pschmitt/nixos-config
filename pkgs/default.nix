@@ -28,6 +28,7 @@ in
   noctalia-battery-icon = pkgs.callPackage ./local/noctalia-battery-icon { inherit ComicCodeNF; };
   noctalia-syncthing = pkgs.callPackage ./local/noctalia-syncthing { };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
+  noctalia-osd = pkgs.callPackage ./local/noctalia-osd { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;

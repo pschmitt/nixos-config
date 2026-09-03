@@ -1,9 +1,11 @@
 # osd — fire an ad-hoc on-screen notification.
 #
-# Uses DMS's native toast IPC (dms ipc call toast ...) when dms.service is
-# the running bar, falling back to notify-send/mako otherwise — so scripts
-# and keybinds get a native-looking OSD regardless of which bar is active
-# mid-migration (see toggle-bar.sh).
+# Tries, in order: Noctalia's pschmitt/osd:toast plugin panel (see
+# pkgs/local/noctalia-osd), DMS's native toast IPC (dms ipc call toast ...),
+# then notify-send/mako — so scripts and keybinds get a native-looking OSD
+# regardless of which bar is active (see toggle-bar.sh). Noctalia has no
+# generic "show a custom OSD" primitive of its own (only fixed-purpose ones:
+# brightness-osd, volume-osd, ...), hence the dedicated plugin.
 
 usage() {
   cat <<EOF
@@ -14,19 +16,24 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE...
 
 Options:
   -s, --severity {info,warn,error}   Severity (default: info)
-  -c, --category CATEGORY            Dedupe/update-in-place key (DMS only;
-                                      repeated calls with the same category
-                                      replace the previous toast instead of
-                                      stacking). Defaults to --app-name.
-  -d, --details TEXT                 Extra detail line (DMS only)
+  -c, --category CATEGORY            Dedupe/update-in-place key (Noctalia and
+                                      DMS only; repeated calls with the same
+                                      category replace the previous toast
+                                      instead of stacking). Defaults to
+                                      --app-name.
+  -d, --details TEXT                 Extra detail line (Noctalia and DMS only)
   -x, --command CMD                  Command run when the toast is clicked
-                                      (DMS only)
+                                      (Noctalia and DMS only)
   -a, --app-name NAME                notify-send app name (fallback only,
                                       default: osd)
-  -t, --timeout MS                   notify-send timeout in ms (fallback
-                                      only)
+  -t, --timeout MS                   Auto-dismiss timeout in ms (Noctalia and
+                                      notify-send fallback; ignored by DMS)
   -h, --help                         Show this help
 EOF
+}
+
+use_noctalia() {
+  command -v noctalia &>/dev/null && noctalia msg status &>/dev/null
 }
 
 use_dms() {
@@ -41,6 +48,20 @@ send() {
   local category="$5"
   local app_name="$6"
   local timeout="$7"
+
+  if use_noctalia
+  then
+    local payload
+    payload=$(jq -nc \
+      --arg summary "$message" \
+      --arg body "$details" \
+      --arg severity "$severity" \
+      --arg category "$category" \
+      --arg command "$cmd" \
+      --argjson timeout_ms "${timeout:-null}" \
+      '{summary:$summary, body:$body, severity:$severity, category:$category, command:$command, timeout_ms:$timeout_ms}')
+    noctalia msg panel-open pschmitt/osd:toast "$payload" &>/dev/null && return 0
+  fi
 
   if use_dms
   then
@@ -70,6 +91,11 @@ send() {
 ipc_dismiss() {
   local category="$1"
 
+  if use_noctalia
+  then
+    noctalia msg plugin pschmitt/osd:toast all dismiss "$category" &>/dev/null && return 0
+  fi
+
   if use_dms
   then
     dms ipc call toast dismiss "$category" &>/dev/null && return 0
@@ -90,6 +116,11 @@ ipc_dismiss() {
 }
 
 ipc_hide() {
+  if use_noctalia
+  then
+    noctalia msg panel-close pschmitt/osd:toast &>/dev/null && return 0
+  fi
+
   if use_dms
   then
     dms ipc call toast hide &>/dev/null && return 0
@@ -100,13 +131,26 @@ ipc_hide() {
 }
 
 ipc_status() {
+  if use_noctalia
+  then
+    local active
+    active=$(noctalia msg status | jq -r '.activePanelId // ""')
+    if [[ "$active" == "pschmitt/osd:toast" ]]
+    then
+      echo "active"
+    else
+      echo "inactive"
+    fi
+    return 0
+  fi
+
   if use_dms
   then
     dms ipc call toast status
     return $?
   fi
 
-  echo "dms not running; no fallback status available" >&2
+  echo "neither noctalia nor dms running; no fallback status available" >&2
   return 1
 }
 

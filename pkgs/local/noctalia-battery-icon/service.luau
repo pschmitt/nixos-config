@@ -32,6 +32,7 @@ local function settings()
     highColor = noctalia.getConfig("high_color") or "#6FCF97",
     chargingColor = noctalia.getConfig("charging_color") or "#B6C4FF",
     textColor = noctalia.getConfig("text_color") or "#11131A",
+    emptyColor = noctalia.getConfig("empty_color") or "#33333F",
   }
 end
 
@@ -53,18 +54,6 @@ end
 -- charging, so it never competes with the digits for space.
 local BOLT_POLYGON = "130,16 125,30 131,30 124,48 130,32 124,32"
 
--- Track opacity for the un-filled portion of the pill (Android-13+-style
--- charge gauge: a faint full-width track, with a solid fill bar growing
--- left-to-right as the charge level rises), as a hex alpha byte appended to
--- a #RRGGBB color. Only works for plain hex; a role name typed into
--- Settings already fails the same way the rest of this script's colors do.
-local function withAlpha(hex, alphaHex)
-  if type(hex) == "string" and hex:sub(1, 1) == "#" and #hex == 7 then
-    return hex .. alphaHex
-  end
-  return hex
-end
-
 local function regenerate(cfg, percent, charging, dataDir)
   local bg = tierColor(cfg, percent, charging)
   local fg = cfg.textColor
@@ -77,6 +66,8 @@ local function regenerate(cfg, percent, charging, dataDir)
     .. sanitize(bg)
     .. "-"
     .. sanitize(fg)
+    .. "-"
+    .. sanitize(cfg.emptyColor)
     .. ".png"
 
   if noctalia.fileExists(outPath) then
@@ -86,28 +77,30 @@ local function regenerate(cfg, percent, charging, dataDir)
 
   -- Fill bar width, clamped so it always shows at least the rounded cap.
   local fillX = math.max(14, 4 + math.floor(104 * math.clamp(percent, 0, 100) / 100))
-  -- Knob only gets a solid fill once the gauge has actually reached it
-  -- (full charge); otherwise it's outline-only, same as the unfilled body,
-  -- so the two read as one continuous shape instead of a detached blob.
-  local knobFull = fillX >= 108
-  local strokeColor = withAlpha(fg, "66")
 
+  -- A proportional-width gauge fill (Android-13-style) made the digits'
+  -- optical center shift with the charge level, since the pill's painted
+  -- region used to stop at the fill edge — a fixed -annotate offset can't
+  -- stay centered when the colored region's own width keeps changing. Fix:
+  -- paint the *entire* pill (and knob) with cfg.emptyColor first, so the
+  -- shape is always fully covered regardless of charge, then lay the
+  -- charge-tier-colored fill on top from the left. Total painted width (and
+  -- so the label's true center) is now constant at every percentage.
+  --
   -- Canvas is wider than the pill+knob (0-117) so a charging bolt has its
-  -- own room on the right and never has to compete with the digits — the
-  -- label stays centered on the pill itself via the -annotate offset below,
-  -- not on the full canvas.
+  -- own room on the right and never has to compete with the digits.
   local cmd = "@magick@ -size 144x64 xc:none "
-    .. "-fill none -stroke '"
-    .. strokeColor
-    .. "' -strokewidth 3 -draw 'roundrectangle 4,6 108,58 10,10' "
+    .. "-fill '"
+    .. cfg.emptyColor
+    .. "' -draw 'roundrectangle 4,6 108,58 10,10' "
     .. "-draw 'roundrectangle 108,23 117,41 3,3' "
-    .. "-stroke none -fill '"
+    .. "-fill '"
     .. bg
     .. "' -draw 'roundrectangle 4,6 "
     .. tostring(fillX)
     .. ",58 10,10' "
 
-  if knobFull then
+  if fillX >= 108 then
     cmd = cmd .. "-fill '" .. bg .. "' -draw 'roundrectangle 108,23 117,41 3,3' "
   end
 
@@ -152,7 +145,14 @@ local function poll()
     noctalia.runAsync("cat " .. statusPath, function(statusResult)
       local status = trim(statusResult.stdout)
       local charging = status == "Charging" or status == "Full"
-      local key = tostring(percent) .. (charging and "c" or "d") .. cfg.lowColor .. cfg.mediumColor .. cfg.highColor .. cfg.chargingColor .. cfg.textColor
+      local key = tostring(percent)
+        .. (charging and "c" or "d")
+        .. cfg.lowColor
+        .. cfg.mediumColor
+        .. cfg.highColor
+        .. cfg.chargingColor
+        .. cfg.textColor
+        .. cfg.emptyColor
 
       if key == lastKey then
         return
