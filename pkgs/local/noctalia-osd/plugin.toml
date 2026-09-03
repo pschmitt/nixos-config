@@ -1,0 +1,40 @@
+# Custom OSD toast, triggered via CLI/IPC — the Noctalia counterpart to
+# pkgs/local/dms-shell-critical-notifications' DMS toast IPC. Noctalia has no
+# generic "show an arbitrary OSD" primitive of its own (only fixed-purpose
+# ones: brightness-osd, volume-osd, mic-volume-osd, keyboard-backlight-osd),
+# so this plugin provides one, matching pkgs/local/osd's feature set:
+# severity, category (informational dedupe key), a click-to-run command, and
+# an auto-dismiss timeout.
+#
+# Usage:
+#   noctalia msg panel-open pschmitt/osd:toast '{"summary":"Feierabend","body":"23 minutes left","severity":"info","timeout_ms":4000}'
+#   noctalia msg panel-close pschmitt/osd:toast
+#   noctalia msg plugin pschmitt/osd:toast all dismiss <category>
+
+id = "pschmitt/osd"
+name = "Custom OSD"
+version = "1.0.0"
+plugin_api = 14
+author = "pschmitt"
+license = "MIT"
+tags = ["panel", "utility", "notifications"]
+icon = "bell"
+description = "Ad-hoc on-screen toast, triggered via CLI/IPC with a JSON payload (summary, body, severity, category, command, timeout_ms)."
+
+[[setting]]
+key = "default_timeout_ms"
+type = "int"
+label_key = "settings.default_timeout_ms.label"
+description_key = "settings.default_timeout_ms.description"
+default = 4000
+min = 500
+max = 60000
+
+[[panel]]
+id = "toast"
+entry = "panel.luau"
+width = 420
+height = 100
+placement = "floating"
+position = "top_center"
+open_near_click = false
