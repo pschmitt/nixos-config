@@ -119,10 +119,10 @@ local function tierColor(cfg, percent, charging)
   return cfg.highColor
 end
 
--- Small Android-style lightning bolt, drawn past the terminal knob (outside
--- the pill+knob shape, in the canvas margin reserved for it below) when
--- charging, so it never competes with the digits for space.
-local BOLT_POLYGON = "130,16 125,30 131,30 124,48 130,32 124,32"
+-- Android-16-style lightning bolt, drawn inside the pill to the right of
+-- the digits (not a separate terminal knob poking out past the shape —
+-- that read as a near-invisible sliver at real bar size).
+local BOLT_POLYGON = "116,14 100,34 110,34 98,50 120,28 108,28 120,14"
 
 -- Plug/unplug pulse: the bar has no frame-tick API (setUpdateInterval is
 -- the only clock a widget/service gets), so "animation" here means briefly
@@ -168,52 +168,46 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
     return
   end
 
-  -- Fill bar width, clamped so it always shows at least the rounded cap.
-  local fillX = math.max(14, 4 + math.floor(104 * math.clamp(percent, 0, 100) / 100))
+  -- Fill width, clamped so it always shows at least the rounded cap (the
+  -- pill's own corner radius is 26, so much less than that renders as an
+  -- odd lens shape rather than a flat-sided sliver).
+  local fillX = math.max(22, 4 + math.floor(132 * math.clamp(percent, 0, 100) / 100))
 
-  -- A proportional-width gauge fill (Android-13-style) made the digits'
+  -- A proportional-width gauge fill (Android-style) made the digits'
   -- optical center shift with the charge level, since the pill's painted
   -- region used to stop at the fill edge — a fixed -annotate offset can't
   -- stay centered when the colored region's own width keeps changing. Fix:
-  -- paint the *entire* pill (and knob) with cfg.emptyColor first, so the
-  -- shape is always fully covered regardless of charge, then lay the
-  -- charge-tier-colored fill on top from the left. Total painted width (and
-  -- so the label's true center) is now constant at every percentage.
-  --
-  -- Canvas is wider than the pill+knob (0-117) so a charging bolt has its
-  -- own room on the right and never has to compete with the digits.
-  local cmd = "@magick@ -size 144x64 xc:none "
+  -- paint the *entire* pill with cfg.emptyColor first, so the shape is
+  -- always fully covered regardless of charge, then lay the charge-tier
+  -- color on top from the left. Total painted width (and so the label's
+  -- true center) is now constant at every percentage.
+  local cmd = "@magick@ -size 140x64 xc:none "
     .. "-fill '"
     .. cfg.emptyColor
-    .. "' -draw 'roundrectangle 4,6 108,58 10,10' "
-    .. "-draw 'roundrectangle 108,23 117,41 3,3' "
+    .. "' -draw 'roundrectangle 4,6 136,58 26,26' "
     .. "-fill '"
     .. bg
     .. "' -draw 'roundrectangle 4,6 "
     .. tostring(fillX)
-    .. ",58 10,10' "
+    .. ",58 26,26' "
 
-  if fillX >= 108 then
-    cmd = cmd .. "-fill '" .. bg .. "' -draw 'roundrectangle 108,23 117,41 3,3' "
-  end
-
+  -- Charging reserves room on the right for the bolt (see BOLT_POLYGON);
+  -- otherwise the label sits centered in the full pill.
   cmd = cmd
     .. "-gravity center -fill '"
     .. fg
-    .. "' -font '@font@' -pointsize 42 -annotate -11+3 '"
+    .. "' -font '@font@' -pointsize 38 -annotate "
+    .. (charging and "-22+3" or "+0+3")
+    .. " '"
     .. label
     .. "' "
 
   if charging then
-    -- fg (textColor) is meant to contrast against the colored pill fill
-    -- behind the digits; the bolt sits outside the pill, in the canvas's
-    -- transparent margin, which composites onto the bar's own dark
-    -- background — a near-black fg bolt there is effectively invisible.
-    -- Use bg (the tier/charging color) instead so it reads as a visible
-    -- colored accent.
+    -- Same fg as the digits: it already contrasts against both the filled
+    -- (bg) and unfilled (emptyColor) regions the bolt might land over.
     cmd = cmd
       .. "-fill '"
-      .. bg
+      .. fg
       .. "' -draw 'polygon "
       .. BOLT_POLYGON
       .. "' "
