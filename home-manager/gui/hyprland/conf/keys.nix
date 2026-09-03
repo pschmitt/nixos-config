@@ -11,7 +11,6 @@ let
 
   bin = "~/.config/hypr/bin";
   swayBin = "~/.config/sway/bin";
-  barify = "${swayBin}/barify";
   playerctl = "${swayBin}/playerctl-wrapper.sh";
 
   mouseSubmap = "🖱️ mouse";
@@ -157,11 +156,15 @@ in
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
       # ── Media / brightness (locked = works on the lock screen) ────────
-      (execBindLocked "XF86MonBrightnessUp" "${barify} brightness up")
-      (execBindLocked "XF86MonBrightnessDown" "${barify} brightness down")
-      (execBindLocked "XF86AudioRaiseVolume" "${barify} sink up")
-      (execBindLocked "XF86AudioLowerVolume" "${barify} sink down")
-      (execBindLocked "XF86AudioMute" "${barify} sink mute")
+      # DMS's own OSDs (brightness/volume) fire natively off these IPC calls
+      # — no separate notify-send/toast needed. Falls back to a raw
+      # brightnessctl/pactl call when dms.service isn't the active bar
+      # (toggle-bar.sh can switch back to waybar/quickshell-bar mid-migration).
+      (execBindLocked "XF86MonBrightnessUp" "dms ipc call brightness increment 5 || brightnessctl set 5%+")
+      (execBindLocked "XF86MonBrightnessDown" "dms ipc call brightness decrement 5 || brightnessctl set 5%-")
+      (execBindLocked "XF86AudioRaiseVolume" "dms ipc call audio increment 5 || pactl set-sink-volume @DEFAULT_SINK@ +5%")
+      (execBindLocked "XF86AudioLowerVolume" "dms ipc call audio decrement 5 || pactl set-sink-volume @DEFAULT_SINK@ -5%")
+      (execBindLocked "XF86AudioMute" "dms ipc call audio mute || pactl set-sink-mute @DEFAULT_SINK@ toggle")
       (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute")
       (execBindLocked "SUPER + space" "obs-control toggle-mute")
       (execBindLocked "XF86AudioPlay" "${playerctl} toggle")
