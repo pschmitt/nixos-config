@@ -2940,6 +2940,26 @@
         "type": "gitlab"
       }
     },
+    "noctalia": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1788404626,
+        "narHash": "sha256-aJjQhcVJTXyES4G0LrmmlnkGFOzt3CpMIg8JdUdKfWU=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
+        "rev": "a1a0e0ffc841af1f77901bc7ebc81c104ed8d56e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
+        "type": "github"
+      }
+    },
     "npm-lockfile-fix": {
       "inputs": {
         "nixpkgs": [
@@ -3324,6 +3344,7 @@
         "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-unstable": "nixpkgs-unstable",
         "nixpkgs-wayland": "nixpkgs-wayland",
+        "noctalia": "noctalia",
         "obs-cli": "obs-cli",
         "poor-tools": "poor-tools",
         "pre-commit-hooks": "pre-commit-hooks_4",

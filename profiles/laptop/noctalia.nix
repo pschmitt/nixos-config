@@ -14,19 +14,22 @@
     programs.noctalia = {
       enable = true;
       systemd.enable = true;
-      # Mirrors the DMS bar layout (workspaceSwitcher+runningApps /
-      # weather+clock+timewarrior / music+systemTray+syncshell+controlCenter+
-      # battery+notifications) as closely as Noctalia's built-in widget set
-      # allows. OSD (volume/brightness/mic/etc.) is native and on by default
-      # — no settings needed. Everything beyond this starter layout is meant
-      # to be tuned live (Settings app / ~/.config/noctalia/config.toml),
-      # same as DMS's settings.json began as a live-edited snapshot before
-      # being made declarative.
+      # Started as a mirror of the DMS bar layout (workspaceSwitcher+
+      # runningApps / weather+clock+timewarrior / music+systemTray+
+      # syncshell+controlCenter+battery+notifications), since diverged a
+      # bit on request (no dedicated control-center button — the
+      # notifications widget still opens into it). OSD (volume/brightness/
+      # mic/etc.) is native and on by default — no settings needed.
+      # Everything beyond this is meant to be tuned live (Settings app /
+      # ~/.config/noctalia/config.toml), same as DMS's settings.json began
+      # as a live-edited snapshot before being made declarative.
       settings = {
         bar.main = {
           position = "top";
           margin_ends = 0; # span the full screen width, matching the DMS bar
           font_weight = 700; # bold bar text
+          capsule = true; # individual pill/card background per widget
+          capsule_padding = 12;
           start = [
             "workspaces"
             "taskbar"
@@ -40,7 +43,6 @@
             "media"
             "tray"
             "rylos/syncthing:bar"
-            "control-center"
             "battery"
             "notifications"
           ];
@@ -84,13 +86,18 @@
         };
         weather.enabled = true;
         location.auto_locate = true;
+        # Control center, launcher, clipboard, and plugin panels (e.g.
+        # syncthing's) felt too small; scale non-bar shell UI up ~15%.
+        # Separate from bar.scale/[widget.*].scale, which only affect bar
+        # widget content.
+        accessibility.ui_scale = 1.15;
         shell.font_family = "ComicCode Nerd Font"; # matches mako.nix/DMS's fontName
-        # Match kitty (Nord.conf, see ~/.config/kitty/kitty.conf) rather than
-        # Noctalia's own default palette.
+        # Noctalia's own brand palette (purple/blue accent on near-black) —
+        # switched back from Nord after seeing it in a plugin screenshot.
         theme = {
           mode = "dark";
           source = "builtin";
-          builtin = "Nord";
+          builtin = "Noctalia";
         };
         # Control Center (which the notifications widget opens into, at its
         # "notifications" tab) is "attached" by default but still opens
@@ -102,6 +109,13 @@
           hide_artist = true;
           max_length = 140;
           art_size = 18;
+        };
+        # Android-style: percentage overlaid inside the battery outline
+        # (proportional fill), instead of a separate glyph + text label.
+        widget.battery = {
+          display_mode = "graphic";
+          show_label = true;
+          label_content = "percent";
         };
       };
     };

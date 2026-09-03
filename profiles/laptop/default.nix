@@ -12,7 +12,11 @@
 
     ../network/wifi.nix
     ./a11y.nix
-    ./dank-material-shell.nix
+    # DMS is kept but intentionally not imported while trying Noctalia as
+    # the default bar instead — see profiles/laptop/noctalia.nix. The file
+    # is kept (not deleted) so switching back is a one-line revert.
+    # ./dank-material-shell.nix
+    ./noctalia.nix
     ./initrd-network.nix
     ./initrd-wifi.nix
     ./noisetorch.nix

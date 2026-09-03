@@ -27,6 +27,7 @@
     ./hyprland
     ./niri.nix
     ./dank.nix
+    ./noctalia.nix
     # ./vicinae.nix
   ];
 }
