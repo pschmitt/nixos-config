@@ -1,6 +1,6 @@
 id = "pschmitt/battery-icon"
 name = "Battery Icon"
-version = "0.2.4"
+version = "0.2.5"
 plugin_api = 26 # noctalia.getSetting(), needed to resolve palette-role color values
 author = "pschmitt"
 license = "GPL-3.0-only"

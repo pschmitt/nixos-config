@@ -129,7 +129,7 @@ end
 -- batteries get a small terminal on the right, while charging replaces it
 -- with the larger external bolt. BODY_PATH also gives the left end slightly
 -- rounder corners than the right, as in Android's 24x14 source geometry.
-local BODY_PATH = "M4,20 C4,12.268 8.492,6 14.033,6 H82.833 C86.79,6 90,10.477 90,16 V48 C90,53.523 86.79,58 82.833,58 H14.033 C8.492,58 4,51.732 4,44 Z"
+local BODY_PATH = "M4,21 C4,12.716 8.925,6 15,6 H81 C85.971,6 90,11.373 90,18 V46 C90,52.627 85.971,58 81,58 H15 C8.925,58 4,51.284 4,43 Z"
 local TERMINAL = "94,21 101,43 3,3"
 
 -- Adapted from AOSP's Apache-2.0 battery_unified_attr_charging vector,
@@ -167,7 +167,7 @@ local function regenerate(cfg, percent, charging, powerSaver, dataDir, bgOverrid
   local fg = cfg.textColor
   local label = tostring(percent)
   local outPath = dataDir
-    .. "/battery-m3e-v4-"
+    .. "/battery-m3e-v5-"
     .. tostring(percent)
     .. (charging and "c" or "d")
     .. (powerSaver and "s" or "n")
