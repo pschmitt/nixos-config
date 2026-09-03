@@ -13,7 +13,12 @@
     ../../services/nixos-installer-boot-entry.nix
   ];
 
-  home-manager.users.${config.mainUser.username}.services.jellysync.enable = true;
+  home-manager.users.${config.mainUser.username} = {
+    services.jellysync.enable = true;
+    # Battery Icon plugin (profiles/laptop/noctalia.nix) defaults to BAT0;
+    # gk4's kernel exposes its battery as BATT instead.
+    programs.noctalia.settings.plugin_settings."pschmitt/battery-icon".battery_device = "BATT";
+  };
 
   hardware.cattle = false;
   initrd.wifi = {
