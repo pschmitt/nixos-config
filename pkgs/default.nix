@@ -13,6 +13,7 @@ let
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   soundboard = pkgs.callPackage ./local/soundboard { };
   timew-status = pkgs.callPackage ./local/timew-status { };
+  osd = pkgs.callPackage ./local/osd { };
 in
 {
   # local pkgs
@@ -24,8 +25,14 @@ in
   dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
+  inherit osd;
   obs-control = pkgs.callPackage ./local/obs-control {
-    inherit inputs emoji-fzf soundboard;
+    inherit
+      inputs
+      emoji-fzf
+      soundboard
+      osd
+      ;
     inherit (pkgs) walker;
   };
   quickshell-bar = pkgs.callPackage ./local/quickshell-bar { inherit timew-status; };

@@ -6,7 +6,6 @@
   inputs,
   pulseaudio,
   v4l-utils,
-  libnotify,
   jq,
   gnugrep,
   gawk,
@@ -14,6 +13,7 @@
   emoji-fzf,
   walker,
   soundboard,
+  osd,
 }:
 let
   obs-cli = inputs.obs-cli.packages.${stdenv.hostPlatform.system}.obs-cli;
@@ -24,7 +24,6 @@ writeShellApplication {
     obs-cli
     pulseaudio # pactl
     v4l-utils # v4l2-ctl
-    libnotify # notify-send
     jq
     gnugrep
     gawk
@@ -32,6 +31,7 @@ writeShellApplication {
     emoji-fzf
     walker
     soundboard
+    osd
   ];
   text = builtins.readFile ./obs-control.sh;
   meta = {

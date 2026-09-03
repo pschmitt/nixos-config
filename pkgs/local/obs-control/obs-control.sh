@@ -14,7 +14,6 @@ DEFAULT_SCENE="📹 Webcam"
 WEBCAM_NAME="Insta360 Link"
 OBS_SOURCE_NAME="Webcam"
 MIC_OFF_ITEM="Microphone off"
-NOTIFY_ICON="${HOME}/Pictures/Icons/obs.png"
 
 ensure_obs_env() {
   : "${OBS_API_HOST:=localhost}"
@@ -38,15 +37,7 @@ obscli() {
 
 notify() {
   [[ -n "${NO_NOTIFICATION:-}" ]] && return 0
-  # Match the original obs.zsh OSD styling: the osd-top-center category is
-  # themed by mako, and the synchronous hint makes rapid notifications
-  # replace one another instead of stacking.
-  notify-send \
-    --app-name obs.zsh \
-    --hint "string:x-canonical-private-synchronous:obs.zsh" \
-    --category osd-top-center \
-    --icon "$NOTIFY_ICON" \
-    "$1" 2>/dev/null || true
+  osd -a obs-control -c obs-control "$1" || true
 }
 
 # ── Scenes ───────────────────────────────────────────────────────────────
@@ -154,13 +145,13 @@ sync_mic_overlay() {
 mute_mic() {
   mute_all_sources
   sync_mic_overlay
-  notify "🔇 Muted"
+  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 unmute_mic() {
   unmute_all_sources
   sync_mic_overlay
-  notify "🎤 Unmuted"
+  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 toggle_mute() {
@@ -168,12 +159,11 @@ toggle_mute() {
   then
     unmute_all_sources
     sync_mic_overlay
-    notify "🎤 Unmuted"
   else
     mute_all_sources
     sync_mic_overlay
-    notify "🔇 Muted"
   fi
+  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 # ── Webcam (Insta360 via v4l2) ─────────────────────────────────────────────
