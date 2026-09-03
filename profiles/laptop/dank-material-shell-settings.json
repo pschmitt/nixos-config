@@ -10,6 +10,8 @@
   "showWorkspaceIndex": true,
   "osdPosition": 4,
   "osdMediaPlaybackEnabled": true,
+  "osdAlwaysShowValue": true,
+  "audioVisualizerEnabled": false,
   "appIdSubstitutions": [],
   "useAutoLocation": true,
   "runningAppsCurrentWorkspace": false,
