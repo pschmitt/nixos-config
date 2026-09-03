@@ -142,6 +142,13 @@ local function header()
       onClick = "onOpenGui",
     }),
     ui.button({
+      glyph = "settings",
+      variant = "ghost",
+      controlSize = "sm",
+      tooltip = tr("panel.open-settings"),
+      onClick = "onSettings",
+    }),
+    ui.button({
       glyph = "refresh",
       variant = "primary",
       controlSize = "sm",
@@ -424,6 +431,10 @@ end
 
 function onOpenGui()
   sendCmd("open_gui")
+end
+
+function onSettings()
+  noctalia.openSettings()
 end
 
 function onPauseAll()
