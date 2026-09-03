@@ -119,7 +119,7 @@ entry = "bar.luau"
   type = "int"
   label_key = "settings.icon_width.label"
   description_key = "settings.icon_width.description"
-  default = 41
+  default = 45 # matches the rendered bitmap's 160x64 (2.5:1) aspect ratio at the default icon_height
   min = 16
   max = 96
 
