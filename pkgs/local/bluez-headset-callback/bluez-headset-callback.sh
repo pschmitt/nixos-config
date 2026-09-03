@@ -47,7 +47,7 @@ bt_disconnected() {
     jq -er '.' <<< "$data"
   fi
 
-  notify-send -c bluetooth "󰂲 Bluetooth device disconnected" "$name"
+  osd -c bluetooth -d "$name" "󰂲 Bluetooth device disconnected"
 }
 
 event_type() {
