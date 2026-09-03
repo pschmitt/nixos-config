@@ -85,6 +85,7 @@
         bar.main = {
           position = "top";
           margin_ends = 0; # span the full screen width, matching the DMS bar
+          padding = 0; # main-axis padding from bar edges to the start/end widget sections — separate from margin_ends
           # No font_weight override: the SemiBold family above is already a
           # fixed-weight cut, and synthetic-bolding on top of it looked off.
           # No blanket per-widget capsule anymore: only workspaces/media get
