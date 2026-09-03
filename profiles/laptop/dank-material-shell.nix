@@ -12,6 +12,10 @@
     programs.dank-material-shell = {
       enable = true;
       systemd.enable = true;
+      # Critical notifications otherwise use the same accent color
+      # (Theme.primary) as every other notification, indistinguishable on
+      # a dynamic/wallpaper-derived theme. See pkgs/local/dms-shell-critical-notifications.
+      package = pkgs.dms-shell-critical-notifications;
       # Raw pkgs.glib collides with the gsettings wrapper from
       # modules/theme.nix; the VPN widget isn't needed for this trial.
       enableVPN = false;
