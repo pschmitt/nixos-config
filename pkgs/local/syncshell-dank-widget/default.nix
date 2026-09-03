@@ -3,8 +3,8 @@
 # Symbol status glyph for the Syncthing logo with a synced (green check)
 # / syncing (blue) / paused (gray) / issue (red) badge. Also extends the
 # daemon + API client (upstream is read-only) with Rescan All / Pause
-# All / Resume All, driven from the popout footer and a right-click
-# pause/resume toggle.
+# All / Resume All, driven from the popout footer and a hand-rolled
+# right-click context menu (SyncshellContextMenu.qml).
 {
   lib,
   stdenvNoCC,
@@ -29,6 +29,7 @@ stdenvNoCC.mkDerivation {
     cp -r ${upstream}/share/dms-plugins/syncshell/. "$dest"/
     chmod -R u+w "$dest"
     cp ${./SyncshellWidget.qml} "$dest"/SyncshellWidget.qml
+    cp ${./SyncshellContextMenu.qml} "$dest"/SyncshellContextMenu.qml
     cp ${./SyncshellDaemon.qml} "$dest"/SyncshellDaemon.qml
     cp ${./models/SyncthingApi.js} "$dest"/models/SyncthingApi.js
     cp ${./assets}/*.svg "$dest"/assets/
