@@ -283,7 +283,14 @@ local function poll()
 
     noctalia.runAsync("cat " .. statusPath, function(statusResult)
       local status = trim(statusResult.stdout)
-      local charging = status == "Charging" or status == "Full"
+      -- "Not charging" (distinct from "Discharging") is the kernel
+      -- power_supply ABI's status for AC present but the battery not
+      -- accepting current — a charge-limit/threshold pause, thermal
+      -- protection, etc. It only ever occurs with external power
+      -- connected, so treat it as "plugged in" the same as an active
+      -- charge, or the icon/sound/pulse never fire once the battery
+      -- sits at its charge-limit threshold.
+      local charging = status == "Charging" or status == "Full" or status == "Not charging"
       -- nil lastCharging means this is the first read since (re)start: never
       -- an edge, so a charger already connected doesn't fire the sound/pulse.
       local edge = lastCharging ~= nil and lastCharging ~= charging
