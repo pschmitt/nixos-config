@@ -60,15 +60,27 @@ PluginComponent {
     }
 
     // DMS plugins only get a single right-click callback (no built-in
-    // context-menu primitive), so the multi-action set (Refresh, Rescan
-    // All, Pause/Resume All) lives in the popout's footer instead. Right
-    // click is bound to the one action worth a single gesture: toggling
-    // every folder paused/resumed.
-    pillRightClickAction: () => {
-        Quickshell.execDetached([
-            "dms", "ipc", "call", "syncshell",
-            root.state.allFoldersPaused ? "resumeAll" : "pauseAll"
-        ]);
+    // context-menu primitive), so the quick-actions menu is hand-rolled as
+    // its own layer-shell surface, the same way native bar widgets (e.g.
+    // AppsDockContextMenu) build their right-click menus.
+    pillRightClickAction: (x, y, width, section, screen) => {
+        contextMenuLoader.active = true;
+        if (contextMenuLoader.item) {
+            contextMenuLoader.item.showAt(
+                x, y,
+                root.isVertical,
+                root.axis?.edge ?? "top",
+                root.state.allFoldersPaused,
+                root.state.busy,
+                screen
+            );
+        }
+    }
+
+    Loader {
+        id: contextMenuLoader
+        active: false
+        source: "SyncshellContextMenu.qml"
     }
 
     horizontalBarPill: Component {
