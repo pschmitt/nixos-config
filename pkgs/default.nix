@@ -14,6 +14,7 @@ let
   soundboard = pkgs.callPackage ./local/soundboard { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   osd = pkgs.callPackage ./local/osd { };
+  ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
 in
 {
   # local pkgs
@@ -24,6 +25,7 @@ in
   };
   dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   noctalia-timewarrior = pkgs.callPackage ./local/noctalia-timewarrior { inherit timew-status; };
+  noctalia-battery-icon = pkgs.callPackage ./local/noctalia-battery-icon { inherit ComicCodeNF; };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;
@@ -82,7 +84,7 @@ in
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
-  ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
+  inherit ComicCodeNF;
   MonoLisa = pkgs.callPackage ./fonts/MonoLisa { };
   MonoLisaNF = pkgs.callPackage ./fonts/MonoLisaNF { };
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
