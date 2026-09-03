@@ -165,8 +165,13 @@ in
       (execBindLocked "XF86AudioRaiseVolume" "dms ipc call audio increment 5 || pactl set-sink-volume @DEFAULT_SINK@ +5%")
       (execBindLocked "XF86AudioLowerVolume" "dms ipc call audio decrement 5 || pactl set-sink-volume @DEFAULT_SINK@ -5%")
       (execBindLocked "XF86AudioMute" "dms ipc call audio mute || pactl set-sink-mute @DEFAULT_SINK@ toggle")
-      (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute")
-      (execBindLocked "SUPER + space" "obs-control toggle-mute")
+      # obs-control also syncs OBS's "mic off" overlay (see pkgs/local/obs-control),
+      # but it's only on PATH when go-hass-agent.enableWorkCommands is set
+      # (ge2) — everywhere else (gk4, ...) it's missing from PATH entirely,
+      # which silently no-ops the bind. Fall back to Noctalia's own native
+      # mic-mute IPC, which works unconditionally and fires its own OSD.
+      (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute || noctalia msg mic-mute")
+      (execBindLocked "SUPER + space" "obs-control toggle-mute || noctalia msg mic-mute")
       (execBindLocked "XF86AudioPlay" "${playerctl} toggle")
       (execBindLocked "XF86AudioPause" "${playerctl} pause")
       (execBindLocked "XF86AudioNext" "${playerctl} next")

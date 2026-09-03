@@ -106,6 +106,7 @@
             # "ai_usage" — disabled, see plugins.enabled below.
             "tray"
             "pschmitt/syncthing:bar"
+            "group:volume"
             "network"
             "group:notif-battery"
           ];
@@ -135,6 +136,14 @@
               members = [
                 "pschmitt/battery-icon:bar"
                 "notifications"
+              ];
+              padding = 12;
+            }
+            {
+              id = "volume";
+              members = [
+                "input-volume"
+                "output-volume"
               ];
               padding = 12;
             }
@@ -253,6 +262,15 @@
             hide_when_no_media = true;
           };
           network.show_label = false;
+          input-volume = {
+            type = "volume";
+            device = "input";
+            show_label = false; # mic level as a number isn't useful at a glance
+          };
+          output-volume = {
+            type = "volume";
+            device = "output";
+          };
           media-gap = {
             type = "spacer";
             length = 100;
