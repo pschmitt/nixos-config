@@ -32,6 +32,14 @@
       "label": "Charging color",
       "description": "Icon color while the battery is charging or full, regardless of level."
     },
+    "charging_bolt_color": {
+      "label": "Charging bolt color",
+      "description": "Fill color of the charging bolt."
+    },
+    "power_saver_color": {
+      "label": "Power Saver color",
+      "description": "Icon color while the system power profile is power-saver."
+    },
     "text_color": {
       "label": "Text color",
       "description": "Color of the percentage number baked into the icon."

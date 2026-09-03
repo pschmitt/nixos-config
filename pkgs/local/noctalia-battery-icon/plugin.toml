@@ -1,15 +1,15 @@
 id = "pschmitt/battery-icon"
 name = "Battery Icon"
-version = "0.1.0"
+version = "0.2.4"
 plugin_api = 26 # noctalia.getSetting(), needed to resolve palette-role color values
 author = "pschmitt"
 license = "GPL-3.0-only"
 tags = ["bar", "system", "hardware"]
 icon = "battery-2"
-description = "Battery percentage rendered inside the battery icon itself (Android status-bar style), via a live-generated bitmap — the bar-widget UI framework has no overlay/z-stack primitive for drawing text on top of a shape."
-# magick renders the icon bitmap; udevadm gives instant plug/unplug
-# detection instead of waiting for the next poll_interval tick.
-dependencies = ["imagemagick", "udevadm"]
+description = "Material 3 Expressive battery indicator with an internal percentage, clipped level fill, and charging bolt, rendered as a live-generated bitmap."
+# magick renders the icon bitmap, powerprofilesctl supplies the yellow
+# Power Saver state, and udevadm gives instant plug/unplug detection.
+dependencies = ["imagemagick", "powerprofilesctl", "udevadm"]
 
 # ── Plugin-level settings (shared by every entry, edited in Settings -> Plugins) ──
 
@@ -54,50 +54,64 @@ max = 99
 # by Noctalia's own color-role picker, e.g. "primary"/"on_hover") against
 # the active custom palette file before it ever reaches magick, so both
 # role names and hex work here the same as in any built-in Noctalia color
-# setting. Defaults below stay fixed hex, matching the Indigo palette's
-# error/primary/hover, in case a custom palette can't be resolved.
+# setting. Defaults below use the Google palette from Android's unified
+# battery drawable, in case a custom palette can't be resolved.
 
 [[setting]]
 key = "low_color"
 type = "color"
 label_key = "settings.low_color.label"
 description_key = "settings.low_color.description"
-default = "#FF6B81"
+default = "#EA4335"
 
 [[setting]]
 key = "medium_color"
 type = "color"
 label_key = "settings.medium_color.label"
 description_key = "settings.medium_color.description"
-default = "#F2C94C"
+default = "#9AA0A6"
 
 [[setting]]
 key = "high_color"
 type = "color"
 label_key = "settings.high_color.label"
 description_key = "settings.high_color.description"
-default = "#6FCF97"
+default = "#9AA0A6"
 
 [[setting]]
 key = "charging_color"
 type = "color"
 label_key = "settings.charging_color.label"
 description_key = "settings.charging_color.description"
-default = "#B6C4FF"
+default = "#34A853"
+
+[[setting]]
+key = "charging_bolt_color"
+type = "color"
+label_key = "settings.charging_bolt_color.label"
+description_key = "settings.charging_bolt_color.description"
+default = "#FFFFFF"
+
+[[setting]]
+key = "power_saver_color"
+type = "color"
+label_key = "settings.power_saver_color.label"
+description_key = "settings.power_saver_color.description"
+default = "#FBBC04"
 
 [[setting]]
 key = "text_color"
 type = "color"
 label_key = "settings.text_color.label"
 description_key = "settings.text_color.description"
-default = "#11131A"
+default = "#202124"
 
 [[setting]]
 key = "empty_color"
 type = "color"
 label_key = "settings.empty_color.label"
 description_key = "settings.empty_color.description"
-default = "#33333F"
+default = "#F1F3F4"
 
 [[setting]]
 key = "charging_sound_enabled"
@@ -119,7 +133,7 @@ entry = "bar.luau"
   type = "int"
   label_key = "settings.icon_width.label"
   description_key = "settings.icon_width.description"
-  default = 45 # matches the rendered bitmap's 160x64 (2.5:1) aspect ratio at the default icon_height
+  default = 36 # matches the rendered bitmap's 128x64 (2:1) aspect ratio at the default icon_height
   min = 16
   max = 96
 

@@ -1,8 +1,8 @@
 --!nonstrict
--- Battery icon poller — renders a small PNG (rounded pill, charge-tier
--- color, percentage baked into the body) via ImageMagick whenever the
--- charge level, plugged-in state, or relevant settings change,
--- Android-status-bar style.
+-- Battery icon poller — renders a small Material 3 Expressive-style PNG
+-- (clipped charge level and percentage inside the battery body, plus a
+-- terminal or charging bolt) via ImageMagick whenever the charge level,
+-- power state, or relevant settings change.
 --
 -- The bar-widget ui.* framework (row/column/box/label, all pure flex
 -- layout) has no overlay/z-stack primitive, and even Noctalia's own
@@ -97,18 +97,23 @@ local function settings()
     pollMs = (tonumber(noctalia.getConfig("poll_interval")) or 15) * 1000,
     lowThreshold = tonumber(noctalia.getConfig("low_threshold")) or 20,
     mediumThreshold = tonumber(noctalia.getConfig("medium_threshold")) or 50,
-    lowColor = resolveColor(noctalia.getConfig("low_color"), "#FF6B81"),
-    mediumColor = resolveColor(noctalia.getConfig("medium_color"), "#F2C94C"),
-    highColor = resolveColor(noctalia.getConfig("high_color"), "#6FCF97"),
-    chargingColor = resolveColor(noctalia.getConfig("charging_color"), "#B6C4FF"),
-    textColor = resolveColor(noctalia.getConfig("text_color"), "#11131A"),
-    emptyColor = resolveColor(noctalia.getConfig("empty_color"), "#33333F"),
+    lowColor = resolveColor(noctalia.getConfig("low_color"), "#EA4335"),
+    mediumColor = resolveColor(noctalia.getConfig("medium_color"), "#9AA0A6"),
+    highColor = resolveColor(noctalia.getConfig("high_color"), "#9AA0A6"),
+    chargingColor = resolveColor(noctalia.getConfig("charging_color"), "#34A853"),
+    chargingBoltColor = resolveColor(noctalia.getConfig("charging_bolt_color"), "#FFFFFF"),
+    powerSaverColor = resolveColor(noctalia.getConfig("power_saver_color"), "#FBBC04"),
+    textColor = resolveColor(noctalia.getConfig("text_color"), "#202124"),
+    emptyColor = resolveColor(noctalia.getConfig("empty_color"), "#F1F3F4"),
   }
 end
 
-local function tierColor(cfg, percent, charging)
+local function tierColor(cfg, percent, charging, powerSaver)
   if charging then
     return cfg.chargingColor
+  end
+  if powerSaver then
+    return cfg.powerSaverColor
   end
   if percent <= cfg.lowThreshold then
     return cfg.lowColor
@@ -119,21 +124,27 @@ local function tierColor(cfg, percent, charging)
   return cfg.highColor
 end
 
--- Android-16-style lightning bolt, drawn inside the pill to the right of
--- the digits (not a separate terminal knob poking out past the shape —
--- that read as a near-invisible sliver at real bar size). White fill with
--- a dark outline (rather than flat fg) so it pops against both the filled
--- (bg) and unfilled (emptyColor) regions it might land over, instead of
--- blending into whichever one is currently underneath it.
-local BOLT_POLYGON = "136,10 110,32 124,32 106,54 138,26 122,26 138,10"
-local BOLT_STROKE_WIDTH = 2.5
+-- Geometry follows the linked Android Material 3 Expressive reference.
+-- The body is deliberately much shorter than the full canvas: unplugged
+-- batteries get a small terminal on the right, while charging replaces it
+-- with the larger external bolt. BODY_PATH also gives the left end slightly
+-- rounder corners than the right, as in Android's 24x14 source geometry.
+local BODY_PATH = "M4,20 C4,12.268 8.492,6 14.033,6 H82.833 C86.79,6 90,10.477 90,16 V48 C90,53.523 86.79,58 82.833,58 H14.033 C8.492,58 4,51.732 4,44 Z"
+local TERMINAL = "94,21 101,43 3,3"
+
+-- Adapted from AOSP's Apache-2.0 battery_unified_attr_charging vector,
+-- scaled and moved just past the battery body.
+-- Keeping it external means the number stays centered and legible instead
+-- of being squeezed to one side at the bar's 18 px display height.
+local BOLT_POLYGON = "96,56 99,39 86,39 109,8 114,8 111,27 126,27 101,56"
+local BOLT_STROKE_WIDTH = 3.5
 
 -- Plug/unplug pulse: the bar has no frame-tick API (setUpdateInterval is
 -- the only clock a widget/service gets), so "animation" here means briefly
 -- driving that interval fast and rendering a couple of extra blended-color
 -- frames before settling on the real icon, instead of a single flat cut.
 local ANIM_FRAME_MS = 110
-local pendingAnim = nil -- { cfg, percent, charging, dataDir, frames, index }
+local pendingAnim = nil -- { cfg, percent, charging, powerSaver, dataDir, frames, index }
 
 local function hexToRgb(hex)
   local h = hex:gsub("#", "")
@@ -151,77 +162,86 @@ local function blendHex(fromHex, toHex, t)
   )
 end
 
-local function regenerate(cfg, percent, charging, dataDir, bgOverride)
-  local bg = bgOverride or tierColor(cfg, percent, charging)
+local function regenerate(cfg, percent, charging, powerSaver, dataDir, bgOverride)
+  local bg = bgOverride or tierColor(cfg, percent, charging, powerSaver)
   local fg = cfg.textColor
   local label = tostring(percent)
   local outPath = dataDir
-    .. "/battery-"
+    .. "/battery-m3e-v4-"
     .. tostring(percent)
     .. (charging and "c" or "d")
+    .. (powerSaver and "s" or "n")
     .. "-"
     .. sanitize(bg)
     .. "-"
     .. sanitize(fg)
     .. "-"
     .. sanitize(cfg.emptyColor)
+    .. "-"
+    .. sanitize(cfg.chargingBoltColor)
     .. ".png"
 
   if noctalia.fileExists(outPath) then
-    noctalia.state.set("battery_icon", { path = outPath, percent = percent, charging = charging })
+    noctalia.state.set(
+      "battery_icon",
+      { path = outPath, percent = percent, charging = charging, powerSaver = powerSaver }
+    )
     return
   end
 
-  -- Fill width, clamped so it always shows at least the rounded cap (the
-  -- pill's own corner radius is 26, so much less than that renders as an
-  -- odd lens shape rather than a flat-sided sliver).
-  local fillX = math.max(22, 4 + math.floor(152 * math.clamp(percent, 0, 100) / 100))
-
-  -- A proportional-width gauge fill (Android-style) made the digits'
-  -- optical center shift with the charge level, since the pill's painted
-  -- region used to stop at the fill edge — a fixed -annotate offset can't
-  -- stay centered when the colored region's own width keeps changing. Fix:
-  -- paint the *entire* pill with cfg.emptyColor first, so the shape is
-  -- always fully covered regardless of charge, then lay the charge-tier
-  -- color on top from the left. Total painted width (and so the label's
-  -- true center) is now constant at every percentage.
-  local cmd = "@magick@ -size 160x64 xc:none "
+  -- Paint the empty body, then composite a rectangular level fill through
+  -- a body-shaped mask. This produces Android's straight vertical level
+  -- boundary while retaining the body's rounded outer edge; drawing a
+  -- second rounded rectangle here gives the fill a visibly incorrect
+  -- rounded boundary at 20% and 50%.
+  local fillX = 4 + math.floor(86 * math.clamp(percent, 0, 100) / 100)
+  local cmd = "@magick@ -size 128x64 xc:none "
     .. "-fill '"
     .. cfg.emptyColor
-    .. "' -draw 'roundrectangle 4,6 156,58 26,26' "
-    .. "-fill '"
+    .. "' -draw 'path \""
+    .. BODY_PATH
+    .. "\"' "
+    .. "\\( -size 128x64 xc:none -fill '"
     .. bg
-    .. "' -draw 'roundrectangle 4,6 "
+    .. "' -draw 'rectangle 4,6 "
     .. tostring(fillX)
-    .. ",58 26,26' "
-
-  -- Charging reserves room on the right for the bolt (see BOLT_POLYGON);
-  -- otherwise the label sits centered in the full pill.
-  cmd = cmd
-    .. "-gravity center -fill '"
-    .. fg
-    .. "' -font '@font@' -pointsize 38 -annotate "
-    .. (charging and "-25+3" or "+0+3")
-    .. " '"
-    .. label
-    .. "' "
+    .. ",58' "
+    .. "\\( -size 128x64 xc:none -fill white -draw 'path \""
+    .. BODY_PATH
+    .. "\"' \\) -compose DstIn -composite \\) -compose Over -composite "
 
   if charging then
     cmd = cmd
-      .. "-fill white -stroke '"
+      .. "-fill '"
+      .. cfg.chargingBoltColor
+      .. "' -stroke '"
       .. fg
       .. "' -strokewidth "
       .. tostring(BOLT_STROKE_WIDTH)
       .. " -draw 'polygon "
       .. BOLT_POLYGON
       .. "' "
+  else
+    cmd = cmd .. "-fill '" .. cfg.emptyColor .. "' -draw 'roundrectangle " .. TERMINAL .. "' "
   end
+
+  -- The full canvas includes the terminal/bolt area, so -17 places the
+  -- text at x=47: the exact horizontal center of the 4..90 body.
+  cmd = cmd
+    .. "-gravity center -fill '"
+    .. fg
+    .. "' -stroke none -font '@font@' -pointsize 48 -annotate -17+2 '"
+    .. label
+    .. "' "
 
   cmd = cmd .. "'" .. outPath .. "'"
 
   noctalia.runAsync(cmd, function(result)
     if result.exitCode == 0 then
-      noctalia.state.set("battery_icon", { path = outPath, percent = percent, charging = charging })
+      noctalia.state.set(
+        "battery_icon",
+        { path = outPath, percent = percent, charging = charging, powerSaver = powerSaver }
+      )
     else
       noctalia.log("battery-icon: magick failed: " .. trim(result.stderr))
     end
@@ -245,20 +265,20 @@ local function advanceAnim()
   if finished then
     pendingAnim = nil
   end
-  regenerate(anim.cfg, anim.percent, anim.charging, anim.dataDir, bg)
+  regenerate(anim.cfg, anim.percent, anim.charging, anim.powerSaver, anim.dataDir, bg)
   return not finished
 end
 
 -- A brief flash toward white, easing back to the real tier color, so a
 -- plug/unplug reads as a distinct moment instead of the icon just
 -- snapping to its new state.
-local function startPulse(cfg, percent, charging, dataDir)
-  local target = tierColor(cfg, percent, charging)
+local function startPulse(cfg, percent, charging, powerSaver, dataDir)
+  local target = tierColor(cfg, percent, charging, powerSaver)
   -- blendHex needs exactly #RRGGBB; ImageMagick (and resolveColor) also
   -- accept #RGB/#RGBA/#RRGGBBAA, so skip straight to the real icon rather
   -- than mis-parse a color shorthand into a garbled flash.
   if not target:match("^#%x%x%x%x%x%x$") then
-    regenerate(cfg, percent, charging, dataDir)
+    regenerate(cfg, percent, charging, powerSaver, dataDir)
     return
   end
   local flash = blendHex(target, "#FFFFFF", 0.85)
@@ -266,6 +286,7 @@ local function startPulse(cfg, percent, charging, dataDir)
     cfg = cfg,
     percent = percent,
     charging = charging,
+    powerSaver = powerSaver,
     dataDir = dataDir,
     frames = { flash, blendHex(target, flash, 0.4) },
     index = 1,
@@ -295,43 +316,49 @@ local function poll()
       -- charge, or the icon/sound/pulse never fire once the battery
       -- sits at its charge-limit threshold.
       local charging = status == "Charging" or status == "Full" or status == "Not charging"
-      -- nil lastCharging means this is the first read since (re)start: never
-      -- an edge, so a charger already connected doesn't fire the sound/pulse.
-      local edge = lastCharging ~= nil and lastCharging ~= charging
+      noctalia.runAsync("@powerprofilesctl@ get", function(profileResult)
+        local powerSaver = trim(profileResult.stdout) == "power-saver"
+        -- nil lastCharging means this is the first read since (re)start: never
+        -- an edge, so a charger already connected doesn't fire the sound/pulse.
+        local edge = lastCharging ~= nil and lastCharging ~= charging
 
-      if edge and noctalia.getConfig("charging_sound_enabled") then
-        if charging and soundReady.charging then
-          noctalia.sound.play("charging")
-        elseif not charging and soundReady.unplug then
-          noctalia.sound.play("unplug")
+        if edge and noctalia.getConfig("charging_sound_enabled") then
+          if charging and soundReady.charging then
+            noctalia.sound.play("charging")
+          elseif not charging and soundReady.unplug then
+            noctalia.sound.play("unplug")
+          end
         end
-      end
-      lastCharging = charging
+        lastCharging = charging
 
-      local key = tostring(percent)
-        .. (charging and "c" or "d")
-        .. cfg.lowColor
-        .. cfg.mediumColor
-        .. cfg.highColor
-        .. cfg.chargingColor
-        .. cfg.textColor
-        .. cfg.emptyColor
+        local key = tostring(percent)
+          .. (charging and "c" or "d")
+          .. (powerSaver and "s" or "n")
+          .. cfg.lowColor
+          .. cfg.mediumColor
+          .. cfg.highColor
+          .. cfg.chargingColor
+          .. cfg.chargingBoltColor
+          .. cfg.powerSaverColor
+          .. cfg.textColor
+          .. cfg.emptyColor
 
-      if key == lastKey then
-        return
-      end
-      lastKey = key
+        if key == lastKey then
+          return
+        end
+        lastKey = key
 
-      local dataDir = noctalia.pluginDataDir()
-      if dataDir == nil then
-        return
-      end
+        local dataDir = noctalia.pluginDataDir()
+        if dataDir == nil then
+          return
+        end
 
-      if edge then
-        startPulse(cfg, percent, charging, dataDir)
-      else
-        regenerate(cfg, percent, charging, dataDir)
-      end
+        if edge then
+          startPulse(cfg, percent, charging, powerSaver, dataDir)
+        else
+          regenerate(cfg, percent, charging, powerSaver, dataDir)
+        end
+      end, 5000)
     end, 5000)
   end, 5000)
 end
