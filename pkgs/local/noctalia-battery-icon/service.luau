@@ -125,7 +125,7 @@ end
 -- a dark outline (rather than flat fg) so it pops against both the filled
 -- (bg) and unfilled (emptyColor) regions it might land over, instead of
 -- blending into whichever one is currently underneath it.
-local BOLT_POLYGON = "116,10 90,32 104,32 86,54 118,26 102,26 118,10"
+local BOLT_POLYGON = "136,10 110,32 124,32 106,54 138,26 122,26 138,10"
 local BOLT_STROKE_WIDTH = 2.5
 
 -- Plug/unplug pulse: the bar has no frame-tick API (setUpdateInterval is
@@ -175,7 +175,7 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
   -- Fill width, clamped so it always shows at least the rounded cap (the
   -- pill's own corner radius is 26, so much less than that renders as an
   -- odd lens shape rather than a flat-sided sliver).
-  local fillX = math.max(22, 4 + math.floor(132 * math.clamp(percent, 0, 100) / 100))
+  local fillX = math.max(22, 4 + math.floor(152 * math.clamp(percent, 0, 100) / 100))
 
   -- A proportional-width gauge fill (Android-style) made the digits'
   -- optical center shift with the charge level, since the pill's painted
@@ -185,10 +185,10 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
   -- always fully covered regardless of charge, then lay the charge-tier
   -- color on top from the left. Total painted width (and so the label's
   -- true center) is now constant at every percentage.
-  local cmd = "@magick@ -size 140x64 xc:none "
+  local cmd = "@magick@ -size 160x64 xc:none "
     .. "-fill '"
     .. cfg.emptyColor
-    .. "' -draw 'roundrectangle 4,6 136,58 26,26' "
+    .. "' -draw 'roundrectangle 4,6 156,58 26,26' "
     .. "-fill '"
     .. bg
     .. "' -draw 'roundrectangle 4,6 "
@@ -201,7 +201,7 @@ local function regenerate(cfg, percent, charging, dataDir, bgOverride)
     .. "-gravity center -fill '"
     .. fg
     .. "' -font '@font@' -pointsize 38 -annotate "
-    .. (charging and "-22+3" or "+0+3")
+    .. (charging and "-25+3" or "+0+3")
     .. " '"
     .. label
     .. "' "
