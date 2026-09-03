@@ -6,6 +6,17 @@
 }:
 let
   forgejoHostName = "git.${config.domains.main}";
+  mirrorSyncFailureCheckScript = pkgs.writeShellScript "forgejo-mirror-sync-check" ''
+    failures="$(${pkgs.systemd}/bin/journalctl -u forgejo.service --since '-2 hours' --no-pager -g 'failed to update mirror repository' -o cat 2>/dev/null | wc -l)"
+    if [ "$failures" -ge 5 ]
+    then
+      printf '❌ %s Forgejo pull-mirror sync failures in the last 2h (threshold 5)\n' "$failures" >&2
+      ${pkgs.systemd}/bin/journalctl -u forgejo.service --since '-2 hours' --no-pager -g 'SyncMirrors' -o cat 2>/dev/null \
+        | grep -oE 'repo: <Repository [0-9]+:[^>]+>' | sort -u >&2
+      exit 1
+    fi
+    printf '✅ forgejo mirror sync ok (%s failures in last 2h)\n' "$failures"
+  '';
 in
 {
   # Explicitly allow ssh
@@ -77,5 +88,9 @@ in
         for 3 cycles
       then restart
       if 3 restarts within 15 cycles then alert
+
+    check program "forgejo mirror-sync health" with path "${mirrorSyncFailureCheckScript}"
+      group services
+      if status != 0 for 2 cycles then alert
   '';
 }
