@@ -40,6 +40,10 @@
       "label": "Empty color",
       "description": "Fill color for the unfilled portion of the gauge."
     },
+    "charging_sound_enabled": {
+      "label": "Play sound when charger connects",
+      "description": "Plays a short sound the moment charging starts. Off by default."
+    },
     "icon_width": {
       "label": "Icon width",
       "description": "Bar display width of the rendered icon, in pixels."

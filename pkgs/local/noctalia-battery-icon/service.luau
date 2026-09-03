@@ -21,6 +21,19 @@ end
 
 local lastKey = ""
 
+-- nil until the first status read, so a charger already connected when the
+-- service (re)starts doesn't trigger the sound — only an actual plug-in
+-- edge does.
+local lastCharging = nil
+local chargingSoundReady = false
+
+noctalia.sound.load("charging", "sounds/charging.oga", function(ok, err)
+  chargingSoundReady = ok
+  if not ok then
+    noctalia.log("battery-icon: charging sound failed to load: " .. tostring(err))
+  end
+end)
+
 -- Noctalia's own "color" settings (e.g. bar.color, widget capsule_fill)
 -- accept either a hex value or a palette role name like "on_primary" —
 -- see docs/user/bar/index.mdx. Its generic color-setting editor offers the
@@ -200,6 +213,14 @@ local function poll()
     noctalia.runAsync("cat " .. statusPath, function(statusResult)
       local status = trim(statusResult.stdout)
       local charging = status == "Charging" or status == "Full"
+
+      if lastCharging == false and charging and noctalia.getConfig("charging_sound_enabled") then
+        if chargingSoundReady then
+          noctalia.sound.play("charging")
+        end
+      end
+      lastCharging = charging
+
       local key = tostring(percent)
         .. (charging and "c" or "d")
         .. cfg.lowColor

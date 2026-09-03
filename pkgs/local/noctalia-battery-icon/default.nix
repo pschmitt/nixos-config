@@ -3,6 +3,7 @@
   stdenvNoCC,
   imagemagick,
   ComicCodeNF,
+  sound-theme-freedesktop,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -30,6 +31,8 @@ stdenvNoCC.mkDerivation {
 
     cp plugin.toml bar.luau "$dest"/
     cp -r translations "$dest"/
+    mkdir -p "$dest"/sounds
+    cp -L ${sound-theme-freedesktop}/share/sounds/freedesktop/stereo/power-plug.oga "$dest"/sounds/charging.oga
     substitute service.luau "$dest"/service.luau \
       --subst-var-by magick ${imagemagick}/bin/magick \
       --subst-var-by font ${ComicCodeNF}/share/fonts/opentype/ComicCodeNerdFont-SemiBold-resized.otf
