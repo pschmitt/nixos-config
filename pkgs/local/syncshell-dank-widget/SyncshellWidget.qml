@@ -52,15 +52,6 @@ PluginComponent {
         return "assets/status-synced.svg";
     }
 
-    function statusText() {
-        if (!state || state.phase !== "ready") return ""
-        if (problemFolders > 0) return String(problemFolders)
-        if (pausedFolders > 0 && activeFolders === 0) return String(pausedFolders)
-        var rate = Number(state.downloadBytesPerSec || 0)
-        if (rate >= 1024) return "↓ " + PanelModel.formatRate(rate)
-        return ""
-    }
-
     function stateColor(folder) {
         if (folder.problem) return Theme.error
         if (folder.syncing || folder.scanning) return Theme.primary
@@ -81,32 +72,21 @@ PluginComponent {
     }
 
     horizontalBarPill: Component {
-        Row {
-            spacing: Theme.spacingXS
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-                source: root.statusIconSource()
-                width: Theme.iconSize - 5
-                height: width
-                sourceSize.width: width
-                sourceSize.height: height
-                fillMode: Image.PreserveAspectFit
-                smooth: true
-            }
-            StyledText {
-                visible: root.statusText() !== ""
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.statusText()
-                color: root.problemFolders > 0 ? Theme.error : Theme.surfaceText
-                font.pixelSize: Theme.fontSizeMedium
-            }
+        Image {
+            source: root.statusIconSource()
+            width: Theme.barIconSize(root.barThickness, -6, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
+            height: width
+            sourceSize.width: width
+            sourceSize.height: height
+            fillMode: Image.PreserveAspectFit
+            smooth: true
         }
     }
 
     verticalBarPill: Component {
         Image {
             source: root.statusIconSource()
-            width: Theme.iconSize - 4
+            width: Theme.barIconSize(root.barThickness, -6, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
             height: width
             sourceSize.width: width
             sourceSize.height: height

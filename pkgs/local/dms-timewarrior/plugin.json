@@ -8,7 +8,7 @@
   "type": "widget",
   "capabilities": ["dankbar-widget"],
   "component": "./TimewarriorWidget.qml",
-  "requires": ["timew-is-on", "timew-total"],
+  "requires": ["timew-is-on", "timew-total", "timew-week-breakdown"],
   "permissions": ["process"],
   "license": "GPL-3.0-only"
 }
