@@ -14,6 +14,64 @@
     programs.noctalia = {
       enable = true;
       systemd.enable = true;
+      # Colors sampled directly from the reference screenshot
+      # (noctalia.dev/plugins/community/battery-power-management) — near
+      # black surfaces + a pastel periwinkle accent. Not a Noctalia builtin;
+      # that screenshot is almost certainly a wallpaper-derived scheme from
+      # the plugin author's own machine, not one of the fixed palette names.
+      customPalettes.Indigo =
+        let
+          dark = {
+            mPrimary = "#B6C4FF";
+            mOnPrimary = "#11131A";
+            mSecondary = "#8FA8FF";
+            mOnSecondary = "#11131A";
+            mTertiary = "#C9B6FF";
+            mOnTertiary = "#11131A";
+            mError = "#FF6B81";
+            mOnError = "#11131A";
+            mSurface = "#11131A";
+            mOnSurface = "#E8E8F0";
+            mSurfaceVariant = "#1E1F27";
+            mOnSurfaceVariant = "#9A9AAE";
+            mOutline = "#33333F";
+            mShadow = "#000000";
+            mHover = "#262733";
+            mOnHover = "#E8E8F0";
+            terminal = {
+              background = "#11131A";
+              foreground = "#E8E8F0";
+              cursor = "#B6C4FF";
+              cursorText = "#11131A";
+              selectionBg = "#262733";
+              selectionFg = "#E8E8F0";
+              normal = {
+                black = "#11131A";
+                red = "#FF6B81";
+                green = "#8FA8FF";
+                yellow = "#C9B6FF";
+                blue = "#B6C4FF";
+                magenta = "#C9B6FF";
+                cyan = "#8FA8FF";
+                white = "#E8E8F0";
+              };
+              bright = {
+                black = "#33333F";
+                red = "#FF6B81";
+                green = "#8FA8FF";
+                yellow = "#C9B6FF";
+                blue = "#B6C4FF";
+                magenta = "#C9B6FF";
+                cyan = "#8FA8FF";
+                white = "#FFFFFF";
+              };
+            };
+          };
+        in
+        {
+          inherit dark;
+          light = dark;
+        };
       # Started as a mirror of the DMS bar layout (workspaceSwitcher+
       # runningApps / weather+clock+timewarrior / music+systemTray+
       # syncshell+controlCenter+battery+notifications), since diverged a
@@ -27,7 +85,8 @@
         bar.main = {
           position = "top";
           margin_ends = 0; # span the full screen width, matching the DMS bar
-          font_weight = 700; # bold bar text
+          # No font_weight override: the SemiBold family above is already a
+          # fixed-weight cut, and synthetic-bolding on top of it looked off.
           capsule = true; # individual pill/card background per widget
           capsule_padding = 12;
           start = [
@@ -43,7 +102,7 @@
             "media"
             "tray"
             "rylos/syncthing:bar"
-            "battery"
+            "pschmitt/battery-icon:bar"
             "notifications"
           ];
         };
@@ -58,6 +117,9 @@
             "rylos/syncthing"
             # Port of pkgs/local/dms-timewarrior — see pkgs/local/noctalia-timewarrior.
             "pschmitt/timewarrior"
+            # Renders the charge percentage inside the battery icon itself
+            # (Android status-bar style) — see pkgs/local/noctalia-battery-icon.
+            "pschmitt/battery-icon"
           ];
           # The official/community git sources aren't actually hardcoded —
           # they're seeded into runtime state on first launch, so declaring
@@ -82,6 +144,12 @@
               location = "${pkgs.noctalia-timewarrior}/share/noctalia-plugins";
               enabled = true;
             }
+            {
+              name = "local-battery-icon";
+              kind = "path";
+              location = "${pkgs.noctalia-battery-icon}/share/noctalia-plugins";
+              enabled = true;
+            }
           ];
         };
         weather.enabled = true;
@@ -91,31 +159,34 @@
         # Separate from bar.scale/[widget.*].scale, which only affect bar
         # widget content.
         accessibility.ui_scale = 1.15;
-        shell.font_family = "ComicCode Nerd Font"; # matches mako.nix/DMS's fontName
-        # Noctalia's own brand palette (purple/blue accent on near-black) —
-        # switched back from Nord after seeing it in a plugin screenshot.
+        shell.font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
         theme = {
           mode = "dark";
-          source = "builtin";
-          builtin = "Noctalia";
+          source = "custom";
+          custom_palette = "Indigo";
         };
         # Control Center (which the notifications widget opens into, at its
         # "notifications" tab) is "attached" by default but still opens
         # centered on the bar rather than under the clicked widget.
         shell.panel.open_near_click_control_center = true;
-        # Shorter media pill: no artist line, truncate the title sooner, and
-        # a smaller album art icon.
-        widget.media = {
-          hide_artist = true;
-          max_length = 140;
-          art_size = 18;
-        };
-        # Android-style: percentage overlaid inside the battery outline
-        # (proportional fill), instead of a separate glyph + text label.
-        widget.battery = {
-          display_mode = "graphic";
-          show_label = true;
-          label_content = "percent";
+        widget = {
+          weather = {
+            show_condition = false;
+            icon_color = "primary";
+          };
+          workspaces = {
+            style = "minimal";
+            show_all_outputs = true;
+          };
+          # Shorter media pill: no artist line, truncate the title sooner,
+          # a smaller album art icon, and scroll the title on hover instead
+          # of always/never.
+          media = {
+            hide_artist = true;
+            max_length = 140;
+            art_size = 18;
+            title_scroll = "on_hover";
+          };
         };
       };
     };

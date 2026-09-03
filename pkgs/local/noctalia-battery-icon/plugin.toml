@@ -1,0 +1,17 @@
+id = "pschmitt/battery-icon"
+name = "Battery Icon"
+version = "0.1.0"
+plugin_api = 9
+author = "pschmitt"
+license = "GPL-3.0-only"
+tags = ["bar", "system", "hardware"]
+icon = "battery-2"
+description = "Battery percentage rendered inside the battery icon itself (Android status-bar style), via a live-generated bitmap — the bar-widget UI framework has no overlay/z-stack primitive for drawing text on top of a shape."
+
+[[service]]
+id = "poller"
+entry = "service.luau"
+
+[[widget]]
+id = "bar"
+entry = "bar.luau"
