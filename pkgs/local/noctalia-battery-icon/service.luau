@@ -114,7 +114,7 @@ local function regenerate(cfg, percent, charging, dataDir)
   cmd = cmd
     .. "-gravity center -fill '"
     .. fg
-    .. "' -font '@font@' -pointsize 42 -annotate -16+3 '"
+    .. "' -font '@font@' -pointsize 42 -annotate -11+3 '"
     .. label
     .. "' "
 
