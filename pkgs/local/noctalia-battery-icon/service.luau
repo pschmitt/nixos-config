@@ -21,18 +21,73 @@ end
 
 local lastKey = ""
 
+-- Noctalia's own "color" settings (e.g. bar.color, widget capsule_fill)
+-- accept either a hex value or a palette role name like "on_primary" —
+-- see docs/user/bar/index.mdx. Its generic color-setting editor offers the
+-- same role-name picker here, but a role name means nothing to
+-- ImageMagick's -fill, which only understands actual colors. Resolve a
+-- role name against the active custom palette file ourselves before it
+-- reaches magick.
+local paletteCache = { key = nil, colors = nil }
+
+local function roleToPaletteKey(role)
+  -- "on_primary" -> "mOnPrimary", matching the palette JSON's Material-ish
+  -- key casing (see ~/.config/noctalia/palettes/<name>.json).
+  local out = "m"
+  for word in role:gmatch("[^_]+") do
+    out = out .. word:sub(1, 1):upper() .. word:sub(2)
+  end
+  return out
+end
+
+local function resolveRoleColor(role)
+  if noctalia.getSetting("theme.source") ~= "custom" then
+    return nil -- built-in palettes aren't user files we can read directly
+  end
+  local paletteName = noctalia.getSetting("theme.custom_palette")
+  if paletteName == nil or paletteName == "" then
+    return nil
+  end
+  local mode = noctalia.isDarkMode() and "dark" or "light"
+  local cacheKey = paletteName .. ":" .. mode
+
+  if paletteCache.key ~= cacheKey then
+    local raw = noctalia.readFile(noctalia.expandPath("~/.config/noctalia/palettes/" .. paletteName .. ".json"))
+    local decoded = raw ~= nil and noctalia.json.decode(raw) or nil
+    paletteCache = { key = cacheKey, colors = decoded ~= nil and decoded[mode] or nil }
+  end
+
+  if paletteCache.colors == nil then
+    return nil
+  end
+  return paletteCache.colors[roleToPaletteKey(role)]
+end
+
+-- `value` is either a hex color or a Noctalia palette role name; `fallback`
+-- is the fixed hex used when it's a role name that can't be resolved
+-- (built-in palette, unknown role, missing palette file, ...).
+local function resolveColor(value, fallback)
+  if type(value) ~= "string" or value == "" then
+    return fallback
+  end
+  if value:match("^#%x+$") then
+    return value
+  end
+  return resolveRoleColor(value) or fallback
+end
+
 local function settings()
   return {
     device = noctalia.getConfig("battery_device") or "BAT0",
     pollMs = (tonumber(noctalia.getConfig("poll_interval")) or 15) * 1000,
     lowThreshold = tonumber(noctalia.getConfig("low_threshold")) or 20,
     mediumThreshold = tonumber(noctalia.getConfig("medium_threshold")) or 50,
-    lowColor = noctalia.getConfig("low_color") or "#FF6B81",
-    mediumColor = noctalia.getConfig("medium_color") or "#F2C94C",
-    highColor = noctalia.getConfig("high_color") or "#6FCF97",
-    chargingColor = noctalia.getConfig("charging_color") or "#B6C4FF",
-    textColor = noctalia.getConfig("text_color") or "#11131A",
-    emptyColor = noctalia.getConfig("empty_color") or "#33333F",
+    lowColor = resolveColor(noctalia.getConfig("low_color"), "#FF6B81"),
+    mediumColor = resolveColor(noctalia.getConfig("medium_color"), "#F2C94C"),
+    highColor = resolveColor(noctalia.getConfig("high_color"), "#6FCF97"),
+    chargingColor = resolveColor(noctalia.getConfig("charging_color"), "#B6C4FF"),
+    textColor = resolveColor(noctalia.getConfig("text_color"), "#11131A"),
+    emptyColor = resolveColor(noctalia.getConfig("empty_color"), "#33333F"),
   }
 end
 

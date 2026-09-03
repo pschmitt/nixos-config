@@ -1,7 +1,7 @@
 id = "pschmitt/battery-icon"
 name = "Battery Icon"
 version = "0.1.0"
-plugin_api = 14
+plugin_api = 26 # noctalia.getSetting(), needed to resolve palette-role color values
 author = "pschmitt"
 license = "GPL-3.0-only"
 tags = ["bar", "system", "hardware"]
@@ -44,12 +44,15 @@ default = 50
 min = 1
 max = 99
 
-# Fixed hex, not a theme role name: these feed ImageMagick's -fill directly
-# (service.luau), and magick has no notion of Noctalia's color roles — a
-# role name like "error" fails with "no decode delegate for this image
-# format" since magick tries to read it as a file. Defaults match the
-# Indigo palette's error/primary so they still look consistent out of the
-# box; a role name typed into Settings will fail the same way.
+# These feed ImageMagick's -fill (service.luau), which has no notion of
+# Noctalia's color roles — a bare role name like "on_primary" fails with
+# "no decode delegate for this image format" since magick tries to read it
+# as a file. service.luau's resolveColor() resolves a role name (as typed
+# by Noctalia's own color-role picker, e.g. "primary"/"on_hover") against
+# the active custom palette file before it ever reaches magick, so both
+# role names and hex work here the same as in any built-in Noctalia color
+# setting. Defaults below stay fixed hex, matching the Indigo palette's
+# error/primary/hover, in case a custom palette can't be resolved.
 
 [[setting]]
 key = "low_color"

@@ -224,6 +224,7 @@
         # "notifications" tab) is "attached" by default but still opens
         # centered on the bar rather than under the clicked widget.
         shell.panel.open_near_click_control_center = true;
+        control_center.width = 900; # full-sidebar width in px (600-1200), default 700
         widget = {
           weather = {
             show_condition = false;
