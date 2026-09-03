@@ -1,0 +1,32 @@
+{
+  "settings": {
+    "poll_interval": {
+      "label": "Poll interval (seconds)",
+      "description": "How often to refresh the tracked duration and week/month/year totals."
+    },
+    "overtime_hours": {
+      "label": "Overtime threshold (hours)",
+      "description": "Tracked hours today above which the widget switches to the overtime color."
+    },
+    "icon_color": {
+      "label": "Icon color",
+      "description": "Clock icon color while under the overtime threshold."
+    },
+    "icon_overtime_color": {
+      "label": "Icon overtime color",
+      "description": "Clock icon color once today's tracked time passes the overtime threshold."
+    },
+    "label_color": {
+      "label": "Label color",
+      "description": "Duration text color while under the overtime threshold."
+    },
+    "label_overtime_color": {
+      "label": "Label overtime color",
+      "description": "Duration text color once today's tracked time passes the overtime threshold."
+    },
+    "icon_glyph": {
+      "label": "Icon glyph",
+      "description": "Tabler/Nerd-Font glyph name shown next to the tracked duration."
+    }
+  }
+}

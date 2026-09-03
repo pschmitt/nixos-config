@@ -26,6 +26,8 @@ in
   dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   noctalia-timewarrior = pkgs.callPackage ./local/noctalia-timewarrior { inherit timew-status; };
   noctalia-battery-icon = pkgs.callPackage ./local/noctalia-battery-icon { inherit ComicCodeNF; };
+  noctalia-syncthing = pkgs.callPackage ./local/noctalia-syncthing { };
+  ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;

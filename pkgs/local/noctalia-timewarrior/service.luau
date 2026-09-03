@@ -11,7 +11,9 @@ local function trim(s)
   return noctalia.string.trim(s or "")
 end
 
-local POLL_MS = 5000
+local function pollMs()
+  return (tonumber(noctalia.getConfig("poll_interval")) or 5) * 1000
+end
 
 local summary = { week = "0:00", month = "0:00", year = "0:00", days = {} }
 
@@ -78,6 +80,6 @@ end
 poll()
 
 function update()
-  noctalia.setUpdateInterval(POLL_MS)
+  noctalia.setUpdateInterval(pollMs())
   poll()
 end

@@ -15,6 +15,7 @@ stdenvNoCC.mkDerivation {
       ./service.luau
       ./bar.luau
       ./panel.luau
+      ./translations
     ];
   };
 
@@ -28,6 +29,7 @@ stdenvNoCC.mkDerivation {
     mkdir -p "$dest"
 
     cp plugin.toml bar.luau panel.luau "$dest"/
+    cp -r translations "$dest"/
     substitute service.luau "$dest"/service.luau \
       --subst-var-by timewIsOn ${timew-status}/bin/timew-is-on \
       --subst-var-by timewTotal ${timew-status}/bin/timew-total \
