@@ -96,6 +96,13 @@ label_key = "settings.empty_color.label"
 description_key = "settings.empty_color.description"
 default = "#33333F"
 
+[[setting]]
+key = "charging_sound_enabled"
+type = "bool"
+label_key = "settings.charging_sound_enabled.label"
+description_key = "settings.charging_sound_enabled.description"
+default = false
+
 [[service]]
 id = "poller"
 entry = "service.luau"
