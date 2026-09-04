@@ -40,9 +40,9 @@ local function render()
   local overtime = isOvertime()
   local labelColor = noctalia.getConfig("label_color") or "on_surface"
   local labelOvertimeColor = noctalia.getConfig("label_overtime_color") or "error"
-  local fmt = noctalia.getConfig("time_format")
+  local fmt = noctalia.getConfig("bar_time_format")
   if fmt == nil or fmt == "" then
-    fmt = duration.DEFAULT_FORMAT
+    fmt = "{hours}:{minutes}"
   end
 
   local container = barWidget.isVertical() and ui.column or ui.row

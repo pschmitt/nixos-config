@@ -135,13 +135,6 @@ local function header()
       onClick = paused and "onResumeAll" or "onPauseAll",
     }),
     ui.button({
-      glyph = "external-link",
-      variant = "ghost",
-      controlSize = "sm",
-      tooltip = tr("panel.open-gui"),
-      onClick = "onOpenGui",
-    }),
-    ui.button({
       glyph = "settings",
       variant = "ghost",
       controlSize = "sm",
@@ -376,8 +369,10 @@ local function footer()
       table.insert(children, ui.label({
         text = snapshot.sources.resolvedUrl,
         fontSize = 11,
-        color = "on_surface/0.55",
+        color = "primary",
         maxLines = 1,
+        tooltip = tr("panel.open-gui"),
+        onClick = "onOpenGui",
       }))
     end
   end

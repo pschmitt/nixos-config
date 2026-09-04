@@ -7,8 +7,8 @@ local duration = require("./lib/duration.luau")
 local summary = noctalia.state.get("tw_summary") or { week = "0:00", month = "0:00", year = "0:00", days = {} }
 
 local function currentFormat()
-  local fmt = noctalia.getConfig("time_format")
-  return (fmt and fmt ~= "") and fmt or duration.DEFAULT_FORMAT
+  local fmt = noctalia.getConfig("panel_time_format")
+  return (fmt and fmt ~= "") and fmt or "{hours}h {minutes}m"
 end
 
 local function statBox(label, value)
@@ -32,10 +32,29 @@ local function dayRow(day, fmt)
   })
 end
 
+local function header()
+  return ui.row({ gap = 8, align = "center" }, {
+    ui.image({
+      path = "assets/timewarrior-logo.png",
+      width = 28,
+      height = 28,
+      fit = "contain",
+    }),
+    ui.label({ text = "Timewarrior", fontSize = 16, fontWeight = "bold", flexGrow = 1 }),
+    ui.button({
+      glyph = "settings",
+      variant = "ghost",
+      controlSize = "sm",
+      tooltip = "Plugin settings",
+      onClick = "onSettings",
+    }),
+  })
+end
+
 local function render()
   local fmt = currentFormat()
   local content = {
-    ui.label({ text = "Timewarrior", fontSize = 16, fontWeight = "bold" }),
+    header(),
     ui.row({ gap = 8 }, {
       statBox("Week", duration.format(summary.week, fmt)),
       statBox("Month", duration.format(summary.month, fmt)),
@@ -67,3 +86,7 @@ noctalia.state.watch("tw_summary", function(val)
 end)
 
 render()
+
+function onSettings()
+  noctalia.openSettings()
+end

@@ -99,7 +99,6 @@
           ];
           center = [
             "group:weather-date"
-            "group:timewarrior"
           ];
           end = [
             "pschmitt/screencast:bar"
@@ -125,14 +124,10 @@
               members = [
                 "weather"
                 "clock"
+                "pschmitt/timewarrior:bar"
               ];
               padding = 12;
-              widget_spacing = 20; # gap between weather and clock (only 2 members, so this is just their spacer)
-            }
-            {
-              id = "timewarrior";
-              members = [ "pschmitt/timewarrior:bar" ];
-              padding = 12;
+              widget_spacing = 20; # gap between weather/clock/timewarrior
             }
             {
               id = "notif-battery";
@@ -238,11 +233,12 @@
           enabled = true;
           default.path = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
         };
-        # Off by default in Noctalia; needed for any UI sound to play at
-        # all, including the battery-icon plugin's opt-in plug/unplug
-        # chimes (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
-        # below is still its own separate gate).
-        audio.enable_sounds = true;
+        # Off by default in Noctalia; would also gate the battery-icon
+        # plugin's opt-in plug/unplug chimes
+        # (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
+        # below is its own separate gate, on this master switch) — left off,
+        # no audible shell sounds wanted.
+        audio.enable_sounds = false;
         # Control center, launcher, clipboard, and plugin panels (e.g.
         # syncthing's) felt too small; scale non-bar shell UI up ~15%.
         # Separate from bar.scale/[widget.*].scale, which only affect bar
