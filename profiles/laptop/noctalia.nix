@@ -102,6 +102,7 @@
             "group:timewarrior"
           ];
           end = [
+            "pschmitt/screencast:bar"
             "media"
             "media-gap"
             # "ai_usage" — disabled, see plugins.enabled below.
@@ -164,6 +165,10 @@
             "pschmitt/syncthing"
             # Port of pkgs/local/dms-timewarrior — see pkgs/local/noctalia-timewarrior.
             "pschmitt/timewarrior"
+            # Red-dot REC indicator while screensharing — see
+            # pkgs/local/noctalia-screencast, ported from the old Waybar
+            # custom/screencast module.
+            "pschmitt/screencast"
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pkgs/local/noctalia-battery-icon.
             "pschmitt/battery-icon"
@@ -214,6 +219,12 @@
               name = "local-osd";
               kind = "path";
               location = "${pkgs.noctalia-osd}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "local-screencast";
+              kind = "path";
+              location = "${pkgs.noctalia-screencast}/share/noctalia-plugins";
               enabled = true;
             }
           ];

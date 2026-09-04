@@ -1,0 +1,78 @@
+# Port of the old Waybar custom/screencast module
+# (home-manager/gui/hyprland/waybar/custom_modules/screencast.sh) to
+# Noctalia. Detection itself is unchanged and lives outside this plugin:
+# home-manager/gui/hyprland/bin/scripts/screencast.sh (state machine) and
+# xdg-portal-screencast-watcher.sh (busctl monitor on
+# org.freedesktop.portal.ScreenCast), wired up as a systemd user service in
+# home-manager/gui/hyprland/services/xdg-portal-screencast-watcher.nix. That
+# pipeline is also consumed by the Home Assistant sensor in
+# home-manager/gui/go-hass-agent/scripts/screencast.sh, so this plugin just
+# reads its state file rather than re-detecting screencasting itself.
+
+id = "pschmitt/screencast"
+name = "Screencast Indicator"
+version = "0.2.0"
+plugin_api = 15 # noctalia.readFile(), confirmed available at this level by noctalia-syncthing
+author = "pschmitt"
+license = "GPL-3.0-only"
+tags = ["bar", "indicator", "utility"]
+icon = "screen-share"
+description = "Red dot + REC bar indicator while screensharing, ported from the Waybar custom/screencast widget."
+
+# ── Plugin-level settings (shared by every entry, edited in Settings -> Plugins) ──
+
+[[setting]]
+key = "poll_interval"
+type = "int"
+label_key = "settings.poll_interval.label"
+description_key = "settings.poll_interval.description"
+default = 2
+min = 1
+max = 30
+
+[[setting]]
+key = "dot_color"
+type = "color"
+label_key = "settings.dot_color.label"
+description_key = "settings.dot_color.description"
+default = "error"
+
+[[setting]]
+key = "label_color"
+type = "color"
+label_key = "settings.label_color.label"
+description_key = "settings.label_color.description"
+default = "error"
+
+[[setting]]
+key = "dot_size"
+type = "int"
+label_key = "settings.dot_size.label"
+description_key = "settings.dot_size.description"
+default = 8
+min = 4
+max = 16
+
+[[setting]]
+key = "pulse_enabled"
+type = "bool"
+label_key = "settings.pulse_enabled.label"
+description_key = "settings.pulse_enabled.description"
+default = true
+
+[[setting]]
+key = "pulse_period_ms"
+type = "int"
+label_key = "settings.pulse_period_ms.label"
+description_key = "settings.pulse_period_ms.description"
+default = 1200
+min = 300
+max = 5000
+
+[[service]]
+id = "poller"
+entry = "service.luau"
+
+[[widget]]
+id = "bar"
+entry = "bar.luau"

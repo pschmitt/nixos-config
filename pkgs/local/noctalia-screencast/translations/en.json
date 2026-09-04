@@ -1,0 +1,28 @@
+{
+  "settings": {
+    "poll_interval": {
+      "label": "Poll interval (seconds)",
+      "description": "How often to re-check the screencast state file for changes."
+    },
+    "dot_color": {
+      "label": "Dot color",
+      "description": "Color of the recording dot."
+    },
+    "label_color": {
+      "label": "Label color",
+      "description": "Color of the REC text."
+    },
+    "dot_size": {
+      "label": "Dot size",
+      "description": "Diameter of the recording dot, in pixels."
+    },
+    "pulse_enabled": {
+      "label": "Pulse dot",
+      "description": "Breathe the recording dot's opacity while active, instead of a static fill."
+    },
+    "pulse_period_ms": {
+      "label": "Pulse period (ms)",
+      "description": "Duration of one dim-bright-dim breathing cycle."
+    }
+  }
+}
