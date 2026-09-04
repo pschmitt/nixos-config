@@ -29,8 +29,8 @@
       "description": "Extra padding inside Noctalia's built-in panel padding. Large values can leave too little room for two lines."
     },
     "max_text_width": {
-      "label": "Maximum text width",
-      "description": "Maximum width of each label before it is ellipsized."
+      "label": "Maximum text width (0 = off)",
+      "description": "Optional maximum width of each label before it is ellipsized. Set to 0 to show text without an explicit width limit."
     },
     "summary_font_size": {
       "label": "Summary font size",
