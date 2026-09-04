@@ -1,16 +1,17 @@
 {
   lib,
   stdenvNoCC,
+  coreutils,
   imagemagick,
-  roboto,
   power-profiles-daemon,
+  roboto,
   sound-theme-freedesktop,
   systemd,
 }:
 
 stdenvNoCC.mkDerivation {
   pname = "noctalia-battery-icon";
-  version = "0.2.6";
+  version = "0.4.5";
 
   src = lib.fileset.toSource {
     root = ./.;
@@ -40,7 +41,9 @@ stdenvNoCC.mkDerivation {
       --subst-var-by magick ${imagemagick}/bin/magick \
       --subst-var-by font ${roboto}/share/fonts/truetype/Roboto-Bold.ttf \
       --subst-var-by powerprofilesctl ${power-profiles-daemon}/bin/powerprofilesctl \
-      --subst-var-by udevadm ${systemd}/bin/udevadm
+      --subst-var-by udevadm ${systemd}/bin/udevadm \
+      --subst-var-by busctl ${systemd}/bin/busctl \
+      --subst-var-by stdbuf ${coreutils}/bin/stdbuf
 
     runHook postInstall
   '';

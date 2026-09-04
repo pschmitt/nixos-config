@@ -300,15 +300,20 @@
         # service.luau before hitting ImageMagick.
         plugin_settings."pschmitt/battery-icon" = {
           # Material 3 Expressive battery colors (Google palette): neutral
-          # normally, green while powered, yellow in Power Saver, and red
-          # at or below the low-battery threshold.
+          # normally, green while powered, and red at or below the
+          # low-battery threshold.
           low_color = "#EA4335";
           medium_color = "#9AA0A6";
           high_color = "#9AA0A6";
           charging_color = "#34A853";
-          power_saver_color = "#FBBC04";
           text_color = "#202124";
           empty_color = "#F1F3F4";
+        };
+        plugin_settings."pschmitt/syncthing" = {
+          # "Folder X is up to date" fires on every sync completion and
+          # isn't interesting often enough to be worth a toast; errors and
+          # device connect/disconnect notifications stay on.
+          notify_folder_up_to_date = false;
         };
       };
     };

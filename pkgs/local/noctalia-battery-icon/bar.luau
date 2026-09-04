@@ -23,7 +23,7 @@ local function render()
     -- bolt) — without contain, a mismatched display box stretches it.
     ui.image({ path = state.path, width = width, height = height, fit = "contain" }),
   }))
-  local suffix = state.charging and " (charging)" or (state.powerSaver and " (Power Saver)" or "")
+  local suffix = state.charging and " (charging)" or (state.powerSaver and " (Battery Saver)" or "")
   barWidget.setTooltip(tostring(state.percent) .. "%" .. suffix)
 end
 

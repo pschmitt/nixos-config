@@ -8,6 +8,10 @@
       "label": "Poll interval (seconds)",
       "description": "How often to check the charge level and regenerate the icon."
     },
+    "full_at": {
+      "label": "Full at (%)",
+      "description": "Charge level this battery treats as full, for machines with a firmware charge limit. Colors are graded against this instead of 100%; the displayed percentage stays the real one. 0 detects it automatically."
+    },
     "low_threshold": {
       "label": "Low threshold (%)",
       "description": "Charge percentage at or below which the low-battery color is used."
@@ -36,9 +40,9 @@
       "label": "Charging bolt color",
       "description": "Fill color of the charging bolt."
     },
-    "power_saver_color": {
-      "label": "Power Saver color",
-      "description": "Icon color while the system power profile is power-saver."
+    "power_saver_plus_color": {
+      "label": "Battery Saver plus color",
+      "description": "Color of the “+” drawn beside the battery while Battery Saver is active."
     },
     "text_color": {
       "label": "Text color",
