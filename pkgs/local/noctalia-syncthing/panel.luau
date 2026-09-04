@@ -148,13 +148,6 @@ local function header()
       tooltip = tr("panel.open-settings"),
       onClick = "onSettings",
     }),
-    ui.button({
-      glyph = "refresh",
-      variant = "primary",
-      controlSize = "sm",
-      tooltip = tr("panel.refresh"),
-      onClick = "onRefresh",
-    }),
   })
 end
 
@@ -362,10 +355,22 @@ local function footer()
       end
       table.insert(children, ui.label({ text = err.message, fontSize = 11, color = "error/0.85", maxLines = 2 }))
     end
-    table.insert(children, ui.label({
-      text = tr("panel.last-check-info", { value = snapshot.checkedAt }),
-      fontSize = 11,
-      color = "on_surface/0.55",
+    table.insert(children, ui.row({ gap = 4, align = "center" }, {
+      ui.label({
+        text = tr("panel.last-check-info", { value = snapshot.checkedAt }),
+        fontSize = 11,
+        color = "on_surface/0.55",
+        flexGrow = 1,
+      }),
+      ui.button({
+        glyph = "refresh",
+        variant = "ghost",
+        width = 18,
+        height = 18,
+        glyphSize = 11,
+        tooltip = tr("panel.refresh"),
+        onClick = "onRefresh",
+      }),
     }))
     if snapshot.sources.resolvedUrl ~= "" then
       table.insert(children, ui.label({

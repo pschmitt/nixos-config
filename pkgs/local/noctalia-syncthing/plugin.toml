@@ -7,7 +7,7 @@
 
 id = "pschmitt/syncthing"
 name = "Syncthing"
-version = "2.1.1"
+version = "2.2.1"
 plugin_api = 15 # noctalia.openSettings(), for the panel's settings button
 author = "pschmitt (fork of Marco Ziliani's rylos/syncthing)"
 license = "MIT"
@@ -62,6 +62,34 @@ key = "notify_events"
 type = "bool"
 label_key = "settings.notify_events.label"
 description_key = "settings.notify_events.description"
+default = true
+
+[[setting]]
+key = "notify_folder_done"
+type = "bool"
+label_key = "settings.notify_folder_done.label"
+description_key = "settings.notify_folder_done.description"
+default = true
+
+[[setting]]
+key = "notify_folder_error"
+type = "bool"
+label_key = "settings.notify_folder_error.label"
+description_key = "settings.notify_folder_error.description"
+default = true
+
+[[setting]]
+key = "notify_device_connected"
+type = "bool"
+label_key = "settings.notify_device_connected.label"
+description_key = "settings.notify_device_connected.description"
+default = true
+
+[[setting]]
+key = "notify_device_disconnected"
+type = "bool"
+label_key = "settings.notify_device_disconnected.label"
+description_key = "settings.notify_device_disconnected.description"
 default = true
 
 [[setting]]
