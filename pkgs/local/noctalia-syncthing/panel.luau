@@ -10,12 +10,13 @@
 -- neither list has a length limit and there are no numbered callback globals.
 
 local statusIcon = require("./lib/status_icon.luau")
+local stateColors = require("./lib/state_colors.luau")
 
 -- Must match height = … in the [[panel]] entry of plugin.toml. The root
 -- column's height is what actually sizes the content, and it is measured
 -- inside the padding, so the padding has to come off it or the last row is
 -- clipped by the panel edge.
-local PANEL_HEIGHT = 530
+local PANEL_HEIGHT = 500
 local PANEL_PADDING = 14
 -- The panel frame eats a few pixels below the content, so the last footer line
 -- would otherwise sit flush against the bottom edge.
@@ -26,18 +27,6 @@ local isOpen = false
 local cmdNonce = 0
 -- Active list tab: "folders" | "devices" (Syncthing Tray-style tabs).
 local view = "folders"
-
-local STATE_COLORS = {
-  idle = "primary",
-  syncing = "secondary",
-  paused = "outline",
-  disconnected = "secondary",
-  offline = "error",
-  unauthorized = "error",
-  error = "error",
-  unconfigured = "outline",
-  disabled = "outline",
-}
 
 local function tr(key, subst)
   return noctalia.tr(key, subst)
@@ -125,7 +114,7 @@ local function header()
     }),
     ui.column({ gap = 2, flexGrow = 1 }, {
       ui.label({ text = tr("panel.title"), fontSize = 16, fontWeight = "bold" }),
-      ui.label({ text = tr(`state.{state}`), fontSize = 12, color = STATE_COLORS[state] or "outline" }),
+      ui.label({ text = tr(`state.{state}`), fontSize = 12, color = stateColors.get(state) }),
     }),
     ui.button({
       glyph = paused and "player-play" or "player-pause",
@@ -164,44 +153,19 @@ local function ratesLabel()
   })
 end
 
-local function statTile(value, label)
-  return ui.column({ gap = 2, padding = 8, fill = "surface_variant/0.5", radius = 8, align = "center", flexGrow = 1 }, {
-    ui.label({ text = value, fontSize = 15, fontWeight = "bold" }),
-    ui.label({ text = label, fontSize = 11, color = "on_surface/0.6" }),
-  })
-end
-
-local function stats()
-  local devices = snapshot and `{snapshot.devices.connected}/{snapshot.devices.configured}` or "-"
-  local folders = snapshot and tostring(snapshot.totals.monitoredFolders) or "-"
-  local pending = "-"
-  if snapshot then
-    pending = snapshot.totals.needItems > 0
-      and tostring(snapshot.totals.needItems)
-      or formatBytes(snapshot.totals.needBytes)
-  end
-  return ui.row({ gap = 8 }, {
-    statTile(devices, tr("panel.devices")),
-    statTile(folders, tr("panel.folders")),
-    statTile(pending, tr("panel.pending")),
-  })
-end
-
 local function folderStateText(folder)
+  local progress = folder.state ~= "idle" and folder.completion >= 0 and ` {folder.completion}%` or ""
+  local base = `{tr(`state.{folder.state}`)}{progress}`
   if folder.state == "syncing" then
-    local base = `{tr(`state.{folder.state}`)} {folder.completion}%`
     if folder.needItems > 0 then
       base = tr("panel.folder-state", { state = base, count = folder.needItems })
     end
     return base
   end
   if folder.state == "error" and folder.detail ~= "" then
-    return folder.detail
+    return `{base} — {folder.detail}`
   end
-  if folder.state == "idle" and folder.lastActivity ~= "" then
-    return tr("panel.last-activity", { value = folder.lastActivity })
-  end
-  return tr(`state.{folder.state}`)
+  return base
 end
 
 local function tabs()
@@ -229,7 +193,7 @@ local function tabs()
 end
 
 local function folderRow(folder)
-  local color = STATE_COLORS[folder.state] or "outline"
+  local color = stateColors.get(folder.state)
   return ui.row({
     key = `folder-{folder.id}`,
     gap = 8,
@@ -241,7 +205,7 @@ local function folderRow(folder)
     ui.box({ width = 8, height = 8, radius = 4, fill = color }),
     ui.column({ gap = 2, flexGrow = 1 }, {
       ui.label({ text = folder.label, fontWeight = "bold", fontSize = 13, maxLines = 1 }),
-      ui.label({ text = folderStateText(folder), fontSize = 11, color = "on_surface/0.65", maxLines = 1 }),
+      ui.label({ text = folderStateText(folder), fontSize = 10, color = "on_surface/0.65", maxLines = 1 }),
       ui.progress({
         progress = folder.completion / 100,
         height = 3,
@@ -272,7 +236,7 @@ local function folderRow(folder)
 end
 
 local function deviceRow(device)
-  local color = device.connected and "primary" or "outline"
+  local color = device.connected and stateColors.get("idle") or stateColors.get("disconnected")
   local subtitle
   if device.paused then
     subtitle = tr("device.paused")
@@ -337,7 +301,7 @@ local function footer()
     table.insert(children, ui.label({
       text = detail,
       fontSize = 11,
-      color = (snapshot and STATE_COLORS[snapshot.state] == "error") and "error" or "on_surface/0.75",
+      color = (snapshot and snapshot.state == "error") and stateColors.get("error") or "on_surface/0.75",
       maxLines = 3,
     }))
   end
@@ -348,33 +312,29 @@ local function footer()
       end
       table.insert(children, ui.label({ text = err.message, fontSize = 11, color = "error/0.85", maxLines = 2 }))
     end
-    table.insert(children, ui.row({ gap = 4, align = "center" }, {
-      ui.label({
+    local checkRowChildren = {
+      ui.button({
         text = tr("panel.last-check-info", { value = snapshot.checkedAt }),
         fontSize = 11,
-        color = "on_surface/0.55",
+        variant = "ghost",
+        controlSize = "sm",
         flexGrow = 1,
+        tooltip = tr("panel.refresh"),
+        onClick = "onRefresh",
       }),
-      ui.button({
-        glyph = "refresh",
+    }
+    if snapshot.sources.resolvedUrl ~= "" then
+      table.insert(checkRowChildren, ui.button({
+        glyph = "external-link",
         variant = "ghost",
         width = 18,
         height = 18,
         glyphSize = 11,
-        tooltip = tr("panel.refresh"),
-        onClick = "onRefresh",
-      }),
-    }))
-    if snapshot.sources.resolvedUrl ~= "" then
-      table.insert(children, ui.label({
-        text = snapshot.sources.resolvedUrl,
-        fontSize = 11,
-        color = "primary",
-        maxLines = 1,
         tooltip = tr("panel.open-gui"),
         onClick = "onOpenGui",
       }))
     end
+    table.insert(children, ui.row({ gap = 4, align = "center" }, checkRowChildren))
   end
   return ui.column({ gap = 3 }, children)
 end
@@ -397,7 +357,6 @@ local function render()
       -- the rest of the panel does not.
       visible = not snapshot or snapshot.state ~= "idle",
     }),
-    stats(),
     tabs(),
     folderList(),
     ratesLabel(),

@@ -58,6 +58,62 @@ default = []
 advanced = true
 
 [[setting]]
+key = "idle_color"
+type = "color"
+label_key = "settings.idle_color.label"
+description_key = "settings.idle_color.description"
+default = "primary"
+
+[[setting]]
+key = "syncing_color"
+type = "color"
+label_key = "settings.syncing_color.label"
+description_key = "settings.syncing_color.description"
+default = "secondary"
+
+[[setting]]
+key = "paused_color"
+type = "color"
+label_key = "settings.paused_color.label"
+description_key = "settings.paused_color.description"
+default = "outline"
+
+[[setting]]
+key = "disconnected_color"
+type = "color"
+label_key = "settings.disconnected_color.label"
+description_key = "settings.disconnected_color.description"
+default = "secondary"
+
+[[setting]]
+key = "offline_color"
+type = "color"
+label_key = "settings.offline_color.label"
+description_key = "settings.offline_color.description"
+default = "error"
+
+[[setting]]
+key = "unauthorized_color"
+type = "color"
+label_key = "settings.unauthorized_color.label"
+description_key = "settings.unauthorized_color.description"
+default = "error"
+
+[[setting]]
+key = "error_color"
+type = "color"
+label_key = "settings.error_color.label"
+description_key = "settings.error_color.description"
+default = "error"
+
+[[setting]]
+key = "unconfigured_color"
+type = "color"
+label_key = "settings.unconfigured_color.label"
+description_key = "settings.unconfigured_color.description"
+default = "outline"
+
+[[setting]]
 key = "notify_events"
 type = "bool"
 label_key = "settings.notify_events.label"
@@ -136,7 +192,7 @@ entry = "bar.luau"
 id = "panel"
 entry = "panel.luau"
 width = 400
-height = 530
+height = 500
 placement = "attached"
 position = "auto"
 open_near_click = true
