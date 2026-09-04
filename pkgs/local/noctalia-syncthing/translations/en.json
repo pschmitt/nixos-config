@@ -75,13 +75,13 @@
       "description": "Master switch for event notifications. Turn off to silence all of the below regardless of their own setting.",
       "label": "Event notifications"
     },
-    "notify_folder_done": {
-      "description": "Notify when a folder finishes syncing and is up to date.",
-      "label": "Notify: folder up to date"
-    },
     "notify_folder_error": {
       "description": "Notify when a folder reports an error.",
       "label": "Notify: folder error"
+    },
+    "notify_folder_up_to_date": {
+      "description": "Notify when a folder finishes syncing and is up to date.",
+      "label": "Notify: folder up to date"
     },
     "poll_interval": {
       "description": "How often the Syncthing status is refreshed.",

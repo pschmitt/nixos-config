@@ -23,4 +23,11 @@ function M.path(state)
   return `assets/status-{kind}.png`
 end
 
+-- Same composited syncthing-logo-plus-badge style, addressed directly by
+-- badge kind instead of by folder/connection state -- for events (like
+-- device connect/disconnect) that aren't one of the folder states above.
+function M.badge(kind)
+  return `assets/status-{kind}.png`
+end
+
 return M

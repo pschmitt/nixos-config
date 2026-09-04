@@ -1,0 +1,131 @@
+--- a/src/notification/notifications.h
++++ b/src/notification/notifications.h
+@@ -2,6 +2,7 @@
+ 
+ #include "notification/notification_manager.h"
+ 
++#include <optional>
+ #include <string>
+ #include <utility>
+ 
+@@ -16,15 +17,21 @@
+ 
+   inline NotificationManager* instance() { return instancePtr(); }
+ 
+-  inline void error(std::string app, std::string title, std::string body) {
++  inline void error(std::string app, std::string title, std::string body, std::string icon = {}) {
+     if (auto* m = instancePtr()) {
+-      m->addInternal(std::move(app), std::move(title), std::move(body), Urgency::Critical);
++      m->addInternal(
++          std::move(app), std::move(title), std::move(body), Urgency::Critical, kDefaultNotificationTimeout,
++          icon.empty() ? std::nullopt : std::optional<std::string>(std::move(icon))
++      );
+     }
+   }
+ 
+-  inline void info(std::string app, std::string title, std::string body) {
++  inline void info(std::string app, std::string title, std::string body, std::string icon = {}) {
+     if (auto* m = instancePtr()) {
+-      m->addInternal(std::move(app), std::move(title), std::move(body));
++      m->addInternal(
++          std::move(app), std::move(title), std::move(body), Urgency::Normal, kDefaultNotificationTimeout,
++          icon.empty() ? std::nullopt : std::optional<std::string>(std::move(icon))
++      );
+     }
+   }
+ 
+--- a/src/scripting/luau_host.h
++++ b/src/scripting/luau_host.h
+@@ -199,8 +199,8 @@
+   void scriptSetUpdateInterval(int ms);
+   [[nodiscard]] bool scriptLoadSound(std::string name, std::string path, int callbackRef);
+   void scriptPlaySound(std::string name);
+-  void scriptNotifyInfo(std::string title, std::string body);
+-  void scriptNotifyError(std::string title, std::string body);
++  void scriptNotifyInfo(std::string title, std::string body, std::string icon = {});
++  void scriptNotifyError(std::string title, std::string body, std::string icon = {});
+   // Toggle the host wallpaper surface on an output. Queued as a side effect and
+   // applied on the main thread (Wallpaper is not worker-thread safe).
+   void scriptSetWallpaperEnabled(std::string connector, bool enabled);
+--- a/src/scripting/luau_host.cpp
++++ b/src/scripting/luau_host.cpp
+@@ -781,10 +781,11 @@
+   int luau_notify(lua_State* L) {
+     const char* title = luaL_checkstring(L, 1);
+     const char* body = luaL_optstring(L, 2, "");
++    const char* icon = luaL_optstring(L, 3, "");
+     if (auto* host = hostForState(L)) {
+-      host->scriptNotifyInfo(title, body);
++      host->scriptNotifyInfo(title, body, icon);
+     } else {
+-      notify::info("Noctalia", title, body);
++      notify::info("Noctalia", title, body, icon);
+     }
+     return 0;
+   }
+@@ -792,10 +793,11 @@
+   int luau_notifyError(lua_State* L) {
+     const char* title = luaL_checkstring(L, 1);
+     const char* body = luaL_optstring(L, 2, "");
++    const char* icon = luaL_optstring(L, 3, "");
+     if (auto* host = hostForState(L)) {
+-      host->scriptNotifyError(title, body);
++      host->scriptNotifyError(title, body, icon);
+     } else {
+-      notify::error("Noctalia", title, body);
++      notify::error("Noctalia", title, body, icon);
+     }
+     return 0;
+   }
+@@ -2710,24 +2712,30 @@
+   kLog.info("{}", message);
+ }
+ 
+-void LuauHost::scriptNotifyInfo(std::string title, std::string body) {
++void LuauHost::scriptNotifyInfo(std::string title, std::string body, std::string icon) {
+   if (m_scriptContext != nullptr) {
+     m_scriptContext->sideEffects.push_back(
+-        {.kind = scripting::ScriptSideEffectKind::NotifyInfo, .title = std::move(title), .body = std::move(body)}
++        {.kind = scripting::ScriptSideEffectKind::NotifyInfo,
++         .title = std::move(title),
++         .body = std::move(body),
++         .extra = std::move(icon)}
+     );
+     return;
+   }
+-  notify::info("Noctalia", title, body);
++  notify::info("Noctalia", title, body, icon);
+ }
+ 
+-void LuauHost::scriptNotifyError(std::string title, std::string body) {
++void LuauHost::scriptNotifyError(std::string title, std::string body, std::string icon) {
+   if (m_scriptContext != nullptr) {
+     m_scriptContext->sideEffects.push_back(
+-        {.kind = scripting::ScriptSideEffectKind::NotifyError, .title = std::move(title), .body = std::move(body)}
++        {.kind = scripting::ScriptSideEffectKind::NotifyError,
++         .title = std::move(title),
++         .body = std::move(body),
++         .extra = std::move(icon)}
+     );
+     return;
+   }
+-  notify::error("Noctalia", title, body);
++  notify::error("Noctalia", title, body, icon);
+ }
+ 
+ bool LuauHost::scriptLoadSound(std::string name, std::string path, int callbackRef) {
+--- a/src/scripting/script_runtime.cpp
++++ b/src/scripting/script_runtime.cpp
+@@ -150,10 +150,10 @@
+           kLog.info("{}", effect.title);
+           break;
+         case ScriptSideEffectKind::NotifyInfo:
+-          notify::info("Noctalia", effect.title, effect.body);
++          notify::info("Noctalia", effect.title, effect.body, effect.extra);
+           break;
+         case ScriptSideEffectKind::NotifyError:
+-          notify::error("Noctalia", effect.title, effect.body);
++          notify::error("Noctalia", effect.title, effect.body, effect.extra);
+           break;
+         case ScriptSideEffectKind::CopyToClipboard:
+           if (clipboard == nullptr || !clipboard->copyText(effect.title, effect.body)) {

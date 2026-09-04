@@ -7,7 +7,7 @@
 
 id = "pschmitt/syncthing"
 name = "Syncthing"
-version = "2.3.0"
+version = "2.3.3"
 plugin_api = 15 # noctalia.openSettings(), for the panel's settings button
 author = "pschmitt (fork of Marco Ziliani's rylos/syncthing)"
 license = "MIT"
@@ -65,10 +65,10 @@ description_key = "settings.notify_events.description"
 default = true
 
 [[setting]]
-key = "notify_folder_done"
+key = "notify_folder_up_to_date"
 type = "bool"
-label_key = "settings.notify_folder_done.label"
-description_key = "settings.notify_folder_done.description"
+label_key = "settings.notify_folder_up_to_date.label"
+description_key = "settings.notify_folder_up_to_date.description"
 default = true
 
 [[setting]]
