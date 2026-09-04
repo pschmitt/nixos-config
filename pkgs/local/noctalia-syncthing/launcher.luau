@@ -4,6 +4,8 @@
 -- Fuzzy-search the monitored folders; Enter triggers a rescan of the
 -- selected folder.
 
+local statusIcon = require("./lib/status_icon.luau")
+
 local function decodeSnapshot()
   local encoded = noctalia.state.get("st.snapshot")
   return encoded and noctalia.json.decode(encoded) or nil
@@ -59,5 +61,9 @@ function onActivate(id)
   end
   cmdNonce += 1
   noctalia.state.set("st.cmd", noctalia.json.encode({ n = cmdNonce, action = "rescan", folder = id }))
-  noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("launcher.rescan-started", { id = id }))
+  noctalia.notify(
+    noctalia.tr("toast.title"),
+    noctalia.tr("launcher.rescan-started", { id = id }),
+    `{noctalia.pluginDir()}/{statusIcon.path("syncing")}`
+  )
 end

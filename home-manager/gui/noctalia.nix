@@ -2,6 +2,7 @@
   inputs,
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -36,12 +37,22 @@ in
     '';
   };
 
-  config = lib.mkIf (config.programs.noctalia.enable && cfg.resetStateOnActivation) {
-    home.activation.noctaliaResetState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      state_file="${config.xdg.stateHome}/noctalia/settings.toml"
-      if [[ -f "$state_file" ]]; then
-        run rm -f "$state_file"
-      fi
-    '';
-  };
+  config = lib.mkMerge [
+    {
+      # The upstream home module points `programs.noctalia.package` (via
+      # `lib.mkDefault`) straight at `inputs.noctalia.packages.${system}.default`,
+      # bypassing pkgs entirely -- so overlays/noctalia.nix's patched build
+      # (see its comment for why: plugin-notification icon support) only
+      # takes effect if we repoint it at `pkgs.noctalia` here.
+      programs.noctalia.package = pkgs.noctalia;
+    }
+    (lib.mkIf (config.programs.noctalia.enable && cfg.resetStateOnActivation) {
+      home.activation.noctaliaResetState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        state_file="${config.xdg.stateHome}/noctalia/settings.toml"
+        if [[ -f "$state_file" ]]; then
+          run rm -f "$state_file"
+        fi
+      '';
+    })
+  ];
 }

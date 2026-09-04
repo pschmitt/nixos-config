@@ -48,7 +48,7 @@ key = "label_overtime_color"
 type = "color"
 label_key = "settings.label_overtime_color.label"
 description_key = "settings.label_overtime_color.description"
-default = "on_surface"
+default = "error"
 
 [[service]]
 id = "poller"

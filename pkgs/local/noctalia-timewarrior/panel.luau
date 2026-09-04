@@ -35,7 +35,7 @@ end
 local function header()
   return ui.row({ gap = 8, align = "center" }, {
     ui.image({
-      path = "assets/timewarrior-logo.png",
+      path = "assets/timewarrior-logo.svg",
       width = 28,
       height = 28,
       fit = "contain",

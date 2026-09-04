@@ -6,7 +6,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "noctalia-syncthing";
-  version = "2.3.0";
+  version = "2.3.3";
 
   src = lib.fileset.toSource {
     root = ./.;

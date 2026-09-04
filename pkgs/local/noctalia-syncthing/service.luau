@@ -8,6 +8,8 @@
 -- entries through "st.cmd" (refresh, pause/resume all, per-folder
 -- pause/resume/rescan).
 
+local statusIcon = require("./lib/status_icon.luau")
+
 local DEFAULT_CONFIG_PATHS = {
   "~/.local/state/syncthing/config.xml",
   "~/.config/syncthing/config.xml",
@@ -220,6 +222,13 @@ local function emptySnapshot(state, detail)
   }
 end
 
+-- Absolute path to one of the composited syncthing-logo-plus-badge icons
+-- (lib/status_icon.luau), for the notify() icon argument -- noctalia.notify's
+-- icon path must be absolute, unlike ui.image's plugin-dir-relative paths.
+local function assetIconPath(relPath)
+  return `{noctalia.pluginDir()}/{relPath}`
+end
+
 -- Desktop notifications on meaningful transitions (folder done/error, device
 -- connect/disconnect). Only between two healthy snapshots, so a Syncthing
 -- restart or plugin reload doesn't spray stale events.
@@ -238,7 +247,7 @@ local function notifyTransitions(old, new)
   -- Master switch above gates all of these; each event kind also has its own
   -- toggle, defaulting on, so a "folder is up to date" spam source can be
   -- silenced without losing error/device notifications.
-  local notifyFolderDone = noctalia.getConfig("notify_folder_done") ~= false
+  local notifyFolderDone = noctalia.getConfig("notify_folder_up_to_date") ~= false
   local notifyFolderError = noctalia.getConfig("notify_folder_error") ~= false
   local notifyDeviceConnected = noctalia.getConfig("notify_device_connected") ~= false
   local notifyDeviceDisconnected = noctalia.getConfig("notify_device_disconnected") ~= false
@@ -251,9 +260,17 @@ local function notifyTransitions(old, new)
     local prev = oldFolders[f.id]
     if prev then
       if notifyFolderDone and prev.state == "syncing" and f.state == "idle" then
-        noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.folder-done", { label = f.label }))
+        noctalia.notify(
+          noctalia.tr("toast.title"),
+          noctalia.tr("notify.folder-done", { label = f.label }),
+          assetIconPath(statusIcon.path("idle"))
+        )
       elseif notifyFolderError and f.state == "error" and prev.state ~= "error" then
-        noctalia.notifyError(noctalia.tr("toast.title"), noctalia.tr("notify.folder-error", { label = f.label }))
+        noctalia.notifyError(
+          noctalia.tr("toast.title"),
+          noctalia.tr("notify.folder-error", { label = f.label }),
+          assetIconPath(statusIcon.path("error"))
+        )
       end
     end
   end
@@ -266,9 +283,17 @@ local function notifyTransitions(old, new)
     local prev = oldDevices[d.id]
     if prev and prev.connected ~= d.connected then
       if d.connected and notifyDeviceConnected then
-        noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.device-connected", { name = d.name }))
+        noctalia.notify(
+          noctalia.tr("toast.title"),
+          noctalia.tr("notify.device-connected", { name = d.name }),
+          assetIconPath(statusIcon.badge("device-connected"))
+        )
       elseif not d.connected and notifyDeviceDisconnected then
-        noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.device-disconnected", { name = d.name }))
+        noctalia.notify(
+          noctalia.tr("toast.title"),
+          noctalia.tr("notify.device-disconnected", { name = d.name }),
+          assetIconPath(statusIcon.badge("device-disconnected"))
+        )
       end
     end
   end
@@ -611,7 +636,11 @@ end
 function openGui()
   noctalia.log(`[syncthing] openGui: url={cfg.baseUrl}`)
   if cfg.baseUrl == "" then
-    noctalia.notifyError(noctalia.tr("toast.title"), noctalia.tr("detail.no-url"))
+    noctalia.notifyError(
+      noctalia.tr("toast.title"),
+      noctalia.tr("detail.no-url"),
+      assetIconPath(statusIcon.path("error"))
+    )
     return
   end
   -- gio, not xdg-open: with XDG_CURRENT_DESKTOP=KDE (set for Qt theming under
@@ -622,7 +651,11 @@ function openGui()
   noctalia.runAsync(`gio open {url} || xdg-open {url}`, function(result)
     noctalia.log(`[syncthing] openGui exit={result.exitCode} err={result.stderr}`)
     if result.exitCode ~= 0 then
-      noctalia.notifyError(noctalia.tr("toast.title"), `open failed: {noctalia.string.trim(result.stderr)}`)
+      noctalia.notifyError(
+        noctalia.tr("toast.title"),
+        `open failed: {noctalia.string.trim(result.stderr)}`,
+        assetIconPath(statusIcon.path("error"))
+      )
     end
   end, 10000)
 end

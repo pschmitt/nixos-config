@@ -2,7 +2,7 @@
 -- Timewarrior bar widget entry.
 --
 -- Declarative render (barWidget.render, not the imperative setGlyph/setText
--- API) so the Timewarrior project logo (assets/timewarrior-logo.png) can be
+-- API) so the Timewarrior project logo (assets/timewarrior-logo.svg) can be
 -- shown next to the tracked duration — same approach as
 -- pkgs/local/noctalia-syncthing/bar.luau's logo. Hidden entirely while
 -- nothing is tracked, matching the DMS widget's setVisibilityOverride(false)
@@ -24,7 +24,7 @@ end
 local function logo()
   local size = tonumber(noctalia.getConfig("icon_size")) or 16
   return ui.image({
-    path = "assets/timewarrior-logo.png",
+    path = "assets/timewarrior-logo.svg",
     width = size,
     height = size,
     fit = "contain",
