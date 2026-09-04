@@ -16,7 +16,10 @@
   home-manager.users.${config.mainUser.username} = {
     services.jellysync.enable = true;
     # Battery Icon plugin (profiles/laptop/noctalia.nix) defaults to BAT0;
-    # gk4's kernel exposes its battery as BATT instead.
+    # gk4's kernel exposes its battery as BATT instead. Its 80% charge cap
+    # lives purely in the GPD BIOS -- no charge_control_* in sysfs, no vendor
+    # module, nothing from upower -- so the plugin infers it from behaviour
+    # instead (full_at = 0). Pin full_at = 80 here if that ever misreads.
     programs.noctalia.settings.plugin_settings."pschmitt/battery-icon".battery_device = "BATT";
   };
 
