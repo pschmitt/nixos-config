@@ -235,6 +235,14 @@ local function notifyTransitions(old, new)
     return
   end
 
+  -- Master switch above gates all of these; each event kind also has its own
+  -- toggle, defaulting on, so a "folder is up to date" spam source can be
+  -- silenced without losing error/device notifications.
+  local notifyFolderDone = noctalia.getConfig("notify_folder_done") ~= false
+  local notifyFolderError = noctalia.getConfig("notify_folder_error") ~= false
+  local notifyDeviceConnected = noctalia.getConfig("notify_device_connected") ~= false
+  local notifyDeviceDisconnected = noctalia.getConfig("notify_device_disconnected") ~= false
+
   local oldFolders = {}
   for _, f in old.folders do
     oldFolders[f.id] = f
@@ -242,9 +250,9 @@ local function notifyTransitions(old, new)
   for _, f in new.folders do
     local prev = oldFolders[f.id]
     if prev then
-      if prev.state == "syncing" and f.state == "idle" then
+      if notifyFolderDone and prev.state == "syncing" and f.state == "idle" then
         noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.folder-done", { label = f.label }))
-      elseif f.state == "error" and prev.state ~= "error" then
+      elseif notifyFolderError and f.state == "error" and prev.state ~= "error" then
         noctalia.notifyError(noctalia.tr("toast.title"), noctalia.tr("notify.folder-error", { label = f.label }))
       end
     end
@@ -257,8 +265,11 @@ local function notifyTransitions(old, new)
   for _, d in new.devicesList do
     local prev = oldDevices[d.id]
     if prev and prev.connected ~= d.connected then
-      local key = d.connected and "notify.device-connected" or "notify.device-disconnected"
-      noctalia.notify(noctalia.tr("toast.title"), noctalia.tr(key, { name = d.name }))
+      if d.connected and notifyDeviceConnected then
+        noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.device-connected", { name = d.name }))
+      elseif not d.connected and notifyDeviceDisconnected then
+        noctalia.notify(noctalia.tr("toast.title"), noctalia.tr("notify.device-disconnected", { name = d.name }))
+      end
     end
   end
 end

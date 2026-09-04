@@ -1,10 +1,10 @@
 id = "pschmitt/timewarrior"
 name = "Timewarrior"
-version = "0.1.0"
+version = "0.2.1"
 plugin_api = 14
 author = "pschmitt"
 license = "GPL-3.0-only"
-dependencies = ["timewarrior"]
+dependencies = ["timew"]
 tags = ["bar", "productivity", "time-tracking"]
 icon = "clock-hour-3"
 description = "Currently tracked Timewarrior task duration, ported from the DMS/Waybar widget."
@@ -30,18 +30,11 @@ min = 1
 max = 24
 
 [[setting]]
-key = "icon_color"
-type = "color"
-label_key = "settings.icon_color.label"
-description_key = "settings.icon_color.description"
-default = "on_surface"
-
-[[setting]]
-key = "icon_overtime_color"
-type = "color"
-label_key = "settings.icon_overtime_color.label"
-description_key = "settings.icon_overtime_color.description"
-default = "error"
+key = "time_format"
+type = "string"
+label_key = "settings.time_format.label"
+description_key = "settings.time_format.description"
+default = "{hours}h {minutes}m"
 
 [[setting]]
 key = "label_color"
@@ -66,11 +59,13 @@ id = "bar"
 entry = "bar.luau"
 
   [[widget.setting]]
-  key = "icon_glyph"
-  type = "string"
-  label_key = "settings.icon_glyph.label"
-  description_key = "settings.icon_glyph.description"
-  default = "clock-hour-3"
+  key = "icon_size"
+  type = "int"
+  label_key = "settings.icon_size.label"
+  description_key = "settings.icon_size.description"
+  default = 16
+  min = 12
+  max = 32
 
   # Routed through the anchored panel-toggle dispatcher (same one native bar
   # widgets use) so the panel opens under the click instead of centered on

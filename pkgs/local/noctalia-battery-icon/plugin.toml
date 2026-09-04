@@ -1,6 +1,6 @@
 id = "pschmitt/battery-icon"
 name = "Battery Icon"
-version = "0.2.5"
+version = "0.2.6"
 plugin_api = 26 # noctalia.getSetting(), needed to resolve palette-role color values
 author = "pschmitt"
 license = "GPL-3.0-only"
@@ -9,7 +9,7 @@ icon = "battery-2"
 description = "Material 3 Expressive battery indicator with an internal percentage, clipped level fill, and charging bolt, rendered as a live-generated bitmap."
 # magick renders the icon bitmap, powerprofilesctl supplies the yellow
 # Power Saver state, and udevadm gives instant plug/unplug detection.
-dependencies = ["imagemagick", "powerprofilesctl", "udevadm"]
+dependencies = ["magick", "powerprofilesctl", "udevadm"]
 
 # ── Plugin-level settings (shared by every entry, edited in Settings -> Plugins) ──
 

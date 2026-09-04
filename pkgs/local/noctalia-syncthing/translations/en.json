@@ -63,9 +63,25 @@
       "description": "Accept self-signed certificates on HTTPS GUI URLs.",
       "label": "Skip TLS verification"
     },
+    "notify_device_connected": {
+      "description": "Notify when a remote device connects.",
+      "label": "Notify: device connected"
+    },
+    "notify_device_disconnected": {
+      "description": "Notify when a remote device disconnects.",
+      "label": "Notify: device disconnected"
+    },
     "notify_events": {
-      "description": "Notify when a folder finishes syncing, goes into error, or a device connects/disconnects.",
+      "description": "Master switch for event notifications. Turn off to silence all of the below regardless of their own setting.",
       "label": "Event notifications"
+    },
+    "notify_folder_done": {
+      "description": "Notify when a folder finishes syncing and is up to date.",
+      "label": "Notify: folder up to date"
+    },
+    "notify_folder_error": {
+      "description": "Notify when a folder reports an error.",
+      "label": "Notify: folder error"
     },
     "poll_interval": {
       "description": "How often the Syncthing status is refreshed.",
