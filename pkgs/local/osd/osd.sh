@@ -1,6 +1,6 @@
 # osd — fire an ad-hoc on-screen notification.
 #
-# Tries, in order: Noctalia's pschmitt/osd:toast plugin panel (see
+# Tries, in order: Noctalia's pschmitt/osd plugin panels (see
 # pkgs/local/noctalia-osd), DMS's native toast IPC (dms ipc call toast ...),
 # then notify-send/mako — so scripts and keybinds get a native-looking OSD
 # regardless of which bar is active (see toggle-bar.sh). Noctalia has no
@@ -24,6 +24,18 @@ Options:
   -d, --details TEXT                 Extra detail line (Noctalia and DMS only)
   -x, --command CMD                  Command run when the toast is clicked
                                       (Noctalia and DMS only)
+  -i, --icon GLYPH                   Tabler glyph name shown instead of the
+                                      severity icon, eg. bluetooth-connected
+                                      (Noctalia only)
+  -I, --icon-color COLOR             Icon color: a Noctalia palette role
+                                      (error, on_surface, ...) or #RRGGBB
+                                      (Noctalia only)
+  -p, --profile NAME                 Named profile_rules entry to apply
+                                      (Noctalia only)
+  -S, --style JSON                   Raw style object merged under --icon /
+                                      --icon-color, for any other knob the
+                                      plugin exposes (Noctalia only). See
+                                      pkgs/local/noctalia-osd/README.md
   -a, --app-name NAME                notify-send app name (fallback only,
                                       default: osd)
   -t, --timeout MS                   Auto-dismiss timeout in ms (Noctalia and
@@ -34,6 +46,24 @@ EOF
 
 use_noctalia() {
   command -v noctalia &>/dev/null && noctalia msg status &>/dev/null
+}
+
+# Noctalia panel geometry is static per [[panel]] entry, so the plugin ships
+# one entry per line count instead of a single box tall enough for both. Pick
+# the tall one only when there is actually a body line to put in it, otherwise
+# a plain `osd MESSAGE` renders in a window with an empty line's worth of dead
+# space. Both entries run the same script; see pkgs/local/noctalia-osd.
+NOCTALIA_PANELS=(pschmitt/osd:compact pschmitt/osd:toast)
+
+noctalia_panel() {
+  local details="$1"
+
+  if [[ -n "$details" ]]
+  then
+    echo "pschmitt/osd:toast"
+  else
+    echo "pschmitt/osd:compact"
+  fi
 }
 
 use_dms() {
@@ -48,9 +78,15 @@ send() {
   local category="$5"
   local app_name="$6"
   local timeout="$7"
+  local profile="$8"
+  local style="${9:-\{\}}"
 
   if use_noctalia
   then
+    # Every per-toast override the plugin understands rides in the payload:
+    # "style" is the same key set as its settings, so nothing here needs a
+    # config change or a plugin reload. Empty members are dropped so the
+    # plugin falls back to its own defaults rather than seeing "".
     local payload
     payload=$(jq -nc \
       --arg summary "$message" \
@@ -58,9 +94,13 @@ send() {
       --arg severity "$severity" \
       --arg category "$category" \
       --arg command "$cmd" \
+      --arg profile "$profile" \
       --argjson timeout_ms "${timeout:-null}" \
-      '{summary:$summary, body:$body, severity:$severity, category:$category, command:$command, timeout_ms:$timeout_ms}')
-    noctalia msg panel-open pschmitt/osd:toast "$payload" &>/dev/null && return 0
+      --argjson style "$style" \
+      '{summary:$summary, body:$body, severity:$severity, category:$category,
+        command:$command, timeout_ms:$timeout_ms, profile:$profile, style:$style}
+       | with_entries(select(.value != null and .value != "" and .value != {}))')
+    noctalia msg panel-open "$(noctalia_panel "$details")" "$payload" &>/dev/null && return 0
   fi
 
   if use_dms
@@ -93,7 +133,13 @@ ipc_dismiss() {
 
   if use_noctalia
   then
-    noctalia msg plugin pschmitt/osd:toast all dismiss "$category" &>/dev/null && return 0
+    # Either entry may be the one showing this category.
+    local panel rc=1
+    for panel in "${NOCTALIA_PANELS[@]}"
+    do
+      noctalia msg plugin "$panel" all dismiss "$category" &>/dev/null && rc=0
+    done
+    [[ "$rc" -eq 0 ]] && return 0
   fi
 
   if use_dms
@@ -118,7 +164,12 @@ ipc_dismiss() {
 ipc_hide() {
   if use_noctalia
   then
-    noctalia msg panel-close pschmitt/osd:toast &>/dev/null && return 0
+    local panel rc=1
+    for panel in "${NOCTALIA_PANELS[@]}"
+    do
+      noctalia msg panel-close "$panel" &>/dev/null && rc=0
+    done
+    [[ "$rc" -eq 0 ]] && return 0
   fi
 
   if use_dms
@@ -133,14 +184,17 @@ ipc_hide() {
 ipc_status() {
   if use_noctalia
   then
-    local active
+    local active panel
     active=$(noctalia msg status | jq -r '.activePanelId // ""')
-    if [[ "$active" == "pschmitt/osd:toast" ]]
-    then
-      echo "active"
-    else
-      echo "inactive"
-    fi
+    for panel in "${NOCTALIA_PANELS[@]}"
+    do
+      if [[ "$active" == "$panel" ]]
+      then
+        echo "active"
+        return 0
+      fi
+    done
+    echo "inactive"
     return 0
   fi
 
@@ -182,6 +236,7 @@ main() {
   esac
 
   local severity=info category="" details="" cmd="" app_name=osd timeout=""
+  local icon="" icon_color="" profile="" style="{}"
 
   while [[ -n "${1:-}" ]]
   do
@@ -208,6 +263,22 @@ main() {
         ;;
       -t|--timeout)
         timeout="$2"
+        shift 2
+        ;;
+      -i|--icon)
+        icon="$2"
+        shift 2
+        ;;
+      -I|--icon-color)
+        icon_color="$2"
+        shift 2
+        ;;
+      -p|--profile)
+        profile="$2"
+        shift 2
+        ;;
+      -S|--style)
+        style="$2"
         shift 2
         ;;
       -h|--help)
@@ -247,7 +318,22 @@ main() {
 
   [[ -z "$category" ]] && category="$app_name"
 
-  send "$severity" "$*" "$details" "$cmd" "$category" "$app_name" "$timeout"
+  if ! jq -e 'type == "object"' <<< "$style" >/dev/null 2>&1
+  then
+    printf -- '--style must be a JSON object: %s\n' "$style" >&2
+    return 2
+  fi
+
+  # --icon / --icon-color are just shorthands for two style keys, so they win
+  # over the same keys inside --style.
+  style=$(jq -c \
+    --arg icon "$icon" \
+    --arg icon_color "$icon_color" \
+    '. + ({icon:$icon, icon_color:$icon_color} | with_entries(select(.value != "")))' \
+    <<< "$style")
+
+  send "$severity" "$*" "$details" "$cmd" "$category" "$app_name" "$timeout" \
+    "$profile" "$style"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

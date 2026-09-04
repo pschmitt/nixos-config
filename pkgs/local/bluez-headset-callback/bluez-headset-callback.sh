@@ -54,7 +54,10 @@ bt_disconnected() {
   zhj bt::is-audio-device "$mac_addr" || return 0
 
   name="$(zhj bt::mac-address-to-name "$mac_addr")"
-  osd -c bluetooth -d "$name" "󰂲 Bluetooth device disconnected"
+  # --icon takes a Tabler glyph name, so the summary stays plain text instead
+  # of carrying a hardcoded nerd-font codepoint that only renders in a font
+  # the OSD may not be using.
+  osd -c bluetooth -i bluetooth-off -d "$name" "Bluetooth device disconnected"
 }
 
 event_type() {
