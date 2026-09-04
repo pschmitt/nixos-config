@@ -43,6 +43,9 @@ in
         label = "Documents";
         dir = "/mnt/data/srv/syncthing/documents";
         devices = documentsDevices;
+        # Allow this server to push local edits back out, unlike the
+        # receive-only default for other folders.
+        type = "sendreceive";
       };
       music = {
         label = "Music";
