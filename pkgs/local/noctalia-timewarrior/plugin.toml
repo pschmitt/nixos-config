@@ -1,7 +1,7 @@
 id = "pschmitt/timewarrior"
 name = "Timewarrior"
-version = "0.2.1"
-plugin_api = 14
+version = "0.4.1"
+plugin_api = 15 # noctalia.openSettings(), for the panel's settings button
 author = "pschmitt"
 license = "GPL-3.0-only"
 dependencies = ["timew"]
@@ -30,10 +30,10 @@ min = 1
 max = 24
 
 [[setting]]
-key = "time_format"
+key = "panel_time_format"
 type = "string"
-label_key = "settings.time_format.label"
-description_key = "settings.time_format.description"
+label_key = "settings.panel_time_format.label"
+description_key = "settings.panel_time_format.description"
 default = "{hours}h {minutes}m"
 
 [[setting]]
@@ -66,6 +66,16 @@ entry = "bar.luau"
   default = 16
   min = 12
   max = 32
+
+  # "{hours}:{minutes}" reproduces the plain "H:MM" text the bar showed
+  # before the logo/time_format change (state.duration passed straight to
+  # setText) — a bar-specific default, distinct from the panel's.
+  [[widget.setting]]
+  key = "bar_time_format"
+  type = "string"
+  label_key = "settings.bar_time_format.label"
+  description_key = "settings.bar_time_format.description"
+  default = "{hours}:{minutes}"
 
   # Routed through the anchored panel-toggle dispatcher (same one native bar
   # widgets use) so the panel opens under the click instead of centered on

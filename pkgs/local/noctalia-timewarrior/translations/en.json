@@ -8,9 +8,13 @@
       "label": "Overtime threshold (hours)",
       "description": "Tracked hours today above which the widget switches to the overtime color."
     },
-    "time_format": {
-      "label": "Time format",
-      "description": "Format of displayed durations (bar, and week/month/year/day totals in the panel). Placeholders: {hours}, {minutes}."
+    "panel_time_format": {
+      "label": "Panel time format",
+      "description": "Format of the panel's week/month/year/day totals. Placeholders: {hours}, {minutes}."
+    },
+    "bar_time_format": {
+      "label": "Bar time format",
+      "description": "Format of the tracked duration shown in the bar. Placeholders: {hours}, {minutes}."
     },
     "label_color": {
       "label": "Label color",
