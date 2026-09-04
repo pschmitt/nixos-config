@@ -28,6 +28,17 @@
               default = null;
               description = "Device names (keys into custom.syncthing.devices) to share this folder with. Defaults to all other devices when null.";
             };
+            type = lib.mkOption {
+              type = lib.types.nullOr (
+                lib.types.enum [
+                  "sendreceive"
+                  "sendonly"
+                  "receiveonly"
+                ]
+              );
+              default = null;
+              description = "Override the Syncthing folder type. Defaults to receiveonly on the server and sendreceive on clients.";
+            };
           };
         }
       );
@@ -114,7 +125,13 @@
               else
                 lib.attrNames otherDevices;
             # Server should not be authoritative; it’s the backup/receiver by default.
-            type = if cfg.server then "receiveonly" else "sendreceive";
+            type =
+              if folder.type != null then
+                folder.type
+              else if cfg.server then
+                "receiveonly"
+              else
+                "sendreceive";
             ignorePerms = false;
 
             # ignore files created by nextcloud desktop client
