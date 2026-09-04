@@ -27,6 +27,7 @@ in
   noctalia-timewarrior = pkgs.callPackage ./local/noctalia-timewarrior { inherit timew-status; };
   noctalia-battery-icon = pkgs.callPackage ./local/noctalia-battery-icon { };
   noctalia-syncthing = pkgs.callPackage ./local/noctalia-syncthing { };
+  noctalia-screencast = pkgs.callPackage ./local/noctalia-screencast { };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   noctalia-osd = pkgs.callPackage ./local/noctalia-osd { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
