@@ -1,7 +1,7 @@
 {
   inputs,
   final,
-  prev,
+  ...
 }:
 let
   inherit (final.stdenv.hostPlatform) system;
@@ -21,6 +21,13 @@ in
     # as the 3rd arg. Drop once upstream adds this itself.
     patches = (old.patches or [ ]) ++ [
       ./patches/noctalia/0001-plugin-notify-icon.patch
+
+      # Luau ui.image controls were rasterized at 3x their display size with
+      # mipmapping enabled, making small SVG plugin icons permanently soft.
+      # Rasterize them at the exact device-pixel size without mipmaps instead;
+      # other image consumers retain their own downscaling behavior. Drop once
+      # upstream fixes this itself.
+      ./patches/noctalia/0002-sharp-ui-image.patch
     ];
   });
 }

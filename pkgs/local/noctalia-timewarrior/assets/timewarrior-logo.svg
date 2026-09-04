@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+<!-- viewBox added so the artwork is genuinely scalable; the file had none,
+     which leaves a renderer no coordinate system to scale by. It is an
+     identity mapping (0 0 28 28), so rendering is unchanged.
+
+     NB width/height are not a sharpness lever: Noctalia rasterises at a
+     size it chooses itself. Verified by rendering the bar with a 16px and
+     a 128px intrinsic size and diffing the screenshots: RMSE 0, identical.
+     (Also: no double hyphen anywhere in this comment. It is invalid XML
+     and silently kills the whole file, taking the logo with it.) -->
+<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
     <g transform="translate(-477.17241,-466.67808)">
         <g transform="matrix(0.125,0,0,-0.125,477.17241,603.76058)">
             <g transform="matrix(0.2042547,0,0,0.2042547,0,872.66204)">
