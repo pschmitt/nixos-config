@@ -1,0 +1,9 @@
+<!-- Shown in place of the Timewarrior logo while nothing is being tracked,
+     when hide_when_inactive is turned off. Muted grey rather than the logo's
+     white so a stopped timer reads as inactive at a glance. Same 28x28
+     viewBox as timewarrior-logo.svg so both occupy the identical box and the
+     bar doesn't reflow when tracking starts or stops. -->
+<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="6" width="4.5" height="16" rx="1.6" fill="#9AA0A6"/>
+  <rect x="15.5" y="6" width="4.5" height="16" rx="1.6" fill="#9AA0A6"/>
+</svg>

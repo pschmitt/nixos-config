@@ -1,0 +1,17 @@
+--- a/src/ui/ui_tree_reconciler.cpp
++++ b/src/ui/ui_tree_reconciler.cpp
+@@ -1360,11 +1360,11 @@ void UiTreeReconciler::updateNode(const DesiredNode& desired, MountedNode& slot,
+       }
+       if (const std::string* path = strProp(desired, "path")) {
+         const std::string resolved = m_resolver ? m_resolver(*path) : *path;
+-        const float targetSize = std::max(1.0F, std::max(imageWidth, imageHeight) * 3.0F);
+-        if (resolved != slot.imagePath || targetSize > slot.imageTargetSize) {
++        const float targetSize = std::max(1.0F, std::max(imageWidth, imageHeight));
++        if (resolved != slot.imagePath || targetSize != slot.imageTargetSize) {
+           slot.imagePath = resolved;
+           slot.imageTargetSize = targetSize;
+-          if (!image->setSourceFile(renderer, resolved, static_cast<int>(std::round(targetSize)), true)) {
++          if (!image->setSourceFile(renderer, resolved, static_cast<int>(std::round(targetSize)), false)) {
+             kLog.warn("ui tree: image failed to load '{}'", resolved);
+           }
+         }

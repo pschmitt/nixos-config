@@ -1,6 +1,6 @@
 id = "pschmitt/timewarrior"
 name = "Timewarrior"
-version = "0.4.1"
+version = "0.6.0"
 plugin_api = 15 # noctalia.openSettings(), for the panel's settings button
 author = "pschmitt"
 license = "GPL-3.0-only"
@@ -66,6 +66,18 @@ entry = "bar.luau"
   default = 16
   min = 12
   max = 32
+
+  # The widget has always vanished entirely while nothing is tracked (the
+  # DMS module's setVisibilityOverride(false) behaviour), which is still the
+  # default. Turning this off keeps it in the bar showing assets/pause.svg
+  # instead of the logo, so the slot doesn't appear and disappear as the
+  # timer starts and stops.
+  [[widget.setting]]
+  key = "hide_when_inactive"
+  type = "bool"
+  label_key = "settings.hide_when_inactive.label"
+  description_key = "settings.hide_when_inactive.description"
+  default = true
 
   # "{hours}:{minutes}" reproduces the plain "H:MM" text the bar showed
   # before the logo/time_format change (state.duration passed straight to
