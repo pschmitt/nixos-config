@@ -63,6 +63,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    noctalia-plugins = {
+      url = "github:pschmitt/noctalia-plugins";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     docker-compose-bulk = {
       url = "github:pschmitt/docker-compose-bulk";
       inputs.nixpkgs.follows = "nixpkgs";
