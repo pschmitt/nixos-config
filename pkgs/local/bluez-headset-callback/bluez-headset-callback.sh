@@ -40,13 +40,20 @@ bt_disconnected() {
   local data="$1"
   local mac_addr name
   mac_addr="$(extract_mac_addr <<< "$data")"
-  name="$(zhj bt::mac-address-to-name "$mac_addr")"
 
   if [[ -n "$DEBUG" ]]
   then
     jq -er '.' <<< "$data"
   fi
 
+  # Only notify for audio devices (headsets/speakers), mirroring the
+  # bt::is-audio-device gate bt_connected()'s bt::setup-headset already
+  # applies. Without this, any BLE device toggling its Connected property
+  # (eg. Shelly BLU sensors/relays syncing over Bluetooth) fires a
+  # notification too.
+  zhj bt::is-audio-device "$mac_addr" || return 0
+
+  name="$(zhj bt::mac-address-to-name "$mac_addr")"
   osd -c bluetooth -d "$name" "󰂲 Bluetooth device disconnected"
 }
 
