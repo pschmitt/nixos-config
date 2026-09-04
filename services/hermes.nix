@@ -19,17 +19,22 @@ let
   hermesNixFlakeDir = "${config.services.hermes-agent.workingDirectory}/nixos-config";
 
   # Upstream packaging bug (NousResearch/hermes-agent pyproject.toml,
-  # [tool.setuptools] py-modules): registration_lifecycle.py exists at the
-  # repo root and is imported (unguarded, module-level) by
-  # hermes_cli/plugins.py, but py-modules never got it added alongside its
-  # sibling utils/hermes_constants/etc, so uv2nix's sealed venv never
-  # installs it -- `hermes dashboard` crash-loops with "ModuleNotFoundError:
-  # No module named 'registration_lifecycle'". The module only imports
-  # stdlib, so a plain PYTHONPATH supplement is sufficient until the
-  # one-line py-modules fix lands upstream.
-  hermesRegistrationLifecycleShim = pkgs.runCommand "hermes-registration-lifecycle-shim" { } ''
+  # [tool.setuptools] py-modules): some root-level modules exist in the repo
+  # and are imported by other modules, but py-modules never got them added
+  # alongside their siblings (utils/hermes_constants/etc), so uv2nix's sealed
+  # venv never installs them:
+  #   - registration_lifecycle.py, imported (unguarded, module-level) by
+  #     hermes_cli/plugins.py -- `hermes dashboard`/gateway crash-loop with
+  #     "ModuleNotFoundError: No module named 'registration_lifecycle'".
+  #   - hermes_state_registry.py, imported (unguarded, module-level) by
+  #     hermes_state.py -- hermes-agent crash-loops with
+  #     "ModuleNotFoundError: No module named 'hermes_state_registry'".
+  # Both modules only import stdlib, so a plain PYTHONPATH supplement is
+  # sufficient until the one-line py-modules fix lands upstream.
+  hermesPyModulesShim = pkgs.runCommand "hermes-py-modules-shim" { } ''
     mkdir -p $out
     cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
+    cp ${inputs.hermes-agent}/hermes_state_registry.py $out/
   '';
   ghBrknLol = pkgs.writeShellScriptBin "gh-brkn-lol" ''
     export GH_CONFIG_DIR="${ghConfigRoot}/gh-brkn-lol"
@@ -512,9 +517,10 @@ in
     services = {
       # hermes-agent.service itself (the gateway that actually answers
       # Signal/etc) is defined by the upstream module -- it hits the same
-      # registration_lifecycle gap as hermes-dashboard below, via
-      # gateway/run.py's _install_plugin_message_injector -> hermes_cli.plugins.
-      hermes-agent.environment.PYTHONPATH = hermesRegistrationLifecycleShim;
+      # py-modules gap as hermes-dashboard below, via gateway/run.py's
+      # _install_plugin_message_injector -> hermes_cli.plugins, and also
+      # imports hermes_state_registry via hermes_state.py at startup.
+      hermes-agent.environment.PYTHONPATH = hermesPyModulesShim;
 
       # The upstream module runs the gateway natively. Its dashboard is a
       # separate process, bound to loopback and protected by a two-factor
@@ -531,7 +537,7 @@ in
           HOME = config.services.hermes-agent.stateDir;
           HERMES_HOME = "${config.services.hermes-agent.stateDir}/.hermes";
           HERMES_MANAGED = "true";
-          PYTHONPATH = hermesRegistrationLifecycleShim;
+          PYTHONPATH = hermesPyModulesShim;
         };
         serviceConfig = {
           User = config.services.hermes-agent.user;
