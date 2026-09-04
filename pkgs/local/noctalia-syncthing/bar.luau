@@ -9,6 +9,7 @@
 -- panel, right click forces a refresh.
 
 local statusIcon = require("./lib/status_icon.luau")
+local stateColors = require("./lib/state_colors.luau")
 
 local function logo(state)
   local size = tonumber(noctalia.getConfig("icon_size")) or 16
@@ -19,17 +20,6 @@ local function logo(state)
     fit = "contain",
   })
 end
-
-local COLORS = {
-  idle = "on_surface",
-  syncing = "secondary",
-  paused = "outline",
-  disconnected = "secondary",
-  offline = "error",
-  unauthorized = "error",
-  error = "error",
-  unconfigured = "outline",
-}
 
 local snapshot = nil
 local cmdNonce = 0
@@ -110,7 +100,7 @@ end
 
 local function render()
   local state = stateOf()
-  local color = COLORS[state] or "outline"
+  local color = stateColors.get(state)
   local showPending = noctalia.getConfig("show_pending") ~= false
   local pending = state == "syncing" and showPending and pendingText() or ""
   local container = barWidget.isVertical() and ui.column or ui.row

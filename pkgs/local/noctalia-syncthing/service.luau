@@ -351,8 +351,8 @@ local function summarizeFolder(folder, status)
     needBytes = needBytes,
     globalBytes = globalBytes,
     -- Sync completion in percent, derived from db/status byte counters.
-    completion = globalBytes > 0 and math.floor(100 * (globalBytes - needBytes) / globalBytes) or 100,
-    lastActivity = folder.lastActivity or "",
+    completion = globalBytes > 0 and math.clamp(math.floor(100 * (globalBytes - needBytes) / globalBytes), 0, 100)
+      or ((rawState == "paused" or rawState == "error") and -1 or 100),
     detail = watchError ~= "" and watchError or hardError,
   }
 end
@@ -447,7 +447,6 @@ local function fetchCore(generation)
     config = "/rest/config",
     connections = "/rest/system/connections",
     errors = "/rest/system/error",
-    fstats = "/rest/stats/folder",
   }
   local results = {}
   local remaining = 0
@@ -534,24 +533,10 @@ local function fetchCore(generation)
       if cfg.monitoredCount > 0 and not cfg.monitored[id] then
         continue
       end
-      -- Last activity from folder stats: prefer the last synced file's
-      -- timestamp, fall back to the last scan (skip Go zero dates).
-      local fs = (results.fstats or {})[id]
-      local lastActivity = ""
-      if fs then
-        local at = trim((fs.lastFile or {}).at)
-        if at == "" or at:sub(1, 4) == "0001" then
-          at = trim(fs.lastScan)
-        end
-        if at ~= "" and at:sub(1, 4) ~= "0001" then
-          lastActivity = at:sub(1, 16):gsub("T", " ")
-        end
-      end
       table.insert(monitoredFolders, {
         id = id,
         label = trim(folder.label) ~= "" and trim(folder.label) or id,
         paused = folder.paused == true,
-        lastActivity = lastActivity,
       })
     end
     table.sort(monitoredFolders, function(a, b)

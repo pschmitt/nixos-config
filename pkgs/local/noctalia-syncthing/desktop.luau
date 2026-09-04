@@ -5,19 +5,9 @@
 -- progress bar while syncing. Pure display; open the panel for actions.
 
 local statusIcon = require("./lib/status_icon.luau")
+local stateColors = require("./lib/state_colors.luau")
 
 local snapshot = nil
-
-local STATE_COLORS = {
-  idle = "primary",
-  syncing = "secondary",
-  paused = "outline",
-  disconnected = "secondary",
-  offline = "error",
-  unauthorized = "error",
-  error = "error",
-  unconfigured = "outline",
-}
 
 local function formatRate(bytesPerSec)
   local units = { "B", "KB", "MB", "GB" }
@@ -40,7 +30,7 @@ end
 
 local function render()
   local state = snapshot and snapshot.state or "unconfigured"
-  local color = STATE_COLORS[state] or "outline"
+  local color = stateColors.get(state)
   local devices = snapshot and `{snapshot.devices.connected}/{snapshot.devices.configured}` or "-"
   local folders = snapshot and tostring(snapshot.totals.monitoredFolders) or "-"
   local pending = snapshot and tostring(snapshot.totals.needItems) or "-"
@@ -64,7 +54,7 @@ local function render()
   }
 
   if snapshot and state == "syncing" and (snapshot.syncPercent or -1) >= 0 then
-    table.insert(children, ui.progress({ progress = snapshot.syncPercent / 100, height = 4, fill = "secondary" }))
+    table.insert(children, ui.progress({ progress = snapshot.syncPercent / 100, height = 4, fill = stateColors.get("syncing") }))
   end
   if snapshot and ((snapshot.rateIn or 0) >= 1024 or (snapshot.rateOut or 0) >= 1024) then
     table.insert(children, ui.label({
