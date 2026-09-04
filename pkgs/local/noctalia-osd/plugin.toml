@@ -14,7 +14,7 @@
 
 id = "pschmitt/osd"
 name = "Custom OSD"
-version = "1.6.0"
+version = "1.7.0"
 plugin_api = 14
 author = "pschmitt"
 license = "MIT"
@@ -38,14 +38,9 @@ label_key = "settings.show_icon.label"
 description_key = "settings.show_icon.description"
 default = true
 
-# Sized/styled to match noctalia's own built-in OSDs (brightness-osd,
-# volume-osd, …): upstream's horizontal card is 252x46px at ui_scale=1 and
-# its surface 252x62px — see cardWidth()/cardHeight()/osdSurfaceHeight() in
-# src/shell/osd/osd_overlay.cpp. The [[panel]] geometry below adopts exactly
-# those numbers. Note the panel host already insets the script's tree by
-# Style::panelPadding (14px per side, not configurable from a plugin), so the
-# content box is 224x34px — just enough for the second (body) line a native
-# OSD never carries, with no dead space left over.
+# Panel width is host-owned and static, so the wrapper selects the smallest
+# matching width bucket for each message. The panel host insets the script's
+# tree by Style::panelPadding (14px per side, not configurable from a plugin).
 [[setting]]
 key = "icon_size"
 type = "int"
@@ -100,9 +95,9 @@ key = "max_text_width"
 type = "int"
 label_key = "settings.max_text_width.label"
 description_key = "settings.max_text_width.description"
-default = 190
-min = 80
-max = 194
+default = 0
+min = 0
+max = 462
 advanced = true
 
 [[setting]]
@@ -258,13 +253,10 @@ description_key = "settings.profile_rules.description"
 default = '''[{"match":{"category":"success"},"style":{"icon":"circle-check","icon_color":"#A8D38D"}},{"match":{"category":"warning"},"style":{"icon":"alert-triangle","icon_color":"#F3BD6A"}},{"match":{"category":["error","failure"]},"style":{"icon":"alert-circle","icon_color":"#F1705F"}},{"name":"critical","style":{"icon":"alert-circle","icon_color":"error","summary_color":"error","timeout_ms":0}}]'''
 advanced = true
 
-# Two panel entries, because panel geometry is static per entry (no runtime
-# resize API) while a toast is one or two lines depending on its payload. One
-# entry sized for both would leave the common single-line toast floating in
-# dead space, which is exactly what the native OSDs never do. Callers pick:
-# ":compact" without a body, ":toast" with one — see pkgs/local/osd/osd.sh.
-# Both run this same script; each panel entry gets its own Luau instance and
-# they share the plugin-level settings above.
+# Panel geometry is static per entry (there is no runtime resize API), so each
+# line count has four width buckets. The wrapper computes the smallest bucket
+# for the longest displayed line — see pkgs/local/osd/osd.sh. All entries run
+# this same script and share the plugin-level settings above.
 #
 # The heights are host-padding-bound, not text-bound: the panel host insets
 # the script tree by Style::panelPadding (14px per side, not overridable from
@@ -274,8 +266,8 @@ advanced = true
 [[panel]]
 id = "compact"
 entry = "panel.luau"
-# 252px is upstream's cardWidth() for a horizontal OSD; 48px is the smallest
-# height that clears the icon inside the host padding. Content box: 224x20.
+# 48px is the smallest height that clears the icon inside the host padding.
+# Content box: 224x20.
 width = 252
 height = 48
 placement = "floating"
@@ -294,6 +286,78 @@ entry = "panel.luau"
 # One line taller than "compact" for the body line. Content box: 224x34,
 # which fits summary (14px) + line_gap + body (12px) + two_line_balance.
 width = 252
+height = 62
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "compact-medium"
+entry = "panel.luau"
+# Content box: 292x20.
+width = 320
+height = 48
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "toast-medium"
+entry = "panel.luau"
+# Content box: 292x34.
+width = 320
+height = 62
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "compact-wide"
+entry = "panel.luau"
+# Content box: 372x20.
+width = 400
+height = 48
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "toast-wide"
+entry = "panel.luau"
+# Content box: 372x34.
+width = 400
+height = 62
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "compact-xwide"
+entry = "panel.luau"
+# Content box: 492x20.
+width = 520
+height = 48
+placement = "floating"
+position = "top_center"
+open_near_click = false
+keyboard_focus = "none"
+dismiss_on_outside_click = false
+
+[[panel]]
+id = "toast-xwide"
+entry = "panel.luau"
+# Content box: 492x34.
+width = 520
 height = 62
 placement = "floating"
 position = "top_center"

@@ -89,24 +89,33 @@ outer card background, border, radius, and shadow come from Noctalia's global
 panel theme; this plugin can style only its inset content tree.
 
 Because the geometry is static but a toast is one *or* two lines, the manifest
-declares two panel entries running this same script:
+declares four width buckets for each of the two line counts:
 
 | Entry | Size | Content box | For |
 | --- | --- | --- | --- |
-| `pschmitt/osd:compact` | 252x48 | 224x20 | no `body` |
-| `pschmitt/osd:toast` | 252x62 | 224x34 | with `body` |
+| `pschmitt/osd:compact` | 252x48 | 224x20 | no `body`, short |
+| `pschmitt/osd:compact-medium` | 320x48 | 292x20 | no `body`, medium |
+| `pschmitt/osd:compact-wide` | 400x48 | 372x20 | no `body`, wide |
+| `pschmitt/osd:compact-xwide` | 520x48 | 492x20 | no `body`, extra wide |
+| `pschmitt/osd:toast` | 252x62 | 224x34 | with `body`, short |
+| `pschmitt/osd:toast-medium` | 320x62 | 292x34 | with `body`, medium |
+| `pschmitt/osd:toast-wide` | 400x62 | 372x34 | with `body`, wide |
+| `pschmitt/osd:toast-xwide` | 520x62 | 492x34 | with `body`, extra wide |
 
-`pkgs/local/osd/osd.sh` picks between them by whether `--details` was given.
-Opening either closes the other, since both share Noctalia's single
-active-panel slot, so `dismiss`/`hide`/`status` address both ids.
+`pkgs/local/osd/osd.sh` chooses the line count and smallest width bucket from
+the longest displayed line. Direct `noctalia msg panel-open` calls use the
+panel entry they name and do not get that wrapper-side width selection.
+Opening any entry closes the other, since all share Noctalia's single
+active-panel slot, so `dismiss`/`hide`/`status` address all ids.
 
-252px is upstream's `cardWidth()` for a horizontal OSD
-(`src/shell/osd/osd_overlay.cpp`). The heights are bound by the host padding,
-not by the text: the panel host insets the script's tree by
-`Style::panelPadding`, a fixed 14px per side a plugin cannot turn off, so a
-20px icon already needs 48px of panel. A native OSD fits the same glyph in a
-46px card only because its own `cardPadding` is `spaceMd` (12px).
+The width buckets keep ordinary messages compact while allowing longer
+messages such as ISO timestamps to expand without an explicit text-width cap.
+The heights are bound by the host padding, not by the text: the panel host
+insets the script's tree by `Style::panelPadding`, a fixed 14px per side a
+plugin cannot turn off, so a 20px icon already needs 48px of panel.
 
-`content_padding_h`/`content_padding_v` only *add* to that inset, and
-`max_text_width` is capped at 194 (224 minus the icon and its gap) — raising
-either past the content box clips the text rather than growing the window.
+`content_padding_h`/`content_padding_v` only *add* to that inset.
+`max_text_width` defaults to `0`, which disables the explicit text-width cap;
+set it from 80 to 462 to enable ellipsizing at a chosen width. The `osd`
+wrapper estimates the required panel width and chooses the smallest available
+bucket (252, 320, 400, or 520px) for each message.

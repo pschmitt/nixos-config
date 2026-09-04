@@ -144,7 +144,7 @@ local function resolvedStyle(payload)
     line_gap = configNumber("line_gap", 2),
     padding_h = configNumber("content_padding_h", 0),
     padding_v = configNumber("content_padding_v", 0),
-    max_text_width = configNumber("max_text_width", 190),
+    max_text_width = configNumber("max_text_width", 0),
     summary_font_size = configNumber("summary_font_size", 14),
     summary_font_weight = tostring(configValue("summary_font_weight", "bold")),
     summary_color = tostring(configValue("summary_color", "on_surface")),
@@ -189,7 +189,7 @@ local function render()
       color = style.summary_color,
       textAlign = style.text_align,
       baseline = "inkCentered",
-      maxWidth = style.max_text_width,
+      maxWidth = style.max_text_width > 0 and style.max_text_width or nil,
       maxLines = 1,
     }),
   }
@@ -200,7 +200,7 @@ local function render()
       color = style.body_color,
       textAlign = style.text_align,
       baseline = "inkCentered",
-      maxWidth = style.max_text_width,
+      maxWidth = style.max_text_width > 0 and style.max_text_width or nil,
       maxLines = 1,
     }))
   end

@@ -48,21 +48,50 @@ use_noctalia() {
   command -v noctalia &>/dev/null && noctalia msg status &>/dev/null
 }
 
-# Noctalia panel geometry is static per [[panel]] entry, so the plugin ships
-# one entry per line count instead of a single box tall enough for both. Pick
-# the tall one only when there is actually a body line to put in it, otherwise
-# a plain `osd MESSAGE` renders in a window with an empty line's worth of dead
-# space. Both entries run the same script; see pkgs/local/noctalia-osd.
-NOCTALIA_PANELS=(pschmitt/osd:compact pschmitt/osd:toast)
+# Noctalia panel geometry is static per [[panel]] entry. Keep short messages
+# compact, then select a wider bucket from the longest displayed line. The
+# estimate assumes roughly 8px per character at the default font size and
+# includes the host inset, icon, and icon-to-text gap.
+NOCTALIA_PANELS=(
+  pschmitt/osd:compact
+  pschmitt/osd:toast
+  pschmitt/osd:compact-medium
+  pschmitt/osd:toast-medium
+  pschmitt/osd:compact-wide
+  pschmitt/osd:toast-wide
+  pschmitt/osd:compact-xwide
+  pschmitt/osd:toast-xwide
+)
 
 noctalia_panel() {
-  local details="$1"
+  local message="$1"
+  local details="$2"
+  local max_length=${#message}
+  if (( ${#details} > max_length ))
+  then
+    max_length=${#details}
+  fi
+
+  local required_width=$((58 + max_length * 8))
+  local suffix=""
+  if (( required_width > 252 ))
+  then
+    suffix="-medium"
+  fi
+  if (( required_width > 320 ))
+  then
+    suffix="-wide"
+  fi
+  if (( required_width > 400 ))
+  then
+    suffix="-xwide"
+  fi
 
   if [[ -n "$details" ]]
   then
-    echo "pschmitt/osd:toast"
+    echo "pschmitt/osd:toast${suffix}"
   else
-    echo "pschmitt/osd:compact"
+    echo "pschmitt/osd:compact${suffix}"
   fi
 }
 
@@ -100,7 +129,7 @@ send() {
       '{summary:$summary, body:$body, severity:$severity, category:$category,
         command:$command, timeout_ms:$timeout_ms, profile:$profile, style:$style}
        | with_entries(select(.value != null and .value != "" and .value != {}))')
-    noctalia msg panel-open "$(noctalia_panel "$details")" "$payload" &>/dev/null && return 0
+    noctalia msg panel-open "$(noctalia_panel "$message" "$details")" "$payload" &>/dev/null && return 0
   fi
 
   if use_dms
