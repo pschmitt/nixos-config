@@ -4,11 +4,15 @@
 # SUPER+SHIFT+B (toggle-bar.sh) cycles waybar -> quickshell-bar -> noctalia
 # (dms is skipped from the candidate list while its module isn't imported).
 {
+  inputs,
   config,
   pkgs,
   lib,
   ...
 }:
+let
+  noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
+in
 {
   home-manager.users.${config.mainUser.username} = {
     programs.noctalia = {
@@ -150,7 +154,7 @@
         plugins = {
           enabled = [
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
-            # rylos/syncthing (see pkgs/local/noctalia-syncthing) with a
+            # rylos/syncthing (see pschmitt/noctalia-plugins) with a
             # tray-sized icon and the DMS syncshell widget's composited status
             # badges instead of a small logo + separate glyph. Its `url`/
             # `api_key` plugin settings aren't set here: they persist to
@@ -158,17 +162,17 @@
             # there's no secret to manage declaratively for a one-time local
             # setup.
             "pschmitt/syncthing"
-            # Port of pkgs/local/dms-timewarrior — see pkgs/local/noctalia-timewarrior.
+            # Port of pkgs/local/dms-timewarrior — see pschmitt/noctalia-plugins.
             "pschmitt/timewarrior"
             # Red-dot REC indicator while screensharing — see
-            # pkgs/local/noctalia-screencast, ported from the old Waybar
+            # pschmitt/noctalia-plugins, ported from the old Waybar
             # custom/screencast module.
             "pschmitt/screencast"
             # Renders the charge percentage inside the battery icon itself
-            # (Android status-bar style) — see pkgs/local/noctalia-battery-icon.
+            # (Android status-bar style) — see pschmitt/noctalia-plugins.
             "pschmitt/battery-icon"
             # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
-            # pkgs/local/noctalia-osd and pkgs/local/osd/osd.sh.
+            # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
             "pschmitt/osd"
             # AI plan quota (community plugin, felipeartur/ai-usagebar) —
             # tried and disabled again: didn't like the look, and Codex
@@ -193,33 +197,33 @@
               enabled = true;
             }
             {
-              name = "local";
+              name = "pschmitt-timewarrior";
               kind = "path";
-              location = "${pkgs.noctalia-timewarrior}/share/noctalia-plugins";
+              location = "${noctaliaPlugins.noctalia-timewarrior}/share/noctalia-plugins";
               enabled = true;
             }
             {
-              name = "local-battery-icon";
+              name = "pschmitt-battery-icon";
               kind = "path";
-              location = "${pkgs.noctalia-battery-icon}/share/noctalia-plugins";
+              location = "${noctaliaPlugins.noctalia-battery-icon}/share/noctalia-plugins";
               enabled = true;
             }
             {
-              name = "local-syncthing";
+              name = "pschmitt-syncthing";
               kind = "path";
-              location = "${pkgs.noctalia-syncthing}/share/noctalia-plugins";
+              location = "${noctaliaPlugins.noctalia-syncthing}/share/noctalia-plugins";
               enabled = true;
             }
             {
-              name = "local-osd";
+              name = "pschmitt-osd";
               kind = "path";
-              location = "${pkgs.noctalia-osd}/share/noctalia-plugins";
+              location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
               enabled = true;
             }
             {
-              name = "local-screencast";
+              name = "pschmitt-screencast";
               kind = "path";
-              location = "${pkgs.noctalia-screencast}/share/noctalia-plugins";
+              location = "${noctaliaPlugins.noctalia-screencast}/share/noctalia-plugins";
               enabled = true;
             }
           ];
@@ -296,7 +300,7 @@
         };
         # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
         # above. Role names here (e.g. "on_surface") are resolved against the
-        # active custom palette by pkgs/local/noctalia-battery-icon's
+        # active custom palette by pschmitt/noctalia-plugins' battery-icon
         # service.luau before hitting ImageMagick.
         plugin_settings."pschmitt/battery-icon" = {
           # Material 3 Expressive battery colors (Google palette): neutral

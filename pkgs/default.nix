@@ -24,12 +24,7 @@ in
     inherit inputs;
   };
   dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
-  noctalia-timewarrior = pkgs.callPackage ./local/noctalia-timewarrior { inherit timew-status; };
-  noctalia-battery-icon = pkgs.callPackage ./local/noctalia-battery-icon { };
-  noctalia-syncthing = pkgs.callPackage ./local/noctalia-syncthing { };
-  noctalia-screencast = pkgs.callPackage ./local/noctalia-screencast { };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
-  noctalia-osd = pkgs.callPackage ./local/noctalia-osd { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;

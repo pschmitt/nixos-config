@@ -12,7 +12,7 @@ in
     # Upstream's Luau plugin API (noctalia.notify/notifyError) hardcodes the
     # notification appName to "Noctalia" and never forwards an icon, so every
     # plugin's notifications show the generic Noctalia icon (e.g.
-    # pkgs/local/noctalia-syncthing). This threads an optional 3rd `icon`
+    # pschmitt/noctalia-plugins' syncthing plugin). This threads an optional 3rd `icon`
     # argument through luau_notify/luau_notifyError -> LuauHost::scriptNotify*
     # -> the NotifyInfo/NotifyError side effect (reusing its existing `extra`
     # field) -> notify::info/error -> NotificationManager::addInternal, which
