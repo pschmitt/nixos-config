@@ -2,13 +2,14 @@
 
 stdenvNoCC.mkDerivation {
   pname = "noctalia-osd";
-  version = "1.0.0";
+  version = "1.6.0";
 
   src = lib.fileset.toSource {
     root = ./.;
     fileset = lib.fileset.unions [
       ./plugin.toml
       ./panel.luau
+      ./README.md
       ./translations
     ];
   };
@@ -22,7 +23,7 @@ stdenvNoCC.mkDerivation {
     dest=$out/share/noctalia-plugins/osd
     mkdir -p "$dest"
 
-    cp plugin.toml panel.luau "$dest"/
+    cp plugin.toml panel.luau README.md "$dest"/
     cp -r translations "$dest"/
 
     runHook postInstall

@@ -2,7 +2,116 @@
   "settings": {
     "default_timeout_ms": {
       "label": "Default auto-dismiss timeout (ms)",
-      "description": "How long the toast stays up when the caller doesn't pass its own timeout_ms."
+      "description": "How long the toast stays up when no profile or caller supplies timeout_ms; zero in a profile disables auto-dismiss."
+    },
+    "show_icon": {
+      "label": "Show severity icon",
+      "description": "Show a glyph beside the toast text."
+    },
+    "icon_size": {
+      "label": "Icon size",
+      "description": "Severity glyph size, in pixels."
+    },
+    "icon_text_gap": {
+      "label": "Icon-to-text gap",
+      "description": "Horizontal space between the glyph and text column."
+    },
+    "line_gap": {
+      "label": "Text line gap",
+      "description": "Vertical space between summary and body."
+    },
+    "content_padding_h": {
+      "label": "Horizontal content padding",
+      "description": "Extra padding inside Noctalia's built-in panel padding."
+    },
+    "content_padding_v": {
+      "label": "Vertical content padding",
+      "description": "Extra padding inside Noctalia's built-in panel padding. Large values can leave too little room for two lines."
+    },
+    "max_text_width": {
+      "label": "Maximum text width",
+      "description": "Maximum width of each label before it is ellipsized."
+    },
+    "summary_font_size": {
+      "label": "Summary font size",
+      "description": "Font size for the first line."
+    },
+    "summary_font_weight": {
+      "label": "Summary font weight",
+      "description": "Weight of the first line."
+    },
+    "summary_color": {
+      "label": "Summary color",
+      "description": "Theme role or fixed color for the first line."
+    },
+    "body_font_size": {
+      "label": "Body font size",
+      "description": "Font size for the optional second line."
+    },
+    "body_color": {
+      "label": "Body color",
+      "description": "Theme role or fixed color for the optional second line."
+    },
+    "text_align": {
+      "label": "Text alignment",
+      "description": "Alignment of summary and body within the wider label.",
+      "start": "Start",
+      "center": "Center",
+      "end": "End"
+    },
+    "two_line_balance": {
+      "label": "Two-line optical balance",
+      "description": "Invisible trailing space that shifts a two-line block upward by half this amount for pixel-level optical centering."
+    },
+    "info_icon": {
+      "label": "Info glyph",
+      "description": "Glyph used by info and unknown severities."
+    },
+    "info_icon_color": {
+      "label": "Info glyph color",
+      "description": "Theme role or fixed color for info glyphs."
+    },
+    "warn_icon": {
+      "label": "Warning glyph",
+      "description": "Glyph used by warn severity."
+    },
+    "warn_icon_color": {
+      "label": "Warning glyph color",
+      "description": "Theme role or fixed color for warning glyphs."
+    },
+    "error_icon": {
+      "label": "Error glyph",
+      "description": "Glyph used by error severity."
+    },
+    "error_icon_color": {
+      "label": "Error glyph color",
+      "description": "Theme role or fixed color for error glyphs."
+    },
+    "content_fill": {
+      "label": "Inner content fill",
+      "description": "Fill behind the host-inset content box; transparent by default. This cannot recolor Noctalia's outer panel card."
+    },
+    "content_border": {
+      "label": "Inner content border color",
+      "description": "Border color for the host-inset content box."
+    },
+    "content_border_width": {
+      "label": "Inner content border width",
+      "description": "Border width for the host-inset content box; zero disables it."
+    },
+    "content_radius": {
+      "label": "Inner content corner radius",
+      "description": "Corner radius for the host-inset content box."
+    },
+    "profile_rules": {
+      "label": "Profile rules (JSON)",
+      "description": "Ordered mako-style match rules; later matches win. See the installed README for schema and examples."
+    },
+    "font_weight": {
+      "normal": "Normal",
+      "medium": "Medium",
+      "semibold": "Semibold",
+      "bold": "Bold"
     }
   }
 }
