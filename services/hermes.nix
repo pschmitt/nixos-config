@@ -26,15 +26,19 @@ let
   #   - registration_lifecycle.py, imported (unguarded, module-level) by
   #     hermes_cli/plugins.py -- `hermes dashboard`/gateway crash-loop with
   #     "ModuleNotFoundError: No module named 'registration_lifecycle'".
-  #   - hermes_state_registry.py, imported (unguarded, module-level) by
-  #     hermes_state.py -- hermes-agent crash-loops with
-  #     "ModuleNotFoundError: No module named 'hermes_state_registry'".
-  # Both modules only import stdlib, so a plain PYTHONPATH supplement is
-  # sufficient until the one-line py-modules fix lands upstream.
+  #   - hermes_state_registry.py and hermes_state_holders.py, imported
+  #     (unguarded, module-level) by hermes_state.py -- hermes-agent
+  #     crash-loops with "ModuleNotFoundError: No module named
+  #     'hermes_state_registry'" (then 'hermes_state_holders' next).
+  # All three modules only import stdlib, so a plain PYTHONPATH supplement is
+  # sufficient until the one-line py-modules fix lands upstream. (Checked for
+  # other root-level .py files missing from py-modules: only mini_swe_runner
+  # is also missing, but it's test-only, never imported at runtime.)
   hermesPyModulesShim = pkgs.runCommand "hermes-py-modules-shim" { } ''
     mkdir -p $out
     cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
     cp ${inputs.hermes-agent}/hermes_state_registry.py $out/
+    cp ${inputs.hermes-agent}/hermes_state_holders.py $out/
   '';
   ghBrknLol = pkgs.writeShellScriptBin "gh-brkn-lol" ''
     export GH_CONFIG_DIR="${ghConfigRoot}/gh-brkn-lol"
