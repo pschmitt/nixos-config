@@ -694,4 +694,18 @@ in
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.
   custom.authelia.extraTwoFactorDomains = [ hermesHost ];
+
+  # The playwright-* MCP servers above pass -o IdentityFile explicitly, but
+  # any other ssh Hermes runs on its own (e.g. from a shell tool call) has no
+  # identity to fall back to otherwise -- the hermes-agent account has no
+  # ~/.ssh/id_* files, so bare `ssh <host>` fails with "Permission denied
+  # (publickey)" even though the key file itself is readable by this user.
+  # Scope the default identity to this account via a system-wide Match block
+  # instead of writing into $HOME/.ssh, since hermes-agent's home dir is
+  # otherwise fully managed by the service itself.
+  programs.ssh.extraConfig = ''
+    Match User ${config.services.hermes-agent.user}
+      IdentityFile ${config.sops.secrets."ssh/hermes/privateKey".path}
+      IdentitiesOnly yes
+  '';
 }
