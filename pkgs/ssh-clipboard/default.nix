@@ -9,16 +9,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "ssh-clipboard";
-  version = "0.2.9";
+  version = "0.2.11";
 
   src = fetchFromGitHub {
     owner = "standardagents";
     repo = "ssh-clipboard";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-dWFeYRvBwjz6ShLVVRhWSUBH1aMuvgHCmF72qPQ6cyI=";
+    hash = "sha256-iXfEk9oir4OlKWGUZAH/czGn+A1kO/1+v3rOaEKwLxM=";
   };
 
-  cargoHash = "sha256-0cIVoq3Fpmi51uergWkWVSauJl4aFHReo7fiVtfoTkY=";
+  cargoHash = "sha256-Oq5Wbs62+Zolp7ZpQb0LhWIdQGbQE1IWGNZuETHVRM4=";
 
   nativeBuildInputs = [ pkg-config ];
   nativeCheckInputs = [ xorg-server ];
