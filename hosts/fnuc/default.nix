@@ -82,7 +82,7 @@
   mainUser.extraAuthorizedKeys = lib.mkAfter [
     # Home Assistant container on hv, used by the KVM USB replug automation.
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7 root@a0d7b954-ssh"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII7+jtjOeLE3FGczBVc7eKG6fxpOPvR2+nlb//8PdNd9 hermes-playwright@nixos-config"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOuMa/MglO4MOXG9mALoFZQHnpe67vgP5wZGSOKGQs7/ hermes@nixos-config"
   ];
 
   systemd.user = {
