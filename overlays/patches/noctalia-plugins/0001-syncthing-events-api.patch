@@ -1,0 +1,207 @@
+--- a/service.luau
++++ b/service.luau
+@@ -1,8 +1,9 @@
+ --!nonstrict
+--- Syncthing poller — the headless [[service]] entry.
++-- Syncthing event subscriber — the headless [[service]] entry.
+ --
+--- Talks to the Syncthing REST API directly with noctalia.http (no external
+--- helper). Resolves the GUI URL and API key from the plugin settings, falling
++-- Uses Syncthing's long-polling /rest/events API to refresh its status when
++-- Syncthing reports a change. Resolves the GUI URL and API key from the plugin
++-- settings, falling
+ -- back to Syncthing's config.xml. Publishes one JSON snapshot to
+ -- noctalia.state under "st.snapshot" and executes commands sent by the UI
+ -- entries through "st.cmd" (refresh, pause/resume all, per-folder
+@@ -36,7 +37,7 @@
+   baseUrl = "",
+   apiKey = "",
+   insecure = false,
+-  pollMs = 10000,
++  recoveryMs = 10000,
+   monitored = {}, -- set of folder ids; empty = all
+   monitoredCount = 0,
+   sources = { configPath = "", urlSource = "none", apiKeySource = "none" },
+@@ -150,7 +151,7 @@
+   cfg.apiKey = apiKey
+   cfg.insecure = noctalia.getConfig("insecure_tls") == true
+   local seconds = tonumber(noctalia.getConfig("poll_interval")) or 10
+-  cfg.pollMs = math.clamp(seconds, 2, 300) * 1000
++  cfg.recoveryMs = math.clamp(seconds, 2, 300) * 1000
+   cfg.monitored = {}
+   cfg.monitoredCount = 0
+   for _, id in (noctalia.getConfig("folders") or {}) do
+@@ -299,6 +300,9 @@
+   end
+ end
+ 
++
++local ensureEventStream = nil
++
+ local function publish(snapshot, generation)
+   -- A late callback from a poll that was already given up on must not clobber
+   -- the snapshot a newer poll published.
+@@ -411,6 +415,7 @@
+       end
+     end
+     publish(classify(snapshot), generation)
++    ensureEventStream()
+   end
+ 
+   for index, folder in monitoredFolders do
+@@ -562,6 +567,106 @@
+   end
+ end
+ 
++-- Syncthing keeps one request open until events become available or its
++-- timeout expires. Reopen successful requests immediately; failed/invalid
++-- responses leave eventStream nil so update() performs a bounded recovery
++-- attempt after recoveryMs instead of reconnecting in a tight loop.
++local EVENT_TIMEOUT_SECONDS = 60
++-- noctalia's httpStream keys a stream by a Luau ref number that gets freed
++-- the instant the stream closes, and a fresh stream opened right after can
++-- be handed that same freed number back. Reconnecting once *per event*
++-- (limit=1) turns any burst (e.g. "pause all"/"resume all", which fires one
++-- event per folder plus a ConfigSaved) into a tight close/reopen loop, and
++-- under that churn a stale close notification for the just-closed stream
++-- can land on the ref number the new stream now owns — which fails a
++-- lookup, reports back as a bare failure with no Luau call involved (so
++-- nothing logs it), and counts straight against noctalia's error budget
++-- (this is what silently tripped "hit too many errors and was disabled").
++-- Batching many events into one long-poll response means one reconnect per
++-- *burst* instead of one per event, which keeps this collision vanishingly
++-- rare in practice.
++local EVENT_LIMIT = 100
++local eventStream = nil
++local eventGeneration = 0
++local eventSince = 0
++
++ensureEventStream = function()
++  if eventStream ~= nil or cfg.baseUrl == "" or cfg.apiKey == "" then
++    return false
++  end
++
++  eventGeneration += 1
++  local generation = eventGeneration
++  local lines = {}
++  local stream = noctalia.httpStream({
++    url = `{cfg.baseUrl}/rest/events?since={eventSince}&limit={EVENT_LIMIT}&timeout={EVENT_TIMEOUT_SECONDS}`,
++    method = "GET",
++    headers = { `X-API-Key: {cfg.apiKey}` },
++    allow_insecure_tls = cfg.insecure,
++  }, function(line)
++    if generation == eventGeneration then
++      table.insert(lines, line)
++    end
++  end, function(result)
++    if generation ~= eventGeneration then
++      return
++    end
++    eventStream = nil
++
++    if not result.ok then
++      publish(emptySnapshot("offline"))
++      return
++    end
++    if result.status == 401 or result.status == 403 then
++      publish(emptySnapshot("unauthorized"))
++      return
++    end
++    if result.status < 200 or result.status >= 300 then
++      publish(emptySnapshot("error", `HTTP {result.status}`))
++      return
++    end
++
++    -- Some event kinds (ConfigSaved in particular) embed the *entire* saved
++    -- config as `data` — 10+ KB, hundreds of pretty-printed lines, for a
++    -- payload we don't otherwise use. Fully JSON-decoding that (previously
++    -- via noctalia.json.decode) is what raised on a plain "pause all"/
++    -- "resume all" in the Syncthing GUI, and a raised error here counts
++    -- against noctalia's error budget and auto-disables the whole plugin
++    -- service ("hit too many errors and was disabled"). All we ever need
++    -- from an event is its own top-level, always-bare-numeric `id` (to
++    -- advance `since`) and whether at least one arrived — so pull just
++    -- that out of the raw body with a pattern instead of parsing `data`.
++    local handled, handlerErr = pcall(function()
++      local body = table.concat(lines, "\n")
++      local sawEvent = false
++      for idText in body:gmatch('"id"%s*:%s*(%d+)') do
++        sawEvent = true
++        local id = tonumber(idText) or 0
++        if id > eventSince then
++          eventSince = id
++        end
++      end
++
++      -- Status is still assembled from the regular REST endpoints, but those
++      -- requests now happen only after Syncthing reports an event. poll() also
++      -- coalesces bursts while a refresh is already in flight.
++      if sawEvent then
++        poll(true)
++      end
++    end)
++    if not handled then
++      noctalia.log(`[syncthing] event handling error: {handlerErr}`)
++    end
++    ensureEventStream()
++  end)
++
++  if stream == nil then
++    return false
++  end
++  eventStream = stream
++  return true
++end
++
+ function poll(force)
+   if pollPending then
+     -- Still waiting on a poll that has not timed out: coalesce into it.
+@@ -678,6 +783,11 @@
+ function onConfigChanged()
+   -- config_path may now point elsewhere, and a user who just fixed their
+   -- Syncthing setup expects the next poll to pick it up.
++  eventGeneration += 1
++  if eventStream ~= nil then
++    eventStream.stop()
++    eventStream = nil
++  end
+   configXml = nil
+   poll(true)
+ end
+@@ -695,8 +805,10 @@
+ end
+ 
+ function update()
+-  noctalia.setUpdateInterval(cfg.pollMs)
+-  poll(false)
++  noctalia.setUpdateInterval(cfg.recoveryMs)
++  if eventStream == nil then
++    poll(false)
++  end
+ end
+ 
+ resolveConfig()
+--- a/plugin.toml
++++ b/plugin.toml
+@@ -7,7 +7,7 @@
+ 
+ id = "pschmitt/syncthing"
+ name = "Syncthing"
+-version = "2.3.3"
++version = "2.4.3"
+ plugin_api = 15 # noctalia.openSettings(), for the panel's settings button
+ author = "pschmitt (fork of Marco Ziliani's rylos/syncthing)"
+ license = "MIT"
+--- a/translations/en.json
++++ b/translations/en.json
+@@ -95,8 +95,8 @@
+       "label": "Paused color"
+     },
+     "poll_interval": {
+-      "description": "How often the Syncthing status is refreshed.",
+-      "label": "Poll interval (seconds)"
++      "description": "How long to wait before retrying after the realtime event stream fails.",
++      "label": "Event-stream recovery interval (seconds)"
+     },
+     "show_pending": {
+       "description": "Show the number of pending items next to the icon while syncing.",
