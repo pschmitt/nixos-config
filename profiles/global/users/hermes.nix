@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   # Dedicated account for Hermes' SSH access (see services/hermes.nix). On
   # most hosts this is purely an unprivileged playwright-mcp SSH target, kept
@@ -13,9 +18,7 @@
     description = lib.mkDefault "Hermes agent playwright-mcp SSH access (see services/hermes.nix)";
     group = lib.mkDefault "hermes";
     shell = lib.mkDefault pkgs.bash;
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOuMa/MglO4MOXG9mALoFZQHnpe67vgP5wZGSOKGQs7/ hermes@nixos-config"
-    ];
+    openssh.authorizedKeys.keys = [ config.custom.hermes.sshPublicKey ];
   };
 
   users.groups.hermes = lib.mkDefault { };

@@ -18,7 +18,7 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
       # Hermes (see services/hermes.nix). Grants Hermes' key login as a Nix
       # trusted-user here, not just the unprivileged hermes account.
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOuMa/MglO4MOXG9mALoFZQHnpe67vgP5wZGSOKGQs7/ hermes@nixos-config"
+      config.custom.hermes.sshPublicKey
     ];
   };
 
