@@ -6,7 +6,6 @@
     ../../profiles/server
     ../../profiles/network/roflnet.nix
     ../../profiles/tdarr-node.nix
-    ../../profiles/global/users/hermes.nix
     ../../services/esphome.nix
     ../../services/browser-mcp-chromium-container.nix
     ../../services/forgejo-runner.nix

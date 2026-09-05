@@ -10,7 +10,7 @@
     group = "hermes";
     shell = pkgs.bash;
     openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII7+jtjOeLE3FGczBVc7eKG6fxpOPvR2+nlb//8PdNd9 hermes-playwright@nixos-config"
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOuMa/MglO4MOXG9mALoFZQHnpe67vgP5wZGSOKGQs7/ hermes@nixos-config"
     ];
   };
 

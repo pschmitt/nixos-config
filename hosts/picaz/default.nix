@@ -19,6 +19,7 @@
     ../../profiles/global/sops.nix
     ../../profiles/global/ssh-server.nix
     ../../profiles/global/users/root.nix
+    ../../profiles/global/users/hermes.nix
   ];
 
   hardware.cattle = true;

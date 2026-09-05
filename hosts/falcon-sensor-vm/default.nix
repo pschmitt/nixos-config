@@ -7,6 +7,7 @@
 {
   imports = [
     ../../profiles/global/nix/overlays.nix
+    ../../profiles/global/users/hermes.nix
     ../../profiles/work/crowdstrike-falcon-sensor.nix
   ];
 
