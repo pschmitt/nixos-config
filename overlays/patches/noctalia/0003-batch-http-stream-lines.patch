@@ -1,0 +1,91 @@
+--- a/src/scripting/script_runtime_types.h
++++ b/src/scripting/script_runtime_types.h
+@@ -257,6 +257,9 @@ namespace scripting {
+     std::string chunkName;
+     std::string source;
+     // StreamLine / HttpStreamLine payload.
+     std::string first;
++    // HttpStreamLine payload, batched to avoid losing line-delimited bodies
++    // when a producer emits a complete response faster than its Luau host runs.
++    std::vector<std::string> httpStreamLines;
+     // CallArgs payload: the callback's argument list, pushed in order.
+     ScriptArgs args;
+--- a/src/scripting/luau_host.cpp
++++ b/src/scripting/luau_host.cpp
+@@ -2456,7 +2456,17 @@ int LuauHost::startHttpStream(HttpRequest request, int lineRef, int closeRef) {
+-    auto onClose = [handler, hostId, streamKey, control](HttpStreamResult result) {
++    auto onClose = [handler, hostId, streamKey, control, buffer](HttpStreamResult result) {
+       if (control->cancelled.load(std::memory_order_relaxed)) {
+         return;
+       }
++      // A valid HTTP body need not end in a newline. Deliver the final partial
++      // line before closing so line-delimited consumers receive complete JSON.
++      if (!buffer->empty()) {
++        std::string line = std::move(*buffer);
++        buffer->clear();
++        if (!line.empty() && line.back() == '\r') {
++          line.pop_back();
++        }
++        handler(hostId, streamKey, false, std::move(line), false, 0);
++      }
+       handler(hostId, streamKey, true, std::string(), result.transportOk, static_cast<int>(result.status));
+     };
+
+--- a/src/scripting/script_runtime.cpp
++++ b/src/scripting/script_runtime.cpp
+@@ -15,2 +15,3 @@
+ #include <deque>
++#include <iterator>
+ #include <mutex>
+@@ -28,3 +28,4 @@ namespace scripting {
+     constexpr Logger kLog("script-runtime");
+     constexpr std::size_t kMaxQueuedEvents = 64;
++    constexpr std::size_t kMaxHttpStreamLinesPerEvent = 256;
+     std::atomic<int> g_shutdownSignal{0};
+@@ -367,1 +368,23 @@ namespace scripting {
++        // HTTP streams are line-delimited at the Luau API boundary. A single
++        // pretty-printed JSON response can consequently contain hundreds of
++        // lines, which used to overflow the 64-event runtime queue and silently
++        // corrupt an otherwise valid response. Preserve line order while
++        // batching a bounded number of lines per queued event.
++        if (event.kind == ScriptEventKind::HttpStreamLine) {
++          const auto existing = std::ranges::find_if(queue.rbegin(), queue.rend(), [&event](const auto& queued) {
++            return queued.kind == ScriptEventKind::HttpStreamLine
++                && queued.hostId == event.hostId
++                && queued.callbackRef == event.callbackRef
++                && queued.httpStreamLines.size() < kMaxHttpStreamLinesPerEvent;
++          });
++          if (existing != queue.rend()) {
++            existing->httpStreamLines.insert(
++                existing->httpStreamLines.end(),
++                std::make_move_iterator(event.httpStreamLines.begin()),
++                std::make_move_iterator(event.httpStreamLines.end())
++            );
++            return true;
++          }
++        }
++
+         if (event.kind == ScriptEventKind::Update) {
+@@ -522,7 +544,7 @@ namespace scripting {
+       event.kind = closed ? ScriptEventKind::HttpStreamClosed : ScriptEventKind::HttpStreamLine;
+       event.hostId = hostId;
+       event.callbackRef = streamKey;
+-      event.first = std::move(line);
++      event.httpStreamLines.emplace_back(std::move(line));
+       event.httpOk = ok;
+       event.httpStatus = status;
+       event.budget = kCallBudget;
+@@ -672,3 +694,9 @@ namespace scripting {
+-        bindingContext.beginCall(event.snapshot);
+-        const bool ok = host->callHttpStreamLineCallback(event.callbackRef, event.first, event.budget);
+-        return collectResult(event, "http stream callback", ok);
++        for (const auto& line : event.httpStreamLines) {
++          if (!host->hasHttpStream(event.callbackRef)) {
++            break; // the callback deliberately stopped its stream
++          }
++          bindingContext.beginCall(event.snapshot);
++          if (!host->callHttpStreamLineCallback(event.callbackRef, line, event.budget)) {
++            return collectResult(event, "http stream callback", false);
++          }
++        }
++        return collectResult(event, "http stream callback", true);
