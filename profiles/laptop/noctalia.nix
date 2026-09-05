@@ -290,6 +290,7 @@ in
             show_condition = false;
             icon_color = "primary";
           };
+          clock.format = "{:%H:%M:%S}";
           workspaces = {
             style = "minimal";
             show_all_outputs = true;
