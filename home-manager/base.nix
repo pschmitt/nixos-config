@@ -3,6 +3,7 @@
     # Option modules providing host facts (osConfig-free): config.mainUser,
     # config.domains, config.host.*
     ../modules/browser.nix
+    ../modules/hermes.nix
     ../modules/main-user.nix
     ../modules/domains.nix
     ../modules/theme.nix

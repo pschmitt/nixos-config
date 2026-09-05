@@ -5,6 +5,7 @@
     ./domains.nix
     ./falcon-sensor-vm.nix
     ./hardware.nix
+    ./hermes.nix
     ./main-user.nix
     ./nix-host-overrides.nix
     ./sops.nix
