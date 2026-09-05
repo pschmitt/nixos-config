@@ -1,0 +1,72 @@
+--- a/src/ui/controls/button.h
++++ b/src/ui/controls/button.h
+@@ -62,6 +62,9 @@
+   void setSelected(bool selected);
+   void setContentAlign(ButtonContentAlign align);
+   void setVariant(ButtonVariant variant);
++  // Tints the button's own text/glyph ink, leaving the variant's background,
++  // border, and hover/press animation untouched. Cleared with std::nullopt.
++  void setContentColor(std::optional<ColorSpec> color);
+   void setCustomPalette(ButtonPalette customPalette);
+   void setSurfaceOpacity(float opacity);
+   void setOnClick(std::function<void()> callback);
+@@ -136,6 +139,7 @@
+   ButtonVariant m_variant = ButtonVariant::Default;
+   ButtonPalette m_palette;
+   std::optional<ButtonPalette> m_customPalette;
++  std::optional<ColorSpec> m_contentColor;
+   // Animation: snapshot of colors at transition start
+   Color m_fromBg{};
+   Color m_fromBorder{};
+--- a/src/ui/controls/button.cpp
++++ b/src/ui/controls/button.cpp
+@@ -300,6 +300,14 @@
+   setMaxHeight(pinned);
+ }
+ 
++void Button::setContentColor(std::optional<ColorSpec> color) {
++  if (m_contentColor == color) {
++    return;
++  }
++  m_contentColor = color;
++  applyVisualState();
++}
++
+ void Button::setOnClick(std::function<void()> callback) {
+   m_onClick = std::move(callback);
+   refreshInputAreaEnabled();
+@@ -642,6 +650,13 @@
+     targetBorder = resolveColorSpec(m_palette.normal.border);
+     targetLabel = resolveColorSpec(m_palette.normal.label);
+   }
++
++  // An explicit content color owns the ink in every interactive state, so a
++  // status glyph keeps its meaning while the button hovers and presses around
++  // it. Disabled still wins: a dimmed control must read as dimmed.
++  if (m_contentColor.has_value() && m_enabled) {
++    targetLabel = resolveColorSpec(*m_contentColor);
++  }
+ }
+ 
+ void Button::applyVisualState() {
+--- a/src/ui/ui_tree_reconciler.cpp
++++ b/src/ui/ui_tree_reconciler.cpp
+@@ -482,7 +482,7 @@
+                                                               "visible",     "text",    "glyph",        "fontSize",
+                                                               "glyphSize",   "variant", "contentAlign", "enabled",
+                                                               "selected",    "onClick", "onRightClick", "tooltip",
+-                                                              "controlSize", "onHover"};
++                                                              "controlSize", "onHover", "color"};
+       static const std::unordered_set<std::string> kGraph = {
+           "width", "height", "flexGrow",  "opacity",     "visible",       "values",        "values2",
+           "color", "color2", "lineWidth", "fillOpacity", "onPointerMove", "onPointerLeave"
+@@ -1445,6 +1445,9 @@
+       if (auto variant = parseButtonVariant(desired)) {
+         button->setVariant(*variant);
+       }
++      // Unconditional, like the tooltip below: a color dropped between renders
++      // must fall back to the variant's own ink on the retained Button.
++      button->setContentColor(parseColor(desired, "color"));
+       if (const std::string* contentAlign = strProp(desired, "contentAlign")) {
+         if (*contentAlign == "start") {
+           button->setContentAlign(ButtonContentAlign::Start);
