@@ -12,6 +12,15 @@
 }:
 let
   noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
+  # A polling->events-API rewrite of this plugin's service.luau was tried
+  # locally (overlays/patches/noctalia-plugins/0001-syncthing-events-api.patch)
+  # to replace the fixed poll interval with Syncthing's /rest/events
+  # long-poll. Reverted 2026-09-05: reconnecting after every event (or burst
+  # of events — pause/resume-all, or just noctalia's own restart replaying a
+  # backlog) intermittently raced noctalia's own httpStream stream-key reuse
+  # and tripped its error budget, auto-disabling the plugin service with no
+  # log output to point at a fix. Left in the patches directory in case a
+  # future noctalia release closes that race and this becomes viable again.
 in
 {
   home-manager.users.${config.mainUser.username} = {
@@ -112,7 +121,6 @@ in
             "tray"
             "pschmitt/syncthing:bar"
             "group:volume"
-            "network"
             "group:notif-battery"
           ];
           # A plugin widget referenced by its raw "author/plugin:entry" id
@@ -136,6 +144,8 @@ in
             {
               id = "notif-battery";
               members = [
+                "network"
+                "pschmitt/fan-control:widget"
                 "pschmitt/battery-icon:bar"
                 "notifications"
               ];
@@ -162,6 +172,11 @@ in
             # there's no secret to manage declaratively for a one-time local
             # setup.
             "pschmitt/syncthing"
+            # Fan monitor/control — thinkpad_acpi (x13) or generic hwmon PWM
+            # (Dell dell-smm-hwmon on ge2, GPD gpdfan on gk4), auto-detected.
+            # Forked from the community piero-93/thinkpad-fan plugin — see
+            # pschmitt/noctalia-plugins.
+            "pschmitt/fan-control"
             # Port of pkgs/local/dms-timewarrior — see pschmitt/noctalia-plugins.
             "pschmitt/timewarrior"
             # Red-dot REC indicator while screensharing — see
@@ -215,6 +230,12 @@ in
               enabled = true;
             }
             {
+              name = "pschmitt-fan-control";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-fan-control}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
               name = "pschmitt-osd";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
@@ -248,16 +269,21 @@ in
         # Separate from bar.scale/[widget.*].scale, which only affect bar
         # widget content.
         accessibility.ui_scale = 1.15;
-        shell.font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
+        shell = {
+          font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
+          # Default is "{:%H:%M}" (std::chrono format spec) — add seconds to
+          # the center bar's clock widget.
+          time_format = "{:%H:%M:%S}";
+          # Control Center (which the notifications widget opens into, at
+          # its "notifications" tab) is "attached" by default but still
+          # opens centered on the bar rather than under the clicked widget.
+          panel.open_near_click_control_center = true;
+        };
         theme = {
           mode = "dark";
           source = "custom";
           custom_palette = "Indigo";
         };
-        # Control Center (which the notifications widget opens into, at its
-        # "notifications" tab) is "attached" by default but still opens
-        # centered on the bar rather than under the clicked widget.
-        shell.panel.open_near_click_control_center = true;
         control_center.width = 900; # full-sidebar width in px (600-1200), default 700
         widget = {
           weather = {
@@ -302,22 +328,32 @@ in
         # above. Role names here (e.g. "on_surface") are resolved against the
         # active custom palette by pschmitt/noctalia-plugins' battery-icon
         # service.luau before hitting ImageMagick.
-        plugin_settings."pschmitt/battery-icon" = {
-          # Material 3 Expressive battery colors (Google palette): neutral
-          # normally, green while powered, and red at or below the
-          # low-battery threshold.
-          low_color = "#EA4335";
-          medium_color = "#9AA0A6";
-          high_color = "#9AA0A6";
-          charging_color = "#34A853";
-          text_color = "#202124";
-          empty_color = "#F1F3F4";
-        };
-        plugin_settings."pschmitt/syncthing" = {
-          # "Folder X is up to date" fires on every sync completion and
-          # isn't interesting often enough to be worth a toast; errors and
-          # device connect/disconnect notifications stay on.
-          notify_folder_up_to_date = false;
+        plugin_settings = {
+          "pschmitt/fan-control" = {
+            bar_display = "none"; # icon only
+            color_trigger = "temp";
+            temp_threshold_low = 60; # below: theme default (temp_low_color unset)
+            temp_threshold_high = 70; # at/above: temp_high_color
+            temp_mid_color = "#FFA500"; # 60-69°C: orange
+            temp_high_color = "#EA4335"; # 70°C+: red
+          };
+          "pschmitt/battery-icon" = {
+            # Material 3 Expressive battery colors (Google palette): neutral
+            # normally, green while powered, and red at or below the
+            # low-battery threshold.
+            low_color = "#EA4335";
+            medium_color = "#9AA0A6";
+            high_color = "#9AA0A6";
+            charging_color = "#34A853";
+            text_color = "#202124";
+            empty_color = "#F1F3F4";
+          };
+          "pschmitt/syncthing" = {
+            # "Folder X is up to date" fires on every sync completion and
+            # isn't interesting often enough to be worth a toast; errors and
+            # device connect/disconnect notifications stay on.
+            notify_folder_up_to_date = false;
+          };
         };
       };
     };
@@ -329,4 +365,22 @@ in
     # felipeartur/ai-usagebar bar widget disabled above.
     home.packages = [ pkgs.ai-usagebar ];
   };
+
+  # pschmitt/fan-control needs group-scoped write access to whichever fan
+  # control interface is present, without running as root at runtime or
+  # making it world-writable. Safe to apply on all three hosts unconditionally
+  # (per AGENTS.md: no per-host branching in shared profiles) — a udev rule
+  # for hardware that isn't present here is a no-op, and thinkpad_acpi's
+  # fan_control module option is ignored when the module isn't loaded.
+  # See plugins/fan-control/README.md in pschmitt/noctalia-plugins.
+  users.groups.fan_ctl = { };
+  users.users.${config.mainUser.username}.extraGroups = [ "fan_ctl" ];
+  boot.extraModprobeConfig = ''
+    options thinkpad_acpi fan_control=1
+  '';
+  services.udev.extraRules = ''
+    ACTION=="add|bind", SUBSYSTEM=="platform", DRIVER=="thinkpad_acpi", RUN+="${pkgs.coreutils}/bin/chgrp fan_ctl /proc/acpi/ibm/fan", RUN+="${pkgs.coreutils}/bin/chmod 0664 /proc/acpi/ibm/fan"
+    SUBSYSTEM=="hwmon", ATTR{name}=="dell_smm", RUN+="${pkgs.bash}/bin/sh -c 'for f in /sys/%p/pwm*; do ${pkgs.coreutils}/bin/chgrp fan_ctl \"$$f\"; ${pkgs.coreutils}/bin/chmod 0664 \"$$f\"; done'"
+    SUBSYSTEM=="hwmon", ATTR{name}=="gpdfan", RUN+="${pkgs.bash}/bin/sh -c 'for f in /sys/%p/pwm*; do ${pkgs.coreutils}/bin/chgrp fan_ctl \"$$f\"; ${pkgs.coreutils}/bin/chmod 0664 \"$$f\"; done'"
+  '';
 }
