@@ -69,6 +69,7 @@ in
   ssh-clipboard = pkgs.callPackage ./ssh-clipboard { };
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
+  syncthing-nautilus = pkgs.callPackage ./syncthing-nautilus { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
