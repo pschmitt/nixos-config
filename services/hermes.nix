@@ -180,12 +180,6 @@ in
       "hermes/signal/allowed-users" = config.custom.mkSecret {
         mode = "0400";
       };
-      "ssh/nix-remote-builder/privkey" = {
-        sopsFile = ../secrets/shared.sops.yaml;
-        owner = config.services.hermes-agent.user;
-        group = config.services.hermes-agent.group;
-        mode = "0400";
-      };
       "todoist/api_token" = {
         sopsFile = ../secrets/shared.sops.yaml;
         owner = config.services.hermes-agent.user;
@@ -217,6 +211,18 @@ in
         mode = "0400";
       };
       "ssh/hermes-sops/privateKey" = {
+        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        mode = "0400";
+      };
+      # Hermes' own identity for reaching its playwright-mcp targets, kept
+      # separate from ssh/nix-remote-builder/privkey so a leaked Hermes
+      # credential doesn't also carry Nix distributed-build trust. Authorized
+      # on rofl-13/rofl-14 for the dedicated hermes account (see
+      # profiles/global/users/hermes.nix) and on fnuc for mainUser
+      # (fnuc has no NixOS user module, see hosts/fnuc/default.nix).
+      "ssh/hermes/privateKey" = {
         sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
@@ -392,11 +398,11 @@ in
               "-o"
               "IdentitiesOnly=yes"
               "-o"
-              "IdentityFile=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
               "-o"
               "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
               "-l"
-              "nix-remote-builder"
+              "hermes"
               "rofl-13"
               "${pkgs.playwright-mcp}/bin/playwright-mcp"
               "--cdp-endpoint=http://127.0.0.1:9222"
@@ -412,11 +418,11 @@ in
               "-o"
               "IdentitiesOnly=yes"
               "-o"
-              "IdentityFile=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
               "-o"
               "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
               "-l"
-              "nix-remote-builder"
+              "hermes"
               "rofl-14"
               "${pkgs.playwright-mcp}/bin/playwright-mcp"
               "--cdp-endpoint=http://127.0.0.1:9222"
@@ -432,7 +438,7 @@ in
               "-o"
               "IdentitiesOnly=yes"
               "-o"
-              "IdentityFile=${config.sops.secrets."ssh/nix-remote-builder/privkey".path}"
+              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
               "-o"
               "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
               "-l"

@@ -74,11 +74,15 @@
   };
 
   # Allow Home Assistant's KVM USB watchdog and Hermes on rofl-10 to use
-  # scoped main-user SSH access rather than a shared/global account.
+  # scoped main-user SSH access rather than a shared/global account. fnuc has
+  # no NixOS user module (standalone Home Manager host), so Hermes can't get
+  # its own dedicated Unix account here the way it does on rofl-13/rofl-14
+  # (see profiles/global/users/hermes.nix); it still logs in as
+  # mainUser, but with its own key rather than sharing nix-remote-builder's.
   mainUser.extraAuthorizedKeys = lib.mkAfter [
     # Home Assistant container on hv, used by the KVM USB replug automation.
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKtJvOe/V+obZ1lS2L/qUAUVDUSFapVKin07BUZSHAU7 root@a0d7b954-ssh"
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII7+jtjOeLE3FGczBVc7eKG6fxpOPvR2+nlb//8PdNd9 hermes-playwright@nixos-config"
   ];
 
   systemd.user = {
