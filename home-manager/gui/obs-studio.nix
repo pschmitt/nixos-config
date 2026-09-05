@@ -14,6 +14,8 @@ let
       runtimeInputs = with pkgs; [
         config.programs.obs-studio.finalPackage
         coreutils
+        curl
+        jq
         procps
         systemd
       ];
@@ -55,12 +57,26 @@ in
     ];
   };
 
-  xdg.desktopEntries."obs-studio-custom" = {
-    name = "OBS Studio (Custom)";
-    comment = "Start OBS with our custom flags";
-    icon = "com.obsproject.Studio";
-    exec = obsAutostartExec;
-    terminal = false;
+  xdg.desktopEntries = {
+    "obs-studio-custom" = {
+      name = "OBS Studio (Custom)";
+      comment = "Start OBS with our custom flags";
+      icon = "com.obsproject.Studio";
+      exec = obsAutostartExec;
+      terminal = false;
+    };
+
+    # Autostart-only variant: bails out on weekends and public holidays.
+    # Hidden from launchers so manually starting OBS always works, whatever
+    # the day.
+    "obs-studio-autostart" = {
+      name = "OBS Studio (Autostart)";
+      comment = "Start OBS with our custom flags, but only on workdays";
+      icon = "com.obsproject.Studio";
+      exec = "${obsAutostartExec} --workdays-only";
+      terminal = false;
+      noDisplay = true;
+    };
   };
 
   home.file.".config/obs-studio/scripts/bounce.lua".source = builtins.fetchurl {
