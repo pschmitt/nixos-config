@@ -29,6 +29,8 @@
     imv # image viewer
     loupe
     nautilus
+    nautilus-python
+    syncthing-nautilus
     sushi # file previewer for gnome
 
     # wayland
