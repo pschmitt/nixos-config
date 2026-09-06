@@ -18,9 +18,10 @@
     # `columns` specifies the number of tile columns in Window and Screen tabs (default: 1).
     columns = 2
 
-    # Highlighting for hovered and selected window or screen in Hyprland
-    # highlight_border_color = rgba(53, 132, 228, 1.0)
-    # highlight_border_size = 5
+    # Highlighting for hovered and selected window or screen in Hyprland (slurp-like overlay)
+    # highlight_color = rgba(168, 85, 247, 1.0) # or hex like #a855f7
+    # highlight_fill_opacity = 0.22
+    # highlight_border_size = 3
 
     # Preview settings. `refresh_rate` is in frames per second. Settings apply when the picker opens.
     preview {

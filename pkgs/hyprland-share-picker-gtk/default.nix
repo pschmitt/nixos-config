@@ -61,6 +61,7 @@ stdenvNoCC.mkDerivation {
       "$out/bin/hyprland-share-picker-gtk"
 
     substituteInPlace "$out/bin/hyprland-share-picker-gtk" \
+      --replace-fail '@gtk4LayerShell@' '${gtk4-layer-shell}' \
       --replace-fail '@python@' '${pythonWithGtk}/bin/python' \
       --replace-fail '@script@' "$out/share/hyprland-share-picker-gtk/hyprland_share_picker.py"
 

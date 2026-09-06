@@ -21,7 +21,7 @@ WINDOW_ENTRY = re.compile(
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
 CONFIG_VALUE = re.compile(
-    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_border_color|highlight_border_size)\s*=\s*(.+?)\s*$",
+    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_color|highlight_border_color|highlight_fill_opacity|highlight_border_size)\s*=\s*(.+?)\s*$",
     re.MULTILINE,
 )
 DEFAULT_CONFIG = {
@@ -29,8 +29,10 @@ DEFAULT_CONFIG = {
     "jpeg_quality": 78,
     "refresh_rate": 4.0,
     "columns": 1,
-    "highlight_border_color": "rgba(53, 132, 228, 1.0)",
-    "highlight_border_size": 5,
+    "highlight_color": "rgba(168, 85, 247, 1.0)",
+    "highlight_border_color": "rgba(168, 85, 247, 1.0)",
+    "highlight_fill_opacity": 0.22,
+    "highlight_border_size": 3,
 }
 
 
@@ -44,7 +46,7 @@ def parse_picker_config(value):
     settings = DEFAULT_CONFIG.copy()
     for name, raw_value in CONFIG_VALUE.findall(value):
         raw_value = raw_value.strip()
-        if name in ("scale", "refresh_rate"):
+        if name in ("scale", "refresh_rate", "highlight_fill_opacity"):
             try:
                 parsed = float(raw_value)
             except ValueError:
@@ -52,6 +54,8 @@ def parse_picker_config(value):
             if name == "scale" and 0.1 <= parsed <= 1.0:
                 settings[name] = parsed
             elif name == "refresh_rate" and 0.5 <= parsed <= 30:
+                settings[name] = parsed
+            elif name == "highlight_fill_opacity" and 0.0 <= parsed <= 1.0:
                 settings[name] = parsed
         elif name in ("jpeg_quality", "columns", "highlight_border_size"):
             try:
@@ -64,8 +68,9 @@ def parse_picker_config(value):
                 settings[name] = parsed
             elif name == "highlight_border_size" and 1 <= parsed <= 30:
                 settings[name] = parsed
-        elif name == "highlight_border_color" and raw_value:
-            settings[name] = raw_value
+        elif name in ("highlight_color", "highlight_border_color") and raw_value:
+            settings["highlight_color"] = raw_value
+            settings["highlight_border_color"] = raw_value
     return settings
 
 
@@ -207,67 +212,128 @@ def hyprland_instance_signature():
     return None
 
 
-def hyprland_ipc_command(cmd_str):
+def hyprland_ipc_query(req_str):
     his = hyprland_instance_signature()
     if not his:
-        return False
+        return None
     sock_path = f"/run/user/{os.getuid()}/hypr/{his}/.socket.sock"
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
-            s.settimeout(0.25)
+            s.settimeout(0.2)
             s.connect(sock_path)
-            s.sendall(cmd_str.encode("utf-8"))
-            resp = s.recv(4096)
-            return resp == b"ok"
-    except (OSError, socket.timeout):
-        return False
+            s.sendall(req_str.encode("utf-8"))
+            buf = b""
+            while True:
+                chunk = s.recv(4096)
+                if not chunk:
+                    break
+                buf += chunk
+            return json.loads(buf.decode("utf-8"))
+    except (OSError, socket.timeout, json.JSONDecodeError):
+        return None
 
 
-class WindowHighlighter:
-    def __init__(self, border_color="rgba(53, 132, 228, 1.0)", border_size=5):
-        self.border_color = border_color
-        self.border_size = str(border_size)
-        self.active_address = None
+def parse_rgba_color(value, default=(0.6588, 0.3333, 0.9686, 1.0)):
+    """Parse hex (#rgb, #rrggbb, #rrggbbaa) or rgb/rgba(...) into (r, g, b, a) float tuple."""
+    if not value or not isinstance(value, str):
+        return default
+    value = value.strip().lower()
 
-    def highlight(self, address):
-        if not address or address == self.active_address:
-            return
-        if self.active_address:
-            self.clear()
-        cmd = (
-            f'eval local w = "address:{address}" '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "inactive_border_color", value = "{self.border_color}", window = w }})) '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "active_border_color", value = "{self.border_color}", window = w }})) '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "border_size", value = "{self.border_size}", window = w }}))'
-        )
-        if hyprland_ipc_command(cmd):
-            self.active_address = address
+    if value.startswith("#"):
+        hex_str = value.lstrip("#")
+        try:
+            if len(hex_str) == 3:
+                r = int(hex_str[0] * 2, 16) / 255.0
+                g = int(hex_str[1] * 2, 16) / 255.0
+                b = int(hex_str[2] * 2, 16) / 255.0
+                return (r, g, b, 1.0)
+            elif len(hex_str) == 6:
+                r = int(hex_str[0:2], 16) / 255.0
+                g = int(hex_str[2:4], 16) / 255.0
+                b = int(hex_str[4:6], 16) / 255.0
+                return (r, g, b, 1.0)
+            elif len(hex_str) == 8:
+                r = int(hex_str[0:2], 16) / 255.0
+                g = int(hex_str[2:4], 16) / 255.0
+                b = int(hex_str[4:6], 16) / 255.0
+                a = int(hex_str[6:8], 16) / 255.0
+                return (r, g, b, a)
+        except ValueError:
+            return default
 
-    def clear(self):
-        if not self.active_address:
-            return
-        cmd = (
-            f'eval local w = "address:{self.active_address}" '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "inactive_border_color", value = "unset", window = w }})) '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "active_border_color", value = "unset", window = w }})) '
-            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "border_size", value = "unset", window = w }}))'
-        )
-        hyprland_ipc_command(cmd)
-        self.active_address = None
+    m = re.match(
+        r"^rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$",
+        value,
+    )
+    if m:
+        try:
+            r_val = float(m.group(1))
+            g_val = float(m.group(2))
+            b_val = float(m.group(3))
+            r = (r_val / 255.0) if r_val > 1.0 else r_val
+            g = (g_val / 255.0) if g_val > 1.0 else g_val
+            b = (b_val / 255.0) if b_val > 1.0 else b_val
+            a = float(m.group(4)) if m.group(4) is not None else 1.0
+            return (r, g, b, a)
+        except ValueError:
+            return default
+
+    return default
 
 
-class ScreenHighlighter:
-    def __init__(self, layer_shell, gdk_module, gtk_module):
+class OverlayHighlighter:
+    """Renders slurp-like translucent box and crisp border overlays across monitors."""
+
+    def __init__(self, layer_shell, gdk_module, gtk_module, config):
         self.layer_shell = layer_shell
         self.Gdk = gdk_module
         self.Gtk = gtk_module
-        self.windows = {}
-        self.active_monitor = None
 
-    def _create_overlay(self, monitor_name, gdk_monitor):
+        color_str = config.get("highlight_color") or config.get("highlight_border_color")
+        color_tuple = parse_rgba_color(color_str)
+        self.r, self.g, self.b, _ = color_tuple
+        self.fill_alpha = float(config.get("highlight_fill_opacity", 0.22))
+        self.border_alpha = 0.95
+        self.border_width = float(config.get("highlight_border_size", 3))
+
+        self.overlays = {}
+        self.active_target = None
+
         if not self.layer_shell:
-            return None
+            return
+
+        display = self.Gdk.Display.get_default()
+        if display is None:
+            return
+
+        css = """
+        window.overlay-highlighter {
+            background-color: transparent;
+            background: none;
+            border: none;
+            box-shadow: none;
+        }
+        """
+        provider = self.Gtk.CssProvider()
+        provider.load_from_data(css.encode("utf-8"))
+        self.Gtk.StyleContext.add_provider_for_display(
+            display,
+            provider,
+            self.Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+
+        monitors = display.get_monitors()
+        for i in range(monitors.get_n_items()):
+            m = monitors.get_item(i)
+            connector = m.get_connector()
+            if not connector:
+                continue
+            geom = m.get_geometry()
+            self._create_monitor_overlay(connector, m, geom)
+
+    def _create_monitor_overlay(self, connector, gdk_mon, geom):
         win = self.Gtk.Window()
+        win.add_css_class("overlay-highlighter")
         self.layer_shell.init_for_window(win)
         self.layer_shell.set_layer(win, self.layer_shell.Layer.OVERLAY)
         self.layer_shell.set_keyboard_mode(win, self.layer_shell.KeyboardMode.NONE)
@@ -280,69 +346,193 @@ class ScreenHighlighter:
             self.layer_shell.Edge.RIGHT,
         ):
             self.layer_shell.set_anchor(win, edge, True)
-        self.layer_shell.set_monitor(win, gdk_monitor)
+        self.layer_shell.set_monitor(win, gdk_mon)
 
-        box = self.Gtk.Box()
-        box.set_hexpand(True)
-        box.set_vexpand(True)
-        box.set_can_target(False)
-        win.set_child(box)
+        area = self.Gtk.DrawingArea()
+        entry = {
+            "win": win,
+            "area": area,
+            "geom": geom,
+            "active_rect": None,
+            "exclude_rect": None,
+        }
 
-        win.add_css_class("screen-highlight-overlay")
-        win.set_can_target(False)
-        win.set_focusable(False)
+        def draw_func(_area, cr, width, height):
+            cr.save()
+            cr.set_operator(cairo.OPERATOR_CLEAR)
+            cr.paint()
+            cr.restore()
 
-        def on_realize(widget):
-            surface = widget.get_surface()
-            if surface is not None:
-                surface.set_input_region(cairo.Region())
+            rect = entry["active_rect"]
+            if not rect:
+                return
 
-        win.connect("realize", on_realize)
-        return win
+            rx, ry, rw, rh = rect
+            exclude = entry.get("exclude_rect")
 
-    def highlight(self, monitor_name):
-        if monitor_name == self.active_monitor:
-            return
-        if self.active_monitor:
+            # 1. Translucent fill (slurp style)
+            cr.save()
+            cr.rectangle(rx, ry, rw, rh)
+            if exclude:
+                ex, ey, ew, eh = exclude
+                if (
+                    ex < rx + rw
+                    and ex + ew > rx
+                    and ey < ry + rh
+                    and ey + eh > ry
+                ):
+                    cr.rectangle(ex, ey, ew, eh)
+                    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+            cr.set_source_rgba(self.r, self.g, self.b, self.fill_alpha)
+            cr.fill()
+            cr.restore()
+
+            # 2. Crisp solid border (slurp style)
+            cr.save()
+            cr.rectangle(rx, ry, rw, rh)
+            cr.set_source_rgba(self.r, self.g, self.b, self.border_alpha)
+            cr.set_line_width(self.border_width)
+            cr.stroke()
+            cr.restore()
+
+        area.set_draw_func(draw_func)
+        win.set_child(area)
+
+        def set_empty_input(w):
+            surf = w.get_surface()
+            if surf is not None:
+                surf.set_input_region(cairo.Region())
+
+        win.connect("realize", set_empty_input)
+        win.connect("map", set_empty_input)
+        self.overlays[connector] = entry
+
+    def highlight_screen(self, monitor_name):
+        self.active_target = ("screen", monitor_name)
+        picker_rect = self._get_picker_rect()
+
+        for connector, entry in self.overlays.items():
+            geom = entry["geom"]
+            if connector == monitor_name:
+                entry["active_rect"] = (0, 0, geom.width, geom.height)
+                if picker_rect:
+                    px, py, pw, ph = picker_rect
+                    entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
+                else:
+                    entry["exclude_rect"] = None
+                entry["win"].set_visible(True)
+                entry["area"].queue_draw()
+            else:
+                if entry["active_rect"] is not None:
+                    entry["active_rect"] = None
+                    entry["exclude_rect"] = None
+                    entry["win"].set_visible(False)
+                    entry["area"].queue_draw()
+
+    def highlight_window(self, target_data):
+        if not target_data:
             self.clear()
-        if not monitor_name or not self.layer_shell:
             return
 
-        display = self.Gdk.Display.get_default()
-        if display is None:
+        address = None
+        entry_meta = None
+        if isinstance(target_data, dict):
+            address = target_data.get("address")
+            entry_meta = target_data.get("entry")
+        else:
+            address = target_data
+
+        self.active_target = ("window", address or (entry_meta.get("id") if entry_meta else None))
+
+        clients = hyprland_ipc_query("j/clients") or []
+        client = None
+        if address:
+            client = next((c for c in clients if c.get("address") == address), None)
+        if not client and entry_meta:
+            client = client_for_entry(entry_meta, clients)
+
+        if not client or client.get("hidden") or not client.get("mapped", True):
+            self.clear()
             return
-        monitors = display.get_monitors()
-        target_gdk_mon = None
-        for i in range(monitors.get_n_items()):
-            m = monitors.get_item(i)
-            if m.get_connector() == monitor_name or m.get_description() == monitor_name:
-                target_gdk_mon = m
-                break
 
-        if target_gdk_mon is None:
+        win_x, win_y = client.get("at", [0, 0])
+        win_w, win_h = client.get("size", [0, 0])
+        if win_w <= 0 or win_h <= 0:
+            self.clear()
             return
 
-        if monitor_name not in self.windows:
-            self.windows[monitor_name] = self._create_overlay(monitor_name, target_gdk_mon)
+        client_ws = client.get("workspace", {}).get("id")
+        is_pinned = client.get("pinned", False)
 
-        win = self.windows.get(monitor_name)
-        if win is not None:
-            win.set_visible(True)
-            self.active_monitor = monitor_name
+        monitors_info = hyprland_ipc_query("j/monitors") or []
+        mon_active_ws = {
+            m.get("name"): m.get("activeWorkspace", {}).get("id")
+            for m in monitors_info
+        }
+
+        picker_rect = self._get_picker_rect(clients)
+
+        for connector, entry in self.overlays.items():
+            geom = entry["geom"]
+            rel_x = win_x - geom.x
+            rel_y = win_y - geom.y
+
+            active_ws = mon_active_ws.get(connector)
+            ws_visible = is_pinned or (client_ws is not None and client_ws == active_ws)
+
+            if (
+                ws_visible
+                and rel_x < geom.width
+                and rel_x + win_w > 0
+                and rel_y < geom.height
+                and rel_y + win_h > 0
+            ):
+                entry["active_rect"] = (rel_x, rel_y, win_w, win_h)
+                if picker_rect:
+                    px, py, pw, ph = picker_rect
+                    entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
+                else:
+                    entry["exclude_rect"] = None
+                entry["win"].set_visible(True)
+                entry["area"].queue_draw()
+            else:
+                if entry["active_rect"] is not None:
+                    entry["active_rect"] = None
+                    entry["exclude_rect"] = None
+                    entry["win"].set_visible(False)
+                    entry["area"].queue_draw()
+
+    def _get_picker_rect(self, clients=None):
+        if clients is None:
+            clients = hyprland_ipc_query("j/clients") or []
+        for c in clients:
+            c_class = c.get("class", "")
+            c_init = c.get("initialClass", "")
+            if (
+                "HyprlandSharePicker" in c_class
+                or "hyprland-share-picker" in c_class
+                or "HyprlandSharePicker" in c_init
+            ):
+                at = c.get("at")
+                size = c.get("size")
+                if at and size:
+                    return (at[0], at[1], size[0], size[1])
+        return None
 
     def clear(self):
-        if self.active_monitor and self.active_monitor in self.windows:
-            win = self.windows[self.active_monitor]
-            if win is not None:
-                win.set_visible(False)
-        self.active_monitor = None
+        self.active_target = None
+        for entry in self.overlays.values():
+            if entry["active_rect"] is not None:
+                entry["active_rect"] = None
+                entry["exclude_rect"] = None
+                entry["win"].set_visible(False)
+                entry["area"].queue_draw()
 
     def destroy_all(self):
         self.clear()
-        for win in self.windows.values():
-            if win is not None:
-                win.close()
-        self.windows.clear()
+        for entry in self.overlays.values():
+            entry["win"].close()
+        self.overlays.clear()
 
 
 def self_test():
@@ -362,16 +552,24 @@ def self_test():
         "jpeg_quality": 90,
         "refresh_rate": 8.0,
         "columns": 1,
-        "highlight_border_color": "rgba(53, 132, 228, 1.0)",
-        "highlight_border_size": 5,
+        "highlight_color": "rgba(168, 85, 247, 1.0)",
+        "highlight_border_color": "rgba(168, 85, 247, 1.0)",
+        "highlight_fill_opacity": 0.22,
+        "highlight_border_size": 3,
     }
     assert parse_picker_config("columns = 3")["columns"] == 3
     assert parse_picker_config("columns = 0")["columns"] == 1
     assert parse_picker_config("highlight_border_size = 8")["highlight_border_size"] == 8
-    assert parse_picker_config("highlight_border_color = #ff5500")["highlight_border_color"] == "#ff5500"
+    assert parse_picker_config("highlight_fill_opacity = 0.4")["highlight_fill_opacity"] == 0.4
+    assert parse_picker_config("highlight_color = #a855f7")["highlight_color"] == "#a855f7"
     assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_CONFIG
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"
+    parsed_rgb = parse_rgba_color("#a855f7")
+    assert abs(parsed_rgb[0] - 0.6588) < 0.01
+    assert abs(parsed_rgb[1] - 0.3333) < 0.01
+    assert abs(parsed_rgb[2] - 0.9686) < 0.01
+    assert parsed_rgb[3] == 1.0
 
 
 def load_gtk():
@@ -400,6 +598,8 @@ def main():
         assert Gtk.ContentFit.COVER is not None
         assert Gdk.Texture.new_from_bytes is not None
         assert Gtk4LayerShell is not None
+        if os.environ.get("WAYLAND_DISPLAY"):
+            assert Gtk4LayerShell.is_supported(), "Gtk4LayerShell is not supported (check LD_PRELOAD)"
         return
 
     class SharePicker(Gtk.Application):
@@ -434,14 +634,15 @@ def main():
             self.window_flow = None
             self.window_card_states = []
             self.window_refreshing = threading.Event()
-            self.window_highlighter = WindowHighlighter(
-                border_color=self.config.get("highlight_border_color", "rgba(53, 132, 228, 1.0)"),
-                border_size=self.config.get("highlight_border_size", 5),
-            )
-            self.screen_highlighter = ScreenHighlighter(
-                Gtk4LayerShell,
-                Gdk,
-                Gtk,
+            self.highlighter = (
+                OverlayHighlighter(
+                    Gtk4LayerShell,
+                    Gdk,
+                    Gtk,
+                    self.config,
+                )
+                if Gtk4LayerShell
+                else None
             )
             self.hovered_target = None
             self.selected_target = None
@@ -450,19 +651,13 @@ def main():
 
         def do_shutdown(self):
             self.clear_all_highlights()
-            if self.screen_highlighter:
-                self.screen_highlighter.destroy_all()
+            if getattr(self, "highlighter", None):
+                self.highlighter.destroy_all()
             super().do_shutdown()
 
         def target_for_card(self, selection, state, tab):
             if tab == "windows":
-                addr = state.get("address") if state else None
-                if not addr and state and state.get("entry"):
-                    client = client_for_entry(state["entry"], read_json(["hyprctl", "clients", "-j"]))
-                    if client:
-                        addr = client.get("address")
-                        state["address"] = addr
-                return ("window", addr) if addr else None
+                return ("window", state) if state else None
             elif tab == "screens":
                 monitor_name = selection.removeprefix("screen:") if selection else None
                 return ("screen", monitor_name) if monitor_name else None
@@ -491,29 +686,26 @@ def main():
             if target == self.current_highlight:
                 return
 
-            if self.current_highlight is not None:
-                prev_type, prev_val = self.current_highlight
-                if prev_type == "window":
-                    self.window_highlighter.clear()
-                elif prev_type == "screen":
-                    self.screen_highlighter.clear()
+            if target is None:
+                if getattr(self, "highlighter", None):
+                    self.highlighter.clear()
                 self.current_highlight = None
+                return
 
-            if target is not None:
-                new_type, new_val = target
-                if new_type == "window" and new_val:
-                    self.window_highlighter.highlight(new_val)
-                    self.current_highlight = target
-                elif new_type == "screen" and new_val:
-                    self.screen_highlighter.highlight(new_val)
-                    self.current_highlight = target
+            new_type, new_val = target
+            if new_type == "window":
+                if getattr(self, "highlighter", None):
+                    self.highlighter.highlight_window(new_val)
+                self.current_highlight = target
+            elif new_type == "screen":
+                if getattr(self, "highlighter", None):
+                    self.highlighter.highlight_screen(new_val)
+                self.current_highlight = target
 
         def clear_all_highlights(self):
             self.hovered_target = None
-            if self.window_highlighter:
-                self.window_highlighter.clear()
-            if self.screen_highlighter:
-                self.screen_highlighter.clear()
+            if getattr(self, "highlighter", None):
+                self.highlighter.clear()
             self.current_highlight = None
 
         def do_activate(self):
@@ -1088,38 +1280,30 @@ def main():
             return False
 
         def install_css(self):
-            highlight_color = self.config.get("highlight_border_color", "rgba(53, 132, 228, 1.0)")
-            highlight_size = self.config.get("highlight_border_size", 5)
-            css_data = f"""
-                .share-picker {{ background: @window_bg_color; }}
-                .source-card {{
+            css_data = b"""
+                .share-picker { background: @window_bg_color; }
+                .source-card {
                   background: alpha(@window_fg_color, 0.045);
                   border: 2px solid transparent;
                   border-radius: 14px;
                   padding: 0;
-                }}
-                .source-card:hover {{ background: alpha(@accent_bg_color, 0.12); }}
-                .source-card:checked {{
+                }
+                .source-card:hover { background: alpha(@accent_bg_color, 0.12); }
+                .source-card:checked {
                   background: alpha(@accent_bg_color, 0.16);
                   border-color: @accent_bg_color;
                   box-shadow: 0 4px 16px alpha(@accent_bg_color, 0.18);
-                }}
-                .source-card > box {{ min-width: 220px; }}
-                .action-card {{
+                }
+                .source-card > box { min-width: 220px; }
+                .action-card {
                   background: alpha(@accent_bg_color, 0.08);
                   border-style: dashed;
-                }}
-                .preview {{
+                }
+                .preview {
                   background: alpha(@window_fg_color, 0.09);
                   border-radius: 12px 12px 0 0;
-                }}
-                .screen-highlight-overlay {{
-                  background-color: transparent;
-                  border: {highlight_size}px solid {highlight_color};
-                  border-radius: 0;
-                  box-shadow: inset 0 0 16px alpha({highlight_color}, 0.45);
-                }}
-            """.encode("utf-8")
+                }
+            """
             provider = Gtk.CssProvider()
             provider.load_from_data(css_data)
             Gtk.StyleContext.add_provider_for_display(
