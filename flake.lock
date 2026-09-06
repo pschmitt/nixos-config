@@ -182,22 +182,6 @@
         "type": "github"
       }
     },
-    "cpuguy83-nixcfg": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1786311455,
-        "narHash": "sha256-5cAne93gFa5fz5CBQ88h5NawJviwkVvK+dIm9Hf3WYY=",
-        "owner": "cpuguy83",
-        "repo": "nixcfg",
-        "rev": "b3405112fed9211d997549da7ebf14911f14a982",
-        "type": "github"
-      },
-      "original": {
-        "owner": "cpuguy83",
-        "repo": "nixcfg",
-        "type": "github"
-      }
-    },
     "dank-qml-common": {
       "flake": false,
       "locked": {
@@ -3321,7 +3305,6 @@
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "codex-ha-bridge": "codex-ha-bridge",
-        "cpuguy83-nixcfg": "cpuguy83-nixcfg",
         "dankMaterialShell": "dankMaterialShell",
         "declaroid": "declaroid",
         "disko": "disko",

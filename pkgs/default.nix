@@ -54,6 +54,7 @@ in
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
+  hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
