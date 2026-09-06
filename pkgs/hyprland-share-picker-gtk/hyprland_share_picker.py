@@ -16,9 +16,47 @@ WINDOW_ENTRY = re.compile(
     r"(?P<title>.*?)\[HE>]"
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
-PREVIEW_REFRESH_MS = 250
-PREVIEW_SCALE = "0.35"
-PREVIEW_JPEG_QUALITY = "78"
+CONFIG_VALUE = re.compile(r"^\s*(scale|jpeg_quality|refresh_rate)\s*=\s*(\S+)", re.MULTILINE)
+DEFAULT_PREVIEW_SETTINGS = {
+    "scale": 0.35,
+    "jpeg_quality": 78,
+    "refresh_rate": 4.0,
+}
+
+
+def picker_config_path():
+    config_home = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    return config_home / "hypr" / "xdph-picker-gtk.conf"
+
+
+def parse_picker_config(value):
+    """Read the small Hyprlang-style preview settings file safely."""
+    settings = DEFAULT_PREVIEW_SETTINGS.copy()
+    for name, raw_value in CONFIG_VALUE.findall(value):
+        try:
+            parsed = float(raw_value)
+        except ValueError:
+            continue
+        if name == "scale" and 0.1 <= parsed <= 1.0:
+            settings[name] = parsed
+        elif name == "jpeg_quality" and 1 <= parsed <= 100:
+            settings[name] = int(parsed)
+        elif name == "refresh_rate" and 0.5 <= parsed <= 30:
+            settings[name] = parsed
+    return settings
+
+
+def picker_config():
+    try:
+        return parse_picker_config(picker_config_path().read_text())
+    except OSError:
+        return DEFAULT_PREVIEW_SETTINGS.copy()
+
+
+PREVIEW_SETTINGS = picker_config()
+PREVIEW_REFRESH_MS = max(33, round(1000 / PREVIEW_SETTINGS["refresh_rate"]))
+PREVIEW_SCALE = str(PREVIEW_SETTINGS["scale"])
+PREVIEW_JPEG_QUALITY = str(PREVIEW_SETTINGS["jpeg_quality"])
 
 
 def portal_selection(selection, allow_token):
@@ -144,6 +182,12 @@ def self_test():
         "title": "A tab",
     }
     assert window_preview_command({"stableId": "18000004"})[:3] == ["grim", "-T", "18000004"]
+    assert parse_picker_config("preview {\n  scale = 0.5\n  jpeg_quality = 90\n  refresh_rate = 8\n}") == {
+        "scale": 0.5,
+        "jpeg_quality": 90,
+        "refresh_rate": 8.0,
+    }
+    assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_PREVIEW_SETTINGS
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"
 
