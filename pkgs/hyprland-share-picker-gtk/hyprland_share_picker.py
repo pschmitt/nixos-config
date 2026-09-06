@@ -21,18 +21,24 @@ WINDOW_ENTRY = re.compile(
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
 CONFIG_VALUE = re.compile(
-    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_color|highlight_border_color|highlight_fill_opacity|highlight_border_size)\s*=\s*(.+?)\s*$",
+    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_mode|highlight_color"
+    r"|highlight_border_color|highlight_fill_opacity|highlight_border_size"
+    r"|dim_color|dim_factor)\s*=\s*(.+?)\s*$",
     re.MULTILINE,
 )
+HIGHLIGHT_MODES = ("highlight", "dim")
 DEFAULT_CONFIG = {
     "scale": 0.35,
     "jpeg_quality": 78,
     "refresh_rate": 4.0,
     "columns": 1,
-    "highlight_color": "rgba(168, 85, 247, 1.0)",
-    "highlight_border_color": "rgba(168, 85, 247, 1.0)",
+    "highlight_mode": "highlight",
+    "highlight_color": "rgba(59, 130, 246, 1.0)",
+    "highlight_border_color": "rgba(59, 130, 246, 1.0)",
     "highlight_fill_opacity": 0.22,
     "highlight_border_size": 3,
+    "dim_color": "rgba(0, 0, 0, 1.0)",
+    "dim_factor": 0.5,
 }
 
 
@@ -46,7 +52,7 @@ def parse_picker_config(value):
     settings = DEFAULT_CONFIG.copy()
     for name, raw_value in CONFIG_VALUE.findall(value):
         raw_value = raw_value.strip()
-        if name in ("scale", "refresh_rate", "highlight_fill_opacity"):
+        if name in ("scale", "refresh_rate", "highlight_fill_opacity", "dim_factor"):
             try:
                 parsed = float(raw_value)
             except ValueError:
@@ -55,7 +61,7 @@ def parse_picker_config(value):
                 settings[name] = parsed
             elif name == "refresh_rate" and 0.5 <= parsed <= 30:
                 settings[name] = parsed
-            elif name == "highlight_fill_opacity" and 0.0 <= parsed <= 1.0:
+            elif name in ("highlight_fill_opacity", "dim_factor") and 0.0 <= parsed <= 1.0:
                 settings[name] = parsed
         elif name in ("jpeg_quality", "columns", "highlight_border_size"):
             try:
@@ -68,6 +74,12 @@ def parse_picker_config(value):
                 settings[name] = parsed
             elif name == "highlight_border_size" and 1 <= parsed <= 30:
                 settings[name] = parsed
+        elif name == "highlight_mode":
+            mode = raw_value.lower()
+            if mode in HIGHLIGHT_MODES:
+                settings[name] = mode
+        elif name == "dim_color" and raw_value:
+            settings[name] = raw_value
         elif name in ("highlight_color", "highlight_border_color") and raw_value:
             settings["highlight_color"] = raw_value
             settings["highlight_border_color"] = raw_value
@@ -233,7 +245,10 @@ def hyprland_ipc_query(req_str):
         return None
 
 
-def parse_rgba_color(value, default=(0.6588, 0.3333, 0.9686, 1.0)):
+DEFAULT_HIGHLIGHT_RGBA = (0.2314, 0.5098, 0.9647, 1.0)
+
+
+def parse_rgba_color(value, default=DEFAULT_HIGHLIGHT_RGBA):
     """Parse hex (#rgb, #rrggbb, #rrggbbaa) or rgb/rgba(...) into (r, g, b, a) float tuple."""
     if not value or not isinstance(value, str):
         return default
@@ -290,11 +305,16 @@ class OverlayHighlighter:
         self.Gtk = gtk_module
 
         color_str = config.get("highlight_color") or config.get("highlight_border_color")
-        color_tuple = parse_rgba_color(color_str)
+        color_tuple = parse_rgba_color(color_str, DEFAULT_HIGHLIGHT_RGBA)
         self.r, self.g, self.b, _ = color_tuple
         self.fill_alpha = float(config.get("highlight_fill_opacity", 0.22))
         self.border_alpha = 0.95
         self.border_width = float(config.get("highlight_border_size", 3))
+
+        self.mode = config.get("highlight_mode", "highlight")
+        dim_tuple = parse_rgba_color(config.get("dim_color"), (0.0, 0.0, 0.0, 1.0))
+        self.dim_r, self.dim_g, self.dim_b, _ = dim_tuple
+        self.dim_alpha = float(config.get("dim_factor", 0.5))
 
         self.overlays = {}
         self.active_target = None
@@ -355,6 +375,7 @@ class OverlayHighlighter:
             "geom": geom,
             "active_rect": None,
             "exclude_rect": None,
+            "dim_all": False,
         }
 
         def draw_func(_area, cr, width, height):
@@ -364,35 +385,52 @@ class OverlayHighlighter:
             cr.restore()
 
             rect = entry["active_rect"]
-            if not rect:
+            if not rect and not entry.get("dim_all"):
                 return
 
-            rx, ry, rw, rh = rect
             exclude = entry.get("exclude_rect")
 
-            # 1. Translucent fill (slurp style)
+            # The picker dialog sits below this overlay layer, so clip it out of
+            # everything we paint - fill, dim and border alike. Otherwise the
+            # target's edges are stroked straight across the dialog.
             cr.save()
-            cr.rectangle(rx, ry, rw, rh)
             if exclude:
                 ex, ey, ew, eh = exclude
-                if (
-                    ex < rx + rw
-                    and ex + ew > rx
-                    and ey < ry + rh
-                    and ey + eh > ry
-                ):
-                    cr.rectangle(ex, ey, ew, eh)
-                    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
-            cr.set_source_rgba(self.r, self.g, self.b, self.fill_alpha)
-            cr.fill()
-            cr.restore()
+                cr.rectangle(0, 0, width, height)
+                cr.rectangle(ex, ey, ew, eh)
+                cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+                cr.clip()
 
-            # 2. Crisp solid border (slurp style)
-            cr.save()
-            cr.rectangle(rx, ry, rw, rh)
-            cr.set_source_rgba(self.r, self.g, self.b, self.border_alpha)
-            cr.set_line_width(self.border_width)
-            cr.stroke()
+            if self.mode == "dim":
+                # Dim everything except the target.
+                cr.save()
+                cr.rectangle(0, 0, width, height)
+                if rect:
+                    rx, ry, rw, rh = rect
+                    cr.rectangle(rx, ry, rw, rh)
+                    cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+                cr.set_source_rgba(self.dim_r, self.dim_g, self.dim_b, self.dim_alpha)
+                cr.fill()
+                cr.restore()
+            elif rect:
+                # Translucent fill over the target (slurp style).
+                rx, ry, rw, rh = rect
+                cr.save()
+                cr.rectangle(rx, ry, rw, rh)
+                cr.set_source_rgba(self.r, self.g, self.b, self.fill_alpha)
+                cr.fill()
+                cr.restore()
+
+            # Crisp solid border around the target (slurp style).
+            if rect:
+                rx, ry, rw, rh = rect
+                cr.save()
+                cr.rectangle(rx, ry, rw, rh)
+                cr.set_source_rgba(self.r, self.g, self.b, self.border_alpha)
+                cr.set_line_width(self.border_width)
+                cr.stroke()
+                cr.restore()
+
             cr.restore()
 
         area.set_draw_func(draw_func)
@@ -414,20 +452,9 @@ class OverlayHighlighter:
         for connector, entry in self.overlays.items():
             geom = entry["geom"]
             if connector == monitor_name:
-                entry["active_rect"] = (0, 0, geom.width, geom.height)
-                if picker_rect:
-                    px, py, pw, ph = picker_rect
-                    entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
-                else:
-                    entry["exclude_rect"] = None
-                entry["win"].set_visible(True)
-                entry["area"].queue_draw()
+                self._show(entry, (0, 0, geom.width, geom.height), picker_rect)
             else:
-                if entry["active_rect"] is not None:
-                    entry["active_rect"] = None
-                    entry["exclude_rect"] = None
-                    entry["win"].set_visible(False)
-                    entry["area"].queue_draw()
+                self._hide(entry, picker_rect)
 
     def highlight_window(self, target_data):
         if not target_data:
@@ -487,20 +514,38 @@ class OverlayHighlighter:
                 and rel_y < geom.height
                 and rel_y + win_h > 0
             ):
-                entry["active_rect"] = (rel_x, rel_y, win_w, win_h)
-                if picker_rect:
-                    px, py, pw, ph = picker_rect
-                    entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
-                else:
-                    entry["exclude_rect"] = None
-                entry["win"].set_visible(True)
-                entry["area"].queue_draw()
+                self._show(entry, (rel_x, rel_y, win_w, win_h), picker_rect)
             else:
-                if entry["active_rect"] is not None:
-                    entry["active_rect"] = None
-                    entry["exclude_rect"] = None
-                    entry["win"].set_visible(False)
-                    entry["area"].queue_draw()
+                self._hide(entry, picker_rect)
+
+    def _show(self, entry, rect, picker_rect):
+        """Paint `rect` (monitor-relative) as the target on this monitor."""
+        geom = entry["geom"]
+        entry["active_rect"] = rect
+        entry["dim_all"] = False
+        if picker_rect:
+            px, py, pw, ph = picker_rect
+            entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
+        else:
+            entry["exclude_rect"] = None
+        entry["win"].set_visible(True)
+        entry["area"].queue_draw()
+
+    def _hide(self, entry, picker_rect):
+        """Drop the target on this monitor - in dim mode it stays fully dimmed."""
+        geom = entry["geom"]
+        dim_all = self.mode == "dim"
+        if entry["active_rect"] is None and entry["dim_all"] == dim_all:
+            return
+        entry["active_rect"] = None
+        entry["dim_all"] = dim_all
+        if dim_all and picker_rect:
+            px, py, pw, ph = picker_rect
+            entry["exclude_rect"] = (px - geom.x, py - geom.y, pw, ph)
+        else:
+            entry["exclude_rect"] = None
+        entry["win"].set_visible(dim_all)
+        entry["area"].queue_draw()
 
     def _get_picker_rect(self, clients=None):
         if clients is None:
@@ -522,11 +567,13 @@ class OverlayHighlighter:
     def clear(self):
         self.active_target = None
         for entry in self.overlays.values():
-            if entry["active_rect"] is not None:
-                entry["active_rect"] = None
-                entry["exclude_rect"] = None
-                entry["win"].set_visible(False)
-                entry["area"].queue_draw()
+            if entry["active_rect"] is None and not entry["dim_all"]:
+                continue
+            entry["active_rect"] = None
+            entry["dim_all"] = False
+            entry["exclude_rect"] = None
+            entry["win"].set_visible(False)
+            entry["area"].queue_draw()
 
     def destroy_all(self):
         self.clear()
@@ -552,16 +599,24 @@ def self_test():
         "jpeg_quality": 90,
         "refresh_rate": 8.0,
         "columns": 1,
-        "highlight_color": "rgba(168, 85, 247, 1.0)",
-        "highlight_border_color": "rgba(168, 85, 247, 1.0)",
+        "highlight_mode": "highlight",
+        "highlight_color": "rgba(59, 130, 246, 1.0)",
+        "highlight_border_color": "rgba(59, 130, 246, 1.0)",
         "highlight_fill_opacity": 0.22,
         "highlight_border_size": 3,
+        "dim_color": "rgba(0, 0, 0, 1.0)",
+        "dim_factor": 0.5,
     }
     assert parse_picker_config("columns = 3")["columns"] == 3
     assert parse_picker_config("columns = 0")["columns"] == 1
     assert parse_picker_config("highlight_border_size = 8")["highlight_border_size"] == 8
     assert parse_picker_config("highlight_fill_opacity = 0.4")["highlight_fill_opacity"] == 0.4
     assert parse_picker_config("highlight_color = #a855f7")["highlight_color"] == "#a855f7"
+    assert parse_picker_config("highlight_mode = dim")["highlight_mode"] == "dim"
+    assert parse_picker_config("highlight_mode = nope")["highlight_mode"] == "highlight"
+    assert parse_picker_config("dim_factor = 0.7")["dim_factor"] == 0.7
+    assert parse_picker_config("dim_factor = 5")["dim_factor"] == 0.5
+    assert parse_picker_config("dim_color = #101010")["dim_color"] == "#101010"
     assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_CONFIG
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"
