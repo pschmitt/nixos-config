@@ -1,5 +1,9 @@
 { pkgs, ... }:
 {
+  home.packages = [
+    pkgs.hyprland-share-picker-gtk
+  ];
+
   # Mirror ~/.config/hypr/xdph.conf for xdg-desktop-portal-hyprland.
   xdg.configFile."hypr/xdph.conf".text = ''
     screencopy {
