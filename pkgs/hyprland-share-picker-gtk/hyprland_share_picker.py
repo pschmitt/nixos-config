@@ -21,12 +21,31 @@ WINDOW_ENTRY = re.compile(
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
 CONFIG_VALUE = re.compile(
-    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_mode|highlight_color"
-    r"|highlight_border_color|highlight_fill_opacity|highlight_border_size"
-    r"|dim_color|dim_factor)\s*=\s*(.+?)\s*$",
+    r"^\s*(scale|jpeg_quality|refresh_rate|columns"
+    r"|mode|color|fill_opacity|border_size|border|dim_color|dim_factor)\s*=\s*(.+?)\s*$",
     re.MULTILINE,
 )
+# Keys of the `highlight { ... }` section, mapped onto their setting names.
+HIGHLIGHT_KEYS = {
+    "mode": "highlight_mode",
+    "color": "highlight_color",
+    "fill_opacity": "highlight_fill_opacity",
+    "border": "highlight_border",
+    "border_size": "highlight_border_size",
+    "dim_color": "dim_color",
+    "dim_factor": "dim_factor",
+}
 HIGHLIGHT_MODES = ("highlight", "dim")
+BOOL_VALUES = {
+    "true": True,
+    "yes": True,
+    "on": True,
+    "1": True,
+    "false": False,
+    "no": False,
+    "off": False,
+    "0": False,
+}
 DEFAULT_CONFIG = {
     "scale": 0.35,
     "jpeg_quality": 78,
@@ -34,8 +53,8 @@ DEFAULT_CONFIG = {
     "columns": 1,
     "highlight_mode": "highlight",
     "highlight_color": "rgba(59, 130, 246, 1.0)",
-    "highlight_border_color": "rgba(59, 130, 246, 1.0)",
     "highlight_fill_opacity": 0.22,
+    "highlight_border": True,
     "highlight_border_size": 3,
     "dim_color": "rgba(0, 0, 0, 1.0)",
     "dim_factor": 0.5,
@@ -51,6 +70,7 @@ def parse_picker_config(value):
     """Read the small Hyprlang-style preview and highlight settings file safely."""
     settings = DEFAULT_CONFIG.copy()
     for name, raw_value in CONFIG_VALUE.findall(value):
+        name = HIGHLIGHT_KEYS.get(name, name)
         raw_value = raw_value.strip()
         if name in ("scale", "refresh_rate", "highlight_fill_opacity", "dim_factor"):
             try:
@@ -74,15 +94,16 @@ def parse_picker_config(value):
                 settings[name] = parsed
             elif name == "highlight_border_size" and 1 <= parsed <= 30:
                 settings[name] = parsed
+        elif name == "highlight_border":
+            parsed = BOOL_VALUES.get(raw_value.lower())
+            if parsed is not None:
+                settings[name] = parsed
         elif name == "highlight_mode":
             mode = raw_value.lower()
             if mode in HIGHLIGHT_MODES:
                 settings[name] = mode
-        elif name == "dim_color" and raw_value:
+        elif name in ("highlight_color", "dim_color") and raw_value:
             settings[name] = raw_value
-        elif name in ("highlight_color", "highlight_border_color") and raw_value:
-            settings["highlight_color"] = raw_value
-            settings["highlight_border_color"] = raw_value
     return settings
 
 
@@ -304,11 +325,12 @@ class OverlayHighlighter:
         self.Gdk = gdk_module
         self.Gtk = gtk_module
 
-        color_str = config.get("highlight_color") or config.get("highlight_border_color")
+        color_str = config.get("highlight_color")
         color_tuple = parse_rgba_color(color_str, DEFAULT_HIGHLIGHT_RGBA)
         self.r, self.g, self.b, _ = color_tuple
         self.fill_alpha = float(config.get("highlight_fill_opacity", 0.22))
         self.border_alpha = 0.95
+        self.draw_border = bool(config.get("highlight_border", True))
         self.border_width = float(config.get("highlight_border_size", 3))
 
         self.mode = config.get("highlight_mode", "highlight")
@@ -422,7 +444,7 @@ class OverlayHighlighter:
                 cr.restore()
 
             # Crisp solid border around the target (slurp style).
-            if rect:
+            if rect and self.draw_border:
                 rx, ry, rw, rh = rect
                 cr.save()
                 cr.rectangle(rx, ry, rw, rh)
@@ -601,22 +623,37 @@ def self_test():
         "columns": 1,
         "highlight_mode": "highlight",
         "highlight_color": "rgba(59, 130, 246, 1.0)",
-        "highlight_border_color": "rgba(59, 130, 246, 1.0)",
         "highlight_fill_opacity": 0.22,
+        "highlight_border": True,
         "highlight_border_size": 3,
         "dim_color": "rgba(0, 0, 0, 1.0)",
         "dim_factor": 0.5,
     }
     assert parse_picker_config("columns = 3")["columns"] == 3
     assert parse_picker_config("columns = 0")["columns"] == 1
-    assert parse_picker_config("highlight_border_size = 8")["highlight_border_size"] == 8
-    assert parse_picker_config("highlight_fill_opacity = 0.4")["highlight_fill_opacity"] == 0.4
-    assert parse_picker_config("highlight_color = #a855f7")["highlight_color"] == "#a855f7"
-    assert parse_picker_config("highlight_mode = dim")["highlight_mode"] == "dim"
-    assert parse_picker_config("highlight_mode = nope")["highlight_mode"] == "highlight"
-    assert parse_picker_config("dim_factor = 0.7")["dim_factor"] == 0.7
+    highlight_section = parse_picker_config(
+        "highlight {\n"
+        "  mode = dim\n"
+        "  color = #a855f7\n"
+        "  fill_opacity = 0.4\n"
+        "  border = false\n"
+        "  border_size = 8\n"
+        "  dim_color = #101010\n"
+        "  dim_factor = 0.7\n"
+        "}"
+    )
+    assert highlight_section["highlight_mode"] == "dim"
+    assert highlight_section["highlight_color"] == "#a855f7"
+    assert highlight_section["highlight_fill_opacity"] == 0.4
+    assert highlight_section["highlight_border"] is False
+    assert highlight_section["highlight_border_size"] == 8
+    assert highlight_section["dim_color"] == "#101010"
+    assert highlight_section["dim_factor"] == 0.7
+    assert parse_picker_config("mode = nope")["highlight_mode"] == "highlight"
     assert parse_picker_config("dim_factor = 5")["dim_factor"] == 0.5
-    assert parse_picker_config("dim_color = #101010")["dim_color"] == "#101010"
+    assert parse_picker_config("border = no")["highlight_border"] is False
+    assert parse_picker_config("border = maybe")["highlight_border"] is True
+    assert parse_picker_config("border_size = 8")["highlight_border"] is True
     assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_CONFIG
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"

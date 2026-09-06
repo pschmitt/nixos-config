@@ -23,7 +23,7 @@ let
   # future noctalia release closes that race and this becomes viable again.
 in
 {
-  home-manager.users.${config.mainUser.username} = {
+  home-manager.users.${config.mainUser.username} = hmArgs: {
     programs.noctalia = {
       enable = true;
       systemd.enable = true;
@@ -117,8 +117,8 @@ in
             "pschmitt/screencast:bar"
             "media"
             "media-gap"
-            # "ai_usage" — disabled, see plugins.enabled below.
             "tray"
+            "salemsayed/codexbar-meter:bar"
             "pschmitt/syncthing:bar"
             "group:volume"
             "group:notif-battery"
@@ -162,6 +162,9 @@ in
         };
         plugins = {
           enabled = [
+            # CodexBar usage meter (community plugin) — reports AI plan quotas
+            # (Codex, Claude, etc.) via the codexbar CLI.
+            "salemsayed/codexbar-meter"
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
             # rylos/syncthing (see pschmitt/noctalia-plugins) with a
             # tray-sized icon and the DMS syncshell widget's composited status
@@ -330,6 +333,15 @@ in
         # active custom palette by pschmitt/noctalia-plugins' battery-icon
         # service.luau before hitting ImageMagick.
         plugin_settings = {
+          "salemsayed/codexbar-meter" = {
+            # The wrapper from home-manager/devel/codexbar.nix, not plain
+            # pkgs.codexbar: it supplies the OpenAI admin key from sops and
+            # reports both Claude accounts instead of only the active one.
+            codexbarPath = "${hmArgs.config.custom.codexbar.package}/bin/codexbar";
+            # Codex, OpenAI, Claude x2 and Antigravity — show as many meters in
+            # the bar as the plugin allows, the rest fall into its "+N".
+            barProviderLimit = 4;
+          };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
             color_trigger = "temp";
@@ -362,8 +374,7 @@ in
     # so flip which one autostarts with the graphical session. toggle-bar.sh
     # can still cycle to any available bar regardless of this.
     systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
-    # CLI kept on PATH for direct terminal use even with the
-    # felipeartur/ai-usagebar bar widget disabled above.
+    # codexbar itself comes from home-manager/devel/codexbar.nix.
     home.packages = [ pkgs.ai-usagebar ];
   };
 
