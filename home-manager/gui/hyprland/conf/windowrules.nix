@@ -64,6 +64,14 @@
       # Share picker + Zoom quirks
       {
         match = xdph;
+        float = true;
+      }
+      {
+        match = xdph;
+        center = true;
+      }
+      {
+        match = xdph;
         pin = true;
       }
       {
