@@ -10,6 +10,7 @@
   gobject-introspection-unwrapped,
   grim,
   gtk4,
+  gtk4-layer-shell,
   hyprland,
   pango,
   slurp,
@@ -47,6 +48,7 @@ stdenvNoCC.mkDerivation {
     glib
     gobject-introspection-unwrapped
     gtk4
+    gtk4-layer-shell
     pango
   ];
 

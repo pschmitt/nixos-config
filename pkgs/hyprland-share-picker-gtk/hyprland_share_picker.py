@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """A GTK4 screencast source picker for xdg-desktop-portal-hyprland."""
 
+import atexit
+import cairo
 import json
 import os
 import re
+import socket
 import subprocess
 import sys
 import threading
@@ -18,7 +21,7 @@ WINDOW_ENTRY = re.compile(
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
 CONFIG_VALUE = re.compile(
-    r"^\s*(scale|jpeg_quality|refresh_rate|columns)\s*=\s*(\S+)",
+    r"^\s*(scale|jpeg_quality|refresh_rate|columns|highlight_border_color|highlight_border_size)\s*=\s*(.+?)\s*$",
     re.MULTILINE,
 )
 DEFAULT_CONFIG = {
@@ -26,6 +29,8 @@ DEFAULT_CONFIG = {
     "jpeg_quality": 78,
     "refresh_rate": 4.0,
     "columns": 1,
+    "highlight_border_color": "rgba(53, 132, 228, 1.0)",
+    "highlight_border_size": 5,
 }
 
 
@@ -35,21 +40,32 @@ def picker_config_path():
 
 
 def parse_picker_config(value):
-    """Read the small Hyprlang-style preview settings file safely."""
+    """Read the small Hyprlang-style preview and highlight settings file safely."""
     settings = DEFAULT_CONFIG.copy()
     for name, raw_value in CONFIG_VALUE.findall(value):
-        try:
-            parsed = float(raw_value)
-        except ValueError:
-            continue
-        if name == "scale" and 0.1 <= parsed <= 1.0:
-            settings[name] = parsed
-        elif name == "jpeg_quality" and 1 <= parsed <= 100:
-            settings[name] = int(parsed)
-        elif name == "refresh_rate" and 0.5 <= parsed <= 30:
-            settings[name] = parsed
-        elif name == "columns" and 1 <= parsed <= 12:
-            settings[name] = int(parsed)
+        raw_value = raw_value.strip()
+        if name in ("scale", "refresh_rate"):
+            try:
+                parsed = float(raw_value)
+            except ValueError:
+                continue
+            if name == "scale" and 0.1 <= parsed <= 1.0:
+                settings[name] = parsed
+            elif name == "refresh_rate" and 0.5 <= parsed <= 30:
+                settings[name] = parsed
+        elif name in ("jpeg_quality", "columns", "highlight_border_size"):
+            try:
+                parsed = int(raw_value)
+            except ValueError:
+                continue
+            if name == "jpeg_quality" and 1 <= parsed <= 100:
+                settings[name] = parsed
+            elif name == "columns" and 1 <= parsed <= 12:
+                settings[name] = parsed
+            elif name == "highlight_border_size" and 1 <= parsed <= 30:
+                settings[name] = parsed
+        elif name == "highlight_border_color" and raw_value:
+            settings[name] = raw_value
     return settings
 
 
@@ -179,6 +195,156 @@ def parse_region(value, monitor_list):
     return f"region:{output}@{x - monitor.get('x', 0)},{y - monitor.get('y', 0)},{width},{height}"
 
 
+def hyprland_instance_signature():
+    his = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE")
+    if his:
+        return his
+    hypr_dir = Path(f"/run/user/{os.getuid()}/hypr")
+    if hypr_dir.is_dir():
+        for entry in hypr_dir.iterdir():
+            if (entry / ".socket.sock").exists():
+                return entry.name
+    return None
+
+
+def hyprland_ipc_command(cmd_str):
+    his = hyprland_instance_signature()
+    if not his:
+        return False
+    sock_path = f"/run/user/{os.getuid()}/hypr/{his}/.socket.sock"
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.settimeout(0.25)
+            s.connect(sock_path)
+            s.sendall(cmd_str.encode("utf-8"))
+            resp = s.recv(4096)
+            return resp == b"ok"
+    except (OSError, socket.timeout):
+        return False
+
+
+class WindowHighlighter:
+    def __init__(self, border_color="rgba(53, 132, 228, 1.0)", border_size=5):
+        self.border_color = border_color
+        self.border_size = str(border_size)
+        self.active_address = None
+
+    def highlight(self, address):
+        if not address or address == self.active_address:
+            return
+        if self.active_address:
+            self.clear()
+        cmd = (
+            f'eval local w = "address:{address}" '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "inactive_border_color", value = "{self.border_color}", window = w }})) '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "active_border_color", value = "{self.border_color}", window = w }})) '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "border_size", value = "{self.border_size}", window = w }}))'
+        )
+        if hyprland_ipc_command(cmd):
+            self.active_address = address
+
+    def clear(self):
+        if not self.active_address:
+            return
+        cmd = (
+            f'eval local w = "address:{self.active_address}" '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "inactive_border_color", value = "unset", window = w }})) '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "active_border_color", value = "unset", window = w }})) '
+            f'hl.dispatch(hl.dsp.window.set_prop({{ prop = "border_size", value = "unset", window = w }}))'
+        )
+        hyprland_ipc_command(cmd)
+        self.active_address = None
+
+
+class ScreenHighlighter:
+    def __init__(self, layer_shell, gdk_module, gtk_module):
+        self.layer_shell = layer_shell
+        self.Gdk = gdk_module
+        self.Gtk = gtk_module
+        self.windows = {}
+        self.active_monitor = None
+
+    def _create_overlay(self, monitor_name, gdk_monitor):
+        if not self.layer_shell:
+            return None
+        win = self.Gtk.Window()
+        self.layer_shell.init_for_window(win)
+        self.layer_shell.set_layer(win, self.layer_shell.Layer.OVERLAY)
+        self.layer_shell.set_keyboard_mode(win, self.layer_shell.KeyboardMode.NONE)
+        self.layer_shell.set_exclusive_zone(win, -1)
+        self.layer_shell.set_namespace(win, "hyprland-share-picker-highlight")
+        for edge in (
+            self.layer_shell.Edge.TOP,
+            self.layer_shell.Edge.BOTTOM,
+            self.layer_shell.Edge.LEFT,
+            self.layer_shell.Edge.RIGHT,
+        ):
+            self.layer_shell.set_anchor(win, edge, True)
+        self.layer_shell.set_monitor(win, gdk_monitor)
+
+        box = self.Gtk.Box()
+        box.set_hexpand(True)
+        box.set_vexpand(True)
+        box.set_can_target(False)
+        win.set_child(box)
+
+        win.add_css_class("screen-highlight-overlay")
+        win.set_can_target(False)
+        win.set_focusable(False)
+
+        def on_realize(widget):
+            surface = widget.get_surface()
+            if surface is not None:
+                surface.set_input_region(cairo.Region())
+
+        win.connect("realize", on_realize)
+        return win
+
+    def highlight(self, monitor_name):
+        if monitor_name == self.active_monitor:
+            return
+        if self.active_monitor:
+            self.clear()
+        if not monitor_name or not self.layer_shell:
+            return
+
+        display = self.Gdk.Display.get_default()
+        if display is None:
+            return
+        monitors = display.get_monitors()
+        target_gdk_mon = None
+        for i in range(monitors.get_n_items()):
+            m = monitors.get_item(i)
+            if m.get_connector() == monitor_name or m.get_description() == monitor_name:
+                target_gdk_mon = m
+                break
+
+        if target_gdk_mon is None:
+            return
+
+        if monitor_name not in self.windows:
+            self.windows[monitor_name] = self._create_overlay(monitor_name, target_gdk_mon)
+
+        win = self.windows.get(monitor_name)
+        if win is not None:
+            win.set_visible(True)
+            self.active_monitor = monitor_name
+
+    def clear(self):
+        if self.active_monitor and self.active_monitor in self.windows:
+            win = self.windows[self.active_monitor]
+            if win is not None:
+                win.set_visible(False)
+        self.active_monitor = None
+
+    def destroy_all(self):
+        self.clear()
+        for win in self.windows.values():
+            if win is not None:
+                win.close()
+        self.windows.clear()
+
+
 def self_test():
     entries = parse_window_list("42[HC>]firefox[HT>]A tab[HE>]43[HC>]kitty[HT>]shell[HE>]0xabc[HA>]")
     assert entries == [
@@ -196,9 +362,13 @@ def self_test():
         "jpeg_quality": 90,
         "refresh_rate": 8.0,
         "columns": 1,
+        "highlight_border_color": "rgba(53, 132, 228, 1.0)",
+        "highlight_border_size": 5,
     }
     assert parse_picker_config("columns = 3")["columns"] == 3
     assert parse_picker_config("columns = 0")["columns"] == 1
+    assert parse_picker_config("highlight_border_size = 8")["highlight_border_size"] == 8
+    assert parse_picker_config("highlight_border_color = #ff5500")["highlight_border_color"] == "#ff5500"
     assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_CONFIG
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"
@@ -211,7 +381,13 @@ def load_gtk():
     gi.require_version("Gtk", "4.0")
     from gi.repository import Gdk, Gio, GLib, Gtk
 
-    return Gdk, Gio, GLib, Gtk
+    try:
+        gi.require_version("Gtk4LayerShell", "1.0")
+        from gi.repository import Gtk4LayerShell
+    except (ValueError, ImportError):
+        Gtk4LayerShell = None
+
+    return Gdk, Gio, GLib, Gtk, Gtk4LayerShell
 
 
 def main():
@@ -219,7 +395,7 @@ def main():
         self_test()
         return
 
-    Gdk, Gio, GLib, Gtk = load_gtk()
+    Gdk, Gio, GLib, Gtk, Gtk4LayerShell = load_gtk()
     if "--runtime-check" in sys.argv:
         assert Gtk.ContentFit.COVER is not None
         assert Gdk.Texture.new_from_bytes is not None
@@ -257,6 +433,87 @@ def main():
             self.window_flow = None
             self.window_card_states = []
             self.window_refreshing = threading.Event()
+            self.window_highlighter = WindowHighlighter(
+                border_color=self.config.get("highlight_border_color", "rgba(53, 132, 228, 1.0)"),
+                border_size=self.config.get("highlight_border_size", 5),
+            )
+            self.screen_highlighter = ScreenHighlighter(
+                Gtk4LayerShell,
+                Gdk,
+                Gtk,
+            )
+            self.hovered_target = None
+            self.selected_target = None
+            self.current_highlight = None
+            atexit.register(self.clear_all_highlights)
+
+        def do_shutdown(self):
+            self.clear_all_highlights()
+            if self.screen_highlighter:
+                self.screen_highlighter.destroy_all()
+            super().do_shutdown()
+
+        def target_for_card(self, selection, state, tab):
+            if tab == "windows":
+                addr = state.get("address") if state else None
+                if not addr and state and state.get("entry"):
+                    client = client_for_entry(state["entry"], read_json(["hyprctl", "clients", "-j"]))
+                    if client:
+                        addr = client.get("address")
+                        state["address"] = addr
+                return ("window", addr) if addr else None
+            elif tab == "screens":
+                monitor_name = selection.removeprefix("screen:") if selection else None
+                return ("screen", monitor_name) if monitor_name else None
+            return None
+
+        def on_card_hover_enter(self, _controller, _x, _y, selection, state, tab):
+            target = self.target_for_card(selection, state, tab)
+            if target is not None:
+                self.hovered_target = target
+                self.update_highlight()
+
+        def on_card_hover_leave(self, _controller, selection, state, tab):
+            target = self.target_for_card(selection, state, tab)
+            if self.hovered_target == target:
+                self.hovered_target = None
+                self.update_highlight()
+
+        def update_highlight(self):
+            active_tab = self.stack.get_visible_child_name() if self.stack else "windows"
+            target = self.hovered_target
+            if target is None and self.selected_target is not None:
+                sel_type = self.selected_target[0]
+                if (sel_type == "window" and active_tab == "windows") or (sel_type == "screen" and active_tab == "screens"):
+                    target = self.selected_target
+
+            if target == self.current_highlight:
+                return
+
+            if self.current_highlight is not None:
+                prev_type, prev_val = self.current_highlight
+                if prev_type == "window":
+                    self.window_highlighter.clear()
+                elif prev_type == "screen":
+                    self.screen_highlighter.clear()
+                self.current_highlight = None
+
+            if target is not None:
+                new_type, new_val = target
+                if new_type == "window" and new_val:
+                    self.window_highlighter.highlight(new_val)
+                    self.current_highlight = target
+                elif new_type == "screen" and new_val:
+                    self.screen_highlighter.highlight(new_val)
+                    self.current_highlight = target
+
+        def clear_all_highlights(self):
+            self.hovered_target = None
+            if self.window_highlighter:
+                self.window_highlighter.clear()
+            if self.screen_highlighter:
+                self.screen_highlighter.clear()
+            self.current_highlight = None
 
         def do_activate(self):
             if self.window is not None:
@@ -516,12 +773,17 @@ def main():
                 self.first_card = card
             else:
                 card.set_group(self.first_card)
-            card.connect("toggled", self.on_card_toggled, selection)
+            card.connect("toggled", self.on_card_toggled, selection, state, tab)
             click = Gtk.GestureClick()
             click.set_button(1)
             click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
             click.connect("pressed", self.on_card_pressed, selection)
             card.add_controller(click)
+
+            motion = Gtk.EventControllerMotion.new()
+            motion.connect("enter", self.on_card_hover_enter, selection, state, tab)
+            motion.connect("leave", self.on_card_hover_leave, selection, state, tab)
+            card.add_controller(motion)
 
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
             preview = Gtk.Picture()
@@ -596,10 +858,12 @@ def main():
                     pass
             return False
 
-        def on_card_toggled(self, card, selection):
+        def on_card_toggled(self, card, selection, state=None, tab=None):
             if card.get_active():
                 self.selection = selection
                 self.share_button.set_sensitive(True)
+                self.selected_target = self.target_for_card(selection, state, tab)
+                self.update_highlight()
 
         def on_card_pressed(self, _gesture, presses, _x, _y, selection):
             now = time.monotonic()
@@ -622,6 +886,8 @@ def main():
                 if button is not None and not button.get_active():
                     button.set_active(True)
                 self.update_pick_button()
+            self.hovered_target = None
+            self.update_highlight()
 
         def on_tab_toggled(self, button, name):
             if button.get_active():
@@ -714,6 +980,7 @@ def main():
                 self.emit_selection(self.selection)
 
         def select_screen(self, *_args):
+            self.clear_all_highlights()
             self.window.set_visible(False)
 
             def choose():
@@ -736,6 +1003,7 @@ def main():
             threading.Thread(target=choose, daemon=True).start()
 
         def select_region(self, *_args):
+            self.clear_all_highlights()
             self.window.set_visible(False)
 
             def choose():
@@ -755,6 +1023,7 @@ def main():
             threading.Thread(target=choose, daemon=True).start()
 
         def select_window(self, *_args):
+            self.clear_all_highlights()
             self.window.set_visible(False)
 
             def choose():
@@ -796,6 +1065,7 @@ def main():
             if selection is None:
                 self.window.set_visible(True)
                 self.window.present()
+                self.update_highlight()
             else:
                 self.emit_selection(selection)
             return False
@@ -804,6 +1074,7 @@ def main():
             if self.has_submitted:
                 return
             self.has_submitted = True
+            self.clear_all_highlights()
             sys.stdout.write(portal_selection(selection, self.allow_token))
             sys.stdout.flush()
             if self.window is not None:
@@ -811,38 +1082,45 @@ def main():
             self.quit()
 
         def on_close_request(self, *_args):
+            self.clear_all_highlights()
             self.quit()
             return False
 
-        @staticmethod
-        def install_css():
-            provider = Gtk.CssProvider()
-            provider.load_from_data(
-                b"""
-                .share-picker { background: @window_bg_color; }
-                .source-card {
+        def install_css(self):
+            highlight_color = self.config.get("highlight_border_color", "rgba(53, 132, 228, 1.0)")
+            highlight_size = self.config.get("highlight_border_size", 5)
+            css_data = f"""
+                .share-picker {{ background: @window_bg_color; }}
+                .source-card {{
                   background: alpha(@window_fg_color, 0.045);
                   border: 2px solid transparent;
                   border-radius: 14px;
                   padding: 0;
-                }
-                .source-card:hover { background: alpha(@accent_bg_color, 0.12); }
-                .source-card:checked {
+                }}
+                .source-card:hover {{ background: alpha(@accent_bg_color, 0.12); }}
+                .source-card:checked {{
                   background: alpha(@accent_bg_color, 0.16);
                   border-color: @accent_bg_color;
                   box-shadow: 0 4px 16px alpha(@accent_bg_color, 0.18);
-                }
-                .source-card > box { min-width: 220px; }
-                .action-card {
+                }}
+                .source-card > box {{ min-width: 220px; }}
+                .action-card {{
                   background: alpha(@accent_bg_color, 0.08);
                   border-style: dashed;
-                }
-                .preview {
+                }}
+                .preview {{
                   background: alpha(@window_fg_color, 0.09);
                   border-radius: 12px 12px 0 0;
-                }
-                """
-            )
+                }}
+                .screen-highlight-overlay {{
+                  background-color: transparent;
+                  border: {highlight_size}px solid {highlight_color};
+                  border-radius: 0;
+                  box-shadow: inset 0 0 16px alpha({highlight_color}, 0.45);
+                }}
+            """.encode("utf-8")
+            provider = Gtk.CssProvider()
+            provider.load_from_data(css_data)
             Gtk.StyleContext.add_provider_for_display(
                 Gdk.Display.get_default(),
                 provider,
