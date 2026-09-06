@@ -8,4 +8,14 @@
       cursor_mode = 2 # embedded: share the cursor in screencasts
     }
   '';
+
+  xdg.configFile."hypr/xdph-picker-gtk.conf".text = ''
+    # Preview settings for hyprland-share-picker-gtk.
+    # `refresh_rate` is in frames per second. Settings apply when the picker opens.
+    preview {
+      scale = 0.35
+      jpeg_quality = 78
+      refresh_rate = 4
+    }
+  '';
 }
