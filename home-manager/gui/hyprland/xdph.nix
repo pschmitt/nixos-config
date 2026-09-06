@@ -10,8 +10,11 @@
   '';
 
   xdg.configFile."hypr/xdph-picker-gtk.conf".text = ''
-    # Preview settings for hyprland-share-picker-gtk.
-    # `refresh_rate` is in frames per second. Settings apply when the picker opens.
+    # Configuration for hyprland-share-picker-gtk.
+    # `columns` specifies the number of tile columns in Window and Screen tabs (default: 1).
+    columns = 2
+
+    # Preview settings. `refresh_rate` is in frames per second. Settings apply when the picker opens.
     preview {
       scale = 0.35
       jpeg_quality = 78

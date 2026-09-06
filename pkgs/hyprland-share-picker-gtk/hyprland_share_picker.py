@@ -16,11 +16,15 @@ WINDOW_ENTRY = re.compile(
     r"(?P<title>.*?)\[HE>]"
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
-CONFIG_VALUE = re.compile(r"^\s*(scale|jpeg_quality|refresh_rate)\s*=\s*(\S+)", re.MULTILINE)
-DEFAULT_PREVIEW_SETTINGS = {
+CONFIG_VALUE = re.compile(
+    r"^\s*(scale|jpeg_quality|refresh_rate|columns)\s*=\s*(\S+)",
+    re.MULTILINE,
+)
+DEFAULT_CONFIG = {
     "scale": 0.35,
     "jpeg_quality": 78,
     "refresh_rate": 4.0,
+    "columns": 1,
 }
 
 
@@ -31,7 +35,7 @@ def picker_config_path():
 
 def parse_picker_config(value):
     """Read the small Hyprlang-style preview settings file safely."""
-    settings = DEFAULT_PREVIEW_SETTINGS.copy()
+    settings = DEFAULT_CONFIG.copy()
     for name, raw_value in CONFIG_VALUE.findall(value):
         try:
             parsed = float(raw_value)
@@ -43,6 +47,8 @@ def parse_picker_config(value):
             settings[name] = int(parsed)
         elif name == "refresh_rate" and 0.5 <= parsed <= 30:
             settings[name] = parsed
+        elif name == "columns" and 1 <= parsed <= 12:
+            settings[name] = int(parsed)
     return settings
 
 
@@ -50,13 +56,15 @@ def picker_config():
     try:
         return parse_picker_config(picker_config_path().read_text())
     except OSError:
-        return DEFAULT_PREVIEW_SETTINGS.copy()
+        return DEFAULT_CONFIG.copy()
 
 
-PREVIEW_SETTINGS = picker_config()
-PREVIEW_REFRESH_MS = max(33, round(1000 / PREVIEW_SETTINGS["refresh_rate"]))
-PREVIEW_SCALE = str(PREVIEW_SETTINGS["scale"])
-PREVIEW_JPEG_QUALITY = str(PREVIEW_SETTINGS["jpeg_quality"])
+CONFIG_SETTINGS = picker_config()
+PREVIEW_SETTINGS = CONFIG_SETTINGS
+PREVIEW_REFRESH_MS = max(33, round(1000 / CONFIG_SETTINGS["refresh_rate"]))
+PREVIEW_SCALE = str(CONFIG_SETTINGS["scale"])
+PREVIEW_JPEG_QUALITY = str(CONFIG_SETTINGS["jpeg_quality"])
+COLUMNS = CONFIG_SETTINGS["columns"]
 
 
 def portal_selection(selection, allow_token):
@@ -186,8 +194,11 @@ def self_test():
         "scale": 0.5,
         "jpeg_quality": 90,
         "refresh_rate": 8.0,
+        "columns": 1,
     }
-    assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_PREVIEW_SETTINGS
+    assert parse_picker_config("columns = 3")["columns"] == 3
+    assert parse_picker_config("columns = 0")["columns"] == 1
+    assert parse_picker_config("scale = 2\nrefresh_rate = nope") == DEFAULT_CONFIG
     assert portal_selection("window:42", True) == "[SELECTION]r/window:42\n"
     assert parse_region("DP-1 2048 120 640 480", [{"name": "DP-1", "x": 1920, "y": 0}]) == "region:DP-1@128,120,640,480"
 
@@ -230,11 +241,16 @@ def main():
             self.selection = None
             self.monitor_list = monitors()
             self.allow_token = "--allow-token" in sys.argv
+            self.config = CONFIG_SETTINGS
+            self.has_submitted = False
             self.first_card = None
             self.share_button = None
             self.window = None
             self.stack = None
             self.tab_buttons = {}
+            self.pick_button = None
+            self.pick_button_icon = None
+            self.pick_button_label = None
             self.window_flow = None
             self.window_card_states = []
             self.window_refreshing = threading.Event()
@@ -245,7 +261,7 @@ def main():
                 return
 
             self.window = Gtk.ApplicationWindow(application=self, title="Share your screen")
-            self.window.set_default_size(980, 700)
+            self.window.set_default_size(1180, 800)
             self.window.set_size_request(640, 460)
             self.window.add_css_class("share-picker")
             self.window.connect("close-request", self.on_close_request)
@@ -277,15 +293,18 @@ def main():
             stack.set_vexpand(True)
             stack.add_titled(self.make_window_page(), "windows", "Window")
             stack.add_titled(self.make_source_page(self.screen_cards()), "screens", "Screen")
-            stack.add_titled(self.make_source_page([self.region_card()]), "regions", "Region")
+            stack.add_titled(self.make_region_page(), "regions", "Region")
             self.stack = stack
             stack.set_visible_child_name(last_tab())
             stack.connect("notify::visible-child-name", self.on_tab_changed)
 
             switcher = self.make_tab_switcher()
-            switcher.set_halign(Gtk.Align.CENTER)
-            switcher.set_margin_bottom(12)
-            content.append(switcher)
+            tab_bar = Gtk.Box(spacing=8)
+            tab_bar.set_halign(Gtk.Align.CENTER)
+            tab_bar.set_margin_bottom(12)
+            tab_bar.append(switcher)
+            tab_bar.append(self.make_pick_button())
+            content.append(tab_bar)
             content.append(stack)
 
             footer = Gtk.Box(spacing=12)
@@ -345,11 +364,32 @@ def main():
                 self.tab_buttons[name] = button
             return switcher
 
+        def make_pick_button(self):
+            button = Gtk.Button()
+            button.add_css_class("flat")
+            button.connect("clicked", self.pick_active_source)
+            content = Gtk.Box(spacing=6)
+            content.set_margin_top(5)
+            content.set_margin_bottom(5)
+            content.set_margin_start(8)
+            content.set_margin_end(8)
+            self.pick_button_icon = Gtk.Image()
+            self.pick_button_icon.set_pixel_size(16)
+            self.pick_button_label = Gtk.Label()
+            content.append(self.pick_button_icon)
+            content.append(self.pick_button_label)
+            button.set_child(content)
+            self.pick_button = button
+            self.update_pick_button()
+            return button
+
         def make_source_page(self, cards):
             flow = Gtk.FlowBox()
             flow.set_selection_mode(Gtk.SelectionMode.NONE)
-            flow.set_max_children_per_line(2)
-            flow.set_min_children_per_line(1)
+            cols = self.config.get("columns", 1)
+            flow.set_max_children_per_line(cols)
+            flow.set_min_children_per_line(cols)
+            flow.set_homogeneous(True)
             flow.set_column_spacing(14)
             flow.set_row_spacing(14)
             flow.set_margin_top(4)
@@ -363,12 +403,45 @@ def main():
             scroll.set_child(flow)
             return scroll
 
+        def make_region_page(self):
+            box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+            box.set_halign(Gtk.Align.CENTER)
+            box.set_valign(Gtk.Align.CENTER)
+            box.set_vexpand(True)
+            box.set_hexpand(True)
+            box.set_margin_top(40)
+            box.set_margin_bottom(40)
+
+            icon = Gtk.Image.new_from_icon_name("selection-rectangular-symbolic")
+            icon.set_pixel_size(48)
+            box.append(icon)
+
+            heading = Gtk.Label(label="Select a region")
+            heading.add_css_class("title-2")
+            box.append(heading)
+
+            desc = Gtk.Label(
+                label="Click and drag on any screen to select a specific rectangular area to share.",
+                wrap=True,
+            )
+            desc.add_css_class("dim-label")
+            box.append(desc)
+
+            button = Gtk.Button(label="Draw region…")
+            button.add_css_class("suggested-action")
+            button.set_margin_top(8)
+            button.connect("clicked", self.select_region)
+            box.append(button)
+            return box
+
         def make_window_page(self):
             allowed = parse_window_list(os.environ.get("XDPH_WINDOW_SHARING_LIST"))
             self.window_flow = Gtk.FlowBox()
             self.window_flow.set_selection_mode(Gtk.SelectionMode.NONE)
-            self.window_flow.set_max_children_per_line(2)
-            self.window_flow.set_min_children_per_line(1)
+            cols = self.config.get("columns", 1)
+            self.window_flow.set_max_children_per_line(cols)
+            self.window_flow.set_min_children_per_line(cols)
+            self.window_flow.set_homogeneous(True)
             self.window_flow.set_column_spacing(14)
             self.window_flow.set_row_spacing(14)
             self.window_flow.set_margin_top(4)
@@ -380,7 +453,6 @@ def main():
                 self.window_flow.append(self.empty_state("No shareable windows are available."))
             else:
                 client_list = read_json(["hyprctl", "clients", "-j"])
-                self.window_flow.append(self.window_pick_card())
                 for entry in allowed:
                     state = {"entry": entry, "address": entry["address"], "client": None}
                     self.update_window_state(state, client_list)
@@ -421,47 +493,6 @@ def main():
                 )
             return cards
 
-        def region_card(self):
-            return self.action_card(
-                "selection-rectangular-symbolic",
-                "Select a region",
-                "Draw an area on any screen",
-                "Draw a specific area to share",
-                self.select_region,
-            )
-
-        def window_pick_card(self):
-            return self.action_card(
-                "crosshair-symbolic",
-                "Pick a window",
-                "Click a visible window to share it",
-                "Choose a visible window directly",
-                self.select_window,
-            )
-
-        def action_card(self, icon_name, title_text, subtitle_text, tooltip, handler):
-            card = Gtk.Button()
-            card.add_css_class("source-card")
-            card.add_css_class("action-card")
-            card.set_size_request(360, 250)
-            card.set_tooltip_text(tooltip)
-            card.connect("clicked", handler)
-
-            body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-            body.set_halign(Gtk.Align.CENTER)
-            body.set_valign(Gtk.Align.CENTER)
-            icon = Gtk.Image.new_from_icon_name(icon_name)
-            icon.set_pixel_size(48)
-            body.append(icon)
-            title = Gtk.Label(label=title_text)
-            title.add_css_class("heading")
-            body.append(title)
-            subtitle = Gtk.Label(label=subtitle_text, wrap=True)
-            subtitle.add_css_class("dim-label")
-            body.append(subtitle)
-            card.set_child(body)
-            return card
-
         def empty_state(self, label):
             card = Gtk.Box()
             card.set_size_request(360, 180)
@@ -474,7 +505,7 @@ def main():
             card = Gtk.ToggleButton()
             card.add_css_class("source-card")
             card.set_hexpand(True)
-            card.set_size_request(360, -1)
+            card.set_size_request(240, -1)
             if self.first_card is None:
                 self.first_card = card
             else:
@@ -482,7 +513,9 @@ def main():
             card.connect("toggled", self.on_card_toggled, selection)
             click = Gtk.GestureClick()
             click.set_button(1)
-            click.connect("pressed", self.on_card_pressed, selection)
+            click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+            click.connect("pressed", self.on_card_double_clicked, selection)
+            click.connect("released", self.on_card_double_clicked, selection)
             card.add_controller(click)
 
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -563,8 +596,9 @@ def main():
                 self.selection = selection
                 self.share_button.set_sensitive(True)
 
-        def on_card_pressed(self, _gesture, presses, _x, _y, selection):
-            if presses == 2:
+        def on_card_double_clicked(self, _gesture, presses, _x, _y, selection):
+            if presses == 2 and not self.has_submitted:
+                self.has_submitted = True
                 self.selection = selection
                 self.emit_selection(selection)
 
@@ -575,10 +609,32 @@ def main():
                 button = self.tab_buttons.get(name)
                 if button is not None and not button.get_active():
                     button.set_active(True)
+                self.update_pick_button()
 
         def on_tab_toggled(self, button, name):
             if button.get_active():
                 self.stack.set_visible_child_name(name)
+
+        def update_pick_button(self):
+            if self.pick_button is None:
+                return
+            button_details = {
+                "windows": ("Pick window…", "crosshair-symbolic", "Click a visible window to share it"),
+                "screens": ("Pick screen…", "video-display-symbolic", "Click an output to share it"),
+                "regions": ("Pick region…", "selection-rectangular-symbolic", "Draw an area to share"),
+            }
+            label, icon_name, tooltip = button_details[self.stack.get_visible_child_name()]
+            self.pick_button_label.set_label(label)
+            self.pick_button_icon.set_from_icon_name(icon_name)
+            self.pick_button.set_tooltip_text(tooltip)
+
+        def pick_active_source(self, *_args):
+            pickers = {
+                "windows": self.select_window,
+                "screens": self.select_screen,
+                "regions": self.select_region,
+            }
+            pickers[self.stack.get_visible_child_name()]()
 
         def update_window_state(self, state, client_list):
             client = next((item for item in client_list if item.get("address") == state["address"]), None)
@@ -647,6 +703,28 @@ def main():
             if self.selection is not None:
                 self.emit_selection(self.selection)
 
+        def select_screen(self, *_args):
+            self.window.set_visible(False)
+
+            def choose():
+                try:
+                    completed = subprocess.run(
+                        ["slurp", "-o", "-f", "%o"],
+                        check=False,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,
+                        text=True,
+                    )
+                    if completed.returncode == 0 and completed.stdout.strip():
+                        selection = f"screen:{completed.stdout.strip()}"
+                    else:
+                        selection = None
+                except OSError:
+                    selection = None
+                GLib.idle_add(self.finish_pick, selection)
+
+            threading.Thread(target=choose, daemon=True).start()
+
         def select_region(self, *_args):
             self.window.set_visible(False)
 
@@ -662,7 +740,7 @@ def main():
                     selection = parse_region(completed.stdout, self.monitor_list) if completed.returncode == 0 else None
                 except OSError:
                     selection = None
-                GLib.idle_add(self.finish_region, selection)
+                GLib.idle_add(self.finish_pick, selection)
 
             threading.Thread(target=choose, daemon=True).start()
 
@@ -681,7 +759,7 @@ def main():
                     selection = self.window_at_point(completed.stdout) if completed.returncode == 0 else None
                 except OSError:
                     selection = None
-                GLib.idle_add(self.finish_window_pick, selection)
+                GLib.idle_add(self.finish_pick, selection)
 
             threading.Thread(target=choose, daemon=True).start()
 
@@ -704,14 +782,7 @@ def main():
                     return f"window:{state['entry']['id']}"
             return None
 
-        def finish_region(self, selection):
-            if selection is None:
-                self.quit()
-            else:
-                self.emit_selection(selection)
-            return False
-
-        def finish_window_pick(self, selection):
+        def finish_pick(self, selection):
             if selection is None:
                 self.window.set_visible(True)
                 self.window.present()
@@ -720,6 +791,9 @@ def main():
             return False
 
         def emit_selection(self, selection):
+            if self.has_submitted:
+                return
+            self.has_submitted = True
             sys.stdout.write(portal_selection(selection, self.allow_token))
             sys.stdout.flush()
             self.quit()
@@ -746,7 +820,7 @@ def main():
                   border-color: @accent_bg_color;
                   box-shadow: 0 4px 16px alpha(@accent_bg_color, 0.18);
                 }
-                .source-card > box { min-width: 360px; }
+                .source-card > box { min-width: 220px; }
                 .action-card {
                   background: alpha(@accent_bg_color, 0.08);
                   border-style: dashed;
