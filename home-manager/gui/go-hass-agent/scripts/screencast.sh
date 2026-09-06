@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 # Emits a Go Hass Agent binary sensor describing the current screencasting state.
 #
-# The state is read straight out of the PipeWire graph, the same way the
-# pschmitt/screencast Noctalia plugin detects it: a live xdg-desktop-portal
-# capture shows up as a PipeWire link with one endpoint on an
-# xdg-desktop-portal node, and the other endpoint names the capturing client.
-# That replaces the old busctl watcher (xdg-portal-screencast-watcher) and its
-# /tmp/screencast.json state file, so nothing has to run in the background.
-#
-# The plugin parses `pw-cli ls` because Noctalia's Luau CPU budget cannot
-# decode a full pw-dump graph; here jq is already a dependency, so query
-# pw-dump directly instead of scraping the human-readable listing.
+# The state comes from screencast-state(1), which reads it out of the PipeWire
+# graph the same way the pschmitt/screencast Noctalia plugin does: a live
+# xdg-desktop-portal capture shows up as a PipeWire link with one endpoint on
+# an xdg-desktop-portal node, and the other endpoint names the capturing
+# client. That replaces the old busctl watcher
+# (xdg-portal-screencast-watcher) and its /tmp/screencast.json state file, so
+# nothing has to run in the background.
 
 STATE=false
 ICON="mdi:monitor"
@@ -22,25 +19,9 @@ TIMESTAMP_ISO=""
 # costs one attribute until the next change.
 CACHEFILE="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/go-hass-agent-screencast.json"
 
-# Names of the PipeWire clients linked to an xdg-desktop-portal node.
+# Names of the PipeWire clients attached to an xdg-desktop-portal node.
 screencasting_apps() {
-  pw-dump 2>/dev/null | jq -c '
-    [ .[] | select(.type == "PipeWire:Interface:Node") ] as $nodes
-    | ( [ $nodes[] | { key: (.id | tostring), value: (.info.props["node.name"] // "") } ] | from_entries ) as $names
-    | ( [ $nodes[] | select((.info.props["node.name"] // "") | test("xdg-desktop-portal")) | .id ] ) as $portal
-    | [ .[]
-        | select(.type == "PipeWire:Interface:Link")
-        | [ .info["output-node-id"], .info["input-node-id"] ]
-        # A portal link has one portal endpoint and one client endpoint;
-        # report the latter.
-        | select(any(.[]; IN($portal[])))
-        | .[]
-        | select(IN($portal[]) | not)
-      ]
-    | map($names[tostring] // "")
-    | map(select(. != ""))
-    | unique
-  ' 2>/dev/null
+  screencast-state --json 2>/dev/null | jq -c '.apps // []'
 }
 
 read_state() {

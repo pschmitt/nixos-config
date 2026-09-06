@@ -14,6 +14,7 @@ let
   soundboard = pkgs.callPackage ./local/soundboard { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   osd = pkgs.callPackage ./local/osd { };
+  screencast-state = pkgs.callPackage ./local/screencast-state { };
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
 in
 {
@@ -38,7 +39,10 @@ in
       ;
     inherit (pkgs) walker;
   };
-  quickshell-bar = pkgs.callPackage ./local/quickshell-bar { inherit timew-status; };
+  quickshell-bar = pkgs.callPackage ./local/quickshell-bar {
+    inherit timew-status screencast-state;
+  };
+  inherit screencast-state;
   inherit soundboard;
   syncshell-dank-widget = pkgs.callPackage ./local/syncshell-dank-widget { inherit inputs; };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };

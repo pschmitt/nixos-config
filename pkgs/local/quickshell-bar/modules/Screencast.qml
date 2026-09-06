@@ -21,21 +21,31 @@ Widgets.Pill {
         text: root.active ? " SCREENCASTING" : ""
     }
 
-    FileView {
-        id: fv
-        path: (Quickshell.env("TMPDIR") || "/tmp") + "/screencast.json"
-        watchChanges: true
-        printErrors: false
-        onFileChanged: reload()
-        onLoaded: {
-            try {
-                const obj = JSON.parse(text());
-                root.active = obj.state === "on";
-                root.apps = (obj.apps || []).join(", ");
-            } catch (e) {
-                root.active = false;
+    // screencast-state reads the PipeWire graph directly, so this no longer
+    // depends on the xdg-portal-screencast-watcher service and its
+    // /tmp/screencast.json state file.
+    Process {
+        id: stateProc
+        command: ["screencast-state", "--json"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const obj = JSON.parse(text);
+                    root.active = obj.active === true;
+                    root.apps = (obj.apps || []).join(", ");
+                } catch (e) {
+                    root.active = false;
+                    root.apps = "";
+                }
             }
         }
-        onLoadFailed: root.active = false
+    }
+
+    Timer {
+        interval: 5000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: stateProc.running = true
     }
 }

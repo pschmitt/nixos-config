@@ -8,6 +8,7 @@
   gsettings-desktop-schemas,
   wttrbar,
   timew-status,
+  screencast-state,
   enableSoftKeyboard ? false,
 }:
 
@@ -75,6 +76,7 @@ stdenvNoCC.mkDerivation {
           glib
           wttrbar
           timew-status
+          screencast-state
         ]
       } \
       --suffix XDG_DATA_DIRS : "${gsettings-desktop-schemas}/share/gsettings-schemas/${gsettings-desktop-schemas.name}" \

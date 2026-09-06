@@ -25,6 +25,7 @@ in
           bruvtabPkg
           grim
           jq
+          screencast-state
           (python3.withPackages (ps: [ ps.dbus-python ]))
           timew-status
           yt-dlp
