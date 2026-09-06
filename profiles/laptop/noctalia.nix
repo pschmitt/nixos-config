@@ -285,6 +285,7 @@ in
         };
         control_center.width = 900; # full-sidebar width in px (600-1200), default 700
         widget = {
+          taskbar.scale = 1.25;
           weather = {
             show_condition = false;
             icon_color = "primary";
