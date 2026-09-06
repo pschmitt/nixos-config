@@ -17,6 +17,8 @@ WINDOW_ENTRY = re.compile(
     r"(?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
 )
 PREVIEW_REFRESH_MS = 250
+PREVIEW_SCALE = "0.35"
+PREVIEW_JPEG_QUALITY = "78"
 
 
 def portal_selection(selection, allow_token):
@@ -103,7 +105,7 @@ def window_preview_command(client):
     stable_id = client.get("stableId") if client else None
     if stable_id is None:
         return None
-    return ["grim", "-T", str(stable_id), "-s", "0.18", "-t", "jpeg", "-q", "65", "-"]
+    return ["grim", "-T", str(stable_id), "-s", PREVIEW_SCALE, "-t", "jpeg", "-q", PREVIEW_JPEG_QUALITY, "-"]
 
 
 def workspace_details(client):
@@ -369,7 +371,7 @@ def main():
                         f"screen:{name}",
                         name,
                         f"{description} · {resolution}",
-                        ["grim", "-o", name, "-s", "0.18", "-t", "jpeg", "-q", "65", "-"],
+                        ["grim", "-o", name, "-s", PREVIEW_SCALE, "-t", "jpeg", "-q", PREVIEW_JPEG_QUALITY, "-"],
                         tab="screens",
                     )
                 )
@@ -434,6 +436,10 @@ def main():
             else:
                 card.set_group(self.first_card)
             card.connect("toggled", self.on_card_toggled, selection)
+            click = Gtk.GestureClick()
+            click.set_button(1)
+            click.connect("pressed", self.on_card_pressed, selection)
+            card.add_controller(click)
 
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
             preview = Gtk.Picture()
@@ -512,6 +518,11 @@ def main():
             if card.get_active():
                 self.selection = selection
                 self.share_button.set_sensitive(True)
+
+        def on_card_pressed(self, _gesture, presses, _x, _y, selection):
+            if presses == 2:
+                self.selection = selection
+                self.emit_selection(selection)
 
         def on_tab_changed(self, stack, _property):
             name = stack.get_visible_child_name()
