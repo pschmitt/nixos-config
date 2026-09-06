@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 
@@ -243,6 +244,8 @@ def main():
             self.allow_token = "--allow-token" in sys.argv
             self.config = CONFIG_SETTINGS
             self.has_submitted = False
+            self.last_click_selection = None
+            self.last_click_time = 0.0
             self.first_card = None
             self.share_button = None
             self.window = None
@@ -299,12 +302,15 @@ def main():
             stack.connect("notify::visible-child-name", self.on_tab_changed)
 
             switcher = self.make_tab_switcher()
-            tab_bar = Gtk.Box(spacing=8)
-            tab_bar.set_halign(Gtk.Align.CENTER)
-            tab_bar.set_margin_bottom(12)
-            tab_bar.append(switcher)
-            tab_bar.append(self.make_pick_button())
-            content.append(tab_bar)
+            pick_button = self.make_pick_button()
+
+            nav_bar = Gtk.CenterBox()
+            nav_bar.set_margin_bottom(12)
+            nav_bar.set_margin_start(28)
+            nav_bar.set_margin_end(28)
+            nav_bar.set_center_widget(switcher)
+            nav_bar.set_end_widget(pick_button)
+            content.append(nav_bar)
             content.append(stack)
 
             footer = Gtk.Box(spacing=12)
@@ -371,11 +377,11 @@ def main():
             content = Gtk.Box(spacing=6)
             content.set_margin_top(5)
             content.set_margin_bottom(5)
-            content.set_margin_start(8)
-            content.set_margin_end(8)
-            self.pick_button_icon = Gtk.Image()
+            content.set_margin_start(10)
+            content.set_margin_end(10)
+            self.pick_button_icon = Gtk.Image.new_from_icon_name("edit-select-symbolic")
             self.pick_button_icon.set_pixel_size(16)
-            self.pick_button_label = Gtk.Label()
+            self.pick_button_label = Gtk.Label(label="Pick")
             content.append(self.pick_button_icon)
             content.append(self.pick_button_label)
             button.set_child(content)
@@ -514,8 +520,7 @@ def main():
             click = Gtk.GestureClick()
             click.set_button(1)
             click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
-            click.connect("pressed", self.on_card_double_clicked, selection)
-            click.connect("released", self.on_card_double_clicked, selection)
+            click.connect("pressed", self.on_card_pressed, selection)
             card.add_controller(click)
 
             body = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -596,8 +601,16 @@ def main():
                 self.selection = selection
                 self.share_button.set_sensitive(True)
 
-        def on_card_double_clicked(self, _gesture, presses, _x, _y, selection):
-            if presses == 2 and not self.has_submitted:
+        def on_card_pressed(self, _gesture, presses, _x, _y, selection):
+            now = time.monotonic()
+            is_double = (
+                presses == 2
+                or (self.last_click_selection == selection and (now - self.last_click_time) < 0.45)
+            )
+            self.last_click_selection = selection
+            self.last_click_time = now
+
+            if is_double and not self.has_submitted:
                 self.has_submitted = True
                 self.selection = selection
                 self.emit_selection(selection)
@@ -618,15 +631,13 @@ def main():
         def update_pick_button(self):
             if self.pick_button is None:
                 return
-            button_details = {
-                "windows": ("Pick window…", "crosshair-symbolic", "Click a visible window to share it"),
-                "screens": ("Pick screen…", "video-display-symbolic", "Click an output to share it"),
-                "regions": ("Pick region…", "selection-rectangular-symbolic", "Draw an area to share"),
+            tooltips = {
+                "windows": "Click a visible window to share it",
+                "screens": "Click an output to share it",
+                "regions": "Draw an area on any screen to share",
             }
-            label, icon_name, tooltip = button_details[self.stack.get_visible_child_name()]
-            self.pick_button_label.set_label(label)
-            self.pick_button_icon.set_from_icon_name(icon_name)
-            self.pick_button.set_tooltip_text(tooltip)
+            tab = self.stack.get_visible_child_name() if self.stack else "windows"
+            self.pick_button.set_tooltip_text(tooltips.get(tab, "Pick directly"))
 
         def pick_active_source(self, *_args):
             pickers = {
