@@ -145,7 +145,6 @@ in
               id = "notif-battery";
               members = [
                 "network"
-                "pschmitt/fan-control:widget"
                 "pschmitt/battery-icon:bar"
                 "notifications"
               ];
