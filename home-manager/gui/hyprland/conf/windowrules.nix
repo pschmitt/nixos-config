@@ -68,6 +68,13 @@
       }
       {
         match = xdph;
+        size = [
+          "min(1200, monitor_w * 0.85)"
+          "min(820, monitor_h * 0.85)"
+        ];
+      }
+      {
+        match = xdph;
         center = true;
       }
       {
