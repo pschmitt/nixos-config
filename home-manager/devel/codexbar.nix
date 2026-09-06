@@ -24,10 +24,6 @@ let
         enabled = true;
       }
       {
-        id = "openai";
-        enabled = true;
-      }
-      {
         id = "antigravity";
         enabled = true;
       }
@@ -38,6 +34,16 @@ let
       # so leaving this off just saves a redundant request.
       {
         id = "claude";
+        enabled = false;
+      }
+      # Also off, and not a plan quota at all: this is the OpenAI admin API,
+      # which returns daily spend (openAIAPIUsage.daily / costUSD) and no rate
+      # limit window, so codexbar-meter has nothing to draw a meter from and
+      # renders a permanent "—" beside the codex card that does report the
+      # ChatGPT plan limits. OPENAI_ADMIN_KEY stays wired up in the wrapper, so
+      # `codexbar usage --provider openai` still reports costs on demand.
+      {
+        id = "openai";
         enabled = false;
       }
     ];
