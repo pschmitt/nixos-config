@@ -1,47 +1,60 @@
 #!/usr/bin/env bash
+# Waybar custom/screencast module.
+#
+# State comes from screencast-state(1), which reads the PipeWire graph
+# directly, so this no longer depends on the xdg-portal-screencast-watcher
+# service and its /tmp/screencast.json state file.
 
-is_screencasting() {
-  jq -e '.state == "on"' "${TMPDIR:-/tmp}/screencast.json" &>/dev/null
+screencast_state() {
+  screencast-state --json 2>/dev/null
 }
 
-screencasting_apps() {
-  jq -er '.apps | join(", ")' "${TMPDIR:-/tmp}/screencast.json"
+format() {
+  local state icon text alt tooltip apps
+  local icon_on=''
+
+  state="$(screencast_state)"
+
+  if jq -e '.active' <<< "$state" &> /dev/null
+  then
+    apps="$(jq -r '.apps | join(", ")' <<< "$state")"
+    icon="$icon_on"
+    text='<span foreground="#e27978" font-weight="bold">SCREENCASTING</span>'
+    tooltip="Screencasting with $apps"
+    alt=on
+  else
+    icon=""
+    text=""
+    tooltip="Not screencasting"
+    alt=off
+  fi
+
+  jq -ernc --arg app screencast --arg icon "$icon" \
+    --arg class custom-screencast --arg alt "$alt" \
+    --arg text "$text" --arg tooltip "$tooltip" \
+    '{
+      "text": (if $text != "" then ($icon + " " + $text) else $icon end),
+      "alt": $alt,
+      "class": $class,
+      "tooltip": $tooltip
+    }'
+}
+
+main() {
+  case "${1:-}" in
+    format)
+      format
+      ;;
+    *)
+      printf 'Usage: %s format\n' "$(basename "$0")" >&2
+      return 2
+      ;;
+  esac
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  ICON_ON=''
-  # ICON_OFF=''
-  APP=screencast
-  CLASS="custom-screencast"
-  TEXT=""
-
-  # Check if we are being invoked by waybar
-  case "$1" in
-    format)
-      if is_screencasting
-      then
-        ICON="$ICON_ON"
-        TEXT='<span foreground="#e27978" font-weight="bold">SCREENCASTING</span>'
-        TOOLTIP="Screencasting with $(screencasting_apps)"
-        ALT="on"
-      else
-        ICON=""
-        TEXT=""
-        ALT="off"
-        TOOLTIP="Not screencasting"
-      fi
-
-      jq -ernc --arg app "$APP" --arg icon "$ICON" \
-        --arg class "$CLASS" --arg alt "$ALT" \
-        --arg text "$TEXT" --arg tooltip "$TOOLTIP" \
-        '{
-          "text": (if $text != "" then ($icon + " " + $text) else $icon end),
-          "alt": $alt,
-          "class": $class,
-          "tooltip": $tooltip
-        }'
-      exit 0
-      ;;
-  esac
+  main "$@"
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :
