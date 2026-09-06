@@ -197,11 +197,6 @@
 
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
 
-    cpuguy83-nixcfg = {
-      url = "github:cpuguy83/nixcfg";
-      flake = false;
-    };
-
     # hyprland end }}}
 
     jcalapi = {

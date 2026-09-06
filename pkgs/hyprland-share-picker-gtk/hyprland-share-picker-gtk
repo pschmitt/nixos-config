@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+main() {
+  exec "@python@" "@script@" "$@"
+}
+
+main "$@"
+
+# vim: set ft=sh et ts=2 sw=2 :

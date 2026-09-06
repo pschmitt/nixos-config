@@ -11,7 +11,7 @@
         class = "^(firefox)$";
         title = "^(.*Sharing Indicator)$";
       };
-      xdph.class = "^(hyprland-share-picker)$";
+      xdph.class = "^(hyprland-share-picker|lol\\.brkn\\.HyprlandSharePicker)$";
       zoom.class = "^(zoom)$";
       gcr.class = "^(gcr-prompter)$";
       peeppee.class = "^.*(-peepee)$";
