@@ -40,6 +40,8 @@
   boot.loader.systemd-boot.configurationLimit = lib.mkForce 1;
 
   home-manager.users.${config.mainUser.username} = { config, ... }: {
+    programs.noctalia.settings.plugin_settings."pschmitt/fan-control".alt_mode = true;
+    programs.noctalia.settings.plugin_settings."pschmitt/battery-icon".show_fan_controls = false;
     host.extraAutostartEntries = [
       "${config.home.profileDirectory}/share/applications/obs-studio-autostart.desktop"
     ];
