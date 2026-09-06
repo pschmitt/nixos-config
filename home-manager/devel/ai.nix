@@ -196,6 +196,11 @@ in
         skills = allSkills;
         enableMcpIntegration = true;
         settings = {
+          trustedWorkspaces = [
+            "/etc/nixos"
+            "/mnt/ha"
+          ];
+
           general = {
             preferredEditor = "nvim";
             previewFeatures = true;
