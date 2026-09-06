@@ -109,6 +109,7 @@ in
           start = [
             "workspaces"
             "taskbar"
+            "group:ai-usage"
           ];
           center = [
             "group:weather-date"
@@ -118,7 +119,6 @@ in
             "media"
             "media-gap"
             "tray"
-            "salemsayed/codexbar-meter:bar"
             "pschmitt/syncthing:bar"
             "group:volume"
             "group:notif-battery"
@@ -131,6 +131,16 @@ in
           # single member or not — it sets the spec through a different path
           # that bypasses that per-key validation.
           capsule_group = [
+            {
+              # Single-member group purely to get a capsule around the AI usage
+              # widget — see the note above on why `capsule = true` on the raw
+              # plugin widget id doesn't work.
+              id = "ai-usage";
+              members = [
+                "pschmitt/ha-ai-usage:bar"
+              ];
+              padding = 12;
+            }
             {
               id = "weather-date";
               members = [
@@ -157,14 +167,18 @@ in
                 "output-volume"
               ];
               padding = 12;
+              # Collapsed to the first member (the mic); hovering the capsule
+              # unfolds the output volume beside it.
+              accordion = true;
             }
           ];
         };
         plugins = {
           enabled = [
-            # CodexBar usage meter (community plugin) — reports AI plan quotas
-            # (Codex, Claude, etc.) via the codexbar CLI.
-            "salemsayed/codexbar-meter"
+            # AI plan quotas, normalized and collected by Home Assistant. This
+            # deliberately replaces codexbar-meter: the bar does not need to
+            # duplicate provider authentication/polling that HA already owns.
+            "pschmitt/ha-ai-usage"
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
             # rylos/syncthing (see pschmitt/noctalia-plugins) with a
             # tray-sized icon and the DMS syncshell widget's composited status
@@ -217,6 +231,12 @@ in
               name = "pschmitt-timewarrior";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-timewarrior}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-ha-ai-usage";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -333,14 +353,28 @@ in
         # active custom palette by pschmitt/noctalia-plugins' battery-icon
         # service.luau before hitting ImageMagick.
         plugin_settings = {
-          "salemsayed/codexbar-meter" = {
-            # The wrapper from home-manager/devel/codexbar.nix, not plain
-            # pkgs.codexbar: it supplies the OpenAI admin key from sops and
-            # reports both Claude accounts instead of only the active one.
-            codexbarPath = "${hmArgs.config.custom.codexbar.package}/bin/codexbar";
-            # Codex, OpenAI, Claude x2 and Antigravity — show as many meters in
-            # the bar as the plugin allows, the rest fall into its "+N".
-            barProviderLimit = 4;
+          "pschmitt/ha-ai-usage" = {
+            # Both paths resolve to sops-nix runtime files, never to values in
+            # the Nix store. The plugin reads them immediately before each
+            # authenticated HA request.
+            server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
+            token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
+            # What the bar renders is plugin-scoped on purpose: config.toml is
+            # a read-only home-manager symlink, so Noctalia's per-bar-widget
+            # settings UI can never persist anything here. Only the widget's
+            # pixel geometry (icon_size/progress_*/spacing) is left per-widget.
+            # "short" = the 5h/session quota, "weekly" = the weekly one; the
+            # tooltip lists both regardless of what the bar picks.
+            metric_window = "weekly";
+            # Comma-separated, case-insensitive fragments matched against the
+            # discovered card labels (e.g. "Pro, Gemini, Codex"). Empty shows
+            # every account Home Assistant discovers, capped by metric_limit.
+            # The tooltip always lists every account regardless of this.
+            card_filter = "Pro, Codex";
+            metric_limit = 3;
+            # Compact by default: glyph + progress bar, no text. Values, names
+            # and reset times stay in the tooltip and the panel.
+            display_mode = "summary";
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
@@ -374,8 +408,6 @@ in
     # so flip which one autostarts with the graphical session. toggle-bar.sh
     # can still cycle to any available bar regardless of this.
     systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
-    # codexbar itself comes from home-manager/devel/codexbar.nix.
-    home.packages = [ pkgs.ai-usagebar ];
   };
 
   # pschmitt/fan-control needs group-scoped write access to whichever fan
