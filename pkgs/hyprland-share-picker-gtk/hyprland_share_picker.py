@@ -399,6 +399,7 @@ def main():
     if "--runtime-check" in sys.argv:
         assert Gtk.ContentFit.COVER is not None
         assert Gdk.Texture.new_from_bytes is not None
+        assert Gtk4LayerShell is not None
         return
 
     class SharePicker(Gtk.Application):
