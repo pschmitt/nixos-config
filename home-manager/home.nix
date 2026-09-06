@@ -15,6 +15,7 @@
       ./sops.nix
       ./ssh.nix
       ./ssh-clipboard.nix
+      ./tracker.nix
       ./work
       ./yadm.nix
     ]
