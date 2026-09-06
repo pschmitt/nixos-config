@@ -64,6 +64,46 @@ let
       env.API_ACCESS_TOKEN.file = tokenFile;
     };
 
+  # agy owns ~/.gemini/antigravity-cli/antigravity-oauth-token once it exists:
+  # the file carries a short-lived access_token plus an expiry that agy
+  # rewrites on every refresh. So the sops copy is only ever a *seed*, written
+  # once as a real writable file. Pointing the path at the store or at the
+  # 0400 sops secret itself (which is replaced on every activation) would take
+  # the file away from agy and break token refresh.
+  antigravityOauthSeed = pkgs.writeShellApplication {
+    name = "antigravity-oauth-seed";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      readonly TOKEN_FILE="${config.home.homeDirectory}/.gemini/antigravity-cli/antigravity-oauth-token"
+      readonly SECRET_FILE="${config.sops.secrets."antigravity/oauth_token".path}"
+
+      main() {
+        if [[ -e "$TOKEN_FILE" ]]
+        then
+          echo "$TOKEN_FILE already present, leaving it to agy"
+          return 0
+        fi
+
+        if [[ ! -r "$SECRET_FILE" ]]
+        then
+          echo "No seed token at $SECRET_FILE, skipping" >&2
+          return 0
+        fi
+
+        mkdir -p "$(dirname "$TOKEN_FILE")"
+        install -m600 "$SECRET_FILE" "$TOKEN_FILE"
+        echo "Seeded $TOKEN_FILE from sops"
+      }
+
+      if [[ "''${BASH_SOURCE[0]}" == "''${0}" ]]
+      then
+        main "$@"
+      fi
+
+      # vim: set ft=sh et ts=2 sw=2 :
+    '';
+  };
+
 in
 {
   options.custom.aiSkills.extraSources = lib.mkOption {
@@ -105,7 +145,36 @@ in
           mode = "0600";
           sopsFile = config.host.sopsFile;
         };
+        # agy has no declarative login: upstream's programs.antigravity-cli
+        # writes config only (settings.json, mcp_config.json, policies,
+        # commands, skills) and nothing auth-related, so the OAuth token is the
+        # one piece a fresh host cannot obtain without an interactive browser
+        # flow. Seeding it also fixes CodexBar's antigravity provider, which
+        # falls back to launching an agy session when no token is present and
+        # dies on NixOS's absent /bin/ps.
+        "antigravity/oauth_token" = {
+          mode = "0400";
+          sopsFile = ../../secrets/shared.sops.yaml;
+        };
       };
+    };
+
+    # Ordered after sops-nix.service, which is what materialises the secret
+    # this reads. Runs on every login/boot but is a no-op the moment agy has a
+    # token of its own, so a revoked seed is a one-line log entry rather than a
+    # loop.
+    systemd.user.services.antigravity-oauth-seed = {
+      Unit = {
+        Description = "Seed the Antigravity CLI OAuth token from sops";
+        After = [ "sops-nix.service" ];
+        Wants = [ "sops-nix.service" ];
+      };
+      Service = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = "${antigravityOauthSeed}/bin/antigravity-oauth-seed";
+      };
+      Install.WantedBy = [ "default.target" ];
     };
 
     programs.mcp = {
