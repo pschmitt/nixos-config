@@ -605,13 +605,12 @@ def main():
             now = time.monotonic()
             is_double = (
                 presses == 2
-                or (self.last_click_selection == selection and (now - self.last_click_time) < 0.45)
+                or (self.last_click_selection == selection and (now - self.last_click_time) < 0.5)
             )
             self.last_click_selection = selection
             self.last_click_time = now
 
-            if is_double and not self.has_submitted:
-                self.has_submitted = True
+            if is_double:
                 self.selection = selection
                 self.emit_selection(selection)
 
@@ -807,6 +806,8 @@ def main():
             self.has_submitted = True
             sys.stdout.write(portal_selection(selection, self.allow_token))
             sys.stdout.flush()
+            if self.window is not None:
+                self.window.close()
             self.quit()
 
         def on_close_request(self, *_args):
