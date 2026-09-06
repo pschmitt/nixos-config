@@ -25,6 +25,7 @@ in
   };
   dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
+  codexbar = pkgs.callPackage ./local/codexbar { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;

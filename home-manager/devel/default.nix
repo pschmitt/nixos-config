@@ -14,6 +14,7 @@ in
     ./ai.nix
     ./android.nix
     ./cloud.nix
+    ./codexbar.nix
     ./git.nix
     ../../modules/home-manager/glab.nix
     ./golang.nix

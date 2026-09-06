@@ -18,15 +18,19 @@
     # `columns` specifies the number of tile columns in Window and Screen tabs (default: 1).
     columns = 2
 
-    # Highlighting for hovered and selected window or screen in Hyprland (slurp-like overlay).
-    # `highlight_mode` is either `highlight` (tint the target) or `dim` (dim
-    # everything but the target). `dim_factor` is the dim opacity (0.0 - 1.0).
-    highlight_mode = dim
-    dim_factor = 0.55
-    # dim_color = rgba(0, 0, 0, 1.0) # or hex like #000000
-    # highlight_color = rgba(59, 130, 246, 1.0) # or hex like #3b82f6
-    # highlight_fill_opacity = 0.22
-    # highlight_border_size = 3
+    # How the hovered and selected window or screen is marked in Hyprland
+    # (slurp-like overlay). `mode` is either `highlight` (tint the target) or
+    # `dim` (dim everything but the target); `dim_factor` is the dim opacity.
+    # `border` draws a crisp outline around the target on top of either mode.
+    highlight {
+      mode = dim
+      dim_factor = 0.55
+      border = false
+      # dim_color = rgba(0, 0, 0, 1.0) # or hex like #000000
+      # color = rgba(59, 130, 246, 1.0) # or hex like #3b82f6
+      # fill_opacity = 0.22
+      # border_size = 3
+    }
 
     # Preview settings. `refresh_rate` is in frames per second. Settings apply when the picker opens.
     preview {
