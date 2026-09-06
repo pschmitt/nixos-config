@@ -188,6 +188,7 @@ def main():
             self.share_button = None
             self.window = None
             self.stack = None
+            self.tab_buttons = {}
             self.window_flow = None
             self.window_card_states = []
             self.window_refreshing = threading.Event()
@@ -228,14 +229,14 @@ def main():
             stack = Gtk.Stack()
             stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
             stack.set_vexpand(True)
-            stack.add_titled(self.make_source_page(self.screen_cards()), "screens", "Screens")
-            stack.add_titled(self.make_source_page([self.region_card()]), "regions", "Regions")
-            stack.add_titled(self.make_window_page(), "windows", "Windows")
+            stack.add_titled(self.make_window_page(), "windows", "Window")
+            stack.add_titled(self.make_source_page(self.screen_cards()), "screens", "Screen")
+            stack.add_titled(self.make_source_page([self.region_card()]), "regions", "Region")
+            self.stack = stack
             stack.set_visible_child_name(last_tab())
             stack.connect("notify::visible-child-name", self.on_tab_changed)
-            self.stack = stack
 
-            switcher = Gtk.StackSwitcher(stack=stack)
+            switcher = self.make_tab_switcher()
             switcher.set_halign(Gtk.Align.CENTER)
             switcher.set_margin_bottom(12)
             content.append(switcher)
@@ -267,6 +268,36 @@ def main():
             self.window.set_child(content)
             self.install_css()
             self.window.present()
+
+        def make_tab_switcher(self):
+            switcher = Gtk.Box(spacing=4)
+            first_button = None
+            for name, label, icon_name in [
+                ("windows", "Window", "view-grid-symbolic"),
+                ("screens", "Screen", "video-display-symbolic"),
+                ("regions", "Region", "selection-rectangular-symbolic"),
+            ]:
+                button = Gtk.ToggleButton()
+                if first_button is None:
+                    first_button = button
+                else:
+                    button.set_group(first_button)
+                button.set_active(self.stack.get_visible_child_name() == name)
+                button.connect("toggled", self.on_tab_toggled, name)
+
+                content = Gtk.Box(spacing=6)
+                content.set_margin_top(5)
+                content.set_margin_bottom(5)
+                content.set_margin_start(10)
+                content.set_margin_end(10)
+                icon = Gtk.Image.new_from_icon_name(icon_name)
+                icon.set_pixel_size(16)
+                content.append(icon)
+                content.append(Gtk.Label(label=label))
+                button.set_child(content)
+                switcher.append(button)
+                self.tab_buttons[name] = button
+            return switcher
 
         def make_source_page(self, cards):
             flow = Gtk.FlowBox()
@@ -342,7 +373,6 @@ def main():
                         tab="screens",
                     )
                 )
-            cards.append(self.region_card())
             return cards
 
         def region_card(self):
@@ -487,6 +517,13 @@ def main():
             name = stack.get_visible_child_name()
             if name is not None:
                 save_last_tab(name)
+                button = self.tab_buttons.get(name)
+                if button is not None and not button.get_active():
+                    button.set_active(True)
+
+        def on_tab_toggled(self, button, name):
+            if button.get_active():
+                self.stack.set_visible_child_name(name)
 
         def update_window_state(self, state, client_list):
             client = next((item for item in client_list if item.get("address") == state["address"]), None)
