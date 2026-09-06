@@ -17,8 +17,26 @@
       peeppee.class = "^.*(-peepee)$";
       porn.title = "(?i).*porn.*";
       bitwarden.title = "(?i).*bitwarden.*";
+      noctalia.class = "^(dev\\.noctalia\\.Noctalia)$";
     in
     [
+      # Noctalia Settings
+      {
+        match = noctalia;
+        float = true;
+      }
+      {
+        match = noctalia;
+        size = [
+          "min(1300, monitor_w * 0.8)"
+          "min(900, monitor_h * 0.85)"
+        ];
+      }
+      {
+        match = noctalia;
+        center = true;
+      }
+
       # Firefox PiP: float + pin
       {
         match = pip;
