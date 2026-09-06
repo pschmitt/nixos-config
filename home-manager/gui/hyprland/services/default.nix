@@ -23,6 +23,13 @@
     # waybar via toggle-bar.sh.
     # ./mako.nix
     ./polkit.nix
-    ./xdg-portal-screencast-watcher.nix
+    # Disabled: this busctl watcher only existed to fire
+    # screencast.sh on|off, whose notify-send now duplicates Noctalia's
+    # native privacy OSD (osd.privacy.screen-on/off). The Home Assistant
+    # screencast sensor no longer needs its /tmp/screencast.json either —
+    # go-hass-agent/scripts/screencast.sh reads the PipeWire graph directly,
+    # like the pschmitt/screencast Noctalia plugin does. Kept (not deleted)
+    # so re-enabling is a one-line revert, same as mako.nix above.
+    # ./xdg-portal-screencast-watcher.nix
   ];
 }

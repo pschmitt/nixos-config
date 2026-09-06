@@ -16,20 +16,31 @@ let
     # defaults to disabled, so the other ~65 entries are noise.
     #
     # No credentials live in here: the OpenAI admin key comes from sops via
-    # OPENAI_ADMIN_KEY in the wrapper below, and Codex/Claude/Antigravity are
-    # read by CodexBar straight out of their own CLIs' credential stores.
-    providers =
-      map
-        (id: {
-          inherit id;
-          enabled = true;
-        })
-        [
-          "codex"
-          "openai"
-          "claude"
-          "antigravity"
-        ];
+    # OPENAI_ADMIN_KEY in the wrapper below, and Codex, Claude and Antigravity
+    # are read by CodexBar straight out of their own CLIs' credential stores.
+    providers = [
+      {
+        id = "codex";
+        enabled = true;
+      }
+      {
+        id = "openai";
+        enabled = true;
+      }
+      {
+        id = "antigravity";
+        enabled = true;
+      }
+      # Deliberately off: an all-providers run would report whichever single
+      # Claude account happens to be active, and the wrapper below throws that
+      # card away in favour of one per account. An explicit `--provider claude`
+      # still works while disabled, which is exactly what the wrapper issues,
+      # so leaving this off just saves a redundant request.
+      {
+        id = "claude";
+        enabled = false;
+      }
+    ];
   };
 
   # CodexBar reports exactly one Claude account, and neither of its
@@ -50,7 +61,14 @@ let
       readonly CODEXBAR="${pkgs.codexbar}/bin/CodexBarCLI"
       readonly OPENAI_ADMIN_KEY_FILE="${cfg.openaiAdminKeyFile}"
 
-      export_openai_admin_key() {
+      # Everything CodexBar needs from the environment has to be set here: the
+      # main consumer is a Noctalia widget running under systemd --user, which
+      # gets none of the interactive shell's exports. CODEX_HOME is the one
+      # that bites — without it the Codex provider reads a non-existent
+      # ~/.codex and reports "401 Unauthorized" rather than "not signed in".
+      export_provider_credentials() {
+        export CODEX_HOME="''${CODEX_HOME:-${cfg.codexHome}}"
+
         if [[ ! -r "$OPENAI_ADMIN_KEY_FILE" ]]
         then
           return 0
@@ -58,6 +76,31 @@ let
 
         OPENAI_ADMIN_KEY="$(< "$OPENAI_ADMIN_KEY_FILE")"
         export OPENAI_ADMIN_KEY
+      }
+
+      # CodexBar exits non-zero when *any* provider fails, while still printing
+      # a perfectly good payload for the ones that succeeded — its own plugin
+      # says as much ("CodexBar may return a non-zero exit code for a partial
+      # provider response"). Under errexit and pipefail that exit code would
+      # discard the whole response and leave the widget with nothing, so the
+      # status is dropped and only the payload is trusted.
+      codexbar_json() {
+        local payload
+
+        payload="$("$CODEXBAR" "$@")" || true
+        if [[ -z "$payload" ]]
+        then
+          return 0
+        fi
+
+        jq '.' <<< "$payload" || true
+      }
+
+      # Every provider enabled in the config file. Claude is dropped here on
+      # top of being disabled there, so re-enabling it by hand degrades to a
+      # wasted request rather than a duplicate, untagged Claude card.
+      base_usage() {
+        codexbar_json "$@" | jq 'map(select(.provider != "claude"))'
       }
 
       # Emit the Claude provider's usage for one account, tagged so the bar can
@@ -85,10 +128,12 @@ let
           return 0
         fi
 
+        # Exported inside the subshell so it reaches CodexBar without leaking
+        # one account's token into the next account's fetch.
         usage="$(
-          CODEXBAR_CLAUDE_OAUTH_TOKEN="$token" \
-            "$CODEXBAR" usage --provider claude --source oauth --format json --json-only
-        )" || true
+          export CODEXBAR_CLAUDE_OAUTH_TOKEN="$token"
+          codexbar_json usage --provider claude --source oauth --format json --json-only
+        )"
         if [[ -z "$usage" ]]
         then
           return 0
@@ -129,27 +174,29 @@ let
         # shellcheck disable=SC2064 # $tmp must expand now, not on trap
         trap "rm -rf '$tmp'" EXIT
 
-        # CodexBar's own single-account Claude card is dropped in favour of the
-        # per-account ones appended below.
-        "$CODEXBAR" "$@" |
-          jq 'map(select(.provider != "claude"))' > "$tmp/base.json"
+        # Run every fetch concurrently: the widget wraps this whole command in
+        # `timeout 30s`, and one Claude account per extra sequential round trip
+        # eats that budget for no reason.
+        base_usage "$@" > "$tmp/base.json" &
         parts=("$tmp/base.json")
 
         ${lib.concatStringsSep "\n  " (
           lib.concatMap (label: [
             ''claude_account ${lib.escapeShellArg label} ${
               lib.escapeShellArg cfg.claudeAccounts.${label}
-            } > "$tmp/claude-${label}.json"''
+            } > "$tmp/claude-${label}.json" &''
             ''parts+=("$tmp/claude-${label}.json")''
           ]) (lib.attrNames cfg.claudeAccounts)
         )}
+
+        wait
 
         # Files left empty by a skipped account contribute no inputs to --slurp.
         jq --slurp 'add // []' "''${parts[@]}"
       }
 
       main() {
-        export_openai_admin_key
+        export_provider_credentials
 
         if wants_merged_usage "$@"
         then
@@ -201,6 +248,17 @@ in
         whose file is absent are skipped, so the same set works on hosts that
         only have one of them. Labels are shown in the bar next to the provider
         name and are sorted alphabetically.
+      '';
+    };
+
+    codexHome = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.xdg.configHome}/codex";
+      defaultText = lib.literalMD "`$XDG_CONFIG_HOME/codex`";
+      description = ''
+        CODEX_HOME to fall back to when the caller has not exported one, so
+        the Codex provider finds its `auth.json` even when CodexBar is run from
+        a systemd user service rather than an interactive shell.
       '';
     };
 
