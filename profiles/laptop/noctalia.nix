@@ -13,6 +13,12 @@
 let
   noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
 
+  # Noctalia's built-in "sticker" widget (used for the lockscreen avatar
+  # below) has no rounding/mask setting of its own -- just image_path and
+  # opacity -- so it renders ~/.face as a plain square. Pre-crop a circular
+  # copy instead of asking Noctalia to do it.
+  avatarCircularPath = "${config.mainUser.homeDirectory}/.local/share/noctalia-avatar-circular.png";
+
   # A polling->events-API rewrite of this plugin's service.luau was tried
   # locally (overlays/patches/noctalia-plugins/0001-syncthing-events-api.patch)
   # to replace the fixed poll interval with Syncthing's /rest/events
@@ -337,17 +343,35 @@ in
             # rendered as a massive block of text clipped off the top-left
             # of the screen. Coordinates are logical px in eDP-1's rotated
             # (transform=3) + scaled (1.667) output space: 1536x960.
+            # No custom plugin needed for the avatar: Noctalia ships a
+            # built-in "sticker" desktop-widget type (image_path + opacity)
+            # that lockscreen_widgets can use too, same as any other type.
+            avatar = {
+              type = "sticker";
+              output = "eDP-1";
+              cx = 768.0;
+              cy = 250.0;
+              box_width = 150.0;
+              box_height = 150.0;
+              settings = {
+                image_path = avatarCircularPath;
+                opacity = 1.0;
+              };
+            };
             date = {
               type = "clock";
               output = "eDP-1";
               cx = 768.0;
-              cy = 60.0;
+              cy = 400.0;
               box_width = 700.0;
               box_height = 110.0;
               settings = {
                 clock_style = "digital";
                 format = "{:%Y-%m-%d}";
-                color = "on_surface";
+                # on_surface is the bright/high-contrast text role; this
+                # reads too bold at this size. on_surface_variant is the
+                # standard muted-gray secondary-text role.
+                color = "on_surface_variant";
                 font_family = "ComicCode Nerd Font";
                 shadow = true;
                 center_text = true;
@@ -357,13 +381,13 @@ in
               type = "clock";
               output = "eDP-1";
               cx = 768.0;
-              cy = 152.0;
+              cy = 490.0;
               box_width = 400.0;
               box_height = 55.0;
               settings = {
                 clock_style = "digital";
                 format = "{:%H:%M:%S}";
-                color = "on_surface";
+                color = "on_surface_variant";
                 font_family = "ComicCode Nerd Font";
                 shadow = true;
                 center_text = true;
@@ -535,6 +559,21 @@ in
     systemd.user.services.noctalia.Service.Environment = [
       "TIMEWARRIORDB=${config.mainUser.homeDirectory}/.config/timewarrior"
     ];
+    # Regenerate the circular avatar crop (see avatarCircularPath above) on
+    # every activation, same cadence as noctaliaResetState, so it follows
+    # ~/.face if that ever changes. Silently does nothing if ~/.face is
+    # missing rather than failing activation over a cosmetic asset.
+    home.activation.noctaliaAvatarCircularCrop = hmArgs.lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      src="${config.mainUser.homeDirectory}/.face"
+      if [[ -f "$src" ]]; then
+        run mkdir -p "$(${pkgs.coreutils}/bin/dirname "${avatarCircularPath}")"
+        run ${pkgs.imagemagick}/bin/magick "$src" \
+          -resize 260x260^ -gravity center -extent 260x260 \
+          \( -size 260x260 xc:none -fill white -draw "circle 130,130 130,0" \) \
+          -alpha set -compose DstIn -composite \
+          "${avatarCircularPath}"
+      fi
+    '';
   };
 
   # pschmitt/fan-control needs group-scoped write access to whichever fan
