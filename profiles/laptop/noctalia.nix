@@ -709,6 +709,12 @@ in
             # tw::work-stop shuts the gec-debian VM down, closes Zoom/Teams
             # tabs and runs timewsync before it returns.
             command_timeout = 300;
+            # Sync button in the panel header. tw::sync is the two-sided
+            # version of the plugin's `timewsync` default: it syncs timewarrior
+            # and then taskwarrior (twice, around the timew push), which is
+            # what keeps the worklog task and its intervals consistent.
+            sync_enabled = true;
+            sync_command = "${config.mainUser.homeDirectory}/bin/zhj taskwarrior::sync";
           };
           "pschmitt/syncthing" = {
             # "Folder X is up to date" fires on every sync completion and
