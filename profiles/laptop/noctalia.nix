@@ -505,6 +505,9 @@ in
                     # input_radius.
                     background = true;
                     background_radius = 24.0;
+                    # Default 10 hugged the art/title/controls too tightly
+                    # against the now-rounder background edge.
+                    background_padding = 18.0;
                   };
                 };
                 # Fixed widget-id convention for the login panel itself
