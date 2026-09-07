@@ -370,11 +370,15 @@ in
               {
                 enabled = true;
                 widget = {
+                  # date/time/avatar/login-box cy fractions below vertically
+                  # center that whole four-widget stack as a block (equal
+                  # top/bottom margins from the stack's own total height),
+                  # not each widget individually.
                   date = {
                     type = "clock";
                     output = "eDP-1";
                     cx = w * 0.5;
-                    cy = h * 0.375;
+                    cy = h * 0.31823;
                     box_width = w * 0.4557;
                     box_height = h * 0.1146;
                     settings = {
@@ -394,7 +398,7 @@ in
                     type = "clock";
                     output = "eDP-1";
                     cx = w * 0.5;
-                    cy = h * 0.46875;
+                    cy = h * 0.42418;
                     box_width = w * 0.2604;
                     box_height = h * 0.05729;
                     settings = {
@@ -418,7 +422,7 @@ in
                     type = "sticker";
                     output = "eDP-1";
                     cx = w * 0.5;
-                    cy = h * 0.58854;
+                    cy = h * 0.55095;
                     box_width = w * 0.09766;
                     box_height = h * 0.15625;
                     settings = {
@@ -471,7 +475,7 @@ in
                     type = "login_box";
                     output = "eDP-1";
                     cx = w * 0.5;
-                    cy = h * 0.81042;
+                    cy = h * 0.69407;
                     box_width = w * 0.52734;
                     # 0.20417 (Noctalia's auto-computed default) was sized
                     # for the full "regular" panel with weather/media/session
@@ -485,6 +489,10 @@ in
                       # login fields are a much more translucent, rounder pill.
                       background_opacity = 0.5;
                       background_radius = 20.0;
+                      # Drops the separate "Place your finger on the reader"
+                      # status card above the password row. Errors and Caps
+                      # Lock warnings still show there when they happen.
+                      show_unlock_hint = false;
                     };
                   };
                 };
