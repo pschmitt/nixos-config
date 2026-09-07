@@ -126,11 +126,9 @@ in
             "group:weather-date"
           ];
           end = [
-            "screencast"
             "media"
             "media-gap"
-            "tray"
-            "syncthing"
+            "group:sync-tray"
             "group:volume"
             "group:notif-battery"
           ];
@@ -173,15 +171,30 @@ in
               padding = 12;
             }
             {
+              id = "sync-tray";
+              members = [
+                "tray"
+                "syncthing"
+              ];
+              padding = 12;
+            }
+            {
               id = "volume";
               members = [
                 "input-volume"
                 "output-volume"
+                # The REC indicator rides along with the audio controls: it is
+                # only ever visible while a screencast is running, and when it
+                # appears it belongs next to the mic it is recording with.
+                "screencast"
               ];
               padding = 12;
-              # Collapsed to the first member (the mic); hovering the capsule
-              # unfolds the output volume beside it.
-              accordion = true;
+              # No accordion any more. Noctalia keeps exactly one member of an
+              # accordion capsule visible (index 0, the mic) and clips the rest
+              # until hover, which would have made the REC dot a hover-only
+              # indicator -- the one thing it must not be. So the whole capsule
+              # stays unfolded: mic, output volume, and REC while sharing.
+              accordion = false;
             }
           ];
         };
