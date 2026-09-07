@@ -493,10 +493,10 @@ in
                   output = name;
                   cx = w * 0.5;
                   cy = h * 0.69407;
-                  # Noctalia's own auto-computed default (0.84375h) was
-                  # sized for the full "regular" panel and read as too wide
-                  # a password bar once switched to "compact".
-                  box_width = h * 0.44;
+                  # Narrower still, closer to the avatar's own width
+                  # (0.15625h) -- GNOME-style reference had a much tighter
+                  # password field than a full-width bar.
+                  box_width = h * 0.24;
                   # 0.20417h (Noctalia's auto-computed default) was sized
                   # for the full "regular" panel with weather/media/session
                   # buttons; "compact" is just a password row and doesn't
@@ -505,9 +505,15 @@ in
                   box_height = h * 0.09;
                   settings = {
                     layout = "compact";
-                    # Default 0.88/12 read as a solid dark card; GDM-style
-                    # login fields are a much more translucent, rounder pill.
-                    background_opacity = 0.5;
+                    # GNOME-style reference uses a light/white pill rather
+                    # than a dark card. on_surface is the near-white role in
+                    # our dark palette (#E8E8F0). No separate input-text-color
+                    # setting exists (checked lockscreen_login_box.h/.cpp) --
+                    # unverified whether typed text stays legible on this;
+                    # revert to background_color = "surface_variant" (dark,
+                    # what this replaced) if it doesn't.
+                    background_color = "on_surface";
+                    background_opacity = 0.92;
                     background_radius = 20.0;
                     # Drops the separate "Place your finger on the reader"
                     # status card above the password row. Errors and Caps
