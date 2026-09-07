@@ -388,42 +388,30 @@ in
                 h = logicalHeight;
               in
               {
-                # Small date/time pinned near the top, well out of the way
-                # of the avatar+login block below (re-laid-out per request:
-                # big avatar with the password field right under it, date/
-                # time small and up top instead of a big centered block).
-                "date-${name}" = {
+                # Small combined date+time pinned near the top, well out of
+                # the way of the avatar+login block below (re-laid-out per
+                # request: big avatar with the password field right under
+                # it, date/time small and up top instead of a big centered
+                # block). Was two separate widgets (date larger, time
+                # smaller); merged back into one per request, kept at the
+                # smaller time widget's box_height (0.03h) -- box_width
+                # widened proportionally (0.16h -> 0.36h) since the combined
+                # string is roughly 2.4x longer than "HH:MM:SS" alone.
+                "datetime-${name}" = {
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.045;
-                  box_width = h * 0.32;
-                  box_height = h * 0.045;
+                  cy = h * 0.07;
+                  box_width = h * 0.36;
+                  box_height = h * 0.03;
                   settings = {
                     clock_style = "digital";
-                    format = "{:%Y-%m-%d}";
+                    format = "{:%Y-%m-%d %H:%M:%S}";
                     # on_surface (bright/high-contrast) and on_surface_variant
                     # (standard muted secondary-text) both still read too
                     # bright here; outline is the dimmest role in the
                     # palette (normally used for borders/dividers).
                     color = "outline";
-                    font_family = "ComicCode Nerd Font";
-                    shadow = true;
-                    center_text = true;
-                    background = false;
-                  };
-                };
-                "time-${name}" = {
-                  type = "clock";
-                  output = name;
-                  cx = w * 0.5;
-                  cy = h * 0.095;
-                  box_width = h * 0.16;
-                  box_height = h * 0.03;
-                  settings = {
-                    clock_style = "digital";
-                    format = "{:%H:%M:%S}";
-                    color = "outline"; # match date-${name}'s color above
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     center_text = true;
