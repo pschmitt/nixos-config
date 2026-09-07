@@ -388,17 +388,17 @@ in
                 h = logicalHeight;
               in
               {
-                # date/time/avatar/login-box cy fractions below vertically
-                # center that whole four-widget stack as a block (equal
-                # top/bottom margins from the stack's own total height),
-                # not each widget individually.
+                # Small date/time pinned near the top, well out of the way
+                # of the avatar+login block below (re-laid-out per request:
+                # big avatar with the password field right under it, date/
+                # time small and up top instead of a big centered block).
                 "date-${name}" = {
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.31823;
-                  box_width = h * 0.72917;
-                  box_height = h * 0.1146;
+                  cy = h * 0.045;
+                  box_width = h * 0.32;
+                  box_height = h * 0.045;
                   settings = {
                     clock_style = "digital";
                     format = "{:%Y-%m-%d}";
@@ -417,9 +417,9 @@ in
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.42418;
-                  box_width = h * 0.41667;
-                  box_height = h * 0.05729;
+                  cy = h * 0.095;
+                  box_width = h * 0.16;
+                  box_height = h * 0.03;
                   settings = {
                     clock_style = "digital";
                     format = "{:%H:%M:%S}";
@@ -437,13 +437,17 @@ in
                 # common card background/surface behind the content (default
                 # true) -- we don't want a square card showing through the
                 # circular crop.
+                #
+                # Bigger than before (0.15625h -> 0.22h) and centered with
+                # the login box directly under it, per request -- no date/
+                # time between them anymore, those moved to the top.
                 "avatar-${name}" = {
                   type = "sticker";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.55095;
-                  box_width = h * 0.15625;
-                  box_height = h * 0.15625;
+                  cy = h * 0.49;
+                  box_width = h * 0.22;
+                  box_height = h * 0.22;
                   settings = {
                     image_path = avatarCircularPath;
                     opacity = 1.0;
@@ -488,15 +492,16 @@ in
                 # reverting our override even though config.toml still says
                 # "compact". date/time/battery above don't hit this because
                 # they already carry explicit geometry.
+                # Directly under the (now bigger) avatar, close enough to
+                # read as one unit rather than two separately-placed pieces.
                 "lockscreen-login-box@${name}" = {
                   type = "login_box";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.69407;
-                  # Narrower still, closer to the avatar's own width
-                  # (0.15625h) -- GNOME-style reference had a much tighter
-                  # password field than a full-width bar.
-                  box_width = h * 0.24;
+                  cy = h * 0.675;
+                  # Close to the avatar's own width (0.22h) rather than a
+                  # wide bar.
+                  box_width = h * 0.30;
                   # 0.20417h (Noctalia's auto-computed default) was sized
                   # for the full "regular" panel with weather/media/session
                   # buttons; "compact" is just a password row and doesn't
@@ -505,16 +510,14 @@ in
                   box_height = h * 0.09;
                   settings = {
                     layout = "compact";
-                    # GNOME-style reference uses a light/white pill rather
-                    # than a dark card. on_surface is the near-white role in
-                    # our dark palette (#E8E8F0). No separate input-text-color
-                    # setting exists (checked lockscreen_login_box.h/.cpp) --
-                    # unverified whether typed text stays legible on this;
-                    # revert to background_color = "surface_variant" (dark,
-                    # what this replaced) if it doesn't.
-                    background_color = "on_surface";
-                    background_opacity = 0.92;
-                    background_radius = 20.0;
+                    # A visible outer panel (tried dark, then light/near-
+                    # white -- see prior commits) always read as an ugly
+                    # extra card. 0 opacity removes it outright; the actual
+                    # password input keeps its own separate dark fill
+                    # (input_opacity, untouched, defaults to 1.0) so it's
+                    # still a clean, readable, self-contained pill on its
+                    # own -- just without a panel floating behind it.
+                    background_opacity = 0.0;
                     # Drops the separate "Place your finger on the reader"
                     # status card above the password row. Errors and Caps
                     # Lock warnings still show there when they happen.
