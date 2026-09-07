@@ -478,9 +478,11 @@ in
                   type = "media_player";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.93;
-                  box_width = h * 0.5;
-                  box_height = h * 0.05;
+                  cy = h * 0.9;
+                  # 0.5h x 0.05h squeezed the art thumbnail + title + play
+                  # button down to near-nothing -- much bigger box.
+                  box_width = h * 0.65;
+                  box_height = h * 0.12;
                   settings = {
                     layout = "horizontal";
                     color = "outline"; # match datetime-${name}'s color
