@@ -402,10 +402,11 @@ in
                   settings = {
                     clock_style = "digital";
                     format = "{:%Y-%m-%d}";
-                    # on_surface is the bright/high-contrast text role; this
-                    # reads too bold at this size. on_surface_variant is the
-                    # standard muted-gray secondary-text role.
-                    color = "on_surface_variant";
+                    # on_surface (bright/high-contrast) and on_surface_variant
+                    # (standard muted secondary-text) both still read too
+                    # bright here; outline is the dimmest role in the
+                    # palette (normally used for borders/dividers).
+                    color = "outline";
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     center_text = true;
@@ -422,7 +423,7 @@ in
                   settings = {
                     clock_style = "digital";
                     format = "{:%H:%M:%S}";
-                    color = "on_surface_variant";
+                    color = "outline"; # match date-${name}'s color above
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     center_text = true;
