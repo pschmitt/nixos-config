@@ -359,6 +359,9 @@ in
             # authenticated HA request.
             server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
+            # Sub-path the panel's Home Assistant link icon opens, appended to
+            # server_file's URL: the "mi casa" dashboard's AI-quotas card.
+            dashboard_path = "/mi-casa/data#ai-quotas";
             # What the bar renders is plugin-scoped on purpose: config.toml is
             # a read-only home-manager symlink, so Noctalia's per-bar-widget
             # settings UI can never persist anything here. Only the widget's
