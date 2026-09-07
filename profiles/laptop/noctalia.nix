@@ -343,26 +343,11 @@ in
             # rendered as a massive block of text clipped off the top-left
             # of the screen. Coordinates are logical px in eDP-1's rotated
             # (transform=3) + scaled (1.667) output space: 1536x960.
-            # No custom plugin needed for the avatar: Noctalia ships a
-            # built-in "sticker" desktop-widget type (image_path + opacity)
-            # that lockscreen_widgets can use too, same as any other type.
-            avatar = {
-              type = "sticker";
-              output = "eDP-1";
-              cx = 768.0;
-              cy = 250.0;
-              box_width = 150.0;
-              box_height = 150.0;
-              settings = {
-                image_path = avatarCircularPath;
-                opacity = 1.0;
-              };
-            };
             date = {
               type = "clock";
               output = "eDP-1";
               cx = 768.0;
-              cy = 400.0;
+              cy = 360.0;
               box_width = 700.0;
               box_height = 110.0;
               settings = {
@@ -381,7 +366,7 @@ in
               type = "clock";
               output = "eDP-1";
               cx = 768.0;
-              cy = 490.0;
+              cy = 450.0;
               box_width = 400.0;
               box_height = 55.0;
               settings = {
@@ -391,6 +376,25 @@ in
                 font_family = "ComicCode Nerd Font";
                 shadow = true;
                 center_text = true;
+              };
+            };
+            # No custom plugin needed for the avatar: Noctalia ships a
+            # built-in "sticker" desktop-widget type (image_path + opacity)
+            # that lockscreen_widgets can use too, same as any other type.
+            # background=false drops every widget type's common card
+            # background/surface behind the content (default true) -- we
+            # don't want a square card showing through the circular crop.
+            avatar = {
+              type = "sticker";
+              output = "eDP-1";
+              cx = 768.0;
+              cy = 565.0;
+              box_width = 150.0;
+              box_height = 150.0;
+              settings = {
+                image_path = avatarCircularPath;
+                opacity = 1.0;
+                background = false;
               };
             };
             # No box_width/box_height here: the plugin's "lockscreen" entry
