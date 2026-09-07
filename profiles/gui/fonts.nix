@@ -50,6 +50,31 @@ in
       enable = true;
       antialias = true;
       hinting.enable = true;
+      # Family aliases that resolve to an italic face. Fontconfig picks the
+      # Roman face for a bare family name (every Comic Code family ships both),
+      # and a name like "ComicCode Nerd Font Italic" isn't a family at all — it
+      # falls back to DejaVu. Toolkits normally ask for a slant alongside the
+      # family, but some don't: Noctalia's text stack builds its Pango
+      # descriptions with a family, a weight and a size only, so a plugin
+      # label there can never request italics. These aliases are the way in —
+      # ask for the alias family and fontconfig assigns the slant.
+      localConf = ''
+        <?xml version="1.0"?>
+        <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+        <fontconfig>
+          <match target="pattern">
+            <test name="family" compare="eq">
+              <string>ComicCode Italic</string>
+            </test>
+            <edit name="family" mode="assign" binding="same">
+              <string>ComicCode Nerd Font</string>
+            </edit>
+            <edit name="slant" mode="assign" binding="same">
+              <const>italic</const>
+            </edit>
+          </match>
+        </fontconfig>
+      '';
       # defaultFonts = {
       #   serif = ["Noto Serif"];
       #   sansSerif = ["Noto Sans"];
