@@ -9,11 +9,6 @@ in
   host.internalMonitor = {
     transform = 3;
     scale = 1.666;
-    # hyprctl-reported mode is 1600x2560 pre-transform; transform=3 swaps it
-    # to a rendered 2560x1600 canvas, and scale divides that down to logical
-    # px -- matches Noctalia's own startup log: "logical=1536x960".
-    logicalWidth = 1536.0;
-    logicalHeight = 960.0;
     # GK4: sensor-proxy already compensates the chassis mount, so keep
     # iio-hyprland's orientation map neutral here.
     iioTransformMap = [
@@ -23,6 +18,17 @@ in
       3
     ];
   };
+  # hyprctl-reported mode is 1600x2560 pre-transform; transform=3 swaps it to
+  # a rendered 2560x1600 canvas, and scale divides that down to logical px --
+  # matches Noctalia's own startup log: "logical=1536x960". Single internal
+  # panel, no dock/external monitor on this host.
+  host.lockscreenOutputs = [
+    {
+      name = "eDP-1";
+      logicalWidth = 1536.0;
+      logicalHeight = 960.0;
+    }
+  ];
 
   wayland.windowManager.hyprland.settings = {
     # fake F1 (dead_circumflex) -> scratchpad terminal.

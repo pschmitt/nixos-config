@@ -87,25 +87,44 @@
           ordered as normal,left-up,bottom-up,right-up.
         '';
       };
-      logicalWidth = lib.mkOption {
-        type = lib.types.nullOr lib.types.float;
-        default = null;
-        description = ''
-          Internal monitor's logical width in px, i.e. its Hyprland-reported
-          mode width/height already adjusted for `transform` (rotation) and
-          `scale` -- what `hyprctl monitors` calls "logical" and Noctalia's
-          own log line reports as `logical=WxH`. Null means unknown; consumers
-          needing absolute on-screen widget placement (e.g. Noctalia
-          lockscreen_widgets, see profiles/laptop/noctalia.nix) should treat
-          that as "don't guess" and skip rather than place widgets using
-          another host's numbers.
-        '';
-      };
-      logicalHeight = lib.mkOption {
-        type = lib.types.nullOr lib.types.float;
-        default = null;
-        description = "Internal monitor's logical height in px. See logicalWidth.";
-      };
+    };
+
+    lockscreenOutputs = lib.mkOption {
+      type = lib.types.listOf (
+        lib.types.submodule {
+          options = {
+            name = lib.mkOption {
+              type = lib.types.str;
+              description = "Wayland output/connector name, e.g. \"eDP-1\" or \"DP-3\".";
+            };
+            logicalWidth = lib.mkOption {
+              type = lib.types.float;
+              description = ''
+                This output's logical width in px, i.e. its Hyprland-reported
+                mode width/height already adjusted for transform (rotation)
+                and scale -- what `hyprctl monitors` calls "logical" and
+                Noctalia's own log line reports as `logical=WxH`.
+              '';
+            };
+            logicalHeight = lib.mkOption {
+              type = lib.types.float;
+              description = "This output's logical height in px. See logicalWidth.";
+            };
+          };
+        }
+      );
+      default = [ ];
+      description = ''
+        Outputs Noctalia's custom lockscreen_widgets (see
+        profiles/laptop/noctalia.nix) should be duplicated onto, with each
+        one's real logical size. Noctalia has no "show on every output"
+        widget mode of its own (that's bespoke-coded for its login_box only,
+        not generic widgets), so getting the same layout on every screen
+        means declaring one full widget set per output; this is the list
+        that drives that. Empty means unmeasured/unknown for this host --
+        consumers should skip lockscreen_widgets placement entirely rather
+        than guess using another host's or another output's numbers.
+      '';
     };
 
     extraAutostartEntries = lib.mkOption {
