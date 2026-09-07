@@ -181,12 +181,15 @@ in
             {
               id = "volume";
               members = [
+                # The REC indicator leads the audio controls: it is only ever
+                # visible while a screencast is running, and when it appears it
+                # should be the first thing in the capsule, not something
+                # appended after the volume readout. Being member 0 costs
+                # nothing now that this capsule is not an accordion (see
+                # below) -- that index is only special while one is.
+                "screencast"
                 "input-volume"
                 "output-volume"
-                # The REC indicator rides along with the audio controls: it is
-                # only ever visible while a screencast is running, and when it
-                # appears it belongs next to the mic it is recording with.
-                "screencast"
               ];
               padding = 12;
               # No accordion any more. Noctalia keeps exactly one member of an
