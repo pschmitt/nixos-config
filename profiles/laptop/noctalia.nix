@@ -422,7 +422,9 @@ in
                     center_text = true;
                     # Unlike every other widget here, this one keeps its
                     # background (common default: background_color =
-                    # "surface", opacity 0.8, radius 12) per request.
+                    # "surface", opacity 0.8) per request; radius bumped from
+                    # the 12 default to 24 per request.
+                    background_radius = 24.0;
                   };
                 };
                 # No custom plugin needed for the avatar: Noctalia ships a
@@ -480,17 +482,25 @@ in
                   output = name;
                   cx = w * 0.5;
                   cy = h * 0.9;
-                  # 0.5h x 0.05h squeezed the art thumbnail + title + play
-                  # button down to near-nothing -- much bigger box.
-                  box_width = h * 0.65;
-                  box_height = h * 0.12;
+                  # Was a fixed 0.65h x 0.12h box (needed back when this had
+                  # no background, to keep the art thumbnail + title + play
+                  # button from being squeezed down to near-nothing). Now
+                  # that `background` below draws a rounded rect, a fixed box
+                  # much wider than the actual content left huge empty
+                  # padding left/right of it. 0.0/0.0 auto-fits the box to
+                  # content instead (default for every widget type), so the
+                  # background hugs the art/title/controls tightly.
+                  box_width = 0.0;
+                  box_height = 0.0;
                   settings = {
                     layout = "horizontal";
                     color = "outline"; # match datetime-${name}'s color
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     hide_when_no_media = true;
-                    background = false;
+                    # Rounded background per request (widget default:
+                    # background_color = "surface", opacity 0.8, radius 12).
+                    background = true;
                   };
                 };
                 # Fixed widget-id convention for the login panel itself
@@ -544,6 +554,8 @@ in
                     # input itself. Enter still submits without the button.
                     show_keyboard_layout = false;
                     show_login_button = false;
+                    # Password field corner radius per request (default 6).
+                    input_radius = 24.0;
                   };
                 };
               };
