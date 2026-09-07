@@ -46,6 +46,10 @@ in
       # takes effect if we repoint it at `pkgs.noctalia` here.
       programs.noctalia.package = pkgs.noctalia;
     }
+    (lib.mkIf config.programs.noctalia.enable {
+      home.packages = [ pkgs.caffeine ];
+    })
+
     (lib.mkIf (config.programs.noctalia.enable && cfg.resetStateOnActivation) {
       home.activation.noctaliaResetState = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         state_file="${config.xdg.stateHome}/noctalia/settings.toml"
