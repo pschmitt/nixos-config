@@ -499,8 +499,12 @@ in
                     shadow = true;
                     hide_when_no_media = true;
                     # Rounded background per request (widget default:
-                    # background_color = "surface", opacity 0.8, radius 12).
+                    # background_color = "surface", opacity 0.8); radius
+                    # bumped from the 12 default to 24 to match
+                    # datetime-${name}'s background and the login box's
+                    # input_radius.
                     background = true;
+                    background_radius = 24.0;
                   };
                 };
                 # Fixed widget-id convention for the login panel itself
