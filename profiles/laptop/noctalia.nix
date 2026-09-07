@@ -336,17 +336,33 @@ in
             # widget's unconstrained natural size"), which for the clock
             # rendered as a massive block of text clipped off the top-left
             # of the screen. Coordinates are logical px in eDP-1's rotated
-            # (transform=3) + scaled (1.67) output space, ~1533x958 here.
-            clock = {
+            # (transform=3) + scaled (1.667) output space: 1536x960.
+            date = {
               type = "clock";
               output = "eDP-1";
-              cx = 766.0;
-              cy = 70.0;
-              box_width = 600.0;
-              box_height = 100.0;
+              cx = 768.0;
+              cy = 60.0;
+              box_width = 700.0;
+              box_height = 110.0;
               settings = {
                 clock_style = "digital";
-                format = "{:%Y-%m-%d %H:%M:%S}";
+                format = "{:%Y-%m-%d}";
+                color = "on_surface";
+                font_family = "ComicCode Nerd Font";
+                shadow = true;
+                center_text = true;
+              };
+            };
+            time = {
+              type = "clock";
+              output = "eDP-1";
+              cx = 768.0;
+              cy = 152.0;
+              box_width = 400.0;
+              box_height = 55.0;
+              settings = {
+                clock_style = "digital";
+                format = "{:%H:%M:%S}";
                 color = "on_surface";
                 font_family = "ComicCode Nerd Font";
                 shadow = true;
@@ -367,10 +383,38 @@ in
               type = "pschmitt/battery-icon:lockscreen";
               output = "eDP-1";
               cx = 1473.0;
-              cy = 70.0;
+              cy = 890.0;
               settings = {
                 icon_width = 64;
                 icon_height = 32;
+              };
+            };
+            # Fixed widget ID for the login panel itself (password field,
+            # weather/media row, session buttons) -- see
+            # docs.noctalia.dev/noctalia/configuration/lockscreen/widgets.
+            # "compact" drops the weather/media/session-button row for a
+            # slim password-only bar.
+            #
+            # cx/cy/box_width/box_height are required here even though we
+            # want Noctalia's own default position: leaving them unset
+            # (like we first tried) sends this widget through Noctalia's
+            # auto-placement bootstrap, which persists a *fresh default*
+            # settings snapshot (layout = "regular", overwriting our
+            # "compact") into ~/.local/state/noctalia/settings.toml --
+            # silently reverting our override even though config.toml still
+            # says "compact". date/time/battery above don't hit this because
+            # they already carry explicit geometry. Values below are
+            # Noctalia's own previously auto-computed default placement,
+            # copied verbatim so behavior otherwise doesn't change.
+            "lockscreen-login-box@eDP-1" = {
+              type = "login_box";
+              output = "eDP-1";
+              cx = 768.0;
+              cy = 778.0;
+              box_width = 810.0;
+              box_height = 196.0;
+              settings = {
+                layout = "compact";
               };
             };
           };
