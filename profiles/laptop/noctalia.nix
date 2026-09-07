@@ -401,9 +401,14 @@ in
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.035;
-                  box_width = h * 0.36;
-                  box_height = h * 0.03;
+                  cy = h * 0.033;
+                  # 0.03h ("kept at the smaller time widget's size", a
+                  # request from a few commits back) read as tiny once it
+                  # had its own background box -- bumped noticeably bigger
+                  # (0.03h -> 0.05h), width scaled to match (same ~12:1
+                  # aspect ratio).
+                  box_width = h * 0.6;
+                  box_height = h * 0.05;
                   settings = {
                     clock_style = "digital";
                     format = "{:%Y-%m-%d %H:%M:%S}";
@@ -415,7 +420,9 @@ in
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     center_text = true;
-                    background = false;
+                    # Unlike every other widget here, this one keeps its
+                    # background (common default: background_color =
+                    # "surface", opacity 0.8, radius 12) per request.
                   };
                 };
                 # No custom plugin needed for the avatar: Noctalia ships a
@@ -433,7 +440,7 @@ in
                   type = "sticker";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.49;
+                  cy = h * 0.41;
                   box_width = h * 0.22;
                   box_height = h * 0.22;
                   settings = {
@@ -486,7 +493,7 @@ in
                   type = "login_box";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.675;
+                  cy = h * 0.595;
                   # Close to the avatar's own width (0.22h) rather than a
                   # wide bar.
                   box_width = h * 0.30;
@@ -510,6 +517,11 @@ in
                     # status card above the password row. Errors and Caps
                     # Lock warnings still show there when they happen.
                     show_unlock_hint = false;
+                    # Drops the keyboard-layout chip ("DE") and the checkmark
+                    # submit button beside the password field -- just the
+                    # input itself. Enter still submits without the button.
+                    show_keyboard_layout = false;
+                    show_login_button = false;
                   };
                 };
               };
