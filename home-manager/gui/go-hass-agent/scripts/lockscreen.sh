@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/lib.sh"
 
+lockscreen_noctalia() {
+  command -v noctalia >/dev/null 2>&1 || return 1
+  { pgrep -x noctalia || pgrep -x .noctalia-wrapp; } >/dev/null 2>&1 || return 1
+  [[ "$(noctalia msg status 2>/dev/null | jq -re '.locked // false')" == "true" ]]
+}
+
 lockscreen_app() {
   local app
   for app in hyprlock swaylock gtklock
@@ -60,7 +66,11 @@ main() {
         program="plasma-lockscreen"
         ;;
       sway|Hyprland)
-        if program=$(lockscreen_app 2>/dev/null)
+        if lockscreen_noctalia
+        then
+          state=false
+          program="noctalia"
+        elif program=$(lockscreen_app 2>/dev/null)
         then
           state=false
         else

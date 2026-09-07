@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Unlocks hyprlock by sending it SIGUSR1 (immediate unlock and exit).
+# Unlocks the active session lock screen: Noctalia (via loginctl), hyprlock
+# (SIGUSR1, immediate unlock and exit), or loginctl as a generic fallback.
 
 usage() {
   cat <<EOF
@@ -25,13 +26,40 @@ main() {
     esac
   done
 
-  if ! pgrep -x hyprlock >/dev/null
-  then
-    printf 'hyprlock is not running\n' >&2
-    return 1
+  local sessions=()
+  while IFS= read -r s; do
+    [[ -n "$s" ]] && sessions+=("$s")
+  done < <(loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1}')
+
+  local unlocked=0
+  if command -v noctalia >/dev/null 2>&1 && { pgrep -x noctalia || pgrep -x .noctalia-wrapp; } >/dev/null 2>&1; then
+    if [[ "$(noctalia msg status 2>/dev/null | jq -re '.locked // false')" == "true" ]]; then
+      if (( ${#sessions[@]} )); then
+        for s in "${sessions[@]}"; do
+          loginctl unlock-session "$s"
+        done
+      else
+        loginctl unlock-session || true
+      fi
+      unlocked=1
+    fi
   fi
 
-  pkill -SIGUSR1 -x hyprlock
+  if pgrep -x hyprlock >/dev/null 2>&1; then
+    pkill -SIGUSR1 -x hyprlock
+    unlocked=1
+  fi
+
+  if (( ! unlocked )); then
+    # Fallback to loginctl unlock-session
+    if (( ${#sessions[@]} )); then
+      for s in "${sessions[@]}"; do
+        loginctl unlock-session "$s" || true
+      done
+    else
+      loginctl unlock-session || true
+    fi
+  fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

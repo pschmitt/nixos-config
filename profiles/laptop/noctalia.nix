@@ -12,6 +12,7 @@
 }:
 let
   noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
+
   # A polling->events-API rewrite of this plugin's service.luau was tried
   # locally (overlays/patches/noctalia-plugins/0001-syncthing-events-api.patch)
   # to replace the fixed poll interval with Syncthing's /rest/events
@@ -311,6 +312,39 @@ in
             "Custom HHKB DE layout by pschmitt" = "hhkb-de";
             "gpdpocket4 custom DE layout" = "gpd-de";
             "gpdpocket4 custom US layout with some german-isms" = "gpd-us";
+          };
+          avatar_path = "${config.mainUser.homeDirectory}/.face";
+        };
+        # Replaces hyprlock as the default session locker on all laptops.
+        # Blurred screenshot capture before lock (via wlr-screencopy) with
+        # surface tint, PAM/fprintd fingerprint support, and lock-before-sleep.
+        lockscreen = {
+          enabled = true;
+          lock_before_suspend = true;
+          fingerprint = true;
+          allow_empty_password = false;
+          blurred_desktop = true;
+          blur_intensity = 0.6;
+          tint_intensity = 0.35;
+          wallpaper = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
+        };
+        lockscreen_widgets = {
+          enabled = true;
+          widget = {
+            clock = {
+              type = "clock";
+              settings = {
+                clock_style = "digital";
+                format = "{:%Y-%m-%d %H:%M:%S}";
+                color = "on_surface";
+                font_family = "ComicCode Nerd Font";
+                shadow = true;
+                center_text = true;
+              };
+            };
+            battery = {
+              type = "pschmitt/battery-icon:lockscreen";
+            };
           };
         };
         theme = {

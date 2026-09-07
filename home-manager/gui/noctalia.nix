@@ -48,6 +48,24 @@ in
     }
     (lib.mkIf config.programs.noctalia.enable {
       home.packages = [ pkgs.caffeine ];
+      xdg.configFile."noctalia/config.toml".force = true;
+
+      # Noctalia requires XDG_SESSION_ID to connect to logind's session lock monitor.
+      # Because noctalia.service runs as a systemd user service outside of the session scope,
+      # GetSessionByPID(getpid()) fails if XDG_SESSION_ID is not already in the service environment.
+      systemd.user.services.noctalia.Service.ExecStart =
+        let
+          noctaliaLauncher = pkgs.writeShellScript "noctalia-launcher" ''
+            if [ -z "''${XDG_SESSION_ID:-}" ]; then
+              XDG_SESSION_ID="$(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1; exit}')"
+              if [ -n "$XDG_SESSION_ID" ]; then
+                export XDG_SESSION_ID
+              fi
+            fi
+            exec ${config.programs.noctalia.package}/bin/noctalia "$@"
+          '';
+        in
+        lib.mkForce "${noctaliaLauncher}";
     })
 
     (lib.mkIf (config.programs.noctalia.enable && cfg.resetStateOnActivation) {

@@ -5,7 +5,11 @@
     ./monitors.nix
     ./hyprevents.nix
     ./hypridle.nix
-    ./hyprlock.nix
+    # hyprlock.nix is intentionally not imported: Noctalia now manages the
+    # session lock natively (profiles/laptop/noctalia.nix, lockscreen.enabled)
+    # on every host that imports this module. File kept for reference / a
+    # one-line revert if a host ever drops Noctalia.
+    # ./hyprlock.nix
     ./iio-hyprland.nix
     # hyprpaper.nix is intentionally not imported: Noctalia now manages the
     # wallpaper natively (profiles/laptop/noctalia.nix, wallpaper.default.path)
