@@ -470,6 +470,26 @@ in
                     background = false;
                   };
                 };
+                # Built-in "media_player" desktop-widget type, same as
+                # clock/sticker above -- no plugin needed. hide_when_no_media
+                # keeps it from occupying bottom-center space (and showing an
+                # empty/idle player) when nothing is playing.
+                "media-${name}" = {
+                  type = "media_player";
+                  output = name;
+                  cx = w * 0.5;
+                  cy = h * 0.93;
+                  box_width = h * 0.5;
+                  box_height = h * 0.05;
+                  settings = {
+                    layout = "horizontal";
+                    color = "outline"; # match datetime-${name}'s color
+                    font_family = "ComicCode Nerd Font";
+                    shadow = true;
+                    hide_when_no_media = true;
+                    background = false;
+                  };
+                };
                 # Fixed widget-id convention for the login panel itself
                 # (password field, weather/media row, session buttons) --
                 # see docs.noctalia.dev/noctalia/configuration/lockscreen/
