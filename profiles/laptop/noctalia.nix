@@ -331,8 +331,19 @@ in
         lockscreen_widgets = {
           enabled = true;
           widget = {
+            # cx/cy/box_width/box_height are required: they default to
+            # 0/0/0/0 ("centered on the top-left corner, auto-fit to the
+            # widget's unconstrained natural size"), which for the clock
+            # rendered as a massive block of text clipped off the top-left
+            # of the screen. Coordinates are logical px in eDP-1's rotated
+            # (transform=3) + scaled (1.67) output space, ~1533x958 here.
             clock = {
               type = "clock";
+              output = "eDP-1";
+              cx = 766.0;
+              cy = 70.0;
+              box_width = 600.0;
+              box_height = 100.0;
               settings = {
                 clock_style = "digital";
                 format = "{:%Y-%m-%d %H:%M:%S}";
@@ -342,8 +353,25 @@ in
                 center_text = true;
               };
             };
+            # No box_width/box_height here: the plugin's "lockscreen" entry
+            # (noctalia-plugins battery-icon plugin.toml) reuses bar.luau but
+            # doesn't declare its own icon_width/icon_height settings (only
+            # the separate bar widget entry does, default 36x18) — reading
+            # them back undeclared and forcing a box-fit scale against that
+            # crashed Noctalia's Wayland client outright (division against
+            # an unresolved natural size -> an invalid buffer size sent to
+            # the compositor, display_error=22). Declaring them explicitly
+            # here and letting the widget auto-fit its own (now well-defined)
+            # natural size avoids that path entirely.
             battery = {
               type = "pschmitt/battery-icon:lockscreen";
+              output = "eDP-1";
+              cx = 1473.0;
+              cy = 70.0;
+              settings = {
+                icon_width = 64;
+                icon_height = 32;
+              };
             };
           };
         };
