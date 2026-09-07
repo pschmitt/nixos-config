@@ -4,17 +4,25 @@ has() {
   command -v "$1" &>/dev/null
 }
 
+is_noctalia_running() {
+  has noctalia && { pgrep -x noctalia || pgrep -x .noctalia-wrapp; } &>/dev/null
+}
+
 is_locked() {
+  if is_noctalia_running
+  then
+    [[ "$(noctalia msg status 2>/dev/null | jq -re '.locked // false')" == "true" ]] && return 0
+  fi
   pgrep -x hyprlock &>/dev/null
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  JOURNAL_IDENTIFIER="${JOURNAL_IDENTIFIER:-hyprlock}"
+  JOURNAL_IDENTIFIER="${JOURNAL_IDENTIFIER:-lockscreen}"
 
   if [[ -z $FORCE ]] && is_locked
   then
-    # Avoid sending SIGUSR1 to the locker when it's already active (hypridle re-triggers lock.sh).
+    # Avoid re-triggering when locker is already active
     exit 0
   fi
 
@@ -36,6 +44,11 @@ then
   if [[ -z $NOW ]] && has chayang
   then
     chayang -d "${DELAY:-5}" || exit
+  fi
+
+  if is_noctalia_running
+  then
+    exec noctalia msg session lock
   fi
 
   eval systemd-cat --identifier="$JOURNAL_IDENTIFIER" -- "hyprlock"

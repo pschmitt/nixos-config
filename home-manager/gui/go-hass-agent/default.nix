@@ -43,7 +43,7 @@ in
             icon = "mdi:camera";
           }
           {
-            name = "Unlock Hyprlock";
+            name = "Unlock Screen";
             exec = "${commandScripts."unlock-hyprlock.sh"}";
             icon = "mdi:lock-open-variant";
           }

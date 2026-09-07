@@ -48,7 +48,7 @@ in
         (mkLuaInline ''
           function()
               -- Propagate graphical session variables to systemd/DBus.
-              hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP XDG_RUNTIME_DIR QT_QPA_PLATFORM SDL_VIDEODRIVER CLUTTER_BACKEND TERMINAL")
+              hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP XDG_RUNTIME_DIR QT_QPA_PLATFORM SDL_VIDEODRIVER CLUTTER_BACKEND TERMINAL XDG_SESSION_ID XDG_SEAT")
               -- Restart the portal so it picks up WAYLAND_DISPLAY (it may have
               -- started before Hyprland exported the display environment).
               hl.exec_cmd("systemctl --user restart xdg-desktop-portal")
