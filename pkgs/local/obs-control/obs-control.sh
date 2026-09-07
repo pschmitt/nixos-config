@@ -37,7 +37,9 @@ obscli() {
 
 notify() {
   [[ -n "${NO_NOTIFICATION:-}" ]] && return 0
-  osd -a obs-control -c obs-control "$1" || true
+  # Every message below carries its own emoji, so suppress osd's severity
+  # glyph — two icons side by side just looks noisy.
+  osd -a obs-control -c obs-control --no-icon "$1" || true
 }
 
 # ── Scenes ───────────────────────────────────────────────────────────────
