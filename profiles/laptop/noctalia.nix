@@ -401,7 +401,7 @@ in
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.07;
+                  cy = h * 0.035;
                   box_width = h * 0.36;
                   box_height = h * 0.03;
                   settings = {
@@ -457,7 +457,7 @@ in
                   type = "pschmitt/battery-icon:lockscreen";
                   output = name;
                   cx = w - (h * 0.04102);
-                  cy = h * 0.92708;
+                  cy = h * 0.97;
                   settings = {
                     icon_width = 64;
                     icon_height = 32;
