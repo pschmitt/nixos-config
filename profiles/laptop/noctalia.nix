@@ -300,6 +300,18 @@ in
           # its "notifications" tab) is "attached" by default but still
           # opens centered on the bar rather than under the clicked widget.
           panel.open_near_click_control_center = true;
+          # The keyboard-layout widget labels a layout by its xkb description
+          # (`name[Group1]`), which it shortens via a built-in language table
+          # ("German" -> DE, ...). Our custom layouts from
+          # pkgs/local/custom-keymaps aren't in that table and would fall back
+          # to "--", so map their descriptions to short labels by hand. Keys
+          # must match the `name[Group1]` strings in
+          # pkgs/local/custom-keymaps/symbols/* verbatim.
+          keyboard_layout.custom_labels = {
+            "Custom HHKB DE layout by pschmitt" = "hhkb-de";
+            "gpdpocket4 custom DE layout" = "gpd-de";
+            "gpdpocket4 custom US layout with some german-isms" = "gpd-us";
+          };
         };
         theme = {
           mode = "dark";

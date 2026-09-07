@@ -1,0 +1,177 @@
+--- a/src/compositors/hyprland/hyprland_keyboard_backend.cpp
++++ b/src/compositors/hyprland/hyprland_keyboard_backend.cpp
+@@ -1,14 +1,31 @@
+ #include "compositors/hyprland/hyprland_keyboard_backend.h"
+ 
+ #include "compositors/hyprland/hyprland_runtime.h"
+ 
++#include <algorithm>
++#include <cstddef>
++#include <string>
+ #include <string_view>
+ 
++namespace {
++  // Hyprland names every virtual keyboard "hl-virtual-keyboard-<client>".
++  bool isVirtualKeyboard(std::string_view name) { return name.starts_with("hl-virtual-keyboard"); }
++
++  std::size_t countLayouts(std::string_view layouts) {
++    if (layouts.empty()) {
++      return 0;
++    }
++    return static_cast<std::size_t>(std::ranges::count(layouts, ',')) + 1;
++  }
++} // namespace
++
+ HyprlandKeyboardBackend::HyprlandKeyboardBackend(compositors::hyprland::HyprlandRuntime& runtime)
+-    : compositors::hyprland::HyprlandEventHandler(runtime) {}
++    : compositors::hyprland::HyprlandEventHandler(runtime) {
++  seedLayoutFromDevices();
++}
+ 
+ HyprlandKeyboardBackend::~HyprlandKeyboardBackend() { cleanup(); }
+ 
+ bool HyprlandKeyboardBackend::isAvailable() const noexcept { return m_runtime.available(); }
+ 
+ bool HyprlandKeyboardBackend::cycleLayout() const { return m_runtime.request("switchxkblayout all next").has_value(); }
+@@ -36,12 +53,13 @@ void HyprlandKeyboardBackend::notifyChanged() {
+   }
+ }
+ 
+ void HyprlandKeyboardBackend::notifyCleanup() {
+   m_currentLayoutName.clear();
+   m_mainKeyboardName.clear();
++  m_lastRefresh.reset();
+ }
+ 
+ void HyprlandKeyboardBackend::cleanup() { m_runtime.cleanup(); }
+ 
+ void HyprlandKeyboardBackend::seedLayoutFromDevices() {
+   const auto json = m_runtime.requestJson("j/devices");
+@@ -51,23 +69,53 @@ void HyprlandKeyboardBackend::seedLayoutFromDevices() {
+ 
+   const auto keyboardsIt = json->find("keyboards");
+   if (keyboardsIt == json->end() || !keyboardsIt->is_array()) {
+     return;
+   }
+ 
++  // Prefer the compositor's own `main` keyboard, but only if it is a real
++  // device. When it is virtual (noctalia's own hl-virtual-keyboard is a
++  // frequent winner, since injecting input makes it main) fall back to the
++  // physical keyboard with the most configured layouts -- that is the one
++  // carrying a per-device `kb_layout` rather than the global default.
++  const nlohmann::json* fallback = nullptr;
++  std::size_t fallbackLayouts = 0;
++
+   for (const auto& keyboard : *keyboardsIt) {
+-    if (!keyboard.is_object() || !keyboard.value("main", false)) {
++    if (!keyboard.is_object()) {
+       continue;
+     }
++    const std::string name = keyboard.value("name", "");
+     const std::string layout = keyboard.value("active_keymap", "");
+-    if (!layout.empty() && layout != "error") {
++    if (name.empty() || layout.empty() || layout == "error" || isVirtualKeyboard(name)) {
++      continue;
++    }
++    if (keyboard.value("main", false)) {
+       m_currentLayoutName = layout;
+-      m_mainKeyboardName = keyboard.value("name", "");
++      m_mainKeyboardName = name;
+       return;
+     }
++    if (const auto layouts = countLayouts(keyboard.value("layout", "")); layouts > fallbackLayouts) {
++      fallbackLayouts = layouts;
++      fallback = &keyboard;
++    }
++  }
++
++  if (fallback != nullptr) {
++    m_currentLayoutName = fallback->value("active_keymap", "");
++    m_mainKeyboardName = fallback->value("name", "");
++  }
++}
++
++void HyprlandKeyboardBackend::refreshMainKeyboard() {
++  const auto now = std::chrono::steady_clock::now();
++  if (m_lastRefresh.has_value() && now - *m_lastRefresh < kRefreshInterval) {
++    return;
+   }
++  m_lastRefresh = now;
++  seedLayoutFromDevices();
+ }
+ 
+ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_view data) {
+ 
+   if (event != "activelayout") {
+     return;
+@@ -77,14 +125,25 @@ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_vi
+   if (comma == std::string_view::npos || comma + 1 >= data.size()) {
+     return;
+   }
+ 
+   const std::string_view keyboardName = data.substr(0, comma);
+   const std::string_view layoutName = data.substr(comma + 1);
+-
+-  if (!m_mainKeyboardName.empty() && keyboardName != m_mainKeyboardName) {
+-    return;
++  const std::string previousLayoutName = m_currentLayoutName;
++
++  if (!isVirtualKeyboard(keyboardName)) {
++    // `main` follows the last device that produced input, so an event from
++    // another real keyboard means our pick is stale, not that it should be
++    // ignored. Re-resolve (throttled, since one switch fans out to every
++    // keyboard) and only then decide whether this event is the one to take.
++    if (m_mainKeyboardName.empty() || keyboardName != m_mainKeyboardName) {
++      refreshMainKeyboard();
++    }
++    if (m_mainKeyboardName.empty() || keyboardName == m_mainKeyboardName) {
++      m_currentLayoutName = std::string(layoutName);
++    }
+   }
+ 
+-  m_currentLayoutName = std::string(layoutName);
+-  notifyChanged();
++  if (m_currentLayoutName != previousLayoutName) {
++    notifyChanged();
++  }
+ }
+--- a/src/compositors/hyprland/hyprland_keyboard_backend.h
++++ b/src/compositors/hyprland/hyprland_keyboard_backend.h
+@@ -1,11 +1,12 @@
+ #pragma once
+ 
+ #include "compositors/keyboard_backend.h"
+ #include "hyprland_event_handler.h"
+ 
++#include <chrono>
+ #include <functional>
+ #include <nlohmann/json.hpp>
+ #include <optional>
+ #include <string>
+ #include <string_view>
+ #include <vector>
+@@ -28,13 +29,24 @@ public:
+   void setChangeCallback(ChangeCallback callback);
+   void cleanup();
+   void notifyCleanup();
+   void notifyChanged();
+ 
+ private:
++  // Hyprland re-points its `main` keyboard at whichever device last produced
++  // input, and emits one `activelayout` event per keyboard on every switch.
++  // Without a resolved main keyboard the last event of a burst wins, which is
++  // whatever device happens to sort last -- so per-device `kb_layout` lists
++  // never surface. Resolve it from `j/devices`, refresh when the events stop
++  // matching, and never track a virtual keyboard (noctalia's own included:
++  // those only ever carry the global `input:kb_layout`).
++  static constexpr auto kRefreshInterval = std::chrono::milliseconds(500);
++
+   void seedLayoutFromDevices();
++  void refreshMainKeyboard();
+   void handleEvent(std::string_view event, std::string_view data);
+ 
+   std::string m_currentLayoutName;
+   std::string m_mainKeyboardName;
++  std::optional<std::chrono::steady_clock::time_point> m_lastRefresh;
+   ChangeCallback m_changeCallback;
+ };
