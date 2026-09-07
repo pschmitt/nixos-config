@@ -126,11 +126,11 @@ in
             "group:weather-date"
           ];
           end = [
-            "pschmitt/screencast:bar"
+            "screencast"
             "media"
             "media-gap"
             "tray"
-            "pschmitt/syncthing:bar"
+            "syncthing"
             "group:volume"
             "group:notif-battery"
           ];
@@ -148,7 +148,7 @@ in
               # plugin widget id doesn't work.
               id = "ai-usage";
               members = [
-                "pschmitt/ha-ai-usage:bar"
+                "ha-ai-usage"
               ];
               padding = 12;
             }
@@ -157,7 +157,7 @@ in
               members = [
                 "weather"
                 "clock"
-                "pschmitt/timewarrior:bar"
+                "timewarrior"
               ];
               padding = 12;
               widget_spacing = 20; # gap between weather/clock/timewarrior
@@ -166,7 +166,7 @@ in
               id = "notif-battery";
               members = [
                 "network"
-                "pschmitt/battery-icon:bar"
+                "battery-icon"
                 "notifications"
               ];
               padding = 12;
@@ -583,6 +583,28 @@ in
             type = "spacer";
             length = 100;
           };
+          # Plugin widgets get named instances here rather than being
+          # referenced by their raw "author/plugin:entry" ids in the lanes and
+          # capsule groups above. Noctalia's bar editor only offers a widget's
+          # settings gear when it can resolve a type for the reference, and
+          # that lookup knows only [widget.<name>].type and built-in type names
+          # (widgetTypeForReference(),
+          # src/shell/settings/widget_settings_registry.cpp) — a bare plugin id
+          # resolves to nothing, which is why none of these plugin widgets had
+          # a settings gear, and why there was nowhere to set their
+          # widget-scoped settings (icon_size and friends) from here either.
+          # Same root cause as `capsule = true` being rejected on a raw plugin
+          # id (see the note by capsule_group above).
+          #
+          # The trade-off that comes with the gear: what the settings UI writes
+          # lands in ~/.local/state/noctalia/settings.toml, which outranks this
+          # read-only config.toml — so a live tweak silently wins over any
+          # `settings` declared here until it is cleared.
+          timewarrior.type = "pschmitt/timewarrior:bar";
+          ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
+          battery-icon.type = "pschmitt/battery-icon:bar";
+          syncthing.type = "pschmitt/syncthing:bar";
+          screencast.type = "pschmitt/screencast:bar";
           # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
           # plugins.enabled below.
         };
@@ -635,6 +657,36 @@ in
             charging_color = "#34A853";
             text_color = "#202124";
             empty_color = "#F1F3F4";
+          };
+          "pschmitt/timewarrior" = {
+            # Keep the bar slot Mon-Fri even when the timer is off, so the
+            # panel's Start button is reachable on a work day; on the weekend
+            # an idle tracker is just noise and the slot vanishes as it always
+            # did. A running interval is shown regardless of the day.
+            visibility = "workdays";
+            # Noctalia labels can't ask for an italic style, so the panel's
+            # hint text gets there through a family that resolves to an italic
+            # face — the fontconfig alias defined in profiles/gui/fonts.nix.
+            italic_font_family = "ComicCode Italic";
+            # The panel's start/stop button (and the widget's middle click)
+            # would otherwise just run `timew start`/`timew stop`, which is
+            # only half of a work day here: tw::work-start/stop also bring the
+            # WIIT VPN up/down, start/stop the matching Taskwarrior task,
+            # dismiss the timetracking reminder, and handle the falcon-sensor
+            # VM, OBS and timewsync. Pointing the plugin at those keeps one
+            # code path for "start working", whether it is triggered from a
+            # shell or from the bar.
+            #
+            # zhj sources the interactive zsh plugins in a non-interactive
+            # shell, which is what makes the tw:: aliases resolvable here; the
+            # plugin runs these through /bin/sh -c, so the absolute path
+            # matters (~/bin is on the interactive PATH, not the systemd user
+            # service's).
+            start_command = "${config.mainUser.homeDirectory}/bin/zhj tw::work-start";
+            stop_command = "${config.mainUser.homeDirectory}/bin/zhj tw::work-stop";
+            # tw::work-stop shuts the gec-debian VM down, closes Zoom/Teams
+            # tabs and runs timewsync before it returns.
+            command_timeout = 300;
           };
           "pschmitt/syncthing" = {
             # "Folder X is up to date" fires on every sync completion and
