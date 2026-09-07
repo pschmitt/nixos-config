@@ -401,14 +401,13 @@ in
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.033;
-                  # 0.03h ("kept at the smaller time widget's size", a
-                  # request from a few commits back) read as tiny once it
-                  # had its own background box -- bumped noticeably bigger
-                  # (0.03h -> 0.05h), width scaled to match (same ~12:1
-                  # aspect ratio).
-                  box_width = h * 0.6;
-                  box_height = h * 0.05;
+                  cy = h * 0.035;
+                  # Box_width was way wider than the actual text needed
+                  # (0.6h background around ~19 chars of content) -- tightened
+                  # to 0.4h. box_height bumped a bit more for a slightly
+                  # bigger font (0.05h -> 0.06h).
+                  box_width = h * 0.4;
+                  box_height = h * 0.06;
                   settings = {
                     clock_style = "digital";
                     format = "{:%Y-%m-%d %H:%M:%S}";
