@@ -1,12 +1,10 @@
 --- a/src/compositors/hyprland/hyprland_keyboard_backend.cpp
 +++ b/src/compositors/hyprland/hyprland_keyboard_backend.cpp
-@@ -1,14 +1,31 @@
+@@ -1,30 +1,65 @@
  #include "compositors/hyprland/hyprland_keyboard_backend.h"
  
  #include "compositors/hyprland/hyprland_runtime.h"
  
-+#include <algorithm>
-+#include <cstddef>
 +#include <string>
  #include <string_view>
  
@@ -14,11 +12,20 @@
 +  // Hyprland names every virtual keyboard "hl-virtual-keyboard-<client>".
 +  bool isVirtualKeyboard(std::string_view name) { return name.starts_with("hl-virtual-keyboard"); }
 +
-+  std::size_t countLayouts(std::string_view layouts) {
-+    if (layouts.empty()) {
-+      return 0;
++  // "hhkb-de,de,us" -> {"hhkb-de", "de", "us"}
++  std::vector<std::string> splitLayouts(std::string_view layouts) {
++    std::vector<std::string> names;
++    while (!layouts.empty()) {
++      const auto comma = layouts.find(',');
++      if (const auto name = layouts.substr(0, comma); !name.empty()) {
++        names.emplace_back(name);
++      }
++      if (comma == std::string_view::npos) {
++        break;
++      }
++      layouts.remove_prefix(comma + 1);
 +    }
-+    return static_cast<std::size_t>(std::ranges::count(layouts, ',')) + 1;
++    return names;
 +  }
 +} // namespace
 +
@@ -33,21 +40,52 @@
  bool HyprlandKeyboardBackend::isAvailable() const noexcept { return m_runtime.available(); }
  
  bool HyprlandKeyboardBackend::cycleLayout() const { return m_runtime.request("switchxkblayout all next").has_value(); }
-@@ -36,12 +53,13 @@ void HyprlandKeyboardBackend::notifyChanged() {
+ 
+ std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const {
+   const auto current = currentLayoutName();
+   if (!current.has_value()) {
+     return std::nullopt;
+   }
++  if (m_layoutNames.size() > 1) {
++    // These are xkb layout codes, while the active layout is only ever known
++    // by its description, so leave currentIndex unset: every caller then
++    // falls back to currentLayoutName() for display and uses the list purely
++    // as the "how many layouts are configured" answer -- which is what the
++    // bar widget needs to stop hiding itself as a single-layout setup.
++    return KeyboardLayoutState{m_layoutNames, -1};
++  }
+   return KeyboardLayoutState{{*current}, 0};
+ }
+ 
+ std::optional<std::string> HyprlandKeyboardBackend::currentLayoutName() const {
++  if (m_currentLayoutName.empty()) {
++    refreshMainKeyboard();
++  }
+   if (m_currentLayoutName.empty()) {
+     return std::nullopt;
+   }
+   return m_currentLayoutName;
+ }
+ 
+@@ -36,38 +71,72 @@ void HyprlandKeyboardBackend::notifyChanged() {
    }
  }
  
  void HyprlandKeyboardBackend::notifyCleanup() {
    m_currentLayoutName.clear();
    m_mainKeyboardName.clear();
++  m_layoutNames.clear();
 +  m_lastRefresh.reset();
  }
  
  void HyprlandKeyboardBackend::cleanup() { m_runtime.cleanup(); }
  
- void HyprlandKeyboardBackend::seedLayoutFromDevices() {
+-void HyprlandKeyboardBackend::seedLayoutFromDevices() {
++void HyprlandKeyboardBackend::seedLayoutFromDevices() const {
    const auto json = m_runtime.requestJson("j/devices");
-@@ -51,23 +69,53 @@ void HyprlandKeyboardBackend::seedLayoutFromDevices() {
+   if (!json || !json->is_object()) {
+     return;
+   }
  
    const auto keyboardsIt = json->find("keyboards");
    if (keyboardsIt == json->end() || !keyboardsIt->is_array()) {
@@ -60,7 +98,7 @@
 +  // physical keyboard with the most configured layouts -- that is the one
 +  // carrying a per-device `kb_layout` rather than the global default.
 +  const nlohmann::json* fallback = nullptr;
-+  std::size_t fallbackLayouts = 0;
++  std::vector<std::string> fallbackLayouts;
 +
    for (const auto& keyboard : *keyboardsIt) {
 -    if (!keyboard.is_object() || !keyboard.value("main", false)) {
@@ -77,25 +115,27 @@
        m_currentLayoutName = layout;
 -      m_mainKeyboardName = keyboard.value("name", "");
 +      m_mainKeyboardName = name;
++      m_layoutNames = splitLayouts(keyboard.value("layout", ""));
        return;
      }
-+    if (const auto layouts = countLayouts(keyboard.value("layout", "")); layouts > fallbackLayouts) {
-+      fallbackLayouts = layouts;
++    if (auto layouts = splitLayouts(keyboard.value("layout", "")); layouts.size() > fallbackLayouts.size()) {
++      fallbackLayouts = std::move(layouts);
 +      fallback = &keyboard;
 +    }
-+  }
+   }
 +
 +  if (fallback != nullptr) {
 +    m_currentLayoutName = fallback->value("active_keymap", "");
 +    m_mainKeyboardName = fallback->value("name", "");
++    m_layoutNames = std::move(fallbackLayouts);
 +  }
 +}
 +
-+void HyprlandKeyboardBackend::refreshMainKeyboard() {
++void HyprlandKeyboardBackend::refreshMainKeyboard() const {
 +  const auto now = std::chrono::steady_clock::now();
 +  if (m_lastRefresh.has_value() && now - *m_lastRefresh < kRefreshInterval) {
 +    return;
-   }
++  }
 +  m_lastRefresh = now;
 +  seedLayoutFromDevices();
  }
@@ -104,7 +144,7 @@
  
    if (event != "activelayout") {
      return;
-@@ -77,14 +125,25 @@ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_vi
+@@ -77,14 +146,25 @@ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_vi
    if (comma == std::string_view::npos || comma + 1 >= data.size()) {
      return;
    }
@@ -150,13 +190,14 @@
  #include <string>
  #include <string_view>
  #include <vector>
-@@ -28,13 +29,24 @@ public:
+@@ -28,13 +29,30 @@ public:
    void setChangeCallback(ChangeCallback callback);
    void cleanup();
    void notifyCleanup();
    void notifyChanged();
  
  private:
+-  void seedLayoutFromDevices();
 +  // Hyprland re-points its `main` keyboard at whichever device last produced
 +  // input, and emits one `activelayout` event per keyboard on every switch.
 +  // Without a resolved main keyboard the last event of a burst wins, which is
@@ -166,12 +207,20 @@
 +  // those only ever carry the global `input:kb_layout`).
 +  static constexpr auto kRefreshInterval = std::chrono::milliseconds(500);
 +
-   void seedLayoutFromDevices();
-+  void refreshMainKeyboard();
++  // Mutable so the const accessors can recover a layout name lazily: the
++  // constructor's seed loses the race with Hyprland IPC readiness often
++  // enough (and the runtime clears every handler on reconnect), and without
++  // this nothing re-resolves until the next layout switch -- leaving the bar
++  // widget hidden as a "single layout" and the OSD priming on an empty name.
++  void seedLayoutFromDevices() const;
++  void refreshMainKeyboard() const;
    void handleEvent(std::string_view event, std::string_view data);
  
-   std::string m_currentLayoutName;
-   std::string m_mainKeyboardName;
-+  std::optional<std::chrono::steady_clock::time_point> m_lastRefresh;
+-  std::string m_currentLayoutName;
+-  std::string m_mainKeyboardName;
++  mutable std::string m_currentLayoutName;
++  mutable std::string m_mainKeyboardName;
++  mutable std::vector<std::string> m_layoutNames;
++  mutable std::optional<std::chrono::steady_clock::time_point> m_lastRefresh;
    ChangeCallback m_changeCallback;
  };
