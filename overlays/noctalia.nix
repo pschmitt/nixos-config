@@ -38,6 +38,21 @@ in
       # and violet power glyphs. Drop once upstream adds this itself.
       ./patches/noctalia/0004-button-content-color.patch
 
+      # The Hyprland keyboard-layout widget could only ever show de/us here,
+      # never the HHKB's own hhkb-de (per-device kb_layout, see
+      # home-manager/gui/hyprland/conf/input.nix). Two upstream bugs stack up:
+      # hyprland_keyboard_backend.cpp defines seedLayoutFromDevices() but
+      # never calls it, so m_mainKeyboardName stays empty and handleEvent()'s
+      # "only the main keyboard" filter is inert -- and since Hyprland emits
+      # one `activelayout` event per keyboard on every switch, the last event
+      # of the burst wins. Seeding alone isn't enough either: Hyprland points
+      # `main` at whichever device last produced input, which is regularly
+      # noctalia's own hl-virtual-keyboard-.noctalia-wrapped, and that one
+      # only carries the global input:kb_layout. So also skip virtual
+      # keyboards when picking, and re-resolve (throttled) when events stop
+      # matching the current pick. Drop once upstream handles this itself.
+      ./patches/noctalia/0005-hyprland-main-keyboard-layout.patch
+
       # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
       # for the syncthing plugin's events-API attempt) is intentionally not
       # applied: that plugin rewrite was reverted 2026-09-05 (see
