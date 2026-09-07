@@ -30,6 +30,8 @@ Options:
   -I, --icon-color COLOR             Icon color: a Noctalia palette role
                                       (error, on_surface, ...) or #RRGGBB
                                       (Noctalia only)
+  -n, --no-icon                      Show no glyph at all, text only
+                                      (Noctalia only)
   -p, --profile NAME                 Named profile_rules entry to apply
                                       (Noctalia only)
   -S, --style JSON                   Raw style object merged under --icon /
@@ -66,13 +68,21 @@ NOCTALIA_PANELS=(
 noctalia_panel() {
   local message="$1"
   local details="$2"
+  local show_icon="${3:-true}"
   local max_length=${#message}
   if (( ${#details} > max_length ))
   then
     max_length=${#details}
   fi
 
-  local required_width=$((58 + max_length * 8))
+  # Without the glyph the row loses the icon and its text gap (20 + 10px).
+  local base_width=58
+  if [[ "$show_icon" == false ]]
+  then
+    base_width=28
+  fi
+
+  local required_width=$((base_width + max_length * 8))
   local suffix=""
   if (( required_width > 252 ))
   then
@@ -129,7 +139,13 @@ send() {
       '{summary:$summary, body:$body, severity:$severity, category:$category,
         command:$command, timeout_ms:$timeout_ms, profile:$profile, style:$style}
        | with_entries(select(.value != null and .value != "" and .value != {}))')
-    noctalia msg panel-open "$(noctalia_panel "$message" "$details")" "$payload" &>/dev/null && return 0
+    local show_icon=true
+    if [[ "$(jq -r '.show_icon // empty' <<< "$style")" == false ]]
+    then
+      show_icon=false
+    fi
+    noctalia msg panel-open \
+      "$(noctalia_panel "$message" "$details" "$show_icon")" "$payload" &>/dev/null && return 0
   fi
 
   if use_dms
@@ -265,7 +281,7 @@ main() {
   esac
 
   local severity=info category="" details="" cmd="" app_name=osd timeout=""
-  local icon="" icon_color="" profile="" style="{}"
+  local icon="" icon_color="" profile="" style="{}" no_icon=
 
   while [[ -n "${1:-}" ]]
   do
@@ -301,6 +317,10 @@ main() {
       -I|--icon-color)
         icon_color="$2"
         shift 2
+        ;;
+      -n|--no-icon)
+        no_icon=false
+        shift
         ;;
       -p|--profile)
         profile="$2"
@@ -353,12 +373,14 @@ main() {
     return 2
   fi
 
-  # --icon / --icon-color are just shorthands for two style keys, so they win
-  # over the same keys inside --style.
+  # --icon / --icon-color / --no-icon are just shorthands for style keys, so
+  # they win over the same keys inside --style.
   style=$(jq -c \
     --arg icon "$icon" \
     --arg icon_color "$icon_color" \
-    '. + ({icon:$icon, icon_color:$icon_color} | with_entries(select(.value != "")))' \
+    --argjson show_icon "${no_icon:-null}" \
+    '. + ({icon:$icon, icon_color:$icon_color} | with_entries(select(.value != "")))
+       + (if $show_icon == null then {} else {show_icon:$show_icon} end)' \
     <<< "$style")
 
   send "$severity" "$*" "$details" "$cmd" "$category" "$app_name" "$timeout" \
