@@ -38,6 +38,10 @@ in
       mon = hmArgs.config.host.internalMonitor;
     in
     {
+      # Noctalia's own agent takes over (shell.polkit_agent below); only one
+      # PolicyKit agent can register per session, so hyprpolkitagent has to go.
+      services.hyprpolkitagent.enable = false;
+
       programs.noctalia = {
         enable = true;
         systemd.enable = true;
@@ -314,6 +318,16 @@ in
             # its "notifications" tab) is "attached" by default but still
             # opens centered on the bar rather than under the clicked widget.
             panel.open_near_click_control_center = true;
+            # Noctalia's own PolicyKit agent, in place of hyprpolkitagent
+            # (disabled above) — that one registers but then fails its portal
+            # handshake ("Could not register app ID: App info not found for
+            # ''"), so prompts never reliably showed. Noctalia registers a
+            # libpolkit-agent listener against a polkit_unix_session subject,
+            # which needs XDG_SESSION_ID in the service environment — already
+            # provided by the noctalia-launcher wrapper added for the
+            # lockscreen (home-manager/gui/noctalia.nix). Panel placement
+            # defaults to floating/center; see [shell.panel] polkit_placement.
+            polkit_agent = true;
             # The keyboard-layout widget labels a layout by its xkb description
             # (`name[Group1]`), which it shortens via a built-in language table
             # ("German" -> DE, ...). Our custom layouts from
