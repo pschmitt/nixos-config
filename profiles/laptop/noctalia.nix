@@ -714,6 +714,12 @@ in
             # version of the plugin's `timewsync` default: it syncs timewarrior
             # and then taskwarrior (twice, around the timew push), which is
             # what keeps the worklog task and its intervals consistent.
+            # A year in hours is just a number; {days} splits it by the
+            # plugin's hours_per_day (8 by default, i.e. work days), so the
+            # Year box reads "149d 3h" instead of "1195h". Week and month stay
+            # in hours, where the figure is still something to compare against
+            # a day's or a week's target.
+            year_time_format = "{days}d {hours}h";
             sync_enabled = true;
             sync_command = "${config.mainUser.homeDirectory}/bin/zhj taskwarrior::sync";
           };
