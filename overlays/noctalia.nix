@@ -50,8 +50,24 @@ in
       # noctalia's own hl-virtual-keyboard-.noctalia-wrapped, and that one
       # only carries the global input:kb_layout. So also skip virtual
       # keyboards when picking, and re-resolve (throttled) when events stop
-      # matching the current pick. Drop once upstream handles this itself.
+      # matching the current pick. Also recover the layout name lazily from
+      # the const accessors: the constructor's seed loses the race with IPC
+      # readiness often enough that the widget would otherwise stay hidden
+      # as a "single layout" until the next switch -- and report the real
+      # layout list from `j/devices` rather than a one-element one, since the
+      # widget's hide-when-single-layout check otherwise only ever sees the
+      # wl_seat's list, which is empty whenever noctalia holds no keyboard
+      # focus. Drop once upstream handles this itself.
       ./patches/noctalia/0005-hyprland-main-keyboard-layout.patch
+
+      # On every noctalia start the keyboard-layout OSD popped up announcing
+      # a layout nobody switched to ("DE", while the HHKB was on hhkb-de).
+      # KeyboardLayoutOsd::prime() records the current layout so the first
+      # change isn't announced, but it marks itself primed even when that
+      # name is still empty -- so the first real name to arrive reads as a
+      # change. Stay unprimed until there is something to compare against.
+      # Drop once upstream handles this itself.
+      ./patches/noctalia/0006-keyboard-layout-osd-prime.patch
 
       # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
       # for the syncthing plugin's events-API attempt) is intentionally not

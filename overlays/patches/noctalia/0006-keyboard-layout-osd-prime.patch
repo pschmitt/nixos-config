@@ -1,0 +1,22 @@
+--- a/src/shell/osd/keyboard_layout_osd.cpp
++++ b/src/shell/osd/keyboard_layout_osd.cpp
+@@ -30,13 +30,18 @@ namespace {
+ } // namespace
+ 
+ void KeyboardLayoutOsd::bindOverlay(OsdOverlay& overlay) { m_overlay = &overlay; }
+ 
+ void KeyboardLayoutOsd::prime(const CompositorPlatform& platform) {
+   m_lastLayoutName = platform.currentKeyboardLayoutName();
+-  m_hasLayout = true;
++  // Priming on an empty name defeats the point of priming: the first real
++  // name to arrive then reads as a change and pops an OSD on every startup,
++  // announcing a layout nobody switched to. Stay unprimed until there is
++  // something to compare against -- onLayoutChanged() absorbs the first
++  // non-empty name silently.
++  m_hasLayout = !m_lastLayoutName.empty();
+ }
+ 
+ void KeyboardLayoutOsd::onLayoutChanged(const CompositorPlatform& platform, const Config& config) {
+   const std::string layoutName = platform.currentKeyboardLayoutName();
+   if (layoutName.empty()) {
+     return;
