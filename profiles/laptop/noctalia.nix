@@ -701,11 +701,14 @@ in
             empty_color = "#F1F3F4";
           };
           "pschmitt/timewarrior" = {
-            # Keep the bar slot Mon-Fri even when the timer is off, so the
-            # panel's Start button is reachable on a work day; on the weekend
-            # an idle tracker is just noise and the slot vanishes as it always
-            # did. A running interval is shown regardless of the day.
-            visibility = "workdays";
+            # Keep the bar slot through the working day even when the timer
+            # is off, so the panel's Start button is reachable when it matters;
+            # outside those hours an idle tracker is just noise and the slot
+            # vanishes as it always did. Weekends are in scope too — that is
+            # the trade for hiding it at 23:00 on a Tuesday. The plugin's
+            # working_hours_start/end default to 06:00-20:00, which is the
+            # wanted window. A running interval is shown whatever the hour.
+            visibility = "working_hours";
             # Noctalia labels can't ask for an italic style, so the panel's
             # hint text gets there through a family that resolves to an italic
             # face — the fontconfig alias defined in profiles/gui/fonts.nix.
