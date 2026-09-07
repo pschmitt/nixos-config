@@ -411,6 +411,12 @@ in
     # so flip which one autostarts with the graphical session. toggle-bar.sh
     # can still cycle to any available bar regardless of this.
     systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
+    # The Timewarrior Noctalia plugin runs `timew` directly. Keep it on the
+    # same database as the shell/Waybar helpers; systemd user services do not
+    # inherit the interactive shell's TIMEWARRIORDB environment.
+    systemd.user.services.noctalia.Service.Environment = [
+      "TIMEWARRIORDB=${config.mainUser.homeDirectory}/.config/timewarrior"
+    ];
   };
 
   # pschmitt/fan-control needs group-scoped write access to whichever fan
