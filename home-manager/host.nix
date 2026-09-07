@@ -87,6 +87,25 @@
           ordered as normal,left-up,bottom-up,right-up.
         '';
       };
+      logicalWidth = lib.mkOption {
+        type = lib.types.nullOr lib.types.float;
+        default = null;
+        description = ''
+          Internal monitor's logical width in px, i.e. its Hyprland-reported
+          mode width/height already adjusted for `transform` (rotation) and
+          `scale` -- what `hyprctl monitors` calls "logical" and Noctalia's
+          own log line reports as `logical=WxH`. Null means unknown; consumers
+          needing absolute on-screen widget placement (e.g. Noctalia
+          lockscreen_widgets, see profiles/laptop/noctalia.nix) should treat
+          that as "don't guess" and skip rather than place widgets using
+          another host's numbers.
+        '';
+      };
+      logicalHeight = lib.mkOption {
+        type = lib.types.nullOr lib.types.float;
+        default = null;
+        description = "Internal monitor's logical height in px. See logicalWidth.";
+      };
     };
 
     extraAutostartEntries = lib.mkOption {

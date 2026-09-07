@@ -3,6 +3,13 @@ let
   inherit (lib.generators) mkLuaInline;
 in
 {
+  # AU Optronics 0x31A6 internal panel: 1920x1200 @ scale 1.0, no rotation
+  # (verified via `hyprctl monitors -j`, 2026-09-07) -- so logical == mode.
+  host.internalMonitor = {
+    logicalWidth = 1920.0;
+    logicalHeight = 1200.0;
+  };
+
   wayland.windowManager.hyprland.settings = {
     workspace_rule = [
       {

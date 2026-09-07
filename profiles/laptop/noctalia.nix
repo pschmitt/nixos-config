@@ -30,555 +30,597 @@ let
   # future noctalia release closes that race and this becomes viable again.
 in
 {
-  home-manager.users.${config.mainUser.username} = hmArgs: {
-    programs.noctalia = {
-      enable = true;
-      systemd.enable = true;
-      # Colors sampled directly from the reference screenshot
-      # (noctalia.dev/plugins/community/battery-power-management) — near
-      # black surfaces + a pastel periwinkle accent. Not a Noctalia builtin;
-      # that screenshot is almost certainly a wallpaper-derived scheme from
-      # the plugin author's own machine, not one of the fixed palette names.
-      customPalettes.Indigo =
-        let
-          dark = {
-            mPrimary = "#B6C4FF";
-            mOnPrimary = "#11131A";
-            mSecondary = "#8FA8FF";
-            mOnSecondary = "#11131A";
-            mTertiary = "#C9B6FF";
-            mOnTertiary = "#11131A";
-            mError = "#FF6B81";
-            mOnError = "#11131A";
-            mSurface = "#11131A";
-            mOnSurface = "#E8E8F0";
-            mSurfaceVariant = "#1E1F27";
-            mOnSurfaceVariant = "#9A9AAE";
-            mOutline = "#33333F";
-            mShadow = "#000000";
-            mHover = "#262733";
-            mOnHover = "#E8E8F0";
-            terminal = {
-              background = "#11131A";
-              foreground = "#E8E8F0";
-              cursor = "#B6C4FF";
-              cursorText = "#11131A";
-              selectionBg = "#262733";
-              selectionFg = "#E8E8F0";
-              normal = {
-                black = "#11131A";
-                red = "#FF6B81";
-                green = "#8FA8FF";
-                yellow = "#C9B6FF";
-                blue = "#B6C4FF";
-                magenta = "#C9B6FF";
-                cyan = "#8FA8FF";
-                white = "#E8E8F0";
-              };
-              bright = {
-                black = "#33333F";
-                red = "#FF6B81";
-                green = "#8FA8FF";
-                yellow = "#C9B6FF";
-                blue = "#B6C4FF";
-                magenta = "#C9B6FF";
-                cyan = "#8FA8FF";
-                white = "#FFFFFF";
+  home-manager.users.${config.mainUser.username} =
+    hmArgs:
+    let
+      # host.internalMonitor.logicalWidth/logicalHeight (home-manager/host.nix)
+      # drive the lockscreen_widgets placement below -- see the comment there.
+      mon = hmArgs.config.host.internalMonitor;
+    in
+    {
+      programs.noctalia = {
+        enable = true;
+        systemd.enable = true;
+        # Colors sampled directly from the reference screenshot
+        # (noctalia.dev/plugins/community/battery-power-management) — near
+        # black surfaces + a pastel periwinkle accent. Not a Noctalia builtin;
+        # that screenshot is almost certainly a wallpaper-derived scheme from
+        # the plugin author's own machine, not one of the fixed palette names.
+        customPalettes.Indigo =
+          let
+            dark = {
+              mPrimary = "#B6C4FF";
+              mOnPrimary = "#11131A";
+              mSecondary = "#8FA8FF";
+              mOnSecondary = "#11131A";
+              mTertiary = "#C9B6FF";
+              mOnTertiary = "#11131A";
+              mError = "#FF6B81";
+              mOnError = "#11131A";
+              mSurface = "#11131A";
+              mOnSurface = "#E8E8F0";
+              mSurfaceVariant = "#1E1F27";
+              mOnSurfaceVariant = "#9A9AAE";
+              mOutline = "#33333F";
+              mShadow = "#000000";
+              mHover = "#262733";
+              mOnHover = "#E8E8F0";
+              terminal = {
+                background = "#11131A";
+                foreground = "#E8E8F0";
+                cursor = "#B6C4FF";
+                cursorText = "#11131A";
+                selectionBg = "#262733";
+                selectionFg = "#E8E8F0";
+                normal = {
+                  black = "#11131A";
+                  red = "#FF6B81";
+                  green = "#8FA8FF";
+                  yellow = "#C9B6FF";
+                  blue = "#B6C4FF";
+                  magenta = "#C9B6FF";
+                  cyan = "#8FA8FF";
+                  white = "#E8E8F0";
+                };
+                bright = {
+                  black = "#33333F";
+                  red = "#FF6B81";
+                  green = "#8FA8FF";
+                  yellow = "#C9B6FF";
+                  blue = "#B6C4FF";
+                  magenta = "#C9B6FF";
+                  cyan = "#8FA8FF";
+                  white = "#FFFFFF";
+                };
               };
             };
+          in
+          {
+            inherit dark;
+            light = dark;
           };
-        in
-        {
-          inherit dark;
-          light = dark;
-        };
-      # Started as a mirror of the DMS bar layout (workspaceSwitcher+
-      # runningApps / weather+clock+timewarrior / music+systemTray+
-      # syncshell+controlCenter+battery+notifications), since diverged a
-      # bit on request (no dedicated control-center button — the
-      # notifications widget still opens into it). OSD (volume/brightness/
-      # mic/etc.) is native and on by default — no settings needed.
-      # Everything beyond this is meant to be tuned live (Settings app /
-      # ~/.config/noctalia/config.toml), same as DMS's settings.json began
-      # as a live-edited snapshot before being made declarative.
-      settings = {
-        bar.main = {
-          position = "top";
-          margin_ends = 0; # span the full screen width, matching the DMS bar
-          padding = 0; # main-axis padding from bar edges to the start/end widget sections — separate from margin_ends
-          # No font_weight override: the SemiBold family above is already a
-          # fixed-weight cut, and synthetic-bolding on top of it looked off.
-          # No blanket per-widget capsule anymore: only workspaces/media get
-          # their own ([widget.workspaces]/[widget.media] below), everything
-          # else is either bare or bundled into a capsule_group below.
-          capsule = false;
-          capsule_padding = 12;
-          start = [
-            "workspaces"
-            "taskbar"
-            "group:ai-usage"
-          ];
-          center = [
-            "group:weather-date"
-          ];
-          end = [
-            "pschmitt/screencast:bar"
-            "media"
-            "media-gap"
-            "tray"
-            "pschmitt/syncthing:bar"
-            "group:volume"
-            "group:notif-battery"
-          ];
-          # A plugin widget referenced by its raw "author/plugin:entry" id
-          # (or even given its own named instance) rejects a direct
-          # `capsule = true` override as "unknown setting" — confirmed live,
-          # not just a single-member-group quirk. capsule_group is the only
-          # mechanism that actually applies a capsule to a plugin widget,
-          # single member or not — it sets the spec through a different path
-          # that bypasses that per-key validation.
-          capsule_group = [
-            {
-              # Single-member group purely to get a capsule around the AI usage
-              # widget — see the note above on why `capsule = true` on the raw
-              # plugin widget id doesn't work.
-              id = "ai-usage";
-              members = [
-                "pschmitt/ha-ai-usage:bar"
-              ];
-              padding = 12;
-            }
-            {
-              id = "weather-date";
-              members = [
-                "weather"
-                "clock"
-                "pschmitt/timewarrior:bar"
-              ];
-              padding = 12;
-              widget_spacing = 20; # gap between weather/clock/timewarrior
-            }
-            {
-              id = "notif-battery";
-              members = [
-                "network"
-                "pschmitt/battery-icon:bar"
-                "notifications"
-              ];
-              padding = 12;
-            }
-            {
-              id = "volume";
-              members = [
-                "input-volume"
-                "output-volume"
-              ];
-              padding = 12;
-              # Collapsed to the first member (the mic); hovering the capsule
-              # unfolds the output volume beside it.
-              accordion = true;
-            }
-          ];
-        };
-        plugins = {
-          enabled = [
-            # AI plan quotas, normalized and collected by Home Assistant. This
-            # deliberately replaces codexbar-meter: the bar does not need to
-            # duplicate provider authentication/polling that HA already owns.
-            "pschmitt/ha-ai-usage"
-            # Syncthing status/control — fork of noctalia-dev/community-plugins'
-            # rylos/syncthing (see pschmitt/noctalia-plugins) with a
-            # tray-sized icon and the DMS syncshell widget's composited status
-            # badges instead of a small logo + separate glyph. Its `url`/
-            # `api_key` plugin settings aren't set here: they persist to
-            # Noctalia's runtime state once entered in Settings -> Plugins, so
-            # there's no secret to manage declaratively for a one-time local
-            # setup.
-            "pschmitt/syncthing"
-            # Fan monitor/control — thinkpad_acpi (x13) or generic hwmon PWM
-            # (Dell dell-smm-hwmon on ge2, GPD gpdfan on gk4), auto-detected.
-            # Forked from the community piero-93/thinkpad-fan plugin — see
-            # pschmitt/noctalia-plugins.
-            "pschmitt/fan-control"
-            # Port of pkgs/local/dms-timewarrior — see pschmitt/noctalia-plugins.
-            "pschmitt/timewarrior"
-            # Red-dot REC indicator while screensharing — see
-            # pschmitt/noctalia-plugins, ported from the old Waybar
-            # custom/screencast module.
-            "pschmitt/screencast"
-            # Renders the charge percentage inside the battery icon itself
-            # (Android status-bar style) — see pschmitt/noctalia-plugins.
-            "pschmitt/battery-icon"
-            # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
-            # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
-            "pschmitt/osd"
-            # AI plan quota (community plugin, felipeartur/ai-usagebar) —
-            # tried and disabled again: didn't like the look, and Codex
-            # support wasn't solid. pkgs/local/ai-usagebar is still built
-            # below in case it's worth another look later.
-          ];
-          # The official/community git sources aren't actually hardcoded —
-          # they're seeded into runtime state on first launch, so declaring
-          # them here too makes the config self-contained regardless of
-          # that seeding (bit us once already after a state reset).
-          source = [
-            {
-              name = "official";
-              kind = "git";
-              location = "https://github.com/noctalia-dev/official-plugins";
-              enabled = true;
-            }
-            {
-              name = "community";
-              kind = "git";
-              location = "https://github.com/noctalia-dev/community-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-timewarrior";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-timewarrior}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-ha-ai-usage";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-battery-icon";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-battery-icon}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-syncthing";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-syncthing}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-fan-control";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-fan-control}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-osd";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-screencast";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-screencast}/share/noctalia-plugins";
-              enabled = true;
-            }
-          ];
-        };
-        weather.enabled = true;
-        location.auto_locate = true;
-        # Migrated from hyprpaper (home-manager/gui/hyprland/services/hyprpaper.nix,
-        # now unimported) — same wallpaper, now managed natively by Noctalia
-        # instead of a separate daemon fighting it for the same output.
-        wallpaper = {
-          enabled = true;
-          default.path = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
-        };
-        # Off by default in Noctalia; would also gate the battery-icon
-        # plugin's opt-in plug/unplug chimes
-        # (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
-        # below is its own separate gate, on this master switch) — left off,
-        # no audible shell sounds wanted.
-        audio.enable_sounds = false;
-        # Control center, launcher, clipboard, and plugin panels (e.g.
-        # syncthing's) felt too small; scale non-bar shell UI up ~15%.
-        # Separate from bar.scale/[widget.*].scale, which only affect bar
-        # widget content.
-        accessibility.ui_scale = 1.15;
-        shell = {
-          font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
-          # Default is "{:%H:%M}" (std::chrono format spec) — add seconds to
-          # the center bar's clock widget.
-          time_format = "{:%H:%M:%S}";
-          # Control Center (which the notifications widget opens into, at
-          # its "notifications" tab) is "attached" by default but still
-          # opens centered on the bar rather than under the clicked widget.
-          panel.open_near_click_control_center = true;
-          # The keyboard-layout widget labels a layout by its xkb description
-          # (`name[Group1]`), which it shortens via a built-in language table
-          # ("German" -> DE, ...). Our custom layouts from
-          # pkgs/local/custom-keymaps aren't in that table and would fall back
-          # to "--", so map their descriptions to short labels by hand. Keys
-          # must match the `name[Group1]` strings in
-          # pkgs/local/custom-keymaps/symbols/* verbatim.
-          keyboard_layout.custom_labels = {
-            "Custom HHKB DE layout by pschmitt" = "hhkb-de";
-            "gpdpocket4 custom DE layout" = "gpd-de";
-            "gpdpocket4 custom US layout with some german-isms" = "gpd-us";
+        # Started as a mirror of the DMS bar layout (workspaceSwitcher+
+        # runningApps / weather+clock+timewarrior / music+systemTray+
+        # syncshell+controlCenter+battery+notifications), since diverged a
+        # bit on request (no dedicated control-center button — the
+        # notifications widget still opens into it). OSD (volume/brightness/
+        # mic/etc.) is native and on by default — no settings needed.
+        # Everything beyond this is meant to be tuned live (Settings app /
+        # ~/.config/noctalia/config.toml), same as DMS's settings.json began
+        # as a live-edited snapshot before being made declarative.
+        settings = {
+          bar.main = {
+            position = "top";
+            margin_ends = 0; # span the full screen width, matching the DMS bar
+            padding = 0; # main-axis padding from bar edges to the start/end widget sections — separate from margin_ends
+            # No font_weight override: the SemiBold family above is already a
+            # fixed-weight cut, and synthetic-bolding on top of it looked off.
+            # No blanket per-widget capsule anymore: only workspaces/media get
+            # their own ([widget.workspaces]/[widget.media] below), everything
+            # else is either bare or bundled into a capsule_group below.
+            capsule = false;
+            capsule_padding = 12;
+            start = [
+              "workspaces"
+              "taskbar"
+              "group:ai-usage"
+            ];
+            center = [
+              "group:weather-date"
+            ];
+            end = [
+              "pschmitt/screencast:bar"
+              "media"
+              "media-gap"
+              "tray"
+              "pschmitt/syncthing:bar"
+              "group:volume"
+              "group:notif-battery"
+            ];
+            # A plugin widget referenced by its raw "author/plugin:entry" id
+            # (or even given its own named instance) rejects a direct
+            # `capsule = true` override as "unknown setting" — confirmed live,
+            # not just a single-member-group quirk. capsule_group is the only
+            # mechanism that actually applies a capsule to a plugin widget,
+            # single member or not — it sets the spec through a different path
+            # that bypasses that per-key validation.
+            capsule_group = [
+              {
+                # Single-member group purely to get a capsule around the AI usage
+                # widget — see the note above on why `capsule = true` on the raw
+                # plugin widget id doesn't work.
+                id = "ai-usage";
+                members = [
+                  "pschmitt/ha-ai-usage:bar"
+                ];
+                padding = 12;
+              }
+              {
+                id = "weather-date";
+                members = [
+                  "weather"
+                  "clock"
+                  "pschmitt/timewarrior:bar"
+                ];
+                padding = 12;
+                widget_spacing = 20; # gap between weather/clock/timewarrior
+              }
+              {
+                id = "notif-battery";
+                members = [
+                  "network"
+                  "pschmitt/battery-icon:bar"
+                  "notifications"
+                ];
+                padding = 12;
+              }
+              {
+                id = "volume";
+                members = [
+                  "input-volume"
+                  "output-volume"
+                ];
+                padding = 12;
+                # Collapsed to the first member (the mic); hovering the capsule
+                # unfolds the output volume beside it.
+                accordion = true;
+              }
+            ];
           };
-          avatar_path = "${config.mainUser.homeDirectory}/.face";
-        };
-        # Replaces hyprlock as the default session locker on all laptops.
-        # Blurred screenshot capture before lock (via wlr-screencopy) with
-        # surface tint, PAM/fprintd fingerprint support, and lock-before-sleep.
-        lockscreen = {
-          enabled = true;
-          lock_before_suspend = true;
-          fingerprint = true;
-          allow_empty_password = false;
-          blurred_desktop = true;
-          blur_intensity = 0.6;
-          tint_intensity = 0.35;
-          wallpaper = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
-        };
-        lockscreen_widgets = {
-          enabled = true;
+          plugins = {
+            enabled = [
+              # AI plan quotas, normalized and collected by Home Assistant. This
+              # deliberately replaces codexbar-meter: the bar does not need to
+              # duplicate provider authentication/polling that HA already owns.
+              "pschmitt/ha-ai-usage"
+              # Syncthing status/control — fork of noctalia-dev/community-plugins'
+              # rylos/syncthing (see pschmitt/noctalia-plugins) with a
+              # tray-sized icon and the DMS syncshell widget's composited status
+              # badges instead of a small logo + separate glyph. Its `url`/
+              # `api_key` plugin settings aren't set here: they persist to
+              # Noctalia's runtime state once entered in Settings -> Plugins, so
+              # there's no secret to manage declaratively for a one-time local
+              # setup.
+              "pschmitt/syncthing"
+              # Fan monitor/control — thinkpad_acpi (x13) or generic hwmon PWM
+              # (Dell dell-smm-hwmon on ge2, GPD gpdfan on gk4), auto-detected.
+              # Forked from the community piero-93/thinkpad-fan plugin — see
+              # pschmitt/noctalia-plugins.
+              "pschmitt/fan-control"
+              # Port of pkgs/local/dms-timewarrior — see pschmitt/noctalia-plugins.
+              "pschmitt/timewarrior"
+              # Red-dot REC indicator while screensharing — see
+              # pschmitt/noctalia-plugins, ported from the old Waybar
+              # custom/screencast module.
+              "pschmitt/screencast"
+              # Renders the charge percentage inside the battery icon itself
+              # (Android status-bar style) — see pschmitt/noctalia-plugins.
+              "pschmitt/battery-icon"
+              # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
+              # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
+              "pschmitt/osd"
+              # AI plan quota (community plugin, felipeartur/ai-usagebar) —
+              # tried and disabled again: didn't like the look, and Codex
+              # support wasn't solid. pkgs/local/ai-usagebar is still built
+              # below in case it's worth another look later.
+            ];
+            # The official/community git sources aren't actually hardcoded —
+            # they're seeded into runtime state on first launch, so declaring
+            # them here too makes the config self-contained regardless of
+            # that seeding (bit us once already after a state reset).
+            source = [
+              {
+                name = "official";
+                kind = "git";
+                location = "https://github.com/noctalia-dev/official-plugins";
+                enabled = true;
+              }
+              {
+                name = "community";
+                kind = "git";
+                location = "https://github.com/noctalia-dev/community-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-timewarrior";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-timewarrior}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-ha-ai-usage";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-battery-icon";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-battery-icon}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-syncthing";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-syncthing}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-fan-control";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-fan-control}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-osd";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
+                enabled = true;
+              }
+              {
+                name = "pschmitt-screencast";
+                kind = "path";
+                location = "${noctaliaPlugins.noctalia-screencast}/share/noctalia-plugins";
+                enabled = true;
+              }
+            ];
+          };
+          weather.enabled = true;
+          location.auto_locate = true;
+          # Migrated from hyprpaper (home-manager/gui/hyprland/services/hyprpaper.nix,
+          # now unimported) — same wallpaper, now managed natively by Noctalia
+          # instead of a separate daemon fighting it for the same output.
+          wallpaper = {
+            enabled = true;
+            default.path = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
+          };
+          # Off by default in Noctalia; would also gate the battery-icon
+          # plugin's opt-in plug/unplug chimes
+          # (plugin_settings."pschmitt/battery-icon".charging_sound_enabled
+          # below is its own separate gate, on this master switch) — left off,
+          # no audible shell sounds wanted.
+          audio.enable_sounds = false;
+          # Control center, launcher, clipboard, and plugin panels (e.g.
+          # syncthing's) felt too small; scale non-bar shell UI up ~15%.
+          # Separate from bar.scale/[widget.*].scale, which only affect bar
+          # widget content.
+          accessibility.ui_scale = 1.15;
+          shell = {
+            font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
+            # Default is "{:%H:%M}" (std::chrono format spec) — add seconds to
+            # the center bar's clock widget.
+            time_format = "{:%H:%M:%S}";
+            # Control Center (which the notifications widget opens into, at
+            # its "notifications" tab) is "attached" by default but still
+            # opens centered on the bar rather than under the clicked widget.
+            panel.open_near_click_control_center = true;
+            # The keyboard-layout widget labels a layout by its xkb description
+            # (`name[Group1]`), which it shortens via a built-in language table
+            # ("German" -> DE, ...). Our custom layouts from
+            # pkgs/local/custom-keymaps aren't in that table and would fall back
+            # to "--", so map their descriptions to short labels by hand. Keys
+            # must match the `name[Group1]` strings in
+            # pkgs/local/custom-keymaps/symbols/* verbatim.
+            keyboard_layout.custom_labels = {
+              "Custom HHKB DE layout by pschmitt" = "hhkb-de";
+              "gpdpocket4 custom DE layout" = "gpd-de";
+              "gpdpocket4 custom US layout with some german-isms" = "gpd-us";
+            };
+            avatar_path = "${config.mainUser.homeDirectory}/.face";
+          };
+          # Replaces hyprlock as the default session locker on all laptops.
+          # Blurred screenshot capture before lock (via wlr-screencopy) with
+          # surface tint, PAM/fprintd fingerprint support, and lock-before-sleep.
+          lockscreen = {
+            enabled = true;
+            lock_before_suspend = true;
+            fingerprint = true;
+            allow_empty_password = false;
+            blurred_desktop = true;
+            blur_intensity = 0.6;
+            tint_intensity = 0.35;
+            wallpaper = "${config.mainUser.homeDirectory}/Pictures/Wallpapers/chill.png";
+          };
+          # Absolute cx/cy/box_width/box_height (logical px) are required per
+          # widget -- see the individual comments below -- so this whole block
+          # needs to know this host's actual internal-panel logical size
+          # (host.internalMonitor.logicalWidth/logicalHeight, home-manager/
+          # host.nix, set per host in hyprland/conf/host-specific/<host>.nix).
+          # Without it we'd be placing widgets using gk4's rotated 1536x960
+          # canvas on every host, which is exactly the bug this replaced: it
+          # shipped that way for ge2 (1920x1200, unrotated) for a few commits
+          # before this landed, positioning everything too far left/up.
+          # Every cx/cy/box_* below is `w`/`h` times a fraction tuned visually
+          # on gk4; gk4 (1536x960) and ge2 (1920x1200) happen to share the same
+          # 16:10 aspect ratio, so the fractions carry over as-is. A host with
+          # a different aspect ratio may still need its own visual pass.
+          lockscreen_widgets =
+            if mon.logicalWidth == null || mon.logicalHeight == null then
+              {
+                # Unknown screen geometry (e.g. x13, not yet measured): skip
+                # the custom layout rather than place widgets blindly. Noctalia
+                # still locks natively via the plain `lockscreen` block above.
+                enabled = false;
+              }
+            else
+              let
+                w = mon.logicalWidth;
+                h = mon.logicalHeight;
+              in
+              {
+                enabled = true;
+                widget = {
+                  date = {
+                    type = "clock";
+                    output = "eDP-1";
+                    cx = w * 0.5;
+                    cy = h * 0.375;
+                    box_width = w * 0.4557;
+                    box_height = h * 0.1146;
+                    settings = {
+                      clock_style = "digital";
+                      format = "{:%Y-%m-%d}";
+                      # on_surface is the bright/high-contrast text role; this
+                      # reads too bold at this size. on_surface_variant is the
+                      # standard muted-gray secondary-text role.
+                      color = "on_surface_variant";
+                      font_family = "ComicCode Nerd Font";
+                      shadow = true;
+                      center_text = true;
+                      background = false;
+                    };
+                  };
+                  time = {
+                    type = "clock";
+                    output = "eDP-1";
+                    cx = w * 0.5;
+                    cy = h * 0.46875;
+                    box_width = w * 0.2604;
+                    box_height = h * 0.05729;
+                    settings = {
+                      clock_style = "digital";
+                      format = "{:%H:%M:%S}";
+                      color = "on_surface_variant";
+                      font_family = "ComicCode Nerd Font";
+                      shadow = true;
+                      center_text = true;
+                      background = false;
+                    };
+                  };
+                  # No custom plugin needed for the avatar: Noctalia ships a
+                  # built-in "sticker" desktop-widget type (image_path +
+                  # opacity) that lockscreen_widgets can use too, same as any
+                  # other type. background=false drops every widget type's
+                  # common card background/surface behind the content (default
+                  # true) -- we don't want a square card showing through the
+                  # circular crop.
+                  avatar = {
+                    type = "sticker";
+                    output = "eDP-1";
+                    cx = w * 0.5;
+                    cy = h * 0.58854;
+                    box_width = w * 0.09766;
+                    box_height = h * 0.15625;
+                    settings = {
+                      image_path = avatarCircularPath;
+                      opacity = 1.0;
+                      background = false;
+                    };
+                  };
+                  # No box_width/box_height here: the plugin's "lockscreen"
+                  # entry (noctalia-plugins battery-icon plugin.toml) reuses
+                  # bar.luau but doesn't declare its own icon_width/icon_height
+                  # settings (only the separate bar widget entry does, default
+                  # 36x18) — reading them back undeclared and forcing a
+                  # box-fit scale against that crashed Noctalia's Wayland
+                  # client outright (division against an unresolved natural
+                  # size -> an invalid buffer size sent to the compositor,
+                  # display_error=22). Declaring them explicitly here and
+                  # letting the widget auto-fit its own (now well-defined)
+                  # natural size avoids that path entirely.
+                  battery = {
+                    type = "pschmitt/battery-icon:lockscreen";
+                    output = "eDP-1";
+                    cx = w * 0.95898;
+                    cy = h * 0.92708;
+                    settings = {
+                      icon_width = 64;
+                      icon_height = 32;
+                      background = false;
+                    };
+                  };
+                  # Fixed widget ID for the login panel itself (password
+                  # field, weather/media row, session buttons) -- see
+                  # docs.noctalia.dev/noctalia/configuration/lockscreen/widgets.
+                  # "compact" drops the weather/media/session-button row for a
+                  # slim password-only bar.
+                  #
+                  # cx/cy/box_width/box_height are required here even though we
+                  # want Noctalia's own default position: leaving them unset
+                  # (like we first tried) sends this widget through Noctalia's
+                  # auto-placement bootstrap, which persists a *fresh default*
+                  # settings snapshot (layout = "regular", overwriting our
+                  # "compact") into ~/.local/state/noctalia/settings.toml --
+                  # silently reverting our override even though config.toml
+                  # still says "compact". date/time/battery above don't hit
+                  # this because they already carry explicit geometry. Values
+                  # below are Noctalia's own previously auto-computed default
+                  # placement on gk4, expressed as fractions of w/h so behavior
+                  # otherwise doesn't change there.
+                  "lockscreen-login-box@eDP-1" = {
+                    type = "login_box";
+                    output = "eDP-1";
+                    cx = w * 0.5;
+                    cy = h * 0.81042;
+                    box_width = w * 0.52734;
+                    # 0.20417 (Noctalia's auto-computed default) was sized
+                    # for the full "regular" panel with weather/media/session
+                    # buttons; "compact" is just a password row and doesn't
+                    # need nearly that much height -- shrunk for a slimmer,
+                    # more GDM-like pill instead of a big mostly-empty card.
+                    box_height = h * 0.09;
+                    settings = {
+                      layout = "compact";
+                      # Default 0.88/12 read as a solid dark card; GDM-style
+                      # login fields are a much more translucent, rounder pill.
+                      background_opacity = 0.5;
+                      background_radius = 20.0;
+                    };
+                  };
+                };
+              };
+          theme = {
+            mode = "dark";
+            source = "custom";
+            custom_palette = "Indigo";
+          };
+          control_center.width = 900; # full-sidebar width in px (600-1200), default 700
           widget = {
-            # cx/cy/box_width/box_height are required: they default to
-            # 0/0/0/0 ("centered on the top-left corner, auto-fit to the
-            # widget's unconstrained natural size"), which for the clock
-            # rendered as a massive block of text clipped off the top-left
-            # of the screen. Coordinates are logical px in eDP-1's rotated
-            # (transform=3) + scaled (1.667) output space: 1536x960.
-            date = {
-              type = "clock";
-              output = "eDP-1";
-              cx = 768.0;
-              cy = 360.0;
-              box_width = 700.0;
-              box_height = 110.0;
-              settings = {
-                clock_style = "digital";
-                format = "{:%Y-%m-%d}";
-                # on_surface is the bright/high-contrast text role; this
-                # reads too bold at this size. on_surface_variant is the
-                # standard muted-gray secondary-text role.
-                color = "on_surface_variant";
-                font_family = "ComicCode Nerd Font";
-                shadow = true;
-                center_text = true;
-              };
+            taskbar.scale = 1.25;
+            weather = {
+              show_condition = false;
+              icon_color = "primary";
             };
-            time = {
-              type = "clock";
-              output = "eDP-1";
-              cx = 768.0;
-              cy = 450.0;
-              box_width = 400.0;
-              box_height = 55.0;
-              settings = {
-                clock_style = "digital";
-                format = "{:%H:%M:%S}";
-                color = "on_surface_variant";
-                font_family = "ComicCode Nerd Font";
-                shadow = true;
-                center_text = true;
-              };
+            clock.format = "{:%H:%M:%S}";
+            workspaces = {
+              style = "minimal";
+              show_all_outputs = true;
+              capsule = true;
             };
-            # No custom plugin needed for the avatar: Noctalia ships a
-            # built-in "sticker" desktop-widget type (image_path + opacity)
-            # that lockscreen_widgets can use too, same as any other type.
-            # background=false drops every widget type's common card
-            # background/surface behind the content (default true) -- we
-            # don't want a square card showing through the circular crop.
-            avatar = {
-              type = "sticker";
-              output = "eDP-1";
-              cx = 768.0;
-              cy = 565.0;
-              box_width = 150.0;
-              box_height = 150.0;
-              settings = {
-                image_path = avatarCircularPath;
-                opacity = 1.0;
-                background = false;
-              };
+            # Shorter media pill: no artist line, truncate the title sooner,
+            # a smaller album art icon, and scroll the title on hover instead
+            # of always/never.
+            media = {
+              hide_artist = true;
+              min_length = 120;
+              max_length = 240;
+              capsule = true;
+              art_size = 18;
+              title_scroll = "on_hover";
+              hide_when_no_media = true;
             };
-            # No box_width/box_height here: the plugin's "lockscreen" entry
-            # (noctalia-plugins battery-icon plugin.toml) reuses bar.luau but
-            # doesn't declare its own icon_width/icon_height settings (only
-            # the separate bar widget entry does, default 36x18) — reading
-            # them back undeclared and forcing a box-fit scale against that
-            # crashed Noctalia's Wayland client outright (division against
-            # an unresolved natural size -> an invalid buffer size sent to
-            # the compositor, display_error=22). Declaring them explicitly
-            # here and letting the widget auto-fit its own (now well-defined)
-            # natural size avoids that path entirely.
-            battery = {
-              type = "pschmitt/battery-icon:lockscreen";
-              output = "eDP-1";
-              cx = 1473.0;
-              cy = 890.0;
-              settings = {
-                icon_width = 64;
-                icon_height = 32;
-              };
+            network.show_label = false;
+            input-volume = {
+              type = "volume";
+              device = "input";
+              show_label = false; # mic level as a number isn't useful at a glance
             };
-            # Fixed widget ID for the login panel itself (password field,
-            # weather/media row, session buttons) -- see
-            # docs.noctalia.dev/noctalia/configuration/lockscreen/widgets.
-            # "compact" drops the weather/media/session-button row for a
-            # slim password-only bar.
-            #
-            # cx/cy/box_width/box_height are required here even though we
-            # want Noctalia's own default position: leaving them unset
-            # (like we first tried) sends this widget through Noctalia's
-            # auto-placement bootstrap, which persists a *fresh default*
-            # settings snapshot (layout = "regular", overwriting our
-            # "compact") into ~/.local/state/noctalia/settings.toml --
-            # silently reverting our override even though config.toml still
-            # says "compact". date/time/battery above don't hit this because
-            # they already carry explicit geometry. Values below are
-            # Noctalia's own previously auto-computed default placement,
-            # copied verbatim so behavior otherwise doesn't change.
-            "lockscreen-login-box@eDP-1" = {
-              type = "login_box";
-              output = "eDP-1";
-              cx = 768.0;
-              cy = 778.0;
-              box_width = 810.0;
-              box_height = 196.0;
-              settings = {
-                layout = "compact";
-              };
+            output-volume = {
+              type = "volume";
+              device = "output";
             };
+            media-gap = {
+              type = "spacer";
+              length = 100;
+            };
+            # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
+            # plugins.enabled below.
           };
-        };
-        theme = {
-          mode = "dark";
-          source = "custom";
-          custom_palette = "Indigo";
-        };
-        control_center.width = 900; # full-sidebar width in px (600-1200), default 700
-        widget = {
-          taskbar.scale = 1.25;
-          weather = {
-            show_condition = false;
-            icon_color = "primary";
-          };
-          clock.format = "{:%H:%M:%S}";
-          workspaces = {
-            style = "minimal";
-            show_all_outputs = true;
-            capsule = true;
-          };
-          # Shorter media pill: no artist line, truncate the title sooner,
-          # a smaller album art icon, and scroll the title on hover instead
-          # of always/never.
-          media = {
-            hide_artist = true;
-            min_length = 120;
-            max_length = 240;
-            capsule = true;
-            art_size = 18;
-            title_scroll = "on_hover";
-            hide_when_no_media = true;
-          };
-          network.show_label = false;
-          input-volume = {
-            type = "volume";
-            device = "input";
-            show_label = false; # mic level as a number isn't useful at a glance
-          };
-          output-volume = {
-            type = "volume";
-            device = "output";
-          };
-          media-gap = {
-            type = "spacer";
-            length = 100;
-          };
-          # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
-          # plugins.enabled below.
-        };
-        # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
-        # above. Role names here (e.g. "on_surface") are resolved against the
-        # active custom palette by pschmitt/noctalia-plugins' battery-icon
-        # service.luau before hitting ImageMagick.
-        plugin_settings = {
-          "pschmitt/ha-ai-usage" = {
-            # Both paths resolve to sops-nix runtime files, never to values in
-            # the Nix store. The plugin reads them immediately before each
-            # authenticated HA request.
-            server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
-            token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
-            # Sub-path the panel's Home Assistant link icon opens, appended to
-            # server_file's URL: the "mi casa" dashboard's AI-quotas card.
-            dashboard_path = "/mi-casa/data#ai-quotas";
-            # What the bar renders is plugin-scoped on purpose: config.toml is
-            # a read-only home-manager symlink, so Noctalia's per-bar-widget
-            # settings UI can never persist anything here. Only the widget's
-            # pixel geometry (icon_size/progress_*/spacing) is left per-widget.
-            # "short" = the 5h/session quota, "weekly" = the weekly one; the
-            # tooltip lists both regardless of what the bar picks.
-            metric_window = "weekly";
-            # Comma-separated, case-insensitive fragments matched against the
-            # discovered card labels (e.g. "Pro, Gemini, Codex"). Empty shows
-            # every account Home Assistant discovers, capped by metric_limit.
-            # The tooltip always lists every account regardless of this.
-            card_filter = "Pro, Codex";
-            metric_limit = 3;
-            # Compact by default: glyph + progress bar, no text. Values, names
-            # and reset times stay in the tooltip and the panel.
-            display_mode = "summary";
-          };
-          "pschmitt/fan-control" = {
-            bar_display = "none"; # icon only
-            color_trigger = "temp";
-            temp_threshold_low = 60; # below: theme default (temp_low_color unset)
-            temp_threshold_high = 70; # at/above: temp_high_color
-            temp_mid_color = "#FFA500"; # 60-69°C: orange
-            temp_high_color = "#EA4335"; # 70°C+: red
-          };
-          "pschmitt/battery-icon" = {
-            # Material 3 Expressive battery colors (Google palette): neutral
-            # normally, green while powered, and red at or below the
-            # low-battery threshold.
-            low_color = "#EA4335";
-            medium_color = "#9AA0A6";
-            high_color = "#9AA0A6";
-            charging_color = "#34A853";
-            text_color = "#202124";
-            empty_color = "#F1F3F4";
-          };
-          "pschmitt/syncthing" = {
-            # "Folder X is up to date" fires on every sync completion and
-            # isn't interesting often enough to be worth a toast; errors and
-            # device connect/disconnect notifications stay on.
-            notify_folder_up_to_date = false;
+          # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
+          # above. Role names here (e.g. "on_surface") are resolved against the
+          # active custom palette by pschmitt/noctalia-plugins' battery-icon
+          # service.luau before hitting ImageMagick.
+          plugin_settings = {
+            "pschmitt/ha-ai-usage" = {
+              # Both paths resolve to sops-nix runtime files, never to values in
+              # the Nix store. The plugin reads them immediately before each
+              # authenticated HA request.
+              server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
+              token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
+              # Sub-path the panel's Home Assistant link icon opens, appended to
+              # server_file's URL: the "mi casa" dashboard's AI-quotas card.
+              dashboard_path = "/mi-casa/data#ai-quotas";
+              # What the bar renders is plugin-scoped on purpose: config.toml is
+              # a read-only home-manager symlink, so Noctalia's per-bar-widget
+              # settings UI can never persist anything here. Only the widget's
+              # pixel geometry (icon_size/progress_*/spacing) is left per-widget.
+              # "short" = the 5h/session quota, "weekly" = the weekly one; the
+              # tooltip lists both regardless of what the bar picks.
+              metric_window = "weekly";
+              # Comma-separated, case-insensitive fragments matched against the
+              # discovered card labels (e.g. "Pro, Gemini, Codex"). Empty shows
+              # every account Home Assistant discovers, capped by metric_limit.
+              # The tooltip always lists every account regardless of this.
+              card_filter = "Pro, Codex";
+              metric_limit = 3;
+              # Compact by default: glyph + progress bar, no text. Values, names
+              # and reset times stay in the tooltip and the panel.
+              display_mode = "summary";
+            };
+            "pschmitt/fan-control" = {
+              bar_display = "none"; # icon only
+              color_trigger = "temp";
+              temp_threshold_low = 60; # below: theme default (temp_low_color unset)
+              temp_threshold_high = 70; # at/above: temp_high_color
+              temp_mid_color = "#FFA500"; # 60-69°C: orange
+              temp_high_color = "#EA4335"; # 70°C+: red
+            };
+            "pschmitt/battery-icon" = {
+              # Material 3 Expressive battery colors (Google palette): neutral
+              # normally, green while powered, and red at or below the
+              # low-battery threshold.
+              low_color = "#EA4335";
+              medium_color = "#9AA0A6";
+              high_color = "#9AA0A6";
+              charging_color = "#34A853";
+              text_color = "#202124";
+              empty_color = "#F1F3F4";
+            };
+            "pschmitt/syncthing" = {
+              # "Folder X is up to date" fires on every sync completion and
+              # isn't interesting often enough to be worth a toast; errors and
+              # device connect/disconnect notifications stay on.
+              notify_folder_up_to_date = false;
+            };
           };
         };
       };
+      # Waybar was the default, then DMS; Noctalia takes over that role now,
+      # so flip which one autostarts with the graphical session. toggle-bar.sh
+      # can still cycle to any available bar regardless of this.
+      systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
+      # The Timewarrior Noctalia plugin runs `timew` directly. Keep it on the
+      # same database as the shell/Waybar helpers; systemd user services do not
+      # inherit the interactive shell's TIMEWARRIORDB environment.
+      systemd.user.services.noctalia.Service.Environment = [
+        "TIMEWARRIORDB=${config.mainUser.homeDirectory}/.config/timewarrior"
+      ];
+      # Regenerate the circular avatar crop (see avatarCircularPath above) on
+      # every activation, same cadence as noctaliaResetState, so it follows
+      # ~/.face if that ever changes. Silently does nothing if ~/.face is
+      # missing rather than failing activation over a cosmetic asset.
+      home.activation.noctaliaAvatarCircularCrop = hmArgs.lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        src="${config.mainUser.homeDirectory}/.face"
+        if [[ -f "$src" ]]; then
+          run mkdir -p "$(${pkgs.coreutils}/bin/dirname "${avatarCircularPath}")"
+          run ${pkgs.imagemagick}/bin/magick "$src" \
+            -resize 260x260^ -gravity center -extent 260x260 \
+            \( -size 260x260 xc:none -fill white -draw "circle 130,130 130,0" \) \
+            -alpha set -compose DstIn -composite \
+            "${avatarCircularPath}"
+        fi
+      '';
     };
-    # Waybar was the default, then DMS; Noctalia takes over that role now,
-    # so flip which one autostarts with the graphical session. toggle-bar.sh
-    # can still cycle to any available bar regardless of this.
-    systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
-    # The Timewarrior Noctalia plugin runs `timew` directly. Keep it on the
-    # same database as the shell/Waybar helpers; systemd user services do not
-    # inherit the interactive shell's TIMEWARRIORDB environment.
-    systemd.user.services.noctalia.Service.Environment = [
-      "TIMEWARRIORDB=${config.mainUser.homeDirectory}/.config/timewarrior"
-    ];
-    # Regenerate the circular avatar crop (see avatarCircularPath above) on
-    # every activation, same cadence as noctaliaResetState, so it follows
-    # ~/.face if that ever changes. Silently does nothing if ~/.face is
-    # missing rather than failing activation over a cosmetic asset.
-    home.activation.noctaliaAvatarCircularCrop = hmArgs.lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      src="${config.mainUser.homeDirectory}/.face"
-      if [[ -f "$src" ]]; then
-        run mkdir -p "$(${pkgs.coreutils}/bin/dirname "${avatarCircularPath}")"
-        run ${pkgs.imagemagick}/bin/magick "$src" \
-          -resize 260x260^ -gravity center -extent 260x260 \
-          \( -size 260x260 xc:none -fill white -draw "circle 130,130 130,0" \) \
-          -alpha set -compose DstIn -composite \
-          "${avatarCircularPath}"
-      fi
-    '';
-  };
 
   # pschmitt/fan-control needs group-scoped write access to whichever fan
   # control interface is present, without running as root at runtime or
