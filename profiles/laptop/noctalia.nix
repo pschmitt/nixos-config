@@ -166,6 +166,7 @@ in
               id = "notif-battery";
               members = [
                 "network"
+                "bluetooth"
                 "battery-icon"
                 "notifications"
               ];
