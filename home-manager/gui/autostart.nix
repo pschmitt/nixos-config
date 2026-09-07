@@ -10,7 +10,17 @@ let
   # Attach to (or create) the main tmux session. Replaces the zhj
   # `tmux::attach` zsh function so this does not depend on the yadm setup.
   tmuxAttach = pkgs.writeShellScript "tmux-attach" ''
-    exec ${pkgs.tmux}/bin/tmux -u new -A -D -s ${tmuxSessionName}
+    BOOT_MARKER="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tmux-yup-boot-done"
+
+    if ! ${pkgs.tmux}/bin/tmux has-session -t ${tmuxSessionName} 2>/dev/null; then
+      ${pkgs.tmux}/bin/tmux new-session -d -s ${tmuxSessionName}
+      if [[ ! -e "$BOOT_MARKER" ]]; then
+        touch "$BOOT_MARKER"
+        ${pkgs.tmux}/bin/tmux send-keys -t "${tmuxSessionName}:0.0" "yup" C-m
+      fi
+    fi
+
+    exec ${pkgs.tmux}/bin/tmux -u attach -d -t ${tmuxSessionName}
   '';
 
   # Connect to the remote tmux session on fnuc without relying on zsh wrappers.
