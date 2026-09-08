@@ -596,6 +596,7 @@ fn make_window_page(
     flow.set_max_children_per_line(cols as u32);
     flow.set_min_children_per_line(cols as u32);
     flow.set_homogeneous(true);
+    flow.set_valign(gtk4::Align::Start);
     flow.set_column_spacing(14);
     flow.set_row_spacing(14);
     flow.set_margin_top(4);
@@ -700,6 +701,7 @@ fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Scroll
     flow.set_max_children_per_line(cols as u32);
     flow.set_min_children_per_line(cols as u32);
     flow.set_homogeneous(true);
+    flow.set_valign(gtk4::Align::Start);
     flow.set_column_spacing(14);
     flow.set_row_spacing(14);
     flow.set_margin_top(4);
@@ -852,7 +854,9 @@ fn make_source_card(
     let card = ToggleButton::new();
     card.add_css_class("source-card");
     card.set_hexpand(true);
-    card.set_size_request(240, -1);
+    card.set_vexpand(false);
+    card.set_valign(gtk4::Align::Start);
+    card.set_size_request(240, 246);
 
     if let Some(lead) = group_lead {
         card.set_group(Some(lead));
@@ -860,20 +864,27 @@ fn make_source_card(
         *group_lead = Some(card.clone());
     }
 
-    let body = GtkBox::new(Orientation::Vertical, 10);
+    let body = GtkBox::new(Orientation::Vertical, 0);
+    body.set_vexpand(false);
+
     let preview = Picture::new();
     preview.add_css_class("preview");
     preview.set_can_shrink(true);
-    preview.set_size_request(-1, 180);
+    preview.set_size_request(-1, 170);
     preview.set_content_fit(ContentFit::Cover);
     preview.set_halign(gtk4::Align::Fill);
+    preview.set_vexpand(false);
     body.append(&preview);
 
     let info_box = GtkBox::new(Orientation::Horizontal, 12);
+    info_box.add_css_class("card-info");
+    info_box.set_size_request(-1, 56);
+    info_box.set_margin_top(8);
     info_box.set_margin_bottom(12);
     info_box.set_margin_start(14);
     info_box.set_margin_end(14);
     info_box.set_valign(gtk4::Align::Center);
+    info_box.set_vexpand(false);
 
     if let Some(ref icon_w) = icon {
         info_box.append(icon_w);
@@ -881,14 +892,21 @@ fn make_source_card(
 
     let labels = GtkBox::new(Orientation::Vertical, 2);
     labels.set_hexpand(true);
+    labels.set_valign(gtk4::Align::Center);
 
-    let name_label = Label::new(Some(title));
+    let clean_title = title.replace(['\r', '\n'], " ");
+    let name_label = Label::new(Some(&clean_title));
     name_label.set_xalign(0.0);
+    name_label.set_single_line_mode(true);
+    name_label.set_lines(1);
     name_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
     name_label.add_css_class("heading");
 
-    let detail_label = Label::new(Some(subtitle));
+    let clean_subtitle = subtitle.replace(['\r', '\n'], " ");
+    let detail_label = Label::new(Some(&clean_subtitle));
     detail_label.set_xalign(0.0);
+    detail_label.set_single_line_mode(true);
+    detail_label.set_lines(1);
     detail_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
     detail_label.add_css_class("dim-label");
 
