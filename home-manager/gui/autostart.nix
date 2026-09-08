@@ -9,15 +9,12 @@ let
 
   # Attach to (or create) the main tmux session. Replaces the zhj
   # `tmux::attach` zsh function so this does not depend on the yadm setup.
+  # The daily `yup` run used to be injected here on session creation; that's
+  # now the independent yup-startup.nix systemd service instead, so this
+  # doesn't compete with whatever the user is doing in the first pane.
   tmuxAttach = pkgs.writeShellScript "tmux-attach" ''
-    BOOT_MARKER="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tmux-yup-boot-done"
-
     if ! ${pkgs.tmux}/bin/tmux has-session -t ${tmuxSessionName} 2>/dev/null; then
       ${pkgs.tmux}/bin/tmux new-session -d -s ${tmuxSessionName}
-      if [[ ! -e "$BOOT_MARKER" ]]; then
-        touch "$BOOT_MARKER"
-        ${pkgs.tmux}/bin/tmux send-keys -t "${tmuxSessionName}:0.0" "yup" C-m
-      fi
     fi
 
     exec ${pkgs.tmux}/bin/tmux -u attach -d -t ${tmuxSessionName}
