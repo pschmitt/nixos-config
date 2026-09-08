@@ -5,8 +5,8 @@ usage() {
 Usage: $(basename "$0")
 
 Once per calendar day, open a new pane in the "main" tmux session (creating
-the session if needed) and run "yup" there. Intended to run once at login,
-not on a recurring timer.
+the session if needed) and run the update-and-deploy script there. Intended
+to run once at login, not on a recurring timer.
 EOF
 }
 
@@ -44,7 +44,7 @@ main() {
 
   local new_pane
   new_pane="$(tmux split-window -t "${session}:0" -P -F '#{pane_id}')"
-  tmux send-keys -t "$new_pane" "yup" C-m
+  tmux send-keys -t "$new_pane" "/etc/nixos/scripts/update-and-deploy.sh" C-m
 
   mkdir -p "$(dirname "$marker")"
   printf '%s\n' "$today" > "$marker"
