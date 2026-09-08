@@ -8,7 +8,7 @@
   services = {
     dbus = {
       enable = true;
-      packages = [ pkgs.gcr ];
+      packages = [ pkgs.gcr_4 ];
     };
 
     # enable keyring service
