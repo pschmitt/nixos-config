@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 {
@@ -24,6 +25,15 @@
   };
 
   hardware.cattle = false;
+
+  # Expose the AMD SMU so ryzenadj can adjust the HX 370 power limits.
+  boot = {
+    extraModulePackages = [ config.boot.kernelPackages.ryzen-smu ];
+    kernelModules = [ "ryzen_smu" ];
+  };
+
+  environment.systemPackages = [ pkgs.ryzenadj ];
+
   initrd.wifi = {
     enable = true;
     interfaceName = "wlp195s0";
