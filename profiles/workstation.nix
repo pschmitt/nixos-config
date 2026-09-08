@@ -26,6 +26,8 @@
     ../services/autoupgrade.nix
   ];
 
+  custom.nixosConfigSymlink.enable = true;
+
   # Install the nixos-upgrade service on laptops, but don't schedule it —
   # unlike servers, laptops upgrade on demand (systemctl start
   # nixos-upgrade.service), not on a timer.
@@ -33,7 +35,6 @@
 
   home-manager.users.${config.mainUser.username} = {
     imports = [
-      ../home-manager/nixos-pull.nix
       ../home-manager/ssh-clipboard-peers.nix
     ];
     services.go-hass-agent.enableWorkstationCommands = true;
