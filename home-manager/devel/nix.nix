@@ -1,17 +1,4 @@
 { config, pkgs, ... }:
-let
-  yup = pkgs.writeShellApplication {
-    name = "yup";
-    runtimeInputs = with pkgs; [
-      coreutils
-      git
-      just
-      nix
-      sudo
-    ];
-    text = builtins.readFile ../../scripts/yup.sh;
-  };
-in
 {
   # Access tokens for the user's own (unprivileged) nix commands.
   # The system-level GitHub token in profiles/global/nix/secrets.nix is
@@ -45,6 +32,5 @@ in
     nixpkgs-fmt
     nvd
     statix
-    yup
   ];
 }

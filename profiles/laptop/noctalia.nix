@@ -679,34 +679,23 @@ in
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
             # Sub-path the panel's Home Assistant link icon opens, appended to
             # server_file's URL: the "mi casa" dashboard's AI-quotas card.
-            panel_dashboard_path = "/mi-casa/data#ai-quotas";
+            dashboard_path = "/mi-casa/data#ai-quotas";
             # What the bar renders is plugin-scoped on purpose: config.toml is
             # a read-only home-manager symlink, so Noctalia's per-bar-widget
             # settings UI can never persist anything here. Only the widget's
-            # pixel geometry (bar_icon_size/bar_progress_*/bar_spacing) is left
-            # per-widget.
-            # "both" stacks the 5h/session and weekly bars on top of each
-            # other instead of picking one; the tooltip lists both regardless
-            # of what the bar picks either way.
-            bar_metric_window = "both";
+            # pixel geometry (icon_size/progress_*/spacing) is left per-widget.
+            # "short" = the 5h/session quota, "weekly" = the weekly one; the
+            # tooltip lists both regardless of what the bar picks.
+            metric_window = "weekly";
             # Comma-separated, case-insensitive fragments matched against the
             # discovered card labels (e.g. "Pro, Gemini, Codex"). Empty shows
-            # every account Home Assistant discovers, capped by
-            # bar_metric_limit. The tooltip always lists every account
-            # regardless of this.
-            bar_card_filter = "Pro, Codex";
-            bar_metric_limit = 3;
+            # every account Home Assistant discovers, capped by metric_limit.
+            # The tooltip always lists every account regardless of this.
+            card_filter = "Pro, Codex";
+            metric_limit = 3;
             # Compact by default: glyph + progress bar, no text. Values, names
             # and reset times stay in the tooltip and the panel.
-            bar_display_mode = "summary";
-            # Panel cards stick to each account's headline session/weekly
-            # windows, hiding Copilot's Chat/Completions rows and Gemini's 3P
-            # model rows -- those never carry a fixed-length window of their
-            # own and just added noise here.
-            panel_all_metrics = false;
-            # Smaller rings/padding/fonts so every card fits the panel height
-            # without scrolling.
-            panel_compact = true;
+            display_mode = "summary";
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
