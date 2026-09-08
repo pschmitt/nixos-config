@@ -4,10 +4,27 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0")
 
-Once per calendar day, open a new pane in the "main" tmux session (creating
-the session if needed) and run the update-and-deploy script there. Intended
-to run once at login, not on a recurring timer.
+Once per calendar day, open a new pane in the "main" tmux session and run
+the update-and-deploy script there. Intended to run once at login, not on a
+recurring timer.
 EOF
+}
+
+# Wait for the "main" session rather than creating it ourselves: at login
+# this can race the autostart entry that owns creating it (tmuxAttach in
+# autostart.nix), and losing that race leaves us splitting into a session
+# that's about to be torn down along with the rest of the early tmux server.
+wait_for_session() {
+  local session="$1"
+  local tries=60
+
+  while (( tries-- > 0 ))
+  do
+    tmux has-session -t "$session" 2>/dev/null && return 0
+    sleep 1
+  done
+
+  return 1
 }
 
 main() {
@@ -37,13 +54,17 @@ main() {
     return 0
   fi
 
-  if ! tmux has-session -t "$session" 2>/dev/null
+  if ! wait_for_session "$session"
   then
-    tmux new-session -d -s "$session"
+    printf '%s session never appeared, giving up\n' "$session" >&2
+    return 1
   fi
 
   local new_pane
   new_pane="$(tmux split-window -t "${session}:0" -P -F '#{pane_id}')"
+  # Keep the pane around (showing its final output) even if its shell exits
+  # unexpectedly, instead of silently vanishing before anyone can review it.
+  tmux set-option -t "$new_pane" remain-on-exit on
   tmux send-keys -t "$new_pane" "/etc/nixos/scripts/update-and-deploy.sh" C-m
 
   mkdir -p "$(dirname "$marker")"
