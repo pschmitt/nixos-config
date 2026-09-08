@@ -13,7 +13,6 @@
     ../global/users/github-actions.nix
     ../global/users/nix-remote-builder.nix
     ../../services/autoupgrade.nix
-    ../../services/git-clone-nixos-config.nix
     ../../services/initrd-luks-ssh-unlock.nix
 
     ../../hardware/openstack-wiit.nix
@@ -31,6 +30,8 @@
 
   hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;
+
+  custom.nixosConfigSymlink.enable = true;
 
   custom.syncthing.server = true;
 
