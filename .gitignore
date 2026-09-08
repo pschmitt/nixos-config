@@ -42,3 +42,5 @@ nbx-preview.*
 *.apk
 *.obb
 *.ab
+
+target/

@@ -21,22 +21,24 @@
     # How the hovered and selected window or screen is marked in Hyprland
     # (slurp-like overlay). `mode` is either `highlight` (tint the target) or
     # `dim` (dim everything but the target); `dim_factor` is the dim opacity.
-    # `border` draws a crisp outline around the target on top of either mode.
+    # The target stays lightly tinted and outlined in either mode so it remains
+    # obvious while comparing sources or reviewing a drawn region.
     highlight {
       mode = dim
-      dim_factor = 0.55
-      border = false
+      dim_factor = 0.62
+      color = #60a5fa
+      fill_opacity = 0.16
+      border = true
+      border_size = 4
       # dim_color = rgba(0, 0, 0, 1.0) # or hex like #000000
-      # color = rgba(59, 130, 246, 1.0) # or hex like #3b82f6
-      # fill_opacity = 0.22
-      # border_size = 3
     }
 
-    # Preview settings. `refresh_rate` is in frames per second. Settings apply when the picker opens.
+    # Preview settings. `refresh_rate` is the focused (hovered or selected)
+    # source rate; other visible tiles run at 1 fps to save CPU.
     preview {
       scale = 0.35
       jpeg_quality = 78
-      refresh_rate = 4
+      refresh_rate = 30
     }
   '';
 }
