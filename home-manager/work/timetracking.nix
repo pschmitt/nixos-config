@@ -47,7 +47,7 @@ in
   systemd.user.timers.taskwarrior-sync = {
     Unit.Description = "Sync taskwarrior and timewarrior periodically";
     Timer = {
-      OnUnitInactiveSec = "30m";
+      OnUnitInactiveSec = "6h";
       Persistent = true;
     };
     Install.WantedBy = [ "timers.target" ];
