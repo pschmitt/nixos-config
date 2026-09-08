@@ -31,8 +31,6 @@
   hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;
 
-  custom.nixosConfigSymlink.enable = true;
-
   custom.syncthing.server = true;
 
   services.dbus.implementation = "broker";
