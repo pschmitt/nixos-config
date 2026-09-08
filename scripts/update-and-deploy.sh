@@ -16,6 +16,21 @@ All remaining options are passed to the local deploy command.
 EOF
 }
 
+wait_for_network() {
+  local host="github.com" port=443 tries=30
+
+  while (( tries-- > 0 ))
+  do
+    if (exec 3<>"/dev/tcp/${host}/${port}") 2>/dev/null
+    then
+      return 0
+    fi
+    sleep 2
+  done
+
+  return 1
+}
+
 checkout_main() {
   local remote_head main_branch current_branch branch
 
@@ -79,6 +94,11 @@ main() {
   then
     printf 'NixOS configuration repository not found: %s\n' "$repo_dir" >&2
     return 1
+  fi
+
+  if ! wait_for_network
+  then
+    printf 'Warning: network still unreachable after waiting, proceeding anyway\n' >&2
   fi
 
   checkout_main
