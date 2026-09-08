@@ -62,9 +62,6 @@ main() {
 
   local new_pane
   new_pane="$(tmux split-window -t "${session}:0" -P -F '#{pane_id}')"
-  # Keep the pane around (showing its final output) even if its shell exits
-  # unexpectedly, instead of silently vanishing before anyone can review it.
-  tmux set-option -t "$new_pane" remain-on-exit on
   tmux send-keys -t "$new_pane" "/etc/nixos/scripts/update-and-deploy.sh" C-m
 
   mkdir -p "$(dirname "$marker")"
