@@ -21,6 +21,7 @@
     ./soundboard.nix
     ./theme.nix
     ./xdg-portal.nix
+    ./yup-startup.nix
 
     # window managers
     ./gnome.nix
