@@ -7,13 +7,15 @@
 let
   cfg = config.custom.nixosConfigSymlink;
 
-  script = pkgs.writeShellApplication {
-    name = "nixos-config-symlink";
+  repoDir = "${config.mainUser.homeDirectory}/devel/private/pschmitt/nixos-config.git";
+
+  cloneScript = pkgs.writeShellApplication {
+    name = "nixos-config-clone";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.git
     ];
-    text = builtins.readFile ./scripts/nixos-config-symlink.sh;
+    text = builtins.readFile ./scripts/nixos-config-clone.sh;
   };
 in
 {
@@ -22,18 +24,31 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    # Idempotent, non-destructive: no-ops if /etc/nixos is already the
-    # symlink, or already a populated checkout (the common case on hosts that
-    # haven't been manually migrated to the devel-checkout convention yet —
-    # see AGENTS.md). Only actually clones + links on a host where /etc/nixos
-    # is missing or empty, e.g. a fresh install.
-    system.activationScripts.nixosConfigSymlink = {
-      deps = [ "users" ];
-      text = ''
-        NIXOS_CONFIG_HOME=${lib.escapeShellArg config.mainUser.homeDirectory} \
-        NIXOS_CONFIG_USER=${lib.escapeShellArg config.mainUser.username} \
-        ${script}/bin/nixos-config-symlink
-      '';
+    # Non-forcing `L`: only creates the symlink if /etc/nixos doesn't already
+    # exist, so an already-populated legacy checkout (the common case on
+    # hosts not yet manually migrated, see AGENTS.md) is left untouched. A
+    # fresh host gets a symlink here even before the clone below has run —
+    # it just dangles until then.
+    systemd.tmpfiles.rules = [
+      "L /etc/nixos - - - - ${repoDir}"
+    ];
+
+    # The one part tmpfiles can't do declaratively: populate repoDir itself
+    # on a fresh host. Never touches /etc/nixos.
+    systemd.services.nixos-config-clone = {
+      wantedBy = [ "multi-user.target" ];
+      after = [ "network-online.target" ];
+      requires = [ "network-online.target" ];
+
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        Environment = [
+          "NIXOS_CONFIG_HOME=${config.mainUser.homeDirectory}"
+          "NIXOS_CONFIG_USER=${config.mainUser.username}"
+        ];
+        ExecStart = "${cloneScript}/bin/nixos-config-clone";
+      };
     };
   };
 }
