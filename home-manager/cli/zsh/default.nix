@@ -66,15 +66,6 @@
       source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
     '';
 
-    # The legacy yup zsh function depends on lazily loaded local plugins. Keep
-    # the command name, but ensure it resolves to the Nix-managed executable.
-    "zsh/custom/os/nixos/zz-yup.zsh".text = ''
-      (( $+functions[yup] )) && unfunction yup
-      (( $+functions[yupnc] )) && unfunction yupnc
-      alias yup='command yup'
-      alias yupnc='command yup --flake-update --print-build-logs'
-    '';
-
     "zsh/custom/os/not-nixos/nix.zsh".text = lib.mkAfter ''
       [[ -r /etc/profile.d/nix.sh ]] || return
       source /etc/profile.d/nix.sh &>/dev/null
