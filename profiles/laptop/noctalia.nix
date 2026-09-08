@@ -725,6 +725,13 @@ in
             # working_hours_start/end default to 06:00-20:00, which is the
             # wanted window. A running interval is shown whatever the hour.
             visibility = "working_hours";
+            # Feierabend(bier): the working day here is a morning and an
+            # afternoon around a lunch break, so the second `tw::work-stop` is
+            # the one that ends it — from then on the bar shows the plugin's
+            # clock-out glyph (a beer) instead of a paused tracker. A third
+            # interval puts the tracking icon back, and the beer only lasts as
+            # long as the working_hours slot does, i.e. until 20:00.
+            clock_out_after = 2;
             # Noctalia labels can't ask for an italic style, so the panel's
             # hint text gets there through a family that resolves to an italic
             # face — the fontconfig alias defined in profiles/gui/fonts.nix.
