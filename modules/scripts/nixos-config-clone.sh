@@ -29,6 +29,18 @@ main() {
   local home_dir="${NIXOS_CONFIG_HOME:?NIXOS_CONFIG_HOME is not set}"
   local user="${NIXOS_CONFIG_USER:?NIXOS_CONFIG_USER is not set}"
   local repo_dir="$home_dir/devel/private/pschmitt/nixos-config.git"
+  local link=/etc/nixos
+
+  # Mirror the tmpfiles L condition (modules/nixos-config-symlink.nix): only
+  # bootstrap repo_dir in the same cases where that rule would actually
+  # create (or has already created) the /etc/nixos symlink. Otherwise this
+  # would clone an orphan checkout that nothing ever uses on every host that
+  # still has a real, populated legacy /etc/nixos.
+  if [[ -e "$link" && ! -L "$link" && -n "$(ls -A "$link")" ]]
+  then
+    printf '%s already holds a populated checkout; not bootstrapping %s\n' "$link" "$repo_dir"
+    return 0
+  fi
 
   if [[ -d "$repo_dir/.git" ]]
   then
