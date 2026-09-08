@@ -778,6 +778,19 @@ in
             year_time_format = "{days}d {hours}h";
             sync_enabled = true;
             sync_command = "${config.mainUser.homeDirectory}/bin/zhj taskwarrior::sync";
+            # Badge mode: one constant icon (the bundled logo), state shown as
+            # a small corner badge instead of swapping the whole icon.
+            # noctalia_assets_dir has to match the exact build actually
+            # running -- pkgs.noctalia is the same patched package
+            # programs.noctalia.package already points at.
+            badge_mode = true;
+            noctalia_assets_dir = "${pkgs.noctalia}/share/noctalia/assets/fonts";
+            tracking_glyph = "player-play";
+            stopped_glyph = "player-pause";
+            # clock_out_glyph keeps the plugin's own default ("beer").
+            # Breathing badge while tracking, same idea as the screencast REC
+            # dot -- a "this is live" cue, off for stopped/clocked-out.
+            badge_pulse_enabled = true;
           };
           "pschmitt/syncthing" = {
             # "Folder X is up to date" fires on every sync completion and
