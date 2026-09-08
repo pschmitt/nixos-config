@@ -4,6 +4,13 @@
   pkgs,
   ...
 }:
+let
+  ryzenadjTdp = pkgs.writeShellApplication {
+    name = "ryzenadj-tdp";
+    runtimeInputs = [ pkgs.ryzenadj ];
+    text = builtins.readFile ./scripts/ryzenadj-tdp.sh;
+  };
+in
 {
   imports = [
     ./hardware-configuration.nix
@@ -21,7 +28,10 @@
     # lives purely in the GPD BIOS -- no charge_control_* in sysfs, no vendor
     # module, nothing from upower -- so the plugin infers it from behaviour
     # instead (full_at = 0). Pin full_at = 80 here if that ever misreads.
-    programs.noctalia.settings.plugin_settings."pschmitt/battery-icon".battery_device = "BATT";
+    programs.noctalia.settings.plugin_settings."pschmitt/battery-icon" = {
+      battery_device = "BATT";
+      show_tdp_controls = true;
+    };
   };
 
   hardware.cattle = false;
@@ -32,7 +42,28 @@
     kernelModules = [ "ryzen_smu" ];
   };
 
-  environment.systemPackages = [ pkgs.ryzenadj ];
+  environment.systemPackages = [
+    pkgs.ryzenadj
+    ryzenadjTdp
+  ];
+
+  security.polkit = {
+    extraConfig = ''
+      polkit.addRule(function (action, subject) {
+        if (action.id == "org.freedesktop.policykit.exec") {
+          if (
+            (
+              action.lookup("program") == "/run/current-system/sw/bin/ryzenadj-tdp" ||
+              action.lookup("program") == "${ryzenadjTdp}/bin/ryzenadj-tdp"
+            ) &&
+            subject.user == "${config.mainUser.username}"
+          ) {
+            return polkit.Result.YES;
+          }
+        }
+      });
+    '';
+  };
 
   initrd.wifi = {
     enable = true;
