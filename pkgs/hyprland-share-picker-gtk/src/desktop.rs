@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use gtk4::{ContentFit, Image, Picture, Widget, gdk, prelude::*};
+use gtk4::{Image, Widget, gdk, prelude::*};
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ pub struct DesktopApp {
     pub icon: Option<String>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DesktopRegistry {
     apps: Vec<DesktopApp>,
     by_wm_class: HashMap<String, usize>,
@@ -250,6 +250,32 @@ impl DesktopRegistry {
     }
 }
 
+fn make_icon_image_from_file(path: &Path, pixel_size: i32) -> Widget {
+    let file = gio::File::for_path(path);
+    let gicon = gio::FileIcon::new(&file);
+    let img = Image::from_gicon(&gicon);
+    img.set_pixel_size(pixel_size);
+    img.set_size_request(pixel_size, pixel_size);
+    img.set_halign(gtk4::Align::Center);
+    img.set_valign(gtk4::Align::Center);
+    img.set_hexpand(false);
+    img.set_vexpand(false);
+    img.add_css_class("app-icon");
+    img.upcast::<Widget>()
+}
+
+fn make_icon_image_from_name(icon_name: &str, pixel_size: i32) -> Widget {
+    let img = Image::from_icon_name(icon_name);
+    img.set_pixel_size(pixel_size);
+    img.set_size_request(pixel_size, pixel_size);
+    img.set_halign(gtk4::Align::Center);
+    img.set_valign(gtk4::Align::Center);
+    img.set_hexpand(false);
+    img.set_vexpand(false);
+    img.add_css_class("app-icon");
+    img.upcast::<Widget>()
+}
+
 pub fn create_app_icon(
     registry: &DesktopRegistry,
     class: &str,
@@ -263,30 +289,12 @@ pub fn create_app_icon(
         let p = Path::new(icon_val);
         if p.is_absolute() {
             if p.exists() {
-                let pic = Picture::for_filename(p);
-                pic.set_can_shrink(true);
-                pic.set_content_fit(ContentFit::Contain);
-                pic.set_size_request(pixel_size, pixel_size);
-                pic.set_halign(gtk4::Align::Center);
-                pic.set_valign(gtk4::Align::Center);
-                pic.set_hexpand(false);
-                pic.set_vexpand(false);
-                pic.add_css_class("app-icon");
-                return pic.upcast::<Widget>();
+                return make_icon_image_from_file(p, pixel_size);
             }
             for ext in ["png", "svg", "xpm"] {
                 let pe = p.with_extension(ext);
                 if pe.exists() {
-                    let pic = Picture::for_filename(&pe);
-                    pic.set_can_shrink(true);
-                    pic.set_content_fit(ContentFit::Contain);
-                    pic.set_size_request(pixel_size, pixel_size);
-                    pic.set_halign(gtk4::Align::Center);
-                    pic.set_valign(gtk4::Align::Center);
-                    pic.set_hexpand(false);
-                    pic.set_vexpand(false);
-                    pic.add_css_class("app-icon");
-                    return pic.upcast::<Widget>();
+                    return make_icon_image_from_file(&pe, pixel_size);
                 }
             }
         }
@@ -306,25 +314,11 @@ pub fn create_app_icon(
         if let Some(ref th) = theme {
             for candidate in [name, &name.to_lowercase()] {
                 if th.has_icon(candidate) {
-                    let img = Image::from_icon_name(candidate);
-                    img.set_pixel_size(pixel_size);
-                    img.set_halign(gtk4::Align::Center);
-                    img.set_valign(gtk4::Align::Center);
-                    img.set_hexpand(false);
-                    img.set_vexpand(false);
-                    img.add_css_class("app-icon");
-                    return img.upcast::<Widget>();
+                    return make_icon_image_from_name(candidate, pixel_size);
                 }
             }
         } else {
-            let img = Image::from_icon_name(name);
-            img.set_pixel_size(pixel_size);
-            img.set_halign(gtk4::Align::Center);
-            img.set_valign(gtk4::Align::Center);
-            img.set_hexpand(false);
-            img.set_vexpand(false);
-            img.add_css_class("app-icon");
-            return img.upcast::<Widget>();
+            return make_icon_image_from_name(name, pixel_size);
         }
 
         // 2b. Check pixmaps directories
@@ -337,30 +331,12 @@ pub fn create_app_icon(
         for pix_dir in &pix_dirs {
             let base = Path::new(pix_dir).join(icon_val);
             if base.exists() {
-                let pic = Picture::for_filename(&base);
-                pic.set_can_shrink(true);
-                pic.set_content_fit(ContentFit::Contain);
-                pic.set_size_request(pixel_size, pixel_size);
-                pic.set_halign(gtk4::Align::Center);
-                pic.set_valign(gtk4::Align::Center);
-                pic.set_hexpand(false);
-                pic.set_vexpand(false);
-                pic.add_css_class("app-icon");
-                return pic.upcast::<Widget>();
+                return make_icon_image_from_file(&base, pixel_size);
             }
             for ext in ["png", "svg", "xpm"] {
                 let pe = base.with_extension(ext);
                 if pe.exists() {
-                    let pic = Picture::for_filename(&pe);
-                    pic.set_can_shrink(true);
-                    pic.set_content_fit(ContentFit::Contain);
-                    pic.set_size_request(pixel_size, pixel_size);
-                    pic.set_halign(gtk4::Align::Center);
-                    pic.set_valign(gtk4::Align::Center);
-                    pic.set_hexpand(false);
-                    pic.set_vexpand(false);
-                    pic.add_css_class("app-icon");
-                    return pic.upcast::<Widget>();
+                    return make_icon_image_from_file(&pe, pixel_size);
                 }
             }
         }
@@ -375,38 +351,17 @@ pub fn create_app_icon(
             &initial_class.to_lowercase(),
         ] {
             if !candidate.is_empty() && th.has_icon(candidate) {
-                let img = Image::from_icon_name(candidate);
-                img.set_pixel_size(pixel_size);
-                img.set_halign(gtk4::Align::Center);
-                img.set_valign(gtk4::Align::Center);
-                img.set_hexpand(false);
-                img.set_vexpand(false);
-                img.add_css_class("app-icon");
-                return img.upcast::<Widget>();
+                return make_icon_image_from_name(candidate, pixel_size);
             }
         }
     }
 
     // 4. Fallback generic icon
-    let img = Image::from_icon_name("application-x-executable-symbolic");
-    img.set_pixel_size(pixel_size);
-    img.set_halign(gtk4::Align::Center);
-    img.set_valign(gtk4::Align::Center);
-    img.set_hexpand(false);
-    img.set_vexpand(false);
-    img.add_css_class("app-icon");
-    img.upcast::<Widget>()
+    make_icon_image_from_name("application-x-executable-symbolic", pixel_size)
 }
 
 pub fn create_themed_icon(icon_name: &str, pixel_size: i32) -> Widget {
-    let img = Image::from_icon_name(icon_name);
-    img.set_pixel_size(pixel_size);
-    img.set_halign(gtk4::Align::Center);
-    img.set_valign(gtk4::Align::Center);
-    img.set_hexpand(false);
-    img.set_vexpand(false);
-    img.add_css_class("app-icon");
-    img.upcast::<Widget>()
+    make_icon_image_from_name(icon_name, pixel_size)
 }
 
 #[cfg(test)]
@@ -447,5 +402,49 @@ mod tests {
         );
 
         let _ = fs::remove_file(test_file);
+    }
+
+    #[test]
+    fn test_icon_dimensions() {
+        if gtk4::init().is_err() {
+            return;
+        }
+        let reg = DesktopRegistry::new();
+        let icon_widget = create_app_icon(&reg, "kitty-tmux", "", 32);
+        let (min, nat) = icon_widget.preferred_size();
+        assert_eq!(min.width(), 32);
+        assert_eq!(min.height(), 32);
+        assert_eq!(nat.width(), 32);
+        assert_eq!(nat.height(), 32);
+
+        let themed = create_themed_icon("video-display-symbolic", 32);
+        let (min, nat) = themed.preferred_size();
+        assert_eq!(min.width(), 32);
+        assert_eq!(min.height(), 32);
+        assert_eq!(nat.width(), 32);
+        assert_eq!(nat.height(), 32);
+
+        let scroll = gtk4::ScrolledWindow::new();
+        scroll.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Never);
+        scroll.set_size_request(-1, 170);
+
+        let pic = gtk4::Picture::new();
+        pic.set_can_shrink(true);
+        pic.set_content_fit(gtk4::ContentFit::Cover);
+        scroll.set_child(Some(&pic));
+
+        let bytes = vec![0u8; 800 * 600 * 4];
+        let tex = gdk::MemoryTexture::new(
+            800,
+            600,
+            gdk::MemoryFormat::R8g8b8a8,
+            &glib::Bytes::from(&bytes),
+            800 * 4,
+        );
+        pic.set_paintable(Some(&tex));
+
+        let (min_h, nat_h, _, _) = scroll.measure(gtk4::Orientation::Vertical, 530);
+        assert_eq!(min_h, 170);
+        assert_eq!(nat_h, 170);
     }
 }
