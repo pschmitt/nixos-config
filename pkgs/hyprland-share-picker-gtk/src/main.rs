@@ -115,7 +115,9 @@ fn main() {
         .build();
 
     let allow_token = args.allow_token;
-    let window_list = args.window_list;
+    let window_list = args
+        .window_list
+        .or_else(|| std::env::var("XDPH_WINDOW_SHARING_LIST").ok());
 
     app.connect_activate(move |app| {
         ui::build_ui(app, allow_token, window_list.clone());

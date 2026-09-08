@@ -25,8 +25,9 @@ use crate::{
     css::install_css,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
     hyprland::{
-        Client, Monitor, PortalWindowEntry, client_for_entry, parse_region, parse_region_details,
-        parse_window_list, query_active_workspace, query_clients, query_monitors, window_at_point,
+        Client, Monitor, PortalWindowEntry, client_for_entry, listen_socket2, parse_region,
+        parse_region_details, parse_window_list, query_active_workspace, query_clients,
+        query_monitors, window_at_point, window_to_region,
     },
     overlay::OverlayHighlighter,
 };
@@ -63,6 +64,22 @@ pub fn save_last_tab(tab: &str) {
     let _ = fs::write(path, format!("{tab}\n"));
 }
 
+#[derive(Clone)]
+pub struct WindowCardItem {
+    pub card_id: usize,
+    pub address: String,
+    pub portal_id: String,
+    pub selection: String,
+    pub is_portal_authorized: bool,
+    pub title: String,
+    pub class: String,
+    pub workspace_id: i64,
+    pub workspace_name: String,
+    pub button: ToggleButton,
+    pub name_label: Label,
+    pub detail_label: Label,
+}
+
 pub struct AppState {
     pub config: PickerConfig,
     pub allow_token: bool,
@@ -78,6 +95,13 @@ pub struct AppState {
     pub clients: Vec<Client>,
     pub monitors: Vec<Monitor>,
     pub window_entries: Vec<PortalWindowEntry>,
+    pub has_window_list_raw: bool,
+    pub next_card_id: usize,
+    pub desktop_reg: Rc<DesktopRegistry>,
+    pub window_flow: Option<FlowBox>,
+    pub window_group_lead: Option<ToggleButton>,
+    pub window_cards: HashMap<String, WindowCardItem>,
+    pub last_active_ws: Option<i64>,
     pub share_button: Option<Button>,
     pub pick_button_icon: Option<Image>,
     pub pick_button_label: Option<Label>,
@@ -98,12 +122,13 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     install_css();
     let config = load_config();
     let highlighter = OverlayHighlighter::new(&config);
-    let desktop_reg = DesktopRegistry::new();
+    let desktop_reg = Rc::new(DesktopRegistry::new());
 
     let (frame_tx, frame_rx) = channel::<FrameMessage>();
     let capture_mgr = Rc::new(CaptureManager::new(frame_tx));
     let monitors = query_monitors();
     let clients = query_clients();
+    let has_window_list_raw = window_list_raw.is_some();
     let window_entries = if let Some(ref raw) = window_list_raw {
         parse_window_list(raw)
     } else {
@@ -137,6 +162,13 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         clients,
         monitors: monitors.clone(),
         window_entries,
+        has_window_list_raw,
+        next_card_id: 0,
+        desktop_reg,
+        window_flow: None,
+        window_group_lead: None,
+        window_cards: HashMap::new(),
+        last_active_ws: None,
         share_button: None,
         pick_button_icon: None,
         pick_button_label: None,
@@ -153,8 +185,23 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         stack: None,
     }));
 
+    // Attach Hyprland socket2 listener for dynamic window updates
+    let (event_tx, event_rx) = channel::<()>();
+    let event_tx_socket = event_tx.clone();
+    let _socket_thread = listen_socket2(move |msg| {
+        if msg.starts_with("openwindow>>")
+            || msg.starts_with("closewindow>>")
+            || msg.starts_with("windowtitle")
+            || msg.starts_with("movewindow")
+            || msg.starts_with("workspace")
+        {
+            let _ = event_tx_socket.send(());
+        }
+    });
+
     // Attach frame delivery and slurp pick completion handler on GTK main loop (60 fps check)
     let state_loop = state.clone();
+    let mut last_poll = Instant::now();
     glib::timeout_add_local(Duration::from_millis(16), move || {
         let pics = pictures_loop.borrow();
         while let Ok(msg) = frame_rx.try_recv() {
@@ -168,6 +215,21 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
                 );
                 picture.set_paintable(Some(&texture));
             }
+        }
+
+        let mut need_refresh = false;
+        while let Ok(()) = event_rx.try_recv() {
+            need_refresh = true;
+        }
+
+        let now = Instant::now();
+        if now.duration_since(last_poll) > Duration::from_millis(1000) {
+            last_poll = now;
+            need_refresh = true;
+        }
+
+        if need_refresh {
+            refresh_windows_internal(&state_loop);
         }
 
         let pick_result = {
@@ -272,7 +334,8 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         if keyval == gdk::Key::Return || keyval == gdk::Key::KP_Enter {
             let s = state_key.borrow();
             if let Some(ref sel) = s.selection {
-                emit_selection(sel, s.allow_token);
+                let final_sel = resolve_final_selection(sel, &s);
+                emit_selection(&final_sel, s.allow_token);
             }
             return glib::Propagation::Stop;
         }
@@ -353,10 +416,12 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     stack.set_transition_type(StackTransitionType::Crossfade);
     stack.set_vexpand(true);
 
-    let mut next_card_id = 0;
+    let mut next_card_id = state.borrow().next_card_id;
+    let desktop_reg = state.borrow().desktop_reg.clone();
     let window_page = make_window_page(state.clone(), &desktop_reg, &mut next_card_id);
     let screen_page = make_screen_page(state.clone(), &mut next_card_id);
     let region_page = make_region_page(state.clone(), &mut next_card_id);
+    state.borrow_mut().next_card_id = next_card_id;
 
     stack.add_titled(&window_page, Some("windows"), "Window");
     stack.add_titled(&screen_page, Some("screens"), "Screen");
@@ -416,7 +481,8 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     share_btn.connect_clicked(move |_| {
         let s = state_share.borrow();
         if let Some(ref sel) = s.selection {
-            emit_selection(sel, s.allow_token);
+            let final_sel = resolve_final_selection(sel, &s);
+            emit_selection(&final_sel, s.allow_token);
         }
     });
     footer.append(&share_btn);
@@ -583,6 +649,69 @@ fn update_pick_button_ui(state: &mut AppState) {
     if let Some(ref btn) = state.pick_button {
         btn.set_tooltip_text(Some(tooltip));
     }
+}
+
+fn refresh_windows_internal(state: &Rc<RefCell<AppState>>) {
+    let clients = query_clients();
+    let monitors = query_monitors();
+    let active_workspace = query_active_workspace().map(|workspace| workspace.id);
+
+    if let Ok(mut state) = state.try_borrow_mut() {
+        state.clients = clients;
+        if !monitors.is_empty() {
+            state.monitors = monitors;
+        }
+        state.last_active_ws = active_workspace;
+    }
+}
+
+fn resolve_final_selection(selection: &str, state: &AppState) -> String {
+    let Some(window_id) = selection.strip_prefix("window:") else {
+        return selection.to_string();
+    };
+
+    // Window cards use XDPH's lower toplevel-handle ID directly. The direct
+    // picker, however, identifies a client by its stable Hyprland ID. Convert
+    // that ID back to the portal-authorized handle before emitting it.
+    if state
+        .window_entries
+        .iter()
+        .any(|entry| entry.id == window_id)
+    {
+        return selection.to_string();
+    }
+
+    let queried_clients = query_clients();
+    let queried_monitors = query_monitors();
+    let clients = if queried_clients.is_empty() {
+        &state.clients
+    } else {
+        &queried_clients
+    };
+    let monitors = if queried_monitors.is_empty() {
+        &state.monitors
+    } else {
+        &queried_monitors
+    };
+
+    let Some(client) = clients
+        .iter()
+        .find(|client| client.stable_id_string().as_deref() == Some(window_id))
+    else {
+        return selection.to_string();
+    };
+
+    if let Some(entry) = state.window_entries.iter().find(|entry| {
+        entry.address.as_deref() == Some(client.address.as_str())
+            || entry.id == client.stable_id_string().as_deref().unwrap_or_default()
+    }) {
+        return format!("window:{}", entry.id);
+    }
+
+    // A client opened after XDPH supplied its window list has no portal handle.
+    // Capture its bounds as a region rather than returning an invalid window ID
+    // to XDPH, which can crash its window-capture path.
+    window_to_region(client, monitors).unwrap_or_else(|| selection.to_string())
 }
 
 fn make_window_page(
@@ -866,15 +995,24 @@ fn make_source_card(
 
     let body = GtkBox::new(Orientation::Vertical, 0);
     body.set_vexpand(false);
+    body.set_hexpand(true);
 
     let preview = Picture::new();
-    preview.add_css_class("preview");
     preview.set_can_shrink(true);
-    preview.set_size_request(-1, 170);
     preview.set_content_fit(ContentFit::Cover);
     preview.set_halign(gtk4::Align::Fill);
-    preview.set_vexpand(false);
-    body.append(&preview);
+    preview.set_valign(gtk4::Align::Fill);
+    preview.set_hexpand(true);
+    preview.set_vexpand(true);
+
+    let preview_box = ScrolledWindow::new();
+    preview_box.add_css_class("preview");
+    preview_box.set_policy(PolicyType::Never, PolicyType::Never);
+    preview_box.set_size_request(-1, 170);
+    preview_box.set_hexpand(true);
+    preview_box.set_vexpand(false);
+    preview_box.set_child(Some(&preview));
+    body.append(&preview_box);
 
     let info_box = GtkBox::new(Orientation::Horizontal, 12);
     info_box.add_css_class("card-info");
@@ -885,6 +1023,7 @@ fn make_source_card(
     info_box.set_margin_end(14);
     info_box.set_valign(gtk4::Align::Center);
     info_box.set_vexpand(false);
+    info_box.set_hexpand(true);
 
     if let Some(ref icon_w) = icon {
         info_box.append(icon_w);

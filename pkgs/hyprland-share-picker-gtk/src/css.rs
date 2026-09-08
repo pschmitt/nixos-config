@@ -19,7 +19,6 @@ window.share-picker {
   border-radius: 14px;
   padding: 0;
   min-height: 246px;
-  max-height: 246px;
 }
 .source-card:hover { background: alpha(@accent_bg_color, 0.12); }
 .source-card:checked {
@@ -30,7 +29,6 @@ window.share-picker {
 .source-card > box {
   min-width: 220px;
   min-height: 246px;
-  max-height: 246px;
 }
 .action-card {
   background: alpha(@accent_bg_color, 0.08);
@@ -40,7 +38,6 @@ window.share-picker {
   background: alpha(@window_fg_color, 0.09);
   border-radius: 12px 12px 0 0;
   min-height: 170px;
-  max-height: 170px;
 }
 .region-preview {
   background: alpha(@window_fg_color, 0.09);
@@ -48,10 +45,11 @@ window.share-picker {
 }
 .card-info {
   min-height: 56px;
-  max-height: 56px;
 }
 .app-icon {
   border-radius: 6px;
+  min-width: 32px;
+  min-height: 32px;
 }
 window.overlay-highlighter {
   background-color: transparent;

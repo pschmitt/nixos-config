@@ -4,6 +4,7 @@ use std::{
     os::unix::net::UnixStream,
     path::PathBuf,
     process::Command,
+    thread,
     time::Duration,
 };
 
@@ -134,15 +135,28 @@ pub struct RegionDetails {
 
 pub fn parse_window_list(raw: &str) -> Vec<PortalWindowEntry> {
     let re = Regex::new(
-        r"(?P<id>\d+)\[HC>](?P<class>.*?)\[HT>](?P<title>.*?)\[HE>](?:(?P<address>0x[0-9a-fA-F]+)\[HA>])?"
+        r"(?P<id>\d+)\[HC>](?P<class>.*?)\[HT>](?P<title>.*?)\[HE>](?:(?P<address>0x[0-9a-fA-F]+|\d+)\[HA>])?"
     ).unwrap();
 
     re.captures_iter(raw)
-        .map(|cap| PortalWindowEntry {
-            id: cap["id"].to_string(),
-            class: cap["class"].to_string(),
-            title: cap["title"].to_string(),
-            address: cap.name("address").map(|m| m.as_str().to_string()),
+        .map(|cap| {
+            let address = cap.name("address").map(|m| {
+                let s = m.as_str();
+                if s.starts_with("0x") || s.starts_with("0X") {
+                    s.to_lowercase()
+                } else if let Ok(num) = s.parse::<u64>() {
+                    format!("0x{:x}", num)
+                } else {
+                    s.to_string()
+                }
+            });
+
+            PortalWindowEntry {
+                id: cap["id"].to_string(),
+                class: cap["class"].to_string(),
+                title: cap["title"].to_string(),
+                address,
+            }
         })
         .collect()
 }
@@ -228,6 +242,29 @@ pub fn parse_region_details(selection: &str, monitors: &[Monitor]) -> Option<Reg
     })
 }
 
+pub fn window_to_region(client: &Client, monitors: &[Monitor]) -> Option<String> {
+    if client.at.len() < 2 || client.size.len() < 2 {
+        return None;
+    }
+    let (gx, gy) = (client.at[0], client.at[1]);
+    let (w, h) = (client.size[0] as u32, client.size[1] as u32);
+    if w == 0 || h == 0 {
+        return None;
+    }
+
+    let mon = monitors
+        .iter()
+        .find(|m| gx >= m.x && gx < m.x + m.width && gy >= m.y && gy < m.y + m.height)
+        .or_else(|| monitors.first())?;
+
+    let rel_x = gx - mon.x;
+    let rel_y = gy - mon.y;
+    Some(format!(
+        "region:{}@{},{},{},{}",
+        mon.name, rel_x, rel_y, w, h
+    ))
+}
+
 pub fn hyprland_instance_signature() -> Option<String> {
     if let Ok(his) = env::var("HYPRLAND_INSTANCE_SIGNATURE") {
         if !his.is_empty() {
@@ -246,6 +283,31 @@ pub fn hyprland_instance_signature() -> Option<String> {
     }
 
     None
+}
+
+pub fn listen_socket2<F: Fn(&str) + Send + 'static>(callback: F) -> Option<thread::JoinHandle<()>> {
+    let his = hyprland_instance_signature()?;
+    let uid = rustix::process::getuid().as_raw();
+    let sock_path = format!("/run/user/{uid}/hypr/{his}/.socket2.sock");
+
+    thread::Builder::new()
+        .name("hypr-socket2".into())
+        .spawn(move || {
+            use std::io::BufRead;
+            loop {
+                if let Ok(stream) = UnixStream::connect(&sock_path) {
+                    let reader = std::io::BufReader::new(stream);
+                    for line in reader.lines() {
+                        match line {
+                            Ok(msg) => callback(&msg),
+                            Err(_) => break,
+                        }
+                    }
+                }
+                thread::sleep(Duration::from_millis(500));
+            }
+        })
+        .ok()
 }
 
 pub fn hyprland_ipc_query<T: for<'de> Deserialize<'de>>(req: &str) -> Option<T> {
@@ -319,8 +381,9 @@ mod tests {
 
     #[test]
     fn test_parse_window_list() {
-        let entries =
-            parse_window_list("42[HC>]firefox[HT>]A tab[HE>]43[HC>]kitty[HT>]shell[HE>]0xabc[HA>]");
+        let entries = parse_window_list(
+            "42[HC>]firefox[HT>]A tab[HE>]43[HC>]kitty[HT>]shell[HE>]0xabc[HA>]44[HC>]slack[HT>]chat[HE>]102798129481488[HA>]",
+        );
         assert_eq!(
             entries,
             vec![
@@ -336,7 +399,52 @@ mod tests {
                     title: "shell".to_string(),
                     address: Some("0xabc".to_string()),
                 },
+                PortalWindowEntry {
+                    id: "44".to_string(),
+                    class: "slack".to_string(),
+                    title: "chat".to_string(),
+                    address: Some("0x5d7e8dfdc710".to_string()),
+                },
             ]
+        );
+    }
+
+    #[test]
+    fn test_window_to_region() {
+        let mon = Monitor {
+            id: 0,
+            name: "DP-1".into(),
+            description: "".into(),
+            width: 1920,
+            height: 1080,
+            x: 0,
+            y: 0,
+            scale: 1.0,
+            focused: true,
+            active_workspace: None,
+            special_workspace: None,
+        };
+        let client = Client {
+            address: "0x123".into(),
+            stable_id: None,
+            at: vec![100, 200],
+            size: vec![800, 600],
+            workspace: Workspace {
+                id: 1,
+                name: "1".into(),
+            },
+            title: "Test".into(),
+            class: "test".into(),
+            initial_class: "test".into(),
+            initial_title: "test".into(),
+            focus_history_id: None,
+            pinned: false,
+            hidden: false,
+            mapped: true,
+        };
+        assert_eq!(
+            window_to_region(&client, &[mon]),
+            Some("region:DP-1@100,200,800,600".into())
         );
     }
 
