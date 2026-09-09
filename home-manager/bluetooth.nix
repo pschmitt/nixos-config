@@ -8,6 +8,13 @@
   systemd.user.services.bluez-headset-callback = {
     Unit = {
       Description = "Bluez Headset Callback";
+      # Needs WAYLAND_DISPLAY (for the noctalia/osd toast) which is only
+      # imported into the systemd user manager once Hyprland's autostart
+      # runs dbus-update-activation-environment. default.target activates
+      # before that happens, so this must wait on graphical-session.target
+      # instead, like the other Hyprland-session services do.
+      PartOf = [ "graphical-session.target" ];
+      After = [ "graphical-session.target" ];
     };
     Service = {
       ExecStart = "${pkgs.bluez-headset-callback}/bin/bluez-headset-callback.sh";
@@ -15,7 +22,7 @@
       RestartSec = 10;
     };
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "graphical-session.target" ];
     };
   };
 }
