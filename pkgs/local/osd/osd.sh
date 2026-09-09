@@ -6,6 +6,15 @@
 # regardless of which bar is active (see toggle-bar.sh). Noctalia has no
 # generic "show a custom OSD" primitive of its own (only fixed-purpose ones:
 # brightness-osd, volume-osd, ...), hence the dedicated plugin.
+#
+# use_noctalia() below shells out to the noctalia binary, which needs
+# WAYLAND_DISPLAY to reach the compositor. Callers invoked from a systemd
+# --user service that starts before the session's environment import runs
+# (see home-manager/bluetooth.nix) would otherwise see a WAYLAND_DISPLAY-less
+# environment and silently fall back to notify-send. Default to Hyprland's
+# usual first instance name rather than let that happen quietly.
+: "${WAYLAND_DISPLAY:=wayland-1}"
+export WAYLAND_DISPLAY
 
 usage() {
   cat <<EOF

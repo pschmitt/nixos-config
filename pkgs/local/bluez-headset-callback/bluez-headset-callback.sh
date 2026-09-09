@@ -167,14 +167,6 @@ main() {
   # Add /run/wrappers/bin to PATH (for sudo)
   add_to_path "/run/wrappers/bin"
 
-  # graphical-session.target ordering (see home-manager/bluetooth.nix)
-  # should always import the real WAYLAND_DISPLAY before this starts, but
-  # without it osd silently mistakes noctalia for not running and falls
-  # back to notify-send. Default to Hyprland's usual first instance name
-  # rather than let that happen quietly.
-  : "${WAYLAND_DISPLAY:=wayland-1}"
-  export WAYLAND_DISPLAY
-
   mkdir -p "$STATE_DIR"
 
   local dbus_filter_type="signal"
