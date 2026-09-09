@@ -778,18 +778,18 @@ in
             year_time_format = "{days}d {hours}h";
             sync_enabled = true;
             sync_command = "${config.mainUser.homeDirectory}/bin/zhj taskwarrior::sync";
-            # Badge mode: one constant icon (the bundled logo), state shown as
-            # a small corner badge instead of swapping the whole icon.
-            # noctalia_assets_dir has to match the exact build actually
-            # running -- pkgs.noctalia is the same patched package
-            # programs.noctalia.package already points at.
+            # The 16px default badge follows the Syncthing plugin's proven
+            # path: purpose-drawn play/pause/beer SVGs on a 16-unit grid are
+            # rasterized to 256px at build time, then Noctalia performs the
+            # one final downsample at the actual UI/output scale. The helmet
+            # logo remains visible behind every state badge.
             badge_mode = true;
             noctalia_assets_dir = "${pkgs.noctalia}/share/noctalia/assets/fonts";
             tracking_glyph = "player-play";
             stopped_glyph = "player-pause";
             # clock_out_glyph keeps the plugin's own default ("beer").
-            # Breathing badge while tracking, same idea as the screencast REC
-            # dot -- a "this is live" cue, off for stopped/clocked-out.
+            # Pulse only the tracking badge's green chip; the logo and white
+            # play mark remain opaque and sharp throughout the cycle.
             badge_pulse_enabled = true;
           };
           "pschmitt/syncthing" = {
