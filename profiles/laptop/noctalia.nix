@@ -626,6 +626,7 @@ in
             art_size = 18;
             title_scroll = "on_hover";
             hide_when_no_media = true;
+            show_progress = true;
           };
           network.show_label = false;
           input-volume = {
