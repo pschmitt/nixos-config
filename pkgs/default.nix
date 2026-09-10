@@ -76,6 +76,7 @@ in
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
   shellyctl = pkgs.callPackage ./shellyctl { };
+  slack-mcp-server = pkgs.callPackage ./slack-mcp-server { };
   ssh-clipboard = pkgs.callPackage ./ssh-clipboard { };
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
