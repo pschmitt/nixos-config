@@ -1,0 +1,19 @@
+{
+  "id": "syncshell",
+  "name": "SyncShell",
+  "description": "Syncthing status and control: bar widget with per-folder pause/rescan, a pinned desktop status card, a /st launcher provider, and a Control Center pause/resume toggle.",
+  "version": "0.3.0",
+  "author": "Chris Fisher; based on work by IlyaZar",
+  "type": "composite",
+  "capabilities": ["daemon", "dankbar-widget", "control-center", "desktop-widget", "launcher", "network"],
+  "components": {
+    "daemon": "./SyncshellDaemon.qml",
+    "widget": "./SyncshellWidget.qml",
+    "desktop": "./SyncshellDesktopWidget.qml",
+    "launcher": "./SyncshellLauncher.qml"
+  },
+  "trigger": "/st",
+  "requires_dms": ">=1.5.0",
+  "requires": ["syncthing", "xdg-open"],
+  "permissions": ["network", "process", "settings_read"]
+}

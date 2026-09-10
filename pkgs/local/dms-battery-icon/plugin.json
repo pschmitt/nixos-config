@@ -1,0 +1,13 @@
+{
+  "id": "batteryIcon",
+  "name": "Battery Icon",
+  "description": "Android-style battery pill (percentage inside the silhouette, charging bolt) with a panel for power profile, Bluetooth peripheral levels, and the idle inhibitor toggle.",
+  "version": "0.1.0",
+  "author": "pschmitt",
+  "icon": "battery_std",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./BatteryIconWidget.qml",
+  "settings": "./BatteryIconSettings.qml",
+  "permissions": ["settings_read", "settings_write"]
+}

@@ -1,14 +1,15 @@
 {
   "id": "timewarrior",
   "name": "Timewarrior",
-  "description": "Timewarrior tracked-time status, ported from the Waybar/quickshell-bar module.",
-  "version": "0.1.0",
+  "description": "Timewarrior tracked-time status: bar pill, week/month/year totals, a last-14-days breakdown, and editable per-day intervals (start/stop, edit start/end, delete).",
+  "version": "0.2.0",
   "author": "pschmitt",
   "icon": "timer",
   "type": "widget",
   "capabilities": ["dankbar-widget"],
   "component": "./TimewarriorWidget.qml",
-  "requires": ["timew-is-on", "timew-total", "timew-week-breakdown"],
-  "permissions": ["process"],
+  "settings": "./TimewarriorSettings.qml",
+  "requires": ["timew-is-on", "timew-total", "timew-week-breakdown", "timew"],
+  "permissions": ["process", "settings_read", "settings_write"],
   "license": "GPL-3.0-only"
 }

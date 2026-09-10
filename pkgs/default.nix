@@ -22,6 +22,9 @@ in
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { inherit osd; };
   caffeine = pkgs.callPackage ./local/caffeine { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
+  dms-battery-icon = pkgs.callPackage ./local/dms-battery-icon { };
+  dms-ha-ai-usage = pkgs.callPackage ./local/dms-ha-ai-usage { };
+  dms-screencast = pkgs.callPackage ./local/dms-screencast { inherit screencast-state; };
   dms-shell-critical-notifications = pkgs.callPackage ./local/dms-shell-critical-notifications {
     inherit inputs;
   };
