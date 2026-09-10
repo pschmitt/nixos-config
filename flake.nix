@@ -178,7 +178,7 @@
     hyprgrass = {
       # The latest revisions changed GestureManager.cpp beyond the local
       # Hyprland 0.56 compatibility patch; keep the last known-good commit.
-      url = "github:horriblename/hyprgrass/e28346f49144e058b0e2d9dc66313c0a57c3d423";
+      url = "github:horriblename/hyprgrass/5b9ef545c49aee81f0d7b93f742c6180e7b3dc04";
       inputs.hyprland.follows = "hyprland"; # IMPORTANT
     };
 
