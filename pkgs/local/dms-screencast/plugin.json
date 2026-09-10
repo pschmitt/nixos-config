@@ -1,0 +1,13 @@
+{
+  "id": "screencast",
+  "name": "Screencast Indicator",
+  "description": "Red pulsing REC marker in the bar while a portal-based screen share is live, ported from Noctalia's pschmitt/screencast plugin.",
+  "version": "0.1.0",
+  "author": "pschmitt",
+  "icon": "screen_share",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./ScreencastWidget.qml",
+  "dependencies": ["hyprctl"],
+  "permissions": ["process"]
+}

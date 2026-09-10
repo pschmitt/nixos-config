@@ -148,6 +148,22 @@ PluginComponent {
         })
     }
 
+    // Rescan one folder: same endpoint as rescanAll, scoped with ?folder=id.
+    // Backs the launcher's per-folder rescan action (SyncshellLauncher.qml).
+    function scanFolder(folderId) {
+        if (!apiKey || busy || !folderId) return
+        busy = true
+        publish()
+        request("scanAll", { method: "POST", query: { folder: folderId } }, function() {
+            root.busy = false
+            root.refresh()
+        }, function(error) {
+            root.busy = false
+            root.lastError = error && error.message ? String(error.message) : "Rescan failed"
+            root.publish()
+        })
+    }
+
     // Pause All / Resume All: Syncthing has no single "pause everything"
     // endpoint, so PATCH each folder's `paused` flag individually (the same
     // effect as the folder-level pause toggle in Syncthing's own web UI).
@@ -291,6 +307,14 @@ PluginComponent {
             if (!path) return "Folder path unavailable"
             Quickshell.execDetached(["xdg-open", path])
             return "Opened folder"
+        }
+        function rescanFolder(index: string): string {
+            var position = Number(index)
+            if (position !== Math.floor(position) || position < 0 || position >= root.folders.length)
+                return "Invalid folder"
+            var folder = root.folders[position] || ({})
+            root.scanFolder(folder.id)
+            return "Rescan started"
         }
         function status(): string {
             return "phase=" + root.phase + " folders=" + root.folders.length

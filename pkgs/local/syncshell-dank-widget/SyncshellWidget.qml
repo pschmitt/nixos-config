@@ -83,6 +83,23 @@ PluginComponent {
         source: "SyncshellContextMenu.qml"
     }
 
+    // Control Center quick-toggle tile: mirrors the bar popout's Pause
+    // All/Resume All action so the global pause is reachable without
+    // opening the popout. "Active" = reachable and not paused, same
+    // semantics as Noctalia's shortcut.luau.
+    ccWidgetIcon: root.state.allFoldersPaused ? "cloud_off" : "cloud_sync"
+    ccWidgetPrimaryText: "Syncthing"
+    ccWidgetSecondaryText: root.state && root.state.phase === "ready"
+        ? (root.state.allFoldersPaused ? "Paused" : (root.activeFolders > 0 ? "Syncing" : "Up to date"))
+        : (root.state.lastError || "Discovering")
+    ccWidgetIsActive: root.state && root.state.phase === "ready" && !root.state.allFoldersPaused
+    ccWidgetIsToggle: true
+
+    onCcWidgetToggled: Quickshell.execDetached([
+        "dms", "ipc", "call", "syncshell",
+        root.state.allFoldersPaused ? "resumeAll" : "pauseAll"
+    ])
+
     horizontalBarPill: Component {
         Image {
             source: root.statusIconSource()
@@ -327,6 +344,6 @@ PluginComponent {
         }
     }
 
-    popoutWidth: 480
+    popoutWidth: 520
     popoutHeight: 690
 }

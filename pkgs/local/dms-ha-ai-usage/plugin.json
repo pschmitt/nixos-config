@@ -1,0 +1,13 @@
+{
+  "id": "haAiUsage",
+  "name": "Home Assistant AI Usage",
+  "description": "Dynamically discovered AI plan quotas (Claude, Codex, Copilot, Gemini) from Home Assistant. Ported from Noctalia's pschmitt/ha-ai-usage plugin.",
+  "version": "0.1.0",
+  "author": "pschmitt",
+  "icon": "donut_large",
+  "type": "widget",
+  "capabilities": ["dankbar-widget", "network"],
+  "component": "./HaAiUsageWidget.qml",
+  "settings": "./HaAiUsageSettings.qml",
+  "permissions": ["settings_read", "settings_write", "network"]
+}

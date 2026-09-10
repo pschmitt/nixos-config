@@ -2,6 +2,7 @@
   lib,
   stdenvNoCC,
   timew-status,
+  timewarrior,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -13,6 +14,7 @@ stdenvNoCC.mkDerivation {
     fileset = lib.fileset.unions [
       ./plugin.json
       ./TimewarriorWidget.qml
+      ./TimewarriorSettings.qml
     ];
   };
 
@@ -26,10 +28,12 @@ stdenvNoCC.mkDerivation {
     mkdir -p "$dest"
 
     cp plugin.json "$dest"/
+    cp TimewarriorSettings.qml "$dest"/
     substitute TimewarriorWidget.qml "$dest"/TimewarriorWidget.qml \
       --subst-var-by timewIsOn ${timew-status}/bin/timew-is-on \
       --subst-var-by timewTotal ${timew-status}/bin/timew-total \
-      --subst-var-by timewWeekBreakdown ${timew-status}/bin/timew-week-breakdown
+      --subst-var-by timewWeekBreakdown ${timew-status}/bin/timew-week-breakdown \
+      --subst-var-by timew ${timewarrior}/bin/timew
 
     runHook postInstall
   '';

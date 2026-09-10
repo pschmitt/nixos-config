@@ -57,6 +57,7 @@
         "timewarrior"
       ],
       "rightWidgets": [
+        "screencast",
         {
           "id": "music",
           "enabled": true,
@@ -64,8 +65,9 @@
         },
         "systemTray",
         "syncshell",
+        "haAiUsage",
         "controlCenterButton",
-        "battery",
+        "batteryIcon",
         "notificationButton"
       ],
       "spacing": 0,
