@@ -134,16 +134,9 @@ in
         };
         slack = {
           command = "${pkgs.slack-mcp-server}/bin/slack-mcp-server";
-          # The GEC user token lacks users:read, so the startup user-cache
-          # fetch fails with `missing_scope` and the server exits fatally;
-          # -no-cache skips that fetch (channel/user lookups then require
-          # IDs instead of #channel-name/@username).
-          args = [ "-no-cache" ];
           env = {
             SLACK_MCP_XOXP_TOKEN.file = config.sops.secrets."slack/gec-chat/xoxp-token".path;
-            # The GEC user token also lacks chat:write, so message posting is
-            # disabled until the token is reauthorized with that scope.
-            SLACK_MCP_ADD_MESSAGE_TOOL = "false";
+            SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
       };
