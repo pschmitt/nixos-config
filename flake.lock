@@ -2502,11 +2502,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1788416139,
-        "narHash": "sha256-sTCYNqcskXS/C/lKOAi7Dc+a+WAs84atPAbRHRKhsTY=",
+        "lastModified": 1789040948,
+        "narHash": "sha256-fv0oYN+L2b8PdR5leZWOAde4c1e5ltV9RcKVkcQ2ww4=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "6fba09ce1ecee376d840b136be8c77dbd17ffc19",
+        "rev": "320c518fd421416296111859c09bf643bf617e18",
         "type": "github"
       },
       "original": {
