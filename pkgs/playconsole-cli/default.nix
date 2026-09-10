@@ -6,13 +6,13 @@
 
 buildGoModule rec {
   pname = "playconsole-cli";
-  version = "0.5.15";
+  version = "0.5.17";
 
   src = fetchFromGitHub {
     owner = "AndroidPoet";
     repo = "playconsole-cli";
     rev = "v${version}";
-    hash = "sha256-QOCp1C3/uPzjfPUWBBVOcEwmwy7yVwiUOt15CTM0Fl0=";
+    hash = "sha256-79sOAyf2OlRbkGDdN4LD/jegi0GeNdHJx/pCgzmqrpw=";
   };
 
   vendorHash = "sha256-pJ1RHJmDJ2vSRv4Eq0GMQXYtkDUAmUDCELy2LvKnTCI=";
