@@ -121,7 +121,6 @@ in
             "workspaces"
             "taskbar"
             "group:ai-usage"
-            "group:hassio"
           ];
           center = [
             "group:weather-date"
@@ -151,18 +150,6 @@ in
               padding = 12;
             }
             {
-              # Same single-member-just-for-the-capsule story as "ai-usage"
-              # above. Starts out empty (no entities configured yet) — the
-              # widget still renders its "smart-home" fallback glyph in that
-              # state rather than disappearing, so the capsule is always
-              # there to click open the panel and add some.
-              id = "hassio";
-              members = [
-                "hassio"
-              ];
-              padding = 12;
-            }
-            {
               id = "weather-date";
               members = [
                 "weather"
@@ -187,6 +174,7 @@ in
               members = [
                 "tray"
                 "syncthing"
+                "hassio"
               ];
               padding = 12;
             }
@@ -767,6 +755,10 @@ in
             # not a second one to mint and rotate.
             server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
+            # One fixed bar slot rather than one icon per configured entity,
+            # so the bar doesn't grow/shrink/recolor as entities are added or
+            # change state.
+            bar_display_mode = "single";
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
