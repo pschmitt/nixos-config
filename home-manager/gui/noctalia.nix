@@ -49,88 +49,96 @@ in
     (lib.mkIf config.programs.noctalia.enable {
       xdg.configFile."noctalia/config.toml".force = true;
 
-      home = {
-        packages = [ pkgs.caffeine ];
+      home.packages = [ pkgs.caffeine ];
 
-        # Noctalia requires XDG_SESSION_ID to connect to logind's session lock monitor.
-        # Because noctalia.service runs as a systemd user service outside of the session scope,
-        # GetSessionByPID(getpid()) fails if XDG_SESSION_ID is not already in the service environment.
-        activation = {
-          # Hyprland's ext-session-lock protocol has no graceful handoff: if
-          # Noctalia (the session-lock client) is restarted -- e.g. by this
-          # very activation's own reloadSystemd step, whenever a switch
-          # changes anything noctalia.service depends on -- while it holds
-          # an active lock, the compositor sees the client vanish mid-lock
-          # and refuses to auto-unlock (by design: a lock client dying is
-          # exactly how a malicious process would try to bypass a lock), so
-          # it falls back to its own placeholder ("Oopsie daisy, it looks
-          # like you locked your screen but the lockscreen app died") which
-          # takes no password and needs a manual
-          # `hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'` to
-          # dismiss -- confirmed live on gk4 (2026-09-11: a plugin crash
-          # while locking hit the same failure path) and previously noticed
-          # happening from an ordinary switch while stepped away with the
-          # screen locked.
-          #
-          # These two activation entries bracket reloadSystemd (the DAG node
-          # that actually restarts changed systemd --user units, see
-          # home-manager's modules/systemd.nix) to detect exactly that case
-          # -- noctalia.service demonstrably restarting (ActiveEnterTimestamp
-          # advancing, not just "was locked before") while a seat0 session
-          # had LockedHint=yes -- and only then clear the crashed fallback
-          # and re-lock, so a switch never silently leaves the machine
-          # unlocked. Gated on ActiveEnterTimestamp actually changing (not
-          # merely "was locked") so this never touches a lock noctalia
-          # didn't just drop.
-          noctaliaCaptureLockState = lib.hm.dag.entryBefore [ "reloadSystemd" ] ''
-            NOCTALIA_LOCK_RECOVERY_SESSIONS=""
-            if command -v loginctl >/dev/null 2>&1; then
+      # Noctalia requires XDG_SESSION_ID to connect to logind's session lock monitor.
+      # Because noctalia.service runs as a systemd user service outside of the session scope,
+      # GetSessionByPID(getpid()) fails if XDG_SESSION_ID is not already in the service environment.
+      #
+      # Hyprland's ext-session-lock protocol has no graceful handoff: if
+      # noctalia.service stops while it holds an active lock -- for *any*
+      # reason, not just a nixos-rebuild/home-manager switch restarting it,
+      # but also noctalia restarting itself after hot-reloading a changed
+      # plugin file on disk (observed live, 2026-09-11: a concurrent edit to
+      # an unrelated plugin's icon triggered exactly this) -- the compositor
+      # sees the lock client vanish mid-lock and refuses to auto-unlock (by
+      # design: a lock client dying is exactly how a malicious process would
+      # try to bypass a lock), falling back to its own placeholder ("Oopsie
+      # daisy, it looks like you locked your screen but the lockscreen app
+      # died") which takes no password and otherwise needs a manual
+      # `hyprctl --instance 0 eval 'hl.clear_crashed_lockscreen()'` to
+      # dismiss. ExecStopPost/ExecStartPost bracket noctalia.service's own
+      # stop/start lifecycle (unlike a home-manager activation hook, which
+      # only ever sees a switch-triggered restart) so this is caught
+      # whatever actually stopped and restarted the service: ExecStopPost
+      # drops a timestamped marker whenever a seat0 session is locked as the
+      # service goes down, and the next ExecStartPost -- as long as that
+      # marker isn't old enough to be a stale leftover from an unrelated
+      # login/reboot -- clears the crashed fallback and re-locks, so a
+      # restart never silently leaves the machine unlocked.
+      systemd.user.services.noctalia.Service = {
+        ExecStart =
+          let
+            noctaliaLauncher = pkgs.writeShellScript "noctalia-launcher" ''
+              if [ -z "''${XDG_SESSION_ID:-}" ]; then
+                XDG_SESSION_ID="$(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1; exit}')"
+                if [ -n "$XDG_SESSION_ID" ]; then
+                  export XDG_SESSION_ID
+                fi
+              fi
+              exec ${config.programs.noctalia.package}/bin/noctalia "$@"
+            '';
+          in
+          lib.mkForce "${noctaliaLauncher}";
+
+        ExecStopPost =
+          let
+            noctaliaCaptureLockState = pkgs.writeShellScript "noctalia-capture-lock-state" ''
+              marker="''${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/lock-recovery-pending"
+              mkdir -p "$(dirname "$marker")"
+              locked=0
               while IFS= read -r sid; do
                 [[ -z "$sid" ]] && continue
-                if [[ "$(loginctl show-session "$sid" -p LockedHint --value 2>/dev/null)" == "yes" ]]; then
-                  NOCTALIA_LOCK_RECOVERY_SESSIONS+="$sid "
+                if [[ "$(${pkgs.systemd}/bin/loginctl show-session "$sid" -p LockedHint --value 2>/dev/null)" == "yes" ]]; then
+                  locked=1
                 fi
-              done < <(loginctl list-sessions --no-legend 2>/dev/null | awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1}')
-            fi
-            NOCTALIA_PRE_RESTART_TIMESTAMP=""
-            if command -v systemctl >/dev/null 2>&1; then
-              NOCTALIA_PRE_RESTART_TIMESTAMP=$(env XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" systemctl --user show noctalia.service -p ActiveEnterTimestamp --value 2>/dev/null || true)
-            fi
-            export NOCTALIA_LOCK_RECOVERY_SESSIONS NOCTALIA_PRE_RESTART_TIMESTAMP
-          '';
-
-          noctaliaRecoverLockscreen = lib.hm.dag.entryAfter [ "reloadSystemd" ] ''
-            if [[ -n "''${NOCTALIA_LOCK_RECOVERY_SESSIONS:-}" ]] && command -v systemctl >/dev/null 2>&1 && command -v hyprctl >/dev/null 2>&1
-            then
-              newTimestamp=$(env XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" systemctl --user show noctalia.service -p ActiveEnterTimestamp --value 2>/dev/null || true)
-              if [[ -n "$newTimestamp" && "$newTimestamp" != "''${NOCTALIA_PRE_RESTART_TIMESTAMP:-}" ]]
-              then
-                warnEcho "Noctalia restarted while the session was locked -- clearing Hyprland's crashed-lockscreen fallback and re-locking"
-                env XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" hyprctl --instance 0 eval "hl.clear_crashed_lockscreen()" >/dev/null 2>&1 || true
-                for sid in ''${NOCTALIA_LOCK_RECOVERY_SESSIONS}
-                do
-                  env XDG_RUNTIME_DIR="''${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" loginctl lock-session "$sid" >/dev/null 2>&1 || true
-                done
+              done < <(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1}')
+              if [[ "$locked" == 1 ]]; then
+                ${pkgs.coreutils}/bin/date +%s > "$marker"
+              else
+                rm -f "$marker"
               fi
-            fi
-            unset NOCTALIA_LOCK_RECOVERY_SESSIONS NOCTALIA_PRE_RESTART_TIMESTAMP
-          '';
-        };
+            '';
+          in
+          "${noctaliaCaptureLockState}";
+
+        ExecStartPost =
+          let
+            noctaliaRecoverLockscreen = pkgs.writeShellScript "noctalia-recover-lockscreen" ''
+              marker="''${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/lock-recovery-pending"
+              [[ -f "$marker" ]] || exit 0
+              markerEpoch="$(cat "$marker" 2>/dev/null || echo 0)"
+              rm -f "$marker"
+              age=$(( $(${pkgs.coreutils}/bin/date +%s) - markerEpoch ))
+              # Stale beyond a normal restart window (noctalia's logind lock
+              # monitor is observed live to come back up within ~1s) -- most
+              # likely a leftover from an unrelated login or reboot, not a
+              # restart-while-locked, so don't act on it.
+              if (( age > 120 )); then
+                exit 0
+              fi
+              # Give noctalia a moment to reconnect its logind session-lock
+              # monitor before touching anything.
+              sleep 1
+              ${pkgs.hyprland}/bin/hyprctl --instance 0 eval "hl.clear_crashed_lockscreen()" >/dev/null 2>&1 || true
+              while IFS= read -r sid; do
+                [[ -z "$sid" ]] && continue
+                ${pkgs.systemd}/bin/loginctl lock-session "$sid" >/dev/null 2>&1 || true
+              done < <(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1}')
+            '';
+          in
+          "${noctaliaRecoverLockscreen}";
       };
-
-      systemd.user.services.noctalia.Service.ExecStart =
-        let
-          noctaliaLauncher = pkgs.writeShellScript "noctalia-launcher" ''
-            if [ -z "''${XDG_SESSION_ID:-}" ]; then
-              XDG_SESSION_ID="$(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1; exit}')"
-              if [ -n "$XDG_SESSION_ID" ]; then
-                export XDG_SESSION_ID
-              fi
-            fi
-            exec ${config.programs.noctalia.package}/bin/noctalia "$@"
-          '';
-        in
-        lib.mkForce "${noctaliaLauncher}";
     })
 
     (lib.mkIf (config.programs.noctalia.enable && cfg.resetStateOnActivation) {
