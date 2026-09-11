@@ -84,7 +84,13 @@ in
   services = {
     paperless = {
       enable = true;
-      # package = pkgs.master.paperless-ngx;
+      # Flaky test reads local time from a file's mtime; excluded upstream
+      # before nixpkgs commit d6524aa dropped that exclusion.
+      package = pkgs.paperless-ngx.overrideAttrs (old: {
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "testNormalOperation"
+        ];
+      });
 
       domain = primaryHost;
       address = "127.0.0.1";
