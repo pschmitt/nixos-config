@@ -26,7 +26,7 @@ in
   };
 
   systemd.user.services.streamcontroller = {
-    enable = true;
+    enable = false;
     description = "An elegant Linux app for the Elgato Stream Deck with support for plugins";
     documentation = [ "https://github.com/StreamController/StreamController" ];
     path = [
