@@ -31,6 +31,85 @@ let
 in
 {
   home-manager.users.${config.mainUser.username} = hmArgs: {
+    # Declarative Home Assistant layout base. The ha plugin writes panel
+    # changes to its separate state overlay, leaving this file immutable.
+    xdg.configFile."noctalia/ha.yaml".text = ''
+      entities:
+        - entity_id: sensor.schmutzi_current_status
+          state_template: "{{ states('sensor.schmutzi_time_remaining') }}"
+          conditions:
+            entity: sensor.schmutzi_current_status
+            state: [running, spinning, rinsing, reserved, rinse_hold, pause, drying, detecting, steam_softening, cool_down, refreshing]
+      sections:
+        - name: Balcony
+          collapsed: true
+          entities:
+            - light.ikea_balcony_wall_light_round
+            - light.balcony_wall_light_cube_light
+        - name: Living room
+          collapsed: true
+          entities:
+            - light.hue_living_room_light
+            - light.hue_couch_light
+            - light.ikea_living_room_table_light
+            - light.hue_marrakesh_light
+            - light.ikea_kitchen_ceiling_light
+            - light.cabinet_lights
+            - entity_id: media_player.living_room_tv
+              remote: remote.wolfgang_der_iii
+        - name: Office
+          entities:
+            - cover.office_roller_shutter_balcony_door_shutter
+            - cover.office_roller_shutter_window_shutter
+            - fan.xiaomi_smart_standing_air_circulation_fan
+            - light.elgato_key_light_mini
+            - light.hue_office_light
+      homeassistant:
+        customize:
+          light.hue_living_room_light:
+            friendly_name: Living room
+          light.hue_couch_light:
+            friendly_name: Couch
+          light.ikea_living_room_table_light:
+            friendly_name: Table
+          light.hue_marrakesh_light:
+            friendly_name: Marrakesh
+          light.ikea_kitchen_ceiling_light:
+            friendly_name: Kitchen
+          light.cabinet_lights:
+            friendly_name: Cabinets
+          media_player.living_room_tv:
+            friendly_name: TV
+          cover.office_roller_shutter_balcony_door_shutter:
+            friendly_name: Door
+          cover.office_roller_shutter_window_shutter:
+            friendly_name: Window
+          fan.xiaomi_smart_standing_air_circulation_fan:
+            friendly_name: Fan
+          light.elgato_key_light_mini:
+            friendly_name: Elgato
+          light.hue_office_light:
+            friendly_name: Hue
+          light.ikea_balcony_wall_light_round:
+            friendly_name: Round
+          light.balcony_wall_light_cube_light:
+            friendly_name: Cube
+          sensor.schmutzi_current_status:
+            friendly_name: Washer
+            icon: mdi:washing-machine
+    '';
+    xdg.configFile."noctalia/ha.yaml".force = true;
+
+    # The HA plugin's layout.yaml is an app-owned state overlay. Keep the
+    # declarative layout above authoritative on every activation, just like
+    # Noctalia's own settings.toml reset below does for its runtime overrides.
+    home.activation.noctaliaHaResetState = hmArgs.lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      state_file="${config.mainUser.homeDirectory}/.local/state/noctalia/plugins/data/pschmitt/ha/layout.yaml"
+      if [[ -f "$state_file" ]]; then
+        run rm -f "$state_file"
+      fi
+    '';
+
     # Noctalia's own agent takes over (shell.polkit_agent below); only one
     # PolicyKit agent can register per session, so hyprpolkitagent has to go.
     services.hyprpolkitagent.enable = false;
@@ -126,6 +205,7 @@ in
             "group:weather-date"
           ];
           end = [
+            "ha"
             "media"
             "group:sync-tray"
             "group:volume"
@@ -174,7 +254,6 @@ in
               members = [
                 "tray"
                 "syncthing"
-                "hassio"
               ];
               padding = 12;
             }
@@ -203,20 +282,13 @@ in
         };
         plugins = {
           enabled = [
+            # Home Assistant entity status/toggles with a declarative layout
+            # base and a writable runtime overlay (see ha.yaml).
+            "pschmitt/ha"
             # AI plan quotas, normalized and collected by Home Assistant. This
             # deliberately replaces codexbar-meter: the bar does not need to
             # duplicate provider authentication/polling that HA already owns.
             "pschmitt/ha-ai-usage"
-            # Status/toggle bar for a handful of chosen Home Assistant
-            # entities — see pschmitt/noctalia-plugins. Replaces the
-            # community pozzoo/hassio plugin, which never worked here: its
-            # entity browser asks HA to render (or, failing that, decode) the
-            # complete entity list in one shot, and this instance has 7000+
-            # entities -- HA itself rejects the render past its template
-            # output-length cap, and the /api/states fallback decode alone
-            # outruns Noctalia's per-callback CPU budget. pschmitt/hassio
-            # never requests more than a bounded, paginated slice.
-            "pschmitt/hassio"
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
             # rylos/syncthing (see pschmitt/noctalia-plugins) with a
             # tray-sized icon and the DMS syncshell widget's composited status
@@ -272,6 +344,12 @@ in
               enabled = true;
             }
             {
+              name = "pschmitt-ha";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-ha}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
               name = "pschmitt-timewarrior";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-timewarrior}/share/noctalia-plugins";
@@ -281,12 +359,6 @@ in
               name = "pschmitt-ha-ai-usage";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-hassio";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-hassio}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -696,8 +768,8 @@ in
           # read-only config.toml — so a live tweak silently wins over any
           # `settings` declared here until it is cleared.
           timewarrior.type = "pschmitt/timewarrior:bar";
+          ha.type = "pschmitt/ha:bar";
           ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
-          hassio.type = "pschmitt/hassio:bar";
           battery-icon.type = "pschmitt/battery-icon:bar";
           syncthing.type = "pschmitt/syncthing:bar";
           screencast.type = "pschmitt/screencast:bar";
@@ -749,16 +821,12 @@ in
             # without scrolling.
             panel_compact = true;
           };
-          "pschmitt/hassio" = {
-            # Same sops-nix runtime secret files as pschmitt/ha-ai-usage
-            # above -- one Home Assistant long-lived token for both plugins,
-            # not a second one to mint and rotate.
+          "pschmitt/ha" = {
+            bar_display_mode = "single";
             server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
-            # One fixed bar slot rather than one icon per configured entity,
-            # so the bar doesn't grow/shrink/recolor as entities are added or
-            # change state.
-            bar_display_mode = "single";
+            panel_dashboard_path = "/mi-casa";
+            panel_show_search = true;
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
