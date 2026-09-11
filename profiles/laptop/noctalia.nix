@@ -716,7 +716,7 @@ in
             # of what the bar picks either way.
             bar_metric_window = "both";
             # Comma-separated, case-insensitive fragments matched against the
-            # discovered card labels (e.g. "Pro, Gemini, Codex"). Empty shows
+            # discovered card labels (e.g. "Pro, Antigravity, Codex"). Empty shows
             # every account Home Assistant discovers, capped by
             # bar_metric_limit. The tooltip always lists every account
             # regardless of this.
@@ -729,7 +729,7 @@ in
             # in the tooltip and panel.
             bar_display_mode = "detailed";
             # Panel cards stick to each account's headline session/weekly
-            # windows, hiding Copilot's Chat/Completions rows and Gemini's 3P
+            # windows, hiding Copilot's Chat/Completions rows and Antigravity's 3P
             # model rows -- those never carry a fixed-length window of their
             # own and just added noise here.
             panel_all_metrics = false;
