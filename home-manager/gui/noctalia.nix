@@ -135,6 +135,15 @@ in
                 [[ -z "$sid" ]] && continue
                 ${pkgs.systemd}/bin/loginctl lock-session "$sid" >/dev/null 2>&1 || true
               done < <(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1}')
+              # hypridle's own ext-idle-notify-v1 subscription is observed
+              # live to wedge across this same crash/restart (confirmed
+              # 2026-09-11: no `Idled:` timeout fired for 45+ minutes
+              # afterwards despite zero HID activity on the USB
+              # keyboard/touchpad IRQ counters) -- hypridle itself never
+              # restarts on its own here, so its idle timer silently stops
+              # advancing and the screen never re-locks on inactivity.
+              # Restarting it re-establishes the subscription.
+              ${pkgs.systemd}/bin/systemctl --user restart hypridle.service >/dev/null 2>&1 || true
             '';
           in
           "${noctaliaRecoverLockscreen}";
