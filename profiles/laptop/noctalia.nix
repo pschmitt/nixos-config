@@ -233,6 +233,12 @@ in
             # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
             # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
             "pschmitt/osd"
+            # Lockscreen-only: "🍻 {N}s before Feierabend" while `zhj
+            # feierabend countdown-start`'s shutdown timer is armed. Ported
+            # from the old hyprlock label (home-manager/gui/hyprland/services/
+            # hyprlock.nix) after Noctalia replaced hyprlock as the session
+            # locker — see pschmitt/noctalia-plugins.
+            "pschmitt/feierabend"
             # AI plan quota (community plugin, felipeartur/ai-usagebar) —
             # tried and disabled again: didn't like the look, and Codex
             # support wasn't solid. pkgs/local/ai-usagebar is still built
@@ -289,6 +295,12 @@ in
               name = "pschmitt-osd";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-feierabend";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-feierabend}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -443,6 +455,22 @@ in
                     background_radius = 24.0;
                   };
                 };
+                # "🍻 {N}s before Feierabend" while `zhj feierabend
+                # countdown-start`'s shutdown timer is armed, nothing
+                # otherwise (the plugin's widget.luau renders an empty row
+                # when idle) — see pschmitt/noctalia-plugins' feierabend
+                # plugin. box_width/box_height = 0 auto-fits the box to that
+                # content, same as media-${name} below, so an idle countdown
+                # leaves no empty card behind. Placed just under the
+                # date/time widget, above the avatar.
+                "feierabend-${name}" = {
+                  type = "pschmitt/feierabend:lockscreen";
+                  output = name;
+                  cx = w * 0.5;
+                  cy = h * 0.11;
+                  box_width = 0.0;
+                  box_height = 0.0;
+                };
                 # No custom plugin needed for the avatar: Noctalia ships a
                 # built-in "sticker" desktop-widget type (image_path +
                 # opacity) that lockscreen_widgets can use too, same as any
@@ -469,23 +497,20 @@ in
                 };
                 # No box_width/box_height here: the plugin's "lockscreen"
                 # entry (noctalia-plugins battery-icon plugin.toml) reuses
-                # bar.luau but doesn't declare its own icon_width/icon_height
-                # settings (only the separate bar widget entry does, default
-                # 36x18) — reading them back undeclared and forcing a
-                # box-fit scale against that crashed Noctalia's Wayland
-                # client outright (division against an unresolved natural
-                # size -> an invalid buffer size sent to the compositor,
-                # display_error=22). Declaring them explicitly here and
-                # letting the widget auto-fit its own (now well-defined)
-                # natural size avoids that path entirely.
+                # bar.luau, which only declares icon_width/icon_height as
+                # settings under the separate "bar" widget entry, not this
+                # "lockscreen" desktop_widget one -- setting them here (as
+                # this block used to) logs "unknown setting" and is a no-op;
+                # bar.luau falls back to its own hardcoded 36x18 default
+                # either way, which is a well-defined non-zero size, so
+                # dropping them changes only the icon's pixel size, not
+                # correctness.
                 "battery-${name}" = {
                   type = "pschmitt/battery-icon:lockscreen";
                   output = name;
                   cx = w - (h * 0.04102);
                   cy = h * 0.97;
                   settings = {
-                    icon_width = 64;
-                    icon_height = 32;
                     background = false;
                   };
                 };
@@ -697,9 +722,12 @@ in
             # regardless of this.
             bar_card_filter = "Pro, Codex";
             bar_metric_limit = 3;
-            # Compact by default: glyph + progress bar, no text. Values, names
-            # and reset times stay in the tooltip and the panel.
-            bar_display_mode = "summary";
+            # "detailed" is the only non-icon mode (the plugin's old
+            # "summary" option was collapsed into it); bar_show_name/value/
+            # reset stay unset (default false) so the bar itself still shows
+            # only glyph + progress bar, with names/values/reset times kept
+            # in the tooltip and panel.
+            bar_display_mode = "detailed";
             # Panel cards stick to each account's headline session/weekly
             # windows, hiding Copilot's Chat/Completions rows and Gemini's 3P
             # model rows -- those never carry a fixed-length window of their
