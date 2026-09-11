@@ -121,6 +121,7 @@ in
             "workspaces"
             "taskbar"
             "group:ai-usage"
+            "group:hassio"
           ];
           center = [
             "group:weather-date"
@@ -146,6 +147,18 @@ in
               id = "ai-usage";
               members = [
                 "ha-ai-usage"
+              ];
+              padding = 12;
+            }
+            {
+              # Same single-member-just-for-the-capsule story as "ai-usage"
+              # above. Starts out empty (no entities configured yet) — the
+              # widget still renders its "smart-home" fallback glyph in that
+              # state rather than disappearing, so the capsule is always
+              # there to click open the panel and add some.
+              id = "hassio";
+              members = [
+                "hassio"
               ];
               padding = 12;
             }
@@ -206,6 +219,16 @@ in
             # deliberately replaces codexbar-meter: the bar does not need to
             # duplicate provider authentication/polling that HA already owns.
             "pschmitt/ha-ai-usage"
+            # Status/toggle bar for a handful of chosen Home Assistant
+            # entities — see pschmitt/noctalia-plugins. Replaces the
+            # community pozzoo/hassio plugin, which never worked here: its
+            # entity browser asks HA to render (or, failing that, decode) the
+            # complete entity list in one shot, and this instance has 7000+
+            # entities -- HA itself rejects the render past its template
+            # output-length cap, and the /api/states fallback decode alone
+            # outruns Noctalia's per-callback CPU budget. pschmitt/hassio
+            # never requests more than a bounded, paginated slice.
+            "pschmitt/hassio"
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
             # rylos/syncthing (see pschmitt/noctalia-plugins) with a
             # tray-sized icon and the DMS syncshell widget's composited status
@@ -270,6 +293,12 @@ in
               name = "pschmitt-ha-ai-usage";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-hassio";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-hassio}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -680,6 +709,7 @@ in
           # `settings` declared here until it is cleared.
           timewarrior.type = "pschmitt/timewarrior:bar";
           ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
+          hassio.type = "pschmitt/hassio:bar";
           battery-icon.type = "pschmitt/battery-icon:bar";
           syncthing.type = "pschmitt/syncthing:bar";
           screencast.type = "pschmitt/screencast:bar";
@@ -730,6 +760,13 @@ in
             # Smaller rings/padding/fonts so every card fits the panel height
             # without scrolling.
             panel_compact = true;
+          };
+          "pschmitt/hassio" = {
+            # Same sops-nix runtime secret files as pschmitt/ha-ai-usage
+            # above -- one Home Assistant long-lived token for both plugins,
+            # not a second one to mint and rotate.
+            server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
+            token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
