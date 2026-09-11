@@ -127,7 +127,6 @@ in
           ];
           end = [
             "media"
-            "media-gap"
             "group:sync-tray"
             "group:volume"
             "group:notif-battery"
@@ -637,7 +636,6 @@ in
           clock.format = "{:%H:%M:%S}";
           workspaces = {
             style = "minimal";
-            show_all_outputs = true;
             capsule = true;
           };
           # Shorter media pill: no artist line, truncate the title sooner,
@@ -662,10 +660,6 @@ in
           output-volume = {
             type = "volume";
             device = "output";
-          };
-          media-gap = {
-            type = "spacer";
-            length = 100;
           };
           # Plugin widgets get named instances here rather than being
           # referenced by their raw "author/plugin:entry" ids in the lanes and
