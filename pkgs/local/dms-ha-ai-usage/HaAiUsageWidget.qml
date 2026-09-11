@@ -41,7 +41,7 @@ PluginComponent {
         { domain: "hass_claude_usage", id: "claude", prefix: "sensor.claude_usage_" },
         { domain: "openai_usage_monitor", id: "codex", prefix: "sensor.codex_usage_" },
         { domain: "github_copilot_usage", id: "copilot", prefix: "sensor.github_copilot_" },
-        { domain: "gemini_usage", id: "gemini", prefix: "sensor.google_gemini_" }
+        { domain: "google_antigravity_usage", id: "antigravity", prefix: "sensor.google_antigravity_" }
     ]
 
     // image (bundled brand marks, same assets pschmitt/ha-ai-usage ships)
@@ -50,7 +50,7 @@ PluginComponent {
         claude: { label: "Claude", image: "assets/claude-code.svg", glyph: "smart_toy", order: 1 },
         codex: { label: "Codex", glyph: "terminal", order: 2 },
         copilot: { label: "GitHub Copilot", glyph: "code", order: 3 },
-        gemini: { label: "Gemini", image: "assets/google-antigravity.svg", glyph: "auto_awesome", order: 4 }
+        antigravity: { label: "Google Antigravity", image: "assets/antigravity.svg", glyph: "auto_awesome", order: 4 }
     })
 
     function expandPath(p) {
@@ -133,8 +133,8 @@ PluginComponent {
             "    {%- set claude = monitor.id == 'claude' and (id.endswith('_session_usage') or id.endswith('_week_usage')) -%}\n" +
             "    {%- set codex = monitor.id == 'codex' and (id.endswith('_5h_used') or id.endswith('_weekly_used')) -%}\n" +
             "    {%- set copilot = monitor.id == 'copilot' and id.endswith('_used') -%}\n" +
-            "    {%- set gemini = monitor.id == 'gemini' and id.endswith('_usage') and not id.endswith('_usage_pace') -%}\n" +
-            "    {%- if id.startswith(monitor.prefix) and (claude or codex or copilot or gemini) and item.state | float(-1) >= 0 -%}\n" +
+            "    {%- set antigravity = monitor.id == 'antigravity' and id.endswith('_usage') and not id.endswith('_usage_pace') -%}\n" +
+            "    {%- if id.startswith(monitor.prefix) and (claude or codex or copilot or antigravity) and item.state | float(-1) >= 0 -%}\n" +
             "      {%- set attrs = item.attributes -%}\n" +
             "      {%- set reset_id = id | replace('_session_usage', '_session_reset_time') | replace('_week_usage', '_weekly_reset_time') -%}\n" +
             "      {%- set reset = states[reset_id] -%}\n" +
@@ -275,7 +275,7 @@ PluginComponent {
         } else if (source.includes("premium")) { label = "Premium"; }
         else if (source.includes("completion")) { label = "Completions"; }
         else if (source.includes("chat")) { label = "Chat"; }
-        const secondary = String(item.integration || "") === "gemini" && source.includes("3p models");
+        const secondary = String(item.integration || "") === "antigravity" && source.includes("3p models");
         if (secondary) label = "3P " + label;
         return { window, label, secondary };
     }
