@@ -19,6 +19,7 @@
     ./noctalia.nix
     ./initrd-network.nix
     ./initrd-wifi.nix
+    ./managarr.nix
     ./noisetorch.nix
     ./network.nix
     ./power-profiles-daemon.nix
