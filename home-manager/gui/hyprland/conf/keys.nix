@@ -149,6 +149,7 @@ in
       (execBind "SUPER + ALT + j" "walker-menu meetings")
       (execBind "SUPER + ALT + s" "walker -m menus:soundboard -p '🎹 Soundboard'")
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
+      (execBind "SUPER + CONTROL + H" "walker -m menus:home-assistant -p '🏠 Home Assistant'")
 
       # ── Mouse / submap entry ─────────────────────────────────────────
       (bind "SUPER + SHIFT + M" ''hl.dsp.submap("${mouseSubmap}")'')

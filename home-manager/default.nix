@@ -19,6 +19,7 @@
       bluetoothEnable = config.hardware.bluetooth.enable;
     };
 
+    backupFileExtension = "hm-backup";
     useGlobalPkgs = true;
     useUserPackages = true;
 

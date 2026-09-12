@@ -212,6 +212,7 @@ in
           trustedWorkspaces = [
             "/etc/nixos"
             "/mnt/ha"
+            "/home/pschmitt/devel/private/pschmitt/nixos-config.git"
           ];
 
           general = {
@@ -308,6 +309,7 @@ in
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
       file.".claude/keybindings.json".source = ./claude-keybindings.json;
+      file.".gemini/antigravity-cli/settings.json".force = true;
 
       packages = with pkgs.llm-agents; [
         # vscode forks
