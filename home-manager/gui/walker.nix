@@ -35,34 +35,73 @@ let
   };
 in
 {
+  home.packages = [ pkgs.ha-walker ];
+
   services.elephant.enable = true;
 
   xdg.configFile = {
     "elephant/menus/emoji.lua".source = ./walker/emoji.lua;
+    "elephant/menus/home-assistant.lua".source = ./walker/home-assistant.lua;
     "elephant/menus/obs-reaction.lua".source = ./walker/obs-reaction.lua;
     "elephant/menus/soundboard.lua".source = ./walker/soundboard.lua;
     "elephant/menus/soundboard-tts.lua".source = ./walker/soundboard-tts.lua;
     "elephant/emoji-list.txt".source = emojiList;
   };
 
-  systemd.user.services = {
-    walker.Unit = {
-      After = [ "wayland-wm-app-daemon.service" ];
-      Wants = [ "wayland-wm-app-daemon.service" ];
-    };
-    elephant = {
-      Unit.X-Restart-Triggers = [
-        "${./walker/emoji.lua}"
-        "${./walker/obs-reaction.lua}"
-        "${./walker/soundboard.lua}"
-        "${./walker/soundboard-tts.lua}"
-        "${emojiList}"
-      ];
-      Service = {
-        ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
-        Restart = "on-failure";
-        RestartSec = 5;
+  systemd.user = {
+    services = {
+      walker.Unit = {
+        After = [ "wayland-wm-app-daemon.service" ];
+        Wants = [ "wayland-wm-app-daemon.service" ];
       };
+      elephant = {
+        Unit.X-Restart-Triggers = [
+          "${./walker/emoji.lua}"
+          "${./walker/home-assistant.lua}"
+          "${./walker/obs-reaction.lua}"
+          "${./walker/soundboard.lua}"
+          "${./walker/soundboard-tts.lua}"
+          "${emojiList}"
+        ];
+        Service = {
+          ExecStartPre = "${elephantRbwUnlock}/bin/elephant-rbw-unlock";
+          Restart = "on-failure";
+          RestartSec = 5;
+        };
+      };
+      elephant-ha-stream = {
+        Unit = {
+          Description = "Real-time Home Assistant state stream for Walker";
+          After = [ "network-online.target" ];
+          Wants = [ "network-online.target" ];
+        };
+        Service = {
+          Type = "simple";
+          ExecStart = "${pkgs.ha-walker}/bin/ha-walker stream";
+          Restart = "always";
+          RestartSec = 3;
+        };
+        Install.WantedBy = [ "default.target" ];
+      };
+      elephant-ha-sync = {
+        Unit = {
+          Description = "Sync Home Assistant states for Walker";
+          After = [ "network-online.target" ];
+        };
+        Service = {
+          Type = "oneshot";
+          ExecStart = "${pkgs.ha-walker}/bin/ha-walker sync";
+        };
+      };
+    };
+
+    timers.elephant-ha-sync = {
+      Unit.Description = "Periodically sync Home Assistant states for Walker (fallback)";
+      Timer = {
+        OnBootSec = "1m";
+        OnUnitActiveSec = "5m";
+      };
+      Install.WantedBy = [ "timers.target" ];
     };
   };
 
@@ -81,115 +120,185 @@ in
 
       theme = "justgray";
       modules = [ { name = "menus"; } ];
-      providers.prefixes = [
-        {
-          prefix = ";";
-          provider = "providerlist";
-        }
-        {
-          prefix = ">";
-          provider = "runner";
-        }
-        {
-          prefix = "/";
-          provider = "files";
-        }
-        {
-          prefix = ".";
-          provider = "menus:emoji";
-        }
-        {
-          prefix = "~";
-          provider = "symbols";
-        }
-        {
-          prefix = "!";
-          provider = "todo";
-        }
-        {
-          prefix = "$";
-          provider = "windows";
-        }
-        {
-          prefix = ",";
-          provider = "menus:soundboard-tts";
-        }
-      ];
-      providers.actions = {
-        "menus:emoji" = [
+      providers = {
+        default = [
+          "desktopapplications"
+          "calc"
+          "websearch"
+          "menus:home-assistant"
+        ];
+        prefixes = [
           {
-            action = "default";
-            bind = "Return";
-            default = true;
-            after = "Close";
+            prefix = ";";
+            provider = "providerlist";
           }
           {
-            action = "toggle-pin";
-            bind = "ctrl p";
-            label = "📌 Pin / Unpin";
-            after = "AsyncReload";
+            prefix = ">";
+            provider = "runner";
+          }
+          {
+            prefix = "/";
+            provider = "files";
+          }
+          {
+            prefix = ".";
+            provider = "menus:emoji";
+          }
+          {
+            prefix = "~";
+            provider = "symbols";
+          }
+          {
+            prefix = "!";
+            provider = "todo";
+          }
+          {
+            prefix = "$";
+            provider = "windows";
+          }
+          {
+            prefix = ",";
+            provider = "menus:soundboard-tts";
+          }
+          {
+            prefix = "@";
+            provider = "menus:home-assistant";
+          }
+          {
+            prefix = ":ha";
+            provider = "menus:home-assistant";
+          }
+          {
+            prefix = ":h";
+            provider = "menus:home-assistant";
           }
         ];
-        "menus:obs-reaction" = [
-          {
-            action = "default";
-            bind = "Return";
-            default = true;
-            after = "Close";
-          }
-        ];
-        "menus:soundboard" = [
-          {
-            action = "default";
-            bind = "Return";
-            default = true;
-            after = "Close";
-          }
-          {
-            action = "tts-en";
-            bind = "ctrl e";
-            label = "🗣️ English";
-            after = "Close";
-          }
-          {
-            action = "tts-de";
-            bind = "ctrl d";
-            label = "🗣️ Deutsch";
-            after = "Close";
-          }
-          {
-            action = "tts-ha";
-            bind = "ctrl h";
-            label = "☁️ HA Cloud";
-            after = "Close";
-          }
-        ];
-        "menus:soundboard-tts" = [
-          {
-            action = "default";
-            bind = "Return";
-            default = true;
-            after = "Close";
-          }
-          {
-            action = "tts-en";
-            bind = "ctrl e";
-            label = "🗣️ English";
-            after = "Close";
-          }
-          {
-            action = "tts-de";
-            bind = "ctrl d";
-            label = "🗣️ Deutsch";
-            after = "Close";
-          }
-          {
-            action = "tts-ha";
-            bind = "ctrl h";
-            label = "☁️ HA Cloud";
-            after = "Close";
-          }
-        ];
+        actions = {
+          "menus:emoji" = [
+            {
+              action = "default";
+              bind = "Return";
+              default = true;
+              after = "Close";
+            }
+            {
+              action = "toggle-pin";
+              bind = "ctrl p";
+              label = "📌 Pin / Unpin";
+              after = "AsyncReload";
+            }
+          ];
+          "menus:obs-reaction" = [
+            {
+              action = "default";
+              bind = "Return";
+              default = true;
+              after = "Close";
+            }
+          ];
+          "menus:soundboard" = [
+            {
+              action = "default";
+              bind = "Return";
+              default = true;
+              after = "Close";
+            }
+            {
+              action = "tts-en";
+              bind = "ctrl e";
+              label = "🗣️ English";
+              after = "Close";
+            }
+            {
+              action = "tts-de";
+              bind = "ctrl d";
+              label = "🗣️ Deutsch";
+              after = "Close";
+            }
+            {
+              action = "tts-ha";
+              bind = "ctrl h";
+              label = "☁️ HA Cloud";
+              after = "Close";
+            }
+          ];
+          "menus:soundboard-tts" = [
+            {
+              action = "default";
+              bind = "Return";
+              default = true;
+              after = "Close";
+            }
+            {
+              action = "tts-en";
+              bind = "ctrl e";
+              label = "🗣️ English";
+              after = "Close";
+            }
+            {
+              action = "tts-de";
+              bind = "ctrl d";
+              label = "🗣️ Deutsch";
+              after = "Close";
+            }
+            {
+              action = "tts-ha";
+              bind = "ctrl h";
+              label = "☁️ HA Cloud";
+              after = "Close";
+            }
+          ];
+          "menus:home-assistant" = [
+            {
+              action = "default";
+              bind = "Return";
+              default = true;
+              after = "Close";
+            }
+            {
+              action = "toggle";
+              bind = "ctrl t";
+              label = "⚡ Toggle (keep open)";
+              after = "AsyncReload";
+            }
+            {
+              action = "up";
+              bind = "ctrl u";
+              label = "🔼 Up / +";
+              after = "AsyncReload";
+            }
+            {
+              action = "down";
+              bind = "ctrl d";
+              label = "🔽 Down / -";
+              after = "AsyncReload";
+            }
+            {
+              action = "pin";
+              bind = "ctrl p";
+              label = "📌 Pin / Unpin";
+              after = "AsyncReload";
+            }
+            {
+              action = "open";
+              bind = "ctrl o";
+              label = "🌐 Open Web";
+              after = "Close";
+            }
+            {
+              action = "copy";
+              bind = "ctrl c";
+              label = "📋 Copy ID";
+              after = "Close";
+            }
+            {
+              action = "refresh";
+              bind = "ctrl r";
+              label = "🔄 Refresh";
+              after = "AsyncReload";
+            }
+          ];
+        };
       };
     };
     theme = {

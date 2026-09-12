@@ -55,6 +55,7 @@ in
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;
   };
+  ha-walker = pkgs.callPackage ./local/ha-walker { };
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
