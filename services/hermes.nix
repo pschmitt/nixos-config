@@ -688,8 +688,22 @@ in
 
     tmpfiles.rules = [
       "d ${hermesOpsDir} 0700 ${config.services.hermes-agent.user} ${config.services.hermes-agent.group} - -"
+      # Applies the linger setting below immediately on activation, instead of
+      # waiting for the linger-users.service (wantedBy multi-user.target) to
+      # run on next boot.
+      "f /var/lib/systemd/linger/${config.services.hermes-agent.user}"
     ];
   };
+
+  # Hermes' cron/Kanban workers are restart-safe by crossing `systemd-run
+  # --user --scope`, which requires this account's user systemd manager (and
+  # its D-Bus session) to be running. Without linger, that manager never
+  # starts for a service account that never logs in, so /run/user/<uid> is
+  # missing and every scheduled job fails before it is even invoked. Home
+  # Manager cannot set this (it's an account property), so it must be
+  # declared here. See NousResearch/hermes-agent's nix-setup docs and
+  # hermes_cli/gateway.py.
+  users.users.${config.services.hermes-agent.user}.linger = true;
 
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.
