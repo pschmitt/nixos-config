@@ -11,7 +11,7 @@
 
   services.nfsMounts = {
     enable = true;
-    server = "rofl-11.${config.domains.roflnet}";
+    server = "rofl-11.${config.domains.vpn}";
     exports = [
       "audiobooks"
       "books"

@@ -22,7 +22,7 @@
 
   services.nfsMounts = {
     enable = true;
-    server = "rofl-10.${config.domains.roflnet}";
+    server = "rofl-10.${config.domains.vpn}";
   };
 
   # Enable networking
