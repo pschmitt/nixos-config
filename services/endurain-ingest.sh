@@ -16,35 +16,83 @@
 # Transient failures (auth/rate-limit/server/network) are left unmarked and
 # retried on the next trigger.
 
-host="${ENDURAIN_HOST:?}"
-watch_dir="${ENDURAIN_WATCH_DIR:?}"
-state_dir="${ENDURAIN_STATE_DIR:?}"
-: "${ENDURAIN_USERNAME:?}"
-: "${ENDURAIN_PASSWORD:?}"
+# Gadgetbridge/OpenTracks GPX <type> values (lower-cased ActivityKind names)
+# that Endurain does not recognise, mapped onto strings it does. Endurain
+# falls back to its generic "Workout" type for anything unknown, and such
+# activities never get default gear assigned. Values it already understands
+# verbatim - walking, hiking, cycling, treadmill, indoor_cycling, rowing,
+# yoga, strength_training - are deliberately absent and pass through.
+declare -A GPX_TYPE_MAP=(
+  [outdoor_running]='running'
+  [street_running]='running'
+  [indoor_running]='treadmill'
+  [cross_country_running]='running'
+  [ultra_run]='running'
+  [trail_run]='trail running'
+  [track_run]='track running'
+  [virtual_run]='virtualrun'
+  [outdoor_walking]='walking'
+  [race_walking]='walking'
+  [outdoor_cycling]='cycling'
+  [trail_hike]='hiking'
+  [mountain_hike]='hiking'
+  [pool_swim]='lap_swimming'
+  [swimming_openwater]='open_water_swimming'
+  [rowing_machine]='indoor_rowing'
+  [table_tennis]='tabletennis'
+)
 
-mkdir -p "$state_dir"
+# Filled by collect_todo, consumed by main.
+todo=()
+declare -A todo_hash
+
+# Set by rewrite_gpx_type: a scratch copy to upload instead of the original,
+# or empty when the file needs no rewrite. Set by upload_file: uploaded,
+# rejected or transient. Globals rather than stdout, so both functions stay
+# free to log to the journal.
+rewritten_path=""
+upload_outcome=""
+
+log() {
+  printf '%s\n' "$*"
+}
+
+err() {
+  printf '%s\n' "$*" >&2
+}
 
 # Collect only files we have not handled yet, keyed by content hash. We do this
 # before logging in so that triggers with nothing new to do never touch the
 # rate-limited login endpoint.
-shopt -s nullglob nocaseglob
-todo=()
-declare -A todo_hash
-for f in "$watch_dir"/*.fit "$watch_dir"/*.gpx "$watch_dir"/*.tcx; do
-  [ -f "$f" ] || continue
-  hash="$(sha256sum "$f" | cut -d' ' -f1)"
-  [ -e "$state_dir/$hash" ] && continue
-  todo+=("$f")
-  todo_hash["$f"]="$hash"
-done
+collect_todo() {
+  local watch_dir="$1"
+  local state_dir="$2"
+  local f
+  local hash
 
-if [ "${#todo[@]}" -eq 0 ]; then
-  echo 'endurain-ingest: nothing new'
-  exit 0
-fi
+  shopt -s nullglob nocaseglob
+  for f in "$watch_dir"/*.fit "$watch_dir"/*.gpx "$watch_dir"/*.tcx
+  do
+    if [[ ! -f "$f" ]]
+    then
+      continue
+    fi
+    hash="$(sha256sum "$f" | cut -d' ' -f1)"
+    if [[ -e "$state_dir/$hash" ]]
+    then
+      continue
+    fi
+    todo+=("$f")
+    todo_hash["$f"]="$hash"
+  done
+}
 
 login() {
-  local resp code token
+  local host="$1"
+  local resp
+  local code
+  local token
+
   resp="$(mktemp)"
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
@@ -54,48 +102,75 @@ login() {
       --data-urlencode "password=$ENDURAIN_PASSWORD" \
       "https://$host/api/v1/auth/login"
   )" || code='000'
-  if [ "$code" != '200' ]; then
-    echo "login failed (HTTP $code)" >&2
+
+  if [[ "$code" != '200' ]]
+  then
+    err "login failed (HTTP $code)"
     rm -f "$resp"
     return 1
   fi
-  if [ "$(jq -r '.mfa_required // false' <"$resp")" = 'true' ]; then
-    echo 'login requires MFA; unattended ingest cannot proceed' >&2
+
+  if [[ "$(jq -r '.mfa_required // false' <"$resp")" == 'true' ]]
+  then
+    err 'login requires MFA; unattended ingest cannot proceed'
     rm -f "$resp"
     return 1
   fi
-  token="$(jq -er '.access_token' <"$resp")" || {
+
+  if ! token="$(jq -er '.access_token' <"$resp")"
+  then
     rm -f "$resp"
     return 1
-  }
+  fi
+
   rm -f "$resp"
   printf '%s\n' "$token"
 }
 
-token="$(login)"
+# Rewrite an unrecognised GPX <type> onto Endurain's vocabulary, on a scratch
+# copy - the synced original is never touched. Gadgetbridge writes the raw
+# ActivityKind enum name and lower-cased it in 2026-08 (upstream 9d872b136),
+# so the lookup is case-insensitive: an exact match on the old upper-case
+# spelling silently stopped firing when that landed.
+rewrite_gpx_type() {
+  local f="$1"
+  local gpx_type
+  local mapped
 
-uploaded=0
-rejected=0
-transient=0
+  rewritten_path=""
 
-for f in "${todo[@]}"; do
-  hash="${todo_hash[$f]}"
-  marker="$state_dir/$hash"
-  base="$(basename "$f")"
-
-  # Endurain's activity-type detection only matches an exact set of known
-  # strings (e.g. "running"); it has no entry for Gadgetbridge/OpenTracks'
-  # own vocabulary (e.g. "OUTDOOR_RUNNING"), so unrecognized GPX <type>
-  # values silently fall back to its generic "Workout" type, which never
-  # gets a default gear assigned. Rewrite known mismatches on a scratch
-  # copy before upload; the synced original is never touched.
-  upload_path="$f"
-  tmp_upload=""
-  if [[ "$f" == *.gpx ]] && grep -q '<type>OUTDOOR_RUNNING</type>' "$f"; then
-    tmp_upload="$(mktemp --suffix=.gpx)"
-    sed 's#<type>OUTDOOR_RUNNING</type>#<type>running</type>#' "$f" >"$tmp_upload"
-    upload_path="$tmp_upload"
+  if [[ "$f" != *.gpx ]]
+  then
+    return 0
   fi
+
+  gpx_type="$(sed -n 's#.*<type>\([^<]*\)</type>.*#\1#p' "$f" | head -1)"
+  if [[ -z "$gpx_type" ]]
+  then
+    return 0
+  fi
+
+  mapped="${GPX_TYPE_MAP[${gpx_type,,}]:-}"
+  if [[ -z "$mapped" ]] || [[ "$mapped" == "$gpx_type" ]]
+  then
+    return 0
+  fi
+
+  rewritten_path="$(mktemp --suffix=.gpx)"
+  sed "s#<type>[^<]*</type>#<type>$mapped</type>#g" "$f" >"$rewritten_path"
+  log "type rewrite: $(basename "$f"): $gpx_type -> $mapped"
+}
+
+# Upload one file, setting upload_outcome to uploaded, rejected or transient.
+upload_file() {
+  local host="$1"
+  local token="$2"
+  local upload_path="$3"
+  local base="$4"
+  local marker="$5"
+  local resp
+  local code
+  local body
 
   resp="$(mktemp)"
   code="$(
@@ -107,31 +182,98 @@ for f in "${todo[@]}"; do
   )" || code='000'
   body="$(head -c 300 "$resp")"
   rm -f "$resp"
-  [ -n "$tmp_upload" ] && rm -f "$tmp_upload"
+
+  upload_outcome='transient'
 
   case "$code" in
     201)
       : >"$marker"
-      uploaded=$((uploaded + 1))
-      echo "uploaded: $base"
+      log "uploaded: $base"
+      upload_outcome='uploaded'
       ;;
     400 | 413 | 415 | 422)
       # The file itself is unacceptable (e.g. a GPX with no track segments).
       # Record it as handled so we do not retry it forever.
       printf 'rejected HTTP %s: %s\n' "$code" "$base" >"$marker"
-      rejected=$((rejected + 1))
-      echo "REJECTED (HTTP $code): $base: $body" >&2
+      err "REJECTED (HTTP $code): $base: $body"
+      upload_outcome='rejected'
       ;;
     *)
       # Auth/rate-limit/server/network error: leave unmarked to retry later.
-      transient=$((transient + 1))
-      echo "TRANSIENT (HTTP $code), will retry: $base: $body" >&2
+      err "TRANSIENT (HTTP $code), will retry: $base: $body"
       ;;
   esac
-done
+}
 
-echo "endurain-ingest: uploaded=$uploaded rejected=$rejected transient=$transient"
+main() {
+  local host="${ENDURAIN_HOST:?}"
+  local watch_dir="${ENDURAIN_WATCH_DIR:?}"
+  local state_dir="${ENDURAIN_STATE_DIR:?}"
+  local token
+  local f
+  local base
+  local marker
+  local upload_path
+  local uploaded=0
+  local rejected=0
+  local transient=0
 
-# Only signal failure for transient problems; permanently rejected files are
-# recorded and must not keep the unit flapping.
-[ "$transient" -eq 0 ]
+  : "${ENDURAIN_USERNAME:?}"
+  : "${ENDURAIN_PASSWORD:?}"
+
+  mkdir -p "$state_dir"
+
+  collect_todo "$watch_dir" "$state_dir"
+  if [[ "${#todo[@]}" -eq 0 ]]
+  then
+    log 'endurain-ingest: nothing new'
+    return 0
+  fi
+
+  token="$(login "$host")"
+
+  for f in "${todo[@]}"
+  do
+    base="$(basename "$f")"
+    marker="$state_dir/${todo_hash[$f]}"
+
+    rewrite_gpx_type "$f"
+    upload_path="$f"
+    if [[ -n "$rewritten_path" ]]
+    then
+      upload_path="$rewritten_path"
+    fi
+
+    upload_file "$host" "$token" "$upload_path" "$base" "$marker"
+
+    if [[ -n "$rewritten_path" ]]
+    then
+      rm -f "$rewritten_path"
+    fi
+
+    case "$upload_outcome" in
+      uploaded)
+        uploaded=$((uploaded + 1))
+        ;;
+      rejected)
+        rejected=$((rejected + 1))
+        ;;
+      *)
+        transient=$((transient + 1))
+        ;;
+    esac
+  done
+
+  log "endurain-ingest: uploaded=$uploaded rejected=$rejected transient=$transient"
+
+  # Only signal failure for transient problems; permanently rejected files are
+  # recorded and must not keep the unit flapping.
+  [[ "$transient" -eq 0 ]]
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+  main "$@"
+fi
+
+# vim: set ft=sh et ts=2 sw=2 :
