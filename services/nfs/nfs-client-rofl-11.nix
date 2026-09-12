@@ -12,7 +12,7 @@ in
     map (dir: {
       name = "/mnt/data/${dir}";
       value = {
-        device = "rofl-11.${config.domains.netbird}:/${dir}";
+        device = "rofl-11.${config.domains.vpn}:/${dir}";
         fsType = "nfs";
         options = [
           "noauto"

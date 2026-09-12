@@ -8,7 +8,7 @@ in
 
     server = lib.mkOption {
       type = lib.types.str;
-      default = "rofl-10.${config.domains.netbird}";
+      default = "rofl-10.${config.domains.vpn}";
       description = "Hostname of the NFS export server";
     };
 

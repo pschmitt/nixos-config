@@ -99,7 +99,7 @@
     nfsExports.enable = true;
     nfsMounts = {
       enable = true;
-      server = "rofl-11.${config.domains.roflnet}";
+      server = "rofl-11.${config.domains.vpn}";
       exports = [
         "audiobooks"
         "books"
@@ -107,8 +107,9 @@
       ];
     };
     nfsExports.allowedIps = [
+      # NFS is intentionally restricted to the authenticated VPN overlay;
+      # the provider-controlled roflnet must not grant access to private data.
       "100.64.0.0/10"
-      "10.69.46.0/24"
     ];
 
     harmonia.extraVirtualHosts = [
