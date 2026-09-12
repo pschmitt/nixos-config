@@ -39,6 +39,19 @@ INTERACTIVE_DOMAINS = {
     "input_select",
 }
 
+SENSOR_DEVICE_CLASSES = {
+    "temperature",
+    "humidity",
+    "battery",
+    "power",
+    "door",
+    "window",
+    "motion",
+    "presence",
+    "occupancy",
+    "opening",
+}
+
 DEFAULT_PINS = [
     "script.all_off",
     "script.feierabend",
@@ -481,18 +494,7 @@ def sync_states():
         elif domain in ("sensor", "binary_sensor"):
             attrs = s.get("attributes", {})
             dc = attrs.get("device_class", "")
-            if dc in (
-                "temperature",
-                "humidity",
-                "battery",
-                "power",
-                "door",
-                "window",
-                "motion",
-                "presence",
-                "occupancy",
-                "opening",
-            ):
+            if dc in SENSOR_DEVICE_CLASSES:
                 filtered.append(format_entity(s, pins))
 
     save_cache(filtered)
@@ -1059,29 +1061,26 @@ def stream_events():
     pins = load_pins()
 
     last_flush = time.time()
+    last_disk_mtime = (
+        os.path.getmtime(CACHE_FILE) if os.path.isfile(CACHE_FILE) else 0
+    )
+    last_pins_mtime = (
+        os.path.getmtime(PINS_FILE) if os.path.isfile(PINS_FILE) else 0
+    )
     dirty = False
 
     def flush_cache(force=False):
-        nonlocal dirty, last_flush
+        nonlocal dirty, last_flush, last_disk_mtime
         now = time.time()
         if dirty and (force or (now - last_flush) >= 0.25):
             items_list = list(cache_map.values())
             save_cache(items_list)
+            try:
+                last_disk_mtime = os.path.getmtime(CACHE_FILE)
+            except OSError:
+                last_disk_mtime = now
             last_flush = now
             dirty = False
-
-    interactive_set = {
-        "light",
-        "switch",
-        "fan",
-        "climate",
-        "cover",
-        "lock",
-        "vacuum",
-        "media_player",
-        "button",
-        "input_boolean",
-    }
 
     while True:
         try:
@@ -1093,9 +1092,12 @@ def stream_events():
                     line_str = line.decode("utf-8", errors="replace").strip()
                     if not line_str or line_str == "data: ping":
                         continue
-                    if line_str.startswith("data: {"):
+                    if line_str.startswith("data:"):
+                        json_str = line_str[5:].strip()
+                        if not json_str.startswith("{"):
+                            continue
                         try:
-                            payload = json.loads(line_str[6:])
+                            payload = json.loads(json_str)
                         except Exception:
                             continue
                         if payload.get("event_type") == "state_changed":
@@ -1104,6 +1106,40 @@ def stream_events():
                             new_state = event_data.get("new_state")
                             if not eid:
                                 continue
+
+                            domain = eid.split(".", 1)[0]
+                            if domain not in INTERACTIVE_DOMAINS:
+                                if domain in ("sensor", "binary_sensor"):
+                                    attrs = (new_state or {}).get(
+                                        "attributes", {}
+                                    )
+                                    dc = attrs.get("device_class", "")
+                                    if dc not in SENSOR_DEVICE_CLASSES:
+                                        continue
+                                else:
+                                    continue
+
+                            # Sync pins if changed on disk
+                            try:
+                                pins_mt = os.path.getmtime(PINS_FILE)
+                            except OSError:
+                                pins_mt = 0
+                            if pins_mt > last_pins_mtime:
+                                pins = load_pins()
+                                last_pins_mtime = pins_mt
+
+                            # Sync external disk cache updates
+                            # (e.g. from action_toggle)
+                            try:
+                                disk_mt = os.path.getmtime(CACHE_FILE)
+                            except OSError:
+                                disk_mt = 0
+                            if disk_mt > last_disk_mtime:
+                                disk_items = load_cache() or []
+                                for itm in disk_items:
+                                    cache_map[itm["id"]] = itm
+                                last_disk_mtime = disk_mt
+
                             if new_state is None:
                                 if eid in cache_map:
                                     del cache_map[eid]
@@ -1113,8 +1149,7 @@ def stream_events():
                                 cache_map[eid] = updated
                                 dirty = True
 
-                            domain = eid.split(".", 1)[0]
-                            flush_cache(force=(domain in interactive_set))
+                            flush_cache(force=(domain in INTERACTIVE_DOMAINS))
                     if dirty and (time.time() - last_flush) >= 0.5:
                         flush_cache(force=True)
         except Exception as e:

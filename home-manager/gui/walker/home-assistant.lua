@@ -11,65 +11,51 @@ local RUNTIME_DIR = os.getenv("XDG_RUNTIME_DIR") or ("/run/user/" .. (os.getenv(
 local CACHE_FILE = RUNTIME_DIR .. "/elephant-ha/states.json"
 local HELPER = "ha-walker"
 
-local CACHED_DATA = nil
-local LAST_CHECK = 0
-
 local function shell_quote(v)
   return string.format("%q", v or "")
 end
 
 local function load_states()
-  local now = os.time()
-  if CACHED_DATA and (now - LAST_CHECK) < 1 then
-    return CACHED_DATA
-  end
-
   local f = io.open(CACHE_FILE, "r")
   if not f then
-    os.execute("(" .. HELPER .. " sync >/dev/null 2>&1) &")
-    return CACHED_DATA or {}
+    os.execute(HELPER .. " sync >/dev/null 2>&1")
+    f = io.open(CACHE_FILE, "r")
+    if not f then return {} end
   end
 
   local content = f:read("*a")
   f:close()
 
   if not content or content == "" then
-    return CACHED_DATA or {}
+    return {}
   end
 
   local ok, data = pcall(jsonDecode, content)
   if ok and type(data) == "table" then
-    CACHED_DATA = data
-    LAST_CHECK = now
     return data
   end
 
-  return CACHED_DATA or {}
+  return {}
 end
 
 function ActionDefault(val)
-  CACHED_DATA = nil
-  os.execute("(" .. HELPER .. " toggle " .. shell_quote(val) .. " >/dev/null 2>&1) &")
+  os.execute(HELPER .. " toggle " .. shell_quote(val) .. " >/dev/null 2>&1")
 end
 
 function ActionToggle(val)
-  CACHED_DATA = nil
-  os.execute("(" .. HELPER .. " toggle " .. shell_quote(val) .. " >/dev/null 2>&1) &")
+  os.execute(HELPER .. " toggle " .. shell_quote(val) .. " >/dev/null 2>&1")
 end
 
 function ActionUp(val)
-  CACHED_DATA = nil
-  os.execute("(" .. HELPER .. " up " .. shell_quote(val) .. " >/dev/null 2>&1) &")
+  os.execute(HELPER .. " up " .. shell_quote(val) .. " >/dev/null 2>&1")
 end
 
 function ActionDown(val)
-  CACHED_DATA = nil
-  os.execute("(" .. HELPER .. " down " .. shell_quote(val) .. " >/dev/null 2>&1) &")
+  os.execute(HELPER .. " down " .. shell_quote(val) .. " >/dev/null 2>&1")
 end
 
 function ActionPin(val)
-  os.execute(HELPER .. " toggle-pin " .. shell_quote(val))
-  CACHED_DATA = nil
+  os.execute(HELPER .. " toggle-pin " .. shell_quote(val) .. " >/dev/null 2>&1")
 end
 
 function ActionCopy(val)
@@ -81,33 +67,27 @@ function ActionOpen(val)
 end
 
 function ActionRefresh()
-  os.execute(HELPER .. " sync")
-  CACHED_DATA = nil
+  os.execute(HELPER .. " sync >/dev/null 2>&1")
 end
 
 function ActionSetTemp(val)
-  CACHED_DATA = nil
   local eid, temp = val:match("^([^:]+):(.*)$")
   if eid and temp then
-    os.execute("(" .. HELPER .. " set-temp " .. shell_quote(eid) .. " " .. shell_quote(temp) .. " >/dev/null 2>&1) &")
+    os.execute(HELPER .. " set-temp " .. shell_quote(eid) .. " " .. shell_quote(temp) .. " >/dev/null 2>&1")
   end
 end
 
 function ActionSetBrightness(val)
-  CACHED_DATA = nil
   local eid, pct = val:match("^([^:]+):(.*)$")
   if eid and pct then
-    local cmd = HELPER .. " set-brightness " .. shell_quote(eid) .. " " .. shell_quote(pct)
-    os.execute("(" .. cmd .. " >/dev/null 2>&1) &")
+    os.execute(HELPER .. " set-brightness " .. shell_quote(eid) .. " " .. shell_quote(pct) .. " >/dev/null 2>&1")
   end
 end
 
 function ActionSetFanSpeed(val)
-  CACHED_DATA = nil
   local eid, pct = val:match("^([^:]+):(.*)$")
   if eid and pct then
-    local cmd = HELPER .. " set-fan-speed " .. shell_quote(eid) .. " " .. shell_quote(pct)
-    os.execute("(" .. cmd .. " >/dev/null 2>&1) &")
+    os.execute(HELPER .. " set-fan-speed " .. shell_quote(eid) .. " " .. shell_quote(pct) .. " >/dev/null 2>&1")
   end
 end
 

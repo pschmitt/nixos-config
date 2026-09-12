@@ -63,7 +63,8 @@ in
             - cover.office_roller_shutter_window_shutter
             - fan.xiaomi_smart_standing_air_circulation_fan
             - light.elgato_key_light_mini
-            - light.hue_office_light
+            - entity_id: light.hue_office_light
+              bar_target: true
       homeassistant:
         customize:
           light.hue_living_room_light:
@@ -823,6 +824,9 @@ in
           };
           "pschmitt/ha" = {
             bar_display_mode = "single";
+            action_right_click = "control_entity";
+            action_scroll_up = "control_entity";
+            action_scroll_down = "control_entity";
             server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
             panel_dashboard_path = "/mi-casa";
