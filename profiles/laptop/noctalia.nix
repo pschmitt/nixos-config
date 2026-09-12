@@ -421,7 +421,7 @@ in
         # below is its own separate gate, on this master switch) — left off,
         # no audible shell sounds wanted.
         audio.enable_sounds = false;
-        system_monitor.battery_warning_threshold = 15;
+        battery.warning_threshold = 15;
         # Control center, launcher, clipboard, and plugin panels (e.g.
         # syncthing's) felt too small; scale non-bar shell UI up ~15%.
         # Separate from bar.scale/[widget.*].scale, which only affect bar
