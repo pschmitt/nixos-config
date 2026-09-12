@@ -557,8 +557,11 @@ in
                 # when idle) — see pschmitt/noctalia-plugins' feierabend
                 # plugin. box_width/box_height = 0 auto-fits the box to that
                 # content, same as media-${name} below, so an idle countdown
-                # leaves no empty card behind. Placed just under the
-                # date/time widget, above the avatar.
+                # leaves no empty card behind. The plugin desktop-widget
+                # default includes a surface background, so disable it here:
+                # the idle placeholder is transparent and must not become a
+                # small blank card. Placed just under the date/time widget,
+                # above the avatar.
                 "feierabend-${name}" = {
                   type = "pschmitt/feierabend:lockscreen";
                   output = name;
@@ -566,6 +569,7 @@ in
                   cy = h * 0.11;
                   box_width = 0.0;
                   box_height = 0.0;
+                  settings.background = false;
                 };
                 # No custom plugin needed for the avatar: Noctalia ships a
                 # built-in "sticker" desktop-widget type (image_path +
