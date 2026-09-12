@@ -206,8 +206,8 @@ in
             "group:weather-date"
           ];
           end = [
-            "ha"
             "media"
+            "ha"
             "group:sync-tray"
             "group:volume"
             "group:notif-battery"
