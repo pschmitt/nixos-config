@@ -65,6 +65,8 @@ in
             - light.elgato_key_light_mini
             - entity_id: light.hue_office_light
               bar_target: true
+            - lock.front_door_2
+            - camera.office
       homeassistant:
         customize:
           light.hue_living_room_light:
@@ -91,6 +93,10 @@ in
             friendly_name: Elgato
           light.hue_office_light:
             friendly_name: Hue
+          lock.front_door_2:
+            friendly_name: Front door
+          camera.office:
+            friendly_name: Office camera
           light.ikea_balcony_wall_light_round:
             friendly_name: Round
           light.balcony_wall_light_cube_light:
@@ -415,6 +421,7 @@ in
         # below is its own separate gate, on this master switch) — left off,
         # no audible shell sounds wanted.
         audio.enable_sounds = false;
+        system.battery_warning_threshold = 15;
         # Control center, launcher, clipboard, and plugin panels (e.g.
         # syncthing's) felt too small; scale non-bar shell UI up ~15%.
         # Separate from bar.scale/[widget.*].scale, which only affect bar
