@@ -42,6 +42,7 @@ let
       curl
       jq
       coreutils
+      gnused
     ];
     text = builtins.readFile ./endurain-ingest.sh;
   };
