@@ -35,6 +35,7 @@ in
     # changes to its separate state overlay, leaving this file immutable.
     xdg.configFile."noctalia/ha.yaml".text = ''
       entities:
+        - lock.front_door_2
         - entity_id: sensor.schmutzi_current_status
           state_template: "{{ states('sensor.schmutzi_time_remaining') }}"
           conditions:
@@ -65,7 +66,6 @@ in
             - light.elgato_key_light_mini
             - entity_id: light.hue_office_light
               bar_target: true
-            - lock.front_door_2
             - camera.office
       homeassistant:
         customize:
@@ -83,6 +83,7 @@ in
             friendly_name: Cabinets
           media_player.living_room_tv:
             friendly_name: TV
+            icon: tabler:device-tv
           cover.office_roller_shutter_balcony_door_shutter:
             friendly_name: Door
           cover.office_roller_shutter_window_shutter:
@@ -213,7 +214,6 @@ in
           ];
           end = [
             "media"
-            "ha"
             "group:sync-tray"
             "group:volume"
             "group:notif-battery"
@@ -259,8 +259,9 @@ in
             {
               id = "sync-tray";
               members = [
-                "tray"
+                "ha"
                 "syncthing"
+                "tray"
               ];
               padding = 12;
             }
@@ -840,6 +841,9 @@ in
             action_scroll_down = "control_entity";
             server_file = hmArgs.config.sops.secrets."home-assistant/server".path;
             token_file = hmArgs.config.sops.secrets."home-assistant/token".path;
+            activity_user_names = {
+              "e7c2f6918ab242c2877731e7aeaa8182" = "Philipp Schmitt";
+            };
             panel_dashboard_path = "/mi-casa";
             panel_show_search = true;
           };
