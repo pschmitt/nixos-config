@@ -44,3 +44,4 @@ nbx-preview.*
 *.ab
 
 target/
+android/ghostlock-porting/

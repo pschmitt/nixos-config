@@ -115,6 +115,7 @@ if [[ -n "$target_host" ]]
 then
   build_dir="$(create_build_dir_remote "$target_host")"
   rsync -az --delete --delete-excluded \
+    --filter=':- .gitignore' \
     --exclude '.git*' \
     --exclude 'build/' \
     --exclude 'result' \
@@ -123,6 +124,7 @@ then
 else
   build_dir="$(create_build_dir_local)"
   rsync -az --delete --delete-excluded \
+    --filter=':- .gitignore' \
     --exclude '.git*' \
     --exclude 'build/' \
     --exclude 'result' \
