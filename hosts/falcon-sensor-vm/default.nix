@@ -78,7 +78,6 @@
       sharedDirectories.falcon-secrets = {
         source = "/run/falcon-sensor-vm-secrets";
         target = "/run/falcon-secrets";
-        securityModel = "none";
       };
     };
   };
