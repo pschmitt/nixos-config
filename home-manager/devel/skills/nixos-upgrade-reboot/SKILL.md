@@ -69,6 +69,25 @@ Do not wait for other hosts' builds to finish. Never reboot a host while its
 upgrade unit is still active. Hosts with no generation mismatch do not need a
 reboot.
 
+### Remote unlock grace period
+
+The hosts use `luks-ssh-unlock` with target signatures collected and stored on
+`fnuc`. The collection runs approximately once per minute. After a
+kernel-changing upgrade, the freshly activated target state may not yet have
+been collected, and rebooting too quickly can make the remote unlock refuse to
+unlock the host.
+
+When a completed upgrade has a kernel-generation mismatch:
+
+1. Wait at least 60 seconds after upgrade completion before rebooting.
+2. Prefer waiting for one fresh `luks-ssh-unlock` collection cycle, or about
+   two minutes when there is no direct way to verify collection on `fnuc`.
+3. Then reboot the host without waiting for unrelated hosts' upgrades.
+
+Do not skip this grace period merely because the reboot is operationally
+urgent. If the signature collection can be inspected, confirm that `fnuc` has
+recent material for the target before rebooting.
+
 After reboot, retry SSH for a bounded period and verify:
 
 - the host is reachable and has the expected hostname;
