@@ -846,6 +846,7 @@ in
             };
             panel_dashboard_path = "/mi-casa";
             panel_show_search = true;
+            panel_preserve_state = true;
           };
           "pschmitt/fan-control" = {
             bar_display = "none"; # icon only
