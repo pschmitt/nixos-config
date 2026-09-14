@@ -66,7 +66,7 @@ in
             - light.elgato_key_light_mini
             - entity_id: light.hue_office_light
               bar_target: true
-            - camera.office
+            - camera.office_fluent
       homeassistant:
         customize:
           light.hue_living_room_light:
