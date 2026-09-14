@@ -110,9 +110,6 @@ in
       (bindOpts "SUPER + mouse:273" "hl.dsp.window.resize()" { mouse = true; })
 
       # ── Resize (hold-to-repeat) ───────────────────────────────────────
-      (bindOpts "SUPER + SHIFT + h" "hl.dsp.window.resize({ x = -25, y = 0, relative = true })" {
-        repeating = true;
-      })
       (bindOpts "SUPER + SHIFT + j" "hl.dsp.window.resize({ x = 0, y = 25, relative = true })" {
         repeating = true;
       })
@@ -150,6 +147,7 @@ in
       (execBind "SUPER + ALT + s" "walker -m menus:soundboard -p '🎹 Soundboard'")
       (execBind "SUPER + SHIFT + s" "walker-menu soundboard stop")
       (execBind "SUPER + CONTROL + H" "walker -m menus:home-assistant -p '🏠 Home Assistant'")
+      (execBind "SUPER + SHIFT + H" "noctalia msg panel-open pschmitt/ha:panel")
 
       # ── Mouse / submap entry ─────────────────────────────────────────
       (bind "SUPER + SHIFT + M" ''hl.dsp.submap("${mouseSubmap}")'')
