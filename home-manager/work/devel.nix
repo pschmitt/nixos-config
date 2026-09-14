@@ -23,11 +23,16 @@
     };
   };
 
-  home.file."devel/work/gitops/.envrc" = {
-    # NOTE we need to use mkOutOfStoreSymlink here to avoid placing the
-    # rendered secrets in the store
-    source = config.lib.file.mkOutOfStoreSymlink config.sops.templates."doers-envrc".path;
-  };
+  home.file =
+    let
+      # NOTE we need to use mkOutOfStoreSymlink here to avoid placing the
+      # rendered secrets in the store
+      envrcSymlink = config.lib.file.mkOutOfStoreSymlink config.sops.templates."doers-envrc".path;
+    in
+    {
+      "devel/work/.envrc".source = envrcSymlink;
+      "devel/work/gitops/.envrc".source = envrcSymlink;
+    };
 
   home.packages = with pkgs; [
     lefthook
