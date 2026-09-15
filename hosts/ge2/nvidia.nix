@@ -70,9 +70,11 @@
     nvidia-container-toolkit.enable = true;
   };
 
-  # FIX For gnome apps not opening
+  # FIX For gnome apps not opening.
+  # GTK 4.22 renamed the "ngl" renderer to "gl" and warns on the old name,
+  # falling back to the default renderer instead of honoring the setting.
   environment.sessionVariables = {
-    GSK_RENDERER = "ngl";
+    GSK_RENDERER = "gl";
   };
 
   # Load nvidia driver for Xorg and Wayland
