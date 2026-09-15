@@ -172,33 +172,9 @@ in
   };
 
   # The remote debugging port listens only on the host loopback interface.
-  # rofl-13/rofl-14 are reached over SSH so their CDP ports remain private too.
-  programs.mcp.servers = {
-    playwright-fnuc = {
-      command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
-      args = [ "--cdp-endpoint=http://127.0.0.1:9222" ];
-    };
-
-    playwright-rofl-13 = {
-      command = "ssh";
-      args = [
-        "-o"
-        "BatchMode=yes"
-        "rofl-13"
-        "${pkgs.playwright-mcp}/bin/playwright-mcp"
-        "--cdp-endpoint=http://127.0.0.1:9222"
-      ];
-    };
-
-    playwright-rofl-14 = {
-      command = "ssh";
-      args = [
-        "-o"
-        "BatchMode=yes"
-        "rofl-14"
-        "${pkgs.playwright-mcp}/bin/playwright-mcp"
-        "--cdp-endpoint=http://127.0.0.1:9222"
-      ];
-    };
-  };
+  # The MCP client entries that reach it (playwright-fnuc, plus
+  # playwright-rofl-13/-14 for the sibling rofl boxes) live in
+  # home-manager/devel/ai.nix so they're available from every host, not just
+  # fnuc itself; they go over SSH so this loopback-only CDP port never needs
+  # to be exposed on the network.
 }
