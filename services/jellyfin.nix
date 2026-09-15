@@ -6,7 +6,7 @@
 }:
 let
   # https://github.com/jellyfin/jellyfin/releases/tag/v12.0
-  # renovate: datasource=docker depName=lscr.io/linuxserver/jellyfin
+  # renovate: datasource=docker depName=ghcr.io/linuxserver/jellyfin versioning=loose
   jellyfinVersion = "12.0ubu2604-ls48";
 
   dataDir = "/srv/jellyfin";
@@ -45,7 +45,7 @@ in
 
   virtualisation.oci-containers.containers.jellyfin = {
     autoStart = true;
-    image = "lscr.io/linuxserver/jellyfin:${jellyfinVersion}";
+    image = "ghcr.io/linuxserver/jellyfin:${jellyfinVersion}";
     pull = "missing";
     extraOptions = [
       "--hostname=${config.networking.hostName}"
