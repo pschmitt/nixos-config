@@ -2,6 +2,14 @@
 let
   containerName = "browser-mcp-chromium";
   dataDir = "/var/lib/${containerName}";
+  # Bind-mounted at this exact same absolute path in the container (in
+  # addition to already being visible under dataDir's /config mount) so that
+  # playwright-mcp (running bare on the host, see home-manager/devel/ai.nix)
+  # and Chromium
+  # (running in the container) agree on one literal path for --output-dir:
+  # Chrome is told over CDP to save downloads there, and that path has to
+  # resolve to a real, writable directory in both mount namespaces.
+  downloadsDir = "${dataDir}/mcp-downloads";
   containerPort = 48945;
   # Pin PUID/PGID explicitly and reuse the same values for the mount root's
   # ownership so the container can always write to it (e.g. to create
@@ -20,6 +28,7 @@ in
 
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 ${toString puid} ${toString pgid} - -"
+    "d ${downloadsDir} 0750 ${toString puid} ${toString pgid} - -"
   ];
 
   sops.secrets = {
@@ -47,7 +56,10 @@ in
       CHROME_CLI = "--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222";
     };
     environmentFiles = [ config.sops.templates."${containerName}.env".path ];
-    volumes = [ "${dataDir}:/config" ];
+    volumes = [
+      "${dataDir}:/config"
+      "${downloadsDir}:${downloadsDir}"
+    ];
     extraOptions = [
       "--network=host"
       "--shm-size=1g"

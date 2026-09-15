@@ -145,6 +145,14 @@ in
         # and rofl-14's own local Chromium. Reached over SSH from every host
         # (including fnuc itself) so the loopback-only CDP ports never need
         # to be exposed on the network.
+        #
+        # --output-dir must be a path that resolves to the same real,
+        # writable directory both here (where playwright-mcp itself runs, on
+        # the bare host) and inside the container (where Chromium actually
+        # writes downloads once told to over CDP) -- see the matching
+        # ${containerName}-mcp-downloads bind mount at the identical
+        # absolute path in hosts/fnuc/browser-mcp.nix and
+        # services/browser-mcp-chromium-container.nix.
         playwright-fnuc = {
           command = "ssh";
           args = [
@@ -153,6 +161,7 @@ in
             "fnuc"
             "${pkgs.playwright-mcp}/bin/playwright-mcp"
             "--cdp-endpoint=http://127.0.0.1:9222"
+            "--output-dir=/home/pschmitt/.local/share/browser-mcp-chromium/mcp-downloads"
           ];
         };
 
@@ -164,6 +173,7 @@ in
             "rofl-13"
             "${pkgs.playwright-mcp}/bin/playwright-mcp"
             "--cdp-endpoint=http://127.0.0.1:9222"
+            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
           ];
         };
 
@@ -175,6 +185,7 @@ in
             "rofl-14"
             "${pkgs.playwright-mcp}/bin/playwright-mcp"
             "--cdp-endpoint=http://127.0.0.1:9222"
+            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
           ];
         };
       };
