@@ -3,10 +3,11 @@ use std::{
     collections::HashMap,
     fs,
     io::{Write, stdout},
+    os::fd::AsRawFd,
     path::PathBuf,
     process::{self, Command},
     rc::Rc,
-    sync::mpsc::{Receiver, channel},
+    sync::mpsc::{Receiver, Sender, channel},
     thread,
     time::{Duration, Instant},
 };
@@ -20,14 +21,15 @@ use gtk4::{
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
-    capture::{CaptureManager, CaptureTarget, FrameMessage},
+    capture::{CaptureCommand, CaptureManager, CaptureTarget, DmabufFrame, FrameMessage,
+        FramePayload},
     config::{PickerConfig, load_config},
     css::install_css,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
     hyprland::{
-        Client, Monitor, PortalWindowEntry, client_for_entry, listen_socket2, parse_region,
-        parse_region_details, parse_window_list, query_active_workspace, query_clients,
-        query_monitors, window_at_point, window_to_region,
+        Client, Monitor, PortalWindowEntry, client_for_entry, parse_region, parse_region_details,
+        parse_window_list, query_active_workspace, query_clients, query_monitors,
+        spawn_state_watcher, window_at_point, window_to_region,
     },
     overlay::OverlayHighlighter,
 };
@@ -113,6 +115,7 @@ pub struct AppState {
     pub region_draw_button: Option<Button>,
     pub card_buttons: Vec<(String, ToggleButton)>,
     pub card_targets: Vec<(usize, String, CaptureTarget)>,
+    pub card_widgets: HashMap<usize, ToggleButton>,
     pub pictures: Rc<RefCell<HashMap<usize, Picture>>>,
     pub window: Option<ApplicationWindow>,
     pub stack: Option<Stack>,
@@ -180,56 +183,39 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         region_draw_button: None,
         card_buttons: Vec::new(),
         card_targets: Vec::new(),
+        card_widgets: HashMap::new(),
         pictures,
         window: None,
         stack: None,
     }));
 
-    // Attach Hyprland socket2 listener for dynamic window updates
-    let (event_tx, event_rx) = channel::<()>();
-    let event_tx_socket = event_tx.clone();
-    let _socket_thread = listen_socket2(move |msg| {
-        if msg.starts_with("openwindow>>")
-            || msg.starts_with("closewindow>>")
-            || msg.starts_with("windowtitle")
-            || msg.starts_with("movewindow")
-            || msg.starts_with("workspace")
-        {
-            let _ = event_tx_socket.send(());
-        }
-    });
+    // Hyprland state arrives pre-queried from a worker thread; the UI only
+    // copies it into place.
+    let hypr_rx = spawn_state_watcher();
 
-    // Attach frame delivery and slurp pick completion handler on GTK main loop (60 fps check)
+    // Slurp pick completion and Hyprland state updates. This runs on a plain
+    // timeout because it must keep working while the window is hidden for
+    // slurp, when the frame clock is stopped.
     let state_loop = state.clone();
-    let mut last_poll = Instant::now();
-    glib::timeout_add_local(Duration::from_millis(16), move || {
-        let pics = pictures_loop.borrow();
-        while let Ok(msg) = frame_rx.try_recv() {
-            if let Some(picture) = pics.get(&msg.card_id) {
-                let texture = gdk::MemoryTexture::new(
-                    msg.frame.width,
-                    msg.frame.height,
-                    gdk::MemoryFormat::R8g8b8a8,
-                    &msg.frame.bytes,
-                    msg.frame.stride,
-                );
-                picture.set_paintable(Some(&texture));
+    glib::timeout_add_local(Duration::from_millis(100), move || {
+        let mut latest_state = None;
+        while let Ok(snapshot) = hypr_rx.try_recv() {
+            latest_state = Some(snapshot);
+        }
+
+        if let Some(snapshot) = latest_state {
+            if let Ok(mut s) = state_loop.try_borrow_mut() {
+                s.clients = snapshot.clients;
+                if !snapshot.monitors.is_empty() {
+                    s.monitors = snapshot.monitors;
+                }
+                s.last_active_ws = snapshot.active_workspace;
+                if snapshot.windows_changed {
+                    // Let the capture worker re-enumerate toplevels so previews
+                    // of newly opened windows can bind.
+                    s.capture_mgr.refresh_targets();
+                }
             }
-        }
-
-        let mut need_refresh = false;
-        while let Ok(()) = event_rx.try_recv() {
-            need_refresh = true;
-        }
-
-        let now = Instant::now();
-        if now.duration_since(last_poll) > Duration::from_millis(1000) {
-            last_poll = now;
-            need_refresh = true;
-        }
-
-        if need_refresh {
-            refresh_windows_internal(&state_loop);
         }
 
         let pick_result = {
@@ -509,17 +495,137 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     let state_tab_change = state.clone();
     stack.connect_visible_child_name_notify(move |stk| {
         if let Some(name) = stk.visible_child_name() {
-            let mut s = state_tab_change.borrow_mut();
-            s.active_tab = name.to_string();
-            save_last_tab(&name);
-            s.capture_mgr.set_active_tab(&name);
-            update_pick_button_ui(&mut s);
-            update_overlay_highlight(&s);
+            {
+                let mut s = state_tab_change.borrow_mut();
+                s.active_tab = name.to_string();
+                save_last_tab(&name);
+                s.capture_mgr.set_active_tab(&name);
+                update_pick_button_ui(&mut s);
+                update_overlay_highlight(&s);
+            }
+            if let Ok(s) = state_tab_change.try_borrow() {
+                update_card_fps(&s);
+            }
+        }
+    });
+
+    // Frame delivery rides the frame clock instead of a timer, so a texture is
+    // swapped in right before the frame that will show it, and no work happens
+    // while the window is hidden.
+    let release_sender = capture_mgr.command_sender();
+    window.add_tick_callback(move |_widget, _clock| {
+        deliver_frames(&frame_rx, &pictures_loop, &release_sender);
+        glib::ControlFlow::Continue
+    });
+
+    // Cards that scrolled out of view stop capturing entirely.
+    let state_visibility = state.clone();
+    glib::timeout_add_local_once(Duration::from_millis(250), move || {
+        if let Ok(s) = state_visibility.try_borrow() {
+            update_card_fps(&s);
         }
     });
 
     capture_mgr.set_active_tab(&initial_tab);
     window.present();
+}
+
+/// Applies the newest frame per card. Older frames for the same card are
+/// dropped without ever being uploaded, so a burst from the capture worker
+/// costs one texture swap, not several.
+fn deliver_frames(
+    frame_rx: &Receiver<FrameMessage>,
+    pictures: &Rc<RefCell<HashMap<usize, Picture>>>,
+    release_sender: &Sender<CaptureCommand>,
+) {
+    let mut latest: HashMap<usize, FramePayload> = HashMap::new();
+    while let Ok(msg) = frame_rx.try_recv() {
+        if let Some(superseded) = latest.insert(msg.card_id, msg.frame) {
+            release_payload(superseded, release_sender);
+        }
+    }
+
+    if latest.is_empty() {
+        return;
+    }
+
+    let pics = pictures.borrow();
+    for (card_id, payload) in latest {
+        let Some(picture) = pics.get(&card_id) else {
+            release_payload(payload, release_sender);
+            continue;
+        };
+
+        match payload {
+            FramePayload::Shm(frame) => {
+                let texture = gdk::MemoryTexture::new(
+                    frame.width,
+                    frame.height,
+                    gdk::MemoryFormat::R8g8b8a8,
+                    &frame.bytes,
+                    frame.stride,
+                );
+                picture.set_paintable(Some(&texture));
+            }
+            FramePayload::Dmabuf(frame) => {
+                if let Some(texture) = import_dmabuf(frame, release_sender) {
+                    picture.set_paintable(Some(&texture));
+                }
+            }
+        }
+    }
+}
+
+fn release_payload(payload: FramePayload, release_sender: &Sender<CaptureCommand>) {
+    if let FramePayload::Dmabuf(frame) = payload {
+        let _ = release_sender.send(CaptureCommand::ReleaseBuffer {
+            buffer_id: frame.buffer_id,
+        });
+    }
+}
+
+/// Wraps a compositor-written dmabuf in a GDK texture. Nothing is copied: the
+/// buffer stays on the GPU and the capture worker keeps it alive until the
+/// release closure fires.
+fn import_dmabuf(frame: DmabufFrame, release_sender: &Sender<CaptureCommand>) -> Option<gdk::Texture> {
+    let display = gdk::Display::default()?;
+
+    let builder = gdk::DmabufTextureBuilder::new();
+    builder.set_display(&display);
+    builder.set_width(frame.width.max(0) as u32);
+    builder.set_height(frame.height.max(0) as u32);
+    builder.set_fourcc(frame.fourcc);
+    builder.set_modifier(frame.modifier);
+    builder.set_n_planes(1);
+    builder.set_fd(0, frame.fd.as_raw_fd());
+    builder.set_stride(0, frame.stride);
+    builder.set_offset(0, frame.offset);
+    builder.set_premultiplied(true);
+
+    let buffer_id = frame.buffer_id;
+    let fd = frame.fd;
+    let sender = release_sender.clone();
+
+    // SAFETY: the fd stays open for as long as the texture lives, because it is
+    // owned by the release closure GDK calls when it drops the texture.
+    let result = unsafe {
+        builder.build_with_release_func(move || {
+            drop(fd);
+            let _ = sender.send(CaptureCommand::ReleaseBuffer { buffer_id });
+        })
+    };
+
+    match result {
+        Ok(texture) => Some(texture),
+        Err(err) => {
+            eprintln!("hyprland-share-picker: importing a dmabuf preview failed: {err}");
+            // The release closure never ran, so this buffer and its fd are
+            // stranded. Give up on dmabuf rather than stranding more.
+            let _ = release_sender.send(CaptureCommand::ReleaseBuffer { buffer_id });
+            let _ = release_sender.send(CaptureCommand::DisableDmabuf);
+            None
+        }
+    }
 }
 
 fn make_tab_switcher(stack: &Stack) -> GtkBox {
@@ -651,20 +757,6 @@ fn update_pick_button_ui(state: &mut AppState) {
     }
 }
 
-fn refresh_windows_internal(state: &Rc<RefCell<AppState>>) {
-    let clients = query_clients();
-    let monitors = query_monitors();
-    let active_workspace = query_active_workspace().map(|workspace| workspace.id);
-
-    if let Ok(mut state) = state.try_borrow_mut() {
-        state.clients = clients;
-        if !monitors.is_empty() {
-            state.monitors = monitors;
-        }
-        state.last_active_ws = active_workspace;
-    }
-}
-
 fn resolve_final_selection(selection: &str, state: &AppState) -> String {
     let Some(window_id) = selection.strip_prefix("window:") else {
         return selection.to_string();
@@ -712,6 +804,25 @@ fn resolve_final_selection(selection: &str, state: &AppState) -> String {
     // Capture its bounds as a region rather than returning an invalid window ID
     // to XDPH, which can crash its window-capture path.
     window_to_region(client, monitors).unwrap_or_else(|| selection.to_string())
+}
+
+/// Re-evaluates which cards are on screen whenever the list scrolls or is
+/// resized, so off-screen previews stop capturing.
+fn watch_scroll_for_culling(scroll: &ScrolledWindow, state: Rc<RefCell<AppState>>) {
+    let adjustment = scroll.vadjustment();
+
+    let state_scroll = state.clone();
+    adjustment.connect_value_changed(move |_adj| {
+        if let Ok(s) = state_scroll.try_borrow() {
+            update_card_fps(&s);
+        }
+    });
+
+    adjustment.connect_page_size_notify(move |_adj| {
+        if let Ok(s) = state.try_borrow() {
+            update_card_fps(&s);
+        }
+    });
 }
 
 fn make_window_page(
@@ -820,6 +931,7 @@ fn make_window_page(
     let scroll = ScrolledWindow::new();
     scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
     scroll.set_child(Some(&flow));
+    watch_scroll_for_culling(&scroll, state.clone());
     scroll
 }
 
@@ -878,6 +990,7 @@ fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Scroll
     let scroll = ScrolledWindow::new();
     scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
     scroll.set_child(Some(&flow));
+    watch_scroll_for_culling(&scroll, state.clone());
     scroll
 }
 
@@ -1075,6 +1188,7 @@ fn make_source_card(
         let mut s = state.borrow_mut();
         s.card_buttons.push((sel_str.clone(), card.clone()));
         s.card_targets.push((card_id, sel_str.clone(), target));
+        s.card_widgets.insert(card_id, card.clone());
     }
 
     // Toggle event
@@ -1169,6 +1283,29 @@ fn make_source_card(
     card
 }
 
+/// Whether a card overlaps the visible part of its scroller. Cards that have
+/// not been laid out yet count as visible so they are not parked before their
+/// first frame.
+fn card_is_in_viewport(card: &ToggleButton) -> bool {
+    if !card.is_mapped() {
+        return false;
+    }
+
+    let Some(viewport) = card.ancestor(ScrolledWindow::static_type()) else {
+        return true;
+    };
+    let Some(bounds) = card.compute_bounds(&viewport) else {
+        return true;
+    };
+
+    let height = viewport.height() as f32;
+    if height <= 0.0 {
+        return true;
+    }
+
+    bounds.y() < height && bounds.y() + bounds.height() > 0.0
+}
+
 fn update_card_fps(state: &AppState) {
     let focused_id = if let Some(hid) = state.hovered_id {
         Some(hid)
@@ -1184,10 +1321,19 @@ fn update_card_fps(state: &AppState) {
 
     let high_fps = state.config.refresh_rate;
     for (id, _, _) in &state.card_targets {
+        let visible = match state.card_widgets.get(id) {
+            // The region preview has no card widget; it is always live.
+            None => true,
+            Some(card) => card_is_in_viewport(card),
+        };
+
         let fps = if Some(*id) == focused_id {
             high_fps
-        } else {
+        } else if visible {
             1.0
+        } else {
+            // Parked: scrolled out of view, so nothing would be shown anyway.
+            0.0
         };
         state.capture_mgr.set_card_fps(*id, fps);
     }
@@ -1217,18 +1363,15 @@ fn update_overlay_highlight(state: &AppState) {
         }
     };
 
-    let monitors = query_monitors();
-    let monitors_to_use = if !monitors.is_empty() {
-        monitors
-    } else {
-        state.monitors.clone()
-    };
+    // Cached state only: this runs on every hover change, and the Hyprland IPC
+    // queries block on a unix socket. The state watcher keeps both lists fresh.
+    let monitors_to_use = state.monitors.clone();
 
     if let Some(name) = sel.strip_prefix("screen:") {
         highlighter.highlight_screen(name);
     } else if let Some(id) = sel.strip_prefix("window:") {
-        let clients = query_clients();
-        if let Some(c) = clients
+        if let Some(c) = state
+            .clients
             .iter()
             .find(|cl| cl.stable_id_string().as_deref() == Some(id))
         {
@@ -1254,6 +1397,9 @@ fn trigger_pick_screen(state: Rc<RefCell<AppState>>) {
     if let Some(ref win) = state.borrow().window {
         win.set_visible(false);
     }
+    // Nothing is on screen to preview while slurp owns the display, and the
+    // compositor should not be doing capture work during the drag.
+    state.borrow().capture_mgr.set_paused(true);
 
     let (tx, rx) = channel::<Option<String>>();
     thread::spawn(move || {
@@ -1287,6 +1433,9 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
     if let Some(ref win) = state.borrow().window {
         win.set_visible(false);
     }
+    // Nothing is on screen to preview while slurp owns the display, and the
+    // compositor should not be doing capture work during the drag.
+    state.borrow().capture_mgr.set_paused(true);
 
     let (tx, rx) = channel::<Option<String>>();
     thread::spawn(move || {
@@ -1331,6 +1480,9 @@ fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
     if let Some(ref win) = state.borrow().window {
         win.set_visible(false);
     }
+    // Nothing is on screen to preview while slurp owns the display, and the
+    // compositor should not be doing capture work during the drag.
+    state.borrow().capture_mgr.set_paused(true);
 
     let monitors = state.borrow().monitors.clone();
     let (tx, rx) = channel::<Option<String>>();
@@ -1361,6 +1513,7 @@ fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
         win.set_visible(true);
         win.present();
     }
+    state.borrow().capture_mgr.set_paused(false);
 
     if let Some(sel) = selection {
         if sel.starts_with("region:") {
