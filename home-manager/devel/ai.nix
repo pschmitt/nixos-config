@@ -139,6 +139,44 @@ in
             SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
+
+        # Playwright attached to the persistent, KasmVNC-visible Chromium
+        # container on fnuc (see hosts/fnuc/browser-mcp.nix) and to rofl-13's
+        # and rofl-14's own local Chromium. Reached over SSH from every host
+        # (including fnuc itself) so the loopback-only CDP ports never need
+        # to be exposed on the network.
+        playwright-fnuc = {
+          command = "ssh";
+          args = [
+            "-o"
+            "BatchMode=yes"
+            "fnuc"
+            "${pkgs.playwright-mcp}/bin/playwright-mcp"
+            "--cdp-endpoint=http://127.0.0.1:9222"
+          ];
+        };
+
+        playwright-rofl-13 = {
+          command = "ssh";
+          args = [
+            "-o"
+            "BatchMode=yes"
+            "rofl-13"
+            "${pkgs.playwright-mcp}/bin/playwright-mcp"
+            "--cdp-endpoint=http://127.0.0.1:9222"
+          ];
+        };
+
+        playwright-rofl-14 = {
+          command = "ssh";
+          args = [
+            "-o"
+            "BatchMode=yes"
+            "rofl-14"
+            "${pkgs.playwright-mcp}/bin/playwright-mcp"
+            "--cdp-endpoint=http://127.0.0.1:9222"
+          ];
+        };
       };
     };
 
