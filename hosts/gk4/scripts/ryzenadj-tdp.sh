@@ -11,22 +11,12 @@ is_valid_milliwatts() {
   [[ "$value" =~ ^[1-9][0-9]*$ ]] && ((value >= 1000 && value <= 1000000))
 }
 
-main() {
-  if [[ "$#" -eq 1 && "$1" == "--info" ]]
-  then
-    exec ryzenadj --info
-  fi
-
-  if [[ "$#" -ne 4 ]]
-  then
-    usage
-    return 2
-  fi
-
-  declare -A seen=()
+run_limits() {
   local name
   local value
   local argument
+
+  declare -A seen=()
 
   for argument in "$@"
   do
@@ -80,6 +70,21 @@ main() {
   done
 
   exec ryzenadj "$@"
+}
+
+main() {
+  if [[ "$#" -eq 1 && "$1" == "--info" ]]
+  then
+    exec ryzenadj --info
+  fi
+
+  if [[ "$#" -ne 4 ]]
+  then
+    usage
+    return 2
+  fi
+
+  run_limits "$@"
 }
 
 main "$@"

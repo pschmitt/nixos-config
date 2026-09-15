@@ -3,6 +3,40 @@
 GO_HASS_AGENT_UNIT="go-hass-agent.service"
 MATCH="type='signal',sender='net.hadess.PowerProfiles',path='/net/hadess/PowerProfiles',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"
 NOTIFY_APP_NAME="power-profiles-daemon"
+CONFIG_FILE="${PPD_REACT_CONFIG:-/etc/ppd-react.conf}"
+
+while (($# > 0))
+do
+  case "$1" in
+    --config)
+      if (($# < 2))
+      then
+        printf '%s\n' "error: --config requires a path" >&2
+        exit 2
+      fi
+      CONFIG_FILE="$2"
+      shift 2
+    ;;
+    --config=*)
+      CONFIG_FILE="${1#*=}"
+      shift
+    ;;
+    --help|-h)
+      printf '%s\n' "usage: ppd-react [--config PATH]"
+      exit 0
+    ;;
+    *)
+      printf '%s\n' "error: unknown argument: $1" >&2
+      exit 2
+    ;;
+  esac
+done
+
+if [[ -r "$CONFIG_FILE" ]]
+then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+fi
 
 log_warn() {
   printf '%s\n' "warning: $*" >&2
@@ -10,6 +44,48 @@ log_warn() {
 
 should_notify() {
   [[ -n "${NOTIFY:-}" ]]
+}
+
+apply_tdp_profile() {
+  local profile="$1"
+  local profile_key
+  local limits_variable
+  local limits
+  local stapm_limit
+  local fast_limit
+  local slow_limit
+  local apu_slow_limit
+
+  if [[ -z "${TDP_COMMAND:-}" ]]
+  then
+    return 0
+  fi
+
+  profile_key="${profile^^}"
+  profile_key="${profile_key//-/_}"
+  limits_variable="TDP_PROFILE_${profile_key}"
+  limits="${!limits_variable:-}"
+  if [[ -z "$limits" ]]
+  then
+    log_warn "no TDP settings configured for power profile $profile"
+    return 0
+  fi
+
+  read -r stapm_limit fast_limit slow_limit apu_slow_limit <<<"$limits"
+  if [[ -z "$stapm_limit" || -z "$fast_limit" || -z "$slow_limit" || -z "$apu_slow_limit" ]]
+  then
+    log_warn "invalid TDP settings configured for power profile $profile"
+    return 0
+  fi
+
+  if ! "$TDP_COMMAND" \
+    "--stapm-limit=$stapm_limit" \
+    "--fast-limit=$fast_limit" \
+    "--slow-limit=$slow_limit" \
+    "--apu-slow-limit=$apu_slow_limit" >/dev/null
+  then
+    log_warn "failed to apply TDP settings for power profile $profile"
+  fi
 }
 
 get_active_profile() {
@@ -88,6 +164,8 @@ notify_all_sessions() {
 
 apply_profile() {
   local profile="$1"
+
+  apply_tdp_profile "$profile"
 
   case "$profile" in
     power-saver)
