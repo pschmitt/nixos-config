@@ -28,7 +28,7 @@
         "\\.nix$"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
       ]
     }
   ],
