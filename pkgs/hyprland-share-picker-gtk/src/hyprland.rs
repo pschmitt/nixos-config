@@ -4,6 +4,7 @@ use std::{
     os::unix::net::UnixStream,
     path::PathBuf,
     process::Command,
+    sync::mpsc::{Receiver, RecvTimeoutError, channel},
     thread,
     time::Duration,
 };
@@ -283,6 +284,84 @@ pub fn hyprland_instance_signature() -> Option<String> {
     }
 
     None
+}
+
+/// A coalesced snapshot of everything the picker reads from Hyprland.
+pub struct HyprState {
+    pub clients: Vec<Client>,
+    pub monitors: Vec<Monitor>,
+    pub active_workspace: Option<i64>,
+    /// Set when the set of windows differs from the previous snapshot.
+    pub windows_changed: bool,
+}
+
+/// Longest gap between snapshots when Hyprland reports nothing.
+const STATE_IDLE_REFRESH: Duration = Duration::from_millis(2000);
+/// Quiet period that ends a burst of window events.
+const STATE_EVENT_DEBOUNCE: Duration = Duration::from_millis(120);
+
+/// Watches Hyprland's event socket and turns event bursts into coalesced state
+/// snapshots on a worker thread. The IPC queries block on a unix socket, so
+/// they must never run on the UI thread.
+pub fn spawn_state_watcher() -> Receiver<HyprState> {
+    let (state_tx, state_rx) = channel::<HyprState>();
+    let (event_tx, event_rx) = channel::<()>();
+
+    let _listener = listen_socket2(move |msg| {
+        if msg.starts_with("openwindow>>")
+            || msg.starts_with("closewindow>>")
+            || msg.starts_with("windowtitle")
+            || msg.starts_with("movewindow")
+            || msg.starts_with("workspace")
+        {
+            let _ = event_tx.send(());
+        }
+    });
+
+    let spawned = thread::Builder::new()
+        .name("hypr-state".into())
+        .spawn(move || {
+            let mut previous: Vec<String> = Vec::new();
+            let mut first = true;
+
+            loop {
+                match event_rx.recv_timeout(STATE_IDLE_REFRESH) {
+                    Ok(()) => {
+                        // Hyprland emits these in bursts; wait for quiet.
+                        while event_rx.recv_timeout(STATE_EVENT_DEBOUNCE).is_ok() {}
+                    }
+                    Err(RecvTimeoutError::Timeout) => {}
+                    // No event socket: keep the periodic refresh going anyway.
+                    Err(RecvTimeoutError::Disconnected) => thread::sleep(STATE_IDLE_REFRESH),
+                }
+
+                let clients = query_clients();
+                let addresses: Vec<String> = clients.iter().map(|c| c.address.clone()).collect();
+                // The first snapshot is not a change: the UI queried the same
+                // state when it started, and reporting one would make the
+                // capture worker rebuild its connection for nothing.
+                let windows_changed = !first && addresses != previous;
+                previous = addresses;
+                first = false;
+
+                let snapshot = HyprState {
+                    clients,
+                    monitors: query_monitors(),
+                    active_workspace: query_active_workspace().map(|workspace| workspace.id),
+                    windows_changed,
+                };
+
+                if state_tx.send(snapshot).is_err() {
+                    return;
+                }
+            }
+        });
+
+    if spawned.is_err() {
+        eprintln!("hyprland-share-picker: could not spawn the Hyprland state watcher");
+    }
+
+    state_rx
 }
 
 pub fn listen_socket2<F: Fn(&str) + Send + 'static>(callback: F) -> Option<thread::JoinHandle<()>> {

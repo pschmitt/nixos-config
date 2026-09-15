@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-gtk4 = { version = "0.9", features = ["v4_8"] }
+gtk4 = { version = "0.9", features = ["v4_14"] }
 gtk4-layer-shell = "0.4"
 libwayshot = "0.9.0"
+wayland-client = "0.31"
 image = { version = "0.25", default-features = false, features = ["jpeg"] }
 anyhow = "1.0"
 clap = { version = "4.5", features = ["derive"] }
@@ -15,7 +16,7 @@ serde_json = "1.0"
 regex = "1.10"
 glib = "0.20"
 gio = "0.20"
-gdk4 = "0.9"
+gdk4 = { version = "0.9", features = ["v4_14"] }
 cairo-rs = "0.20"
 rustix = { version = "0.38", features = ["process"] }
 libc = "0.2"
