@@ -74,12 +74,14 @@ let
   runChromium = pkgs.writeShellApplication {
     name = "${containerName}-run";
     text = ''
+      puid="$(id -u)"
+      pgid="$(id -g)"
       /usr/bin/docker rm -f ${containerName} >/dev/null 2>&1 || true
       exec /usr/bin/docker run --rm --name ${containerName} \
         --network host \
         --shm-size=1g \
-        -e PUID="$(id -u)" \
-        -e PGID="$(id -g)" \
+        -e PUID="$puid" \
+        -e PGID="$pgid" \
         -e TZ=Europe/Berlin \
         -e CHROME_CLI="--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222" \
         --env-file ${envFile} \

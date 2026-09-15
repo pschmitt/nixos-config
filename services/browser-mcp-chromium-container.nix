@@ -3,6 +3,12 @@ let
   containerName = "browser-mcp-chromium";
   dataDir = "/var/lib/${containerName}";
   containerPort = 48945;
+  # Pin PUID/PGID explicitly and reuse the same values for the mount root's
+  # ownership so the container can always write to it (e.g. to create
+  # ~/Downloads), instead of relying on the linuxserver image's uid/gid 911
+  # default.
+  puid = 1000;
+  pgid = 1000;
   primaryHost = "browser.${config.networking.hostName}.${config.domains.tailscale}";
   serverAliases = [
     "browser.${config.networking.hostName}.${config.domains.netbird}"
@@ -13,7 +19,7 @@ in
   imports = [ ./http.nix ];
 
   systemd.tmpfiles.rules = [
-    "d ${dataDir} 0750 root root - -"
+    "d ${dataDir} 0750 ${toString puid} ${toString pgid} - -"
   ];
 
   sops.secrets = {
@@ -36,6 +42,8 @@ in
     autoStart = true;
     hostname = containerName;
     environment = {
+      PUID = toString puid;
+      PGID = toString pgid;
       CHROME_CLI = "--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222";
     };
     environmentFiles = [ config.sops.templates."${containerName}.env".path ];
