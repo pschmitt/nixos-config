@@ -62,6 +62,7 @@ in
   clipcascade = pkgs.callPackage ./clipcascade { };
   inherit emoji-fzf;
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
+  fievel = pkgs.callPackage ./fievel { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };

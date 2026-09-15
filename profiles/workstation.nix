@@ -37,6 +37,15 @@
     imports = [
       ../home-manager/ssh-clipboard-peers.nix
     ];
+    services.fievel = {
+      enable = true;
+      # Keep Fievel's default Super+Space hint chord away from the desktop
+      # microphone toggle, and use a consistent chord for both hint buttons.
+      settings.hints.keys = {
+        left = "leftmeta + leftctrl + space";
+        right = "leftmeta + leftctrl + i";
+      };
+    };
     services.go-hass-agent.enableWorkstationCommands = true;
   };
 
