@@ -7,6 +7,13 @@
 let
   containerName = "browser-mcp-chromium";
   dataDir = "${config.home.homeDirectory}/.local/share/${containerName}/config";
+  # Bind-mounted at this exact same absolute path in the container so that
+  # playwright-mcp (running bare on fnuc, see home-manager/devel/ai.nix) and
+  # Chromium (running in the container) agree on one literal path for
+  # --output-dir: Chrome is told over CDP to save downloads there, and that
+  # path has to resolve to a real, writable directory in both mount
+  # namespaces.
+  downloadsDir = "${config.home.homeDirectory}/.local/share/${containerName}/mcp-downloads";
   envFile = config.sops.templates."${containerName}.env".path;
 
   proxyContainerName = "browser-mcp-traefik";
@@ -86,6 +93,7 @@ let
         -e CHROME_CLI="--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222" \
         --env-file ${envFile} \
         -v ${dataDir}:/config \
+        -v ${downloadsDir}:${downloadsDir} \
         lscr.io/linuxserver/chromium:latest
     '';
   };
@@ -136,6 +144,7 @@ in
 
   home.activation.createBrowserMcpChromiumDataDir = lib.hm.dag.entryBefore [ "writeBoundary" ] ''
     run mkdir -p "${dataDir}"
+    run mkdir -p "${downloadsDir}"
     run mkdir -p "${proxyDataDir}"
   '';
 
