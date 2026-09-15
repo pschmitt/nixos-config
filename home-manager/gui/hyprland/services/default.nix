@@ -1,6 +1,7 @@
 { ... }:
 {
   imports = [
+    ../../../../modules/home-manager/fievel.nix
     ./clipboard.nix
     ./monitors.nix
     ./hyprevents.nix
