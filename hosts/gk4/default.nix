@@ -5,10 +5,25 @@
   ...
 }:
 let
+  gpdFanCurve = pkgs.writeShellApplication {
+    name = "gpd-fan-curve";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = builtins.readFile ./scripts/gpd-fan-curve.sh;
+  };
   ryzenadjTdp = pkgs.writeShellApplication {
     name = "ryzenadj-tdp";
     runtimeInputs = [ pkgs.ryzenadj ];
     text = builtins.readFile ./scripts/ryzenadj-tdp.sh;
+  };
+  gpdPowerctl = pkgs.writeShellApplication {
+    name = "gpd-powerctl";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.power-profiles-daemon
+      pkgs.systemd
+      ryzenadjTdp
+    ];
+    text = builtins.readFile ./scripts/gpd-powerctl.sh;
   };
 in
 {
@@ -30,8 +45,10 @@ in
     # instead (full_at = 0). Pin full_at = 80 here if that ever misreads.
     programs.noctalia.settings.plugin_settings."pschmitt/battery-icon" = {
       battery_device = "BATT";
+      show_fan_controls = false;
       show_tdp_controls = true;
     };
+    programs.noctalia.settings.plugin_settings."pschmitt/fan-control".thermal_zone = "thermal_zone1";
   };
 
   hardware.cattle = false;
@@ -43,9 +60,51 @@ in
   };
 
   environment.systemPackages = [
+    gpdFanCurve
+    gpdPowerctl
     pkgs.ryzenadj
     ryzenadjTdp
   ];
+
+  systemd.services.gpd-fan-curve = {
+    description = "Temperature-dependent GPD Pocket 4 fan control";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "local-fs.target" ];
+    serviceConfig = {
+      ExecStart = "${gpdFanCurve}/bin/gpd-fan-curve";
+      ExecStopPost = "${gpdFanCurve}/bin/gpd-fan-curve --safe";
+      Restart = "always";
+      RestartSec = "5s";
+    };
+  };
+
+  # Re-enter manual curve control after firmware/kernel resume handling.
+  powerManagement.resumeCommands = "systemctl restart gpd-fan-curve.service";
+
+  services.ppd-react.tdp = {
+    enable = true;
+    command = "${ryzenadjTdp}/bin/ryzenadj-tdp";
+    profiles = {
+      power-saver = {
+        stapmLimit = 15000;
+        fastLimit = 15000;
+        slowLimit = 15000;
+        apuSlowLimit = 15000;
+      };
+      balanced = {
+        stapmLimit = 20000;
+        fastLimit = 20000;
+        slowLimit = 20000;
+        apuSlowLimit = 20000;
+      };
+      performance = {
+        stapmLimit = 24000;
+        fastLimit = 28000;
+        slowLimit = 28000;
+        apuSlowLimit = 28000;
+      };
+    };
+  };
 
   security.polkit = {
     extraConfig = ''
