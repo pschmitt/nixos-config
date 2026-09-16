@@ -14,7 +14,7 @@ in
 
     autoStart = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Start Fievel automatically with the graphical session.";
     };
 
