@@ -137,10 +137,6 @@ in
       (execBind "SUPER + CONTROL + H" "walker -m menus:home-assistant -p '🏠 Home Assistant'")
       (execBind "SUPER + SHIFT + H" "noctalia msg panel-open pschmitt/ha:panel")
 
-      # ── Mouse mode ────────────────────────────────────────────────────
-      # Fievel is deliberately on-demand: while stopped, physical keyboards
-      # retain their own XKB layouts; Super+Shift+M starts/stops its mouse mode.
-      (execBind "SUPER + SHIFT + M" "${bin}/fievel-toggle.sh")
       (execBind "SUPER + numbersign" "waypoint")
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
