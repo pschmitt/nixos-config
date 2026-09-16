@@ -109,12 +109,14 @@ in
 
     systemd.services.ppd-react = {
       description = "React to power-profiles-daemon profile changes";
-      wantedBy = [ "multi-user.target" ];
+      # Start as part of power-profiles-daemon, after it has initialized its
+      # current profile. This avoids the multi-user ordering cycle and makes
+      # the initial TDP apply happen before user-session widgets read it.
+      wantedBy = [ "power-profiles-daemon.service" ];
       after = [
         "dbus.service"
         "power-profiles-daemon.service"
       ];
-      wants = [ "power-profiles-daemon.service" ];
       serviceConfig = {
         ExecStart = "${ppdReact}/bin/ppd-react --config=${ppdReactConfig}";
         Restart = "always";
