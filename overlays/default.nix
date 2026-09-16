@@ -41,6 +41,44 @@
     master = import inputs.nixpkgs-master {
       inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
+      overlays = [
+        (mfinal: mprev: {
+          # GitHub's codeload tarball for this tag changed bytes after
+          # nixpkgs-master recorded its hash (a known codeload
+          # re-compression quirk, not a content change) -- pulled in
+          # transitively by netbox's django-polymorphic/drf-spectacular
+          # test deps. Goes in via pythonPackagesExtensions (composed into
+          # every python package set nixpkgs builds, unlike
+          # packageOverrides, which a package's own `python3.override
+          # { packageOverrides = ...; }` -- as netbox's does -- can
+          # shadow) so it reaches netbox's self-referential python
+          # reconstruction too. Drop once nixpkgs-master catches up.
+          pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
+            (pyfinal: pyprev: {
+              playwright = pyprev.playwright.overridePythonAttrs (_old: {
+                src = mfinal.fetchFromGitHub {
+                  owner = "microsoft";
+                  repo = "playwright-python";
+                  tag = "v${pyprev.playwright.version}";
+                  hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
+                };
+              });
+
+              # doCheck is already false upstream, but preCheck still
+              # string-interpolates playwright-driver.browsers (the actual
+              # WebKit/Chromium/Firefox binaries) into PLAYWRIGHT_BROWSERS_PATH,
+              # which forces Nix to build them even though the check phase
+              # that would use it never runs. That pulls in an unrelated,
+              # currently-broken nixpkgs-master bug (WebKit's minibrowser-wpe
+              # is missing libmanette for autoPatchelf). Drop preCheck instead
+              # of chasing that bug -- nothing here ever gets used.
+              pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
+                preCheck = "";
+              });
+            })
+          ];
+        })
+      ];
     };
   };
 
