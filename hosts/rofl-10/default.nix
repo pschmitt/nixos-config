@@ -36,6 +36,7 @@
     ../../services/luks-ssh-unlock-homelab.nix
     ../../services/mealie.nix
     ../../services/matrix.nix
+    ../../services/monero-wallet-rpc-sync-receiver.nix
     ../../services/n8n.nix
     ../../services/netbox.nix
     ../../services/paperless-ngx.nix
