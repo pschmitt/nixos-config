@@ -12,6 +12,12 @@ in
   options.services.fievel = {
     enable = lib.mkEnableOption "Fievel keyboard-driven mouse control";
 
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Start Fievel automatically with the graphical session.";
+    };
+
     package = lib.mkPackageOption pkgs "fievel" { };
 
     settings = lib.mkOption {
@@ -60,7 +66,7 @@ in
         After = [ "graphical-session.target" ];
       };
 
-      Install.WantedBy = [ "graphical-session.target" ];
+      Install.WantedBy = lib.optional cfg.autoStart "graphical-session.target";
 
       Service = {
         ExecStart =
