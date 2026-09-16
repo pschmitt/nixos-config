@@ -42,9 +42,12 @@ in
     # gk4's kernel exposes its battery as BATT instead. Its 80% charge cap
     # lives purely in the GPD BIOS -- no charge_control_* in sysfs, no vendor
     # module, nothing from upower -- so the plugin infers it from behaviour
-    # instead (full_at = 0). Pin full_at = 80 here if that ever misreads.
+    # instead (full_at = 0). Treat that learned 80% cap as visually full,
+    # while keeping the number inside the icon as the real battery percentage.
     programs.noctalia.settings.plugin_settings."pschmitt/battery-icon" = {
       battery_device = "BATT";
+      charge_limit_as_full = true;
+      scale_percentage_to_charge_limit = false;
       show_fan_controls = false;
       show_tdp_controls = true;
     };
