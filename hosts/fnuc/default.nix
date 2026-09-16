@@ -21,6 +21,7 @@
     ./nix-daemon.nix
     ./browser-mcp.nix
     ./claude-work-warmup.nix
+    ./agy-warmup.nix
     ./wl-paste-shim.nix
     ./syncthing.nix
   ];
