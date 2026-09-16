@@ -63,6 +63,13 @@ in
                       "noatime"
                     ];
                   };
+                  "@monero-wallet-rpc" = {
+                    mountpoint = "/var/lib/monero-wallet-rpc";
+                    mountOptions = [
+                      "compress=zstd"
+                      "noatime"
+                    ];
+                  };
                 };
               };
             };
