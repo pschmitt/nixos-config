@@ -39,6 +39,10 @@
     ];
     services.fievel = {
       enable = true;
+      # Fievel grabs all physical keyboards and exposes one virtual keyboard.
+      # Keep it on-demand so normal typing retains each keyboard's own XKB map;
+      # the Hyprland mouse-mode bind starts/stops it explicitly.
+      autoStart = false;
       # Keep Fievel's default Super+Space hint chord away from the desktop
       # microphone toggle, and use a consistent chord for both hint buttons.
       settings.hints.keys = {

@@ -13,10 +13,7 @@ let
   swayBin = "~/.config/sway/bin";
   playerctl = "${swayBin}/playerctl-wrapper.sh";
 
-  mouseSubmap = "🖱️ mouse";
   resizeSubmap = "↔️ resize";
-
-  reset = combo: bind combo ''hl.dsp.submap("reset")'';
 
   # Workspace keys 1-10 (key "0" -> workspace 10).
   wsKeys = [
@@ -37,21 +34,11 @@ let
       ws = if key == "0" then 10 else lib.toInt key;
     in
     [
-      (bind "SUPER + ${key}" ''hl.dsp.workspace.move({ workspace = ${toString ws}, monitor = "current" })'')
       (execBind "SUPER + ${key}" "${bin}/switch-workspace.sh ${toString ws}")
       (bind "SUPER + SHIFT + ${key}" "hl.dsp.window.move({ workspace = ${toString ws} })")
     ]
   ) wsKeys;
 
-  # Mouse-mode submap helpers.
-  mv = combo: args: bindOpts combo (exec "${bin}/mousectl.sh move ${args}") { repeating = true; };
-  cl =
-    combo: btn:
-    execBind combo ("${bin}/mousectl.sh click" + lib.optionalString (btn != null) " ${btn}");
-  mouseto =
-    combo: x: y:
-    execBind combo "dotoolc <<< 'mouseto ${x} ${y}'";
-  mouseBtn = combo: action: execBind combo "dotoolc <<< 'button${action} left'";
 in
 {
   # Keybinds + submaps.
@@ -149,8 +136,10 @@ in
       (execBind "SUPER + CONTROL + H" "walker -m menus:home-assistant -p '🏠 Home Assistant'")
       (execBind "SUPER + SHIFT + H" "noctalia msg panel-open pschmitt/ha:panel")
 
-      # ── Mouse / submap entry ─────────────────────────────────────────
-      (bind "SUPER + SHIFT + M" ''hl.dsp.submap("${mouseSubmap}")'')
+      # ── Mouse mode ────────────────────────────────────────────────────
+      # Fievel is deliberately on-demand: while stopped, physical keyboards
+      # retain their own XKB layouts; Super+Shift+M starts/stops its mouse mode.
+      (execBind "SUPER + SHIFT + M" "${bin}/fievel-toggle.sh")
       (execBind "SUPER + numbersign" "waypoint")
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
@@ -183,45 +172,6 @@ in
     ++ wsBinds;
 
     submaps = {
-      "${mouseSubmap}".settings.bind = [
-        (mv "right" "+25")
-        (mv "left" "-25")
-        (mv "up" "-y -25")
-        (mv "down" "-y +25")
-        (mv "SHIFT + right" "+50")
-        (mv "SHIFT + left" "-50")
-        (mv "SHIFT + up" "-y -50")
-        (mv "SHIFT + down" "-y +50")
-        (mv "ALT + right" "+5")
-        (mv "ALT + left" "-5")
-        (mv "ALT + up" "-y -5")
-        (mv "ALT + down" "-y +5")
-
-        (cl "return" null)
-        (cl "space" null)
-        (cl "SHIFT + return" "right")
-        (cl "SHIFT + space" "right")
-        (cl "ALT + return" "middle")
-        (cl "ALT + space" "middle")
-
-        (mouseto "SHIFT + 0" "0" "0")
-        (mouseto "SHIFT + 1" "1" "0")
-        (mouseto "SHIFT + 2" "1" "1")
-        (mouseto "SHIFT + 3" "0" "1")
-        (mouseto "0" "0.25" "0.25")
-        (mouseto "1" "0.75" "0.25")
-        (mouseto "2" "0.75" "0.75")
-        (mouseto "3" "0.25" "0.75")
-
-        (mouseBtn "SUPER + SHIFT + space" "down")
-        (mouseBtn "SUPER + SHIFT + return" "down")
-        (mouseBtn "SUPER + space" "up")
-        (mouseBtn "SUPER + return" "up")
-
-        (reset "escape")
-        (reset "q")
-      ];
-
       "${resizeSubmap}".settings.bind = [
         (bindOpts "right" "hl.dsp.window.resize({ x = 25, y = 0, relative = true })" { repeating = true; })
         (bindOpts "left" "hl.dsp.window.resize({ x = -25, y = 0, relative = true })" { repeating = true; })
