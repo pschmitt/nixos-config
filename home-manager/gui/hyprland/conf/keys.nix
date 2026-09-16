@@ -14,6 +14,7 @@ let
   playerctl = "${swayBin}/playerctl-wrapper.sh";
 
   resizeSubmap = "↔️ resize";
+  reset = combo: bind combo ''hl.dsp.submap("reset")'';
 
   # Workspace keys 1-10 (key "0" -> workspace 10).
   wsKeys = [
