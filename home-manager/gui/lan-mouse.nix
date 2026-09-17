@@ -42,6 +42,25 @@ in
       description = "Listen port for lan-mouse.";
     };
 
+    captureBackend = lib.mkOption {
+      type = lib.types.nullOr (
+        lib.types.enum [
+          "input-capture-portal"
+          "layer-shell"
+          "x11"
+          "dummy"
+        ]
+      );
+      # input-capture-portal (lan-mouse's auto-detected default on wlroots
+      # compositors) drops CTRL/SHIFT/ALT/SUPER modifier events when the
+      # receiving end uses the wlroots emulation backend -- a known
+      # upstream limitation (https://github.com/feschber/lan-mouse). Force
+      # layer-shell, which Hyprland supports natively and doesn't have
+      # this bug.
+      default = "layer-shell";
+      description = "Input capture backend override (--capture-backend). Null uses lan-mouse's auto-detection.";
+    };
+
     peers = lib.mkOption {
       default = [ ];
       description = "lan-mouse peers to connect to.";
@@ -124,7 +143,14 @@ in
       };
 
       Service = {
-        ExecStart = "${cfg.package}/bin/lan-mouse daemon";
+        ExecStart = lib.concatStringsSep " " (
+          [ "${cfg.package}/bin/lan-mouse" ]
+          ++ lib.optionals (cfg.captureBackend != null) [
+            "--capture-backend"
+            cfg.captureBackend
+          ]
+          ++ [ "daemon" ]
+        );
         Restart = "on-failure";
         RestartSec = 1;
       };
