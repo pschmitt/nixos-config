@@ -46,11 +46,10 @@ let
   # unconditionally -- see lockscreen.luau. Written remotely below (by the
   # host that's leaving, onto the peer it's entering); cleared locally both
   # here (when *this* host starts sending elsewhere, it can't simultaneously
-  # be receiving) and in goBackScript (clicking the button is itself "input
-  # is back", regardless of whether releaseBind was used instead and this
-  # never got cleared that way -- same known gap as awaySentinel: neither
-  # sentinel updates when release_bind's physical key combo is used instead,
-  # since that bypasses every hook lan-mouse fires).
+  # be receiving), in goBackScript (clicking the button is itself "input is
+  # back"), and remotely by releaseWatcherScript below (releaseBind's
+  # physical key combo bypasses every hook lan-mouse fires, so this is the
+  # only other place that ever notices it happened at all).
   incomingSentinel = "$XDG_RUNTIME_DIR/lan-mouse-incoming";
   notifyScript =
     peer:
@@ -110,6 +109,34 @@ let
         'systemctl --user restart lan-mouse.service; rm -f "${awaySentinel}"' &
     done
     wait
+  '';
+
+  # `releaseBind` forces capture back entirely inside lan-mouse's own
+  # capture backend, before events are forwarded -- it never runs
+  # enter_hook or anything else external, so neither sentinel above ever
+  # updates when it's used (confirmed live: bar icon/lockscreen button
+  # left stuck). lan-mouse exposes no hook, IPC event stream, or `cli`
+  # subcommand for this (checked: `cli --help` has no watch/events/status
+  # verb, and the daemon logs "releasing capture: release-bind pressed"
+  # with nothing else configurable around it) -- the journal line is the
+  # only externally observable signal at all. This tails this host's own
+  # lan-mouse.service journal continuously and reacts to that exact line:
+  # clears this host's own awaySentinel (control is back locally) and, over
+  # ssh, clears every peer's incomingSentinel -- the same bookkeeping
+  # goBackScript does, just triggered by the log line instead of a click.
+  releaseWatcherScript = pkgs.writeShellScript "lan-mouse-release-watcher" ''
+    ${pkgs.systemd}/bin/journalctl --user -u lan-mouse.service -f -n 0 -o cat | while IFS= read -r line; do
+      case "$line" in
+        *"releasing capture: release-bind pressed"*)
+          rm -f "${awaySentinel}"
+          for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
+            ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
+              'rm -f "${incomingSentinel}"' &
+          done
+          wait
+          ;;
+      esac
+    done
   '';
 in
 {
@@ -284,6 +311,28 @@ in
       };
 
       Install.WantedBy = [ "graphical-session.target" ];
+    };
+
+    # See releaseWatcherScript's own comment: the only way to react to
+    # release_bind at all is tailing lan-mouse.service's own journal.
+    # `PartOf = [ "lan-mouse.service" ]` propagates both stop *and* restart
+    # from lan-mouse.service to this unit (goBackScript restarts
+    # lan-mouse.service directly, which would otherwise leave this tailing
+    # a now-dead journalctl stream from the old process).
+    systemd.user.services.lan-mouse-release-watcher = {
+      Unit = {
+        Description = "Clears lan-mouse sentinels when release_bind forces capture back";
+        After = [ "lan-mouse.service" ];
+        PartOf = [ "lan-mouse.service" ];
+      };
+
+      Service = {
+        ExecStart = "${releaseWatcherScript}";
+        Restart = "on-failure";
+        RestartSec = 1;
+      };
+
+      Install.WantedBy = [ "lan-mouse.service" ];
     };
   };
 }
