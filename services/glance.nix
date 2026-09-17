@@ -1,4 +1,9 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   domain = config.domains.main;
   glanceHost = "home.${domain}";
@@ -19,6 +24,32 @@ let
   iconMovie = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="m20.84 2.18l-3.93.78l2.74 3.54l1.97-.4zm-6.87 1.36L12 3.93l2.75 3.53l1.96-.39zm-4.9.96l-1.97.41l2.75 3.53l1.96-.39zm-4.91 1l-.98.19a1.995 1.995 0 0 0-1.57 2.35L2 10l4.9-.97zM20 12v8H4v-8zm2-2H2v10a2 2 0 0 0 2 2h16c1.11 0 2-.89 2-2z"/></svg>'';
   iconCalendar = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 10v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2zm2-7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h1V1h2v2h8V1h2v2zm0 16V8H5v11zM9 14v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2z"/></svg>'';
   iconGitHub = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>'';
+
+  # dashboard-icons (di:) ships per-background variants for some logos:
+  # "-light" is the near-white one meant for dark backgrounds, "-dark" the
+  # near-black one meant for light backgrounds. A bookmark can only declare
+  # one icon, so the config carries the variant that fits Glance's dark
+  # default and this CSS swaps in the other one when the theme picker flips
+  # :root[data-scheme] -- Glance sets that attribute client-side from the
+  # X-Scheme response header, so the swap follows a theme switch with no
+  # reload, and if the stylesheet ever fails to load the icons still look
+  # right for the dark default. `content: url(...)` on an <img> replaces the
+  # rendered image, which is the only way to substitute a src from CSS.
+  diIconUrl = name: "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/${name}.svg";
+  # dark-scheme icon -> light-scheme icon
+  schemeIconVariants = {
+    "vaultwarden-light" = "vaultwarden";
+    "netbox" = "netbox-dark";
+  };
+  glanceAssets = pkgs.writeTextDir "user.css" (
+    lib.concatStrings (
+      lib.mapAttrsToList (dark: light: ''
+        :root[data-scheme="light"] img.bookmarks-icon[src="${diIconUrl dark}"] {
+          content: url("${diIconUrl light}");
+        }
+      '') schemeIconVariants
+    )
+  );
 
   mkWidgetHeader =
     {
@@ -634,7 +665,9 @@ in
         server = {
           host = "127.0.0.1";
           port = glancePort;
+          assets-path = "${glanceAssets}";
         };
+        theme.custom-css-file = "/assets/user.css";
         pages = [
           {
             name = "Home";
@@ -690,15 +723,18 @@ in
                           {
                             title = "NetBox";
                             url = "https://netbox.${domain}";
+                            # Bright teal, made for dark backgrounds;
+                            # schemeIconVariants swaps in "di:netbox-dark"
+                            # under the light scheme.
                             icon = "di:netbox";
                           }
                           {
                             title = "Vaultwarden";
                             url = "https://vault.${domain}";
-                            # Plain "di:vaultwarden" is near-black and barely
-                            # visible on Glance's dark theme; this "-light"
-                            # variant is the same logo in a near-white fill,
-                            # meant for dark backgrounds.
+                            # Near-white fill for the dark default theme;
+                            # schemeIconVariants swaps in plain
+                            # "di:vaultwarden" (near-black) under the light
+                            # scheme.
                             icon = "di:vaultwarden-light";
                           }
                         ];
