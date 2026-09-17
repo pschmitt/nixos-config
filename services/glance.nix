@@ -128,6 +128,12 @@ let
   octiconPrMerged = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="#8250df"><path d="M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z"/></svg>'';
   octiconPrClosed = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="#cf222e"><path d="M3.25 1A2.25 2.25 0 0 1 4 5.372v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.251 2.251 0 0 1 3.25 1Zm9.5 5.5a.75.75 0 0 1 .75.75v3.378a2.251 2.251 0 1 1-1.5 0V7.25a.75.75 0 0 1 .75-.75Zm-2.03-5.273a.75.75 0 0 1 1.06 0l.97.97.97-.97a.748.748 0 0 1 1.265.332.75.75 0 0 1-.205.729l-.97.97.97.97a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018l-.97-.97-.97.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l.97-.97-.97-.97a.75.75 0 0 1 0-1.06ZM2.5 3.25a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0ZM3.25 12a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm9.5 0a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Z"/></svg>'';
 
+  # Icons for the GitHub notification action buttons -- fill="currentColor"
+  # so they follow the button's own text color instead of a fixed brand
+  # color (unlike the PR-state/notification-type octicons above).
+  octiconCheckSmall = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>'';
+  octiconBellSlashSmall = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M8 16a2 2 0 0 0 1.985-1.75c.017-.137-.097-.25-.235-.25h-3.5c-.138 0-.252.113-.235.25A2 2 0 0 0 8 16ZM3 5c0-.463.07-.91.202-1.334l-1.29-1.29a.75.75 0 1 1 1.06-1.06l12 12a.75.75 0 1 1-1.06 1.06l-1.322-1.322c-.34.016-.68.03-1.02.04L11 13H2.518a1.516 1.516 0 0 1-1.263-2.36l1.703-2.554A.255.255 0 0 0 3 7.947V5Zm10 2.947V5A5 5 0 0 0 4.09 2.181l1.098 1.098A3.5 3.5 0 0 1 11.5 5v2.947c0 .346.102.683.294.97l1.703 2.554a.018.018 0 0 1 .002.008l-.001.007-.004.006-.006.004-.007.001-.031.002H8.06l1.5 1.5h3.922a1.516 1.516 0 0 0 1.263-2.36l-1.703-2.554A.255.255 0 0 1 13 7.947Z"/></svg>'';
+
   # GitHub Octicons for notification subject types.
   octiconNotificationIssue = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="#1a7f37"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0a6.5 6.5 0 0 0-13 0Z"/></svg>'';
   octiconNotificationPullRequest = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="#8250df"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5a.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5a.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0a.75.75 0 0 0-1.5 0Z"/></svg>'';
@@ -206,7 +212,7 @@ let
   haWarningsJinja = ''
     {%- set ns = namespace(items=[]) -%}
     {%- for e in states.binary_sensor -%}
-      {%- if e.entity_id != 'binary_sensor.plant_issues' and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
+      {%- if e.entity_id != 'binary_sensor.plant_issues' and e.entity_id != 'binary_sensor.window_advisor' and not e.entity_id.startswith('binary_sensor.window_advisor_') and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
         {%- set failed = state_attr(e.entity_id, 'failed_checks') -%}
         {%- if failed -%}
           {%- set detail = (state_attr(e.entity_id, "host_summary") or "") ~ ": " ~ (failed | join(", ")) -%}
@@ -215,11 +221,7 @@ let
         {%- else -%}
           {%- set detail = state_attr(e.entity_id, "msg") or state_attr(e.entity_id, "secondary_info") or "" -%}
           {%- set itype = "device" -%}
-          {%- if e.entity_id == "binary_sensor.window_advisor" -%}
-            {%- set link = "https://ha.${domain}/dashboard-debug/window-advisor" -%}
-          {%- else -%}
-            {%- set link = "" -%}
-          {%- endif -%}
+          {%- set link = "" -%}
         {%- endif -%}
         {%- set icon = state_attr(e.entity_id, "icon") or "" -%}
         {%- set ns.items = ns.items + [{"name": e.name, "entity_id": e.entity_id, "detail": detail, "link": link, "icon": icon, "type": itype, "last_changed": e.last_changed.isoformat()}] -%}
@@ -244,6 +246,18 @@ let
       {%- set count = ns.plant_all_entries | length -%}
       {%- set oldest = ns.plant_all_entries | map(attribute="last_changed") | min -%}
       {%- set ns.items = ns.items + [{"name": count ~ " plant" ~ ("s" if count != 1 else "") ~ (" need " if count != 1 else " needs ") ~ "attention", "entity_id": "plant.problems", "detail": ns.plant_detail_parts | join("; "), "link": "https://ha.${domain}/dashboard-debug/plants", "icon": "mdi:sprout", "type": "plant", "last_changed": oldest.isoformat()}] -%}
+    {%- endif -%}
+    {%- set ns.window_entries = [] -%}
+    {%- for e in states.binary_sensor -%}
+      {%- if e.entity_id.startswith('binary_sensor.window_advisor_') and e.state == 'on' -%}
+        {%- set room = e.name | replace("Window advisor: ", "") -%}
+        {%- set ns.window_entries = ns.window_entries + [{"room": room, "last_changed": e.last_changed}] -%}
+      {%- endif -%}
+    {%- endfor -%}
+    {%- if ns.window_entries -%}
+      {%- set rooms = ns.window_entries | map(attribute="room") | list -%}
+      {%- set oldest = ns.window_entries | map(attribute="last_changed") | min -%}
+      {%- set ns.items = ns.items + [{"name": "Window Advisor", "entity_id": "binary_sensor.window_advisor", "detail": rooms | join(", "), "link": "https://ha.${domain}/dashboard-debug/window-advisor", "icon": "mdi:window-open-variant", "type": "device", "last_changed": oldest.isoformat()}] -%}
     {%- endif -%}
     {%- for eid in ["binary_sensor.offline_devices_devices_offline", "binary_sensor.public_alerts", "binary_sensor.dwd_warnings_current_future"] -%}
       {%- if states(eid) == "on" -%}
@@ -471,6 +485,12 @@ let
     </div>
   '';
 
+  # Styled to resemble GitHub's own notification action buttons (icon +
+  # label pill, subtle border/background) rather than Glance's UI.
+  ghActionButtonBg = "rgba(255,255,255,.06)";
+  ghActionButtonHoverBg = "rgba(255,255,255,.14)";
+  ghActionButtonStyle = "display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:${ghActionButtonBg};color:inherit;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;line-height:1.4";
+
   # Reuses the hermes-agent pschmitt GitHub token declared in hermes.nix
   # (already has notifications scope, verified live) rather than minting a
   # new PAT -- referencing the placeholder doesn't require redeclaring the
@@ -498,9 +518,9 @@ let
           <div class="flex items-center gap-5">
             <span class="shrink-0">{{ if eq $type "PullRequest" }}${octiconNotificationPullRequest}{{ else if eq $type "Issue" }}${octiconNotificationIssue}{{ else if eq $type "Release" }}${octiconNotificationRelease}{{ else if eq $type "Commit" }}${octiconNotificationCommit}{{ else if eq $type "CheckSuite" }}${octiconNotificationCheckSuite}{{ else if eq $type "Discussion" }}${octiconNotificationDiscussion}{{ else }}${octiconNotificationDefault}{{ end }}</span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ $webUrl }}" target="_blank" rel="noreferrer">{{ .String "subject.title" }}</a>
-            <span class="shrink-0" style="margin-left:auto;display:flex;gap:8px">
-              <button type="button" title="Mark as done" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">✓</button>
-              <button type="button" title="Unsubscribe" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">🔕</button>
+            <span class="shrink-0" style="margin-left:auto;display:flex;gap:6px">
+              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Done</span></button>
+              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconBellSlashSmall}<span>Unsubscribe</span></button>
             </span>
           </div>
           <div class="size-h6 color-subdue">{{ $repo }} · {{ .String "reason" }}</div>
@@ -565,6 +585,13 @@ in
                 widgets = [
                   { type = "clock"; }
                   {
+                    type = "weather";
+                    # Same coordinates as the laptop weather widgets
+                    # (profiles/laptop/dank-material-shell.nix).
+                    location = "Berlin, Germany";
+                    units = "metric";
+                  }
+                  {
                     type = "custom-api";
                     title = "Calendar";
                     hide-header = true;
@@ -584,13 +611,6 @@ in
                         icon = iconCalendar;
                       }
                       + calendarTemplate;
-                  }
-                  {
-                    type = "weather";
-                    # Same coordinates as the laptop weather widgets
-                    # (profiles/laptop/dank-material-shell.nix).
-                    location = "Berlin, Germany";
-                    units = "metric";
                   }
                   {
                     type = "bookmarks";
@@ -616,7 +636,11 @@ in
                           {
                             title = "Vaultwarden";
                             url = "https://vault.${domain}";
-                            icon = "di:vaultwarden";
+                            # Plain "di:vaultwarden" is near-black and barely
+                            # visible on Glance's dark theme; this "-light"
+                            # variant is the same logo in a near-white fill,
+                            # meant for dark backgrounds.
+                            icon = "di:vaultwarden-light";
                           }
                         ];
                       }
