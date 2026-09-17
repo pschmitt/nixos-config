@@ -33,9 +33,11 @@ in
         server = {
           # 0.0.0.0 (not just loopback) so the n8n container can reach it
           # directly over the trusted n8n docker bridge (see services/n8n.nix)
-          # without going through the public limiter. Still not exposed to
-          # the WAN: nginx is the only public path, and the firewall only
-          # trusts the n8n bridge interface, not the world.
+          # without going through the public limiter, and so Home Assistant
+          # and local debugging clients can reach it directly over the
+          # tailscale/netbird mesh (see the limiter passlist below). Still not
+          # exposed to the WAN: nginx (over loopback) is the only public path,
+          # and the explicit firewall drop below refuses everything else.
           bind_address = "0.0.0.0";
           port = 7372;
           public_instance = true;
@@ -105,6 +107,16 @@ in
         if 3 restarts within 15 cycles then alert
     '';
   };
+
+  # searx.settings.server.bind_address above is 0.0.0.0 for two trusted paths
+  # (n8n docker bridge, tailscale/netbird mesh) that are both already in
+  # networking.firewall.trustedInterfaces. Make the deny of everything else
+  # explicit rather than depending solely on this port never ending up in
+  # allowedTCPPorts. nginx's own proxy connection (loopback) is unaffected
+  # since "lo" is trusted too.
+  networking.firewall.extraInputRules = ''
+    tcp dport ${toString config.services.searx.settings.server.port} drop
+  '';
 
   # The searx-init unit (services/searx module, upstream) always deletes any
   # limiter.toml on start, forcing the packaged default bot-detection, which
