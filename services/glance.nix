@@ -58,6 +58,12 @@ let
   # the Google feeds are UTC ("...Z") while the Outlook one carries TZID, so
   # without that normalization Google events rendered 2h early in summer.
   #
+  # Today's events are highlighted via their subtitle line ("Today, 15:04" in
+  # the accent color). "Today" comes from now at render time, i.e. the rofl-10
+  # clock (Europe/Berlin), so after midnight it lags by at most one cache
+  # cycle. Note Go template comments must hug their delimiters ({{/* .. */}}),
+  # a spaced-out {{ /* .. */ }} is a config-breaking parse error.
+  #
   # The webhook URLs themselves (this one and the notification-action one
   # below) are secrets -- this repo is public, and the random path segment
   # is the only thing gating either webhook -- so both are sops-backed and
@@ -69,16 +75,18 @@ let
     {{ if not $events }}
       <p class="color-subdue">Nothing upcoming</p>
     {{ else }}
+      {{ $today := now | formatTime "DateOnly" }}
       <ul class="list list-gap-10 collapsible-container" data-collapse-after="8">
       {{ range $events }}
         {{ $t := .String "start" | parseTime "RFC3339" }}
+        {{ $isToday := eq (formatTime "DateOnly" $t) $today }}
         <li>
           <div class="flex items-center gap-5">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{{ if eq (.String "calendar") "work" }}#8250df{{ else if eq (.String "calendar") "bergmann-schmitt" }}#1a7f37{{ else }}#0969da{{ end }}"></span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ .String "url" }}" target="_blank" rel="noreferrer">{{ .String "title" }}</a>
           </div>
-          <div class="size-h6 color-subdue">
-            {{ if .Bool "allDay" }}{{ formatTime "Jan 2" $t }} · all day{{ else }}{{ formatTime "Jan 2, 15:04" $t }}{{ end }}
+          <div class="size-h6 {{ if $isToday }}color-primary{{ else }}color-subdue{{ end }}">
+            {{ if .Bool "allDay" }}{{ if $isToday }}Today{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day{{ else }}{{ if $isToday }}Today, {{ formatTime "15:04" $t }}{{ else }}{{ formatTime "Jan 2, 15:04" $t }}{{ end }}{{ end }}
           </div>
         </li>
       {{ end }}
