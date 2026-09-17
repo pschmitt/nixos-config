@@ -242,9 +242,10 @@ in
                 "weather"
                 "clock"
                 "timewarrior"
+                "lan-mouse"
               ];
               padding = 12;
-              widget_spacing = 20; # gap between weather/clock/timewarrior
+              widget_spacing = 20; # gap between weather/clock/timewarrior/lan-mouse
             }
             {
               id = "notif-battery";
@@ -329,6 +330,10 @@ in
             # hyprlock.nix) after Noctalia replaced hyprlock as the session
             # locker — see pschmitt/noctalia-plugins.
             "pschmitt/feierabend"
+            # Bar icon + panel showing which host currently owns
+            # mouse/keyboard control -- see home-manager/gui/lan-mouse.nix's
+            # enter_hook (away sentinel) and pschmitt/noctalia-plugins.
+            "pschmitt/lan-mouse"
             # AI plan quota (community plugin, felipeartur/ai-usagebar) —
             # tried and disabled again: didn't like the look, and Codex
             # support wasn't solid. pkgs/local/ai-usagebar is still built
@@ -403,6 +408,12 @@ in
               name = "pschmitt-screencast";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-screencast}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-lan-mouse";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-lan-mouse}/share/noctalia-plugins";
               enabled = true;
             }
           ];
@@ -527,7 +538,12 @@ in
                   type = "clock";
                   output = name;
                   cx = w * 0.5;
-                  cy = h * 0.035;
+                  # Pulled up from the original 0.035h for a slight top-edge
+                  # overhang (macOS Dynamic Island look). 0.005h clipped the
+                  # text itself, not just the pill's rounded corners --
+                  # 0.024h keeps the overhang to ~a few px of background,
+                  # not the digits.
+                  cy = h * 0.024;
                   # Box_width was way wider than the actual text needed
                   # (0.6h background around ~19 chars of content) -- tightened
                   # to 0.4h. box_height bumped a bit more for a slightly
@@ -652,6 +668,30 @@ in
                     # against the now-rounder background edge.
                     background_padding = 18.0;
                   };
+                };
+                # "Bring input back" button -- see pschmitt/noctalia-plugins'
+                # lan-mouse plugin lockscreen.luau and releaseBind's comment
+                # in home-manager/gui/lan-mouse.nix. Only relevant while this
+                # host is locked and a peer holds capture (the one case
+                # lan-mouse's own edge-crossing release can't reach), so it's
+                # tucked in the opposite bottom corner from the battery icon
+                # rather than competing with the avatar/login box for
+                # attention. Auto-fit box (0.0/0.0), same as
+                # feierabend-${name}/media-${name} above.
+                "lanmouse-${name}" = {
+                  type = "pschmitt/lan-mouse:lockscreen";
+                  output = name;
+                  cx = h * 0.10;
+                  cy = h * 0.97;
+                  box_width = 0.0;
+                  box_height = 0.0;
+                  # Every desktop_widget gets a background card by default
+                  # (see battery-${name} below, which disables it the same
+                  # way) -- without this, the widget showed as an empty
+                  # framed box whenever the button itself is hidden
+                  # (state.incoming == false, i.e. not currently using
+                  # another host's mouse/keyboard, the common case).
+                  settings.background = false;
                 };
                 # Fixed widget-id convention for the login panel itself
                 # (password field, weather/media row, session buttons) --
@@ -782,6 +822,7 @@ in
           # read-only config.toml — so a live tweak silently wins over any
           # `settings` declared here until it is cleared.
           timewarrior.type = "pschmitt/timewarrior:bar";
+          lan-mouse.type = "pschmitt/lan-mouse:bar";
           ha.type = "pschmitt/ha:bar";
           ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
           battery-icon.type = "pschmitt/battery-icon:bar";
