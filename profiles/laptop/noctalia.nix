@@ -35,7 +35,7 @@ in
     # changes to its separate state overlay, leaving this file immutable.
     xdg.configFile."noctalia/ha.yaml".text = ''
       entities:
-        - lock.front_door_2
+        - lock.m5stack_atoms3r_nuki_bridge_m5stack_atoms3r_nuki_bridge_lock
         - entity_id: sensor.schmutzi_current_status
           state_template: "{{ states('sensor.schmutzi_time_remaining') }}"
           conditions:
@@ -94,7 +94,7 @@ in
             friendly_name: Elgato
           light.hue_office_light:
             friendly_name: Hue
-          lock.front_door_2:
+          lock.m5stack_atoms3r_nuki_bridge_m5stack_atoms3r_nuki_bridge_lock:
             friendly_name: Front door
           camera.office:
             friendly_name: Office camera
