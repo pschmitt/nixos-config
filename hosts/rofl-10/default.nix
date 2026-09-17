@@ -28,6 +28,7 @@
     ../../services/forgejo.nix
     ../../services/gitea-mirror.nix
     ../../services/github-backup.nix
+    ../../services/glance.nix
     ../../services/harmonia.nix
     ../../services/hermes.nix
     ../../services/http-static.nix
