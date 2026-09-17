@@ -12,6 +12,7 @@
     ./go-hass-agent
     ./gnome-keyring.nix
     ./home-assistant-secrets.nix
+    ./lan-mouse.nix
     # ./clipcascade.nix
     ./mcp-browser.nix
     ./media.nix
