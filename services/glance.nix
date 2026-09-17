@@ -101,6 +101,16 @@ let
   # All-day events are never "now" or "past" (they would be ongoing for their
   # whole day, which reads as noise), so they keep the plain date line.
   #
+  # Today and tomorrow are named rather than dated, and the list collapses
+  # right after them, so "Show more" is exactly the line between what is
+  # imminent and what is not. The events are already sorted, so the collapse
+  # point is the index of the first event past tomorrow (floored at 3, so a
+  # quiet couple of days still show something rather than a lone button).
+  # Tomorrow is now + 24h, which lands on the wrong date in the hour after
+  # midnight on a DST switch; the fallback to 25h covers the long day, and
+  # the short one is left as is -- it costs half an hour of plain dates once
+  # a year and is not worth more machinery than that.
+  #
   # Note Go template comments must hug their delimiters ({{/* .. */}}); a
   # spaced-out {{ /* .. */ }} is a config-breaking parse error.
   #
@@ -116,14 +126,22 @@ let
       <p class="color-subdue">Nothing upcoming</p>
     {{ else }}
       {{ $today := now | formatTime "DateOnly" }}
+      {{ $tomorrow := offsetNow "24h" | formatTime "DateOnly" }}
+      {{ if eq $tomorrow $today }}{{ $tomorrow = offsetNow "25h" | formatTime "DateOnly" }}{{ end }}
       {{ $nowStamp := now | formatTime "2006-01-02T15:04:05" }}
-      <ul class="list list-gap-10 collapsible-container" data-collapse-after="8">
+      {{ $visible := len $events }}
+      {{ range $i, $ev := $events }}
+        {{ if and (lt $i $visible) (gt (formatTime "DateOnly" ($ev.String "start" | parseTime "RFC3339")) $tomorrow) }}{{ $visible = $i }}{{ end }}
+      {{ end }}
+      {{ if lt $visible 3 }}{{ $visible = 3 }}{{ end }}
+      <ul class="list list-gap-10 collapsible-container" data-collapse-after="{{ $visible }}">
       {{ range $events }}
         {{ $t := .String "start" | parseTime "RFC3339" }}
         {{ $e := .String "end" | parseTime "RFC3339" }}
         {{ $startStamp := formatTime "2006-01-02T15:04:05" $t }}
         {{ $endStamp := formatTime "2006-01-02T15:04:05" $e }}
         {{ $isToday := eq (formatTime "DateOnly" $t) $today }}
+        {{ $isTomorrow := eq (formatTime "DateOnly" $t) $tomorrow }}
         {{ $timed := not (.Bool "allDay") }}
         {{ $isPast := and $timed (le $endStamp $nowStamp) }}
         {{ $isNow := and $timed (le $startStamp $nowStamp) (gt $endStamp $nowStamp) }}
@@ -132,13 +150,15 @@ let
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{{ if eq (.String "calendar") "work" }}#8250df{{ else if eq (.String "calendar") "bergmann-schmitt" }}#1a7f37{{ else }}#0969da{{ end }}"></span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ .String "url" }}" target="_blank" rel="noreferrer">{{ .String "title" }}</a>
           </div>
-          <div class="size-h6 {{ if or $isNow (and $isToday (not $isPast)) }}color-primary{{ else }}color-subdue{{ end }}">
+          <div class="size-h6 {{ if or $isNow (and $isToday (not $isPast)) }}color-primary{{ else if $isTomorrow }}color-base{{ else }}color-subdue{{ end }}">
             {{ if .Bool "allDay" }}
-              {{ if $isToday }}Today{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day
+              {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day
             {{ else if $isNow }}
               Now · until {{ if eq (formatTime "DateOnly" $e) (formatTime "DateOnly" $t) }}{{ formatTime "15:04" $e }}{{ else }}{{ formatTime "Jan 2, 15:04" $e }}{{ end }}
             {{ else if $isToday }}
               Today, {{ formatTime "15:04" $t }}
+            {{ else if $isTomorrow }}
+              Tomorrow, {{ formatTime "15:04" $t }}
             {{ else }}
               {{ formatTime "Jan 2, 15:04" $t }}
             {{ end }}
