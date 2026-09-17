@@ -51,6 +51,30 @@ in
 
       home.packages = [ pkgs.caffeine ];
 
+      # A shutdown can interrupt `zhj feierabend countdown` before its EXIT
+      # trap removes these files. Clear them before Noctalia's first start so
+      # an interrupted countdown cannot be resurrected on the next boot. Keep
+      # this oneshot active: Noctalia may restart while a new countdown is
+      # running, and that restart must not clear its live state.
+      systemd.user.services.feierabend-state-cleanup = {
+        Unit = {
+          Description = "Clear stale Feierabend countdown state";
+          Before = [ "noctalia.service" ];
+        };
+
+        Service = {
+          Type = "oneshot";
+          ExecStart = pkgs.writeShellScript "clear-feierabend-state" ''
+            rm -f -- \
+              "${config.xdg.stateHome}/feierabend-countdown" \
+              "${config.xdg.stateHome}/feierabend-event"
+          '';
+          RemainAfterExit = true;
+        };
+
+        Install.WantedBy = [ "noctalia.service" ];
+      };
+
       # Noctalia requires XDG_SESSION_ID to connect to logind's session lock monitor.
       # Because noctalia.service runs as a systemd user service outside of the session scope,
       # GetSessionByPID(getpid()) fails if XDG_SESSION_ID is not already in the service environment.
