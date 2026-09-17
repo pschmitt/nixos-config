@@ -29,7 +29,23 @@
     # // (import ./tmux.nix { inherit final prev; })
     // (import ./hyprgrass.nix { inherit inputs final prev; })
     // (import ./noctalia.nix { inherit inputs final prev; })
-    // { }; # Continue merging additional overlays as needed
+    // {
+      # GitHub's codeload tarball for Playwright v1.63.0 changed bytes after
+      # nixpkgs recorded its hash.  Keep the main package set in sync with the
+      # equivalent nixpkgs-master workaround below; pytr uses this package set.
+      pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (_pyfinal: pyprev: {
+          playwright = pyprev.playwright.overridePythonAttrs (_old: {
+            src = final.fetchFromGitHub {
+              owner = "microsoft";
+              repo = "playwright-python";
+              tag = "v${pyprev.playwright.version}";
+              hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
+            };
+          });
+        })
+      ];
+    }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
   unstable-packages = final: prev: {
