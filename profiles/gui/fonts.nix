@@ -29,6 +29,7 @@ in
       [
         # dejavu_fonts
         # noto-fonts-cjk
+        ComicCode
         fira-code
         fira-code-symbols
         liberation_ttf

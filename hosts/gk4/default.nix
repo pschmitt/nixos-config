@@ -84,28 +84,43 @@ in
   # Re-enter manual curve control after firmware/kernel resume handling.
   powerManagement.resumeCommands = "systemctl restart gpd-fan-curve.service";
 
-  services.ppd-react.tdp = {
-    enable = true;
-    command = "${ryzenadjTdp}/bin/ryzenadj-tdp";
-    profiles = {
-      power-saver = {
-        stapmLimit = 15000;
-        fastLimit = 15000;
-        slowLimit = 15000;
-        apuSlowLimit = 15000;
+  services = {
+    kmscon = {
+      config = {
+        rotate = "right";
+        "xkb-keymap" = "${pkgs.custom-keymaps}/share/keymaps/custom/gpdpocket4-de.xkb";
       };
-      balanced = {
-        stapmLimit = 20000;
-        fastLimit = 20000;
-        slowLimit = 20000;
-        apuSlowLimit = 20000;
+    };
+
+    ppd-react.tdp = {
+      enable = true;
+      command = "${ryzenadjTdp}/bin/ryzenadj-tdp";
+      profiles = {
+        power-saver = {
+          stapmLimit = 15000;
+          fastLimit = 15000;
+          slowLimit = 15000;
+          apuSlowLimit = 15000;
+        };
+        balanced = {
+          stapmLimit = 20000;
+          fastLimit = 20000;
+          slowLimit = 20000;
+          apuSlowLimit = 20000;
+        };
+        performance = {
+          stapmLimit = 24000;
+          fastLimit = 28000;
+          slowLimit = 28000;
+          apuSlowLimit = 28000;
+        };
       };
-      performance = {
-        stapmLimit = 24000;
-        fastLimit = 28000;
-        slowLimit = 28000;
-        apuSlowLimit = 28000;
-      };
+    };
+
+    upower = {
+      criticalPowerAction = "PowerOff";
+      percentageCritical = 10;
+      percentageAction = 5;
     };
   };
 
@@ -147,12 +162,6 @@ in
       # allowedTCPPorts = [ ... ];
       # allowedUDPPorts = [ ... ];
     };
-  };
-
-  services.upower = {
-    criticalPowerAction = "PowerOff";
-    percentageCritical = 10;
-    percentageAction = 5;
   };
 
   systemd.sleep.settings.Sleep = {

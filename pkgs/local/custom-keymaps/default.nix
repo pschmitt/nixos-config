@@ -3,6 +3,7 @@
   stdenvNoCC,
   ckbcomp,
   xkeyboard_config,
+  xkbcomp,
 }:
 let
   symbolsDir = ./symbols;
@@ -21,6 +22,27 @@ let
         -I"${xkeyboard_config}/share/X11/xkb" \
         -layout "${layout}" \
         > "$out/share/keymaps/custom/${layout}.map"
+
+      cat > "$out/share/keymaps/custom/${layout}.xkb" <<EOF
+      xkb_keymap {
+        xkb_keycodes { include "evdev+aliases(qwerty)" };
+        xkb_types { include "complete" };
+        xkb_compat { include "complete" };
+        xkb_symbols { include "pc+${layout}" };
+        xkb_geometry { include "pc(pc105)" };
+      };
+      EOF
+
+      xkbcomp \
+        -w 0 \
+        -xkb \
+        -I"$out/share/X11/xkb" \
+        -I"${xkeyboard_config}/share/X11/xkb" \
+        "$out/share/keymaps/custom/${layout}.xkb" \
+        "$out/share/keymaps/custom/${layout}.compiled.xkb"
+
+      mv "$out/share/keymaps/custom/${layout}.compiled.xkb" \
+        "$out/share/keymaps/custom/${layout}.xkb"
     '') layouts
   );
 in
@@ -30,7 +52,10 @@ stdenvNoCC.mkDerivation {
   dontUnpack = true;
   strictDeps = true;
 
-  nativeBuildInputs = [ ckbcomp ];
+  nativeBuildInputs = [
+    ckbcomp
+    xkbcomp
+  ];
 
   installPhase = ''
     runHook preInstall

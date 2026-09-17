@@ -1,4 +1,9 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./hardware-configuration.nix
@@ -17,6 +22,11 @@
   ];
 
   hardware.cattle = false;
+
+  services.kmscon.config = {
+    "xkb-keymap" = "${pkgs.custom-keymaps}/share/keymaps/custom/hhkb-de.xkb";
+  };
+
   initrd.wifi = {
     enable = true;
     interfaceName = "wlp0s20f3";
