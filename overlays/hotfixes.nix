@@ -88,6 +88,19 @@
     '';
   });
 
+  # nixpkgs' WebKit build for playwright-driver.browsers is missing
+  # libmanette in buildInputs, so auto-patchelf can't satisfy
+  # libmanette-0.2.so.0 wanted by minibrowser-wpe/lib/libWPEWebKit-*.so,
+  # which breaks every build of playwright-mcp (pulled in by
+  # home-manager/devel/ai.nix on every host). Fixed upstream in
+  # https://github.com/NixOS/nixpkgs/pull/563824
+  # (d3194c02c2440bf7350b5c92836a38111882800e, merged into nixpkgs master
+  # 2026-09-16) but not yet in nixos-unstable. Build playwright-mcp from the
+  # nixpkgs-master package set (already tracked as `master` in
+  # unstable-packages below) instead of reimplementing the fix locally.
+  # Revert to plain `prev.playwright-mcp` once nixos-unstable catches up.
+  playwright-mcp = final.master.playwright-mcp;
+
   # Waybar's hyprland/workspaces module hard-codes old Hyprlang-style
   # dispatchers ("dispatch workspace N") which are invalid Lua and fail
   # in Hyprland Lua config mode (configType = "lua").
