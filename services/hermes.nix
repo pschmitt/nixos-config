@@ -575,11 +575,19 @@ in
         ];
       };
 
-      # signal-cli runs its own daemon (JSON-RPC over HTTP, loopback-only) that
-      # the gateway's Signal adapter talks to; Hermes never calls the Signal
-      # servers directly. Account registration/verification is a one-time
-      # interactive step (needs a real SMS/voice code) run manually against the
-      # same data dir.
+      # signal-cli runs its own daemon (JSON-RPC over HTTP) that the gateway's
+      # Signal adapter talks to; Hermes never calls the Signal servers
+      # directly. Account registration/verification is a one-time interactive
+      # step (needs a real SMS/voice code) run manually against the same data
+      # dir.
+      #
+      # Bound to 0.0.0.0 rather than loopback-only so Home Assistant (reachable
+      # only over the tailscale/netbird mesh, not roflnet) can also send
+      # through this same bot account via its /api/v1/rpc JSON-RPC endpoint.
+      # This is still not exposed publicly: tailscale0/nb-netbird-io are the
+      # only interfaces in networking.firewall.trustedInterfaces (see
+      # profiles/network/{tailscale,netbird}.nix), every other interface stays
+      # behind the default-deny firewall.
       signal-cli-daemon = {
         description = "signal-cli JSON-RPC daemon for Hermes";
         wantedBy = [ "multi-user.target" ];
@@ -596,7 +604,7 @@ in
           # The bot's phone number is a secret (see hermes/signal/account), so
           # read it from the environment at runtime instead of baking it into
           # the unit.
-          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.signal-cli}/bin/signal-cli --scrub-log -a \"$SIGNAL_ACCOUNT\" -d ${signalCliDataDir} daemon --http 127.0.0.1:${toString signalCliPort} --receive-mode on-start'";
+          ExecStart = "${pkgs.bash}/bin/bash -c '${pkgs.signal-cli}/bin/signal-cli --scrub-log -a \"$SIGNAL_ACCOUNT\" -d ${signalCliDataDir} daemon --http 0.0.0.0:${toString signalCliPort} --receive-mode on-start'";
           EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
           Restart = "always";
           RestartSec = 5;
@@ -708,6 +716,20 @@ in
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.
   custom.authelia.extraTwoFactorDomains = [ hermesHost ];
+
+  # signal-cli-daemon above binds 0.0.0.0 so Home Assistant can reach it over
+  # the mesh, relying on tailscale0/nb-netbird-io being in
+  # networking.firewall.trustedInterfaces (see
+  # profiles/network/{tailscale,netbird}.nix) -- packets arriving on those
+  # interfaces are accepted before this rule is ever reached. This host's
+  # firewall uses the nftables backend (services/networking/firewall-nftables.nix),
+  # where extraInputRules is appended to the input-allow chain, i.e. it only
+  # ever sees new connections from non-trusted interfaces. Make the deny
+  # explicit here rather than relying solely on signalCliPort never ending up
+  # in allowedTCPPorts.
+  networking.firewall.extraInputRules = ''
+    tcp dport ${toString signalCliPort} drop
+  '';
 
   # The playwright-* MCP servers above pass -o IdentityFile explicitly, but
   # any other ssh Hermes runs on its own (e.g. from a shell tool call) has no
