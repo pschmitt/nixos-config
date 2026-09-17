@@ -45,6 +45,9 @@ in
         uid = 1000;
         gid = 1000;
       };
+      "calendar/ics-url/private" = config.custom.mkSecret { mode = "0400"; };
+      "calendar/ics-url/bergmann-schmitt" = config.custom.mkSecret { mode = "0400"; };
+      "calendar/ics-url/work" = config.custom.mkSecret { mode = "0400"; };
     };
     templates."n8n/runners/env" = {
       content = ''
@@ -52,6 +55,22 @@ in
       '';
       mode = "0400";
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-n8n-runner.service" ];
+    };
+    # Workflow secrets (e.g. the "📅 Glance Calendar Feed" workflow's ICS
+    # feed URLs) referenced from node expressions via `{{ $env.VAR }}`
+    # instead of being embedded literally in node parameters -- n8n
+    # workflows on this instance sync to a *public* GitHub repo
+    # (pschmitt/n8n-workflows), so anything typed directly into a node
+    # parameter is effectively published. $env references are safe to
+    # export; the values behind them are not.
+    templates."n8n/workflow-secrets/env" = {
+      content = ''
+        CALENDAR_ICS_URL_PRIVATE=${config.sops.placeholder."calendar/ics-url/private"}
+        CALENDAR_ICS_URL_BERGMANN_SCHMITT=${config.sops.placeholder."calendar/ics-url/bergmann-schmitt"}
+        CALENDAR_ICS_URL_WORK=${config.sops.placeholder."calendar/ics-url/work"}
+      '';
+      mode = "0400";
+      restartUnits = [ "${config.virtualisation.oci-containers.backend}-n8n.service" ];
     };
   };
 
@@ -101,6 +120,12 @@ in
 
         # N8N_BASIC_AUTH_ACTIVE = "true";
         N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true";
+        # Required for workflows to reference secrets via `{{ $env.VAR }}`
+        # expressions instead of embedding them literally in node
+        # parameters -- workflows here sync to a *public* GitHub repo
+        # (pschmitt/n8n-workflows), so anything typed into a parameter is
+        # effectively published; $env references are safe to export.
+        N8N_BLOCK_ENV_ACCESS_IN_NODE = "false";
 
         N8N_HOST = n8nHost;
         N8N_LISTEN_ADDRESS = "0.0.0.0";
@@ -120,6 +145,9 @@ in
 
         N8N_USER_FOLDER = "/data";
       };
+      environmentFiles = [
+        config.sops.templates."n8n/workflow-secrets/env".path
+      ];
       volumes = [
         "${n8nDataDir}:/data:rw"
         "${n8nHomeDir}/n8n-files:/home/node/.n8n-files:rw"
