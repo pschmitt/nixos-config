@@ -348,50 +348,60 @@ let
   # a second, ungrouped request for raw Episode items (subrequest
   # "episodes") is cross-referenced by SeriesId inside the template to find
   # the min/max season number among that series' new episodes.
+  # Styled as a horizontally-scrolling poster-card strip (portrait art,
+  # rounded corners, a corner badge for new-episode count) to match
+  # Jellyfin's own "Recently Added" rows instead of a generic icon+text list.
   jellyfinLatestTemplate = ''
     {{ $items := .JSON.Array "" }}
     {{ $episodes := (.Subrequest "episodes").JSON.Array "" }}
     {{ if not $items }}
       <p class="color-subdue">Nothing new recently</p>
     {{ else }}
-      <ul class="list list-gap-10 collapsible-container" data-collapse-after="6">
+      <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
       {{ range $items }}
-        <li>
-          <a class="flex items-center gap-10" href="${jellyfinHost}/web/#/details?id={{ .String "Id" }}&serverId=''${JELLYFIN_SERVER_ID}" target="_blank" rel="noreferrer">
-            <img src="${jellyfinHost}/Items/{{ .String "Id" }}/Images/Primary?fillWidth=160&quality=80" style="width:64px;height:96px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="" onerror="this.style.visibility='hidden'" />
-            <div class="min-w-0">
-              <div class="size-h5 color-highlight text-truncate">{{ .String "Name" }}</div>
-              <div class="size-h6 color-subdue">
-                {{ if eq (.String "Type") "Movie" }}
-                  🎬 Movie
-                {{ else if eq (.String "Type") "Series" }}
-                  {{ $seriesId := .String "Id" }}
-                  {{ $seasonMin := 9999 }}
-                  {{ $seasonMax := -1 }}
-                  {{ range $episodes }}
-                    {{ if eq (.String "SeriesId") $seriesId }}
-                      {{ $s := .Int "ParentIndexNumber" }}
-                      {{ if lt $s $seasonMin }}{{ $seasonMin = $s }}{{ end }}
-                      {{ if gt $s $seasonMax }}{{ $seasonMax = $s }}{{ end }}
-                    {{ end }}
-                  {{ end }}
-                  📺
-                  {{ if eq $seasonMax -1 }}
-                  {{ else if eq $seasonMin $seasonMax }}
-                    Season {{ $seasonMin }} ·
-                  {{ else }}
-                    Seasons {{ $seasonMin }}-{{ $seasonMax }} ·
-                  {{ end }}
-                  {{ .Int "ChildCount" }} new episode{{ if ne (.Int "ChildCount") 1 }}s{{ end }}
-                {{ else }}
-                  📺 {{ .String "SeriesName" }} · S{{ printf "%02d" (.Int "ParentIndexNumber") }}E{{ printf "%02d" (.Int "IndexNumber") }}
-                {{ end }}
-              </div>
-            </div>
-          </a>
-        </li>
+        {{ $type := .String "Type" }}
+        {{ $id := .String "Id" }}
+        {{ $title := .String "Name" }}
+        {{ $subtitle := "" }}
+        {{ $badge := 0 }}
+        {{ if eq $type "Movie" }}
+          {{ $year := .Int "ProductionYear" }}
+          {{ if gt $year 0 }}{{ $subtitle = printf "%d" $year }}{{ end }}
+        {{ else if eq $type "Series" }}
+          {{ $seriesId := $id }}
+          {{ $seasonMin := 9999 }}
+          {{ $seasonMax := -1 }}
+          {{ range $episodes }}
+            {{ if eq (.String "SeriesId") $seriesId }}
+              {{ $s := .Int "ParentIndexNumber" }}
+              {{ if lt $s $seasonMin }}{{ $seasonMin = $s }}{{ end }}
+              {{ if gt $s $seasonMax }}{{ $seasonMax = $s }}{{ end }}
+            {{ end }}
+          {{ end }}
+          {{ if ne $seasonMax -1 }}
+            {{ if eq $seasonMin $seasonMax }}
+              {{ $subtitle = printf "Season %d" $seasonMin }}
+            {{ else }}
+              {{ $subtitle = printf "Seasons %d-%d" $seasonMin $seasonMax }}
+            {{ end }}
+          {{ end }}
+          {{ $badge = .Int "ChildCount" }}
+        {{ else }}
+          {{ $title = .String "SeriesName" }}
+          {{ $subtitle = printf "S%d:E%d - %s" (.Int "ParentIndexNumber") (.Int "IndexNumber") (.String "Name") }}
+        {{ end }}
+        <a href="${jellyfinHost}/web/#/details?id={{ $id }}&serverId=''${JELLYFIN_SERVER_ID}" target="_blank" rel="noreferrer" style="flex:0 0 auto;width:130px;text-decoration:none;color:inherit">
+          <div style="position:relative">
+            <img src="${jellyfinHost}/Items/{{ $id }}/Images/Primary?fillWidth=260&quality=90" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block" alt="" onerror="this.style.visibility='hidden'" />
+            {{ if gt $badge 0 }}
+              <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $badge }}</span>
+            {{ end }}
+          </div>
+          <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ $title }}</div>
+          {{ if $subtitle }}<div class="size-h6 color-subdue text-truncate">{{ $subtitle }}</div>{{ end }}
+        </a>
       {{ end }}
-      </ul>
+      </div>
     {{ end }}
   '';
 
@@ -497,8 +507,8 @@ let
             <span class="shrink-0">{{ if eq $type "PullRequest" }}${octiconNotificationPullRequest}{{ else if eq $type "Issue" }}${octiconNotificationIssue}{{ else if eq $type "Release" }}${octiconNotificationRelease}{{ else if eq $type "Commit" }}${octiconNotificationCommit}{{ else if eq $type "CheckSuite" }}${octiconNotificationCheckSuite}{{ else if eq $type "Discussion" }}${octiconNotificationDiscussion}{{ else }}${octiconNotificationDefault}{{ end }}</span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ $webUrl }}" target="_blank" rel="noreferrer">{{ .String "subject.title" }}</a>
             <span class="shrink-0" style="margin-left:auto;display:flex;gap:8px">
-              <button type="button" title="Mark as done" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch("''${GH_NOTIFICATION_ACTION_URL}",{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">✓</button>
-              <button type="button" title="Unsubscribe" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch("''${GH_NOTIFICATION_ACTION_URL}",{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">🔕</button>
+              <button type="button" title="Mark as done" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">✓</button>
+              <button type="button" title="Unsubscribe" style="background:none;border:none;cursor:pointer;padding:0;opacity:.55;font-size:13px" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.55" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">🔕</button>
             </span>
           </div>
           <div class="size-h6 color-subdue">{{ $repo }} · {{ .String "reason" }}</div>
