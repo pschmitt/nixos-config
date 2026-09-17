@@ -14,6 +14,7 @@ let
 
   containerBackend = config.virtualisation.oci-containers.backend;
   systemdUnit = "${containerBackend}-n8n";
+  runnerSystemdUnit = "${containerBackend}-n8n-runner";
 
   # renovate: datasource=docker depName=n8nio/n8n
   n8nVersion = "2.40.2";
@@ -179,25 +180,50 @@ in
     };
   };
 
-  systemd.services."${systemdUnit}".preStart =
+  systemd.services =
     let
-      runtimePkg =
-        if containerBackend == "docker" then
-          pkgs.docker
-        else if containerBackend == "podman" then
-          pkgs.podman
-        else
-          throw "Unsupported OCI container backend: ${containerBackend}";
-      runtimeBin = "${runtimePkg}/bin/${containerBackend}";
-      # Only docker supports pinning the bridge interface name this way.
-      networkCreateOpts = lib.optionalString (
-        containerBackend == "docker"
-      ) "-o com.docker.network.bridge.name=${containerNetworkBridgeName}";
+      # docker.service restarting (e.g. during a system switch) can briefly
+      # leave the daemon socket unavailable; the default RestartSec (~100ms)
+      # burns through systemd's default StartLimitBurst (5) in well under a
+      # second, long before dockerd is back up, permanently failing the unit
+      # with "start-limit-hit" until manually reset. Space retries out and
+      # widen the burst so both containers recover on their own. The runner
+      # additionally depends on n8n (Requires=/After=, not BindsTo=), so if
+      # n8n's own start fails first, the runner's start fails as "Dependency
+      # failed" too and needs its own retry budget to come back once n8n
+      # does.
+      restartResilience = {
+        serviceConfig = {
+          RestartSec = "10s";
+          StartLimitIntervalSec = 300;
+          StartLimitBurst = 10;
+        };
+      };
     in
-    ''
-      if ! ${runtimeBin} network inspect ${containerNetworkName} >/dev/null 2>&1
-      then
-        ${runtimeBin} network create --subnet=${containerNetworkSubnet} ${networkCreateOpts} ${containerNetworkName}
-      fi
-    '';
+    {
+      "${systemdUnit}" = restartResilience // {
+        preStart =
+          let
+            runtimePkg =
+              if containerBackend == "docker" then
+                pkgs.docker
+              else if containerBackend == "podman" then
+                pkgs.podman
+              else
+                throw "Unsupported OCI container backend: ${containerBackend}";
+            runtimeBin = "${runtimePkg}/bin/${containerBackend}";
+            # Only docker supports pinning the bridge interface name this way.
+            networkCreateOpts = lib.optionalString (
+              containerBackend == "docker"
+            ) "-o com.docker.network.bridge.name=${containerNetworkBridgeName}";
+          in
+          ''
+            if ! ${runtimeBin} network inspect ${containerNetworkName} >/dev/null 2>&1
+            then
+              ${runtimeBin} network create --subnet=${containerNetworkSubnet} ${networkCreateOpts} ${containerNetworkName}
+            fi
+          '';
+      };
+      "${runnerSystemdUnit}" = restartResilience;
+    };
 }
