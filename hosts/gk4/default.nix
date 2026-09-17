@@ -52,6 +52,17 @@ in
       show_tdp_controls = true;
     };
     programs.noctalia.settings.plugin_settings."pschmitt/fan-control".thermal_zone = "thermal_zone1";
+
+    # ge2 sits to the left of gk4.
+    services.lan-mouse = {
+      enable = true;
+      peers = [
+        {
+          name = "ge2";
+          position = "left";
+        }
+      ];
+    };
   };
 
   hardware.cattle = false;

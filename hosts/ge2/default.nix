@@ -56,5 +56,16 @@
       "${config.home.profileDirectory}/share/applications/obs-studio-autostart.desktop"
     ];
     services.go-hass-agent.enableWorkCommands = true;
+
+    # gk4 sits to the right of ge2.
+    services.lan-mouse = {
+      enable = true;
+      peers = [
+        {
+          name = "gk4";
+          position = "right";
+        }
+      ];
+    };
   };
 }
