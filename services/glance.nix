@@ -592,18 +592,22 @@ in
                           {
                             title = "n8n";
                             url = "https://n8n.${domain}";
+                            icon = "di:n8n";
                           }
                           {
                             title = "Home Assistant";
                             url = "https://ha.${domain}";
+                            icon = "di:home-assistant";
                           }
                           {
                             title = "NetBox";
                             url = "https://netbox.${domain}";
+                            icon = "di:netbox";
                           }
                           {
                             title = "Vaultwarden";
                             url = "https://vault.${domain}";
+                            icon = "di:vaultwarden";
                           }
                         ];
                       }
