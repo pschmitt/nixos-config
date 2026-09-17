@@ -29,6 +29,15 @@
 
   # https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html
   services = {
+    kmscon = {
+      enable = true;
+      config = {
+        hwaccel = true;
+        "font-name" = "Comic Code";
+        "font-size" = 30;
+      };
+    };
+
     logind.settings.Login = {
       HandlePowerKey = lib.mkDefault "suspend"; # default is "poweroff"
       HandleLidSwitchExternalPower = lib.mkDefault "suspend";
