@@ -60,6 +60,7 @@ in
       apiTokenPepperFiles."1" = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins =
         _ps: with pkgs.master.netbox_4_6.plugins; [
+          netbox-custom-objects
           netbox-documents
           netbox-interface-synchronization
           netbox-qrcode
@@ -71,6 +72,7 @@ in
           "127.0.0.1"
         ];
         PLUGINS = [
+          "netbox_custom_objects"
           "netbox_documents"
           "netbox_interface_synchronization"
           "netbox_qrcode"
@@ -79,6 +81,7 @@ in
       };
       extraConfig = ''
         PLUGINS_CONFIG = {
+            'netbox_custom_objects': {},
             'netbox_documents': {
                 'documents_location': 'right',
                 'allowed_doc_types': {
