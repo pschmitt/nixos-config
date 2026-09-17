@@ -53,6 +53,11 @@ let
   # random unguessable path segment, and this data is read-only event
   # titles/times, not calendar write access.
   #
+  # The feed emits timed events already converted to Europe/Berlin: Glance's
+  # formatTime renders an RFC3339 string in whatever offset it carries, and
+  # the Google feeds are UTC ("...Z") while the Outlook one carries TZID, so
+  # without that normalization Google events rendered 2h early in summer.
+  #
   # The webhook URLs themselves (this one and the notification-action one
   # below) are secrets -- this repo is public, and the random path segment
   # is the only thing gating either webhook -- so both are sops-backed and
