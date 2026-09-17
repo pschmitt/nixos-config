@@ -104,6 +104,32 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
   `guiEnable`, `bluetoothEnable`) — referencing `config` in `imports` causes an
   infinite recursion. See `home-manager/README.md`.
 
+## Deployment gotchas
+
+- **`just deploy <host>` can report failure even when the switch actually
+  succeeded.** Hosts running a desktop (NetworkManager) restart it during
+  activation if networking-related config changed; that kills the SSH session
+  `just deploy` is running the remote `nixos-rebuild switch` over, producing
+  `Timeout, server <host> not responding` and a non-zero exit — but the
+  remote `nixos-rebuild switch` process itself keeps running to completion
+  since it isn't killed by the dropped SSH session. **Don't trust the exit
+  code alone on failure.** Re-`ssh` in (it comes back once NetworkManager is
+  back up) and check `readlink -f /run/current-system` plus
+  `nix-env -p /nix/var/nix/profiles/system --list-generations | tail -3` to
+  see whether the new generation is actually current, and spot-check that
+  units stopped during activation (NetworkManager, docker, polkit, etc.) came
+  back `active`.
+- **Hosts with `services/initrd-luks-ssh-unlock.nix` (rofl-13, rofl-14, gk4,
+  ge2, ...) present a *different* SSH host key while sitting in initrd
+  waiting for the LUKS-unlock SSH connection**, from separate keys at
+  `/etc/ssh/initrd/ssh_host_{ed25519,rsa}_key` — not the normal system's
+  `/etc/ssh/ssh_host_*`. If a host was just rebooted and SSH suddenly reports
+  `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`, that's expected during
+  the initrd window, not necessarily a compromised host — the real system
+  key reappears once it boots past LUKS unlock into the full system. Still
+  worth a quick sanity check (e.g. confirm the reboot was expected) before
+  writing it off, but don't treat it as a hard security incident on its own.
+
 ## Verifying refactors are behaviour-preserving
 
 Refactors should not change what gets deployed. Prove it by eval-diffing the
