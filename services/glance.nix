@@ -518,8 +518,13 @@ in
       "jellyfin/user-id" = config.custom.mkSecret { mode = "0400"; };
       "radarr/api-key" = config.custom.mkSecret { mode = "0400"; };
       "sonarr/api-key" = config.custom.mkSecret { mode = "0400"; };
-      "n8n/webhook/calendar-feed-url" = config.custom.mkSecret { mode = "0400"; };
-      "n8n/webhook/gh-notification-action-url" = config.custom.mkSecret { mode = "0400"; };
+      # Named "glance/webhook/..." rather than "n8n/webhook/..." because
+      # secrets.sops.yaml already has a real nested "n8n:" mapping (from
+      # n8n/runners/authToken); sops-install-secrets resolves that as a
+      # nested path once the first segment already exists as a mapping,
+      # which broke lookup for a flat "n8n/webhook/..." key.
+      "glance/webhook/calendar-feed-url" = config.custom.mkSecret { mode = "0400"; };
+      "glance/webhook/gh-notification-action-url" = config.custom.mkSecret { mode = "0400"; };
     };
     templates."glance.env" = {
       content = ''
@@ -532,8 +537,8 @@ in
         RADARR_API_KEY=${config.sops.placeholder."radarr/api-key"}
         SONARR_API_KEY=${config.sops.placeholder."sonarr/api-key"}
         GITHUB_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
-        CALENDAR_FEED_URL=${config.sops.placeholder."n8n/webhook/calendar-feed-url"}
-        GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."n8n/webhook/gh-notification-action-url"}
+        CALENDAR_FEED_URL=${config.sops.placeholder."glance/webhook/calendar-feed-url"}
+        GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."glance/webhook/gh-notification-action-url"}
       '';
       mode = "0400";
       restartUnits = [ "glance.service" ];
