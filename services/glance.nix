@@ -438,19 +438,15 @@ let
       {{ $tvItems := sortByTime "airDateUtc" "RFC3339" "asc" ($sonarr.JSON.Array "") }}
       {{ if $tvItems }}
         <div class="size-h6 color-base margin-bottom-10">TV</div>
-        <ul class="list list-gap-10 collapsible-container" data-collapse-after="5">
+        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
         {{ range $tvItems }}
-          <li>
-            <div class="flex items-center gap-10">
-              <img src="{{ .String "series.images.#(coverType==\"poster\").remoteUrl" }}" style="width:64px;height:96px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="" onerror="this.style.visibility='hidden'" />
-              <div class="min-w-0">
-                <div class="size-h5 color-highlight text-truncate">{{ .String "series.title" }}</div>
-                <div class="size-h6 color-subdue">S{{ printf "%02d" (.Int "seasonNumber") }}E{{ printf "%02d" (.Int "episodeNumber") }} · {{ printf "%.10s" (.String "airDateUtc") }}</div>
-              </div>
-            </div>
-          </li>
+          <a href="${sonarrHost}" target="_blank" rel="noreferrer" style="flex:0 0 auto;width:130px;text-decoration:none;color:inherit">
+            <img src="{{ .String "series.images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block" alt="" onerror="this.style.visibility='hidden'" />
+            <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "series.title" }}</div>
+            <div class="size-h6 color-subdue text-truncate">S{{ .Int "seasonNumber" }}:E{{ .Int "episodeNumber" }} · {{ printf "%.10s" (.String "airDateUtc") }}</div>
+          </a>
         {{ end }}
-        </ul>
+        </div>
       {{ end }}
     {{ else }}
       <p class="size-h6 color-negative">Sonarr: {{ $sonarr.Response.Status }}</p>
@@ -459,19 +455,15 @@ let
       {{ $movieItems := sortByTime "inCinemas" "RFC3339" "asc" ($radarr.JSON.Array "") }}
       {{ if $movieItems }}
         <div class="size-h6 color-base margin-bottom-10 margin-top-15">Movies</div>
-        <ul class="list list-gap-10 collapsible-container" data-collapse-after="5">
+        <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
         {{ range $movieItems }}
-          <li>
-            <div class="flex items-center gap-10">
-              <img src="{{ .String "images.#(coverType==\"poster\").remoteUrl" }}" style="width:64px;height:96px;object-fit:cover;border-radius:4px;flex-shrink:0" alt="" onerror="this.style.visibility='hidden'" />
-              <div class="min-w-0">
-                <div class="size-h5 color-highlight text-truncate">{{ .String "title" }}</div>
-                <div class="size-h6 color-subdue">{{ printf "%.10s" (.String "inCinemas") }}</div>
-              </div>
-            </div>
-          </li>
+          <a href="${radarrHost}" target="_blank" rel="noreferrer" style="flex:0 0 auto;width:130px;text-decoration:none;color:inherit">
+            <img src="{{ .String "images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block" alt="" onerror="this.style.visibility='hidden'" />
+            <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "title" }}</div>
+            <div class="size-h6 color-subdue text-truncate">{{ printf "%.10s" (.String "inCinemas") }}</div>
+          </a>
         {{ end }}
-        </ul>
+        </div>
       {{ end }}
     {{ else }}
       <p class="size-h6 color-negative">Radarr: {{ $radarr.Response.Status }}</p>
@@ -577,6 +569,13 @@ in
                     title = "Calendar";
                     hide-header = true;
                     cache = "30m";
+                    # The n8n workflow behind this does 3 sequential external
+                    # ICS fetches + RRULE parsing, which can take well past
+                    # Glance's default request timeout -- especially right
+                    # after a glance.service restart with a cold widget
+                    # cache, which would otherwise cache the timeout error
+                    # for the full 30m cache duration.
+                    timeout = "30s";
                     url = "\${CALENDAR_FEED_URL}";
                     template =
                       mkWidgetHeader {
