@@ -155,7 +155,11 @@ in
         # services/browser-mcp-chromium-container.nix.
         playwright-fnuc = {
           command = "ssh";
+          # -q silences ssh-smart-proxy.sh's "⟶ fnuc: direct (fnuc)" route
+          # banner (fnuc's ProxyCommand), which otherwise leaks onto the
+          # terminal when this MCP server spawns.
           args = [
+            "-q"
             "-o"
             "BatchMode=yes"
             "fnuc"
