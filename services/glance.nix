@@ -58,11 +58,20 @@ let
   # the Google feeds are UTC ("...Z") while the Outlook one carries TZID, so
   # without that normalization Google events rendered 2h early in summer.
   #
-  # Today's events are highlighted via their subtitle line ("Today, 15:04" in
-  # the accent color). "Today" comes from now at render time, i.e. the rofl-10
-  # clock (Europe/Berlin), so after midnight it lags by at most one cache
-  # cycle. Note Go template comments must hug their delimiters ({{/* .. */}}),
-  # a spaced-out {{ /* .. */ }} is a config-breaking parse error.
+  # Events are rendered in three states, all derived at render time from now
+  # on the rofl-10 clock (Europe/Berlin), so they lag reality by at most one
+  # cache cycle: ongoing ("Now · until 21:44", accent + left rule), still to
+  # come today ("Today, 15:04", accent) and already over (dimmed). The state
+  # comparisons are string compares of "2006-01-02T15:04:05" stamps, since Go
+  # templates can only compare basic types, not time.Time -- that layout sorts
+  # lexicographically, and both sides are formatted in their own zone, which
+  # the feed already normalized to Europe/Berlin.
+  #
+  # All-day events are never "now" or "past" (they would be ongoing for their
+  # whole day, which reads as noise), so they keep the plain date line.
+  #
+  # Note Go template comments must hug their delimiters ({{/* .. */}}); a
+  # spaced-out {{ /* .. */ }} is a config-breaking parse error.
   #
   # The webhook URLs themselves (this one and the notification-action one
   # below) are secrets -- this repo is public, and the random path segment
@@ -76,17 +85,32 @@ let
       <p class="color-subdue">Nothing upcoming</p>
     {{ else }}
       {{ $today := now | formatTime "DateOnly" }}
+      {{ $nowStamp := now | formatTime "2006-01-02T15:04:05" }}
       <ul class="list list-gap-10 collapsible-container" data-collapse-after="8">
       {{ range $events }}
         {{ $t := .String "start" | parseTime "RFC3339" }}
+        {{ $e := .String "end" | parseTime "RFC3339" }}
+        {{ $startStamp := formatTime "2006-01-02T15:04:05" $t }}
+        {{ $endStamp := formatTime "2006-01-02T15:04:05" $e }}
         {{ $isToday := eq (formatTime "DateOnly" $t) $today }}
-        <li>
+        {{ $timed := not (.Bool "allDay") }}
+        {{ $isPast := and $timed (le $endStamp $nowStamp) }}
+        {{ $isNow := and $timed (le $startStamp $nowStamp) (gt $endStamp $nowStamp) }}
+        <li{{ if $isNow }} style="border-left:2px solid var(--color-primary);padding-left:8px"{{ else if $isPast }} style="opacity:0.45"{{ end }}>
           <div class="flex items-center gap-5">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{{ if eq (.String "calendar") "work" }}#8250df{{ else if eq (.String "calendar") "bergmann-schmitt" }}#1a7f37{{ else }}#0969da{{ end }}"></span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ .String "url" }}" target="_blank" rel="noreferrer">{{ .String "title" }}</a>
           </div>
-          <div class="size-h6 {{ if $isToday }}color-primary{{ else }}color-subdue{{ end }}">
-            {{ if .Bool "allDay" }}{{ if $isToday }}Today{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day{{ else }}{{ if $isToday }}Today, {{ formatTime "15:04" $t }}{{ else }}{{ formatTime "Jan 2, 15:04" $t }}{{ end }}{{ end }}
+          <div class="size-h6 {{ if or $isNow (and $isToday (not $isPast)) }}color-primary{{ else }}color-subdue{{ end }}">
+            {{ if .Bool "allDay" }}
+              {{ if $isToday }}Today{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day
+            {{ else if $isNow }}
+              Now · until {{ if eq (formatTime "DateOnly" $e) (formatTime "DateOnly" $t) }}{{ formatTime "15:04" $e }}{{ else }}{{ formatTime "Jan 2, 15:04" $e }}{{ end }}
+            {{ else if $isToday }}
+              Today, {{ formatTime "15:04" $t }}
+            {{ else }}
+              {{ formatTime "Jan 2, 15:04" $t }}
+            {{ end }}
           </div>
         </li>
       {{ end }}
