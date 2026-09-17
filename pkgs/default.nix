@@ -59,7 +59,6 @@ in
 
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
-  clipcascade = pkgs.callPackage ./clipcascade { };
   inherit emoji-fzf;
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
   fievel = pkgs.callPackage ./fievel { };
