@@ -146,22 +146,40 @@ let
   # GitHub search's "issues" representation of a PR only has two `state`
   # values (open/closed) -- a merged PR is "closed" with `pull_request.
   # merged_at` set, so that's checked first: merged/closed/open octicon.
+  #
+  # GitHub's search API has no per-user "read" state for arbitrary search
+  # results (unlike notifications), so read PRs are tracked in our own n8n
+  # Data Table (workflow "📋 Glance Nixpkgs PR Read State", kPWS4aHy5IOIcMjw)
+  # and filtered out here against the $readNumbers subrequest -- a read PR
+  # is skipped entirely rather than shown crossed-out, so it stays gone
+  # across reloads/devices until it gets new activity re-surfacing it.
   nixpkgsPrListItem = ''
-    <li>
+    {{ $prNumber := .Int "number" }}
+    {{ $isRead := false }}
+    {{ range $readNumbers }}
+      {{ if eq (.Int "pr_number") $prNumber }}{{ $isRead = true }}{{ end }}
+    {{ end }}
+    {{ if not $isRead }}
+    <li id="nixpkgs-pr-{{ $prNumber }}">
       <div class="flex items-center gap-5">
         <span class="shrink-0">{{ if ne (.String "pull_request.merged_at") "" }}${octiconPrMerged}{{ else if eq (.String "state") "closed" }}${octiconPrClosed}{{ else }}${octiconPrOpen}{{ end }}</span>
         <a class="size-h5 color-highlight block text-truncate" href="{{ .String "html_url" }}">{{ .String "title" }}</a>
+        <span class="shrink-0" style="margin-left:auto">
+          <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('nixpkgs-pr-{{ $prNumber }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${NIXPKGS_PR_MARK_READ_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:{{ $prNumber }}})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Read</span></button>
+        </span>
       </div>
       <ul class="list-horizontal-text">
-        <li>#{{ .Int "number" }}</li>
+        <li>#{{ $prNumber }}</li>
         <li>{{ printf "%.10s" (.String "updated_at") }}</li>
       </ul>
     </li>
+    {{ end }}
   '';
 
   nixpkgsPrListTemplate = ''
     {{ $groupA := sortByTime "updated_at" "RFC3339" "desc" (.JSON.Array "items") }}
     {{ $groupB := sortByTime "updated_at" "RFC3339" "desc" ((.Subrequest "group-b").JSON.Array "items") }}
+    {{ $readNumbers := (.Subrequest "read-prs").JSON.Array "" }}
     <div>
     {{ if $groupA }}
       <div class="size-h6 color-base margin-bottom-10">${builtins.concatStringsSep " · " nixpkgsGroupA}</div>
@@ -547,6 +565,8 @@ in
       # which broke lookup for a flat "n8n/webhook/..." key.
       "glance/webhook/calendar-feed-url" = config.custom.mkSecret { mode = "0400"; };
       "glance/webhook/gh-notification-action-url" = config.custom.mkSecret { mode = "0400"; };
+      "glance/webhook/nixpkgs-pr-mark-read-url" = config.custom.mkSecret { mode = "0400"; };
+      "glance/webhook/nixpkgs-pr-read-list-url" = config.custom.mkSecret { mode = "0400"; };
     };
     templates."glance.env" = {
       content = ''
@@ -561,6 +581,8 @@ in
         GITHUB_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
         CALENDAR_FEED_URL=${config.sops.placeholder."glance/webhook/calendar-feed-url"}
         GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."glance/webhook/gh-notification-action-url"}
+        NIXPKGS_PR_MARK_READ_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-mark-read-url"}
+        NIXPKGS_PR_READ_LIST_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-read-list-url"}
       '';
       mode = "0400";
       restartUnits = [ "glance.service" ];
@@ -713,6 +735,7 @@ in
                       hide-header = true;
                       cache = "2h";
                       subrequests."group-b" = mkNixpkgsPrList nixpkgsGroupB;
+                      subrequests."read-prs".url = "\${NIXPKGS_PR_READ_LIST_URL}";
                       template =
                         mkWidgetHeader {
                           title = "Nixpkgs PRs";
