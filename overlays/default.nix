@@ -43,6 +43,17 @@
               hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
             };
           });
+
+          # Same libmanette/WebKit autoPatchelf breakage as the
+          # nixpkgs-master override below (nixpkgs' playwright-driver.browsers
+          # is missing libmanette in buildInputs). This main package set's
+          # pytest-playwright is pulled in transitively by paperless-ngx
+          # (via hermes-agent), so it needs the same preCheck drop -- nothing
+          # in preCheck's PLAYWRIGHT_BROWSERS_PATH setup is actually used
+          # since doCheck is already false upstream.
+          pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
+            preCheck = "";
+          });
         })
       ];
     }; # Continue merging additional overlays as needed
