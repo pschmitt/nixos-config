@@ -39,6 +39,38 @@
     '';
   };
 
+  systemd.network = {
+    netdevs."10-hass-br0" = {
+      netdevConfig = {
+        Name = "hass-br0";
+        Kind = "bridge";
+        MACAddress = "6c:4b:90:e4:73:8c";
+      };
+      bridgeConfig = {
+        STP = false;
+        MulticastSnooping = true;
+      };
+    };
+
+    networks = {
+      "40-enp1s0f0" = {
+        matchConfig.Name = "enp1s0f0";
+        networkConfig.Bridge = "hass-br0";
+        linkConfig.RequiredForOnline = "enslaved";
+      };
+
+      "40-hass-br0" = {
+        matchConfig.Name = "hass-br0";
+        networkConfig = {
+          DHCP = "yes";
+          IPv6PrivacyExtensions = "kernel";
+        };
+        dhcpV4Config.RouteMetric = 1024;
+        ipv6AcceptRAConfig.RouteMetric = 1024;
+      };
+    };
+  };
+
   services.nfs.server = {
     enable = true;
     exports = ''
