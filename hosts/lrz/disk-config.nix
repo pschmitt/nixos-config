@@ -36,6 +36,29 @@
   };
 
   disko.devices = {
+    # SATA media disk: retain its existing partition label for stable mounting.
+    # HA media is exported over NFS; VM images remain on the system NVMe.
+    disk.data = {
+      device = lib.mkDefault "/dev/sda";
+      type = "disk";
+      content = {
+        type = "gpt";
+        partitions.data = {
+          label = "k8s";
+          size = "100%";
+          type = "8300";
+          content = {
+            type = "btrfs";
+            mountpoint = "/mnt/sda1";
+            mountOptions = [
+              "compress=zstd"
+              "noatime"
+              "nofail"
+            ];
+          };
+        };
+      };
+    };
     disk.system = {
       device = lib.mkDefault "/dev/nvme0n1";
       type = "disk";
