@@ -51,6 +51,14 @@ let
     )
   );
 
+  # A deploy stops glance.service while the rest of the activation runs -- on
+  # the order of a minute -- and nginx has nothing to proxy to in that window,
+  # which surfaced as a bare 502. This placeholder is served for the three
+  # upstream-down codes instead and refreshes itself, so a dashboard left open
+  # comes back on its own once glance is listening again. No single quotes: it
+  # is embedded in an nginx single-quoted string below.
+  glanceRestartingPage = ''<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>Dashboard restarting</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#151519;color:#b8b8c0;font:14px system-ui,-apple-system,sans-serif">Dashboard restarting, retrying every 5s...</body>'';
+
   mkWidgetHeader =
     {
       title,
@@ -343,6 +351,11 @@ let
   # binary_sensor.plant_issues is deliberately excluded: it's an aggregate
   # of the same plant.* entities already listed individually below.
   #
+  # The alert_entities are excluded from that same loop: they carry
+  # device_class "problem" themselves, so without the exclusion each one is
+  # emitted twice -- once by the generic loop as a "device" and once by the
+  # explicit pass below as an "alert".
+  #
   # `detail` prefers, in order: the monit failed_checks list (for the
   # monit_<host>_status sensors, so it says *which* check is failing, not
   # just that the host is unhealthy), or the msg/secondary_info attribute (a
@@ -362,9 +375,10 @@ let
   # dashboard's own plant card.
   # Verified interactively with `hass-cli template`.
   haWarningsJinja = ''
+    {%- set alert_entities = ["binary_sensor.offline_devices_devices_offline", "binary_sensor.public_alerts", "binary_sensor.dwd_warnings_current_future"] -%}
     {%- set ns = namespace(items=[]) -%}
     {%- for e in states.binary_sensor -%}
-      {%- if e.entity_id != 'binary_sensor.plant_issues' and e.entity_id != 'binary_sensor.window_advisor' and not e.entity_id.startswith('binary_sensor.window_advisor_') and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
+      {%- if e.entity_id not in alert_entities and e.entity_id != 'binary_sensor.plant_issues' and e.entity_id != 'binary_sensor.window_advisor' and not e.entity_id.startswith('binary_sensor.window_advisor_') and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
         {%- set failed = state_attr(e.entity_id, 'failed_checks') -%}
         {%- if failed -%}
           {%- set detail = (state_attr(e.entity_id, "host_summary") or "") ~ ": " ~ (failed | join(", ")) -%}
@@ -411,7 +425,7 @@ let
       {%- set oldest = ns.window_entries | map(attribute="last_changed") | min -%}
       {%- set ns.items = ns.items + [{"name": "Window Advisor", "entity_id": "binary_sensor.window_advisor", "detail": rooms | join(", "), "link": "https://ha.${domain}/dashboard-debug/window-advisor", "icon": "mdi:window-open-variant", "type": "device", "last_changed": oldest.isoformat()}] -%}
     {%- endif -%}
-    {%- for eid in ["binary_sensor.offline_devices_devices_offline", "binary_sensor.public_alerts", "binary_sensor.dwd_warnings_current_future"] -%}
+    {%- for eid in alert_entities -%}
       {%- if states(eid) == "on" -%}
         {%- set detail = state_attr(eid, "msg") or state_attr(eid, "secondary_info") or "" -%}
         {%- set icon = state_attr(eid, "icon") or "" -%}
@@ -950,8 +964,18 @@ in
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString glancePort}";
         proxyWebsockets = true;
-        extraConfig = autheliaConfig.location;
+        # Only these three codes are intercepted, so glance's own 404s and
+        # friends still pass through untouched.
+        extraConfig = autheliaConfig.location + ''
+          proxy_intercept_errors on;
+          error_page 502 503 504 = @restarting;
+        '';
       };
+      locations."@restarting".extraConfig = ''
+        default_type text/html;
+        add_header Retry-After 5 always;
+        return 503 '${glanceRestartingPage}';
+      '';
     };
 
     monit.config = ''
