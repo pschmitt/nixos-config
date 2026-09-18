@@ -174,8 +174,39 @@ migrate_srv() {
 		ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo docker stop \$(sudo docker ps -q) 2>/dev/null || true"
 	fi
 
+	# Stop active services on destination host that write to /srv
+	local srv_units=(
+		"syslog-ng.service"
+		"smokeping.service"
+		"docker-watchyourlan.service"
+		"docker-ftpd.service"
+	)
+	local stopped_units=()
+
+	if [[ $DRY_RUN -eq 0 ]]; then
+		for unit in "${srv_units[@]}"; do
+			# shellcheck disable=SC2029
+			if ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "systemctl is-active --quiet ${unit}" 2>/dev/null; then
+				log "Stopping ${unit} on ${DEST_HOST} during /srv transfer..."
+				# shellcheck disable=SC2029
+				ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo systemctl stop ${unit}" 2>/dev/null || true
+				stopped_units+=("${unit}")
+			fi
+		done
+	fi
+
 	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /srv"
 	run_src_rsync "/srv/" "/srv/" "--delete"
+
+	# Restart stopped services on destination host
+	if [[ $DRY_RUN -eq 0 ]]; then
+		for unit in "${stopped_units[@]}"; do
+			log "Restarting ${unit} on ${DEST_HOST}..."
+			# shellcheck disable=SC2029
+			ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo systemctl start ${unit}" 2>/dev/null || true
+		done
+	fi
+
 	log "/srv migration completed."
 }
 
@@ -191,13 +222,45 @@ migrate_ha_vm() {
 	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /var/lib/libvirt/images /var/lib/libvirt/qemu/nvram"
 
 	if [[ "$MODE" == "presync" ]]; then
-		log "Presync mode: VM disk/NVRAM copy is deferred until final cutover."
-		log "The live VM on ${SOURCE_HOST} is NOT touched or read during pre-sync."
+		log "Presync mode: performing non-disruptive live external snapshot to pre-sync base QCOW2..."
 		log "Dumping domain XML from ${SOURCE_HOST} for reference..."
 		if [[ $DRY_RUN -eq 0 ]]; then
 			ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh dumpxml home-assistant" | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
 		fi
-		log "HA VM pre-sync step completed (XML saved, disk copy deferred to cutoff)."
+
+		local vm_state
+		vm_state=$(ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh domstate home-assistant 2>/dev/null || echo 'unknown'")
+		log "Current VM state on ${SOURCE_HOST}: ${vm_state}"
+
+		if [[ "$vm_state" =~ "running" ]]; then
+			local snap_name="presync-snapshot"
+			local overlay_img="/var/lib/libvirt/images/haos-presync-overlay.qcow2"
+
+			log "Creating live disk-only snapshot overlay on ${SOURCE_HOST}..."
+			if [[ $DRY_RUN -eq 0 ]]; then
+				# shellcheck disable=SC2029
+				ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh snapshot-create-as home-assistant ${snap_name} --disk-only --diskspec vda,file=${overlay_img} --no-metadata"
+
+				log "Transferring base QCOW2 disk image to ${DEST_HOST} (sparse, inplace)..."
+				run_src_rsync "${vm_img}" "${vm_img}" "--sparse" "--inplace"
+
+				log "Transferring NVRAM..."
+				run_src_rsync "${vm_nvram}" "${vm_nvram}"
+
+				log "Committing live snapshot overlay back into base disk on ${SOURCE_HOST}..."
+				ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh blockcommit home-assistant vda --active --pivot --shallow --verbose"
+				# shellcheck disable=SC2029
+				ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo rm -f ${overlay_img}"
+			else
+				log "[DRY-RUN] Would create snapshot overlay ${overlay_img}, rsync base image to ${DEST_HOST}, and blockcommit back to base"
+			fi
+		else
+			log "VM is not running on ${SOURCE_HOST} (${vm_state}); syncing QCOW2 directly..."
+			run_src_rsync "${vm_nvram}" "${vm_nvram}"
+			run_src_rsync "${vm_img}" "${vm_img}" "--sparse" "--inplace"
+		fi
+
+		log "HA VM pre-sync step completed successfully without disrupting running VM."
 		return 0
 	fi
 
