@@ -344,7 +344,7 @@
     sops-nix = {
       # Temporary pin until upstream PR #984 lands; buildGo125Module was
       # removed from nixpkgs after Go 1.25 reached end of life.
-      url = "github:Mic92/sops-nix/16954c1c360c3dc4d4b3b3e64df59f7e89452cb1";
+      url = "github:Mic92/sops-nix/1e73e8f7176d65e1b55e324de099bbfff4b2c574";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
