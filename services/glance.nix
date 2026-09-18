@@ -7,18 +7,11 @@
 let
   domain = config.domains.main;
   glanceHost = "home.${domain}";
-  # Same name on each mesh network, matching browser-mcp-chromium-container's
-  # browser.<host>.<net> pattern. Wildcard DNS for *.<host>.<net>.${domain}
-  # already points at this host's Tailscale/Netbird addresses, so reaching
-  # these actually routes over the mesh -- which is the point: the connection
-  # then has a 100.64.0.0/10 source address, and Authelia's existing "local"
-  # network bypass applies. Going to ${glanceHost} instead resolves to the WAN
-  # address and hairpins, so it never looks like mesh traffic.
-  meshHosts = [
-    "home.${config.networking.hostName}.${config.domains.tailscale}"
-    "home.${config.networking.hostName}.${config.domains.netbird}"
-    "home.${config.networking.hostName}.${config.domains.vpn}"
-  ];
+  # home.<host>.<mesh domain>. Reaching one of these actually routes over the
+  # mesh, so Authelia's mesh bypass applies and no login is asked for;
+  # ${glanceHost} resolves to the WAN address and hairpins, so it never looks
+  # like mesh traffic (and is two-factor on purpose, see below).
+  meshHosts = config.custom.meshHosts "home";
   glancePort = 9832;
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
@@ -1023,29 +1016,4 @@ in
   # Require Authelia before proxying, matching the other private dashboards
   # on this host (see services/hermes.nix).
   custom.authelia.extraTwoFactorDomains = [ glanceHost ];
-
-  # ${glanceHost} above stays two-factor even on the mesh, so reaching the
-  # dashboard without a login is what the mesh names are for. The built-in mesh
-  # bypass only covers *.${domain}, which is one label deep and so does not
-  # match these -- hence an explicit rule. It is still scoped to the "local"
-  # network, so the same hostname reached from anywhere else (a forged SNI to
-  # the WAN address, say) falls through to the default two-factor policy
-  # rather than being open.
-  custom.authelia.extraAccessControlRules = [
-    {
-      policy = "bypass";
-      # "local" is Authelia's built-in name for loopback plus the 100.64.0.0/10
-      # CGNAT range, but both meshes hand out IPv6 as well and clients prefer
-      # it, so a browser on the mesh arrives from a ULA address that the v4
-      # range does not cover. Tailscale's own /48 and this Netbird network's
-      # /64 are listed alongside it -- deliberately the exact /64 rather than
-      # Netbird's whole /48, to keep the bypass as narrow as what is routed.
-      networks = [
-        "local"
-        "fd7a:115c:a1e0::/48"
-        "fd8d:fa54:9081:c944::/64"
-      ];
-      domain = meshHosts;
-    }
-  ];
 }

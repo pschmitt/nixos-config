@@ -1,4 +1,11 @@
-{ config, ... }:
+# haIngressBypass pulls in the "$authelia_ha_bypass" test, whose map is
+# defined by services/authelia-nginx-bypass.nix. Hosts that do not import that
+# module must pass false, otherwise nginx refuses to start with
+# "unknown \"authelia_ha_bypass\" variable".
+{
+  config,
+  haIngressBypass ? true,
+}:
 let
   autheliaDomain = "auth.${config.domains.main}";
   authzURL = "https://${autheliaDomain}/api/authz/auth-request";
@@ -36,9 +43,16 @@ in
       if ($http_x_api_key) {
         return 200;
       }
-      ## Bypass Authelia for HA ingress proxy (Bearer token set by HA)
-      if ($authelia_ha_bypass = "1") {
-        return 200;
+      ${
+        if haIngressBypass then
+          ''
+            ## Bypass Authelia for HA ingress proxy (Bearer token set by HA)
+            if ($authelia_ha_bypass = "1") {
+              return 200;
+            }
+          ''
+        else
+          ""
       }
 
       ## Essential Proxy Configuration

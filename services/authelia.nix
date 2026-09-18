@@ -29,7 +29,23 @@ let
     "127.0.0.1/32"
     "::1/128"
     "100.64.0.0/10"
+    # Both meshes hand out IPv6 as well, and clients prefer it when it is
+    # available -- so without these a browser on the mesh arrives from a ULA
+    # address and the bypass above silently never applies. Tailscale's own /48
+    # and this Netbird network's routed /64; deliberately that /64 rather than
+    # Netbird's whole /48, to keep the bypass as narrow as what is routed.
+    "fd7a:115c:a1e0::/48"
+    "fd8d:fa54:9081:c944::/64"
   ];
+  # Every <service>.<host>.<mesh domain> name, in one rule. Those names only
+  # resolve to mesh addresses, but nginx answers on 0.0.0.0, so a request can
+  # still arrive at such a vhost by sending its SNI to the WAN address -- the
+  # bypass is therefore decided by source network, not by the hostname, and an
+  # off-mesh request falls through to the rules below like any other.
+  meshDomainRegex =
+    "^([^.]+\\.)+("
+    + lib.concatStringsSep "|" (map (d: lib.replaceStrings [ "." ] [ "\\." ] d) config.domains.mesh)
+    + ")$";
   autheliaSettings = {
     server.address = "tcp://:${toString autheliaPort}/";
     theme = "auto";
@@ -95,6 +111,13 @@ let
           policy = "bypass";
           networks = [ "local" ];
           domain = [ "*.${config.domains.main}" ];
+        }
+        {
+          # The wildcard above is one label deep, so it does not match the
+          # mesh names -- they need their own rule.
+          policy = "bypass";
+          networks = [ "local" ];
+          domain_regex = [ meshDomainRegex ];
         }
       ]
       ++ config.custom.authelia.extraAccessControlRules;

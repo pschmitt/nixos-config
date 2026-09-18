@@ -17,11 +17,18 @@ let
   # default.
   puid = 1000;
   pgid = 1000;
-  primaryHost = "browser.${config.networking.hostName}.${config.domains.tailscale}";
-  serverAliases = [
-    "browser.${config.networking.hostName}.${config.domains.netbird}"
-    "browser.${config.networking.hostName}.${config.domains.vpn}"
-  ];
+  # browser.<host>.<mesh domain>, via the shared helper so this and the Glance
+  # dashboard expose mesh names the same way.
+  meshHosts = config.custom.meshHosts "browser";
+  primaryHost = builtins.head meshHosts;
+  serverAliases = builtins.tail meshHosts;
+  # haIngressBypass = false: that test needs a map from
+  # services/authelia-nginx-bypass.nix, which only the host running Home
+  # Assistant's ingress imports, and nginx refuses to start without it.
+  autheliaConfig = import ./authelia-nginx-config.nix {
+    inherit config;
+    haIngressBypass = false;
+  };
 in
 {
   imports = [ ./http.nix ];
@@ -66,18 +73,26 @@ in
     ];
   };
 
+  # These names only resolve to mesh addresses, but nginx answers on 0.0.0.0,
+  # so a request can reach this vhost anyway by sending its SNI to the WAN
+  # address. Authelia therefore stays in front of the VNC session and decides
+  # by source network: straight through from the mesh (see the mesh rule in
+  # services/authelia.nix), a login prompt from anywhere else. The MCP clients
+  # are unaffected -- they reach Chromium over ssh on 127.0.0.1:9222, not
+  # through nginx.
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
     # FIXME https://github.com/NixOS/nixpkgs/issues/210807
     acmeRoot = null;
     forceSSL = true;
+    extraConfig = autheliaConfig.server;
 
     locations."/" = {
       proxyPass = "http://127.0.0.1:${toString containerPort}";
       proxyWebsockets = true;
       recommendedProxySettings = true;
-      extraConfig = ''
+      extraConfig = autheliaConfig.location + ''
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
       '';
