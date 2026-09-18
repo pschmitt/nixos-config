@@ -108,7 +108,7 @@ obs-studio::start() {
 }
 
 main() {
-  local workdays_only
+  local workdays_only=""
 
   while [[ -n "${1:-}" ]]
   do
