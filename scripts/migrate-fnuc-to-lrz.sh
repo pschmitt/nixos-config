@@ -19,10 +19,11 @@ SOURCE_HOST="fnuc"
 DEST_HOST="lrz"
 DEST_USER="pschmitt"
 SSH_KEY="/home/pschmitt/.ssh/id_ed25519"
-SSH_OPTS="-o StrictHostKeyChecking=accept-new -i ${SSH_KEY}"
+SSH_OPTS=(-o StrictHostKeyChecking=accept-new -i "${SSH_KEY}")
 
 DRY_RUN=0
 MODE="presync" # presync | final
+CONFIRM_FINAL=0
 TARGET="all"   # all | ha-vm | sda1 | srv
 
 log() {
@@ -47,15 +48,16 @@ usage() {
 Usage: $(basename "$0") [OPTIONS] [TARGET]
 
 Targets:
-  all         Run migration for all components (ha-vm, sda1, srv) [default]
-  ha-vm       Home Assistant OS VM disk, NVRAM, and libvirt XML
-  sda1        /mnt/sda1 storage (frigate, reolink; excludes dead replicas)
-  srv         /srv directories (syslog-ng, smokeping, netalertx, etc.)
+  all               Run migration for all components (ha-vm, sda1, srv) [default]
+  ha-vm             Home Assistant OS VM disk, NVRAM, and libvirt XML
+  sda1              /mnt/sda1 storage (frigate, reolink; excludes dead replicas)
+  srv               /srv directories (syslog-ng, smokeping, netalertx, etc.)
 
 Options:
   -n, --dry-run     Perform dry-run with rsync -n
-  --presync         Warm pre-sync without stopping services (default)
-  --final           Final delta sync: stops services/VM on fnuc prior to sync
+  --presync         Warm pre-sync without stopping services (default; safe for live HA)
+  --final           Final delta sync: stops services/VM on fnuc prior to sync (requires --confirm-final)
+  --confirm-final   Explicit confirmation required when running --final to prevent accidental disruption
   --source <host>   Source host [default: fnuc]
   --dest <host>     Destination host [default: lrz]
   -h, --help        Show this help message
@@ -76,6 +78,10 @@ while [[ $# -gt 0 ]]; do
 		;;
 	--final)
 		MODE="final"
+		shift
+		;;
+	--confirm-final)
+		CONFIRM_FINAL=1
 		shift
 		;;
 	--source)
@@ -99,6 +105,10 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+if [[ "$MODE" == "final" && $DRY_RUN -eq 0 && $CONFIRM_FINAL -eq 0 ]]; then
+	die "SAFETY ABORT: --final mode will gracefully shut down the Home Assistant VM and stop Docker containers on \${SOURCE_HOST}! If you are performing the final live cutover, pass --confirm-final."
+fi
+
 RSYNC_FLAGS=("-aHAX" "--numeric-ids" "--info=progress2")
 if [[ $DRY_RUN -eq 1 ]]; then
 	RSYNC_FLAGS+=("-n")
@@ -110,24 +120,25 @@ run_src_rsync() {
 	shift 2
 	local extra_args=("$@")
 
-	local rsync_cmd="sudo rsync ${RSYNC_FLAGS[*]} ${extra_args[*]} -e 'ssh ${SSH_OPTS}' --rsync-path='sudo rsync' ${src} ${DEST_USER}@${DEST_HOST}:${dst}"
+	local rsync_cmd="sudo rsync ${RSYNC_FLAGS[*]} ${extra_args[*]} -e 'ssh ${SSH_OPTS[*]}' --rsync-path='sudo rsync' ${src} ${DEST_USER}@${DEST_HOST}:${dst}"
 	log "Executing rsync on ${SOURCE_HOST}: ${src} -> ${DEST_HOST}:${dst}"
-	ssh -A "${SOURCE_HOST}" "${rsync_cmd}"
+	# shellcheck disable=SC2029
+	ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "${rsync_cmd}"
 }
 
 preflight_checks() {
 	log "Starting preflight checks..."
 	log "Checking connectivity to source (${SOURCE_HOST}) and destination (${DEST_HOST})..."
 
-	ssh -o ConnectTimeout=5 "${SOURCE_HOST}" "hostname" >/dev/null 2>&1 || die "Cannot connect to ${SOURCE_HOST}"
-	ssh -o ConnectTimeout=5 "${DEST_HOST}" "hostname" >/dev/null 2>&1 || die "Cannot connect to ${DEST_HOST}"
+	ssh "${SSH_OPTS[@]}" -o ConnectTimeout=5 "${SOURCE_HOST}" "hostname" >/dev/null 2>&1 || die "Cannot connect to ${SOURCE_HOST}"
+	ssh "${SSH_OPTS[@]}" -o ConnectTimeout=5 "${DEST_HOST}" "hostname" >/dev/null 2>&1 || die "Cannot connect to ${DEST_HOST}"
 
 	log "Verifying remote sudo and rsync on both hosts..."
-	ssh -A "${SOURCE_HOST}" "sudo rsync --version" >/dev/null 2>&1 || die "sudo rsync failed on ${SOURCE_HOST}"
-	ssh -o ConnectTimeout=5 "${DEST_HOST}" "sudo rsync --version" >/dev/null 2>&1 || die "sudo rsync failed on ${DEST_HOST}"
+	ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo rsync --version" >/dev/null 2>&1 || die "sudo rsync failed on ${SOURCE_HOST}"
+	ssh "${SSH_OPTS[@]}" -o ConnectTimeout=5 "${DEST_HOST}" "sudo rsync --version" >/dev/null 2>&1 || die "sudo rsync failed on ${DEST_HOST}"
 
 	log "Checking free space on ${DEST_HOST}..."
-	ssh "${DEST_HOST}" "df -h / /mnt/sda1"
+	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "df -h / /mnt/sda1"
 	log "Preflight checks passed."
 }
 
@@ -137,7 +148,7 @@ migrate_sda1() {
 	log "=========================================================="
 
 	# Ensure target mount is mounted and directory exists
-	ssh "${DEST_HOST}" "sudo mkdir -p /mnt/sda1"
+	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /mnt/sda1"
 
 	# We sync specific live datasets: frigate, reolink
 	# We exclude replicas, engine-binaries, longhorn-disk.cfg
@@ -160,10 +171,10 @@ migrate_srv() {
 
 	if [[ "$MODE" == "final" && $DRY_RUN -eq 0 ]]; then
 		log "Final mode: stopping docker containers on ${SOURCE_HOST}..."
-		ssh "${SOURCE_HOST}" "sudo docker stop \$(sudo docker ps -q) 2>/dev/null || true"
+		ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo docker stop \$(sudo docker ps -q) 2>/dev/null || true"
 	fi
 
-	ssh "${DEST_HOST}" "sudo mkdir -p /srv"
+	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /srv"
 	run_src_rsync "/srv/" "/srv/" "--delete"
 	log "/srv migration completed."
 }
@@ -177,18 +188,18 @@ migrate_ha_vm() {
 	local vm_nvram="/var/lib/libvirt/qemu/nvram/home-assistant_VARS.fd"
 
 	# Ensure destination directories exist
-	ssh "${DEST_HOST}" "sudo mkdir -p /var/lib/libvirt/images /var/lib/libvirt/qemu/nvram"
+	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /var/lib/libvirt/images /var/lib/libvirt/qemu/nvram"
 
 	if [[ "$MODE" == "final" ]]; then
 		if [[ $DRY_RUN -eq 0 ]]; then
 			log "Final mode: gracefully shutting down home-assistant VM on ${SOURCE_HOST}..."
-			ssh "${SOURCE_HOST}" "sudo virsh shutdown home-assistant 2>/dev/null || true"
+			ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh shutdown home-assistant 2>/dev/null || true"
 
 			log "Waiting for VM to stop..."
 			local timeout=60
 			while [[ $timeout -gt 0 ]]; do
 				local state
-				state=$(ssh "${SOURCE_HOST}" "sudo virsh domstate home-assistant 2>/dev/null || echo 'unknown'")
+				state=$(ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh domstate home-assistant 2>/dev/null || echo 'unknown'")
 				if [[ "$state" =~ "shut off" ]]; then
 					log "VM successfully shut off."
 					break
@@ -210,7 +221,7 @@ migrate_ha_vm() {
 	# 1. Dump libvirt domain XML for reference
 	log "Dumping domain XML from ${SOURCE_HOST}..."
 	if [[ $DRY_RUN -eq 0 ]]; then
-		ssh "${SOURCE_HOST}" "sudo virsh dumpxml home-assistant" | ssh "${DEST_HOST}" "sudo tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
+		ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh dumpxml home-assistant" | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
 	fi
 
 	# 2. Transfer NVRAM

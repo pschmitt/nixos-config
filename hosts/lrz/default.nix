@@ -1,4 +1,9 @@
-{ config, ... }:
+{ config, pkgs, ... }:
+let
+  migrateScript = pkgs.writeScriptBin "migrate-fnuc-to-lrz" (
+    builtins.readFile ../../scripts/migrate-fnuc-to-lrz.sh
+  );
+in
 {
   imports = [
     ./disk-config.nix
@@ -39,49 +44,108 @@
     '';
   };
 
-  systemd.network = {
-    netdevs."10-hass-br0" = {
-      netdevConfig = {
-        Name = "hass-br0";
-        Kind = "bridge";
-        MACAddress = "6c:4b:90:e4:73:8c";
+  systemd = {
+    network = {
+      netdevs."10-hass-br0" = {
+        netdevConfig = {
+          Name = "hass-br0";
+          Kind = "bridge";
+          MACAddress = "6c:4b:90:e4:73:8c";
+        };
+        bridgeConfig = {
+          STP = false;
+          MulticastSnooping = true;
+        };
       };
-      bridgeConfig = {
-        STP = false;
-        MulticastSnooping = true;
+
+      networks = {
+        "40-enp1s0f0" = {
+          matchConfig.Name = "enp1s0f0";
+          networkConfig.Bridge = "hass-br0";
+          linkConfig.RequiredForOnline = "enslaved";
+        };
+
+        "40-hass-br0" = {
+          matchConfig.Name = "hass-br0";
+          networkConfig = {
+            DHCP = "yes";
+            IPv6PrivacyExtensions = "kernel";
+          };
+          dhcpV4Config.RouteMetric = 1024;
+          ipv6AcceptRAConfig.RouteMetric = 1024;
+        };
       };
     };
 
-    networks = {
-      "40-enp1s0f0" = {
-        matchConfig.Name = "enp1s0f0";
-        networkConfig.Bridge = "hass-br0";
-        linkConfig.RequiredForOnline = "enslaved";
+    services = {
+      # FNUC-018: Scheduled warm pre-sync of fnuc data (HA VM, /mnt/sda1, /srv)
+      # Runs completely non-disruptively while fnuc workloads remain live.
+      fnuc-migration-presync = {
+        description = "Warm pre-sync of fnuc data to lrz (non-disruptive)";
+        path = with pkgs; [
+          bash
+          coreutils
+          openssh
+          rsync
+          sudo
+        ];
+        environment = {
+          HOME = "/home/pschmitt";
+        };
+        serviceConfig = {
+          Type = "oneshot";
+          User = "pschmitt";
+          Group = "users";
+          ExecStart = "${migrateScript}/bin/migrate-fnuc-to-lrz --presync all";
+        };
       };
 
-      "40-hass-br0" = {
-        matchConfig.Name = "hass-br0";
-        networkConfig = {
-          DHCP = "yes";
-          IPv6PrivacyExtensions = "kernel";
-        };
-        dhcpV4Config.RouteMetric = 1024;
-        ipv6AcceptRAConfig.RouteMetric = 1024;
+      # Never export the underlying root filesystem if the SATA mount is missing.
+      nfs-server = {
+        unitConfig.RequiresMountsFor = [ "/mnt/sda1" ];
+        bindsTo = [ "mnt-sda1.mount" ];
+        after = [ "mnt-sda1.mount" ];
       };
+    };
+
+    timers.fnuc-migration-presync = {
+      description = "Nightly warm pre-sync of fnuc data to lrz";
+      timerConfig = {
+        OnCalendar = "04:00";
+        Persistent = true;
+        RandomizedDelaySec = "10m";
+      };
+      wantedBy = [ "timers.target" ];
     };
   };
+
+  # FNUC-005: Headless virtualization for Home Assistant OS VM
+  virtualisation.libvirtd = {
+    enable = true;
+    onShutdown = "shutdown";
+    allowedBridges = [
+      "virbr0"
+      "hass-br0"
+    ];
+    qemu = {
+      package = pkgs.qemu_kvm;
+      swtpm.enable = true;
+    };
+  };
+
+  environment.systemPackages = with pkgs; [
+    libvirt
+    qemu_kvm
+    migrateScript
+    (writeShellScriptBin "define-ha-vm" ''
+      exec ${pkgs.libvirt}/bin/virsh define ${./home-assistant.xml}
+    '')
+  ];
 
   services.nfs.server = {
     enable = true;
     exports = ''
       /mnt/sda1 10.5.0.0/22(rw,sync,no_subtree_check,no_root_squash,anonuid=1000,anongid=1000,mountpoint)
     '';
-  };
-
-  # Never export the underlying root filesystem if the SATA mount is missing.
-  systemd.services.nfs-server = {
-    unitConfig.RequiresMountsFor = [ "/mnt/sda1" ];
-    bindsTo = [ "mnt-sda1.mount" ];
-    after = [ "mnt-sda1.mount" ];
   };
 }
