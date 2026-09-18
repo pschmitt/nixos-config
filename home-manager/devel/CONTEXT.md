@@ -48,10 +48,11 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## Tmux pane and window naming
 
 - **Only do this when running inside a tmux session.** Check first: run `echo $TMUX` — if the output is empty, skip the rename entirely and do not attempt any tmux calls.
-- Once you understand what the current conversation is about, rename the active tmux pane and window to reflect it.
+- Once you understand what the current conversation is about, rename the tmux pane and window this session is actually attached to.
 - Use the tmux MCP tools `rename-pane` and `rename-window` (load via ToolSearch if not yet available).
-- To find the active window and pane: call `get-current-session`, then `list-windows` on the session, then `list-panes` on the active window.
-- **Only rename if the current name looks like a default/generic shell name** (e.g. `claude`, `bash`, `zsh`, `fish`, `sh`, a bare number). If the window or pane already has a meaningful slug title, the user set it manually — leave it unchanged. **Exception:** if the AI/harness is running in the only pane in the current window, rename regardless of the existing title — a solo pane means no other user-initiated split is present, so overwriting is safe.
+- **Do not target tmux's "active" pane/window.** "Active" means whatever the user currently has focused, which can be a different window than the one this agent is running in (user switched away, multiple panes/sessions, etc.) — renaming it renames the wrong thing.
+- Instead, identify the exact pane this process owns: run `echo $TMUX_PANE` (e.g. `%46`) to get its pane ID. Then call `get-current-session`, `list-windows` on that session, and `list-panes` on each window until you find the pane whose `id` matches `$TMUX_PANE`. That pane's `window_id` is the window to rename — use these specific `paneId`/`windowId` values, not whichever ones a given tool call reports as "active".
+- **Only rename if the current name looks like a default/generic shell name** (e.g. `claude`, `bash`, `zsh`, `fish`, `sh`, a bare number). If the window or pane already has a meaningful slug title, the user set it manually — leave it unchanged. **Exception:** if the AI/harness is running in the only pane of its own window (check via `list-panes` on that `window_id`), rename regardless of the existing title — a solo pane means no other user-initiated split is present, so overwriting is safe.
 - Keep names short: max 20 characters, no spaces — use `-` as separator.
 - Examples: `nix-ai-context`, `ha-lights`, `netbox-sync`, `ctx-tmux-rename`, `ha-fints-fix-reauth`
 - Do this once per conversation, as soon as the topic is clear — do not repeat.
