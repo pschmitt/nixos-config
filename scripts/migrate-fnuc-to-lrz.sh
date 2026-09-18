@@ -190,32 +190,46 @@ migrate_ha_vm() {
 	# Ensure destination directories exist
 	ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo mkdir -p /var/lib/libvirt/images /var/lib/libvirt/qemu/nvram"
 
-	if [[ "$MODE" == "final" ]]; then
+	if [[ "$MODE" == "presync" ]]; then
+		log "Presync mode: VM disk/NVRAM copy is deferred until final cutover."
+		log "The live VM on ${SOURCE_HOST} is NOT touched or read during pre-sync."
+		log "Dumping domain XML from ${SOURCE_HOST} for reference..."
 		if [[ $DRY_RUN -eq 0 ]]; then
-			log "Final mode: gracefully shutting down home-assistant VM on ${SOURCE_HOST}..."
-			ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh shutdown home-assistant 2>/dev/null || true"
-
-			log "Waiting for VM to stop..."
-			local timeout=60
-			while [[ $timeout -gt 0 ]]; do
-				local state
-				state=$(ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh domstate home-assistant 2>/dev/null || echo 'unknown'")
-				if [[ "$state" =~ "shut off" ]]; then
-					log "VM successfully shut off."
-					break
-				fi
-				sleep 2
-				timeout=$((timeout - 2))
-			done
-
-			if [[ $timeout -le 0 ]]; then
-				warn "VM did not shut off cleanly in 60s; checking state..."
-			fi
-		else
-			log "[DRY-RUN] Would shut down home-assistant VM on ${SOURCE_HOST}"
+			ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh dumpxml home-assistant" | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
 		fi
+		log "HA VM pre-sync step completed (XML saved, disk copy deferred to cutoff)."
+		return 0
+	fi
+
+	# From here on, MODE is "final"
+	if [[ $DRY_RUN -eq 0 ]]; then
+		log "Final mode: gracefully shutting down home-assistant VM on ${SOURCE_HOST}..."
+		ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh shutdown home-assistant 2>/dev/null || true"
+
+		log "Waiting for VM to stop..."
+		local timeout=60
+		local vm_stopped=0
+		while [[ $timeout -gt 0 ]]; do
+			local state
+			state=$(ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh domstate home-assistant 2>/dev/null || echo 'unknown'")
+			if [[ "$state" =~ "shut off" ]]; then
+				log "VM successfully shut off."
+				vm_stopped=1
+				break
+			fi
+			sleep 2
+			timeout=$((timeout - 2))
+		done
+
+		if [[ $vm_stopped -eq 0 ]]; then
+			die "CRITICAL: VM did not shut off cleanly in 60s on ${SOURCE_HOST}! Refusing to copy live disk. Please stop the VM manually and re-run."
+		fi
+
+		# Disable pre-sync timer on destination host now that cutoff is reached
+		log "Cutoff reached: disabling fnuc-migration-presync.timer on ${DEST_HOST}..."
+		ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo systemctl disable --now fnuc-migration-presync.timer 2>/dev/null || true"
 	else
-		log "Presync mode: VM remains running during initial disk transfer."
+		log "[DRY-RUN] Would shut down home-assistant VM on ${SOURCE_HOST} and disable presync timer on ${DEST_HOST}"
 	fi
 
 	# 1. Dump libvirt domain XML for reference
@@ -224,15 +238,15 @@ migrate_ha_vm() {
 		ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "sudo virsh dumpxml home-assistant" | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
 	fi
 
-	# 2. Transfer NVRAM
-	log "Transferring NVRAM..."
+	# 2. Transfer NVRAM from powered-off VM
+	log "Transferring NVRAM from powered-off VM..."
 	run_src_rsync "${vm_nvram}" "${vm_nvram}"
 
-	# 3. Transfer QCOW2 with --sparse and --inplace
-	log "Transferring QCOW2 disk image (sparse)..."
+	# 3. Transfer QCOW2 disk image from powered-off VM
+	log "Transferring QCOW2 disk image from powered-off VM (sparse)..."
 	run_src_rsync "${vm_img}" "${vm_img}" "--sparse" "--inplace"
 
-	log "Home Assistant VM migration step (${MODE}) completed."
+	log "Home Assistant VM migration step (${MODE}) completed successfully."
 }
 
 main() {

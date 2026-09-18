@@ -100,6 +100,30 @@ in
         };
       };
 
+      # FNUC-005: Enforce that the Home Assistant VM on lrz remains strictly POWERED OFF
+      # and autostart disabled until the final cutoff day.
+      home-assistant-vm-guard = {
+        description = "Enforce powered-off state for Home Assistant VM on lrz before cutover";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "libvirtd.service" ];
+        requires = [ "libvirtd.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStart = pkgs.writeShellScript "guard-ha-vm-offline" ''
+            if ${pkgs.libvirt}/bin/virsh dominfo home-assistant >/dev/null 2>&1; then
+              state=$(${pkgs.libvirt}/bin/virsh domstate home-assistant 2>/dev/null || echo "shut off")
+              if [[ "$state" =~ "running" ]]; then
+                echo "CRITICAL: home-assistant VM is running on lrz before cutoff! Shutting it down immediately..." >&2
+                ${pkgs.libvirt}/bin/virsh destroy home-assistant || true
+              fi
+              # Ensure autostart is disabled
+              ${pkgs.libvirt}/bin/virsh autostart --disable home-assistant 2>/dev/null || true
+            fi
+          '';
+        };
+      };
+
       # Never export the underlying root filesystem if the SATA mount is missing.
       nfs-server = {
         unitConfig.RequiresMountsFor = [ "/mnt/sda1" ];
