@@ -100,19 +100,26 @@ let
       }">
   '';
 
-  # n8n workflow "📅 Glance Calendar Feed" (gHTZP9q3faIYaP1M, n8n.brkn.lol):
-  # fetches the 3 secret ICS feeds (private/bergmann-schmitt Google
-  # calendars, work Outlook calendar), does its own lightweight RRULE
-  # expansion (DAILY/WEEKLY) since the Outlook feed doesn't pre-expand
-  # recurring meetings, and returns merged/sorted JSON for the next 14 days.
-  # Webhook auth is "none" per n8n's own default guidance -- security is the
-  # random unguessable path segment, and this data is read-only event
-  # titles/times, not calendar write access.
+  # Home Assistant script.glance_calendar_feed (scripts.yaml in the hass
+  # repo) is the source: it calls calendar.get_events on the work Outlook
+  # calendar, the private Google calendar and the shared bergmann-schmitt
+  # one, from today 00:00 over 14 days, then merges, de-duplicates and sorts
+  # them into {events: [{calendar, title, start, end, allDay, url}]}.
   #
-  # The feed emits timed events already converted to Europe/Berlin: Glance's
-  # formatTime renders an RFC3339 string in whatever offset it carries, and
-  # the Google feeds are UTC ("...Z") while the Outlook one carries TZID, so
-  # without that normalization Google events rendered 2h early in summer.
+  # This replaced a n8n workflow that fetched the three ICS feeds itself and
+  # expanded RRULEs by hand. Home Assistant owns those calendars anyway and
+  # gets the hard parts right: the hand-rolled expansion dated a recurring
+  # meeting a day late (matching monthly rules by day-of-month rather than
+  # weekday), listed one birthday twice, and its "private" ICS had silently
+  # gone empty. It is also local -- ~0.1s versus 4-10s for three sequential
+  # external ICS fetches, which is what kept timing out and erroring the
+  # widget after every glance.service restart.
+  #
+  # Timed events arrive with a real offset (+02:00) and all-day ones as bare
+  # dates, which the script normalizes to midnight UTC: Glance's formatTime
+  # renders an RFC3339 string in whatever offset it carries, so an all-day
+  # event formatted in UTC keeps its own date, and timed events keep Berlin
+  # wall-clock time.
   #
   # Events are rendered in three states, all derived at render time from now
   # on the rofl-10 clock (Europe/Berlin), so they lag reality by at most one
@@ -121,7 +128,7 @@ let
   # comparisons are string compares of "2006-01-02T15:04:05" stamps, since Go
   # templates can only compare basic types, not time.Time -- that layout sorts
   # lexicographically, and both sides are formatted in their own zone, which
-  # the feed already normalized to Europe/Berlin.
+  # the feed already emits with a real offset.
   #
   # All-day events are never "now" or "past" (they would be ongoing for their
   # whole day, which reads as noise), so they keep the plain date line.
@@ -139,15 +146,15 @@ let
   # Note Go template comments must hug their delimiters ({{/* .. */}}); a
   # spaced-out {{ /* .. */ }} is a config-breaking parse error.
   #
-  # The webhook URLs themselves (this one and the notification-action one
-  # below) are secrets -- this repo is public, and the random path segment
-  # is the only thing gating either webhook -- so both are sops-backed and
-  # only ever referenced via Glance's own runtime ${VAR} env expansion
-  # (glance.env below), never as literal strings here.
+  # The remaining n8n webhook URLs (the notification-action and nixpkgs
+  # read-state ones below) are secrets -- this repo is public, and the random
+  # path segment is the only thing gating either webhook -- so both are
+  # sops-backed and only ever referenced via Glance's own runtime ${VAR} env
+  # expansion (glance.env below), never as literal strings here.
 
   calendarTemplate = ''
     ${autoReloadSnippet}
-    {{ $events := .JSON.Array "events" }}
+    {{ $events := .JSON.Array "service_response.events" }}
     {{ if not $events }}
       <p class="color-subdue">Nothing upcoming</p>
     {{ else }}
@@ -690,7 +697,6 @@ in
       # n8n/runners/authToken); sops-install-secrets resolves that as a
       # nested path once the first segment already exists as a mapping,
       # which broke lookup for a flat "n8n/webhook/..." key.
-      "glance/webhook/calendar-feed-url" = config.custom.mkSecret { mode = "0400"; };
       "glance/webhook/gh-notification-action-url" = config.custom.mkSecret { mode = "0400"; };
       "glance/webhook/nixpkgs-pr-mark-read-url" = config.custom.mkSecret { mode = "0400"; };
       "glance/webhook/nixpkgs-pr-read-list-url" = config.custom.mkSecret { mode = "0400"; };
@@ -706,7 +712,6 @@ in
         RADARR_API_KEY=${config.sops.placeholder."radarr/api-key"}
         SONARR_API_KEY=${config.sops.placeholder."sonarr/api-key"}
         GITHUB_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
-        CALENDAR_FEED_URL=${config.sops.placeholder."glance/webhook/calendar-feed-url"}
         GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."glance/webhook/gh-notification-action-url"}
         NIXPKGS_PR_MARK_READ_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-mark-read-url"}
         NIXPKGS_PR_READ_LIST_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-read-list-url"}
@@ -752,14 +757,14 @@ in
                     # cache means a freshly loaded page can show labels that
                     # old, and across midnight they name the wrong day.
                     cache = "10m";
-                    # The n8n workflow behind this does 3 sequential external
-                    # ICS fetches + RRULE parsing, which can take well past
-                    # Glance's default request timeout -- especially right
-                    # after a glance.service restart with a cold widget
-                    # cache, which would otherwise cache the timeout error
-                    # for the full 30m cache duration.
-                    timeout = "30s";
-                    url = "\${CALENDAR_FEED_URL}";
+                    timeout = "10s";
+                    method = "POST";
+                    # return_response=true makes Home Assistant hand back the
+                    # script's own response instead of just the changed states.
+                    url = "https://ha.${domain}/api/services/script/glance_calendar_feed?return_response=true";
+                    headers.Authorization = "Bearer \${HASS_TOKEN}";
+                    body-type = "json";
+                    body = { };
                     template =
                       mkWidgetHeader {
                         title = "Calendar";
