@@ -267,13 +267,26 @@ let
   # and filtered out here against the $readNumbers subrequest -- a read PR
   # is skipped entirely rather than shown crossed-out, so it stays gone
   # across reloads/devices until it gets new activity re-surfacing it.
+  # nixpkgs tags backports at the very start of the title, either from the
+  # backport bot ("[Backport release-26.05] foo: 1.2 -> 1.3") or hand-written
+  # ("[26.05] foo: ...", "[release-26.05] foo: ..."). Same rule as the
+  # "GitHub nixpkgs PR Digest" n8n workflow, which drops them from the mail.
+  # GitHub's search API can't express this, so it is filtered here instead.
+  # Anchored on purpose, so a version bump like "tailscale: 1.98.10 ->
+  # 1.102.1" is not mistaken for a release tag.
+  # Passed to findMatch as a Go template raw string (backticks): a regular
+  # quoted literal would have to escape every backslash, since Go unquotes it
+  # before the regexp ever sees it.
+  nixpkgsBackportPattern = "(?i)^\\s*\\[\\s*(backport\\b[^\\]]*|(release-)?[0-9]{2}\\.[0-9]{2})\\s*\\]";
+
   nixpkgsPrListItem = ''
     {{ $prNumber := .Int "number" }}
     {{ $isRead := false }}
     {{ range $readNumbers }}
       {{ if eq (.Int "pr_number") $prNumber }}{{ $isRead = true }}{{ end }}
     {{ end }}
-    {{ if not $isRead }}
+    {{ $isBackport := ne (findMatch `${nixpkgsBackportPattern}` (.String "title")) "" }}
+    {{ if and (not $isRead) (not $isBackport) }}
     <li id="nixpkgs-pr-{{ $prNumber }}">
       <div class="flex items-center gap-5">
         <span class="shrink-0">{{ if ne (.String "pull_request.merged_at") "" }}${octiconPrMerged}{{ else if eq (.String "state") "closed" }}${octiconPrClosed}{{ else }}${octiconPrOpen}{{ end }}</span>
