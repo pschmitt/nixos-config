@@ -2951,11 +2951,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1789747261,
-        "narHash": "sha256-MPKCIa70PkZygbJz6ooCpOVCsFJWhkMyxnMw6YFSs/A=",
+        "lastModified": 1789748229,
+        "narHash": "sha256-6Evr8wve3qe7yre0H2DBW8lc12GnyI0hiJ33Q3fGEZU=",
         "owner": "pschmitt",
         "repo": "noctalia-plugins",
-        "rev": "fa91408260262e006b6d3a3135ef876502ffce61",
+        "rev": "e6c48e6c694d976e88ea844a86df2552859c7aad",
         "type": "github"
       },
       "original": {
