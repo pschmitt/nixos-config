@@ -7,6 +7,18 @@
 let
   domain = config.domains.main;
   glanceHost = "home.${domain}";
+  # Same name on each mesh network, matching browser-mcp-chromium-container's
+  # browser.<host>.<net> pattern. Wildcard DNS for *.<host>.<net>.${domain}
+  # already points at this host's Tailscale/Netbird addresses, so reaching
+  # these actually routes over the mesh -- which is the point: the connection
+  # then has a 100.64.0.0/10 source address, and Authelia's existing "local"
+  # network bypass applies. Going to ${glanceHost} instead resolves to the WAN
+  # address and hairpins, so it never looks like mesh traffic.
+  meshHosts = [
+    "home.${config.networking.hostName}.${config.domains.tailscale}"
+    "home.${config.networking.hostName}.${config.domains.netbird}"
+    "home.${config.networking.hostName}.${config.domains.vpn}"
+  ];
   glancePort = 9832;
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
@@ -58,6 +70,31 @@ let
   # comes back on its own once glance is listening again. No single quotes: it
   # is embedded in an nginx single-quoted string below.
   glanceRestartingPage = ''<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="5"><title>Dashboard restarting</title><body style="margin:0;height:100vh;display:grid;place-items:center;background:#151519;color:#b8b8c0;font:14px system-ui,-apple-system,sans-serif">Dashboard restarting, retrying every 5s...</body>'';
+
+  # Both the public and the mesh hostnames proxy the same way; they differ
+  # only in how they get their certificate, and in whether Authelia lets the
+  # request through (see the access_control rule below).
+  glanceVirtualHost = {
+    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+    acmeRoot = null;
+    forceSSL = true;
+    extraConfig = autheliaConfig.server;
+    locations."/" = {
+      proxyPass = "http://127.0.0.1:${toString glancePort}";
+      proxyWebsockets = true;
+      # Only these three codes are intercepted, so glance's own 404s and
+      # friends still pass through untouched.
+      extraConfig = autheliaConfig.location + ''
+        proxy_intercept_errors on;
+        error_page 502 503 504 = @restarting;
+      '';
+    };
+    locations."@restarting".extraConfig = ''
+      default_type text/html;
+      add_header Retry-After 5 always;
+      return 503 '${glanceRestartingPage}';
+    '';
+  };
 
   mkWidgetHeader =
     {
@@ -954,28 +991,18 @@ in
       };
     };
 
-    nginx.virtualHosts.${glanceHost} = {
-      enableACME = false;
-      useACMEHost = "wildcard.${domain}";
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
-      forceSSL = true;
-      extraConfig = autheliaConfig.server;
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString glancePort}";
-        proxyWebsockets = true;
-        # Only these three codes are intercepted, so glance's own 404s and
-        # friends still pass through untouched.
-        extraConfig = autheliaConfig.location + ''
-          proxy_intercept_errors on;
-          error_page 502 503 504 = @restarting;
-        '';
+    nginx.virtualHosts = {
+      ${glanceHost} = glanceVirtualHost // {
+        enableACME = false;
+        useACMEHost = "wildcard.${domain}";
       };
-      locations."@restarting".extraConfig = ''
-        default_type text/html;
-        add_header Retry-After 5 always;
-        return 503 '${glanceRestartingPage}';
-      '';
+      # The mesh names are not covered by the *.${domain} wildcard cert (it is
+      # one label deep), so this vhost gets its own DNS-01 cert with the three
+      # names as SANs.
+      ${builtins.head meshHosts} = glanceVirtualHost // {
+        serverAliases = builtins.tail meshHosts;
+        enableACME = true;
+      };
     };
 
     monit.config = ''
@@ -996,4 +1023,29 @@ in
   # Require Authelia before proxying, matching the other private dashboards
   # on this host (see services/hermes.nix).
   custom.authelia.extraTwoFactorDomains = [ glanceHost ];
+
+  # ${glanceHost} above stays two-factor even on the mesh, so reaching the
+  # dashboard without a login is what the mesh names are for. The built-in mesh
+  # bypass only covers *.${domain}, which is one label deep and so does not
+  # match these -- hence an explicit rule. It is still scoped to the "local"
+  # network, so the same hostname reached from anywhere else (a forged SNI to
+  # the WAN address, say) falls through to the default two-factor policy
+  # rather than being open.
+  custom.authelia.extraAccessControlRules = [
+    {
+      policy = "bypass";
+      # "local" is Authelia's built-in name for loopback plus the 100.64.0.0/10
+      # CGNAT range, but both meshes hand out IPv6 as well and clients prefer
+      # it, so a browser on the mesh arrives from a ULA address that the v4
+      # range does not cover. Tailscale's own /48 and this Netbird network's
+      # /64 are listed alongside it -- deliberately the exact /64 rather than
+      # Netbird's whole /48, to keep the bypass as narrow as what is routed.
+      networks = [
+        "local"
+        "fd7a:115c:a1e0::/48"
+        "fd8d:fa54:9081:c944::/64"
+      ];
+      domain = meshHosts;
+    }
+  ];
 }
