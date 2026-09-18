@@ -75,6 +75,31 @@ let
       </div>
     '';
 
+  # Glance injects widget HTML with innerHTML, which never executes <script>
+  # tags, and its page.js only fetches page content once -- there is no
+  # client-side refresh. A tab left open therefore keeps the render it was
+  # served forever, with the day labels below frozen at render time ("Today"
+  # still meaning yesterday the next morning). An inline event handler on an
+  # injected element does run (verified in a browser), so this reloads the
+  # page once the content is older than autoReloadMinutes, skipping hidden
+  # tabs and catching up as soon as one becomes visible again. It rides along
+  # in the calendar template because that is the widget whose correctness
+  # depends on the clock, and a reload refreshes every other widget too.
+  autoReloadMinutes = 15;
+  autoReloadSnippet = ''
+    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="" style="display:none" onload="
+      if (!window.__glanceAutoReload) {
+        window.__glanceAutoReload = true;
+        var loadedAt = Date.now();
+        var maxAge = ${toString autoReloadMinutes} * 60 * 1000;
+        var reloadIfStale = function () {
+          if (!document.hidden && Date.now() - loadedAt >= maxAge) location.reload();
+        };
+        setInterval(reloadIfStale, 60 * 1000);
+        document.addEventListener('visibilitychange', reloadIfStale);
+      }">
+  '';
+
   # n8n workflow "📅 Glance Calendar Feed" (gHTZP9q3faIYaP1M, n8n.brkn.lol):
   # fetches the 3 secret ICS feeds (private/bergmann-schmitt Google
   # calendars, work Outlook calendar), does its own lightweight RRULE
@@ -121,6 +146,7 @@ let
   # (glance.env below), never as literal strings here.
 
   calendarTemplate = ''
+    ${autoReloadSnippet}
     {{ $events := .JSON.Array "events" }}
     {{ if not $events }}
       <p class="color-subdue">Nothing upcoming</p>
@@ -707,7 +733,12 @@ in
                     type = "custom-api";
                     title = "Calendar";
                     hide-header = true;
-                    cache = "30m";
+                    # Kept short because the day labels ("Today", "Now",
+                    # dimmed past events) are baked in when the template is
+                    # rendered, which only happens on a refetch -- a longer
+                    # cache means a freshly loaded page can show labels that
+                    # old, and across midnight they name the wrong day.
+                    cache = "10m";
                     # The n8n workflow behind this does 3 sequential external
                     # ICS fetches + RRULE parsing, which can take well past
                     # Glance's default request timeout -- especially right
