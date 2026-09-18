@@ -12,6 +12,12 @@ in
 
     # home-manager configuration (TEST!)
     ../../profiles/gui/linger.nix
+
+    # FNUC-007: Native syslog-ng and logrotate service
+    ../../services/syslog-server.nix
+
+    # FNUC-008: Native fleet LUKS SSH unlock service
+    ../../services/luks-ssh-unlock-fleet.nix
   ];
 
   hardware.biosBoot = false;
@@ -133,9 +139,9 @@ in
     };
 
     timers.fnuc-migration-presync = {
-      description = "Nightly warm pre-sync of fnuc data to lrz";
+      description = "Daily warm pre-sync of fnuc data to lrz (07:00)";
       timerConfig = {
-        OnCalendar = "04:00";
+        OnCalendar = "07:00";
         Persistent = true;
         RandomizedDelaySec = "10m";
       };
