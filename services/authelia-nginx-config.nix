@@ -5,6 +5,14 @@
 {
   config,
   haIngressBypass ? true,
+  # Skip Authelia whenever the request carries an X-API-Key header. The header
+  # is never checked here -- any value passes -- so this is only sound in front
+  # of an app that authenticates the key itself (the *arr style). It is off by
+  # default because a bare header is not authentication: with it on, anyone can
+  # reach the app behind this vhost from the internet by sending one. The *arr
+  # services, which this was meant for, do not use this snippet at all; they go
+  # through modules/container-services.nix, which has no such bypass.
+  apiKeyBypass ? false,
 }:
 let
   autheliaDomain = "auth.${config.domains.main}";
@@ -39,9 +47,17 @@ in
 
     ## Virtual endpoint created by nginx to forward auth requests.
     location /internal/authelia/authz {
-      ## Bypass Authelia if API key is present
-      if ($http_x_api_key) {
-        return 200;
+      ${
+        if apiKeyBypass then
+          ''
+            ## Bypass Authelia if an API key is present -- the app behind this
+            ## vhost is responsible for validating it.
+            if ($http_x_api_key) {
+              return 200;
+            }
+          ''
+        else
+          ""
       }
       ${
         if haIngressBypass then
