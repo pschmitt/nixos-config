@@ -164,6 +164,8 @@ creation_rules:
   - path_regex: hosts/rofl-10/luks.sops.yaml
     key_groups:
       - age:
+          - age1v6z532d6ltx8k644qzmkuvsakysggpqge3603fzay47j20rr35vqd0ygaq # host key of fnuc
+          - age1lmf0lmvtgvxlrz76gcr8s0vz4fq0zja8xf0wjxxk2ac8jfj5apzqsr5ch8 # host key of lrz
           - age1gtk0eh2ug7kzmtwrvff8tvr47zs9ceu3pwx60z0zah42nnk6ug5qherau5 # host key of rofl-10
           - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
           - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
@@ -221,6 +223,18 @@ creation_rules:
     key_groups:
       - age:
           - age1hcvva2dx0k9z6srn7tv22nt7674z5skqsnwr2fu36pdc97ueadgqwznktk # host key of x13
+          - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
+          - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
+          - age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn # github/pschmitt
+          - age17rl4f347jmnv86cy6pyfd8hu02jj7974jmnq8jrmjz0uj7ecpupstuahy5 # github/pschmitt
+          - age1efl2xnt3767ajnu9xgl9zjycx5exggg6rgv53lj84sefeaqcgplqcrmlzj # github/pschmitt
+          - age1z8682uyrqfghn8fgvhp23a6udknlckvl4wcvgnafhqks95xhtu3sn83wrq # github/pschmitt
+          - age12uccn3k687ydk5jpmjwh3yp637x7rgy0tsx820t2rg70y7qdxuhqc6madk # github/pschmitt
+  - path_regex: hosts/.*/luks\.sops\.yaml
+    key_groups:
+      - age:
+          - age1v6z532d6ltx8k644qzmkuvsakysggpqge3603fzay47j20rr35vqd0ygaq # host key of fnuc
+          - age1lmf0lmvtgvxlrz76gcr8s0vz4fq0zja8xf0wjxxk2ac8jfj5apzqsr5ch8 # host key of lrz
           - age19s835cdck6ezupejsfj4qlzfnpwlpx52cvrasx9mms8svrr7nscq94l5fe # github/pschmitt
           - age1753xqc2qsh49edyqe2v2ujeeph05fdejqnm2yy5zq05gk9crhqcsf2mnwc # github/pschmitt
           - age1j2l3z55gnastjxwcrp32lh37huussemk9lctfkjemtzgksqadgyqhhaqpn # github/pschmitt
