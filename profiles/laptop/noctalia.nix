@@ -979,6 +979,12 @@ in
             # isn't interesting often enough to be worth a toast; errors and
             # device connect/disconnect notifications stay on.
             notify_folder_up_to_date = false;
+            # Noctalia labels can't ask for an italic style, so the panel's
+            # empty-state hints ("No folder errors.", ...) get there through a
+            # family that resolves to an italic face — the fontconfig alias
+            # defined in profiles/gui/fonts.nix, same as the timewarrior
+            # plugin's italic_font_family above.
+            italic_font_family = "ComicCode Italic";
           };
         };
       };
