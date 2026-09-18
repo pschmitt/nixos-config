@@ -8,6 +8,12 @@
 let
   targets = [
     {
+      name = "fnuc";
+      hostname = "fnuc.lan";
+      hasInitrdCheck = false;
+      healthcheckCmd = "mount | grep -v tmpfs | grep luks";
+    }
+    {
       name = "ge2";
       hostname = "ge2.lan";
       hasInitrdCheck = true;

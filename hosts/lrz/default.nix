@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   migrateScript = pkgs.writeScriptBin "migrate-fnuc-to-lrz" (
     builtins.readFile ../../scripts/migrate-fnuc-to-lrz.sh
@@ -18,13 +23,35 @@ in
 
     # FNUC-008: Native fleet LUKS SSH unlock service
     ../../services/luks-ssh-unlock-fleet.nix
+
+    # FNUC-009: Native SmokePing latency monitor
+    ../../services/smokeping.nix
+
+    # FNUC-010: Camera FTP upload and prune timer
+    ../../services/reolink-ftp.nix
+
+    # FNUC-012: WatchYourLAN host discovery service
+    ../../services/watchyourlan.nix
+
+    # FNUC-020: Emergency noVNC Web Console for Home Assistant VM
+    ../../services/web-vnc-console.nix
+
+    # FNUC-006: Native KVM USB passthrough watchdog
+    ../../services/kvm-usb.nix
   ];
+
+  services.kvm-usb-passthrough.enable = true;
 
   hardware.biosBoot = false;
   # NOTE avoids setting kernelParams that are only relevant for kvm guests
   # Having this set to true will cause the system to hang on boot and
   # you will *not* be able to enter the luks password on the console
   hardware.kvmGuest = false;
+
+  # Auto-unlock encrypted data volume in initrd using key on root filesystem
+  boot.initrd.luks.devices.data-encrypted = {
+    keyFile = lib.mkForce "/sysroot/etc/crypttab.d/keyfiles/data";
+  };
 
   # Enable networking
   networking = {

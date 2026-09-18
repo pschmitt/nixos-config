@@ -48,4 +48,10 @@ in
   systemd.tmpfiles.rules = [
     "d ${logDir} 0755 root root -"
   ];
+
+  networking.firewall.allowedUDPPorts = [ 514 ];
+  networking.firewall.allowedTCPPorts = [
+    514
+    601
+  ];
 }
