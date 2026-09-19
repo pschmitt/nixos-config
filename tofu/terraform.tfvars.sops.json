@@ -76,6 +76,13 @@
 		"lrz@brkn.lol": "ENC[AES256_GCM,data:0js9cWFrsdJVkyryaXoW8MqSmdswc/zri9nf8n32OO4=,iv:k7o/GlML7ph5GQbEfo+8USPXLMrYa2bMMh7ig3LrXgA=,tag:k7WD4lYkJ02usWlXOXe2pw==,type:str]",
 		"admin@brkn.lol": "ENC[AES256_GCM,data:ONd6S2fETvk8WQPu9vruTA==,iv:fsxFMGI9qwKvqSvLxuVnb9zbdogoKQijl4bHGXR+fMA=,tag:7OJCzqy+XjdrFOvXNDd45A==,type:str]"
 	},
+	"bw_email": "ENC[AES256_GCM,data:41oKCvv9QpfDFHU9O35ZFtzi,iv:G6fLdTcwcaIdf4jrm1Q8nk3tVYWRZdrwcyxvhWtHUwE=,tag:6bQKq+OLK7ZDRxCI6Om2hQ==,type:str]",
+	"bw_master_password": "ENC[AES256_GCM,data:BGLAeSP/QF0rtqSg,iv:ruZ3QFrB/QVj+wlAeNGOnN9OsuspP3vrc27zuLwtfoA=,tag:lh5scOALOliMK0G/Ao3+NQ==,type:str]",
+	"bw_client_id": "ENC[AES256_GCM,data:Fz3WhytwslqePfiurFEgiqhW0r+XPg2/Qmi9Nwx/KK76PnEyARxfOZw=,iv:fYkeLrjHetY0cU9zvnxEyMyQa1pRx0QR1MUUkDtxez0=,tag:Wj2r77awf0Ix7ERh4mcZkQ==,type:str]",
+	"bw_client_secret": "ENC[AES256_GCM,data:RTXT1d89Jtt0y42/3feBVckyN4jA3V7zfqPo8VXY,iv:F+2lJYHy0RWPsvGSqZdMDtIDCrAX37mpkXRQ9SZcMzI=,tag:8dSnx65M7frIMPvwMEdoBA==,type:str]",
+	"restic_repo_passwords": {
+		"lrz": "ENC[AES256_GCM,data:IQOv46RNZg/5GaQhcRfgBLhTCPA0JGr7ZkbJiHuajQ011LFkKz4e4WiScAsqIEo2aG6nIDqRn4BxVomL87iJogHgMFf9jVu/fLME7UP+BBBT96Q/Swxu9Alizqq4zz5J9i0lqF0CmTOQUvin47TFXe+dienl3XCY,iv:PpM6rmIcz0jLmul3v5L+QjW4Pi1nTK+6anurWDPugNI=,tag:XBr+/07aKBcwaUQYpfd7+w==,type:str]"
+	},
 	"sops": {
 		"age": [
 			{
@@ -107,8 +114,8 @@
 				"recipient": "age12uccn3k687ydk5jpmjwh3yp637x7rgy0tsx820t2rg70y7qdxuhqc6madk"
 			}
 		],
-		"lastmodified": "2026-09-19T13:59:56Z",
-		"mac": "ENC[AES256_GCM,data:UodiJ5ClcZHEBe1RdZFrvJaSGFoQz0DyGmprslz2l3PA9lLOYXjxdQTrpn2PSQYUMDIQvP3Z1VI1A17zgYRFYes1lM4+D9VgGPNTGJTU4r/PCSyR3a3J+Fkxwjp9VndSEbTLV6VJpPrdy/TsOBtext/BLWV9Cgsx2FniJ1qxWJ0=,iv:xMFt8plS79C65YFKwuKEymPwuSa+ZLjEbMaMpT3K9Jg=,tag:vF9kQwzBiK5PNUTgxNE7Ag==,type:str]",
+		"lastmodified": "2026-09-19T14:09:17Z",
+		"mac": "ENC[AES256_GCM,data:UTLXHTKHOvPA/ynT1K/ettnyogp4cz/8Q7nibirc9X2GyMu9azeWaWy4e7iCRS/T3I/+956XvRq4p0yWrg6yuWHGaYC9b5zTjlnIotnopBw/v1GmzDWD53PFkDzy7Qpscr8ZjVHnDDUjO1+AxSe8HkAkS4jKc+uvIMsb/qaMcGM=,iv:biPpWNIfSJ6y79ITyUqgVJSiWTdi9kgwMXnS+VoAKgo=,tag:Rd9fqKUDN0th+1mPOj8y8w==,type:str]",
 		"unencrypted_suffix": "_unencrypted",
 		"version": "3.13.3"
 	}
