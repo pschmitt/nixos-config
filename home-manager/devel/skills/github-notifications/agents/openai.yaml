@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub notifications"
+  short_description: "Triage GitHub issues, PRs, and mentions"
+  default_prompt: "Review my GitHub notifications, prioritize mentions, issues, pull requests, and Renovate updates, verify CI, and summarize findings and actions with links."
