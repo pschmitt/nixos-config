@@ -146,7 +146,7 @@ run_scenario() {
   define_mocks
   case "$scenario" in
     *dry*)
-      DRY_RUN=1
+      export DRY_RUN=1
       RSYNC_FLAGS+=(-n)
       ;;
   esac
@@ -214,10 +214,10 @@ check_scenario() {
       if [[ "$scenario" == srv-stop-fails ]]
       then
         reject_trace 'rsync ' || return
-        reject_trace 'systemctl start docker-ftpd.service' || return
+        reject_trace 'systemctl start ftpd.service' || return
       else
         require_trace 'rsync /srv/' || return
-        require_trace 'systemctl start docker-ftpd.service' || return
+        require_trace 'systemctl start ftpd.service' || return
       fi
       if [[ "$scenario" == srv-term ]]
       then
@@ -274,13 +274,20 @@ test_main() {
     return
   fi
   [[ $# -eq 0 ]] || return 2
-  local test_dir script case_dir scenario status failures=0 count=0
+  local test_dir script case_dir scenario status failures=0 count=0 self_name
   test_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-  script="${test_dir}/../migrate-fnuc-to-lrz.sh"
-  export TEST_SELF="${test_dir}/$(basename -- "${BASH_SOURCE[0]}")"
+  self_name=$(basename -- "${BASH_SOURCE[0]}")
+  export TEST_SELF="${test_dir}/${self_name}"
   case_dir=$(mktemp -d -t migration-tests.XXXXXXXX)
   # Cleanup is confined to the exact directory created by this test run.
   trap 'rm -rf -- "${case_dir}"' EXIT
+  script="${case_dir}/migrate-fnuc-to-lrz.sh"
+  cat \
+    "${test_dir}/../migrate-fnuc-to-lrz/lib.sh" \
+    "${test_dir}/../migrate-fnuc-to-lrz/sda1.sh" \
+    "${test_dir}/../migrate-fnuc-to-lrz/srv.sh" \
+    "${test_dir}/../migrate-fnuc-to-lrz/ha-vm.sh" \
+    "${test_dir}/../migrate-fnuc-to-lrz/main.sh" > "$script"
   local scenarios=(
     srv-ok srv-inactive srv-copy-fails srv-stop-fails srv-start-fails srv-term srv-dry
     ha-ok ha-off ha-dry-running ha-dry-off

@@ -1,4 +1,14 @@
 { pkgs, ... }:
+let
+  defineHaVm = pkgs.writeShellApplication {
+    name = "define-ha-vm";
+    runtimeInputs = [ pkgs.libvirt ];
+    text = ''
+      virsh -c qemu:///system define ${./home-assistant.xml}
+      virsh -c qemu:///system autostart --disable home-assistant
+    '';
+  };
+in
 {
   # FNUC-005: Headless virtualization for Home Assistant OS VM
   virtualisation.libvirtd = {
@@ -47,11 +57,24 @@
     };
   };
 
-  environment.systemPackages = with pkgs; [
-    libvirt
-    qemu_kvm
-    (writeShellScriptBin "define-ha-vm" ''
-      exec ${pkgs.libvirt}/bin/virsh define ${./home-assistant.xml}
-    '')
+  environment.systemPackages = [
+    pkgs.libvirt
+    pkgs.qemu_kvm
+    defineHaVm
   ];
+
+  # Keep the persistent libvirt domain definition in sync with the Nix-managed
+  # XML. The VM remains powered off and non-autostarted until migration cutover.
+  systemd.services.home-assistant-vm-init = {
+    description = "Define the Nix-managed Home Assistant VM domain";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "home-assistant-vm-guard.service" ];
+    wants = [ "libvirtd-config.service" ];
+    after = [ "libvirtd-config.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${defineHaVm}/bin/define-ha-vm";
+    };
+  };
 }

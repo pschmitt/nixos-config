@@ -10,8 +10,8 @@ migrate_srv() (
   local srv_units=(
     "syslog-ng.service"
     "smokeping.service"
-    "docker-watchyourlan.service"
-    "docker-ftpd.service"
+    "watchyourlan.service"
+    "ftpd.service"
   )
   local stopped_units=()
   local unit unit_state

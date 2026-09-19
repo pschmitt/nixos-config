@@ -45,7 +45,7 @@
     <controller type='usb' index='0' model='qemu-xhci' ports='15'/>
     <controller type='pci' index='0' model='pcie-root'/>
     <interface type='bridge'>
-      <mac address='52:54:00:a0:a7:1b'/>
+      <mac address='52:54:00:a0:a7:2b'/>
       <source bridge='hass-br0'/>
       <model type='virtio'/>
     </interface>
