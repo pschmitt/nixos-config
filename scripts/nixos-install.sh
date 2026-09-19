@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-# Ensure we are in the script's directory (repo root)
-cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+# Ensure we are in the repo root directory
+cd "$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)" || exit 9
 
 usage() {
   cat <<EOF
