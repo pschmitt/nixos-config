@@ -22,7 +22,6 @@ set -euo pipefail
 
 SOURCE_HOST="fnuc"
 DEST_HOST="lrz"
-DEST_USER="pschmitt"
 SSH_KEY="/home/pschmitt/.ssh/id_ed25519"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=accept-new -i "${SSH_KEY}")
 
@@ -58,13 +57,24 @@ run_src_rsync() {
   shift 2
   local extra_args=("$@")
 
-  local rsync_cmd ssh_cmd
+  local rsync_cmd ssh_cmd source_spec
+  source_spec="root@${SOURCE_HOST}:${src}"
   printf -v ssh_cmd '%q ' ssh "${SSH_OPTS[@]}"
-  printf -v rsync_cmd '%q ' sudo -n rsync "${RSYNC_FLAGS[@]}" "${extra_args[@]}" \
-    -e "${ssh_cmd}" --rsync-path='sudo -n rsync' -- "${src}" "${DEST_USER}@${DEST_HOST}:${dst}"
-  log "Executing rsync on ${SOURCE_HOST}: ${src} -> ${DEST_HOST}:${dst}"
-  # shellcheck disable=SC2029
-  ssh "${SSH_OPTS[@]}" "${SOURCE_HOST}" "${rsync_cmd}"
+  log "Executing rsync on ${DEST_HOST}: ${SOURCE_HOST}:${src} -> ${dst}"
+
+  # Run the long-lived rsync on the destination.  The previous push model
+  # started rsync inside an SSH session on fnuc; if that control session
+  # dropped, its nested rsync could survive as an unsupervised writer.
+  if [[ "$(hostname -s)" == "$DEST_HOST" ]]
+  then
+    sudo -n rsync "${RSYNC_FLAGS[@]}" "${extra_args[@]}" \
+      -e "${ssh_cmd}" --rsync-path=rsync -- "${source_spec}" "${dst}"
+  else
+    printf -v rsync_cmd '%q ' sudo -n rsync "${RSYNC_FLAGS[@]}" "${extra_args[@]}" \
+      -e "${ssh_cmd}" --rsync-path=rsync -- "${source_spec}" "${dst}"
+    # shellcheck disable=SC2029
+    ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "${rsync_cmd}"
+  fi
 }
 
 preflight_checks() {

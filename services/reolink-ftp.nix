@@ -29,6 +29,7 @@ in
         wantedBy = [ "multi-user.target" ];
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
+        unitConfig.ConditionPathExists = "${certsDir}/pure-ftpd.pem";
         unitConfig.RequiresMountsFor = [
           reolinkDataDir
           certsDir

@@ -70,8 +70,14 @@ in
         home-assistant-vm-guard = {
           description = "Enforce powered-off state for Home Assistant VM on lrz before cutover";
           wantedBy = [ "multi-user.target" ];
-          after = [ "libvirtd.service" ];
-          requires = [ "libvirtd.service" ];
+          after = [
+            "libvirtd.service"
+            "home-assistant-vm-init.service"
+          ];
+          requires = [
+            "libvirtd.service"
+            "home-assistant-vm-init.service"
+          ];
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
