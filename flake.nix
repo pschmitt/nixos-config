@@ -422,6 +422,7 @@
           system,
           deviceType,
           homeManager ? false,
+          hostModule ? ./hosts/${hostname},
         }:
         let
           isServer = deviceType == "server";
@@ -437,7 +438,7 @@
           modules =
             commonModules
             ++ [
-              ./hosts/${hostname}
+              hostModule
               {
                 hardware.type = deviceType;
               }
@@ -455,6 +456,7 @@
         {
           system,
           modules ? [ ],
+          homeModule ? ./hosts/${hostname},
           # Import-gating facts (mirrors the NixOS bridge in
           # home-manager/default.nix); standalone hosts default to headless.
           guiEnable ? false,
@@ -477,7 +479,7 @@
               ;
           };
 
-          modules = modules ++ [ ./hosts/${hostname} ];
+          modules = modules ++ [ homeModule ];
         };
 
       mkNixOnDroid =
@@ -618,6 +620,12 @@
                 system = "x86_64-linux";
                 deviceType = "server";
                 homeManager = true;
+              };
+              fnuc = {
+                system = "x86_64-linux";
+                deviceType = "server";
+                homeManager = true;
+                hostModule = ./hosts/fnuc/nixos.nix;
               };
               rofl-10 = {
                 system = "x86_64-linux";
