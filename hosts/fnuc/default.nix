@@ -35,6 +35,12 @@
   # doesn't import as a standalone home-manager host.
   nixpkgs.config.allowUnfree = true;
 
+  # nixos-install enters the target system while installing the boot loader
+  # and needs util-linux's mount command there.
+  environment.systemPackages = [ pkgs.util-linux ];
+
+  systemd.tmpfiles.rules = [ "d /var/lib/fnuc-migration 0750 pschmitt users -" ];
+
   domains.main = "brkn.lol";
 
   targets.genericLinux.enable = true;
