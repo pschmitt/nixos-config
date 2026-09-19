@@ -178,6 +178,24 @@ in
       '';
     };
 
+    # Same actively-checked Tailscale+Netbird pattern for the separate
+    # "dieppe" HA instance. It has no Nabu Casa (or other) fallback tier, so
+    # its vhost below proxies straight to this upstream with nothing after
+    # it -- a request just gets a 502 if both mesh peers are down.
+    upstreams.hass_dieppe_mesh = {
+      servers = {
+        "homeassistant-dieppe.snake-eagle.ts.net:8123" = { };
+        "homeassistant-dieppe.${config.domains.netbird}:8123" = {
+          backup = true;
+        };
+      };
+      extraConfig = ''
+        check interval=5000 rise=2 fall=2 timeout=2000 type=http;
+        check_http_send "GET / HTTP/1.0\r\nConnection: close\r\n\r\n";
+        check_http_expect_alive http_2xx http_3xx;
+      '';
+    };
+
     streamConfig = ''
       map $ssl_preread_protocol $oci_01_public_backend {
         default 127.0.0.1:8443;
@@ -327,15 +345,26 @@ in
         '';
       };
 
-      "hass.dieppe.schmi.tt" = publicProxy {
-        cert = "oci-01-schmi-tt";
-        backend = "http://homeassistant-dieppe.snake-eagle.ts.net:8123";
-        aliases = [
+      "hass.dieppe.schmi.tt" = {
+        serverAliases = [
           "ha.dieppe.schmi.tt"
           "homeassistant.dieppe.schmi.tt"
           "home-assistant.dieppe.schmi.tt"
         ];
-        websockets = true;
+        listen = lib.mkForce publicListen;
+        useACMEHost = "oci-01-schmi-tt";
+        forceSSL = true;
+        locations."/" = {
+          proxyWebsockets = true;
+          recommendedProxySettings = false;
+          extraConfig = ''
+            proxy_pass http://hass_dieppe_mesh;
+            proxy_set_header Host $host;
+            ${haProxyHeaders}
+            proxy_connect_timeout 2s;
+            proxy_read_timeout 3s;
+          '';
+        };
       };
 
       "grafana.ovm5.de" = publicProxy {
