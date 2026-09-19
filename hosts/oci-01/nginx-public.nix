@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -154,6 +155,29 @@ in
       valid = "30s";
     };
 
+    # Gives the hass_mesh upstream below (Tailscale + Netbird) real active
+    # health checks -- periodic probes that mark a server down independently
+    # of live traffic, instead of only reacting after a client request hits
+    # it -- since stock nginx open source has none.
+    additionalModules = [ pkgs.nginxModules.upstream-check ];
+
+    upstreams.hass_mesh = {
+      # Order doesn't matter functionally (the check module drives up/down
+      # state, and `backup` only decides which one nginx prefers while both
+      # are healthy); Tailscale primary, Netbird backup.
+      servers = {
+        "homeassistant.${config.domains.tailscale}:8123" = { };
+        "hass.${config.domains.netbird}:8123" = {
+          backup = true;
+        };
+      };
+      extraConfig = ''
+        check interval=5000 rise=2 fall=2 timeout=2000 type=http;
+        check_http_send "GET / HTTP/1.0\r\nConnection: close\r\n\r\n";
+        check_http_expect_alive http_2xx http_3xx;
+      '';
+    };
+
     streamConfig = ''
       map $ssl_preread_protocol $oci_01_public_backend {
         default 127.0.0.1:8443;
@@ -234,15 +258,17 @@ in
       # oci-01 is already a Tailscale + Netbird peer, and the HA VM joins
       # both meshes directly (Tailscale node "homeassistant", Netbird node
       # "hass") -- so reach it straight over mesh first instead of always
-      # going out to the Nabu Casa remote-UI relay. Each tier is a real
-      # per-request check with a short bounded timeout: a hung/refused
-      # connection to one tier fails over to the next within the same
-      # request via nginx's named-location error_page recipe. Nabu Casa
-      # stays as the last resort for off-mesh/away access, since it's the
-      # only tier reachable from the public internet (see 2026-09-19: it
-      # silently black-holes at the TLS layer instead of erring when HA's
-      # cloud tunnel is down, which is exactly the failure this guards
-      # against).
+      # going out to the Nabu Casa remote-UI relay. The mesh tier
+      # (hass_mesh upstream above) is actively health-checked, so a downed
+      # peer is already known before a request arrives; Nabu Casa is the
+      # last-resort tier, reached via a per-request error_page fallback
+      # (bounded timeout) since it can't join the same upstream -- it needs
+      # HTTPS plus a different Host/SNI, which one nginx upstream can't mix
+      # with the mesh's plain-HTTP servers. Nabu Casa stays as the last
+      # resort for off-mesh/away access, since it's the only tier reachable
+      # from the public internet (see 2026-09-19: it silently black-holes
+      # at the TLS layer instead of erring when HA's cloud tunnel is down,
+      # which is exactly the failure this guards against).
       "hass.${mainDomain}" = {
         serverAliases = [
           "ha.${mainDomain}"
@@ -254,22 +280,10 @@ in
         forceSSL = true;
         locations = {
           "/" = {
-            proxyPass = "http://homeassistant.${config.domains.tailscale}:8123";
             proxyWebsockets = true;
             recommendedProxySettings = false;
             extraConfig = ''
-              proxy_set_header Host $host;
-              ${haProxyHeaders}
-              proxy_connect_timeout 2s;
-              proxy_read_timeout 3s;
-              error_page 502 503 504 = @hass_netbird;
-            '';
-          };
-          "@hass_netbird" = {
-            proxyPass = "http://hass.${config.domains.netbird}:8123";
-            proxyWebsockets = true;
-            recommendedProxySettings = false;
-            extraConfig = ''
+              proxy_pass http://hass_mesh;
               proxy_set_header Host $host;
               ${haProxyHeaders}
               proxy_connect_timeout 2s;
