@@ -2,13 +2,32 @@
   config,
   hostname,
   inputs,
+  lib,
+  pkgs,
   ...
 }:
+let
+  # Companion to home-manager/sops.nix's own fixSshOwnership: that one runs
+  # before the user-level sops-nix.service, but nixos-anywhere's --extra-files
+  # leaves ~/.ssh root-owned even earlier than that, which breaks the
+  # system-level home-manager-<user>.service itself (runs as User=pschmitt)
+  # while it's trying to link home.file entries (e.g. ssh.nix) into ~/.ssh.
+  fixSshOwnership = pkgs.writeShellScript "hm-system-fix-ssh-ownership" ''
+    DIR='${config.mainUser.homeDirectory}/.ssh'
+    if [[ -d "$DIR" ]]; then
+      chown -R '${config.mainUser.username}:${config.mainUser.username}' "$DIR"
+    fi
+  '';
+in
 {
   imports = [
     # Import home-manager's NixOS module
     inputs.home-manager.nixosModules.home-manager
   ];
+
+  systemd.services."home-manager-${config.mainUser.username}".serviceConfig.ExecStartPre =
+    lib.mkBefore
+      [ "+-${fixSshOwnership}" ];
 
   home-manager = {
     # Import-gating facts go through specialArgs (not config) so home.nix can
