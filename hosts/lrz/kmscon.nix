@@ -6,6 +6,7 @@
     config = {
       hwaccel = true;
       "font-name" = "Comic Code";
+      "dpms-timeout" = 0;
     };
   };
 
