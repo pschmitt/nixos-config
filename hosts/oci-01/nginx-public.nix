@@ -7,6 +7,20 @@ let
   mainDomain = config.domains.main;
   mailHost = "mail.${mainDomain}";
   healthchecksHost = "hc.${mainDomain}";
+  # The Nabu Casa remote-UI hostname is a per-instance secret (its UUID
+  # subdomain grants direct access to this HA instance), so it's injected at
+  # activation time via sops rather than baked into the Nix store -- see
+  # sops.secrets."nabu-casa/hass-relay-host" below. Referenced only as the
+  # nginx variable $nabu_casa_hass_host, never as a literal string here.
+  nabuCasaHostVar = "$nabu_casa_hass_host";
+  # Common headers for the hass.${mainDomain} failover chain below (each tier
+  # sets its own Host on top of these).
+  haProxyHeaders = ''
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Forwarded-Host $host;
+  '';
   publicListen = [
     {
       addr = "0.0.0.0";
@@ -76,6 +90,21 @@ let
   ];
 in
 {
+  sops.secrets."nabu-casa/hass-relay-host" = config.custom.mkSecret {
+    owner = config.services.nginx.user;
+  };
+
+  # Keeps the Nabu Casa remote-UI hostname (a per-instance secret UUID
+  # subdomain) out of the world-readable Nix store: nginx picks it up as
+  # $nabu_casa_hass_host via `include`, decrypted only into /run at
+  # activation. Shared by hass.${mainDomain} and hass.ber.schmi.tt below.
+  sops.templates."nginx/nabu-casa-hass.conf" = {
+    owner = config.services.nginx.user;
+    content = ''
+      set $nabu_casa_hass_host "${config.sops.placeholder."nabu-casa/hass-relay-host"}";
+    '';
+  };
+
   systemd.services.nginx = {
     wants = [ "stalwart-network-config.service" ];
     after = [ "stalwart-network-config.service" ];
@@ -202,35 +231,85 @@ in
         ];
       };
 
-      "hass.${mainDomain}" = publicProxy {
-        cert = "oci-01-brkn-lol";
-        backend = "https://2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
-        aliases = [
+      # oci-01 is already a Tailscale + Netbird peer, and the HA VM joins
+      # both meshes directly (Tailscale node "homeassistant", Netbird node
+      # "hass") -- so reach it straight over mesh first instead of always
+      # going out to the Nabu Casa remote-UI relay. Each tier is a real
+      # per-request check with a short bounded timeout: a hung/refused
+      # connection to one tier fails over to the next within the same
+      # request via nginx's named-location error_page recipe. Nabu Casa
+      # stays as the last resort for off-mesh/away access, since it's the
+      # only tier reachable from the public internet (see 2026-09-19: it
+      # silently black-holes at the TLS layer instead of erring when HA's
+      # cloud tunnel is down, which is exactly the failure this guards
+      # against).
+      "hass.${mainDomain}" = {
+        serverAliases = [
           "ha.${mainDomain}"
           "homeassistant.${mainDomain}"
           "home-assistant.${mainDomain}"
         ];
-        websockets = true;
-        proxyHost = "2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
-        extraConfig = ''
-          proxy_ssl_server_name on;
-          proxy_ssl_name 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
-        '';
+        listen = lib.mkForce publicListen;
+        useACMEHost = "oci-01-brkn-lol";
+        forceSSL = true;
+        locations = {
+          "/" = {
+            proxyPass = "http://homeassistant.${config.domains.tailscale}:8123";
+            proxyWebsockets = true;
+            recommendedProxySettings = false;
+            extraConfig = ''
+              proxy_set_header Host $host;
+              ${haProxyHeaders}
+              proxy_connect_timeout 2s;
+              proxy_read_timeout 3s;
+              error_page 502 503 504 = @hass_netbird;
+            '';
+          };
+          "@hass_netbird" = {
+            proxyPass = "http://hass.${config.domains.netbird}:8123";
+            proxyWebsockets = true;
+            recommendedProxySettings = false;
+            extraConfig = ''
+              proxy_set_header Host $host;
+              ${haProxyHeaders}
+              proxy_connect_timeout 2s;
+              proxy_read_timeout 3s;
+              error_page 502 503 504 = @hass_nabucasa;
+            '';
+          };
+          "@hass_nabucasa" = {
+            proxyPass = "https://${nabuCasaHostVar}";
+            proxyWebsockets = true;
+            recommendedProxySettings = false;
+            extraConfig = ''
+              include ${config.sops.templates."nginx/nabu-casa-hass.conf".path};
+              resolver 1.1.1.1 9.9.9.9 valid=300s;
+              proxy_set_header Host ${nabuCasaHostVar};
+              ${haProxyHeaders}
+              proxy_ssl_server_name on;
+              proxy_ssl_name ${nabuCasaHostVar};
+              proxy_connect_timeout 3s;
+              proxy_read_timeout 5s;
+            '';
+          };
+        };
       };
 
       "hass.ber.schmi.tt" = publicProxy {
         cert = "oci-01-schmi-tt";
-        backend = "https://2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
+        backend = "https://${nabuCasaHostVar}";
         aliases = [
           "ha.ber.schmi.tt"
           "homeassistant.ber.schmi.tt"
           "home-assistant.ber.schmi.tt"
         ];
         websockets = true;
-        proxyHost = "2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa";
+        proxyHost = nabuCasaHostVar;
         extraConfig = ''
+          include ${config.sops.templates."nginx/nabu-casa-hass.conf".path};
+          resolver 1.1.1.1 9.9.9.9 valid=300s;
           proxy_ssl_server_name on;
-          proxy_ssl_name 2ozir0cxvj1ovgzwcdt0sh49bc0z8lvh.ui.nabu.casa;
+          proxy_ssl_name ${nabuCasaHostVar};
         '';
       };
 
