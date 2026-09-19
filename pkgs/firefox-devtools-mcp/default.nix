@@ -8,11 +8,11 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "firefox-devtools-mcp";
-  version = "0.10.2";
+  version = "0.10.3";
 
   src = fetchurl {
     url = "https://registry.npmjs.org/@mozilla/firefox-devtools-mcp/-/firefox-devtools-mcp-${finalAttrs.version}.tgz";
-    hash = "sha256-gTDMK1jbnj7i1dQ20M+rts9p6l42RACfYkhGGqSbeJ4=";
+    hash = "sha256-L0BkTzH+Zce679jdRyw8OH2PWBsKH8YHBhqfZ4S/vMU=";
   };
 
   postPatch = ''
