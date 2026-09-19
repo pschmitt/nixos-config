@@ -11,7 +11,6 @@
 locals {
   mail_bw_excluded = [
     "admin@brkn.lol", # credential lives in the bitwarden.com account entry's notes, not a mail-style login item
-    "p@pschmitt.dev", # existing item has file attachments; the bitwarden provider's PUT can't serialize them ($.attachments -> Dictionary conversion error)
   ]
 
   # Account/host names aren't secret, only the passwords are -- but
