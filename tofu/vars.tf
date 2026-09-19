@@ -143,4 +143,28 @@ variable "healthchecksio_api_url" {
   type        = string
 }
 
+variable "stalwart_endpoint" {
+  description = "Base URL of the Stalwart mail server (JMAP admin API)"
+  type        = string
+  default     = "https://stalwart.brkn.lol"
+}
+
+variable "stalwart_username" {
+  description = "Stalwart admin username (HTTP basic auth)"
+  type        = string
+  sensitive   = true
+}
+
+variable "stalwart_password" {
+  description = "Stalwart admin password (HTTP basic auth)"
+  type        = string
+  sensitive   = true
+}
+
+variable "mail_account_passwords" {
+  description = "Password per tofu-managed Stalwart account, keyed by local part (e.g. \"lrz\" for lrz@<domain>)"
+  type        = map(string)
+  sensitive   = true
+}
+
 # vim: set ft=terraform

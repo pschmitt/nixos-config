@@ -24,6 +24,11 @@ terraform {
       source  = "kristofferahl/healthchecksio"
       version = "~> 2.0"
     }
+
+    stalwart = {
+      source  = "flungo/stalwart"
+      version = "~> 0.2"
+    }
   }
 
   backend "s3" {
@@ -70,5 +75,11 @@ provider "healthchecksio" {
 
   # Default to the self-hosted instance but allow override through variables.
   api_url = var.healthchecksio_api_url
+}
+
+provider "stalwart" {
+  endpoint = var.stalwart_endpoint
+  username = var.stalwart_username
+  password = var.stalwart_password
 }
 # vim: set ft=terraform :
