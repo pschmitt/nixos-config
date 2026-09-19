@@ -18,6 +18,9 @@ in
     # home-manager configuration (TEST!)
     ../../profiles/gui/linger.nix
 
+    # HTTPS and ACME via nginx
+    ../../services/http.nix
+
     # FNUC-007: Native syslog-ng and logrotate service
     ../../services/syslog-server.nix
 
