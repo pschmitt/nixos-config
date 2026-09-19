@@ -78,7 +78,7 @@ if [[ $DRY_RUN -eq 1 ]]; then
 fi
 
 main() {
-  log "Starting fnuc -> lrz data migration [Target: ${TARGET}, Mode: ${MODE}, DryRun: ${DRY_RUN}]"
+  log "Starting ${SOURCE_HOST} -> ${DEST_HOST} data migration [Target: ${TARGET}, Mode: ${MODE}, DryRun: ${DRY_RUN}]"
   preflight_checks
   if [[ $DRY_RUN -eq 0 ]]
   then
