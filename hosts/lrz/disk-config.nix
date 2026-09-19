@@ -89,6 +89,10 @@
                 "defaults"
                 "umask=0077"
               ];
+              extraArgs = [
+                "-n"
+                "EFI"
+              ];
             };
           };
           luks = {

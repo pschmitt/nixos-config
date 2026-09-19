@@ -42,6 +42,7 @@ decrypt_host_secrets() {
     # copy this file
     cd "$tmpdir" || exit 9
     "${tofu_script_dir}/decrypt-luks-passphrase.sh" > luks-passphrase-root.txt || exit 1
+    TARGET_DISK=data "${tofu_script_dir}/decrypt-luks-passphrase.sh" > luks-passphrase-data.txt 2>/dev/null || true
 
     if command -v tree >/dev/null
     then
@@ -120,12 +121,21 @@ cmd_remote() {
     flake_uri="${flake_uri}#${target_host}"
   fi
 
+  local disk_encryption_args=(
+    --disk-encryption-keys /tmp/disk-1.key "${tmpdir}/luks-passphrase-root.txt"
+  )
+  if [[ -s "${tmpdir}/luks-passphrase-data.txt" ]]; then
+    disk_encryption_args+=(
+      --disk-encryption-keys /tmp/disk-2.key "${tmpdir}/luks-passphrase-data.txt"
+    )
+  fi
+
   local cmd=(nix run github:nix-community/nixos-anywhere -- \
     --flake "$flake_uri" \
     --target-host "$ssh_host" \
     --build-on local \
     --disko-mode disko \
-    --disk-encryption-keys /tmp/disk-1.key "${tmpdir}/luks-passphrase-root.txt" \
+    "${disk_encryption_args[@]}" \
     --extra-files "${tmpdir}/files" \
     -i ~/.ssh/id_ed25519 \
     "${args[@]}")
