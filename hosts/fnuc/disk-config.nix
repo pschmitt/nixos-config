@@ -1,13 +1,7 @@
 { lib, ... }:
 {
-  # fileSystems."/boot" = {
-  #   fsType = "vfat";
-  #   # options = [ "defaults" "fmask=0077" ];
-  # };
-
   fileSystems = {
     "/" = {
-      # device = "/dev/sda1";  # set by disko
       fsType = "btrfs";
       options = [
         "subvol=@root"
@@ -36,8 +30,7 @@
   };
 
   disko.devices = {
-    # SATA media disk: LUKS encrypted volume matching rofl-10/11 pattern.
-    # HA media is exported over NFS; VM images remain on the system NVMe.
+    # SATA data disk: LUKS encrypted volume matching lrz and rofl-10/11 pattern.
     disk.data = {
       device = lib.mkDefault "/dev/sda";
       type = "disk";
@@ -65,6 +58,8 @@
         };
       };
     };
+
+    # System NVMe: 10 GiB EFI system partition, 1M BIOS boot, remaining for LUKS Btrfs.
     disk.system = {
       device = lib.mkDefault "/dev/nvme0n1";
       type = "disk";
@@ -98,9 +93,6 @@
               name = "encrypted";
               settings = {
                 keyFile = "/tmp/disk-1.key";
-                # NOTE fallbackToPassword is implied when enabling systemd
-                # in initrd
-                # fallbackToPassword = true;
                 allowDiscards = true;
               };
               content = {
