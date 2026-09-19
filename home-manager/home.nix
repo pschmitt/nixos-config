@@ -15,11 +15,11 @@
       ./sops.nix
       ./ssh.nix
       ./ssh-clipboard.nix
-      ./tracker.nix
       ./work
       ./yadm.nix
     ]
     (lib.optional bluetoothEnable ./bluetooth.nix)
+    (lib.optional guiEnable ./tracker.nix)
     (lib.optional guiEnable ./gui)
   ];
 

@@ -38,6 +38,15 @@ in
 
     # FNUC-006: Native KVM USB passthrough watchdog
     ../../services/kvm-usb.nix
+
+    # FNUC-013: Headless staging browser with CDP and noVNC
+    ./browser.nix
+
+    # FNUC-014: Staged Home Manager user services isolation
+    ./user-services.nix
+
+    # FNUC-015: Restic backup configuration with migration locking
+    ./backups.nix
   ];
 
   services.kvm-usb-passthrough.enable = true;
@@ -78,6 +87,7 @@ in
   };
 
   systemd = {
+    tmpfiles.rules = [ "d /var/lib/fnuc-migration 0750 pschmitt users -" ];
     network = {
       netdevs."10-hass-br0" = {
         netdevConfig = {
@@ -115,12 +125,15 @@ in
       # Runs completely non-disruptively while fnuc workloads remain live.
       fnuc-migration-presync = {
         description = "Warm pre-sync of fnuc data to lrz (non-disruptive)";
+        unitConfig.ConditionPathExists = "!/var/lib/fnuc-migration/cutover";
         path = with pkgs; [
           bash
           coreutils
           openssh
           rsync
           sudo
+          util-linux
+          gawk
         ];
         environment = {
           HOME = "/home/pschmitt";
