@@ -42,6 +42,12 @@ in
       default = "rw,nohide,insecure,no_subtree_check,no_root_squash";
       description = "Export options applied to each exported directory";
     };
+
+    extraExports = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Extra raw export lines to append to services.nfs.server.exports";
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -69,6 +75,7 @@ in
           }"
         ) cfg.exports
       )}
+      ${cfg.extraExports}
     '';
 
     networking.firewall.allowedTCPPorts = [ 2049 ];

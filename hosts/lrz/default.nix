@@ -48,11 +48,30 @@ in
     # FNUC-014: Staged Home Manager user services isolation
     ./user-services.nix
 
+    # FNUC-011: Declarative NFS export server
+    ../../services/nfs/nfs-server.nix
+
     # FNUC-015: Restic backup configuration with migration locking
     ./backups.nix
   ];
 
-  services.kvm-usb-passthrough.enable = true;
+  services = {
+    fwupd.enable = true;
+    kvm-usb-passthrough.enable = true;
+    nfsExports = {
+      enable = true;
+      basePath = "/mnt";
+      exports = [ "sda1" ];
+      allowedIps = [
+        "10.5.0.0/22"
+        "100.64.0.0/10"
+      ];
+      exportOptions = "rw,sync,nohide,insecure,no_subtree_check,no_root_squash,anonuid=1000,anongid=1000";
+      extraExports = ''
+        /mnt/sda1 10.5.0.0/22(rw,sync,no_subtree_check,no_root_squash,anonuid=1000,anongid=1000,mountpoint)
+      '';
+    };
+  };
 
   hardware.biosBoot = false;
   # NOTE avoids setting kernelParams that are only relevant for kvm guests
@@ -214,11 +233,4 @@ in
       exec ${pkgs.libvirt}/bin/virsh define ${./home-assistant.xml}
     '')
   ];
-
-  services.nfs.server = {
-    enable = true;
-    exports = ''
-      /mnt/sda1 10.5.0.0/22(rw,sync,no_subtree_check,no_root_squash,anonuid=1000,anongid=1000,mountpoint)
-    '';
-  };
 }
