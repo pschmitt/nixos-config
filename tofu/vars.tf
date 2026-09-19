@@ -167,4 +167,35 @@ variable "mail_account_passwords" {
   sensitive   = true
 }
 
+variable "bw_email" {
+  description = "Bitwarden account email (vault.bitwarden.com)"
+  type        = string
+  sensitive   = true
+}
+
+variable "bw_master_password" {
+  description = "Bitwarden account master password"
+  type        = string
+  sensitive   = true
+}
+
+variable "bw_client_id" {
+  description = "Bitwarden Personal API Key client_id"
+  type        = string
+  sensitive   = true
+}
+
+variable "bw_client_secret" {
+  description = "Bitwarden Personal API Key client_secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "restic_repo_passwords" {
+  description = "restic repository encryption password per tofu-managed restic host (not the S3 credential -- the repo password itself, already set in each host's own secrets.sops.yaml)"
+  type        = map(string)
+  sensitive   = true
+  default     = {}
+}
+
 # vim: set ft=terraform

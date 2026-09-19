@@ -29,6 +29,11 @@ terraform {
       source  = "flungo/stalwart"
       version = "~> 0.2"
     }
+
+    bitwarden = {
+      source  = "maxlaverse/bitwarden"
+      version = "~> 0.19"
+    }
   }
 
   backend "s3" {
@@ -81,5 +86,13 @@ provider "stalwart" {
   endpoint = var.stalwart_endpoint
   username = var.stalwart_username
   password = var.stalwart_password
+}
+
+provider "bitwarden" {
+  email                 = var.bw_email
+  master_password       = var.bw_master_password
+  client_id             = var.bw_client_id
+  client_secret         = var.bw_client_secret
+  client_implementation = "embedded"
 }
 # vim: set ft=terraform :
