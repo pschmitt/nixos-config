@@ -46,6 +46,7 @@ migrate_ha_vm() (
   local vm_img="/var/lib/libvirt/images/haos-11.2-restored.qcow2"
   local vm_nvram="/var/lib/libvirt/qemu/nvram/home-assistant_VARS.fd"
   local overlay_img="/var/lib/libvirt/images/haos-presync-overlay.qcow2"
+  local source_xml="/var/lib/fnuc-migration/home-assistant-source.xml"
   local snapshot_attempted=""
   local vm_status=0
   local dest_state
@@ -77,7 +78,9 @@ migrate_ha_vm() (
     log "Presync mode: performing non-disruptive live external snapshot to pre-sync base QCOW2..."
     log "Dumping domain XML from ${SOURCE_HOST} for reference..."
     if [[ $DRY_RUN -eq 0 ]]; then
-      source_virsh dumpxml home-assistant | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
+      ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n mkdir -p /var/lib/fnuc-migration"
+      # shellcheck disable=SC2029
+      source_virsh dumpxml home-assistant | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n tee ${source_xml} >/dev/null"
     fi
 
     local vm_state
@@ -159,7 +162,9 @@ migrate_ha_vm() (
   # 1. Dump libvirt domain XML for reference
   log "Dumping domain XML from ${SOURCE_HOST}..."
   if [[ $DRY_RUN -eq 0 ]]; then
-    source_virsh dumpxml home-assistant | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n tee /var/lib/libvirt/qemu/home-assistant.xml >/dev/null"
+    ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n mkdir -p /var/lib/fnuc-migration"
+    # shellcheck disable=SC2029
+    source_virsh dumpxml home-assistant | ssh "${SSH_OPTS[@]}" "${DEST_HOST}" "sudo -n tee ${source_xml} >/dev/null"
   fi
 
   # 2. Transfer NVRAM from powered-off VM
