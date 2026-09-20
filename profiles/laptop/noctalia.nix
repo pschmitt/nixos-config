@@ -871,6 +871,10 @@ in
             # Smaller rings/padding/fonts so every card fits the panel height
             # without scrolling.
             panel_compact = true;
+            # Keep one metric widget per row by default; set to "2" to pair
+            # metrics side by side in both compact and regular panel modes.
+            panel_columns = "2";
+            panel_size = "h670";
           };
           "pschmitt/ha" = {
             bar_display_mode = "single";
