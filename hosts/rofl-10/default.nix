@@ -33,7 +33,7 @@
     ../../services/http-static.nix
     ../../services/http.nix
     ../../services/immich.nix
-    ../../services/luks-ssh-unlock-homelab.nix
+    ../../services/luks-ssh-unlock-fleet.nix
     ../../services/mealie.nix
     ../../services/matrix.nix
     ../../services/monero-wallet-rpc-sync-receiver.nix
