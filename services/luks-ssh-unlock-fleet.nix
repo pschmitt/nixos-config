@@ -11,7 +11,11 @@ let
       name = "fnuc";
       hostname = "fnuc.lan";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep -v tmpfs | grep luks";
+      # fnuc/lrz's dm-crypt mappers are named "encrypted"/"data-encrypted"
+      # (see their disk-config.nix), not "luks-*" like gk4 -- "grep luks"
+      # never matches, so the healthcheck (and therefore
+      # fetch_initrd_checksum) never succeeds.
+      healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
     }
     {
       name = "ge2";
@@ -29,7 +33,7 @@ let
       name = "lrz";
       hostname = "lrz.lan";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep -v tmpfs | grep luks";
+      healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
     }
     {
       name = "oci-01";
