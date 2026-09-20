@@ -144,11 +144,11 @@ in
     # SOPS file and must be owned by the Hermes service account.
     secrets = {
       "n8n/mcp/token" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.sops.defaultSopsFile;
         mode = "0400";
       };
       "home-assistant/token" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.sops.defaultSopsFile;
         mode = "0400";
       };
       "hermes/home-assistant/llat" = config.custom.mkSecret {
@@ -181,19 +181,19 @@ in
         mode = "0400";
       };
       "todoist/api_token" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.sops.defaultSopsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "todoist/user_id" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.sops.defaultSopsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "todoist/email" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.sops.defaultSopsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";

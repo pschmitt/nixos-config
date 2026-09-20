@@ -8,7 +8,7 @@
   # git.wiit.one reuses the same PAT as glab (home-manager/work/glab.nix)
   # so private-repo flake inputs on that host resolve too.
   sops.secrets."nix/github_token" = {
-    sopsFile = ../../secrets/shared.sops.yaml;
+    sopsFile = config.host.sopsDefaultFile;
   };
 
   sops.templates."nix-access-tokens".content = ''

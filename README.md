@@ -65,30 +65,30 @@ To create a new host:
 ./scripts/init-host-config.sh $NEW_HOST
 ```
 
-3. Update [./tofu/dns-dynamic.tf](./tofu/dns-dynamic.tf)
+3. Update [./private/tofu/dns-dynamic.tf](./private/tofu/dns-dynamic.tf)
 
 4. Add to `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
 
 5. Deploy:
 
 ```shell
-./tofu/tofu.sh init
-./tofu/tofu.sh apply -target=module.nix-${NEW_HOST}
+./private/tofu/tofu.sh init
+./private/tofu/tofu.sh apply -target=module.nix-${NEW_HOST}
 ```
 
 ## Removing a host
 
 1. Remove its config from:
 - [flake.nix](./flake.nix)
-- [./tofu/dns-dynamic.tf](./tofu/dns-dynamic.tf)
+- [./private/tofu/dns-dynamic.tf](./private/tofu/dns-dynamic.tf)
 
 2. Remove from `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
 
 3.
 ```shell
 HOST_TO_REMOVE=xxx
-rm -rf "./host/$HOST_TO_REMOVE" "./tofu/${HOST_TO_REMOVE}.tf"
-./secrets/sops-config-gen.sh --github-username pschmitt --auto
+rm -rf "./hosts/$HOST_TO_REMOVE" "./private/tofu/${HOST_TO_REMOVE}.tf"
+./private/secrets/sops-config-gen.sh --github-username pschmitt --auto
 ```
 
 ## Updating custom packages

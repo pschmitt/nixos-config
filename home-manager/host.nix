@@ -1,18 +1,18 @@
 # host.* — system facts the home config needs, kept osConfig-free so the same
 # modules work both as a NixOS submodule (facts fed by the bridge in
 # ./default.nix) and standalone (facts set explicitly, e.g. hosts/fnuc).
-{ lib, ... }:
+{ inputs, lib, ... }:
 {
   options.host = {
     sopsFile = lib.mkOption {
       type = lib.types.path;
-      default = ../secrets/shared.sops.yaml;
+      default = inputs.nixos-config-private.outPath + "/secrets/nixos-shared.sops.yaml";
       description = "Host-specific SOPS file (NixOS: config.custom.sopsFile).";
     };
 
     sopsDefaultFile = lib.mkOption {
       type = lib.types.path;
-      default = ../secrets/shared.sops.yaml;
+      default = inputs.nixos-config-private.outPath + "/secrets/nixos-shared.sops.yaml";
       description = "Default SOPS file for shared secrets.";
     };
 

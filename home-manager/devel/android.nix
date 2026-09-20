@@ -26,7 +26,7 @@ in
 
   sops.secrets."google-play/service-account-json" = {
     mode = "0600";
-    sopsFile = ../../secrets/shared.sops.yaml;
+    sopsFile = config.host.sopsDefaultFile;
   };
 
   sops.templates."gpc-config" = {

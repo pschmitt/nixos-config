@@ -283,7 +283,7 @@ in
   config = lib.mkIf cfg.enable {
     sops.secrets."openai/admin_key" = {
       mode = "0400";
-      sopsFile = ../../secrets/shared.sops.yaml;
+      sopsFile = config.host.sopsDefaultFile;
     };
 
     # CodexBar persists its own Settings toggles here, so a read-only store

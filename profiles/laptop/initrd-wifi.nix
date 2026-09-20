@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -38,7 +39,7 @@ in
     sops = {
       file = lib.mkOption {
         type = lib.types.path;
-        default = ../../secrets/initrd-wifi.sops.yaml;
+        default = inputs.nixos-config-private.outPath + "/secrets/nixos-initrd-wifi.sops.yaml";
         description = "SOPS file containing the initrd Wi-Fi credentials.";
       };
 

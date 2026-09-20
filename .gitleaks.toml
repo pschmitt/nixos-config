@@ -24,8 +24,8 @@ keywords = [
 [allowlist]
 description = "Files / values that legitimately live in the repo"
 paths = [
-  # Encrypted secrets are committed on purpose. Note: we deliberately do NOT
-  # allowlist the whole secrets/ dir — the *.sh tooling there must be scanned.
+  # Encrypted secrets are committed on purpose. Keep this allowlist narrow so
+  # arbitrary tooling in the private submodule is still scanned.
   '''\.sops\.ya?ml$''',
   '''\.age$''',
 ]

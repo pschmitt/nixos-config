@@ -36,10 +36,11 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
 
 ## Secrets (SOPS)
 
-- Config: `.sops.yaml`; secrets dir: `secrets/`; tool: `sops`. Never print
+- Config: `.sops.yaml`; public host secrets live under `hosts/`, while shared
+  encrypted data lives in the private flake's `secrets/`; tool: `sops`. Never print
   decrypted secrets to the console or logs.
-- The **default** sops file is `secrets/shared.sops.yaml` (set in
-  `common/global/sops.nix` as `sops.defaultSopsFile`).
+- The **default** sops file is `private/secrets/nixos-shared.sops.yaml` in the
+  checkout (set from the private flake input as `sops.defaultSopsFile`).
 - For a secret that lives in the **host-specific** file (`custom.sopsFile`), use the
   helper from `modules/sops.nix` instead of repeating `inherit (config.custom) sopsFile;`:
 

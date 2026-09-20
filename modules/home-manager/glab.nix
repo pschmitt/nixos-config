@@ -128,7 +128,7 @@ in
       home.packages = [ pkgs.glab ];
 
       sops.secrets."glab/gitlab.com/token" = {
-        sopsFile = ../../secrets/shared.sops.yaml;
+        sopsFile = config.host.sopsDefaultFile;
       };
 
       # Runs as a user-session systemd service (ordered after sops-nix.service)
