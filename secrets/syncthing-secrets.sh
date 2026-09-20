@@ -9,7 +9,7 @@ Generates a Syncthing cert/key (and device ID) for TARGET_HOST.
 
 Options:
   -p, --patch                 Write cert/key into hosts/TARGET_HOST/secrets.sops.yaml
-  --update-devices-json       Write device ID into data/syncthing/devices.json
+  --update-devices-json       Write device ID into private/data/syncthing/devices.json
   --print-device-id           Print the computed device ID to stdout
   --print-json                Print JSON with cert/key/deviceID to stdout (no file writes)
   -h, --help                  Show this help
@@ -159,7 +159,7 @@ main() {
   sops_file="hosts/${target_host}/secrets.sops.yaml"
 
   local devices_json
-  devices_json="data/syncthing/devices.json"
+  devices_json="private/data/syncthing/devices.json"
 
   local temp_dir
   temp_dir="$(mktemp -d)"

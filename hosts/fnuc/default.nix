@@ -22,7 +22,7 @@
     ./claude-work-warmup.nix
     ./agy-warmup.nix
     ./wl-paste-shim.nix
-    ./syncthing.nix
+    ../../profiles/server/interactive/syncthing-home.nix
   ];
 
   services.ssh-clipboard = {

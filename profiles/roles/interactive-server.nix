@@ -7,6 +7,7 @@
   imports = [
     ../server
     ../server/interactive/dotfiles.nix
+    ../server/interactive/syncthing.nix
   ];
 
   environment.etc."zshenv.local".text = lib.mkAfter ''
