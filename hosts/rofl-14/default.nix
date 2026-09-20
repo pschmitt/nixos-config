@@ -5,7 +5,7 @@
 
     ../../profiles/server
     ../../profiles/network/roflnet.nix
-    ../../profiles/tdarr-node.nix
+    ../../profiles/roles/tdarr-node.nix
     ../../services/esphome.nix
     ../../services/browser-mcp-chromium-container.nix
     ../../services/forgejo-runner.nix

@@ -4,13 +4,13 @@
   ...
 }:
 let
-  deviceGroups = import ../syncthing-device-groups.nix;
+  deviceGroups = import ../../data/syncthing/device-groups.nix;
   personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
   documentsDevices = personalDevices ++ deviceGroups.documentsPhones;
 in
 {
   imports = [
-    ../syncthing.nix
+    ../../services/syncthing.nix
     ../../modules/syncthing-tui.nix
   ];
 

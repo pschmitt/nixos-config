@@ -8,7 +8,7 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
-    ../../profiles/server
+    ../../profiles/roles/interactive-server.nix
     ../../profiles/gui/linger.nix
     ../../profiles/network/ha-sshfs.nix
 

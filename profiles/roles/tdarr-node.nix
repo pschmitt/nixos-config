@@ -3,10 +3,10 @@
 { config, ... }:
 {
   imports = [
-    ../services/harmonia.nix
-    ../services/http.nix
-    ../services/nfs/nfs-client.nix
-    ../services/tdarr-node.nix
+    ../../services/harmonia.nix
+    ../../services/http.nix
+    ../../services/nfs/nfs-client.nix
+    ../../services/tdarr-node.nix
   ];
 
   services.nfsMounts = {
