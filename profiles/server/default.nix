@@ -20,7 +20,6 @@
 
     ./ansible.nix
     ./boot.nix
-    ./dotfiles.nix
     ./firewall.nix
     ./monit.nix
     ./networking.nix

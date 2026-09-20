@@ -3,7 +3,7 @@
   imports = [
     ./hardware-configuration.nix
 
-    ../../profiles/workstation.nix
+    ../../profiles/roles/workstation.nix
 
     ../../services/nixos-installer-boot-entry.nix
   ];

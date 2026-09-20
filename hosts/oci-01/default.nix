@@ -6,7 +6,9 @@
     ./hardware-configuration.nix
 
     ../../profiles/server
-    ../../profiles/email-server.nix
+    ../../services/stalwart.nix
+    ../../services/roundcube.nix
+    ../../services/mail-autoconfig.nix
 
     ./http-static.nix
     ../../services/healthchecks.nix

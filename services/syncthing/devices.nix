@@ -4,7 +4,7 @@
   ...
 }:
 let
-  devices = builtins.fromJSON (builtins.readFile ./syncthing-devices.json);
+  devices = builtins.fromJSON (builtins.readFile ../../data/syncthing/devices.json);
   vpnDomain = config.domains.vpn;
   mkAddresses = host: [
     "tcp://${host}.${vpnDomain}"

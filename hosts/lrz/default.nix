@@ -3,7 +3,7 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
-    ../../profiles/server
+    ../../profiles/roles/interactive-server.nix
 
     # home-manager configuration (TEST!)
     ../../profiles/gui/linger.nix

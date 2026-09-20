@@ -3,27 +3,27 @@
 { config, lib, ... }:
 {
   imports = [
-    ./global
-    ./gui
+    ../global
+    ../gui
 
     # Desktop + display manager; these laptops run Hyprland and GNOME under
     # GDM.
-    ./gui/hyprland.nix
-    ./gui/gnome.nix
-    ./gui/gdm.nix
+    ../gui/hyprland.nix
+    ../gui/gnome.nix
+    ../gui/gdm.nix
 
-    ./laptop
+    ../laptop
 
     # Extra features currently run by all three laptops.
-    ./network/snek
-    ./laptop/tor.nix
-    ./laptop/wireshark.nix
-    ./laptop/nrf.nix
-    ./laptop/waydroid.nix
-    ./work/vpn/openvpn.nix
+    ../network/snek
+    ../laptop/tor.nix
+    ../laptop/wireshark.nix
+    ../laptop/nrf.nix
+    ../laptop/waydroid.nix
+    ../work/vpn/openvpn.nix
 
-    ../services/restic
-    ../services/autoupgrade.nix
+    ../../services/restic
+    ../../services/autoupgrade.nix
   ];
 
   custom.nixosConfigSymlink.enable = true;
@@ -35,7 +35,7 @@
 
   home-manager.users.${config.mainUser.username} = {
     imports = [
-      ../home-manager/ssh-clipboard-peers.nix
+      ../../home-manager/ssh-clipboard-peers.nix
     ];
     services.fievel = {
       enable = true;

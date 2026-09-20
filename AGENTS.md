@@ -46,13 +46,13 @@
   should really be a NixOS-side option in `modules/` first.
 
 ## Host composition
-- `profiles/` is the single composition point for everything. It contains both
-  foundational layers (`profiles/global/`, `profiles/network/`) and higher-level
-  bundles: machine-class directories (`profiles/server/`, `profiles/gui/`,
-  `profiles/laptop/`, `profiles/work/`) and role aggregator files
-  (`profiles/workstation.nix`, `profiles/tdarr-node.nix`, etc.). A role
-  aggregator is a pure `imports` list with a one-line header comment, grouping
-  imports shared by **2+ hosts**.
+- `profiles/` is the single composition point for host composition. It contains
+  foundational layers (`profiles/global/`, `profiles/network/`) and
+  machine-class directories (`profiles/server/`, `profiles/gui/`,
+  `profiles/laptop/`, `profiles/work/`). Reusable multi-host roles live under
+  `profiles/roles/` (for example `profiles/roles/workstation.nix` and
+  `profiles/roles/tdarr-node.nix`). A role aggregator groups imports shared by
+  **2+ hosts**.
 - Don't create a profile for a single-host stack — that is just indirection;
   keep those imports inline in the host's `default.nix`.
 - Avoid host-specific conditionals in shared modules, profiles, or services.

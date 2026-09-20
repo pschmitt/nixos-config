@@ -1,6 +1,6 @@
 { config, lib, ... }:
 let
-  syncthingDevices = builtins.fromJSON (builtins.readFile ../../profiles/syncthing-devices.json);
+  syncthingDevices = builtins.fromJSON (builtins.readFile ../../data/syncthing/devices.json);
   otherDevices = lib.filterAttrs (name: _: name != "fnuc") syncthingDevices;
   vpnDomain = config.domains.vpn;
   mkAddresses = host: [
@@ -8,7 +8,7 @@ let
     "dynamic"
   ];
 
-  deviceGroups = import ../../profiles/syncthing-device-groups.nix;
+  deviceGroups = import ../../data/syncthing/device-groups.nix;
   personalDevices = lib.filter (d: otherDevices ? ${d}) (
     deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones
   );
@@ -39,7 +39,7 @@ in
     # ~/.local/state/syncthing is also where the previous Fedora (dnf)
     # package kept its config -- the existing cert.pem/key.pem there are
     # picked up as-is, so this device keeps the id already registered in
-    # ../../profiles/syncthing-devices.json instead of re-pairing as new.
+    # ../../data/syncthing/devices.json instead of re-pairing as new.
     overrideDevices = true;
     overrideFolders = true;
 

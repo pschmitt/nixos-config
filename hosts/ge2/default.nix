@@ -23,7 +23,7 @@ in
     ./crash-diagnostics.nix
     ../../profiles/work/elgato-stream-deck.nix
 
-    ../../profiles/workstation.nix
+    ../../profiles/roles/workstation.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
   ];

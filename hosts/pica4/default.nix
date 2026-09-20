@@ -17,7 +17,7 @@
     # XXX Below imports initrd-luks-ssh-unlock etc
     # ../../profiles/server
     # So we only import what we really need here:
-    ../../profiles/server/dotfiles.nix
+    ../../profiles/server/interactive/dotfiles.nix
     # ../../monit.nix
     # ../../netbird.nix
     # ../../restic.nix

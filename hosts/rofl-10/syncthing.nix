@@ -15,13 +15,13 @@ let
     exec ${pkgs.syncthingtui}/bin/syncthingtui -address 127.0.0.1:8384 -api-key "$api_key" "$@"
   '';
 
-  deviceGroups = import ../../profiles/syncthing-device-groups.nix;
+  deviceGroups = import ../../data/syncthing/device-groups.nix;
   personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
   documentsDevices = personalDevices ++ deviceGroups.documentsPhones;
 in
 {
   imports = [
-    ../../profiles/syncthing.nix
+    ../../services/syncthing.nix
     ../../modules/syncthing-tui.nix
   ];
 
