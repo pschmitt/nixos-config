@@ -141,7 +141,7 @@ in
         };
 
         # Playwright attached to the persistent, KasmVNC-visible Chromium
-        # container on fnuc (see hosts/fnuc/browser-mcp.nix) and to rofl-13's
+        # container on fnuc (see services/browser-mcp-chromium-container.nix) and to rofl-13's
         # and rofl-14's own local Chromium. Reached over SSH from every host
         # (including fnuc itself) so the loopback-only CDP ports never need
         # to be exposed on the network.
@@ -151,8 +151,7 @@ in
         # the bare host) and inside the container (where Chromium actually
         # writes downloads once told to over CDP) -- see the matching
         # ${containerName}-mcp-downloads bind mount at the identical
-        # absolute path in hosts/fnuc/browser-mcp.nix and
-        # services/browser-mcp-chromium-container.nix.
+        # absolute path in services/browser-mcp-chromium-container.nix.
         playwright-fnuc = {
           command = "ssh";
           # -q silences ssh-smart-proxy.sh's "⟶ fnuc: direct (fnuc)" route
@@ -165,7 +164,7 @@ in
             "fnuc"
             "${pkgs.playwright-mcp}/bin/playwright-mcp"
             "--cdp-endpoint=http://127.0.0.1:9222"
-            "--output-dir=/home/pschmitt/.local/share/browser-mcp-chromium/mcp-downloads"
+            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
           ];
         };
 

@@ -17,6 +17,7 @@
     ../../services/watchyourlan.nix
     ../../services/web-vnc-console.nix
     ../../services/kvm-usb.nix
+    ../../services/browser-mcp-chromium-container.nix
 
     ./backups.nix
     ./nfs.nix
@@ -72,7 +73,6 @@
         ../../home-manager/ssh-clipboard-peers.nix
         ../../services/nix-distributed-build.nix
 
-        ./browser-mcp.nix
         ./claude-work-warmup.nix
         ./agy-warmup.nix
         ./wl-paste-shim.nix
