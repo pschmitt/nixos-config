@@ -19,7 +19,7 @@ buildNpmPackage (finalAttrs: {
     cp ${./package-lock.json} package-lock.json
   '';
 
-  npmDepsHash = "sha256-MCEaK6nZ1Jp8fYvvSep4BHflx7l5HLxR9I5EV8bilZk=";
+  npmDepsHash = "sha256-I8+ZXD/oa+Qfh32Wx4dRmJr+l74wGdHEKrk6M2/l82c=";
 
   # The bundled `geckodriver` npm dependency otherwise tries to download a
   # prebuilt geckodriver binary from GitHub during `npm ci`, which the build
