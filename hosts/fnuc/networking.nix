@@ -4,6 +4,10 @@
     hostName = "fnuc";
     firewall.enable = false;
 
+    # Wake-on-LAN over the wired NIC, so the box can be woken remotely from
+    # ATX standby.
+    interfaces.eno1.wakeOnLan.enable = true;
+
     wireless = {
       enable = true;
       interfaces = [ "wlp0s20f3" ];
