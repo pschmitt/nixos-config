@@ -436,7 +436,7 @@ in
         # widget content.
         accessibility.ui_scale = 1.15;
         shell = {
-          font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
+          font_family = "Comic Code Semibold"; # a distinct family/cut, not a weight variant
           # Default is "{:%H:%M}" (std::chrono format spec) — add seconds to
           # the center bar's clock widget.
           time_format = "{:%H:%M:%S}";
