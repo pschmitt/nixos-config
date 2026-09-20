@@ -1,10 +1,13 @@
 {
   config,
+  inputs,
   lib,
   ...
 }:
 let
-  devices = builtins.fromJSON (builtins.readFile ../../data/syncthing/devices.json);
+  devices = builtins.fromJSON (
+    builtins.readFile (inputs.nixos-config-private.outPath + "/data/syncthing/devices.json")
+  );
   vpnDomain = config.domains.vpn;
   mkAddresses = host: [
     "tcp://${host}.${vpnDomain}"

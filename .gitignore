@@ -22,10 +22,6 @@ clouds.yaml
 *.pub
 *_key
 data
-!data/
-!data/syncthing/
-!data/syncthing/devices.json
-!data/syncthing/device-groups.nix
 
 # Proprietary drivers (pkgs.libfprint-focaltech)
 libfprint*.install

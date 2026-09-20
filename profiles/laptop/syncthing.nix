@@ -1,10 +1,11 @@
 {
   config,
+  inputs,
   pkgs,
   ...
 }:
 let
-  deviceGroups = import ../../data/syncthing/device-groups.nix;
+  deviceGroups = import (inputs.nixos-config-private.outPath + "/data/syncthing/device-groups.nix");
   personalDevices = deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones;
   documentsDevices = personalDevices ++ deviceGroups.documentsPhones;
 in

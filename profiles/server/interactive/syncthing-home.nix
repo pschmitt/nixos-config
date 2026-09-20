@@ -1,14 +1,23 @@
-{ config, lib, ... }:
+{
+  config,
+  hostname,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 let
-  syncthingDevices = builtins.fromJSON (builtins.readFile ../../data/syncthing/devices.json);
-  otherDevices = lib.filterAttrs (name: _: name != "fnuc") syncthingDevices;
+  syncthingDevices = builtins.fromJSON (
+    builtins.readFile (inputs.nixos-config-private.outPath + "/data/syncthing/devices.json")
+  );
+  otherDevices = lib.filterAttrs (name: _: name != hostname) syncthingDevices;
   vpnDomain = config.domains.vpn;
   mkAddresses = host: [
     "tcp://${host}.${vpnDomain}"
     "dynamic"
   ];
 
-  deviceGroups = import ../../data/syncthing/device-groups.nix;
+  deviceGroups = import (inputs.nixos-config-private.outPath + "/data/syncthing/device-groups.nix");
   personalDevices = lib.filter (d: otherDevices ? ${d}) (
     deviceGroups.servers ++ deviceGroups.laptops ++ deviceGroups.phones
   );
@@ -32,14 +41,19 @@ let
   };
 in
 {
-  imports = [ ../../modules/home-manager/syncthing-tui.nix ];
+  imports = [ ../../../modules/home-manager/syncthing-tui.nix ];
+
+  home.packages = [
+    pkgs.syncthingtui
+    pkgs.stui
+  ];
 
   services.syncthing = {
     enable = true;
     # ~/.local/state/syncthing is also where the previous Fedora (dnf)
     # package kept its config -- the existing cert.pem/key.pem there are
     # picked up as-is, so this device keeps the id already registered in
-    # ../../data/syncthing/devices.json instead of re-pairing as new.
+    # the private Syncthing device registry instead of re-pairing as new.
     overrideDevices = true;
     overrideFolders = true;
 

@@ -78,7 +78,6 @@
         ./claude-work-warmup.nix
         ./agy-warmup.nix
         ./wl-paste-shim.nix
-        ./syncthing.nix
       ];
 
       services = {
@@ -106,11 +105,6 @@
 
       xdg.configFile."home-manager".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
-
-      home.packages = [
-        pkgs.syncthingtui
-        pkgs.stui
-      ];
 
       systemd.user = {
         services.kubeconfig-update = {
