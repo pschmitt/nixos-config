@@ -147,13 +147,11 @@ sync_mic_overlay() {
 mute_mic() {
   mute_all_sources
   sync_mic_overlay
-  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 unmute_mic() {
   unmute_all_sources
   sync_mic_overlay
-  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 toggle_mute() {
@@ -165,7 +163,6 @@ toggle_mute() {
     mute_all_sources
     sync_mic_overlay
   fi
-  # DMS's native MicVolumeOSD fires off the PipeWire mute change itself.
 }
 
 # ── Webcam (Insta360 via v4l2) ─────────────────────────────────────────────

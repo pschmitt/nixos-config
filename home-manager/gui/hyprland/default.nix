@@ -16,7 +16,6 @@
     ./quickshell-bar
     ./services
     ./tools
-    ./waybar
     ./xdph.nix
   ];
 }

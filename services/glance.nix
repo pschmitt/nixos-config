@@ -254,7 +254,6 @@ let
   nixpkgsGroupB = [
     "paperless-ngx"
     "tailscale"
-    "waybar"
     "vaultwarden"
   ];
   # GitHub's web PR search (unlike its /search/issues REST API) doesn't
@@ -786,8 +785,7 @@ in
                   { type = "clock"; }
                   {
                     type = "weather";
-                    # Same coordinates as the laptop weather widgets
-                    # (profiles/laptop/dank-material-shell.nix).
+                    # Same coordinates as the laptop weather widgets.
                     location = "Berlin, Germany";
                     units = "metric";
                   }

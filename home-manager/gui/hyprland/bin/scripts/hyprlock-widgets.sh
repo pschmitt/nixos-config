@@ -8,7 +8,7 @@ battery::icon() {
   local percent="$1"
   local state="$2"
 
-  # Keep icon set in sync with the Waybar module to have a consistent battery look.
+  # Keep the battery icon set consistent across the desktop widgets.
   local -a discharging_icons=(
     "󰁺" # 0-19%
     "󰁼" # 20-39%

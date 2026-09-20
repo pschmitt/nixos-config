@@ -10,6 +10,5 @@ then
     # TODO This seems to mess up the LG monitor for a little while.shikane
     # Race condition?
     # shikane --oneshot
-    pkill -USR2 waybar
   ) &
 fi

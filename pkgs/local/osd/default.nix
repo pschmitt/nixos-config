@@ -1,5 +1,5 @@
-# Simple CLI for firing ad-hoc OSDs/toasts — native DMS toast IPC when
-# dms.service is the active bar, falling back to notify-send/mako otherwise.
+# Simple CLI for firing ad-hoc OSDs/toasts through Noctalia, falling back to
+# notify-send/mako when the graphical session is unavailable.
 {
   lib,
   writeShellApplication,
@@ -14,7 +14,7 @@ writeShellApplication {
   ];
   text = builtins.readFile ./osd.sh;
   meta = {
-    description = "Fire an ad-hoc OSD/toast via DMS's native toast IPC (falls back to notify-send/mako)";
+    description = "Fire an ad-hoc OSD/toast via Noctalia (falls back to notify-send/mako)";
     platforms = lib.platforms.linux;
     mainProgram = "osd";
     license = lib.licenses.mit;

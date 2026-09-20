@@ -3,8 +3,8 @@
   home.packages = with pkgs; [
     brightnessctl
     hyprpicker
-    libnotify # notify-send — fallback for osd(1) and other scripts when dms isn't active; no longer pulled in via mako.nix
-    osd # ad-hoc OSD/toast CLI (DMS toast IPC, falls back to notify-send/mako)
+    libnotify # notify-send fallback for osd(1) and other scripts
+    osd # ad-hoc OSD/toast CLI
     screencast-state # live xdg-desktop-portal screencasts, read from PipeWire
     wev
     walker-menu # soundboard/misc/meetings dmenu menus

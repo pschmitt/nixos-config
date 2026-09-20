@@ -173,7 +173,7 @@ kill -0 1087878
     # shellcheck disable=1090
     [[ -n "$SOURCE_FILE" ]] && source "$SOURCE_FILE"
 
-    # Update HYPRLAND_INSTANCE_SIGNATURE (might be required for waybar for eg.)
+    # Update HYPRLAND_INSTANCE_SIGNATURE for the launched process.
     # shellcheck disable=2155
     export HYPRLAND_INSTANCE_SIGNATURE="$(hyprland_instance_signature)"
 

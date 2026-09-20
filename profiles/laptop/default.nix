@@ -12,10 +12,6 @@
 
     ../network/wifi.nix
     ./a11y.nix
-    # Noctalia is the default bar (see profiles/laptop/noctalia.nix); DMS is
-    # re-enabled alongside it as an opt-in alternative, reachable via
-    # SUPER+SHIFT+B (toggle-bar.sh) — see profiles/laptop/dank-material-shell.nix.
-    ./dank-material-shell.nix
     ./noctalia.nix
     ./initrd-network.nix
     ./initrd-wifi.nix

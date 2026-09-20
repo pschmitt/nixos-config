@@ -141,15 +141,12 @@ in
       (bind "SUPER + ALT + R" ''hl.dsp.submap("${resizeSubmap}")'')
 
       # ── Media / brightness (locked = works on the lock screen) ────────
-      # DMS's own OSDs (brightness/volume) fire natively off these IPC calls
-      # — no separate notify-send/toast needed. Falls back to a raw
-      # brightnessctl/pactl call when dms.service isn't the active bar
-      # (toggle-bar.sh can switch back to waybar/quickshell-bar mid-migration).
-      (execBindLocked "XF86MonBrightnessUp" "dms ipc call brightness increment 5 || brightnessctl set 5%+")
-      (execBindLocked "XF86MonBrightnessDown" "dms ipc call brightness decrement 5 || brightnessctl set 5%-")
-      (execBindLocked "XF86AudioRaiseVolume" "dms ipc call audio increment 5 || pactl set-sink-volume @DEFAULT_SINK@ +5%")
-      (execBindLocked "XF86AudioLowerVolume" "dms ipc call audio decrement 5 || pactl set-sink-volume @DEFAULT_SINK@ -5%")
-      (execBindLocked "XF86AudioMute" "dms ipc call audio mute || pactl set-sink-mute @DEFAULT_SINK@ toggle")
+      # Noctalia observes these hardware changes and provides the OSDs.
+      (execBindLocked "XF86MonBrightnessUp" "brightnessctl set 5%+")
+      (execBindLocked "XF86MonBrightnessDown" "brightnessctl set 5%-")
+      (execBindLocked "XF86AudioRaiseVolume" "pactl set-sink-volume @DEFAULT_SINK@ +5%")
+      (execBindLocked "XF86AudioLowerVolume" "pactl set-sink-volume @DEFAULT_SINK@ -5%")
+      (execBindLocked "XF86AudioMute" "pactl set-sink-mute @DEFAULT_SINK@ toggle")
       # obs-control also syncs OBS's "mic off" overlay (see pkgs/local/obs-control),
       # but it's only on PATH when go-hass-agent.enableWorkCommands is set
       # (ge2) — everywhere else (gk4, ...) it's missing from PATH entirely,

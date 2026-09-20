@@ -101,34 +101,6 @@
   # Revert to plain `prev.playwright-mcp` once nixos-unstable catches up.
   playwright-mcp = final.master.playwright-mcp;
 
-  # Waybar's hyprland/workspaces module hard-codes old Hyprlang-style
-  # dispatchers ("dispatch workspace N") which are invalid Lua and fail
-  # in Hyprland Lua config mode (configType = "lua").
-  # TODO: remove once Waybar ships native Lua dispatch support.
-  waybar = prev.waybar.overrideAttrs (old: {
-    postPatch = (old.postPatch or "") + ''
-      substituteInPlace src/modules/hyprland/workspace.cpp \
-        --replace-fail \
-          'dispatch focusworkspaceoncurrentmonitor " + std::to_string(id())' \
-          'dispatch hl.dsp.focus({ workspace = " + std::to_string(id()) + ", monitor = \"current\" })"' \
-        --replace-fail \
-          'dispatch workspace " + std::to_string(id())' \
-          'dispatch hl.dsp.focus({ workspace = " + std::to_string(id()) + " })"' \
-        --replace-fail \
-          'dispatch focusworkspaceoncurrentmonitor name:" + name()' \
-          'dispatch hl.dsp.focus({ workspace = \"name:" + name() + "\", monitor = \"current\" })"' \
-        --replace-fail \
-          'dispatch workspace name:" + name()' \
-          'dispatch hl.dsp.focus({ workspace = \"name:" + name() + "\" })"' \
-        --replace-fail \
-          'dispatch togglespecialworkspace " + name()' \
-          'dispatch hl.dsp.workspace.toggle_special({ name = \"" + name() + "\" })"' \
-        --replace-fail \
-          '"dispatch togglespecialworkspace"' \
-          '"dispatch hl.dsp.workspace.toggle_special()"'
-    '';
-  });
-
   # obs-replay-source 1.8.1 still uses the deprecated OBS button-property API,
   # which is an error with OBS Studio 32.2.1.
   obs-studio-plugins = prev.obs-studio-plugins // {

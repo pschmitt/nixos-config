@@ -133,7 +133,7 @@ in
         Theme-derived environment variables. Consumed as home.sessionVariables
         (home-manager/gui/theme.nix) and re-exported into Hyprland's own
         process environment (home-manager/gui/hyprland/conf/env.nix) so
-        processes it forks directly — keybinds, waybar on-click, exec-once —
+        processes it forks directly — keybinds and exec-once —
         are themed too, not just processes started from a login shell.
       '';
     };
