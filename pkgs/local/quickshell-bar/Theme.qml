@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 
 QtObject {
-    // Palette lifted from waybar/style.css for visual continuity.
+    // Shared desktop palette.
     readonly property color bg: "#191818"
     readonly property color text: "#d2d2d2"
     readonly property color muted: "#a9a9a9"

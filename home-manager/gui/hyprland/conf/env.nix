@@ -3,7 +3,7 @@ let
   # custom.desktop.theme.sessionVariables (modules/theme.nix) is also applied
   # as home.sessionVariables, but that only reaches login shells
   # (~/.profile). uwsm starts Hyprland with its own curated environment, so
-  # anything Hyprland forks directly (keybinds, waybar on-click, exec-once)
+  # anything Hyprland forks directly (keybinds, exec-once)
   # never sees them unless Hyprland exports them itself here. Apps launched
   # from a terminal look fine only because the login shell re-sources
   # hm-session-vars.sh.
@@ -74,8 +74,8 @@ in
 
   ]
   # Re-export the GTK/Qt theming vars into Hyprland's own process
-  # environment so every process it forks directly (keybinds, waybar
-  # on-click handlers, exec-once) inherits them too, not just login
+  # environment so every process it forks directly (keybinds and exec-once)
+  # inherits them too, not just login
   # shells. See comment above.
   ++ (map (name: {
     _args = [

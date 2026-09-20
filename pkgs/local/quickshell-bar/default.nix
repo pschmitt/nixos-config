@@ -86,7 +86,7 @@ stdenvNoCC.mkDerivation {
   '';
 
   meta = {
-    description = "Custom Quickshell top bar (Waybar alternative) for Hyprland";
+    description = "Custom Quickshell top bar for Hyprland";
     license = lib.licenses.mit;
     platforms = lib.platforms.linux;
   };

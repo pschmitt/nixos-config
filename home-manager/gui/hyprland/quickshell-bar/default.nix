@@ -7,7 +7,7 @@ in
 
   systemd.user.services.quickshell-bar = {
     Unit = {
-      Description = "Custom Quickshell top bar (Waybar alternative)";
+      Description = "Custom Quickshell top bar";
       PartOf = [ "graphical-session.target" ];
       After = [ "graphical-session.target" ];
     };
@@ -18,6 +18,6 @@ in
       RestartSec = 5;
     };
 
-    # Not in Install.wantedBy: opt-in only, Waybar remains the default bar.
+    # Not in Install.wantedBy: opt-in only; Noctalia is the default bar.
   };
 }

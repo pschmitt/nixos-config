@@ -22,13 +22,6 @@ in
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { inherit osd; };
   caffeine = pkgs.callPackage ./local/caffeine { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
-  dms-battery-icon = pkgs.callPackage ./local/dms-battery-icon { };
-  dms-ha-ai-usage = pkgs.callPackage ./local/dms-ha-ai-usage { };
-  dms-screencast = pkgs.callPackage ./local/dms-screencast { inherit screencast-state; };
-  dms-shell-critical-notifications = pkgs.callPackage ./local/dms-shell-critical-notifications {
-    inherit inputs;
-  };
-  dms-timewarrior = pkgs.callPackage ./local/dms-timewarrior { inherit timew-status; };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   codexbar = pkgs.callPackage ./local/codexbar { };
   docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
@@ -48,7 +41,6 @@ in
   };
   inherit screencast-state;
   inherit soundboard;
-  syncshell-dank-widget = pkgs.callPackage ./local/syncshell-dank-widget { inherit inputs; };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   inherit timew-status;
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };

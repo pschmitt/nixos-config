@@ -141,8 +141,6 @@ screencast_on() {
   # Pause notifications
   # makoctl mode -a do-not-disturb
 
-  # Update waybar module (signal: 7)
-  pkill -RTMIN+7 waybar
 }
 
 screencast_off() {
@@ -168,8 +166,6 @@ screencast_off() {
   notify-send-unique "❌ Screencast stopped"
   log "Screencast stopped"
 
-  # Update waybar module (signal: 7)
-  pkill -RTMIN+7 waybar
 }
 
 select_output() {

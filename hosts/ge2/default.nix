@@ -106,7 +106,7 @@ in
 
     # Declarative custom-buttons config for the plugin's panel (read-only,
     # same base-file convention as pschmitt/ha's ha.yaml) -- wraps the
-    # existing obs-control verbs already bound to hyprland keys/waybar (see
+    # existing obs-control verbs already bound to hyprland keys (see
     # home-manager/gui/hyprland/conf/keys.nix and pkgs/local/obs-control).
     xdg.configFile."noctalia/obs-studio.yaml" = {
       force = true;

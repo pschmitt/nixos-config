@@ -1,8 +1,5 @@
-# Noctalia — trial replacement for DankMaterialShell as the default
-# Quickshell bar on all laptops (ge2/gk4/x13). DMS itself is intentionally
-# kept but not imported for now, see profiles/laptop/default.nix.
-# SUPER+SHIFT+B (toggle-bar.sh) cycles waybar -> quickshell-bar -> noctalia
-# (dms is skipped from the candidate list while its module isn't imported).
+# Noctalia — the default Quickshell bar on all laptops (ge2/gk4/x13).
+# SUPER+SHIFT+B (toggle-bar.sh) cycles quickshell-bar -> noctalia.
 {
   inputs,
   config,
@@ -183,19 +180,19 @@ in
           inherit dark;
           light = dark;
         };
-      # Started as a mirror of the DMS bar layout (workspaceSwitcher+
+      # Started as a mirror of an earlier bar layout (workspaceSwitcher+
       # runningApps / weather+clock+timewarrior / music+systemTray+
       # syncshell+controlCenter+battery+notifications), since diverged a
       # bit on request (no dedicated control-center button — the
       # notifications widget still opens into it). OSD (volume/brightness/
       # mic/etc.) is native and on by default — no settings needed.
       # Everything beyond this is meant to be tuned live (Settings app /
-      # ~/.config/noctalia/config.toml), same as DMS's settings.json began
+      # ~/.config/noctalia/config.toml).
       # as a live-edited snapshot before being made declarative.
       settings = {
         bar.main = {
           position = "top";
-          margin_ends = 0; # span the full screen width, matching the DMS bar
+          margin_ends = 0; # span the full screen width
           padding = 0; # main-axis padding from bar edges to the start/end widget sections — separate from margin_ends
           # No font_weight override: the SemiBold family above is already a
           # fixed-weight cut, and synthetic-bolding on top of it looked off.
@@ -300,7 +297,7 @@ in
             "pschmitt/ha-ai-usage"
             # Syncthing status/control — fork of noctalia-dev/community-plugins'
             # rylos/syncthing (see pschmitt/noctalia-plugins) with a
-            # tray-sized icon and the DMS syncshell widget's composited status
+            # tray-sized icon with composited status
             # badges instead of a small logo + separate glyph. Its `url`/
             # `api_key` plugin settings aren't set here: they persist to
             # Noctalia's runtime state once entered in Settings -> Plugins, so
@@ -312,11 +309,10 @@ in
             # Forked from the community piero-93/thinkpad-fan plugin — see
             # pschmitt/noctalia-plugins.
             "pschmitt/fan-control"
-            # Port of pkgs/local/dms-timewarrior — see pschmitt/noctalia-plugins.
+            # Timewarrior integration from pschmitt/noctalia-plugins.
             "pschmitt/timewarrior"
             # Red-dot REC indicator while screensharing — see
-            # pschmitt/noctalia-plugins, ported from the old Waybar
-            # custom/screencast module.
+            # pschmitt/noctalia-plugins.
             "pschmitt/screencast"
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pschmitt/noctalia-plugins.
@@ -989,12 +985,8 @@ in
         };
       };
     };
-    # Waybar was the default, then DMS; Noctalia takes over that role now,
-    # so flip which one autostarts with the graphical session. toggle-bar.sh
-    # can still cycle to any available bar regardless of this.
-    systemd.user.services.waybar.Install.WantedBy = lib.mkForce [ ];
     # The Timewarrior Noctalia plugin runs `timew` directly. Keep it on the
-    # same database as the shell/Waybar helpers; systemd user services do not
+    # same database as the shell helpers; systemd user services do not
     # inherit the interactive shell's TIMEWARRIORDB environment.
     systemd.user.services.noctalia.Service.Environment = [
       "TIMEWARRIORDB=${config.mainUser.homeDirectory}/.config/timewarrior"

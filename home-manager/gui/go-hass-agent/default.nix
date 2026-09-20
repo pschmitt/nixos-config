@@ -136,7 +136,7 @@ in
     (lib.mkIf config.services.go-hass-agent.enableWorkCommands {
       services.go-hass-agent.obsPasswordSecret = lib.mkDefault "obs/websocket/password";
 
-      # obs-control on PATH for the hyprland keybinds and waybar mic toggle;
+      # obs-control on PATH for the hyprland keybinds and mic toggle;
       # ms-teams for the ms-teams-join-room keybind script (the go-hass-agent
       # buttons/sensors reach them via scriptPackages above).
       home.packages = [
@@ -146,7 +146,7 @@ in
 
       sops.secrets = lib.mkIf config.services.go-hass-agent.enable {
         # Rendered to the canonical obs-websocket password path so obs-control
-        # can read it outside the go-hass-agent service env (keybinds/waybar).
+        # can read it outside the go-hass-agent service environment.
         "obs/websocket/password" = {
           sopsFile = config.host.sopsFile;
           path = "${config.xdg.configHome}/obs-studio/obs-websocket.password";

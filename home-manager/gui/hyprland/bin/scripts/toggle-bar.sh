@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Ordered wishlist of bar services to cycle through. Hosts that don't enable
-# a given service (eg. dms while its module is skipped) just skip it.
-CANDIDATE_BARS=(dms noctalia)
+# a given service just skip it.
+CANDIDATE_BARS=(quickshell-bar noctalia)
 
 available_bars() {
   local bar

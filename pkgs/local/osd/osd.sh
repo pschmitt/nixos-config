@@ -1,9 +1,8 @@
 # osd — fire an ad-hoc on-screen notification.
 #
 # Tries, in order: Noctalia's pschmitt/osd plugin panels (see
-# pkgs/local/noctalia-osd), DMS's native toast IPC (dms ipc call toast ...),
-# then notify-send/mako — so scripts and keybinds get a native-looking OSD
-# regardless of which bar is active (see toggle-bar.sh). Noctalia has no
+# pkgs/local/noctalia-osd), then notify-send/mako — so scripts and keybinds get
+# a native-looking OSD when Noctalia is active. Noctalia has no
 # generic "show a custom OSD" primitive of its own (only fixed-purpose ones:
 # brightness-osd, volume-osd, ...), hence the dedicated plugin.
 #
@@ -25,14 +24,14 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE...
 
 Options:
   -s, --severity {info,warn,error}   Severity (default: info)
-  -c, --category CATEGORY            Dedupe/update-in-place key (Noctalia and
-                                      DMS only; repeated calls with the same
+  -c, --category CATEGORY            Dedupe/update-in-place key (Noctalia
+                                      only; repeated calls with the same
                                       category replace the previous toast
                                       instead of stacking). Defaults to
                                       --app-name.
-  -d, --details TEXT                 Extra detail line (Noctalia and DMS only)
+  -d, --details TEXT                 Extra detail line (Noctalia only)
   -x, --command CMD                  Command run when the toast is clicked
-                                      (Noctalia and DMS only)
+                                      (Noctalia only)
   -i, --icon GLYPH                   Tabler glyph name shown instead of the
                                       severity icon, eg. bluetooth-connected
                                       (Noctalia only)
@@ -50,7 +49,7 @@ Options:
   -a, --app-name NAME                notify-send app name (fallback only,
                                       default: osd)
   -t, --timeout MS                   Auto-dismiss timeout in ms (Noctalia and
-                                      notify-send fallback; ignored by DMS)
+                                      notify-send fallback)
   -h, --help                         Show this help
 EOF
 }
@@ -114,10 +113,6 @@ noctalia_panel() {
   fi
 }
 
-use_dms() {
-  command -v dms &>/dev/null && dms ipc call toast status &>/dev/null
-}
-
 send() {
   local severity="$1"
   local message="$2"
@@ -157,11 +152,6 @@ send() {
       "$(noctalia_panel "$message" "$details" "$show_icon")" "$payload" &>/dev/null && return 0
   fi
 
-  if use_dms
-  then
-    dms ipc call toast "${severity}With" "$message" "$details" "$cmd" "$category" &>/dev/null && return 0
-  fi
-
   local -a args
   args=(--app-name "$app_name")
   [[ -n "$timeout" ]] && args+=(-t "$timeout")
@@ -196,11 +186,6 @@ ipc_dismiss() {
     [[ "$rc" -eq 0 ]] && return 0
   fi
 
-  if use_dms
-  then
-    dms ipc call toast dismiss "$category" &>/dev/null && return 0
-  fi
-
   command -v makoctl &>/dev/null || return 1
   command -v jq &>/dev/null || return 1
 
@@ -226,11 +211,6 @@ ipc_hide() {
     [[ "$rc" -eq 0 ]] && return 0
   fi
 
-  if use_dms
-  then
-    dms ipc call toast hide &>/dev/null && return 0
-  fi
-
   command -v makoctl &>/dev/null || return 1
   makoctl dismiss --all
 }
@@ -252,13 +232,7 @@ ipc_status() {
     return 0
   fi
 
-  if use_dms
-  then
-    dms ipc call toast status
-    return $?
-  fi
-
-  echo "neither noctalia nor dms running; no fallback status available" >&2
+  echo "neither noctalia nor a notification fallback is running" >&2
   return 1
 }
 
