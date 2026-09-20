@@ -22,6 +22,11 @@
     master.bitwarden-cli
   ];
 
+  # rbw's implicit-account path can resolve the wrong credential source even
+  # though `default` is configured as the primary account. Keep the default
+  # explicit for plain CLI calls; account-specific wrappers override it.
+  home.sessionVariables.RBW_ACCOUNT = "default";
+
   # rbw itself is installed by programs.rbw.declarative below (same
   # derivation as the `rbw` overlay in overlays/rbw.nix).
   programs.rbw.declarative = {
