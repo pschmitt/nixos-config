@@ -637,6 +637,10 @@
                 system = "x86_64-linux";
                 deviceType = "server";
               };
+              deleteme = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
               oci-03 = {
                 system = "aarch64-linux";
                 deviceType = "server";

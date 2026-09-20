@@ -29,9 +29,19 @@ EOF
 
 decrypt_host_secrets() {
   local target_host="$1" tmpdir="$2"
-  local tofu_script_dir="${PWD}/tofu/scripts"
+  local public_root="$PWD"
+  local private_root="${PRIVATE_CONFIG_DIR:-${public_root}/private}"
+  local tofu_script_dir="${private_root}/tofu/scripts"
+
+  if [[ ! -d "$tofu_script_dir" ]]
+  then
+    echo "Error: private configuration is missing at ${private_root}. Initialize the private submodule first." >&2
+    return 1
+  fi
+
   (
     export TARGET_HOST="$target_host" # the tofu scripts need this env var
+    export NIXOS_CONFIG_DIR="$public_root"
 
     # in ./files/ we put the files we want to copy to the host
     mkdir -p "${tmpdir}/files"

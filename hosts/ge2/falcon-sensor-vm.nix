@@ -1,6 +1,6 @@
 { config, inputs, ... }:
 {
-  sops.secrets."crowdstrike/customerId".sopsFile = ../../secrets/shared.sops.yaml;
+  sops.secrets."crowdstrike/customerId".sopsFile = config.sops.defaultSopsFile;
 
   services.falcon-sensor-vm = {
     enable = true;

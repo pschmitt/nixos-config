@@ -27,7 +27,7 @@
 
   sops = {
     secrets."openclaw/token" = {
-      sopsFile = ../../secrets/shared.sops.yaml;
+      sopsFile = config.host.sopsDefaultFile;
     };
 
     templates.openclaw-gateway-env.content = ''

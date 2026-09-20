@@ -30,8 +30,8 @@ in
 
       sops = {
         secrets = {
-          "firefox/addons/linkding/url".sopsFile = ../../secrets/shared.sops.yaml;
-          "firefox/addons/linkding/token".sopsFile = ../../secrets/shared.sops.yaml;
+          "firefox/addons/linkding/url".sopsFile = config.host.sopsDefaultFile;
+          "firefox/addons/linkding/token".sopsFile = config.host.sopsDefaultFile;
         };
 
         # programs.firefox.profiles.default.extensions.settings writes this same

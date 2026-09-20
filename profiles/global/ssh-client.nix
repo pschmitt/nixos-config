@@ -16,7 +16,7 @@ let
     "${host}.netbird.cloud"
   ];
 
-  # NOTE ssh-hosts.generated.json is generated using ./secrets/ssh-gen-known-hosts.sh
+  # NOTE ssh-hosts.generated.json is generated using ./private/secrets/ssh-gen-known-hosts.sh
   generatedHostKeys =
     let
       p = ./ssh-hosts.generated.json;

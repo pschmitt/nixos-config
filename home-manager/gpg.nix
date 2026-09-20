@@ -1,6 +1,11 @@
-{ config, pkgs, ... }:
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 let
-  sopsFile = ../secrets/gpg.sops.yaml;
+  sopsFile = inputs.nixos-config-private.outPath + "/secrets/nixos-gpg.sops.yaml";
 
   keys = [
     {

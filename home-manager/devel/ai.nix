@@ -93,17 +93,17 @@ in
       secrets = {
         "mistral-vibe/env" = {
           mode = "0600";
-          sopsFile = ../../secrets/shared.sops.yaml;
+          sopsFile = config.host.sopsDefaultFile;
         };
         "n8n/mcp/token" = {
           mode = "0600";
-          sopsFile = ../../secrets/shared.sops.yaml;
+          sopsFile = config.host.sopsDefaultFile;
         };
         # GEC Slack workspace user token (xoxp-...), lets the Slack MCP server
         # read/post as Philipp's own Slack identity rather than a bot user.
         "slack/gec-chat/xoxp-token" = {
           mode = "0600";
-          sopsFile = ../../secrets/shared.sops.yaml;
+          sopsFile = config.host.sopsDefaultFile;
         };
         # MCP uses the same host-specific Philipp Schmitt PAT:
         # `nixos-config (<HOSTNAME>)`.

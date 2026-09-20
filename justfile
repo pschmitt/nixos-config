@@ -5,15 +5,15 @@ default:
   @just --list
 
 sops-config-gen *args:
-  ./secrets/sops-config-gen.sh {{args}}
+  ./private/secrets/sops-config-gen.sh {{args}}
 
 # Set/edit a value in a SOPS file by dotted path.
 #   just sops-edit FILE PATH VALUE
 # VALUE is taken literally, or read from a file with the `file:` prefix.
 # Examples:
-#   just sops-edit secrets/shared.sops.yaml httpd.password 'mysecret1234' # gitleaks:allow
-#   just sops-edit secrets/shared.sops.yaml users.pschmitt.password file:./hash.txt
-#   just sops-edit secrets/shared.sops.yaml ssh.hosts.0 'first-array-entry'
+#   just sops-edit private/secrets/nixos-shared.sops.yaml httpd.password 'mysecret1234' # gitleaks:allow
+#   just sops-edit private/secrets/nixos-shared.sops.yaml users.pschmitt.password file:./hash.txt
+#   just sops-edit private/secrets/nixos-shared.sops.yaml ssh.hosts.0 'first-array-entry'
 alias sops-set := sops-edit
 sops-edit file path value:
   #!/usr/bin/env bash
@@ -130,7 +130,7 @@ nixfmt:
 
 alias tofu-fmt := fmt-tofu
 fmt-tofu:
-  tofu -chdir=tofu fmt
+  tofu -chdir=private/tofu fmt
 
 fmt: nixfmt fmt-tofu
   @echo "Formatted nix files and tofu configs"
@@ -294,7 +294,7 @@ fetch-proprietary-garbage *args:
   ./scripts/fetch-proprietary-garbage.sh {{args}}
 
 tofu *args:
-  ./tofu/tofu.sh {{args}}
+  ./private/tofu/tofu.sh {{args}}
 
 alias tofu-deploy-all := tofu-yolo
 tofu-yolo host='' *args:

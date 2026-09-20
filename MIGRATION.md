@@ -5,13 +5,13 @@
 - `oci-01` is an OCI `VM.Standard.A1.Flex` instance with 2 OCPUs and 12 GiB
   RAM in `eu-frankfurt-1`, availability domain 2.
 - The current public address is ephemeral, not reserved. It is referenced by
-  the Terraform-managed Cloudflare records in `tofu/dns-dynamic.tf`,
-  `tofu/dns-brkn-lol.tf`, and `tofu/dns-email.tf`.
+  the Terraform-managed Cloudflare records in `private/tofu/dns-dynamic.tf`,
+  `private/tofu/dns-brkn-lol.tf`, and `private/tofu/dns-email.tf`.
 - OCI reverse DNS is attached to the current public address. Replacing the
   instance would normally allocate a different address and require a new OCI
   support request for the PTR record.
 - The data disk is a separate 50 GiB OCI block volume, managed as
-  `oci_core_volume.oci_01_data` in `tofu/data-volumes.tf`. It is attached
+  `oci_core_volume.oci_01_data` in `private/tofu/data-volumes.tf`. It is attached
   paravirtualized and protected by `prevent_destroy` on both the volume and
   attachment.
 - On Ubuntu the disk is `/dev/sdb1`, LUKS2, opened as `data`, and mounted as
@@ -159,7 +159,7 @@ kept on the data disk only as a rollback copy; no active service uses them.
 ## Terraform safety requirements
 
 Before any replacement or termination operation, boot-volume retention is
-explicit in `tofu/oci-01.tf`:
+explicit in `private/tofu/oci-01.tf`:
 
 ```hcl
 preserve_boot_volume = true
@@ -175,9 +175,9 @@ detach the data volume, not delete it, but the cloud-side behavior must still
 be checked after every operation.
 
 Terraform/OpenTofu operations should run from `rofl-10`, using the repository's
-`tofu/tofu.sh` wrapper. The local `nixos::tofu-from-rofl` helper cleans and
+`private/tofu/tofu.sh` wrapper. The local `nixos::tofu-from-rofl` helper cleans and
 updates `/etc/nixos` on the remote host before running `nix develop --command
-./tofu/tofu.sh`; it assumes the desired changes are available on the selected
+./private/tofu/tofu.sh`; it assumes the desired changes are available on the selected
 branch. Targeted plans/applies are required so unrelated NixOS builds are not
 started.
 

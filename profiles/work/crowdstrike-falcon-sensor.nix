@@ -28,7 +28,7 @@
       sops.secrets."crowdstrike/customerId" =
         lib.mkIf (config.custom.crowdstrike.customerIdFile == null)
           {
-            sopsFile = ../../secrets/shared.sops.yaml;
+            sopsFile = config.sops.defaultSopsFile;
           };
 
       services.falcon-sensor = {

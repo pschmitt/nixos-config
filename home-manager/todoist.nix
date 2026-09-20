@@ -8,13 +8,13 @@
   sops = {
     secrets = {
       "todoist/api_token" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.host.sopsDefaultFile;
       };
       "todoist/user_id" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.host.sopsDefaultFile;
       };
       "todoist/email" = {
-        sopsFile = ../secrets/shared.sops.yaml;
+        sopsFile = config.host.sopsDefaultFile;
       };
     };
 

@@ -8,6 +8,7 @@ main() {
   local FORCE=${FORCE:-}
   local NEW_HOSTNAME=${NEW_HOSTNAME:-}
   local TEMPLATE_TYPE=${TEMPLATE_TYPE:-openstack-wiit}
+  local private_root="${PRIVATE_CONFIG_DIR:-${PWD}/private}"
 
   while [[ -n $* ]]
   do
@@ -55,6 +56,12 @@ main() {
     return 2
   fi
 
+  if [[ ! -x "${private_root}/secrets/sops-init.sh" || ! -x "${private_root}/secrets/ssh-gen-known-hosts.sh" ]]
+  then
+    echo "Error: private configuration is missing at ${private_root}. Initialize the private submodule first." >&2
+    return 1
+  fi
+
   # nix config
   local DEST="./hosts/${NEW_HOSTNAME}"
 
@@ -71,8 +78,8 @@ main() {
 
   cp -va "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
   printf '%s' "$NEW_HOSTNAME" > "${DEST}/HOSTNAME"
-  ./secrets/sops-init.sh "$NEW_HOSTNAME"
-  ./secrets/ssh-gen-known-hosts.sh
+  ./private/secrets/sops-init.sh "$NEW_HOSTNAME"
+  ./private/secrets/ssh-gen-known-hosts.sh
 
   # tofu config
   case "$TEMPLATE_TYPE" in
@@ -82,19 +89,25 @@ main() {
       ;;
   esac
 
-  TOFU_CONF="./tofu/${NEW_HOSTNAME}.tf"
-  sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" "./templates/tofu/${TEMPLATE_TYPE}/host.tf" \
+  if [[ ! -f "${private_root}/templates/tofu/${TEMPLATE_TYPE}/host.tf" ]]
+  then
+    echo "Error: No private Tofu template for '${TEMPLATE_TYPE}' under ${private_root}." >&2
+    return 1
+  fi
+
+  TOFU_CONF="${private_root}/tofu/${NEW_HOSTNAME}.tf"
+  sed "s#\${REPLACEME}#${NEW_HOSTNAME}#g" "${private_root}/templates/tofu/${TEMPLATE_TYPE}/host.tf" \
     > "$TOFU_CONF"
   tofu fmt "$TOFU_CONF"
 
   echo "Config created for $NEW_HOSTNAME"
   echo "To deploy, run:"
-  echo "./tofu/tofu.sh init && ./tofu/tofu.sh apply -target=module.nix-${NEW_HOSTNAME}"
+  echo "./private/tofu/tofu.sh init && ./private/tofu/tofu.sh apply -target=module.nix-${NEW_HOSTNAME}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-  cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
+  cd "$(cd "$(dirname "$0")/.." >/dev/null 2>&1; pwd -P)" || exit 9
 
   main "$@"
 fi
