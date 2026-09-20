@@ -18,6 +18,7 @@
     ../../services/web-vnc-console.nix
     ../../services/kvm-usb.nix
     ../../services/browser-mcp-chromium-container.nix
+    ../../services/nix-distributed-build.nix
 
     ./backups.nix
     ./nfs.nix
