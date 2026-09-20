@@ -10,6 +10,7 @@
     ./hardware-configuration.nix
     ../../profiles/server
     ../../profiles/gui/linger.nix
+    ../../profiles/network/ha-sshfs.nix
 
     ../../services/syslog-server.nix
     ../../services/smokeping.nix

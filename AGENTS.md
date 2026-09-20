@@ -16,7 +16,8 @@
 - Prefer committing only verified, working changes.
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
   - Check `hostname` first: if the current machine is the target host, omit the argument (`just deploy`) to build and switch locally without SSH/rsync.
-- To apply standalone Home Manager changes on fnuc (non-NixOS), run `just hm` (or `just hm <hostname>` for a specific host). This rsyncs the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem.
+- fnuc has been migrated to full NixOS (see `hosts/fnuc/nixos.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
+- `just hm` (or `just hm <hostname>`) applies a *standalone* Home Manager `homeConfigurations.<hostname>` profile for a non-NixOS host, rsyncing the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem. There is currently no such host in this flake — `homeConfigurations.fnuc` predates fnuc's NixOS migration and is stale/unused; do not point users at it.
 
 ## Private configuration submodule
 - `private/` is a Git submodule tracking `pschmitt/nixos-config-private`; it supplies private modules and secrets used by this flake.
