@@ -26,6 +26,12 @@ let
       healthcheckCmd = "mount | grep luks-root";
     }
     {
+      name = "lrz";
+      hostname = "lrz.lan";
+      hasInitrdCheck = false;
+      healthcheckCmd = "mount | grep -v tmpfs | grep luks";
+    }
+    {
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
       configDir = "/srv/luks-ssh-unlock/config/oci-01-nixos";
@@ -69,6 +75,9 @@ let
       healthcheckCmd = "mount | grep encrypted";
     }
   ];
+
+  # Each importing host unlocks every other fleet member, not itself.
+  otherTargets = lib.filter (target: target.name != config.networking.hostName) targets;
 
   cfgDirFor = target: target.configDir or "/srv/luks-ssh-unlock/config/${target.name}";
 
@@ -122,7 +131,7 @@ in
         sopsFile = ../hosts/${target.name}/luks.sops.yaml;
         key = "luks/root";
       };
-    }) targets
+    }) otherTargets
   );
 
   services.luks-ssh-unlock = {
@@ -131,7 +140,7 @@ in
       map (target: {
         inherit (target) name;
         value = createInstance target;
-      }) targets
+      }) otherTargets
     );
   };
 }
