@@ -27,7 +27,15 @@ in
       };
       accounts = {
         default = {
-          host = "mail.${config.domains.main}";
+          # Pinned to the IPv4 address: mail.${config.domains.main} (Stalwart
+          # on oci-01) silently drops connections over IPv6 from at least
+          # some source addresses -- clean TCP handshake, then an immediate
+          # empty FIN with no SMTP banner, while IPv4 completes normally.
+          # Looks like an IP-reputation/abuse-protection block on Stalwart's
+          # side rather than a network issue (reproduced from multiple
+          # hosts); revert this once that's cleared up on the Stalwart admin
+          # side.
+          host = "130.61.215.245";
           port = 587;
           tls_starttls = true;
           tls_certcheck = false;
