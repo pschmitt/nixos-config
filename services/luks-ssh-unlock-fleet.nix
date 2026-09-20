@@ -83,6 +83,17 @@ let
   # Each importing host unlocks every other fleet member, not itself.
   otherTargets = lib.filter (target: target.name != config.networking.hostName) targets;
 
+  # Cloud hosts get a dedicated key instead of the personal one, so their
+  # root filesystem never needs to hold a copy of it. See the
+  # luks-ssh-unlock-identity entry in hosts/rofl-10/secrets.sops.yaml; its
+  # public half is trusted below via
+  # users.users.root.openssh.authorizedKeys.keys.
+  selfSshKey =
+    if config.networking.hostName == "rofl-10" then
+      config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path
+    else
+      "/home/pschmitt/.ssh/id_ed25519";
+
   cfgDirFor = target: target.configDir or "/srv/luks-ssh-unlock/config/${target.name}";
 
   createInstance =
@@ -93,7 +104,7 @@ let
     {
       type = "systemd";
       inherit (target) hostname;
-      key = "/home/pschmitt/.ssh/id_ed25519";
+      key = selfSshKey;
       passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
       sshKnownHostsFile = "${cDir}/known_hosts";
       initrdKnownHostsFile = "${cDir}/known_hosts_initrd";
@@ -130,16 +141,30 @@ in
 {
   imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
 
+  # Fleet-internal trust: rofl-10's dedicated unlock identity (see
+  # selfSshKey above) is authorized as root on every fleet member.
+  users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock"
+  ];
+
   # SOPS secrets: read LUKS passphrases from each target host's own luks.sops.yaml file
-  sops.secrets = lib.listToAttrs (
-    map (target: {
-      name = "luks/${target.name}/passphrase";
-      value = {
-        sopsFile = ../hosts/${target.name}/luks.sops.yaml;
-        key = "luks/root";
+  sops.secrets =
+    lib.listToAttrs (
+      map (target: {
+        name = "luks/${target.name}/passphrase";
+        value = {
+          sopsFile = ../hosts/${target.name}/luks.sops.yaml;
+          key = "luks/root";
+        };
+      }) otherTargets
+    )
+    // lib.optionalAttrs (config.networking.hostName == "rofl-10") {
+      "luks-ssh-unlock/rofl-10-identity" = {
+        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        key = "luks-ssh-unlock-identity";
+        mode = "0400";
       };
-    }) otherTargets
-  );
+    };
 
   services.luks-ssh-unlock = {
     enable = true;
