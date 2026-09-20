@@ -1,48 +1,31 @@
 { pkgs, ... }:
 
-let
-  # FIXME Is there any env var that GARNIX sets?
-  isGarnix = builtins.getEnv "NOT_GARNIX" == "";
-  # Only install proprietary fonts if not in CI
-  conditionalPackages =
-    pkgs:
-    if isGarnix then
-      [ ]
-    else
-      with pkgs;
-      [
-        ComicCode
-        ComicCodeNF
-        MonoLisa
-        MonoLisa-Custom
-        MonoLisa-CustomNF
-      ];
-in
 {
   # NOTE You might need to run $ fc-cache -v --really-force as both your user and root
   # Also, removing ~/.config/fontconfig might help in case emojis are all fucked up and shit
   # The last time around the following command fixed emojis in pango apps:
   # rm -rf ~/.cache/fontconfig ~/.config/fontconfig; sudo fc-cache --really-force -v; fc-cache --really-force -v
   fonts = {
-    packages =
-      with pkgs;
-      [
-        # dejavu_fonts
-        # noto-fonts-cjk
-        ComicCode
-        fira-code
-        fira-code-symbols
-        liberation_ttf
-        nerd-fonts.fira-code
-        nerd-fonts.inconsolata
-        nerd-fonts.terminess-ttf
-        noto-fonts-color-emoji
-        noto-fonts-color-emoji
-        ubuntu-classic
-        font-awesome
-        font-awesome_5
-      ]
-      ++ (conditionalPackages pkgs);
+    packages = with pkgs; [
+      # dejavu_fonts
+      # noto-fonts-cjk
+      ComicCode
+      ComicCodeNF
+      MonoLisa
+      MonoLisa-Custom
+      MonoLisa-CustomNF
+      fira-code
+      fira-code-symbols
+      liberation_ttf
+      nerd-fonts.fira-code
+      nerd-fonts.inconsolata
+      nerd-fonts.terminess-ttf
+      noto-fonts-color-emoji
+      noto-fonts-color-emoji
+      ubuntu-classic
+      font-awesome
+      font-awesome_5
+    ];
     fontDir.enable = true;
     # enableDefaultFonts = true;  # deprecated in unstable
     enableDefaultPackages = true; # new option name (unstable)
