@@ -10,7 +10,7 @@ let
     {
       name = "fnuc";
       hostname = "fnuc.lan";
-      hasInitrdCheck = false;
+      hasInitrdCheck = true;
       healthcheckCmd = "mount | grep -v tmpfs | grep luks";
     }
     {
@@ -28,7 +28,7 @@ let
     {
       name = "lrz";
       hostname = "lrz.lan";
-      hasInitrdCheck = false;
+      hasInitrdCheck = true;
       healthcheckCmd = "mount | grep -v tmpfs | grep luks";
     }
     {
