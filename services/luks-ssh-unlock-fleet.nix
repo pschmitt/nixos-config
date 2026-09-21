@@ -38,7 +38,6 @@ let
     {
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
-      configDir = "/srv/luks-ssh-unlock/config/oci-01-nixos";
       hasInitrdCheck = false;
       healthcheckCmd = "mount | grep encrypted";
     }
