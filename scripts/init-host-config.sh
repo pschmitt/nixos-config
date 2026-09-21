@@ -58,7 +58,7 @@ main() {
 
   if [[ ! -x "${private_root}/secrets/sops-init.sh" || ! -x "${private_root}/secrets/ssh-gen-known-hosts.sh" ]]
   then
-    echo "Error: private configuration is missing at ${private_root}. Initialize the private submodule first." >&2
+    echo "Error: private configuration is missing at ${private_root}. Check out nixos-config-private there or set PRIVATE_CONFIG_DIR." >&2
     return 1
   fi
 
@@ -78,8 +78,8 @@ main() {
 
   cp -va "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
   printf '%s' "$NEW_HOSTNAME" > "${DEST}/HOSTNAME"
-  ./private/secrets/sops-init.sh "$NEW_HOSTNAME"
-  ./private/secrets/ssh-gen-known-hosts.sh
+  NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/sops-init.sh" "$NEW_HOSTNAME"
+  NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/ssh-gen-known-hosts.sh"
 
   # tofu config
   case "$TEMPLATE_TYPE" in
@@ -102,7 +102,7 @@ main() {
 
   echo "Config created for $NEW_HOSTNAME"
   echo "To deploy, run:"
-  echo "./private/tofu/tofu.sh init && ./private/tofu/tofu.sh apply -target=module.nix-${NEW_HOSTNAME}"
+  echo "PRIVATE_CONFIG_DIR=${private_root} just tofu init && PRIVATE_CONFIG_DIR=${private_root} just tofu apply -target=module.nix-${NEW_HOSTNAME}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

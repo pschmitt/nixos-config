@@ -35,7 +35,7 @@ decrypt_host_secrets() {
 
   if [[ ! -d "$tofu_script_dir" ]]
   then
-    echo "Error: private configuration is missing at ${private_root}. Initialize the private submodule first." >&2
+    echo "Error: private configuration is missing at ${private_root}. Check out nixos-config-private there or set PRIVATE_CONFIG_DIR." >&2
     return 1
   fi
 

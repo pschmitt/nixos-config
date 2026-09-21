@@ -19,12 +19,39 @@
 - fnuc has been migrated to full NixOS (see `hosts/fnuc/nixos.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
 - `just hm` (or `just hm <hostname>`) applies a *standalone* Home Manager `homeConfigurations.<hostname>` profile for a non-NixOS host, rsyncing the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem. There is currently no such host in this flake — `homeConfigurations.fnuc` predates fnuc's NixOS migration and is stale/unused; do not point users at it.
 
-## Private configuration submodule
-- `private/` is a Git submodule tracking `pschmitt/nixos-config-private`; it supplies private modules and secrets used by this flake.
-- The flake references `nixos-config-private` as `github:pschmitt/nixos-config-private` (a normal flake input, pinned in `flake.lock`), with `inputs.nixpkgs.follows = "nixpkgs"` so it shares the top-level `nixpkgs`. This repo is private, so fetching it requires a GitHub token — every host gets one via `access-tokens` in `nix.conf` (system-level for root/nix-daemon builds via `profiles/global/nix/secrets.nix`, user-level for unprivileged `nix` commands via `home-manager/devel/nix.nix`); do not remove that plumbing.
-  - Previously this input used `path:./private` to avoid needing network/GitHub access on deploy targets (the copy helpers rsync the repo without `.git`, which made `path:` fail anyway because Nix can't resolve tracked files inside a submodule from the parent checkout — see 2026-09-01). The `github:` input with access-tokens replaced that workaround; do not revert to `path:./private` or route flake operations through copy helpers just to work around private-input resolution.
-- The checked-out `private/` submodule is still used for local editing: make changes there, commit, and push to publish. `nix flake update` (or `nix flake lock --update-input nixos-config-private`) then picks up the new revision for the flake input — the submodule checkout and the flake input are independent and can point at different revisions until you update the lock file.
-- When committing a `flake.lock` bump for the `nixos-config-private` input, always use the commit message `bump my privates`.
+## Private configuration repository
+- Treat this public repository as safe to publish. All secrets and sensitive
+  material must live in `pschmitt/nixos-config-private`, never in tracked files
+  here. This includes private SOPS ciphertext, credentials, passwords, tokens, private
+  keys, SSH/TLS fingerprints and host keys, device serials, account IDs,
+  inventory/provider credentials, private infrastructure records, and
+  secret-bearing helper or provisioning scripts.
+- Keep only public interfaces, non-sensitive defaults, and references in this
+  repository. Put private modules, shared/private SOPS files, scripts that
+  handle secrets, Tofu/OpenTofu configuration and templates that contain
+  private infrastructure data, and private-repository-only support files such
+  as `hermes-sops.pub` in the private repository. Encrypted per-host payloads
+  under `hosts/*/secrets.sops.yaml` and `hosts/*/luks.sops.yaml` remain public
+  deployment inputs, but their recipient configuration is private.
+- The flake references `nixos-config-private` as
+  `github:pschmitt/nixos-config-private`, a normal flake input pinned in
+  `flake.lock`; it follows the top-level `nixpkgs`. Fetching it requires a
+  GitHub token. Every host gets one through `access-tokens` in `nix.conf`
+  (system-level via `profiles/global/nix/secrets.nix`, user-level via
+  `home-manager/devel/nix.nix`). Do not remove that plumbing or replace the
+  GitHub input with `path:./private`.
+- Edit the private repository through its separate local checkout when needed.
+  Set `PRIVATE_CONFIG_DIR` for scripts that need it. Commit and publish changes
+  there first; then update this repository's lock file with
+  `nix flake lock --update-input nixos-config-private`. Always use the commit
+  message `bump my privates` for that lock-file commit.
+- The canonical SOPS configuration is `nixos-config-private/.sops.yaml`.
+  Scripts use it for both public host ciphertext and private-repository secrets;
+  do not recreate a public `.sops.yaml`.
+- Never add a secret or sensitive identifier here merely because it is
+  encrypted, obfuscated, or needed by a script. If a public module needs one,
+  expose a runtime or activation interface and source the value from the
+  private input, SOPS, or a host/runtime secret path.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.

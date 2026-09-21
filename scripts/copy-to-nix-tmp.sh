@@ -119,7 +119,7 @@ then
     --exclude '.git*' \
     --exclude 'build/' \
     --exclude 'result' \
-    --exclude 'private/tofu/.terraform/' \
+    --exclude 'private/' \
     "${REPO_ROOT}/" "${target_host}:${build_dir}/"
 else
   build_dir="$(create_build_dir_local)"
@@ -128,6 +128,7 @@ else
     --exclude '.git*' \
     --exclude 'build/' \
     --exclude 'result' \
+    --exclude 'private/' \
     "${REPO_ROOT}/" "${build_dir}/"
 fi
 
