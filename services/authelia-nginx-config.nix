@@ -2,9 +2,12 @@
 # defined by services/authelia-nginx-bypass.nix. Hosts that do not import that
 # module must pass false, otherwise nginx refuses to start with
 # "unknown \"authelia_ha_bypass\" variable".
+# forceHeaderBypass uses the second map from that same module. It defaults to
+# the HA setting because both maps are provided by the same host module.
 {
   config,
   haIngressBypass ? true,
+  forceHeaderBypass ? haIngressBypass,
   # Skip Authelia whenever the request carries an X-API-Key header. The header
   # is never checked here -- any value passes -- so this is only sound in front
   # of an app that authenticates the key itself (the *arr style). It is off by
@@ -64,6 +67,17 @@ in
           ''
             ## Bypass Authelia for HA ingress proxy (Bearer token set by HA)
             if ($authelia_ha_bypass = "1") {
+              return 200;
+            }
+          ''
+        else
+          ""
+      }
+      ${
+        if forceHeaderBypass then
+          ''
+            ## Bypass Authelia for callers presenting the host's secret header.
+            if ($authelia_force_header_bypass = "1") {
               return 200;
             }
           ''
