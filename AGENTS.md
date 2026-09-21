@@ -30,9 +30,10 @@
   repository. Put private modules, shared/private SOPS files, scripts that
   handle secrets, Tofu/OpenTofu configuration and templates that contain
   private infrastructure data, and private-repository-only support files such
-  as `hermes-sops.pub` in the private repository. Encrypted per-host payloads
-  under `hosts/*/secrets.sops.yaml` and `hosts/*/luks.sops.yaml` remain public
-  deployment inputs, but their recipient configuration is private.
+  as `hermes-sops.pub` in the private repository. Per-host encrypted payloads
+  live there too, under `hosts/*/secrets.sops.yaml` and
+  `hosts/*/luks.sops.yaml`; the public repository contains only references to
+  those files through the private flake input.
 - The flake references `nixos-config-private` as
   `github:pschmitt/nixos-config-private`, a normal flake input pinned in
   `flake.lock`; it follows the top-level `nixpkgs`. Fetching it requires a

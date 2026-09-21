@@ -60,6 +60,11 @@ The public checkout and private configuration repository are separate. Set
 `PRIVATE_CONFIG_DIR` to the local `nixos-config-private` checkout when using
 host-initialization, SOPS, or Tofu tooling.
 
+Host-specific SOPS payloads (`hosts/*/*.sops.yaml`) and generated SSH host
+data are stored in the private repository and consumed through the
+`nixos-config-private` flake input; the public checkout intentionally contains
+no host secret ciphertexts.
+
 To create a new host:
 
 1. Add it to [flake.nix](./flake.nix)

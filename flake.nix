@@ -534,10 +534,6 @@
                 pass_filenames = false;
                 entry = "${pkgs.gitleaks}/bin/gitleaks git --staged --redact --no-banner --config .gitleaks.toml";
               };
-              pre-commit-hook-ensure-sops = {
-                enable = true;
-                files = ".+.sops.yaml$";
-              };
             };
           };
         }
