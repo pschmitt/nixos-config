@@ -64,6 +64,36 @@ let
       env.API_ACCESS_TOKEN.file = tokenFile;
     };
 
+  # TREK uses OAuth client credentials for unattended MCP clients. Keep the
+  # client credentials in SOPS and read them only when the proxy starts.
+  mcpOAuthProxy =
+    {
+      url,
+      tokenUrl,
+      clientIdFile,
+      clientSecretFile,
+    }:
+    let
+      proxy = pkgs.writeShellApplication {
+        name = "mcp-trek";
+        runtimeInputs = [ pkgs.coreutils ];
+        text = ''
+          client_id=$(<${lib.escapeShellArg clientIdFile})
+          client_secret=$(<${lib.escapeShellArg clientSecretFile})
+          exec ${pkgs.mcp-proxy}/bin/mcp-proxy \
+            --transport streamablehttp \
+            --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
+            --client-id "$client_id" \
+            --client-secret "$client_secret" \
+            --token-url ${lib.escapeShellArg tokenUrl} \
+            ${lib.escapeShellArg url}
+        '';
+      };
+    in
+    {
+      command = lib.getExe proxy;
+    };
+
 in
 {
   options.custom.aiSkills.extraSources = lib.mkOption {
@@ -99,6 +129,14 @@ in
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
+        "trek/mcp/client-id" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
+        "trek/mcp/client-secret" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
         # GEC Slack workspace user token (xoxp-...), lets the Slack MCP server
         # read/post as Philipp's own Slack identity rather than a bot user.
         "slack/gec-chat/xoxp-token" = {
@@ -124,6 +162,12 @@ in
         home-assistant = mcpHttpProxy {
           url = "https://ha.${domainName}/api/mcp";
           tokenFile = config.sops.secrets."home-assistant/token".path;
+        };
+        trek = mcpOAuthProxy {
+          url = "https://trek.${domainName}/mcp";
+          tokenUrl = "https://trek.${domainName}/oauth/token";
+          clientIdFile = config.sops.secrets."trek/mcp/client-id".path;
+          clientSecretFile = config.sops.secrets."trek/mcp/client-secret".path;
         };
         obsidian = {
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
