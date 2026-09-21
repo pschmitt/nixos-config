@@ -113,6 +113,15 @@ in
           proxy_read_timeout 3600;
         '';
       };
+      trek = {
+        port = 32037;
+        hosts = [ (mkHost "trek") ];
+        monitoring = {
+          path = "/api/health";
+          expectedHttpStatusCode = 200;
+          restart.systemdUnit = config.virtualisation.oci-containers.containers.trek.serviceName;
+        };
+      };
       # traefik = {
       #   port = 8723; # http: 18723
       #   default = true;
