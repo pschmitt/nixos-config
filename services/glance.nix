@@ -619,6 +619,12 @@ let
 
   radarrHost = "https://rad.arr.${domain}";
   sonarrHost = "https://son.arr.${domain}";
+  # VPN-confinement exposes the Arr API ports on rofl-11's NetBird address.
+  # Use that mesh path for server-side widget requests instead of traversing
+  # the public Authelia-protected vhosts. Keep the public hosts above for
+  # links opened in the browser.
+  radarrApiHost = "http://rofl-11.${config.domains.netbird}:7878";
+  sonarrApiHost = "http://rofl-11.${config.domains.netbird}:8989";
 
   # Both start/end dates are computed at render time (now/offsetNow inside
   # the template itself, not baked into a static `parameters` value
@@ -632,14 +638,14 @@ let
   upcomingReleasesTemplate = ''
     {{ $start := now | formatTime "DateOnly" }}
     {{ $end := offsetNow "336h" | formatTime "DateOnly" }}
-    {{ $sonarr := newRequest "${sonarrHost}/api/v3/calendar"
+    {{ $sonarr := newRequest "${sonarrApiHost}/api/v3/calendar"
         | withHeader "X-Api-Key" "''${SONARR_API_KEY}"
         | withParameter "start" $start
         | withParameter "end" $end
         | withParameter "unmonitored" "false"
         | withParameter "includeSeries" "true"
         | getResponse }}
-    {{ $radarr := newRequest "${radarrHost}/api/v3/calendar"
+    {{ $radarr := newRequest "${radarrApiHost}/api/v3/calendar"
         | withHeader "X-Api-Key" "''${RADARR_API_KEY}"
         | withParameter "start" $start
         | withParameter "end" $end
