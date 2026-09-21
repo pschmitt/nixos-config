@@ -31,6 +31,7 @@ in
     ./hardware-configuration.nix
 
     ../../profiles/roles/workstation.nix
+    ../../profiles/roles/lan-mouse-peer.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix
@@ -54,15 +55,12 @@ in
     programs.noctalia.settings.plugin_settings."pschmitt/fan-control".thermal_zone = "thermal_zone1";
 
     # ge2 sits to the left of gk4.
-    services.lan-mouse = {
-      enable = true;
-      peers = [
-        {
-          name = "ge2";
-          position = "left";
-        }
-      ];
-    };
+    services.lan-mouse.peers = [
+      {
+        name = "ge2";
+        position = "left";
+      }
+    ];
   };
 
   hardware.cattle = false;

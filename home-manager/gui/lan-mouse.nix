@@ -174,6 +174,18 @@ in
       description = "Input capture backend override (--capture-backend). Null uses lan-mouse's auto-detection.";
     };
 
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = ''
+        Whether lan-mouse.service starts automatically via
+        graphical-session.target. When false, the package, config and
+        systemd units are still deployed -- only the automatic start is
+        skipped, so it can still be started manually with
+        `systemctl --user start lan-mouse.service`.
+      '';
+    };
+
     notifyOnSwitch = lib.mkOption {
       type = lib.types.bool;
       # lan-mouse fires this per-client "enter hook" locally as the mouse
@@ -310,7 +322,7 @@ in
         RestartSec = 1;
       };
 
-      Install.WantedBy = [ "graphical-session.target" ];
+      Install.WantedBy = lib.optionals cfg.autoStart [ "graphical-session.target" ];
     };
 
     # See releaseWatcherScript's own comment: the only way to react to
