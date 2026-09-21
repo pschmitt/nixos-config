@@ -1,5 +1,14 @@
 { lib, pkgs, ... }:
 let
+  thermals = pkgs.writeShellApplication {
+    name = "fnuc-thermals";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.lm_sensors
+    ];
+    text = builtins.readFile ./scripts/thermals.sh;
+  };
+
   fnucNetworkHealth = pkgs.writeShellScript "fnuc-network-health" ''
     set -o pipefail
 
@@ -34,6 +43,9 @@ let
 in
 {
   services.monit.config = lib.mkAfter ''
+    check program "thermals" with path "${thermals}/bin/fnuc-thermals 90"
+      if status > 0 for 5 cycles then alert
+
     # The e1000e driver can report carrier up while its TX ring is wedged.
     # Keep this alert-only: recovery may require diagnosis or a reboot.
     check program "fnuc wired network health" with path "${fnucNetworkHealth}"
