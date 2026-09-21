@@ -63,9 +63,6 @@
     <graphics type='vnc' port='5900' autoport='no' listen='127.0.0.1'>
       <listen type='address' address='127.0.0.1'/>
     </graphics>
-    <graphics type='spice' autoport='yes'>
-      <listen type='address'/>
-    </graphics>
     <video>
       <model type='virtio' heads='1' primary='yes'/>
     </video>
