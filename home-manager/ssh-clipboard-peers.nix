@@ -4,6 +4,7 @@ let
     "fnuc"
     "ge2"
     "gk4"
+    "lrz"
   ];
   allPeers = map (name: {
     inherit name;
