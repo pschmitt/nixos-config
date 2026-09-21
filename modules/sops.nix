@@ -1,10 +1,16 @@
-{ lib, config, ... }:
+{
+  config,
+  inputs,
+  lib,
+  ...
+}:
 
 {
   options.custom = {
     sopsFile = lib.mkOption {
       type = lib.types.path;
-      default = ../hosts/${config.networking.hostName}/secrets.sops.yaml;
+      default =
+        inputs.nixos-config-private.outPath + "/hosts/${config.networking.hostName}/secrets.sops.yaml";
       description = "Host-specific SOPS file (overrides the shared default).";
     };
 

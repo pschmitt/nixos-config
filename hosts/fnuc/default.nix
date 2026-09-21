@@ -74,7 +74,7 @@
 
   host = {
     # fnuc's host-specific secrets (MQTT creds wired by the go-hass-agent module)
-    sopsFile = ./secrets.sops.yaml;
+    sopsFile = inputs.nixos-config-private.outPath + "/hosts/fnuc/secrets.sops.yaml";
     stateVersion = "26.05";
     manageAuthorizedKeys = true;
   };

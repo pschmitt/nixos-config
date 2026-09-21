@@ -84,7 +84,7 @@ in
             # abergmann is also in it) -- use a dedicated group so FBQ admin
             # status is scoped to just the Authelia users actually meant to
             # administer this app (currently only pschmitt; see
-            # authelia/users-database in hosts/rofl-10/secrets.sops.yaml).
+            # authelia/users-database in the private rofl-10 secrets file).
             adminGroup: "filebrowser-admin"
             clientId: "filebrowser-quantum"
             clientSecret: "${config.sops.placeholder."filebrowser-quantum/oidc-client-secret"}"

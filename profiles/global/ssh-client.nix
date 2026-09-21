@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   pkgs,
   ...
 }:
@@ -16,11 +17,11 @@ let
     "${host}.netbird.cloud"
   ];
 
-  # NOTE ssh-hosts.generated.json is generated using
+  # NOTE data/ssh-hosts.generated.json is generated using
   # nixos-config-private/secrets/ssh-gen-known-hosts.sh.
   generatedHostKeys =
     let
-      p = ./ssh-hosts.generated.json;
+      p = inputs.nixos-config-private.outPath + "/data/ssh-hosts.generated.json";
     in
     if builtins.pathExists p then builtins.fromJSON (builtins.readFile p) else { };
 

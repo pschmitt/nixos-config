@@ -14,6 +14,7 @@ let
   signalCliDataDir = "${config.services.hermes-agent.stateDir}/.signal-cli";
   gpgHome = "${config.services.hermes-agent.stateDir}/.gnupg";
   ghConfigRoot = "${config.services.hermes-agent.stateDir}/.config/gh";
+  rofl10SecretsFile = inputs.nixos-config-private.outPath + "/hosts/rofl-10/secrets.sops.yaml";
   sopsAgeKeyFile = config.sops.secrets."age/hermes-sops/keys.txt".path;
   hermesOpsDir = "${config.services.hermes-agent.stateDir}/ops";
   hermesNixFlakeDir = "${config.services.hermes-agent.workingDirectory}/nixos-config";
@@ -199,19 +200,19 @@ in
         mode = "0400";
       };
       "gpg/hermes/privateKey" = {
-        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "gpg/hermes/passphrase" = {
-        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "ssh/hermes-sops/privateKey" = {
-        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
@@ -223,13 +224,13 @@ in
       # profiles/global/users/hermes.nix) and on fnuc for mainUser
       # (fnuc has no NixOS user module, see hosts/fnuc/default.nix).
       "ssh/hermes/privateKey" = {
-        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
       "age/hermes-sops/keys.txt" = {
-        sopsFile = ../hosts/rofl-10/secrets.sops.yaml;
+        sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
