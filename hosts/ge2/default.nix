@@ -67,6 +67,7 @@ in
         "pschmitt/obs-studio" = {
           panel_show_record_button = false;
           panel_show_stream_button = false;
+          mic_input_name = "mic";
           # home-manager/gui/obs-studio.nix's "obs-studio-custom" desktop entry
           # (our custom launch flags), not the plain `obs` binary this setting
           # defaults to.
@@ -105,51 +106,51 @@ in
     services.go-hass-agent.enableWorkCommands = true;
 
     # Declarative custom-buttons config for the plugin's panel (read-only,
-    # same base-file convention as pschmitt/ha's ha.yaml) -- wraps the
-    # existing obs-control verbs already bound to hyprland keys (see
-    # home-manager/gui/hyprland/conf/keys.nix and pkgs/local/obs-control).
+    # same base-file convention as pschmitt/ha's ha.yaml) -- host-specific
+    # commands stay here instead of being dependencies of the generic plugin.
     xdg.configFile."noctalia/obs-studio.yaml" = {
       force = true;
       text = ''
         buttons:
           - label: BRB
             icon: coffee
-            obs_control: brb
+            command: [obs-control, brb]
             active_scene: "🚬 brb"
             bg: "#f4a340"
             fg: "#1a1200"
           - label: Webcam
             icon: camera
-            obs_control: webcam
+            command: [obs-control, webcam]
             active_scene: "📹 Webcam"
             bg: "#3b82f6"
             fg: "#ffffff"
           - label: Alt cam
             icon: rotate-clockwise
-            obs_control: alt
+            command: [obs-control, alt]
             active_scene: "👣 Alternative Camera"
             bg: "#8b5cf6"
             fg: "#ffffff"
           - label: Freeze
             icon: snowflake
-            filter_source: Webcam
-            filter_name: Freeze
+            command: [obs-control, toggle-freeze]
+            state_filter_source: Webcam
+            state_filter_name: Freeze
             bg: "#38bdf8"
             fg: "#04232f"
           - label: Replay
             icon: repeat
-            obs_control: replay
+            command: [obs-control, replay]
             active_scene: "🔄 Replay"
             bg: "#14b8a6"
             fg: "#06231e"
           - label: Thumbs up
             icon: thumb-up
-            obs_control: thumbs-up
+            command: [obs-control, thumbs-up]
             bg: "#22c55e"
             fg: "#052e12"
           - label: Dislike
             icon: thumb-down
-            obs_control: thumbs-down
+            command: [obs-control, thumbs-down]
             bg: "#ef4444"
             fg: "#2a0505"
           - label: Roomba
