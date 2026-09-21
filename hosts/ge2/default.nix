@@ -24,7 +24,6 @@ in
     ../../profiles/work/elgato-stream-deck.nix
 
     ../../profiles/roles/workstation.nix
-    ../../profiles/roles/lan-mouse-peer.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
   ];
@@ -116,16 +115,19 @@ in
           - label: BRB
             icon: coffee
             obs_control: brb
+            active_scene: "🚬 brb"
             bg: "#f4a340"
             fg: "#1a1200"
           - label: Webcam
             icon: camera
             obs_control: webcam
+            active_scene: "📹 Webcam"
             bg: "#3b82f6"
             fg: "#ffffff"
           - label: Alt cam
             icon: rotate-clockwise
             obs_control: alt
+            active_scene: "👣 Alternative Camera"
             bg: "#8b5cf6"
             fg: "#ffffff"
           - label: Freeze
@@ -137,6 +139,7 @@ in
           - label: Replay
             icon: repeat
             obs_control: replay
+            active_scene: "🔄 Replay"
             bg: "#14b8a6"
             fg: "#06231e"
           - label: Thumbs up
@@ -158,11 +161,15 @@ in
     };
 
     # gk4 sits to the right of ge2.
-    services.lan-mouse.peers = [
-      {
-        name = "gk4";
-        position = "right";
-      }
-    ];
+    services.lan-mouse = {
+      enable = true;
+      autoStart = false;
+      peers = [
+        {
+          name = "gk4";
+          position = "right";
+        }
+      ];
+    };
   };
 }
