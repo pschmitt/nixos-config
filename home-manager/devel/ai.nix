@@ -76,16 +76,22 @@ let
     let
       proxy = pkgs.writeShellApplication {
         name = "mcp-trek";
-        runtimeInputs = [ pkgs.coreutils ];
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.jq
+        ];
         text = ''
           client_id=$(<${lib.escapeShellArg clientIdFile})
           client_secret=$(<${lib.escapeShellArg clientSecretFile})
-          exec ${pkgs.mcp-proxy}/bin/mcp-proxy \
+          access_token=$(curl --fail-with-body --silent --show-error \
+            --data-urlencode grant_type=client_credentials \
+            --data-urlencode client_id="$client_id" \
+            --data-urlencode client_secret="$client_secret" \
+            ${lib.escapeShellArg tokenUrl} | jq --exit-status --raw-output .access_token)
+          API_ACCESS_TOKEN="$access_token" exec ${pkgs.mcp-proxy}/bin/mcp-proxy \
             --transport streamablehttp \
             --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
-            --client-id "$client_id" \
-            --client-secret "$client_secret" \
-            --token-url ${lib.escapeShellArg tokenUrl} \
             ${lib.escapeShellArg url}
         '';
       };
