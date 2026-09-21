@@ -12,21 +12,33 @@ let
   trekVersion = "4.3.0";
 in
 {
-  sops.secrets."trek/encryption-key" = config.custom.mkSecret {
-    mode = "0400";
-    restartUnits = [ "${containerBackend}-trek.service" ];
-  };
+  sops = {
+    secrets."trek/encryption-key" = config.custom.mkSecret {
+      mode = "0400";
+      restartUnits = [ "${containerBackend}-trek.service" ];
+    };
 
-  sops.templates."trek/env" = {
-    content = ''
-      ENCRYPTION_KEY=${config.sops.placeholder."trek/encryption-key"}
-      ALLOWED_ORIGINS=https://${trekHost}
-      APP_URL=https://${trekHost}
-      TRUST_PROXY=1
-      TZ=${config.time.timeZone}
-    '';
-    mode = "0400";
-    restartUnits = [ "${containerBackend}-trek.service" ];
+    secrets."trek/smtp-password" = config.custom.mkSecret {
+      mode = "0400";
+      restartUnits = [ "${containerBackend}-trek.service" ];
+    };
+
+    templates."trek/env" = {
+      content = ''
+        ENCRYPTION_KEY=${config.sops.placeholder."trek/encryption-key"}
+        ALLOWED_ORIGINS=https://${trekHost}
+        APP_URL=https://${trekHost}
+        TRUST_PROXY=1
+        TZ=${config.time.timeZone}
+        SMTP_HOST=mail.${config.domains.main}
+        SMTP_PORT=465
+        SMTP_USER=trek@${config.domains.main}
+        SMTP_PASS=${config.sops.placeholder."trek/smtp-password"}
+        SMTP_FROM=TREK <trek@${config.domains.main}>
+      '';
+      mode = "0400";
+      restartUnits = [ "${containerBackend}-trek.service" ];
+    };
   };
 
   systemd.tmpfiles.rules = [
