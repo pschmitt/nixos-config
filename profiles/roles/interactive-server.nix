@@ -6,7 +6,6 @@
 {
   imports = [
     ../server
-    ../server/interactive/dotfiles.nix
     ../server/interactive/syncthing.nix
   ];
 
