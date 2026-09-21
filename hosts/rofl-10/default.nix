@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -81,6 +82,17 @@
   sops.secrets."hass/sshfs/private-key" = config.custom.mkSecret {
     mode = "0400";
   };
+
+  # Same reasoning for services/luks-ssh-unlock-fleet.nix: rofl-10 unlocks
+  # the rest of the fleet as a dedicated identity instead of the personal
+  # key, so its public half is what's trusted fleet-wide (see that module's
+  # users.users.root.openssh.authorizedKeys.keys entry).
+  sops.secrets."luks-ssh-unlock/rofl-10-identity" = {
+    sopsFile = inputs.nixos-config-private.outPath + "/hosts/rofl-10/secrets.sops.yaml";
+    key = "luks-ssh-unlock-identity";
+    mode = "0400";
+  };
+  custom.luksSshUnlockFleet.selfKeyPath = config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path;
   custom = {
     promptColor = "#0B87CA"; # nextcloud blue
     homeAssistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;

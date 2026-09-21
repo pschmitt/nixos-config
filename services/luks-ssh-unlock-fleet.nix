@@ -38,7 +38,9 @@ let
     {
       name = "oci-01";
       hostname = "oci-01.brkn.lol";
-      hasInitrdCheck = false;
+      # oci-01 was migrated from Ubuntu to full NixOS; it now has its own
+      # initrd SSH host keys and is unlockable like the rest of the fleet.
+      hasInitrdCheck = true;
       healthcheckCmd = "mount | grep encrypted";
     }
     {
@@ -82,96 +84,168 @@ let
   # Each importing host unlocks every other fleet member, not itself.
   otherTargets = lib.filter (target: target.name != config.networking.hostName) targets;
 
-  # Cloud hosts get a dedicated key instead of the personal one, so their
-  # root filesystem never needs to hold a copy of it. See the
-  # luks-ssh-unlock-identity entry in the private rofl-10 secrets file; its
-  # public half is trusted below via
+  # Most importers authenticate as themselves with the personal key. Cloud
+  # hosts that shouldn't hold a copy of it override this option instead (see
+  # hosts/rofl-10/default.nix); its public half is trusted below via
   # users.users.root.openssh.authorizedKeys.keys.
-  selfSshKey =
-    if config.networking.hostName == "rofl-10" then
-      config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path
-    else
-      "/home/pschmitt/.ssh/id_ed25519";
+  selfSshKey = config.custom.luksSshUnlockFleet.selfKeyPath;
 
-  cfgDirFor = target: target.configDir or "/srv/luks-ssh-unlock/config/${target.name}";
+  # Every target's own secrets.sops.yaml already backs up its regular and
+  # initrd SSH host public keys (recorded there for disaster recovery), but
+  # that file also holds unrelated per-host secrets (personal SSH private
+  # key, tokens, ...) with a recipient list scoped to that host alone --
+  # widening it so other fleet members could decrypt just the pubkeys would
+  # over-grant access to everything else in it. luks.sops.yaml is already
+  # narrowly scoped to LUKS-unlock material and already lists exactly the
+  # hosts that need it (fnuc, lrz, rofl-10 -- the only importers of this
+  # module), so the pubkeys are copied there instead (same bytes, correctly
+  # scoped file) and referenced from there, rendered via sops.templates so a
+  # target's key rotation flows through automatically (with a matching
+  # service restart) instead of relying on a hand-bootstrapped file under
+  # /srv.
+  luksSecretsFile =
+    target: inputs.nixos-config-private.outPath + "/hosts/${target.name}/luks.sops.yaml";
 
-  createInstance =
+  pubkeySecret = target: keySet: algo: {
+    name = "ssh/${target.name}/${keySet}/${algo}/pubkey";
+    value = {
+      sopsFile = luksSecretsFile target;
+      key = "ssh/${keySet}/${algo}/pubkey";
+    };
+  };
+
+  secretsForTarget =
     target:
-    let
-      cDir = cfgDirFor target;
-    in
-    {
-      type = "systemd";
-      inherit (target) hostname;
-      key = selfSshKey;
-      passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
-      sshKnownHostsFile = "${cDir}/known_hosts";
-      initrdKnownHostsFile = "${cDir}/known_hosts_initrd";
-
-      forceIpv4 = true;
-      sleepInterval = 30;
-
-      initrdCheck = {
-        enable = target.hasInitrdCheck;
-        # `dir` is where a fresh signed baseline gets scp'd to on every
-        # successful healthcheck (fetch_initrd_checksum); the module derives
-        # the read-back path (`file`) from dir+hostname automatically.
-        dir = "/srv/luks-ssh-unlock/data/initrd-checksum";
-        paranoid = true;
-        requireSignature = true;
-      };
-
-      healthcheck = {
-        enable = true;
-        command = target.healthcheckCmd;
-      };
-
-      notifications = {
-        enable = true;
-        mail = {
-          enable = true;
-          recipient = config.mainUser.email;
-          from = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
-          subject = "LUKS SSH Unlocker: #hostname -> #event_type";
+    [
+      {
+        name = "luks/${target.name}/passphrase";
+        value = {
+          sopsFile = luksSecretsFile target;
+          key = "luks/root";
         };
+      }
+      (pubkeySecret target "host_keys" "ed25519")
+      (pubkeySecret target "host_keys" "rsa")
+    ]
+    ++ lib.optionals target.hasInitrdCheck [
+      (pubkeySecret target "initrd_host_keys" "ed25519")
+      (pubkeySecret target "initrd_host_keys" "rsa")
+    ];
+
+  # A known_hosts line just needs "<hostname> <keytype> <base64key>"; the
+  # backed-up pubkey secrets are already full "<keytype> <base64key> ..."
+  # lines, so prefixing the target's connection hostname is enough.
+  knownHostsTemplate =
+    target: keySet:
+    lib.concatMapStringsSep "\n"
+      (
+        algo: "${target.hostname} " + config.sops.placeholder."ssh/${target.name}/${keySet}/${algo}/pubkey"
+      )
+      [
+        "ed25519"
+        "rsa"
+      ]
+    + "\n";
+
+  templatesForTarget =
+    target:
+    [
+      {
+        name = "luks-ssh-unlock/${target.name}/known_hosts";
+        value = {
+          content = knownHostsTemplate target "host_keys";
+          restartUnits = [ "luks-ssh-unlock-${target.name}.service" ];
+        };
+      }
+    ]
+    ++ lib.optionals target.hasInitrdCheck [
+      {
+        name = "luks-ssh-unlock/${target.name}/known_hosts_initrd";
+        value = {
+          content = knownHostsTemplate target "initrd_host_keys";
+          restartUnits = [ "luks-ssh-unlock-${target.name}.service" ];
+        };
+      }
+    ];
+
+  createInstance = target: {
+    type = "systemd";
+    inherit (target) hostname;
+    key = selfSshKey;
+    passphraseFile = config.sops.secrets."luks/${target.name}/passphrase".path;
+    sshKnownHostsFile = config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts".path;
+    initrdKnownHostsFile =
+      if target.hasInitrdCheck then
+        config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts_initrd".path
+      else
+        null;
+
+    forceIpv4 = true;
+    sleepInterval = 30;
+
+    initrdCheck = {
+      enable = target.hasInitrdCheck;
+      # `dir` is where a fresh signed baseline gets scp'd to on every
+      # successful healthcheck (fetch_initrd_checksum); the module derives
+      # the read-back path (`file`) from dir+hostname automatically.
+      dir = "/srv/luks-ssh-unlock/data/initrd-checksum";
+      paranoid = true;
+      requireSignature = true;
+    };
+
+    healthcheck = {
+      enable = true;
+      command = target.healthcheckCmd;
+    };
+
+    notifications = {
+      enable = true;
+      mail = {
+        enable = true;
+        recipient = config.mainUser.email;
+        from = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
+        subject = "LUKS SSH Unlocker: #hostname -> #event_type";
       };
     };
+  };
 in
 {
   imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
 
-  # Fleet-internal trust: rofl-10's dedicated unlock identity (see
-  # selfSshKey above) is authorized as root on every fleet member.
-  users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock"
-  ];
+  options.custom.luksSshUnlockFleet.selfKeyPath = lib.mkOption {
+    type = lib.types.path;
+    default = "/home/pschmitt/.ssh/id_ed25519";
+    description = ''
+      SSH private key this host authenticates as when unlocking other fleet
+      members. Cloud hosts that shouldn't hold a copy of the personal key
+      override this with a dedicated identity instead (see
+      hosts/rofl-10/default.nix).
+    '';
+  };
 
-  # SOPS secrets: read LUKS passphrases from each target host's private file.
-  sops.secrets =
-    lib.listToAttrs (
-      map (target: {
-        name = "luks/${target.name}/passphrase";
-        value = {
-          sopsFile = inputs.nixos-config-private.outPath + "/hosts/${target.name}/luks.sops.yaml";
-          key = "luks/root";
-        };
-      }) otherTargets
-    )
-    // lib.optionalAttrs (config.networking.hostName == "rofl-10") {
-      "luks-ssh-unlock/rofl-10-identity" = {
-        sopsFile = inputs.nixos-config-private.outPath + "/hosts/rofl-10/secrets.sops.yaml";
-        key = "luks-ssh-unlock-identity";
-        mode = "0400";
-      };
+  config = {
+    # Fleet-internal trust: rofl-10's dedicated unlock identity (see the
+    # custom.luksSshUnlockFleet.selfKeyPath override in hosts/rofl-10) is
+    # authorized as root on every fleet member.
+    users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock"
+    ];
+
+    # SOPS secrets: LUKS passphrase and SSH host pubkeys from each target
+    # host's own private files.
+    sops.secrets = lib.listToAttrs (lib.concatMap secretsForTarget otherTargets);
+
+    # Rendered known_hosts files, one pair (regular + initrd) per target.
+    sops.templates = lib.listToAttrs (lib.concatMap templatesForTarget otherTargets);
+
+    services.luks-ssh-unlock = {
+      enable = true;
+      instances = lib.listToAttrs (
+        map (target: {
+          inherit (target) name;
+          value = createInstance target;
+        }) otherTargets
+      );
     };
-
-  services.luks-ssh-unlock = {
-    enable = true;
-    instances = lib.listToAttrs (
-      map (target: {
-        inherit (target) name;
-        value = createInstance target;
-      }) otherTargets
-    );
   };
 }
