@@ -635,8 +635,19 @@ let
   # `parameters` widget properties can't reference template functions.
   # Poster art uses gjson's `#(coverType=="poster")` array query since
   # images.0 isn't reliably the poster.
+  #
+  # Releases are badged so imminent drops stand out:
+  # - Today: solid accent pill badge ("Today"), 2px primary border ring around poster,
+  #   and "Today" in color-primary with font-weight 600 in the subtitle.
+  # - Tomorrow: outlined accent pill badge ("Tomorrow") and "Tomorrow" in color-base.
+  # - In 2 days: countdown pill badge ("D-2") in Jellyfin cyan.
+  # - In 3+ days: countdown pill badge ("D-3", "D-4", ...) in slate gray.
   upcomingReleasesTemplate = ''
-    {{ $start := now | formatTime "DateOnly" }}
+    {{ $today := now | formatTime "DateOnly" }}
+    {{ $tomorrow := offsetNow "24h" | formatTime "DateOnly" }}
+    {{ if eq $tomorrow $today }}{{ $tomorrow = offsetNow "25h" | formatTime "DateOnly" }}{{ end }}
+    {{ $todayStart := startOfDay now }}
+    {{ $start := $today }}
     {{ $end := offsetNow "336h" | formatTime "DateOnly" }}
     {{ $sonarr := newRequest "${sonarrApiHost}/api/v3/calendar"
         | withHeader "X-Api-Key" "''${SONARR_API_KEY}"
@@ -658,10 +669,32 @@ let
         <div class="size-h6 color-base margin-bottom-10">TV</div>
         <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
         {{ range $tvItems }}
+          {{ $airDateStr := printf "%.10s" (.String "airDateUtc") }}
+          {{ if not $airDateStr }}{{ $airDateStr = .String "airDate" }}{{ end }}
+          {{ $isToday := eq $airDateStr $today }}
+          {{ $isTomorrow := eq $airDateStr $tomorrow }}
+          {{ $days := -1 }}
+          {{ if and (not $isToday) (not $isTomorrow) $airDateStr }}
+            {{ $diffHours := ((parseLocalTime "DateOnly" $airDateStr).Sub $todayStart).Hours }}
+            {{ if ge $diffHours 0.0 }}
+              {{ $days = toInt (div (add $diffHours 12) 24) }}
+            {{ end }}
+          {{ end }}
           <a href="${sonarrHost}" target="_blank" rel="noreferrer" style="flex:0 0 auto;width:130px;text-decoration:none;color:inherit">
-            <img src="{{ .String "series.images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block" alt="" onerror="this.style.visibility='hidden'" />
+            <div style="position:relative">
+              <img src="{{ .String "series.images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block{{ if $isToday }};box-shadow:0 0 0 2px var(--color-primary){{ end }}" alt="" onerror="this.style.visibility='hidden'" />
+              {{ if $isToday }}
+                <span style="position:absolute;top:6px;right:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
+              {{ else if $isTomorrow }}
+                <span style="position:absolute;top:6px;right:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
+              {{ else if eq $days 2 }}
+                <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $days }}</span>
+              {{ else if gt $days 2 }}
+                <span style="position:absolute;top:6px;right:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $days }}</span>
+              {{ end }}
+            </div>
             <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "series.title" }}</div>
-            <div class="size-h6 color-subdue text-truncate">S{{ .Int "seasonNumber" }}:E{{ .Int "episodeNumber" }} · {{ printf "%.10s" (.String "airDateUtc") }}</div>
+            <div class="size-h6 {{ if $isToday }}color-primary{{ else if $isTomorrow }}color-base{{ else }}color-subdue{{ end }} text-truncate"{{ if $isToday }} style="font-weight:600"{{ end }}>S{{ .Int "seasonNumber" }}:E{{ .Int "episodeNumber" }} · {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ $airDateStr }}{{ end }}</div>
           </a>
         {{ end }}
         </div>
@@ -675,10 +708,38 @@ let
         <div class="size-h6 color-base margin-bottom-10 margin-top-15">Movies</div>
         <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
         {{ range $movieItems }}
+          {{ $movieDate := printf "%.10s" (.String "inCinemas") }}
+          {{ if or (not $movieDate) (lt $movieDate $start) }}
+            {{ if and (.String "digitalRelease") (ge (printf "%.10s" (.String "digitalRelease")) $start) }}
+              {{ $movieDate = printf "%.10s" (.String "digitalRelease") }}
+            {{ else if and (.String "physicalRelease") (ge (printf "%.10s" (.String "physicalRelease")) $start) }}
+              {{ $movieDate = printf "%.10s" (.String "physicalRelease") }}
+            {{ end }}
+          {{ end }}
+          {{ $isMovieToday := eq $movieDate $today }}
+          {{ $isMovieTomorrow := eq $movieDate $tomorrow }}
+          {{ $movieDays := -1 }}
+          {{ if and (not $isMovieToday) (not $isMovieTomorrow) $movieDate }}
+            {{ $diffHours := ((parseLocalTime "DateOnly" $movieDate).Sub $todayStart).Hours }}
+            {{ if ge $diffHours 0.0 }}
+              {{ $movieDays = toInt (div (add $diffHours 12) 24) }}
+            {{ end }}
+          {{ end }}
           <a href="${radarrHost}" target="_blank" rel="noreferrer" style="flex:0 0 auto;width:130px;text-decoration:none;color:inherit">
-            <img src="{{ .String "images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block" alt="" onerror="this.style.visibility='hidden'" />
+            <div style="position:relative">
+              <img src="{{ .String "images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block{{ if $isMovieToday }};box-shadow:0 0 0 2px var(--color-primary){{ end }}" alt="" onerror="this.style.visibility='hidden'" />
+              {{ if $isMovieToday }}
+                <span style="position:absolute;top:6px;right:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
+              {{ else if $isMovieTomorrow }}
+                <span style="position:absolute;top:6px;right:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
+              {{ else if eq $movieDays 2 }}
+                <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $movieDays }}</span>
+              {{ else if gt $movieDays 2 }}
+                <span style="position:absolute;top:6px;right:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $movieDays }}</span>
+              {{ end }}
+            </div>
             <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "title" }}</div>
-            <div class="size-h6 color-subdue text-truncate">{{ printf "%.10s" (.String "inCinemas") }}</div>
+            <div class="size-h6 {{ if $isMovieToday }}color-primary{{ else if $isMovieTomorrow }}color-base{{ else }}color-subdue{{ end }} text-truncate"{{ if $isMovieToday }} style="font-weight:600"{{ end }}>{{ if $isMovieToday }}Today{{ else if $isMovieTomorrow }}Tomorrow{{ else }}{{ if $movieDate }}{{ $movieDate }}{{ else }}{{ printf "%.10s" (.String "inCinemas") }}{{ end }}{{ end }}</div>
           </a>
         {{ end }}
         </div>
@@ -975,7 +1036,7 @@ in
                     type = "custom-api";
                     title = "Upcoming Releases";
                     hide-header = true;
-                    cache = "6h";
+                    cache = "1h";
                     template =
                       mkWidgetHeader {
                         title = "Upcoming Releases";
