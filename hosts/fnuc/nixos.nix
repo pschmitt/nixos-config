@@ -23,6 +23,7 @@
     ../../services/nix-distributed-build.nix
 
     ./backups.nix
+    ./monit.nix
     ./nfs.nix
     ./networking.nix
     ./hass-vm.nix
