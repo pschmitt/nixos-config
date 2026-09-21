@@ -24,6 +24,7 @@ in
     ../../profiles/work/elgato-stream-deck.nix
 
     ../../profiles/roles/workstation.nix
+    ../../profiles/roles/lan-mouse-peer.nix
 
     ../../services/initrd-luks-ssh-unlock.nix
   ];
@@ -157,14 +158,11 @@ in
     };
 
     # gk4 sits to the right of ge2.
-    services.lan-mouse = {
-      enable = true;
-      peers = [
-        {
-          name = "gk4";
-          position = "right";
-        }
-      ];
-    };
+    services.lan-mouse.peers = [
+      {
+        name = "gk4";
+        position = "right";
+      }
+    ];
   };
 }
