@@ -37,12 +37,15 @@
     ipv6AcceptRAConfig.RouteMetric = 2048;
   };
 
-  # The onboard Intel I219-LM occasionally wedges its TX ring with EEE
-  # enabled.  Keep EEE disabled before systemd-networkd configures the
-  # interface; this avoids the e1000e "Detected Hardware Unit Hang" loop
-  # that previously took down the host and its bridged HA VM.
-  systemd.services.e1000e-eno1-eee-off = {
-    description = "Disable EEE on fnuc's Intel e1000e interface";
+  # The onboard Intel I219-LM occasionally wedges its TX ring, surfacing as
+  # e1000e "Detected Hardware Unit Hang" and taking down the host and its
+  # bridged HA VM until a hard reboot. Disabling EEE alone did not stop the
+  # recurrence (still hit it after ~20h uptime with EEE off), so also
+  # disable TSO/GSO/GRO segmentation offload, the most commonly effective
+  # workaround reported for this I219 TX-hang bug. Keep both disabled
+  # before systemd-networkd configures the interface.
+  systemd.services.e1000e-eno1-workarounds = {
+    description = "Disable EEE and segmentation offload on fnuc's Intel e1000e interface";
     wantedBy = [
       "network-pre.target"
       "sys-subsystem-net-devices-eno1.device"
@@ -53,7 +56,10 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.ethtool}/bin/ethtool --set-eee eno1 eee off";
+      ExecStart = [
+        "${pkgs.ethtool}/bin/ethtool --set-eee eno1 eee off"
+        "${pkgs.ethtool}/bin/ethtool -K eno1 tso off gso off gro off"
+      ];
     };
   };
 }
