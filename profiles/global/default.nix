@@ -6,6 +6,7 @@
 {
   imports = [
     ../network
+    ./android.nix
     ./appimage.nix
     ./atd.nix
     ./boot.nix

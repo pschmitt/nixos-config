@@ -27,6 +27,8 @@
     ./nfs.nix
     ./networking.nix
     ./hass-vm.nix
+
+    ../../profiles/roles/homelab-server.nix
   ];
 
   services = {

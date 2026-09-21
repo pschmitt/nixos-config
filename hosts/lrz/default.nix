@@ -55,6 +55,8 @@
 
     # FNUC-018: fnuc -> lrz migration presync + safety guard
     ./fnuc-migration.nix
+
+    ../../profiles/roles/homelab-server.nix
   ];
 
   services = {
