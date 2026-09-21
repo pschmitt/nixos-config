@@ -21,6 +21,7 @@
     ./ansible.nix
     ./boot.nix
     ./firewall.nix
+    ./interactive/dotfiles.nix
     ./monit.nix
     ./networking.nix
     ./restic.nix
