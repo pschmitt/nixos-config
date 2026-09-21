@@ -5,15 +5,18 @@ default:
   @just --list
 
 sops-config-gen *args:
-  ./private/secrets/sops-config-gen.sh {{args}}
+  #!/usr/bin/env bash
+  set -euo pipefail
+  private_root="${PRIVATE_CONFIG_DIR:-$PWD/private}"
+  NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/sops-config-gen.sh" {{args}}
 
 # Set/edit a value in a SOPS file by dotted path.
 #   just sops-edit FILE PATH VALUE
 # VALUE is taken literally, or read from a file with the `file:` prefix.
 # Examples:
-#   just sops-edit private/secrets/nixos-shared.sops.yaml httpd.password 'mysecret1234' # gitleaks:allow
-#   just sops-edit private/secrets/nixos-shared.sops.yaml users.pschmitt.password file:./hash.txt
-#   just sops-edit private/secrets/nixos-shared.sops.yaml ssh.hosts.0 'first-array-entry'
+#   just sops-edit "$PRIVATE_CONFIG_DIR/secrets/nixos-shared.sops.yaml" httpd.password 'mysecret1234' # gitleaks:allow
+#   just sops-edit "$PRIVATE_CONFIG_DIR/secrets/nixos-shared.sops.yaml" users.pschmitt.password file:./hash.txt
+#   just sops-edit "$PRIVATE_CONFIG_DIR/secrets/nixos-shared.sops.yaml" ssh.hosts.0 'first-array-entry'
 alias sops-set := sops-edit
 sops-edit file path value:
   #!/usr/bin/env bash
@@ -38,6 +41,13 @@ sops-edit file path value:
       SOPS_AGE_KEY="$(ssh-to-age --private-key -i "$HOME/.ssh/id_ed25519")"
       export SOPS_AGE_KEY
     fi
+  fi
+
+  private_root="${PRIVATE_CONFIG_DIR:-$PWD/private}"
+  if [[ ! -f "$private_root/.sops.yaml" ]]
+  then
+    echo "error: private SOPS config not found at $private_root/.sops.yaml; set PRIVATE_CONFIG_DIR" >&2
+    exit 1
   fi
 
   # Resolve the value. `file:<path>` reads the contents verbatim, otherwise
@@ -87,7 +97,7 @@ sops-edit file path value:
   fi
 
   echo "Setting ${sops_path} in ${file}" >&2
-  "${sops_cmd[@]}" set "$file" "$sops_path" "$json_value"
+  "${sops_cmd[@]}" --config "$private_root/.sops.yaml" set "$file" "$sops_path" "$json_value"
 
 repl host='':
   ./scripts/nix.sh repl "{{host}}"
@@ -130,7 +140,10 @@ nixfmt:
 
 alias tofu-fmt := fmt-tofu
 fmt-tofu:
-  tofu -chdir=private/tofu fmt
+  #!/usr/bin/env bash
+  set -euo pipefail
+  private_root="${PRIVATE_CONFIG_DIR:-$PWD/private}"
+  tofu -chdir="$private_root/tofu" fmt
 
 fmt: nixfmt fmt-tofu
   @echo "Formatted nix files and tofu configs"
@@ -294,7 +307,10 @@ fetch-proprietary-garbage *args:
   ./scripts/fetch-proprietary-garbage.sh {{args}}
 
 tofu *args:
-  ./private/tofu/tofu.sh {{args}}
+  #!/usr/bin/env bash
+  set -euo pipefail
+  private_root="${PRIVATE_CONFIG_DIR:-$PWD/private}"
+  NIXOS_CONFIG_DIR="$PWD" "$private_root/tofu/tofu.sh" {{args}}
 
 alias tofu-deploy-all := tofu-yolo
 tofu-yolo host='' *args:

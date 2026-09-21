@@ -56,39 +56,45 @@ device entrypoint lives in
 
 ## Deploying a new host
 
+The public checkout and private configuration repository are separate. Set
+`PRIVATE_CONFIG_DIR` to the local `nixos-config-private` checkout when using
+host-initialization, SOPS, or Tofu tooling.
+
 To create a new host:
 
 1. Add it to [flake.nix](./flake.nix)
 2. Create the config files:
 
 ```shell
-./scripts/init-host-config.sh $NEW_HOST
+PRIVATE_CONFIG_DIR=/path/to/nixos-config-private \
+  ./scripts/init-host-config.sh "$NEW_HOST"
 ```
 
-3. Update [./private/tofu/dns-dynamic.tf](./private/tofu/dns-dynamic.tf)
+3. Update `tofu/dns-dynamic.tf` in the private configuration repository.
 
 4. Add to `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
 
 5. Deploy:
 
 ```shell
-./private/tofu/tofu.sh init
-./private/tofu/tofu.sh apply -target=module.nix-${NEW_HOST}
+PRIVATE_CONFIG_DIR=/path/to/nixos-config-private just tofu init
+PRIVATE_CONFIG_DIR=/path/to/nixos-config-private \
+  just tofu apply -target=module.nix-${NEW_HOST}
 ```
 
 ## Removing a host
 
 1. Remove its config from:
 - [flake.nix](./flake.nix)
-- [./private/tofu/dns-dynamic.tf](./private/tofu/dns-dynamic.tf)
+- `tofu/dns-dynamic.tf` in the private configuration repository
 
 2. Remove from `/srv/luks-ssh-unlock/docker-compose.yaml` (@fnuc)
 
 3.
 ```shell
 HOST_TO_REMOVE=xxx
-rm -rf "./hosts/$HOST_TO_REMOVE" "./private/tofu/${HOST_TO_REMOVE}.tf"
-./private/secrets/sops-config-gen.sh --github-username pschmitt --auto
+rm -rf "./hosts/$HOST_TO_REMOVE" "/path/to/nixos-config-private/tofu/${HOST_TO_REMOVE}.tf"
+PRIVATE_CONFIG_DIR=/path/to/nixos-config-private just sops-config-gen --github-username pschmitt --auto
 ```
 
 ## Updating custom packages
