@@ -20,8 +20,7 @@ If using local rbw and it is locked, invoke the `rbw` skill first.
 Notes:
 - Handle retrieved credentials as secrets and do not commit them to the
   repository.
-- The service configuration lives in
-  [`services/bichon.nix`](/etc/nixos/services/bichon.nix).
+- The service configuration lives in `services/bichon.nix` in `nixos-config`.
 
 ## API
 
