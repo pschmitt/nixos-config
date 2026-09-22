@@ -105,7 +105,7 @@ in
   };
 
   # Trust the n8n container network like the default docker0 bridge already
-  # is (see profiles/global/docker.nix), so n8n can reach host-only services
+  # is (see profiles/base/docker.nix), so n8n can reach host-only services
   # (e.g. searxng) via host.docker.internal without exposing them publicly.
   networking.firewall.trustedInterfaces = lib.mkAfter [ containerNetworkBridgeName ];
 

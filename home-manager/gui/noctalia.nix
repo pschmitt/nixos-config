@@ -10,7 +10,7 @@ let
 in
 {
   # Module import only: `programs.noctalia.enable` is opt-in per host (see
-  # profiles/laptop/noctalia.nix).
+  # profiles/specializations/laptop/noctalia.nix).
   imports = [
     inputs.noctalia.homeModules.default
   ];

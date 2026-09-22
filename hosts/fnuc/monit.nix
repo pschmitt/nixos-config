@@ -1,13 +1,9 @@
 {
-  config,
   lib,
   pkgs,
   ...
 }:
 let
-  hassDomain = config.services.home-assistant-vm.domainName;
-  virsh = "${pkgs.libvirt}/bin/virsh -c qemu:///system";
-
   thermals = pkgs.writeShellApplication {
     name = "fnuc-thermals";
     runtimeInputs = [
@@ -59,19 +55,5 @@ in
     check program "fnuc wired network health" with path "${fnucNetworkHealth}"
       group network
       if status > 0 for 2 cycles then alert
-
-    check process "libvirt ${hassDomain}" with pidfile /var/run/libvirt/qemu/${hassDomain}.pid
-      start program "${virsh} start ${hassDomain}"
-      stop program "${virsh} stop ${hassDomain}"
-
-    check host "libvirt ${hassDomain} (net)" with address 10.5.1.1
-      start program "${virsh} start ${hassDomain}"
-      stop program "${virsh} stop ${hassDomain}"
-      if failed icmp type echo count 5 with timeout 30 seconds then restart
-
-    check host "hass-fnuc" with address 10.5.1.1
-      if failed port 8123 for 5 cycles then alert
-      if failed port 1883 for 5 cycles then alert
-      if failed port 8883 for 5 cycles then alert
   '';
 }

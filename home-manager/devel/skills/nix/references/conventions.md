@@ -6,11 +6,11 @@
 - `modules/`: Shared NixOS modules and custom option definitions.
 - `modules/home-manager/`: Shared Home Manager modules.
 - `home-manager/`: User-level Home Manager configurations.
-- `common/`: Shared base *platform layers* — the machine class/capability a host
-  *is* (`global`, `server`, `gui`, `laptop`, `network`, `work`), imported
-  explicitly and forming a transitive hierarchy.
-- `profiles/`: Reusable host *roles* — groupings of service imports shared
-  by more than one host (see "Host composition" below).
+- `profiles/base/`: The common machine baseline.
+- `profiles/features/`: Optional capabilities such as networking, desktop, and
+  work tooling.
+- `profiles/specializations/`: Machine classes and reusable host roles.
+- `services/`: Service modules, including reusable Home Manager user services.
 - `pkgs/`: Custom package definitions.
 - `overlays/`: Nixpkgs overlays.
 - `hardware/`: Hardware-specific configuration snippets.
@@ -85,23 +85,22 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
 
 ## Host composition
 
-- Hosts import `common/<category>` snippets plus the services they run.
-- When **two or more hosts share a service grouping**, extract it into
-  `profiles/roles/<role>.nix` and have those hosts import the role (e.g.
-  `profiles/roles/tdarr-node.nix` shared by rofl-13/rofl-14,
-  `profiles/roles/workstation.nix` shared by ge2/gk4/x13). A role is a pure
-  `imports` aggregator with a one-line header comment. Don't create a profile
-  for a single-host stack — that is just indirection.
+- Compose hosts from `profiles/base/`, relevant `profiles/features/`,
+  `profiles/specializations/`, and host-local modules. Keep each `default.nix`
+  focused on a readable import list rather than large module bodies.
+- Reusable multi-host compositions belong under
+  `profiles/specializations/<name>/`; for example, `tdarr-node/` is shared by
+  rofl-13/rofl-14 and `workstation/` by ge2/gk4/x13. Avoid one-host-only
+  aggregators that add indirection without expressing a reusable concept.
 
 ## Home Manager
 
-- There is **one** shared home config tree, used both as a NixOS submodule
-  (ge2/gk4/x13/lrz) and standalone (fnuc, non-NixOS). It is **`osConfig`-free**:
+- There is **one** shared home config tree, used as a NixOS submodule (fnuc/ge2/gk4/lrz/x13). It is **`osConfig`-free**:
   modules read host facts from `config.host.*`, `config.mainUser`,
   `config.domains`, or the `hostname` specialArg — never `osConfig`.
 - Host facts (`config.host.*`, declared in `home-manager/host.nix`) are fed by
   the bridge in `home-manager/default.nix` (integrated, from the NixOS `config`)
-  or set explicitly in the host module (standalone). Add new facts there rather
+  A future standalone configuration can set facts explicitly. Add new facts there rather
   than reaching into system state.
 - A fact that gates an **`import`** (not just config) must be a specialArg (e.g.
   `guiEnable`, `bluetoothEnable`) — referencing `config` in `imports` causes an

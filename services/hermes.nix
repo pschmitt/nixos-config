@@ -221,8 +221,8 @@ in
       # separate from ssh/nix-remote-builder/privkey so a leaked Hermes
       # credential doesn't also carry Nix distributed-build trust. Authorized
       # on rofl-13/rofl-14 for the dedicated hermes account (see
-      # profiles/global/users/hermes.nix) and on fnuc for mainUser
-      # (fnuc has no NixOS user module, see hosts/fnuc/default.nix).
+      # profiles/base/users/hermes.nix), and on fnuc for its dedicated hermes
+      # account from that same shared user module.
       "ssh/hermes/privateKey" = {
         sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
@@ -587,7 +587,7 @@ in
       # through this same bot account via its /api/v1/rpc JSON-RPC endpoint.
       # This is still not exposed publicly: tailscale0/nb-netbird-io are the
       # only interfaces in networking.firewall.trustedInterfaces (see
-      # profiles/network/{tailscale,netbird}.nix), every other interface stays
+      # profiles/features/network/{tailscale,netbird}.nix), every other interface stays
       # behind the default-deny firewall.
       signal-cli-daemon = {
         description = "signal-cli JSON-RPC daemon for Hermes";
@@ -721,7 +721,7 @@ in
   # signal-cli-daemon above binds 0.0.0.0 so Home Assistant can reach it over
   # the mesh, relying on tailscale0/nb-netbird-io being in
   # networking.firewall.trustedInterfaces (see
-  # profiles/network/{tailscale,netbird}.nix) -- packets arriving on those
+  # profiles/features/network/{tailscale,netbird}.nix) -- packets arriving on those
   # interfaces are accepted before this rule is ever reached. This host's
   # firewall uses the nftables backend (services/networking/firewall-nftables.nix),
   # where extraInputRules is appended to the input-allow chain, i.e. it only

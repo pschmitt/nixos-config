@@ -1,6 +1,4 @@
 _: {
-  hardware.cattle = false;
-
   services.restic.backups.main = {
     paths = [
       "/srv"

@@ -441,37 +441,6 @@
             ];
         };
 
-      mkHome =
-        hostname:
-        {
-          system,
-          modules ? [ ],
-          homeModule ? ./hosts/${hostname},
-          # Import-gating facts (mirrors the NixOS bridge in
-          # home-manager/default.nix); standalone hosts default to headless.
-          guiEnable ? false,
-          bluetoothEnable ? false,
-        }:
-        inputs.home-manager.lib.homeManagerConfiguration {
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-            overlays = builtins.attrValues outputs.overlays;
-          };
-
-          extraSpecialArgs = {
-            inherit
-              inputs
-              outputs
-              hostname
-              guiEnable
-              bluetoothEnable
-              ;
-          };
-
-          modules = modules ++ [ homeModule ];
-        };
-
       mkNixOnDroid =
         hostname:
         {
@@ -561,13 +530,6 @@
       # These are usually stuff you would upstream into home-manager
       homeManagerModules = import ./modules/home-manager;
 
-      homeConfigurations = rec {
-        fnuc = mkHome "fnuc" {
-          system = "x86_64-linux";
-        };
-        pschmitt = fnuc;
-      };
-
       nixOnDroidConfigurations = rec {
         zf10 = mkNixOnDroid "zf10" { };
         default = zf10;
@@ -611,7 +573,7 @@
                 system = "x86_64-linux";
                 deviceType = "server";
                 homeManager = true;
-                hostModule = ./hosts/fnuc/nixos.nix;
+                hostModule = ./hosts/fnuc;
               };
               rofl-10 = {
                 system = "x86_64-linux";

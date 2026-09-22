@@ -10,7 +10,7 @@
     # Interactive laptop base: global + GUI infra + Hyprland/GNOME under GDM +
     # laptop role features + work bundle + restic. Add extra desktops via
     # profiles/desktop-*.nix if needed.
-    ../../profiles/roles/workstation.nix
+    ../../profiles/specializations/workstation
 
     ../../services/initrd-luks-ssh-unlock.nix
     ../../services/nixos-installer-boot-entry.nix

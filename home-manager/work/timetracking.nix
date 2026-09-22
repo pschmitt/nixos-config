@@ -23,7 +23,7 @@ in
   ];
 
   # Same values as the interactive shell's xdg.zsh (see also the noctalia
-  # plugin's own TIMEWARRIORDB override, profiles/laptop/noctalia.nix) —
+  # plugin's own TIMEWARRIORDB override, profiles/specializations/laptop/noctalia.nix) —
   # systemd user services do not inherit the interactive shell's exports.
   systemd.user.services.taskwarrior-sync = {
     Unit.Description = "Sync taskwarrior and timewarrior";

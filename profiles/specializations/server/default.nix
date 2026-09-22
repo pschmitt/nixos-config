@@ -1,0 +1,50 @@
+# See also: https://github.com/nix-community/srvos
+{
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
+{
+  imports = [
+    ../../base
+    ../../features/network
+    ../../../services/mail
+
+    ../../base/users/github-actions.nix
+    ../../base/users/nix-remote-builder.nix
+    ../../../services/autoupgrade.nix
+    ../../../services/initrd-luks-ssh-unlock.nix
+
+    ../../../hardware/openstack-wiit.nix
+    ../../../hardware/oci.nix
+
+    ./ansible.nix
+    ./boot.nix
+    ./firewall.nix
+    ./interactive/dotfiles.nix
+    ./monit.nix
+    ./networking.nix
+    ./restic.nix
+    ./snapper.nix
+  ];
+
+  hardware.type = lib.mkDefault "server";
+  hardware.biosBoot = lib.mkDefault true;
+
+  custom.syncthing.server = true;
+
+  services.dbus.implementation = "broker";
+
+  programs.nix-index-database.comma.enable = true;
+
+  environment.systemPackages = with pkgs; [
+    curl
+    dnsutils
+    gitMinimal
+    htop
+    jq
+    tmux
+    inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
+  ];
+}

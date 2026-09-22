@@ -2,23 +2,15 @@
 
 Description: tdb.
 
-## Home Manager on `fnuc`
+## NixOS on `fnuc`
 
-`fnuc` is a standalone Home Manager target for a headless Fedora host.
-
-Apply it with:
+`fnuc` is a full NixOS host. Deploy it with the repository helper:
 
 ```shell
-NIX_CONFIG='experimental-features = nix-command flakes' \
-nix run github:nix-community/home-manager -- switch --flake '.#fnuc'
+just deploy fnuc
 ```
 
-To verify that the configuration evaluates:
-
-```shell
-nix --extra-experimental-features 'nix-command flakes' \
-  eval '.#homeConfigurations.fnuc.activationPackage.drvPath'
-```
+When running directly on `fnuc`, use `just deploy` without a target argument.
 
 ## Nix-on-Droid on `zf10`
 

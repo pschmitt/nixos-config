@@ -6,9 +6,8 @@
     description = ''
       Hermes agent's SSH public key (see services/hermes.nix). Shared so it
       is defined once and reused by every module that authorizes it:
-      profiles/global/users/hermes.nix, profiles/global/users/nix-remote-builder.nix,
-      and hosts/fnuc/default.nix (fnuc has no NixOS user module, so Hermes
-      logs in as mainUser there instead of its own dedicated account).
+      profiles/base/users/hermes.nix, profiles/base/users/nix-remote-builder.nix,
+      and the same shared user module on fnuc.
     '';
   };
 }

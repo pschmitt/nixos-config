@@ -19,7 +19,7 @@ in
 
   # host = "0.0.0.0" plus openFirewall = false relies entirely on the
   # tailscale/netbird mesh being in networking.firewall.trustedInterfaces
-  # (see profiles/network/{tailscale,netbird}.nix) -- this is a personal
+  # (see profiles/features/network/{tailscale,netbird}.nix) -- this is a personal
   # sync server, never meant to be reachable from anywhere else. Make that
   # explicit instead of depending solely on listenPort never ending up in
   # allowedTCPPorts.

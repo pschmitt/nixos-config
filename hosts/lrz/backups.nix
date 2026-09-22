@@ -1,9 +1,5 @@
 { pkgs, ... }:
 {
-  # FNUC-015: This host holds persistent service data. This also enables the
-  # shared restic service and its existing host-specific runtime SOPS secrets.
-  hardware.cattle = false;
-
   services.restic.backups.main = {
     # The migration coordinator creates this lock as pschmitt:users. Wrap the
     # actual restic process: backupPrepareCommand runs in a separate process
@@ -13,7 +9,7 @@
         /var/lib/fnuc-migration/lock ${pkgs.restic}/bin/restic "$@"
     '';
 
-    # /etc, /var/lib and the main user's home come from profiles/server/restic.
+    # /etc, /var/lib and the main user's home come from profiles/specializations/server/restic.
     paths = [
       "/srv"
       "/mnt/sda1"

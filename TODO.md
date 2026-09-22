@@ -21,5 +21,5 @@ explicit.
 
 Status: Open
 
-Keep `profiles/roles/workstation.nix` as a pure imports aggregator, moving shared
+Keep `profiles/specializations/workstation/default.nix` as a pure imports aggregator, moving shared
 Home Manager, zram, Nix, and systemd tuning into an appropriately named module.

@@ -1,0 +1,3 @@
+{
+  custom.promptColor = "yellow";
+}

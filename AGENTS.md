@@ -16,7 +16,7 @@
 - Prefer committing only verified, working changes.
 - To deploy changes to a host, run `just deploy TARGET_HOST`.
   - Check `hostname` first: if the current machine is the target host, omit the argument (`just deploy`) to build and switch locally without SSH/rsync.
-- fnuc has been migrated to full NixOS (see `hosts/fnuc/nixos.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
+- fnuc has been migrated to full NixOS (see `hosts/fnuc/default.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
 - `just hm` (or `just hm <hostname>`) applies a *standalone* Home Manager `homeConfigurations.<hostname>` profile for a non-NixOS host, rsyncing the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem. There is currently no such host in this flake — `homeConfigurations.fnuc` predates fnuc's NixOS migration and is stale/unused; do not point users at it.
 
 ## Private configuration repository
@@ -36,7 +36,7 @@
   `github:pschmitt/nixos-config-private`, a normal flake input pinned in
   `flake.lock`; it follows the top-level `nixpkgs`. Fetching it requires a
   GitHub token. Every host gets one through `access-tokens` in `nix.conf`
-  (system-level via `profiles/global/nix/secrets.nix`, user-level via
+  (system-level via `profiles/base/nix/secrets.nix`, user-level via
   `home-manager/devel/nix.nix`). Do not remove that plumbing or replace the
   GitHub input with `path:./private`.
 - Edit the private repository through its separate local checkout when needed.
@@ -72,15 +72,31 @@
   should really be a NixOS-side option in `modules/` first.
 
 ## Host composition
-- `profiles/` is the single composition point for host composition. It contains
-  foundational layers (`profiles/global/`, `profiles/network/`) and
-  machine-class directories (`profiles/server/`, `profiles/gui/`,
-  `profiles/laptop/`, `profiles/work/`). Reusable multi-host roles live under
-  `profiles/roles/` (for example `profiles/roles/workstation.nix` and
-  `profiles/roles/tdarr-node.nix`). A role aggregator groups imports shared by
-  **2+ hosts**.
-- Don't create a profile for a single-host stack — that is just indirection;
-  keep those imports inline in the host's `default.nix`.
+- `profiles/base/` is the common baseline. Optional capabilities live under
+  `profiles/features/` (for example `network/`, `desktop/`, and `work/`), while
+  machine classes and reusable host roles live under
+  `profiles/specializations/` (for example `server/`, `laptop/`,
+  `workstation/`, and `homelab-server/`).
+- Keep every NixOS host's `hosts/<host>/default.nix` as its concise composition
+  entrypoint. Avoid special-case entrypoint names such as `nixos.nix`; point the
+  flake at the host directory or its `default.nix`.
+- In a host `default.nix`, list shared profiles/features/roles first, then a
+  blank line, then host-local modules. Sort imports alphabetically within each
+  group. Keep this grouping consistent when adding imports.
+- Keep Nix files focused on one capability or responsibility. Split host
+  configuration into small, cohesive modules when that makes ownership clearer;
+  do not scatter settings into arbitrary files or create modules that only add
+  indirection. Keep each host `default.nix` import-focused and put related imports
+  inside the module that owns that capability where practical (for example, an
+  initrd Wi-Fi module should import its initrd SSH-unlock service).
+- When reorganizing host modules, preserve the evaluated configuration: do not
+  accidentally enable, disable, omit, or unprovision services. Verify that
+  extracted settings and imports remain reachable from the host entrypoint. Keep
+  module contents and service configuration unchanged when reorganizing imports;
+  never omit an existing service just to shorten an import list.
+- Don't create a specialization for a single-host stack unless it is a
+  deliberate reusable concept; shared service groupings are appropriate when
+  used by **2+ hosts**.
 - Avoid host-specific conditionals in shared modules, profiles, or services.
   Do not branch on `config.networking.hostName`, expressions like
   `config.networking.hostName == "..."`, Home Manager `hostname`, or similar
@@ -88,9 +104,10 @@
 - If shared code needs host-varying behavior, prefer adding a dedicated module
   option and setting it from the relevant host config instead of inspecting the
   host identity inside the shared module.
-- Put host-specific overrides in the relevant `hosts/<host>/default.nix` or
-  standalone Home Manager host entrypoint instead. Shared modules should expose
-  reusable options/defaults, not embed per-host exceptions.
+- Put host-specific overrides in a host-local module imported by
+  `hosts/<host>/default.nix` (or the standalone Home Manager entrypoint).
+  Shared modules should expose reusable options/defaults, not embed per-host
+  exceptions.
 
 ## NetBox
 - When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.

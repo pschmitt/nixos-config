@@ -1,6 +1,6 @@
 # host.* — system facts the home config needs, kept osConfig-free so the same
 # modules work both as a NixOS submodule (facts fed by the bridge in
-# ./default.nix) and standalone (facts set explicitly, e.g. hosts/fnuc).
+# ./default.nix) and standalone (facts set explicitly by the host module).
 { inputs, lib, ... }:
 {
   options.host = {
@@ -116,7 +116,7 @@
       default = [ ];
       description = ''
         Outputs Noctalia's custom lockscreen_widgets (see
-        profiles/laptop/noctalia.nix) should be duplicated onto, with each
+        profiles/specializations/laptop/noctalia.nix) should be duplicated onto, with each
         one's real logical size. Noctalia has no "show on every output"
         widget mode of its own (that's bespoke-coded for its login_box only,
         not generic widgets), so getting the same layout on every screen

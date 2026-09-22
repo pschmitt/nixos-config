@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 {
   # Access tokens for the user's own (unprivileged) nix commands.
-  # The system-level GitHub token in profiles/global/nix/secrets.nix is
+  # The system-level GitHub token in profiles/base/nix/secrets.nix is
   # rendered root-only, so it only helps root/nix-daemon invocations (eg.
   # `sudo nixos-rebuild`), not plain `nix build`/`nix flake update` run as
   # this user — those hit GitHub's anonymous API rate limit instead.

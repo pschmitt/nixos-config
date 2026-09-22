@@ -10,7 +10,7 @@
     };
   };
 
-  # lrz doesn't import profiles/gui, so the font package isn't pulled in
+  # lrz doesn't import profiles/features/desktop, so the font package isn't pulled in
   # implicitly like it is for the laptop hosts this kmscon config is copied from.
   fonts.packages = [ pkgs.ComicCode ];
 
