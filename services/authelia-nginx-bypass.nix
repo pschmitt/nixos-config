@@ -3,29 +3,11 @@
   lib,
   ...
 }:
-let
-  forceBypassHeaderSecret = config.custom.authelia.forceBypassHeaderSecret;
-  forceBypassMapEntry = lib.optionalString (forceBypassHeaderSecret != null) ''
-    "${config.sops.placeholder.${forceBypassHeaderSecret}}" 1;
-  '';
-in
 {
-  options.custom.authelia.forceBypassHeaderSecret = lib.mkOption {
-    type = lib.types.nullOr lib.types.str;
-    default = null;
-    description = ''
-      Name of the SOPS secret whose exact value in the X-Authelia-Bypass
-      header bypasses Authelia on nginx vhosts using the standard auth-request
-      snippet. This is a bearer credential and should only be enabled for a
-      host where that risk is understood.
-    '';
-  };
-
   config = {
     sops.secrets."nginx/ha_ingress_key" = {
       owner = config.services.nginx.user;
     };
-
     # HA's ingress integration proxies these apps server-side and attaches a
     # shared Bearer token (set via the ingress `headers:` config). nginx skips
     # Authelia when that token is present. The HA *proxy* (not the browser) sends
@@ -39,7 +21,9 @@ in
           default                                                      0;
         }
         map $http_x_authelia_bypass $authelia_force_header_bypass {
-          ${forceBypassMapEntry}
+          ${lib.optionalString (builtins.hasAttr "authelia/forceBypassHeader" config.sops.secrets) ''
+            "${config.sops.placeholder."authelia/forceBypassHeader"}" 1;
+          ''}
           default 0;
         }
       '';
