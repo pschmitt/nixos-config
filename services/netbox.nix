@@ -36,13 +36,13 @@ let
 in
 {
   sops.secrets = {
-    "netbox/secretKey" = config.custom.mkSecret {
+    "netbox/secretKey" = config.sops.mkHostSecret {
       owner = "netbox";
       group = "netbox";
       mode = "0400";
       restartUnits = [ "netbox.service" ];
     };
-    "netbox/apiTokenPeppers" = config.custom.mkSecret {
+    "netbox/apiTokenPeppers" = config.sops.mkHostSecret {
       owner = "netbox";
       group = "netbox";
       mode = "0400";

@@ -13,12 +13,12 @@ let
 in
 {
   sops = {
-    secrets."trek/encryption-key" = config.custom.mkSecret {
+    secrets."trek/encryption-key" = config.sops.mkHostSecret {
       mode = "0400";
       restartUnits = [ "${containerBackend}-trek.service" ];
     };
 
-    secrets."trek/smtp-password" = config.custom.mkSecret {
+    secrets."trek/smtp-password" = config.sops.mkHostSecret {
       mode = "0400";
       restartUnits = [ "${containerBackend}-trek.service" ];
     };

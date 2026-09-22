@@ -20,9 +20,9 @@ let
         in
         {
           sopsSecrets = acc.sopsSecrets // {
-            "${baseSecretPath}/faces/${name}" = config.custom.mkSecret {
+            "${baseSecretPath}/faces/${name}" = config.sops.mkHostSecret {
             };
-            "${baseSecretPath}/albums/${name}" = config.custom.mkSecret {
+            "${baseSecretPath}/albums/${name}" = config.sops.mkHostSecret {
             };
           };
 
@@ -73,7 +73,7 @@ let
       )
       {
         sopsSecrets = {
-          "${baseSecretPath}/apiKey" = config.custom.mkSecret {
+          "${baseSecretPath}/apiKey" = config.sops.mkHostSecret {
           };
         };
         sopsTemplates = { };

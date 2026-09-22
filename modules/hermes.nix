@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  options.custom.hermes.sshPublicKey = lib.mkOption {
+  options.services.hermes.sshPublicKey = lib.mkOption {
     type = lib.types.str;
     default = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOuMa/MglO4MOXG9mALoFZQHnpe67vgP5wZGSOKGQs7/ hermes@nixos-config";
     description = ''

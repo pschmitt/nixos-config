@@ -7,11 +7,11 @@
 {
   config = lib.mkIf (!config.hardware.cattle) {
     sops.secrets = {
-      "restic/env" = config.custom.mkSecret {
+      "restic/env" = config.sops.mkHostSecret {
       };
-      "restic/password" = config.custom.mkSecret {
+      "restic/password" = config.sops.mkHostSecret {
       };
-      "restic/repository" = config.custom.mkSecret {
+      "restic/repository" = config.sops.mkHostSecret {
       };
     };
 

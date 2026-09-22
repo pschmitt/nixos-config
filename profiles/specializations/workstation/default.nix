@@ -27,7 +27,7 @@
     ../../../services/autoupgrade.nix
   ];
 
-  custom.nixosConfigSymlink.enable = true;
+  system.nixosConfigSymlink.enable = true;
 
   # Install the nixos-upgrade service on laptops, but don't schedule it —
   # unlike servers, laptops upgrade on demand (systemctl start

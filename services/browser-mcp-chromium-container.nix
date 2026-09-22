@@ -19,7 +19,7 @@ let
   pgid = 1000;
   # browser.<host>.<mesh domain>, via the shared helper so this and the Glance
   # dashboard expose mesh names the same way.
-  meshHosts = config.custom.meshHosts "browser";
+  meshHosts = config.domains.meshHosts "browser";
   primaryHost = builtins.head meshHosts;
   serverAliases = builtins.tail meshHosts;
   # haIngressBypass = false: that test needs a map from

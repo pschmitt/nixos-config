@@ -8,7 +8,7 @@ let
   # syncthingtui auto-discovers its API key/address from a local user's own
   # config.xml, but rofl-10's Syncthing runs as the system "syncthing" user
   # -- not reachable that way when pschmitt runs it over SSH. Reuse the
-  # api_key custom.syncthingTui below already resolves into
+  # api_key services.syncthing.tui below already resolves into
   # ~/.config/stui/config.yaml instead of re-deriving it separately.
   syncthingtuiWrapped = pkgs.writeShellScriptBin "syncthingtui" ''
     set -euo pipefail
@@ -26,57 +26,59 @@ in
     ../../modules/syncthing/tui.nix
   ];
 
-  custom.syncthingTui = {
-    enable = true;
-    user = config.mainUser.username;
-    homeDirectory = config.mainUser.homeDirectory;
-    configXml = "/var/lib/syncthing/.config/syncthing/config.xml";
-  };
-
   environment.systemPackages = [
     syncthingtuiWrapped
     pkgs.stui
   ];
 
-  custom.syncthing = {
-    folders = {
-      documents = {
-        label = "Documents";
-        dir = "/mnt/data/srv/syncthing/documents";
-        devices = documentsDevices;
-        # Allow this server to push local edits back out, unlike the
-        # receive-only default for other folders.
-        type = "sendreceive";
-      };
-      music = {
-        label = "Music";
-        dir = "/mnt/data/srv/syncthing/music";
-        devices = personalDevices;
-      };
-      pictures = {
-        label = "Pictures";
-        dir = "/mnt/data/srv/syncthing/pictures";
-        devices = personalDevices;
-      };
-      backups = {
-        label = "Backups";
-        dir = "/mnt/data/srv/syncthing/backups";
-        devices = personalDevices;
+  services = {
+    syncthing.tui = {
+      enable = true;
+      user = config.mainUser.username;
+      homeDirectory = config.mainUser.homeDirectory;
+      configXml = "/var/lib/syncthing/.config/syncthing/config.xml";
+    };
+
+    syncthing.declarative = {
+      folders = {
+        documents = {
+          label = "Documents";
+          dir = "/mnt/data/srv/syncthing/documents";
+          devices = documentsDevices;
+          # Allow this server to push local edits back out, unlike the
+          # receive-only default for other folders.
+          type = "sendreceive";
+        };
+        music = {
+          label = "Music";
+          dir = "/mnt/data/srv/syncthing/music";
+          devices = personalDevices;
+        };
+        pictures = {
+          label = "Pictures";
+          dir = "/mnt/data/srv/syncthing/pictures";
+          devices = personalDevices;
+        };
+        backups = {
+          label = "Backups";
+          dir = "/mnt/data/srv/syncthing/backups";
+          devices = personalDevices;
+        };
       };
     };
-  };
 
-  services.nginx.virtualHosts."sync.${config.domains.main}" = {
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-    basicAuthFile = config.sops.secrets."htpasswd".path;
+    nginx.virtualHosts."sync.${config.domains.main}" = {
+      enableACME = true;
+      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+      acmeRoot = null;
+      forceSSL = true;
+      basicAuthFile = config.sops.secrets."htpasswd".path;
 
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:8384";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:8384";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
+      };
     };
   };
 }

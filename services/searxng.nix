@@ -10,7 +10,7 @@ in
 {
   sops = {
     secrets = {
-      "searxng/secret-key" = config.custom.mkSecret {
+      "searxng/secret-key" = config.sops.mkHostSecret {
         restartUnits = [ "searx.service" ];
       };
     };

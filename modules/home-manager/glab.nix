@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.custom.glab;
+  cfg = config.dotfiles.glab;
   utils = import "${pkgs.path}/nixos/lib/utils.nix" {
     inherit lib config pkgs;
   };
@@ -51,7 +51,7 @@ let
   '';
 in
 {
-  options.custom.glab = {
+  options.dotfiles.glab = {
     enable = lib.mkEnableOption "glab";
 
     defaultHost = lib.mkOption {
@@ -122,7 +122,7 @@ in
 
   config = lib.mkMerge [
     {
-      custom.glab.enable = lib.mkDefault true;
+      dotfiles.glab.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       home.packages = [ pkgs.glab ];

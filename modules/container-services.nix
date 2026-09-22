@@ -23,7 +23,7 @@ let
     filter
     ;
 
-  cfg = config.custom.containerServices;
+  cfg = config.services.containerServices;
 
   autheliaDomain = "auth.${config.domains.main}";
 
@@ -506,7 +506,7 @@ let
 
 in
 {
-  options.custom.containerServices = {
+  options.services.containerServices = {
     enable = mkEnableOption "automatic container virtual host and Monit configuration";
 
     services = mkOption {

@@ -18,7 +18,7 @@
     description = lib.mkDefault "Hermes agent playwright-mcp SSH access (see services/hermes.nix)";
     group = lib.mkDefault "hermes";
     shell = lib.mkDefault pkgs.bash;
-    openssh.authorizedKeys.keys = [ config.custom.hermes.sshPublicKey ];
+    openssh.authorizedKeys.keys = [ config.services.hermes.sshPublicKey ];
   };
 
   users.groups.hermes = lib.mkDefault { };

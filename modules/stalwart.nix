@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.custom.stalwart;
+  cfg = config.services.stalwart;
   networkListenerObjects = lib.mapAttrs' (
     logicalName: listener:
     let
@@ -45,7 +45,7 @@ let
   };
 in
 {
-  options.custom.stalwart = {
+  options.services.stalwart = {
     configFile = lib.mkOption {
       type = lib.types.str;
       default = "/etc/stalwart/config.json";
@@ -95,7 +95,7 @@ in
     assertions = [
       {
         assertion = config.services.stalwart.enable;
-        message = "custom.stalwart.networkListeners requires services.stalwart.enable";
+        message = "services.stalwart.networkListeners requires services.stalwart.enable";
       }
     ];
 

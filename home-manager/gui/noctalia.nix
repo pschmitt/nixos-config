@@ -6,7 +6,7 @@
   ...
 }:
 let
-  cfg = config.custom.noctalia;
+  cfg = config.dotfiles.noctalia;
 in
 {
   # Module import only: `programs.noctalia.enable` is opt-in per host (see
@@ -15,7 +15,7 @@ in
     inputs.noctalia.homeModules.default
   ];
 
-  options.custom.noctalia.resetStateOnActivation = lib.mkOption {
+  options.dotfiles.noctalia.resetStateOnActivation = lib.mkOption {
     type = lib.types.bool;
     default = true;
     description = ''

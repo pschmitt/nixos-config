@@ -16,7 +16,7 @@
       hostname = {
         format = "@[$hostname]($style) ";
         ssh_only = false;
-        style = "bold ${config.custom.promptColor}";
+        style = "bold ${config.dotfiles.promptColor}";
       };
       directory = {
         style = "bold green";

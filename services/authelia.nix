@@ -14,7 +14,7 @@ let
   stateDir = "/var/lib/${autheliaUser}";
   secretsAttrs =
     owner:
-    config.custom.mkSecret {
+    config.sops.mkHostSecret {
       inherit owner;
       group = autheliaGroup;
       mode = "0400";
@@ -86,14 +86,14 @@ let
           domain = [ autheliaDomain ];
         }
       ]
-      ++ lib.optional (config.custom.authelia.extraTwoFactorDomains != [ ]) {
+      ++ lib.optional (config.services.authelia.extraTwoFactorDomains != [ ]) {
         # Like extraAuthenticatedDomains, but require the stronger policy for
         # applications whose control plane can execute privileged actions.
         # This precedes the mesh-wide bypass below.
         policy = "two_factor";
-        domain = config.custom.authelia.extraTwoFactorDomains;
+        domain = config.services.authelia.extraTwoFactorDomains;
       }
-      ++ lib.optional (config.custom.authelia.extraAuthenticatedDomains != [ ]) {
+      ++ lib.optional (config.services.authelia.extraAuthenticatedDomains != [ ]) {
         # Some apps have NO login of their own — they use proxy auth (e.g.
         # X-Auth-User from Authelia's Remote-User) or run with
         # AUTHENTICATIONMETHOD=External (fully trusting the proxy). Those
@@ -104,7 +104,7 @@ let
         # (HA-app access is unaffected: nginx short-circuits Authelia via the
         # ingress Bearer token before any rule is evaluated.)
         policy = "one_factor";
-        domain = config.custom.authelia.extraAuthenticatedDomains;
+        domain = config.services.authelia.extraAuthenticatedDomains;
       }
       ++ [
         {
@@ -120,7 +120,7 @@ let
           domain_regex = [ meshDomainRegex ];
         }
       ]
-      ++ config.custom.authelia.extraAccessControlRules;
+      ++ config.services.authelia.extraAccessControlRules;
     };
   };
 in

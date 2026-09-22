@@ -24,7 +24,7 @@ in
 lib.mkMerge [
   {
     # Fix permissions after UID changes (e.g., after reinstall)
-    systemd.tmpfiles.rules = lib.mkIf config.custom.httpStatic.enableDefaultSites (
+    systemd.tmpfiles.rules = lib.mkIf config.services.http-static.enableDefaultSites (
       let
         user = config.users.users.github-actions.name;
         inherit (config.services.nginx) group;
@@ -39,7 +39,7 @@ lib.mkMerge [
     );
 
     services.nginx.virtualHosts = lib.mkMerge [
-      (lib.mkIf config.custom.httpStatic.enableDefaultSites {
+      (lib.mkIf config.services.http-static.enableDefaultSites {
         "blobs.${config.domains.main}" = {
           enableACME = true;
           # FIXME https://github.com/NixOS/nixpkgs/issues/210807
@@ -149,10 +149,10 @@ lib.mkMerge [
           };
         };
       })
-      config.custom.httpStatic.extraVirtualHosts
+      config.services.http-static.extraVirtualHosts
     ];
 
-    services.monit.config = lib.mkIf config.custom.httpStatic.enableDefaultSites (
+    services.monit.config = lib.mkIf config.services.http-static.enableDefaultSites (
       lib.mkAfter ''
         check host "http-static-blobs" with address "blobs.${config.domains.main}"
           group nginx
@@ -169,31 +169,33 @@ lib.mkMerge [
   # Authelia (authelia.nix) is on this same host, so these can be spliced
   # into its access_control rules via the shared extension point instead of
   # authelia.nix hardcoding blobs-specific policy.
-  (lib.optionalAttrs (options ? custom.authelia) {
-    custom.authelia.extraAccessControlRules = lib.mkIf config.custom.httpStatic.enableDefaultSites [
-      {
-        policy = "one_factor";
-        domain = [ "blobs.${config.domains.main}" ];
-        subject = [ "group:admin" ];
-      }
-      {
-        policy = "one_factor";
-        domain = [ "blobs.${config.domains.main}" ];
-        resources = [
-          "^/private/?$"
-          "^/private/.*$"
+  (lib.optionalAttrs (lib.hasAttrByPath [ "services" "authelia" "extraAccessControlRules" ] options) {
+    services.authelia.extraAccessControlRules =
+      lib.mkIf config.services.http-static.enableDefaultSites
+        [
+          {
+            policy = "one_factor";
+            domain = [ "blobs.${config.domains.main}" ];
+            subject = [ "group:admin" ];
+          }
+          {
+            policy = "one_factor";
+            domain = [ "blobs.${config.domains.main}" ];
+            resources = [
+              "^/private/?$"
+              "^/private/.*$"
+            ];
+            subject = [
+              "group:admin"
+              "group:github-actions"
+            ];
+          }
+          # Deny any other request to blobs
+          # {
+          #   policy = "deny";
+          #   domain = [ "blobs.${config.domains.main}" ];
+          #   subject = [ "group:github-actions" ];
+          # }
         ];
-        subject = [
-          "group:admin"
-          "group:github-actions"
-        ];
-      }
-      # Deny any other request to blobs
-      # {
-      #   policy = "deny";
-      #   domain = [ "blobs.${config.domains.main}" ];
-      #   subject = [ "group:github-actions" ];
-      # }
-    ];
   })
 ]

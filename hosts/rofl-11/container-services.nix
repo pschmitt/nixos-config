@@ -12,7 +12,7 @@ in
     ../../modules/container-services.nix
   ];
 
-  custom.containerServices = {
+  services.containerServices = {
     enable = true;
     services = {
       tdarr = {

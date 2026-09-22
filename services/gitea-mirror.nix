@@ -61,7 +61,7 @@ let
 in
 {
   sops.secrets = {
-    "gitea-mirror/env" = config.custom.mkSecret {
+    "gitea-mirror/env" = config.sops.mkHostSecret {
       restartUnits = [ "${config.virtualisation.oci-containers.backend}-gitea-mirror.service" ];
     };
   };

@@ -32,7 +32,7 @@ let
     );
 in
 {
-  sops.secrets."rclone/config" = config.custom.mkSecret {
+  sops.secrets."rclone/config" = config.sops.mkHostSecret {
     mode = "0600";
   };
 

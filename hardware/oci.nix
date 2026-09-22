@@ -8,7 +8,11 @@
 {
   config = lib.mkIf (config.hardware.serverType == "oci") {
     nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
-    custom.netbirdSetupKey = lib.mkForce "oci";
+    services = {
+      netbird.setupKeyName = lib.mkForce "oci";
+      udev.path = [ pkgs.oci-consistent-device-naming ];
+      udev.packages = [ pkgs.oci-consistent-device-naming ];
+    };
     hardware = {
       # kvmGuest = true;
       biosBoot = false;
@@ -74,7 +78,5 @@
     # };
 
     # TODO Add the udev rules from ./99-systemoci-persistent-names.rules
-    services.udev.path = [ pkgs.oci-consistent-device-naming ];
-    services.udev.packages = [ pkgs.oci-consistent-device-naming ];
   };
 }

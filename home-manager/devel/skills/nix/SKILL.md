@@ -23,6 +23,6 @@ for local Codex and shell workflows.
 
 Read `AGENTS.md` in the repo root for environment setup, code style, and deployment rules.
 See `references/conventions.md` for directory layout, secrets handling, and repo
-idioms (no `with lib;`, `config.custom.mkSecret`, `writeShellApplication` + external
+idioms (no `with lib;`, `config.sops.mkHostSecret`, `writeShellApplication` + external
 scripts, `common/` layers vs top-level `profiles/`, `pkgs.formats.*`, and how to
 verify refactors).

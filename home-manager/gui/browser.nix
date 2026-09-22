@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.custom.desktop.browser;
+  cfg = config.dotfiles.desktop.browser;
   linkdingExtensionId = "{61a05c39-ad45-4086-946f-32adb0a40a9d}";
   linkdingInjectorId = "{19561335-5a63-4b4e-8182-1eced17f9b47}";
   linkdingStorage = builtins.toJSON {
@@ -23,7 +23,7 @@ in
 {
   config = lib.mkMerge [
     {
-      custom.desktop.browser.enable = lib.mkDefault true;
+      dotfiles.desktop.browser.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       home.packages = cfg.userPackages;

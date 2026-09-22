@@ -5,8 +5,8 @@
 }:
 let
   port = 6080;
-  meshHostsVnc = config.custom.meshHosts "vnc";
-  meshHostsWebVnc = config.custom.meshHosts "web-vnc";
+  meshHostsVnc = config.domains.meshHosts "vnc";
+  meshHostsWebVnc = config.domains.meshHosts "web-vnc";
   allHosts = meshHostsVnc ++ meshHostsWebVnc;
   primaryHost = builtins.head allHosts;
   serverAliases = builtins.tail allHosts;

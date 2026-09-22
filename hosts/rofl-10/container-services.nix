@@ -24,7 +24,7 @@ in
     ../../modules/container-services.nix
   ];
 
-  custom.containerServices = {
+  services.containerServices = {
     enable = true;
     defaultEnableACMEForDefaultHosts = false;
     defaultUseACMEHostForDefaultHosts = wildcardCert;

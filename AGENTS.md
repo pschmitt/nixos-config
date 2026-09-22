@@ -60,16 +60,18 @@
 - **Never** write code with trailing whitespace.
 
 ## Option naming
-- Prefer repo-owned option namespaces over generic top-level names.
-- For cross-layer features shared between NixOS and Home Manager, use
-  `custom.<domain>.*` or `custom.<domain>.<feature>.*` rather than bare names
-  like `theme.*` or `browser.*`.
-- For desktop/user-facing shared features, prefer `custom.desktop.*`.
-- For actual machine capabilities, prefer canonical hardware facts under
-  `hardware.*` and bridge them into Home Manager, rather than introducing
-  ad hoc Home Manager-only host flags.
-- Before adding a new host fact under `home-manager/host.nix`, check whether it
-  should really be a NixOS-side option in `modules/` first.
+- Put options in the namespace that owns their behavior: use native namespaces
+  such as `services.*`, `programs.*`, `hardware.*`, `domains.*`, and `system.*`.
+- Do not introduce a `custom.*` namespace. Keep repo-owned `dotfiles.*` options
+  lean and mean, reserving them for cross-layer or user-facing configuration
+  that has no more specific native namespace.
+- For features shared between NixOS and Home Manager, declare reusable options
+  in shared modules imported by both contexts and bridge system values explicitly
+  in `home-manager/default.nix`.
+- For machine capabilities, use canonical facts under `hardware.*` and bridge
+  them into Home Manager rather than introducing ad hoc host flags.
+- Before adding a host fact under `home-manager/host.nix`, check whether it
+  should instead be a NixOS-side option in `modules/`.
 
 ## Host composition
 - `profiles/base/` is the common baseline. Optional capabilities live under

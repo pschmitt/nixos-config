@@ -20,7 +20,7 @@ let
   mealieVersion = "v3.27.0";
 in
 {
-  sops.secrets."mealie/openai-api-key" = config.custom.mkSecret {
+  sops.secrets."mealie/openai-api-key" = config.sops.mkHostSecret {
     restartUnits = [ "${config.virtualisation.oci-containers.backend}-mealie.service" ];
   };
 

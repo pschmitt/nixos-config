@@ -2,5 +2,5 @@
 {
   imports = [ ./syncthing/devices.nix ];
 
-  custom.syncthing.enable = true;
+  services.syncthing.declarative.enable = true;
 }

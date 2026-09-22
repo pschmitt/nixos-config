@@ -10,19 +10,19 @@
   # NOTE Below will *NOT* work!
   # sops.secrets = {
   #   "ssh/initrd_host_keys/ed25519/privkey" = {
-  #     sopsFile = config.custom.sopsFile;
+  #     sopsFile = config.sops.hostSopsFile;
   #     path = "/etc/ssh/initrd.sops/ssh_host_ed25519_key";
   #   };
   #   "ssh/initrd_host_keys/rsa/privkey" = {
-  #     sopsFile = config.custom.sopsFile;
+  #     sopsFile = config.sops.hostSopsFile;
   #     path = "/etc/ssh/initrd.sops/ssh_host_rsa_key";
   #   };
   #   "ssh/initrd_host_keys/ed25519/pubkey" = {
-  #     sopsFile = config.custom.sopsFile;
+  #     sopsFile = config.sops.hostSopsFile;
   #     path = "/etc/ssh/initrd.sops/ssh_host_ed25519_key.pub";
   #   };
   #   "ssh/initrd_host_keys/rsa/pubkey" = {
-  #     sopsFile = config.custom.sopsFile;
+  #     sopsFile = config.sops.hostSopsFile;
   #     path = "/etc/ssh/initrd.sops/ssh_host_rsa_key.pub";
   #   };
   # };

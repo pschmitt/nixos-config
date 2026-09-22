@@ -1,13 +1,13 @@
 { config, ... }:
 let
-  # custom.desktop.theme.sessionVariables (modules/theme.nix) is also applied
+  # dotfiles.desktop.theme.sessionVariables (modules/theme.nix) is also applied
   # as home.sessionVariables, but that only reaches login shells
   # (~/.profile). uwsm starts Hyprland with its own curated environment, so
   # anything Hyprland forks directly (keybinds, exec-once)
   # never sees them unless Hyprland exports them itself here. Apps launched
   # from a terminal look fine only because the login shell re-sources
   # hm-session-vars.sh.
-  sessionVars = config.custom.desktop.theme.sessionVariables;
+  sessionVars = config.dotfiles.desktop.theme.sessionVariables;
 in
 {
   # Wayland/toolkit environment overrides -> hl.env("KEY", "value").

@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 {
 
-  sops.secrets."github-runners/nixos-config/token" = config.custom.mkSecret {
+  sops.secrets."github-runners/nixos-config/token" = config.sops.mkHostSecret {
   };
 
   services.github-runners.nixos-config = {

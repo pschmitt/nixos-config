@@ -14,7 +14,7 @@
 
   users.users."${config.mainUser.username}".extraGroups = [ "networkmanager" ];
 
-  custom.netbirdSetupKey = lib.mkForce "laptop";
+  services.netbird.setupKeyName = lib.mkForce "laptop";
 
   services.tailscale.extraSetFlags = [
     "--accept-routes"

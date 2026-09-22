@@ -34,7 +34,7 @@ let
   defineSopsSecrets = lib.listToAttrs (
     lib.lists.map (name: {
       name = "luks/${name}";
-      value = config.custom.mkSecret {
+      value = config.sops.mkHostSecret {
       };
     }) instanceNames
   );

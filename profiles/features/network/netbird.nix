@@ -12,7 +12,7 @@ in
   imports = [ ../../../services/monit/netbird.nix ];
 
   sops.secrets.netbird-setup-key = {
-    key = "netbird/setup-keys/${netbirdClientName}/${config.custom.netbirdSetupKey}";
+    key = "netbird/setup-keys/${netbirdClientName}/${config.services.netbird.setupKeyName}";
     owner = "netbird-${netbirdClientName}";
     group = "netbird-${netbirdClientName}";
     mode = "0440";

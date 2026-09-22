@@ -39,16 +39,16 @@ in
 {
   sops = {
     secrets = {
-      "n8n/runners/authToken" = config.custom.mkSecret {
+      "n8n/runners/authToken" = config.sops.mkHostSecret {
         path = "/run/secrets/n8n-runners-authToken";
         mode = "0400";
         # Below needs to match the user inside the n8n container
         uid = 1000;
         gid = 1000;
       };
-      "calendar/ics-url/private" = config.custom.mkSecret { mode = "0400"; };
-      "calendar/ics-url/bergmann-schmitt" = config.custom.mkSecret { mode = "0400"; };
-      "calendar/ics-url/work" = config.custom.mkSecret { mode = "0400"; };
+      "calendar/ics-url/private" = config.sops.mkHostSecret { mode = "0400"; };
+      "calendar/ics-url/bergmann-schmitt" = config.sops.mkHostSecret { mode = "0400"; };
+      "calendar/ics-url/work" = config.sops.mkHostSecret { mode = "0400"; };
     };
     templates."n8n/runners/env" = {
       content = ''

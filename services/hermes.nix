@@ -152,33 +152,33 @@ in
         sopsFile = config.sops.defaultSopsFile;
         mode = "0400";
       };
-      "hermes/home-assistant/llat" = config.custom.mkSecret {
+      "hermes/home-assistant/llat" = config.sops.mkHostSecret {
         owner = config.services.hermes-agent.user;
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
-      "hermes/matrix/password" = config.custom.mkSecret {
+      "hermes/matrix/password" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/matrix/recovery-key" = config.custom.mkSecret {
+      "hermes/matrix/recovery-key" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/bitwarden/session" = config.custom.mkSecret {
+      "hermes/bitwarden/session" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/bitwarden/data-json" = config.custom.mkSecret {
+      "hermes/bitwarden/data-json" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/github/pschmitt/token" = config.custom.mkSecret {
+      "hermes/github/pschmitt/token" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/github/gh-brkn-lol/token" = config.custom.mkSecret {
+      "hermes/github/gh-brkn-lol/token" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/signal/account" = config.custom.mkSecret {
+      "hermes/signal/account" = config.sops.mkHostSecret {
         mode = "0400";
       };
-      "hermes/signal/allowed-users" = config.custom.mkSecret {
+      "hermes/signal/allowed-users" = config.sops.mkHostSecret {
         mode = "0400";
       };
       "todoist/api_token" = {
@@ -716,7 +716,7 @@ in
 
   # Require Authelia before proxying, including from the mesh. The dashboard
   # itself is loopback-only, so NGINX is its only external entry point.
-  custom.authelia.extraTwoFactorDomains = [ hermesHost ];
+  services.authelia.extraTwoFactorDomains = [ hermesHost ];
 
   # signal-cli-daemon above binds 0.0.0.0 so Home Assistant can reach it over
   # the mesh, relying on tailscale0/nb-netbird-io being in

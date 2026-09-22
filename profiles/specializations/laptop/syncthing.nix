@@ -15,7 +15,7 @@ in
     ../../../modules/syncthing/tui.nix
   ];
 
-  custom.syncthingTui = {
+  services.syncthing.tui = {
     enable = true;
     user = config.mainUser.username;
     homeDirectory = config.mainUser.homeDirectory;
@@ -25,7 +25,7 @@ in
   # Folder ids must match the server's (hosts/rofl-10/syncthing.nix) for
   # Syncthing to pair them up automatically -- no manual "accept" step on
   # first connect. Paths default to ~/<label> on clients.
-  custom.syncthing.folders = {
+  services.syncthing.declarative.folders = {
     documents = {
       label = "Documents";
       devices = documentsDevices;

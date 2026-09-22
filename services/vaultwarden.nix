@@ -14,7 +14,7 @@ let
   dataDir = "${rootDir}/data";
   backupDir = "${rootDir}/backups";
   vaultwardenUser = "vaultwarden";
-  secretAttrs = config.custom.mkSecret {
+  secretAttrs = config.sops.mkHostSecret {
     owner = vaultwardenUser;
     group = vaultwardenUser;
     mode = "0400";

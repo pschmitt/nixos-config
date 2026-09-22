@@ -23,7 +23,7 @@ let
   );
 in
 {
-  sops.secrets."roundcube/des-key" = config.custom.mkSecret {
+  sops.secrets."roundcube/des-key" = config.sops.mkHostSecret {
     owner = roundcubeUser;
     group = roundcubeGroup;
     mode = "0400";

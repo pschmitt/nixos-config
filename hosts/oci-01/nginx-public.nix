@@ -91,7 +91,7 @@ let
   ];
 in
 {
-  sops.secrets."nabu-casa/hass-relay-host" = config.custom.mkSecret {
+  sops.secrets."nabu-casa/hass-relay-host" = config.sops.mkHostSecret {
     owner = config.services.nginx.user;
   };
 

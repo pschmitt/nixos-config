@@ -10,5 +10,5 @@
     };
   };
 
-  sops.secrets."wifi/psk" = config.custom.mkSecret { };
+  sops.secrets."wifi/psk" = config.sops.mkHostSecret { };
 }

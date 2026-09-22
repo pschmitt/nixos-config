@@ -15,9 +15,12 @@
 - `overlays/`: Nixpkgs overlays.
 - `hardware/`: Hardware-specific configuration snippets.
 
-Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
-`domains.nix`, `hardware.nix`, `main-user.nix`, `syncthing.nix`) and wired up via
-`modules/default.nix` — add new option modules to that import list.
+Declare options alongside the feature that owns them, using native option
+namespaces such as `services.*`, `programs.*`, `hardware.*`, `domains.*`, or
+`system.*`. Use `dotfiles.*` only for repo-owned cross-layer or user-facing
+settings without a more specific native namespace. Do not add `custom.*` options.
+Import NixOS modules through `modules/default.nix`; shared options consumed by
+both NixOS and Home Manager must be declared in modules imported by both contexts.
 
 ## Code style (do / don't)
 
@@ -43,12 +46,12 @@ Custom options are defined under `modules/` (`custom.nix`, `sops.nix`,
 - The **default** sops file is `secrets/nixos-shared.sops.yaml` in the private
   configuration checkout (set from the private flake input as
   `sops.defaultSopsFile`).
-- For a secret that lives in the **host-specific** file (`custom.sopsFile`), use the
-  helper from `modules/sops.nix` instead of repeating `inherit (config.custom) sopsFile;`:
+- For a secret that lives in the **host-specific** file (`sops.hostSopsFile`), use
+  the helper from `modules/sops.nix` rather than repeating `sopsFile`:
 
   ```nix
-  sops.secrets."foo/bar" = config.custom.mkSecret { };
-  sops.secrets."foo/baz" = config.custom.mkSecret { owner = "svc"; };
+  sops.secrets."foo/bar" = config.sops.mkHostSecret { };
+  sops.secrets."foo/baz" = config.sops.mkHostSecret { owner = "svc"; };
   ```
 
 - After any SOPS change, verify by decrypting the old and new versions and diffing

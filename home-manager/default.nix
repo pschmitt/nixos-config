@@ -50,16 +50,12 @@ in
       # Bridge: feed system facts from the NixOS config into the (osConfig-free)
       # home config. Standalone hosts set these explicitly instead.
       inherit (config) mainUser domains;
-      custom = {
-        desktop = {
-          inherit (config.custom.desktop)
-            browser
-            theme
-            ;
-        };
+      dotfiles = {
+        promptColor = config.dotfiles.promptColor;
+        inherit (config.dotfiles) desktop;
       };
       host = {
-        sopsFile = config.custom.sopsFile;
+        sopsFile = config.sops.hostSopsFile;
         sopsDefaultFile = config.sops.defaultSopsFile;
         highDpi = config.hardware.highDpi;
         nvidiaPrimeOffload = config.hardware.nvidia.prime.offload.enable;

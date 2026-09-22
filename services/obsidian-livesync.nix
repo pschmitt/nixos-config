@@ -11,9 +11,9 @@ in
 {
   sops = {
     secrets = {
-      "obsidian-livesync/username" = config.custom.mkSecret {
+      "obsidian-livesync/username" = config.sops.mkHostSecret {
       };
-      "obsidian-livesync/password" = config.custom.mkSecret {
+      "obsidian-livesync/password" = config.sops.mkHostSecret {
       };
     };
 

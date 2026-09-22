@@ -32,7 +32,7 @@
   hardware.type = lib.mkDefault "server";
   hardware.biosBoot = lib.mkDefault true;
 
-  custom.syncthing.server = true;
+  services.syncthing.declarative.server = true;
 
   services.dbus.implementation = "broker";
 

@@ -11,8 +11,8 @@
   config =
     let
       customerIdFile =
-        if config.custom.crowdstrike.customerIdFile != null then
-          config.custom.crowdstrike.customerIdFile
+        if config.services.falcon-sensor.customerIdFile != null then
+          config.services.falcon-sensor.customerIdFile
         else
           config.sops.secrets."crowdstrike/customerId".path;
     in
@@ -20,7 +20,7 @@
       # Overwrite the placeholder CID with the real one unless a caller provides
       # a runtime-only file, such as the dedicated Falcon VM.
       sops.secrets."crowdstrike/customerId" =
-        lib.mkIf (config.custom.crowdstrike.customerIdFile == null)
+        lib.mkIf (config.services.falcon-sensor.customerIdFile == null)
           {
             sopsFile = config.sops.defaultSopsFile;
           };

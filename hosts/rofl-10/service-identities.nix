@@ -4,7 +4,7 @@
   ...
 }:
 {
-  sops.secrets."hass/sshfs/private-key" = config.custom.mkSecret {
+  sops.secrets."hass/sshfs/private-key" = config.sops.mkHostSecret {
     mode = "0400";
   };
 
@@ -14,9 +14,9 @@
     mode = "0400";
   };
 
-  custom = {
-    luksSshUnlockFleet.selfKeyPath = config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path;
-    homeAssistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
-    homeAssistant.sshfs.host = "homeassistant.snake-eagle.ts.net";
+  services = {
+    luks-ssh-unlock-fleet.selfKeyPath = config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path;
+    home-assistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
+    home-assistant.sshfs.host = "homeassistant.snake-eagle.ts.net";
   };
 }

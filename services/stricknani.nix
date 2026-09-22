@@ -34,21 +34,21 @@ in
 
   sops = {
     secrets = {
-      "stricknani/secrets/secretKey" = config.custom.mkSecret {
+      "stricknani/secrets/secretKey" = config.sops.mkHostSecret {
       };
-      "stricknani/secrets/csrfSecretKey" = config.custom.mkSecret {
+      "stricknani/secrets/csrfSecretKey" = config.sops.mkHostSecret {
       };
-      "stricknani/initialAdmin/password" = config.custom.mkSecret {
+      "stricknani/initialAdmin/password" = config.sops.mkHostSecret {
       };
-      "stricknani/initialAdmin/username" = config.custom.mkSecret {
+      "stricknani/initialAdmin/username" = config.sops.mkHostSecret {
       };
-      "stricknani/openaiApiKey" = config.custom.mkSecret {
+      "stricknani/openaiApiKey" = config.sops.mkHostSecret {
       };
-      "stricknani/sentry/dsnBackend" = config.custom.mkSecret {
+      "stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
       };
-      "stricknani/sentry/dsnFrontend" = config.custom.mkSecret {
+      "stricknani/sentry/dsnFrontend" = config.sops.mkHostSecret {
       };
-      "stricknani/aiUser/password" = config.custom.mkSecret {
+      "stricknani/aiUser/password" = config.sops.mkHostSecret {
         owner = user;
         group = user;
       };

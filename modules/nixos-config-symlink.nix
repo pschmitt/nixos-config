@@ -1,11 +1,11 @@
 { config, lib, ... }:
 let
-  cfg = config.custom.nixosConfigSymlink;
+  cfg = config.system.nixosConfigSymlink;
 
   repoDir = "${config.mainUser.homeDirectory}/devel/private/pschmitt/nixos-config.git";
 in
 {
-  options.custom.nixosConfigSymlink = {
+  options.system.nixosConfigSymlink = {
     enable = lib.mkEnableOption "managing /etc/nixos as a symlink into the devel checkout";
   };
 

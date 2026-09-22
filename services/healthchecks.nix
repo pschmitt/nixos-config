@@ -46,9 +46,9 @@ let
 in
 {
   sops.secrets = {
-    "healthchecks/secret-key" = config.custom.mkSecret secretAttrs;
-    "healthchecks/email-host-password" = config.custom.mkSecret secretAttrs;
-    "healthchecks/discord-client-secret" = config.custom.mkSecret secretAttrs;
+    "healthchecks/secret-key" = config.sops.mkHostSecret secretAttrs;
+    "healthchecks/email-host-password" = config.sops.mkHostSecret secretAttrs;
+    "healthchecks/discord-client-secret" = config.sops.mkHostSecret secretAttrs;
   };
 
   systemd.tmpfiles.rules = [

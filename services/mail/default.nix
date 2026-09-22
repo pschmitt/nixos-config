@@ -10,10 +10,10 @@ let
 in
 {
   config = lib.mkIf (!config.hardware.cattle) {
-    sops.secrets."mail/brkn-lol" = config.custom.mkSecret {
+    sops.secrets."mail/brkn-lol" = config.sops.mkHostSecret {
       owner = config.mainUser.username;
     };
-    sops.secrets."mail/gmail" = config.custom.mkSecret {
+    sops.secrets."mail/gmail" = config.sops.mkHostSecret {
       owner = config.mainUser.username;
     };
 

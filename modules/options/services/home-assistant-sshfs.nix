@@ -1,6 +1,6 @@
 { config, lib, ... }:
 {
-  options.custom.homeAssistant.sshfs.identityFile = lib.mkOption {
+  options.services.home-assistant.sshfs.identityFile = lib.mkOption {
     type = lib.types.path;
     default = "${config.mainUser.homeDirectory}/.ssh/id_ed25519";
     description = ''
@@ -11,7 +11,7 @@
     '';
   };
 
-  options.custom.homeAssistant.sshfs.host = lib.mkOption {
+  options.services.home-assistant.sshfs.host = lib.mkOption {
     type = lib.types.str;
     default = "hass.${config.domains.vpn}";
     description = "SSH host serving the Home Assistant configuration mount.";

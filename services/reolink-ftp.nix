@@ -20,7 +20,7 @@ let
   };
 in
 {
-  sops.secrets."ftp/reolink/password" = config.custom.mkSecret { };
+  sops.secrets."ftp/reolink/password" = config.sops.mkHostSecret { };
 
   systemd = {
     services = {

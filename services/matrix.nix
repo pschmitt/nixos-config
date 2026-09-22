@@ -20,25 +20,25 @@ in
 {
   sops = {
     secrets = {
-      "matrix/registration-shared-secret" = config.custom.mkSecret {
+      "matrix/registration-shared-secret" = config.sops.mkHostSecret {
         owner = synapseUser;
         group = synapseGroup;
         mode = "0400";
       };
 
-      "matrix/mautrix-signal/encryption-pickle-key" = config.custom.mkSecret {
+      "matrix/mautrix-signal/encryption-pickle-key" = config.sops.mkHostSecret {
         owner = "mautrix-signal";
         group = "mautrix-signal";
         mode = "0400";
       };
 
-      "matrix/mautrix-whatsapp/encryption-pickle-key" = config.custom.mkSecret {
+      "matrix/mautrix-whatsapp/encryption-pickle-key" = config.sops.mkHostSecret {
         owner = "mautrix-whatsapp";
         group = "mautrix-whatsapp";
         mode = "0400";
       };
 
-      "matrix/mautrix-meta-facebook/encryption-pickle-key" = config.custom.mkSecret {
+      "matrix/mautrix-meta-facebook/encryption-pickle-key" = config.sops.mkHostSecret {
         owner = "mautrix-meta-facebook";
         group = "mautrix-meta";
         mode = "0400";

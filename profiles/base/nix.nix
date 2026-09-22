@@ -121,11 +121,11 @@
   programs = {
     nh = {
       enable = true;
-      # Only hosts with custom.nixosConfigSymlink actually have /etc/nixos
+      # Only hosts with system.nixosConfigSymlink actually have /etc/nixos
       # (a symlink into the devel checkout); everything else builds straight
       # from GitHub, same as system.autoUpgrade.
       flake =
-        if config.custom.nixosConfigSymlink.enable then "/etc/nixos" else "github:pschmitt/nixos-config";
+        if config.system.nixosConfigSymlink.enable then "/etc/nixos" else "github:pschmitt/nixos-config";
     };
 
     nix-ld = {

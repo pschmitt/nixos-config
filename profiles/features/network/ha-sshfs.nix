@@ -11,7 +11,7 @@
 
     fileSystems."/mnt/ha" = {
       fsType = "fuse";
-      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@${config.custom.homeAssistant.sshfs.host}:/homeassistant";
+      device = "${pkgs.sshfs-fuse}/bin/sshfs#root@${config.services.home-assistant.sshfs.host}:/homeassistant";
       options = [
         "noauto"
         "_netdev"
@@ -22,7 +22,7 @@
         # https://www.freedesktop.org/software/systemd/man/latest/systemd.automount.html
         "x-systemd.device-timeout=10s"
         "x-systemd.mount-timeout=10s"
-        "IdentityFile=${config.custom.homeAssistant.sshfs.identityFile}"
+        "IdentityFile=${config.services.home-assistant.sshfs.identityFile}"
         "IdentitiesOnly=yes"
         "StrictHostKeyChecking=no"
         "UserKnownHostsFile=/dev/null"

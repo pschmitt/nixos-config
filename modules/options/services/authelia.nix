@@ -1,6 +1,6 @@
 { config, lib, ... }:
 {
-  options.custom.authelia = {
+  options.services.authelia = {
     extraAccessControlRules = lib.mkOption {
       type = lib.types.listOf lib.types.attrs;
       default = [ ];

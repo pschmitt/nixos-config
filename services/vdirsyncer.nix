@@ -90,27 +90,27 @@ let
 in
 {
   sops.secrets = {
-    "vdirsyncer/google/client-id" = config.custom.mkSecret {
+    "vdirsyncer/google/client-id" = config.sops.mkHostSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/google/client-secret" = config.custom.mkSecret {
+    "vdirsyncer/google/client-secret" = config.sops.mkHostSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/google/token" = config.custom.mkSecret {
+    "vdirsyncer/google/token" = config.sops.mkHostSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/nextcloud/username" = config.custom.mkSecret {
+    "vdirsyncer/nextcloud/username" = config.sops.mkHostSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";
     };
-    "vdirsyncer/nextcloud/password" = config.custom.mkSecret {
+    "vdirsyncer/nextcloud/password" = config.sops.mkHostSecret {
       owner = syncUser;
       group = syncGroup;
       mode = "0400";

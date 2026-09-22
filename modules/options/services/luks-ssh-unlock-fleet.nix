@@ -1,6 +1,6 @@
 { lib, ... }:
 {
-  options.custom.luksSshUnlockFleet.selfKeyPath = lib.mkOption {
+  options.services.luks-ssh-unlock-fleet.selfKeyPath = lib.mkOption {
     type = lib.types.path;
     default = "/home/pschmitt/.ssh/id_ed25519";
     description = ''

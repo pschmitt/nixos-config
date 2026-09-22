@@ -26,11 +26,11 @@ in
   nixpkgs.config.permittedInsecurePackages = [ "elasticsearch-7.17.27" ];
 
   sops.secrets = {
-    "geoip/licenseKey" = config.custom.mkSecret {
+    "geoip/licenseKey" = config.sops.mkHostSecret {
     };
-    "parsedmarc/imap/password" = config.custom.mkSecret {
+    "parsedmarc/imap/password" = config.sops.mkHostSecret {
     };
-    "grafana/secretKey" = config.custom.mkSecret {
+    "grafana/secretKey" = config.sops.mkHostSecret {
       owner = config.systemd.services.grafana.serviceConfig.User;
     };
   };

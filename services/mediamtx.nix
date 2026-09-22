@@ -16,12 +16,12 @@ in
   # --- SOPS: secrets for users/passwords ---
   sops = {
     secrets = {
-      "mediamtx/admin/username".sopsFile = config.custom.sopsFile;
-      "mediamtx/admin/password".sopsFile = config.custom.sopsFile;
-      "mediamtx/ffmpeg/username".sopsFile = config.custom.sopsFile;
-      "mediamtx/ffmpeg/password".sopsFile = config.custom.sopsFile;
-      "mediamtx/frigate/username".sopsFile = config.custom.sopsFile;
-      "mediamtx/frigate/password".sopsFile = config.custom.sopsFile;
+      "mediamtx/admin/username".sopsFile = config.sops.hostSopsFile;
+      "mediamtx/admin/password".sopsFile = config.sops.hostSopsFile;
+      "mediamtx/ffmpeg/username".sopsFile = config.sops.hostSopsFile;
+      "mediamtx/ffmpeg/password".sopsFile = config.sops.hostSopsFile;
+      "mediamtx/frigate/username".sopsFile = config.sops.hostSopsFile;
+      "mediamtx/frigate/password".sopsFile = config.sops.hostSopsFile;
     };
 
     # Render the full mediamtx.yml with placeholders substituted by sops.

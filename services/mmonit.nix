@@ -68,7 +68,7 @@ in
   users.groups.mmonit = { };
 
   # license
-  sops.secrets."mmonit/license" = config.custom.mkSecret {
+  sops.secrets."mmonit/license" = config.sops.mkHostSecret {
     owner = "mmonit";
   };
 

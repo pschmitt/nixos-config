@@ -4,12 +4,12 @@
   ...
 }:
 let
-  cfg = config.custom.desktop.browser;
+  cfg = config.dotfiles.desktop.browser;
 in
 {
   config = lib.mkMerge [
     {
-      custom.desktop.browser.enable = lib.mkDefault true;
+      dotfiles.desktop.browser.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       # NOTE see also home-manager/gui/browser.nix

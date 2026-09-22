@@ -8,11 +8,11 @@ let
 in
 {
   sops.secrets = {
-    "filebrowser-quantum/admin-password" = config.custom.mkSecret {
+    "filebrowser-quantum/admin-password" = config.sops.mkHostSecret {
       owner = "syncthing";
       mode = "0400";
     };
-    "filebrowser-quantum/oidc-client-secret" = config.custom.mkSecret {
+    "filebrowser-quantum/oidc-client-secret" = config.sops.mkHostSecret {
       owner = "syncthing";
       mode = "0400";
     };

@@ -55,7 +55,7 @@ in
 {
   config = {
     sops.secrets = {
-      "nix/store/privkey" = config.custom.mkSecret {
+      "nix/store/privkey" = config.sops.mkHostSecret {
       };
       "nix/credentials/htpasswd" = {
         owner = "nginx";

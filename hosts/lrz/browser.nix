@@ -1,6 +1,6 @@
 { config, pkgs, ... }:
 let
-  meshHosts = config.custom.meshHosts "browser";
+  meshHosts = config.domains.meshHosts "browser";
   primaryHost = builtins.head meshHosts;
   serverAliases = builtins.tail meshHosts;
   autheliaConfig = import ../../services/authelia-nginx-config.nix {

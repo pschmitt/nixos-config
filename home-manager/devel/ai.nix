@@ -20,7 +20,7 @@ let
     "${n8nSkillsSrc}/skills"
     pkgs.todoist-cli.skill
   ]
-  ++ config.custom.aiSkills.extraSources;
+  ++ config.dotfiles.aiSkills.extraSources;
 
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
   # toString coerces the derivation to its store-path string, which the skills
@@ -102,7 +102,7 @@ let
 
 in
 {
-  options.custom.aiSkills.extraSources = lib.mkOption {
+  options.dotfiles.aiSkills.extraSources = lib.mkOption {
     type = lib.types.listOf lib.types.path;
     default = [ ];
     description = ''

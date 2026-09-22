@@ -4,12 +4,12 @@
   ...
 }:
 let
-  cfg = config.custom.desktop.theme;
+  cfg = config.dotfiles.desktop.theme;
 in
 {
   config = lib.mkMerge [
     {
-      custom.desktop.theme.enable = lib.mkDefault true;
+      dotfiles.desktop.theme.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       environment.systemPackages = cfg.systemPackages;

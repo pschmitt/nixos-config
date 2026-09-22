@@ -88,7 +88,7 @@ let
   # hosts that shouldn't hold a copy of it override this option instead (see
   # hosts/rofl-10/default.nix); its public half is trusted below via
   # users.users.root.openssh.authorizedKeys.keys.
-  selfSshKey = config.custom.luksSshUnlockFleet.selfKeyPath;
+  selfSshKey = config.services.luks-ssh-unlock-fleet.selfKeyPath;
 
   # Every target's own secrets.sops.yaml already backs up its regular and
   # initrd SSH host public keys (recorded there for disaster recovery), but
@@ -214,7 +214,7 @@ in
 
   config = {
     # Fleet-internal trust: rofl-10's dedicated unlock identity (see the
-    # custom.luksSshUnlockFleet.selfKeyPath override in hosts/rofl-10) is
+    # services.luks-ssh-unlock-fleet.selfKeyPath override in hosts/rofl-10) is
     # authorized as root on every fleet member.
     users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock"

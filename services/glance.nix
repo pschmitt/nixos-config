@@ -11,7 +11,7 @@ let
   # mesh, so Authelia's mesh bypass applies and no login is asked for;
   # ${glanceHost} resolves to the WAN address and hairpins, so it never looks
   # like mesh traffic (and is two-factor on purpose, see below).
-  meshHosts = config.custom.meshHosts "home";
+  meshHosts = config.domains.meshHosts "home";
   glancePort = 9832;
   autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
@@ -798,21 +798,21 @@ in
 {
   sops = {
     secrets = {
-      "opsgenie/edge-stack/api-key" = config.custom.mkSecret { mode = "0400"; };
-      "opsgenie/gksv3-on-call/api-key" = config.custom.mkSecret { mode = "0400"; };
-      "jellyfin/api-key" = config.custom.mkSecret { mode = "0400"; };
-      "jellyfin/server-id" = config.custom.mkSecret { mode = "0400"; };
-      "jellyfin/user-id" = config.custom.mkSecret { mode = "0400"; };
-      "radarr/api-key" = config.custom.mkSecret { mode = "0400"; };
-      "sonarr/api-key" = config.custom.mkSecret { mode = "0400"; };
+      "opsgenie/edge-stack/api-key" = config.sops.mkHostSecret { mode = "0400"; };
+      "opsgenie/gksv3-on-call/api-key" = config.sops.mkHostSecret { mode = "0400"; };
+      "jellyfin/api-key" = config.sops.mkHostSecret { mode = "0400"; };
+      "jellyfin/server-id" = config.sops.mkHostSecret { mode = "0400"; };
+      "jellyfin/user-id" = config.sops.mkHostSecret { mode = "0400"; };
+      "radarr/api-key" = config.sops.mkHostSecret { mode = "0400"; };
+      "sonarr/api-key" = config.sops.mkHostSecret { mode = "0400"; };
       # Named "glance/webhook/..." rather than "n8n/webhook/..." because
       # secrets.sops.yaml already has a real nested "n8n:" mapping (from
       # n8n/runners/authToken); sops-install-secrets resolves that as a
       # nested path once the first segment already exists as a mapping,
       # which broke lookup for a flat "n8n/webhook/..." key.
-      "glance/webhook/gh-notification-action-url" = config.custom.mkSecret { mode = "0400"; };
-      "glance/webhook/nixpkgs-pr-mark-read-url" = config.custom.mkSecret { mode = "0400"; };
-      "glance/webhook/nixpkgs-pr-read-list-url" = config.custom.mkSecret { mode = "0400"; };
+      "glance/webhook/gh-notification-action-url" = config.sops.mkHostSecret { mode = "0400"; };
+      "glance/webhook/nixpkgs-pr-mark-read-url" = config.sops.mkHostSecret { mode = "0400"; };
+      "glance/webhook/nixpkgs-pr-read-list-url" = config.sops.mkHostSecret { mode = "0400"; };
     };
     templates."glance.env" = {
       content = ''
@@ -1083,5 +1083,5 @@ in
 
   # Require Authelia before proxying, matching the other private dashboards
   # on this host (see services/hermes.nix).
-  custom.authelia.extraTwoFactorDomains = [ glanceHost ];
+  services.authelia.extraTwoFactorDomains = [ glanceHost ];
 }

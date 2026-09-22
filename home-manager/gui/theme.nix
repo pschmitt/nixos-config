@@ -4,14 +4,14 @@
   ...
 }:
 let
-  cfg = config.custom.desktop.theme;
+  cfg = config.dotfiles.desktop.theme;
   colorScheme = if cfg.preferDark then "prefer-dark" else "default";
   darkTheme = if cfg.preferDark then "1" else "0";
 in
 {
   config = lib.mkMerge [
     {
-      custom.desktop.theme.enable = lib.mkDefault true;
+      dotfiles.desktop.theme.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
       home = {

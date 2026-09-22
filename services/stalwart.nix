@@ -176,11 +176,10 @@ in
     inherit dataDir;
     openFirewall = true;
     settings.server.listener = stalwartListeners;
+    networkListeners = desiredNetworkListeners;
   };
 
-  custom.stalwart.networkListeners = desiredNetworkListeners;
-
-  sops.secrets."stalwart/dns-task-api-key" = config.custom.mkSecret {
+  sops.secrets."stalwart/dns-task-api-key" = config.sops.mkHostSecret {
     owner = "stalwart";
     group = "stalwart";
     mode = "0400";

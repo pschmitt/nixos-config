@@ -3,16 +3,16 @@
 {
   config =
     let
-      cfg = config.custom.syncthing;
+      cfg = config.services.syncthing.declarative;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
     in
     lib.mkIf cfg.enable {
-      sops.secrets."syncthing/cert" = config.custom.mkSecret {
+      sops.secrets."syncthing/cert" = config.sops.mkHostSecret {
         owner = syncthingUser;
         group = syncthingUser;
         mode = "0400";
       };
-      sops.secrets."syncthing/key" = config.custom.mkSecret {
+      sops.secrets."syncthing/key" = config.sops.mkHostSecret {
         owner = syncthingUser;
         group = syncthingUser;
         mode = "0400";

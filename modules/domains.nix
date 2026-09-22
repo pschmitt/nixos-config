@@ -47,7 +47,7 @@
     };
   };
 
-  options.custom.meshHosts = lib.mkOption {
+  options.domains.meshHosts = lib.mkOption {
     type = lib.types.functionTo (lib.types.listOf lib.types.str);
     description = ''
       Given a service name, the <name>.<host>.<mesh domain> hostname on each
@@ -58,6 +58,6 @@
     '';
   };
 
-  config.custom.meshHosts =
+  config.domains.meshHosts =
     name: map (meshDomain: "${name}.${config.networking.hostName}.${meshDomain}") config.domains.mesh;
 }

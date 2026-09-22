@@ -13,7 +13,7 @@ in
     ../../services/http-static.nix
   ];
 
-  custom.httpStatic = {
+  services.http-static = {
     enableDefaultSites = false;
     extraVirtualHosts = {
       "pschmitt.dev" = {

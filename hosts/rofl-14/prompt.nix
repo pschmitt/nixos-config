@@ -1,3 +1,3 @@
 {
-  custom.promptColor = "magenta";
+  dotfiles.promptColor = "magenta";
 }

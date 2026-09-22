@@ -7,7 +7,7 @@
     sopsFile = lib.mkOption {
       type = lib.types.path;
       default = inputs.nixos-config-private.outPath + "/secrets/nixos-shared.sops.yaml";
-      description = "Host-specific SOPS file (NixOS: config.custom.sopsFile).";
+      description = "Host-specific SOPS file (NixOS: config.sops.hostSopsFile).";
     };
 
     sopsDefaultFile = lib.mkOption {

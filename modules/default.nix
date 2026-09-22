@@ -1,7 +1,7 @@
 {
   imports = [
     ./browser.nix
-    ./custom.nix
+    ./dotfiles.nix
     ./domains.nix
     ./falcon-sensor-vm.nix
     ./hardware.nix

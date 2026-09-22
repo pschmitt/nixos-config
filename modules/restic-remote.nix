@@ -87,9 +87,9 @@ in
     # Secrets configuration
     sops.secrets = lib.mkMerge (
       lib.mapAttrsToList (name: _instance: {
-        "restic-remote/${name}/env" = config.custom.mkSecret {
+        "restic-remote/${name}/env" = config.sops.mkHostSecret {
         };
-        "restic-remote/${name}/sshkey" = config.custom.mkSecret {
+        "restic-remote/${name}/sshkey" = config.sops.mkHostSecret {
         };
       }) cfg.instances
     );

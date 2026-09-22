@@ -11,7 +11,7 @@ let
     mkIf
     types
     ;
-  cfg = config.custom.syncthingTui;
+  cfg = config.services.syncthing.tui;
 
   writeStuiConfig = pkgs.writeShellScript "write-stui-config-${cfg.user}" ''
     set -euo pipefail
@@ -38,7 +38,7 @@ let
   '';
 in
 {
-  options.custom.syncthingTui = {
+  options.services.syncthing.tui = {
     enable = mkEnableOption "generating stui's config.yaml from a NixOS-managed Syncthing instance";
 
     user = mkOption {

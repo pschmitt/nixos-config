@@ -11,7 +11,7 @@ in
   sops.secrets = builtins.listToAttrs (
     map (secret: {
       name = secret;
-      value = config.custom.mkSecret {
+      value = config.sops.mkHostSecret {
       };
     }) secrets
   );

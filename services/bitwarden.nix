@@ -1,6 +1,6 @@
 { config, ... }:
 {
-  sops.secrets."bitwarden/password" = config.custom.mkSecret {
+  sops.secrets."bitwarden/password" = config.sops.mkHostSecret {
     owner = config.mainUser.username;
   };
 

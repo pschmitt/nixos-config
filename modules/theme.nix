@@ -5,7 +5,7 @@
   ...
 }:
 let
-  cfg = config.custom.desktop.theme;
+  cfg = config.dotfiles.desktop.theme;
 
   gsettingsWrapper = pkgs.writeTextFile {
     name = "gsettings";
@@ -23,7 +23,7 @@ let
   };
 in
 {
-  options.custom.desktop.theme = {
+  options.dotfiles.desktop.theme = {
     enable = lib.mkEnableOption "shared desktop theme";
 
     systemPackages = lib.mkOption {

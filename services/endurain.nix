@@ -80,14 +80,14 @@ in
 {
   sops = {
     secrets = {
-      "endurain/env" = config.custom.mkSecret {
+      "endurain/env" = config.sops.mkHostSecret {
         restartUnits = [
           endurainUnit
           postgresUnit
         ];
       };
       # Endurain user login for the ingest service (username + password).
-      "endurain-ingest/env" = config.custom.mkSecret {
+      "endurain-ingest/env" = config.sops.mkHostSecret {
         owner = ingestUser;
       };
     };

@@ -3,7 +3,7 @@
 # itself so CI/build jobs don't compete with forgejo for resources.
 { config, ... }:
 {
-  sops.secrets."forgejo/runner/token" = config.custom.mkSecret { };
+  sops.secrets."forgejo/runner/token" = config.sops.mkHostSecret { };
 
   # act_runner reads its registration token from an EnvironmentFile, which
   # systemd loads as root before dropping to the runner's DynamicUser -- so

@@ -8,7 +8,7 @@
   ...
 }:
 let
-  cfg = config.custom.codexbar;
+  cfg = config.dotfiles.codexbar;
 
   configFile = (pkgs.formats.json { }).generate "codexbar-config.json" {
     version = 1;
@@ -223,7 +223,7 @@ let
   };
 in
 {
-  options.custom.codexbar = {
+  options.dotfiles.codexbar = {
     enable = lib.mkEnableOption "the CodexBar AI usage CLI" // {
       default = true;
     };
@@ -237,7 +237,7 @@ in
         The `codexbar` wrapper to put on PATH and to point CodexBar consumers
         (such as the codexbar-meter Noctalia plugin's `codexbarPath`) at. It
         injects the OpenAI admin key from sops and reports every Claude account
-        in {option}`custom.codexbar.claudeAccounts` instead of just one.
+        in {option}`dotfiles.codexbar.claudeAccounts` instead of just one.
       '';
     };
 

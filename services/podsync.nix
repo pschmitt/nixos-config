@@ -67,7 +67,7 @@ in
 {
   sops = {
     secrets = {
-      "podsync/youtubeApiKey" = config.custom.mkSecret {
+      "podsync/youtubeApiKey" = config.sops.mkHostSecret {
         restartUnits = [ "${config.virtualisation.oci-containers.backend}-podsync.service" ];
       };
     };

@@ -2,6 +2,7 @@
   imports = [
     # Option modules providing host facts (osConfig-free): config.mainUser,
     # config.domains, config.host.*
+    ../modules/dotfiles.nix
     ../modules/browser.nix
     ../modules/hermes.nix
     ../modules/main-user.nix
