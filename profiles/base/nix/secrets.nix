@@ -27,9 +27,12 @@
         login ${config.sops.placeholder."nix/credentials/username"}
         password ${config.sops.placeholder."nix/credentials/password"}
       '';
-      nix-access-token-github.content = ''
-        access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
-      '';
+      nix-access-token-github = {
+        mode = "0444";
+        content = ''
+          access-tokens = github.com=${config.sops.placeholder."nix/github_token"}
+        '';
+      };
     };
   };
 }
