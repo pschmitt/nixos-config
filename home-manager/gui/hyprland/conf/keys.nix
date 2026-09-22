@@ -35,6 +35,7 @@ let
       ws = if key == "0" then 10 else lib.toInt key;
     in
     [
+      (bind "SUPER + ${key}" ''hl.dsp.workspace.move({ workspace = ${toString ws}, monitor = "current" })'')
       (execBind "SUPER + ${key}" "${bin}/switch-workspace.sh ${toString ws}")
       (bind "SUPER + SHIFT + ${key}" "hl.dsp.window.move({ workspace = ${toString ws} })")
     ]
