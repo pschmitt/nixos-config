@@ -26,12 +26,15 @@
   - Compare full system: compare `config.system.build.toplevel.drvPath`. Use `nix-diff <before.drv> <after.drv>` to confirm differences are limited to flake input hashes (`etc`, `etc-profile`, `etc-nix-registry.json`) and not systemd units, packages, or services.
 
 ## Private configuration repository
-- Treat this public repository as safe to publish. All secrets and sensitive
-  material must live in `pschmitt/nixos-config-private`, never in tracked files
-  here. This includes private SOPS ciphertext, credentials, passwords, tokens, private
+- **Never put a secret in this repository, full stop.** Treat this public
+  repository as safe to publish, and treat that as a hard constraint, not a
+  goal to balance against convenience. All secrets and sensitive material
+  must live in `pschmitt/nixos-config-private`, never in tracked files here.
+  This includes private SOPS ciphertext, credentials, passwords, tokens, private
   keys, SSH/TLS fingerprints and host keys, device serials, account IDs,
   inventory/provider credentials, private infrastructure records, and
-  secret-bearing helper or provisioning scripts.
+  secret-bearing helper or provisioning scripts. If you are unsure whether
+  something belongs here, it doesn't — put it in the private repo instead.
 - Keep only public interfaces, non-sensitive defaults, and references in this
   repository. Private modules, secrets, and infrastructure config live in the
   private repository instead; this repository contains only references to

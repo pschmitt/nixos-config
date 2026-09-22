@@ -1,0 +1,12 @@
+# ⚠️  WARNING — last-resort stopgap only, not a place to put secrets. ⚠️
+#
+# This public repository must never contain real secrets — the canonical
+# SOPS configuration is nixos-config-private/.sops.yaml, and all actual
+# secrets belong there instead. This file exists solely so that if something
+# (typically a misbehaving agent) mistakenly creates a *.sops.* file here
+# anyway, sops has a real recipient to encrypt it to (pschmitt's personal
+# GPG key) instead of the value ending up committed in plaintext.
+# See AGENTS.md ("Private configuration repository").
+creation_rules:
+  - path_regex: .*\.sops\.(yaml|json|env|ini)$
+    pgp: 9FBF2ABFFB37F7F3F50244E5DC439C47EACB17F9
