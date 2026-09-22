@@ -17,8 +17,6 @@
     ../../home-manager/ssh-clipboard-peers.nix
     ../../services/nix-distributed-build.nix
 
-    ./kvm-usb.nix
-    ./nix-daemon.nix
     ./claude-work-warmup.nix
     ./agy-warmup.nix
     ../../profiles/server/interactive/syncthing-home.nix

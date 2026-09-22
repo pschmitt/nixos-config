@@ -44,9 +44,6 @@
     # Console rendering (kmscon) for the physical/KVM display
     ./kmscon.nix
 
-    # FNUC-011: Declarative NFS export server
-    ./nfs.nix
-
     # Host networking: hostName, firewall, Wi-Fi fallback
     ./networking.nix
 
