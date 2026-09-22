@@ -8,6 +8,7 @@
   ];
 
   hardware.cattle = true;
+  hardware.serverType = "openstack";
 
   # Enable networking
   networking = {
