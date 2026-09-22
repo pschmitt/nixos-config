@@ -27,13 +27,11 @@
   inventory/provider credentials, private infrastructure records, and
   secret-bearing helper or provisioning scripts.
 - Keep only public interfaces, non-sensitive defaults, and references in this
-  repository. Put private modules, shared/private SOPS files, scripts that
-  handle secrets, Tofu/OpenTofu configuration and templates that contain
-  private infrastructure data, and private-repository-only support files such
-  as `hermes-sops.pub` in the private repository. Per-host encrypted payloads
-  live there too, under `hosts/*/secrets.sops.yaml` and
-  `hosts/*/luks.sops.yaml`; the public repository contains only references to
-  those files through the private flake input.
+  repository. Private modules, secrets, and infrastructure config live in the
+  private repository instead; this repository contains only references to
+  them through the private flake input. See that repository's own
+  `AGENTS.md` for its internal layout (host/secrets structure, SOPS
+  conventions, etc.) — don't duplicate that detail here.
 - The flake references `nixos-config-private` as
   `github:pschmitt/nixos-config-private`, a normal flake input pinned in
   `flake.lock`; it follows the top-level `nixpkgs`. Fetching it requires a
@@ -42,8 +40,8 @@
   `home-manager/devel/nix.nix`). Do not remove that plumbing or replace the
   GitHub input with `path:./private`.
 - Edit the private repository through its separate local checkout when needed.
-  Set `PRIVATE_CONFIG_DIR` for scripts that need it. Commit and publish changes
-  there first; then update this repository's lock file with
+  Set `PRIVATE_CONFIG_DIR` for scripts here that need it. Commit and publish
+  changes there first; then update this repository's lock file with
   `nix flake lock --update-input nixos-config-private`. Always use the commit
   message `bump my privates` for that lock-file commit.
 - The canonical SOPS configuration is `nixos-config-private/.sops.yaml`.
