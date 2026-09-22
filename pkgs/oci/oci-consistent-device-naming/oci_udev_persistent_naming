@@ -16,10 +16,24 @@ if [ "$#" -ne 1 ]; then
 fi
 
 if [[ "$DEVPATH" = *"virtio"* ]]; then
-    # Using ID_PATH to retrieve the LU #
-    # ID_PATH is virtio-pci-0000:00:04.0-scsi-0:0:2:12
-    # With the substitution, we would be able to get 12 which is the LUN number.
-    LUN=$(echo "$ID_PATH" | sed 's/.*://')
+    # ID_PATH is pci-<addr>-scsi-<host>:<channel>:<target>:<lun>. The
+    # original upstream script (below) assumed only the trailing LUN
+    # field ever increments across additional disks, with target fixed at
+    # 0 - true for some OCI shapes/topologies, but empirically NOT true
+    # for others: e.g. a boot volume at 0:0:0:1 and a first additional
+    # paravirtualized data disk at 0:0:1:1 - same trailing LUN (1), only
+    # the target changed (0 -> 1), so the original extraction collided
+    # both disks onto the same LUN and therefore the same oracleoci/vdX
+    # name. Summing target+lun is a strict generalization: it reduces to
+    # the original behavior when target stays 0 (LUN alone increments),
+    # and still yields a distinct, increasing index per disk when target
+    # increments instead (verified against the collision case above:
+    # boot 0+1=1 -> vda, next disk 1+1=2 -> vdb).
+    # PATCHED (upstream): LUN=$(echo "$ID_PATH" | sed 's/.*://')
+    hctl="${ID_PATH##*scsi-}"
+    target=$(echo "$hctl" | cut -d: -f3)
+    lun_field=$(echo "$hctl" | cut -d: -f4)
+    LUN=$((target + lun_field))
 else
     # Using DEVPATH to retrieve the LUN #
     # DEVPATH is /devices/platform/host5/session3/target5:0:0/5:0:0:12/block/sdc
