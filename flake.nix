@@ -53,6 +53,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    nixos-images = {
+      url = "github:nix-community/nixos-images";
+      # Deliberately not following our nixpkgs: it pins its own
+      # nixos-unstable/nixos-stable and composes its kexec-installer module
+      # against that specific pin.
+    };
+
     noctalia = {
       url = "github:noctalia-dev/noctalia";
       inputs.nixpkgs.follows = "nixpkgs";

@@ -5,12 +5,17 @@
       # /dev/sda is NOT stable once a second disk is attached (SCSI letter
       # assignment is attachment-order-dependent, not tied to boot vs. data)
       # - confirmed empirically: with the data disk attached, the boot
-      # volume enumerated as /dev/sdb, not /dev/sda. Use its SCSI WWN
-      # instead - the same pattern oci-01 already uses for its data disk
-      # (see disk-config-data.nix). A predictable /dev/oracleoci/oraclevdX
-      # name was tried and reverted in 2024 (see git history); the WWN is
-      # what stuck.
-      device = lib.mkDefault "/dev/disk/by-id/scsi-3604c27e2f30d43f69e4998462381f66a";
+      # volume enumerated as /dev/sdb, not /dev/sda.
+      #
+      # Use the oci-consistent-device-naming udev rule's predictable name
+      # instead (boot volume is always LUN 1 -> oraclevda). This normally
+      # only works once the target's own final NixOS config is booted (see
+      # hardware/oci.nix) - not during the ephemeral kexec+disko install
+      # phase, which runs nixos-anywhere's own generic installer image
+      # instead of ours. To fix that, this host's kexec_tarball_url (see
+      # test-delete-oci.tf) points at a custom kexec image
+      # (pkgs/oci/oci-kexec-installer) with that same udev rule baked in.
+      device = lib.mkDefault "/dev/oracleoci/oraclevda";
       type = "disk";
       content = {
         type = "gpt";

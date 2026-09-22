@@ -16,6 +16,7 @@ let
   osd = pkgs.callPackage ./local/osd { };
   screencast-state = pkgs.callPackage ./local/screencast-state { };
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
+  oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
 in
 {
   # local pkgs
@@ -83,8 +84,12 @@ in
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
 
   # oci pkgs
-  oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
+  inherit oci-consistent-device-naming;
   oracle-cloud-agent = pkgs.callPackage ./oci/oracle-cloud-agent { };
+  oci-kexec-installer-aarch64-linux = pkgs.callPackage ./oci/oci-kexec-installer {
+    inherit inputs oci-consistent-device-naming;
+    system = "aarch64-linux";
+  };
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };

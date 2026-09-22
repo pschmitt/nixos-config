@@ -2441,6 +2441,25 @@
     },
     "nixos-images": {
       "inputs": {
+        "nixos-stable": "nixos-stable",
+        "nixos-unstable": "nixos-unstable"
+      },
+      "locked": {
+        "lastModified": 1789641344,
+        "narHash": "sha256-vhB2KdEO1VlEfkiVoQAbMkKnTe1qxyJK3nbUsOOP4ok=",
+        "owner": "nix-community",
+        "repo": "nixos-images",
+        "rev": "16d7721cb350e7f1d0c49a757a3dcd11e80d91af",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "nixos-images",
+        "type": "github"
+      }
+    },
+    "nixos-images_2": {
+      "inputs": {
         "nixos-stable": [
           "nixos-raspberrypi",
           "nixpkgs"
@@ -2489,7 +2508,7 @@
       "inputs": {
         "argononed": "argononed",
         "flake-compat": "flake-compat_4",
-        "nixos-images": "nixos-images",
+        "nixos-images": "nixos-images_2",
         "nixpkgs": "nixpkgs_6"
       },
       "locked": {
@@ -2505,6 +2524,40 @@
         "ref": "main",
         "repo": "nixos-raspberrypi",
         "type": "github"
+      }
+    },
+    "nixos-stable": {
+      "locked": {
+        "lastModified": 1789114715,
+        "narHash": "sha256-ugpsyk3NM2s87vXfUiIIiibbJ4Pp0JPS5p/3mfs+q+c=",
+        "ref": "nixos-26.05",
+        "rev": "21a67dc470149f337cecafbe965d8d252a390518",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs"
+      },
+      "original": {
+        "ref": "nixos-26.05",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs"
+      }
+    },
+    "nixos-unstable": {
+      "locked": {
+        "lastModified": 1782175435,
+        "narHash": "sha256-EMzXKmnOtBQ2MnvpiNOm7E+kOMvdPrIKaeg52Tip2Uk=",
+        "ref": "nixpkgs-unstable",
+        "rev": "89570f24e97e614aa34aa9ab1c927b6578a43775",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs"
+      },
+      "original": {
+        "ref": "nixpkgs-unstable",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/NixOS/nixpkgs"
       }
     },
     "nixpkgs": {
@@ -3262,6 +3315,7 @@
         "nix-on-droid": "nix-on-droid",
         "nix-openclaw": "nix-openclaw",
         "nixos-config-private": "nixos-config-private",
+        "nixos-images": "nixos-images",
         "nixos-needsreboot": "nixos-needsreboot",
         "nixos-raspberrypi": "nixos-raspberrypi",
         "nixpkgs": "nixpkgs_7",
