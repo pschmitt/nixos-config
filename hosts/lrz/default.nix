@@ -7,7 +7,6 @@
     ./disk-config.nix
     ./fnuc-migration.nix
     ./hardware-configuration.nix
-    ./hardware.nix
     ./hass-vm.nix
     ./initrd-data-unlock.nix
     ./kmscon.nix

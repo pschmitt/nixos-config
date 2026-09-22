@@ -4,11 +4,9 @@
     hostName = lib.strings.trim (builtins.readFile ./HOSTNAME);
     firewall.enable = false;
     networkmanager = {
-      enable = true;
       dns = "systemd-resolved";
     };
     wireless = {
-      enable = true;
       userControlled = true;
     };
   };
