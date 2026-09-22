@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 {
   # FNUC-015: This host holds persistent service data. This also enables the
   # shared restic service and its existing host-specific runtime SOPS secrets.
@@ -31,13 +31,6 @@
       "/mnt/sda1/replicas"
       "/mnt/sda1/engine-binaries"
     ];
-
-    # Staging only: the parent coordinates the first backup after repository,
-    # mount and application-consistency checks. Never initialize or prune an
-    # existing repository as a side effect of that first manual backup.
-    timerConfig = lib.mkForce null;
-    initialize = lib.mkForce false;
-    pruneOpts = lib.mkForce [ ];
   };
 
   # Refuse to back up an empty directory on the root disk if SATA is missing.

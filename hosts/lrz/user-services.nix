@@ -1,16 +1,15 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
-  # FNUC-013: keep fnuc's automation authoritative during staging. In particular,
-  # do not import hosts/fnuc/default.nix or copy its home/service identities.
+  # Keep lrz integrated with NixOS Home Manager rather than importing fnuc's
+  # standalone Home Manager entrypoint and its host identity settings.
   home-manager.users.${config.mainUser.username} = {
     imports = [
       ../../home-manager/ssh-clipboard-peers.nix
     ];
 
     services = {
-      jcalapi.enable = lib.mkForce false;
+      jcalapi.enable = true;
       ssh-clipboard.headlessX11 = true;
-      home-manager.autoUpgrade.enable = lib.mkForce false;
     };
   };
 }

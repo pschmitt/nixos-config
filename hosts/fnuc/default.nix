@@ -21,7 +21,6 @@
     ./nix-daemon.nix
     ./claude-work-warmup.nix
     ./agy-warmup.nix
-    ./wl-paste-shim.nix
     ../../profiles/server/interactive/syncthing-home.nix
   ];
 
@@ -43,23 +42,6 @@
   domains.main = "brkn.lol";
 
   targets.genericLinux.enable = true;
-
-  # fnuc has passwordless sudo, and home-manager.autoUpgrade runs unattended
-  # overnight, so pre-fix the GPU driver symlink before upstream's own
-  # checkExistingGpuDrivers check runs. If it's already up to date, upstream
-  # stays silent; if sudo isn't available, this is a no-op and upstream's
-  # original warning still fires.
-  home.activation.autoFixGpuDrivers =
-    let
-      gpuCfg = config.targets.genericLinux.gpu;
-      setupPath = lib.getExe gpuCfg.setupPackage;
-    in
-    lib.hm.dag.entryBefore [ "checkExistingGpuDrivers" ] ''
-      existing=$(readlink /run/opengl-driver || true)
-      if [[ "''${existing}" != "${gpuCfg.drivers}" ]] && /usr/bin/sudo -n true >/dev/null 2>&1; then
-        run /usr/bin/sudo -n ${setupPath}
-      fi
-    '';
 
   xdg.configFile."home-manager".source =
     config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
@@ -116,12 +98,6 @@
     package = pkgs.nix;
     settings.max-jobs = 0;
 
-    # home-manager.autoUpgrade (below) switches nightly, creating a new
-    # generation every run with nothing to expire old ones — left unchecked
-    # this pins the entire nix store and fills the disk (see 2026-08-18
-    # incident: 467 unpruned generations, ~250GB reclaimed on cleanup).
-    # --delete-older-than expires generations of every profile (not just
-    # home-manager's) and GCs the store in one pass.
     gc = {
       automatic = true;
       dates = "03:00:00";
@@ -203,15 +179,6 @@
       ];
     };
 
-    home-manager.autoUpgrade = {
-      enable = true;
-      frequency = "02:30";
-      useFlake = true;
-      flakeDir = "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git";
-      preSwitchCommands = [
-        "${pkgs.gitMinimal}/bin/git pull"
-      ];
-    };
   };
 
   sops.secrets = {
