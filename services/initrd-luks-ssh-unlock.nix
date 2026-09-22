@@ -80,9 +80,7 @@
       {
         text = lib.mkBefore ''
           export TMPDIR=/tmp
-          if [ -n "''${IN_NIXOS_ENTER:-}" ]; then
-            exit 0
-          fi
+          mkdir -p /tmp
         '';
       };
 }
