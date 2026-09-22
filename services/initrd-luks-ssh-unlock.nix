@@ -74,4 +74,15 @@
     enable = true;
     activationScript.enable = true;
   };
+
+  system.activationScripts.luksInitrdChecksum =
+    lib.mkIf config.services.luks-ssh-unlock.activationScript.enable
+      {
+        text = lib.mkBefore ''
+          export TMPDIR=/tmp
+          if [ -n "''${IN_NIXOS_ENTER:-}" ]; then
+            exit 0
+          fi
+        '';
+      };
 }
