@@ -15,7 +15,7 @@ let
   ];
 in
 {
-  services.syncthing.declarative.devices = lib.mapAttrs (host: device: {
+  services.syncthing.managed.devices = lib.mapAttrs (host: device: {
     inherit (device) id;
     # Allow non-NixOS/external devices to specify their own addresses in JSON.
     # If omitted, default to the VPN hostname + dynamic discovery.

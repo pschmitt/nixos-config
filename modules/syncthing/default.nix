@@ -1,7 +1,7 @@
 { config, lib, ... }:
 
 {
-  options.services.syncthing.declarative = {
+  options.services.syncthing.managed = {
     enable = lib.mkEnableOption "syncthing with declarative devices";
 
     server = lib.mkOption {
@@ -26,7 +26,7 @@
             devices = lib.mkOption {
               type = lib.types.nullOr (lib.types.listOf lib.types.str);
               default = null;
-              description = "Device names (keys into services.syncthing.declarative.devices) to share this folder with. Defaults to all other devices when null.";
+              description = "Device names (keys into services.syncthing.managed.devices) to share this folder with. Defaults to all other devices when null.";
             };
             type = lib.mkOption {
               type = lib.types.nullOr (
@@ -75,7 +75,7 @@
 
   config =
     let
-      cfg = config.services.syncthing.declarative;
+      cfg = config.services.syncthing.managed;
       currentHost = config.networking.hostName;
       otherDevices = lib.filterAttrs (name: _: name != currentHost) cfg.devices;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;

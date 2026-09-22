@@ -25,7 +25,7 @@ in
   # Folder ids must match the server's (hosts/rofl-10/syncthing.nix) for
   # Syncthing to pair them up automatically -- no manual "accept" step on
   # first connect. Paths default to ~/<label> on clients.
-  services.syncthing.declarative.folders = {
+  services.syncthing.managed.folders = {
     documents = {
       label = "Documents";
       devices = documentsDevices;

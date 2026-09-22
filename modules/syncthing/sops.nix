@@ -3,7 +3,7 @@
 {
   config =
     let
-      cfg = config.services.syncthing.declarative;
+      cfg = config.services.syncthing.managed;
       syncthingUser = if cfg.server then "syncthing" else config.mainUser.username;
     in
     lib.mkIf cfg.enable {
