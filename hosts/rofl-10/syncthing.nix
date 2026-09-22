@@ -39,7 +39,7 @@ in
       configXml = "/var/lib/syncthing/.config/syncthing/config.xml";
     };
 
-    syncthing.declarative = {
+    syncthing.managed = {
       folders = {
         documents = {
           label = "Documents";
