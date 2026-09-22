@@ -29,6 +29,16 @@ let
     inherit config;
     haIngressBypass = false;
   };
+  # Docker/host restarts never give Chromium a clean shutdown (exit_type
+  # stays "Crashed"), and Chromium's cookie store purges session-only
+  # cookies (no expiry, e.g. most SSO logins) at the *next* startup whenever
+  # session.restore_on_startup != 1. Force "continue where you left off" via
+  # enterprise policy -- rather than the mutable Preferences file, which
+  # this doesn't touch -- so logins survive container/host restarts instead
+  # of only surviving alongside the on-disk profile.
+  restoreSessionPolicy = pkgs.writeText "browser-mcp-chromium-restore-session.json" (
+    builtins.toJSON { RestoreOnStartup = 1; }
+  );
 in
 {
   imports = [ ./http.nix ];
@@ -37,18 +47,6 @@ in
     "d ${dataDir} 0750 ${toString puid} ${toString pgid} - -"
     "d ${downloadsDir} 0750 ${toString puid} ${toString pgid} - -"
   ];
-
-  sops.secrets = {
-    "browser-mcp/vnc/user" = config.custom.mkSecret { };
-    "browser-mcp/vnc/password" = config.custom.mkSecret { };
-  };
-
-  sops.templates."${containerName}.env".content = ''
-    CUSTOM_USER=${config.sops.placeholder."browser-mcp/vnc/user"}
-    PASSWORD=${config.sops.placeholder."browser-mcp/vnc/password"}
-    CUSTOM_PORT=${toString containerPort}
-    CUSTOM_HTTPS_PORT=48946
-  '';
 
   # Keep a persistent GUI browser for human logins and CAPTCHAs. Playwright MCP
   # connects over CDP from the same host, so it sees the logged-in profile and
@@ -60,12 +58,14 @@ in
     environment = {
       PUID = toString puid;
       PGID = toString pgid;
+      CUSTOM_PORT = toString containerPort;
+      CUSTOM_HTTPS_PORT = "48946";
       CHROME_CLI = "--remote-debugging-address=127.0.0.1 --remote-debugging-port=9222";
     };
-    environmentFiles = [ config.sops.templates."${containerName}.env".path ];
     volumes = [
       "${dataDir}:/config"
       "${downloadsDir}:${downloadsDir}"
+      "${restoreSessionPolicy}:/etc/chromium/policies/managed/restore-session.json:ro"
     ];
     extraOptions = [
       "--network=host"
@@ -73,13 +73,10 @@ in
     ];
   };
 
-  # These names only resolve to mesh addresses, but nginx answers on 0.0.0.0,
-  # so a request can reach this vhost anyway by sending its SNI to the WAN
-  # address. Authelia therefore stays in front of the VNC session and decides
-  # by source network: straight through from the mesh (see the mesh rule in
-  # services/authelia.nix), a login prompt from anywhere else. The MCP clients
-  # are unaffected -- they reach Chromium over ssh on 127.0.0.1:9222, not
-  # through nginx.
+  # Authelia gates access to this vhost via SSO (see the browser rule in
+  # services/authelia.nix), protecting the session on both mesh and WAN
+  # without needing container-level Basic Auth. The MCP clients are unaffected
+  # -- they reach Chromium over ssh on 127.0.0.1:9222, not through nginx.
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
