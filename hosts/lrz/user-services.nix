@@ -5,7 +5,6 @@
   home-manager.users.${config.mainUser.username} = {
     services = {
       jcalapi.enable = lib.mkForce false;
-      ssh-clipboard.enable = lib.mkForce false;
       home-manager.autoUpgrade.enable = lib.mkForce false;
     };
   };
