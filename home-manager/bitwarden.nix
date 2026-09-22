@@ -122,9 +122,7 @@
           email.file = config.sops.secrets."rbw/work/email".path;
           baseUrl.file = config.sops.secrets."rbw/work/base_url".path;
           unlock = {
-            # Do not let a broken WIIT credential-source/TOTP prevent the
-            # primary account from being listed. `--all` still opts into it.
-            policy = "on-demand";
+            policy = "always";
             credentials.account = "default";
           };
         };
