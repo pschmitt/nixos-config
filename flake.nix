@@ -402,7 +402,7 @@
         ./modules # custom modules
         inputs.disko.nixosModules.disko
         inputs.sops-nix.nixosModules.sops
-        ./modules/syncthing-sops.nix
+        ./modules/syncthing/sops.nix
         inputs.nixos-config-private.nixosModules.default
       ];
 

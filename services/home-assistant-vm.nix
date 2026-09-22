@@ -19,44 +19,6 @@ let
   };
 in
 {
-  options.services.home-assistant-vm = {
-    enable = lib.mkEnableOption "Home Assistant OS VM hosting";
-
-    domainName = lib.mkOption {
-      type = lib.types.str;
-      default = "home-assistant";
-      description = "Libvirt domain name for the Home Assistant VM.";
-    };
-
-    domainXml = lib.mkOption {
-      type = lib.types.path;
-      description = "Nix-managed libvirt domain XML.";
-    };
-
-    physicalInterface = lib.mkOption {
-      type = lib.types.str;
-      description = "Physical interface enslaved into the VM bridge.";
-    };
-
-    bridgeName = lib.mkOption {
-      type = lib.types.str;
-      default = "hass-br0";
-      description = "Bridge name used by the Home Assistant VM.";
-    };
-
-    bridgeMac = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
-      default = null;
-      description = "Stable MAC address for the host bridge, when required.";
-    };
-
-    autostart = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Whether libvirt should autostart the Home Assistant VM.";
-    };
-  };
-
   config = lib.mkIf cfg.enable {
     virtualisation.libvirtd = {
       enable = true;

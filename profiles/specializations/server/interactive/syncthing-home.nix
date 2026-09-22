@@ -41,7 +41,7 @@ let
   };
 in
 {
-  imports = [ ../../../../modules/home-manager/syncthing-tui.nix ];
+  imports = [ ../../../../modules/syncthing/home-manager/tui.nix ];
 
   home.packages = [
     pkgs.syncthingtui

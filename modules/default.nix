@@ -9,9 +9,10 @@
     ./main-user.nix
     ./nix-host-overrides.nix
     ./nixos-config-symlink.nix
+    ./options
     ./sops.nix
     ./stalwart.nix
-    ./syncthing.nix
+    ./syncthing
     ./theme.nix
   ];
 }

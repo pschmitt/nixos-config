@@ -7,7 +7,7 @@
     enable = true;
     physicalInterface = "enp1s0f0";
     bridgeMac = "6c:4b:90:e4:73:8c";
-    domainXml = ./home-assistant.xml;
+    macAddress = "52:54:00:a0:a7:2b";
     autostart = false;
   };
 }

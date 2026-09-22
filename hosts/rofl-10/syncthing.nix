@@ -23,7 +23,7 @@ in
 {
   imports = [
     ../../services/syncthing.nix
-    ../../modules/syncthing-tui.nix
+    ../../modules/syncthing/tui.nix
   ];
 
   custom.syncthingTui = {
