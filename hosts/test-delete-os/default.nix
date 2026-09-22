@@ -3,6 +3,7 @@
   imports = [
     ./disk-config.nix
     ./hardware-configuration.nix
+    ./luks-data.nix
 
     ../../profiles/specializations/server
   ];

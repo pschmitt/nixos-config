@@ -4,6 +4,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ./hardware.nix
+    ./luks-data.nix
 
     ../../profiles/specializations/server
   ];
