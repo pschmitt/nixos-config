@@ -3,12 +3,15 @@
   disko.devices.disk.data = {
     # /dev/oracleoci/oraclevdX (from the attachment's explicit `device`
     # argument) doesn't exist in the kexec installer environment - that
-    # symlink needs Oracle Cloud Agent's udev rules, which aren't present
-    # there. Use the SCSI WWN instead: a standard udev by-id symlink
-    # (available with no OCI-specific tooling) that's stable for the life
-    # of this volume attachment. Discovered empirically the same way
-    # oci-01's static data disk id was: `ls -la /dev/disk/by-id/` on the
-    # live host after attaching.
+    # symlink needs the oci-consistent-device-naming udev rule (see
+    # hardware/oci.nix), which isn't present there since disko partitioning
+    # runs inside nixos-anywhere's own generic kexec installer image, not
+    # our host's config. This exact predictable-device-name approach was
+    # tried and reverted in 2024 (see git history) in favor of hardcoding
+    # the SCSI WWN, which is what oci-01's data disk already does - a
+    # standard udev by-id symlink needing no OCI-specific tooling, stable
+    # for the life of this volume attachment. Discovered empirically the
+    # same way: `ls -la /dev/disk/by-id/` on the live host after attaching.
     device = lib.mkDefault "/dev/disk/by-id/scsi-3600c1308c9a44a5c880063f93ce10a9e";
     destroy = lib.mkForce false;
     type = "disk";

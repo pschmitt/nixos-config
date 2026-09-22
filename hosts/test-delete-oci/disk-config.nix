@@ -6,7 +6,10 @@
       # assignment is attachment-order-dependent, not tied to boot vs. data)
       # - confirmed empirically: with the data disk attached, the boot
       # volume enumerated as /dev/sdb, not /dev/sda. Use its SCSI WWN
-      # instead (see disk-config-data.nix for the same reasoning).
+      # instead - the same pattern oci-01 already uses for its data disk
+      # (see disk-config-data.nix). A predictable /dev/oracleoci/oraclevdX
+      # name was tried and reverted in 2024 (see git history); the WWN is
+      # what stuck.
       device = lib.mkDefault "/dev/disk/by-id/scsi-3604c27e2f30d43f69e4998462381f66a";
       type = "disk";
       content = {
