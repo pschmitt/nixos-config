@@ -2,7 +2,12 @@
 {
   disko.devices = {
     disk.system = {
-      device = lib.mkDefault "/dev/sda";
+      # /dev/sda is NOT stable once a second disk is attached (SCSI letter
+      # assignment is attachment-order-dependent, not tied to boot vs. data)
+      # - confirmed empirically: with the data disk attached, the boot
+      # volume enumerated as /dev/sdb, not /dev/sda. Use its SCSI WWN
+      # instead (see disk-config-data.nix for the same reasoning).
+      device = lib.mkDefault "/dev/disk/by-id/scsi-3604c27e2f30d43f69e4998462381f66a";
       type = "disk";
       content = {
         type = "gpt";
