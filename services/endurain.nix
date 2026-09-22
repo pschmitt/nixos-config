@@ -36,6 +36,12 @@ let
   # folder so the receive-only watch dir is never modified and re-syncs/reverts
   # cannot trigger duplicate uploads.
   ingestStateDir = "/var/lib/${ingestUser}";
+  # Drops GPS-spike trackpoints (a point implying implausible speed on both
+  # its incoming and outgoing leg - a lost/regained satellite lock) before
+  # upload. Stdlib-only, no extra libraries needed.
+  fixGpxSpikes = pkgs.writers.writePython3Bin "fix-gpx-spikes" { } (
+    builtins.readFile ./fix-gpx-spikes.py
+  );
   endurainIngest = pkgs.writeShellApplication {
     name = "endurain-ingest";
     runtimeInputs = with pkgs; [
@@ -43,6 +49,7 @@ let
       jq
       coreutils
       gnused
+      fixGpxSpikes
     ];
     text = builtins.readFile ./endurain-ingest.sh;
   };

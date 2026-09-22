@@ -46,11 +46,12 @@ declare -A GPX_TYPE_MAP=(
 todo=()
 declare -A todo_hash
 
-# Set by rewrite_gpx_type: a scratch copy to upload instead of the original,
-# or empty when the file needs no rewrite. Set by upload_file: uploaded,
-# rejected or transient. Globals rather than stdout, so both functions stay
-# free to log to the journal.
+# Set by rewrite_gpx_type/fix_gpx_spikes: a scratch copy to upload instead of
+# the original, or empty when the file needs no change. Set by upload_file:
+# uploaded, rejected or transient. Globals rather than stdout, so all three
+# functions stay free to log to the journal.
 rewritten_path=""
+despiked_path=""
 upload_outcome=""
 
 log() {
@@ -161,6 +162,41 @@ rewrite_gpx_type() {
   log "type rewrite: $(basename "$f"): $gpx_type -> $mapped"
 }
 
+# Drop GPS-spike trackpoints before upload, on a scratch copy (only .gpx -
+# see fix-gpx-spikes.py for the detection rule: a point must be anomalous on
+# BOTH its incoming and outgoing leg, so a real point after a pause/resume
+# gap is never touched). Its stdout is exactly the removed-point count;
+# everything else it reports goes to stderr, which we pass through as-is.
+fix_gpx_spikes() {
+  local f="$1"
+  local out
+  local removed
+
+  despiked_path=""
+
+  if [[ "$f" != *.gpx ]]
+  then
+    return 0
+  fi
+
+  out="$(mktemp --suffix=.gpx)"
+  if ! removed="$(fix-gpx-spikes "$f" "$out")"
+  then
+    err "fix-gpx-spikes failed on $(basename "$f"); uploading as-is"
+    rm -f "$out"
+    return 0
+  fi
+
+  if [[ "$removed" -eq 0 ]]
+  then
+    rm -f "$out"
+    return 0
+  fi
+
+  log "despiked: $(basename "$f")"
+  despiked_path="$out"
+}
+
 # Upload one file, setting upload_outcome to uploaded, rejected or transient.
 upload_file() {
   local host="$1"
@@ -244,11 +280,21 @@ main() {
       upload_path="$rewritten_path"
     fi
 
+    fix_gpx_spikes "$upload_path"
+    if [[ -n "$despiked_path" ]]
+    then
+      upload_path="$despiked_path"
+    fi
+
     upload_file "$host" "$token" "$upload_path" "$base" "$marker"
 
     if [[ -n "$rewritten_path" ]]
     then
       rm -f "$rewritten_path"
+    fi
+    if [[ -n "$despiked_path" ]]
+    then
+      rm -f "$despiked_path"
     fi
 
     case "$upload_outcome" in
