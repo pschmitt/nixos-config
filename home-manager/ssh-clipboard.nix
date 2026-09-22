@@ -7,6 +7,25 @@
 }:
 let
   cfg = config.services.ssh-clipboard;
+
+  wlPasteShim = pkgs.writeShellApplication {
+    name = "wl-paste";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.xclip
+    ];
+    text = builtins.readFile ./scripts/wl-paste.sh;
+  };
+
+  wlCopyShim = pkgs.writeShellApplication {
+    name = "wl-copy";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.perl
+      pkgs.xclip
+    ];
+    text = builtins.readFile ./scripts/wl-copy.sh;
+  };
   jsonFormat = pkgs.formats.json { };
 
   nodeIdHash = builtins.hashString "sha256" "${cfg.nodeName}:${config.home.homeDirectory}";
@@ -135,7 +154,13 @@ in
     ];
 
     home = {
-      packages = [ cfg.package ];
+      packages = [
+        cfg.package
+      ]
+      ++ lib.optionals cfg.headlessX11 [
+        wlCopyShim
+        wlPasteShim
+      ];
       sessionVariables = lib.mkIf (cfg.sessionDisplay != null) {
         DISPLAY = cfg.sessionDisplay;
       };

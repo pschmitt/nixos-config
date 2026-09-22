@@ -81,7 +81,6 @@
 
         ./claude-work-warmup.nix
         ./agy-warmup.nix
-        ./wl-paste-shim.nix
       ];
 
       services = {
