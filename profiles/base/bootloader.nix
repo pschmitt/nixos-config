@@ -10,6 +10,7 @@
             enable = true;
             configurationLimit = 10;
             efiSupport = true;
+            efiInstallAsRemovable = true;
           };
         }
       else

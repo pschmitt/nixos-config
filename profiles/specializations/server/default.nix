@@ -45,6 +45,7 @@
     htop
     jq
     tmux
+    util-linux
     inputs.tmux-slay.packages.${pkgs.stdenv.hostPlatform.system}.default
   ];
 }
