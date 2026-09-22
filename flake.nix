@@ -603,6 +603,14 @@
                 system = "aarch64-linux";
                 deviceType = "server";
               };
+              test-delete-os = {
+                system = "x86_64-linux";
+                deviceType = "server";
+              };
+              test-delete-oci = {
+                system = "aarch64-linux";
+                deviceType = "server";
+              };
             };
           in
           nixpkgs.lib.mapAttrs mkHost hostConfigs

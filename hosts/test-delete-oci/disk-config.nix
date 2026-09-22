@@ -1,19 +1,8 @@
 { lib, ... }:
-let
-  tfVars =
-    if builtins.pathExists ./tf-vars.json then
-      builtins.fromJSON (builtins.readFile ./tf-vars.json)
-    else
-      null;
-in
 {
-  disko.devices.disk = {
-    system = {
-      device =
-        if tfVars != null && tfVars ? disks.root.id then
-          "/dev/disk/by-id/scsi-0QEMU_QEMU_HARDDISK_${tfVars.disks.root.id}"
-        else
-          lib.mkDefault "/dev/sda";
+  disko.devices = {
+    disk.system = {
+      device = lib.mkDefault "/dev/sda";
       type = "disk";
       content = {
         type = "gpt";

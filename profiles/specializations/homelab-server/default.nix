@@ -17,6 +17,7 @@
     ../../../services/web-vnc-console.nix
     ../../../services/kvm-usb.nix
     ../../../services/nfs/nfs-server.nix
+    ./nix.nix
     ./ssh-clipboard.nix
   ];
 
