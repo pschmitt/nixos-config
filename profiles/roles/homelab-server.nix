@@ -3,7 +3,7 @@
 # Only what's genuinely identical between the two host configs lives here;
 # host-specific values (network interfaces, VM staging vs. production,
 # backup/migration state) stay in hosts/fnuc/ and hosts/lrz/.
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ../gui/linger.nix
@@ -15,6 +15,10 @@
     ../../services/watchyourlan.nix
     ../../services/web-vnc-console.nix
     ../../services/kvm-usb.nix
+  ];
+
+  home-manager.users.${config.mainUser.username}.imports = [
+    ../../home-manager/wl-paste-shim.nix
   ];
 
   services = {
