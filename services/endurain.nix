@@ -27,7 +27,6 @@ let
   gadgetbridgeGpxDir = "${gadgetbridgeDir}/gpx";
   gadgetbridgeSyncId = "6qqtd-3lljl";
   phoneDevices = [
-    "px5"
     "p11"
   ];
 
@@ -142,6 +141,7 @@ in
           EnvironmentFile = config.sops.secrets."endurain-ingest/env".path;
           Environment = [
             "ENDURAIN_HOST=${endurainHost}"
+            "ENDURAIN_TZ=${config.time.timeZone}"
             "ENDURAIN_WATCH_DIR=${gadgetbridgeGpxDir}"
             "ENDURAIN_STATE_DIR=${ingestStateDir}/markers"
             "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
@@ -239,9 +239,9 @@ in
   };
 
   services = {
-    # Receive Gadgetbridge exports from the phones. rofl-10 only receives; the
-    # phones (px5, p11) are authoritative. The matching devices + Syncthing
-    # server are configured in hosts/rofl-10/syncthing.nix.
+    # Receive Gadgetbridge exports from the phone. rofl-10 only receives; the
+    # phone (p11) is authoritative. The matching device + Syncthing server
+    # are configured in hosts/rofl-10/syncthing.nix.
     syncthing.settings.folders.gadgetbridge = {
       id = gadgetbridgeSyncId;
       label = "Gadgetbridge";

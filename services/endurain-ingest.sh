@@ -3,18 +3,28 @@
 # Wrapped by pkgs.writeShellApplication, which prepends the shebang and
 # errexit/nounset/pipefail. Configuration comes from the environment, set by
 # the systemd unit:
-#   ENDURAIN_HOST, ENDURAIN_USERNAME, ENDURAIN_PASSWORD,
+#   ENDURAIN_HOST, ENDURAIN_USERNAME, ENDURAIN_PASSWORD, ENDURAIN_TZ,
 #   ENDURAIN_WATCH_DIR, ENDURAIN_STATE_DIR
 #
 # Triggered by a systemd .path unit (plus a sparse backstop timer). The watch
 # dir is a receive-only Syncthing folder fed by the (send-only) phone, so we
 # MUST NOT modify it: doing so would show up as "locally changed" items and any
-# Syncthing re-sync/revert would re-present files. Instead we dedup by content
-# hash via marker files in ENDURAIN_STATE_DIR. A marker means "handled, never
-# upload again", written both for successful uploads and for permanently
-# rejected files (e.g. a GPX with no track segments) so they stop retrying.
-# Transient failures (auth/rate-limit/server/network) are left unmarked and
-# retried on the next trigger.
+# Syncthing re-sync/revert would re-present files. Instead we dedup LOCAL
+# retries by content hash via marker files in ENDURAIN_STATE_DIR. A marker
+# means "handled, never upload again", written for successful uploads,
+# server-side duplicates and permanently rejected files (e.g. a GPX with no
+# track segments) so they stop retrying. Transient failures (auth/rate-limit/
+# server/network) are left unmarked and retried on the next trigger.
+#
+# Content-hash dedup only catches re-syncs of the exact same file. It cannot
+# catch the same real-world activity arriving as two different files - e.g.
+# two phones both running Gadgetbridge exporting the same watch session a
+# few seconds apart, or an activity Endurain already has via some other sync
+# path entirely (its Strava/Garmin Connect integrations, observed creating
+# same-second duplicates outside this script's control). check_duplicate
+# guards against both by asking Endurain itself whether an activity already
+# starts within DEDUP_WINDOW_SECONDS of this GPX's first trackpoint, before
+# ever uploading.
 
 # Gadgetbridge/OpenTracks GPX <type> values (lower-cased ActivityKind names)
 # that Endurain does not recognise, mapped onto strings it does. Endurain
@@ -41,6 +51,14 @@ declare -A GPX_TYPE_MAP=(
   [rowing_machine]='indoor_rowing'
   [table_tennis]='tabletennis'
 )
+
+# How close two activities' start times must be to count as the same
+# real-world session. Observed duplicates were 2s apart; 300s leaves plenty
+# of margin while still being far shorter than the gap between two genuinely
+# separate activities on the same day.
+DEDUP_WINDOW_SECONDS="${ENDURAIN_DEDUP_WINDOW_SECONDS:-300}"
+# How many of the most recent activities to compare against.
+DEDUP_LOOKBACK=20
 
 # Filled by collect_todo, consumed by main.
 todo=()
@@ -126,6 +144,118 @@ login() {
 
   rm -f "$resp"
   printf '%s\n' "$token"
+}
+
+# Extract the "sub" claim (our own user id) from the access token's JWT
+# payload, without verifying the signature - we already trust the connection
+# to our own server, and the result is only used to scope a read-only lookup
+# of our own recent activities.
+jwt_sub() {
+  local token="$1"
+  local payload
+
+  payload="$(cut -d. -f2 <<<"$token")"
+  payload="${payload//-/+}"
+  payload="${payload//_//}"
+  case $(( ${#payload} % 4 )) in
+    2) payload+='==' ;;
+    3) payload+='=' ;;
+  esac
+
+  base64 -d <<<"$payload" 2>/dev/null | jq -r '.sub // empty'
+}
+
+# Print the start_time of our DEDUP_LOOKBACK most recent activities, one per
+# line. Best-effort: prints nothing on any failure, which makes
+# check_duplicate fail open (upload proceeds) rather than block ingestion on
+# an API hiccup.
+recent_start_times() {
+  local host="$1"
+  local token="$2"
+  local user_id="$3"
+  local resp
+  local code
+
+  if [[ -z "$user_id" ]]
+  then
+    return 0
+  fi
+
+  resp="$(mktemp)"
+  code="$(
+    curl -sS -o "$resp" -w '%{http_code}' \
+      -H "Authorization: Bearer $token" \
+      -H 'X-Client-Type: mobile' \
+      "https://$host/api/v1/activities/user/$user_id/page_number/1/num_records/$DEDUP_LOOKBACK"
+  )" || code='000'
+
+  if [[ "$code" == '200' ]]
+  then
+    jq -r '.[].start_time' <"$resp"
+  fi
+  rm -f "$resp"
+}
+
+# Sets is_duplicate=1 when an activity already exists within
+# DEDUP_WINDOW_SECONDS of this GPX's first trackpoint. Only .gpx is checked
+# (the only format seen duplicated in practice) and start_time comparisons
+# happen in epoch seconds: the GPX's own <time> is UTC, Endurain's returned
+# start_time is local wall-clock time in $tz.
+is_duplicate=""
+
+# Extract the first trackpoint's <time>. A plain greedy `.*<time>...` sed
+# match breaks on these files: they're a single unbroken line with no
+# newlines, so `.*` backtracks all the way to the LAST <time> in the
+# document (the activity's end, or worse the <metadata> block's own <time>,
+# whichever comes last) instead of the first trkpt's. Splitting on <trkpt>
+# first isolates trkpt #1 on its own line, where a greedy match is safe
+# again because that single trkpt only ever has one <time>.
+first_trkpt_time() {
+  local f="$1"
+  sed 's#<trkpt#\n<trkpt#g' "$f" | sed -n '2p' | sed -n 's#.*<time>\([^<]*\)</time>.*#\1#p'
+}
+
+check_duplicate() {
+  local f="$1"
+  local host="$2"
+  local token="$3"
+  local user_id="$4"
+  local tz="$5"
+  local gpx_time
+  local epoch
+  local existing_start
+  local existing_epoch
+  local delta
+
+  is_duplicate=""
+
+  if [[ "$f" != *.gpx ]]
+  then
+    return 0
+  fi
+
+  gpx_time="$(first_trkpt_time "$f")"
+  if [[ -z "$gpx_time" ]]
+  then
+    return 0
+  fi
+
+  epoch="$(date -d "$gpx_time" +%s)" || return 0
+
+  while read -r existing_start
+  do
+    if [[ -z "$existing_start" ]]
+    then
+      continue
+    fi
+    existing_epoch="$(TZ="$tz" date -d "$existing_start" +%s)" || continue
+    delta=$(( existing_epoch - epoch ))
+    if (( delta > -DEDUP_WINDOW_SECONDS && delta < DEDUP_WINDOW_SECONDS ))
+    then
+      is_duplicate=1
+      return 0
+    fi
+  done < <(recent_start_times "$host" "$token" "$user_id")
 }
 
 # Rewrite an unrecognised GPX <type> onto Endurain's vocabulary, on a scratch
@@ -243,14 +373,17 @@ upload_file() {
 
 main() {
   local host="${ENDURAIN_HOST:?}"
+  local tz="${ENDURAIN_TZ:?}"
   local watch_dir="${ENDURAIN_WATCH_DIR:?}"
   local state_dir="${ENDURAIN_STATE_DIR:?}"
   local token
+  local user_id
   local f
   local base
   local marker
   local upload_path
   local uploaded=0
+  local duplicate=0
   local rejected=0
   local transient=0
 
@@ -267,11 +400,21 @@ main() {
   fi
 
   token="$(login "$host")"
+  user_id="$(jwt_sub "$token")"
 
   for f in "${todo[@]}"
   do
     base="$(basename "$f")"
     marker="$state_dir/${todo_hash[$f]}"
+
+    check_duplicate "$f" "$host" "$token" "$user_id" "$tz"
+    if [[ -n "$is_duplicate" ]]
+    then
+      printf 'duplicate: activity within %ss of an existing one\n' "$DEDUP_WINDOW_SECONDS" >"$marker"
+      log "DUPLICATE (skipped): $base"
+      duplicate=$((duplicate + 1))
+      continue
+    fi
 
     rewrite_gpx_type "$f"
     upload_path="$f"
@@ -310,10 +453,10 @@ main() {
     esac
   done
 
-  log "endurain-ingest: uploaded=$uploaded rejected=$rejected transient=$transient"
+  log "endurain-ingest: uploaded=$uploaded duplicate=$duplicate rejected=$rejected transient=$transient"
 
-  # Only signal failure for transient problems; permanently rejected files are
-  # recorded and must not keep the unit flapping.
+  # Only signal failure for transient problems; permanently rejected/duplicate
+  # files are recorded and must not keep the unit flapping.
   [[ "$transient" -eq 0 ]]
 }
 
