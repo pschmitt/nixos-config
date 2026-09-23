@@ -3578,11 +3578,11 @@
         "pre-commit-hooks": "pre-commit-hooks_5"
       },
       "locked": {
-        "lastModified": 1790146051,
-        "narHash": "sha256-CT1zdveqf7fSyzPSlV0d2HJwKEEVMtr9qEbU/xe9fDw=",
+        "lastModified": 1790146696,
+        "narHash": "sha256-qIbiKUFi/mU75uJPj20652U7dBssxBCNq8aNZPM96wY=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "68d2f217eb41575b5da2e10f44f2848d92f7d707",
+        "rev": "6cfe56d4f01b2375f0ffd2ebbe6e0ff5298645b9",
         "type": "github"
       },
       "original": {
