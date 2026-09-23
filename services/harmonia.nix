@@ -7,6 +7,7 @@
 let
   mainDomain = config.domains.main;
   netbirdDomain = config.domains.netbird;
+  hostName = config.networking.hostName;
   cfg = config.services.harmonia;
 
   # List of Harmonia hosts with their respective configurations
@@ -15,8 +16,8 @@ let
       domain = "cache.${config.networking.hostName}.${netbirdDomain}";
       basicAuth = false;
     }
-    { domain = "cache.${config.networking.hostName}.${mainDomain}"; }
-  ];
+  ]
+  ++ lib.optional cfg.exposeMainDomain { domain = "cache.${hostName}.${mainDomain}"; };
 
   # Function to generate virtual host configuration
   generateVHost =
@@ -74,12 +75,12 @@ in
       nginx.virtualHosts = virtualHosts;
 
       monit.config = lib.mkAfter ''
-        check host "harmonia" with address "cache.${config.networking.hostName}.${mainDomain}"
+        check host "harmonia" with address "127.0.0.1"
           group services
           restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
           if failed
-            port 443
-            protocol https status 401
+            port 42766
+            protocol http request "/nix-cache-info" status 200
             with timeout 15 seconds
             for 3 cycles
           then restart
