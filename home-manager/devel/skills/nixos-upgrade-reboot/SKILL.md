@@ -69,24 +69,48 @@ Do not wait for other hosts' builds to finish. Never reboot a host while its
 upgrade unit is still active. Hosts with no generation mismatch do not need a
 reboot.
 
-### Remote unlock grace period
+### Verify remote unlock readiness
 
-The hosts use `luks-ssh-unlock` with target signatures collected and stored on
-`fnuc`. The collection runs approximately once per minute. After a
-kernel-changing upgrade, the freshly activated target state may not yet have
-been collected, and rebooting too quickly can make the remote unlock refuse to
-unlock the host.
+Do not use an elapsed-time delay as the reboot gate. The target's signed initrd
+checksum must be current on the configured `luks-ssh-unlock` controller before
+rebooting; a recent timestamp alone is not sufficient if collection or
+validation is failing.
 
-When a completed upgrade has a kernel-generation mismatch:
+After a successful upgrade with a kernel-generation mismatch:
 
-1. Wait at least 60 seconds after upgrade completion before rebooting.
-2. Prefer waiting for one fresh `luks-ssh-unlock` collection cycle, or about
-   two minutes when there is no direct way to verify collection on `fnuc`.
-3. Then reboot the host without waiting for unrelated hosts' upgrades.
+1. Derive the controller and instance for the target from the active NixOS
+   configuration. Start with the public repository's
+   `services/luks-ssh-unlock-fleet.nix` and host imports, then follow the
+   `nixos-config-private` input for private modules or host-specific overrides.
+   Use the evaluated `services.luks-ssh-unlock.instances` configuration on the
+   controller to identify the target instance; do not assume a controller,
+   hostname, or target list from memory.
+2. Inspect that instance's journal from the upgrade completion time onward.
+   Check for checksum fetch failures or SSH/healthcheck errors. Successful
+   healthchecks may be intentionally silent, and a controller-side health check
+   before the upgrade does not prove the new checksum was collected.
+3. Read the instance's configured `initrdCheck.dir` (the `INITRD_CHECKSUM_DIR`
+   value) from the evaluated configuration. Confirm the checksum and detached
+   signature exist in its per-target directory, and that the successful
+   collection is newer than activation. Verify the signature with the target's
+   trusted SSH host key as configured by Nix. Treat timestamps as supporting
+   evidence alongside a successful fetch and signature verification. Resolve
+   private module values from the private checkout or evaluated configuration
+   rather than copying sensitive data into notes.
+4. If the new checksum has not been collected, or the controller reports a
+   missing file, signature/checksum validation failure, or skipped unlock,
+   leave the host running and diagnose the controller/target exchange. Do not
+   bypass signature validation or reboot on a timer. Recheck after the
+   controller records a successful post-activation collection.
+5. Re-check that the upgrade unit is inactive and the kernel paths still
+   differ, then reboot that host promptly without waiting for unrelated builds.
 
-Do not skip this grace period merely because the reboot is operationally
-urgent. If the signature collection can be inspected, confirm that `fnuc` has
-recent material for the target before rebooting.
+After reboot, the target may briefly present its distinct initrd SSH host key.
+Use the trusted initrd host-key record to validate it; never overwrite
+`known_hosts` or disable checking blindly. If validation succeeds, a temporary
+`UserKnownHostsFile=/dev/null` plus `StrictHostKeyChecking=no` may be used only
+for the narrowly scoped post-reboot check. Report the key change and do not
+silently alter persistent SSH configuration.
 
 After reboot, retry SSH for a bounded period and verify:
 
@@ -94,13 +118,6 @@ After reboot, retry SSH for a bounded period and verify:
 - `uname -r` reflects the new kernel;
 - `/run/booted-system/kernel` and `/run/current-system/kernel` now match; and
 - `nixos-upgrade.service` is inactive/dead/success.
-
-If SSH reports a changed host key, do not overwrite `known_hosts` blindly.
-Validate the fingerprint against a trusted current inventory or other
-independent source first. If validation is available, a temporary
-`UserKnownHostsFile=/dev/null` plus `StrictHostKeyChecking=no` may be used only
-for the narrowly scoped post-reboot check; report the key change and do not
-silently alter the user's persistent SSH configuration.
 
 ## Completion and reporting
 
