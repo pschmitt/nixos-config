@@ -60,6 +60,7 @@ in
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
+  immich-mcp = pkgs.callPackage ./immich-mcp { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
   ketall = pkgs.callPackage ./ketall { };
   libfprint-focaltech = pkgs.callPackage ./libfprint-focaltech { };

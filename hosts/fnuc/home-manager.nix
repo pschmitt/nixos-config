@@ -7,6 +7,7 @@
 
       ../../services/claude-work-warmup.nix
       ../../services/agy-warmup.nix
+      ./immich-mcp.nix
     ];
   };
 }

@@ -255,6 +255,7 @@ in
           GH_BRKN_LOL_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
           GH_PSCHMITT_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
           GH_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
+          IMMICH_API_KEY=${config.sops.placeholder."immich/immich-face-to-album/apiKey"}
           SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
           SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
           SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
@@ -344,6 +345,17 @@ in
           home-assistant = {
             url = "https://ha.${config.domains.main}/api/mcp";
             headers.Authorization = "Bearer \${MCP_HOME_ASSISTANT_API_KEY}";
+            connect_timeout = 30;
+            timeout = 90;
+          };
+          immich = {
+            command = "${pkgs.immich-mcp}/bin/ImmichMCP";
+            args = [ "--stdio" ];
+            env = {
+              IMMICH_BASE_URL = "http://127.0.0.1:${toString config.services.immich.port}";
+              IMMICH_API_KEY = "\${IMMICH_API_KEY}";
+              IMMICH_TOOL_MODE = "gateway";
+            };
             connect_timeout = 30;
             timeout = 90;
           };
