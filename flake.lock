@@ -2426,11 +2426,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1790195506,
-        "narHash": "sha256-7apPcGju6gKUhleIec9be/Zr8IMWW+OUaYZreQEs/uA=",
+        "lastModified": 1790197913,
+        "narHash": "sha256-rxNCFQ1+e19voc0PTn9HT48gb/1a2BR4Ec1q8/fs2tQ=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "be4fad15545e3023dde8680e475f3e416c8e4d96",
+        "rev": "13234637ef1cdbfe1593b1ce18041f7dcbd25e3b",
         "type": "github"
       },
       "original": {
@@ -2928,11 +2928,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790196582,
-        "narHash": "sha256-fvc3Etjjxoe5FdI0hBVjUWHRih6IeDLWekN6XvCZovw=",
+        "lastModified": 1790197914,
+        "narHash": "sha256-WMKGdGe1BsO+Hri3OPAN5zIYmFRAvLvn+0qrERmajO8=",
         "owner": "pschmitt",
         "repo": "noctalia-plugins",
-        "rev": "8df148aafc61f3755ce1676566dd6759d60958f0",
+        "rev": "4d935be46a1ddfd5e474423aadca659da72642e4",
         "type": "github"
       },
       "original": {
