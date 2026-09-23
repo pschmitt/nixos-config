@@ -81,8 +81,13 @@ let
     }
   ];
 
-  # Each importing host unlocks every other fleet member, not itself.
-  otherTargets = lib.filter (target: target.name != config.networking.hostName) targets;
+  # By default, each importing host unlocks every other fleet member.
+  fleetConfig = config.services.luks-ssh-unlock-fleet;
+  otherTargets = lib.filter (
+    target:
+    target.name != config.networking.hostName
+    && (fleetConfig.targetNames == null || lib.elem target.name fleetConfig.targetNames)
+  ) targets;
 
   # Most importers authenticate as themselves with the personal key. Cloud
   # hosts that shouldn't hold a copy of it override this option instead (see
@@ -179,6 +184,15 @@ let
         config.sops.templates."luks-ssh-unlock/${target.name}/known_hosts_initrd".path
       else
         null;
+    jumpHost =
+      if fleetConfig.jumpHost == null then
+        null
+      else
+        {
+          inherit (fleetConfig.jumpHost) hostname username port;
+          enable = true;
+          key = if fleetConfig.jumpHost.key == null then selfSshKey else fleetConfig.jumpHost.key;
+        };
 
     forceIpv4 = true;
     sleepInterval = 30;
@@ -213,6 +227,15 @@ in
   imports = [ inputs.luks-ssh-unlock.nixosModules.default ];
 
   config = {
+    assertions = [
+      {
+        assertion =
+          fleetConfig.targetNames == null
+          || lib.all (name: lib.elem name (map (target: target.name) targets)) fleetConfig.targetNames;
+        message = "services.luks-ssh-unlock-fleet.targetNames contains an unknown fleet target.";
+      }
+    ];
+
     # Fleet-internal trust: rofl-10's dedicated unlock identity (see the
     # services.luks-ssh-unlock-fleet.selfKeyPath override in hosts/rofl-10) is
     # authorized as root on every fleet member.
