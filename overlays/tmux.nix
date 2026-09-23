@@ -1,8 +1,8 @@
-{ final, prev }:
+{ prev, ... }:
 
 # https://github.com/NixOS/nixpkgs/pull/468021
 {
-  tmux = prev.tmux.overrideAttrs (oldAttrs: rec {
+  tmux = prev.tmux.overrideAttrs (_oldAttrs: rec {
     # pname = "tmux";
     version = "3.6a";
 

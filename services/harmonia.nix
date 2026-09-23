@@ -21,8 +21,8 @@ let
   # Function to generate virtual host configuration
   generateVHost =
     {
-      domain,
       basicAuth ? true,
+      ...
     }:
     {
       enableACME = true;

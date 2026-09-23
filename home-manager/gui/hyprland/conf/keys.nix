@@ -4,7 +4,6 @@ let
   inherit (h)
     bind
     bindOpts
-    exec
     execBind
     execBindLocked
     ;

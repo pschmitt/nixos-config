@@ -1,7 +1,7 @@
-{ final, prev }:
+{ prev, ... }:
 {
   netbird = prev.netbird.overrideAttrs (
-    oldAttrs:
+    _oldAttrs:
     let
       version = "0.35.1";
     in

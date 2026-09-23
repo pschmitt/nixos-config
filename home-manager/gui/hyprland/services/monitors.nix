@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
   xdg.configFile."hypr/monitors.lua".text = ''
     -- Dynamic monitor layout — classifies connected monitors by EDID

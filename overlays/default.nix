@@ -81,7 +81,7 @@
           # shadow) so it reaches netbox's self-referential python
           # reconstruction too. Drop once nixpkgs-master catches up.
           pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
-            (pyfinal: pyprev: {
+            (_pyfinal: pyprev: {
               playwright = pyprev.playwright.overridePythonAttrs (_old: {
                 src = mfinal.fetchFromGitHub {
                   owner = "microsoft";

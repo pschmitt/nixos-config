@@ -1,4 +1,4 @@
-{ lib, pkgs, ... }:
+{ lib, ... }:
 {
   # RPi Zero W — BCM2835, ARMv6
   nixpkgs.hostPlatform = lib.mkDefault "armv6l-linux";

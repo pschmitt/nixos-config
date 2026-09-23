@@ -10,7 +10,6 @@
   systemd,
   port ? 8080,
   mmonitHome ? "/var/lib/mmonit",
-  user ? "mmonit",
   sessionTimeout ? "43200 min", # 30days, default is 30min
 }:
 

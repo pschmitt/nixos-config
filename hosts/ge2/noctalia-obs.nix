@@ -9,7 +9,7 @@ let
   noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
 in
 {
-  home-manager.users.${config.mainUser.username} = { lib, ... }: {
+  home-manager.users.${config.mainUser.username} = _: {
     programs.noctalia.settings = {
       plugin_settings = {
         "pschmitt/fan-control".alt_mode = true;

@@ -8,69 +8,67 @@
 let
   cfg = config.services.restic-remote;
 
-  instanceOptions =
-    { name, config, ... }:
-    {
-      options = {
-        user = lib.mkOption {
-          type = lib.types.str;
-          default = "root";
-          description = "SSH User";
-        };
+  instanceOptions = _: {
+    options = {
+      user = lib.mkOption {
+        type = lib.types.str;
+        default = "root";
+        description = "SSH User";
+      };
 
-        host = lib.mkOption {
-          type = lib.types.str;
-          description = "SSH Host";
-        };
+      host = lib.mkOption {
+        type = lib.types.str;
+        description = "SSH Host";
+      };
 
-        identityFile = lib.mkOption {
-          type = lib.types.path;
-          description = "Path to SSH private key";
-        };
+      identityFile = lib.mkOption {
+        type = lib.types.path;
+        description = "Path to SSH private key";
+      };
 
-        timer = lib.mkOption {
-          type = lib.types.str;
-          default = "daily";
-          description = "Systemd timer schedule (OnCalendar)";
-        };
+      timer = lib.mkOption {
+        type = lib.types.str;
+        default = "daily";
+        description = "Systemd timer schedule (OnCalendar)";
+      };
 
-        environmentFile = lib.mkOption {
-          type = lib.types.path;
-          description = "File containing secrets (env vars). Should include RESTIC_REPOSITORY, RESTIC_PASSWORD, AWS credentials, and optionally HEALTHCHECK_URL.";
-        };
+      environmentFile = lib.mkOption {
+        type = lib.types.path;
+        description = "File containing secrets (env vars). Should include RESTIC_REPOSITORY, RESTIC_PASSWORD, AWS credentials, and optionally HEALTHCHECK_URL.";
+      };
 
-        repositoryFile = lib.mkOption {
-          type = lib.types.nullOr lib.types.path;
-          default = null;
-          description = "Path to file containing restic repository URL. If null, RESTIC_REPOSITORY must be set in environmentFile.";
-        };
+      repositoryFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "Path to file containing restic repository URL. If null, RESTIC_REPOSITORY must be set in environmentFile.";
+      };
 
-        exclude = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-          description = "Paths to exclude from backup";
-        };
+      exclude = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Paths to exclude from backup";
+      };
 
-        pruneOpts = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [
-            "--keep-last 5"
-            "--keep-daily 1"
-            "--keep-weekly 2"
-            "--keep-monthly 3"
-            "--keep-yearly 10"
-            "--keep-within 14d"
-          ];
-          description = "Prune options for restic";
-        };
+      pruneOpts = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "--keep-last 5"
+          "--keep-daily 1"
+          "--keep-weekly 2"
+          "--keep-monthly 3"
+          "--keep-yearly 10"
+          "--keep-within 14d"
+        ];
+        description = "Prune options for restic";
+      };
 
-        extraOptions = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-          description = "Extra options to pass to restic";
-        };
+      extraOptions = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        description = "Extra options to pass to restic";
       };
     };
+  };
 in
 {
   options.services.restic-remote = {
@@ -201,7 +199,7 @@ in
     # Override the systemd service to add failure handling and create failure notification services
     systemd.services = lib.mkMerge [
       (lib.mapAttrs' (
-        name: instance:
+        name: _instance:
         lib.nameValuePair "restic-backups-${name}" {
           serviceConfig = {
             TimeoutStartSec = "4h";

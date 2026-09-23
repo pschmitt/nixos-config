@@ -290,7 +290,6 @@ let
       extraClause = concatStringsSep " " monitorClauses;
       monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
-      inherit (service) monitoring;
       restartCommand = restartProgram service;
     in
     if program != null then

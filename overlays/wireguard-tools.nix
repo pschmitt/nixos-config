@@ -1,4 +1,4 @@
-{ final, prev }:
+{ prev, ... }:
 
 {
   wireguard-tools = prev.wireguard-tools.overrideAttrs (oldAttrs: {
