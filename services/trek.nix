@@ -51,6 +51,7 @@ in
     image = "mauriceboe/trek:${trekVersion}";
     pull = "always";
     autoStart = true;
+    serviceConfig.restartIfChanged = true;
     environment = {
       NODE_ENV = "production";
       PORT = toString containerPort;
