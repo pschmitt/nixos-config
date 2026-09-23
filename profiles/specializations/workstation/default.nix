@@ -64,7 +64,10 @@
   nix.settings = {
     max-jobs = lib.mkDefault 4;
     cores = lib.mkDefault 4;
+    trusted-public-keys = [ "fnuc:X/5wlLoWwSvNyAm369jFXOgwx7og2VLIs/bzTsoZ85Q=" ];
   };
+
+  nixHost.extraSubstituters = [ "https://cache.fnuc.${config.domains.netbird}" ];
 
   systemd.services.nix-daemon.serviceConfig = {
     CPUWeight = lib.mkDefault 50;

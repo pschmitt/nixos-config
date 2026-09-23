@@ -6,6 +6,7 @@
     ../../services/browser-mcp-chromium-container.nix
     ../../services/codex-ha-bridge.nix
     ../../services/go-hass-agent.nix
+    ../../services/harmonia.nix
     ../../services/kubeconfig-update.nix
 
     ./authorized-keys.nix
