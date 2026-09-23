@@ -59,7 +59,7 @@
     }; # Continue merging additional overlays as needed
   # When applied, the unstable nixpkgs set (declared in the flake inputs) will
   # be accessible through 'pkgs.unstable'
-  unstable-packages = final: prev: {
+  unstable-packages = final: _prev: {
     unstable = import inputs.nixpkgs-unstable {
       inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
@@ -110,7 +110,7 @@
   };
 
   flakes =
-    final: prev:
+    final: _prev:
     let
       libMozilla = import (inputs.firefox-addons + "/../../lib/mozilla.nix") { inherit (final) lib; };
       buildMozillaXpiAddon = libMozilla.mkBuildMozillaXpiAddon { inherit (final) fetchurl stdenv; };
@@ -124,7 +124,7 @@
 
   llm-agents = inputs.llm-agents.overlays.shared-nixpkgs;
 
-  old-packages = final: prev: {
+  old-packages = final: _prev: {
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
     kubectl-123 = import (builtins.fetchTarball {
       url = "https://github.com/NixOS/nixpkgs/archive/611bf8f183e6360c2a215fa70dfd659943a9857f.tar.gz";

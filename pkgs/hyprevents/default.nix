@@ -12,7 +12,7 @@
   nix-update-script,
 }:
 
-stdenvNoCC.mkDerivation (finalAttrs: {
+stdenvNoCC.mkDerivation (_finalAttrs: {
   pname = "hyprevents";
   version = "unstable-2024-10-15";
 

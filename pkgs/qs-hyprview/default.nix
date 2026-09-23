@@ -8,7 +8,7 @@
   nix-update-script,
 }:
 
-stdenvNoCC.mkDerivation (finalAttrs: {
+stdenvNoCC.mkDerivation (_finalAttrs: {
   pname = "qs-hyprview";
   version = "unstable-2026-08-21";
 

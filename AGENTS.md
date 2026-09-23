@@ -85,7 +85,7 @@
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
 - `statix` checks should pass. After Nix code changes, run `statix check` from within `nix develop`.
-- Also run `deadnix` to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). Leave idiomatic `final: prev:` / `finalAttrs:` as-is.
+- Also run `deadnix` to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 - Don't use `with lib;`. Qualify explicitly (`lib.mkOption`, `lib.types.str`, `lib.mkIf`) — that is the repo-wide style. For many uses in one scope, prefer `inherit (lib) mkOption mkIf types;` over `with`. This applies to package `meta` blocks too (`meta = { license = lib.licenses.mit; ... }`, and `maintainers = with lib.maintainers; [ pschmitt ];`).
