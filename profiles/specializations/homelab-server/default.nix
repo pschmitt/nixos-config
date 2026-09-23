@@ -10,7 +10,7 @@
     ../../features/desktop/linger.nix
 
     ../../../services/syslog-server.nix
-    ../../../services/luks-ssh-unlock-fleet.nix
+    ../../../services/luks-ssh-unlock/fleet.nix
     ../../../services/smokeping.nix
     ../../../services/reolink-ftp.nix
     ../../../services/watchyourlan.nix

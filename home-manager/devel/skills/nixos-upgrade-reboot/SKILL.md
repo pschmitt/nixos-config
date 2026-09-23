@@ -80,7 +80,7 @@ After a successful upgrade with a kernel-generation mismatch:
 
 1. Derive the controller and instance for the target from the active NixOS
    configuration. Start with the public repository's
-   `services/luks-ssh-unlock-fleet.nix` and host imports, then follow the
+   `services/luks-ssh-unlock/fleet.nix` and host imports, then follow the
    `nixos-config-private` input for private modules or host-specific overrides.
    Use the evaluated `services.luks-ssh-unlock.instances` configuration on the
    controller to identify the target instance; do not assume a controller,

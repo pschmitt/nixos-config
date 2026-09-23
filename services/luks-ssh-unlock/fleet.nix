@@ -6,34 +6,33 @@
 }:
 
 let
+  encryptedRootHealthcheck = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"encrypted\")'";
+
   targets = [
     {
       name = "fnuc";
       hostname = "fnuc.lan";
       hasInitrdCheck = true;
-      # fnuc/lrz's dm-crypt mappers are named "encrypted"/"data-encrypted"
-      # (see their disk-config.nix), not "luks-*" like gk4 -- "grep luks"
-      # never matches, so the healthcheck (and therefore
-      # fetch_initrd_checksum) never succeeds.
-      healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
+      # fnuc/lrz's dm-crypt mappers are named "encrypted"/"data-encrypted".
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "ge2";
       hostname = "ge2.lan";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "gk4";
       hostname = "gk4.lan";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep luks-root";
+      healthcheckCmd = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"luks-root\")'";
     }
     {
       name = "lrz";
       hostname = "lrz.lan";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
       dhcpListener = {
         enable = true;
         interface = "any";
@@ -46,43 +45,43 @@ let
       # oci-01 was migrated from Ubuntu to full NixOS; it now has its own
       # initrd SSH host keys and is unlockable like the rest of the fleet.
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "oci-03";
       hostname = "oci-03.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-10";
       hostname = "rofl-10.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-11";
       hostname = "rofl-11.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-12";
       hostname = "rofl-12.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-13";
       hostname = "rofl-13.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
     {
       name = "rofl-14";
       hostname = "rofl-14.brkn.lol";
       hasInitrdCheck = true;
-      healthcheckCmd = "mount | grep encrypted";
+      healthcheckCmd = encryptedRootHealthcheck;
     }
   ];
 

@@ -26,7 +26,7 @@ let
 
     healthcheck = {
       enable = true;
-      command = "mount | grep encrypted";
+      command = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"encrypted\")'";
     };
   };
 

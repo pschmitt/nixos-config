@@ -1,6 +1,6 @@
 { config, lib, ... }:
 {
-  imports = [ ./luks-ssh-unlock-fleet.nix ];
+  imports = [ ./fleet.nix ];
 
   # rofl-10 only needs to unlock the two hosts in the home lab.
   services.luks-ssh-unlock-fleet = {
