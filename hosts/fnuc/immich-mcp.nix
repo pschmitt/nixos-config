@@ -14,7 +14,7 @@ in
     env = {
       IMMICH_API_KEY.file = apiKey;
       IMMICH_BASE_URL = "https://img.${config.domains.main}";
-      IMMICH_TOOL_MODE = "gateway";
+      IMMICH_TOOL_MODE = "static";
     };
   };
 }
