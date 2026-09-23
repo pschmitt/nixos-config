@@ -67,7 +67,7 @@
     trusted-public-keys = [ "fnuc:X/5wlLoWwSvNyAm369jFXOgwx7og2VLIs/bzTsoZ85Q=" ];
   };
 
-  nixHost.extraSubstituters = [ "https://cache.fnuc.${config.domains.netbird}" ];
+  nixHost.extraSubstituters = [ "https://cache.fnuc.${config.domains.vpn}" ];
 
   systemd.services.nix-daemon.serviceConfig = {
     CPUWeight = lib.mkDefault 50;
