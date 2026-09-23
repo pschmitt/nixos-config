@@ -12,6 +12,8 @@ let
   trekVersion = "4.3.1";
 in
 {
+  systemd.services."${containerBackend}-trek".restartIfChanged = true;
+
   sops = {
     secrets."trek/encryption-key" = config.sops.mkHostSecret {
       mode = "0400";
@@ -51,7 +53,6 @@ in
     image = "mauriceboe/trek:${trekVersion}";
     pull = "always";
     autoStart = true;
-    serviceConfig.restartIfChanged = true;
     environment = {
       NODE_ENV = "production";
       PORT = toString containerPort;
