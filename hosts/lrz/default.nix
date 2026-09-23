@@ -9,7 +9,6 @@
     ./hardware-configuration.nix
     ./hass-vm.nix
     ./initrd-data-unlock.nix
-    ./kmscon.nix
     ./networking.nix
     ./services.nix
     ./user-services.nix

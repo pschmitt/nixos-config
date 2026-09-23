@@ -14,6 +14,7 @@
     ../../../services/smokeping.nix
     ../../../services/reolink-ftp.nix
     ../../../services/web-vnc-console.nix
+    ../../../services/kmscon.nix
     ../../../services/kvm-usb.nix
     ../../../services/nfs/nfs-server.nix
     ./nix.nix
@@ -27,6 +28,7 @@
   services = {
     fwupd.enable = true;
     kvm-usb-passthrough.enable = true;
+    kmscon.config."dpms-timeout" = 0;
 
     nfsExports = {
       enable = true;
