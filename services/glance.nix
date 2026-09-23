@@ -379,9 +379,11 @@ let
   # or its device_class attribute, since not all follow the *_issue naming
   # convention -- e.g. binary_sensor.cthulhulu_problem) that is currently
   # "on", every plant.* in "problem" state, plus a handful of known
-  # aggregate/warning sensors (offline devices, public/weather alerts).
+  # warning sensors (public/weather alerts).
   # binary_sensor.plant_issues is deliberately excluded: it's an aggregate
-  # of the same plant.* entities already listed individually below.
+  # of the same plant.* entities already listed individually below. The
+  # offline-devices aggregate is also omitted: integration-specific sensors
+  # (such as the ZHA offline sensor) provide the more actionable detail.
   #
   # The alert_entities are excluded from that same loop: they carry
   # device_class "problem" themselves, so without the exclusion each one is
@@ -407,10 +409,10 @@ let
   # dashboard's own plant card.
   # Verified interactively with `hass-cli template`.
   haWarningsJinja = ''
-    {%- set alert_entities = ["binary_sensor.offline_devices_devices_offline", "binary_sensor.public_alerts", "binary_sensor.dwd_warnings_current_future"] -%}
+    {%- set alert_entities = ["binary_sensor.public_alerts", "binary_sensor.dwd_warnings_current_future"] -%}
     {%- set ns = namespace(items=[]) -%}
     {%- for e in states.binary_sensor -%}
-      {%- if e.entity_id not in alert_entities and e.entity_id != 'binary_sensor.plant_issues' and e.entity_id != 'binary_sensor.window_advisor' and not e.entity_id.startswith('binary_sensor.window_advisor_') and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
+      {%- if e.entity_id not in alert_entities and e.entity_id != 'binary_sensor.offline_devices_devices_offline' and e.entity_id != 'binary_sensor.plant_issues' and e.entity_id != 'binary_sensor.window_advisor' and not e.entity_id.startswith('binary_sensor.window_advisor_') and (e.entity_id.endswith('_issue') or e.entity_id.endswith('_problem') or state_attr(e.entity_id, 'device_class') == 'problem') and e.state == 'on' -%}
         {%- set failed = state_attr(e.entity_id, 'failed_checks') -%}
         {%- if failed -%}
           {%- set detail = (state_attr(e.entity_id, "host_summary") or "") ~ ": " ~ (failed | join(", ")) -%}
@@ -429,6 +431,9 @@ let
     {%- for e in states.plant -%}
       {%- if e.state == "problem" -%}
         {%- set problem = e.attributes.get("problem", "unknown") -%}
+        {%- if "unavailable" in problem -%}
+          {%- set problem = "unavailable" -%}
+        {%- endif -%}
         {%- set entry = {"name": e.name, "last_changed": e.last_changed} -%}
         {%- set ns.plant_groups = dict(ns.plant_groups, **{problem: (ns.plant_groups.get(problem, []) + [entry])}) -%}
       {%- endif -%}
@@ -437,13 +442,13 @@ let
       {%- set ns.plant_all_entries = [] -%}
       {%- set ns.plant_detail_parts = [] -%}
       {%- for problem, entries in ns.plant_groups.items() -%}
-        {%- set names = entries | map(attribute="name") | list -%}
+        {%- set names = entries | map(attribute="name") | map("replace", "balcony_", "") | list -%}
         {%- set ns.plant_all_entries = ns.plant_all_entries + entries -%}
         {%- set ns.plant_detail_parts = ns.plant_detail_parts + [problem ~ ": " ~ (names | join(", "))] -%}
       {%- endfor -%}
       {%- set count = ns.plant_all_entries | length -%}
       {%- set oldest = ns.plant_all_entries | map(attribute="last_changed") | min -%}
-      {%- set ns.items = ns.items + [{"name": count ~ " plant" ~ ("s" if count != 1 else "") ~ (" need " if count != 1 else " needs ") ~ "attention", "entity_id": "plant.problems", "detail": ns.plant_detail_parts | join("; "), "link": "https://ha.${domain}/dashboard-debug/plants", "icon": "mdi:sprout", "type": "plant", "last_changed": oldest.isoformat()}] -%}
+      {%- set ns.items = ns.items + [{"name": count ~ " plant" ~ ("s" if count != 1 else "") ~ (" need " if count != 1 else " needs ") ~ "attention", "entity_id": "plant.problems", "detail": ns.plant_detail_parts | join("\n"), "link": "https://ha.${domain}/dashboard-debug/plants", "icon": "mdi:sprout", "type": "plant", "last_changed": oldest.isoformat()}] -%}
     {%- endif -%}
     {%- set ns.window_entries = [] -%}
     {%- for e in states.binary_sensor -%}
@@ -493,7 +498,7 @@ let
             <span class="size-h6 color-subdue shrink-0" {{ toRelativeTime (parseTime "RFC3339" (.String "last_changed")) }}></span>
           </div>
           {{ if ne (.String "detail") "" }}
-            <div class="size-h6 color-subdue">{{ .String "detail" }}</div>
+            <div class="size-h6 color-subdue" style="white-space:pre-line">{{ .String "detail" }}</div>
           {{ end }}
         </li>
       {{ end }}
