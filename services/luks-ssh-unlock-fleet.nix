@@ -36,7 +36,7 @@ let
       healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
       dhcpListener = {
         enable = true;
-        interface = "eno1";
+        interface = "any";
         clientHostname = "lrz";
       };
     }
