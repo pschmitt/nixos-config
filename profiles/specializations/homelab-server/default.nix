@@ -13,7 +13,6 @@
     ../../../services/luks-ssh-unlock/fleet.nix
     ../../../services/smokeping.nix
     ../../../services/reolink-ftp.nix
-    ../../../services/watchyourlan.nix
     ../../../services/web-vnc-console.nix
     ../../../services/kvm-usb.nix
     ../../../services/nfs/nfs-server.nix
