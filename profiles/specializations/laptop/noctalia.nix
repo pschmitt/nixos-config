@@ -28,81 +28,10 @@ let
 in
 {
   home-manager.users.${config.mainUser.username} = hmArgs: {
-    # Declarative Home Assistant layout base. The ha plugin writes panel
-    # changes to its separate state overlay, leaving this file immutable.
-    xdg.configFile."noctalia/ha.yaml".text = ''
-      entities:
-        - lock.m5stack_atoms3r_nuki_bridge_m5stack_atoms3r_nuki_bridge_lock
-        - entity_id: sensor.schmutzi_current_status
-          state_template: "{{ states('sensor.schmutzi_time_remaining') }}"
-          conditions:
-            entity: sensor.schmutzi_current_status
-            state: [running, spinning, rinsing, reserved, rinse_hold, pause, drying, detecting, steam_softening, cool_down, refreshing]
-      sections:
-        - name: Balcony
-          collapsed: true
-          entities:
-            - light.ikea_balcony_wall_light_round
-            - light.balcony_wall_light_cube_light
-        - name: Living room
-          collapsed: true
-          entities:
-            - light.hue_living_room_light
-            - light.hue_couch_light
-            - light.ikea_living_room_table_light
-            - light.hue_marrakesh_light
-            - light.ikea_kitchen_ceiling_light
-            - light.cabinet_lights
-            - entity_id: media_player.living_room_tv
-              remote: remote.wolfgang_der_iii
-        - name: Office
-          entities:
-            - cover.office_roller_shutter_balcony_door_shutter
-            - cover.office_roller_shutter_window_shutter
-            - fan.xiaomi_smart_standing_air_circulation_fan
-            - light.elgato_key_light_mini
-            - entity_id: light.hue_office_light
-              bar_target: true
-            - camera.office_fluent
-      homeassistant:
-        customize:
-          light.hue_living_room_light:
-            friendly_name: Living room
-          light.hue_couch_light:
-            friendly_name: Couch
-          light.ikea_living_room_table_light:
-            friendly_name: Table
-          light.hue_marrakesh_light:
-            friendly_name: Marrakesh
-          light.ikea_kitchen_ceiling_light:
-            friendly_name: Kitchen
-          light.cabinet_lights:
-            friendly_name: Cabinets
-          media_player.living_room_tv:
-            friendly_name: TV
-            icon: tabler:device-tv
-          cover.office_roller_shutter_balcony_door_shutter:
-            friendly_name: Door
-          cover.office_roller_shutter_window_shutter:
-            friendly_name: Window
-          fan.xiaomi_smart_standing_air_circulation_fan:
-            friendly_name: Fan
-          light.elgato_key_light_mini:
-            friendly_name: Elgato
-          light.hue_office_light:
-            friendly_name: Hue
-          lock.m5stack_atoms3r_nuki_bridge_m5stack_atoms3r_nuki_bridge_lock:
-            friendly_name: Front door
-          camera.office:
-            friendly_name: Office camera
-          light.ikea_balcony_wall_light_round:
-            friendly_name: Round
-          light.balcony_wall_light_cube_light:
-            friendly_name: Cube
-          sensor.schmutzi_current_status:
-            friendly_name: Washer
-            icon: mdi:washing-machine
-    '';
+    # Home Assistant layout and entity IDs live in the private config input.
+    # The plugin keeps its editable panel changes in a separate state overlay.
+    xdg.configFile."noctalia/ha.yaml".source =
+      "${inputs.nixos-config-private.outPath}/hm/noctalia-ha.yaml";
     xdg.configFile."noctalia/ha.yaml".force = true;
 
     # The HA plugin's layout.yaml is an app-owned state overlay. Keep the
