@@ -2,7 +2,7 @@
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0")
+Usage: $(basename "$0") UPDATE-AND-DEPLOY
 
 Once per calendar day, open a new pane in the "main" tmux session and run
 the update-and-deploy script there. Intended to run once at login, not on a
@@ -28,21 +28,20 @@ wait_for_session() {
 }
 
 main() {
-  if [[ -n "${1:-}" ]]
+  if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]
   then
-    case "$1" in
-      -h|--help)
-        usage
-        return 0
-        ;;
-      *)
-        printf 'Unexpected argument: %s\n' "$1" >&2
-        usage >&2
-        return 2
-        ;;
-    esac
+    usage
+    return 0
   fi
 
+  if [[ "$#" -ne 1 ]]
+  then
+    printf 'Expected the update-and-deploy executable path\n' >&2
+    usage >&2
+    return 2
+  fi
+
+  local update_and_deploy="$1"
   local session="main"
   local marker="${XDG_STATE_HOME:-$HOME/.local/state}/yup-startup/last-run"
   local today
@@ -62,7 +61,7 @@ main() {
 
   local new_pane
   new_pane="$(tmux split-window -t "${session}:0" -P -F '#{pane_id}')"
-  tmux send-keys -t "$new_pane" "/etc/nixos/scripts/update-and-deploy.sh" C-m
+  tmux send-keys -t "$new_pane" "$update_and_deploy" C-m
 
   mkdir -p "$(dirname "$marker")"
   printf '%s\n' "$today" > "$marker"

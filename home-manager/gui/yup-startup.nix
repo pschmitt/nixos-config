@@ -1,5 +1,16 @@
 { pkgs, ... }:
 let
+  updateAndDeploy = pkgs.writeShellApplication {
+    name = "update-and-deploy";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.git
+      pkgs.just
+      pkgs.nix
+    ];
+    text = builtins.readFile ../../scripts/update-and-deploy.sh;
+  };
+
   yupStartup = pkgs.writeShellApplication {
     name = "yup-startup";
     runtimeInputs = [
@@ -10,6 +21,8 @@ let
   };
 in
 {
+  home.packages = [ updateAndDeploy ];
+
   systemd.user.services."yup-startup" = {
     Unit = {
       # network-online.target does not exist as a user-manager unit (it's a
@@ -27,7 +40,7 @@ in
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${yupStartup}/bin/yup-startup";
+      ExecStart = "${yupStartup}/bin/yup-startup ${updateAndDeploy}/bin/update-and-deploy";
     };
   };
 }
