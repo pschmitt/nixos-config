@@ -34,6 +34,11 @@ let
       hostname = "lrz.lan";
       hasInitrdCheck = true;
       healthcheckCmd = "mount | grep -v tmpfs | grep encrypted";
+      dhcpListener = {
+        enable = true;
+        interface = "eno1";
+        clientHostname = "lrz";
+      };
     }
     {
       name = "oci-01";
@@ -196,6 +201,8 @@ let
 
     forceIpv4 = true;
     sleepInterval = 30;
+
+    dhcpListener = target.dhcpListener or { };
 
     initrdCheck = {
       enable = target.hasInitrdCheck;
