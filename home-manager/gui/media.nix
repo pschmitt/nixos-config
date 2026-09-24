@@ -5,7 +5,6 @@ in
 {
   imports = [
     ./obs-studio.nix
-    ./jellysync.nix
   ];
 
   home.packages = with pkgs; [

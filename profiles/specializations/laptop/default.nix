@@ -48,11 +48,9 @@
       "syncthing.service"
     ];
     stopUserSystemdUnitsOnPowerSaver = [
-      "jellysync.timer"
       "localsearch-3.service"
     ];
     resumeUserSystemdUnitsOnPowerSaverExit = [
-      "jellysync.timer"
       "localsearch-3.service"
     ];
   };

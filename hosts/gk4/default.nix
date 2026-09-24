@@ -6,7 +6,6 @@
     ./gpd-power.nix
     ./hardware-configuration.nix
     ./initrd-wifi.nix
-    ./jellysync.nix
     ./kmscon.nix
     ./lan-mouse.nix
     ./network.nix

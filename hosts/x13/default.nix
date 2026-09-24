@@ -5,7 +5,6 @@
 
     ./fprintd.nix
     ./hardware-configuration.nix
-    ./jellysync.nix
     ./networking.nix
   ];
 }
