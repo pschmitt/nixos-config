@@ -28,6 +28,11 @@ in
   ];
 
   wayland.windowManager.hyprland.settings = {
+    # lan-mouse's wlroots backend reuses the compositor seat keymap for its
+    # virtual keyboard, so match the seat default to gk4's GPD keyboard. The
+    # built-in HHKB keeps its explicit per-device layout from input.nix.
+    config.input.kb_layout = lib.mkForce "gpdpocket4-de,gpdpocket4-us,us,de";
+
     # lan-mouse presents remote input as a virtual keyboard. Apply the GPD
     # Pocket 4 layout here when gk4's built-in keyboard is controlling ge2.
     device = [
