@@ -23,8 +23,7 @@ in
 
   home.activation.sops-nix = lib.mkForce (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run env ${unitValue service.Environment} ${unitValue service.ExecStart} \
-        || warnEcho "sops-nix: decryption failed, is ~/.ssh/id_ed25519 a recipient?"
+      run env ${unitValue service.Environment} ${unitValue service.ExecStart}
     ''
   );
 }
