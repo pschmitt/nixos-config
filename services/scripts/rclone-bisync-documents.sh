@@ -45,7 +45,8 @@ main() {
   # Nextcloud's WebDAV "Documents" -- that's now a read-only external
   # storage mount onto this same directory (see FileBrowser Quantum /
   # Syncthing migration), so bisync needs write access straight to disk.
-  lockfile=/var/cache/rclone/bisync/mnt-data-srv-syncthing-documents..drive_Documents.lck
+  # Keep this basename in sync with rclone's workdir key for these paths.
+  lockfile=/var/cache/rclone/bisync/mnt_data_srv_syncthing_documents..drive_Documents.lck
   rclone_workdir=/var/cache/rclone/bisync
   system_lockfile=/var/cache/rclone/bisync/mnt-data-srv-syncthing-documents..drive_Documents.systemd.lock
   extra_args=()

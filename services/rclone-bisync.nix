@@ -80,14 +80,6 @@ in
           Persistent = true;
         };
       };
-
-      rclone-bisync-documents-resync = {
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnCalendar = "05:45:00";
-          Persistent = true;
-        };
-      };
     };
   };
 }
