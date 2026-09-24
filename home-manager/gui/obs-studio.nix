@@ -8,20 +8,19 @@
 
 let
   enableNvidiaOffload = config.host.nvidiaPrimeOffload;
-  obsAutostartExec = "${
-    pkgs.writeShellApplication {
-      name = "obs-hyprland-autostart";
-      runtimeInputs = with pkgs; [
-        config.programs.obs-studio.finalPackage
-        coreutils
-        curl
-        jq
-        procps
-        systemd
-      ];
-      text = builtins.readFile ./obs-autostart.sh;
-    }
-  }/bin/obs-hyprland-autostart";
+  obsAutostart = pkgs.writeShellApplication {
+    name = "obs-hyprland-autostart";
+    runtimeInputs = with pkgs; [
+      config.programs.obs-studio.finalPackage
+      coreutils
+      curl
+      jq
+      procps
+      systemd
+    ];
+    text = builtins.readFile ./obs-autostart.sh;
+  };
+  obsAutostartExec = "${obsAutostart}/bin/obs-hyprland-autostart";
   obs-nvidia = pkgs.writeShellScriptBin "obs-nvidia" ''
     nvidia-offload ${config.programs.obs-studio.finalPackage}/bin/obs "$@"
   '';
@@ -36,6 +35,7 @@ in
 {
   home.packages = [
     inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system}.obs-cli
+    obsAutostart
 
     (pkgs.writeShellScriptBin "obs-studio-ustreamer" ''
       ${pkgs.ustreamer}/bin/ustreamer -d /dev/video10 "$@"

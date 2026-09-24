@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-GO_HASS_AGENT_UNIT="go-hass-agent.service"
 MATCH="type='signal',sender='net.hadess.PowerProfiles',path='/net/hadess/PowerProfiles',interface='org.freedesktop.DBus.Properties',member='PropertiesChanged'"
 NOTIFY_APP_NAME="power-profiles-daemon"
 CONFIG_FILE="${PPD_REACT_CONFIG:-/etc/ppd-react.conf}"
+STATE_FILE="${PPD_REACT_STATE_FILE:-/run/ppd-react/active-units}"
+SYSTEM_UNITS_STOP_ON_POWER_SAVER=()
+SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
+USER_UNITS_STOP_ON_POWER_SAVER=()
+USER_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
 
 while (($# > 0))
 do
@@ -162,6 +166,197 @@ notify_all_sessions() {
   )
 }
 
+manage_system_units() {
+  local action="$1"
+  shift
+
+  local unit
+  for unit in "$@"
+  do
+    if ! systemctl --no-block "$action" "$unit"
+    then
+      log_warn "failed to $action system unit $unit"
+    fi
+  done
+}
+
+manage_user_units() {
+  local action="$1"
+  shift
+
+  if (($# == 0))
+  then
+    return 0
+  fi
+
+  local sessions_json
+  if ! sessions_json="$(loginctl list-sessions --no-pager -j 2>/dev/null)"
+  then
+    log_warn "loginctl list-sessions failed while managing user units"
+    return 0
+  fi
+
+  local uid user unit
+  while IFS=$'\t' read -r uid user
+  do
+    if [[ -z "$uid" || -z "$user" ]]
+    then
+      continue
+    fi
+
+    local runtime_dir="/run/user/$uid"
+    local bus="$runtime_dir/bus"
+    if [[ ! -S "$bus" ]]
+    then
+      continue
+    fi
+
+    for unit in "$@"
+    do
+      if ! user_systemctl "$action" "$uid" "$user" "$unit"
+      then
+        log_warn "failed to $action user unit $unit for $user (uid $uid)"
+      fi
+    done
+  done < <(
+    jq -r '
+      [
+        .[]
+        | select(.class == "user")
+        | { uid, user }
+      ]
+      | unique_by(.uid)
+      | .[]
+      | "\(.uid)\t\(.user)"
+    ' <<<"$sessions_json"
+  )
+}
+
+is_listed() {
+  local wanted="$1"
+  shift
+
+  local item
+  for item in "$@"
+  do
+    if [[ "$item" == "$wanted" ]]
+    then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+user_systemctl() {
+  local action="$1"
+  local uid="$2"
+  local user="$3"
+  local unit="$4"
+  local runtime_dir="/run/user/$uid"
+  local bus="$runtime_dir/bus"
+  local -a systemctl_args=(--user)
+
+  if [[ ! -S "$bus" ]]
+  then
+    return 1
+  fi
+
+  if [[ "$action" == "start" || "$action" == "stop" ]]
+  then
+    systemctl_args+=(--no-block)
+  fi
+
+  runuser -u "$user" -- env \
+    XDG_RUNTIME_DIR="$runtime_dir" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
+    systemctl "${systemctl_args[@]}" "$action" "$unit"
+}
+
+capture_resume_state() {
+  if [[ -e "$STATE_FILE" ]]
+  then
+    return 0
+  fi
+
+  mkdir -p "${STATE_FILE%/*}"
+  : >"$STATE_FILE"
+  chmod 0600 "$STATE_FILE"
+
+  local unit uid user sessions_json
+  for unit in "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
+  do
+    if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
+      systemctl is-active --quiet "$unit"
+    then
+      printf 'system|||%s\n' "$unit" >>"$STATE_FILE"
+    fi
+  done
+
+  if ! sessions_json="$(loginctl list-sessions --no-pager -j 2>/dev/null)"
+  then
+    log_warn "loginctl list-sessions failed while capturing active user units"
+    return 0
+  fi
+
+  while IFS=$'\t' read -r uid user
+  do
+    if [[ -z "$uid" || -z "$user" ]]
+    then
+      continue
+    fi
+
+    for unit in "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
+    do
+      if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
+        user_systemctl is-active "$uid" "$user" "$unit"
+      then
+        printf 'user|%s|%s|%s\n' "$uid" "$user" "$unit" >>"$STATE_FILE"
+      fi
+    done
+  done < <(
+    jq -r '
+      [
+        .[]
+        | select(.class == "user")
+        | { uid, user }
+      ]
+      | unique_by(.uid)
+      | .[]
+      | "\(.uid)\t\(.user)"
+    ' <<<"$sessions_json"
+  )
+}
+
+restore_captured_units() {
+  if [[ ! -f "$STATE_FILE" ]]
+  then
+    return 0
+  fi
+
+  local scope uid user unit
+  while IFS='|' read -r scope uid user unit
+  do
+    case "$scope" in
+      system)
+        if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+        then
+          manage_system_units start "$unit"
+        fi
+      ;;
+      user)
+        if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
+          ! user_systemctl start "$uid" "$user" "$unit"
+        then
+          log_warn "failed to resume user unit $unit for $user (uid $uid)"
+        fi
+      ;;
+    esac
+  done <"$STATE_FILE"
+
+  rm -f "$STATE_FILE"
+}
+
 apply_profile() {
   local profile="$1"
 
@@ -169,18 +364,14 @@ apply_profile() {
 
   case "$profile" in
     power-saver)
-      if ! systemctl --no-block stop "$GO_HASS_AGENT_UNIT"
-      then
-        log_warn "failed to stop $GO_HASS_AGENT_UNIT"
-      fi
-      notify_all_sessions "Power profile: power-saver" "Stopped go-hass-agent"
+      capture_resume_state
+      manage_system_units stop "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
+      manage_user_units stop "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
+      notify_all_sessions "Power profile: power-saver" "Stopped configured background services"
     ;;
     balanced|performance)
-      if ! systemctl --no-block start "$GO_HASS_AGENT_UNIT"
-      then
-        log_warn "failed to start $GO_HASS_AGENT_UNIT"
-      fi
-      notify_all_sessions "Power profile: $profile" "Started go-hass-agent"
+      restore_captured_units
+      notify_all_sessions "Power profile: $profile" "Resumed previously active background services"
     ;;
   esac
 }
@@ -286,3 +477,5 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   main "$@"
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :

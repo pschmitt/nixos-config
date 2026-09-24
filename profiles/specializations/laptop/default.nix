@@ -37,5 +37,25 @@
     fwupd.enable = true;
   };
 
+  services.ppd-react = {
+    stopSystemdUnitsOnPowerSaver = [
+      "restic-backups-main.timer"
+      "restic-backups-main.service"
+      "syncthing.service"
+    ];
+    resumeSystemdUnitsOnPowerSaverExit = [
+      "restic-backups-main.timer"
+      "syncthing.service"
+    ];
+    stopUserSystemdUnitsOnPowerSaver = [
+      "jellysync.timer"
+      "localsearch-3.service"
+    ];
+    resumeUserSystemdUnitsOnPowerSaverExit = [
+      "jellysync.timer"
+      "localsearch-3.service"
+    ];
+  };
+
   services.kmscon.config."font-size" = 30;
 }

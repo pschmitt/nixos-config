@@ -5,6 +5,30 @@
       default = true;
     };
 
+    stopSystemdUnitsOnPowerSaver = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "System-level systemd units to stop when power-saver starts.";
+    };
+
+    resumeSystemdUnitsOnPowerSaverExit = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "System-level systemd units to resume, if previously active, when leaving power-saver.";
+    };
+
+    stopUserSystemdUnitsOnPowerSaver = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "User-level systemd units to stop when power-saver starts.";
+    };
+
+    resumeUserSystemdUnitsOnPowerSaverExit = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "User-level systemd units to resume, if previously active, when leaving power-saver.";
+    };
+
     tdp = {
       enable = lib.mkEnableOption "TDP changes in response to power profiles";
 
