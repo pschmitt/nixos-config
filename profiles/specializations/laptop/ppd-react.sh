@@ -9,6 +9,9 @@ SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
 USER_UNITS_STOP_ON_POWER_SAVER=()
 USER_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
 ONLY_STOP_UNITS_ON_BATTERY=1
+STOPPED_UNITS=()
+STARTED_UNITS=()
+RESUMED_UNITS=()
 
 while (($# > 0))
 do
@@ -295,6 +298,34 @@ is_listed() {
   return 1
 }
 
+format_unit_list() {
+  local unit output=""
+
+  for unit in "$@"
+  do
+    if [[ -n "$output" ]]
+    then
+      output+=", "
+    fi
+    output+="$unit"
+  done
+
+  printf '%s' "$output"
+}
+
+notify_unit_change() {
+  local summary="$1"
+  local action="$2"
+  shift 2
+
+  if (($# == 0))
+  then
+    return 0
+  fi
+
+  notify_all_sessions "$summary" "$action: $(format_unit_list "$@")"
+}
+
 user_systemctl() {
   local action="$1"
   local uid="$2"
@@ -321,6 +352,8 @@ user_systemctl() {
 }
 
 capture_resume_state() {
+  STOPPED_UNITS=()
+
   if [[ -e "$STATE_FILE" ]]
   then
     return 0
@@ -333,10 +366,13 @@ capture_resume_state() {
   local unit uid user sessions_json
   for unit in "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
   do
-    if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
-      systemctl is-active --quiet "$unit"
+    if systemctl is-active --quiet "$unit"
     then
-      printf 'system|||%s\n' "$unit" >>"$STATE_FILE"
+      STOPPED_UNITS+=("system/$unit")
+      if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+      then
+        printf 'system|||%s\n' "$unit" >>"$STATE_FILE"
+      fi
     fi
   done
 
@@ -355,10 +391,13 @@ capture_resume_state() {
 
     for unit in "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
     do
-      if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
-        user_systemctl is-active "$uid" "$user" "$unit"
+      if user_systemctl is-active "$uid" "$user" "$unit"
       then
-        printf 'user|%s|%s|%s\n' "$uid" "$user" "$unit" >>"$STATE_FILE"
+        STOPPED_UNITS+=("user/$user/$unit")
+        if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+        then
+          printf 'user|%s|%s|%s\n' "$uid" "$user" "$unit" >>"$STATE_FILE"
+        fi
       fi
     done
   done < <(
@@ -376,6 +415,8 @@ capture_resume_state() {
 }
 
 restore_captured_units() {
+  RESUMED_UNITS=()
+
   if [[ ! -f "$STATE_FILE" ]]
   then
     return 0
@@ -386,16 +427,24 @@ restore_captured_units() {
   do
     case "$scope" in
       system)
-        if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+        if is_listed "$unit" "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
+          ! systemctl is-active --quiet "$unit"
         then
+          RESUMED_UNITS+=("system/$unit")
           manage_system_units start "$unit"
         fi
       ;;
       user)
-        if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}" &&
-          ! user_systemctl start "$uid" "$user" "$unit"
+        if is_listed "$unit" "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
         then
-          log_warn "failed to resume user unit $unit for $user (uid $uid)"
+          if ! user_systemctl is-active "$uid" "$user" "$unit"
+          then
+            RESUMED_UNITS+=("user/$user/$unit")
+            if ! user_systemctl start "$uid" "$user" "$unit"
+            then
+              log_warn "failed to resume user unit $unit for $user (uid $uid)"
+            fi
+          fi
         fi
       ;;
     esac
@@ -405,22 +454,63 @@ restore_captured_units() {
 }
 
 start_resume_units() {
+  STARTED_UNITS=()
+
+  local unit uid user sessions_json
+  for unit in "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+  do
+    if ! systemctl is-active --quiet "$unit"
+    then
+      STARTED_UNITS+=("system/$unit")
+    fi
+  done
+
+  if ! sessions_json="$(loginctl list-sessions --no-pager -j 2>/dev/null)"
+  then
+    log_warn "loginctl list-sessions failed while checking user units to start"
+  else
+    while IFS=$'\t' read -r uid user
+    do
+      if [[ -z "$uid" || -z "$user" ]]
+      then
+        continue
+      fi
+
+      for unit in "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+      do
+        if ! user_systemctl is-active "$uid" "$user" "$unit"
+        then
+          STARTED_UNITS+=("user/$user/$unit")
+        fi
+      done
+    done < <(
+      jq -r '
+        [ .[] | select(.class == "user") | { uid, user } ]
+        | unique_by(.uid)
+        | .[]
+        | "\(.uid)\t\(.user)"
+      ' <<<"$sessions_json"
+    )
+  fi
+
   manage_system_units start "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
   manage_user_units start "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+  rm -f "$STATE_FILE"
 }
 
 apply_power_saver_units() {
   local power_state="$1"
+  local notify_change="${2:-}"
 
   if [[ -n "$ONLY_STOP_UNITS_ON_BATTERY" && "$power_state" != battery ]]
   then
-    restore_captured_units
     start_resume_units
-    if [[ "$power_state" == connected ]]
+    if [[ "$notify_change" == power && "$power_state" == connected ]]
     then
-      notify_all_sessions "External power connected" "Started or resumed configured background services"
-    else
-      notify_all_sessions "Power source unavailable" "Keeping configured background services running"
+      notify_unit_change "External power connected" "Started" "${STARTED_UNITS[@]}"
+    elif [[ "$notify_change" == power ]]
+    then
+      notify_unit_change "Power source unavailable" "Started" "${STARTED_UNITS[@]}"
     fi
     return 0
   fi
@@ -428,22 +518,37 @@ apply_power_saver_units() {
   capture_resume_state
   manage_system_units stop "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
   manage_user_units stop "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
-  notify_all_sessions "Power profile: power-saver" "Stopped configured background services while on battery"
+  if [[ "$notify_change" == profile ]]
+  then
+    notify_unit_change "Power profile: power-saver" "Stopped" "${STOPPED_UNITS[@]}"
+  elif [[ "$notify_change" == power ]]
+  then
+    notify_unit_change "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
+  fi
 }
 
 apply_profile() {
   local profile="$1"
   local power_state="$2"
+  local profile_changed="${3:-}"
 
   apply_tdp_profile "$profile"
 
   case "$profile" in
     power-saver)
-      apply_power_saver_units "$power_state"
+      local notify_units=""
+      if [[ -n "$profile_changed" && "$power_state" == battery ]]
+      then
+        notify_units=profile
+      fi
+      apply_power_saver_units "$power_state" "$notify_units"
     ;;
     balanced|performance)
       restore_captured_units
-      notify_all_sessions "Power profile: $profile" "Resumed previously active background services"
+      if [[ -n "$profile_changed" && "$power_state" == battery ]]
+      then
+        notify_unit_change "Power profile: $profile" "Started" "${RESUMED_UNITS[@]}"
+      fi
     ;;
   esac
 }
@@ -518,7 +623,7 @@ main() {
     apply_profile "$last_profile" "$last_power_state"
   fi
 
-  local msg profile current_power_state wait_status
+  local msg profile current_power_state wait_status profile_changed power_changed
   while true
   do
     wait_status=0
@@ -550,13 +655,33 @@ main() {
     fi
 
     current_power_state="$(external_power_state)"
+    profile_changed=""
+    power_changed=""
     if [[ -n "$profile" && "$profile" != "$last_profile" ]]
     then
       last_profile="$profile"
-      apply_profile "$profile" "$current_power_state"
-    elif [[ "$current_power_state" != "$last_power_state" && "$last_profile" == power-saver ]]
+      profile_changed=1
+      apply_profile "$profile" "$current_power_state" "$profile_changed"
+    fi
+
+    if [[ "$current_power_state" != "$last_power_state" ]]
     then
-      apply_power_saver_units "$current_power_state"
+      power_changed=1
+    fi
+
+    if [[ -n "$power_changed" && "$ONLY_STOP_UNITS_ON_BATTERY" && "$last_profile" == power-saver ]]
+    then
+      if [[ -n "$profile_changed" ]]
+      then
+        if [[ "$current_power_state" == connected ]]
+        then
+          notify_unit_change "External power connected" "Started" "${STARTED_UNITS[@]}"
+        else
+          notify_unit_change "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
+        fi
+      else
+        apply_power_saver_units "$current_power_state" power
+      fi
     fi
 
     last_power_state="$current_power_state"
