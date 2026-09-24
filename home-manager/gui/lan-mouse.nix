@@ -138,6 +138,8 @@ let
       esac
     done
   '';
+
+  peerNames = lib.concatMapStringsSep " " (peer: lib.escapeShellArg peer.name) cfg.peers;
 in
 {
   options.services.lan-mouse = {
@@ -273,6 +275,40 @@ in
     # Exposes `lan-mouse cli ...` on PATH -- used interactively, and by the
     # noctalia lan-mouse plugin (pschmitt/noctalia-plugins) to list peers.
     home.packages = [ cfg.package ];
+
+    xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
+      lan-mouse::_control() {
+        local action="$1"
+        local peer
+        local failed=0
+
+        if ! systemctl --user "$action" lan-mouse.service
+        then
+          printf 'Failed to %s lan-mouse.service locally\n' "$action" >&2
+          failed=1
+        fi
+
+        for peer in ${peerNames}
+        do
+          if ! ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
+            systemctl --user "$action" lan-mouse.service
+          then
+            printf 'Failed to %s lan-mouse.service on %s\n' "$action" "$peer" >&2
+            failed=1
+          fi
+        done
+
+        return "$failed"
+      }
+
+      lan-mouse::on() {
+        lan-mouse::_control start
+      }
+
+      lan-mouse::off() {
+        lan-mouse::_control stop
+      }
+    '';
 
     # Stable path (unlike goBackScript's own store path, which changes every
     # generation) for the noctalia lan-mouse plugin's lockscreen widget to
