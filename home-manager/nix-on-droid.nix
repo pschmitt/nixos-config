@@ -4,7 +4,6 @@
     ./env.nix
     ./network.nix
 
-    ./devel/android.nix
     ./devel/git.nix
     ./devel/nix.nix
     ./devel/nodejs.nix

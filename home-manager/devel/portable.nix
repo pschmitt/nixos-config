@@ -16,6 +16,7 @@ in
     ./golang.nix
     ./jq.nix
     ./mani.nix
+    ./nix-access-tokens.nix
     ./nix.nix
     ./nodejs.nix
     ./python.nix
