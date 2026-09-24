@@ -1,6 +1,8 @@
 # syncthing — shared interactive-server Syncthing configuration.
 { config, ... }:
 {
+  imports = [ ../../../../services/syncthing/web.nix ];
+
   home-manager.users.${config.mainUser.username}.imports = [ ./syncthing-home.nix ];
 
   # Home Manager's syncthing service runs as mainUser and expects to own

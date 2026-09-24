@@ -72,6 +72,8 @@ in
       };
 
       gui = {
+        address = "127.0.0.1:8384";
+        insecureSkipHostcheck = true;
         user = "";
         password = "";
       };
