@@ -1954,11 +1954,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790289910,
-        "narHash": "sha256-atm3qpCXrdRs9ERDspsUt82KSslgu3s/16+dEVYRGFY=",
+        "lastModified": 1790290929,
+        "narHash": "sha256-MGY9KTCKcDiv1B7s7jMewhIxcXh8co/xwF7ihCDgUe8=",
         "owner": "pschmitt",
         "repo": "jellysync",
-        "rev": "5e6afc32271afd8a4363cc8c41d5cc43165b5dc7",
+        "rev": "52d3d7e7be2a040caddfc339e5eabdf21ab47463",
         "type": "github"
       },
       "original": {
