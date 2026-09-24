@@ -301,12 +301,21 @@ in
         return "$failed"
       }
 
-      lan-mouse::on() {
+      lan-mouse::start() {
         lan-mouse::_control start
       }
 
-      lan-mouse::off() {
+      lan-mouse::stop() {
         lan-mouse::_control stop
+      }
+
+      lan-mouse::restart() {
+        local failed=0
+
+        lan-mouse::_control stop || failed=1
+        lan-mouse::_control start || failed=1
+
+        return "$failed"
       }
     '';
 
