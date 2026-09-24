@@ -56,10 +56,15 @@ lib.mkMerge [
             };
 
             "/private/" = {
-              # Lock down the private subtree via Authelia while still offering listings.
+              # Keep browser access through Authelia and allow Basic Auth for
+              # download clients that cannot complete an interactive login.
               extraConfig = ''
                 autoindex on;
                 autoindex_localtime on;
+
+                satisfy any;
+                auth_basic "Private blob downloads";
+                auth_basic_user_file ${config.sops.secrets."http-static/blobs-htpasswd".path};
 
                 set $authelia_basic_request 0;
                 if ($http_authorization != "") {
