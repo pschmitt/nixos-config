@@ -31,6 +31,8 @@ let
         "SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT=(${lib.escapeShellArgs cfg.resumeSystemdUnitsOnPowerSaverExit})"
         "USER_UNITS_STOP_ON_POWER_SAVER=(${lib.escapeShellArgs cfg.stopUserSystemdUnitsOnPowerSaver})"
         "USER_UNITS_RESUME_ON_POWER_SAVER_EXIT=(${lib.escapeShellArgs cfg.resumeUserSystemdUnitsOnPowerSaverExit})"
+        "ONLY_STOP_UNITS_ON_BATTERY=${if cfg.onlyStopUnitsOnBattery then "1" else ""}"
+        "NOTIFY=${if cfg.notify then "1" else ""}"
       ]
       ++ lib.optional (
         cfg.tdp.enable && cfg.tdp.command != null

@@ -8,6 +8,7 @@ SYSTEM_UNITS_STOP_ON_POWER_SAVER=()
 SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
 USER_UNITS_STOP_ON_POWER_SAVER=()
 USER_UNITS_RESUME_ON_POWER_SAVER_EXIT=()
+ONLY_STOP_UNITS_ON_BATTERY=1
 
 while (($# > 0))
 do
@@ -113,6 +114,52 @@ get_active_profile() {
   fi
 
   printf '%s\n' "$profile"
+}
+
+has_external_power() {
+  local supply online type
+
+  for supply in "${PPD_REACT_POWER_SUPPLY_ROOT:-/sys/class/power_supply}"/*
+  do
+    [[ -r "$supply/online" ]] || continue
+    IFS= read -r online <"$supply/online"
+    [[ "$online" == 1 ]] || continue
+
+    if [[ -r "$supply/type" ]]
+    then
+      IFS= read -r type <"$supply/type"
+      [[ "$type" == Battery ]] && continue
+    fi
+
+    return 0
+  done
+
+  return 1
+}
+
+has_battery() {
+  local supply type
+
+  for supply in "${PPD_REACT_POWER_SUPPLY_ROOT:-/sys/class/power_supply}"/*
+  do
+    [[ -r "$supply/type" ]] || continue
+    IFS= read -r type <"$supply/type"
+    [[ "$type" == Battery ]] && return 0
+  done
+
+  return 1
+}
+
+external_power_state() {
+  if has_external_power
+  then
+    printf '%s\n' connected
+  elif has_battery
+  then
+    printf '%s\n' battery
+  else
+    printf '%s\n' unknown
+  fi
 }
 
 notify_all_sessions() {
@@ -357,17 +404,42 @@ restore_captured_units() {
   rm -f "$STATE_FILE"
 }
 
+start_resume_units() {
+  manage_system_units start "${SYSTEM_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+  manage_user_units start "${USER_UNITS_RESUME_ON_POWER_SAVER_EXIT[@]}"
+}
+
+apply_power_saver_units() {
+  local power_state="$1"
+
+  if [[ -n "$ONLY_STOP_UNITS_ON_BATTERY" && "$power_state" != battery ]]
+  then
+    restore_captured_units
+    start_resume_units
+    if [[ "$power_state" == connected ]]
+    then
+      notify_all_sessions "External power connected" "Started or resumed configured background services"
+    else
+      notify_all_sessions "Power source unavailable" "Keeping configured background services running"
+    fi
+    return 0
+  fi
+
+  capture_resume_state
+  manage_system_units stop "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
+  manage_user_units stop "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
+  notify_all_sessions "Power profile: power-saver" "Stopped configured background services while on battery"
+}
+
 apply_profile() {
   local profile="$1"
+  local power_state="$2"
 
   apply_tdp_profile "$profile"
 
   case "$profile" in
     power-saver)
-      capture_resume_state
-      manage_system_units stop "${SYSTEM_UNITS_STOP_ON_POWER_SAVER[@]}"
-      manage_user_units stop "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
-      notify_all_sessions "Power profile: power-saver" "Stopped configured background services"
+      apply_power_saver_units "$power_state"
     ;;
     balanced|performance)
       restore_captured_units
@@ -434,42 +506,60 @@ profile_from_msg() {
 }
 
 main() {
-  local last_profile
-  last_profile="$(get_active_profile)"
+  local last_profile last_power_state
+  if ! last_profile="$(get_active_profile)"
+  then
+    last_profile=""
+  fi
+  last_power_state="$(external_power_state)"
 
   if [[ -n "$last_profile" ]]
   then
-    apply_profile "$last_profile"
+    apply_profile "$last_profile" "$last_power_state"
   fi
 
-  local msg profile
+  local msg profile current_power_state wait_status
   while true
   do
-    if ! msg="$(
-      busctl --system --json=short --match="$MATCH" wait \
+    wait_status=0
+    if msg="$(
+      timeout 5s busctl --system --json=short --match="$MATCH" wait \
         /net/hadess/PowerProfiles \
         org.freedesktop.DBus.Properties \
         PropertiesChanged
     )"
     then
+      :
+    else
+      wait_status="$?"
+    fi
+
+    if [[ "$wait_status" -ne 0 && "$wait_status" -ne 124 ]]
+    then
       log_warn "busctl wait failed"
       sleep 1
-      continue
     fi
 
     profile="$(profile_from_msg "$msg")"
     if [[ -z "$profile" ]]
     then
-      continue
+      if ! profile="$(get_active_profile)"
+      then
+        profile=""
+      fi
     fi
 
-    if [[ "$profile" == "$last_profile" ]]
+    current_power_state="$(external_power_state)"
+    if [[ -n "$profile" && "$profile" != "$last_profile" ]]
     then
-      continue
+      last_profile="$profile"
+      apply_profile "$profile" "$current_power_state"
+    elif [[ "$current_power_state" != "$last_power_state" && "$last_profile" == power-saver ]]
+    then
+      apply_power_saver_units "$current_power_state"
     fi
 
-    last_profile="$profile"
-    apply_profile "$profile"
+    last_power_state="$current_power_state"
   done
 }
 

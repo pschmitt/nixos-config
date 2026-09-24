@@ -5,6 +5,18 @@
       default = true;
     };
 
+    onlyStopUnitsOnBattery = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Only stop configured units in power-saver while on battery power.";
+    };
+
+    notify = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Show desktop notifications when power profiles or external power change service state.";
+    };
+
     stopSystemdUnitsOnPowerSaver = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
