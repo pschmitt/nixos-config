@@ -11,7 +11,7 @@ let
 in
 {
   imports = [
-    ../../../services/syncthing.nix
+    ../../../services/syncthing
     ../../../modules/syncthing/tui.nix
   ];
 
