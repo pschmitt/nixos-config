@@ -31,6 +31,15 @@ in
   ];
 
   wayland.windowManager.hyprland.settings = {
+    # lan-mouse presents remote input as a virtual keyboard. Apply the HHKB
+    # layout here when ge2's HHKB is controlling gk4.
+    device = [
+      {
+        name = "hl-virtual-keyboard-.lan-mouse-wrapped";
+        kb_layout = "hhkb-de,de,us";
+      }
+    ];
+
     # fake F1 (dead_circumflex) -> scratchpad terminal.
     # NOTE: resolve_binds_by_sym = 1 would make this less keymap-dependent
     #       (bind "grave" instead of dead_circumflex).
