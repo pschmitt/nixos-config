@@ -904,6 +904,8 @@ in
             badge_pulse_enabled = true;
           };
           "pschmitt/syncthing" = {
+            # Start the system Syncthing service from the plugin's offline prompt.
+            start_command = "systemctl start syncthing";
             # "Folder X is up to date" fires on every sync completion and
             # isn't interesting often enough to be worth a toast; errors and
             # device connect/disconnect notifications stay on.
