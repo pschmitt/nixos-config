@@ -8,7 +8,7 @@
 
 stdenvNoCC.mkDerivation {
   pname = "fievel";
-  version = "1.0.0";
+  version = "1.1.0";
 
   src = fetchurl {
     url = "https://github.com/MontyTheSoftwareEngineer/fievel/releases/download/1.0.0/fievel-1.0.0-linux-x64.tar.gz";
