@@ -26,6 +26,9 @@ let
   iconJellyfin = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 .002C8.826.002-1.398 18.537.16 21.666c1.56 3.129 22.14 3.094 23.682 0S15.177 0 12 0zm7.76 18.949c-1.008 2.028-14.493 2.05-15.514 0C3.224 16.9 9.92 4.755 12.003 4.755c2.081 0 8.77 12.166 7.759 14.196zM12 9.198c-1.054 0-4.446 6.15-3.93 7.189c.518 1.04 7.348 1.027 7.86 0c.511-1.027-2.874-7.19-3.93-7.19z"/></svg>'';
   iconOpsgenie = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12.002 0a5.988 5.988 0 1 1 0 11.975a5.988 5.988 0 0 1 0-11.975m9.723 13.026h-.03l-4.527-2.242a.67.67 0 0 0-.876.268a22.4 22.4 0 0 1-4.306 5.217a22.4 22.4 0 0 1-4.286-5.2a.67.67 0 0 0-.876-.269l-4.535 2.226h-.03a.67.67 0 0 0-.248.902a29 29 0 0 0 4.55 5.933l-.002.001q.037.037.075.072q.502.504 1.027.981q.123.11.247.217c.315.278.632.555.96.82c.144.117.295.227.441.341c.277.216.552.434.837.639q.66.478 1.346.917a.96.96 0 0 0 1.007.017a29 29 0 0 0 1.428-.98l.2-.153q.538-.397 1.06-.82c.234-.19.46-.39.688-.588c.17-.147.34-.291.506-.442c.295-.268.58-.545.864-.825c.061-.06.127-.118.188-.179l-.004-.002a29 29 0 0 0 4.565-5.949a.67.67 0 0 0-.269-.902"/></svg>'';
   iconNixOS = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="m7.352 1.592l-1.364.002L5.32 2.75l1.557 2.713l-3.137-.008l-1.32 2.34h11.69l-1.353-2.332l-3.192-.006l-2.214-3.865zm6.175 0l-2.687.025l5.846 10.127l1.341-2.34l-1.59-2.765l2.24-3.85l-.683-1.182h-1.336l-1.57 2.705l-1.56-2.72zm6.887 4.195l-5.846 10.125l2.696-.008l1.601-2.76l4.453.016l.682-1.183l-.666-1.157l-3.13-.008L21.778 8.1l-1.365-2.313zM9.432 8.086l-2.696.008l-1.601 2.76l-4.453-.016L0 12.02l.666 1.157l3.13.008l-1.575 2.71l1.365 2.315zM7.33 12.25l-.006.01l-.002-.004l-1.342 2.34l1.59 2.765l-2.24 3.85l.684 1.182H7.35l.004-.006h.001l1.567-2.698l1.558 2.72l2.688-.026l-.004-.006h.01zm2.55 3.93l1.354 2.332l3.192.006l2.215 3.865l1.363-.002l.668-1.156l-1.557-2.713l3.137.008l1.32-2.34z"/></svg>'';
+  iconClock = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z"/></svg>'';
+  iconWeather = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12.74,5.47C15.1,6.5 16.35,9.03 15.92,11.46C17.19,12.56 18,14.19 18,16V16.17C18.31,16.06 18.65,16 19,16A3,3 0 0,1 22,19A3,3 0 0,1 19,22H6A4,4 0 0,1 2,18A4,4 0 0,1 6,14H6.27C5,12.45 4.6,10.24 5.5,8.26C6.72,5.5 9.97,4.24 12.74,5.47M11.93,7.3C10.16,6.5 8.09,7.31 7.31,9.07C6.85,10.09 6.93,11.22 7.41,12.13C8.5,10.83 10.16,10 12,10C12.7,10 13.38,10.12 14,10.34C13.94,9.06 13.18,7.86 11.93,7.3M13.55,3.64C13,3.4 12.45,3.23 11.88,3.12L14.37,1.82L15.27,4.71C14.76,4.29 14.19,3.93 13.55,3.64M6.09,4.44C5.6,4.79 5.17,5.19 4.8,5.63L4.91,2.82L7.87,3.5C7.25,3.71 6.65,4.03 6.09,4.44M18,9.71C17.91,9.12 17.78,8.55 17.59,8L19.97,9.5L17.92,11.73C18.03,11.08 18.05,10.4 18,9.71M3.04,11.3C3.11,11.9 3.24,12.47 3.43,13L1.06,11.5L3.1,9.28C3,9.93 2.97,10.61 3.04,11.3M19,18H16V16A4,4 0 0,0 12,12A4,4 0 0,0 8,16H6A2,2 0 0,0 4,18A2,2 0 0,0 6,20H19A1,1 0 0,0 20,19A1,1 0 0,0 19,18Z"/></svg>'';
+  iconBookmark = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M17,18L12,15.82L7,18V5H17M17,3H7A2,2 0 0,0 5,5V21L12,18L19,21V5C19,3.89 18.1,3 17,3Z"/></svg>'';
   iconMovie = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="m20.84 2.18l-3.93.78l2.74 3.54l1.97-.4zm-6.87 1.36L12 3.93l2.75 3.53l1.96-.39zm-4.9.96l-1.97.41l2.75 3.53l1.96-.39zm-4.91 1l-.98.19a1.995 1.995 0 0 0-1.57 2.35L2 10l4.9-.97zM20 12v8H4v-8zm2-2H2v10a2 2 0 0 0 2 2h16c1.11 0 2-.89 2-2z"/></svg>'';
   iconCalendar = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 10v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2zm2-7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h1V1h2v2h8V1h2v2zm0 16V8H5v11zM9 14v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2z"/></svg>'';
   iconGitHub = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>'';
@@ -55,6 +58,7 @@ let
       '') schemeIconVariants
     )
     + confirmDialogCss
+    + builtinWidgetIconsCss
   );
 
   # A deploy stops glance.service while the rest of the activation runs -- on
@@ -562,6 +566,41 @@ let
       </ul>
     </li>
   '';
+
+  # Built-in widgets (clock, weather, bookmarks) render their own plain
+  # <h2> header with no icon slot, unlike the custom-api ones that use
+  # mkWidgetHeader. The same icons are painted in front of the title as a CSS
+  # mask, so they take the header's text color like the inline SVGs do, with
+  # mkWidgetHeader's spacing (gap-5 = .5rem).
+  svgDataUri =
+    svg:
+    "data:image/svg+xml,"
+    + builtins.replaceStrings [ "\"" "#" "<" ">" ] [ "'" "%23" "%3C" "%3E" ] (
+      builtins.replaceStrings [ "<svg " ] [ "<svg xmlns=\"http://www.w3.org/2000/svg\" " ] svg
+    );
+  builtinWidgetIconsCss = lib.concatStrings (
+    lib.mapAttrsToList
+      (type: icon: ''
+        .widget-type-${type} > .widget-header h2 {
+          display: flex;
+          align-items: center;
+          gap: .5rem;
+        }
+        .widget-type-${type} > .widget-header h2::before {
+          content: "";
+          flex-shrink: 0;
+          width: 16px;
+          height: 16px;
+          background-color: currentColor;
+          mask: url("${svgDataUri icon}") center / contain no-repeat;
+        }
+      '')
+      {
+        clock = iconClock;
+        weather = iconWeather;
+        bookmarks = iconBookmark;
+      }
+  );
 
   # Native <dialog> confirmation for destructive action buttons (OpsGenie
   # Ack, GitHub Unsubscribe): the trigger button opens it with
@@ -1210,7 +1249,6 @@ in
                     type = "bookmarks";
                     groups = [
                       {
-                        title = "brkn.lol";
                         links = [
                           {
                             title = "n8n";
