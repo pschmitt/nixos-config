@@ -1,0 +1,125 @@
+{
+  "bash": {
+    "prefix": "bash",
+    "description": "Bash shebang",
+    "body": [
+      "#!/usr/bin/env bash",
+      ""
+    ],
+    "luasnip": {
+      "priority": 10
+    }
+  },
+  "gwd": {
+    "prefix": "gwd",
+    "description": "Go to current script dir",
+    "body": [
+      "cd \"\\$(cd \"\\$(dirname \"\\$0\")\" >/dev/null 2>&1; pwd -P)\" || exit 9",
+      ""
+    ]
+  },
+  "usa": {
+    "prefix": "usa",
+    "description": "usage()",
+    "body": [
+      "usage() {",
+      "  echo \"Usage: \\$(basename \"\\$0\") $0\"",
+      "\\}",
+      ""
+    ]
+  },
+  "usaf": {
+    "prefix": "usaf",
+    "description": "usage (in function)",
+    "body": "local usage=\"Usage: \\$0 $0\""
+  },
+  "case1": {
+    "prefix": "case1",
+    "description": "case $1 in",
+    "body": [
+      "case \"\\$1\" in",
+      "  help|h|-h|--help)",
+      "    usage",
+      "    exit 0",
+      "    ;;",
+      "  $0)",
+      "    ;;",
+      "  *)",
+      "    usage >&2",
+      "    exit 2",
+      "    ;;",
+      "esac",
+      ""
+    ]
+  },
+  "case1f": {
+    "prefix": "case1f",
+    "description": "case $1 in (in function)",
+    "body": [
+      "case \"\\$1\" in",
+      "  help|h|-h|--help)",
+      "    echo \"\\$usage\"",
+      "    return",
+      "    ;;",
+      "  $0)",
+      "    ;;",
+      "  *)",
+      "    echo \"\\$usage\" >&2",
+      "    return 2",
+      "    ;;",
+      "esac",
+      ""
+    ]
+  },
+  "nosource": {
+    "prefix": "nosource",
+    "description": "Don't run if sourced",
+    "body": [
+      "if [[ \"\\${BASH_SOURCE[0]\\}\" == \"\\${0\\}\" ]]",
+      "then",
+      "  $0",
+      "fi"
+    ]
+  },
+  "mapf": {
+    "prefix": "mapf",
+    "description": "Populate array from command output",
+    "body": "mapfile -t ${1:array} < <(${0:command})"
+  },
+  "warg": {
+    "prefix": "warg",
+    "description": "Patent-pending arg parsing",
+    "body": [
+      "while [[ -n \"\\$*\" ]]",
+      "do",
+      "  case \"\\$1\" in",
+      "    help|h|-h|--help)",
+      "      usage",
+      "      exit 0",
+      "      ;;",
+      "    -${1:s}|--${2:long})",
+      "\t\t\tVAL=\"\\$2\"",
+      "      shift 2",
+      "      ;;",
+      "    --)",
+      "      shift",
+      "      break",
+      "      ;;",
+      "    *)",
+      "      break",
+      "      ;;",
+      "  esac",
+      "done",
+      ""
+    ]
+  },
+  "debog": {
+    "prefix": "debog",
+    "description": "DEBOG!",
+    "body": [
+      "LOGFILE=\"\\${TMPDIR:-/tmp}/\\${0}.log\"",
+      "exec > >(tee -a \"\\$LOGFILE\") 2>&1",
+      "set -x"
+    ]
+  }
+}

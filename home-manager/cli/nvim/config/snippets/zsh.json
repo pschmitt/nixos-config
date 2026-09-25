@@ -1,0 +1,48 @@
+{
+  "zsh": {
+    "prefix": "zsh",
+    "description": "ZSH shebang",
+    "body": ["#!/usr/bin/env zsh", "", ""],
+    "luasnip": {
+      "priority": 10
+    }
+  },
+  "usaf": {
+    "prefix": "usaf",
+    "description": "usage (in function)",
+    "body": [
+      "local usage=\"Usage: \\$0 $0\"",
+      "local help",
+      "",
+      "if [[ -z \"\\$1\" ]]",
+      "then",
+      "  echo \"\\$usage\" >&2",
+      "  return 2",
+      "fi",
+      "",
+      "zparseopts -D -E -K -- \\",
+      "  {h,-help}=help",
+      "",
+      "if [[ -n \"\\$help\" ]]",
+      "then",
+      "\techo \"\\$usage\"",
+      "\treturn",
+      "fi",
+      ""
+    ]
+  },
+  "ifz": {
+    "prefix": "ifz",
+    "description": "Check if value is set and return usage if not",
+    "body": [
+      "local ${1:var}=\\$1",
+      "",
+      "if [[ -z \"\\$${1}\" ]]",
+      "then",
+      "  echo_error \"Missing ${1}\"",
+      "  echo \\$usage >&2",
+      "  return 2",
+      "fi"
+    ]
+  }
+}

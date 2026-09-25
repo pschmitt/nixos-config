@@ -1249,7 +1249,9 @@ in
                     type = "bookmarks";
                     groups = [
                       {
-                        links = [
+                        # Case-insensitive, so "n8n" sorts between "Home
+                        # Assistant" and "NetBox".
+                        links = lib.sort (a: b: lib.toLower a.title < lib.toLower b.title) [
                           {
                             title = "n8n";
                             url = "https://n8n.${domain}";

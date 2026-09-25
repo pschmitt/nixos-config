@@ -236,6 +236,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    lazyvim = {
+      url = "github:pfassina/lazyvim-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     ldifj = {
       url = "github:pschmitt/ldifj";
       inputs.nixpkgs.follows = "nixpkgs";

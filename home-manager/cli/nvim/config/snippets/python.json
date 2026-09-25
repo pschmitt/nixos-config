@@ -1,0 +1,31 @@
+{
+  "py": {
+    "prefix": "py",
+    "description": "Shebang",
+    "body": [
+      "#!/usr/bin/env python",
+      "# coding: utf-8",
+      ""
+    ]
+  },
+  "cod": {
+    "prefix": "cod",
+    "description": "Coding UTF-8",
+    "body": [
+      "# coding: utf-8",
+      ""
+    ]
+  },
+  "\"defarg\"": {
+    "prefix": "\"defarg\"",
+    "description": "def parse_args",
+    "body": [
+      "def parse_args():",
+      "    import argparse",
+      "    parser = argparse.ArgumentParser()",
+      "    parser.add_argument(\"-a\", \"--argument\", help=\"\")",
+      "    return parser.parse_args()",
+      ""
+    ]
+  }
+}

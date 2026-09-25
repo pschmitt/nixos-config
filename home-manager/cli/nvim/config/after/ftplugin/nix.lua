@@ -1,0 +1,4 @@
+-- require("lspconfig")["rnix"].setup({})
+--
+-- -- FIXME We should not need to start the LSP
+-- vim.cmd("LspStart")
