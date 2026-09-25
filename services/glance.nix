@@ -54,6 +54,7 @@ let
         }
       '') schemeIconVariants
     )
+    + confirmDialogCss
   );
 
   # A deploy stops glance.service while the rest of the activation runs -- on
@@ -72,21 +73,24 @@ let
     acmeRoot = null;
     forceSSL = true;
     extraConfig = autheliaConfig.server;
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString glancePort}";
-      proxyWebsockets = true;
-      # Only these three codes are intercepted, so glance's own 404s and
-      # friends still pass through untouched.
-      extraConfig = autheliaConfig.location + ''
-        proxy_intercept_errors on;
-        error_page 502 503 504 = @restarting;
+    locations = {
+      "/" = {
+        proxyPass = "http://127.0.0.1:${toString glancePort}";
+        proxyWebsockets = true;
+        # Only these three codes are intercepted, so glance's own 404s and
+        # friends still pass through untouched.
+        extraConfig = autheliaConfig.location + ''
+          proxy_intercept_errors on;
+          error_page 502 503 504 = @restarting;
+        '';
+      };
+      ${opsgenieAckPath}.extraConfig = opsgenieAckConfig;
+      "@restarting".extraConfig = ''
+        default_type text/html;
+        add_header Retry-After 5 always;
+        return 503 '${glanceRestartingPage}';
       '';
     };
-    locations."@restarting".extraConfig = ''
-      default_type text/html;
-      add_header Retry-After 5 always;
-      return 503 '${glanceRestartingPage}';
-    '';
   };
 
   mkWidgetHeader =
@@ -339,7 +343,7 @@ let
         <span class="shrink-0">{{ if ne (.String "pull_request.merged_at") "" }}${octiconPrMerged}{{ else if eq (.String "state") "closed" }}${octiconPrClosed}{{ else }}${octiconPrOpen}{{ end }}</span>
         <a class="size-h5 color-highlight block text-truncate" href="{{ .String "html_url" }}">{{ .String "title" }}</a>
         <span class="shrink-0" style="margin-left:auto">
-          <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('nixpkgs-pr-{{ $prNumber }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${NIXPKGS_PR_MARK_READ_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:{{ $prNumber }}})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Read</span></button>
+          <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('nixpkgs-pr-{{ $prNumber }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${NIXPKGS_PR_MARK_READ_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:{{ $prNumber }}})}).then(function(r){if(r.ok){${mkRemoveListItemJs null}}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Read</span></button>
         </span>
       </div>
       <ul class="list-horizontal-text">
@@ -521,6 +525,110 @@ let
     };
   };
 
+  # Ack buttons POST to /opsgenie/<team>/... on this same vhost; nginx
+  # (opsgenieAckConfig below) checks Authelia, adds the team's GenieKey and
+  # forwards to the OpsGenie API, so the keys never reach the browser. The
+  # X-Glance header is a cheap CSRF guard: a cross-site form cannot set it.
+  # The list is cached for 5m, so an acked alert may reappear on a reload
+  # within that window.
+  mkOpsgenieAlertItem = team: label: ''
+    {{ $id := .String "id" }}
+    <li id="opsgenie-alert-{{ $id }}">
+      <div class="flex items-center gap-5">
+        <a class="size-h5 color-highlight block text-truncate" href="${opsgenieOrgUrl}/alert/detail/{{ $id }}/details" target="_blank" rel="noreferrer">{{ .String "message" }}</a>
+        <span class="shrink-0" style="margin-left:auto;display:flex;gap:6px">
+          <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="this.nextElementSibling.showModal()">${octiconCheckSmall}<span>Ack</span></button>
+          ${mkConfirmDialog {
+            title = "Acknowledge ${label} alert?";
+            text = ''{{ .String "message" }}'';
+            confirmLabel = "Acknowledge";
+            onConfirm = "var el=document.getElementById('opsgenie-alert-{{ $id }}');var btn=this.previousElementSibling;btn.disabled=true;el.style.opacity='.4';fetch('/opsgenie/${team}/alerts/{{ $id }}/acknowledge',{method:'POST',headers:{'Content-Type':'application/json','X-Glance':'1'},body:JSON.stringify({source:'glance',note:'Acknowledged via Glance dashboard'})}).then(function(r){if(r.ok){${mkRemoveListItemJs "No unacked alerts 🎉"}}else{btn.disabled=false;el.style.opacity='1';alert('Ack failed: HTTP '+r.status)}}).catch(function(e){btn.disabled=false;el.style.opacity='1';alert('Ack failed: '+e)})";
+          }}
+        </span>
+      </div>
+      <ul class="list-horizontal-text">
+        <li>${label}</li>
+        <li{{ if or (eq (.String "priority") "P1") (eq (.String "priority") "P2") }} class="color-negative"{{ end }}>{{ .String "priority" }}</li>
+        <li>{{ printf "%.10s" (.String "createdAt") }}</li>
+      </ul>
+    </li>
+  '';
+
+  # Native <dialog> confirmation for destructive action buttons (OpsGenie
+  # Ack, GitHub Unsubscribe): the trigger button opens it with
+  # onclick="this.nextElementSibling.showModal()", so it must directly follow
+  # that button. Themed with Glance's own palette (confirmDialogCss) so it
+  # follows the light/dark scheme. closedby="any" lets Escape or a backdrop
+  # click cancel; only the confirm button closes it with returnValue
+  # "confirm", which is what runs onConfirm (with `this` being the dialog, so
+  # the trigger is this.previousElementSibling). returnValue is reset right
+  # away, since a later Escape close would otherwise keep the old value.
+  mkConfirmDialog =
+    {
+      title,
+      text,
+      confirmLabel,
+      onConfirm,
+    }:
+    ''
+      <dialog class="confirm-dialog" closedby="any" onclose="var ok=this.returnValue==='confirm';this.returnValue='cancel';if(!ok)return;${onConfirm}">
+        <form method="dialog">
+          <p class="size-h3 color-highlight">${title}</p>
+          <p class="size-h5">${text}</p>
+          <div class="confirm-dialog-actions">
+            <button value="cancel" autofocus>Cancel</button>
+            <button value="confirm" class="confirm-dialog-confirm">${confirmLabel}</button>
+          </div>
+        </form>
+      </dialog>
+    '';
+
+  confirmDialogCss = ''
+    .confirm-dialog {
+      /* Glance's reset zeroes margins, which is what centers a modal. */
+      margin: auto;
+      max-width: min(40rem, calc(100vw - 2rem));
+      padding: 0;
+      border: 1px solid var(--color-popover-border);
+      border-radius: var(--border-radius, 5px);
+      background: var(--color-popover-background);
+      color: var(--color-text-base);
+    }
+    .confirm-dialog::backdrop {
+      background: rgba(0, 0, 0, .5);
+    }
+    .confirm-dialog form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1.5rem;
+    }
+    .confirm-dialog p {
+      overflow-wrap: anywhere;
+    }
+    .confirm-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: .75rem;
+    }
+    .confirm-dialog-actions button {
+      padding: .4rem 1rem;
+      border: 1px solid var(--color-widget-content-border);
+      border-radius: 6px;
+      background: var(--color-widget-background-highlight);
+      color: var(--color-text-highlight);
+      font: inherit;
+      cursor: pointer;
+    }
+    .confirm-dialog-actions button:hover {
+      border-color: var(--color-text-subdue);
+    }
+    .confirm-dialog-actions .confirm-dialog-confirm {
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
+  '';
+
   opsgenieTemplate = ''
     {{ $edge := .JSON.Array "data" }}
     {{ $cks := (.Subrequest "cks").JSON.Array "data" }}
@@ -529,27 +637,37 @@ let
     {{ else }}
       <ul class="list list-gap-10 collapsible-container" data-collapse-after="5">
       {{ range $edge }}
-        <li>
-          <a class="size-h5 color-highlight block text-truncate" href="${opsgenieOrgUrl}/alert/detail/{{ .String "id" }}/details" target="_blank" rel="noreferrer">{{ .String "message" }}</a>
-          <ul class="list-horizontal-text">
-            <li>EDGE</li>
-            <li{{ if or (eq (.String "priority") "P1") (eq (.String "priority") "P2") }} class="color-negative"{{ end }}>{{ .String "priority" }}</li>
-            <li>{{ printf "%.10s" (.String "createdAt") }}</li>
-          </ul>
-        </li>
+        ${mkOpsgenieAlertItem "edge" "EDGE"}
       {{ end }}
       {{ range $cks }}
-        <li>
-          <a class="size-h5 color-highlight block text-truncate" href="${opsgenieOrgUrl}/alert/detail/{{ .String "id" }}/details" target="_blank" rel="noreferrer">{{ .String "message" }}</a>
-          <ul class="list-horizontal-text">
-            <li>CKS</li>
-            <li{{ if or (eq (.String "priority") "P1") (eq (.String "priority") "P2") }} class="color-negative"{{ end }}>{{ .String "priority" }}</li>
-            <li>{{ printf "%.10s" (.String "createdAt") }}</li>
-          </ul>
-        </li>
+        ${mkOpsgenieAlertItem "cks" "CKS"}
       {{ end }}
       </ul>
     {{ end }}
+  '';
+
+  # Proxies the ack buttons above to the OpsGenie API. The team is part of
+  # the path and picks the GenieKey from a sops-rendered map (glance-opsgenie
+  # .conf below). Named captures, since the Authelia subrequest and the map
+  # can clobber numbered ones. The browser's cookies (Authelia session) are
+  # stripped before anything leaves for OpsGenie. The upstream goes through a
+  # variable so a DNS hiccup at boot cannot stop nginx from starting.
+  opsgenieAckPath = "~ ^/opsgenie/(?<opsgenie_team>edge|cks)/alerts/(?<opsgenie_alert>[A-Za-z0-9-]+)/acknowledge$";
+  opsgenieAckConfig = autheliaConfig.location + ''
+    limit_except POST { deny all; }
+    if ($http_x_glance != "1") { return 403; }
+    resolver 127.0.0.53 valid=30s;
+    resolver_timeout 5s;
+    set $opsgenie_upstream https://api.eu.opsgenie.com;
+    proxy_pass $opsgenie_upstream/v2/alerts/$opsgenie_alert/acknowledge?identifierType=id;
+    proxy_set_header Host api.eu.opsgenie.com;
+    proxy_set_header Authorization $glance_opsgenie_auth;
+    proxy_set_header Cookie "";
+    proxy_set_header X-Glance "";
+    proxy_ssl_server_name on;
+    proxy_ssl_name api.eu.opsgenie.com;
+    proxy_ssl_verify on;
+    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
   '';
 
   # Dedicated API key minted via /Auth/Keys (app name "glance-dashboard")
@@ -641,12 +759,22 @@ let
   # Poster art uses gjson's `#(coverType=="poster")` array query since
   # images.0 isn't reliably the poster.
   #
-  # Releases are badged so imminent drops stand out:
+  # Releases are badged (top-left of the poster) so imminent drops stand
+  # out:
   # - Today: solid accent pill badge ("Today"), 2px primary border ring around poster,
   #   and "Today" in color-primary with font-weight 600 in the subtitle.
   # - Tomorrow: outlined accent pill badge ("Tomorrow") and "Tomorrow" in color-base.
-  # - In 2 days: countdown pill badge ("D-2") in Jellyfin cyan.
-  # - In 3+ days: countdown pill badge ("D-3", "D-4", ...) in slate gray.
+  # - In 2 days: countdown pill badge ("2d") in Jellyfin cyan.
+  # - In 3+ days: countdown pill badge ("3d", "4d", ...) in slate gray.
+  #
+  # Several episodes of one series airing on the same day (a season drop, a
+  # double feature) collapse into a single TV card at the first of them,
+  # with an episode count badge in the poster's top-right corner (styled
+  # like the "Recently added" Jellyfin count badge) and the
+  # episode range ("S1:E3-E5") as subtitle. Go templates have no maps or
+  # grouping, so each item rescans the list: it is only rendered if no
+  # earlier item shares its series and air date. The list covers 14 days, so
+  # the quadratic scan stays small.
   upcomingReleasesTemplate = ''
     {{ $today := now | formatTime "DateOnly" }}
     {{ $tomorrow := offsetNow "24h" | formatTime "DateOnly" }}
@@ -673,9 +801,30 @@ let
       {{ if $tvItems }}
         <div class="size-h6 color-base margin-bottom-10">TV</div>
         <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:4px">
-        {{ range $tvItems }}
+        {{ range $i, $item := $tvItems }}
           {{ $airDateStr := printf "%.10s" (.String "airDateUtc") }}
           {{ if not $airDateStr }}{{ $airDateStr = .String "airDate" }}{{ end }}
+          {{ $seriesId := .Int "seriesId" }}
+          {{ $season := .Int "seasonNumber" }}
+          {{/* Episodes of one series airing the same day collapse into one
+               card at the first of them (see upcomingReleasesTemplate). */}}
+          {{ $isFirst := true }}
+          {{ $count := 0 }}
+          {{ $sameSeason := true }}
+          {{ $epMin := .Int "episodeNumber" }}
+          {{ $epMax := $epMin }}
+          {{ range $j, $other := $tvItems }}
+            {{ $otherDate := printf "%.10s" (.String "airDateUtc") }}
+            {{ if not $otherDate }}{{ $otherDate = .String "airDate" }}{{ end }}
+            {{ if and (eq (.Int "seriesId") $seriesId) (eq $otherDate $airDateStr) }}
+              {{ if lt $j $i }}{{ $isFirst = false }}{{ end }}
+              {{ $count = add $count 1 }}
+              {{ if ne (.Int "seasonNumber") $season }}{{ $sameSeason = false }}{{ end }}
+              {{ if lt (.Int "episodeNumber") $epMin }}{{ $epMin = .Int "episodeNumber" }}{{ end }}
+              {{ if gt (.Int "episodeNumber") $epMax }}{{ $epMax = .Int "episodeNumber" }}{{ end }}
+            {{ end }}
+          {{ end }}
+          {{ if $isFirst }}
           {{ $isToday := eq $airDateStr $today }}
           {{ $isTomorrow := eq $airDateStr $tomorrow }}
           {{ $days := -1 }}
@@ -689,18 +838,22 @@ let
             <div style="position:relative">
               <img src="{{ .String "series.images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block{{ if $isToday }};box-shadow:0 0 0 2px var(--color-primary){{ end }}" alt="" onerror="this.style.visibility='hidden'" />
               {{ if $isToday }}
-                <span style="position:absolute;top:6px;right:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
+                <span style="position:absolute;top:6px;left:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
               {{ else if $isTomorrow }}
-                <span style="position:absolute;top:6px;right:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
+                <span style="position:absolute;top:6px;left:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
               {{ else if eq $days 2 }}
-                <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $days }}</span>
+                <span style="position:absolute;top:6px;left:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $days }}d</span>
               {{ else if gt $days 2 }}
-                <span style="position:absolute;top:6px;right:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $days }}</span>
+                <span style="position:absolute;top:6px;left:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $days }}d</span>
+              {{ end }}
+              {{ if gt $count 1 }}
+                <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $count }}</span>
               {{ end }}
             </div>
             <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "series.title" }}</div>
-            <div class="size-h6 {{ if $isToday }}color-primary{{ else if $isTomorrow }}color-base{{ else }}color-subdue{{ end }} text-truncate"{{ if $isToday }} style="font-weight:600"{{ end }}>S{{ .Int "seasonNumber" }}:E{{ .Int "episodeNumber" }} · {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ $airDateStr }}{{ end }}</div>
+            <div class="size-h6 {{ if $isToday }}color-primary{{ else if $isTomorrow }}color-base{{ else }}color-subdue{{ end }} text-truncate"{{ if $isToday }} style="font-weight:600"{{ end }}>{{ if eq $count 1 }}S{{ $season }}:E{{ .Int "episodeNumber" }}{{ else if $sameSeason }}S{{ $season }}:E{{ $epMin }}-E{{ $epMax }}{{ else }}{{ $count }} episodes{{ end }} · {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ $airDateStr }}{{ end }}</div>
           </a>
+          {{ end }}
         {{ end }}
         </div>
       {{ end }}
@@ -734,13 +887,13 @@ let
             <div style="position:relative">
               <img src="{{ .String "images.#(coverType==\"poster\").remoteUrl" }}" style="width:130px;height:195px;object-fit:cover;border-radius:8px;display:block{{ if $isMovieToday }};box-shadow:0 0 0 2px var(--color-primary){{ end }}" alt="" onerror="this.style.visibility='hidden'" />
               {{ if $isMovieToday }}
-                <span style="position:absolute;top:6px;right:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
+                <span style="position:absolute;top:6px;left:6px;background:var(--color-primary);color:var(--color-widget-background);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Today</span>
               {{ else if $isMovieTomorrow }}
-                <span style="position:absolute;top:6px;right:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
+                <span style="position:absolute;top:6px;left:6px;background:var(--color-widget-background);color:var(--color-primary);border:1px solid var(--color-primary);border-radius:999px;min-width:20px;height:20px;padding:0 6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">Tomorrow</span>
               {{ else if eq $movieDays 2 }}
-                <span style="position:absolute;top:6px;right:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $movieDays }}</span>
+                <span style="position:absolute;top:6px;left:6px;background:#00A4DC;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $movieDays }}d</span>
               {{ else if gt $movieDays 2 }}
-                <span style="position:absolute;top:6px;right:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">D-{{ $movieDays }}</span>
+                <span style="position:absolute;top:6px;left:6px;background:#4b5563;color:#fff;border-radius:999px;min-width:20px;height:20px;padding:0 5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.4)">{{ $movieDays }}d</span>
               {{ end }}
             </div>
             <div class="size-h5 color-highlight text-truncate" style="margin-top:6px">{{ .String "title" }}</div>
@@ -754,6 +907,35 @@ let
     {{ end }}
     </div>
   '';
+
+  # Glance's page.js collapses a list only once, at load: it hides every item
+  # past data-collapse-after (class collapsible-item) and appends a "Show
+  # more" button. The action buttons (OpsGenie Ack, GitHub Done/Unsubscribe,
+  # nixpkgs Read) drop their row in place, so this redoes that by hand: the
+  # next hidden item moves up into view, the toggle goes once nothing is
+  # hidden any more, and an emptied list is replaced by emptyText (the same
+  # message the template shows for an empty result) or, with null, removed
+  # together with its heading. Expects the row in `el`; runs inside a
+  # double-quoted HTML attribute, so it must not contain double quotes.
+  mkRemoveListItemJs =
+    emptyText:
+    builtins.replaceStrings [ "\n" ] [ "" ] (
+      ''
+        var list=el.parentElement,n=parseInt(list.dataset.collapseAfter);el.remove();
+        for(var i=0;i<list.children.length&&i<n;i++){list.children[i].classList.remove('collapsible-item')}
+        if(list.children.length<=n){var t=list.nextElementSibling;if(t&&t.classList.contains('expand-toggle-button')){t.remove()}list.classList.remove('container-expanded')}
+      ''
+      + (
+        if emptyText == null then
+          ''
+            if(!list.children.length){var h=list.previousElementSibling;if(h&&h.tagName==='DIV'){h.remove()}list.remove()}
+          ''
+        else
+          ''
+            if(!list.children.length){var p=document.createElement('p');p.className='color-positive';p.textContent='${emptyText}';list.replaceWith(p)}
+          ''
+      )
+    );
 
   # Styled to resemble GitHub's own notification action buttons (icon +
   # label pill, subtle border/background) rather than Glance's UI.
@@ -789,8 +971,14 @@ let
             <span class="shrink-0">{{ if eq $type "PullRequest" }}${octiconNotificationPullRequest}{{ else if eq $type "Issue" }}${octiconNotificationIssue}{{ else if eq $type "Release" }}${octiconNotificationRelease}{{ else if eq $type "Commit" }}${octiconNotificationCommit}{{ else if eq $type "CheckSuite" }}${octiconNotificationCheckSuite}{{ else if eq $type "Discussion" }}${octiconNotificationDiscussion}{{ else }}${octiconNotificationDefault}{{ end }}</span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ $webUrl }}" target="_blank" rel="noreferrer">{{ .String "subject.title" }}</a>
             <span class="shrink-0" style="margin-left:auto;display:flex;gap:6px">
-              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Done</span></button>
-              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){el.remove()}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconBellSlashSmall}<span>Unsubscribe</span></button>
+              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){${mkRemoveListItemJs "No unread notifications 🎉"}}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Done</span></button>
+              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="this.nextElementSibling.showModal()">${octiconBellSlashSmall}<span>Unsubscribe</span></button>
+              ${mkConfirmDialog {
+                title = "Unsubscribe from this thread?";
+                text = ''{{ $repo }}: {{ .String "subject.title" }}'';
+                confirmLabel = "Unsubscribe";
+                onConfirm = "var el=document.getElementById('gh-notif-{{ $id }}');this.previousElementSibling.disabled=true;el.style.opacity='.4';fetch(&quot;\${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'unsubscribe'})}).then(function(r){if(r.ok){${mkRemoveListItemJs "No unread notifications 🎉"}}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})";
+              }}
             </span>
           </div>
           <div class="size-h6 color-subdue">{{ $repo }} · {{ .String "reason" }}</div>
@@ -818,6 +1006,19 @@ in
       "glance/webhook/gh-notification-action-url" = config.sops.mkHostSecret { mode = "0400"; };
       "glance/webhook/nixpkgs-pr-mark-read-url" = config.sops.mkHostSecret { mode = "0400"; };
       "glance/webhook/nixpkgs-pr-read-list-url" = config.sops.mkHostSecret { mode = "0400"; };
+    };
+    # Consumed by opsgenieAckConfig, which picks the key by the team
+    # segment of the ack path.
+    templates."nginx/glance-opsgenie.conf" = {
+      owner = config.services.nginx.user;
+      content = ''
+        map $opsgenie_team $glance_opsgenie_auth {
+          edge "GenieKey ${config.sops.placeholder."opsgenie/edge-stack/api-key"}";
+          cks "GenieKey ${config.sops.placeholder."opsgenie/gksv3-on-call/api-key"}";
+          default "";
+        }
+      '';
+      restartUnits = [ "nginx.service" ];
     };
     templates."glance.env" = {
       content = ''
@@ -1056,6 +1257,10 @@ in
         ];
       };
     };
+
+    nginx.appendHttpConfig = ''
+      include ${config.sops.templates."nginx/glance-opsgenie.conf".path};
+    '';
 
     nginx.virtualHosts = {
       ${glanceHost} = glanceVirtualHost // {
