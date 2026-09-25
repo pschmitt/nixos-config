@@ -345,6 +345,20 @@ in
         };
         weather.enabled = true;
         location.auto_locate = true;
+        # Declares the account so it survives noctaliaResetState wiping
+        # settings.toml (home-manager/gui/noctalia.nix) on every activation
+        # -- without this stanza in the declarative config.toml, Noctalia
+        # forgets the account exists on next start even though its Google
+        # refresh token is still sitting untouched in Secret Service
+        # (gnome-keyring), keyed by this exact account name
+        # ("owner": "personal_google" on the "dev.noctalia.Secret" item).
+        # The token itself is never declared here and doesn't need sops:
+        # Secret Service already persists and refreshes it on its own: this
+        # is just the non-secret pointer back to it.
+        calendar = {
+          enabled = true;
+          account.personal_google.type = "google";
+        };
         # Migrated from hyprpaper (home-manager/gui/hyprland/services/hyprpaper.nix,
         # now unimported) — same wallpaper, now managed natively by Noctalia
         # instead of a separate daemon fighting it for the same output.
