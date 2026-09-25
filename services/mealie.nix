@@ -17,7 +17,7 @@ let
     ]
   );
   # renovate: datasource=docker depName=ghcr.io/mealie-recipes/mealie
-  mealieVersion = "v3.27.0";
+  mealieVersion = "v3.28.0";
 in
 {
   sops.secrets."mealie/openai-api-key" = config.sops.mkHostSecret {
