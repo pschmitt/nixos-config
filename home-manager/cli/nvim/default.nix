@@ -39,7 +39,7 @@ let
 
       # ansible
       ansible-lint
-      # ansible-language-server
+      ansible-language-server
 
       # docker
       docker-language-server
