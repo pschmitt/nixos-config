@@ -1972,11 +1972,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790344609,
-        "narHash": "sha256-gpU5AxoUIRwFoO7QiVBuFiE4rp6D98KzOvDYA2r/Nfw=",
+        "lastModified": 1790344793,
+        "narHash": "sha256-WUvDG8WYqDUEKd+s/Dbb40R9hipceQRWN25lkiF7nD0=",
         "owner": "pschmitt",
         "repo": "jellysync",
-        "rev": "0c1ac1212956e6e073f46d8bebf323f98e51e4f3",
+        "rev": "cb4d943a5f5da2fbcfbdc53ea20c81f98900abd6",
         "type": "github"
       },
       "original": {
@@ -2465,11 +2465,11 @@
         "pre-commit-hooks": "pre-commit-hooks_2"
       },
       "locked": {
-        "lastModified": 1790340658,
-        "narHash": "sha256-NO/A6OGfTh2sp3p/20aaY4ag/JlHyLZqzA08epKNjqw=",
+        "lastModified": 1790344696,
+        "narHash": "sha256-QqlGeHM/oaFjjko8gy6Io1A9gdKZApyqJw8rf6xAYuY=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "2937b663db5335eeadc75d97cdef7c76fafc40df",
+        "rev": "654c357c3952d4ee3ab0c636f9e982ca8b418f6a",
         "type": "github"
       },
       "original": {
