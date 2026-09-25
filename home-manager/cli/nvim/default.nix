@@ -106,8 +106,8 @@ let
     postBuild = ''
       rm -f "$out/bin/nvim"
       makeWrapper ${nvimNightly}/bin/nvim "$out/bin/nvim" \
-        --add-flags "--cmd" \
-        --add-flags "lua ${nvimNightlyProviderLua}" \
+        --add-flag "--cmd" \
+        --add-flag "lua ${nvimNightlyProviderLua}" \
         --set-default VIMINIT "lua dofile('${nvimNightlyInitLua}')" \
         --prefix PATH : ${
           pkgs.lib.makeBinPath (
@@ -128,7 +128,12 @@ in
     inherit appName;
 
     # Parsers not covered by the extras below
-    treesitterParsers = with pkgs.vimPlugins.nvim-treesitter-parsers; [ git_config ];
+    treesitterParsers = with pkgs.vimPlugins.nvim-treesitter-parsers; [
+      fish
+      git_config
+      hyprlang
+      rasi
+    ];
 
     extras = {
       ai = {
