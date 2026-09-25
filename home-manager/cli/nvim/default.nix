@@ -5,9 +5,7 @@
   ...
 }:
 let
-  # TODO switch to "nvim" once the yadm-managed config moved to
-  # ~/.config/nvim##class.termux
-  appName = "lazyvim";
+  appName = "nvim";
 
   # The unwrapped nightly binary from your flake input.
   nvimNightly = inputs.neovim-nightly.packages.${pkgs.stdenv.hostPlatform.system}.neovim;
@@ -83,6 +81,9 @@ let
 
       # toml
       taplo
+
+      # yaml
+      yaml-language-server
     ];
 
     extraLuaPackages = ps: [ ps.magick ];
