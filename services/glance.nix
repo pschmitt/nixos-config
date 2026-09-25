@@ -85,6 +85,7 @@ let
         '';
       };
       ${opsgenieAckPath}.extraConfig = opsgenieAckConfig;
+      ${githubMergePath}.extraConfig = githubMergeConfig;
       "@restarting".extraConfig = ''
         default_type text/html;
         add_header Retry-After 5 always;
@@ -293,6 +294,14 @@ let
   # Icons for the GitHub notification action buttons -- fill="currentColor"
   # so they follow the button's own text color instead of a fixed brand
   # color (unlike the PR-state/notification-type octicons above).
+  # CI state badges for PR notifications (octicons check-circle-fill,
+  # x-circle-fill and dot-fill), colored by the span around them in
+  # GitHub's own check colors -- the theme's positive color is the tan
+  # accent, which does not read as "passed".
+  octiconCheckCircleFill = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 16A8 8 0 1 1 8 0a8 8 0 0 1 0 16Zm3.78-9.72a.751.751 0 0 0-.018-1.042.751.751 0 0 0-1.042-.018L6.75 9.19 5.28 7.72a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042l2 2a.75.75 0 0 0 1.06 0Z"/></svg>'';
+  octiconXCircleFill = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97a.751.751 0 0 0-1.042.018.751.751 0 0 0-.018 1.042L6.94 8 4.97 9.97a.749.749 0 0 0 .326 1.275.749.749 0 0 0 .734-.215L8 9.06l1.97 1.97a.749.749 0 0 0 1.275-.326.749.749 0 0 0-.215-.734L9.06 8l1.97-1.97a.749.749 0 0 0-.326-1.275.749.749 0 0 0-.734.215L8 6.94Z"/></svg>'';
+  octiconDotFill = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"/></svg>'';
+  octiconGitMerge = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M5.45 5.154A4.25 4.25 0 0 0 9.25 7.5h1.378a2.251 2.251 0 1 1 0 1.5H9.25A5.734 5.734 0 0 1 5 7.123v3.505a2.25 2.25 0 1 1-1.5 0V5.372a2.25 2.25 0 1 1 1.95-.218ZM4.25 13.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm8.5-4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5ZM5 3.25a.75.75 0 1 0 0 .005V3.25Z"/></svg>'';
   octiconCheckSmall = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>'';
   octiconBellSlashSmall = ''<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path fill-rule="evenodd" d="M8 16a2 2 0 0 0 1.985-1.75c.017-.137-.097-.25-.235-.25h-3.5c-.138 0-.252.113-.235.25A2 2 0 0 0 8 16ZM3 5c0-.463.07-.91.202-1.334l-1.29-1.29a.75.75 0 1 1 1.06-1.06l12 12a.75.75 0 1 1-1.06 1.06l-1.322-1.322c-.34.016-.68.03-1.02.04L11 13H2.518a1.516 1.516 0 0 1-1.263-2.36l1.703-2.554A.255.255 0 0 0 3 7.947V5Zm10 2.947V5A5 5 0 0 0 4.09 2.181l1.098 1.098A3.5 3.5 0 0 1 11.5 5v2.947c0 .346.102.683.294.97l1.703 2.554a.018.018 0 0 1 .002.008l-.001.007-.004.006-.006.004-.007.001-.031.002H8.06l1.5 1.5h3.922a1.516 1.516 0 0 0 1.263-2.36l-1.703-2.554A.255.255 0 0 1 13 7.947Z"/></svg>'';
 
@@ -646,29 +655,64 @@ let
     {{ end }}
   '';
 
-  # Proxies the ack buttons above to the OpsGenie API. The team is part of
-  # the path and picks the GenieKey from a sops-rendered map (glance-opsgenie
-  # .conf below). Named captures, since the Authelia subrequest and the map
-  # can clobber numbered ones. The browser's cookies (Authelia session) are
-  # stripped before anything leaves for OpsGenie. The upstream goes through a
-  # variable so a DNS hiccup at boot cannot stop nginx from starting.
+  # The dashboard's write actions (OpsGenie Ack, GitHub Merge) POST/PUT to
+  # paths on this same vhost. nginx checks Authelia and a custom X-Glance
+  # header (a cheap CSRF guard: a cross-site form cannot set it), injects
+  # the credential and forwards to the API, so no key ever reaches the
+  # browser. Cookies (the Authelia session) are stripped before anything
+  # leaves. Locations use named captures, since the Authelia subrequest and
+  # maps can clobber numbered ones, and the upstream goes through a variable
+  # so a DNS hiccup at boot cannot stop nginx from starting.
+  mkApiProxyConfig =
+    {
+      method,
+      host,
+      path,
+      auth,
+    }:
+    autheliaConfig.location
+    + ''
+      limit_except ${method} { deny all; }
+      if ($http_x_glance != "1") { return 403; }
+      resolver 127.0.0.53 valid=30s;
+      resolver_timeout 5s;
+      set $api_upstream https://${host};
+      proxy_pass $api_upstream${path};
+      proxy_set_header Host ${host};
+      ${auth}
+      proxy_set_header Cookie "";
+      proxy_set_header X-Glance "";
+      proxy_ssl_server_name on;
+      proxy_ssl_name ${host};
+      proxy_ssl_verify on;
+      proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    '';
+
+  # The team segment picks the GenieKey from a sops-rendered map
+  # (glance-opsgenie.conf below).
   opsgenieAckPath = "~ ^/opsgenie/(?<opsgenie_team>edge|cks)/alerts/(?<opsgenie_alert>[A-Za-z0-9-]+)/acknowledge$";
-  opsgenieAckConfig = autheliaConfig.location + ''
-    limit_except POST { deny all; }
-    if ($http_x_glance != "1") { return 403; }
-    resolver 127.0.0.53 valid=30s;
-    resolver_timeout 5s;
-    set $opsgenie_upstream https://api.eu.opsgenie.com;
-    proxy_pass $opsgenie_upstream/v2/alerts/$opsgenie_alert/acknowledge?identifierType=id;
-    proxy_set_header Host api.eu.opsgenie.com;
-    proxy_set_header Authorization $glance_opsgenie_auth;
-    proxy_set_header Cookie "";
-    proxy_set_header X-Glance "";
-    proxy_ssl_server_name on;
-    proxy_ssl_name api.eu.opsgenie.com;
-    proxy_ssl_verify on;
-    proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
-  '';
+  opsgenieAckConfig = mkApiProxyConfig {
+    method = "POST";
+    host = "api.eu.opsgenie.com";
+    path = "/v2/alerts/$opsgenie_alert/acknowledge?identifierType=id";
+    auth = "proxy_set_header Authorization $glance_opsgenie_auth;";
+  };
+
+  # Merge button on PR notifications. Uses the same token as the widget
+  # (glance-github.conf below), which only ever merges where GitHub itself
+  # lets that account; the template additionally only offers the button on
+  # open, non-draft, non-conflicting PRs in repos the viewer can write to,
+  # and pins the head SHA it rendered so a newer push is not merged unseen.
+  githubMergePath = "~ ^/github/repos/(?<gh_owner>[A-Za-z0-9_.-]+)/(?<gh_repo>[A-Za-z0-9_.-]+)/pulls/(?<gh_pr>[0-9]+)/merge$";
+  githubMergeConfig = mkApiProxyConfig {
+    method = "PUT";
+    host = "api.github.com";
+    path = "/repos/$gh_owner/$gh_repo/pulls/$gh_pr/merge";
+    auth = ''
+      include ${config.sops.templates."nginx/glance-github.conf".path};
+      proxy_set_header Accept application/vnd.github+json;
+    '';
+  };
 
   # Dedicated API key minted via /Auth/Keys (app name "glance-dashboard")
   # using the pschmitt account from rbw, since Jellyfin has no way to issue
@@ -947,13 +991,56 @@ let
   # (already has notifications scope, verified live) rather than minting a
   # new PAT -- referencing the placeholder doesn't require redeclaring the
   # secret, since hermes.nix's declaration is already in this host's config.
+  #
+  # PR notifications also get a CI badge: the combined check state of the
+  # PR's head commit (statusCheckRollup, which covers GitHub Actions and any
+  # other checks/statuses). All PRs go into one aliased GraphQL query (p<i>,
+  # <i> being the item's index in the list) rather than two REST calls per
+  # PR. Owner/name are quoted with printf %q, which is valid GraphQL for the
+  # ASCII names GitHub allows, and the whole query is %q-quoted again into
+  # the JSON body. GraphQL returns what it can on partial errors, so a PR it
+  # cannot resolve, or one without checks, just renders no badge.
+  #
+  # The same query also tells whether a PR can be merged from here (open,
+  # not a draft, not conflicting, and the viewer has write access), which
+  # adds a Merge button (see githubMergeConfig) and lists those PRs first,
+  # whatever their CI state: they are the ones waiting on a decision.
   ghNotificationsTemplate = ''
     {{ $items := .JSON.Array "" }}
     {{ if not $items }}
       <p class="color-positive">No unread notifications 🎉</p>
     {{ else }}
+      {{ $ciQuery := "" }}
+      {{ range $i, $n := $items }}
+        {{ if eq (.String "subject.type") "PullRequest" }}
+          {{ $ciQuery = printf "%s p%d: repository(owner:%q,name:%q){viewerPermission squashMergeAllowed mergeCommitAllowed rebaseMergeAllowed pullRequest(number:%s){state isDraft mergeable headRefOid commits(last:1){nodes{commit{statusCheckRollup{state}}}}}}" $ciQuery $i (.String "repository.owner.login") (.String "repository.name") (findSubmatch `/pulls/([0-9]+)$` (.String "subject.url")) }}
+        {{ end }}
+      {{ end }}
+      {{ $ci := false }}
+      {{ if $ciQuery }}
+        {{ $ci = newRequest "https://api.github.com/graphql"
+            | withHeader "Authorization" "Bearer ''${GITHUB_TOKEN}"
+            | withStringBody (printf `{"query":%q}` (printf "{%s }" $ciQuery))
+            | getResponse }}
+      {{ end }}
       <ul class="list list-gap-10 collapsible-container" data-collapse-after="8">
-      {{ range $items }}
+      {{/* Two passes: PRs offering the Merge button first, then the rest. */}}
+      {{ range $pass := 2 }}
+      {{ range $i, $n := $items }}
+        {{ $ciState := "" }}
+        {{ $mergeMethod := "" }}
+        {{ $headSha := "" }}
+        {{ $prNumber := "" }}
+        {{ if $ci }}
+          {{ $pr := $ci.JSON.Get (printf "data.p%d" $i) }}
+          {{ $ciState = $pr.String "pullRequest.commits.nodes.0.commit.statusCheckRollup.state" }}
+          {{ $perm := $pr.String "viewerPermission" }}
+          {{ if and (eq ($pr.String "pullRequest.state") "OPEN") (not ($pr.Bool "pullRequest.isDraft")) (ne ($pr.String "pullRequest.mergeable") "CONFLICTING") (or (eq $perm "ADMIN") (eq $perm "MAINTAIN") (eq $perm "WRITE")) }}
+            {{ if $pr.Bool "squashMergeAllowed" }}{{ $mergeMethod = "squash" }}{{ else if $pr.Bool "mergeCommitAllowed" }}{{ $mergeMethod = "merge" }}{{ else if $pr.Bool "rebaseMergeAllowed" }}{{ $mergeMethod = "rebase" }}{{ end }}
+            {{ $headSha = $pr.String "pullRequest.headRefOid" }}
+            {{ $prNumber = findSubmatch `/pulls/([0-9]+)$` (.String "subject.url") }}
+          {{ end }}
+        {{ end }}
         {{ $type := .String "subject.type" }}
         {{ $repo := .String "repository.full_name" }}
         {{ $apiUrl := .String "subject.url" }}
@@ -966,13 +1053,30 @@ let
         {{ else if eq $type "Release" }}
           {{ $webUrl = concat $webUrl "/releases" }}
         {{ end }}
+        {{ if eq (eq $pass 0) (ne $mergeMethod "") }}
         <li id="gh-notif-{{ $id }}">
           <div class="flex items-center gap-5">
             <span class="shrink-0">{{ if eq $type "PullRequest" }}${octiconNotificationPullRequest}{{ else if eq $type "Issue" }}${octiconNotificationIssue}{{ else if eq $type "Release" }}${octiconNotificationRelease}{{ else if eq $type "Commit" }}${octiconNotificationCommit}{{ else if eq $type "CheckSuite" }}${octiconNotificationCheckSuite}{{ else if eq $type "Discussion" }}${octiconNotificationDiscussion}{{ else }}${octiconNotificationDefault}{{ end }}</span>
             <a class="size-h5 color-highlight block text-truncate" href="{{ $webUrl }}" target="_blank" rel="noreferrer">{{ .String "subject.title" }}</a>
+            {{ if eq $ciState "SUCCESS" }}
+              <span class="shrink-0" style="display:inline-flex;color:#3fb950" title="Checks passed">${octiconCheckCircleFill}</span>
+            {{ else if or (eq $ciState "FAILURE") (eq $ciState "ERROR") }}
+              <span class="shrink-0" style="display:inline-flex;color:#f85149" title="Checks failed">${octiconXCircleFill}</span>
+            {{ else if or (eq $ciState "PENDING") (eq $ciState "EXPECTED") }}
+              <span class="shrink-0" style="display:inline-flex;color:#d29922" title="Checks running">${octiconDotFill}</span>
+            {{ end }}
             <span class="shrink-0" style="margin-left:auto;display:flex;gap:6px">
-              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){${mkRemoveListItemJs "No unread notifications 🎉"}}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}<span>Done</span></button>
-              <button type="button" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="this.nextElementSibling.showModal()">${octiconBellSlashSmall}<span>Unsubscribe</span></button>
+              {{ if $mergeMethod }}
+                <button type="button" title="Merge" aria-label="Merge" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="this.nextElementSibling.showModal()">${octiconGitMerge}</button>
+                ${mkConfirmDialog {
+                  title = "Merge this pull request?";
+                  text = ''{{ $repo }}#{{ $prNumber }}: {{ .String "subject.title" }}<br><br>{{ if eq $mergeMethod "squash" }}Squash and merge{{ else if eq $mergeMethod "rebase" }}Rebase and merge{{ else }}Create a merge commit{{ end }}{{ if eq $ciState "SUCCESS" }}, checks passed.{{ else if or (eq $ciState "FAILURE") (eq $ciState "ERROR") }}, <span style="color:#f85149">checks failed</span>.{{ else if $ciState }}, <span style="color:#d29922">checks still running</span>.{{ else }}.{{ end }}'';
+                  confirmLabel = "Merge";
+                  onConfirm = "var el=document.getElementById('gh-notif-{{ $id }}');var btn=this.previousElementSibling;btn.disabled=true;el.style.opacity='.4';fetch('/github/repos/{{ $repo }}/pulls/{{ $prNumber }}/merge',{method:'PUT',headers:{'Content-Type':'application/json','X-Glance':'1'},body:JSON.stringify({merge_method:'{{ $mergeMethod }}',sha:'{{ $headSha }}'})}).then(function(r){if(r.ok){fetch(&quot;\${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})});${mkRemoveListItemJs "No unread notifications 🎉"}}else{btn.disabled=false;el.style.opacity='1';r.json().then(function(j){alert('Merge failed: '+(j.message||r.status))},function(){alert('Merge failed: HTTP '+r.status)})}}).catch(function(e){btn.disabled=false;el.style.opacity='1';alert('Merge failed: '+e)})";
+                }}
+              {{ end }}
+              <button type="button" title="Done" aria-label="Done" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="var el=document.getElementById('gh-notif-{{ $id }}');this.disabled=true;el.style.opacity='.4';fetch(&quot;''${GH_NOTIFICATION_ACTION_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:'{{ $id }}',action:'done'})}).then(function(r){if(r.ok){${mkRemoveListItemJs "No unread notifications 🎉"}}else{el.style.opacity='1'}}).catch(function(){el.style.opacity='1'})">${octiconCheckSmall}</button>
+              <button type="button" title="Unsubscribe" aria-label="Unsubscribe" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="this.nextElementSibling.showModal()">${octiconBellSlashSmall}</button>
               ${mkConfirmDialog {
                 title = "Unsubscribe from this thread?";
                 text = ''{{ $repo }}: {{ .String "subject.title" }}'';
@@ -983,6 +1087,8 @@ let
           </div>
           <div class="size-h6 color-subdue">{{ $repo }} · {{ .String "reason" }}</div>
         </li>
+        {{ end }}
+      {{ end }}
       {{ end }}
       </ul>
     {{ end }}
@@ -1007,36 +1113,45 @@ in
       "glance/webhook/nixpkgs-pr-mark-read-url" = config.sops.mkHostSecret { mode = "0400"; };
       "glance/webhook/nixpkgs-pr-read-list-url" = config.sops.mkHostSecret { mode = "0400"; };
     };
-    # Consumed by opsgenieAckConfig, which picks the key by the team
-    # segment of the ack path.
-    templates."nginx/glance-opsgenie.conf" = {
-      owner = config.services.nginx.user;
-      content = ''
-        map $opsgenie_team $glance_opsgenie_auth {
-          edge "GenieKey ${config.sops.placeholder."opsgenie/edge-stack/api-key"}";
-          cks "GenieKey ${config.sops.placeholder."opsgenie/gksv3-on-call/api-key"}";
-          default "";
-        }
-      '';
-      restartUnits = [ "nginx.service" ];
-    };
-    templates."glance.env" = {
-      content = ''
-        HASS_TOKEN=${config.sops.placeholder."home-assistant/token"}
-        OPSGENIE_EDGE_STACK_API_KEY=${config.sops.placeholder."opsgenie/edge-stack/api-key"}
-        OPSGENIE_GKSV3_ONCALL_API_KEY=${config.sops.placeholder."opsgenie/gksv3-on-call/api-key"}
-        JELLYFIN_API_KEY=${config.sops.placeholder."jellyfin/api-key"}
-        JELLYFIN_SERVER_ID=${config.sops.placeholder."jellyfin/server-id"}
-        JELLYFIN_USER_ID=${config.sops.placeholder."jellyfin/user-id"}
-        RADARR_API_KEY=${config.sops.placeholder."radarr/api-key"}
-        SONARR_API_KEY=${config.sops.placeholder."sonarr/api-key"}
-        GITHUB_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
-        GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."glance/webhook/gh-notification-action-url"}
-        NIXPKGS_PR_MARK_READ_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-mark-read-url"}
-        NIXPKGS_PR_READ_LIST_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-read-list-url"}
-      '';
-      mode = "0400";
-      restartUnits = [ "glance.service" ];
+    templates = {
+      # Consumed by opsgenieAckConfig, which picks the key by the team
+      # segment of the ack path.
+      "nginx/glance-opsgenie.conf" = {
+        owner = config.services.nginx.user;
+        content = ''
+          map $opsgenie_team $glance_opsgenie_auth {
+            edge "GenieKey ${config.sops.placeholder."opsgenie/edge-stack/api-key"}";
+            cks "GenieKey ${config.sops.placeholder."opsgenie/gksv3-on-call/api-key"}";
+            default "";
+          }
+        '';
+        restartUnits = [ "nginx.service" ];
+      };
+      "nginx/glance-github.conf" = {
+        owner = config.services.nginx.user;
+        content = ''
+          proxy_set_header Authorization "Bearer ${config.sops.placeholder."hermes/github/pschmitt/token"}";
+        '';
+        restartUnits = [ "nginx.service" ];
+      };
+      "glance.env" = {
+        content = ''
+          HASS_TOKEN=${config.sops.placeholder."home-assistant/token"}
+          OPSGENIE_EDGE_STACK_API_KEY=${config.sops.placeholder."opsgenie/edge-stack/api-key"}
+          OPSGENIE_GKSV3_ONCALL_API_KEY=${config.sops.placeholder."opsgenie/gksv3-on-call/api-key"}
+          JELLYFIN_API_KEY=${config.sops.placeholder."jellyfin/api-key"}
+          JELLYFIN_SERVER_ID=${config.sops.placeholder."jellyfin/server-id"}
+          JELLYFIN_USER_ID=${config.sops.placeholder."jellyfin/user-id"}
+          RADARR_API_KEY=${config.sops.placeholder."radarr/api-key"}
+          SONARR_API_KEY=${config.sops.placeholder."sonarr/api-key"}
+          GITHUB_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
+          GH_NOTIFICATION_ACTION_URL=${config.sops.placeholder."glance/webhook/gh-notification-action-url"}
+          NIXPKGS_PR_MARK_READ_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-mark-read-url"}
+          NIXPKGS_PR_READ_LIST_URL=${config.sops.placeholder."glance/webhook/nixpkgs-pr-read-list-url"}
+        '';
+        mode = "0400";
+        restartUnits = [ "glance.service" ];
+      };
     };
   };
 
