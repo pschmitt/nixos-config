@@ -1,7 +1,10 @@
 -- https://github.com/obsidian-nvim/obsidian.nvim
+local notes_dir = vim.fn.expand((vim.env.XDG_DOCUMENTS_DIR or "~/Documents") .. "/notes")
+
 return {
   "obsidian-nvim/obsidian.nvim",
   version = "*", -- recommended, use latest release instead of latest commit
+  enabled = vim.fn.isdirectory(notes_dir) == 1,
   -- ft = "markdown",
   opts = {
     legacy_commands = false, -- this will be removed in the next major release
@@ -21,7 +24,7 @@ return {
     workspaces = {
       {
         name = "notes",
-        path = (vim.env.XDG_DOCUMENTS_DIR or "~/Documents") .. "/notes",
+        path = notes_dir,
       },
     },
   },
