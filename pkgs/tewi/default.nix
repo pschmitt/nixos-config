@@ -27,14 +27,14 @@ let
 in
 python3.pkgs.buildPythonApplication rec {
   pname = "tewi";
-  version = "2.5.0";
+  version = "2.6.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "anlar";
     repo = "tewi";
     rev = "v${version}";
-    hash = "sha256-d6s0zaWIHNxo6vPengdZ766w/BE8cPnhfbkbs70Vpuk=";
+    hash = "sha256-VOITB8YN+TXkG3Wpqv/twwbPuxPkVa8F1Su/914kPE8=";
   };
 
   build-system = [
