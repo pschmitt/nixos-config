@@ -310,12 +310,7 @@ in
       }
 
       lan-mouse::restart() {
-        local failed=0
-
-        lan-mouse::_control stop || failed=1
-        lan-mouse::_control start || failed=1
-
-        return "$failed"
+        lan-mouse::_control restart || failed=1
       }
     '';
 
