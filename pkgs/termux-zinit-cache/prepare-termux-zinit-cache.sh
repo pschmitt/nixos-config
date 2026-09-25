@@ -127,6 +127,13 @@ main() {
     return 1
   fi
 
+  if [[ ! -d "$XDG_DATA_HOME/zinit/plugins/linkding-cli" ]]
+  then
+    cp "$log_file" /output/zinit-install.log
+    printf 'zinit scheduler did not cache the linkding-cli plugin; private build log retained on the builder\n' >&2
+    return 1
+  fi
+
   tmux_log_file="$TMPDIR/tmux-plugin-install.log"
   if timeout --kill-after=30s 2m tmux -f "$XDG_CONFIG_HOME/tmux/tmux.conf" new-session -d -s termux-cache-smoke >"$tmux_log_file" 2>&1
   then
