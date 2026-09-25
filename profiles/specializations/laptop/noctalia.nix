@@ -57,17 +57,21 @@ in
       mode = "0600";
     };
 
-    # Seeds Secret Service with that token on every login, using the exact
+    # Seeds Secret Service with that token on login, using the exact
     # attribute set (and "dev.noctalia.Secret" schema marker) Noctalia's own
     # Google Calendar OAuth flow stores it under -- confirmed live via the
-    # Secret Service D-Bus API against an already-authorized account. Where
-    # that item already exists (the laptop that did the original OAuth
-    # flow), Secret Service's CreateItem matches on these exact attributes
-    # and replaces it in place with an identical copy, so this is a safe
-    # no-op there; on any other laptop, this is what lets it pick up the
-    # calendar.account.personal_google declaration below without a fresh
-    # OAuth flow of its own -- same idea as gnome-keyring-auto-unlock.nix
-    # seeding the login keyring's own password from sops.
+    # Secret Service D-Bus API against an already-authorized account. This is
+    # a bootstrap-only fallback, never an enforced/reset value: it first
+    # checks (via `secret-tool lookup` on those same attributes) whether an
+    # item already exists and does nothing if so. That matters because
+    # Noctalia itself may legitimately overwrite this item later -- its
+    # OAuth broker's /refresh response can include a rotated refresh_token,
+    # which Noctalia then writes back to Secret Service (src/calendar/
+    # calendar_service.cpp's storeGoogleTokens) -- and a future manual
+    # reconnect on any laptop would too. Unconditionally overwriting on every
+    # login would silently revert either of those back to this stale sops
+    # snapshot. Only a laptop that has never done this account's OAuth flow
+    # (no matching item yet) actually gets seeded.
     systemd.user.services.noctalia-calendar-token-sync = {
       Unit = {
         Description = "Seed Noctalia's Google Calendar refresh token into Secret Service";
@@ -77,9 +81,26 @@ in
       Service = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "noctalia-calendar-token-sync" ''
+          secret_tool=${pkgs.libsecret}/bin/secret-tool
+
+          # Never clobber a token Noctalia itself already manages here --
+          # rotated, or from a fresh manual reconnect -- with the frozen
+          # sops copy below.
+          if "$secret_tool" lookup \
+            application noctalia \
+            name refresh-token \
+            owner personal_google \
+            scope calendar \
+            version 1 \
+            xdg:schema dev.noctalia.Secret \
+            >/dev/null 2>&1
+          then
+            exit 0
+          fi
+
           secret_file="${hmArgs.config.sops.secrets."noctalia/google-calendar-refresh-token".path}"
           [[ -r "$secret_file" ]] || exit 0
-          ${pkgs.libsecret}/bin/secret-tool store \
+          "$secret_tool" store \
             --label='Noctalia calendar refresh token' \
             application noctalia \
             name refresh-token \
