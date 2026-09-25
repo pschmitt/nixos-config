@@ -15,6 +15,7 @@ readonly package_list=(
   libxslt
   nodejs
   openssl-tool
+  pinentry
   python
   python-cryptography
   python-lxml
@@ -32,6 +33,7 @@ main() {
   local dpkg_arch cache_arch python_version rc log_file tmux_log_file plugin_errors zinit_timeout
   local -i start_time=$SECONDS
   local -a archive_paths=(share)
+  local -a configured_packages=()
 
   if [[ "$#" -ne 4 ]]
   then
@@ -69,7 +71,15 @@ main() {
   fi
 
   apt update >/dev/null
-  apt install -y "${package_list[@]}" >/dev/null
+  apt full-upgrade -y >/dev/null
+  apt install -y root-repo unstable-repo yq >/dev/null
+  apt update >/dev/null
+  mapfile -t configured_packages < <(yq -r '.packages[]' /input/.config/yadm/ansible-bootstrap/roles/cli/vars/packages_termux.yml)
+  if [[ "${#configured_packages[@]}" -eq 0 ]]; then
+    printf 'Termux package list was empty\n' >&2
+    return 1
+  fi
+  apt install -y "${package_list[@]}" "${configured_packages[@]}" >/dev/null
 
   export TERMUX_RUN_MODE=ci
   export TERM=xterm
@@ -152,16 +162,52 @@ main() {
   [[ -d "$HOME/.local/bin" ]] && archive_paths+=(bin)
   [[ -d "$HOME/.local/lib" ]] && archive_paths+=(lib)
 
-  tar -czf /output/zinit-cache.tar.gz \
+  tar -czf /output/termux-home.tar.gz \
     --exclude='share/cargo/registry' \
     --exclude='share/cargo/git' \
     --exclude='share/go/pkg/mod' \
     --exclude='share/go/pkg/sumdb' \
     -C "$HOME/.local" "${archive_paths[@]}"
-  (cd /output && sha256sum zinit-cache.tar.gz > zinit-cache.tar.gz.sha256)
-  printf 'format=3\nzsh_tree=%s\ntmux_tree=%s\ntermux_packages=%s\narch=%s\npython=%s\n' \
+  (cd /output && sha256sum termux-home.tar.gz > termux-home.tar.gz.sha256)
+
+  rm -rf -- "$TMPDIR"
+  mkdir -p "$PREFIX/tmp"
+  apt clean >/dev/null
+
+  # OpenSSH installation creates host identity keys. Never publish the
+  # builder's keys; the initializer generates a fresh key per device.
+  rm -f -- "$PREFIX"/etc/ssh/ssh_host_*_key "$PREFIX"/etc/ssh/ssh_host_*_key.pub
+
+  # Services stay disabled until the device-specific yadm setup enables them.
+  for service in sshd ssh-agent
+  do
+    service_dir="$PREFIX/var/service/$service"
+    if [[ ! -d "$service_dir" ]]
+    then
+      printf 'Termux service directory is missing: %s\n' "$service_dir" >&2
+      return 1
+    fi
+    "$PREFIX/bin/sv" down "$service_dir" >/dev/null 2>&1 || true
+    : > "$service_dir/down"
+    if [[ ! -f "$service_dir/down" ]]
+    then
+      printf 'Could not disable Termux service: %s\n' "$service" >&2
+      return 1
+    fi
+  done
+
+  tar -czf /output/termux-prefix.tar.gz \
+    --exclude='usr/var/run' \
+    --exclude='usr/var/log/sv' \
+    --exclude='usr/var/service/*/supervise' \
+    --exclude='usr/var/service/*/log/supervise' \
+    -C /data/data/com.termux/files usr
+  (cd /output && sha256sum termux-prefix.tar.gz > termux-prefix.tar.gz.sha256)
+
+  printf 'format=4\nzsh_tree=%s\ntmux_tree=%s\ntermux_packages=%s\narch=%s\npython=%s\npackage_count=%s\n' \
     "$YADM_ZSH_TREE" "$YADM_TMUX_TREE" "$YADM_TERMUX_PACKAGES_BLOB" "$cache_arch" "$python_version" \
-    > /output/zinit-cache.manifest
+    "$(dpkg-query -W -f='${binary:Package}\n' | wc -l)" \
+    > /output/termux-environment.manifest
   printf 'zinit and tmux cache completed in %s seconds\n' "$((SECONDS - start_time))"
 }
 

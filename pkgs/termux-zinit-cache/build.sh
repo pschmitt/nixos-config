@@ -18,9 +18,11 @@ cleanup() {
     if [[ "$build_status" -ne 0 ]]
     then
       rm -f -- \
-        "$cleanup_output_dir/zinit-cache.tar.gz" \
-        "$cleanup_output_dir/zinit-cache.tar.gz.sha256" \
-        "$cleanup_output_dir/zinit-cache.manifest"
+        "$cleanup_output_dir/termux-home.tar.gz" \
+        "$cleanup_output_dir/termux-home.tar.gz.sha256" \
+        "$cleanup_output_dir/termux-prefix.tar.gz" \
+        "$cleanup_output_dir/termux-prefix.tar.gz.sha256" \
+        "$cleanup_output_dir/termux-environment.manifest"
     fi
   fi
   return "$build_status"
@@ -42,6 +44,7 @@ EOF
 
 main() {
   local source_root output_dir docker_platform termux_base_image docker_context temp_root staging_dir env_dir verify_dir
+  local home_archive_paths prefix_archive_paths
   local zsh_tree tmux_tree packages_blob zinit_timeout input_path object_id output_file file_path file_description
   local -a docker_binfmt_mounts=()
 
@@ -80,7 +83,7 @@ main() {
   do
     if [[ ! "$object_id" =~ ^[[:xdigit:]]{40,64}$ ]]
     then
-      printf 'Input metadata must be Git object IDs\n' >&2
+      printf 'Input metadata must be Git object IDs; invalid value has %s characters\n' "${#object_id}" >&2
       return 2
     fi
   done
@@ -158,7 +161,9 @@ main() {
 
   rm -f -- "$output_dir/container.log" "$output_dir/zinit-install.log" "$output_dir/tmux-plugin-install.log"
 
-  for output_file in zinit-cache.tar.gz zinit-cache.tar.gz.sha256 zinit-cache.manifest
+  for output_file in \
+    termux-home.tar.gz termux-home.tar.gz.sha256 \
+    termux-prefix.tar.gz termux-prefix.tar.gz.sha256 termux-environment.manifest
   do
     if [[ ! -s "$output_dir/$output_file" ]]
     then
@@ -167,7 +172,7 @@ main() {
     fi
   done
 
-  if ! (cd "$output_dir" && sha256sum --check --status zinit-cache.tar.gz.sha256)
+  if ! (cd "$output_dir" && sha256sum --check --status termux-home.tar.gz.sha256 termux-prefix.tar.gz.sha256)
   then
     printf 'Built archive checksum validation failed\n' >&2
     return 1
@@ -175,7 +180,7 @@ main() {
 
   verify_dir="$temp_root/verify"
   mkdir -p "$verify_dir"
-  tar -xzf "$output_dir/zinit-cache.tar.gz" -C "$verify_dir" bin lib
+  tar -xzf "$output_dir/termux-home.tar.gz" -C "$verify_dir" bin lib share
   while IFS= read -r -d '' file_path
   do
     file_description=$(file -b "$file_path")
@@ -186,11 +191,39 @@ main() {
     fi
   done < <(find "$verify_dir/bin" "$verify_dir/lib" -type f -print0)
 
-  if tar -tzf "$output_dir/zinit-cache.tar.gz" | grep -Ev '^(share|bin|lib)(/|$)' | grep -q .
+  home_archive_paths="$temp_root/home-archive-paths"
+  prefix_archive_paths="$temp_root/prefix-archive-paths"
+  tar -tzf "$output_dir/termux-home.tar.gz" > "$home_archive_paths"
+  tar -tzf "$output_dir/termux-prefix.tar.gz" > "$prefix_archive_paths"
+
+  if grep -Ev '^(share|bin|lib)(/|$)' "$home_archive_paths" >/dev/null
   then
-    printf 'Built archive contains a disallowed path\n' >&2
+    printf 'Home archive contains a disallowed path\n' >&2
     return 1
   fi
+
+  if grep -Ev '^usr(/|$)' "$prefix_archive_paths" >/dev/null
+  then
+    printf 'Prefix archive contains a path outside usr/\n' >&2
+    return 1
+  fi
+
+  if grep -Eq '^usr/etc/ssh/ssh_host_.*_key(\.pub)?$' "$prefix_archive_paths"
+  then
+    printf 'Termux prefix archive contains generated SSH host keys\n' >&2
+    return 1
+  fi
+
+  for service in sshd ssh-agent
+  do
+    if ! grep -Fxq "usr/var/service/$service/down" "$prefix_archive_paths"
+    then
+      printf 'Termux service entries in prefix archive:\n' >&2
+      grep -E '^usr/(var/service|etc/sv)/' "$prefix_archive_paths" >&2 || true
+      printf 'Termux prefix archive does not keep %s disabled\n' "$service" >&2
+      return 1
+    fi
+  done
 
   chmod 0600 "$output_dir"/*
   chmod 0700 "$output_dir"
