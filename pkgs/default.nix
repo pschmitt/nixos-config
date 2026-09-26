@@ -67,6 +67,7 @@ in
   linkding-cli = pkgs.callPackage ./linkding-cli { };
   lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
+  nixpp-termux = pkgs.callPackage ./nixpp-termux { };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };

@@ -70,17 +70,43 @@ main() {
     return 1
   fi
 
-  apt update >/dev/null
-  apt full-upgrade -y >/dev/null
-  apt install -y root-repo unstable-repo yq >/dev/null
-  apt update >/dev/null
+  export TMPDIR="$PREFIX/tmp/zinit-cache-build"
+  mkdir -p "$TMPDIR" /output
+
+  apt_step() {
+    local log_name="$1" rc
+    shift
+
+    if "$@" >"$TMPDIR/$log_name" 2>&1
+    then
+      return 0
+    else
+      rc=$?
+      cp "$TMPDIR/$log_name" "/output/$log_name"
+      printf 'Termux package command failed with status %s; log retained on the builder: %s\n' "$rc" "$log_name" >&2
+      tail -n 80 "$TMPDIR/$log_name" >&2
+      return "$rc"
+    fi
+  }
+
+  apt_step apt-update-1.log apt update
+  apt_step apt-upgrade.log apt full-upgrade -y
+  apt_step apt-repos.log apt install -y root-repo unstable-repo yq
+  apt_step apt-update-2.log apt update
   mapfile -t configured_packages < <(yq -r '.packages[]' /input/.config/yadm/ansible-bootstrap/roles/cli/vars/packages_termux.yml)
   if [[ "${#configured_packages[@]}" -eq 0 ]]; then
     printf 'Termux package list was empty\n' >&2
     return 1
   fi
-  apt install -y "${package_list[@]}" "${configured_packages[@]}" >/dev/null
+  apt_step apt-packages.log apt install -y "${package_list[@]}" "${configured_packages[@]}"
+  if ! command -v uv >/dev/null 2>&1 || ! uv --version
+  then
+    printf 'Termux uv package is unavailable; refusing to build an incomplete Zinit cache\n' >&2
+    return 1
+  fi
 
+  # This marks the container as Termux for OS-specific config and secret guards.
+  # It must not suppress Zinit plugin installation or the zinit::uv helper.
   export TERMUX_RUN_MODE=ci
   # Maturin cannot infer Android's API level inside the QEMU Termux container.
   # Match the API level used by Termux's aarch64-linux-android-clang wrapper.
@@ -93,7 +119,6 @@ main() {
   export XDG_CACHE_HOME="$HOME/.cache"
   export XDG_BIN_HOME="$HOME/.local/bin"
   export TMUX_PLUGIN_MANAGER_PATH="$XDG_DATA_HOME/tpm"
-  export TMPDIR="$PREFIX/tmp/zinit-cache-build"
   unset LD_PRELOAD
 
   mkdir -p "$XDG_DATA_HOME" "$XDG_CACHE_HOME" "$XDG_BIN_HOME" "$TMPDIR" /output "$XDG_CONFIG_HOME"
@@ -134,6 +159,15 @@ main() {
   then
     cp "$log_file" /output/zinit-install.log
     printf 'zinit scheduler did not cache the linkding-cli plugin; private build log retained on the builder\n' >&2
+    return 1
+  fi
+
+  if [[ ! -x "$XDG_DATA_HOME/uv/tools/linkding-cli/bin/linkding" ]] ||
+    [[ ! -x "$HOME/.local/bin/linkding" ]] ||
+    ! uv tool list | grep -Eq '^linkding-cli v[[:digit:]]'
+  then
+    cp "$log_file" /output/zinit-install.log
+    printf 'zinit::uv did not install the linkding tool and command shim; private build log retained on the builder\n' >&2
     return 1
   fi
 

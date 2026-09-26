@@ -477,8 +477,26 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           customPackages = import ./pkgs { inherit pkgs inputs; };
+          termuxPrefixArchive = builtins.getEnv "TERMUX_PREFIX_ARCHIVE";
+          termuxHomeArchive = builtins.getEnv "TERMUX_HOME_ARCHIVE";
+          termuxArchivePackage =
+            archivePath: archiveName:
+            pkgs.callPackage ./pkgs/termux-cache-archive {
+              archive = builtins.path {
+                path = /. + archivePath;
+                name = "${archiveName}-source";
+              };
+              inherit archiveName;
+            };
+          termuxArchivePackages =
+            nixpkgs.lib.optionalAttrs
+              (system == "x86_64-linux" && termuxPrefixArchive != "" && termuxHomeArchive != "")
+              {
+                termux-prefix-cache = termuxArchivePackage termuxPrefixArchive "termux-prefix.tar.gz";
+                termux-home-cache = termuxArchivePackage termuxHomeArchive "termux-home.tar.gz";
+              };
         in
-        customPackages
+        customPackages // termuxArchivePackages
       );
 
       # below is to make "nix fmt" work
