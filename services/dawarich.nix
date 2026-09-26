@@ -12,6 +12,8 @@ let
   postgisVersion = "17-3.5-alpine";
   # renovate: datasource=docker depName=redis
   redisVersion = "7.0.15-alpine";
+  dawarichPort = 32927;
+  dawarichContainerPort = 3000;
   units = map (name: "${backend}-${name}") [
     "dawarich"
     "dawarich-postgres"
@@ -44,7 +46,7 @@ in
   };
 
   systemd.services =
-    mkMeshPortForwards { dawarich = 32927; }
+    mkMeshPortForwards { dawarich = dawarichPort; }
     // lib.genAttrs units (unit: {
       requires = [ "rofl-10-container-networks.service" ];
       after = [ "rofl-10-container-networks.service" ];
@@ -64,7 +66,7 @@ in
     });
 
   services.containerServices.services.dawarich = {
-    port = 32927;
+    port = dawarichPort;
     hosts = [
       "dawarich.${config.domains.main}"
       "location.${config.domains.main}"
@@ -87,7 +89,7 @@ in
         "bin/rails"
         "server"
         "-p"
-        "3000"
+        (toString dawarichContainerPort)
         "-b"
         "::"
       ];
@@ -110,14 +112,14 @@ in
       };
       environmentFiles = [ config.sops.templates."compose/dawarich.env".path ];
       extraOptions = [
-        "--health-cmd=wget -qO - http://127.0.0.1:3000/api/v1/health | grep -q '\"status\"\\s*:\\s*\"ok\"'"
+        "--health-cmd=wget -qO - http://127.0.0.1:${toString dawarichContainerPort}/api/v1/health | grep -q '\"status\"\\s*:\\s*\"ok\"'"
         "--health-interval=10s"
         "--health-timeout=10s"
         "--health-retries=30"
         "--health-start-period=30s"
       ];
       networks = [ "dawarich_dawarich" ];
-      ports = [ "127.0.0.1:32927:3000" ];
+      ports = [ "127.0.0.1:${toString dawarichPort}:${toString dawarichContainerPort}" ];
       volumes = [
         "/srv/dawarich/data/public:/var/app/public"
         "/srv/dawarich/data/watched:/var/app/tmp/imports/watched"
