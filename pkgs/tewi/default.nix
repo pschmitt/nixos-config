@@ -53,6 +53,7 @@ python3.pkgs.buildPythonApplication rec {
     platformdirs
     pyperclip
     qbittorrent-api
+    shtab
     textual
     transmission-rpc
   ];
