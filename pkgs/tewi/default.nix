@@ -37,6 +37,13 @@ python3.pkgs.buildPythonApplication rec {
     hash = "sha256-VOITB8YN+TXkG3Wpqv/twwbPuxPkVa8F1Su/914kPE8=";
   };
 
+  # The upstream release references a shell completion that is absent from
+  # the source archive, so setuptools fails while installing data files.
+  postPatch = ''
+    substituteInPlace pyproject.toml \
+      --replace-fail '"share/bash-completion/completions" = ["completions/bash/tewi"]' ""
+  '';
+
   build-system = [
     python3.pkgs.setuptools
   ];
