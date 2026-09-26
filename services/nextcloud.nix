@@ -9,7 +9,7 @@ let
   # renovate: datasource=docker depName=lscr.io/linuxserver/nextcloud
   nextcloudVersion = "35.0.1-ls452";
   # renovate: datasource=docker depName=postgres
-  postgresVersion = "15.19-bookworm";
+  postgresVersion = "18.6-bookworm";
   units = map (name: "${backend}-${name}") [
     "nextcloud"
     "nextcloud-postgres"
