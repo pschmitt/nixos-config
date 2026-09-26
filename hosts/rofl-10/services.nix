@@ -1,5 +1,10 @@
+{ config, ... }:
+let
+  wildcardCert = "wildcard.${config.domains.main}";
+in
 {
   imports = [
+    ../../modules/container-services.nix
     ../../services/anika-blue.nix
     ../../services/atuin.nix
     ../../services/authelia-nginx-bypass.nix
@@ -43,8 +48,18 @@
     ../../services/whoami.nix
     ../../services/wishlist.nix
 
-    ./container-services.nix
     ./restic.nix
     ./syncthing.nix
   ];
+
+  services.containerServices = {
+    enable = true;
+    defaultEnableACMEForDefaultHosts = false;
+    defaultUseACMEHostForDefaultHosts = wildcardCert;
+  };
+
+  security.acme.certs."${wildcardCert}" = {
+    domain = "*.${config.domains.main}";
+    group = "nginx";
+  };
 }

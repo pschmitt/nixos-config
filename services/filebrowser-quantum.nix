@@ -77,7 +77,7 @@ in
             # services/authelia.nix's oidc.yml template) -- FileBrowser
             # Quantum handles its own login/redirect flow end-to-end, so
             # this service is NOT behind nginx's Authelia auth_request gate
-            # (see hosts/rofl-10/container-services.nix). Public share links
+            # (see services.containerServices below). Public share links
             # under /public/ are unaffected either way.
             enabled: true
             # Authelia's shared "admin" group covers other apps too (e.g.
@@ -121,6 +121,15 @@ in
       }";
       Restart = "on-failure";
       RestartSec = 10;
+    };
+  };
+
+  services.containerServices.services.filebrowser-quantum = {
+    inherit port;
+    hosts = [ "files.${config.domains.main}" ];
+    monitoring = {
+      path = "/api/health";
+      restart.systemdUnit = "filebrowser-quantum.service";
     };
   };
 }

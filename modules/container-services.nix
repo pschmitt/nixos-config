@@ -108,17 +108,6 @@ let
                 description = "Systemd unit Monit restarts when this service is unhealthy.";
               };
 
-              composePath = mkOption {
-                type = types.nullOr types.str;
-                default = null;
-                description = "Temporary compatibility path for the remaining external Compose project.";
-              };
-
-              composeService = mkOption {
-                type = types.nullOr types.str;
-                default = null;
-                description = "Optional Compose service to restart during the migration.";
-              };
             };
 
             dependsOn = mkOption {
@@ -263,18 +252,7 @@ let
     '';
 
   restartProgram =
-    service:
-    let
-      inherit (service.monitoring) restart;
-    in
-    # TODO Remove Compose fallback after the private migration branch is in the
-    # pinned flake input.
-    if restart.systemdUnit != null then
-      "${pkgs.systemd}/bin/systemctl restart ${restart.systemdUnit}"
-    else
-      "${pkgs.docker-compose-wrapper}/bin/docker-compose-wrapper -f /srv/${restart.composePath}/docker-compose.yaml up -d --no-deps${
-        optionalString (restart.composeService != null) " ${restart.composeService}"
-      }";
+    service: "${pkgs.systemd}/bin/systemctl restart ${service.monitoring.restart.systemdUnit}";
 
   generateMonitCheck =
     serviceName: service:
@@ -346,16 +324,10 @@ let
     serviceName:
     let
       restart = cfg.services.${serviceName}.monitoring.restart;
-      hasSystemdUnit = restart.systemdUnit != null;
-      hasComposePath = restart.composePath != null;
     in
-    optional (hasSystemdUnit == hasComposePath) {
+    optional (restart.systemdUnit == null) {
       assertion = false;
-      message = "Container service '${serviceName}' must set exactly one of monitoring.restart.systemdUnit or monitoring.restart.composePath.";
-    }
-    ++ optional (restart.composeService != null && !hasComposePath) {
-      assertion = false;
-      message = "Container service '${serviceName}' may only set monitoring.restart.composeService with monitoring.restart.composePath.";
+      message = "Container service '${serviceName}' must set monitoring.restart.systemdUnit.";
     }
   ) (attrNames cfg.services);
 

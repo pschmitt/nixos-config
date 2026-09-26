@@ -77,4 +77,14 @@ in
       "--tmpfs=/tmp:noexec,nosuid,size=128m"
     ];
   };
+
+  services.containerServices.services.trek = {
+    port = listenPort;
+    hosts = [ trekHost ];
+    monitoring = {
+      path = "/api/health";
+      expectedHttpStatusCode = 200;
+      restart.systemdUnit = config.virtualisation.oci-containers.containers.trek.serviceName;
+    };
+  };
 }

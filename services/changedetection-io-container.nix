@@ -66,4 +66,11 @@ in
     fi
   '';
 
+  services.containerServices.services.changedetection = {
+    port = listenPort;
+    hosts = [ domain ];
+    monitoring.restart.systemdUnit =
+      config.virtualisation.oci-containers.containers.changedetection-io.serviceName;
+  };
+
 }

@@ -98,4 +98,13 @@ in
     }) tdarrInterfaces
   );
 
+  services.containerServices.services.tdarr = {
+    port = 8265;
+    hosts = [
+      "tdarr.${config.domains.main}"
+      "tdarr.${config.networking.hostName}.${config.domains.main}"
+    ];
+    monitoring.restart.systemdUnit = config.virtualisation.oci-containers.containers.tdarr.serviceName;
+  };
+
 }

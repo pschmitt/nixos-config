@@ -18,6 +18,12 @@ in
     "d ${dataDir} 0750 ${toString containerUid} ${toString containerGid} - -"
   ];
 
+  services.containerServices.services.bichon = {
+    port = listenPort;
+    hosts = [ "bichon.${config.domains.main}" ];
+    monitoring.restart.systemdUnit = config.virtualisation.oci-containers.containers.bichon.serviceName;
+  };
+
   virtualisation.oci-containers.containers.bichon = {
     image = "rustmailer/bichon:${bichonVersion}";
     autoStart = true;
