@@ -33,6 +33,9 @@ let
   iconCalendar = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 10v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2zm2-7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h1V1h2v2h8V1h2v2zm0 16V8H5v11zM9 14v2H7v-2zm4 0v2h-2v-2zm4 0v2h-2v-2z"/></svg>'';
   iconGitHub = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.79-.22 1.65-.33 2.5-.33s1.71.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"/></svg>'';
 
+  iconHackerNews = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m4.6 5.1l-3.7 6.2V17h-1.8v-3.7L7.4 7.1h2l2.6 4.5l2.6-4.5z"/></svg>'';
+  iconReddit = ''<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20a10 10 0 0 0 0-20m5.9 10.7c.1.3.1.6.1.9c0 2.7-2.7 4.9-6 4.9s-6-2.2-6-4.9c0-.3 0-.6.1-.9a1.8 1.8 0 1 1 2.4-2.7c1-.6 2.1-.9 3.3-1l.8-3.6a.5.5 0 0 1 .6-.4l2.5.5a1.3 1.3 0 1 1-.2 1l-2-.4l-.6 2.9c1.2.1 2.4.4 3.3 1a1.8 1.8 0 1 1 1.7 2.7m-8.5 2.5c.4 0 .7-.3.7-.7s-.3-.7-.7-.7s-.7.3-.7.7s.3.7.7.7m5.2 0c.4 0 .7-.3.7-.7s-.3-.7-.7-.7s-.7.3-.7.7s.3.7.7.7m-.1 2.1a.5.5 0 0 0-.7-.7c-.5.5-1.2.8-2.1.8s-1.6-.3-2.1-.8a.5.5 0 0 0-.7.7c.7.7 1.7 1.1 2.8 1.1s2.1-.4 2.8-1.1"/></svg>'';
+
   # dashboard-icons (di:) ships per-background variants for some logos:
   # "-light" is the near-white one meant for dark backgrounds, "-dark" the
   # near-black one meant for light backgrounds. A bookmark can only declare
@@ -59,6 +62,7 @@ let
     )
     + confirmDialogCss
     + builtinWidgetIconsCss
+    + newsWidgetIconsCss
   );
 
   # A deploy stops glance.service while the rest of the activation runs -- on
@@ -103,6 +107,7 @@ let
       title,
       url ? null,
       icon,
+      action ? "",
     }:
     let
       inner = ''
@@ -117,8 +122,9 @@ let
           ''<span class="uppercase">${inner}</span>'';
     in
     ''
-      <div class="widget-header" style="padding:0">
+      <div class="widget-header" style="padding:0;display:flex;align-items:center;justify-content:space-between;gap:10px">
         <h2>${titleHtml}</h2>
+        ${action}
       </div>
     '';
 
@@ -224,7 +230,7 @@ let
         {{ $isTomorrow := eq (formatTime "DateOnly" $t) $tomorrow }}
         {{ $timed := not (.Bool "allDay") }}
         {{ $isPast := and $timed (le $endStamp $nowStamp) }}
-        {{ $isNow := and $timed (le $startStamp $nowStamp) (gt $endStamp $nowStamp) }}
+        {{ $isNow := and (le $startStamp $nowStamp) (gt $endStamp $nowStamp) }}
         <li{{ if $isNow }} style="border-left:2px solid var(--color-primary);padding-left:8px"{{ else if $isPast }} style="opacity:0.45"{{ end }}>
           <div class="flex items-center gap-5">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;background:{{ if eq (.String "calendar") "work" }}#8250df{{ else if eq (.String "calendar") "bergmann-schmitt" }}#1a7f37{{ else }}#0969da{{ end }}"></span>
@@ -232,7 +238,7 @@ let
           </div>
           <div class="size-h6 {{ if or $isNow (and $isToday (not $isPast)) }}color-primary{{ else if $isTomorrow }}color-base{{ else }}color-subdue{{ end }}">
             {{ if .Bool "allDay" }}
-              {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ formatTime "Jan 2" $t }}{{ end }} · all day
+              {{ if $isToday }}Today{{ else if $isTomorrow }}Tomorrow{{ else }}{{ formatTime "Jan 2" $t }}{{ end }}{{ if gt (.Int "allDayDays") 1 }}–{{ $allDayEnd := .String "allDayEnd" | parseTime "RFC3339" }}{{ if eq (formatTime "Jan" $t) (formatTime "Jan" $allDayEnd) }}{{ formatTime "2" $allDayEnd }}{{ else }}{{ formatTime "Jan 2" $allDayEnd }}{{ end }} · <span class="color-primary">{{ .Int "allDayDays" }} days</span>{{ else }} · all day{{ end }}
             {{ else if $isNow }}
               Now · until {{ if eq (formatTime "DateOnly" $e) (formatTime "DateOnly" $t) }}{{ formatTime "15:04" $e }}{{ else }}{{ formatTime "Jan 2, 15:04" $e }}{{ end }}
             {{ else if $isToday }}
@@ -599,6 +605,29 @@ let
         clock = iconClock;
         weather = iconWeather;
         bookmarks = iconBookmark;
+      }
+  );
+  newsWidgetIconsCss = lib.concatStrings (
+    lib.mapAttrsToList
+      (class: icon: ''
+        .${class} > .widget-header h2 {
+          display: flex;
+          align-items: center;
+          gap: .5rem;
+        }
+        .${class} > .widget-header h2::before {
+          content: "";
+          flex-shrink: 0;
+          width: 16px;
+          height: 16px;
+          background-color: currentColor;
+          mask: url("${svgDataUri icon}") center / contain no-repeat;
+        }
+      '')
+      {
+        news-hacker-news = iconHackerNews;
+        news-homelab = iconReddit;
+        news-github-trending = iconGitHub;
       }
   );
 
@@ -1004,21 +1033,25 @@ let
     emptyText:
     builtins.replaceStrings [ "\n" ] [ "" ] (
       ''
-        var list=el.parentElement,n=parseInt(list.dataset.collapseAfter);el.remove();
-        for(var i=0;i<list.children.length&&i<n;i++){list.children[i].classList.remove('collapsible-item')}
-        if(list.children.length<=n){var t=list.nextElementSibling;if(t&&t.classList.contains('expand-toggle-button')){t.remove()}list.classList.remove('container-expanded')}
+        var list=el.parentElement;el.remove();
+        if(list){var n=parseInt(list.dataset.collapseAfter);for(var i=0;i<list.children.length&&i<n;i++){list.children[i].classList.remove('collapsible-item')}if(list.children.length<=n){var t=list.nextElementSibling;if(t&&t.classList.contains('expand-toggle-button')){t.remove()}list.classList.remove('container-expanded')}
       ''
       + (
         if emptyText == null then
           ''
-            if(!list.children.length){var h=list.previousElementSibling;if(h&&h.tagName==='DIV'){h.remove()}list.remove()}
+            if(!list.children.length){var h=list.previousElementSibling;if(h&&h.tagName==='DIV'){h.remove()}list.remove()}}
           ''
         else
           ''
-            if(!list.children.length){var p=document.createElement('p');p.className='color-positive';p.textContent='${emptyText}';list.replaceWith(p)}
+            if(!list.children.length){var p=document.createElement('p');p.className='color-positive';p.textContent='${emptyText}';list.replaceWith(p)}}
           ''
       )
     );
+
+  nixpkgsMarkAllReadJs = builtins.replaceStrings [ "\n" ] [ "" ] ''
+    var btn=this,items=Array.from(document.querySelectorAll('li[id^=&quot;nixpkgs-pr-&quot;]'));btn.disabled=true;
+    (async function(){try{for(var i=0;i<items.length;i++){var el=items[i],number=Number(el.id.slice(11));var r=await fetch(&quot;''${NIXPKGS_PR_MARK_READ_URL}&quot;,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({number:number})});if(!r.ok)throw new Error('HTTP '+r.status);${mkRemoveListItemJs null}}btn.remove()}catch(e){btn.disabled=false;alert('Could not mark all Nixpkgs PRs read: '+e)}})()
+  '';
 
   # Styled to resemble GitHub's own notification action buttons (icon +
   # label pill, subtle border/background) rather than Glance's UI.
@@ -1356,6 +1389,7 @@ in
                           title = "Nixpkgs PRs";
                           url = nixpkgsSearchUrl;
                           icon = iconNixOS;
+                          action = ''<button type="button" aria-label="Mark all Nixpkgs PRs read" style="${ghActionButtonStyle}" onmouseover="this.style.background='${ghActionButtonHoverBg}'" onmouseout="this.style.background='${ghActionButtonBg}'" onclick="${nixpkgsMarkAllReadJs}">${octiconCheckSmall}<span>Mark all read</span></button>'';
                         }
                         + nixpkgsPrListTemplate;
                     }
@@ -1404,6 +1438,67 @@ in
                         icon = iconMovie;
                       }
                       + upcomingReleasesTemplate;
+                  }
+                ];
+              }
+            ];
+          }
+          {
+            name = "News";
+            columns = [
+              {
+                size = "full";
+                widgets = [
+                  {
+                    type = "hacker-news";
+                    css-class = "news-hacker-news";
+                    title = "Hacker News";
+                    title-url = "https://news.ycombinator.com";
+                    cache = "5m";
+                    limit = 15;
+                    collapse-after = 5;
+                  }
+                  {
+                    type = "rss";
+                    css-class = "news-homelab";
+                    title = "r/homelab";
+                    title-url = "https://www.reddit.com/r/homelab/";
+                    cache = "15m";
+                    limit = 15;
+                    collapse-after = 5;
+                    feeds = [
+                      {
+                        url = "https://www.reddit.com/r/homelab/.rss";
+                        title = "Homelab";
+                      }
+                    ];
+                  }
+                  {
+                    type = "rss";
+                    css-class = "news-github-trending";
+                    title = "GitHub Trending";
+                    title-url = "https://github.com/trending";
+                    cache = "1h";
+                    limit = 16;
+                    collapse-after = 6;
+                    preserve-order = true;
+                    feeds = [
+                      {
+                        url = "https://mkusaka.github.io/trending/all/daily/index.xml";
+                        title = "All languages";
+                        limit = 3;
+                      }
+                      {
+                        url = "https://mkusaka.github.io/trending/nix/daily/index.xml";
+                        title = "Nix";
+                        limit = 3;
+                      }
+                      {
+                        url = "https://raw.githubusercontent.com/cnzhujie/ai-rss-feed/main/rss/github_ranking_ai_rss.xml";
+                        title = "AI ranking changes";
+                        limit = 10;
+                      }
+                    ];
                   }
                 ];
               }
