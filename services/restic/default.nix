@@ -39,7 +39,7 @@
       ];
       initialize = true;
       createWrapper = true;
-      exclude = [ ];
+      exclude = [ "/var/lib/containers" ];
       backupPrepareCommand = ''
         ${pkgs.curl}/bin/curl -fsSL -m 10 --retry 5 -X POST \
           -H "Content-Type: text/plain" \
