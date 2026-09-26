@@ -448,6 +448,7 @@ in
         accessibility.ui_scale = 1.15;
         shell = {
           font_family = "ComicCode Nerd Font SemiBold"; # a distinct family/cut, not a weight variant
+          password_style = "random";
           # Default is "{:%H:%M}" (std::chrono format spec) — add seconds to
           # the center bar's clock widget.
           time_format = "{:%H:%M:%S}";
@@ -486,6 +487,7 @@ in
           enabled = true;
           lock_before_suspend = true;
           fingerprint = true;
+          transition = [ "zoom" ];
           allow_empty_password = false;
           blurred_desktop = true;
           blur_intensity = 0.6;
