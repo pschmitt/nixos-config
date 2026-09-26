@@ -70,11 +70,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    docker-compose-bulk = {
-      url = "github:pschmitt/docker-compose-bulk";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     rbw-auto = {
       # url = "path:/home/pschmitt/devel/private/pschmitt/rbw-auto.git";
       url = "github:pschmitt/rbw-auto";
@@ -146,7 +141,7 @@
     };
 
     nixos-config-private = {
-      url = "github:pschmitt/nixos-config-private";
+      url = "github:pschmitt/nixos-config-private/migrate/compose-to-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
