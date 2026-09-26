@@ -45,8 +45,8 @@ EOF
 main() {
   local source_root output_dir docker_platform termux_base_image docker_context temp_root staging_dir env_dir verify_dir
   local home_archive_paths prefix_archive_paths
-  local zsh_tree tmux_tree packages_blob zinit_timeout input_path object_id output_file file_path file_description
-  local -a docker_binfmt_mounts=()
+  local zsh_tree tmux_tree packages_blob zinit_timeout input_path object_id output_file file_path file_description directory
+  local -a docker_binfmt_mounts=() verify_dirs=()
 
   umask 077
 
@@ -180,21 +180,17 @@ main() {
 
   verify_dir="$temp_root/verify"
   mkdir -p "$verify_dir"
-  tar -xzf "$output_dir/termux-home.tar.gz" -C "$verify_dir" bin lib share
-  while IFS= read -r -d '' file_path
-  do
-    file_description=$(file -b "$file_path")
-    if [[ "$file_description" == *ELF* && "$file_description" != *'ARM aarch64'* ]]
-    then
-      printf 'Built archive contains a non-AArch64 executable under %s\n' "${file_path#"$verify_dir"/}" >&2
-      return 1
-    fi
-  done < <(find "$verify_dir/bin" "$verify_dir/lib" -type f -print0)
-
   home_archive_paths="$temp_root/home-archive-paths"
   prefix_archive_paths="$temp_root/prefix-archive-paths"
   tar -tzf "$output_dir/termux-home.tar.gz" > "$home_archive_paths"
   tar -tzf "$output_dir/termux-prefix.tar.gz" > "$prefix_archive_paths"
+
+  if tar -tvzf "$output_dir/termux-home.tar.gz" |
+    awk 'substr($1, 1, 1) == "h" { found = 1 } END { exit !found }'
+  then
+    printf 'Home archive contains hard links that Termux cannot restore safely\n' >&2
+    return 1
+  fi
 
   if grep -Ev '^(share|bin|lib)(/|$)' "$home_archive_paths" >/dev/null
   then
@@ -202,10 +198,44 @@ main() {
     return 1
   fi
 
+  if grep -Eq '(^/|(^|/)\.\.(/|$))' "$home_archive_paths"
+  then
+    printf 'Home archive contains an unsafe path\n' >&2
+    return 1
+  fi
+
   if grep -Ev '^usr(/|$)' "$prefix_archive_paths" >/dev/null
   then
     printf 'Prefix archive contains a path outside usr/\n' >&2
     return 1
+  fi
+
+  if grep -Eq '(^/|(^|/)\.\.(/|$))' "$prefix_archive_paths"
+  then
+    printf 'Prefix archive contains an unsafe path\n' >&2
+    return 1
+  fi
+
+  tar -xzf "$output_dir/termux-home.tar.gz" -C "$verify_dir"
+  for directory in bin lib
+  do
+    if [[ -d "$verify_dir/$directory" ]]
+    then
+      verify_dirs+=("$verify_dir/$directory")
+    fi
+  done
+
+  if ((${#verify_dirs[@]} > 0))
+  then
+    while IFS= read -r -d '' file_path
+    do
+      file_description=$(file -b "$file_path")
+      if [[ "$file_description" == *ELF* && "$file_description" != *'ARM aarch64'* ]]
+      then
+        printf 'Built archive contains a non-AArch64 executable under %s\n' "${file_path#"$verify_dir"/}" >&2
+        return 1
+      fi
+    done < <(find "${verify_dirs[@]}" -type f -print0)
   fi
 
   if grep -Eq '^usr/etc/ssh/ssh_host_.*_key(\.pub)?$' "$prefix_archive_paths"

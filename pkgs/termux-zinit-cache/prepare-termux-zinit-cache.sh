@@ -82,6 +82,9 @@ main() {
   apt install -y "${package_list[@]}" "${configured_packages[@]}" >/dev/null
 
   export TERMUX_RUN_MODE=ci
+  # Maturin cannot infer Android's API level inside the QEMU Termux container.
+  # Match the API level used by Termux's aarch64-linux-android-clang wrapper.
+  export ANDROID_API_LEVEL="${ANDROID_API_LEVEL:-24}"
   export TERM=xterm
   export ZINIT_SCHEDULER_BURST=1
   export ZDOTDIR=/input/.config/zsh
@@ -169,7 +172,7 @@ main() {
   [[ -d "$HOME/.local/bin" ]] && archive_paths+=(bin)
   [[ -d "$HOME/.local/lib" ]] && archive_paths+=(lib)
 
-  tar -czf /output/termux-home.tar.gz \
+  tar --hard-dereference -czf /output/termux-home.tar.gz \
     --exclude='share/cargo/registry' \
     --exclude='share/cargo/git' \
     --exclude='share/go/pkg/mod' \
