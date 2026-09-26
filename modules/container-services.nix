@@ -111,13 +111,13 @@ let
               composePath = mkOption {
                 type = types.nullOr types.str;
                 default = null;
-                description = "Explicit /srv-relative path to the external Compose project Monit restarts.";
+                description = "Temporary compatibility path for the remaining external Compose project.";
               };
 
               composeService = mkOption {
                 type = types.nullOr types.str;
                 default = null;
-                description = "Compose service to restart; when null, restarts the complete project.";
+                description = "Optional Compose service to restart during the migration.";
               };
             };
 
@@ -267,6 +267,8 @@ let
     let
       inherit (service.monitoring) restart;
     in
+    # TODO Remove Compose fallback after the private migration branch is in the
+    # pinned flake input.
     if restart.systemdUnit != null then
       "${pkgs.systemd}/bin/systemctl restart ${restart.systemdUnit}"
     else

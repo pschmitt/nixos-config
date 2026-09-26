@@ -1,6 +1,7 @@
 { config, pkgs, ... }:
 
 let
+  containerBackend = config.virtualisation.oci-containers.backend;
   domain = config.domains.main;
   inherit (config.networking) hostName;
   mkHost = subdomain: "${subdomain}.${domain}";
@@ -32,7 +33,7 @@ in
       alby-hub = {
         port = 25294;
         hosts = [ (mkHost "alby") ];
-        monitoring.restart.composePath = "alby-hub";
+        monitoring.restart.systemdUnit = "${containerBackend}-alby-hub.service";
       };
       archivebox = {
         port = 27244;
@@ -44,7 +45,7 @@ in
           (mkHostWithNode "archive")
           (mkHostWithNode "archivebox")
         ];
-        monitoring.restart.composePath = "archivebox";
+        monitoring.restart.systemdUnit = "${containerBackend}-archivebox.service";
       };
       bichon = {
         port = 15630;
@@ -65,7 +66,7 @@ in
         ];
         monitoring = {
           path = "/api/v1/health";
-          restart.composePath = "dawarich";
+          restart.systemdUnit = "${containerBackend}-dawarich.service";
         };
       };
       filebrowser-quantum = {
@@ -90,14 +91,14 @@ in
           (mkHost "ld")
           (mkHost "linkding")
         ];
-        monitoring.restart.composePath = "linkding";
+        monitoring.restart.systemdUnit = "${containerBackend}-linkding.service";
       };
       nextcloud = {
         port = 63982;
         tls = true;
         monitoring = {
           program = "${nextcloudHealthCheck}";
-          restart.composePath = "nextcloud";
+          restart.systemdUnit = "${containerBackend}-nextcloud.service";
         };
         hosts = [
           (mkHost "c")
@@ -129,7 +130,7 @@ in
       wikijs = {
         port = 9454;
         hosts = [ (mkHost "wiki") ];
-        monitoring.restart.composePath = "wikijs";
+        monitoring.restart.systemdUnit = "${containerBackend}-wikijs.service";
       };
     };
   };
