@@ -141,7 +141,7 @@
     };
 
     nixos-config-private = {
-      url = "github:pschmitt/nixos-config-private/migrate/compose-to-nix";
+      url = "github:pschmitt/nixos-config-private";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
