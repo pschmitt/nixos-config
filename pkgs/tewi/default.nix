@@ -6,6 +6,16 @@
 }:
 
 let
+  # Tewi requires shtab >= 1.12.1, while the pinned nixpkgs revision carries
+  # 1.9.2. Keep the package buildable until nixpkgs updates it.
+  shtab = python3.pkgs.shtab.overridePythonAttrs (_: {
+    version = "1.12.1";
+    src = fetchPypi {
+      pname = "shtab";
+      version = "1.12.1";
+      hash = "sha256-BjczhyOo/AjtHC/YJthDIimSRknCbjJHu0jFPWDKO/k=";
+    };
+  });
   geoip2fast = python3.pkgs.buildPythonPackage rec {
     pname = "geoip2fast";
     version = "1.2.2";
