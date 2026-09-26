@@ -12,7 +12,10 @@ let
   trekVersion = "4.3.2";
 in
 {
-  systemd.services."${containerBackend}-trek".restartIfChanged = true;
+  systemd.services."${containerBackend}-trek" = {
+    restartIfChanged = true;
+    restartTriggers = [ trekVersion ];
+  };
 
   sops = {
     secrets."trek/encryption-key" = config.sops.mkHostSecret {
