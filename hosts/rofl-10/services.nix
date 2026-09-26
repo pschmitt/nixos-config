@@ -6,6 +6,7 @@ in
   imports = [
     ../../modules/container-services.nix
     ../../services/anika-blue.nix
+    ../../services/archivebox.nix
     ../../services/atuin.nix
     ../../services/authelia-nginx-bypass.nix
     ../../services/authelia.nix
@@ -13,6 +14,7 @@ in
     ../../services/bichon.nix
     ../../services/bentopdf.nix
     ../../services/changedetection-io-container.nix
+    ../../services/dawarich.nix
     ../../services/endurain.nix
     ../../services/filebrowser-quantum.nix
     ../../services/forgejo.nix
@@ -24,12 +26,14 @@ in
     ../../services/http-static.nix
     ../../services/http.nix
     ../../services/immich.nix
+    ../../services/linkding.nix
     ../../services/luks-ssh-unlock/homelab.nix
     ../../services/matrix.nix
     ../../services/mealie.nix
     ../../services/monero-wallet-rpc-sync-receiver.nix
     ../../services/n8n.nix
     ../../services/netbox.nix
+    ../../services/nextcloud.nix
     ../../services/paperless-ngx.nix
     ../../services/pinchflat.nix
     ../../services/podsync.nix
@@ -37,6 +41,7 @@ in
     ../../services/postgresql.nix
     ../../services/rclone-bisync.nix
     ../../services/restic-remote.nix
+    ../../services/rofl-10-container-networks.nix
     ../../services/searxng.nix
     ../../services/stricknani.nix
     ../../services/taskwarrior

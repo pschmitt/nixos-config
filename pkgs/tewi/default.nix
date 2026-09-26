@@ -15,6 +15,7 @@ let
       version = "1.12.1";
       hash = "sha256-BjczhyOo/AjtHC/YJthDIimSRknCbjJHu0jFPWDKO/k=";
     };
+    nativeCheckInputs = [ python3.pkgs.click ];
   });
   geoip2fast = python3.pkgs.buildPythonPackage rec {
     pname = "geoip2fast";
