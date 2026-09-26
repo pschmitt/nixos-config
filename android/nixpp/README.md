@@ -93,10 +93,10 @@ outputs. Stable links select the current immutable client and channel manifest;
 the manifest carries the client, prefix, and home store paths. The client
 checksum currently relies on the authenticated HTTPS blob endpoint, while the
 large prefix and home payloads are authenticated by Nix cache signatures. The
-timed app-driven cold bootstrap took about 19 minutes from the first Termux
-shell prompt to the configured prompt, including time spent recovering from an
-stdin handoff bug fixed in `yadm-init`; it excludes installing and opening the
-official Termux app for its first run.
+latest cold app-driven run took about 11 minutes from entering the curl-piped
+provisioner, after the official Termux app's first-run setup, to the configured
+Zsh prompt. It excludes installing and opening the Termux app and its initial
+package setup.
 
 Do not put private dotfiles or credentials in public outputs or publish their
 source paths to a public cache. Cache outputs intended for Termux must be
