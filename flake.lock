@@ -2423,18 +2423,20 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "pre-commit-hooks": "pre-commit-hooks_2"
+        "pre-commit-hooks": "pre-commit-hooks_2",
+        "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1790425518,
-        "narHash": "sha256-kc2qJSI0gwqgx0/2mxCASOzX/bpGKip3cqYesZP7N8I=",
+        "lastModified": 1790428540,
+        "narHash": "sha256-Mvy7rlNrbBFMdDIWTPl2VEY2j5md22A5XHQ9R9KHt2w=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "9d139c46a908bde3060b741990971f0c20b486dc",
+        "rev": "2bf2e94c38ef87430c0fe6f5f0d338094572e9ab",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
+        "ref": "migrate/stash-native",
         "repo": "nixos-config-private",
         "type": "github"
       }
@@ -3566,6 +3568,22 @@
       "original": {
         "owner": "nix-community",
         "repo": "srvos",
+        "type": "github"
+      }
+    },
+    "stash-nixpkgs": {
+      "locked": {
+        "lastModified": 1786781468,
+        "narHash": "sha256-hHbQE5xItjDr0R3PrwfMJpMc8sBsXfT9izCDJuxOfT8=",
+        "owner": "a4blue",
+        "repo": "nixpkgs",
+        "rev": "4054d9883e03bcbf0af44a9cd4a95f6afcd980ce",
+        "type": "github"
+      },
+      "original": {
+        "owner": "a4blue",
+        "repo": "nixpkgs",
+        "rev": "4054d9883e03bcbf0af44a9cd4a95f6afcd980ce",
         "type": "github"
       }
     },
