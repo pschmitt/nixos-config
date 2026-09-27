@@ -44,6 +44,18 @@ in
     POSTGRES_PASSWORD=${config.sops.placeholder."compose/nextcloud/postgres-password"}
   '';
 
+  # Staging copy for the native-service migration; Nextcloud still uses the
+  # container database. Refresh this database under maintenance mode at cutover.
+  services.postgresql = {
+    ensureDatabases = [ "nextcloud" ];
+    ensureUsers = [
+      {
+        name = "nextcloud";
+        ensureDBOwnership = true;
+      }
+    ];
+  };
+
   systemd.services =
     mkMeshPortForwards { nextcloud = nextcloudPort; }
     // lib.genAttrs units (unit: {
