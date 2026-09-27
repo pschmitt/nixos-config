@@ -110,6 +110,12 @@ let
 
             };
 
+            restartAfterFailures = mkOption {
+              type = types.ints.positive;
+              default = 1;
+              description = "Consecutive failed program checks before Monit restarts this service.";
+            };
+
             dependsOn = mkOption {
               type = types.nullOr types.str;
               default = null;
@@ -239,7 +245,15 @@ let
       program,
       dependsOn,
       group,
+      restartAfterFailures,
     }:
+    let
+      restartCondition =
+        if restartAfterFailures == 1 then
+          "if status != 0 then restart"
+        else
+          "if status != 0 for ${toString restartAfterFailures} cycles then restart";
+    in
     ''
       check program "${serviceName}" with path "${program}"
         group container-services
@@ -247,7 +261,7 @@ let
         ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
         restart program = "${restartCommand}"
           with timeout 180 seconds
-        if status != 0 then restart
+      ${restartCondition}
         if 5 restarts within 10 cycles then alert
     '';
 
@@ -264,6 +278,7 @@ let
         group
         program
         ;
+      inherit (service.monitoring) restartAfterFailures;
       monitorClauses =
         optional (path != null) "request \"${path}\""
         ++ optional (expectedHttpStatusCode != null) "status ${toString expectedHttpStatusCode}";
@@ -280,6 +295,7 @@ let
           program
           dependsOn
           group
+          restartAfterFailures
           ;
       }
     else

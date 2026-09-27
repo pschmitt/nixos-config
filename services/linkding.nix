@@ -10,6 +10,8 @@ let
   linkdingVersion = "1.47.0";
   # renovate: datasource=docker depName=proog/linkding-media-archiver
   mediaArchiverVersion = "v0.6.0";
+  linkdingPort = 54653;
+  linkdingContainerPort = 9090;
   units = map (name: "${backend}-${name}") [
     "linkding"
     "linkding-media-archiver"
@@ -28,7 +30,7 @@ in
   '';
 
   systemd.services =
-    mkMeshPortForwards { linkding = 54653; }
+    mkMeshPortForwards { linkding = linkdingPort; }
     // lib.genAttrs units (unit: {
       requires = [ "rofl-10-container-networks.service" ];
       after = [ "rofl-10-container-networks.service" ];
@@ -38,7 +40,7 @@ in
     });
 
   services.containerServices.services.linkding = {
-    port = 54653;
+    port = linkdingPort;
     hosts = [
       "ld.${config.domains.main}"
       "linkding.${config.domains.main}"
@@ -67,12 +69,12 @@ in
         LD_DISABLE_URL_VALIDATION = "False";
         LD_ENABLE_AUTH_PROXY = "False";
         LD_HOST_DATA_DIR = "./data/linkding";
-        LD_HOST_PORT = "54653";
+        LD_HOST_PORT = toString linkdingPort;
         LD_SUPERUSER_NAME = "";
         LD_SUPERUSER_PASSWORD = "";
       };
       networks = [ "linkding_default" ];
-      ports = [ "127.0.0.1:54653:9090" ];
+      ports = [ "127.0.0.1:${toString linkdingPort}:${toString linkdingContainerPort}" ];
       volumes = [ "/srv/linkding/data/linkding:/etc/linkding/data" ];
     };
 
@@ -81,7 +83,7 @@ in
       autoStart = true;
       dependsOn = [ "linkding" ];
       environment = {
-        LDMA_BASEURL = "http://linkding:9090";
+        LDMA_BASEURL = "http://linkding:${toString linkdingContainerPort}";
         LDMA_SCAN_INTERVAL = "3600";
         LDMA_TAGS = "video music youtube";
       };

@@ -10,6 +10,8 @@ let
   nextcloudVersion = "35.0.1-ls452";
   # renovate: datasource=docker depName=postgres
   postgresVersion = "15.19-bookworm";
+  nextcloudPort = 63982;
+  nextcloudContainerPort = 443;
   units = map (name: "${backend}-${name}") [
     "nextcloud"
     "nextcloud-postgres"
@@ -25,8 +27,8 @@ let
       --insecure \
       --max-time 20 \
       --noproxy '*' \
-      --resolve nextcloud.${domain}:63982:127.0.0.1 \
-      "https://nextcloud.${domain}:63982/status.php" \
+      --resolve nextcloud.${domain}:${toString nextcloudPort}:127.0.0.1 \
+      "https://nextcloud.${domain}:${toString nextcloudPort}/status.php" \
       >/dev/null
   '';
   mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
@@ -43,7 +45,7 @@ in
   '';
 
   systemd.services =
-    mkMeshPortForwards { nextcloud = 63982; }
+    mkMeshPortForwards { nextcloud = nextcloudPort; }
     // lib.genAttrs units (unit: {
       requires = [
         "rofl-10-container-networks.service"
@@ -59,7 +61,7 @@ in
     });
 
   services.containerServices.services.nextcloud = {
-    port = 63982;
+    port = nextcloudPort;
     tls = true;
     hosts =
       map mkHost [
@@ -73,6 +75,7 @@ in
     monitoring = {
       program = "${healthCheck}";
       restart.systemdUnit = "${backend}-nextcloud.service";
+      restartAfterFailures = 5;
     };
     # Large files can take longer than NGINX's default 60 second timeout.
     extraLocationConfig = ''
@@ -95,7 +98,7 @@ in
         TZ = "Europe/Berlin";
       };
       networks = [ "nextcloud_default" ];
-      ports = [ "127.0.0.1:63982:443" ];
+      ports = [ "127.0.0.1:${toString nextcloudPort}:${toString nextcloudContainerPort}" ];
       volumes = [
         "/srv/nextcloud/config/nextcloud:/config"
         "/srv/nextcloud/data/nextcloud:/data"

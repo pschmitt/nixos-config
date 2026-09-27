@@ -12,6 +12,10 @@ let
   piholeVersion = "2026.09.0";
   # renovate: datasource=docker depName=valeriansaliou/sonic
   sonicVersion = "v1.10.1";
+  archiveboxPort = 27244;
+  archiveboxContainerPort = 8000;
+  piholePort = 8090;
+  piholeContainerPort = 80;
   units = map (name: "${backend}-${name}") [
     "archivebox"
     "archivebox-scheduler"
@@ -52,7 +56,7 @@ in
   };
 
   systemd.services =
-    mkMeshPortForwards { archivebox = 27244; }
+    mkMeshPortForwards { archivebox = archiveboxPort; }
     // lib.genAttrs units (unit: {
       requires = [ "rofl-10-container-networks.service" ];
       after = [ "rofl-10-container-networks.service" ];
@@ -72,7 +76,7 @@ in
     });
 
   services.containerServices.services.archivebox = {
-    port = 27244;
+    port = archiveboxPort;
     hosts = [
       "arc.${config.domains.main}"
       "archive.${config.domains.main}"
@@ -100,7 +104,7 @@ in
       };
       environmentFiles = [ config.sops.templates."compose/archivebox.env".path ];
       networks = [ "archivebox_default" ];
-      ports = [ "127.0.0.1:27244:8000" ];
+      ports = [ "127.0.0.1:${toString archiveboxPort}:${toString archiveboxContainerPort}" ];
       volumes = [ "/srv/archivebox/data:/data" ];
     };
 
@@ -125,7 +129,7 @@ in
       environmentFiles = [ config.sops.templates."compose/archivebox-pihole.env".path ];
       extraOptions = [ "--ip=10.27.24.53" ];
       networks = [ "archivebox_dns" ];
-      ports = [ "127.0.0.1:8090:80" ];
+      ports = [ "127.0.0.1:${toString piholePort}:${toString piholeContainerPort}" ];
     };
 
     archivebox-sonic = {

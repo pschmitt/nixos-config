@@ -141,7 +141,7 @@
     };
 
     nixos-config-private = {
-      url = "github:pschmitt/nixos-config-private";
+      url = "github:pschmitt/nixos-config-private/migrate/stash-native";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
