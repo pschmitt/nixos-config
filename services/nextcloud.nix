@@ -5,128 +5,150 @@
   ...
 }:
 let
-  backend = config.virtualisation.oci-containers.backend;
-  # renovate: datasource=docker depName=lscr.io/linuxserver/nextcloud
-  nextcloudVersion = "35.0.1-ls452";
-  # renovate: datasource=docker depName=postgres
-  postgresVersion = "15.19-bookworm";
+  nextcloudVersion = "35.0.1";
   nextcloudPort = 63982;
-  nextcloudContainerPort = 443;
-  units = map (name: "${backend}-${name}") [
-    "nextcloud"
-    "nextcloud-postgres"
-  ];
+  nextcloudConfigDir = "/var/lib/nextcloud/native";
+  nextcloudDataDir = "/srv/nextcloud/data/nextcloud";
   domain = config.domains.main;
-  mkHost = subdomain: "${subdomain}.${domain}";
-  mkHostWithNode = subdomain: "${subdomain}.${config.networking.hostName}.${domain}";
-  healthCheck = pkgs.writeShellScript "nextcloud-health-check" ''
-    exec ${pkgs.curl}/bin/curl \
-      --silent \
-      --show-error \
-      --fail \
-      --insecure \
-      --max-time 20 \
-      --noproxy '*' \
-      --resolve nextcloud.${domain}:${toString nextcloudPort}:127.0.0.1 \
-      "https://nextcloud.${domain}:${toString nextcloudPort}/status.php" \
-      >/dev/null
-  '';
+  primaryHost = "c.${domain}";
+  hostnames = [
+    primaryHost
+    "nextcloud.${domain}"
+    "c.${config.networking.hostName}.${domain}"
+    "nextcloud.${config.networking.hostName}.${domain}"
+  ];
+  serverAliases = lib.remove primaryHost hostnames;
+  wildcardCert = "wildcard.${domain}";
   mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
     inherit config lib pkgs;
   };
 in
 {
-  sops.secrets."compose/nextcloud/postgres-password" = config.sops.mkHostSecret {
-    restartUnits = [ "${backend}-nextcloud-postgres.service" ];
-  };
+  # The existing Compose data tree is owned by numeric GID 1000. Give that
+  # group a system name and add it as a supplementary group for the upstream
+  # NixOS service user; the service itself remains nextcloud:nextcloud.
+  users.groups.nextcloud-data.gid = 1000;
+  users.users.nextcloud.extraGroups = [ "nextcloud-data" ];
 
-  sops.templates."compose/nextcloud-postgres.env".content = ''
-    POSTGRES_PASSWORD=${config.sops.placeholder."compose/nextcloud/postgres-password"}
-  '';
+  systemd.tmpfiles.rules = [
+    "d ${nextcloudConfigDir} 0750 nextcloud nextcloud - -"
+    "z ${nextcloudConfigDir} 0750 nextcloud nextcloud - -"
+    "d ${nextcloudConfigDir}/config 0750 nextcloud nextcloud - -"
+    "z ${nextcloudConfigDir}/config 0750 nextcloud nextcloud - -"
+    "z ${nextcloudConfigDir}/config/config.php 0640 nextcloud nextcloud - -"
+    "d /var/lib/nextcloud/store-apps 0750 nextcloud nextcloud - -"
+    "Z /var/lib/nextcloud/store-apps - nextcloud nextcloud - -"
+  ];
 
-  # Staging copy for the native-service migration; Nextcloud still uses the
-  # container database. Refresh this database under maintenance mode at cutover.
-  services.postgresql = {
-    ensureDatabases = [ "nextcloud" ];
-    ensureUsers = [
-      {
-        name = "nextcloud";
-        ensureDBOwnership = true;
-      }
-    ];
+  services = {
+    nextcloud = {
+      enable = true;
+      hostName = primaryHost;
+      https = true;
+      datadir = nextcloudConfigDir;
+      package = pkgs.nextcloud35.overrideAttrs (_old: {
+        version = nextcloudVersion;
+        src = pkgs.fetchurl {
+          url = "https://download.nextcloud.com/server/releases/nextcloud-${nextcloudVersion}.tar.bz2";
+          hash = "sha256-ftMF6IAZLYBLqDF5oZ3SIldnlgjWMWGmEc4/ipGNKqY=";
+        };
+      });
+      fastcgiTimeout = 3600;
+      database.createLocally = true;
+      config = {
+        dbtype = "pgsql";
+        dbname = "nextcloud";
+        dbuser = "nextcloud";
+        adminuser = null;
+      };
+      settings = {
+        datadirectory = nextcloudDataDir;
+        dbpassword = null;
+        trusted_domains = [
+          primaryHost
+          "cloud.${domain}"
+          "nextcloud.${domain}"
+          "nc.${domain}"
+          "c.ovm5.de"
+          "c.${config.networking.hostName}.${domain}"
+          "nextcloud.${config.networking.hostName}.${domain}"
+        ];
+        trusted_proxies = [
+          "127.0.0.0/8"
+          "100.64.0.0/10"
+        ];
+        "overwrite.cli.url" = "https://${primaryHost}";
+        default_phone_region = "DE";
+        loglevel = 0;
+      };
+      extraApps = {
+        inherit (pkgs.nextcloud35Packages.apps) contacts integration_paperless notes;
+      };
+      appstoreEnable = true;
+    };
+
+    # Calendar 6.6.1 is newer than the locked nixpkgs app (6.5.4). Its existing
+    # code is copied into store-apps before the native service is enabled.
+    # TODO: switch Calendar to pkgs.nextcloud35Packages.apps when nixpkgs catches up.
+
+    nginx.virtualHosts.${primaryHost} = {
+      inherit serverAliases;
+      forceSSL = true;
+      useACMEHost = wildcardCert;
+      listen = [
+        {
+          addr = "0.0.0.0";
+          port = 80;
+        }
+        {
+          addr = "[::0]";
+          port = 80;
+        }
+        {
+          addr = "0.0.0.0";
+          port = 443;
+          ssl = true;
+        }
+        {
+          addr = "[::0]";
+          port = 443;
+          ssl = true;
+        }
+        {
+          addr = "127.0.0.1";
+          port = nextcloudPort;
+          ssl = true;
+        }
+      ];
+    };
+
+    monit.config = lib.mkAfter ''
+      check host "nextcloud" with address "127.0.0.1"
+        group services
+        restart program = "${pkgs.systemd}/bin/systemctl restart phpfpm-nextcloud.service"
+        if failed
+          port ${toString nextcloudPort}
+          protocol https
+          request "/status.php"
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 5 restarts within 10 cycles then alert
+    '';
   };
 
   systemd.services =
     mkMeshPortForwards { nextcloud = nextcloudPort; }
-    // lib.genAttrs units (unit: {
-      requires = [
-        "rofl-10-container-networks.service"
-      ]
-      ++ lib.optional (unit == "${backend}-nextcloud") "mnt-data.mount";
-      restartIfChanged = true;
-      restartTriggers =
-        if unit == "${backend}-nextcloud" then [ nextcloudVersion ] else [ postgresVersion ];
-      after = [
-        "rofl-10-container-networks.service"
-      ]
-      ++ lib.optional (unit == "${backend}-nextcloud") "mnt-data.mount";
-    });
-
-  services.containerServices.services.nextcloud = {
-    port = nextcloudPort;
-    tls = true;
-    hosts =
-      map mkHost [
-        "c"
-        "nextcloud"
-      ]
-      ++ map mkHostWithNode [
-        "c"
-        "nextcloud"
-      ];
-    monitoring = {
-      program = "${healthCheck}";
-      restart.systemdUnit = "${backend}-nextcloud.service";
-      restartAfterFailures = 5;
-    };
-    # Large files can take longer than NGINX's default 60 second timeout.
-    extraLocationConfig = ''
-      proxy_connect_timeout 3600;
-      proxy_send_timeout 3600;
-      proxy_read_timeout 3600;
-    '';
-  };
-
-  virtualisation.oci-containers.containers = {
-    # TODO: Switch to services.nextcloud after nixpkgs provides a package
-    # compatible with the existing Nextcloud 35 data and we have a reviewed
-    # conversion for the LinuxServer config directory.
-    nextcloud = {
-      image = "lscr.io/linuxserver/nextcloud:${nextcloudVersion}";
-      autoStart = true;
-      environment = {
-        PGID = "1000";
-        PUID = "1000";
-        TZ = "Europe/Berlin";
-      };
-      networks = [ "nextcloud_default" ];
-      ports = [ "127.0.0.1:${toString nextcloudPort}:${toString nextcloudContainerPort}" ];
-      volumes = [
-        "/srv/nextcloud/config/nextcloud:/config"
-        "/srv/nextcloud/data/nextcloud:/data"
-        "/mnt/data:/mnt/data"
-        "/mnt/autorestic/mnt:/mnt/autorestic/mnt:shared"
-      ];
-    };
-
-    nextcloud-postgres = {
-      image = "postgres:${postgresVersion}";
-      autoStart = true;
-      environment.POSTGRES_USER = "nextcloud";
-      environmentFiles = [ config.sops.templates."compose/nextcloud-postgres.env".path ];
-      extraOptions = [ "--network-alias=postgres" ];
-      networks = [ "nextcloud_default" ];
-      volumes = [ "/srv/nextcloud/data/postgres:/var/lib/postgresql/data" ];
-    };
-  };
+    //
+      lib.genAttrs
+        [
+          "nextcloud-setup"
+          "nextcloud-cron"
+          "nextcloud-update-db"
+          "phpfpm-nextcloud"
+        ]
+        (_: {
+          requires = [ "mnt-data.mount" ];
+          after = [ "mnt-data.mount" ];
+        });
 }

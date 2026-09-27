@@ -17,8 +17,6 @@ let
     "dawarich-sidekiq"
     "linkding"
     "linkding-media-archiver"
-    "nextcloud"
-    "nextcloud-postgres"
   ];
   networkSetup = pkgs.writeShellApplication {
     name = "rofl-10-container-networks";
@@ -38,7 +36,6 @@ let
       ensure_network archivebox_dns --subnet 10.27.24.0/24
       ensure_network dawarich_dawarich
       ensure_network linkding_default
-      ensure_network nextcloud_default
     '';
   };
 in
