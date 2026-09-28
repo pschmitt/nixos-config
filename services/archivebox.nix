@@ -13,7 +13,8 @@ let
   # renovate: datasource=docker depName=valeriansaliou/sonic
   sonicVersion = "v1.10.1";
   archiveboxPort = 27244;
-  archiveboxContainerPort = 8000;
+  # ArchiveBox 0.9.70's webserver listens on 5797 in the container.
+  archiveboxContainerPort = 5797;
   piholePort = 8090;
   piholeContainerPort = 80;
   units = map (name: "${backend}-${name}") [
