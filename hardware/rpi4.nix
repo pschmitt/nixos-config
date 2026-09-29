@@ -27,6 +27,14 @@
     raspberrypi-eeprom
   ];
 
+  # flashrom (pulled in by raspberrypi-eeprom) fails its cmocka suite on
+  # aarch64: write_chip_bad_status_test
+  nixpkgs.overlays = [
+    (_final: prev: {
+      flashrom = prev.flashrom.overrideAttrs { doCheck = false; };
+    })
+  ];
+
   # Can't use btrfs storage driver!
   virtualisation.docker.storageDriver = lib.mkForce null;
 }
