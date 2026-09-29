@@ -13,7 +13,7 @@
 
   options.services.home-assistant.sshfs.host = lib.mkOption {
     type = lib.types.str;
-    default = "hass.${config.domains.vpn}";
+    default = "ha.${config.domains.vpn}";
     description = "SSH host serving the Home Assistant configuration mount.";
   };
 }

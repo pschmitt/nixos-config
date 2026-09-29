@@ -17,6 +17,6 @@
   services = {
     luks-ssh-unlock-fleet.selfKeyPath = config.sops.secrets."luks-ssh-unlock/rofl-10-identity".path;
     home-assistant.sshfs.identityFile = config.sops.secrets."hass/sshfs/private-key".path;
-    home-assistant.sshfs.host = "homeassistant.snake-eagle.ts.net";
+    home-assistant.sshfs.host = "ha.snake-eagle.ts.net";
   };
 }

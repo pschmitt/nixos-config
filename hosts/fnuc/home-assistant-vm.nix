@@ -11,27 +11,33 @@ in
 {
   imports = [ ../../services/home-assistant-vm.nix ];
 
-  services.home-assistant-vm = {
-    enable = true;
-    physicalInterface = "eno1";
-    bridgeMac = "1c:69:7a:0f:e5:fe";
-    macAddress = "52:54:00:a0:a7:1b";
-    autostart = true;
+  services = {
+    home-assistant-vm = {
+      enable = true;
+      physicalInterface = "eno1";
+      bridgeMac = "1c:69:7a:0f:e5:fe";
+      macAddress = "52:54:00:a0:a7:1b";
+      autostart = true;
+    };
+
+    # The VM runs on this host: mount its config over the local bridge instead
+    # of the VPN name (unreachable from the hypervisor itself).
+    home-assistant.sshfs.host = "10.5.1.1";
+
+    monit.config = lib.mkAfter ''
+      check process "libvirt ${cfg.domainName}" with pidfile /var/run/libvirt/qemu/${cfg.domainName}.pid
+        start program "${virsh} start ${cfg.domainName}"
+        stop program "${virsh} stop ${cfg.domainName}"
+
+      check host "libvirt ${cfg.domainName} (net)" with address 10.5.1.1
+        start program "${virsh} start ${cfg.domainName}"
+        stop program "${virsh} stop ${cfg.domainName}"
+        if failed icmp type echo count 5 with timeout 30 seconds then restart
+
+      check host "hass-fnuc" with address 10.5.1.1
+        if failed port 8123 for 5 cycles then alert
+        if failed port 1883 for 5 cycles then alert
+        if failed port 8883 for 5 cycles then alert
+    '';
   };
-
-  services.monit.config = lib.mkAfter ''
-    check process "libvirt ${cfg.domainName}" with pidfile /var/run/libvirt/qemu/${cfg.domainName}.pid
-      start program "${virsh} start ${cfg.domainName}"
-      stop program "${virsh} stop ${cfg.domainName}"
-
-    check host "libvirt ${cfg.domainName} (net)" with address 10.5.1.1
-      start program "${virsh} start ${cfg.domainName}"
-      stop program "${virsh} stop ${cfg.domainName}"
-      if failed icmp type echo count 5 with timeout 30 seconds then restart
-
-    check host "hass-fnuc" with address 10.5.1.1
-      if failed port 8123 for 5 cycles then alert
-      if failed port 1883 for 5 cycles then alert
-      if failed port 8883 for 5 cycles then alert
-  '';
 }
