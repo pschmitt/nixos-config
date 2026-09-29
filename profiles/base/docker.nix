@@ -27,15 +27,6 @@
     };
   };
 
-  # XXX Setting the following env vars has the following effect:
-  # The env files are loaded, and they MUST EXIST.
-  # You might then end up with an error like:
-  # $ docker-compose up
-  # couldn't find env file: /srv/xxx/.env
-  # environment.variables = {
-  #   COMPOSE_ENV_FILES = ".env,/etc/containers/env/netbird.env,/etc/containers/env/tailscale.env";
-  # };
-
   networking.firewall.trustedInterfaces = lib.mkAfter [ "docker0" ];
 
   services.monit.config = lib.mkIf (config.virtualisation.oci-containers.backend == "docker") (

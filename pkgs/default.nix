@@ -25,7 +25,6 @@ in
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   codexbar = pkgs.callPackage ./local/codexbar { };
-  docker-compose-wrapper = pkgs.callPackage ./local/docker-compose-wrapper { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;
   obs-control = pkgs.callPackage ./local/obs-control {

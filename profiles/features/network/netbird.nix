@@ -81,17 +81,6 @@ in
       firewall.trustedInterfaces = lib.mkAfter netbirdInterfaces;
     };
 
-  systemd.services."${netbirdClientName}-login".postStart = ''
-    NB_BIN="/run/current-system/sw/bin/netbird-${netbirdClientName}"
-
-    # Store Netbird IP address in /etc/netbird/netbird.env
-    if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
-    then
-      ${pkgs.coreutils}/bin/mkdir -p /etc/containers/env
-      echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
-    fi
-  '';
-
   # TODO Verify that the new services.netbird.tunnels.<name>.login.enable works (see above)
   # Then we should be able to safely delete the below autoconnect service.
   # https://github.com/NixOS/nixpkgs/blob/nixos-unstable/nixos/modules/services/networking/tailscale.nix#L172
@@ -125,21 +114,8 @@ in
       do
         sleep 0.5
       done
-
-      # Store Netbird IP address in /etc/netbird/netbird.env
-      if NETBIRD_IP=$($NB_BIN status --ipv4) && [[ -n $NETBIRD_IP ]]
-      then
-        ${pkgs.coreutils}/bin/mkdir -p /etc/containers/env
-        echo "NETBIRD_IP=$NETBIRD_IP" > /etc/containers/env/netbird.env
-      fi
     '';
   };
-
-  environment.shellInit = ''
-    # netbird ip
-    source /etc/containers/env/netbird.env 2>/dev/null
-    [[ -n $NETBIRD_IP ]] && export NETBIRD_IP
-  '';
 
   environment.interactiveShellInit = ''
     alias netbird=netbird-${netbirdClientName}

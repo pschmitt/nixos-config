@@ -40,27 +40,10 @@ in
     ];
   };
 
-  systemd.services.tailscaled-autoconnect = {
-    # Hook into tailscaled rather than multi-user.target: autoconnect waits
-    # for the Running state, which never happens offline and would otherwise
-    # stall multi-user.target until the start timeout.
-    wantedBy = lib.mkForce [ "tailscaled.service" ];
-    postStart = ''
-      # Store Tailscale IP address in /etc/containers/env/tailscale.env
-      if TAILSCALE_IP=$(${tailscalePkg}/bin/tailscale ip -4) && \
-         [[ -n $TAILSCALE_IP ]]
-      then
-        mkdir -p /etc/containers/env
-        echo "TAILSCALE_IP=$TAILSCALE_IP" > /etc/containers/env/tailscale.env
-      fi
-    '';
-  };
-
-  environment.shellInit = ''
-    # tailscale ip
-    source /etc/containers/env/tailscale.env 2>/dev/null
-    [[ -n $TAILSCALE_IP ]] && export TAILSCALE_IP
-  '';
+  # Hook into tailscaled rather than multi-user.target: autoconnect waits
+  # for the Running state, which never happens offline and would otherwise
+  # stall multi-user.target until the start timeout.
+  systemd.services.tailscaled-autoconnect.wantedBy = lib.mkForce [ "tailscaled.service" ];
 
   # We need to enable route_localnet to allow DNAT to 127.0.0.1.
   # This is used by modules/container-services.nix to redirect traffic
