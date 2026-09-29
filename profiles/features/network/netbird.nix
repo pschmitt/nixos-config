@@ -98,7 +98,10 @@ in
   systemd.services."netbird-${netbirdClientName}-autoconnect" = {
     after = [ "netbird-${netbirdClientName}.service" ];
     wants = [ "netbird-${netbirdClientName}.service" ];
-    wantedBy = [ "multi-user.target" ];
+    # Hook into the netbird service rather than multi-user.target: this
+    # oneshot waits for the management connection, which never happens
+    # offline and would otherwise stall multi-user.target indefinitely.
+    wantedBy = [ "netbird-${netbirdClientName}.service" ];
 
     serviceConfig = {
       Type = "oneshot";
