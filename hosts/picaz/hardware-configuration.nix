@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ inputs, lib, ... }:
 {
   # RPi Zero W — BCM2835, ARMv6
   nixpkgs.hostPlatform = lib.mkDefault "armv6l-linux";
@@ -10,6 +10,18 @@
     (_final: prev: {
       efivar = prev.runCommand "efivar-stub" { } "mkdir $out";
       efibootmgr = prev.runCommand "efibootmgr-stub" { } "mkdir $out";
+    })
+    # nixpkgs removed the linux_rpi* kernels, but sd-image-raspberrypi.nix still
+    # sets boot.kernelPackages to linux_rpi1. Point it at the downstream kernel
+    # (bcmrpi_defconfig) from nixos-hardware instead.
+    (final: prev: {
+      linuxKernel = prev.linuxKernel // {
+        packages = prev.linuxKernel.packages // {
+          linux_rpi1 = final.linuxPackagesFor (
+            final.callPackage "${inputs.hardware}/raspberry-pi/common/kernel.nix" { rpiVersion = 1; }
+          );
+        };
+      };
     })
   ];
 

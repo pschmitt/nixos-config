@@ -10,12 +10,8 @@
       # Enable all MagicSysRq keys
       "kernel.sysrq" = 1;
     };
-    kernelPackages = lib.mkDefault (
-      if config.hardware.type == "rpi" then
-        pkgs.linuxKernel.packages.linux_rpi4
-      else
-        pkgs.linuxPackages_latest
-    );
+    # RPi hosts get their downstream kernel from nixos-hardware
+    kernelPackages = lib.mkIf (config.hardware.type != "rpi") (lib.mkDefault pkgs.linuxPackages_latest);
     tmp = {
       useTmpfs = true;
     };
