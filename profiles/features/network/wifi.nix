@@ -42,6 +42,9 @@ let
     dieppe = {
       autoconnect = true;
     };
+    freiburg = {
+      autoconnect = true;
+    };
     g4p = {
       priority = -100;
     };
