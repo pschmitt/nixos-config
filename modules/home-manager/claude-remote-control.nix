@@ -38,6 +38,16 @@ in
       default = null;
       description = "Override CLAUDE_CONFIG_DIR (and ANTHROPIC_CONFIG_DIR) for the remote control service.";
     };
+
+    workingDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "${config.home.homeDirectory}/devel";
+      description = ''
+        Working directory for the remote control server. Must be a trusted
+        workspace other than the home directory: claude refuses to run
+        remote-control from $HOME since home-directory trust is never saved.
+      '';
+    };
   };
 
   config = {
@@ -52,7 +62,7 @@ in
         ExecStart = "${claudeRemoteControlStart}";
         Restart = "on-failure";
         RestartSec = "10s";
-        WorkingDirectory = "%h";
+        WorkingDirectory = cfg.workingDirectory;
         StandardInput = "null";
         StandardOutput = "append:${config.home.homeDirectory}/.local/state/claude-remote-control.log";
         StandardError = "journal";
