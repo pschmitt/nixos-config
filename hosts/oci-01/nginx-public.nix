@@ -166,8 +166,8 @@ in
       # state, and `backup` only decides which one nginx prefers while both
       # are healthy); Tailscale primary, Netbird backup.
       servers = {
-        "homeassistant.${config.domains.tailscale}:8123" = { };
-        "hass.${config.domains.netbird}:8123" = {
+        "ha.${config.domains.tailscale}:8123" = { };
+        "ha.${config.domains.netbird}:8123" = {
           backup = true;
         };
       };
@@ -274,9 +274,9 @@ in
       };
 
       # oci-01 is already a Tailscale + Netbird peer, and the HA VM joins
-      # both meshes directly (Tailscale node "homeassistant", Netbird node
-      # "hass") -- so reach it straight over mesh first instead of always
-      # going out to the Nabu Casa remote-UI relay. The mesh tier
+      # both meshes directly (node "ha" on both Tailscale and Netbird) -- so
+      # reach it straight over mesh first instead of always going out to the
+      # Nabu Casa remote-UI relay. The mesh tier
       # (hass_mesh upstream above) is actively health-checked, so a downed
       # peer is already known before a request arrives; Nabu Casa is the
       # last-resort tier, reached via a per-request error_page fallback
@@ -369,17 +369,17 @@ in
 
       "grafana.ovm5.de" = publicProxy {
         cert = "oci-01-ovm5-de";
-        backend = "https://hass.snake-eagle.ts.net:3000";
+        backend = "https://ha.snake-eagle.ts.net:3000";
         aliases = [
           "graphana.ovm5.de"
           "graph.ovm5.de"
           "gr.ovm5.de"
         ];
         websockets = true;
-        proxyHost = "hass.snake-eagle.ts.net";
+        proxyHost = "ha.snake-eagle.ts.net";
         extraConfig = ''
           proxy_ssl_server_name on;
-          proxy_ssl_name hass.snake-eagle.ts.net;
+          proxy_ssl_name ha.snake-eagle.ts.net;
         '';
       };
 
