@@ -259,6 +259,11 @@ in
           SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
           SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
           SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
+          # Group chats: allow any group the bot account is added to, but only
+          # respond when actually @-mentioned so it doesn't talk over every
+          # message in a busy group (gateway/platforms/signal.py).
+          SIGNAL_GROUP_ALLOWED_USERS=*
+          SIGNAL_REQUIRE_MENTION=true
         '';
         mode = "0400";
         restartUnits = [
