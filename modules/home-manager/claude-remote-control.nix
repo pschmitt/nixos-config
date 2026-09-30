@@ -26,6 +26,19 @@ let
       export CLAUDE_CONFIG_DIR=${lib.escapeShellArg cfg.configDir}
       export ANTHROPIC_CONFIG_DIR="$CLAUDE_CONFIG_DIR"
     ''}
+    # Pre-accept the workspace trust dialog for the working directory and the
+    # one-time "Enable Remote Control? (y/n)" prompt; with stdin at /dev/null
+    # the latter would otherwise make remote-control exit immediately.
+    config_file="''${CLAUDE_CONFIG_DIR:-$HOME}/.claude.json"
+    if [[ -f "$config_file" ]]
+    then
+      tmp_file="$(mktemp "$config_file.XXXXXX")"
+      ${pkgs.jq}/bin/jq --arg path ${lib.escapeShellArg cfg.workingDirectory} \
+        '.remoteDialogSeen = true
+         | .projects[$path] = ((.projects[$path] // {}) + { hasTrustDialogAccepted: true })' \
+        "$config_file" > "$tmp_file" && mv "$tmp_file" "$config_file"
+    fi
+
     exec ${claudeBin} remote-control \
       --name ${effectiveHostname}-svc \
       --permission-mode bypassPermissions
@@ -60,7 +73,7 @@ in
       Service = {
         Type = "simple";
         ExecStart = "${claudeRemoteControlStart}";
-        Restart = "on-failure";
+        Restart = "always";
         RestartSec = "10s";
         WorkingDirectory = cfg.workingDirectory;
         StandardInput = "null";
