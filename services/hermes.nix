@@ -181,6 +181,9 @@ in
       "hermes/signal/allowed-users" = config.sops.mkHostSecret {
         mode = "0400";
       };
+      "hermes/signal/group-allowed-users" = config.sops.mkHostSecret {
+        mode = "0400";
+      };
       "todoist/api_token" = {
         sopsFile = config.sops.defaultSopsFile;
         owner = config.services.hermes-agent.user;
@@ -259,10 +262,11 @@ in
           SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
           SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
           SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
-          # Group chats: allow any group the bot account is added to, but only
-          # respond when actually @-mentioned so it doesn't talk over every
-          # message in a busy group (gateway/platforms/signal.py).
-          SIGNAL_GROUP_ALLOWED_USERS=*
+          # Group chats: restricted to the one allowed group (see
+          # hermes/signal/group-allowed-users), and only respond when
+          # actually @-mentioned so it doesn't talk over every message
+          # (gateway/platforms/signal.py).
+          SIGNAL_GROUP_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/group-allowed-users"}
           SIGNAL_REQUIRE_MENTION=true
         '';
         mode = "0400";
