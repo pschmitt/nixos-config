@@ -7,7 +7,7 @@
 let
   backend = config.virtualisation.oci-containers.backend;
   # renovate: datasource=docker depName=freikin/dawarich
-  dawarichVersion = "1.15.2";
+  dawarichVersion = "1.15.3";
   # renovate: datasource=docker depName=postgis/postgis
   postgisVersion = "17-3.5-alpine";
   # renovate: datasource=docker depName=redis
