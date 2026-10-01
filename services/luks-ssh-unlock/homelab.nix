@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, ... }:
 {
   imports = [ ./fleet.nix ];
 
@@ -13,12 +13,5 @@
       username = "root";
       key = "/etc/ssh/ssh_host_ed25519_key";
     };
-  };
-
-  # The checksum helper opens its own SSH session and cannot use jumpHost.
-  # Keep target host-key pinning enabled while skipping that direct session.
-  services.luks-ssh-unlock.instances = {
-    fnuc.initrdCheck.enable = lib.mkForce false;
-    lrz.initrdCheck.enable = lib.mkForce false;
   };
 }
