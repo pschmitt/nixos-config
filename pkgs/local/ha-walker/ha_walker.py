@@ -1054,7 +1054,8 @@ def stream_events():
 
     sys.stdout.write("Initializing Home Assistant states...\n")
     sys.stdout.flush()
-    sync_states()
+    synced = sync_states()
+    backoff = 3
 
     cache_items = load_cache() or []
     cache_map = {item["id"]: item for item in cache_items}
@@ -1084,10 +1085,17 @@ def stream_events():
 
     while True:
         try:
+            # The initial sync fails when booting offline; retry it so the
+            # cache gets populated as soon as Home Assistant is reachable.
+            if not synced and sync_states():
+                synced = True
+                cache_map = {item["id"]: item for item in load_cache() or []}
+                last_disk_mtime = os.path.getmtime(CACHE_FILE)
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=60) as resp:
                 sys.stdout.write("Connected to Home Assistant event stream.\n")
                 sys.stdout.flush()
+                backoff = 3
                 for line in resp:
                     line_str = line.decode("utf-8", errors="replace").strip()
                     if not line_str or line_str == "data: ping":
@@ -1153,9 +1161,12 @@ def stream_events():
                     if dirty and (time.time() - last_flush) >= 0.5:
                         flush_cache(force=True)
         except Exception as e:
-            sys.stderr.write(f"Stream error: {e}. Reconnecting in 3s...\n")
+            sys.stderr.write(
+                f"Stream error: {e}. Reconnecting in {backoff}s...\n"
+            )
             sys.stderr.flush()
-            time.sleep(3)
+            time.sleep(backoff)
+            backoff = min(backoff * 2, 60)
 
 
 def main():

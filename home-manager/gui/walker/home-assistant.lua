@@ -16,11 +16,12 @@ local function shell_quote(v)
 end
 
 local function load_states()
+  -- Never sync inline: this menu is a default provider, so a blocking sync
+  -- stalls every Walker query while offline. elephant-ha-stream fills the
+  -- cache once Home Assistant is reachable.
   local f = io.open(CACHE_FILE, "r")
   if not f then
-    os.execute(HELPER .. " sync >/dev/null 2>&1")
-    f = io.open(CACHE_FILE, "r")
-    if not f then return {} end
+    return {}
   end
 
   local content = f:read("*a")
