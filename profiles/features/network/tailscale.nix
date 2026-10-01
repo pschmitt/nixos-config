@@ -43,7 +43,12 @@ in
   # Hook into tailscaled rather than multi-user.target: autoconnect waits
   # for the Running state, which never happens offline and would otherwise
   # stall multi-user.target until the start timeout.
-  systemd.services.tailscaled-autoconnect.wantedBy = lib.mkForce [ "tailscaled.service" ];
+  # tailscaled-set is ordered after autoconnect, so it must leave
+  # multi-user.target too, or it drags the autoconnect timeout back in.
+  systemd.services = {
+    tailscaled-autoconnect.wantedBy = lib.mkForce [ "tailscaled.service" ];
+    tailscaled-set.wantedBy = lib.mkForce [ "tailscaled.service" ];
+  };
 
   # We need to enable route_localnet to allow DNAT to 127.0.0.1.
   # This is used by modules/container-services.nix to redirect traffic
