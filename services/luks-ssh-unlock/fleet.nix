@@ -201,7 +201,9 @@ let
     forceIpv4 = true;
     sleepInterval = 30;
 
-    dhcpListener = target.dhcpListener or { };
+    # Sniffing a target's DHCP traffic only works from its own L2 segment;
+    # importers that reach targets through a jump host are off-LAN.
+    dhcpListener = lib.optionalAttrs (fleetConfig.jumpHost == null) (target.dhcpListener or { });
 
     initrdCheck = {
       enable = target.hasInitrdCheck;
