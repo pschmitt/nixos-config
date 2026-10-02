@@ -310,14 +310,14 @@ jobs:
             echo "skip=true" >>"$GITHUB_OUTPUT"
           fi
 
-      - name: Detect flake.lock-only changes for ${{ matrix.package }}
-        id: flakelock_check
+      - name: Detect source changes for ${{ matrix.package }}
+        id: source_check
         run: |
           set -euo pipefail
-          changed="$(git diff --name-only)"
-          if [[ -z "$changed" || "$changed" == "flake.lock" ]]
+          sources_json="pkgs/oci/${{ matrix.package }}/sources.json"
+          if git diff --quiet -- "$sources_json"
           then
-            echo "Only flake.lock changed (or nothing changed), skipping PR" >&2
+            echo "No changes to ${sources_json}; skipping PR" >&2
             echo "skip=true" >>"$GITHUB_OUTPUT"
           fi
 
@@ -332,12 +332,13 @@ jobs:
         run: gpg -K
 
       - name: Create pull request for ${{ matrix.package }}
-        if: steps.prerelease_check.outputs.skip != 'true' && steps.flakelock_check.outputs.skip != 'true'
+        if: steps.prerelease_check.outputs.skip != 'true' && steps.source_check.outputs.skip != 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
           branch: nix-update/${{ matrix.package }}
           delete-branch: true
+          add-paths: pkgs/oci/${{ matrix.package }}/sources.json
           commit-message: "${{ steps.prmeta.outputs.commit_message }}"
           title: "${{ steps.prmeta.outputs.title }}"
           body: |
