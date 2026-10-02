@@ -54,6 +54,13 @@
           pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
             preCheck = "";
           });
+
+          # The 8 kHz mp3 encoder-vs-ffmpeg-CLI comparison misses its 1e-3
+          # tolerance (~1.7e-3) with the current ffmpeg. Pulled in by
+          # paperless-ngx via sentence-transformers -> torchaudio.
+          torchcodec = pyprev.torchcodec.overridePythonAttrs (old: {
+            disabledTests = (old.disabledTests or [ ]) ++ [ "test_audio_against_cli" ];
+          });
         })
       ];
     }; # Continue merging additional overlays as needed
