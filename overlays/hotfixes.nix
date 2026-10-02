@@ -114,6 +114,45 @@
     });
   };
 
+  # abseil-cpp 20260817 requires C++20 (std::partial_ordering etc.), but
+  # mosh's configure pins -std=gnu++17, so every protobuf include fails.
+  # The vendored ax_cxx_compile_stdcxx.m4 predates C++20 support, so use the
+  # one from autoconf-archive instead.
+  mosh = prev.mosh.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.autoconf-archive ];
+    postPatch = (old.postPatch or "") + ''
+      rm m4/ax_cxx_compile_stdcxx.m4
+      substituteInPlace configure.ac \
+        --replace-fail 'AX_CXX_COMPILE_STDCXX([17])' 'AX_CXX_COMPILE_STDCXX([20])'
+    '';
+  });
+
+  # GCC 16 ships the C++26 <simd> header, whose API dropped the
+  # std::experimental names (native_simd, rebind_simd_t, static_simd_cast)
+  # contour's vtbackend relies on. Keep it on <experimental/simd>.
+  contour = prev.contour.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace src/vtbackend/Image.cpp \
+        --replace-fail '#if __has_include(<simd>)' '#if 0'
+    '';
+  });
+
+  # GCC 16 defaults to C++20, whose std::lerp makes rxvt-unicode's own
+  # lerp() overloads ambiguous. Pulled in via srvos' terminfo mixin.
+  rxvt-unicode-unwrapped = prev.rxvt-unicode-unwrapped.overrideAttrs (old: {
+    env = (old.env or { }) // {
+      NIX_CFLAGS_COMPILE = "-std=gnu++17";
+    };
+  });
+
+  # GCC 16 + C23 glibc headers make strchr() return const char *, tripping
+  # shadowsocks-libev's -Werror=discarded-qualifiers in netutils.c.
+  shadowsocks-libev = prev.shadowsocks-libev.overrideAttrs (old: {
+    env = (old.env or { }) // {
+      NIX_CFLAGS_COMPILE = "-Wno-error=discarded-qualifiers";
+    };
+  });
+
   # perl5.42.0-DBD-CSV-0.60 fails 3 tests in t/70_csv.t; disable until
   # upstream fix lands in nixpkgs.
   perlPackages = prev.perlPackages.overrideScope (
