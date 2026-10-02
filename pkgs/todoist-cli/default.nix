@@ -87,6 +87,8 @@ buildNpmPackage (finalAttrs: {
     JSEOF
   '';
 
+  passthru.updatePolicy.autoMerge = "patch";
+
   meta = {
     description = "Command-line interface for Todoist";
     homepage = "https://github.com/Doist/todoist-cli";
