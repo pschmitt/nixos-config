@@ -24,6 +24,7 @@
 - **Verifying refactors are behavior-preserving**:
   - Compare secrets evaluation: `nix eval .#nixosConfigurations.<host>.config.sops.secrets --apply 's: builtins.mapAttrs (n: v: toString v.sopsFile) s' --json` and diff.
   - Compare full system: compare `config.system.build.toplevel.drvPath`. Use `nix-diff <before.drv> <after.drv>` to confirm differences are limited to flake input hashes (`etc`, `etc-profile`, `etc-nix-registry.json`) and not systemd units, packages, or services.
+- **Ad-hoc backups on hosts**: before a risky live operation (service major upgrade, DB migration, manual data fix), store safety backups under `/mnt/data/backups/<service>/<what>-<date>` (e.g. `/mnt/data/backups/netbox/pre-4.7-dump-2026-10-02`), mode `700`, owned by root or the service user. Don't scatter them elsewhere (e.g. `/mnt/data/srv/<service>-backup`), and report the path so it can be cleaned up afterwards.
 
 ## Private configuration repository
 - **Never put a secret in this repository, full stop.** Treat this public
