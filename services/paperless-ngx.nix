@@ -30,21 +30,18 @@ in
   # };
 
   systemd = {
+    # lsyncd -nodaemon never exits, so this must be a long-running service:
+    # as a oneshot its start job never completed, which hung
+    # switch-to-configuration whenever the unit changed.
     services.lsyncd = {
       description = "Lsyncd - Live Sync Daemon";
+      wantedBy = [ "multi-user.target" ];
       script = ''
         ${pkgs.lsyncd}/bin/lsyncd -nodaemon /etc/lsyncd/lsyncd.conf.lua
       '';
       serviceConfig = {
-        Type = "oneshot";
-      };
-    };
-
-    timers.lsyncd = {
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnCalendar = "hourly";
-        Persistent = true;
+        Restart = "on-failure";
+        RestartSec = 30;
       };
     };
 
