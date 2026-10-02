@@ -53,13 +53,13 @@ in
   services = {
     netbox = {
       enable = true;
-      package = pkgs.master.netbox_4_6;
+      package = pkgs.master.netbox_4_7;
       bind = netboxBind;
       dataDir = "/mnt/data/srv/netbox";
       secretKeyFile = config.sops.secrets."netbox/secretKey".path;
       apiTokenPepperFiles."1" = config.sops.secrets."netbox/apiTokenPeppers".path;
       plugins =
-        _ps: with pkgs.master.netbox_4_6.plugins; [
+        _ps: with pkgs.master.netbox_4_7.plugins; [
           netbox-custom-objects
           netbox-documents
           netbox-interface-synchronization
