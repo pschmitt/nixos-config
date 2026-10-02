@@ -30,7 +30,9 @@
     loupe
     nautilus
     nautilus-python
-    syncthing-nautilus
+    # Disabled: its emblem polling of the Syncthing REST API adds load on
+    # hosts with large folders, and the emblems weren't worth it.
+    # syncthing-nautilus
     sushi # file previewer for gnome
 
     # wayland
