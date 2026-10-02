@@ -37,6 +37,12 @@ in
       restartIfChanged = true;
       restartTriggers =
         if unit == "${backend}-linkding" then [ linkdingVersion ] else [ mediaArchiverVersion ];
+      # The archiver exits while linkding's API is still coming up after the
+      # container starts; the default 100ms restart delay burned through
+      # the start limit before linkding was ready, leaving it failed on boot.
+      serviceConfig = lib.optionalAttrs (unit == "${backend}-linkding-media-archiver") {
+        RestartSec = "10s";
+      };
     });
 
   services.containerServices.services.linkding = {
