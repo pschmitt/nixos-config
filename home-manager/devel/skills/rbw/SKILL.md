@@ -91,3 +91,9 @@ if ! rbw unlocked 2>/dev/null; then
   rbw unlocked || { echo "rbw unlock timed out"; exit 1; }
 fi
 ```
+
+## Passkeys in browser automation
+
+For using passkeys stored in `rbw` to authenticate automated browser sessions
+(Playwright MCP), see the [browser-passkey skill](../browser-passkey/SKILL.md).
+
