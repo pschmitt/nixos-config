@@ -211,10 +211,6 @@ let
 
     initrdCheck = {
       enable = target.hasInitrdCheck;
-      # `dir` is where a fresh signed baseline gets scp'd to on every
-      # successful healthcheck (fetch_initrd_checksum); the module derives
-      # the read-back path (`file`) from dir+hostname automatically.
-      dir = "/srv/luks-ssh-unlock/data/initrd-checksum";
       paranoid = true;
       requireSignature = true;
     };
