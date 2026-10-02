@@ -14,6 +14,11 @@ _: {
       open_url_with = "firefox";
       confirm_os_window_close = 0;
 
+      # Don't restore the cached size/state of the last closed OS window:
+      # kitty also remembers "maximized", so closing a maximized kitty made
+      # every new one (eg. the F1 scratchpad) request maximize on Hyprland.
+      remember_window_size = "no";
+
       # Allow reading and writing clipboard and primary selection, do *not* ask
       # for permission
       # https://github.com/tmux/tmux/wiki/Clipboard#terminal-support---kitty
