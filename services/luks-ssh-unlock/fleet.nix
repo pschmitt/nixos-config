@@ -6,6 +6,10 @@
 }:
 
 let
+  # rofl-10's dedicated unlock identity (see the
+  # services.luks-ssh-unlock-fleet.selfKeyPath override in hosts/rofl-10).
+  unlockerPubkey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock";
+
   encryptedRootHealthcheck = "/run/current-system/sw/bin/findmnt -J / | /run/current-system/sw/bin/jq -er '.filesystems[] | select(.target == \"/\") | .source | test(\"encrypted\")'";
 
   targets = [
@@ -244,12 +248,11 @@ in
       }
     ];
 
-    # Fleet-internal trust: rofl-10's dedicated unlock identity (see the
-    # services.luks-ssh-unlock-fleet.selfKeyPath override in hosts/rofl-10) is
-    # authorized as root on every fleet member.
-    users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOcHlgZc+nNUPw2rg90jjov7mvNL8CMbeHgvMygtDJAq rofl-10-luks-ssh-unlock"
-    ];
+    # Fleet-internal trust: the unlocker identity is authorized as root on
+    # every fleet member, both in the booted system (healthchecks, initrd
+    # checksum fetch) and in the initrd SSH server (the actual unlock).
+    users.users.root.openssh.authorizedKeys.keys = lib.mkAfter [ unlockerPubkey ];
+    boot.initrd.network.ssh.authorizedKeys = lib.mkAfter [ unlockerPubkey ];
 
     # SOPS secrets: LUKS passphrase and SSH host pubkeys from each target
     # host's own private files.
