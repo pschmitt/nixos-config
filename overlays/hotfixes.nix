@@ -6,33 +6,6 @@
 }:
 
 {
-  # abseil-cpp 20260817 headers require C++20 (std::*_ordering), but mosh's
-  # configure pins -std=gnu++17 via an AX_CXX_COMPILE_STDCXX macro too old to
-  # accept 20. CXXFLAGS lands after $(CXX) on the compile line, so it wins.
-  mosh = prev.mosh.overrideAttrs (old: {
-    env = (old.env or { }) // {
-      CXXFLAGS = "-std=gnu++20";
-    };
-  });
-
-  # GCC 16 ships C++26 <simd>, which contour prefers but whose API differs
-  # from the <experimental/simd> one its code is written against. Fall back
-  # to the scalar path. Pulled in on servers via srvos enableAllTerminfo.
-  contour = prev.contour.overrideAttrs (old: {
-    postPatch = (old.postPatch or "") + ''
-      substituteInPlace src/vtbackend/Image.cpp \
-        --replace-fail "#define VTBACKEND_SIMD_FOUND 1" ""
-    '';
-  });
-
-  # GCC 16 defaults to C++20, whose std::lerp makes rxvt's own lerp() calls
-  # ambiguous. Also pulled in on servers via srvos enableAllTerminfo.
-  rxvt-unicode-unwrapped = prev.rxvt-unicode-unwrapped.overrideAttrs (old: {
-    env = (old.env or { }) // {
-      CXXFLAGS = "-std=gnu++17 -O2";
-    };
-  });
-
   python313Packages = prev.python313Packages.overrideScope (
     _finalPy: prevPy: {
       pipx = prevPy.pipx.overridePythonAttrs (old: {
