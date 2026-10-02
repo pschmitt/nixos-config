@@ -16,6 +16,7 @@
     ./home-manager.nix
     ./monit.nix
     ./networking.nix
+    ./resource-control.nix
     ./services.nix
   ];
 }
