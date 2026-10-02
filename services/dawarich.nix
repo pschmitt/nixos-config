@@ -11,7 +11,7 @@ let
   # renovate: datasource=docker depName=postgis/postgis
   postgisVersion = "17-3.5-alpine";
   # renovate: datasource=docker depName=redis
-  redisVersion = "7.4.11-alpine";
+  redisVersion = "8.10.2-alpine";
   dawarichPort = 32927;
   dawarichContainerPort = 3000;
   units = map (name: "${backend}-${name}") [
