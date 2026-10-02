@@ -15,6 +15,15 @@ in
     inputs.noctalia.homeModules.default
   ];
 
+  # Workaround (2026-10-02): noctalia's home module tries to replace
+  # home-manager's built-in one via `disabledModules = [
+  # "programs/noctalia.nix" ]`, but home-manager has since moved it to
+  # `programs/noctalia/` (a directory). That path no longer matches, so
+  # both modules get loaded and the build fails with "The option
+  # `programs.noctalia.checkConfig' ... is already declared".
+  # Drop this once upstream noctalia disables the new path itself.
+  disabledModules = [ "programs/noctalia" ];
+
   options.dotfiles.noctalia.resetStateOnActivation = lib.mkOption {
     type = lib.types.bool;
     default = true;
