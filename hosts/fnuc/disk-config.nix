@@ -124,6 +124,16 @@
                       "noatime"
                     ];
                   };
+                  # Overflow swap behind zram (priority 100, see
+                  # resource-control.nix): only used once zram is full.
+                  "@swap" = {
+                    mountpoint = "/swap";
+                    mountOptions = [ "noatime" ];
+                    swap.swapfile = {
+                      size = "8G";
+                      priority = 10;
+                    };
+                  };
                 };
               };
             };
