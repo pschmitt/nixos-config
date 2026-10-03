@@ -1425,6 +1425,23 @@
         "type": "github"
       }
     },
+    "manydots": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1497855400,
+        "narHash": "sha256-lv7e7+KBR/nxC43H0uvphLcI7fALPvxPSGEmBn0g8HQ=",
+        "owner": "knu",
+        "repo": "zsh-manydots-magic",
+        "rev": "4372de0718714046f0c7ef87b43fc0a598896af6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "knu",
+        "repo": "zsh-manydots-magic",
+        "rev": "4372de0718714046f0c7ef87b43fc0a598896af6",
+        "type": "github"
+      }
+    },
     "mq": {
       "inputs": {
         "nixpkgs": [
@@ -2564,6 +2581,7 @@
         "llm-agents": "llm-agents",
         "luks-mount": "luks-mount",
         "luks-ssh-unlock": "luks-ssh-unlock",
+        "manydots": "manydots",
         "mq": "mq",
         "myl": "myl",
         "myl-discovery": "myl-discovery_2",
@@ -2601,6 +2619,8 @@
         "tmux-slay": "tmux-slay",
         "tsvtool": "tsvtool",
         "update-systemd-resolved": "update-systemd-resolved",
+        "vi-motions": "vi-motions",
+        "vi-quote": "vi-quote",
         "vodafone-station-cli": "vodafone-station-cli",
         "vpn-confinement": "vpn-confinement",
         "wezterm": "wezterm",
@@ -3420,6 +3440,40 @@
       "original": {
         "owner": "pyproject-nix",
         "repo": "uv2nix",
+        "type": "github"
+      }
+    },
+    "vi-motions": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1652210842,
+        "narHash": "sha256-sx6thchIjx2gTU5dKG+x0RKB2O/92RLOkHwKQ1P6xy8=",
+        "owner": "zsh-vi-more",
+        "repo": "vi-motions",
+        "rev": "c21a9e13be15166810e9487a015cd70c21229cf7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zsh-vi-more",
+        "repo": "vi-motions",
+        "rev": "c21a9e13be15166810e9487a015cd70c21229cf7",
+        "type": "github"
+      }
+    },
+    "vi-quote": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1609959702,
+        "narHash": "sha256-c8Z+HNxeoSehBAbwCCCVyYVOUOzcc51nE5A1pvtIkV0=",
+        "owner": "zsh-vi-more",
+        "repo": "vi-quote",
+        "rev": "13399086a4c31e8c0e09562ca0c4205ee4c055bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zsh-vi-more",
+        "repo": "vi-quote",
+        "rev": "13399086a4c31e8c0e09562ca0c4205ee4c055bd",
         "type": "github"
       }
     },

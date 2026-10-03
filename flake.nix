@@ -124,6 +124,21 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    manydots = {
+      url = "github:knu/zsh-manydots-magic/4372de0718714046f0c7ef87b43fc0a598896af6";
+      flake = false;
+    };
+
+    vi-motions = {
+      url = "github:zsh-vi-more/vi-motions/c21a9e13be15166810e9487a015cd70c21229cf7";
+      flake = false;
+    };
+
+    vi-quote = {
+      url = "github:zsh-vi-more/vi-quote/13399086a4c31e8c0e09562ca0c4205ee4c055bd";
+      flake = false;
+    };
+
     hermes-agent = {
       url = "github:NousResearch/hermes-agent";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -434,6 +449,19 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           customPackages = import ./pkgs { inherit pkgs inputs; };
+          termuxNativePackages = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") (
+            let
+              termuxNative = import ./pkgs/termux-native {
+                basePkgs = pkgs;
+                inherit inputs;
+              };
+            in
+            {
+              termux-native-bundle = termuxNative.bundle;
+              termux-native-environment = termuxNative.environment;
+              termux-native-gitstatus = termuxNative.gitstatus;
+            }
+          );
           termuxPrefixArchive = builtins.getEnv "TERMUX_PREFIX_ARCHIVE";
           termuxHomeArchive = builtins.getEnv "TERMUX_HOME_ARCHIVE";
           termuxArchivePackage =
@@ -449,11 +477,16 @@
             nixpkgs.lib.optionalAttrs
               (system == "x86_64-linux" && termuxPrefixArchive != "" && termuxHomeArchive != "")
               {
-                termux-prefix-cache = termuxArchivePackage termuxPrefixArchive "termux-prefix.tar.gz";
+                termux-prefix-cache = pkgs.callPackage ./pkgs/termux-prefix-cache {
+                  archive = builtins.path {
+                    path = /. + termuxPrefixArchive;
+                    name = "termux-bootstrap-source";
+                  };
+                };
                 termux-home-cache = termuxArchivePackage termuxHomeArchive "termux-home.tar.gz";
               };
         in
-        customPackages // termuxArchivePackages
+        customPackages // termuxNativePackages // termuxArchivePackages
       );
 
       # below is to make "nix fmt" work

@@ -13,7 +13,7 @@ local disabled_keys = {
   "<leader>wm",
 }
 for _, key in ipairs(disabled_keys) do
-  vim.keymap.del("n", key)
+  pcall(vim.keymap.del, "n", key)
 end
 
 -- remap lazyvim's <leader>wm to <leader>Wm

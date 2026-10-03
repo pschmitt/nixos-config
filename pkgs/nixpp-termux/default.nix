@@ -43,6 +43,14 @@ buildGoModule {
 
   allowedReferences = [ ];
 
+  # Explicit export contract consumed by the Termux bundle builder. The
+  # executable is statically linked for GOOS=android and has no Nix runtime
+  # closure. Other packages may declare additional files under their output.
+  passthru.termuxNative = {
+    files = [ "bin/nixpp" ];
+    binaries = [ "bin/nixpp" ];
+  };
+
   meta = {
     description = "Small Nix binary-cache client for Termux-managed outputs";
     homepage = "https://github.com/pschmitt/nixos-config/tree/main/android/nixpp";

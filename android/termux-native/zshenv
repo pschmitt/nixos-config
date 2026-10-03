@@ -1,0 +1,1 @@
+export ZDOTDIR="${TERMUX_NATIVE_ZDOTDIR:-$HOME/.local/share/termux-native/current/home/.config/zsh}"

@@ -7,12 +7,33 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestProgressUIColorCanBeDisabled(t *testing.T) {
+	var output bytes.Buffer
+	ui := progressUI{output: &output, color: false}
+	ui.title()
+	if strings.Contains(output.String(), "\x1b[") {
+		t.Fatal("progress UI emitted ANSI escapes with color disabled")
+	}
+	if !strings.Contains(output.String(), "nixpp ✨") {
+		t.Fatal("progress UI title is missing")
+	}
+
+	output.Reset()
+	ui.color = true
+	ui.title()
+	if !strings.Contains(output.String(), "\x1b[1;36m") {
+		t.Fatal("progress UI did not emit ANSI color when enabled")
+	}
+}
 
 func TestNixBase32MatchesNix(t *testing.T) {
 	digest := sha256.Sum256([]byte("abc"))
@@ -116,6 +137,127 @@ func TestValidateNetrcRequiresPrivateRegularFile(t *testing.T) {
 	}
 }
 
+func TestSwitchInputValidation(t *testing.T) {
+	validPaths := []string{
+		"/nix/store/0123456789abcdfghijklmnpqrsvwxyz-termux-bundle",
+		"/nix/store/0123456789abcdfghijklmnpqrsvwxyz-name+with.dots",
+	}
+	for _, path := range validPaths {
+		if !validStorePath(path) {
+			t.Errorf("valid store path rejected: %q", path)
+		}
+	}
+	invalidPaths := []string{
+		"/nix/store/../etc/passwd",
+		"/nix/store/0123456789abcdfghijklmnpqrsvwxy-termux-bundle",
+		"/nix/store/0123456789abcdfghijklmnpqrsvwxyz-name/child",
+	}
+	for _, path := range invalidPaths {
+		if validStorePath(path) {
+			t.Errorf("invalid store path accepted: %q", path)
+		}
+	}
+	for _, target := range []string{"rofl-13", "pschmitt@rofl-13", "builder.example"} {
+		if !validSSHTarget(target) {
+			t.Errorf("valid SSH target rejected: %q", target)
+		}
+	}
+	for _, target := range []string{"-oProxyCommand=id", "host;id", "host\ncommand"} {
+		if validSSHTarget(target) {
+			t.Errorf("unsafe SSH target accepted: %q", target)
+		}
+	}
+	if got, want := shellQuote("path with ' quote"), `'path with '"'"' quote'`; got != want {
+		t.Fatalf("shellQuote() = %q, want %q", got, want)
+	}
+}
+
+func TestSwitchReportsMissingFlagsClearly(t *testing.T) {
+	t.Setenv("NIXPP_BUILDER", "")
+	t.Setenv("NIXPP_PUBLIC_KEY", "")
+	cases := []struct {
+		args []string
+		want string
+	}{
+		{args: nil, want: "--flake is required"},
+		{args: []string{"--flake", "example#bundle"}, want: "--builder is required"},
+		{args: []string{"--builder", "builder"}, want: "--flake is required"},
+	}
+	for _, testCase := range cases {
+		err := switchProfile(testCase.args)
+		if err == nil || err.Error() != testCase.want {
+			t.Errorf("switchProfile(%v) error = %v, want %q", testCase.args, err, testCase.want)
+		}
+	}
+}
+
+func TestRemoteBuildCommandUsesRequestedFlakeConfiguration(t *testing.T) {
+	command := remoteBuildCommand(".#termux-native-bundle")
+	if !strings.Contains(command, "--accept-flake-config") {
+		t.Fatalf("build command does not accept the requested flake configuration: %q", command)
+	}
+	if !strings.Contains(command, "'.#termux-native-bundle'") {
+		t.Fatalf("build command does not safely quote the flake installable: %q", command)
+	}
+	if strings.Contains(command, "--impure") {
+		t.Fatalf("build command unexpectedly enables impurity: %q", command)
+	}
+}
+
+func TestReadArchiveDigestAndVerifyFile(t *testing.T) {
+	directory := t.TempDir()
+	archive := filepath.Join(directory, "environment.tar.gz")
+	contents := []byte("termux bundle fixture")
+	if err := os.WriteFile(archive, contents, 0600); err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(contents)
+	digestText := fmt.Sprintf("%x", digest)
+	manifest := filepath.Join(directory, "SHA256SUMS")
+	if err := os.WriteFile(manifest, []byte(digestText+"  environment.tar.gz\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := readArchiveDigest(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != digestText {
+		t.Fatalf("readArchiveDigest() = %q, want %q", got, digestText)
+	}
+	if err := verifyFileSHA256(archive, got); err != nil {
+		t.Fatal(err)
+	}
+	if err := verifyFileSHA256(archive, strings.Repeat("0", sha256.Size*2)); err == nil {
+		t.Fatal("verifyFileSHA256 accepted an incorrect digest")
+	}
+	if err := os.WriteFile(manifest, []byte(digestText+"  ../environment.tar.gz\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readArchiveDigest(manifest); err == nil {
+		t.Fatal("readArchiveDigest accepted an unsafe archive filename")
+	}
+}
+
+func TestMakeStagingDirectoryFallsBackToTermuxPrefix(t *testing.T) {
+	prefix := t.TempDir()
+	termuxTmp := filepath.Join(prefix, "tmp")
+	if err := os.Mkdir(termuxTmp, 0700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMPDIR", filepath.Join(prefix, "missing"))
+	t.Setenv("PREFIX", prefix)
+	stage, err := makeStagingDirectory("nixpp-switch-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Dir(stage) != termuxTmp {
+		t.Fatalf("staging directory = %q, want a child of %q", stage, termuxTmp)
+	}
+	if err := os.Remove(stage); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestExtractNARDirectory(t *testing.T) {
 	root := t.TempDir()
 	archive := filepath.Join(root, "fixture.nar")
@@ -164,7 +306,9 @@ func TestExtractNARDirectory(t *testing.T) {
 	if err := extractNAR(file, output); err != nil {
 		t.Fatal(err)
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
 	contents, err := os.ReadFile(filepath.Join(output, "bin", "tool"))
 	if err != nil {
 		t.Fatal(err)

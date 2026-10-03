@@ -1,9 +1,8 @@
 # nixpp
 
-`nixpp` is a small Termux-side reader for a deliberately narrow subset of
-standard Nix binary caches. Nix on a trusted Linux builder produces the
-Termux-compatible outputs; Termux fetches and verifies those outputs without
-installing Nix or maintaining `/nix/store`.
+`nixpp` is a small Termux-side client for reference-free Nix outputs. A trusted
+Linux host evaluates and builds Termux-compatible outputs; Termux verifies and
+installs them without running Nix or maintaining `/nix/store`.
 
 The initial supported contract is intentionally small:
 
@@ -19,6 +18,9 @@ This is not a general Nix package manager. It does not evaluate derivations,
 build packages, traverse store closures, relocate `/nix/store` references, or
 install arbitrary Linux/glibc outputs. Package derivations must produce Bionic
 compatible files and prove `allowedReferences = []` before they are published.
+Home Manager modules run on the trusted builder; their Termux-ready files are
+assembled into a reference-free output for `nixpp` to fetch. The client itself
+does not interpret Home Manager options or run Home Manager activation.
 
 ## Build
 
@@ -34,9 +36,48 @@ file result-nixpp-termux/bin/nixpp
 readelf -l -d result-nixpp-termux/bin/nixpp
 ```
 
-The client delegates HTTPS, DNS, and basic authentication to Termux's `curl`.
+The `fetch` command delegates HTTPS, DNS, and basic authentication to Termux's `curl`.
 It uses the existing `xz` command for default Nix cache compression and Go's
 standard gzip reader for gzip caches. The phone does not need Go or Nix.
+
+## Build and switch from Termux
+
+`switch` asks an SSH builder to evaluate and build a flake installable, then
+streams that one output back to the phone. The remote build accepts the
+requested flake's `nixConfig`, allowing its configured binary caches to be
+used. Termux packages are installed and tracked by Termux APT; Android/Bionic
+packages explicitly declared in `home.packages` are built and transferred by
+nixpp. The builder exports the output to a
+temporary local Nix cache, where Nix signs it with the builder's configured
+`secret-key-files`. nixpp verifies the NAR signature and hash, rejects store
+references, checks the bundle archive digest, then runs the bundle's
+`bootstrap.sh`. The bootstrap installs required Termux APT packages, health
+checks the new generation, and atomically selects it.
+
+The switch command labels each build, verification, transfer, and activation
+phase and reports how long each took. It uses color on an interactive terminal;
+set `NO_COLOR` to disable ANSI color.
+
+```sh
+export NIXPP_PUBLIC_KEY='builder-cache-key:BASE64_PUBLIC_KEY'
+nixpp switch \
+  --flake 'path:/path/on/builder/to/flake#termuxBundle' \
+  --builder rofl-13
+```
+
+`--public-key` can be used instead of `NIXPP_PUBLIC_KEY`. The builder needs
+Nix, a configured signing key, and SSH access from Termux. Termux must already
+trust the builder's SSH host key and have an SSH key authorized there. The
+flake installable must produce exactly one reference-free directory containing
+`environment.tar.gz`, `SHA256SUMS`, and `bootstrap.sh`, as the root flake's
+`.#termux-native-bundle` output does. The archive is verified before the
+existing generation installer receives it. Each invocation builds and
+activates the selected flake output; the previous generation remains available
+for rollback through its `activate.sh`.
+
+`switch` streams the signed NAR over SSH and does not publish it to an HTTP
+cache. Use `fetch` for outputs already published to a standard Nix binary
+cache.
 
 The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on
@@ -83,6 +124,15 @@ client verified cache signatures, NAR hashes and sizes,
 and extracted both outputs; the resulting shell reported the expected Termux
 yadm classes and `uv tool list` showed the preinstalled `linkding-cli` tool.
 Closing and relaunching the app did not trigger Zinit plugin fetches.
+
+An earlier prototype run on 2026-10-03 used a builder-local Termux `.deb`
+directory to install `zoxide` through Termux APT. That builder-path
+integration has been removed. The current profile keeps Termux system packages
+under APT and exports selected Android/Bionic Home Manager packages as native
+binaries: `bat`, `fd`, `ripgrep`, and `zoxide`, plus the Android `nixpp`
+client. The interactive `fzf` dependency remains an APT package. The Android
+cross toolchain used for these outputs runs on the trusted Nix builder, and
+nixpp transfers only the resulting reference-free profile bundle.
 
 ## First-stage bootstrap
 

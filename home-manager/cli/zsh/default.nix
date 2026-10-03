@@ -4,7 +4,20 @@
   pkgs,
   ...
 }:
+let
+  termuxMode = config.termux.enable or false;
+in
 {
+  options.termux = {
+    enable = lib.mkEnableOption "Termux-native Home Manager integration";
+
+    packages = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Termux package names required by this profile.";
+    };
+  };
+
   imports = [
     ./atuin.nix
     ./direnv.nix
@@ -13,112 +26,114 @@
     ./zoxide.nix
   ];
 
-  programs.zsh = {
-    enable = false;
-    dotDir = "${config.xdg.configHome}/zsh/hm";
-  };
+  config = {
+    programs.zsh = {
+      enable = false;
+      dotDir = "${config.xdg.configHome}/zsh/hm";
+    };
 
-  home = {
-    shell.enableZshIntegration = true;
+    home = {
+      shell.enableZshIntegration = true;
 
-    activation.clearZshCompDump = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      run rm -f ${config.xdg.cacheHome}/zcompdump
-    '';
+      activation.clearZshCompDump = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        run rm -f ${config.xdg.cacheHome}/zcompdump
+      '';
 
-    packages = with pkgs; [
-      gitstatus # used by p10k
-      nix-your-shell
-    ];
-  };
+      packages = lib.optionals (!termuxMode) [
+        pkgs.gitstatus # used by p10k
+        pkgs.nix-your-shell
+      ];
+    };
 
-  xdg.configFile = {
-    "zsh/custom/os/home-manager/system.zsh".text = ''
-      [[ -o interactive ]] || return
-    '';
+    xdg.configFile = {
+      "zsh/custom/os/home-manager/system.zsh".text = ''
+        [[ -o interactive ]] || return
+      '';
 
-    "zsh/custom/os/nixos/system.zsh".text = ''
-      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
-      then
-        source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
-      fi
-
-      # On non-NixOS hosts, prefer the system locale data.
-      if [[ -f /usr/lib/locale/locale-archive ]]
-      then
-        export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-        export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-        unset LOCPATH
-      elif [[ -d /usr/lib/locale ]]
-      then
-        export LOCPATH=/usr/lib/locale
-        unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
-      fi
-
-      [[ -o interactive ]] || return
-
-      # DEPRECATED: Use wezterm.sh instead
-      # source ${pkgs.vte}/etc/profile.d/vte.sh
-
-      # FIXME the osc7 shell func produces output which p10k complains about
-      # on startup (hence the WEZTERM_SHELL_SKIP_CWD)
-      # WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
-
-      source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
-    '';
-
-    "zsh/custom/os/not-nixos/nix.zsh".text = lib.mkAfter ''
-      [[ -r /etc/profile.d/nix.sh ]] || return
-      source /etc/profile.d/nix.sh &>/dev/null
-      (( $+commands[nix] )) || return
-
-      if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
-      then
-        source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
-      fi
-
-      if [[ -f /usr/lib/locale/locale-archive ]]
-      then
-        export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-        export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
-        unset LOCPATH
-      elif [[ -d /usr/lib/locale ]]
-      then
-        export LOCPATH=/usr/lib/locale
-        unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
-      fi
-      source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
-      source "${config.xdg.configHome}/zsh/custom/os/not-nixos/hm.zsh"
-    '';
-
-    "zsh/custom/os/not-nixos/hm.zsh".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git/home-manager/cli/zsh/hm.zsh";
-
-    # completions
-    "zsh/completions/source-me.zsh".text = ''
-      # bashcompinit is not needed here since we already do this in zinit
-      # autoload -U +X bashcompinit && bashcompinit
-      # FIXME openbao is broken as of 2026-01-09
-      # https://github.com/NixOS/nixpkgs/pull/478004
-      # complete -C "${pkgs.openbao}/bin/bao" bao
-      complete -C "${pkgs.vault}/bin/vault" vault
-
-      if (( $+commands[rbw] ))
-      then
-        typeset rbw_bin rbw_prefix
-        rbw_bin="''${commands[rbw]:A}"
-        rbw_prefix="''${rbw_bin:h:h}"
-
-        if [[ -r "''${rbw_prefix}/share/zsh/site-functions/_rbw" ]]
+      "zsh/custom/os/nixos/system.zsh".text = ''
+        if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
         then
-          source "''${rbw_prefix}/share/zsh/site-functions/_rbw"
-        elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw" ]]
-        then
-          source "''${rbw_prefix}/share/bash-completion/completions/rbw"
-        elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw.bash" ]]
-        then
-          source "''${rbw_prefix}/share/bash-completion/completions/rbw.bash"
+          source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
         fi
-      fi
-    '';
+
+        # On non-NixOS hosts, prefer the system locale data.
+        if [[ -f /usr/lib/locale/locale-archive ]]
+        then
+          export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+          export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+          unset LOCPATH
+        elif [[ -d /usr/lib/locale ]]
+        then
+          export LOCPATH=/usr/lib/locale
+          unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
+        fi
+
+        [[ -o interactive ]] || return
+
+        # DEPRECATED: Use wezterm.sh instead
+        # source ${pkgs.vte}/etc/profile.d/vte.sh
+
+        # FIXME the osc7 shell func produces output which p10k complains about
+        # on startup (hence the WEZTERM_SHELL_SKIP_CWD)
+        # WEZTERM_SHELL_SKIP_CWD=1 source ${pkgs.wezterm}/etc/profile.d/wezterm.sh
+
+        source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
+      '';
+
+      "zsh/custom/os/not-nixos/nix.zsh".text = lib.mkAfter ''
+        [[ -r /etc/profile.d/nix.sh ]] || return
+        source /etc/profile.d/nix.sh &>/dev/null
+        (( $+commands[nix] )) || return
+
+        if [[ -f "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh" ]]
+        then
+          source "$HOME/.local/state/nix/profiles/home-manager/home-path/etc/profile.d/hm-session-vars.sh"
+        fi
+
+        if [[ -f /usr/lib/locale/locale-archive ]]
+        then
+          export LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+          export NIX_LOCALE_ARCHIVE=/usr/lib/locale/locale-archive
+          unset LOCPATH
+        elif [[ -d /usr/lib/locale ]]
+        then
+          export LOCPATH=/usr/lib/locale
+          unset LOCALE_ARCHIVE LOCALE_ARCHIVE_2_27 NIX_LOCALE_ARCHIVE
+        fi
+        source "${config.xdg.configHome}/zsh/custom/os/home-manager/system.zsh"
+        source "${config.xdg.configHome}/zsh/custom/os/not-nixos/hm.zsh"
+      '';
+
+      "zsh/custom/os/not-nixos/hm.zsh".source =
+        config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git/home-manager/cli/zsh/hm.zsh";
+
+      # completions
+      "zsh/completions/source-me.zsh".text = ''
+        # bashcompinit is not needed here since we already do this in zinit
+        # autoload -U +X bashcompinit && bashcompinit
+        # FIXME openbao is broken as of 2026-01-09
+        # https://github.com/NixOS/nixpkgs/pull/478004
+        # complete -C "${pkgs.openbao}/bin/bao" bao
+        complete -C "${pkgs.vault}/bin/vault" vault
+
+        if (( $+commands[rbw] ))
+        then
+          typeset rbw_bin rbw_prefix
+          rbw_bin="''${commands[rbw]:A}"
+          rbw_prefix="''${rbw_bin:h:h}"
+
+          if [[ -r "''${rbw_prefix}/share/zsh/site-functions/_rbw" ]]
+          then
+            source "''${rbw_prefix}/share/zsh/site-functions/_rbw"
+          elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw" ]]
+          then
+            source "''${rbw_prefix}/share/bash-completion/completions/rbw"
+          elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw.bash" ]]
+          then
+            source "''${rbw_prefix}/share/bash-completion/completions/rbw.bash"
+          fi
+        fi
+      '';
+    };
   };
 }

@@ -17,9 +17,46 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const nixBase32Alphabet = "0123456789abcdfghijklmnpqrsvwxyz"
+
+type progressUI struct {
+	output io.Writer
+	color  bool
+}
+
+func newProgressUI(output io.Writer) progressUI {
+	color := stderrIsTerminal() && os.Getenv("NO_COLOR") == "" && os.Getenv("TERM") != "dumb"
+	return progressUI{output: output, color: color}
+}
+
+func (ui progressUI) paint(code, value string) string {
+	if !ui.color {
+		return value
+	}
+	return "\x1b[" + code + "m" + value + "\x1b[0m"
+}
+
+func (ui progressUI) title() {
+	fmt.Fprintf(ui.output, "\n%s %s\n", ui.paint("1;36", "nixpp ✨"), ui.paint("2", "switching Termux environment"))
+}
+
+func (ui progressUI) stage(label string, action func() error) error {
+	fmt.Fprintf(ui.output, "  %s %s\n", ui.paint("36", "✦"), label)
+	started := time.Now()
+	if err := action(); err != nil {
+		fmt.Fprintf(ui.output, "  %s %s %s\n", ui.paint("1;31", "✗"), ui.paint("31", "Failed"), ui.paint("2", "("+time.Since(started).Round(time.Second).String()+")"))
+		return err
+	}
+	fmt.Fprintf(ui.output, "  %s %s %s\n", ui.paint("1;32", "✓"), ui.paint("32", "Done"), ui.paint("2", "("+time.Since(started).Round(time.Second).String()+")"))
+	return nil
+}
+
+func (ui progressUI) warning(message string) {
+	fmt.Fprintf(ui.output, "  %s %s\n", ui.paint("1;33", "!"), message)
+}
 
 type narInfo struct {
 	storePath   string
@@ -35,27 +72,463 @@ type narInfo struct {
 
 func main() {
 	if len(os.Args) == 2 && (os.Args[1] == "--help" || os.Args[1] == "-h") {
-		fmt.Println("Usage: nixpp fetch --cache URL --store-path /nix/store/HASH-name --destination DIR --public-key NAME:BASE64")
+		printUsage(os.Stdout)
 		os.Exit(0)
 	}
-	if len(os.Args) < 2 || os.Args[1] != "fetch" {
-		fmt.Fprintln(os.Stderr, "Usage: nixpp fetch --cache URL --store-path /nix/store/HASH-name --destination DIR --public-key NAME:BASE64")
+	if len(os.Args) < 2 {
+		printUsage(os.Stderr)
 		os.Exit(2)
 	}
-	if err := fetch(os.Args[2:]); err != nil {
+	var err error
+	switch os.Args[1] {
+	case "fetch":
+		err = fetch(os.Args[2:])
+	case "switch":
+		err = switchProfile(os.Args[2:])
+	default:
+		printUsage(os.Stderr)
+		os.Exit(2)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "nixpp:", err)
 		os.Exit(1)
 	}
 }
 
-func fetch(args []string) error {
+func printUsage(output io.Writer) {
+	fmt.Fprintln(output, "Usage:")
+	fmt.Fprintln(output, "  nixpp fetch --cache URL --store-path /nix/store/HASH-name --destination DIR --public-key NAME:BASE64")
+	fmt.Fprintln(output, "  nixpp switch --flake FLAKE[#OUTPUT] --builder SSH_HOST [--public-key NAME:BASE64]")
+}
+
+func switchProfile(args []string) (retErr error) {
+	flags := flag.NewFlagSet("switch", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: nixpp switch --flake FLAKE[#OUTPUT] --builder SSH_HOST [--public-key NAME:BASE64]")
+		fmt.Fprintln(os.Stderr, "Build a Termux bundle on a Nix host, verify its Nix signature, and activate it as a generation.")
+		fmt.Fprintln(os.Stderr, "Set NIXPP_PUBLIC_KEY to avoid repeating the trusted key.")
+		flags.PrintDefaults()
+	}
+	flake := flags.String("flake", "", "Nix flake installable that produces a Termux bundle")
+	builder := flags.String("builder", os.Getenv("NIXPP_BUILDER"), "SSH host with Nix and a signing key configured")
+	publicKey := flags.String("public-key", os.Getenv("NIXPP_PUBLIC_KEY"), "trusted Nix cache key NAME:BASE64")
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
+		return err
+	}
+	if *flake == "" {
+		return errors.New("--flake is required")
+	}
+	if *builder == "" {
+		return errors.New("--builder is required")
+	}
+	if flags.NArg() != 0 {
+		return errors.New("unexpected positional arguments; pass the flake with --flake")
+	}
+	if len(*flake) > 4096 || strings.ContainsAny(*flake, "\x00\r\n") {
+		return errors.New("flake installable is invalid or too long")
+	}
+	if !validSSHTarget(*builder) {
+		return errors.New("builder must be an SSH host or user@host alias without command-line options")
+	}
+	if *publicKey == "" {
+		return errors.New("a trusted signing key is required; pass --public-key or set NIXPP_PUBLIC_KEY")
+	}
+	if prefix := os.Getenv("PREFIX"); prefix != "/data/data/com.termux/files/usr" {
+		return errors.New("switch must run inside the standard Termux app shell")
+	}
+	if _, err := exec.LookPath("bash"); err != nil {
+		return errors.New("Termux bash is required to activate a generation")
+	}
+
+	ui := newProgressUI(os.Stderr)
+	ui.title()
+	var storePath string
+	if err := ui.stage("🧱 Build flake on "+*builder, func() error {
+		var err error
+		storePath, err = remoteBuild(*builder, *flake)
+		return err
+	}); err != nil {
+		return err
+	}
+
+	var remoteTemp string
+	var metadata narInfo
+	defer func() {
+		if remoteTemp != "" {
+			if err := remoteRun(*builder, "rm -rf -- "+shellQuote(remoteTemp)); err != nil {
+				ui.warning(fmt.Sprintf("Could not remove temporary builder output %s: %v", remoteTemp, err))
+			}
+		}
+	}()
+	if err := ui.stage("🔏 Sign and inspect the Nix output", func() error {
+		var err error
+		remoteTemp, err = remoteOutputCache(*builder, storePath)
+		if err != nil {
+			return err
+		}
+		storeHash := strings.SplitN(filepath.Base(storePath), "-", 2)[0]
+		metadataText, err := remoteOutput(*builder, "cat -- "+shellQuote(filepath.Join(remoteTemp, "cache", storeHash+".narinfo")))
+		if err != nil {
+			return fmt.Errorf("read builder cache metadata: %w", err)
+		}
+		metadata, err = parseNarInfo([]byte(metadataText))
+		if err != nil {
+			return fmt.Errorf("parse builder cache metadata: %w", err)
+		}
+		if metadata.storePath != storePath {
+			return errors.New("builder metadata StorePath does not match the requested flake output")
+		}
+		if len(metadata.references) != 0 {
+			return errors.New("refusing Termux bundle with Nix store references")
+		}
+		if err := verifySignature(metadata, *publicKey); err != nil {
+			return fmt.Errorf("verify builder signature: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	var stage string
+	var archivePath, digest, bootstrapPath string
+	if err := ui.stage("📦 Transfer and verify the bundle", func() error {
+		var err error
+		stage, err = makeStagingDirectory("nixpp-switch-")
+		if err != nil {
+			return err
+		}
+		narPath := filepath.Join(stage, "output.nar")
+		if err := remoteNAR(*builder, storePath, narPath, metadata.narSize); err != nil {
+			return err
+		}
+		if err := extractVerifiedNAR(narPath, metadata, filepath.Join(stage, "bundle")); err != nil {
+			return err
+		}
+		archivePath = filepath.Join(stage, "bundle", "environment.tar.gz")
+		digest, err = readArchiveDigest(filepath.Join(stage, "bundle", "SHA256SUMS"))
+		if err != nil {
+			return fmt.Errorf("invalid Termux bundle: %w", err)
+		}
+		if err := verifyFileSHA256(archivePath, digest); err != nil {
+			return fmt.Errorf("verify Termux archive: %w", err)
+		}
+		bootstrapPath = filepath.Join(stage, "bundle", "bootstrap.sh")
+		if info, err := os.Stat(bootstrapPath); err != nil || !info.Mode().IsRegular() {
+			return errors.New("Termux bundle is missing a regular bootstrap.sh")
+		}
+		return nil
+	}); err != nil {
+		if stage != "" {
+			if cleanupErr := os.RemoveAll(stage); cleanupErr != nil {
+				return errors.Join(err, fmt.Errorf("remove local staging directory: %w", cleanupErr))
+			}
+		}
+		return err
+	}
+	defer func() {
+		if err := os.RemoveAll(stage); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("remove local staging directory: %w", err))
+		}
+	}()
+
+	if err := ui.stage("🚀 Install and health-check the new generation", func() error {
+		command := exec.Command("bash", bootstrapPath, "install", archivePath, digest)
+		command.Stdin = os.Stdin
+		command.Stdout = os.Stdout
+		command.Stderr = os.Stderr
+		if err := command.Run(); err != nil {
+			return fmt.Errorf("activate Termux generation: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func remoteBuild(builder, flake string) (string, error) {
+	output, err := remoteOutput(builder, remoteBuildCommand(flake))
+	if err != nil {
+		return "", fmt.Errorf("build flake on %s: %w", builder, err)
+	}
+	paths := strings.Fields(output)
+	if len(paths) != 1 || !validStorePath(paths[0]) {
+		return "", errors.New("flake build must produce exactly one valid /nix/store output path")
+	}
+	return paths[0], nil
+}
+
+func remoteBuildCommand(flake string) string {
+	return "nix build --accept-flake-config --no-link --print-out-paths -- " + shellQuote(flake)
+}
+
+func remoteOutputCache(builder, storePath string) (string, error) {
+	output, err := remoteOutput(builder, "mktemp -d /tmp/nixpp-switch.XXXXXXXX")
+	if err != nil {
+		return "", fmt.Errorf("create temporary cache on builder: %w", err)
+	}
+	path := strings.TrimSpace(output)
+	if !validRemoteTemp(path) {
+		return "", errors.New("builder returned an unsafe temporary directory")
+	}
+	command := "references=$(nix-store -q --references " + shellQuote(storePath) + ") && " +
+		"if [ -n \"$references\" ]; then echo 'Termux output has Nix references' >&2; exit 1; fi && " +
+		"mkdir -- " + shellQuote(path+"/cache") + " && " +
+		"nix copy --to " + shellQuote("file://"+path+"/cache") + " " + shellQuote(storePath)
+	if err := remoteRun(builder, command); err != nil {
+		_ = remoteRun(builder, "rm -rf -- "+shellQuote(path))
+		return "", fmt.Errorf("sign and export output on builder: %w", err)
+	}
+	return path, nil
+}
+
+func remoteNAR(builder, storePath, destination string, maximum int64) (retErr error) {
+	file, err := os.CreateTemp(filepath.Dir(destination), ".nixpp-nar-")
+	if err != nil {
+		return err
+	}
+	path := file.Name()
+	closed := false
+	defer func() {
+		if !closed {
+			if err := file.Close(); err != nil {
+				retErr = errors.Join(retErr, err)
+			}
+		}
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			retErr = errors.Join(retErr, err)
+		}
+	}()
+
+	command := exec.Command("ssh", "-T", "--", builder, "nix nar pack "+shellQuote(storePath))
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	command.Stderr = os.Stderr
+	if err := command.Start(); err != nil {
+		return fmt.Errorf("start NAR transfer from %s: %w", builder, err)
+	}
+	count, copyErr := io.Copy(file, io.LimitReader(stdout, maximum+1))
+	if copyErr != nil || count > maximum {
+		_ = command.Process.Kill()
+		waitErr := command.Wait()
+		if copyErr != nil {
+			return errors.Join(fmt.Errorf("receive NAR from %s: %w", builder, copyErr), waitErr)
+		}
+		return errors.Join(errors.New("builder NAR exceeds its signed size limit"), waitErr)
+	}
+	if err := command.Wait(); err != nil {
+		return fmt.Errorf("receive NAR from %s: %w", builder, err)
+	}
+	if err := file.Sync(); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+	closed = true
+	if err := os.Rename(path, destination); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validSSHTarget(target string) bool {
+	if target == "" || strings.HasPrefix(target, "-") {
+		return false
+	}
+	for _, char := range target {
+		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("._@-", char)) {
+			return false
+		}
+	}
+	return true
+}
+
+func validStorePath(path string) bool {
+	if !strings.HasPrefix(path, "/nix/store/") || strings.ContainsAny(path, "\x00\r\n") {
+		return false
+	}
+	base := strings.TrimPrefix(path, "/nix/store/")
+	hash, name, ok := strings.Cut(base, "-")
+	if !ok || len(hash) != 32 || name == "" || strings.Contains(name, "/") {
+		return false
+	}
+	for _, char := range hash {
+		if !strings.ContainsRune(nixBase32Alphabet, char) {
+			return false
+		}
+	}
+	for _, char := range name {
+		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || strings.ContainsRune("+._?=-", char)) {
+			return false
+		}
+	}
+	return true
+}
+
+func validRemoteTemp(path string) bool {
+	if !strings.HasPrefix(path, "/tmp/nixpp-switch.") || len(path) != len("/tmp/nixpp-switch.")+8 {
+		return false
+	}
+	for _, char := range strings.TrimPrefix(path, "/tmp/nixpp-switch.") {
+		if !(char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9') {
+			return false
+		}
+	}
+	return true
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
+}
+
+func remoteOutput(builder, remoteCommand string) (string, error) {
+	command := exec.Command("ssh", "-T", "--", builder, remoteCommand)
+	var output strings.Builder
+	command.Stdout = &output
+	command.Stderr = os.Stderr
+	if err := command.Run(); err != nil {
+		return "", fmt.Errorf("ssh %s: %w", builder, err)
+	}
+	return output.String(), nil
+}
+
+func remoteRun(builder, remoteCommand string) error {
+	_, err := remoteOutput(builder, remoteCommand)
+	return err
+}
+
+func extractVerifiedNAR(path string, metadata narInfo, destination string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	hasher := sha256.New()
+	size, hashErr := io.Copy(hasher, io.LimitReader(file, metadata.narSize+1))
+	closeErr := file.Close()
+	if hashErr != nil {
+		return errors.Join(hashErr, closeErr)
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	expected, err := decodeNixHash(metadata.narHash)
+	if err != nil {
+		return err
+	}
+	if size != metadata.narSize || !equalBytes(hasher.Sum(nil), expected) {
+		return errors.New("builder NAR size or hash does not match its signed metadata")
+	}
+	file, err = os.Open(path)
+	if err != nil {
+		return err
+	}
+	extractErr := extractNAR(file, destination)
+	return errors.Join(extractErr, file.Close())
+}
+
+func readArchiveDigest(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	if len(data) > 4096 {
+		return "", errors.New("SHA256SUMS is unexpectedly large")
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 1 {
+		return "", errors.New("SHA256SUMS must contain exactly one archive entry")
+	}
+	fields := strings.Fields(lines[0])
+	if len(fields) != 2 || fields[1] != "environment.tar.gz" || len(fields[0]) != sha256.Size*2 {
+		return "", errors.New("SHA256SUMS must contain the environment.tar.gz SHA-256")
+	}
+	for _, char := range fields[0] {
+		if !(char >= '0' && char <= '9' || char >= 'a' && char <= 'f') {
+			return "", errors.New("SHA256SUMS contains an invalid lowercase SHA-256")
+		}
+	}
+	return fields[0], nil
+}
+
+func verifyFileSHA256(path, expected string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	hasher := sha256.New()
+	_, hashErr := io.Copy(hasher, file)
+	closeErr := file.Close()
+	if hashErr != nil {
+		return errors.Join(hashErr, closeErr)
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if fmt.Sprintf("%x", hasher.Sum(nil)) != expected {
+		return errors.New("SHA-256 mismatch")
+	}
+	return nil
+}
+
+func makeStagingDirectory(prefix string) (string, error) {
+	candidates := make([]string, 0, 3)
+	if temporary := os.Getenv("TMPDIR"); temporary != "" {
+		candidates = append(candidates, temporary)
+	}
+	if termuxPrefix := os.Getenv("PREFIX"); termuxPrefix != "" {
+		candidates = append(candidates, filepath.Join(termuxPrefix, "tmp"))
+	}
+	candidates = append(candidates, os.TempDir())
+	seen := make(map[string]bool, len(candidates))
+	var lastErr error
+	for _, candidate := range candidates {
+		if seen[candidate] {
+			continue
+		}
+		seen[candidate] = true
+		info, err := os.Stat(candidate)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if !info.IsDir() {
+			lastErr = fmt.Errorf("temporary path is not a directory: %s", candidate)
+			continue
+		}
+		stage, err := os.MkdirTemp(candidate, prefix)
+		if err == nil {
+			return stage, nil
+		}
+		lastErr = err
+	}
+	return "", fmt.Errorf("create private staging directory: %w", lastErr)
+}
+
+func fetch(args []string) (retErr error) {
 	flags := flag.NewFlagSet("fetch", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(os.Stderr, "Usage: nixpp fetch --cache URL --store-path /nix/store/HASH-name --destination DIR --public-key NAME:BASE64")
+		fmt.Fprintln(os.Stderr, "Fetch one reference-free output from a signed Nix binary cache.")
+		fmt.Fprintln(os.Stderr, "Set NIXPP_PUBLIC_KEY to avoid repeating the trusted key.")
+		flags.PrintDefaults()
+	}
 	cache := flags.String("cache", "", "Nix binary cache URL")
 	storePath := flags.String("store-path", "", "full Nix store path")
 	destination := flags.String("destination", "", "new directory to create from the cache output")
-	publicKey := flags.String("public-key", "", "trusted Nix cache key NAME:BASE64")
+	publicKey := flags.String("public-key", os.Getenv("NIXPP_PUBLIC_KEY"), "trusted Nix cache key NAME:BASE64")
 	netrcFile := flags.String("netrc-file", "", "curl netrc file for authenticated cache access")
 	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return nil
+		}
 		return err
 	}
 	if *cache == "" || *storePath == "" || *destination == "" || *publicKey == "" || flags.NArg() != 0 {
@@ -73,7 +546,7 @@ func fetch(args []string) error {
 		return errors.New("refusing to send cache credentials over plain HTTP")
 	}
 	netrcPath := *netrcFile
-	cleanup := func() {}
+	cleanup := func() error { return nil }
 	if netrcPath != "" {
 		if err := validateNetrc(netrcPath); err != nil {
 			return err
@@ -84,7 +557,11 @@ func fetch(args []string) error {
 			return err
 		}
 	}
-	defer cleanup()
+	defer func() {
+		if err := cleanup(); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("remove temporary netrc: %w", err))
+		}
+	}()
 	infoURL := *base
 	infoURL.Path = strings.TrimRight(infoURL.Path, "/") + "/" + storeHash + ".narinfo"
 	info, err := curlRead(infoURL.String(), netrcPath, 1<<20)
@@ -125,11 +602,11 @@ func validateNetrc(path string) error {
 	return nil
 }
 
-func makeNetrc(host string) (string, func(), error) {
+func makeNetrc(host string) (string, func() error, error) {
 	username, usernameSet := os.LookupEnv("NIXPP_USERNAME")
 	password, passwordSet := os.LookupEnv("NIXPP_PASSWORD")
 	if !usernameSet && !passwordSet {
-		return "", func() {}, nil
+		return "", func() error { return nil }, nil
 	}
 	if !usernameSet || !passwordSet {
 		return "", nil, errors.New("NIXPP_USERNAME and NIXPP_PASSWORD must be set together")
@@ -140,21 +617,16 @@ func makeNetrc(host string) (string, func(), error) {
 	}
 	path := file.Name()
 	if err := file.Chmod(0600); err != nil {
-		file.Close()
-		os.Remove(path)
-		return "", nil, err
+		return "", nil, errors.Join(err, file.Close(), os.Remove(path))
 	}
 	content := fmt.Sprintf("machine %s login %s password %s\n", host, netrcQuote(username), netrcQuote(password))
 	if _, err := io.WriteString(file, content); err != nil {
-		file.Close()
-		os.Remove(path)
-		return "", nil, err
+		return "", nil, errors.Join(err, file.Close(), os.Remove(path))
 	}
 	if err := file.Close(); err != nil {
-		os.Remove(path)
-		return "", nil, err
+		return "", nil, errors.Join(err, os.Remove(path))
 	}
-	return path, func() { _ = os.Remove(path) }, nil
+	return path, func() error { return os.Remove(path) }, nil
 }
 
 func netrcQuote(value string) string {
@@ -288,7 +760,7 @@ func verifySignature(info narInfo, publicKey string) error {
 	}
 	narHash, ok := strings.CutPrefix(info.narHash, "sha256:")
 	if !ok {
-		return errors.New("narinfo NarHash must use sha256:")
+		return errors.New("narinfo NarHash must use SHA-256")
 	}
 	fingerprint := "1;" + info.storePath + ";sha256:" + narHash + ";" + strconv.FormatInt(info.narSize, 10) + ";"
 	refs := append([]string(nil), info.references...)
@@ -320,7 +792,7 @@ func safeCacheURL(base *url.URL, rawPath string) (string, error) {
 	return result.String(), nil
 }
 
-func downloadAndExtract(rawURL, netrcPath string, info narInfo, destination string) error {
+func downloadAndExtract(rawURL, netrcPath string, info narInfo, destination string) (retErr error) {
 	if _, err := os.Lstat(destination); err == nil {
 		return fmt.Errorf("destination already exists: %s", destination)
 	} else if !os.IsNotExist(err) {
@@ -334,7 +806,11 @@ func downloadAndExtract(rawURL, netrcPath string, info narInfo, destination stri
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(stage)
+	defer func() {
+		if err := os.RemoveAll(stage); err != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("remove staging directory: %w", err))
+		}
+	}()
 
 	compressedLimit := info.fileSize
 	if compressedLimit == 0 {
@@ -413,8 +889,7 @@ func downloadAndExtract(rawURL, netrcPath string, info narInfo, destination stri
 	}
 	output := filepath.Join(stage, "output")
 	if err := extractNAR(archive, output); err != nil {
-		archive.Close()
-		return err
+		return errors.Join(err, archive.Close())
 	}
 	if err := archive.Close(); err != nil {
 		return err
@@ -442,8 +917,7 @@ func openDecompressor(compression, path string) (io.Reader, func() error, error)
 	case "gzip":
 		reader, err := gzip.NewReader(file)
 		if err != nil {
-			file.Close()
-			return nil, nil, err
+			return nil, nil, errors.Join(err, file.Close())
 		}
 		return reader, func() error {
 			readerErr := reader.Close()
@@ -454,7 +928,9 @@ func openDecompressor(compression, path string) (io.Reader, func() error, error)
 			return fileErr
 		}, nil
 	case "xz":
-		file.Close()
+		if err := file.Close(); err != nil {
+			return nil, nil, err
+		}
 		command := exec.Command("xz", "-dc", "--", path)
 		stdout, err := command.StdoutPipe()
 		if err != nil {
@@ -467,9 +943,7 @@ func openDecompressor(compression, path string) (io.Reader, func() error, error)
 		}
 		return stdout, func() error {
 			if err := stdout.Close(); err != nil {
-				command.Process.Kill()
-				_ = command.Wait()
-				return err
+				return errors.Join(err, command.Process.Kill(), command.Wait())
 			}
 			if err := command.Wait(); err != nil {
 				return fmt.Errorf("xz decompression failed: %w: %s", err, strings.TrimSpace(stderr.String()))
@@ -477,8 +951,7 @@ func openDecompressor(compression, path string) (io.Reader, func() error, error)
 			return nil
 		}, nil
 	default:
-		file.Close()
-		return nil, nil, fmt.Errorf("unsupported compression %q", compression)
+		return nil, nil, errors.Join(fmt.Errorf("unsupported compression %q", compression), file.Close())
 	}
 }
 
@@ -519,7 +992,7 @@ func nixBase32Decode(value string) ([]byte, error) {
 
 func nixBase32Encode(digest []byte) (string, error) {
 	if len(digest) != sha256.Size {
-		return "", errors.New("Nix base32 encoding requires a SHA-256 digest")
+		return "", errors.New("nix base32 encoding requires a SHA-256 digest")
 	}
 	length := (len(digest)*8-1)/5 + 1
 	var output strings.Builder
