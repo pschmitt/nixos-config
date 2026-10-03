@@ -4,7 +4,7 @@
 }:
 {
   wayland.windowManager.hyprland.plugins = [
-    pkgs.hyprlandPlugins.hyprspace
+    pkgs.master.hyprlandPlugins.hyprspace
   ];
 
   wayland.windowManager.hyprland.settings = {

@@ -1,8 +1,9 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
+let
+  dynamicCursors = pkgs.master.hyprlandPlugins.hypr-dynamic-cursors.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/dynamic-cursors-hyprland-0.56.patch ];
+  });
+in
 {
   # Dynamic cursor effects (https://github.com/VirtCode/hypr-dynamic-cursors).
   #
@@ -11,7 +12,7 @@
   # guarded block runs once hl.plugin.dynamic_cursors exists.
   # Lua config section is `plugin.dynamic_cursors` (underscore).
   wayland.windowManager.hyprland.plugins = [
-    inputs.hypr-dynamic-cursors.packages.${pkgs.stdenv.hostPlatform.system}.hypr-dynamic-cursors
+    dynamicCursors
   ];
 
   wayland.windowManager.hyprland.extraConfig = ''

@@ -27,7 +27,6 @@
     // (import ./wireguard-tools.nix { inherit final prev; })
     // (import ./hotfixes.nix { inherit inputs final prev; })
     # // (import ./tmux.nix { inherit final prev; })
-    // (import ./hyprgrass.nix { inherit inputs final prev; })
     // (import ./noctalia.nix { inherit inputs final prev; })
     // {
       # GitHub's codeload tarball for Playwright v1.63.0 changed bytes after

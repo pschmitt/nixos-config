@@ -1,0 +1,66 @@
+--- a/src/GestureManager.cpp
++++ b/src/GestureManager.cpp
+@@ -14 +14,4 @@
+-#include <hyprland/src/helpers/Monitor.hpp>
++#include <hyprland/src/output/Monitor.hpp>
++#include <hyprland/src/state/MonitorState.hpp>
++#include <hyprland/src/pointer/PointerController.hpp>
++#include <hyprland/src/managers/fullscreen/FullscreenController.hpp>
+@@ -188 +191 @@
+-                if (w && !w->isFullscreen()) {
++                if (w && !Fullscreen::controller()->isFullscreen(w)) {
+@@ -190,2 +193,2 @@
+-                        w->m_realPosition->value().x, w->m_realPosition->value().y, w->m_realSize->value().x,
+-                        w->m_realSize->value().y
++                        w->positionAnimation()->value().x, w->positionAnimation()->value().y, w->sizeAnimation()->value().x,
++                        w->sizeAnimation()->value().y
+@@ -199 +202 @@
+-                    bool onTiledGap      = !w->m_isFloating && !w->isFullscreen() && notInRealWindow;
++                    bool onTiledGap      = !w->m_isFloating && !Fullscreen::controller()->isFullscreen(w) && notInRealWindow;
+@@ -362 +365 @@
+-            g_pCompositor->warpCursorTo(Vector2D(pos.x, pos.y));
++            Pointer::pointerController()->warpTo(Vector2D(pos.x, pos.y));
+@@ -593,2 +596,9 @@
+-    auto monitor = g_pCompositor->getMonitorFromName(!ev.device->m_boundOutput.empty() ? ev.device->m_boundOutput : "");
+-    monitor      = monitor ? monitor : Desktop::focusState()->monitor();
++    auto monitor = Desktop::focusState()->monitor();
++    if (!ev.device->m_boundOutput.empty()) {
++        const auto& monitors = State::monitorState()->monitors();
++        const auto bound = std::ranges::find_if(monitors, [&ev](const auto& candidate) {
++            return candidate->m_name == ev.device->m_boundOutput;
++        });
++        if (bound != monitors.end())
++            monitor = *bound;
++    }
+@@ -607,6 +617,4 @@
+-    g_pCompositor->warpCursorTo(
+-        Vector2D{
+-            monitorPos.x + ev.pos.x * monitorSize.x,
+-            monitorPos.y + ev.pos.y * monitorSize.y,
+-        }
+-    );
++    Pointer::pointerController()->warpTo(Vector2D{
++        monitorPos.x + ev.pos.x * monitorSize.x,
++        monitorPos.y + ev.pos.y * monitorSize.y,
++    });
+--- a/src/TouchVisualizer.cpp
++++ b/src/TouchVisualizer.cpp
+@@ -1,0 +2 @@
++#include <numbers>
+@@ -17 +18 @@
+-    cairo_arc(cairo, R, R, R, 0, 2 * PI);
++    cairo_arc(cairo, R, R, R, 0, 2 * std::numbers::pi);
+@@ -66 +67 @@
+-    g_pCompositor->scheduleFrameForMonitor(mon);
++    mon->scheduleFrame();
+@@ -72 +73 @@
+-    g_pCompositor->scheduleFrameForMonitor(Desktop::focusState()->monitor());
++    Desktop::focusState()->monitor()->scheduleFrame();
+@@ -78 +79 @@
+-    g_pCompositor->scheduleFrameForMonitor(mon);
++    mon->scheduleFrame();
+--- a/src/gestures/Actions.hpp
++++ b/src/gestures/Actions.hpp
+@@ -143 +143 @@
+-    bool exceeds_tolerance(const wf::touch::gesture_state_t& state) override;
++    bool exceeds_tolerance(const wf::touch::gesture_state_t& state);

@@ -1,11 +1,7 @@
-{
-  inputs,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 {
   wayland.windowManager.hyprland.plugins = [
-    inputs.hyprtasking.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs.master.hyprlandPlugins.hyprtasking
   ];
 
   wayland.windowManager.hyprland.settings = {
