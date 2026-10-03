@@ -339,14 +339,16 @@ copied into the generated profile. It reuses the regular CLI modules for
 Nixpkgs packages. Termux gets Android/Bionic Rust builds of `bat`, `eza`, `fd`,
 `ripgrep`, `vivid`, and `zoxide`; `direnv`, `eget`, and `fzf` are built with
 the host Go compiler targeting Android/Bionic. Termux APT supplies core and
-patched packages such as Neovim, tmux, and Zsh. Atuin is imported as a pinned
-Termux package artifact with its OpenSSL runtime libraries included in the
-bundle, removing Atuin from the Termux APT install list. Nixpkgs' direct Atuin
-cross build still fails in OpenSSL on Bionic. The Go toolchain is patched to
-use Termux's `/etc` files so those binaries do not refer to the Nix store. Each
-exported executable is checked for AArch64 ELF, an Android linker (or static
-linkage), and no Nix store references. The
-profile also shares portable Neovim options from the regular Home Manager tree.
+patched packages such as Neovim and Zsh. Atuin is imported as a pinned Termux
+package artifact with its OpenSSL runtime libraries included in the bundle.
+Tmux is likewise imported from pinned official Termux package artifacts,
+including its runtime libraries, and launched from the managed generation.
+These imports remove Atuin and tmux from the Termux APT install list. Nixpkgs'
+direct Atuin cross build still fails in OpenSSL on Bionic. The Go toolchain is
+patched to use Termux's `/etc` files so those binaries do not refer to the Nix
+store. Each exported executable is checked for AArch64 ELF, an Android linker
+(or static linkage), and no Nix store references. The profile also shares
+portable Neovim options from the regular Home Manager tree.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 
@@ -426,7 +428,8 @@ bundle. The Nix package imports Atuin and OpenSSL 3.6.5 from the official
 Termux repository using pinned SHA-256 hashes, and exports the OpenSSL runtime
 libraries beside Atuin. The Termux package builder on rofl-13 also built Atuin
 from its upstream recipe in 5m53s. Activation checks the Atuin launcher and
-runs `atuin --version` in the on-device shell smoke test. The current bundle
+runs `atuin --version` in the on-device shell smoke test. The Atuin bundle
+generation
 (`3344efc17ac1064a95c15cbb37e764b588808cf68a760a0e667059c82fe382b7`) was
 installed from the interactive Termux app on the Zenfone 10; the generation
 smoke test passed and `atuin --version` reported `18.23.0 (NO_GIT)`.
@@ -434,7 +437,16 @@ A force-stop followed by launching Termux from its app icon returned to the
 managed prompt in about five seconds; the generated shell smoke test then
 exited 0 without plugin-fetch output.
 
-A direct Nixpkgs Android cross-build of tmux also failed in its Android
-dependency graph before producing the package. For now, tmux and Neovim remain
-Termux APT packages; the shared Home Manager modules still generate their
+A direct Nixpkgs Android cross-build of tmux failed in its Android dependency
+graph before producing the package, so the profile now imports tmux and its
+runtime libraries from pinned official Termux package artifacts. Neovim remains
+a Termux APT package; the shared Home Manager modules still generate its
 configuration and keep their Linux package selection unchanged.
+
+The rebuilt tmux bundle `c1177457473d7715bf46e72eb0d13d79258112f2c73f99fa7134a3e399cf8ddc`
+was installed from the interactive official Termux app on the Zenfone 10. Its
+bootstrap reported that all declared APT packages were already installed (zero
+upgrades and installs), then completed the native execution and Zsh PTY checks.
+After a force-stop and cold app launch, `tmux` resolved from the active
+generation, reported version 3.7c, and created, checked, and killed a detached
+session. The bundle's APT manifest does not install tmux.

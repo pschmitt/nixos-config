@@ -131,10 +131,11 @@ integration has been removed. The current profile keeps Termux system packages
 under APT where they need Termux's patched runtime, and exports supported
 Home Manager packages as Android/Bionic binaries. Rust cross builds currently
 provide `bat`, `eza`, `fd`, `ripgrep`, `vivid`, and `zoxide`; host-Go builds
-provide `direnv`, `eget`, `fzf`, and the `nixpp` client. Atuin is imported from
-a pinned Termux package artifact with its OpenSSL runtime libraries. The shared
-`home-manager/cli/eget.nix` module selects the normal Nixpkgs package on Linux
-and the Android binary in the Termux profile. Exported files are checked for
+provide `direnv`, `eget`, `fzf`, and the `nixpp` client. Atuin and tmux are
+imported from pinned Termux package artifacts with their runtime libraries,
+removing them from the APT install set. Neovim remains a Termux APT package.
+The shared `home-manager/cli/eget.nix` module selects the normal Nixpkgs
+package on Linux and the Android binary in the Termux profile. Exported files are checked for
 Android ELF format and Nix store references. The Android cross toolchain runs
 on the trusted Nix builder; nixpp transfers the resulting reference-free
 profile bundle.

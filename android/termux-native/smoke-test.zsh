@@ -14,7 +14,7 @@ native_shell_check() {
   (( $+_comps[git] )) || return 1
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in atuin bat eza fd rg vivid zoxide nixpp
+  for command in atuin bat eza fd rg tmux vivid zoxide nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -28,10 +28,18 @@ native_shell_check() {
   fd --version >/dev/null || return
   rg --version >/dev/null || return
   vivid generate one-dark >/dev/null || return
+  tmux -V >/dev/null || return
   zoxide --version >/dev/null || return
   nixpp switch --help >/dev/null 2>&1 || return
   "$GITSTATUS_DAEMON" --version || return
   termux-native-status || return
+  local tmux_socket="native-smoke-$$"
+  tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
+  tmux -L "$tmux_socket" has-session -t native-smoke || {
+    tmux -L "$tmux_socket" kill-server
+    return 1
+  }
+  tmux -L "$tmux_socket" kill-server || return
   local fixture
   fixture=$(mktemp -d "$TMPDIR/native-gitstatus.XXXXXXXX") || return
   git init -q "$fixture" || return

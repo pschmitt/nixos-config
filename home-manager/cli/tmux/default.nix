@@ -1,6 +1,12 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   termuxMode = config.termux.enable or false;
+  termuxTmux = pkgs.callPackage ../../../pkgs/termux-native/tmux.nix { };
 in
 {
   programs.tmux = {
@@ -11,6 +17,7 @@ in
     '';
   }
   // lib.optionalAttrs termuxMode {
+    package = null;
     shell = "/data/data/com.termux/files/usr/bin/zsh";
   };
 
@@ -18,5 +25,5 @@ in
     TMUX_TMPDIR = lib.mkForce "/data/data/com.termux/files/usr/tmp";
   };
 
-  termux.packages = lib.mkIf termuxMode [ "tmux" ];
+  home.packages = lib.mkIf termuxMode [ termuxTmux ];
 }

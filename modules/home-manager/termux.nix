@@ -92,8 +92,5 @@
     (lib.mkIf (config.termux.enable && config.programs.zsh.enable) {
       programs.zsh.package = null;
     })
-    (lib.mkIf (config.termux.enable && config.programs.tmux.enable) {
-      programs.tmux.package = null;
-    })
   ];
 }
