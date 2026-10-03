@@ -145,56 +145,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland and cie {{{
-    hyprland = {
-      # url = "github:hyprwm/Hyprland";
-      url = "github:hyprwm/Hyprland/v0.56.1";
-      # inputs.nixpkgs.follows = "nixpkgs";
-    };
-
-    hypridle = {
-      url = "github:hyprwm/hypridle";
-      inputs.nixpkgs.follows = "hyprland";
-    };
-
-    hyprlock = {
-      url = "github:hyprwm/hyprlock";
-      inputs.nixpkgs.follows = "hyprland";
-    };
-
-    # hyprland plugins
-    hyprtasking = {
-      # upstream url
-      # url = "github:raybbian/hyprtasking";
-
-      # https://github.com/raybbian/hyprtasking/pull/82
-      url = "github:Megakuul/hyprtasking";
-      inputs.hyprland.follows = "hyprland";
-    };
-
-    hyprgrass = {
-      # The latest revisions changed GestureManager.cpp beyond the local
-      # Hyprland 0.56 compatibility patch; keep the last known-good commit.
-      url = "github:horriblename/hyprgrass/e28346f49144e058b0e2d9dc66313c0a57c3d423";
-      inputs.hyprland.follows = "hyprland"; # IMPORTANT
-    };
-
+    # Hyprland plugins are taken from nixpkgs.hyprlandPlugins.
     grim-hyprland = {
       url = "github:eriedaberrie/grim-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hypr-dynamic-cursors = {
-      # Match the upstream Hyprland v0.56.1 compatibility pin.
-      url = "github:VirtCode/hypr-dynamic-cursors/f5ba36c7622098b53bf62ddb8ddf03b914abbdf8";
-      inputs.hyprland.follows = "hyprland";
-    };
-
-    # end of plugins
-
     vpn-confinement.url = "github:Maroka-chan/VPN-Confinement";
-
-    # hyprland end }}}
 
     jcalapi = {
       url = "github:pschmitt/jcalapi";
