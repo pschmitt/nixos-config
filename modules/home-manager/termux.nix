@@ -5,10 +5,15 @@
   pkgs,
   ...
 }:
+let
+  termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
+  };
+in
 {
   imports = [
-    ../../home-manager/cli/core.nix
-    ../../home-manager/cli/nvim/termux.nix
+    ../../home-manager/cli
     ../domains.nix
   ];
 
@@ -48,7 +53,10 @@
         );
       };
 
-      home.packages = [ (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; }) ];
+      home.packages = [
+        (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; })
+        termuxZip
+      ];
 
       termux.packages = [
         "bash"
@@ -66,7 +74,6 @@
         "util-linux"
         "unzip"
         "zsh"
-        "zip"
       ];
 
       programs.zsh = {

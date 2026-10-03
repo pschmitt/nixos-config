@@ -12,13 +12,13 @@ aren't already practical to install from Termux.
 
 The package and profile are part of the repository's root flake, so they share
 its pinned Nixpkgs and Home Manager inputs. The regular CLI profile and Termux
-both import `home-manager/cli/core.nix`, which composes their shared bat, eGet,
-eza, fd, ripgrep, tmux, and Zsh modules. Those modules keep their normal Nix
-package behavior on Linux; in Termux mode they render the same settings and
-select Termux packages or exported Android binaries. Neovim uses the regular
-host module on Linux and a portable Termux module on Android. The Termux
-profile supplies the Termux identity and package selection, while the exported
-HM module handles Termux-specific package and file export rules.
+both import `home-manager/cli`, the same entry point. Its modules keep their
+normal Nix package behavior on Linux; in Termux mode they render the same
+settings and select Termux packages or exported Android binaries. Neovim uses
+its regular Home Manager configuration on Linux and a portable Termux
+configuration on Android. The Termux profile supplies the Termux identity and
+package selection, while the exported HM module handles Termux-specific
+package and file export rules.
 
 ## Use the profile
 
@@ -76,9 +76,12 @@ nix build '.#termux-native-bundle'
 sha256sum result/environment.tar.gz
 ```
 
-Use the official [Termux package recipes](https://github.com/termux/termux-packages)
-for Termux-native package builds. Keep those packages in the Termux APT
-repository flow; the Nix bundle does not copy or install `.deb` files.
+The bundle currently cross-builds `zip`, `zipcloak`, `zipnote`, and `zipsplit`
+for Android/Bionic and exports them as native commands. Termux does not need
+APT's `zip` package for this profile. Keep packages that need Termux-specific
+patches or dependency integration in the official
+[Termux package recipes](https://github.com/termux/termux-packages); the Nix
+bundle does not copy or install `.deb` files.
 
 The result contains `environment.tar.gz`, `bootstrap.sh`, and `activate.sh`.
 Transfer all three to the phone through a trusted channel. In Termux, after

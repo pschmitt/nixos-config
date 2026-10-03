@@ -1,23 +1,30 @@
-{ pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  termuxMode = config.termux.enable or false;
+in
 {
   imports = [
     ./core.nix
     ./nvim
   ];
 
-  home.packages = with pkgs; [
-    atuin
-    direnv
-    emoji-fzf
-    fzf
-    linkding-cli
+  home.packages = lib.optionals (!termuxMode) [
+    pkgs.atuin
+    pkgs.direnv
+    pkgs.emoji-fzf
+    pkgs.fzf
+    pkgs.linkding-cli
 
-    # img background removal tools
-    backgroundremover
-    withoutbg
+    # Image background removal tools.
+    pkgs.backgroundremover
+    pkgs.withoutbg
 
-    # Below allows exporting address books from Evolution
-    # we use this in ~zpl/contacts.zsh
+    # Used by ~zpl/contacts.zsh on desktop hosts.
     (pkgs.writeShellScriptBin "addressbook-export" ''
       exec ${pkgs.evolution-data-server}/libexec/evolution-data-server/addressbook-export "$@"
     '')
