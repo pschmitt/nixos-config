@@ -10,7 +10,7 @@ let
 in
 {
   programs.tmux = {
-    enable = true;
+    enable = termuxMode;
     extraConfig = ''
       set -g mouse on
       set -g history-limit 100000

@@ -1,0 +1,142 @@
+diff --git a/src/cursor.cpp b/src/cursor.cpp
+index d63d57a..36dd73f 100644
+--- a/src/cursor.cpp
++++ b/src/cursor.cpp
+@@ -61 +61 @@ Is also largely identical to hyprlands impl, but uses our custom rendering to ro
+-void CDynamicCursors::renderSoftware(Pointer::CPointerManager* pointers, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos,
++void CDynamicCursors::renderSoftware(Pointer::CPointerManager* pointers, Render::CRenderContext& ctx, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos,
+@@ -144 +144 @@ void CDynamicCursors::renderSoftware(Pointer::CPointerManager* pointers, PHLMONI
+-    g_pHyprRenderer->m_renderPass.add(makeUnique<CCursorPassElement>(data));
++    g_pHyprRenderer->addPassElement(ctx, makeUnique<CCursorPassElement>(data));
+@@ -182,0 +183,2 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
++    if (g_pHyprRenderer->context().active())
++        return nullptr;
+@@ -252 +253,0 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-    g_pHyprRenderer->m_renderData.pMonitor = state->monitor;
+@@ -259,2 +259,0 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-    RBO->bind();
+-
+@@ -262,2 +261,9 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-    g_pHyprRenderer->beginFullFakeRender(state->monitor.lock(), damageRegion, RBO->getFB());
+-    g_pHyprRenderer->startRenderPass();
++    auto framebuffer = RBO->getFB();
++    framebuffer->setImageDescription(state->monitor->m_imageDescription);
++    if (!g_pHyprRenderer->beginFullFakeRender(state->monitor.lock(), damageRegion, framebuffer))
++        return nullptr;
++    auto& ctx = g_pHyprRenderer->context();
++    ctx.m_data.fbSize = framebuffer->m_size;
++    g_pHyprRenderer->setProjectionType(ctx, Render::RPT_FB);
++    ctx.m_data.transformDamage = true;
++    g_pHyprRenderer->startRenderPass(ctx);
+@@ -266 +272 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-        g_pHyprRenderer->draw(CClearPassElement::SClearData{CHyprColor{rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX), 1.F}});
++        g_pHyprRenderer->draw(ctx, CClearPassElement::SClearData{CHyprColor{rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX), 1.F}});
+@@ -268 +274 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-        g_pHyprRenderer->draw(CClearPassElement::SClearData{{0.F, 0.F, 0.F, 0.F}});
++        g_pHyprRenderer->draw(ctx, CClearPassElement::SClearData{{0.F, 0.F, 0.F, 0.F}});
+@@ -274 +280 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-    drawCursor(transform, texture, xbox, damageRegion, zoom > 1 && CONFIG(highresNearest));
++    drawCursor(ctx, transform, texture, xbox, damageRegion, zoom > 1 && CONFIG(highresNearest));
+@@ -277 +282,0 @@ SP<Aquamarine::IBuffer> CDynamicCursors::renderHardware(Pointer::CPointerManager
+-    g_pHyprRenderer->m_renderData.pMonitor.reset();
+diff --git a/src/cursor.hpp b/src/cursor.hpp
+index 831d8a6..8c1b6ea 100644
+--- a/src/cursor.hpp
++++ b/src/cursor.hpp
+@@ -28 +28 @@ class CDynamicCursors {
+-    void renderSoftware(Pointer::CPointerManager* pointers, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos,
++    void renderSoftware(Pointer::CPointerManager* pointers, Render::CRenderContext& ctx, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos,
+diff --git a/src/main.cpp b/src/main.cpp
+index 0fde5f6..b917b2c 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -25 +25 @@
+-typedef void (*origRenderSoftwareCursorsFor)(void*, PHLMONITOR, const Time::steady_tp&, CRegion&, std::optional<Vector2D>, bool, bool);
++typedef void (*origRenderSoftwareCursorsFor)(void*, Render::CRenderContext&, PHLMONITOR, const Time::steady_tp&, CRegion&, std::optional<Vector2D>, bool, bool);
+@@ -27 +27 @@ inline CFunctionHook* g_pRenderSoftwareCursorsForHook = nullptr;
+-void hkRenderSoftwareCursorsFor(void* thisptr, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos, bool screencopy,
++void hkRenderSoftwareCursorsFor(void* thisptr, Render::CRenderContext& ctx, PHLMONITOR pMonitor, const Time::steady_tp& now, CRegion& damage, std::optional<Vector2D> overridePos, bool screencopy,
+@@ -30 +30 @@ void hkRenderSoftwareCursorsFor(void* thisptr, PHLMONITOR pMonitor, const Time::
+-        g_pDynamicCursors->renderSoftware((Pointer::CPointerManager*)thisptr, pMonitor, now, damage, overridePos, screencopy, forceRender);
++        g_pDynamicCursors->renderSoftware((Pointer::CPointerManager*)thisptr, ctx, pMonitor, now, damage, overridePos, screencopy, forceRender);
+@@ -32 +32 @@ void hkRenderSoftwareCursorsFor(void* thisptr, PHLMONITOR pMonitor, const Time::
+-        (*(origRenderSoftwareCursorsFor)g_pRenderSoftwareCursorsForHook->m_original)(thisptr, pMonitor, now, damage, overridePos, screencopy, forceRender);
++        (*(origRenderSoftwareCursorsFor)g_pRenderSoftwareCursorsForHook->m_original)(thisptr, ctx, pMonitor, now, damage, overridePos, screencopy, forceRender);
+@@ -190 +190 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+-            "_ZN7Pointer15CPointerManager24renderSoftwareCursorsForEN9Hyprutils6Memory14CSharedPointerIN7Monitor8CMonitorEEERKNSt6chrono10time_pointINS7_3_V212steady_clockENS7_8durationIlSt5ratioILl1ELl1000000000EEEEEERNS1_4Math7CRegionESt8optionalINSI_8Vector2DEEbb",
++            "_ZN7Pointer15CPointerManager24renderSoftwareCursorsForERN6Render14CRenderContextEN9Hyprutils6Memory14CSharedPointerIN7Monitor8CMonitorEEERKNSt6chrono10time_pointINSA_3_V212steady_clockENSA_8durationIlSt5ratioILl1ELl1000000000EEEEEERNS4_4Math7CRegionESt8optionalINSL_8Vector2DEEbb",
+@@ -252 +252,2 @@ APICALL EXPORT void PLUGIN_EXIT() {
+-    g_pHyprRenderer->m_renderPass.removeAllOfType("CCursorPassElement");
++    auto& ctx = g_pHyprRenderer->context();
++    g_pHyprRenderer->currentPass(ctx).removeAllOfType("CCursorPassElement");
+diff --git a/src/render/CursorPassElement.cpp b/src/render/CursorPassElement.cpp
+index 1dfd494..0b5e680 100644
+--- a/src/render/CursorPassElement.cpp
++++ b/src/render/CursorPassElement.cpp
+@@ -12 +12 @@ CCursorPassElement::CCursorPassElement(const CCursorPassElement::SRenderData& da
+-std::vector<UP<IPassElement>> CCursorPassElement::draw() {
++std::vector<UP<IPassElement>> CCursorPassElement::draw(Render::CRenderContext& ctx) {
+@@ -16 +16 @@ std::vector<UP<IPassElement>> CCursorPassElement::draw() {
+-    drawCursor(transform, m_data.tex, m_data.box, g_pHyprRenderer->m_renderData.damage, m_data.nearest);
++    drawCursor(ctx, transform, m_data.tex, m_data.box, ctx.m_data.damage, m_data.nearest);
+@@ -21 +21 @@ std::vector<UP<IPassElement>> CCursorPassElement::draw() {
+-bool CCursorPassElement::needsLiveBlur() {
++bool CCursorPassElement::needsLiveBlur(Render::CRenderContext&) {
+@@ -25 +25 @@ bool CCursorPassElement::needsLiveBlur() {
+-bool CCursorPassElement::needsPrecomputeBlur() {
++bool CCursorPassElement::needsPrecomputeBlur(Render::CRenderContext&) {
+@@ -29,2 +29,2 @@ bool CCursorPassElement::needsPrecomputeBlur() {
+-std::optional<CBox> CCursorPassElement::boundingBox() {
+-    return m_data.box.copy().scale(1.F / g_pHyprRenderer->m_renderData.pMonitor->m_scale).round();
++std::optional<CBox> CCursorPassElement::boundingBox(Render::CRenderContext& ctx) {
++    return m_data.box.copy().scale(1.F / ctx.m_data.pMonitor->m_scale).round();
+@@ -33 +33 @@ std::optional<CBox> CCursorPassElement::boundingBox() {
+-CRegion CCursorPassElement::opaqueRegion() {
++CRegion CCursorPassElement::opaqueRegion(Render::CRenderContext&) {
+@@ -37 +37 @@ CRegion CCursorPassElement::opaqueRegion() {
+-void CCursorPassElement::discard() {
++void CCursorPassElement::discard(Render::CRenderContext&) {
+diff --git a/src/render/CursorPassElement.hpp b/src/render/CursorPassElement.hpp
+index 2f1e827..3cd834a 100644
+--- a/src/render/CursorPassElement.hpp
++++ b/src/render/CursorPassElement.hpp
+@@ -23,6 +23,6 @@ class CCursorPassElement : public IPassElement {
+-    virtual std::vector<UP<IPassElement>> draw();
+-    virtual bool                          needsLiveBlur();
+-    virtual bool                          needsPrecomputeBlur();
+-    virtual std::optional<CBox>           boundingBox();
+-    virtual CRegion                       opaqueRegion();
+-    virtual void                          discard();
++    std::vector<UP<IPassElement>> draw(Render::CRenderContext& ctx) override;
++    bool                         needsLiveBlur(Render::CRenderContext& ctx) override;
++    bool                         needsPrecomputeBlur(Render::CRenderContext& ctx) override;
++    std::optional<CBox>           boundingBox(Render::CRenderContext& ctx) override;
++    CRegion                      opaqueRegion(Render::CRenderContext& ctx) override;
++    void                         discard(Render::CRenderContext& ctx) override;
+diff --git a/src/render/renderer.cpp b/src/render/renderer.cpp
+index 5b5061e..5addf19 100644
+--- a/src/render/renderer.cpp
++++ b/src/render/renderer.cpp
+@@ -33,10 +33,5 @@ Mat3x3 toTransform(CBox& box, float rotation, Vector2D hotspot, float stretchAng
+-void drawCursor(const Mat3x3& transform, SP<Render::ITexture> tex, CBox box, CRegion damage, bool nearest) {
+-    Mat3x3 proj = g_pHyprRenderer->m_renderData.targetProjection.copy().multiply(transform);
+-
+-    std::swap(g_pHyprRenderer->m_renderData.targetProjection, proj);
+-    g_pHyprRenderer->m_renderData.useNearestNeighbor = nearest;
+-
+-    g_pHyprRenderer->draw(CTexPassElement::SRenderData{.tex = tex, .box = box}, damage);
+-
+-    std::swap(g_pHyprRenderer->m_renderData.targetProjection, proj);
+-    g_pHyprRenderer->m_renderData.useNearestNeighbor = false;
++void drawCursor(Render::CRenderContext& ctx, const Mat3x3& transform, SP<Render::ITexture> tex, CBox box, CRegion damage, bool nearest) {
++    auto drawState = ctx.saveDrawState();
++    ctx.m_data.targetProjection = ctx.m_data.targetProjection.copy().multiply(transform);
++    ctx.m_data.useNearestNeighbor = nearest;
++    g_pHyprRenderer->draw(ctx, CTexPassElement::SRenderData{.tex = tex, .box = box}, damage);
+diff --git a/src/render/renderer.hpp b/src/render/renderer.hpp
+index e5f484a..ef6a5d8 100644
+--- a/src/render/renderer.hpp
++++ b/src/render/renderer.hpp
+@@ -16 +16 @@ Mat3x3 toTransform(CBox& box, float rotation, Vector2D hotspot, float stretchAng
+-void drawCursor(const Mat3x3& transform, SP<Render::ITexture> tex, CBox box, CRegion damage, bool nearest);
++void drawCursor(Render::CRenderContext& ctx, const Mat3x3& transform, SP<Render::ITexture> tex, CBox box, CRegion damage, bool nearest);

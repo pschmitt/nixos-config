@@ -1,12 +1,13 @@
 {
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
 let
-  hyprlandPkg = pkgs.master.hyprland;
-  xdphPkg = pkgs.master.xdg-desktop-portal-hyprland;
+  hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
+  xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
 in
 {
   nix.settings = {

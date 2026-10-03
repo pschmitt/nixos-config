@@ -160,7 +160,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Hyprland plugins are taken from nixpkgs.hyprlandPlugins.
+    hyprland.url = "github:hyprwm/Hyprland";
+    hyprgrass = {
+      url = "github:horriblename/hyprgrass";
+      inputs.hyprland.follows = "hyprland";
+    };
+    hypr-dynamic-cursors = {
+      url = "github:VirtCode/hypr-dynamic-cursors";
+      inputs.hyprland.follows = "hyprland";
+      inputs.nixpkgs.follows = "hyprland/nixpkgs";
+    };
     grim-hyprland = {
       url = "github:eriedaberrie/grim-hyprland";
       inputs.nixpkgs.follows = "nixpkgs";

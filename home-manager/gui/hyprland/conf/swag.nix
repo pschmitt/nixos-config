@@ -66,7 +66,7 @@ in
           gradients = false;
           height = 14;
           indicator_height = 14;
-          indicator_gap = -14;
+          indicator_gap = 0;
           gaps_in = 0;
           gaps_out = 0;
           rounding = 0;
