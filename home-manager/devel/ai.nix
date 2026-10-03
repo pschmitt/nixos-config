@@ -301,7 +301,12 @@ in
           };
 
           sandbox_mode = "danger-full-access";
-          features.remote_control = true;
+          # The Nixpkgs CLI package does not include the complete package layout
+          # required by Codex's automatic daemon installer.
+          features = {
+            daemon_auto_start = false;
+            remote_control = true;
+          };
         };
       };
 
