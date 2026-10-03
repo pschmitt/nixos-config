@@ -6,8 +6,8 @@
 }:
 
 let
-  # hyPkgs = pkgs.master;
-  hyPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system};
+  hyPkg = pkgs.master;
+  # hyPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system};
 
   hyprlandPkg = hyPkg.hyprland;
   xdphPkg = hyPkg.xdg-desktop-portal-hyprland;
