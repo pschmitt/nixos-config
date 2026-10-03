@@ -4,13 +4,15 @@
   ...
 }:
 {
-  imports = [ ./zsh ];
+  imports = [
+    ./eget.nix
+    ./zsh
+  ];
 
   home.packages = with pkgs; [
     atuin
     bat
     direnv
-    eget
     eza
     fd
     fzf

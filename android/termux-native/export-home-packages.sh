@@ -2,14 +2,15 @@
 
 set -euo pipefail
 
-manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF}
-output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF}
-readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF}
+manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
+output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
+readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
+system_libraries=${4:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
 launcher="$output/libexec/termux-native-launcher"
 
-if [[ ! -x "$launcher" ]]
+if [[ ! -x "$launcher" || ! -x "$readelf" || ! -d "$system_libraries" ]]
 then
-  printf 'Termux launcher binary is missing: %s\n' "$launcher" >&2
+  printf 'Termux launcher or Android system library directory is missing.\n' >&2
   exit 1
 fi
 
@@ -29,6 +30,29 @@ then
   printf 'Invalid Termux-native package manifest: %s\n' "$manifest" >&2
   exit 1
 fi
+
+check_dependencies() {
+  local package=$1 binary=$2 dynamic_section=$3 dependency
+  while IFS= read -r dependency
+  do
+    [[ -n "$dependency" ]] || continue
+    if [[ ! "$dependency" =~ ^[A-Za-z0-9._+-]+$ ]]
+    then
+      printf 'Invalid shared library name for %s (%s): %s\n' \
+        "$package" "$binary" "$dependency" >&2
+      return 1
+    fi
+    if [[ -f "$system_libraries/$dependency" ||
+      -f "$output/native/$package/lib/$dependency" ||
+      -f "$output/native/$package/lib64/$dependency" ]]
+    then
+      continue
+    fi
+    printf 'Termux binary has an unavailable shared library: %s (%s): %s\n' \
+      "$package" "$binary" "$dependency" >&2
+    return 1
+  done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
+}
 
 while IFS= read -r package
 do
@@ -90,6 +114,7 @@ do
       exit 1
     fi
     dynamic_section=$("$readelf" -d "$source_file")
+    check_dependencies "$name" "$binary" "$dynamic_section"
     if [[ -z "$interpreter" ]] && grep -Eq '\((NEEDED|RUNPATH|RPATH)\)' <<<"$dynamic_section"
     then
       printf 'Static Termux binary has dynamic dependencies: %s (%s)\n' "$name" "$binary" >&2

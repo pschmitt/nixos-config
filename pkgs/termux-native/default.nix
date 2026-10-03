@@ -128,7 +128,8 @@ let
         bash ${../../android/termux-native/export-home-packages.sh} \
           ${termuxNativePackageManifest} \
           "$out" \
-          ${toolchain}/llvm-readelf
+          ${toolchain}/llvm-readelf \
+          ${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24
         printf '%s\n' ${lib.escapeShellArgs homeManagerProfile.config.termux.packages} > "$out/base-packages.txt"
         for file in ${pkgs.lib.escapeShellArgs homeManagerProfile.config.termux.homeFiles}; do
           mkdir -p "$out/home/$(dirname "$file")"

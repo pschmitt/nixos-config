@@ -14,7 +14,7 @@ native_shell_check() {
   (( $+_comps[git] )) || return 1
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in bat eza fd rg vivid zoxide nixpp
+  for command in atuin bat eza fd rg vivid zoxide nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -22,6 +22,7 @@ native_shell_check() {
       return 1
     fi
   done
+  atuin --version >/dev/null || return
   bat --version >/dev/null || return
   eza --version >/dev/null || return
   fd --version >/dev/null || return

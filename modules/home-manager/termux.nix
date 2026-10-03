@@ -6,13 +6,8 @@
 }:
 {
   imports = [
-    ../../home-manager/cli/bat.nix
-    ../../home-manager/cli/eza.nix
-    ../../home-manager/cli/fd.nix
+    ../../home-manager/cli/core.nix
     ../../home-manager/cli/nvim/termux.nix
-    ../../home-manager/cli/ripgrep.nix
-    ../../home-manager/cli/tmux
-    ../../home-manager/cli/zsh
     ../domains.nix
   ];
 

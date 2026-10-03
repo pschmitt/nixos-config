@@ -128,11 +128,23 @@ Closing and relaunching the app did not trigger Zinit plugin fetches.
 An earlier prototype run on 2026-10-03 used a builder-local Termux `.deb`
 directory to install `zoxide` through Termux APT. That builder-path
 integration has been removed. The current profile keeps Termux system packages
-under APT and exports selected Android/Bionic Home Manager packages as native
-binaries: `bat`, `fd`, `ripgrep`, and `zoxide`, plus the Android `nixpp`
-client. The interactive `fzf` dependency remains an APT package. The Android
-cross toolchain used for these outputs runs on the trusted Nix builder, and
-nixpp transfers only the resulting reference-free profile bundle.
+under APT where they need Termux's patched runtime, and exports supported
+Home Manager packages as Android/Bionic binaries. Rust cross builds currently
+provide `bat`, `eza`, `fd`, `ripgrep`, `vivid`, and `zoxide`; host-Go builds
+provide `direnv`, `eget`, `fzf`, and the `nixpp` client. Atuin is imported from
+a pinned Termux package artifact with its OpenSSL runtime libraries. The shared
+`home-manager/cli/eget.nix` module selects the normal Nixpkgs package on Linux
+and the Android binary in the Termux profile. Exported files are checked for
+Android ELF format and Nix store references. The Android cross toolchain runs
+on the trusted Nix builder; nixpp transfers the resulting reference-free
+profile bundle.
+
+Nixpkgs exposes Android cross packages for more programs than this list, but
+that does not mean their Android dependency graph builds. In the pinned
+Nixpkgs revision, cross-building Neovim and Atuin currently fails in dependency
+builds (`attr` calls missing Bionic `IFTODT`; OpenSSL fails on Bionic socket
+types). Neovim remains a Termux APT package; Atuin uses the Termux package
+artifact in the bundle instead.
 
 ## First-stage bootstrap
 

@@ -11,12 +11,14 @@ bundle for generated configuration, shell plugins, and custom binaries that
 aren't already practical to install from Termux.
 
 The package and profile are part of the repository's root flake, so they share
-its pinned Nixpkgs and Home Manager inputs. The Termux profile imports the same
-`home-manager/cli/zsh` modules as regular hosts. Those modules keep their normal
-Nix package behavior on Linux; in Termux mode they render the same settings but
-call the Termux-provided commands at shell startup. The profile supplies the
-Termux identity and package selection, while the exported HM module handles
-Termux-specific package and file export rules.
+its pinned Nixpkgs and Home Manager inputs. The regular CLI profile and Termux
+both import `home-manager/cli/core.nix`, which composes their shared bat, eGet,
+eza, fd, ripgrep, tmux, and Zsh modules. Those modules keep their normal Nix
+package behavior on Linux; in Termux mode they render the same settings and
+select Termux packages or exported Android binaries. Neovim uses the regular
+host module on Linux and a portable Termux module on Android. The Termux
+profile supplies the Termux identity and package selection, while the exported
+HM module handles Termux-specific package and file export rules.
 
 ## Use the profile
 
@@ -50,14 +52,15 @@ profile uses it for nixpp. Mark such derivations with
 `passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; };`.
 The exporter preserves declared package files under the generation, creates
 command launchers, and checks that each executable is AArch64 ELF with an
-Android linker (or is static). Unsupported `home.packages` entries fail the
-build with guidance to use `termux.packages` for Termux APT packages or add an
-Android/Bionic export contract. Home Manager's own support packages are
-handled separately. The final generation rejects Nix store references. Linux
-executables cannot run in native Termux. `termux.homeFiles` is an export
-allowlist: only those generated files enter the archive. Keep private dotfiles
-out of this public bundle; add a path to the allowlist only when you intend that
-file to ship.
+Android linker (or is static), and only needs Android API 24 system libraries
+or libraries included in that package's `lib` or `lib64` export. Unsupported
+`home.packages` entries fail the build with guidance to use `termux.packages`
+for Termux APT packages or add an Android/Bionic export contract. Home
+Manager's own support packages are handled separately. The final generation
+rejects Nix store references. Linux executables cannot run in native Termux.
+`termux.homeFiles` is an export allowlist: only those generated files enter the
+archive. Keep private dotfiles out of this public bundle; add a path to the
+allowlist only when you intend that file to ship.
 
 The complete Termux Home Manager module is
 `modules/home-manager/termux.nix`, exported as
@@ -332,15 +335,17 @@ The profile splits packages by their runtime owner: entries in
 `termux.packages` are installed by Termux APT, while Home Manager packages
 with a `termuxNative` export declaration are built for Android/Bionic and
 copied into the generated profile. It reuses the regular CLI modules for
-`bat`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal Nixpkgs
-packages. Termux gets Android/Bionic builds of `bat`, `fd`, `ripgrep`, and
-`zoxide` from the pinned Nixpkgs Android cross package set. Termux APT supplies
-core/patched packages and the interactive tools that are not yet available as
-native exports. The bundle builds `fzf` and `direnv` with the host Go compiler
-targeting Android/Bionic, and builds the Rust tools with the Android cross set.
-The Go toolchain is patched to use Termux's `/etc` files so those binaries do
-not refer to the Nix store. Each exported executable is checked for AArch64
-ELF, an Android linker (or static linkage), and no Nix store references. The
+`bat`, `eget`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal
+Nixpkgs packages. Termux gets Android/Bionic Rust builds of `bat`, `eza`, `fd`,
+`ripgrep`, `vivid`, and `zoxide`; `direnv`, `eget`, and `fzf` are built with
+the host Go compiler targeting Android/Bionic. Termux APT supplies core and
+patched packages such as Neovim, tmux, and Zsh. Atuin is imported as a pinned
+Termux package artifact with its OpenSSL runtime libraries included in the
+bundle, removing Atuin from the Termux APT install list. Nixpkgs' direct Atuin
+cross build still fails in OpenSSL on Bionic. The Go toolchain is patched to
+use Termux's `/etc` files so those binaries do not refer to the Nix store. Each
+exported executable is checked for AArch64 ELF, an Android linker (or static
+linkage), and no Nix store references. The
 profile also shares portable Neovim options from the regular Home Manager tree.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
@@ -397,6 +402,16 @@ The same bundle keeps `fzf` in the APT manifest and removes `zoxide` from it.
 The shared portable Neovim options were loaded by Termux's APT Neovim in
 headless mode and checked on-device.
 
+The shared CLI module `home-manager/cli/eget.nix` was then imported by the
+Termux profile. Its Android Go build was added to the bundle on rofl-13, and
+the generated `eget` launcher ran on the Zenfone's Termux app, reporting
+`eget version v1.3.4`. The test used the exported launcher and package payload
+without installing `eget` through APT. A direct Nixpkgs Android cross-build of
+Neovim failed through the `attr` dependency because Bionic headers lack
+`IFTODT`; a direct Atuin build failed in OpenSSL on Bionic socket types. Both
+were still Termux APT packages at that stage. Neovim remains an APT package;
+Atuin was later moved into the bundle below.
+
 An earlier bundle was built on rofl-13 with Nixpkgs' Android cross packages for
 `ripgrep`, `fd`, and `bat`. Rust cross builds needed special handling to skip
 emulator-based checks and target post-fixup commands, and the generation
@@ -405,3 +420,18 @@ tools, the profile uses Termux APT for packages that are difficult to build
 or relocate, and retains Nix-built binaries for these four utilities. The
 earlier generation digest was
 `4b882492cc22e96a252e0efc4b82c1fef5599d522340e386b5eed4c4d118633a`.
+
+Atuin 18.23.0 was moved from `termux.packages` into the native Home Manager
+bundle. The Nix package imports Atuin and OpenSSL 3.6.5 from the official
+Termux repository using pinned SHA-256 hashes, and exports the OpenSSL runtime
+libraries beside Atuin. The Termux package builder on rofl-13 also built Atuin
+from its upstream recipe in 5m53s. Activation checks the Atuin launcher and
+runs `atuin --version` in the on-device shell smoke test. The current bundle
+(`3344efc17ac1064a95c15cbb37e764b588808cf68a760a0e667059c82fe382b7`) was
+installed from the interactive Termux app on the Zenfone 10; the generation
+smoke test passed and `atuin --version` reported `18.23.0 (NO_GIT)`.
+
+A direct Nixpkgs Android cross-build of tmux also failed in its Android
+dependency graph before producing the package. For now, tmux and Neovim remain
+Termux APT packages; the shared Home Manager modules still generate their
+configuration and keep their Linux package selection unchanged.

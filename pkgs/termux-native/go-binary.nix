@@ -13,7 +13,7 @@ buildGoModule {
 
   env.CGO_ENABLED = "0";
   tags = [ "timetzdata" ];
-  ldflags = package.ldflags or [ ];
+  ldflags = lib.filter (flag: !lib.hasPrefix "-buildid=" flag) (package.ldflags or [ ]);
 
   preBuild = ''
     export GOOS=android

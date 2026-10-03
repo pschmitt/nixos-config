@@ -1,19 +1,13 @@
 { pkgs, ... }:
 {
   imports = [
-    ./bat.nix
-    ./eza.nix
-    ./fd.nix
+    ./core.nix
     ./nvim
-    ./ripgrep.nix
-    ./tmux
-    ./zsh
   ];
 
   home.packages = with pkgs; [
     atuin
     direnv
-    eget
     emoji-fzf
     fzf
     linkding-cli
