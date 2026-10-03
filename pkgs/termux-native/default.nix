@@ -24,6 +24,7 @@ let
   profile = import ../../android/termux-native/profile.nix { inherit pkgs inputs; };
   homeManagerProfile = inputs.home-manager.lib.homeManagerConfiguration {
     inherit pkgs;
+    extraSpecialArgs = { inherit inputs; };
     modules = [ ../../modules/home-manager/termux.nix ];
   };
   termuxNativePackages = builtins.filter (

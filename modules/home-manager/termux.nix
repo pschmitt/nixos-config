@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -47,7 +48,7 @@
         );
       };
 
-      home.packages = [ (pkgs.callPackage ../../pkgs/nixpp-termux { }) ];
+      home.packages = [ (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; }) ];
 
       termux.packages = [
         "bash"

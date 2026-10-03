@@ -1,51 +1,62 @@
 {
   lib,
-  buildGoModule,
+  inputs,
+  pkgs,
 }:
-
-buildGoModule {
+let
+  system = pkgs.stdenv.hostPlatform.system;
+  fenix = inputs.fenix.packages.${system};
+  rustToolchain = fenix.combine [
+    fenix.minimal.cargo
+    fenix.minimal.rustc
+    fenix.targets.aarch64-linux-android.latest.rust-std
+  ];
+  rustPlatform = pkgs.makeRustPlatform {
+    cargo = rustToolchain;
+    rustc = rustToolchain;
+  };
+  androidPkgs = import inputs.nixpkgs {
+    inherit system;
+    config = {
+      allowUnfree = true;
+      android_sdk.accept_license = true;
+    };
+  };
+  android = androidPkgs.androidenv.composeAndroidPackages {
+    includeNDK = true;
+    ndkVersions = [ "27.2.12479018" ];
+    platformVersions = [ ];
+    buildToolsVersions = [ ];
+    includeEmulator = false;
+  };
+  ndkRoot = "${android.ndk-bundle}/libexec/android-sdk/ndk-bundle";
+  ndkBin = "${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/bin";
+in
+rustPlatform.buildRustPackage {
   pname = "nixpp-termux";
-  version = "0.1.0";
+  version = "0.2.0";
 
   src = lib.cleanSource ./../../android/nixpp;
-  vendorHash = null;
-
+  cargoLock.lockFile = ./../../android/nixpp/Cargo.lock;
+  doCheck = false;
   env = {
-    CGO_ENABLED = "0";
-    GOTOOLCHAIN = "local";
-    GOWORK = "off";
+    CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER = "${ndkBin}/aarch64-linux-android24-clang";
   };
-
-  ldflags = [
-    "-s"
-    "-w"
-  ];
-
-  # buildGoModule derives GOOS/GOARCH from the Nix platform (Linux/amd64 here).
-  # Override them only while building; its default check phase then runs tests
-  # natively on the Linux builder.
-  preBuild = ''
-    export GOOS=android
-    export GOARCH=arm64
+  buildPhase = ''
+    runHook preBuild
+    cargo build --locked --offline --release --target aarch64-linux-android
+    runHook postBuild
   '';
-
-  postBuild = ''
-    unset GOOS GOARCH
-  '';
-
   installPhase = ''
     runHook preInstall
-
-    install -Dm0755 "$GOPATH/bin/android_arm64/nixpp" "$out/bin/nixpp"
-
+    install -Dm0755 target/aarch64-linux-android/release/nixpp "$out/bin/nixpp"
     runHook postInstall
   '';
 
   allowedReferences = [ ];
 
-  # Explicit export contract consumed by the Termux bundle builder. The
-  # executable is statically linked for GOOS=android and has no Nix runtime
-  # closure. Other packages may declare additional files under their output.
+  # The target is Android/Bionic. Rust's standard library is supplied by the
+  # cross platform toolchain; the RustCrypto dependencies are statically linked.
   passthru.termuxNative = {
     files = [ "bin/nixpp" ];
     binaries = [ "bin/nixpp" ];

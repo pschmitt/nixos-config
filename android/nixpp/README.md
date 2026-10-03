@@ -24,21 +24,24 @@ does not interpret Home Manager options or run Home Manager activation.
 
 ## Build
 
-The `nixpp-termux` package cross-compiles a Go AArch64 Android executable. It
+The `nixpp-termux` package cross-compiles the Rust CLI for AArch64 Android. It
 uses Bionic through Android's `/system/bin/linker64` and has no Nix store
-references. Build and test it on a Nix host, then exercise the binary on an
-actual Termux device before relying on it:
+references. Fenix supplies the Rust Android standard library, while the NDK
+provides the target linker. Cargo dependencies and versions are pinned in
+`Cargo.lock`. Run the native unit suite on a Nix host, then build and exercise
+the Android binary on a Termux device:
 
 ```sh
-CGO_ENABLED=0 go test ./...
+cargo test --locked --manifest-path android/nixpp/Cargo.toml
 nix build '.#nixpp-termux'
 file result-nixpp-termux/bin/nixpp
 readelf -l -d result-nixpp-termux/bin/nixpp
 ```
 
-The `fetch` command delegates HTTPS, DNS, and basic authentication to Termux's `curl`.
-It uses the existing `xz` command for default Nix cache compression and Go's
-standard gzip reader for gzip caches. The phone does not need Go or Nix.
+The `fetch` command delegates HTTPS, DNS, and basic authentication to Termux's
+`curl`; Rust verifies Nix cache signatures and hashes before extracting the
+NAR. Termux's `gzip` and `xz` commands decompress those supported cache formats.
+The phone does not need Rust, Cargo, or Nix.
 
 ## Build and switch from Termux
 
@@ -131,7 +134,8 @@ integration has been removed. The current profile keeps Termux system packages
 under APT where they need Termux's patched runtime, and exports supported
 Home Manager packages as Android/Bionic binaries. Rust cross builds currently
 provide `bat`, `eza`, `fd`, `ripgrep`, `vivid`, and `zoxide`; host-Go builds
-provide `direnv`, `eget`, `fzf`, and the `nixpp` client. Atuin and tmux are
+provide `direnv`, `eget`, and `fzf`. The Rust `nixpp` client is cross-built
+for Android/Bionic. Atuin and tmux are
 imported from pinned Termux package artifacts with their runtime libraries,
 removing them from the APT install set. Neovim remains a Termux APT package.
 The shared `home-manager/cli/eget.nix` module selects the normal Nixpkgs
