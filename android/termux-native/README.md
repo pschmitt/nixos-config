@@ -53,7 +53,9 @@ profile uses it for nixpp. Mark such derivations with
 The exporter preserves declared package files under the generation, creates
 command launchers, and checks that each executable is AArch64 ELF with an
 Android linker (or is static), and only needs Android API 24 system libraries
-or libraries included in that package's `lib` or `lib64` export. Unsupported
+or libraries included in that package's `lib` or `lib64` export. It also
+installs checked shell scripts using Termux's `sh`, provided they contain no
+Nix store paths. Unsupported
 `home.packages` entries fail the build with guidance to use `termux.packages`
 for Termux APT packages or add an Android/Bionic export contract. Home
 Manager's own support packages are handled separately. The final generation
@@ -76,9 +78,9 @@ nix build '.#termux-native-bundle'
 sha256sum result/environment.tar.gz
 ```
 
-The bundle currently cross-builds `zip`, `zipcloak`, `zipnote`, and `zipsplit`
-for Android/Bionic and exports them as native commands. Termux does not need
-APT's `zip` package for this profile. Keep packages that need Termux-specific
+The bundle currently cross-builds Zip and Gzip utilities for Android/Bionic
+and exports them as native commands. Termux does not need APT's `zip`, `unzip`,
+or `gzip` packages for this profile. Keep packages that need Termux-specific
 patches or dependency integration in the official
 [Termux package recipes](https://github.com/termux/termux-packages); the Nix
 bundle does not copy or install `.deb` files.
@@ -190,9 +192,11 @@ all package data paths and dynamic dependencies adapted, not just its binaries.
 
 The host must initially have a compatible Termux application and bootstrap,
 network access, trusted release verification material, and the extraction tools.
-For this prototype the base is `bash`, `coreutils`, `tar`, `gzip`, and `zsh`;
-production also needs `curl`, CA certificates, and a signature verifier such as
-`minisign`. Use `pkg install` for missing base packages. Android permissions,
+For this prototype the base is `bash`, `coreutils`, `tar`, and `zsh`. The first
+archive extraction uses Android's `/system/bin/gzip` through GNU tar; the
+installed generation then provides its own native Gzip commands. Production
+also needs `curl`, CA certificates, and a signature verifier such as `minisign`.
+Use `pkg install` for missing base packages. Android permissions,
 Termux:API/Termux:Boot companion apps, storage access, and battery policy remain
 host concerns. App signing/distribution must be compatible with companion apps.
 
@@ -439,6 +443,14 @@ smoke test passed and `atuin --version` reported `18.23.0 (NO_GIT)`.
 A force-stop followed by launching Termux from its app icon returned to the
 managed prompt in about five seconds; the generated shell smoke test then
 exited 0 without plugin-fetch output.
+
+On 2026-10-04, the bundle added Nix-built Android/Bionic Zip, Unzip, and Gzip
+commands to the generation and removed their APT packages from the manifest.
+On the Zenfone, `zip` created an archive accepted by APT's `unzip`; native
+`unzip -t`, `zipgrep`, `gzip`, `zgrep`, `gunzip -t`, and `command -v unzip`
+passed from the active generation. The full 43 MiB `environment.tar.gz` was
+also transferred to the device and listed successfully with Android's system
+`tar -tzf`, using `/system/bin/gzip` before Termux's generation was available.
 
 A direct Nixpkgs Android cross-build of tmux failed in its Android dependency
 graph before producing the package, so the profile now imports tmux and its

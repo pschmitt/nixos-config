@@ -21,9 +21,11 @@ if ! jq -e '
     (.path | type == "string" and startswith("/nix/store/")) and
     (.files | type == "array" and length > 0) and
     (.binaries | type == "array" and length > 0) and
+    (.scripts | type == "array") and
     all(.files[]; type == "string") and
     all(.binaries[]; type == "string" and startswith("bin/")) and
-    (.files as $files | all(.binaries[]; . as $binary | $files | index($binary) != null))
+    all(.scripts[]; type == "string" and startswith("bin/")) and
+    (.files as $files | all((.binaries + .scripts)[]; . as $command | $files | index($command) != null))
   )
 ' "$manifest" >/dev/null
 then
@@ -133,4 +135,33 @@ do
     cp -- "$output/libexec/termux-native-launcher" "$launcher"
     chmod 0755 "$launcher"
   done < <(jq -r '.binaries[]' <<<"$package")
+
+  while IFS= read -r script
+  do
+    source_file="$source_root/$script"
+    command=${script##*/}
+    launcher="$output/bin/$command"
+    if [[ ! -f "$source_file" || ! -x "$source_file" ]]
+    then
+      printf 'Termux-native script is missing or not executable: %s (%s)\n' "$name" "$script" >&2
+      exit 1
+    fi
+    if [[ "$(head -n 1 "$source_file")" != '#!/data/data/com.termux/files/usr/bin/sh' ]]
+    then
+      printf 'Termux-native script must use the Termux sh interpreter: %s (%s)\n' "$name" "$script" >&2
+      exit 1
+    fi
+    if grep -qF /nix/store "$source_file"
+    then
+      printf 'Termux-native script contains a Nix store path: %s (%s)\n' "$name" "$script" >&2
+      exit 1
+    fi
+    if [[ -e "$launcher" ]]
+    then
+      printf 'Termux-native command collision: %s\n' "$command" >&2
+      exit 1
+    fi
+    cp -- "$source_file" "$launcher"
+    chmod 0755 "$launcher"
+  done < <(jq -r '.scripts[]' <<<"$package")
 done < <(jq -c '.[]' "$manifest")

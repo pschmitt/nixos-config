@@ -64,6 +64,7 @@ let
               files
               binaries
               ;
+            scripts = package.passthru.termuxNative.scripts or [ ];
           }) termuxNativePackages
         )
       );

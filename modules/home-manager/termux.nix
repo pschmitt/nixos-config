@@ -10,6 +10,15 @@ let
     llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
   };
+  termuxUnzip = pkgs.callPackage ../../pkgs/termux-native/unzip.nix {
+    bzip2 = pkgs.pkgsCross.aarch64-android-prebuilt.bzip2;
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
+  };
+  termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
+  };
 in
 {
   imports = [
@@ -56,6 +65,8 @@ in
       home.packages = [
         (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; })
         termuxZip
+        termuxUnzip
+        termuxGzip
       ];
 
       termux.packages = [
@@ -64,7 +75,6 @@ in
         "curl"
         "git"
         "grep"
-        "gzip"
         "jq"
         "libngtcp2"
         "openssh"
@@ -72,7 +82,6 @@ in
         "sed"
         "tar"
         "util-linux"
-        "unzip"
         "zsh"
       ];
 
