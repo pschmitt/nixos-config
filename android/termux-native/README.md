@@ -430,6 +430,9 @@ runs `atuin --version` in the on-device shell smoke test. The current bundle
 (`3344efc17ac1064a95c15cbb37e764b588808cf68a760a0e667059c82fe382b7`) was
 installed from the interactive Termux app on the Zenfone 10; the generation
 smoke test passed and `atuin --version` reported `18.23.0 (NO_GIT)`.
+A force-stop followed by launching Termux from its app icon returned to the
+managed prompt in about five seconds; the generated shell smoke test then
+exited 0 without plugin-fetch output.
 
 A direct Nixpkgs Android cross-build of tmux also failed in its Android
 dependency graph before producing the package. For now, tmux and Neovim remain
