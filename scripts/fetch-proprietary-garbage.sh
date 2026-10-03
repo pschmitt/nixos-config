@@ -84,6 +84,22 @@ fetch_package_source() {
     return 1
   fi
 
+  if [[ "$name" == *.zip ]] && ! unzip -tq "$tmp_file" >/dev/null 2>&1
+  then
+    echo "❌ Downloaded file is not a valid ZIP archive: $name" >&2
+    echo "The server may have returned an authentication page; set BLOBS_BASIC_AUTH and retry." >&2
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
+  if [[ "$name" == *.deb ]] && [[ "$(head -c 7 "$tmp_file")" != '!<arch>' ]]
+  then
+    echo "❌ Downloaded file is not a valid Debian package: $name" >&2
+    echo "The server may have returned an authentication page; set BLOBS_BASIC_AUTH and retry." >&2
+    rm -rf "$tmp_dir"
+    return 1
+  fi
+
   local actual_hash_sri
   actual_hash_sri="$(nix hash file --type sha256 "$tmp_file")"
 
