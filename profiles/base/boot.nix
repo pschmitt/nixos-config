@@ -13,7 +13,7 @@
     # RPi hosts get their downstream kernel from nixos-hardware
     kernelPackages = lib.mkIf (config.hardware.type != "rpi") (lib.mkDefault pkgs.linuxPackages_latest);
     tmp = {
-      useTmpfs = true;
+      cleanOnBoot = lib.mkDefault true;
     };
   };
 }
