@@ -4,6 +4,7 @@
   package,
   binary,
   buildBinary ? binary,
+  targetCC,
   skipPostInstall ? false,
   licenseFile ? null,
 }:
@@ -28,7 +29,8 @@ package.overrideAttrs (old: {
   pname = "${lib.getName package}-termux";
 
   env = (old.env or { }) // {
-    CGO_ENABLED = "0";
+    CGO_ENABLED = "1";
+    CC = targetCC;
     GOOS = "android";
     GOARCH = "arm64";
   };
@@ -38,10 +40,17 @@ package.overrideAttrs (old: {
     targetBintools
   ];
 
+  preBuild = (old.preBuild or "") + ''
+    export CC=${targetCC}
+  '';
+
   doCheck = false;
   doInstallCheck = false;
   dontStrip = true;
   allowedReferences = [ ];
+  ldflags = builtins.map (flag: if flag == "-static" then "-Wl,-z,relro" else flag) (
+    old.ldflags or [ ]
+  );
 
   postInstall = (if skipPostInstall then "" else (old.postInstall or "")) + ''
     install -Dm0755 "$out/bin/android_arm64/${buildBinary}" "$out/bin/${binary}"

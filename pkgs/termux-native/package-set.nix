@@ -47,6 +47,7 @@ androidPkgs.extend (
         licenseFile ? null,
       }:
       pkgs.callPackage ./go-binary.nix {
+        targetCC = target.cc;
         inherit
           package
           binary
