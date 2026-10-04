@@ -156,7 +156,7 @@ There are two useful build approaches:
   files; do not assume cross-compilation makes an output relocatable.
 - Use a Nix-packaged Android NDK directly inside a derivation. This prototype
   uses that approach: Linux build tools produce an AArch64 executable against
-  Bionic for API 24. This makes the compiler target and runtime dependencies
+  Bionic for API 35. This makes the compiler target and runtime dependencies
   explicit. See [the NDK guide](https://developer.android.com/ndk/guides/other_build_systems).
 
 A binary cache can store either output, including an entire assembled
@@ -279,6 +279,14 @@ the finished output; it does not evaluate Home Manager modules.
   begins at API 24; each shared library needs suitable lookup for its own direct
   dependencies. Private platform libraries are restricted by linker namespaces.
   See [Android linker changes](https://android.googlesource.com/platform/bionic/+/master/android-changes-for-ndk-developers.md).
+- **Building Nixpkgs tools:** `native-binary.nix` selects the same package from
+  Nixpkgs' Android cross set, then strips and exports its Android executable.
+  It never repackages the ordinary Linux output: `patchelf` can remove Nix
+  runtime paths, but cannot change glibc ABI into Bionic. For Go programs,
+  `go-binary.nix` reuses the Nixpkgs package derivation and source while building
+  with the host Go compiler for Android, then applies the Termux runtime-path
+  and ELF cleanup. A package appearing in the cross set is not proof that its
+  build works; build and inspect each selected output before exporting it.
 - **Paths and scripts:** Termux's normal prefix is
   `/data/data/com.termux/files/usr`. Forked app IDs and alternate Android users
   can break fixed paths. Avoid `/usr`, `/etc`, `/tmp` and Nix store paths in
