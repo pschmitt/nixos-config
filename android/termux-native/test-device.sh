@@ -45,6 +45,7 @@ main() (
   [[ "$(readlink "$selected")" == "generations/$first" ]]
 
   chmod u+w "$work/tree/bin"
+  chmod u+w "$work/tree/bin/termux-nix-hello"
   rm -- "$work/tree/bin/termux-nix-hello"
   tar -czf "$work/broken.tar.gz" -C "$work/tree" .
   broken=$(sha256sum "$work/broken.tar.gz")

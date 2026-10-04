@@ -160,12 +160,6 @@ if [[ -r "$XDG_CONFIG_HOME/termux-native/host.zsh" ]]
 then
   source "$XDG_CONFIG_HOME/termux-native/host.zsh"
 fi
-# Highlighting must observe all the widgets registered above.
-if zsh::prompt-plugins-enabled && not_in_vt
-then
-  source "$_native_plugins/syntax-highlighting/zsh-syntax-highlighting.zsh"
-  ZSH_HIGHLIGHT_STYLES[comment]='fg=006'
-fi
 unset _native_plugins
 unset _native_yadm_config
 
