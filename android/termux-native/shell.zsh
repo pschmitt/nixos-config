@@ -77,6 +77,17 @@ source "$_native_plugins/vi-quote/vi-quote.zsh"
 # the package-manager-provided commands instead of baking Linux store paths in.
 source "$TERMUX_GENERATION/home/.config/zsh/custom/os/home-manager/system.zsh"
 
+# Initialize tools installed in the Termux prefix. Generate their shell hooks
+# from the binaries active on this device so no Linux store paths enter the
+# exported configuration.
+eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
+eval "$(direnv hook zsh)"
+eval "$(zoxide init zsh --no-cmd)"
+alias z=__zoxide_z
+alias zz=__zoxide_zi
+export LS_COLORS="$(vivid generate one-dark)"
+zstyle ':completion:*:default' list-colors "${(s.:.)LS_COLORS}"
+
 # Refuse first-run daemon acquisition: our Android executable is in the bundle.
 typeset -g GITSTATUS_DAEMON="$TERMUX_GENERATION/bin/gitstatusd"
 typeset -g GITSTATUS_AUTO_INSTALL=0

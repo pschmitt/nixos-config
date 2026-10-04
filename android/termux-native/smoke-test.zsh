@@ -63,6 +63,9 @@ native_shell_check() {
   local result=$VCS_STATUS_RESULT
   gitstatus_stop NATIVE_CHECK
   [[ $result == ok-sync ]]
+  ssh-keygen -q -t ed25519 -N '' -f "$fixture/test-key" || return
+  ssh-to-age -private-key -i "$fixture/test-key" -o "$fixture/age-key" || return
+  [[ -s "$fixture/age-key" && "$(head -n 1 "$fixture/age-key")" == AGE-SECRET-KEY-* ]] || return 1
 }
 
 native_shell_check

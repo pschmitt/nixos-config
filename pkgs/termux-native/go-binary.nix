@@ -1,40 +1,65 @@
 {
   lib,
+  llvm,
   pkgs,
   package,
   binary,
+  licenseFile ? null,
 }:
 let
-  buildGoModule = import ./build-go-module.nix { inherit pkgs; };
+  go = pkgs.go.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace src/net/lookup_unix.go \
+        --replace-fail '${pkgs.iana-etc}/etc/protocols' \
+          '/data/data/com.termux/files/usr/etc/protocols'
+      substituteInPlace src/net/port_unix.go \
+        --replace-fail '${pkgs.iana-etc}/etc/services' \
+          '/data/data/com.termux/files/usr/etc/services'
+      substituteInPlace src/mime/type_unix.go \
+        --replace-fail '${pkgs.mailcap}/etc/mime.types' \
+          '/data/data/com.termux/files/usr/etc/mime.types'
+    '';
+  });
 in
-buildGoModule {
+package.overrideAttrs (old: {
   pname = "${lib.getName package}-termux";
-  inherit (package) version src vendorHash;
 
-  env.CGO_ENABLED = "0";
-  tags = [ "timetzdata" ];
-  ldflags = lib.filter (flag: !lib.hasPrefix "-buildid=" flag) (package.ldflags or [ ]);
+  env = (old.env or { }) // {
+    CGO_ENABLED = "0";
+    GOOS = "android";
+    GOARCH = "arm64";
+  };
 
-  preBuild = ''
-    export GOOS=android
-    export GOARCH=arm64
-  '';
+  nativeBuildInputs = builtins.filter (input: input != package.go) (old.nativeBuildInputs or [ ]) ++ [
+    go
+    llvm
+  ];
 
   doCheck = false;
   doInstallCheck = false;
+  dontStrip = true;
+  allowedReferences = [ ];
 
-  installPhase = ''
-    runHook preInstall
-    install -Dm0755 "$GOPATH/bin/android_arm64/${binary}" "$out/bin/${binary}"
-    runHook postInstall
+  postInstall = (old.postInstall or "") + ''
+    install -Dm0755 "$out/bin/android_arm64/${binary}" "$out/bin/${binary}"
+    rm -rf "$out/bin/android_arm64"
+    ${lib.optionalString (licenseFile != null) ''
+      install -Dm0644 ${lib.escapeShellArg licenseFile} "$out/share/licenses/${binary}"
+    ''}
   '';
 
-  allowedReferences = [ ];
-  passthru.termuxNative = {
-    files = [ "bin/${binary}" ];
-    binaries = [ "bin/${binary}" ];
+  postFixup = (old.postFixup or "") + ''
+    llvm-strip --strip-unneeded "$out/bin/${binary}"
+  '';
+
+  passthru = (old.passthru or { }) // {
+    termuxNative = {
+      files = [ "bin/${binary}" ] ++ lib.optional (licenseFile != null) "share/licenses/${binary}";
+      binaries = [ "bin/${binary}" ];
+    };
   };
-  meta = lib.removeAttrs package.meta [ "outputsToInstall" ] // {
+
+  meta = (old.meta or { }) // {
     mainProgram = binary;
   };
-}
+})

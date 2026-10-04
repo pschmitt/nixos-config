@@ -5,31 +5,78 @@
   pkgs,
   ...
 }:
+let
+  termuxBat = pkgs.callPackage ../../pkgs/termux-native/bat.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.bat;
+  };
+  termuxEza = pkgs.callPackage ../../pkgs/termux-native/eza.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.eza;
+  };
+  termuxFd = pkgs.callPackage ../../pkgs/termux-native/fd.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.fd;
+  };
+  termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
+  };
+  termuxUnzip = pkgs.callPackage ../../pkgs/termux-native/unzip.nix {
+    bzip2 = pkgs.pkgsCross.aarch64-android-prebuilt.bzip2;
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
+  };
+  termuxRipgrep = pkgs.callPackage ../../pkgs/termux-native/ripgrep.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.ripgrep.override { withPCRE2 = false; };
+  };
+  termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
+  };
+  termuxAtuin = pkgs.callPackage ../../pkgs/termux-native/atuin.nix { };
+  termuxVivid = pkgs.callPackage ../../pkgs/termux-native/vivid.nix {
+    llvm = pkgs.llvmPackages.llvm;
+    package = pkgs.pkgsCross.aarch64-android-prebuilt.vivid;
+  };
+  termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
+in
 {
   imports = [
-    ../../home-manager/cli
+    ../../home-manager/cli/nvim/termux.nix
+    ../../home-manager/cli/tmux
     ../domains.nix
   ];
 
-  options.termux.homeFiles = lib.mkOption {
-    type = lib.types.listOf lib.types.str;
-    default = [
-      ".config/zsh/.zprofile"
-      ".config/zsh/.zshenv"
-      ".config/zsh/.zshrc"
-      ".config/zsh/completions/source-me.zsh"
-      ".config/zsh/custom/os/home-manager/system.zsh"
-      ".config/tmux/tmux.conf"
-      ".config/nvim/init.lua"
-      ".config/nvim/after"
-      ".config/nvim/lua"
-      ".config/nvim/snippets"
-      ".config/nvim/stylua.toml"
-    ];
-    description = ''
-      Relative Home Manager output files copied into a Termux generation.
-      This allowlist keeps unrelated home and private dotfiles out of bundles.
-    '';
+  options.termux = {
+    enable = lib.mkEnableOption "Termux-specific Home Manager configuration";
+
+    packages = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Termux APT packages required by the Home Manager profile.";
+    };
+
+    homeFiles = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [
+        ".config/zsh/.zprofile"
+        ".config/zsh/.zshenv"
+        ".config/zsh/.zshrc"
+        ".config/zsh/custom/os/home-manager/system.zsh"
+        ".config/tmux/tmux.conf"
+        ".config/nvim/init.lua"
+        ".config/nvim/after"
+        ".config/nvim/lua"
+        ".config/nvim/snippets"
+        ".config/nvim/stylua.toml"
+      ];
+      description = ''
+        Relative Home Manager output files copied into a Termux generation.
+        This allowlist keeps unrelated home and private dotfiles out of bundles.
+      '';
+    };
   };
 
   # Disable Linux packages for programs supplied by the Termux prefix. Packages
@@ -50,36 +97,33 @@
 
       home.packages = [
         (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; })
-        (pkgs.callPackage ../../pkgs/termux-native/go-binary.nix {
-          inherit pkgs;
-          package = pkgs.ssh-to-age;
-          binary = "ssh-to-age";
-        })
+        termuxBat
+        termuxEza
+        termuxFd
+        termuxRipgrep
+        termuxVivid
+        termuxZip
+        termuxUnzip
+        termuxGzip
+        termuxAtuin
+        termuxSshToAge
       ];
 
       termux.packages = [
         "bash"
-        "bat"
         "coreutils"
         "curl"
         "direnv"
-        "eza"
-        "fd"
-        "fzf"
         "git"
         "grep"
-        "gzip"
         "jq"
         "libngtcp2"
+        "less"
         "openssh"
         "procps"
-        "ripgrep"
         "sed"
         "tar"
         "util-linux"
-        "unzip"
-        "vivid"
-        "zip"
         "zoxide"
         "zsh"
       ];
