@@ -2,7 +2,9 @@ export TERMUX_GENERATION="${TERMUX_GENERATION:-$HOME/.local/share/termux-native/
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export TMPDIR="${TMPDIR:-$PREFIX/tmp}"
 export LD_PRELOAD="${LD_PRELOAD:-$PREFIX/lib/libtermux-exec.so}"
-TERMUX_GENERATION="${TERMUX_GENERATION:A}"
+# Resolve the mutable `current` symlink once, so this shell keeps using the
+# same immutable generation after a later activation switches `current`.
+TERMUX_GENERATION="${TERMUX_GENERATION:P}"
 if [[ ! -d "$TERMUX_GENERATION" ]]; then
   print -u2 -r -- "Termux native generation is unavailable: $TERMUX_GENERATION"
   exit 1

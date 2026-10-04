@@ -411,7 +411,10 @@ through package-local libraries and the Nix Android runtime closure. The profile
 also shares portable Neovim options from the regular Home Manager tree.
 At shell startup, `zshenv` resolves `current` to the immutable generation path,
 so an already-running shell keeps using the generation it started with after a
-later activation.
+later activation. Powerlevel10k's instant prompt is loaded early when present
+and respects the existing prompt-plugin skip flags. User-specific OS plugin
+files remain outside the bundle; plugins that still require Zinit need explicit
+Termux package adapters before they can be enabled in the native shell.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 

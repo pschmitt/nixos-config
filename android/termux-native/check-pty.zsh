@@ -3,6 +3,7 @@ native_check_pty() {
   zmodload zsh/zpty || return
   nonce="${$}-${RANDOM}-${RANDOM}"
   script="
+    stty -echo
     if source \"\$TERMUX_GENERATION/shell/smoke-test.zsh\"; then
       print -r -- 'NATIVE_TEST_DONE:$nonce:0'
       exit 0
@@ -18,10 +19,10 @@ native_check_pty() {
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -ic ${(q)script} || return
   trap 'zpty -d native 2>/dev/null' EXIT
-  zpty -r -m native response "*NATIVE_TEST_DONE:$nonce:[0-9]" || return
+  zpty -r -m native response "*NATIVE_TEST_DONE:$nonce:[01]" || return
   zpty -d native
   print -r -- "$response"
-  [[ $response =~ "NATIVE_TEST_DONE:$nonce:([0-9])" ]] || return 1
+  [[ $response =~ "NATIVE_TEST_DONE:$nonce:([01])" ]] || return 1
   child_status=$match[1]
   (( child_status == 0 ))
 }
@@ -31,6 +32,7 @@ native_check_no_plugins() {
   zmodload zsh/zpty || return
   nonce="${$}-${RANDOM}-${RANDOM}"
   script="
+    stty -echo
     if (( \$+functions[zinit] || \$+aliases[zinit] )); then
       print -r -- 'NO_PLUGINS_CHECK:$nonce:1'
       exit 1
@@ -47,10 +49,10 @@ native_check_no_plugins() {
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -ic ${(q)script} || return
   trap 'zpty -d no-plugins 2>/dev/null' EXIT
-  zpty -r -m no-plugins response "*NO_PLUGINS_CHECK:$nonce:[0-9]" || return
+  zpty -r -m no-plugins response "*NO_PLUGINS_CHECK:$nonce:[01]" || return
   zpty -d no-plugins
   print -r -- "$response"
-  [[ $response =~ "NO_PLUGINS_CHECK:$nonce:([0-9])" ]] || return 1
+  [[ $response =~ "NO_PLUGINS_CHECK:$nonce:([01])" ]] || return 1
   child_status=$match[1]
   (( child_status == 0 ))
 }
