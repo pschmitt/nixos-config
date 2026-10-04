@@ -33,6 +33,13 @@ let
     dontStrip = true;
     postFixup = "";
   });
+  runtimeRoots = [
+    unstripped
+  ]
+  ++ map lib.getLib ((unstripped.buildInputs or [ ]) ++ (unstripped.propagatedBuildInputs or [ ]));
+  runtimeClosure = pkgs.closureInfo {
+    rootPaths = lib.unique runtimeRoots;
+  };
 in
 runCommand "${lib.getName package}-termux"
   {
@@ -42,6 +49,7 @@ runCommand "${lib.getName package}-termux"
       abi = "android-bionic";
       files = [ binary ];
       binaries = [ binary ];
+      runtimeClosure = "${runtimeClosure}/store-paths";
     };
     meta = lib.removeAttrs checkedAndroidPackage.meta [ "outputsToInstall" ] // {
       mainProgram = builtins.baseNameOf binary;

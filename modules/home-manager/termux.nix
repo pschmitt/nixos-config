@@ -31,7 +31,7 @@ let
     llvm = pkgs.llvmPackages.llvm;
     package = pkgs.ripgrep;
     crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.ripgrep.override {
-      withPCRE2 = false;
+      withPCRE2 = true;
     };
   };
   termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {

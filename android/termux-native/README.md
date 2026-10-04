@@ -288,8 +288,14 @@ the finished output; it does not evaluate Home Manager modules.
   compatibility cleanup after compilation, not ABI conversion. For Go programs,
   `go-binary.nix` reuses the Nixpkgs package derivation and source while building
   with the host Go compiler for Android, then applies the Termux runtime-path
-  and ELF cleanup. A package appearing in the cross set is not proof that its
-  build works; build and inspect each selected output before exporting it.
+  and ELF cleanup. For Nixpkgs Android packages, the helper also records the
+  target package's Nix runtime closure and target `buildInputs`. The exporter
+  follows each executable's `DT_NEEDED` entries, copies matching Android
+  libraries, recursively bundles their dependencies, and cleans their ELF
+  metadata. Missing libraries and conflicting same-name candidates fail the
+  build. Scripts, data files, and extra commands still need explicit package
+  metadata. A package appearing in the cross set is not proof that its build
+  works; build and inspect each selected output before exporting it.
 - **Paths and scripts:** Termux's normal prefix is
   `/data/data/com.termux/files/usr`. Forked app IDs and alternate Android users
   can break fixed paths. Avoid `/usr`, `/etc`, `/tmp` and Nix store paths in
@@ -469,6 +475,17 @@ configuration and shell integration remain shared.
 
 An earlier experiment bundled Nix-built Android/Bionic Zip, Unzip, and Gzip
 commands. These tools now come from Termux APT, which also owns their
+dependencies and updates.
+
+On 2026-10-04, Android `ripgrep` was built with PCRE2 enabled. The exporter
+automatically included `libpcre2-8.so` from the Nix Android runtime closure.
+The 33 MiB bundle built on rofl-13, passed shell and Nix lint checks, and
+activated through the Termux app on both the Mi Pad 4 and Zenfone 10. On both
+devices, `rg -P '(?<=a)bc'` matched `abc`, and `rg --version` reported
+`15.2.0`.
+
+The 2026-10-04 Zip, Unzip, and Gzip bundling experiment passed these checks on
+the Zenfone, but the tools have since moved back to Termux APT so APT owns their
 dependencies and updates.
 
 A direct Nixpkgs Android cross-build of tmux failed in its Android dependency

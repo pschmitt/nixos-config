@@ -49,6 +49,7 @@ if ! jq -e '
   all(.[];
     (.name | type == "string" and test("^[A-Za-z0-9._+-]+$")) and
     (.path | type == "string" and startswith("/nix/store/")) and
+    (.runtimeClosure == null or (.runtimeClosure | type == "string" and startswith("/nix/store/"))) and
     (.abi == "android-bionic") and
     (.files | type == "array" and length > 0) and
     (.binaries | type == "array" and length > 0) and
@@ -132,7 +133,9 @@ while IFS= read -r package
 do
   name=$(jq -r '.name' <<<"$package")
   source_root=$(jq -r '.path' <<<"$package")
+  runtime_closure=$(jq -r '.runtimeClosure // empty' <<<"$package")
   package_root="$output/native/$name"
+  declare -A scanned_elf=()
 
   while IFS= read -r file
   do
