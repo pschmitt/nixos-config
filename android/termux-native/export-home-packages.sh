@@ -20,6 +20,7 @@ if ! jq -e '
   all(.[];
     (.name | type == "string" and test("^[A-Za-z0-9._+-]+$")) and
     (.path | type == "string" and startswith("/nix/store/")) and
+    (.abi == "android-bionic") and
     (.files | type == "array" and length > 0) and
     (.binaries | type == "array" and length > 0) and
     (.scripts | type == "array") and

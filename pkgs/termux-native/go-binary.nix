@@ -54,6 +54,7 @@ package.overrideAttrs (old: {
 
   passthru = (old.passthru or { }) // {
     termuxNative = {
+      abi = "android-bionic";
       files = [ "bin/${binary}" ] ++ lib.optional (licenseFile != null) "share/licenses/${binary}";
       binaries = [ "bin/${binary}" ];
     };

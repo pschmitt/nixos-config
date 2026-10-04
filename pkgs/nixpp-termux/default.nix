@@ -58,6 +58,7 @@ rustPlatform.buildRustPackage {
   # The target is Android/Bionic. Rust's standard library is supplied by the
   # cross platform toolchain; the RustCrypto dependencies are statically linked.
   passthru.termuxNative = {
+    abi = "android-bionic";
     files = [ "bin/nixpp" ];
     binaries = [ "bin/nixpp" ];
   };
