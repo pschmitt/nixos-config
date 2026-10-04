@@ -457,8 +457,11 @@ Termux-provided packages and all their dependencies to APT.
 On 2026-10-03, an earlier bundle prototype on the Zenfone 10's Termux app
 installed official Termux packages `bat` 0.26.1, `fd` 10.5.0, `fzf` 0.74.4,
 `grep` 3.12, `procps` 4.0.7, `ripgrep` 15.2.0, `sed` 4.10, `unzip` 6.0,
-`zip` 3.0, and `zoxide` 0.10.0. APT installed and tracked these packages and
-the generation's interactive shell smoke test passed.
+`zip` 3.0, and `zoxide` 0.10.0. Termux APT installed the selected packages;
+`dpkg-query` and each command reported the expected versions. The generation's
+interactive shell smoke test passed. This verifies Termux's package database
+and the Nixpp transport/activation path together; other selected tools still
+come from the configured Termux repositories.
 
 The profile also declares nixpp in `home.packages`; its static Android/Bionic
 executable is copied into each generation. From the Zenfone's Termux app, that

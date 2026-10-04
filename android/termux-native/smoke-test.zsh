@@ -22,6 +22,13 @@ native_shell_check() {
       return 1
     fi
   done
+  if NO_PLUGINS=1 zsh::prompt-plugins-enabled ||
+    NO_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled ||
+    ZINIT_SKIP_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled
+  then
+    print -u2 -- 'A prompt-plugin skip flag did not disable prompt plugins'
+    return 1
+  fi
   (( $+widgets[history-substring-search-up] && $+widgets[edit-command-line] && $+widgets[_atuin_search_widget] )) || return 1
   if [[ ! -r "$TERMUX_GENERATION/home/.config/atuin/config.toml" ]]
   then
@@ -60,6 +67,11 @@ native_shell_check() {
         ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
   then
     print -u2 -- "Missing shared completion registration: ipmi=$+_comps[ipmi] ossh=$+_comps[ossh] revolver=$+_comps[revolver] whatsmy=$+_comps[whatsmy] zunit=$+_comps[zunit]"
+    return 1
+  fi
+  if (( $+commands[kubectl] && $+CUSTOM_COMPS[k] && ! $+_comps[k] ))
+  then
+    print -u2 -- 'A kubectl custom completion was declared but not registered'
     return 1
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
