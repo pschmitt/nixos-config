@@ -60,7 +60,6 @@ let
   termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
     package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
   };
-  termuxVivid = fromNixpkgs { package = pkgs.vivid; };
   termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
   termuxEmojiFzf = pkgs.callPackage ../../pkgs/termux-native/python-application.nix {
     package = pkgs.emoji-fzf;
@@ -98,8 +97,12 @@ in
     ../../home-manager/cli/nvim/termux.nix
     ../../home-manager/cli/tmux
     ../../home-manager/cli/zsh/atuin.nix
+    ../../home-manager/cli/zsh/direnv.nix
+    ../../home-manager/cli/zsh/fzf.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
+    ../../home-manager/cli/zsh/vivid.nix
+    ../../home-manager/cli/zsh/zoxide.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
     ../../home-manager/cli/zsh/config/hashicorp-completions.nix
@@ -155,7 +158,6 @@ in
         termuxEza
         termuxFd
         termuxRipgrep
-        termuxVivid
         termuxZip
         termuxUnzip
         termuxGzip
@@ -169,9 +171,7 @@ in
         "bash"
         "coreutils"
         "curl"
-        "direnv"
         "diff-so-fancy"
-        "fzf"
         "git"
         "grep"
         "jq"
@@ -184,7 +184,6 @@ in
         "sed"
         "tar"
         "util-linux"
-        "zoxide"
         "zsh"
       ];
 

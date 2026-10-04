@@ -469,12 +469,14 @@ a Zinit manager nor command was present, and ran `assh`, `mani`, and `rancher`
 from the active Android/Bionic generation. Both devices reported
 `TERMUX_NATIVE_SMOKE_OK`.
 
-The updated profile, importing `home-manager/cli/zsh`, was activated on the
-Zenfone through the Termux app UID. Termux APT supplied Atuin, direnv, fzf,
-and vivid; the generated Home Manager startup file initialized them at runtime.
-Its interactive smoke test passed, including the Atuin widget, direnv hook,
-zoxide functions, completions, and the NDK-built `gitstatusd`. The active
-generation was `8f857a6c09cea9f3e71a5c89146c761afabf4a429716668f35370c4e47c806d1`.
+The updated profile now imports the shared Atuin, direnv, fzf, vivid, and
+zoxide Home Manager modules. They generate Termux-specific runtime hooks in
+`system.zsh`; Linux continues to use its existing generated hooks. On both the
+Zenfone 10 and Mi Pad 4, the app-driven install and PTY smoke test passed,
+including the Atuin widget, direnv hook, zoxide functions, completions,
+native tools, and the no-Zinit check. A cold app relaunch entered the managed
+Zsh prompt. The active generation was
+`deee8e89b5254466a5b5447c5a1eca729a533473d34a35489a70ef5ad0e0d452`.
 
 On 2026-10-03, the updated root-flake bundle built on rofl-13 with zoxide as an
 Android/Bionic Home Manager package. Its binary has no Nix-store references

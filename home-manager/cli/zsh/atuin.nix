@@ -46,6 +46,9 @@ in
         # bindkey '^[r' _atuin_search_widget
       ''
       + lib.optionalString termuxMode ''
+        # Atuin shares this timestamp between its preexec and precmd hooks.
+        typeset -g __atuin_preexec_time
+        eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
         bindkey '^[r' _atuin_search_widget
       ''
     );

@@ -6,6 +6,10 @@
 }:
 let
   termuxMode = config.termux.enable or false;
+  zoxideInitFile = pkgs.runCommand "zoxide-init" { } ''
+    mkdir -p $out
+    ${pkgs.zoxide}/bin/zoxide init zsh --no-cmd > $out/init.zsh
+  '';
 in
 {
   termux.packages = lib.mkIf termuxMode [ "zoxide" ];
@@ -22,12 +26,7 @@ in
     else
       ''
         # zoxide
-        source ${
-          (pkgs.runCommand "zoxide-init" { } ''
-            mkdir -p $out
-            ${pkgs.zoxide}/bin/zoxide init zsh --no-cmd > $out/init.zsh
-          '')
-        }/init.zsh
+        source ${zoxideInitFile}/init.zsh
         alias z=__zoxide_z
         alias zz=__zoxide_zi
       ''

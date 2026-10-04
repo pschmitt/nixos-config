@@ -6,6 +6,10 @@
 }:
 let
   termuxMode = config.termux.enable or false;
+  direnvInitFile = pkgs.runCommand "direnv-init" { } ''
+    mkdir -p $out
+    ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
+  '';
 in
 {
   termux.packages = lib.mkIf termuxMode [ "direnv" ];
@@ -27,12 +31,7 @@ in
     else
       ''
         # direnv
-        source ${
-          (pkgs.runCommand "direnv-init" { } ''
-            mkdir -p $out
-            ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
-          '')
-        }/init.zsh
+        source ${direnvInitFile}/init.zsh
       ''
   );
 }

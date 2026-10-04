@@ -6,6 +6,10 @@
 }:
 let
   termuxMode = config.termux.enable or false;
+  fzfInitFile = pkgs.runCommand "fzf-init" { } ''
+    mkdir -p $out
+    ${pkgs.fzf}/bin/fzf --zsh > $out/init.zsh
+  '';
 in
 {
   termux.packages = lib.mkIf termuxMode [ "fzf" ];
@@ -20,12 +24,7 @@ in
     else
       ''
         # fzf
-        source ${
-          (pkgs.runCommand "fzf-init" { } ''
-            mkdir -p $out
-            ${pkgs.fzf}/bin/fzf --zsh > $out/init.zsh
-          '')
-        }/init.zsh
+        source ${fzfInitFile}/init.zsh
       ''
   );
 }
