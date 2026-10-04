@@ -98,6 +98,7 @@ in
     ../../home-manager/cli/nvim/termux.nix
     ../../home-manager/cli/tmux
     ../../home-manager/cli/zsh/atuin.nix
+    ../../home-manager/cli/zsh/completions
     ../../home-manager/cli/zsh/direnv.nix
     ../../home-manager/cli/zsh/fzf.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
@@ -126,9 +127,14 @@ in
         ".config/zsh/.zshrc"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
+        ".config/zsh/completions/_ipmi"
         ".config/zsh/completions/_kubectl"
         ".config/zsh/completions/_mani"
+        ".config/zsh/completions/_ossh"
         ".config/zsh/completions/_rbw"
+        ".config/zsh/completions/_revolver"
+        ".config/zsh/completions/_whatsmy"
+        ".config/zsh/completions/_zunit"
         ".local/share/man/man1/mani.1"
         ".config/tmux/tmux.conf"
         ".config/nvim/init.lua"

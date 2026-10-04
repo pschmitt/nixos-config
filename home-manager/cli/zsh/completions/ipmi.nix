@@ -1,5 +1,11 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
+  termuxMode = config.termux.enable or false;
   completion = pkgs.linkFarm "zsh-completion-ipmi" [
     {
       name = "_ipmi";
@@ -29,7 +35,11 @@ let
   ];
 in
 {
-  programs.zsh.initContent = lib.mkOrder 520 ''
-    fpath=(${completion} $fpath)
-  '';
+  xdg.configFile."zsh/completions/_ipmi".source = "${completion}/_ipmi";
+
+  programs.zsh.initContent = lib.mkIf (!termuxMode) (
+    lib.mkOrder 520 ''
+      fpath=(${completion} $fpath)
+    ''
+  );
 }

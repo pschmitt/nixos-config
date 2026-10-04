@@ -23,10 +23,15 @@ native_shell_check() {
     return 1
   fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_revolver" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_rbw" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_whatsmy" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_zunit" ||
         ! -r "$TERMUX_GENERATION/home/.local/share/man/man1/mani.1" ]]
   then
-    print -u2 -- 'Termux generation is missing the mani completion or man page'
+    print -u2 -- 'Termux generation is missing a shared completion or the mani man page'
     return 1
   fi
   local atuin_binding
@@ -36,9 +41,11 @@ native_shell_check() {
     print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
     return 1
   fi
-  if (( ! $+_comps[git] || ! $+_comps[kubectl] || ! $+_comps[mani] || ! $+_comps[rbw] ))
+  if (( ! $+_comps[git] || ! $+_comps[ipmi] || ! $+_comps[kubectl] ||
+        ! $+_comps[mani] || ! $+_comps[ossh] || ! $+_comps[rbw] ||
+        ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
   then
-    print -u2 -- "Missing completion registration: git=$+_comps[git] kubectl=$+_comps[kubectl] mani=$+_comps[mani] rbw=$+_comps[rbw]"
+    print -u2 -- "Missing shared completion registration: ipmi=$+_comps[ipmi] ossh=$+_comps[ossh] revolver=$+_comps[revolver] whatsmy=$+_comps[whatsmy] zunit=$+_comps[zunit]"
     return 1
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1

@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   completion = pkgs.linkFarm "zsh-completion-whatsmy" [
     {
@@ -36,7 +41,11 @@ let
   ];
 in
 {
-  programs.zsh.initContent = lib.mkOrder 520 ''
-    fpath=(${completion} $fpath)
-  '';
+  xdg.configFile."zsh/completions/_whatsmy".source = "${completion}/_whatsmy";
+
+  programs.zsh.initContent = lib.mkIf (!(config.termux.enable or false)) (
+    lib.mkOrder 520 ''
+      fpath=(${completion} $fpath)
+    ''
+  );
 }
