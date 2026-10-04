@@ -703,6 +703,22 @@
               { hardware.type = "installation-media"; }
             ];
           };
+          iso-private-netboot = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            modules = [
+              "${nixpkgs}/nixos/modules/installer/netboot/netboot-minimal.nix"
+              ./modules
+              ./hosts/iso-private/networking.nix
+              ./hosts/iso-private/packages.nix
+              ./hosts/iso-private/quiet-boot.nix
+              ./hosts/iso-private/ssh.nix
+              inputs.nixos-config-private.nixosModules.iso-xmr
+              {
+                hardware.type = "installation-media";
+                system.stateVersion = "26.11";
+              }
+            ];
+          };
 
           # legacy ISO images (no EFI, BIOS only!)
           iso-legacy = nixpkgs.lib.nixosSystem {
