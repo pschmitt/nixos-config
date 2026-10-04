@@ -30,6 +30,7 @@ in
     ../../home-manager/cli/zsh/zoxide.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
+    ../../home-manager/cli/zsh/config/completions.nix
     ../../home-manager/cli/zsh/config/hashicorp-completions.nix
     ../../home-manager/cli/zsh/config/hm.nix
     ../../home-manager/cli/zsh/config/portable.nix

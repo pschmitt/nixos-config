@@ -8,7 +8,9 @@ in
   programs.zsh.initContent = lib.mkMerge [
     (lib.mkOrder 800 ''
       zsh::prompt-plugins-enabled() {
-        [[ -z "''${NO_PLUGINS:-}" && -z "''${NO_PROMPT_PLUGINS:-}" ]]
+        [[ -z "''${NO_PLUGINS:-}" &&
+          -z "''${NO_PROMPT_PLUGINS:-}" &&
+          -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
       }
 
       zsh::source-plugin() {
