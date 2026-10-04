@@ -74,88 +74,6 @@ validate_elf() {
   fi
 }
 
-bundle_has_library() {
-  local dependency=$1 candidate
-
-  for candidate in \
-    "$output"/native/*/lib/"$dependency" \
-    "$output"/native/*/lib64/"$dependency" \
-    "$output/lib/$dependency" \
-    "$output/lib64/$dependency"
-  do
-    if [[ -f "$candidate" ]]
-    then
-      return 0
-    fi
-  done
-  return 1
-}
-
-declare -A bundled_dependencies=()
-
-bundle_dependencies() {
-  local package=$1 relative=$2 elf_file=$3 package_root=$4 runtime_closure=$5
-  local dynamic_section dependency candidate store_path destination key
-
-  dynamic_section=$("$readelf" -d "$elf_file" 2>/dev/null || true)
-  while IFS= read -r dependency
-  do
-    [[ -n "$dependency" ]] || continue
-    if [[ -f "$system_libraries/$dependency" ]]
-    then
-      continue
-    fi
-
-    key="$package_root:$dependency"
-    if [[ -n "${bundled_dependencies[$key]:-}" ]]
-    then
-      continue
-    fi
-    bundled_dependencies[$key]=1
-
-    candidate=''
-    for candidate in "$package_root/lib/$dependency" "$package_root/lib64/$dependency"
-    do
-      if [[ -f "$candidate" ]]
-      then
-        break
-      fi
-    done
-    if [[ ! -f "$candidate" && -f "$runtime_closure" ]]
-    then
-      while IFS= read -r store_path
-      do
-        for candidate in "$store_path/lib/$dependency" "$store_path/lib64/$dependency"
-        do
-          if [[ -f "$candidate" ]]
-          then
-            break 2
-          fi
-        done
-      done < "$runtime_closure"
-    fi
-    if [[ ! -f "$candidate" ]]
-    then
-      printf 'No Android runtime library for %s (%s): %s\n' \
-        "$package" "$relative" "$dependency" >&2
-      return 1
-    fi
-
-    destination="$package_root/lib/$dependency"
-    if [[ "$candidate" != "$package_root/"* ]]
-    then
-      mkdir -p "$(dirname "$destination")"
-      cp -L -- "$candidate" "$destination"
-      normalize_elf "$destination"
-    else
-      destination=$candidate
-    fi
-    validate_elf "$package" "$destination"
-    bundle_dependencies "$package" "lib/$dependency" "$destination" \
-      "$package_root" "$runtime_closure" || return
-  done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
-}
-
 if ! jq -e '
   type == "array" and
   all(.[];
@@ -181,44 +99,67 @@ then
   exit 1
 fi
 
-declare -A checked_elfs=()
+find_runtime_library() {
+  local dependency=$1 runtime_closure=$2 root directory candidate
+  local selected selected_hash candidate_hash
+  local -a candidates=()
 
-check_elf_dependencies() {
-  local package=$1 package_root=$2 elf_file=$3 relative dependency candidate
-  local header program_headers interpreter dynamic_section
+  [[ -n "$runtime_closure" && -f "$runtime_closure" ]] || return 1
 
-  header=$("$readelf" -h "$elf_file" 2>/dev/null) || return 0
-  if [[ -n "${checked_elfs[$elf_file]:-}" ]]
+  while IFS= read -r root
+  do
+    [[ -d "$root" ]] || continue
+    for directory in "$root/lib" "$root/lib64" "$root/usr/lib" "$root/usr/lib64"
+    do
+      [[ -d "$directory" ]] || continue
+      while IFS= read -r -d '' candidate
+      do
+        candidates+=("$candidate")
+      done < <(find -L "$directory" -type f -name "$dependency" -print0)
+    done
+  done < "$runtime_closure"
+
+  if (( ${#candidates[@]} == 0 ))
+  then
+    return 1
+  fi
+
+  selected=${candidates[0]}
+  selected_hash=$(sha256sum "$selected")
+  selected_hash=${selected_hash%% *}
+  for candidate in "${candidates[@]:1}"
+  do
+    candidate_hash=$(sha256sum "$candidate")
+    candidate_hash=${candidate_hash%% *}
+    if [[ "$candidate_hash" != "$selected_hash" ]]
+    then
+      printf 'Ambiguous Android runtime library %s: %s and %s differ.\n' \
+        "$dependency" "$selected" "$candidate" >&2
+      return 2
+    fi
+  done
+
+  printf '%s\n' "$selected"
+}
+
+bundle_dependencies() {
+  local package=$1 binary=$2 file=$3 package_root=$4 runtime_closure=$5
+  local dynamic_section dependency candidate destination
+
+  if [[ -n "${scanned_elf[$file]:-}" ]]
   then
     return 0
   fi
-  checked_elfs[$elf_file]=1
+  scanned_elf[$file]=1
+  dynamic_section=$("$readelf" -d "$file")
 
-  relative=${elf_file#"$package_root/"}
-  if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
-    ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
-  then
-    printf 'Exported ELF is not AArch64 ELF64: %s (%s)\n' "$package" "$relative" >&2
-    return 1
-  fi
-
-  program_headers=$("$readelf" -l "$elf_file") || return
-  interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
-  if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
-  then
-    printf 'Exported ELF requests a non-Android interpreter: %s (%s): %s\n' \
-      "$package" "$relative" "$interpreter" >&2
-    return 1
-  fi
-
-  dynamic_section=$("$readelf" -d "$elf_file" 2>/dev/null || true)
   while IFS= read -r dependency
   do
     [[ -n "$dependency" ]] || continue
     if [[ ! "$dependency" =~ ^[A-Za-z0-9._+-]+$ ]]
     then
       printf 'Invalid shared library name for %s (%s): %s\n' \
-        "$package" "$relative" "$dependency" >&2
+        "$package" "$binary" "$dependency" >&2
       return 1
     fi
     if [[ -f "$system_libraries/$dependency" ]]
@@ -226,22 +167,30 @@ check_elf_dependencies() {
       continue
     fi
 
-    candidate=''
-    for candidate in "$package_root/lib/$dependency" "$package_root/lib64/$dependency"
-    do
-      if [[ -f "$candidate" ]]
-      then
-        check_elf_dependencies "$package" "$package_root" "$candidate" || return
-        candidate='found'
-        break
-      fi
-    done
-    if [[ "$candidate" != found ]]
+    if [[ -f "$package_root/lib/$dependency" ]]
     then
-      printf 'Exported ELF has an unavailable shared library: %s (%s): %s\n' \
-        "$package" "$relative" "$dependency" >&2
+      candidate="$package_root/lib/$dependency"
+    elif [[ -f "$package_root/lib64/$dependency" ]]
+    then
+      candidate="$package_root/lib64/$dependency"
+    elif candidate=$(find_runtime_library "$dependency" "$runtime_closure")
+    then
+      destination="$package_root/lib/$dependency"
+      mkdir -p "$(dirname "$destination")"
+      cp -L -- "$candidate" "$destination"
+      normalize_elf "$destination"
+      candidate=$destination
+    else
+      printf 'Termux binary has an unavailable shared library: %s (%s): %s\n' \
+        "$package" "$binary" "$dependency" >&2
       return 1
     fi
+
+    if ! validate_elf "$package" "$candidate"
+    then
+      return 1
+    fi
+    bundle_dependencies "$package" "$binary" "$candidate" "$package_root" "$runtime_closure"
   done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
 }
 
@@ -251,6 +200,8 @@ do
   source_root=$(jq -r '.path' <<<"$package")
   runtime_closure=$(jq -r '.runtimeClosure // empty' <<<"$package")
   package_root="$output/native/$name"
+  declare -A scanned_elf=()
+
   while IFS= read -r tree
   do
     if [[ ! "$tree" =~ ^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)*$ ]]
@@ -325,11 +276,14 @@ do
     fi
   done < <(jq -r '.files[]' <<<"$package")
 
-  checked_elfs=()
-  while IFS= read -r -d '' shipped_file
+  while IFS= read -r file
   do
-    check_elf_dependencies "$name" "$package_root" "$shipped_file"
-  done < <(find "$package_root" -type f -print0)
+    destination="$package_root/$file"
+    if "$readelf" -h "$destination" >/dev/null 2>&1
+    then
+      bundle_dependencies "$name" "$file" "$destination" "$package_root" "$runtime_closure"
+    fi
+  done < <(jq -r '.files[]' <<<"$package")
 
   while IFS= read -r binary
   do
@@ -344,13 +298,7 @@ do
     dynamic_section=$("$readelf" -d "$bundled_file")
     program_headers=$("$readelf" -l "$bundled_file")
     interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
-    if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
-    then
-      printf 'Termux binary requests a non-Android interpreter: %s (%s): %s\n' \
-        "$name" "$binary" "$interpreter" >&2
-      exit 1
-    fi
-    dynamic_section=$("$readelf" -d "$source_file")
+    bundle_dependencies "$name" "$binary" "$bundled_file" "$package_root" "$runtime_closure"
     if [[ -z "$interpreter" ]] && grep -Eq '\((NEEDED|RUNPATH|RPATH)\)' <<<"$dynamic_section"
     then
       printf 'Static Termux binary has dynamic dependencies: %s (%s)\n' "$name" "$binary" >&2
@@ -414,38 +362,8 @@ done < <(jq -c '.[]' "$manifest")
 
 while IFS= read -r -d '' bundled_file
 do
-  if [[ -L "$bundled_file" ]]
+  if "$readelf" -h "$bundled_file" >/dev/null 2>&1
   then
-    resolved_file=$(realpath -e -- "$bundled_file") || {
-      printf 'Broken symlink in Termux bundle: %s\n' "$bundled_file" >&2
-      exit 1
-    }
-    case "$resolved_file" in
-      "$output"/*) ;;
-      *)
-        printf 'Symlink escapes the Termux bundle: %s -> %s\n' \
-          "$bundled_file" "$resolved_file" >&2
-        exit 1
-        ;;
-    esac
-  else
-    resolved_file=$bundled_file
+    validate_elf 'bundle' "$bundled_file"
   fi
-
-  if "$readelf" -h "$resolved_file" >/dev/null 2>&1
-  then
-    validate_elf 'bundle' "$resolved_file"
-    dynamic_section=$("$readelf" -d "$resolved_file")
-    while IFS= read -r dependency
-    do
-      [[ -n "$dependency" ]] || continue
-      if [[ -f "$system_libraries/$dependency" ]] || bundle_has_library "$dependency"
-      then
-        continue
-      fi
-      printf 'Bundled ELF has an unavailable shared library: %s: %s\n' \
-        "$bundled_file" "$dependency" >&2
-      exit 1
-    done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
-  fi
-done < <(find "$output" \( -type f -o -type l \) -print0)
+done < <(find "$output" -type f -print0)

@@ -23,5 +23,4 @@ in
     TMUX_TMPDIR = lib.mkForce "/data/data/com.termux/files/usr/tmp";
   };
 
-  termux.packages = lib.mkIf termuxMode [ "tmux" ];
 }

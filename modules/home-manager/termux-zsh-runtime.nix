@@ -1,4 +1,8 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
 {
   imports = [
     ../../home-manager/cli/zsh/config/runtime.nix
@@ -10,6 +14,21 @@
 
   programs.zsh.envExtra = lib.mkAfter ''
     fpath=("$ZDOTDIR/completions" $fpath)
+
+    typeset -gA DOMAINS
+    DOMAINS[main]=${lib.escapeShellArg config.domains.main}
+    DOMAINS[netbird]=${lib.escapeShellArg config.domains.netbird}
+    DOMAINS[tailscale]=${lib.escapeShellArg config.domains.tailscale}
+
+    if [[ -z "''${NETWORK_LOCATION:-}" && -r ${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"} ]]
+    then
+      NETWORK_LOCATION="$(<${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"})"
+    fi
+
+    export XDG_DATA_DIRS="$PREFIX/share:''${XDG_DATA_DIRS:-/usr/share}"
+    mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
+    export ZSH_CACHE_DIR=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
+    export ZSH_COMPDUMP=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh/zcompdump-termux"}-''${TERMUX_GENERATION:t}
   '';
 
   programs.zsh.initContent = lib.mkMerge [
@@ -51,7 +70,7 @@
       typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
     '')
     (lib.mkOrder 1540 ''
-      if [[ -o interactive ]]
+      if [[ -o interactive && -z "''${NO_PLUGINS:-}" ]]
       then
         zsh::source-local-plugins
       fi

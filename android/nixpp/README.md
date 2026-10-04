@@ -45,15 +45,6 @@ The phone does not need Rust, Cargo, or Nix.
 
 ## Build and switch from Termux
 
-Use `nixpp status` to see the active generation, a short list of retained
-rollback generations, and the Termux APT requirements for the active profile.
-Use `--all` to show every retained generation:
-
-```sh
-nixpp status
-nixpp status --all
-```
-
 `switch` asks an SSH builder to evaluate and build a flake installable, then
 streams that one output back to the phone. The remote build accepts the
 requested flake's `nixConfig`, allowing its configured binary caches to be
@@ -90,16 +81,6 @@ for rollback through its `activate.sh`.
 `switch` streams the signed NAR over SSH and does not publish it to an HTTP
 cache. Use `fetch` for outputs already published to a standard Nix binary
 cache.
-
-Use `nixpp status` to inspect the active generation, its Termux APT
-requirements, Nix-built outputs, and count of readable generation manifests.
-`nixpp generations` lists IDs whose manifests can be read. Malformed historical
-generations are reported in `nixpp status --json` and do not prevent inspecting
-or using the current generation. Rollback still checks the selected generation
-and its Termux APT requirements. To roll back, run
-`bash "$HOME/.local/share/termux-native/current/activate.sh" rollback ID`
-with the desired ID. Add `--json` to `nixpp status` for scripting. The Zsh
-helper `termux-native-status` delegates to the same status view.
 
 The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on
@@ -154,8 +135,11 @@ under APT where they need Termux's patched runtime, and exports supported
 Home Manager packages as Android/Bionic binaries. Rust cross builds currently
 provide `bat`, `eza`, `fd`, `ripgrep`, `vivid`, and `zoxide`; host-Go builds
 provide `direnv`, `eget`, and `fzf`. The Rust `nixpp` client is cross-built
-for Android/Bionic. Termux APT installs Atuin, tmux, Neovim, and their runtime
-dependencies; the bundle contains no extracted Termux `.deb` files or libraries.
+for Android/Bionic. Atuin and tmux are installed and owned by Termux APT, which
+resolves and updates their dependencies normally, including OpenSSL, ncurses,
+libevent, libandroid-support, libandroid-glob, and utf8proc where required.
+Neovim also remains a Termux APT package. No Termux `.deb` artifacts or
+dependency libraries are extracted into Nix generations.
 The shared `home-manager/cli/eget.nix` module selects the normal Nixpkgs
 package on Linux and the Android binary in the Termux profile. Exported files are checked for
 Android ELF format and Nix store references. The Android cross toolchain runs
@@ -166,7 +150,7 @@ Nixpkgs exposes Android cross packages for more programs than this list, but
 that does not mean their Android dependency graph builds. In the pinned
 Nixpkgs revision, cross-building Neovim and Atuin currently fails in dependency
 builds (`attr` calls missing Bionic `IFTODT`; OpenSSL fails on Bionic socket
-types). Termux APT supplies both.
+types). Both remain Termux APT packages.
 
 ## First-stage bootstrap
 

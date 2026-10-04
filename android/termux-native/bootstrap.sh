@@ -36,34 +36,37 @@ restore_startup() {
     temporary=$(mktemp "$PREFIX/etc/.zshenv.restore.XXXXXXXX") || return
     if ! cp -p "$backup/zshenv" "$temporary" || ! mv -f "$temporary" "$PREFIX/etc/zshenv"
     then
-      command rm -f -- "$temporary"
+      rm -f -- "$temporary"
       return 1
     fi
   elif [[ -e "$backup/zshenv-absent" ]]
   then
-    command rm -f -- "$PREFIX/etc/zshenv" || return
+    rm -f -- "$PREFIX/etc/zshenv" || return
   else
     printf 'The saved startup backup is incomplete: %s\n' "$backup" >&2
     return 1
   fi
 
-  command rm -f -- "$shell_file" || return
+  rm -f -- "$shell_file" || return
   if [[ -f "$backup/shell" ]]
   then
     mkdir -p "${shell_file%/*}" || return
     ln -s "$(<"$backup/shell")" "$shell_file" || return
   fi
 
-  command rm -rf -- "$backup" || return
+  rm -rf -- "$backup" || return
   printf 'Restored the original Termux zsh startup. Managed generations remain in %s/.local/share/termux-native.\n' "$HOME"
 }
 
 cleanup_bootstrap_lock() {
-  rmdir -- "$HOME/.local/share/termux-native/.bootstrap-lock" 2>/dev/null || true
+  local root="$HOME/.local/share/termux-native"
+  rm -f -- "$root/.next"
+  rmdir -- "$root/.lock"
 }
 
 main() {
-  local installer root backup temporary shell_file generation lock
+  local installer root backup temporary shell_file generation archive checksum package
+  local apt_install_needed
 
   case "${1:-}" in
     -h | --help)
@@ -93,15 +96,50 @@ main() {
   root="$HOME/.local/share/termux-native"
   archive=$1
   generation=$2
-  mkdir -p "$root" || return
-  lock="$root/.bootstrap-lock"
-  if ! mkdir "$lock" 2>/dev/null
+  if [[ ! -f "$archive" ]]
   then
-    printf 'Another Termux bootstrap is already running.\n' >&2
+    printf 'Bundle archive does not exist: %s\n' "$archive" >&2
     return 1
   fi
+  mkdir -p "$root/generations" || return
+  mkdir "$root/.lock" || {
+    printf 'Another Termux-native bootstrap or activation is in progress.\n' >&2
+    return 1
+  }
   trap cleanup_bootstrap_lock EXIT
-  bash "$installer" install "$1" "$2" || return
+
+  checksum=$(sha256sum "$archive") || return
+  if [[ "${checksum%% *}" != "$generation" ]]
+  then
+    printf 'Bundle checksum mismatch; no Termux packages were changed.\n' >&2
+    return 1
+  fi
+  if ! tar -tzf "$archive" >/dev/null
+  then
+    printf 'Bundle archive is invalid; no Termux packages were changed.\n' >&2
+    return 1
+  fi
+  # shellcheck disable=SC2157 # The Nix derivation substitutes this template value.
+  if [[ -n '@termuxPackages@' ]]
+  then
+    apt_install_needed=0
+    # shellcheck disable=SC2043 # Nix substitutes a package list here.
+    for package in @termuxPackages@
+    do
+      if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null)" != 'install ok installed' ]]
+      then
+        apt_install_needed=1
+        break
+      fi
+    done
+    if (( apt_install_needed ))
+    then
+      pkg install -y @termuxPackages@ || return
+    else
+      printf 'All requested Termux APT packages are already installed.\n'
+    fi
+  fi
+  TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" install "$archive" "$generation" || return
   backup="$root/bootstrap-backup"
   shell_file="$HOME/.termux/shell"
   mkdir -p "$backup" || return

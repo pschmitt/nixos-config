@@ -28,33 +28,6 @@ let
     // extraSpecialArgs;
     modules = [ ../../modules/home-manager/termux.nix ] ++ modules;
   };
-  homeFileSources = map (
-    path:
-    let
-      absolutePath = "${homeManagerProfile.config.home.homeDirectory}/${lib.removePrefix "/" path}";
-      sourcePath =
-        if builtins.hasAttr path homeManagerProfile.config.home.file then
-          path
-        else if builtins.hasAttr absolutePath homeManagerProfile.config.home.file then
-          absolutePath
-        else
-          throw "Termux home file is not configured: ${path}";
-    in
-    {
-      inherit path;
-      source = builtins.path {
-        path = toString homeManagerProfile.config.home.file.${sourcePath}.source;
-        name = builtins.baseNameOf path;
-      };
-    }
-  ) homeManagerProfile.config.termux.homeFiles;
-  homeFiles = pkgs.runCommand "termux-native-home-files" { } ''
-    mkdir -p "$out/home"
-    ${lib.concatMapStringsSep "\n" (file: ''
-      mkdir -p "$out/home/$(dirname ${lib.escapeShellArg file.path})"
-      cp -RL ${lib.escapeShellArg (toString file.source)} "$out/home/${file.path}"
-    '') homeFileSources}
-  '';
   termuxNativePackages = builtins.filter (
     package: builtins.isAttrs ((package.passthru or { }).termuxNative or null)
   ) homeManagerProfile.config.home.packages;
@@ -168,8 +141,19 @@ let
           "$out/bin/gitstatusd"
         chmod u-w "$out/bin/gitstatusd"
         cp ${manifest} "$out/manifest.json"
+        bash ${../../android/termux-native/export-home-packages.sh} \
+          ${termuxNativePackageManifest} \
+          "$out" \
+          ${target.readelf} \
+          ${target.sysrootLib} \
+          ${pkgs.patchelf}/bin/patchelf \
+          ${elfCleaner}/bin/termux-elf-cleaner \
+          ${toString apiLevel}
         printf '%s\n' ${lib.escapeShellArgs termuxPackages} > "$out/base-packages.txt"
-        cp -RL ${homeFiles}/home/. "$out/home/"
+        for file in ${pkgs.lib.escapeShellArgs homeManagerProfile.config.termux.homeFiles}; do
+          mkdir -p "$out/home/$(dirname "$file")"
+          cp -RL "${homeManagerProfile.config."home-files"}/$file" "$out/home/$file"
+        done
         sed '/^export LOCALE_ARCHIVE_2_27=/d' \
           ${homeManagerProfile.config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh \
           > "$out/etc/profile.d/hm-session-vars.sh"
@@ -193,14 +177,6 @@ let
         mkdir -p "$out/share/licenses"
         cp ${pkgs.gitstatus.src}/LICENSE "$out/share/licenses/gitstatus"
         cp ${pkgs.gitstatus.romkatv_libgit2.src}/COPYING "$out/share/licenses/libgit2"
-        bash ${../../android/termux-native/export-home-packages.sh} \
-          ${termuxNativePackageManifest} \
-          "$out" \
-          ${target.readelf} \
-          ${target.sysrootLib} \
-          ${pkgs.patchelf}/bin/patchelf \
-          ${elfCleaner}/bin/termux-elf-cleaner \
-          ${toString apiLevel}
       '';
   bundle = pkgs.runCommand "termux-native-bundle" { allowedReferences = [ ]; } ''
     mkdir -p "$out"

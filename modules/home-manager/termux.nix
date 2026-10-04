@@ -113,6 +113,8 @@ in
         "libngtcp2"
         "less"
         "openssh"
+        "atuin"
+        "tmux"
         "procps"
         "python"
         "shellcheck"

@@ -1,15 +1,60 @@
 native_check_pty() {
-  local generation=$1 response
+  local generation=$1 response nonce script child_status
   zmodload zsh/zpty || return
-  zpty native "$PREFIX/bin/zsh" -fi || return
+  nonce="${$}-${RANDOM}-${RANDOM}"
+  script="
+    if source \"\$TERMUX_GENERATION/shell/smoke-test.zsh\"; then
+      print -r -- 'NATIVE_TEST_DONE:$nonce:0'
+      exit 0
+    else
+      print -r -- 'NATIVE_TEST_DONE:$nonce:1'
+      exit 1
+    fi
+  "
+  zpty native env \
+    "TERMUX_GENERATION=$generation" \
+    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
+    "PATH=$PREFIX/bin:$generation/bin:$PATH" \
+    "$PREFIX/bin/zsh" -ic ${(q)script} || return
   trap 'zpty -d native 2>/dev/null' EXIT
-  zpty -w native "export TERMUX_GENERATION=${(q)generation}; export ZDOTDIR=\$TERMUX_GENERATION/home/.config/zsh; source \$ZDOTDIR/.zshenv && source \$ZDOTDIR/.zshrc && source \$TERMUX_GENERATION/shell/smoke-test.zsh; print -r -- NATIVE_TEST_DONE:\$?; exit" || return
-  zpty -r native response '*NATIVE_TEST_DONE:[0-9]*' || return
+  zpty -r -m native response "*NATIVE_TEST_DONE:$nonce:[0-9]" || return
   zpty -d native
   print -r -- "$response"
-  [[ $response == *NATIVE_TEST_DONE:0* ]]
+  [[ $response =~ "NATIVE_TEST_DONE:$nonce:([0-9])" ]] || return 1
+  child_status=$match[1]
+  (( child_status == 0 ))
 }
 
-native_check_pty "$@"
+native_check_no_plugins() {
+  local generation=$1 response nonce child_status script
+  zmodload zsh/zpty || return
+  nonce="${$}-${RANDOM}-${RANDOM}"
+  script="
+    if (( \$+functions[zinit] || \$+aliases[zinit] )); then
+      print -r -- 'NO_PLUGINS_CHECK:$nonce:1'
+      exit 1
+    else
+      print -r -- 'NO_PLUGINS_CHECK:$nonce:0'
+      exit 0
+    fi
+  "
+  zpty no-plugins env \
+    "NO_PLUGINS=1" \
+    "TERMUX_GENERATION=$generation" \
+    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
+    "PATH=$PREFIX/bin:$generation/bin:$PATH" \
+    "$PREFIX/bin/zsh" -ic ${(q)script} || return
+  trap 'zpty -d no-plugins 2>/dev/null' EXIT
+  zpty -r -m no-plugins response "*NO_PLUGINS_CHECK:$nonce:[0-9]" || return
+  zpty -d no-plugins
+  print -r -- "$response"
+  [[ $response =~ "NO_PLUGINS_CHECK:$nonce:([0-9])" ]] || return 1
+  child_status=$match[1]
+  (( child_status == 0 ))
+}
+
+native_check_pty "$@" && native_check_no_plugins "$@"
 
 # vim: set ft=zsh et ts=2 sw=2 :

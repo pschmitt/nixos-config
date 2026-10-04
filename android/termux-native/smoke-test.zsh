@@ -58,7 +58,7 @@ native_shell_check() {
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in atuin bat eza fd rg rbw ssh-to-age tmux vivid nixpp
+  for command in bat eza fd rg rbw ssh-to-age vivid nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -74,7 +74,7 @@ native_shell_check() {
       return 1
     fi
   done
-  for command in kubectl shellcheck zoxide
+  for command in atuin kubectl shellcheck tmux zoxide
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then

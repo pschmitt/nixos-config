@@ -4,13 +4,13 @@
   package,
   binary,
   buildBinary ? binary,
-  targetCC,
+  target,
   skipPostInstall ? false,
   licenseFile ? null,
 }:
 let
-  targetBintools = pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.bintools;
-  targetObjcopy = "${targetBintools}/bin/${pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.targetPrefix}objcopy";
+  targetCC = target.cc;
+  targetBintools = target.pkgs.stdenv.cc.bintools;
   go = pkgs.go.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/net/lookup_unix.go \
@@ -61,7 +61,7 @@ package.overrideAttrs (old: {
   '';
 
   postFixup = (old.postFixup or "") + ''
-    ${targetObjcopy} --strip-unneeded "$out/bin/${binary}"
+    ${target.objcopy} --strip-unneeded "$out/bin/${binary}"
   '';
 
   passthru = (old.passthru or { }) // {
