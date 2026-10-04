@@ -6,92 +6,8 @@
   ...
 }:
 let
-  fromNixpkgs =
-    {
-      package,
-      crossPackage ? null,
-      skipPostInstall ? false,
-      skipPostFixup ? false,
-    }:
-    pkgs.callPackage ../../pkgs/termux-native/from-nixpkgs.nix {
-      inherit
-        package
-        crossPackage
-        skipPostInstall
-        skipPostFixup
-        ;
-    };
-  termuxBat = fromNixpkgs {
-    package = pkgs.bat;
-    # Nix wraps bat with a store-specific less path; Termux supplies less on PATH.
-    skipPostFixup = true;
-  };
-  termuxEza = fromNixpkgs {
-    package = pkgs.eza;
-    # The export contract ships eza's executable, not its Pandoc-built docs.
-    skipPostInstall = true;
-    crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.eza.overrideAttrs (old: {
-      outputs = [ "out" ];
-      meta = (old.meta or { }) // {
-        outputsToInstall = [ "out" ];
-      };
-      nativeBuildInputs = builtins.filter (input: lib.getName input != "pandoc-cli") (
-        old.nativeBuildInputs or [ ]
-      );
-    });
-  };
-  termuxFd = fromNixpkgs { package = pkgs.fd; };
-  termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
-  };
-  termuxUnzip = pkgs.callPackage ../../pkgs/termux-native/unzip.nix {
-    bzip2 = pkgs.pkgsCross.aarch64-android-prebuilt.bzip2;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
-  };
-  termuxRipgrep = fromNixpkgs {
-    package = pkgs.ripgrep;
-    # The upstream hook executes the Android binary under QEMU to generate
-    # docs/completions; QEMU has no Android system linker on the build host.
-    skipPostFixup = true;
-    crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.ripgrep.override {
-      withPCRE2 = true;
-    };
-  };
-  termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
-  };
-  termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
-  termuxRbw = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux;
-  termuxEmojiFzf = pkgs.callPackage ../../pkgs/termux-native/python-application.nix {
-    package = pkgs.emoji-fzf;
-    python = pkgs.python3;
-  };
-  goNative =
-    {
-      package,
-      binary,
-      buildBinary ? binary,
-      skipPostInstall ? false,
-    }:
-    pkgs.callPackage ../../pkgs/termux-native/go-binary.nix {
-      inherit
-        package
-        binary
-        buildBinary
-        skipPostInstall
-        ;
-    };
-  termuxAssh = goNative {
-    package = pkgs.assh;
-    binary = "assh";
-    skipPostInstall = true;
-  };
-  termuxRancher = goNative {
-    package = pkgs.rancher;
-    binary = "rancher";
-    buildBinary = "cli";
-    skipPostInstall = true;
-  };
+  pkgsTermux =
+    (import ../../pkgs/termux-native/package-set.nix { inherit inputs pkgs; }).termuxPackages;
 in
 {
   imports = [
@@ -158,19 +74,19 @@ in
       };
 
       home.packages = [
-        (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; })
-        termuxBat
-        termuxEza
-        termuxFd
-        termuxRbw
-        termuxRipgrep
-        termuxZip
-        termuxUnzip
-        termuxGzip
-        termuxSshToAge
-        termuxEmojiFzf
-        termuxAssh
-        termuxRancher
+        pkgsTermux.nixpp
+        pkgsTermux.bat
+        pkgsTermux.eza
+        pkgsTermux.fd
+        pkgsTermux.rbw
+        pkgsTermux.ripgrep
+        pkgsTermux.zip
+        pkgsTermux.unzip
+        pkgsTermux.gzip
+        pkgsTermux.ssh-to-age
+        pkgsTermux.emoji-fzf
+        pkgsTermux.assh
+        pkgsTermux.rancher
       ];
 
       termux.packages = [
@@ -211,7 +127,7 @@ in
       };
 
       xdg.configFile = {
-        "zsh/completions/_rbw".source = "${termuxRbw}/share/zsh/site-functions/_rbw";
+        "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
         "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
           # These generated configs live in the active profile generation. Keep
           # the user's real $HOME/.config tree, including yadm-managed files, intact.
