@@ -282,7 +282,10 @@ the finished output; it does not evaluate Home Manager modules.
 - **Building Nixpkgs tools:** `native-binary.nix` selects the same package from
   Nixpkgs' Android cross set, then strips and exports its Android executable.
   It never repackages the ordinary Linux output: `patchelf` can remove Nix
-  runtime paths, but cannot change glibc ABI into Bionic. For Go programs,
+  runtime paths, but cannot change glibc ABI into Bionic. The export stage also
+  runs Termux's `termux-elf-cleaner` at the selected Android API level to remove
+  ELF metadata unsupported by Bionic and repair TLS segment alignment. This is
+  compatibility cleanup after compilation, not ABI conversion. For Go programs,
   `go-binary.nix` reuses the Nixpkgs package derivation and source while building
   with the host Go compiler for Android, then applies the Termux runtime-path
   and ELF cleanup. A package appearing in the cross set is not proof that its

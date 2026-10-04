@@ -2,18 +2,47 @@
 
 set -euo pipefail
 
-manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
-output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
-readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
-system_libraries=${4:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
-patchelf=${5:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
+manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+system_libraries=${4:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+patchelf=${5:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+elf_cleaner=${6:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
+api_level=${7:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF ELF-CLEANER API-LEVEL}
 launcher="$output/libexec/termux-native-launcher"
 
-if [[ ! -x "$launcher" || ! -x "$readelf" || ! -d "$system_libraries" || ! -x "$patchelf" ]]
+if [[ ! -x "$launcher" || ! -x "$readelf" || ! -d "$system_libraries" || ! -x "$patchelf" || ! -x "$elf_cleaner" ]]
 then
-  printf 'Termux launcher or Android system library directory is missing.\n' >&2
+  printf 'Termux launcher, ELF tools, or Android system library directory is missing.\n' >&2
   exit 1
 fi
+
+if [[ ! "$api_level" =~ ^[0-9]+$ ]]
+then
+  printf 'Invalid Android API level: %s\n' "$api_level" >&2
+  exit 1
+fi
+
+normalize_elf() {
+  local file=$1
+  local dynamic_section
+
+  if ! "$readelf" -h "$file" >/dev/null 2>&1
+  then
+    return 0
+  fi
+
+  chmod u+w "$file"
+  dynamic_section=$("$readelf" -d "$file")
+  if grep -Eq '\((RUNPATH|RPATH)\)' <<<"$dynamic_section"
+  then
+    # Nix build paths cannot exist on-device; the launcher supplies bundled
+    # package libraries through LD_LIBRARY_PATH.
+    "$patchelf" --remove-rpath "$file"
+  fi
+  "$elf_cleaner" --api-level "$api_level" "$file"
+  chmod u-w "$file"
+}
 
 if ! jq -e '
   type == "array" and
@@ -132,6 +161,7 @@ do
     destination="$package_root/$file"
     mkdir -p "$(dirname "$destination")"
     cp -L -- "$source_file" "$destination"
+    normalize_elf "$destination"
   done < <(jq -r '.files[]' <<<"$package")
 
   checked_elfs=()
@@ -150,15 +180,6 @@ do
     fi
     bundled_file="$package_root/$binary"
     dynamic_section=$("$readelf" -d "$bundled_file")
-    if grep -Eq '\((RUNPATH|RPATH)\)' <<<"$dynamic_section"
-    then
-      # Nix build paths cannot exist on-device. The launcher supplies the
-      # package-local library directory through LD_LIBRARY_PATH instead.
-      chmod u+w "$bundled_file"
-      "$patchelf" --remove-rpath "$bundled_file"
-      chmod u-w "$bundled_file"
-    fi
-
     header=$("$readelf" -h "$bundled_file")
     if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
       ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
