@@ -23,6 +23,7 @@ then
   # The regular startup's traps.zsh reloads Zinit, so the native shell keeps
   # the Home Manager runtime hooks and reuses only these portable snippets.
   [[ -r "$ZDOTDIR/custom/os/termux/zboot.zsh" ]] && source "$ZDOTDIR/custom/os/termux/zboot.zsh"
+  [[ -r "$ZDOTDIR/custom/os/termux/aliases.zsh" ]] && source "$ZDOTDIR/custom/os/termux/aliases.zsh"
   if [[ -n "$HOST" && -r "$ZDOTDIR/custom/hosts/$HOST/zprompt" ]]
   then
     source "$ZDOTDIR/custom/hosts/$HOST/zprompt"
