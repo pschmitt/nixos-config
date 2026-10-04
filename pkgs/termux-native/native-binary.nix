@@ -1,22 +1,33 @@
 {
   lib,
   llvm,
+  pkgs,
   package,
   binary,
+  crossPackage ? null,
   runCommand,
 }:
 let
-  targetPlatform = package.stdenv.hostPlatform or { };
+  packageName = lib.getName package;
+  androidPackages = pkgs.pkgsCross.aarch64-android-prebuilt;
   androidPackage =
-    if targetPlatform.isAndroid or false then
+    if crossPackage != null then
+      crossPackage
+    else if (package.stdenv.hostPlatform.isAndroid or false) then
       package
+    else if builtins.hasAttr packageName androidPackages then
+      androidPackages.${packageName}
     else
       throw ''
-        ${lib.getName package} is not built for Android/Bionic.
-        Select its Android cross package or rebuild it with an Android toolchain;
-        removing RPATHs cannot convert a glibc binary into a Termux binary.
+        ${packageName} has no package in Nixpkgs' aarch64-android-prebuilt cross set.
+        Add an explicit Android build or use a Termux package instead.
       '';
-  unstripped = androidPackage.overrideAttrs (_: {
+  checkedAndroidPackage =
+    if androidPackage.stdenv.hostPlatform.isAndroid or false then
+      androidPackage
+    else
+      throw "${packageName} cross package is not built for Android/Bionic";
+  unstripped = checkedAndroidPackage.overrideAttrs (_: {
     doCheck = false;
     doInstallCheck = false;
     dontStrip = true;
@@ -32,7 +43,7 @@ runCommand "${lib.getName package}-termux"
       files = [ binary ];
       binaries = [ binary ];
     };
-    meta = lib.removeAttrs package.meta [ "outputsToInstall" ] // {
+    meta = lib.removeAttrs checkedAndroidPackage.meta [ "outputsToInstall" ] // {
       mainProgram = builtins.baseNameOf binary;
     };
   }

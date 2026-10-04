@@ -54,6 +54,14 @@ option for packages that
 produce Android/Bionic binaries without Nix store references. The standalone
 profile uses it for nixpp. Mark such derivations with
 `passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; };`.
+For ordinary Nixpkgs tools, the shared native-binary wrapper starts from the
+regular package (for example `pkgs.bat`) and selects the same attribute from
+`pkgs.pkgsCross.aarch64-android-prebuilt`. This builds the Nixpkgs recipe for
+Android/Bionic instead of trying to repair a Linux/glibc executable. A
+package-specific `crossPackage` can override that selection when Android needs
+different build options. The wrapper strips the executable, then the exporter
+removes Nix RPATHs and rejects missing runtime libraries; it does not attempt
+to guess or convert incompatible dependencies.
 The exporter preserves declared package files under the generation, creates
 command launchers, and checks every exported ELF for AArch64 and the Android
 linker (when it has one). It recursively checks dependencies of both commands
