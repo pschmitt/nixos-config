@@ -59,6 +59,10 @@ declare -A GPX_TYPE_MAP=(
 DEDUP_WINDOW_SECONDS="${ENDURAIN_DEDUP_WINDOW_SECONDS:-300}"
 # How many of the most recent activities to compare against.
 DEDUP_LOOKBACK=20
+# A path event can arrive just before Syncthing finishes presenting a file.
+# Retry empty scans briefly before declaring that there is nothing to ingest.
+EMPTY_SCAN_RETRIES=3
+EMPTY_SCAN_RETRY_SECONDS=10
 
 # Filled by collect_todo, consumed by main.
 todo=()
@@ -386,6 +390,7 @@ main() {
   local duplicate=0
   local rejected=0
   local transient=0
+  local attempt
 
   : "${ENDURAIN_USERNAME:?}"
   : "${ENDURAIN_PASSWORD:?}"
@@ -393,6 +398,13 @@ main() {
   mkdir -p "$state_dir"
 
   collect_todo "$watch_dir" "$state_dir"
+  for (( attempt = 1; attempt <= EMPTY_SCAN_RETRIES && ${#todo[@]} == 0; attempt++ ))
+  do
+    log "endurain-ingest: empty scan; retrying in ${EMPTY_SCAN_RETRY_SECONDS}s ($attempt/$EMPTY_SCAN_RETRIES)"
+    sleep "$EMPTY_SCAN_RETRY_SECONDS"
+    collect_todo "$watch_dir" "$state_dir"
+  done
+
   if [[ "${#todo[@]}" -eq 0 ]]
   then
     log 'endurain-ingest: nothing new'
