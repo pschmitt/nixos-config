@@ -6,9 +6,15 @@ native_shell_check() {
     [[ "$HISTFILE" == "$XDG_STATE_HOME/zsh/zhistory" ]] || return 1
     [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" == 1 ]] || return 1
   fi
+  if (( $+functions[zinit] || $+aliases[zinit] ))
+  then
+    print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
+    return 1
+  fi
   local required
   for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
-    autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status
+    autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
+    prompt::simple prompt::reset
   do
     if (( ! $+functions[$required] ))
     then
@@ -41,6 +47,9 @@ native_shell_check() {
   eza --version >/dev/null || return
   fd --version >/dev/null || return
   rg --version >/dev/null || return
+  assh --help >/dev/null 2>&1 || return
+  mani --help >/dev/null 2>&1 || return
+  rancher --help >/dev/null 2>&1 || return
   vivid generate one-dark >/dev/null || return
   tmux -V >/dev/null || return
   zoxide --version >/dev/null || return
@@ -68,6 +77,12 @@ native_shell_check() {
   [[ -s "$fixture/age-key" && "$(head -n 1 "$fixture/age-key")" == AGE-SECRET-KEY-* ]] || return 1
 }
 
-native_shell_check
+if native_shell_check
+then
+  print -r -- 'TERMUX_NATIVE_SMOKE_OK: shared Zsh features, prompt controls, native tools, and no Zinit'
+else
+  print -u2 -r -- 'TERMUX_NATIVE_SMOKE_FAILED'
+  return 1
+fi
 
 # vim: set ft=zsh et ts=2 sw=2 :
