@@ -12,5 +12,4 @@ in
   home.packages = lib.optionals (!termuxMode) [
     inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw
   ];
-  termux.packages = lib.mkIf termuxMode [ "rbw" ];
 }

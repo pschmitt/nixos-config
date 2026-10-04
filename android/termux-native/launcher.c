@@ -130,6 +130,24 @@ int main(int argc, char **argv) {
   }
   free(library_path);
 
+  const char *ssl_cert_file = getenv("SSL_CERT_FILE");
+  if (ssl_cert_file == NULL || ssl_cert_file[0] == '\0') {
+    const char *prefix = getenv("PREFIX");
+    if (prefix == NULL || prefix[0] == '\0') {
+      prefix = "/data/data/com.termux/files/usr";
+    }
+    char certificate_bundle[PATH_MAX];
+    written = snprintf(certificate_bundle, sizeof(certificate_bundle),
+                       "%s/etc/tls/cert.pem", prefix);
+    if (written < 0 || (size_t)written >= sizeof(certificate_bundle)) {
+      return fail("certificate bundle path is too long");
+    }
+    if (access(certificate_bundle, R_OK) == 0 &&
+        setenv("SSL_CERT_FILE", certificate_bundle, 0) != 0) {
+      return fail("could not set certificate bundle path");
+    }
+  }
+
   argv[0] = (char *)command;
   syscall(SYS_execve, target, argv, environ);
   fprintf(stderr, "termux-native launcher: exec %s: %s\n", target,

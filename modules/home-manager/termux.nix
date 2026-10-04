@@ -61,6 +61,7 @@ let
     package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
   };
   termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
+  termuxRbw = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux;
   termuxEmojiFzf = pkgs.callPackage ../../pkgs/termux-native/python-application.nix {
     package = pkgs.emoji-fzf;
     python = pkgs.python3;
@@ -127,6 +128,7 @@ in
         ".config/atuin/config.toml"
         ".config/zsh/completions/_kubectl"
         ".config/zsh/completions/_mani"
+        ".config/zsh/completions/_rbw"
         ".local/share/man/man1/mani.1"
         ".config/tmux/tmux.conf"
         ".config/nvim/init.lua"
@@ -160,6 +162,7 @@ in
         termuxBat
         termuxEza
         termuxFd
+        termuxRbw
         termuxRipgrep
         termuxZip
         termuxUnzip
@@ -172,6 +175,7 @@ in
 
       termux.packages = [
         "bash"
+        "ca-certificates"
         "coreutils"
         "curl"
         "diff-so-fancy"
@@ -194,10 +198,20 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
-        initContent = builtins.readFile ../../android/termux-native/shell.zsh;
+        initContent = lib.mkAfter (
+          builtins.readFile ../../android/termux-native/shell.zsh
+          + ''
+            if [[ -o interactive && -n "''${_comps+x}" ]]
+            then
+              autoload -Uz _rbw
+              compdef _rbw rbw
+            fi
+          ''
+        );
       };
 
       xdg.configFile = {
+        "zsh/completions/_rbw".source = "${termuxRbw}/share/zsh/site-functions/_rbw";
         "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
           # These generated configs live in the active profile generation. Keep
           # the user's real $HOME/.config tree, including yadm-managed files, intact.
