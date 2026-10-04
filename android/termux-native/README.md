@@ -342,32 +342,30 @@ Static linking can simplify selected leaf tools, but static glibc/musl is not
 equivalent to Bionic compatibility. It also loses dynamic `LD_PRELOAD` interception
 and does not fix paths, DNS assumptions, permissions, or process execution rules.
 
-## zinit: remove installation from prompt startup
+## Zsh plugin manager boundary
 
-The local dotfiles' `zzinit` helper adds a `wait` ice unless `NO_TURBO_MODE` is
-set. It also contains `atclone` helpers that install npm and Go packages. The
-Home Manager service already runs `@zinit-scheduler burst` in an interactive
-login shell. These observations support the reported prompt dependency, but
-are not a full audit of the Ansible bootstrap.
+The Termux Home Manager profile does not install or start Zinit. It imports the
+shared Zsh settings and plugin modules, which source pinned plugin files from
+the Nix generation. The regular yadm/Zinit startup remains in use on non-Termux
+hosts. Termux startup also reuses selected yadm host and local configuration;
+Nix overrides the prompt controls and update hooks that would otherwise call
+the Zinit command. The compatibility function named `zinit::source-local-plugins`
+only forwards to the Nix-managed local plugin loader; it does not load or
+control Zinit.
 
-As an interim fix, run provisioning with `NO_TURBO_MODE=1` and explicitly drain
-the scheduler, then verify expected plugin files and commands before marking
-the bootstrap complete. Direct `zinit wait` declarations and custom hooks still
-need inspection. Shell exit status alone is insufficient if a plugin masks an
-installation failure. Do not treat an unpinned scheduler-internal command as a
-long-term provisioning API.
+This removes the Zinit scheduler and plugin-download phase from Termux shell
+startup. It does not mean every yadm plugin has been migrated: the Termux
+`termux.sh` helpers and the ShellCheck/proot wrapper are still outside the
+Home Manager plugin set. Review those before claiming full behavior parity.
+Private yadm files remain runtime inputs from the phone's home directory and
+are not copied into the public bundle.
 
-For the new design, pin plugin sources in Nix, copy their source files into the
-bundle, and source them directly or load them locally with a pinned zinit.
-Translate network/build hooks into build steps. Keep completion dumps and any
-writable zinit state outside generations. Generate completion caches synchronously
-with the target zsh if required. Deferred *loading* can remain optional; deferred
-*acquisition* must not be required for readiness. The
-[zinit documentation](https://github.com/zdharma-continuum/zinit) describes its
-deferred-loading and hook facilities.
-
-The prototype demonstrates this boundary with vendored plugins; it does not
-yet migrate your full plugin set or run zinit itself.
+The package adapter rebuilds a Nixpkgs recipe for Android/Bionic when
+`pkgsCross.aarch64-android-prebuilt` provides a working derivation. It does not
+repair an already-built glibc executable. `patchelf` only removes Nix-specific
+ELF metadata as part of export; it cannot convert glibc ABI assumptions to
+Bionic. Pure Go tools use a separate Android cross-build adapter. Both routes
+need a real build and Termux runtime check for each selected package.
 
 ## Existing foundations
 
@@ -460,6 +458,13 @@ The bootstrap's `restore` and reinstall paths passed, and the generation's
 Zsh PTY smoke check passed. The APT package set explicitly updates
 `libngtcp2`; `curl --version` succeeded after installation with HTTP/3 support.
 No archive was uploaded or published.
+
+On 2026-10-04, the latest native generation was cold-launched in the official
+Termux app on both the Zenfone 10 and Mi Pad 4. The interactive Zsh smoke test
+exercised shared widgets and prompt simple/reset controls, verified that neither
+a Zinit manager nor command was present, and ran `assh`, `mani`, and `rancher`
+from the active Android/Bionic generation. Both devices reported
+`TERMUX_NATIVE_SMOKE_OK`.
 
 The updated profile, importing `home-manager/cli/zsh`, was activated on the
 Zenfone through the Termux app UID. Termux APT supplied Atuin, direnv, fzf,
