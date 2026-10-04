@@ -41,9 +41,9 @@ native_shell_check() {
     print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
     return 1
   fi
-  if (( ! $+_comps[git] || ! $+_comps[mani] ))
+  if (( ! $+_comps[git] || ! $+_comps[kubectl] || ! $+_comps[mani] ))
   then
-    print -u2 -- "Missing completion registration: git=$+_comps[git] mani=$+_comps[mani]"
+    print -u2 -- "Missing completion registration: git=$+_comps[git] kubectl=$+_comps[kubectl] mani=$+_comps[mani]"
     return 1
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
