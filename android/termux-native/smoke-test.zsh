@@ -22,6 +22,13 @@ native_shell_check() {
     print -u2 -- 'Termux generation is missing the Atuin settings file'
     return 1
   fi
+  if [[ ! -d "$TERMUX_GENERATION/home/.config/jq/colors" ||
+        ! -d "$TERMUX_GENERATION/home/.config/jq/plib" ||
+        ${aliases[fd]:-} != 'noglob fd' ]]
+  then
+    print -u2 -- 'Termux generation is missing shared jq configuration or the fd alias'
+    return 1
+  fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
