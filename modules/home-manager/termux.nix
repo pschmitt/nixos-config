@@ -56,6 +56,7 @@ in
         ".config/zsh/completions/_revolver"
         ".config/zsh/completions/_whatsmy"
         ".config/zsh/completions/_zunit"
+        ".config/zsh/completions/_extract"
         ".config/zsh/completions/source-me.zsh"
         ".config/jq/colors"
         ".config/jq/plib"
@@ -142,6 +143,7 @@ in
 
       xdg.configFile = {
         "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
+        "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
         "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
           # These generated configs live in the active profile generation. Keep
           # the user's real $HOME/.config tree, including yadm-managed files, intact.

@@ -32,10 +32,21 @@
   '';
 
   programs.zsh.initContent = lib.mkMerge [
+    (lib.mkOrder 500 ''
+      if [[ -o interactive &&
+            -z "''${NO_PLUGINS:-}" &&
+            -z "''${NO_PROMPT_PLUGINS:-}" &&
+            -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" &&
+            -r "$XDG_CONFIG_HOME/zsh/p10k-instant-prompt.zsh" ]]
+      then
+        source "$XDG_CONFIG_HOME/zsh/p10k-instant-prompt.zsh"
+      fi
+    '')
     (lib.mkOrder 805 ''
       zsh::prompt-plugins-enabled() {
         [[ -z "''${NO_PLUGINS:-}" &&
-          -z "''${NO_PROMPT_PLUGINS:-}" ]]
+          -z "''${NO_PROMPT_PLUGINS:-}" &&
+          -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
       }
     '')
     (lib.mkOrder 810 ''
