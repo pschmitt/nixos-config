@@ -9,18 +9,28 @@ alias -g DN='&> /dev/null' L='| less' J='| jq'
 # the package-manager-provided commands instead of baking Linux store paths in.
 source "$TERMUX_GENERATION/home/.config/zsh/custom/os/home-manager/system.zsh"
 
-# Reuse yadm's Termux host bootstrap as a runtime input. The yadm files remain
-# in the user's home and are never copied into the public bundle.
+# Reuse selected yadm startup files as runtime inputs. Keep them in the user's
+# home; none of these private files are copied into the public bundle.
 typeset -g _native_profile_zdotdir="$ZDOTDIR"
 typeset -g _native_yadm_zdotdir="$XDG_CONFIG_HOME/zsh"
-if [[ -r "$_native_yadm_zdotdir/custom/os/termux/zboot.zsh" ]]
+if [[ -d "$_native_yadm_zdotdir" ]]
 then
   ZDOTDIR="$_native_yadm_zdotdir"
-  source "$ZDOTDIR/custom/os/termux/zboot.zsh"
+
+  [[ -r "$ZDOTDIR/aliases.zsh" ]] && source "$ZDOTDIR/aliases.zsh"
+  [[ -r "$ZDOTDIR/lib.zsh" ]] && source "$ZDOTDIR/lib.zsh"
+
+  # The regular startup's traps.zsh reloads Zinit, so the native shell keeps
+  # the Home Manager runtime hooks and reuses only these portable snippets.
+  [[ -r "$ZDOTDIR/custom/os/termux/zboot.zsh" ]] && source "$ZDOTDIR/custom/os/termux/zboot.zsh"
   if [[ -n "$HOST" && -r "$ZDOTDIR/custom/hosts/$HOST/zprompt" ]]
   then
     source "$ZDOTDIR/custom/hosts/$HOST/zprompt"
   fi
+
+  [[ -r "$ZDOTDIR/osc.zsh" ]] && source "$ZDOTDIR/osc.zsh"
+  [[ -r "$ZDOTDIR/interactive.zsh" ]] && source "$ZDOTDIR/interactive.zsh"
+  [[ -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"
 fi
 ZDOTDIR="$_native_profile_zdotdir"
 unset _native_profile_zdotdir _native_yadm_zdotdir
