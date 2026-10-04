@@ -99,6 +99,7 @@ in
     ../../home-manager/cli/tmux
     ../../home-manager/cli/zsh/atuin.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
+    ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
     ../../home-manager/cli/zsh/config/hashicorp-completions.nix

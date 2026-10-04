@@ -50,6 +50,14 @@ native_shell_check() {
       return 1
     fi
   done
+  for command in adb-self android-doze notify-send termux-display termux-keepalive termux-lockscreen xsel
+  do
+    if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
+    then
+      print -u2 -- "Termux helper command is not active: $command"
+      return 1
+    fi
+  done
   if [[ ${commands[zoxide]:-} != "$PREFIX/bin/zoxide" ]]
   then
     print -u2 -- "Termux APT command is not active: zoxide"

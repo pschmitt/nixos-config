@@ -338,11 +338,12 @@ only forwards to the Nix-managed local plugin loader; it does not load or
 control Zinit.
 
 This removes the Zinit scheduler and plugin-download phase from Termux shell
-startup. It does not mean every yadm plugin has been migrated: the Termux
-`termux.sh` helpers are still outside the Home Manager plugin set. ShellCheck
-is provided by Termux APT; the old upstream x86_64/proot wrapper is not loaded
-by the native shell. Review the remaining helpers before claiming full
-behavior parity.
+startup. The public `termux.sh` helper commands are exported as Termux shell
+scripts by the Home Manager profile, without relying on Zinit's symlink-based
+installer. ShellCheck is provided by Termux APT; the old upstream x86_64/proot
+wrapper is not loaded by the native shell. The `zinit::source-local-plugins`
+forwarder is still a compatibility seam for private yadm files and remains to
+be removed when those call sites have native replacements.
 Private yadm files remain runtime inputs from the phone's home directory and
 are not copied into the public bundle.
 
