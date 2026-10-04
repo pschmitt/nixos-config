@@ -35,9 +35,9 @@ native_shell_check() {
     print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
     return 1
   fi
-  if (( ! $+_comps[git] || ! $+_comps[mani] ))
+  if (( ! $+_comps[git] || ! $+_comps[kubectl] || ! $+_comps[mani] ))
   then
-    print -u2 -- "Missing completion registration: git=$+_comps[git] mani=$+_comps[mani]"
+    print -u2 -- "Missing completion registration: git=$+_comps[git] kubectl=$+_comps[kubectl] mani=$+_comps[mani]"
     return 1
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
@@ -58,16 +58,14 @@ native_shell_check() {
       return 1
     fi
   done
-  if [[ ${commands[zoxide]:-} != "$PREFIX/bin/zoxide" ]]
-  then
-    print -u2 -- "Termux APT command is not active: zoxide"
-    return 1
-  fi
-  if [[ ${commands[shellcheck]:-} != "$PREFIX/bin/shellcheck" ]]
-  then
-    print -u2 -- "Termux APT command is not active: shellcheck"
-    return 1
-  fi
+  for command in kubectl rbw shellcheck zoxide
+  do
+    if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
+    then
+      print -u2 -- "Termux APT command is not active: $command"
+      return 1
+    fi
+  done
   if (( $+commands[zinit] || $+functions[zinit] || $+aliases[zinit] ))
   then
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
@@ -88,6 +86,8 @@ native_shell_check() {
   nixpp switch --help >/dev/null 2>&1 || return
   "$GITSTATUS_DAEMON" --version || return
   termux-native-status || return
+  rbw --version >/dev/null || return
+  kubectl version --client --output=yaml >/dev/null || return
   local tmux_socket="native-smoke-$$"
   tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
   tmux -L "$tmux_socket" has-session -t native-smoke || {

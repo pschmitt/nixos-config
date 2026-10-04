@@ -99,7 +99,9 @@ in
     ../../home-manager/cli/zsh/atuin.nix
     ../../home-manager/cli/zsh/direnv.nix
     ../../home-manager/cli/zsh/fzf.nix
+    ../../home-manager/cli/zsh/tools/termux/kubectl.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
+    ../../home-manager/cli/zsh/tools/termux/rbw.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
@@ -123,6 +125,7 @@ in
         ".config/zsh/.zshrc"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
+        ".config/zsh/completions/_kubectl"
         ".config/zsh/completions/_mani"
         ".local/share/man/man1/mani.1"
         ".config/tmux/tmux.conf"
