@@ -4,19 +4,9 @@
   ...
 }:
 let
-  termuxTools =
-    pkgs.runCommand "termux-shell-tools"
-      {
-        nativeBuildInputs = [
-          pkgs.bash
-          pkgs.coreutils
-          pkgs.gnused
-        ];
-      }
-      ''
-        mkdir -p "$out/bin"
-        DEST="$out/bin" ${pkgs.bash}/bin/bash ${inputs.termux-tools}/install.sh
-      '';
+  termuxTools = pkgs.callPackage ../../../../../pkgs/termux-native/termux-tools.nix {
+    package = inputs.termux-tools;
+  };
 in
 {
   home.packages = [ termuxTools ];

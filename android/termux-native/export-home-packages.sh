@@ -272,9 +272,11 @@ do
       printf 'Termux-native script is missing or not executable: %s (%s)\n' "$name" "$script" >&2
       exit 1
     fi
-    if [[ "$(head -n 1 "$source_file")" != '#!/data/data/com.termux/files/usr/bin/sh' ]]
+    script_interpreter=$(head -n 1 "$source_file")
+    if [[ "$script_interpreter" != '#!/data/data/com.termux/files/usr/bin/sh' &&
+      "$script_interpreter" != '#!/data/data/com.termux/files/usr/bin/bash' ]]
     then
-      printf 'Termux-native script must use the Termux sh interpreter: %s (%s)\n' "$name" "$script" >&2
+      printf 'Termux-native script must use the Termux sh or bash interpreter: %s (%s)\n' "$name" "$script" >&2
       exit 1
     fi
     if grep -qF /nix/store "$source_file"
