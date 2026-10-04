@@ -435,6 +435,14 @@ The current installer trusts a digest obtained from the builder; it does not
 verify a release signature or hostile archive contents. It keeps previous
 generations for rollback but does not yet garbage-collect them, enforce an
 anti-downgrade policy, or recover interrupted lock directories automatically.
+APT package lifecycle is also install-only: bootstrap installs missing packages
+from the current manifest, and generation activation checks that they are
+installed. It does not remove packages when a later generation stops declaring
+them, and it does not record which packages were already installed before the
+first bootstrap. A future removal path must preserve that pre-existing set and
+remove only packages owned by this profile. Termux APT/dpkg should resolve
+shared dependencies; nixpp must not remove a dependency while any selected
+package still requires it.
 The bootstrap saves the existing `$PREFIX/etc/zshenv` and Termux login shell
 before selecting the managed Zsh configuration. A cold app launch then starts
 the managed shell directly. `bash bootstrap.sh restore` restores both saved
@@ -546,3 +554,9 @@ the Nix-built native executable ran, the APT preparation completed, and the
 managed generation's Zsh smoke checks passed. The initializer then cloned the
 yadm repository, applied the `termux,notnixos` classes, and opened the managed
 Zsh prompt. The yadm-init commit used by the run is `e6a22df`.
+The Bionic Go networking adapter was then built on rofl-13 with the Android
+NDK, cgo, and dynamic Bionic linking. A test binary resolved `example.com` and
+connected to TCP port 443 from the Termux app on both the Zenfone 10 and Mi Pad
+4. After force-stopping and relaunching Termux on both devices, each entered
+the managed Zsh prompt without Zinit/plugin downloads. The package adapter
+change was verified on branch `codex/zsh-nix`.
