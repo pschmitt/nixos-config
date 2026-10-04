@@ -1,0 +1,19 @@
+--- a/src/capture/screencopy_util.cpp
++++ b/src/capture/screencopy_util.cpp
+@@ -180,9 +180,17 @@
+     const bool dimsMatchLogical = image.width == output.logicalWidth && image.height == output.logicalHeight;
+     const bool dimsMatchPhysical =
+         output.width > 0 && output.height > 0 && image.width == output.width && image.height == output.height;
++    const bool transformSwapsAxes = output.transform == WL_OUTPUT_TRANSFORM_90
++        || output.transform == WL_OUTPUT_TRANSFORM_270 || output.transform == WL_OUTPUT_TRANSFORM_FLIPPED_90
++        || output.transform == WL_OUTPUT_TRANSFORM_FLIPPED_270;
++    const bool dimsMatchTransformedPhysical = transformSwapsAxes && output.width > 0 && output.height > 0
++        && image.width == output.height && image.height == output.width;
+     if (dimsMatchLogical && !dimsMatchPhysical) {
+       return false;
+     }
++    if (dimsMatchTransformedPhysical) {
++      return false;
++    }
+     return true;
+   }

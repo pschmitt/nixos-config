@@ -69,6 +69,12 @@ in
       # Drop once upstream handles this itself.
       ./patches/noctalia/0006-keyboard-layout-osd-prime.patch
 
+      # wlr-screencopy may already return the output-transformed frame. When
+      # the transform swaps axes, recognize a frame whose dimensions match
+      # the transposed mode size so capture consumers don't rotate it twice
+      # (observed on GK4's rotated internal panel).
+      ./patches/noctalia/0007-screencopy-transformed-dimensions.patch
+
       # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
       # for the syncthing plugin's events-API attempt) is intentionally not
       # applied: that plugin rewrite was reverted 2026-09-05 (see
