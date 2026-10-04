@@ -10,30 +10,54 @@ let
     {
       package,
       crossPackage ? null,
+      skipPostInstall ? false,
+      skipPostFixup ? false,
     }:
     pkgs.callPackage ../../pkgs/termux-native/from-nixpkgs.nix {
-      inherit package crossPackage;
+      inherit
+        package
+        crossPackage
+        skipPostInstall
+        skipPostFixup
+        ;
     };
-  termuxBat = fromNixpkgs { package = pkgs.bat; };
-  termuxEza = fromNixpkgs { package = pkgs.eza; };
+  termuxBat = fromNixpkgs {
+    package = pkgs.bat;
+    # Nix wraps bat with a store-specific less path; Termux supplies less on PATH.
+    skipPostFixup = true;
+  };
+  termuxEza = fromNixpkgs {
+    package = pkgs.eza;
+    # The export contract ships eza's executable, not its Pandoc-built docs.
+    skipPostInstall = true;
+    crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.eza.overrideAttrs (old: {
+      outputs = [ "out" ];
+      meta = (old.meta or { }) // {
+        outputsToInstall = [ "out" ];
+      };
+      nativeBuildInputs = builtins.filter (input: lib.getName input != "pandoc-cli") (
+        old.nativeBuildInputs or [ ]
+      );
+    });
+  };
   termuxFd = fromNixpkgs { package = pkgs.fd; };
   termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
-    llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
   };
   termuxUnzip = pkgs.callPackage ../../pkgs/termux-native/unzip.nix {
     bzip2 = pkgs.pkgsCross.aarch64-android-prebuilt.bzip2;
-    llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
   };
   termuxRipgrep = fromNixpkgs {
     package = pkgs.ripgrep;
+    # The upstream hook executes the Android binary under QEMU to generate
+    # docs/completions; QEMU has no Android system linker on the build host.
+    skipPostFixup = true;
     crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.ripgrep.override {
       withPCRE2 = true;
     };
   };
   termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
-    llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
   };
   termuxAtuin = pkgs.callPackage ../../pkgs/termux-native/atuin.nix { };
@@ -46,6 +70,8 @@ in
     ../../home-manager/cli/tmux
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
+    ../../home-manager/cli/zsh/config/hashicorp-completions.nix
+    ../../home-manager/cli/zsh/config/hm.nix
     ../../home-manager/cli/zsh/config/portable.nix
     ../../home-manager/cli/zsh/termux-shell.nix
     ../domains.nix

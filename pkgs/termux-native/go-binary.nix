@@ -1,12 +1,13 @@
 {
   lib,
-  llvm,
   pkgs,
   package,
   binary,
   licenseFile ? null,
 }:
 let
+  targetBintools = pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.bintools;
+  targetObjcopy = "${targetBintools}/bin/${pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.targetPrefix}objcopy";
   go = pkgs.go.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/net/lookup_unix.go \
@@ -32,7 +33,7 @@ package.overrideAttrs (old: {
 
   nativeBuildInputs = builtins.filter (input: input != package.go) (old.nativeBuildInputs or [ ]) ++ [
     go
-    llvm
+    targetBintools
   ];
 
   doCheck = false;
@@ -49,7 +50,7 @@ package.overrideAttrs (old: {
   '';
 
   postFixup = (old.postFixup or "") + ''
-    llvm-strip --strip-unneeded "$out/bin/${binary}"
+    ${targetObjcopy} --strip-unneeded "$out/bin/${binary}"
   '';
 
   passthru = (old.passthru or { }) // {

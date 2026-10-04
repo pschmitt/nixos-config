@@ -63,6 +63,22 @@ can override the Android package when build options differ. The wrapper strips
 the executable, then the exporter removes Nix RPATHs and resolves shared
 libraries from the Android runtime closure; missing or conflicting
 dependencies fail the build.
+Stripping uses the selected Android derivation's target `objcopy`, so these
+exports do not need a separate host LLVM tool just for ELF stripping.
+By default, the adapter preserves upstream package hooks and outputs. The
+exporter selects only declared runtime files, removes Nix RPATHs, resolves
+shared libraries from the Android runtime closure, and cleans ELF metadata for
+Termux. This keeps the conversion generic without patching away package build
+behavior.
+Eza's Pandoc-generated docs and completions are omitted because only its
+executable is in the export contract; this avoids building a separate GHC
+toolchain for files the archive cannot use.
+An upstream hook that executes the Android program during cross compilation
+cannot run unless the build host has an Android userspace. Ripgrep's generated
+man pages and completions use this pattern, so its `postFixup` is disabled; the
+exported Android executable and its runtime dependencies are still validated.
+Bat's `postFixup` adds a Nix-specific `less` path to a shell wrapper; that is
+disabled too, and the generated Termux launcher uses the Termux `PATH` instead.
 The exporter preserves declared package files under the generation, creates
 command launchers, and checks every exported ELF for AArch64 and the Android
 linker (when it has one). It recursively checks dependencies of both commands
