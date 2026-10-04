@@ -413,8 +413,11 @@ At shell startup, `zshenv` resolves `current` to the immutable generation path,
 so an already-running shell keeps using the generation it started with after a
 later activation. Powerlevel10k's instant prompt is loaded early when present
 and respects the existing prompt-plugin skip flags. User-specific OS plugin
-files remain outside the bundle; plugins that still require Zinit need explicit
-Termux package adapters before they can be enabled in the native shell.
+files remain outside the bundle. The native shell sources the regular yadm
+aliases, helper library, named directories, OSC 7 hook, and interactive startup
+snippet directly from the user's home at runtime. It skips the Zinit reload
+traps and the general OS plugin aggregator; plugins that still require Zinit
+need explicit Termux adapters before they can be enabled in the native shell.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 

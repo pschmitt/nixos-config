@@ -16,6 +16,11 @@ native_shell_check() {
       return 1
     fi
   done
+  if [[ -r "$XDG_CONFIG_HOME/zsh/osc.zsh" ]] && (( ! $+functions[__chpwd-osc7-pwd] ))
+  then
+    print -u2 -- 'The regular OSC 7 Zsh hook was not loaded from yadm'
+    return 1
+  fi
   if NO_PLUGINS=1 zsh::prompt-plugins-enabled ||
     NO_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled ||
     ZINIT_SKIP_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled
