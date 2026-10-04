@@ -10,6 +10,7 @@ in
 {
   imports = [
     ./atuin.nix
+    ./config/source-me.nix
     ./direnv.nix
     ./fzf.nix
     ./vivid.nix
@@ -97,44 +98,6 @@ in
       "zsh/custom/os/not-nixos/hm.zsh".source =
         config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git/home-manager/cli/zsh/hm.zsh";
 
-      # completions
-      "zsh/completions/source-me.zsh".text = ''
-        # bashcompinit is not needed here since we already do this in zinit
-        # autoload -U +X bashcompinit && bashcompinit
-        # FIXME openbao completion is broken as of 2026-01-09.
-        # https://github.com/NixOS/nixpkgs/pull/478004
-        ${
-          if termuxMode then
-            ''
-              if (( $+commands[vault] ))
-              then
-                complete -C "$commands[vault]" vault
-              fi
-            ''
-          else
-            ''
-              complete -C "${pkgs.vault}/bin/vault" vault
-            ''
-        }
-
-        if (( $+commands[rbw] ))
-        then
-          typeset rbw_bin rbw_prefix
-          rbw_bin="''${commands[rbw]:A}"
-          rbw_prefix="''${rbw_bin:h:h}"
-
-          if [[ -r "''${rbw_prefix}/share/zsh/site-functions/_rbw" ]]
-          then
-            source "''${rbw_prefix}/share/zsh/site-functions/_rbw"
-          elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw" ]]
-          then
-            source "''${rbw_prefix}/share/bash-completion/completions/rbw"
-          elif [[ -r "''${rbw_prefix}/share/bash-completion/completions/rbw.bash" ]]
-          then
-            source "''${rbw_prefix}/share/bash-completion/completions/rbw.bash"
-          fi
-        fi
-      '';
     };
   };
 }

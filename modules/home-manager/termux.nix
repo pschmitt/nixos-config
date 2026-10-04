@@ -15,6 +15,7 @@ in
     ../../home-manager/cli/tmux
     ../../home-manager/cli/zsh/atuin.nix
     ../../home-manager/cli/zsh/completions
+    ../../home-manager/cli/zsh/config/source-me.nix
     ../../home-manager/cli/zsh/direnv.nix
     ../../home-manager/cli/zsh/fzf.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
@@ -51,6 +52,7 @@ in
         ".config/zsh/completions/_revolver"
         ".config/zsh/completions/_whatsmy"
         ".config/zsh/completions/_zunit"
+        ".config/zsh/completions/source-me.zsh"
         ".local/share/man/man1/mani.1"
         ".config/tmux/tmux.conf"
         ".config/nvim/init.lua"
