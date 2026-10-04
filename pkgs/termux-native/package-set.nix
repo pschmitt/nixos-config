@@ -34,7 +34,7 @@ androidPkgs.extend (
           skipPostFixup
           ;
       };
-    goBinary =
+    fromGo =
       {
         package,
         binary,
@@ -49,8 +49,26 @@ androidPkgs.extend (
           skipPostInstall
           ;
       };
+    pythonApplication =
+      {
+        package,
+        python ? pkgs.python3,
+        entrypoint ? null,
+      }:
+      pkgs.callPackage ./python-application.nix {
+        inherit package python entrypoint;
+      };
   in
   {
+    termuxAdapters = {
+      inherit
+        fromGo
+        fromNixpkgs
+        pythonApplication
+        withAptPackages
+        ;
+    };
+
     termuxPackages = {
       nixpp = withAptPackages (pkgs.callPackage ../nixpp-termux { inherit inputs; }) [
         "ca-certificates"
@@ -102,18 +120,17 @@ androidPkgs.extend (
         "ca-certificates"
       ];
 
-      emoji-fzf = pkgs.callPackage ./python-application.nix {
+      emoji-fzf = pythonApplication {
         package = pkgs.emoji-fzf;
-        python = pkgs.python3;
       };
 
-      assh = withAptPackages (goBinary {
+      assh = withAptPackages (fromGo {
         package = pkgs.assh;
         binary = "assh";
         skipPostInstall = true;
       }) [ "ca-certificates" ];
 
-      rancher = withAptPackages (goBinary {
+      rancher = withAptPackages (fromGo {
         package = pkgs.rancher;
         binary = "rancher";
         buildBinary = "cli";

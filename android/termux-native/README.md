@@ -65,6 +65,12 @@ libraries from the Android runtime closure; missing or conflicting
 dependencies fail the build.
 Stripping uses the selected Android derivation's target `objcopy`, so these
 exports do not need a separate host LLVM tool just for ELF stripping.
+The extended Android package set exposes reusable constructors under
+`termuxAdapters`: `fromNixpkgs` selects and wraps an Android cross derivation,
+`fromGo` rebuilds a Nixpkgs Go package for Android, and `pythonApplication`
+exports pure-Python packages through Termux's Python. Each result carries the
+export metadata the bundle needs; add a package to `home.packages` and unsupported
+Nix packages still fail evaluation with a clear diagnostic.
 By default, the adapter preserves upstream package hooks and outputs. The
 exporter selects only declared runtime files, removes Nix RPATHs, resolves
 shared libraries from the Android runtime closure, and cleans ELF metadata for
