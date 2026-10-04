@@ -6,18 +6,17 @@
   ...
 }:
 let
-  termuxBat = pkgs.callPackage ../../pkgs/termux-native/bat.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.bat;
-  };
-  termuxEza = pkgs.callPackage ../../pkgs/termux-native/eza.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.eza;
-  };
-  termuxFd = pkgs.callPackage ../../pkgs/termux-native/fd.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.fd;
-  };
+  fromNixpkgs =
+    {
+      package,
+      crossPackage ? null,
+    }:
+    pkgs.callPackage ../../pkgs/termux-native/from-nixpkgs.nix {
+      inherit package crossPackage;
+    };
+  termuxBat = fromNixpkgs { package = pkgs.bat; };
+  termuxEza = fromNixpkgs { package = pkgs.eza; };
+  termuxFd = fromNixpkgs { package = pkgs.fd; };
   termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
     llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
@@ -27,8 +26,7 @@ let
     llvm = pkgs.llvmPackages.llvm;
     package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
   };
-  termuxRipgrep = pkgs.callPackage ../../pkgs/termux-native/ripgrep.nix {
-    llvm = pkgs.llvmPackages.llvm;
+  termuxRipgrep = fromNixpkgs {
     package = pkgs.ripgrep;
     crossPackage = pkgs.pkgsCross.aarch64-android-prebuilt.ripgrep.override {
       withPCRE2 = true;
@@ -39,10 +37,7 @@ let
     package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
   };
   termuxAtuin = pkgs.callPackage ../../pkgs/termux-native/atuin.nix { };
-  termuxVivid = pkgs.callPackage ../../pkgs/termux-native/vivid.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.vivid;
-  };
+  termuxVivid = fromNixpkgs { package = pkgs.vivid; };
   termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
 in
 {

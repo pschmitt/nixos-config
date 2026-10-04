@@ -3,12 +3,20 @@
   llvm,
   pkgs,
   package,
-  binary,
+  binaryPathOverride ? null,
   crossPackage ? null,
   runCommand,
 }:
 let
   packageName = lib.getName package;
+  mainProgram = (package.meta or { }).mainProgram or null;
+  binaryPath =
+    if binaryPathOverride != null then
+      binaryPathOverride
+    else if mainProgram != null then
+      "bin/${mainProgram}"
+    else
+      throw "${packageName} has no meta.mainProgram; set binary explicitly";
   androidPackages = pkgs.pkgsCross.aarch64-android-prebuilt;
   androidPackage =
     if crossPackage != null then
@@ -47,16 +55,16 @@ runCommand "${lib.getName package}-termux"
     allowedReferences = [ ];
     passthru.termuxNative = {
       abi = "android-bionic";
-      files = [ binary ];
-      binaries = [ binary ];
+      files = [ binaryPath ];
+      binaries = [ binaryPath ];
       runtimeClosure = "${runtimeClosure}/store-paths";
     };
     meta = lib.removeAttrs checkedAndroidPackage.meta [ "outputsToInstall" ] // {
-      mainProgram = builtins.baseNameOf binary;
+      mainProgram = builtins.baseNameOf binaryPath;
     };
   }
   ''
-    mkdir -p "$out/$(dirname ${lib.escapeShellArg binary})"
-    cp ${unstripped}/${binary} "$out/${binary}"
-    llvm-strip --strip-unneeded "$out/${binary}"
+    mkdir -p "$out/$(dirname ${lib.escapeShellArg binaryPath})"
+    cp ${unstripped}/${binaryPath} "$out/${binaryPath}"
+    llvm-strip --strip-unneeded "$out/${binaryPath}"
   ''
