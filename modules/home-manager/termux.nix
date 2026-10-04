@@ -20,8 +20,10 @@ in
     ../../home-manager/cli/zsh/fzf.nix
     ../../home-manager/cli/zsh/tools/fd.nix
     ../../home-manager/cli/zsh/tools/jq.nix
+    ../../home-manager/cli/zsh/tools/termux/assh.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
+    ../../home-manager/cli/zsh/tools/termux/rancher.nix
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
     ../../home-manager/cli/zsh/vivid.nix
@@ -97,8 +99,6 @@ in
         pkgsTermux.gzip
         pkgsTermux.ssh-to-age
         pkgsTermux.emoji-fzf
-        pkgsTermux.assh
-        pkgsTermux.rancher
       ];
 
       termux.packages = [

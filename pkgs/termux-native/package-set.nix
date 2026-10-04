@@ -6,6 +6,16 @@ let
   # Use Nixpkgs' Android/Bionic platform for compatibility. Keep Termux-ready
   # wrappers namespaced so they cannot replace Nixpkgs bootstrap tools.
   androidPkgs = pkgs.pkgsCross.aarch64-android-prebuilt;
+  android = pkgs.androidenv.composeAndroidPackages {
+    includeNDK = true;
+    ndkVersions = [ "27.2.12479018" ];
+    platformVersions = [ ];
+    buildToolsVersions = [ ];
+    includeEmulator = false;
+  };
+  ndkRoot = "${android.ndk-bundle}/libexec/android-sdk/ndk-bundle";
+  toolchain = "${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/bin";
+  minimumApi = 35;
 in
 androidPkgs.extend (
   _final: prev:
@@ -40,6 +50,7 @@ androidPkgs.extend (
         binary,
         buildBinary ? binary,
         skipPostInstall ? false,
+        licenseFile ? null,
       }:
       pkgs.callPackage ./go-binary.nix {
         inherit
@@ -47,7 +58,9 @@ androidPkgs.extend (
           binary
           buildBinary
           skipPostInstall
+          licenseFile
           ;
+        targetCC = "${toolchain}/aarch64-linux-android${toString minimumApi}-clang";
       };
     pythonApplication =
       {
@@ -114,7 +127,22 @@ androidPkgs.extend (
 
       gzip = pkgs.callPackage ./gzip.nix { package = prev.gzip; };
 
-      ssh-to-age = pkgs.callPackage ./ssh-to-age.nix { inherit pkgs; };
+      ssh-to-age = fromGo {
+        package = pkgs.ssh-to-age;
+        binary = "ssh-to-age";
+        licenseFile = "${pkgs.ssh-to-age.src}/LICENSE";
+      };
+
+      eget = fromGo {
+        package = pkgs.eget;
+        binary = "eget";
+      };
+
+      mani = fromGo {
+        package = pkgs.mani;
+        binary = "mani";
+        skipPostInstall = true;
+      };
 
       rbw = withAptPackages inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux [
         "ca-certificates"
