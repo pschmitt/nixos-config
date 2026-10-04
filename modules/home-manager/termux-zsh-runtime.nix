@@ -1,8 +1,4 @@
-{
-  config,
-  lib,
-  ...
-}:
+{ lib, ... }:
 {
   imports = [
     ../../home-manager/cli/zsh/config/runtime.nix
@@ -14,51 +10,13 @@
 
   programs.zsh.envExtra = lib.mkAfter ''
     fpath=("$ZDOTDIR/completions" $fpath)
-
-    typeset -gA DOMAINS
-    DOMAINS[main]=${lib.escapeShellArg config.domains.main}
-    DOMAINS[netbird]=${lib.escapeShellArg config.domains.netbird}
-    DOMAINS[tailscale]=${lib.escapeShellArg config.domains.tailscale}
-
-    if [[ -z "''${NETWORK_LOCATION:-}" && -r ${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"} ]]
-    then
-      NETWORK_LOCATION="$(<${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"})"
-    fi
-
-    export XDG_DATA_DIRS="$PREFIX/share:''${XDG_DATA_DIRS:-/usr/share}"
-    mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
-    export ZSH_CACHE_DIR=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
-    export ZSH_COMPDUMP=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh/zcompdump-termux"}-''${TERMUX_GENERATION:t}
-
-    # Match the regular yadm .zshenv while keeping private overrides at runtime.
-    if [[ -r "$XDG_CONFIG_HOME/zsh/zshenv.private" ]]
-    then
-      source "$XDG_CONFIG_HOME/zsh/zshenv.private"
-    fi
-
-    # Keep generation commands ahead of user-local tools after private Zsh
-    # startup files have adjusted PATH.
-    typeset -U path
-    path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
-    rehash
   '';
 
   programs.zsh.initContent = lib.mkMerge [
-    (lib.mkOrder 500 ''
-      if [[ -o interactive &&
-            -z "''${NO_PLUGINS:-}" &&
-            -z "''${NO_PROMPT_PLUGINS:-}" &&
-            -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" &&
-            -r "$XDG_CONFIG_HOME/zsh/p10k-instant-prompt.zsh" ]]
-      then
-        source "$XDG_CONFIG_HOME/zsh/p10k-instant-prompt.zsh"
-      fi
-    '')
     (lib.mkOrder 805 ''
       zsh::prompt-plugins-enabled() {
         [[ -z "''${NO_PLUGINS:-}" &&
-          -z "''${NO_PROMPT_PLUGINS:-}" &&
-          -z "''${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
+          -z "''${NO_PROMPT_PLUGINS:-}" ]]
       }
     '')
     (lib.mkOrder 810 ''
@@ -93,25 +51,10 @@
       typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
     '')
     (lib.mkOrder 1540 ''
-      if [[ -o interactive && -z "''${NO_PLUGINS:-}" ]]
+      if [[ -o interactive ]]
       then
         zsh::source-local-plugins
       fi
-    '')
-    (lib.mkOrder 1550 ''
-      if [[ -o interactive && -z "''${NO_COMPLETIONS:-}" ]] && (( $+functions[__init_custom_completions] ))
-      then
-        __init_custom_completions
-      fi
-    '')
-    (lib.mkOrder 2000 ''
-      # The login profile may prepend user-local directories after .zshenv.
-      # Restore deterministic package precedence once all startup files ran.
-      typeset -U path
-      path=("''${(@)path:#$TERMUX_GENERATION/bin}")
-      path=("''${(@)path:#$PREFIX/bin}")
-      path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
-      rehash
     '')
   ];
 }

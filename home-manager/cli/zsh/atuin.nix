@@ -7,6 +7,7 @@
 let
   domain = config.domains.main;
   termuxMode = config.termux.enable or false;
+  termuxAtuin = pkgs.callPackage ../../../pkgs/termux-native/atuin.nix { };
   settings = {
     dialect = "uk";
     auto_sync = true;
@@ -32,7 +33,7 @@ in
     inherit settings;
   };
 
-  termux.packages = lib.mkIf termuxMode [ "atuin" ];
+  home.packages = lib.optionals termuxMode [ termuxAtuin ];
 
   xdg.configFile = {
     "atuin/config.toml" = lib.mkIf termuxMode {
@@ -46,9 +47,6 @@ in
         # bindkey '^[r' _atuin_search_widget
       ''
       + lib.optionalString termuxMode ''
-        # Atuin shares this timestamp between its preexec and precmd hooks.
-        typeset -g __atuin_preexec_time
-        eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
         bindkey '^[r' _atuin_search_widget
       ''
     );

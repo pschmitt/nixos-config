@@ -1,24 +1,5 @@
-native_smoke_run() {
-  local description=$1
-  shift
-  print -r -- "  Checking $description..."
-  if "$@" >/dev/null
-  then
-    print -r -- "  Passed: $description"
-    return 0
-  fi
-  print -u2 -- "Smoke command failed: $description"
-  return 1
-}
-
 native_shell_check() {
   [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
-  if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
-  then
-    [[ "$ZDOTDIR" == "$HOME/.config/zsh" ]] || return 1
-    [[ "$HISTFILE" == "$XDG_STATE_HOME/zsh/zhistory" ]] || return 1
-    [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" == 1 ]] || return 1
-  fi
   if (( $+functions[zinit] || $+aliases[zinit] ))
   then
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
@@ -27,7 +8,7 @@ native_shell_check() {
   local required
   for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
     autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
-    prompt::simple prompt::reset emoji-fzf-zle
+    prompt::simple prompt::reset
   do
     if (( ! $+functions[$required] ))
     then
@@ -35,73 +16,16 @@ native_shell_check() {
       return 1
     fi
   done
-  if ! prompt::simple || ! prompt::reset
-  then
-    print -u2 -- 'The prompt toggle still depends on Zinit in the native shell'
-    return 1
-  fi
-  if [[ -r "$XDG_CONFIG_HOME/zsh/aliases.zsh" ]] &&
-    (( ! $+aliases[yup] || ! $+aliases[yupnc] ))
-  then
-    print -u2 -- 'The yadm Termux package upgrade aliases were not loaded'
-    return 1
-  fi
-  if (( ! $+functions[__chpwd-osc7-pwd] ))
-  then
-    print -u2 -- 'The shared OSC 7 Zsh hook was not loaded'
-    return 1
-  fi
-  local hook hook_count=0
-  for hook in $chpwd_functions
-  do
-    [[ "$hook" == __chpwd-osc7-pwd ]] && (( hook_count += 1 ))
-  done
-  if (( hook_count != 1 ))
-  then
-    print -u2 -- "The OSC 7 Zsh hook is registered $hook_count times"
-    return 1
-  fi
-  if NO_PLUGINS=1 zsh::prompt-plugins-enabled ||
-    NO_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled ||
-    ZINIT_SKIP_PROMPT_PLUGINS=1 zsh::prompt-plugins-enabled
-  then
-    print -u2 -- 'A prompt-plugin skip flag did not disable prompt plugins'
-    return 1
-  fi
-  if (( ! $+widgets[history-substring-search-up] || ! $+widgets[edit-command-line] || ! $+widgets[_atuin_search_widget] ))
-  then
-    print -u2 -- 'Missing expected Zsh line editor widgets'
-    return 1
-  fi
-  if (( ! $+_comps[jc] ))
-  then
-    print -u2 -- 'The jc completion function is not registered'
-    return 1
-  fi
+  (( $+widgets[history-substring-search-up] && $+widgets[edit-command-line] && $+widgets[_atuin_search_widget] )) || return 1
   if [[ ! -r "$TERMUX_GENERATION/home/.config/atuin/config.toml" ]]
   then
     print -u2 -- 'Termux generation is missing the Atuin settings file'
     return 1
   fi
-  if [[ ! -d "$TERMUX_GENERATION/home/.config/jq/colors" ||
-        ! -d "$TERMUX_GENERATION/home/.config/jq/plib" ||
-        ${aliases[fd]:-} != 'noglob fd' ]]
-  then
-    print -u2 -- 'Termux generation is missing shared jq configuration or the fd alias'
-    return 1
-  fi
-  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_jc" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_revolver" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_rbw" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/source-me.zsh" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_whatsmy" ||
-        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_zunit" ||
+  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
         ! -r "$TERMUX_GENERATION/home/.local/share/man/man1/mani.1" ]]
   then
-    print -u2 -- 'Termux generation is missing shared completion config or the mani man page'
+    print -u2 -- 'Termux generation is missing the mani completion or man page'
     return 1
   fi
   local atuin_binding
@@ -111,67 +35,58 @@ native_shell_check() {
     print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
     return 1
   fi
-  if (( ! $+_comps[git] || ! $+_comps[ipmi] || ! $+_comps[kubectl] ||
-        ! $+_comps[mani] || ! $+_comps[ossh] || ! $+_comps[rbw] ||
-        ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
+  if (( ! $+_comps[git] || ! $+_comps[mani] ))
   then
-    print -u2 -- "Missing shared completion registration: ipmi=$+_comps[ipmi] ossh=$+_comps[ossh] revolver=$+_comps[revolver] whatsmy=$+_comps[whatsmy] zunit=$+_comps[zunit]"
+    print -u2 -- "Missing completion registration: git=$+_comps[git] mani=$+_comps[mani]"
     return 1
   fi
-  if (( $+commands[kubectl] && $+CUSTOM_COMPS[k] && ! $+_comps[k] ))
-  then
-    print -u2 -- 'A kubectl custom completion was declared but not registered'
-    return 1
-  fi
-  if [[ $GITSTATUS_AUTO_INSTALL != 0 || ! -x $GITSTATUS_DAEMON ]]
-  then
-    print -u2 -- 'Gitstatus is not using the bundled daemon'
-    return 1
-  fi
+  [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in nixpp
+  for command in atuin bat eza fd rg ssh-to-age tmux vivid nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
-      print -u2 -- "Nix-built Android command is not active: $command (resolved to ${commands[$command]:-missing}; generation $TERMUX_GENERATION)"
+      print -u2 -- "Nix-built Android command is not active: $command"
       return 1
     fi
   done
-  for command in atuin bat eza fd rg tmux vivid zoxide
-  do
-    if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
-    then
-      print -u2 -- "Termux APT command is not active: $command"
-      return 1
-    fi
-  done
-  native_smoke_run 'Atuin' atuin --version || return
-  native_smoke_run 'bat' bat --version || return
-  native_smoke_run 'eget' eget --version || return
-  native_smoke_run 'eza' eza --version || return
-  native_smoke_run 'fd' fd --version || return
-  native_smoke_run 'ripgrep' rg --version || return
-  native_smoke_run 'assh' assh --help || return
-  native_smoke_run 'mani' mani --help || return
-  native_smoke_run 'Rancher CLI' rancher --help || return
-  native_smoke_run 'vivid theme generation' vivid generate one-dark || return
-  native_smoke_run 'gzip' gzip --version || return
-  native_smoke_run 'unzip' unzip -v || return
-  native_smoke_run 'zip' zip -v || return
-  native_smoke_run 'tmux' tmux -V || return
-  native_smoke_run 'zoxide' zoxide --version || return
-  native_smoke_run 'ShellCheck' shellcheck --version || return
-  native_smoke_run 'nixpp switch command' nixpp switch --help || return
-  native_smoke_run 'nixpp status command' nixpp status --help || return
-  native_smoke_run 'bundled gitstatus daemon' "$GITSTATUS_DAEMON" --version || return
-  native_smoke_run 'Termux generation status' termux-native-status || return
-  local tmux_socket="$TMPDIR/native-smoke-$$.sock"
-  tmux -S "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
-  tmux -S "$tmux_socket" has-session -t native-smoke || {
-    tmux -S "$tmux_socket" kill-server
+  if [[ ${commands[zoxide]:-} != "$PREFIX/bin/zoxide" ]]
+  then
+    print -u2 -- "Termux APT command is not active: zoxide"
+    return 1
+  fi
+  if [[ ${commands[shellcheck]:-} != "$PREFIX/bin/shellcheck" ]]
+  then
+    print -u2 -- "Termux APT command is not active: shellcheck"
+    return 1
+  fi
+  if (( $+commands[zinit] || $+functions[zinit] || $+aliases[zinit] ))
+  then
+    print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
+    return 1
+  fi
+  atuin --version >/dev/null || return
+  bat --version >/dev/null || return
+  eza --version >/dev/null || return
+  fd --version >/dev/null || return
+  rg --version >/dev/null || return
+  assh --help >/dev/null 2>&1 || return
+  mani --help >/dev/null 2>&1 || return
+  rancher --help >/dev/null 2>&1 || return
+  vivid generate one-dark >/dev/null || return
+  tmux -V >/dev/null || return
+  zoxide --version >/dev/null || return
+  shellcheck --version >/dev/null || return
+  nixpp switch --help >/dev/null 2>&1 || return
+  "$GITSTATUS_DAEMON" --version || return
+  termux-native-status || return
+  local tmux_socket="native-smoke-$$"
+  tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
+  tmux -L "$tmux_socket" has-session -t native-smoke || {
+    tmux -L "$tmux_socket" kill-server
     return 1
   }
-  tmux -S "$tmux_socket" kill-server || return
+  tmux -L "$tmux_socket" kill-server || return
   local fixture
   fixture=$(mktemp -d "$TMPDIR/native-gitstatus.XXXXXXXX") || return
   git init -q "$fixture" || return

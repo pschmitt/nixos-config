@@ -1,16 +1,16 @@
 {
   config,
-  inputs,
   lib,
   pkgs,
   ...
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxPackageSet = import ../../../../../pkgs/termux-native/package-set.nix {
-    inherit inputs pkgs;
+  termuxMani = pkgs.callPackage ../../../../../pkgs/termux-native/go-binary.nix {
+    package = pkgs.mani;
+    binary = "mani";
+    skipPostInstall = true;
   };
-  inherit (termuxPackageSet.termuxPackages) mani;
   maniArtifacts = pkgs.runCommand "mani-zsh-artifacts" { } ''
     mkdir -p "$out/completions" "$out/man/man1"
     ${pkgs.buildPackages.mani}/bin/mani completion zsh > "$out/completions/_mani"
@@ -18,7 +18,7 @@ let
   '';
 in
 {
-  home.packages = [ (if termuxMode then mani else pkgs.mani) ];
+  home.packages = [ (if termuxMode then termuxMani else pkgs.mani) ];
   xdg.configFile."zsh/completions/_mani".source = "${maniArtifacts}/completions/_mani";
   xdg.dataFile."man/man1/mani.1".source = "${maniArtifacts}/man/man1/mani.1";
 

@@ -1,11 +1,5 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 let
-  termuxMode = config.termux.enable or false;
   colorsJq = pkgs.fetchFromGitHub {
     owner = "pschmitt";
     repo = "colors.jq";
@@ -20,7 +14,7 @@ let
   };
 in
 {
-  home.packages = lib.optionals (!termuxMode) [ pkgs.jq ];
+  home.packages = [ pkgs.jq ];
   xdg.configFile = {
     "jq/colors".source = colorsJq;
     "jq/plib".source = plibJq;

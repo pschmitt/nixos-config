@@ -4,13 +4,12 @@
   package,
   binary,
   buildBinary ? binary,
-  target,
   skipPostInstall ? false,
   licenseFile ? null,
 }:
 let
-  targetCC = target.cc;
-  targetBintools = target.pkgs.stdenv.cc.bintools;
+  targetBintools = pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.bintools;
+  targetObjcopy = "${targetBintools}/bin/${pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.cc.targetPrefix}objcopy";
   go = pkgs.go.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/net/lookup_unix.go \
@@ -29,8 +28,7 @@ package.overrideAttrs (old: {
   pname = "${lib.getName package}-termux";
 
   env = (old.env or { }) // {
-    CGO_ENABLED = "1";
-    CC = targetCC;
+    CGO_ENABLED = "0";
     GOOS = "android";
     GOARCH = "arm64";
   };
@@ -40,17 +38,10 @@ package.overrideAttrs (old: {
     targetBintools
   ];
 
-  preBuild = (old.preBuild or "") + ''
-    export CC=${targetCC}
-  '';
-
   doCheck = false;
   doInstallCheck = false;
   dontStrip = true;
   allowedReferences = [ ];
-  ldflags = builtins.map (flag: if flag == "-static" then "-Wl,-z,relro" else flag) (
-    old.ldflags or [ ]
-  );
 
   postInstall = (if skipPostInstall then "" else (old.postInstall or "")) + ''
     install -Dm0755 "$out/bin/android_arm64/${buildBinary}" "$out/bin/${binary}"
@@ -61,7 +52,7 @@ package.overrideAttrs (old: {
   '';
 
   postFixup = (old.postFixup or "") + ''
-    ${target.objcopy} --strip-unneeded "$out/bin/${binary}"
+    ${targetObjcopy} --strip-unneeded "$out/bin/${binary}"
   '';
 
   passthru = (old.passthru or { }) // {
