@@ -23,6 +23,8 @@ stdenv.mkDerivation rec {
     hash = "sha256-4ysI2U4k93ccC8gRoA+AcgTamSIL1ficLfqS8bc8vlY=";
   };
 
+  patches = [ ./rotation.patch ];
+
   nativeBuildInputs = [
     meson
     ninja

@@ -1,0 +1,8 @@
+--- a/src/capture.c
++++ b/src/capture.c
+@@ -107,0 +108,2 @@
++  /* The screencopy buffer is already in output coordinates. Applying the
++   * wl_output transform again rotates the frozen overlay a second time. */
+@@ -109 +111 @@
+-      screencopy_image, overlay->wl_output_transform);
++      screencopy_image, WL_OUTPUT_TRANSFORM_NORMAL);
