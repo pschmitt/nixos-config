@@ -2,84 +2,8 @@
 
 typeset -g _native_yadm_config=${TERMUX_NATIVE_YADM_CONFIG:-0}
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
-zsh::prompt-plugins-enabled() {
-  [[ -z "${NO_PLUGINS:-}" &&
-    -z "${NO_PROMPT_PLUGINS:-}" &&
-    -z "${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
-}
-if [[ "$_native_yadm_config" != 1 ]]
-then
-  mkdir -p "$XDG_DATA_HOME/zsh"
-  HISTFILE="$XDG_DATA_HOME/zsh/zhistory"
-  HISTSIZE=10000
-  SAVEHIST=$HISTSIZE
-  setopt extended_history hist_ignore_dups hist_find_no_dups hist_reduce_blanks
-  setopt hist_save_no_dups hist_verify share_history append_history hist_ignore_space
-  setopt rc_quotes auto_pushd pushd_minus autocd extended_glob interactive_comments
-  setopt noclobber auto_param_slash auto_remove_slash
-  autoload -Uz colors && colors
-  autoload -Uz add-zsh-hook edit-command-line url-quote-magic bracketed-paste-magic
-  zle -N edit-command-line
-  zle -N self-insert url-quote-magic
-  zle -N bracketed-paste bracketed-paste-magic
-fi
-
-typeset -g _native_plugins="$TERMUX_GENERATION/shell/plugins"
-typeset -gA CUSTOM_COMPS
-typeset -ga COMPS_TO_SOURCE
-fpath=("$_native_plugins/completions/src" "$_native_plugins/oh-my-zsh/plugins/extract" $fpath)
-autoload -Uz compinit
-compinit -i -d "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}/zcompdump-$ZSH_VERSION"
-if [[ "$_native_yadm_config" != 1 ]]
-then
-  autoload -Uz bashcompinit && bashcompinit
-  zmodload zsh/complist
-fi
-if [[ -r "$TERMUX_GENERATION/home/.config/zsh/completions/source-me.zsh" ]]
-then
-  source "$TERMUX_GENERATION/home/.config/zsh/completions/source-me.zsh"
-fi
-if [[ "$_native_yadm_config" != 1 ]]
-then
-  WORDCHARS=''
-  setopt always_to_end auto_menu complete_in_word correct
-  zstyle ':completion:*' completer _complete _expand _prefix _ignored _correct _approximate
-  zstyle ':completion:*' use-cache on
-  zstyle ':completion:*' cache-path "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
-  zstyle ':completion:*' menu select=2
-  zstyle ':completion:*' matcher-list '' 'm:{[:lower:][:upper:]}={[:upper:][:lower:]}' '+l:|=* r:|=*'
-  zstyle ':completion:*' special-dirs true
-  zstyle ':completion:*' rehash true
-  zstyle ':completion:*:descriptions' format '%B%d%b'
-fi
-
-if [[ "$_native_yadm_config" != 1 ]]
-then
-  source "$TERMUX_GENERATION/shell/keybindings.zsh"
-fi
-source "$_native_plugins/oh-my-zsh/lib/spectrum.zsh"
-source "$_native_plugins/oh-my-zsh/plugins/colored-man-pages/colored-man-pages.plugin.zsh"
-source "$_native_plugins/oh-my-zsh/plugins/cp/cp.plugin.zsh"
-source "$_native_plugins/oh-my-zsh/plugins/extract/extract.plugin.zsh"
-source "$_native_plugins/oh-my-zsh/plugins/sudo/sudo.plugin.zsh"
-alias x=extract
-alias y='apt search' ync='pkg install -y' yqq='apt-cache policy'
-alias yrm='pkg remove -y' yup='pkg upgrade' yupnc='pkg upgrade -y'
+setopt rc_quotes
 alias -g DN='&> /dev/null' L='| less' J='| jq'
-
-if zsh::prompt-plugins-enabled && not_in_vt
-then
-  source "$_native_plugins/manydots/manydots-magic"
-  manydots-magic
-  source "$_native_plugins/history-substring-search/zsh-history-substring-search.zsh"
-  typeset -g HISTORY_SUBSTRING_SEARCH_FUZZY=1
-  bindkey '^[[A' history-substring-search-up
-  bindkey '^[[B' history-substring-search-down
-  source "$_native_plugins/autopair/autopair.zsh"
-  bindkey '^H' backward-kill-word
-  source "$_native_plugins/vi-motions/motions.zsh"
-  source "$_native_plugins/vi-quote/vi-quote.zsh"
-fi
 
 # These are the shared Home Manager Zsh integrations. In Termux mode they call
 # the package-manager-provided commands instead of baking Linux store paths in.
@@ -88,20 +12,39 @@ source "$TERMUX_GENERATION/home/.config/zsh/custom/os/home-manager/system.zsh"
 # Initialize tools installed in the Termux prefix. Generate their shell hooks
 # from the binaries active on this device so no Linux store paths enter the
 # exported configuration.
+# Atuin deliberately shares this timestamp between its preexec and precmd hooks.
+typeset -g __atuin_preexec_time
 eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
 eval "$(direnv hook zsh)"
+export DIRENV_LOG_FORMAT=
 eval "$(zoxide init zsh --no-cmd)"
+eval "$(fzf --zsh)"
 alias z=__zoxide_z
 alias zz=__zoxide_zi
 export LS_COLORS="$(vivid generate catppuccin-mocha)"
 zstyle ':completion:*:default' list-colors "${(s.:.)LS_COLORS}"
+
+# Reuse yadm's Termux host bootstrap as a runtime input. The yadm files remain
+# in the user's home and are never copied into the public bundle.
+typeset -g _native_profile_zdotdir="$ZDOTDIR"
+typeset -g _native_yadm_zdotdir="$XDG_CONFIG_HOME/zsh"
+if [[ -r "$_native_yadm_zdotdir/custom/os/termux/zboot.zsh" ]]
+then
+  ZDOTDIR="$_native_yadm_zdotdir"
+  source "$ZDOTDIR/custom/os/termux/zboot.zsh"
+  if [[ -n "$HOST" && -r "$ZDOTDIR/custom/hosts/$HOST/zprompt" ]]
+  then
+    source "$ZDOTDIR/custom/hosts/$HOST/zprompt"
+  fi
+fi
+ZDOTDIR="$_native_profile_zdotdir"
+unset _native_profile_zdotdir _native_yadm_zdotdir
 
 # Refuse first-run daemon acquisition: our Android executable is in the bundle.
 typeset -g GITSTATUS_DAEMON="$TERMUX_GENERATION/bin/gitstatusd"
 typeset -g GITSTATUS_AUTO_INSTALL=0
 typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 source "$_native_plugins/powerlevel10k/gitstatus/gitstatus.plugin.zsh"
-source "$_native_plugins/powerlevel10k/powerlevel10k.zsh-theme"
 if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 && -r "$ZDOTDIR/p10k.zsh" ]]
 then
   source "$ZDOTDIR/p10k.zsh"
@@ -118,9 +61,6 @@ then
 fi
 source "$TERMUX_GENERATION/shell/plugins/example.zsh"
 
-# Zinit's regular local-plugin block sources these private files at runtime.
-# Keep them on-device and load them directly for Termux instead of bundling
-# private dotfiles or starting Zinit.
 if [[ "$_native_yadm_config" == 1 ]]
 then
   () {
@@ -163,8 +103,9 @@ fi
 unset _native_plugins
 unset _native_yadm_config
 
-# Keep generated commands and Termux APT commands available after shell
-# integrations adjust PATH.
+# Zinit integrations may rewrite PATH while loading plugins. Restore the
+# selected generation and Termux package directories after those changes so
+# bundled commands such as nixpp stay available in the interactive shell.
 path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
 
 typeset -g TERMUX_NATIVE_READY=1

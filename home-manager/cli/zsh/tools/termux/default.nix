@@ -1,0 +1,29 @@
+{
+  imports = [
+    ./argocd.nix
+    ./assh.nix
+    ./bunq.nix
+    ./designateclient.nix
+    ./home-assistant-cli.nix
+    ./jc.nix
+    ./json-repair.nix
+    ./kubectl.nix
+    ./ldifj.nix
+    ./linkding-cli.nix
+    ./mani.nix
+    ./myl.nix
+    ./obs-cli.nix
+    ./openstackclient.nix
+    ./opsgenie-cli.nix
+    ./proot.nix
+    ./rancher.nix
+    ./rbw.nix
+    ./ruamel-fmt.nix
+    ./slack-react.nix
+    ./tdc.nix
+    ./termux-tools.nix
+    ./todoist-cli.nix
+    ./tudo.nix
+    ./udocker.nix
+  ];
+}

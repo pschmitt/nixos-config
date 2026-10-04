@@ -24,6 +24,7 @@ buildGoModule rec {
 
   postInstall = ''
     ln -s "$out/bin/ketall" "$out/bin/kubectl-get_all"
+    ln -s "$out/bin/ketall" "$out/bin/kubectl-get-all"
   '';
 
   meta = {

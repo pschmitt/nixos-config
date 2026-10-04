@@ -17,7 +17,7 @@ main() {
   cp -R "$gitstatusSource" gitstatus
   chmod -R u+w gitstatus
   make -C gitstatus -j "${NIX_BUILD_CORES:-2}" \
-    CXX="$compiler/aarch64-linux-android24-clang++" \
+    CXX="$compiler/aarch64-linux-android35-clang++" \
     CXXFLAGS="-std=c++14 -O2 -fPIE -funsigned-char -DNDEBUG -DGITSTATUS_VERSION=v1.5.5 -DGITSTATUS_ZERO_NSEC -I$PWD/libgit2/include" \
     LDFLAGS="-pie -static-libstdc++ -L$PWD/libgit2/build -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384" \
     LDLIBS="-lgit2 -lz -ldl"

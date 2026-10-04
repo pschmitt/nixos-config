@@ -8,6 +8,16 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
+    alias-tips = {
+      url = "github:djui/alias-tips";
+      flake = false;
+    };
+
+    zsh-diff-so-fancy = {
+      url = "github:z-shell/zsh-diff-so-fancy";
+      flake = false;
+    };
+
     # attic = {
     #   url = "github:zhaofengli/attic";
     #   inputs.nixpkgs.follows = "nixpkgs";
@@ -207,6 +217,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    tmux-xpanes = {
+      url = "github:greymd/tmux-xpanes";
+      flake = false;
+    };
+
     luks-mount = {
       url = "github:pschmitt/luks-mount.sh";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -317,6 +332,16 @@
     tdc = {
       url = "github:pschmitt/tdc";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    termux-tools = {
+      url = "github:pschmitt/termux.sh";
+      flake = false;
+    };
+
+    tudo = {
+      url = "github:agnostic-apollo/tudo";
+      flake = false;
     };
 
     pre-commit-hooks = {

@@ -12,9 +12,9 @@ check_host() {
   fi
   local api
   api=$(getprop ro.build.version.sdk) || return
-  if [[ ! "$api" =~ ^[0-9]+$ ]] || ((api < 24))
+  if [[ ! "$api" =~ ^[0-9]+$ ]] || ((api < 35))
   then
-    printf 'Android API 24 or newer is required.\n' >&2
+    printf 'Android API 35 or newer is required.\n' >&2
     return 1
   fi
 }

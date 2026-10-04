@@ -3,6 +3,8 @@
   pkgs,
   package,
   binary,
+  buildBinary ? binary,
+  skipPostInstall ? false,
   licenseFile ? null,
 }:
 let
@@ -41,8 +43,8 @@ package.overrideAttrs (old: {
   dontStrip = true;
   allowedReferences = [ ];
 
-  postInstall = (old.postInstall or "") + ''
-    install -Dm0755 "$out/bin/android_arm64/${binary}" "$out/bin/${binary}"
+  postInstall = (if skipPostInstall then "" else (old.postInstall or "")) + ''
+    install -Dm0755 "$out/bin/android_arm64/${buildBinary}" "$out/bin/${binary}"
     rm -rf "$out/bin/android_arm64"
     ${lib.optionalString (licenseFile != null) ''
       install -Dm0644 ${lib.escapeShellArg licenseFile} "$out/share/licenses/${binary}"

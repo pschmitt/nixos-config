@@ -15,11 +15,19 @@ let
     sync_frequency = "15m";
     search_mode = "fuzzy";
   };
+  atuinInitFile = pkgs.runCommand "atuin-init" { } ''
+    mkdir -p $out/home
+    HOME=$out/home ${pkgs.atuin}/bin/atuin init \
+      --disable-ctrl-r \
+      --disable-up-arrow \
+      zsh > $out/init.zsh
+    rm -rf $out/home
+  '';
 in
 {
   programs.atuin = {
     enable = !termuxMode;
-    enableZshIntegration = false; # We manage this manually below
+    enableZshIntegration = false; # We manage this manually below.
     forceOverwriteSettings = true;
     inherit settings;
   };
@@ -30,28 +38,16 @@ in
     "atuin/config.toml" = lib.mkIf termuxMode {
       source = (pkgs.formats.toml { }).generate "atuin-config" settings;
     };
+
     "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (
-      if termuxMode then
-        ''
-          # atuin
-          eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
-          # bindkey '^[r' _atuin_search_widget
-        ''
-      else
-        ''
-          # atuin
-          source ${
-            (pkgs.runCommand "atuin-init" { } ''
-              mkdir -p $out/home
-              HOME=$out/home ${pkgs.atuin}/bin/atuin init \
-                --disable-ctrl-r \
-                --disable-up-arrow \
-                zsh > $out/init.zsh
-              rm -rf $out/home
-            '')
-          }/init.zsh
-          # bindkey '^[r' _atuin_search_widget
-        ''
+      lib.optionalString (!termuxMode) ''
+        # atuin
+        source ${atuinInitFile}/init.zsh
+        # bindkey '^[r' _atuin_search_widget
+      ''
+      + lib.optionalString termuxMode ''
+        bindkey '^[r' _atuin_search_widget
+      ''
     );
   };
 }

@@ -7,6 +7,8 @@ let
   termuxMode = config.termux.enable or false;
 in
 {
+  imports = [ ../../termux-options.nix ];
+
   config = lib.mkIf termuxMode {
     termux.packages = [ "neovim" ];
 

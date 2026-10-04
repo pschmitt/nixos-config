@@ -1,0 +1,19 @@
+{
+  imports = [
+    ./adb.nix
+    ./bruvtab.nix
+    ./fd.nix
+    ./jq.nix
+    ./ketall.nix
+    ./krew.nix
+    ./kubectl-ksh.nix
+    ./kubectl-socks5-proxy.nix
+    ./kubectl-watch.nix
+    ./luks-mount.nix
+    ./netbird.nix
+    ./tesmart.nix
+    ./tmux-slay.nix
+    ./tmux-xpanes.nix
+    ./yank.nix
+  ];
+}

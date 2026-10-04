@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
 {
   imports = [
     ./env.nix
@@ -10,6 +15,10 @@
     ./devel/nodejs.nix
     ./devel/sh.nix
     ./devel/zsh.nix
+    ./cli/zsh
+    ./cli/zsh/termux.nix
+    (inputs.nixos-config-private.outPath + "/hm/zsh.nix")
+    ../modules/domains.nix
   ];
 
   programs.home-manager.enable = true;

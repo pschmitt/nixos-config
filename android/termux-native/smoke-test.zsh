@@ -23,7 +23,29 @@ native_shell_check() {
     fi
   done
   (( $+widgets[history-substring-search-up] && $+widgets[edit-command-line] && $+widgets[_atuin_search_widget] )) || return 1
-  (( $+_comps[git] )) || return 1
+  if [[ ! -r "$TERMUX_GENERATION/home/.config/atuin/config.toml" ]]
+  then
+    print -u2 -- 'Termux generation is missing the Atuin settings file'
+    return 1
+  fi
+  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
+        ! -r "$TERMUX_GENERATION/home/.local/share/man/man1/mani.1" ]]
+  then
+    print -u2 -- 'Termux generation is missing the mani completion or man page'
+    return 1
+  fi
+  local atuin_binding
+  atuin_binding=$(bindkey '^[r') || return 1
+  if [[ "$atuin_binding" != *'_atuin_search_widget' ]]
+  then
+    print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
+    return 1
+  fi
+  if (( ! $+_comps[git] || ! $+_comps[mani] ))
+  then
+    print -u2 -- "Missing completion registration: git=$+_comps[git] mani=$+_comps[mani]"
+    return 1
+  fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
   for command in bat eza fd rg vivid zoxide nixpp
@@ -53,6 +75,7 @@ native_shell_check() {
   vivid generate one-dark >/dev/null || return
   tmux -V >/dev/null || return
   zoxide --version >/dev/null || return
+  shellcheck --version >/dev/null || return
   nixpp switch --help >/dev/null 2>&1 || return
   nixpp status --help >/dev/null 2>&1 || return
   "$GITSTATUS_DAEMON" --version || return

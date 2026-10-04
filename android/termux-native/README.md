@@ -355,8 +355,10 @@ control Zinit.
 
 This removes the Zinit scheduler and plugin-download phase from Termux shell
 startup. It does not mean every yadm plugin has been migrated: the Termux
-`termux.sh` helpers and the ShellCheck/proot wrapper are still outside the
-Home Manager plugin set. Review those before claiming full behavior parity.
+`termux.sh` helpers are still outside the Home Manager plugin set. ShellCheck
+is provided by Termux APT; the old upstream x86_64/proot wrapper is not loaded
+by the native shell. Review the remaining helpers before claiming full
+behavior parity.
 Private yadm files remain runtime inputs from the phone's home directory and
 are not copied into the public bundle.
 

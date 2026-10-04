@@ -7,10 +7,12 @@
 }:
 
 let
+  zsh-tools = pkgs.callPackage ./zsh-tools { inherit inputs; };
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
   # Hoisted so obs-control can depend on them (not top-level nixpkgs attrs).
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
+  udocker-engines = pkgs.callPackage ./udocker-engines { };
   soundboard = pkgs.callPackage ./local/soundboard { };
   timew-status = pkgs.callPackage ./local/timew-status { };
   osd = pkgs.callPackage ./local/osd { };
@@ -52,6 +54,7 @@ in
   # external pkgs
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   inherit emoji-fzf;
+  inherit udocker-engines;
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
   fievel = pkgs.callPackage ./fievel { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
@@ -82,6 +85,16 @@ in
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };
   waypoint = pkgs.callPackage ./waypoint { };
+  inherit (zsh-tools)
+    adb-sh
+    adb-completions
+    kubectl-ksh
+    kubectl-socks5-proxy
+    kubectl-watch
+    netbird-cli
+    tesmart-cli
+    zsh-diff-so-fancy
+    ;
   withoutbg = pkgs.python3Packages.callPackage ./withoutbg { };
   yank-osc52 = pkgs.callPackage ./yank-osc52 { };
 

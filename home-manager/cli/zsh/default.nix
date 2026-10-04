@@ -8,16 +8,6 @@ let
   termuxMode = config.termux.enable or false;
 in
 {
-  options.termux = {
-    enable = lib.mkEnableOption "Termux-native Home Manager integration";
-
-    packages = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Termux package names required by this profile.";
-    };
-  };
-
   imports = [
     ./atuin.nix
     ./direnv.nix

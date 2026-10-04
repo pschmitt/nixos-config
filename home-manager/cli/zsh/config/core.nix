@@ -125,13 +125,31 @@ in
         export ZHJ_MODE=eval
       fi
     '';
-    initContent = lib.mkOrder 1400 ''
-      if [[ -o interactive && -z "$NO_PLUGINS" ]]
-      then
-        zsh::source-local-plugins
-        __init_custom_completions
-      fi
-    '';
+    initContent = lib.mkMerge [
+      # Mirror the yadm custom.zsh loader: OS and per-host overrides such as
+      # custom/hosts/<host>/zprompt (host_color) must precede p10k.zsh.
+      (lib.mkOrder 700 ''
+        () {
+          setopt localoptions nullglob extendedglob
+          local custom_dir="${config.xdg.configHome}/zsh/custom"
+
+          is_distrobox && multisrc "$custom_dir/os/distrobox"/*
+          source "$custom_dir/hostname" 2>/dev/null
+          is_nixos || multisrc "$custom_dir/os/not-nixos"/*.zsh
+
+          multisrc \
+            "$custom_dir/os/$(os-release::kind)"/^zboot.zsh \
+            "$custom_dir/hosts/$HOST"/^zboot.zsh
+        }
+      '')
+      (lib.mkOrder 1400 ''
+        if [[ -o interactive && -z "$NO_PLUGINS" ]]
+        then
+          zsh::source-local-plugins
+          __init_custom_completions
+        fi
+      '')
+    ];
   };
 
 }

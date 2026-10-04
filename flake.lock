@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "alias-tips": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1674152807,
+        "narHash": "sha256-ZFWrwcwwwSYP5d8k7Lr/hL3WKAZmgn51Q9hYL3bq9vE=",
+        "owner": "djui",
+        "repo": "alias-tips",
+        "rev": "41cb143ccc3b8cc444bf20257276cb43275f65c4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "djui",
+        "repo": "alias-tips",
+        "type": "github"
+      }
+    },
     "anika-blue": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -3041,6 +3057,7 @@
     },
     "root": {
       "inputs": {
+        "alias-tips": "alias-tips",
         "anika-blue": "anika-blue",
         "bitwarden-mcp": "bitwarden-mcp",
         "bruvtab": "bruvtab",
@@ -3103,15 +3120,19 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "tdc": "tdc",
+        "termux-tools": "termux-tools",
         "tmux-slay": "tmux-slay",
+        "tmux-xpanes": "tmux-xpanes",
         "tsvtool": "tsvtool",
+        "tudo": "tudo",
         "update-systemd-resolved": "update-systemd-resolved",
         "vi-motions": "vi-motions",
         "vi-quote": "vi-quote",
         "vodafone-station-cli": "vodafone-station-cli",
         "vpn-confinement": "vpn-confinement",
         "wezterm": "wezterm",
-        "zen-browser": "zen-browser"
+        "zen-browser": "zen-browser",
+        "zsh-diff-so-fancy": "zsh-diff-so-fancy"
       }
     },
     "ruamel-fmt": {
@@ -3814,6 +3835,22 @@
         "type": "github"
       }
     },
+    "termux-tools": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1782055973,
+        "narHash": "sha256-gI6eRrwodMgqugoen0Oxj7Xf81oYwWsQNG0icv449kc=",
+        "owner": "pschmitt",
+        "repo": "termux.sh",
+        "rev": "ea6bb6974d1fd01a32ed7de7e20335a511669410",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "termux.sh",
+        "type": "github"
+      }
+    },
     "tmux-slay": {
       "inputs": {
         "flake-utils": "flake-utils_22",
@@ -3832,6 +3869,22 @@
       "original": {
         "owner": "pschmitt",
         "repo": "tmux-slay",
+        "type": "github"
+      }
+    },
+    "tmux-xpanes": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1777951388,
+        "narHash": "sha256-9lNeKJSWSsJRTu+mmbH+PQlF9so2Snk05mQ+KTKVcxM=",
+        "owner": "greymd",
+        "repo": "tmux-xpanes",
+        "rev": "384b12780759f53056f58fb05645dfac89688da8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "greymd",
+        "repo": "tmux-xpanes",
         "type": "github"
       }
     },
@@ -3894,6 +3947,22 @@
       "original": {
         "owner": "pschmitt",
         "repo": "tsvtool",
+        "type": "github"
+      }
+    },
+    "tudo": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1747068172,
+        "narHash": "sha256-LBAgBg6Wko+dWKAvkSqmGJI7PaVCvFWldjpg2uM0uuI=",
+        "owner": "agnostic-apollo",
+        "repo": "tudo",
+        "rev": "6702ea588b0601cac6bf88c81f57397f8bb83e36",
+        "type": "github"
+      },
+      "original": {
+        "owner": "agnostic-apollo",
+        "repo": "tudo",
         "type": "github"
       }
     },
@@ -4179,6 +4248,22 @@
         "owner": "jcollie",
         "ref": "v0.9.0",
         "repo": "zon2nix",
+        "type": "github"
+      }
+    },
+    "zsh-diff-so-fancy": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787315474,
+        "narHash": "sha256-7Hj1SnIZZAjMp6Yu/ay3xvogQzSv1T5b902A6lklKV8=",
+        "owner": "z-shell",
+        "repo": "zsh-diff-so-fancy",
+        "rev": "259a9ead84436b8734482b7078cb98c945b2459a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "z-shell",
+        "repo": "zsh-diff-so-fancy",
         "type": "github"
       }
     }

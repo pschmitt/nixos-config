@@ -1,0 +1,26 @@
+{
+  imports = [
+    ./auto-notify.nix
+    ./autopair.nix
+    ./autosuggestions.nix
+    ./colored-man-pages.nix
+    ./cp.nix
+    ./diff-so-fancy.nix
+    ./docker.nix
+    ./docker-compose.nix
+    ./emoji-fzf.nix
+    ./extract.nix
+    ./gpg-agent.nix
+    ./history-substring-search.nix
+    ./manydots.nix
+    ./powerlevel10k.nix
+    ./prezto-archive.nix
+    ./spectrum.nix
+    ./syntax-highlighting.nix
+    ./sudo.nix
+    ./systemd.nix
+    ./vi-motions.nix
+    ./vi-quote.nix
+    ./zsh-completions.nix
+  ];
+}

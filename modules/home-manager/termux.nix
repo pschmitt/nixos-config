@@ -60,36 +60,57 @@ let
   termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
     package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
   };
-  termuxAtuin = pkgs.callPackage ../../pkgs/termux-native/atuin.nix { };
   termuxVivid = fromNixpkgs { package = pkgs.vivid; };
   termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
   termuxEmojiFzf = pkgs.callPackage ../../pkgs/termux-native/python-application.nix {
     package = pkgs.emoji-fzf;
     python = pkgs.python3;
   };
+  goNative =
+    {
+      package,
+      binary,
+      buildBinary ? binary,
+      skipPostInstall ? false,
+    }:
+    pkgs.callPackage ../../pkgs/termux-native/go-binary.nix {
+      inherit
+        package
+        binary
+        buildBinary
+        skipPostInstall
+        ;
+    };
+  termuxAssh = goNative {
+    package = pkgs.assh;
+    binary = "assh";
+    skipPostInstall = true;
+  };
+  termuxRancher = goNative {
+    package = pkgs.rancher;
+    binary = "rancher";
+    buildBinary = "cli";
+    skipPostInstall = true;
+  };
 in
 {
   imports = [
     ../../home-manager/cli/nvim/termux.nix
     ../../home-manager/cli/tmux
+    ../../home-manager/cli/zsh/atuin.nix
+    ../../home-manager/cli/zsh/tools/termux/mani.nix
     ./termux-zsh-runtime.nix
     ../../home-manager/cli/zsh/config/base.nix
     ../../home-manager/cli/zsh/config/hashicorp-completions.nix
     ../../home-manager/cli/zsh/config/hm.nix
     ../../home-manager/cli/zsh/config/portable.nix
+    ../../home-manager/cli/zsh/plugins
     ../../home-manager/cli/zsh/termux-shell.nix
+    ../../home-manager/termux-options.nix
     ../domains.nix
   ];
 
   options.termux = {
-    enable = lib.mkEnableOption "Termux-specific Home Manager configuration";
-
-    packages = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Termux APT packages required by the Home Manager profile.";
-    };
-
     homeFiles = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [
@@ -97,6 +118,9 @@ in
         ".config/zsh/.zshenv"
         ".config/zsh/.zshrc"
         ".config/zsh/custom/os/home-manager/system.zsh"
+        ".config/atuin/config.toml"
+        ".config/zsh/completions/_mani"
+        ".local/share/man/man1/mani.1"
         ".config/tmux/tmux.conf"
         ".config/nvim/init.lua"
         ".config/nvim/after"
@@ -134,9 +158,10 @@ in
         termuxZip
         termuxUnzip
         termuxGzip
-        termuxAtuin
         termuxSshToAge
         termuxEmojiFzf
+        termuxAssh
+        termuxRancher
       ];
 
       termux.packages = [
@@ -154,6 +179,7 @@ in
         "openssh"
         "procps"
         "python"
+        "shellcheck"
         "sed"
         "tar"
         "util-linux"
