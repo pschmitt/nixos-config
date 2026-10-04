@@ -94,7 +94,7 @@ preflight_archive() (
 
 transaction() (
   local action=$1 archive=$2 generation=$3
-  local root="$HOME/.local/share/termux-native" stage actual
+  local root="$HOME/.local/share/termux-native" stage actual owns_lock=1
   mkdir -p "$root/generations" || return
   mkdir "$root/.lock" || return
   trap 'command rm -f -- "$root/.next"; rmdir -- "$root/.lock"' EXIT

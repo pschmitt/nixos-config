@@ -44,6 +44,36 @@ normalize_elf() {
   chmod u-w "$file"
 }
 
+validate_elf() {
+  local package=$1 file=$2 header program_headers dynamic_section interpreter
+  header=$("$readelf" -h "$file") || {
+    printf 'Cannot read ELF header for %s (%s).\n' "$package" "$file" >&2
+    return 1
+  }
+  if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
+    ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
+  then
+    printf 'Bundled ELF is not AArch64 ELF64: %s (%s)\n' "$package" "$file" >&2
+    return 1
+  fi
+
+  program_headers=$("$readelf" -l "$file") || return
+  interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
+  if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
+  then
+    printf 'Bundled ELF requests a non-Android interpreter: %s (%s): %s\n' \
+      "$package" "$file" "$interpreter" >&2
+    return 1
+  fi
+
+  dynamic_section=$("$readelf" -d "$file") || return
+  if grep -Eq '\((RUNPATH|RPATH)\)' <<<"$dynamic_section"
+  then
+    printf 'Bundled ELF still has RPATH/RUNPATH: %s (%s)\n' "$package" "$file" >&2
+    return 1
+  fi
+}
+
 if ! jq -e '
   type == "array" and
   all(.[];
@@ -209,6 +239,10 @@ do
     mkdir -p "$(dirname "$destination")"
     cp -L -- "$source_file" "$destination"
     normalize_elf "$destination"
+    if "$readelf" -h "$destination" >/dev/null 2>&1
+    then
+      validate_elf "$name" "$destination"
+    fi
   done < <(jq -r '.files[]' <<<"$package")
 
   checked_elfs=()
@@ -226,15 +260,8 @@ do
       exit 1
     fi
     bundled_file="$package_root/$binary"
+    validate_elf "$name" "$bundled_file"
     dynamic_section=$("$readelf" -d "$bundled_file")
-    header=$("$readelf" -h "$bundled_file")
-    if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
-      ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
-    then
-      printf 'Termux binary is not AArch64 ELF64: %s (%s)\n' "$name" "$binary" >&2
-      exit 1
-    fi
-
     program_headers=$("$readelf" -l "$bundled_file")
     interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
     if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
@@ -293,4 +320,22 @@ do
     cp -- "$source_file" "$launcher"
     chmod 0755 "$launcher"
   done < <(jq -r '.scripts[]' <<<"$package")
+
+  while IFS= read -r -d '' bundled_file
+  do
+    if "$readelf" -h "$bundled_file" >/dev/null 2>&1
+    then
+      relative_file=${bundled_file#"$package_root"/}
+      validate_elf "$name" "$bundled_file"
+      bundle_dependencies "$name" "$relative_file" "$bundled_file" "$package_root" "$runtime_closure"
+    fi
+  done < <(find "$package_root" -type f -print0)
 done < <(jq -c '.[]' "$manifest")
+
+while IFS= read -r -d '' bundled_file
+do
+  if "$readelf" -h "$bundled_file" >/dev/null 2>&1
+  then
+    validate_elf 'bundle' "$bundled_file"
+  fi
+done < <(find "$output" -type f -print0)

@@ -91,6 +91,7 @@ main() {
 
   installer="$(dirname "${BASH_SOURCE[0]}")/activate.sh"
   root="$HOME/.local/share/termux-native"
+  archive=$1
   generation=$2
   mkdir -p "$root" || return
   lock="$root/.bootstrap-lock"

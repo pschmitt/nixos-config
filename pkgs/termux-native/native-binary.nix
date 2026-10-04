@@ -2,6 +2,7 @@
   lib,
   pkgs,
   package,
+  target ? import ./target.nix { inherit pkgs; },
   binaryPathOverride ? null,
   crossPackage ? null,
   skipPostInstall ? false,
@@ -18,7 +19,7 @@ let
       "bin/${mainProgram}"
     else
       throw "${packageName} has no meta.mainProgram; set binary explicitly";
-  androidPackages = pkgs.pkgsCross.aarch64-android-prebuilt.extend (
+  androidPackages = target.pkgs.extend (
     _final: prev: {
       # Android's NDK linker is lld, but Nixpkgs' LLVM detection misses it in
       # this cross set. ncurses' version map names symbols it doesn't define,
@@ -46,7 +47,6 @@ let
     else
       throw "${packageName} cross package is not built for Android/Bionic";
   targetBintools = checkedAndroidPackage.stdenv.cc.bintools;
-  targetObjcopy = "${targetBintools}/bin/${checkedAndroidPackage.stdenv.cc.targetPrefix}objcopy";
   unstripped = checkedAndroidPackage.overrideAttrs (old: {
     doCheck = false;
     doInstallCheck = false;
@@ -79,5 +79,5 @@ runCommand "${lib.getName package}-termux"
   ''
     mkdir -p "$out/$(dirname ${lib.escapeShellArg binaryPath})"
     cp ${unstripped}/${binaryPath} "$out/${binaryPath}"
-    ${targetObjcopy} --strip-unneeded "$out/${binaryPath}"
+    ${target.objcopy} --strip-unneeded "$out/${binaryPath}"
   ''

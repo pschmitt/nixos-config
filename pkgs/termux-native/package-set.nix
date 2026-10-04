@@ -3,19 +3,10 @@
   pkgs,
 }:
 let
+  target = import ./target.nix { inherit pkgs; };
   # Use Nixpkgs' Android/Bionic platform for compatibility. Keep Termux-ready
   # wrappers namespaced so they cannot replace Nixpkgs bootstrap tools.
-  androidPkgs = pkgs.pkgsCross.aarch64-android-prebuilt;
-  android = pkgs.androidenv.composeAndroidPackages {
-    includeNDK = true;
-    ndkVersions = [ "27.2.12479018" ];
-    platformVersions = [ ];
-    buildToolsVersions = [ ];
-    includeEmulator = false;
-  };
-  ndkRoot = "${android.ndk-bundle}/libexec/android-sdk/ndk-bundle";
-  toolchain = "${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/bin";
-  minimumApi = 35;
+  androidPkgs = target.pkgs;
 in
 androidPkgs.extend (
   _final: prev:
@@ -42,6 +33,7 @@ androidPkgs.extend (
           crossPackage
           skipPostInstall
           skipPostFixup
+          target
           ;
       };
     fromGo =
@@ -59,8 +51,8 @@ androidPkgs.extend (
           buildBinary
           skipPostInstall
           licenseFile
+          target
           ;
-        targetCC = "${toolchain}/aarch64-linux-android${toString minimumApi}-clang";
       };
     pythonApplication =
       {
