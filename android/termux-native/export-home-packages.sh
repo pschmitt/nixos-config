@@ -52,11 +52,14 @@ if ! jq -e '
     (.runtimeClosure == null or (.runtimeClosure | type == "string" and startswith("/nix/store/"))) and
     (.abi == "android-bionic") and
     (.files | type == "array" and length > 0) and
-    (.binaries | type == "array" and length > 0) and
+    (.binaries | type == "array") and
     (.scripts | type == "array") and
+    (.trees | type == "array") and
     all(.files[]; type == "string") and
     all(.binaries[]; type == "string" and startswith("bin/")) and
     all(.scripts[]; type == "string" and startswith("bin/")) and
+    all(.trees[]; type == "string") and
+    ((.binaries + .scripts + .trees) | length > 0) and
     (.files as $files | all((.binaries + .scripts)[]; . as $command | $files | index($command) != null))
   )
 ' "$manifest" >/dev/null
@@ -136,6 +139,46 @@ do
   runtime_closure=$(jq -r '.runtimeClosure // empty' <<<"$package")
   package_root="$output/native/$name"
   declare -A scanned_elf=()
+
+  while IFS= read -r tree
+  do
+    if [[ ! "$tree" =~ ^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)*$ ]]
+    then
+      printf 'Unsafe package tree for %s: %s\\n' "$name" "$tree" >&2
+      exit 1
+    fi
+    IFS=/ read -r -a components <<<"$tree"
+    for component in "${components[@]}"
+    do
+      if [[ "$component" == . || "$component" == .. ]]
+      then
+        printf 'Unsafe package tree for %s: %s\\n' "$name" "$tree" >&2
+        exit 1
+      fi
+    done
+    source_tree="$source_root/$tree"
+    destination_tree="$package_root/$tree"
+    if [[ ! -d "$source_tree" ]]
+    then
+      printf 'Declared package tree is missing: %s (%s)\\n' "$name" "$tree" >&2
+      exit 1
+    fi
+    mkdir -p "$destination_tree"
+    cp -RL -- "$source_tree/." "$destination_tree/"
+    while IFS= read -r -d '' tree_file
+    do
+      if "$readelf" -h "$tree_file" >/dev/null 2>&1
+      then
+        printf 'Native ELF in a data-only package tree: %s (%s)\\n' "$name" "$tree_file" >&2
+        exit 1
+      fi
+      if grep -qF /nix/store "$tree_file"
+      then
+        printf 'Nix store reference in package tree: %s (%s)\\n' "$name" "$tree_file" >&2
+        exit 1
+      fi
+    done < <(find "$destination_tree" -type f -print0)
+  done < <(jq -r '.trees[]' <<<"$package")
 
   while IFS= read -r file
   do

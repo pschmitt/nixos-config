@@ -90,6 +90,13 @@ Nix store paths. Unsupported
 for Termux APT packages or add an Android/Bionic export contract. Home
 Manager's own support packages are handled separately. The final generation
 rejects Nix store references. Linux executables cannot run in native Termux.
+Pure Python applications can use `python-application.nix`: it copies installed
+Python modules from the Nix package and its propagated runtime inputs, removes
+host-only Python environment metadata and bytecode, and points a Termux shell
+launcher at the system Python with the modules in `PYTHONPATH`. The exporter
+rejects ELF files in this data tree and rejects Nix store references. This
+works for pure Python packages; packages with native Python extensions still
+need an Android build or a Termux APT package.
 `termux.homeFiles` is an export allowlist: only those generated files enter the
 archive. Keep private dotfiles out of this public bundle; add a path to the
 allowlist only when you intend that file to ship.

@@ -63,6 +63,10 @@ let
   termuxAtuin = pkgs.callPackage ../../pkgs/termux-native/atuin.nix { };
   termuxVivid = fromNixpkgs { package = pkgs.vivid; };
   termuxSshToAge = pkgs.callPackage ../../pkgs/termux-native/ssh-to-age.nix { };
+  termuxEmojiFzf = pkgs.callPackage ../../pkgs/termux-native/python-application.nix {
+    package = pkgs.emoji-fzf;
+    python = pkgs.python3;
+  };
 in
 {
   imports = [
@@ -132,6 +136,7 @@ in
         termuxGzip
         termuxAtuin
         termuxSshToAge
+        termuxEmojiFzf
       ];
 
       termux.packages = [
@@ -139,6 +144,8 @@ in
         "coreutils"
         "curl"
         "direnv"
+        "diff-so-fancy"
+        "fzf"
         "git"
         "grep"
         "jq"
@@ -146,6 +153,7 @@ in
         "less"
         "openssh"
         "procps"
+        "python"
         "sed"
         "tar"
         "util-linux"
