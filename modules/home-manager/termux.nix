@@ -92,9 +92,6 @@ in
         username = "termux";
         homeDirectory = "/data/data/com.termux/files/home";
         stateVersion = "26.05";
-        file.".config/zsh/.zshenv".text = lib.mkForce (
-          builtins.readFile ../../android/termux-native/shell-env.zsh
-        );
       };
 
       home.packages = [
