@@ -35,6 +35,13 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 - Do not open pull requests unless explicitly requested. Default to working directly on `main` (or the repository's default branch) without creating feature branches or PRs.
 
+## Progress notifications
+
+- For substantial multi-step work or long-running operations, check the user's presence in Home Assistant when it affects whether they can see chat updates. Use the HA live-context tool or `zsh -lc 'zhj hass-cli state list person'` to inspect the relevant `person.*` state. When the user is away, send concise Signal updates through Home Assistant using `notify.signal_me` (`zsh -lc 'zhj hass-cli service call notify.signal_me --arguments "message=..."'`).
+- Send Signal messages for meaningful milestones, blockers that need the user's attention, and completion after a long operation. Keep routine progress in chat, avoid duplicate messages, and don't send for quick tasks.
+- Start every Signal update with an uppercase ASCII task/topic and the actual harness name in `[TOPIC | HARNESS]` form on its own first line, for example `**[FNUC UPGRADE | CODEX]**`. This lets the user distinguish updates when agents are working in parallel; use the task topic to distinguish agents on the same harness, and don't invent a harness or agent identity. The HA Signal wrapper applies caller-supplied `**bold**` and `*italic*` formatting as actual Signal styles; messages without markers remain plain. When calling the sender script directly, pass `--no-format` to preserve markup literally.
+- State what changed or what is blocked and the next step. Keep secrets and sensitive identifiers out of notifications. If Home Assistant is unavailable, continue communicating in chat.
+
 ## GPG and commit signing
 
 - If a git commit fails because the GPG key is locked, run `zhj gpg::auto-unlock` to unlock it.
