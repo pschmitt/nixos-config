@@ -46,6 +46,8 @@ in
   imports = [
     ../../home-manager/cli/nvim/termux.nix
     ../../home-manager/cli/tmux
+    ../../home-manager/cli/zsh/config/portable.nix
+    ../../home-manager/cli/zsh/termux-shell.nix
     ../domains.nix
   ];
 

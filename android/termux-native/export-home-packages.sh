@@ -2,13 +2,14 @@
 
 set -euo pipefail
 
-manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
-output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
-readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
-system_libraries=${4:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES}
+manifest=${1:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
+output=${2:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
+readelf=${3:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
+system_libraries=${4:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
+patchelf=${5:?usage: export-home-packages.sh MANIFEST OUTPUT LLVM-READELF ANDROID-SYSTEM-LIBRARIES PATCHELF}
 launcher="$output/libexec/termux-native-launcher"
 
-if [[ ! -x "$launcher" || ! -x "$readelf" || ! -d "$system_libraries" ]]
+if [[ ! -x "$launcher" || ! -x "$readelf" || ! -d "$system_libraries" || ! -x "$patchelf" ]]
 then
   printf 'Termux launcher or Android system library directory is missing.\n' >&2
   exit 1
@@ -146,7 +147,18 @@ do
       printf 'Termux-native binary is missing or not executable: %s (%s)\n' "$name" "$binary" >&2
       exit 1
     fi
-    header=$("$readelf" -h "$source_file")
+    bundled_file="$package_root/$binary"
+    dynamic_section=$("$readelf" -d "$bundled_file")
+    if grep -Eq '\((RUNPATH|RPATH)\)' <<<"$dynamic_section"
+    then
+      # Nix build paths cannot exist on-device. The launcher supplies the
+      # package-local library directory through LD_LIBRARY_PATH instead.
+      chmod u+w "$bundled_file"
+      "$patchelf" --remove-rpath "$bundled_file"
+      chmod u-w "$bundled_file"
+    fi
+
+    header=$("$readelf" -h "$bundled_file")
     if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
       ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
     then
@@ -154,7 +166,7 @@ do
       exit 1
     fi
 
-    program_headers=$("$readelf" -l "$source_file")
+    program_headers=$("$readelf" -l "$bundled_file")
     interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
     if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
     then
