@@ -89,7 +89,7 @@ disabled too, and the generated Termux launcher uses the Termux `PATH` instead.
 The exporter preserves declared package files under the generation, creates
 command launchers, and checks every exported ELF for AArch64 and the Android
 linker (when it has one). It recursively checks dependencies of both commands
-and bundled libraries against Android API 24 system libraries and that
+and bundled libraries against Android API 35 system libraries and that
 package's `lib` or `lib64` export. It also
 installs checked shell scripts using Termux's `sh`, provided they contain no
 Nix store paths. Unsupported
