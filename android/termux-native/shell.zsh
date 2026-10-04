@@ -42,15 +42,18 @@ ZDOTDIR="$_native_profile_zdotdir"
 unset _native_profile_zdotdir _native_yadm_zdotdir
 
 # Refuse first-run daemon acquisition: our Android executable is in the bundle.
-typeset -g GITSTATUS_DAEMON="$TERMUX_GENERATION/bin/gitstatusd"
-typeset -g GITSTATUS_AUTO_INSTALL=0
-typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
-source "$_native_plugins/powerlevel10k/gitstatus/gitstatus.plugin.zsh"
-if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 && -r "$ZDOTDIR/p10k.zsh" ]]
+if zsh::prompt-plugins-enabled
 then
-  source "$ZDOTDIR/p10k.zsh"
-else
-  source "$TERMUX_GENERATION/shell/prompt.zsh"
+  typeset -g GITSTATUS_DAEMON="$TERMUX_GENERATION/bin/gitstatusd"
+  typeset -g GITSTATUS_AUTO_INSTALL=0
+  typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
+  source "$_native_plugins/powerlevel10k/gitstatus/gitstatus.plugin.zsh"
+  if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 && -r "$ZDOTDIR/p10k.zsh" ]]
+  then
+    source "$ZDOTDIR/p10k.zsh"
+  else
+    source "$TERMUX_GENERATION/shell/prompt.zsh"
+  fi
 fi
 
 if zsh::prompt-plugins-enabled && not_in_vt
