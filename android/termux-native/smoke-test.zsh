@@ -23,6 +23,7 @@ native_shell_check() {
     return 1
   fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_rbw" ||
         ! -r "$TERMUX_GENERATION/home/.local/share/man/man1/mani.1" ]]
   then
     print -u2 -- 'Termux generation is missing the mani completion or man page'
@@ -35,14 +36,14 @@ native_shell_check() {
     print -u2 -- "Alt-R is not bound to the Atuin search widget: $atuin_binding"
     return 1
   fi
-  if (( ! $+_comps[git] || ! $+_comps[kubectl] || ! $+_comps[mani] ))
+  if (( ! $+_comps[git] || ! $+_comps[kubectl] || ! $+_comps[mani] || ! $+_comps[rbw] ))
   then
-    print -u2 -- "Missing completion registration: git=$+_comps[git] kubectl=$+_comps[kubectl] mani=$+_comps[mani]"
+    print -u2 -- "Missing completion registration: git=$+_comps[git] kubectl=$+_comps[kubectl] mani=$+_comps[mani] rbw=$+_comps[rbw]"
     return 1
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in atuin bat eza fd rg ssh-to-age tmux vivid nixpp
+  for command in atuin bat eza fd rg rbw ssh-to-age tmux vivid nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -58,7 +59,7 @@ native_shell_check() {
       return 1
     fi
   done
-  for command in kubectl rbw shellcheck zoxide
+  for command in kubectl shellcheck zoxide
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then
