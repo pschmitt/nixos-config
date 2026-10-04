@@ -2,6 +2,11 @@
 
 typeset -g _native_yadm_config=${TERMUX_NATIVE_YADM_CONFIG:-0}
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
+zsh::prompt-plugins-enabled() {
+  [[ -z "${NO_PLUGINS:-}" &&
+    -z "${NO_PROMPT_PLUGINS:-}" &&
+    -z "${ZINIT_SKIP_PROMPT_PLUGINS:-}" ]]
+}
 if [[ "$_native_yadm_config" != 1 ]]
 then
   mkdir -p "$XDG_DATA_HOME/zsh"
@@ -62,16 +67,19 @@ alias y='apt search' ync='pkg install -y' yqq='apt-cache policy'
 alias yrm='pkg remove -y' yup='pkg upgrade' yupnc='pkg upgrade -y'
 alias -g DN='&> /dev/null' L='| less' J='| jq'
 
-source "$_native_plugins/manydots/manydots-magic"
-manydots-magic
-source "$_native_plugins/history-substring-search/zsh-history-substring-search.zsh"
-typeset -g HISTORY_SUBSTRING_SEARCH_FUZZY=1
-bindkey '^[[A' history-substring-search-up
-bindkey '^[[B' history-substring-search-down
-source "$_native_plugins/autopair/autopair.zsh"
-bindkey '^H' backward-kill-word
-source "$_native_plugins/vi-motions/motions.zsh"
-source "$_native_plugins/vi-quote/vi-quote.zsh"
+if zsh::prompt-plugins-enabled && not_in_vt
+then
+  source "$_native_plugins/manydots/manydots-magic"
+  manydots-magic
+  source "$_native_plugins/history-substring-search/zsh-history-substring-search.zsh"
+  typeset -g HISTORY_SUBSTRING_SEARCH_FUZZY=1
+  bindkey '^[[A' history-substring-search-up
+  bindkey '^[[B' history-substring-search-down
+  source "$_native_plugins/autopair/autopair.zsh"
+  bindkey '^H' backward-kill-word
+  source "$_native_plugins/vi-motions/motions.zsh"
+  source "$_native_plugins/vi-quote/vi-quote.zsh"
+fi
 
 # These are the shared Home Manager Zsh integrations. In Termux mode they call
 # the package-manager-provided commands instead of baking Linux store paths in.
@@ -85,7 +93,7 @@ eval "$(direnv hook zsh)"
 eval "$(zoxide init zsh --no-cmd)"
 alias z=__zoxide_z
 alias zz=__zoxide_zi
-export LS_COLORS="$(vivid generate one-dark)"
+export LS_COLORS="$(vivid generate catppuccin-mocha)"
 zstyle ':completion:*:default' list-colors "${(s.:.)LS_COLORS}"
 
 # Refuse first-run daemon acquisition: our Android executable is in the bundle.
@@ -101,10 +109,13 @@ else
   source "$TERMUX_GENERATION/shell/prompt.zsh"
 fi
 
-source "$_native_plugins/autosuggestions/zsh-autosuggestions.zsh"
-typeset -g ZSH_AUTOSUGGEST_MANUAL_REBIND=1 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
-typeset -ga ZSH_AUTOSUGGEST_STRATEGY=(match_prev_cmd history completion)
-_zsh_autosuggest_start
+if zsh::prompt-plugins-enabled && not_in_vt
+then
+  source "$_native_plugins/autosuggestions/zsh-autosuggestions.zsh"
+  typeset -g ZSH_AUTOSUGGEST_MANUAL_REBIND=1 ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+  typeset -ga ZSH_AUTOSUGGEST_STRATEGY=(match_prev_cmd history completion)
+  _zsh_autosuggest_start
+fi
 source "$TERMUX_GENERATION/shell/plugins/example.zsh"
 
 # Zinit's regular local-plugin block sources these private files at runtime.
@@ -150,8 +161,11 @@ then
   source "$XDG_CONFIG_HOME/termux-native/host.zsh"
 fi
 # Highlighting must observe all the widgets registered above.
-source "$_native_plugins/syntax-highlighting/zsh-syntax-highlighting.zsh"
-ZSH_HIGHLIGHT_STYLES[comment]='fg=006'
+if zsh::prompt-plugins-enabled && not_in_vt
+then
+  source "$_native_plugins/syntax-highlighting/zsh-syntax-highlighting.zsh"
+  ZSH_HIGHLIGHT_STYLES[comment]='fg=006'
+fi
 unset _native_plugins
 unset _native_yadm_config
 
