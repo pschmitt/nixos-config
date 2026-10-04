@@ -1,6 +1,7 @@
 {
   imports = [
     ./browser.nix
+    ./cli-proxy-api.nix
     ./dotfiles.nix
     ./domains.nix
     ./falcon-sensor-vm.nix
