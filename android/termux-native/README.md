@@ -45,11 +45,13 @@ user for a Termux environment:
 
 `termux.packages` declares the Termux package names required by this profile.
 The bootstrap installs these through `pkg`, so Termux APT resolves dependencies,
-tracks package ownership, and handles future updates. Home
+tracks package ownership, and handles future updates. A Nix-built package can
+also declare `passthru.termuxNative.aptPackages`; the bundle merges and
+deduplicates those requirements with the profile's base list. Home
 `home.packages` remains the standard Home Manager option for packages that
 produce Android/Bionic binaries without Nix store references. The standalone
 profile uses it for nixpp. Mark such derivations with
-`passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; };`.
+`passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; aptPackages = [ "ca-certificates" ]; };`.
 For ordinary Nixpkgs tools, `from-nixpkgs.nix` starts from the regular package
 (for example `pkgs.bat`), selects the same package name from
 `pkgs.pkgsCross.aarch64-android-prebuilt`, and infers its executable from
