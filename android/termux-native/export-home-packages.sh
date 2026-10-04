@@ -55,6 +55,7 @@ if ! jq -e '
     (.binaries | type == "array") and
     (.scripts | type == "array") and
     (.trees | type == "array") and
+    (.aptPackages | type == "array" and all(.[]; type == "string" and test("^[A-Za-z0-9._+-]+$"))) and
     all(.files[]; type == "string") and
     all(.binaries[]; type == "string" and startswith("bin/")) and
     all(.scripts[]; type == "string" and startswith("bin/")) and

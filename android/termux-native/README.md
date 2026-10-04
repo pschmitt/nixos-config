@@ -53,7 +53,7 @@ generation remain safe. Home Manager's `home.packages` remains the standard
 option for packages that
 produce Android/Bionic binaries without Nix store references. The standalone
 profile uses it for nixpp. Mark such derivations with
-`passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; };`.
+`passthru.termuxNative = { files = [ "bin/tool" ]; binaries = [ "bin/tool" ]; aptPackages = [ "ca-certificates" ]; };`.
 For ordinary Nixpkgs tools, `from-nixpkgs.nix` starts from the regular package
 (for example `pkgs.bat`), selects the same package name from
 `pkgs.pkgsCross.aarch64-android-prebuilt`, and infers its executable from

@@ -10,6 +10,15 @@ in
 androidPkgs.extend (
   _final: prev:
   let
+    withAptPackages =
+      package: aptPackages:
+      package.overrideAttrs (old: {
+        passthru = (old.passthru or { }) // {
+          termuxNative = (old.passthru.termuxNative or { }) // {
+            inherit aptPackages;
+          };
+        };
+      });
     fromNixpkgs =
       {
         package,
@@ -43,13 +52,15 @@ androidPkgs.extend (
   in
   {
     termuxPackages = {
-      nixpp = pkgs.callPackage ../nixpp-termux { inherit inputs; };
+      nixpp = withAptPackages (pkgs.callPackage ../nixpp-termux { inherit inputs; }) [
+        "ca-certificates"
+      ];
 
-      bat = fromNixpkgs {
+      bat = withAptPackages (fromNixpkgs {
         package = pkgs.bat;
         # Nix wraps bat with a store-specific less path; Termux supplies less on PATH.
         skipPostFixup = true;
-      };
+      }) [ "less" ];
 
       eza = fromNixpkgs {
         package = pkgs.eza;
@@ -87,25 +98,27 @@ androidPkgs.extend (
 
       ssh-to-age = pkgs.callPackage ./ssh-to-age.nix { inherit pkgs; };
 
-      rbw = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux;
+      rbw = withAptPackages inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux [
+        "ca-certificates"
+      ];
 
       emoji-fzf = pkgs.callPackage ./python-application.nix {
         package = pkgs.emoji-fzf;
         python = pkgs.python3;
       };
 
-      assh = goBinary {
+      assh = withAptPackages (goBinary {
         package = pkgs.assh;
         binary = "assh";
         skipPostInstall = true;
-      };
+      }) [ "ca-certificates" ];
 
-      rancher = goBinary {
+      rancher = withAptPackages (goBinary {
         package = pkgs.rancher;
         binary = "rancher";
         buildBinary = "cli";
         skipPostInstall = true;
-      };
+      }) [ "ca-certificates" ];
     };
   }
 )
