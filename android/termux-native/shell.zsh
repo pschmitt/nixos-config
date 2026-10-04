@@ -9,21 +9,6 @@ alias -g DN='&> /dev/null' L='| less' J='| jq'
 # the package-manager-provided commands instead of baking Linux store paths in.
 source "$ZDOTDIR/custom/os/home-manager/system.zsh"
 
-# Initialize tools installed in the Termux prefix. Generate their shell hooks
-# from the binaries active on this device so no Linux store paths enter the
-# exported configuration.
-# Atuin deliberately shares this timestamp between its preexec and precmd hooks.
-typeset -g __atuin_preexec_time
-eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
-eval "$(direnv hook zsh)"
-export DIRENV_LOG_FORMAT=
-eval "$(zoxide init zsh --no-cmd)"
-eval "$(fzf --zsh)"
-alias z=__zoxide_z
-alias zz=__zoxide_zi
-export LS_COLORS="$(vivid generate catppuccin-mocha)"
-zstyle ':completion:*:default' list-colors "${(s.:.)LS_COLORS}"
-
 # Reuse yadm's Termux host bootstrap as a runtime input. The yadm files remain
 # in the user's home and are never copied into the public bundle.
 typeset -g _native_profile_zdotdir="$ZDOTDIR"
