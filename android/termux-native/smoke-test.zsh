@@ -27,11 +27,12 @@ native_shell_check() {
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_revolver" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_rbw" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/source-me.zsh" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_whatsmy" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_zunit" ||
         ! -r "$TERMUX_GENERATION/home/.local/share/man/man1/mani.1" ]]
   then
-    print -u2 -- 'Termux generation is missing a shared completion or the mani man page'
+    print -u2 -- 'Termux generation is missing shared completion config or the mani man page'
     return 1
   fi
   local atuin_binding
