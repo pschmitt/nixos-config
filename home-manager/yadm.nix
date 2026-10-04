@@ -25,6 +25,13 @@ let
     # echo "Attempting yadm decrypt"
     # ${pkgs.yadm}/bin/yadm decrypt
   '';
+
+  yadmApplyAlternatesScript = pkgs.writeShellScript "yadm-apply-alternates" ''
+    set -euo pipefail
+
+    ${pkgs.yadm}/bin/yadm config --replace-all local.class trusted
+    ${pkgs.yadm}/bin/yadm alt
+  '';
 in
 {
   home.packages = with pkgs; [
@@ -67,9 +74,26 @@ in
         Service = {
           Type = "oneshot";
           ExecStart = "${pkgs.yadm}/bin/yadm pull --autostash --ff-only --verbose";
+          ExecStartPost = "${pkgs.systemd}/bin/systemctl --user restart yadm-apply-alternates.service";
         };
 
         Install.WantedBy = [ ];
+      };
+
+      yadm-apply-alternates = {
+        Unit = {
+          Description = "Enforce yadm classes and apply alternates";
+          After = [ "yadm-clone.service" ];
+          Wants = [ "yadm-clone.service" ];
+          ConditionPathExists = "${config.home.homeDirectory}/.local/share/yadm/repo.git";
+        };
+
+        Service = {
+          Type = "oneshot";
+          ExecStart = yadmApplyAlternatesScript;
+        };
+
+        Install.WantedBy = [ "default.target" ];
       };
 
       zinit-install = {
@@ -110,6 +134,6 @@ in
 
     # NOTE for this work reliably, we need to have lingering enabled for the user
     run ${pkgs.systemd}/bin/systemctl --user start --no-block \
-      yadm-clone.service zinit-install.service
+      yadm-clone.service yadm-apply-alternates.service zinit-install.service
   '';
 }
