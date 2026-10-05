@@ -142,7 +142,7 @@ main() {
       usage
       return 0
       ;;
-    install)
+    preflight | install)
       if (($# != 3))
       then
         usage >&2
