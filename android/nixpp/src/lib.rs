@@ -96,7 +96,6 @@ fn elapsed(duration: Duration) -> String {
 struct GenerationInfo {
     id: String,
     path: String,
-    current: bool,
     architecture: String,
     minimum_api: u64,
     apt_packages: Vec<String>,
@@ -104,10 +103,23 @@ struct GenerationInfo {
 }
 
 #[derive(Debug, serde::Serialize)]
+struct GenerationEntry {
+    id: String,
+    current: bool,
+}
+
+#[derive(Debug, serde::Serialize)]
+struct InvalidGeneration {
+    id: String,
+    error: String,
+}
+
+#[derive(Debug, serde::Serialize)]
 struct GenerationStatus {
     root: String,
-    current: Option<String>,
-    generations: Vec<GenerationInfo>,
+    current: Option<GenerationInfo>,
+    generations: Vec<GenerationEntry>,
+    invalid_generations: Vec<InvalidGeneration>,
 }
 
 fn valid_generation_id(id: &str) -> bool {
@@ -151,7 +163,7 @@ fn manifest_string_array(manifest: &serde_json::Value, name: &str) -> Result<Vec
         .collect()
 }
 
-fn inspect_generation(root: &Path, id: &str, current: bool) -> Result<GenerationInfo> {
+fn inspect_generation(root: &Path, id: &str) -> Result<GenerationInfo> {
     let path = root.join("generations").join(id);
     let metadata =
         fs::symlink_metadata(&path).with_context(|| format!("inspect generation {id}"))?;
@@ -184,7 +196,6 @@ fn inspect_generation(root: &Path, id: &str, current: bool) -> Result<Generation
     Ok(GenerationInfo {
         id: id.to_owned(),
         path: path.display().to_string(),
-        current,
         architecture,
         minimum_api,
         apt_packages: manifest_string_array(&manifest, "basePackages")?,
@@ -230,14 +241,36 @@ fn inspect_generations(root: &Path) -> Result<GenerationStatus> {
     }
     ids.sort_unstable();
     ids.sort_by_key(|id| id != current.as_deref().unwrap_or_default());
-    let generations = ids
-        .iter()
-        .map(|id| inspect_generation(root, id, Some(id) == current.as_ref()))
-        .collect::<Result<Vec<_>>>()?;
+    let mut current_info = None;
+    let mut generations = Vec::new();
+    let mut invalid_generations = Vec::new();
+    for id in ids {
+        match inspect_generation(root, &id) {
+            Ok(info) if Some(&id) == current.as_ref() => current_info = Some(info),
+            Ok(_) => generations.push(GenerationEntry { id, current: false }),
+            Err(error) if Some(&id) == current.as_ref() => {
+                return Err(error).with_context(|| format!("inspect current generation {id}"));
+            }
+            Err(error) => invalid_generations.push(InvalidGeneration {
+                id,
+                error: format!("{error:#}"),
+            }),
+        }
+    }
+    if let Some(info) = &current_info {
+        generations.insert(
+            0,
+            GenerationEntry {
+                id: info.id.clone(),
+                current: true,
+            },
+        );
+    }
     Ok(GenerationStatus {
         root: root.display().to_string(),
-        current,
+        current: current_info,
         generations,
+        invalid_generations,
     })
 }
 
@@ -255,29 +288,27 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
     let ui = Progress::new();
     println!("{}", ui.paint("1;36", "nixpp ✨ Termux generations"));
     if let Some(current) = &status.current {
-        println!("Current: {}", ui.paint("1;32", current));
+        println!("Current: {}", ui.paint("1;32", &current.id));
+        println!(
+            "    {} · Android API {}+",
+            current.architecture, current.minimum_api
+        );
+        println!("    Termux APT: {}", current.apt_packages.join(", "));
+        println!("    Nix outputs: {}", current.nix_packages.join(", "));
+        println!("    Path: {}", current.path);
     } else {
         println!("Current: {}", ui.paint("1;33", "none"));
         println!("Run `nixpp switch --flake …` to install a generation.");
     }
-    println!("Installed generations: {}", status.generations.len());
-    for generation in &status.generations {
-        let marker = if generation.current { "◆" } else { "◇" };
-        let id = if generation.current {
-            ui.paint("1;32", &generation.id)
-        } else {
-            ui.paint("2", &generation.id)
-        };
-        println!("  {marker} {id}");
-        if generation.current {
-            println!(
-                "    {} · Android API {}+",
-                generation.architecture, generation.minimum_api
-            );
-            println!("    Termux APT: {}", generation.apt_packages.join(", "));
-            println!("    Nix outputs: {}", generation.nix_packages.join(", "));
-            println!("    Path: {}", generation.path);
-        }
+    println!(
+        "Readable generation manifests: {}",
+        status.generations.len()
+    );
+    if !status.invalid_generations.is_empty() {
+        println!(
+            "Unusable historical generations: {} (details: `nixpp status --json`)",
+            status.invalid_generations.len()
+        );
     }
     Ok(())
 }
@@ -300,6 +331,12 @@ fn print_generations(status: &GenerationStatus) {
             ui.paint("2", &generation.id)
         };
         println!("  {marker} {id}");
+    }
+    if !status.invalid_generations.is_empty() {
+        println!(
+            "Skipped {} unusable historical generation(s).",
+            status.invalid_generations.len()
+        );
     }
 }
 
@@ -1507,12 +1544,61 @@ mod tests {
             .unwrap();
 
         let status = inspect_generations(&root).unwrap();
-        assert_eq!(status.current.as_deref(), Some(current_id.as_str()));
+        assert_eq!(
+            status.current.as_ref().map(|info| info.id.as_str()),
+            Some(current_id.as_str())
+        );
         assert_eq!(status.generations.len(), 2);
         assert!(status.generations[0].current);
-        assert_eq!(status.generations[0].apt_packages, ["bash", "zsh"]);
-        assert_eq!(status.generations[0].nix_packages, ["nixpp"]);
+        assert_eq!(
+            status.current.as_ref().unwrap().apt_packages,
+            ["bash", "zsh"]
+        );
+        assert_eq!(status.current.as_ref().unwrap().nix_packages, ["nixpp"]);
         assert!(!status.generations[1].current);
+
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn malformed_historical_generation_does_not_hide_current_generation() {
+        let root = temp_dir("malformed-history");
+        let generations = root.join("generations");
+        let current_id = "a".repeat(64);
+        let broken_id = "b".repeat(64);
+        let current_dir = generations.join(&current_id);
+        let broken_dir = generations.join(&broken_id);
+        fs::create_dir_all(&current_dir).unwrap();
+        fs::create_dir_all(&broken_dir).unwrap();
+        fs::write(
+            current_dir.join("manifest.json"),
+            serde_json::json!({
+                "schema": 1,
+                "architecture": "aarch64",
+                "minimumApi": 35,
+                "basePackages": ["bash"],
+                "homePackages": ["nixpp"]
+            })
+            .to_string(),
+        )
+        .unwrap();
+        fs::write(broken_dir.join("manifest.json"), "").unwrap();
+        std::os::unix::fs::symlink(format!("generations/{current_id}"), root.join("current"))
+            .unwrap();
+
+        let status = inspect_generations(&root).unwrap();
+        assert_eq!(
+            status.current.as_ref().map(|info| info.id.as_str()),
+            Some(current_id.as_str())
+        );
+        assert_eq!(status.generations.len(), 1);
+        assert_eq!(status.invalid_generations.len(), 1);
+        assert_eq!(status.invalid_generations[0].id, broken_id);
+        assert!(
+            status.invalid_generations[0]
+                .error
+                .contains("parse generation")
+        );
 
         fs::remove_dir_all(root).unwrap();
     }

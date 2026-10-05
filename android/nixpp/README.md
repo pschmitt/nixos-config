@@ -83,8 +83,11 @@ cache. Use `fetch` for outputs already published to a standard Nix binary
 cache.
 
 Use `nixpp status` to inspect the active generation, its Termux APT
-requirements, and the Nix-built outputs it contains. `nixpp generations` lists
-installed generation IDs. To roll back, run
+requirements, Nix-built outputs, and count of readable generation manifests.
+`nixpp generations` lists IDs whose manifests can be read. Malformed historical
+generations are reported in `nixpp status --json` and do not prevent inspecting
+or using the current generation. Rollback still checks the selected generation
+and its Termux APT requirements. To roll back, run
 `bash "$HOME/.local/share/termux-native/current/activate.sh" rollback ID`
 with the desired ID. Add `--json` to `nixpp status` for scripting. The Zsh
 helper `termux-native-status` delegates to the same status view.
