@@ -1,8 +1,10 @@
 native_smoke_run() {
   local description=$1
   shift
+  print -r -- "  Checking $description..."
   if "$@" >/dev/null
   then
+    print -r -- "  Passed: $description"
     return 0
   fi
   print -u2 -- "Smoke command failed: $description"

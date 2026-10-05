@@ -104,7 +104,8 @@ transaction() (
     # Verify the private copy that will be extracted, not a mutable download.
     cp -- "$archive" "$stage/archive.tar.gz" || return
     actual=$(sha256sum "$stage/archive.tar.gz") || return
-    if [[ "${actual%% *}" != "$generation" ]]
+    actual=${actual:0:64}
+    if [[ "$actual" != "$generation" ]]
     then
       printf 'Archive checksum mismatch; staging directory retained: %s\n' "$stage" >&2
       return 1
