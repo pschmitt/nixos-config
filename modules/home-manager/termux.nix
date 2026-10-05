@@ -12,6 +12,7 @@ in
 {
   imports = [
     ../../home-manager/cli/bat.nix
+    ../../home-manager/cli/eget.nix
     ../../home-manager/cli/eza.nix
     ../../home-manager/cli/fd.nix
     ../../home-manager/cli/nvim/termux.nix

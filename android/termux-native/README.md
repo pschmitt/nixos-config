@@ -393,20 +393,26 @@ The profile splits packages by their runtime owner: entries in
 `termux.packages` are installed by Termux APT, while Home Manager packages
 with a `termuxNative` export declaration are built for Android/Bionic and
 copied into the generated profile. It reuses the regular CLI modules for
-`bat`, `eza`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal
-Nixpkgs packages. Termux APT supplies those utilities plus `direnv`, `fzf`,
-`zoxide`, Atuin, tmux, and Zsh. Shared Zsh modules generate Termux runtime
-hooks for Atuin, direnv, fzf, vivid, and zoxide; `shell.zsh` sources that
-generated file instead of carrying duplicate hook definitions. Termux APT
-supplies core and patched packages such as Atuin, Neovim, tmux, and Zsh. APT
-owns Atuin and tmux and resolves dependencies such as OpenSSL, ncurses,
-libevent, libandroid-support, libandroid-glob, and utf8proc normally. No Termux
-`.deb` files or libraries are copied into Nix generations. The Go toolchain is
-patched to use Termux's `/etc` files so those binaries do not refer to the Nix
-store. Every bundled ELF is checked for AArch64 ELF64, a valid Android linker
-when dynamically linked, and no remaining RPATH/RUNPATH. Dependency checks walk
-through package-local libraries and the Nix Android runtime closure. The profile
-also shares portable Neovim options from the regular Home Manager tree.
+`bat`, `eget`, `eza`, `fd`, and `ripgrep`, and shares the tmux and Zsh
+configuration. Linux hosts use their normal Nixpkgs packages. `eget` is
+rebuilt with the Android Go toolchain and exported in the generation. The
+generic `fromNixpkgs` adapter can package
+compatible Android/Bionic cross derivations; it does not make arbitrary Linux
+packages Android-compatible. Termux APT supplies the other utilities,
+including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. Shared Zsh
+modules generate Termux runtime hooks for Atuin, direnv, fzf, vivid, and
+zoxide; `shell.zsh` sources that generated file instead of carrying duplicate
+hook definitions. Use APT for packages Termux provides: APT owns the package
+and resolves dependencies such as OpenSSL, ncurses, libevent,
+libandroid-support, libandroid-glob, and utf8proc. Do not download or extract
+Termux `.deb` files or copy their dependency libraries into Nix generations.
+Reserve bundled outputs for supported Nix-built Android/Bionic artifacts and
+generated configuration. The Go toolchain is patched to use Termux's `/etc`
+files so those binaries do not refer to the Nix store. Every bundled ELF is
+checked for AArch64 ELF64, a valid Android linker when dynamically linked, and
+no remaining RPATH/RUNPATH. Dependency checks walk through package-local
+libraries and the Nix Android runtime closure. The profile also shares
+portable Neovim options from the regular Home Manager tree.
 At shell startup, `zshenv` resolves `current` to the immutable generation path,
 so an already-running shell keeps using the generation it started with after a
 later activation. Powerlevel10k's instant prompt is loaded early when present

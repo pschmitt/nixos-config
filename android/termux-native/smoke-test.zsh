@@ -90,7 +90,7 @@ native_shell_check() {
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in rbw ssh-to-age nixpp
+  for command in eget nixpp rbw ssh-to-age
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -121,6 +121,7 @@ native_shell_check() {
   fi
   atuin --version >/dev/null || return
   bat --version >/dev/null || return
+  eget --version >/dev/null || return
   eza --version >/dev/null || return
   fd --version >/dev/null || return
   rg --version >/dev/null || return
