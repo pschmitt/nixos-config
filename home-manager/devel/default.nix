@@ -26,6 +26,7 @@ in
     ./python.nix
     ./rust.nix
     ./sh.nix
+    ./tea.nix
     ./zsh.nix
   ];
 
