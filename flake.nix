@@ -449,6 +449,22 @@
           modules = modules ++ [ ./hosts/${hostname} ];
           home-manager-path = inputs.home-manager.outPath;
         };
+
+      mkIso =
+        modules:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = modules ++ [ { hardware.type = "installation-media"; } ];
+        };
+      minimalIsoModules = [
+        "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
+        "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+        ./modules
+      ];
+      privateIsoFlakeModule = inputs.nixos-config-private.nixosModules.iso-private;
+      privateIsoHostModule = ./hosts/iso-private;
+      privateIsoModules =
+        extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
     in
     {
       # Your custom packages
@@ -670,39 +686,23 @@
           };
 
           # installation media
-          iso = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules
+          iso = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
+          # MultiOS loopback boot needs the scripted initrd to honor findiso=.
+          iso-multios = mkIso (
+            minimalIsoModules
+            ++ [
               ./hosts/iso
-              { hardware.type = "installation-media"; }
-            ];
-          };
-          iso-graphical = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
-
-              ./modules
-              ./hosts/iso
-              { hardware.type = "installation-media"; }
-            ];
-          };
-          iso-private = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules
-              ./hosts/iso-private
-              inputs.nixos-config-private.nixosModules.iso-xmr
-              { hardware.type = "installation-media"; }
-            ];
-          };
+              ./hosts/iso/multios.nix
+            ]
+          );
+          iso-graphical = mkIso [
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
+            "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
+            ./modules
+            ./hosts/iso
+          ];
+          iso-private = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
+          iso-private-multios = mkIso (minimalIsoModules ++ privateIsoModules [ ./hosts/iso/multios.nix ]);
           iso-private-netboot = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             modules = [
@@ -712,7 +712,7 @@
               ./hosts/iso-private/packages.nix
               ./hosts/iso-private/quiet-boot.nix
               ./hosts/iso-private/ssh.nix
-              inputs.nixos-config-private.nixosModules.iso-xmr
+              privateIsoFlakeModule
               {
                 hardware.type = "installation-media";
                 system.stateVersion = "26.11";
@@ -721,29 +721,14 @@
           };
 
           # legacy ISO images (no EFI, BIOS only!)
-          iso-legacy = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules
+          iso-legacy = mkIso (
+            minimalIsoModules
+            ++ [
               ./hosts/iso
               ./workarounds/no-efi.nix
-              { hardware.type = "installation-media"; }
-            ];
-          };
-          iso-private-legacy = nixpkgs.lib.nixosSystem {
-            system = "x86_64-linux";
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/channel.nix"
-              "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
-              ./modules
-              ./hosts/iso-private
-              inputs.nixos-config-private.nixosModules.iso-xmr
-              ./workarounds/no-efi.nix
-              { hardware.type = "installation-media"; }
-            ];
-          };
+            ]
+          );
+          iso-private-legacy = mkIso (minimalIsoModules ++ privateIsoModules [ ./workarounds/no-efi.nix ]);
         };
     };
 
