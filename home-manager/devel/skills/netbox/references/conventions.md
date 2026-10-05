@@ -233,6 +233,7 @@ Current prefixes:
 - `AVM` = AVM
 - `AYW` = AYWHP
 - `BRO` = Brother
+- `CPL` = Chipolo
 - `CRU` = Crucial
 - `CZN` = CZ.NIC
 - `DDC` = Dodocool
