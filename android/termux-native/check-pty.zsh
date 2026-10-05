@@ -1,17 +1,17 @@
 native_wait_for_result() {
   local name=$1 marker=$2 response child_status=''
 
-  # Read complete PTY lines and inspect the unique nonce marker. zpty may
-  # prefix its returned line, so require the result marker at the line end.
+  # Read complete PTY lines and accept only the exact nonce and numeric status.
   while zpty -r "$name" response
   do
     response=${response%$'\n'}
     response=${response%$'\r'}
-    if [[ $response == *"$marker:0" ]]
+    print -r -- "$response"
+    if [[ $response == "$marker:0" ]]
     then
       child_status=0
       break
-    elif [[ $response == *"$marker:1" ]]
+    elif [[ $response == "$marker:1" ]]
     then
       child_status=1
       break
@@ -28,7 +28,6 @@ native_wait_for_result() {
   # The interactive login `zsh -l -i -c` child returns to a prompt after the marker.
   # The marker carries the check's status; close its PTY exactly once here.
   zpty -d "$name" 2>/dev/null
-  print -r -- "$response"
   (( child_status == 0 ))
 }
 
@@ -38,17 +37,13 @@ native_check_pty() {
   nonce="${$}-${RANDOM}-${RANDOM}"
   script="
     stty -echo
-    if [[ \$TERMUX_NATIVE_READY == 1 ]] &&
-      (( \$+functions[p10k] )) &&
-      (( ! \$+functions[zinit] && ! \$+aliases[zinit] )); then
-      print -r -- 'NATIVE_TEST_DONE:$nonce:0'
-    else
-      print -r -- 'NATIVE_TEST_DONE:$nonce:1'
-    fi
+    source \"$generation/shell/smoke-test.zsh\"
+    smoke_status=\$?
+    print -r -- 'NATIVE_TEST_DONE:$nonce:'\$smoke_status
   "
   zpty native env \
-    "TERMUX_GENERATION=$generation" \
-    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
+    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -lic ${(q)script} || return
   native_wait_for_result native "NATIVE_TEST_DONE:$nonce"
@@ -68,8 +63,8 @@ native_check_no_plugins() {
   "
   zpty no-plugins env \
     "NO_PLUGINS=1" \
-    "TERMUX_GENERATION=$generation" \
-    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
+    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -lic ${(q)script} || return
   native_wait_for_result no-plugins "NO_PLUGINS_CHECK:$nonce"

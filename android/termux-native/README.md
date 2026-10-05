@@ -411,10 +411,10 @@ rebuilt with the Android Go toolchain and exported in the generation. The
 generic `fromNixpkgs` adapter can package
 compatible Android/Bionic cross derivations; it does not make arbitrary Linux
 packages Android-compatible. Termux APT supplies the other utilities,
-including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. The `jc`
-utility and `obs-cli` are pure Python apps that Termux APT does not provide,
-so the bundle ships their Python sources and runs them with Termux's
-APT-managed Python. Shared
+including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. The `jc`,
+`obs-cli`, and `slack-react` utilities are pure Python apps that Termux APT does
+not provide, so the bundle ships their Python sources and runs them with
+Termux's APT-managed Python. Shared
 Zsh modules generate Termux runtime hooks for Atuin, direnv, fzf, vivid, and
 zoxide; `shell.zsh` sources that generated file instead of carrying duplicate
 hook definitions. Use APT for packages Termux provides: APT owns the package

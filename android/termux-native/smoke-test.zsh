@@ -1,8 +1,10 @@
 native_smoke_run() {
   local description=$1
   shift
+  print -r -- "  Checking $description..."
   if "$@" >/dev/null
   then
+    print -r -- "  Passed: $description"
     return 0
   fi
   print -u2 -- "Smoke command failed: $description"
@@ -116,7 +118,7 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in eget jc nixpp obs-cli rbw ssh-to-age
+  for command in eget jc nixpp obs-cli rbw slack-react ssh-to-age
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -148,6 +150,10 @@ native_shell_check() {
   native_smoke_run 'Atuin version' atuin --version || return
   native_smoke_run 'OBS CLI version' obs-cli --version || return
   native_smoke_run 'jc version' jc --version || return
+  native_smoke_run 'Slack reaction CLI imports' env \
+    "PYTHONPATH=$TERMUX_GENERATION/native/slack-react-termux/python" \
+    PYTHONDONTWRITEBYTECODE=1 python -B -c \
+    'import appdirs, certifi, rich, slack_react, slack_sdk' || return
   native_smoke_run 'udocker help' udocker --help || return
   if [[ "$UDOCKER_DEFAULT_EXECUTION_MODE" != P1 ||
         "$UDOCKER_USE_PROOT_EXECUTABLE" != "$PREFIX/bin/proot" ]]

@@ -31,6 +31,7 @@ in
     ../../home-manager/cli/zsh/tools/termux/mani.nix
     ../../home-manager/cli/zsh/tools/termux/rancher.nix
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
+    ../../home-manager/cli/zsh/tools/termux/slack-react.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
     ../../home-manager/cli/zsh/tools/termux/udocker.nix
     ../../home-manager/cli/zsh/vivid.nix

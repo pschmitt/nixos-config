@@ -109,7 +109,8 @@ main() {
   trap cleanup_bootstrap_lock EXIT
 
   checksum=$(sha256sum "$archive") || return
-  if [[ "${checksum%% *}" != "$generation" ]]
+  checksum=${checksum:0:64}
+  if [[ "$checksum" != "$generation" ]]
   then
     printf 'Bundle checksum mismatch; no Termux packages were changed.\n' >&2
     return 1

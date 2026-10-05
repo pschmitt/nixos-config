@@ -150,6 +150,11 @@ androidPkgs.extend (
           extraRuntimePackages = obsCliPackages.obsws-python.propagatedBuildInputs;
         }) [ "python" ];
 
+      slack-react = pythonApplication {
+        package = inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.default;
+        python = pkgs.python312;
+      };
+
       assh = withAptPackages (fromGo {
         package = pkgs.assh;
         binary = "assh";

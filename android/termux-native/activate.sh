@@ -35,11 +35,6 @@ switch_generation() {
   TERMUX_GENERATION="$root/generations/$generation" \
     ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
     PATH="$root/generations/$generation/bin:$PATH" \
-    timeout 45 "$PREFIX/bin/zsh" -lic \
-      "source \"$root/generations/$generation/shell/smoke-test.zsh\"" || return
-  TERMUX_GENERATION="$root/generations/$generation" \
-    ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
-    PATH="$root/generations/$generation/bin:$PATH" \
     timeout 45 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return
   ln -s "generations/$generation" "$root/.next" || return
@@ -70,7 +65,8 @@ transaction() (
     # Verify the private copy that will be extracted, not a mutable download.
     cp -- "$archive" "$stage/archive.tar.gz" || return
     actual=$(sha256sum "$stage/archive.tar.gz") || return
-    if [[ "${actual%% *}" != "$generation" ]]
+    actual=${actual:0:64}
+    if [[ "$actual" != "$generation" ]]
     then
       printf 'Archive checksum mismatch; staging directory retained: %s\n' "$stage" >&2
       return 1
