@@ -33,7 +33,12 @@ switch_generation() {
   done < "$root/generations/$generation/base-packages.txt"
   "$root/generations/$generation/bin/termux-nix-hello" || return
   TERMUX_GENERATION="$root/generations/$generation" \
-    TERMUX_NATIVE_ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
+    ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
+    PATH="$root/generations/$generation/bin:$PATH" \
+    timeout 45 "$PREFIX/bin/zsh" -lic \
+      "source \"$root/generations/$generation/shell/smoke-test.zsh\"" || return
+  TERMUX_GENERATION="$root/generations/$generation" \
+    ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
     PATH="$root/generations/$generation/bin:$PATH" \
     timeout 45 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return

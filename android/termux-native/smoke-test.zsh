@@ -27,7 +27,8 @@ native_shell_check() {
       return 1
     fi
   done
-  if (( ! $+aliases[yup] || ! $+aliases[yupnc] ))
+  if [[ -r "$XDG_CONFIG_HOME/zsh/aliases.zsh" ]] &&
+    (( ! $+aliases[yup] || ! $+aliases[yupnc] ))
   then
     print -u2 -- 'The yadm Termux package upgrade aliases were not loaded'
     return 1

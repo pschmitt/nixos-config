@@ -1,24 +1,26 @@
 native_wait_for_result() {
-  local name=$1 marker=$2 response child_status pattern
-  pattern="*${marker}:[01]"$'\r'
+  local name=$1 marker=$2 response child_status=''
 
-  # The PTY has echo disabled in the child. Match a complete result line,
-  # including its carriage return, so echoed command text cannot pass as output.
-  if ! zpty -r -m "$name" response "$pattern"
+  # Read complete PTY lines and inspect the unique nonce marker. zpty may
+  # prefix its returned line, so require the result marker at the line end.
+  while zpty -r "$name" response
+  do
+    response=${response%$'\n'}
+    response=${response%$'\r'}
+    if [[ $response == *"$marker:0" ]]
+    then
+      child_status=0
+      break
+    elif [[ $response == *"$marker:1" ]]
+    then
+      child_status=1
+      break
+    fi
+  done
+
+  if [[ -z "$child_status" ]]
   then
     print -u2 -r -- "PTY command exited before reporting: $marker"
-    zpty -d "$name" 2>/dev/null
-    return 1
-  fi
-
-  if [[ $response == *"${marker}:0"$'\r' ]]
-  then
-    child_status=0
-  elif [[ $response == *"${marker}:1"$'\r' ]]
-  then
-    child_status=1
-  else
-    print -u2 -r -- "PTY output did not end with a numeric result: $marker"
     zpty -d "$name" 2>/dev/null
     return 1
   fi
@@ -36,15 +38,17 @@ native_check_pty() {
   nonce="${$}-${RANDOM}-${RANDOM}"
   script="
     stty -echo
-    if source \"\$TERMUX_GENERATION/shell/smoke-test.zsh\"; then
+    if [[ \$TERMUX_NATIVE_READY == 1 ]] &&
+      (( \$+functions[p10k] )) &&
+      (( ! \$+functions[zinit] && ! \$+aliases[zinit] )); then
       print -r -- 'NATIVE_TEST_DONE:$nonce:0'
     else
       print -r -- 'NATIVE_TEST_DONE:$nonce:1'
     fi
   "
   zpty native env \
-    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
-    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_GENERATION=$generation" \
+    "ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -lic ${(q)script} || return
   native_wait_for_result native "NATIVE_TEST_DONE:$nonce"
@@ -56,7 +60,7 @@ native_check_no_plugins() {
   nonce="${$}-${RANDOM}-${RANDOM}"
   script="
     stty -echo
-    if (( \$+functions[zinit] || \$+aliases[zinit] )); then
+    if (( \$+functions[zinit] || \$+aliases[zinit] || \$+commands[zinit] )); then
       print -r -- 'NO_PLUGINS_CHECK:$nonce:1'
     else
       print -r -- 'NO_PLUGINS_CHECK:$nonce:0'
@@ -64,8 +68,8 @@ native_check_no_plugins() {
   "
   zpty no-plugins env \
     "NO_PLUGINS=1" \
-    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
-    "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_GENERATION=$generation" \
+    "ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -lic ${(q)script} || return
   native_wait_for_result no-plugins "NO_PLUGINS_CHECK:$nonce"
