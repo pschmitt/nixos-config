@@ -11,7 +11,7 @@ let
   # renovate: datasource=docker depName=pihole/pihole
   piholeVersion = "2026.09.0";
   # renovate: datasource=docker depName=valeriansaliou/sonic
-  sonicVersion = "v1.10.1";
+  sonicVersion = "v1.10.2";
   archiveboxPort = 27244;
   # ArchiveBox 0.9.70's webserver listens on 5797 in the container.
   archiveboxContainerPort = 5797;
