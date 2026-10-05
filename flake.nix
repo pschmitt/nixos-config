@@ -692,7 +692,7 @@
             minimalIsoModules
             ++ [
               ./hosts/iso
-              ./hosts/iso/multios.nix
+              { boot.initrd.systemd.enable = false; }
             ]
           );
           iso-graphical = mkIso [
@@ -702,7 +702,9 @@
             ./hosts/iso
           ];
           iso-private = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
-          iso-private-multios = mkIso (minimalIsoModules ++ privateIsoModules [ ./hosts/iso/multios.nix ]);
+          iso-private-multios = mkIso (
+            minimalIsoModules ++ privateIsoModules [ { boot.initrd.systemd.enable = false; } ]
+          );
           iso-private-netboot = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             modules = [
