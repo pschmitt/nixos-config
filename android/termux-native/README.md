@@ -430,9 +430,11 @@ The current installer trusts a digest obtained from the builder; it does not
 verify a release signature or hostile archive contents. It keeps previous
 generations for rollback but does not yet garbage-collect them, enforce an
 anti-downgrade policy, or recover interrupted lock directories automatically.
-APT package lifecycle is also install-only: bootstrap verifies the archive and
-holds the activation lock before asking APT to install the current manifest;
-generation activation then checks that required packages are installed. It
+APT package lifecycle is also install-only: bootstrap verifies the archive,
+holds the activation lock, stages the generation, and runs its standalone
+Android executable before asking APT to install the current manifest. Generation
+activation then runs the shell smoke checks after APT has provided their
+runtime dependencies and checks that required packages are installed. It
 does not remove packages when a later generation stops declaring them, and it
 does not record which packages were already installed before the first
 bootstrap. A future removal path must preserve that pre-existing set and

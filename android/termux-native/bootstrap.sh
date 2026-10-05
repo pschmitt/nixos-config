@@ -119,6 +119,7 @@ main() {
     printf 'Bundle archive is invalid; no Termux packages were changed.\n' >&2
     return 1
   fi
+  TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" preflight "$archive" "$generation" || return
   # shellcheck disable=SC2157 # The Nix derivation substitutes this template value.
   if [[ -n '@termuxPackages@' ]]
   then

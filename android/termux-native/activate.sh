@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s install ARCHIVE TRUSTED_SHA256 | rollback GENERATION_SHA256\n' "$(basename "$0")"
+  printf 'Usage: %s preflight ARCHIVE TRUSTED_SHA256 | install ARCHIVE TRUSTED_SHA256 | rollback GENERATION_SHA256\n' "$(basename "$0")"
 }
 
 check_host() {
@@ -59,7 +59,7 @@ transaction() (
   else
     trap 'rm -f -- "$root/.next"' EXIT
   fi
-  if [[ "$action" == install ]]
+  if [[ "$action" == install || "$action" == preflight ]]
   then
     stage=$(mktemp -d "$root/generations/.stage.XXXXXXXX") || return
     # Verify the private copy that will be extracted, not a mutable download.
@@ -87,6 +87,22 @@ transaction() (
         rm -rf -- "$stage" || return
       fi
     fi
+  if [[ "$action" == preflight ]]
+  then
+    local generation_root="$root/generations/$generation"
+    if [[ ! -x "$generation_root/bin/termux-nix-hello" ||
+          ! -f "$generation_root/base-packages.txt" ||
+          ! -f "$generation_root/zshenv" ||
+          ! -f "$generation_root/shell/check-pty.zsh" ||
+          ! -f "$generation_root/shell/smoke-test.zsh" ]]
+    then
+      printf 'Bundle is missing required Termux generation files: %s\n' "$generation" >&2
+      return 1
+    fi
+    "$generation_root/bin/termux-nix-hello" || return
+    printf 'Preflight passed for generation %s.\n' "$generation"
+    return 0
+  fi
   switch_generation "$root" "$generation"
 )
 
@@ -97,7 +113,7 @@ main() {
       usage
       return 0
       ;;
-    install)
+    preflight | install)
       if (($# != 3))
       then
         usage >&2
