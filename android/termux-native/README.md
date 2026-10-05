@@ -310,6 +310,11 @@ the finished output; it does not evaluate Home Manager modules.
   current build fails on Bionic pthread and C++ library gaps even with LTO and
   GPU support disabled. It is not included in the Termux bundle; making it work
   would need a maintained package-specific port.
+  When Nixpkgs' Android cross build is unavailable or fails, Termux's
+  `build-package.sh` is the native porting path. It builds a Termux package from
+  a Termux recipe and its patches; it does not convert arbitrary Nix derivations
+  into Bionic binaries. Install its output through APT so APT owns upgrades,
+  dependency resolution, and removal.
 - **Paths and scripts:** Termux's normal prefix is
   `/data/data/com.termux/files/usr`. Forked app IDs and alternate Android users
   can break fixed paths. Avoid `/usr`, `/etc`, `/tmp` and Nix store paths in
@@ -527,18 +532,11 @@ launchers were verified on the Zenfone. These utilities have since moved to
 Termux APT. The earlier generation digest was
 `4b882492cc22e96a252e0efc4b82c1fef5599d522340e386b5eed4c4d118633a`.
 
-Atuin 18.23.0 was temporarily moved from `termux.packages` into the native
-Home Manager bundle. The adapter imported Atuin and OpenSSL from the official
-Termux repository and exported the OpenSSL runtime libraries beside Atuin.
-That adapter has since been removed; the current profile requests `atuin` from
-Termux APT and keeps the same shell integration and settings. The historical
-bundle generation
-(`3344efc17ac1064a95c15cbb37e764b588808cf68a760a0e667059c82fe382b7`) was
-installed from the interactive Termux app on the Zenfone 10; the generation
-smoke test passed and `atuin --version` reported `18.23.0 (NO_GIT)`.
-A force-stop followed by launching Termux from its app icon returned to the
-managed prompt in about five seconds; the generated shell smoke test then
-exited 0 without plugin-fetch output.
+Atuin and tmux are provided by Termux APT, while their shared Home Manager
+settings and shell integrations remain in the generation. Earlier experiments
+that copied Termux package artifacts or runtime libraries into a generation
+were removed. Keep Termux-provided software under APT ownership; bundle
+supported Android/Bionic builds and generated configuration only.
 
 On 2026-10-04, Android `ripgrep` was built with PCRE2 enabled. The exporter
 automatically included `libpcre2-8.so` from the Nix Android runtime closure.
@@ -552,17 +550,10 @@ and Gzip commands to the generation. The commands were smoke-tested on the
 Zenfone. This experiment was superseded: these tools are available in Termux
 APT and are now installed and tracked there.
 
-A direct Nixpkgs Android cross-build of tmux failed in its Android dependency
-graph before producing the package. The profile briefly imported tmux and its
-runtime libraries from pinned official Termux package artifacts. That adapter
-has since been removed; Termux APT now owns tmux and resolves its dependencies.
-Neovim remains a Termux APT package; the shared Home Manager modules still
-generate its configuration and keep their Linux package selection unchanged.
-
-The historical tmux bundle `c1177457473d7715bf46e72eb0d13d79258112f2c73f99fa7134a3e399cf8ddc`
-was installed from the interactive official Termux app on the Zenfone 10. A
-later change restored APT ownership; the current smoke test expects both
-`atuin` and `tmux` from `$PREFIX/bin` and exercises their shell integration.
+Neovim remains a Termux APT package; the shared Home Manager modules generate
+its configuration and keep their Linux package selection unchanged. The smoke
+test expects Atuin and tmux from `$PREFIX/bin` and exercises their shell
+integration.
 
 The Bionic Go networking adapter was then built on rofl-13 with the Android
 NDK, cgo, and dynamic Bionic linking. A test binary resolved `example.com` and
