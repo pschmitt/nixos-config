@@ -1,4 +1,3 @@
-source "${${(%):-%N}:A:h}/.zshenv"
 [[ -o interactive ]] || return 0
 
 mkdir -p "$XDG_DATA_HOME/zsh" "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
@@ -56,14 +55,19 @@ source "$_native_plugins/vi-quote/vi-quote.zsh"
 
 # These are the shared Home Manager Zsh integrations. In Termux mode they call
 # the package-manager-provided commands instead of baking Linux store paths in.
-source "$ZDOTDIR/custom/os/home-manager/system.zsh"
+source "$TERMUX_GENERATION/home/.config/zsh/custom/os/home-manager/system.zsh"
 
 # Refuse first-run daemon acquisition: our Android executable is in the bundle.
 typeset -g GITSTATUS_DAEMON="$TERMUX_GENERATION/bin/gitstatusd"
 typeset -g GITSTATUS_AUTO_INSTALL=0
 typeset -g POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=true
 source "$_native_plugins/powerlevel10k/gitstatus/gitstatus.plugin.zsh"
-source "$TERMUX_GENERATION/shell/prompt.zsh"
+if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 && -r "$ZDOTDIR/p10k.zsh" ]]
+then
+  source "$ZDOTDIR/p10k.zsh"
+else
+  source "$TERMUX_GENERATION/shell/prompt.zsh"
+fi
 source "$_native_plugins/powerlevel10k/powerlevel10k.zsh-theme"
 
 source "$_native_plugins/autosuggestions/zsh-autosuggestions.zsh"

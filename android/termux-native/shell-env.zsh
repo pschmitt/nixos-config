@@ -14,5 +14,20 @@ export BROWSER=termux-open
 typeset -U path
 path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
 typeset -g KEYTIMEOUT=1 REPORTTIME=10
+typeset -g TERMUX_NATIVE_ENABLED=1
+
+# Keep the managed generation as the early-startup fallback, then hand off to
+# the real yadm Zsh config once yadm has installed it. Source its zshenv here:
+# Zsh has already selected this generated .zshenv for the current startup.
+if [[ -r "$HOME/.config/zsh/zshenv" ]]
+then
+  export ZDOTDIR="$HOME/.config/zsh"
+  typeset -g TERMUX_NATIVE_YADM_CONFIG=1
+  source "$ZDOTDIR/zshenv"
+  path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+else
+  export ZDOTDIR="$TERMUX_GENERATION/home/.config/zsh"
+  unset TERMUX_NATIVE_YADM_CONFIG
+fi
 
 # vim: set ft=zsh et ts=2 sw=2 :

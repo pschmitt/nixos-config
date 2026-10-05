@@ -42,13 +42,13 @@ native_shell_check() {
   nixpp status --help >/dev/null 2>&1 || return
   "$GITSTATUS_DAEMON" --version || return
   termux-native-status || return
-  local tmux_socket="native-smoke-$$"
-  tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
-  tmux -L "$tmux_socket" has-session -t native-smoke || {
-    tmux -L "$tmux_socket" kill-server
+  local tmux_socket="$TMPDIR/native-smoke-$$.sock"
+  tmux -S "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
+  tmux -S "$tmux_socket" has-session -t native-smoke || {
+    tmux -S "$tmux_socket" kill-server
     return 1
   }
-  tmux -L "$tmux_socket" kill-server || return
+  tmux -S "$tmux_socket" kill-server || return
   local fixture
   fixture=$(mktemp -d "$TMPDIR/native-gitstatus.XXXXXXXX") || return
   git init -q "$fixture" || return

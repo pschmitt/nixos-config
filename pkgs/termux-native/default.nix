@@ -129,6 +129,7 @@ let
             cp ${../../android/termux-native/zshenv} "$out/zshenv"
             cp ${../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
             cp ${../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
+            cp ${../../android/termux-native/shell.zsh} "$out/shell/native-init.zsh"
             cp ${../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"
             cp ${../../android/termux-native/keybindings.zsh} "$out/shell/keybindings.zsh"
             cp ${gitstatus}/bin/gitstatusd "$out/bin/gitstatusd"
