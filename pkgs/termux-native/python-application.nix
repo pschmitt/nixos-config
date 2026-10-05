@@ -59,6 +59,7 @@ runCommand "${termuxName}"
         continue
       fi
       [[ "$runtime_package" != "$package_path" ]] || package_found=1
+      chmod -R u+w "$out/python"
       cp -RL -- "$site_packages/." "$out/python/"
     done
     if (( ! package_found ))

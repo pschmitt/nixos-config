@@ -133,10 +133,11 @@ sha256sum result/environment.tar.gz
 ```
 
 Termux APT owns command line tools already in its repositories, including
-`bat`, `eza`, `fd`, `gzip`, `ripgrep`, `unzip`, `vivid`, and `zip`. APT resolves
-and tracks their dependencies. The bundle does not copy or install `.deb`
-files or libraries from Termux packages. Reserve Nix-built Android/Bionic
-outputs for supported tools Termux does not provide and generated
+`atuin`, `bat`, `eza`, `fd`, `gzip`, `ripgrep`, `tmux`, `udocker`, `unzip`,
+`vivid`, and `zip`. APT resolves and tracks their dependencies. The bundle does
+not copy or install `.deb` files or libraries from Termux packages. Reserve
+Nix-built Android/Bionic outputs for supported tools Termux does not provide
+and generated
 configuration.
 
 The result contains `environment.tar.gz`, `bootstrap.sh`, and `activate.sh`.
@@ -574,3 +575,12 @@ Zenfone's official Termux app. Both private archives passed integrity checks,
 the Nix-built native executable ran, APT preparation completed, and the
 managed generation's Zsh smoke checks passed. The initializer cloned yadm,
 applied the `termux,notnixos` classes, and opened the managed Zsh prompt.
+
+A follow-up login-shell check found that Termux's login profile could put
+`~/.local/bin/jc` ahead of the generated `jc`. Startup now reapplies package
+precedence after the login profile, and every new shell resolves `current`
+instead of inheriting a stale generation. Bundle
+`8d6370bb04356b2ad85b97397dcff9de3ab840acc0e683bea5b5a6169a402e2d` passed
+the login smoke check on the Zenfone 10 and Mi Pad 4. New shells on both also
+selected the updated generation when started with a stale inherited value;
+cold app relaunch returned to the managed prompt without plugin downloads.

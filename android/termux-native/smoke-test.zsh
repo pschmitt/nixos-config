@@ -1,3 +1,14 @@
+native_smoke_run() {
+  local description=$1
+  shift
+  if "$@" >/dev/null
+  then
+    return 0
+  fi
+  print -u2 -- "Smoke command failed: $description"
+  return 1
+}
+
 native_shell_check() {
   [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
   if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
@@ -49,7 +60,16 @@ native_shell_check() {
     print -u2 -- 'A prompt-plugin skip flag did not disable prompt plugins'
     return 1
   fi
-  (( $+widgets[history-substring-search-up] && $+widgets[edit-command-line] && $+widgets[_atuin_search_widget] )) || return 1
+  if (( ! $+widgets[history-substring-search-up] || ! $+widgets[edit-command-line] || ! $+widgets[_atuin_search_widget] ))
+  then
+    print -u2 -- 'Missing expected Zsh line editor widgets'
+    return 1
+  fi
+  if (( ! $+_comps[jc] ))
+  then
+    print -u2 -- 'The jc completion function is not registered'
+    return 1
+  fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/atuin/config.toml" ]]
   then
     print -u2 -- 'Termux generation is missing the Atuin settings file'
@@ -62,7 +82,8 @@ native_shell_check() {
     print -u2 -- 'Termux generation is missing shared jq configuration or the fd alias'
     return 1
   fi
-  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
+  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_jc" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_revolver" ||
@@ -94,7 +115,11 @@ native_shell_check() {
     print -u2 -- 'A kubectl custom completion was declared but not registered'
     return 1
   fi
-  [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
+  if [[ $GITSTATUS_AUTO_INSTALL != 0 || ! -x $GITSTATUS_DAEMON ]]
+  then
+    print -u2 -- 'Gitstatus is not using the bundled daemon'
+    return 1
+  fi
   local command
   for command in bat eza fd rg vivid zoxide nixpp
   do

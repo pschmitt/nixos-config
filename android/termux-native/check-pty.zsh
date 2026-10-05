@@ -23,7 +23,7 @@ native_wait_for_result() {
     return 1
   fi
 
-  # The interactive `zsh -i -c` child returns to a prompt after the marker.
+  # The interactive login `zsh -l -i -c` child returns to a prompt after the marker.
   # The marker carries the check's status; close its PTY exactly once here.
   zpty -d "$name" 2>/dev/null
   print -r -- "$response"
@@ -44,8 +44,7 @@ native_check_pty() {
     fi
   "
   zpty native env \
-    "TERMUX_GENERATION=$generation" \
-    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
     "$PREFIX/bin/zsh" -ic ${(q)script} || return
@@ -89,11 +88,10 @@ native_check_no_plugins() {
   "
   zpty no-plugins env \
     "NO_PLUGINS=1" \
-    "TERMUX_GENERATION=$generation" \
-    "ZDOTDIR=$generation/home/.config/zsh" \
+    "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
-    "$PREFIX/bin/zsh" -ic ${(q)script} || return
+    "$PREFIX/bin/zsh" -lic ${(q)script} || return
   native_wait_for_result no-plugins "NO_PLUGINS_CHECK:$nonce"
 }
 

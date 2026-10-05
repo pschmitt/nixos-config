@@ -29,6 +29,18 @@
     mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
     export ZSH_CACHE_DIR=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
     export ZSH_COMPDUMP=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh/zcompdump-termux"}-''${TERMUX_GENERATION:t}
+
+    # Match the regular yadm .zshenv while keeping private overrides at runtime.
+    if [[ -r "$XDG_CONFIG_HOME/zsh/zshenv.private" ]]
+    then
+      source "$XDG_CONFIG_HOME/zsh/zshenv.private"
+    fi
+
+    # Keep generation commands ahead of user-local tools after private Zsh
+    # startup files have adjusted PATH.
+    typeset -U path
+    path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+    rehash
   '';
 
   programs.zsh.initContent = lib.mkMerge [
@@ -91,6 +103,15 @@
       then
         __init_custom_completions
       fi
+    '')
+    (lib.mkOrder 2000 ''
+      # The login profile may prepend user-local directories after .zshenv.
+      # Restore deterministic package precedence once all startup files ran.
+      typeset -U path
+      path=("''${(@)path:#$TERMUX_GENERATION/bin}")
+      path=("''${(@)path:#$PREFIX/bin}")
+      path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+      rehash
     '')
   ];
 }

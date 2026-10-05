@@ -26,11 +26,13 @@ in
     ../../home-manager/cli/zsh/tools/fd.nix
     ../../home-manager/cli/zsh/tools/jq.nix
     ../../home-manager/cli/zsh/tools/termux/assh.nix
+    ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
     ../../home-manager/cli/zsh/tools/termux/rancher.nix
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
+    ../../home-manager/cli/zsh/tools/termux/udocker.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
     ./termux-zsh-runtime.nix
@@ -55,6 +57,7 @@ in
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
         ".config/zsh/completions/_ipmi"
+        ".config/zsh/completions/_jc"
         ".config/zsh/completions/_kubectl"
         ".config/zsh/completions/_mani"
         ".config/zsh/completions/_ossh"
@@ -123,6 +126,7 @@ in
         "unzip"
         "vivid"
         "zip"
+        "udocker"
         "procps"
         "python"
         "shellcheck"

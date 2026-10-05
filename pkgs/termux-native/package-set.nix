@@ -105,6 +105,10 @@ androidPkgs.extend (
         package = pkgs.emoji-fzf;
       };
 
+      jc = pythonApplication {
+        package = pkgs.jc;
+      };
+
       assh = withAptPackages (fromGo {
         package = pkgs.assh;
         binary = "assh";
