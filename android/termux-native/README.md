@@ -97,12 +97,13 @@ for Termux APT packages or add an Android/Bionic export contract. Home
 Manager's own support packages are handled separately. The final generation
 rejects Nix store references. Linux executables cannot run in native Termux.
 Pure Python applications can use `python-application.nix`: it copies installed
-Python modules from the Nix package and its propagated runtime inputs, removes
-host-only Python environment metadata and bytecode, and points a Termux shell
-launcher at the system Python with the modules in `PYTHONPATH`. The exporter
-rejects ELF files in this data tree and rejects Nix store references. This
-works for pure Python packages; packages with native Python extensions still
-need an Android build or a Termux APT package.
+Python modules from the Nix package, its propagated runtime inputs, and any
+explicit `extraRuntimePackages`, removes host-only Python environment metadata
+and bytecode, and points a Termux shell launcher at the system Python with the
+modules in `PYTHONPATH`.
+The exporter rejects ELF files in this data tree and rejects Nix store
+references. This works for pure Python packages; packages with native Python
+extensions still need an Android build or a Termux APT package.
 `termux.homeFiles` is an export allowlist: only those generated files enter the
 archive. Keep private dotfiles out of this public bundle; add a path to the
 allowlist only when you intend that file to ship.
@@ -579,6 +580,14 @@ Zenfone's official Termux app. Both private archives passed integrity checks,
 the Nix-built native executable ran, APT preparation completed, and the
 managed generation's Zsh smoke checks passed. The initializer cloned yadm,
 applied the `termux,notnixos` classes, and opened the managed Zsh prompt.
+
+On 2026-10-05, the profile added `obs-cli` because Termux APT does not provide
+it. The bundle ships its pure Python modules, including the explicit
+`websocket-client` runtime dependency, and uses Termux APT's Python. Bundle
+`b624b1723c6a2d141255922db7ca31758d36377f725dbd8df547fb04233aa679` built on
+rofl-13 and activated through the visible Termux app on the Zenfone 10 and Mi
+Pad 4. Bootstrap and smoke checks passed; APT made no package changes, and
+after cold app relaunch `obs-cli --version` reported `0.9.5` on both devices.
 
 A follow-up login-shell check found that Termux's login profile could put
 `~/.local/bin/jc` ahead of the generated `jc`. Startup now reapplies package

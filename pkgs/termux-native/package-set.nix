@@ -59,9 +59,15 @@ androidPkgs.extend (
         package,
         python ? pkgs.python3,
         entrypoint ? null,
+        extraRuntimePackages ? [ ],
       }:
       pkgs.callPackage ./python-application.nix {
-        inherit package python entrypoint;
+        inherit
+          package
+          python
+          entrypoint
+          extraRuntimePackages
+          ;
       };
   in
   {
@@ -108,6 +114,16 @@ androidPkgs.extend (
       jc = pythonApplication {
         package = pkgs.jc;
       };
+
+      obs-cli =
+        let
+          obsCliPackages = inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system};
+        in
+        withAptPackages (pythonApplication {
+          package = obsCliPackages.obs-cli;
+          python = pkgs.python312;
+          extraRuntimePackages = obsCliPackages.obsws-python.propagatedBuildInputs;
+        }) [ "python" ];
 
       assh = withAptPackages (fromGo {
         package = pkgs.assh;

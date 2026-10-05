@@ -4,6 +4,7 @@
   package,
   python,
   entrypoint ? null,
+  extraRuntimePackages ? [ ],
 }:
 let
   packageName = lib.getName package;
@@ -44,7 +45,10 @@ runCommand "${termuxName}"
     }
     export TERMUX_ADAPTER_OUTPUT="$out"
     mkdir -p "$out/python" "$out/bin"
-    runtime_packages=("$package_path")
+    runtime_packages=(
+      "$package_path"
+      ${lib.escapeShellArgs (map toString extraRuntimePackages)}
+    )
     if [[ -r "$package_path/nix-support/propagated-build-inputs" ]]
     then
       read -r -a propagated_packages < "$package_path/nix-support/propagated-build-inputs" || :
