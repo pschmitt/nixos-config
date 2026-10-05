@@ -1,12 +1,10 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxTmux = pkgs.callPackage ../../../pkgs/termux-native/tmux.nix { };
 in
 {
   programs.tmux = {
@@ -25,5 +23,5 @@ in
     TMUX_TMPDIR = lib.mkForce "/data/data/com.termux/files/usr/tmp";
   };
 
-  home.packages = lib.mkIf termuxMode [ termuxTmux ];
+  termux.packages = lib.mkIf termuxMode [ "tmux" ];
 }

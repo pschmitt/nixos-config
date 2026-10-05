@@ -33,26 +33,67 @@ then
   exit 1
 fi
 
-check_dependencies() {
-  local package=$1 binary=$2 dynamic_section=$3 dependency
+declare -A checked_elfs=()
+
+check_elf_dependencies() {
+  local package=$1 package_root=$2 elf_file=$3 relative dependency candidate
+  local header program_headers interpreter dynamic_section
+
+  header=$("$readelf" -h "$elf_file" 2>/dev/null) || return 0
+  if [[ -n "${checked_elfs[$elf_file]:-}" ]]
+  then
+    return 0
+  fi
+  checked_elfs[$elf_file]=1
+
+  relative=${elf_file#"$package_root/"}
+  if ! grep -Eq 'Class:[[:space:]]+ELF64' <<<"$header" ||
+    ! grep -Eq 'Machine:[[:space:]]+AArch64' <<<"$header"
+  then
+    printf 'Exported ELF is not AArch64 ELF64: %s (%s)\n' "$package" "$relative" >&2
+    return 1
+  fi
+
+  program_headers=$("$readelf" -l "$elf_file") || return
+  interpreter=$(sed -n 's/.*Requesting program interpreter: \([^]]*\)].*/\1/p' <<<"$program_headers")
+  if [[ -n "$interpreter" && "$interpreter" != /system/bin/linker64 ]]
+  then
+    printf 'Exported ELF requests a non-Android interpreter: %s (%s): %s\n' \
+      "$package" "$relative" "$interpreter" >&2
+    return 1
+  fi
+
+  dynamic_section=$("$readelf" -d "$elf_file" 2>/dev/null || true)
   while IFS= read -r dependency
   do
     [[ -n "$dependency" ]] || continue
     if [[ ! "$dependency" =~ ^[A-Za-z0-9._+-]+$ ]]
     then
       printf 'Invalid shared library name for %s (%s): %s\n' \
-        "$package" "$binary" "$dependency" >&2
+        "$package" "$relative" "$dependency" >&2
       return 1
     fi
-    if [[ -f "$system_libraries/$dependency" ||
-      -f "$output/native/$package/lib/$dependency" ||
-      -f "$output/native/$package/lib64/$dependency" ]]
+    if [[ -f "$system_libraries/$dependency" ]]
     then
       continue
     fi
-    printf 'Termux binary has an unavailable shared library: %s (%s): %s\n' \
-      "$package" "$binary" "$dependency" >&2
-    return 1
+
+    candidate=''
+    for candidate in "$package_root/lib/$dependency" "$package_root/lib64/$dependency"
+    do
+      if [[ -f "$candidate" ]]
+      then
+        check_elf_dependencies "$package" "$package_root" "$candidate" || return
+        candidate='found'
+        break
+      fi
+    done
+    if [[ "$candidate" != found ]]
+    then
+      printf 'Exported ELF has an unavailable shared library: %s (%s): %s\n' \
+        "$package" "$relative" "$dependency" >&2
+      return 1
+    fi
   done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
 }
 
@@ -91,6 +132,12 @@ do
     cp -L -- "$source_file" "$destination"
   done < <(jq -r '.files[]' <<<"$package")
 
+  checked_elfs=()
+  while IFS= read -r -d '' shipped_file
+  do
+    check_elf_dependencies "$name" "$package_root" "$shipped_file"
+  done < <(find "$package_root" -type f -print0)
+
   while IFS= read -r binary
   do
     source_file="$source_root/$binary"
@@ -116,7 +163,6 @@ do
       exit 1
     fi
     dynamic_section=$("$readelf" -d "$source_file")
-    check_dependencies "$name" "$binary" "$dynamic_section"
     if [[ -z "$interpreter" ]] && grep -Eq '\((NEEDED|RUNPATH|RPATH)\)' <<<"$dynamic_section"
     then
       printf 'Static Termux binary has dynamic dependencies: %s (%s)\n' "$name" "$binary" >&2

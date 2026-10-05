@@ -46,6 +46,12 @@ enum Command {
         #[arg(long, env = "NIXPP_PUBLIC_KEY")]
         public_key: String,
     },
+    /// Show the active Termux generation and retained rollback generations.
+    Status {
+        /// Show every retained generation.
+        #[arg(long)]
+        all: bool,
+    },
 }
 
 fn main() {
@@ -75,5 +81,6 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(&flake, &builder, &public_key),
+        Command::Status { all } => nixpp::status(all),
     }
 }

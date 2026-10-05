@@ -7,7 +7,6 @@
 let
   domain = config.domains.main;
   termuxMode = config.termux.enable or false;
-  termuxAtuin = pkgs.callPackage ../../../pkgs/termux-native/atuin.nix { };
   settings = {
     dialect = "uk";
     auto_sync = true;
@@ -25,7 +24,7 @@ in
     inherit settings;
   };
 
-  home.packages = lib.mkIf termuxMode [ termuxAtuin ];
+  termux.packages = lib.mkIf termuxMode [ "atuin" ];
 
   xdg.configFile = {
     "atuin/config.toml" = lib.mkIf termuxMode {

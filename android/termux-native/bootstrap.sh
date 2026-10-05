@@ -36,30 +36,34 @@ restore_startup() {
     temporary=$(mktemp "$PREFIX/etc/.zshenv.restore.XXXXXXXX") || return
     if ! cp -p "$backup/zshenv" "$temporary" || ! mv -f "$temporary" "$PREFIX/etc/zshenv"
     then
-      rm -f -- "$temporary"
+      command rm -f -- "$temporary"
       return 1
     fi
   elif [[ -e "$backup/zshenv-absent" ]]
   then
-    rm -f -- "$PREFIX/etc/zshenv" || return
+    command rm -f -- "$PREFIX/etc/zshenv" || return
   else
     printf 'The saved startup backup is incomplete: %s\n' "$backup" >&2
     return 1
   fi
 
-  rm -f -- "$shell_file" || return
+  command rm -f -- "$shell_file" || return
   if [[ -f "$backup/shell" ]]
   then
     mkdir -p "${shell_file%/*}" || return
     ln -s "$(<"$backup/shell")" "$shell_file" || return
   fi
 
-  rm -rf -- "$backup" || return
+  command rm -rf -- "$backup" || return
   printf 'Restored the original Termux zsh startup. Managed generations remain in %s/.local/share/termux-native.\n' "$HOME"
 }
 
+cleanup_bootstrap_lock() {
+  rmdir -- "$HOME/.local/share/termux-native/.bootstrap-lock" 2>/dev/null || true
+}
+
 main() {
-  local installer root backup temporary shell_file generation
+  local installer root backup temporary shell_file generation lock
 
   case "${1:-}" in
     -h | --help)
@@ -88,11 +92,14 @@ main() {
   installer="$(dirname "${BASH_SOURCE[0]}")/activate.sh"
   root="$HOME/.local/share/termux-native"
   generation=$2
-  # shellcheck disable=SC2157 # The Nix derivation substitutes this template value.
-  if [[ -n '@termuxPackages@' ]]
+  mkdir -p "$root" || return
+  lock="$root/.bootstrap-lock"
+  if ! mkdir "$lock" 2>/dev/null
   then
-    pkg install -y @termuxPackages@ || return
+    printf 'Another Termux bootstrap is already running.\n' >&2
+    return 1
   fi
+  trap cleanup_bootstrap_lock EXIT
   bash "$installer" install "$1" "$2" || return
   backup="$root/bootstrap-backup"
   shell_file="$HOME/.termux/shell"

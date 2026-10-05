@@ -1,1 +1,13 @@
-export ZDOTDIR="${TERMUX_NATIVE_ZDOTDIR:-$HOME/.local/share/termux-native/current/home/.config/zsh}"
+if [[ -n "${TERMUX_NATIVE_ZDOTDIR:-}" ]]
+then
+  export ZDOTDIR="$TERMUX_NATIVE_ZDOTDIR"
+else
+  typeset -g _termux_native_current="$HOME/.local/share/termux-native/current"
+  if [[ -e "$_termux_native_current" ]]
+  then
+    export ZDOTDIR="${_termux_native_current:A}/home/.config/zsh"
+  else
+    export ZDOTDIR="$_termux_native_current/home/.config/zsh"
+  fi
+  unset _termux_native_current
+fi

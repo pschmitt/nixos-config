@@ -14,11 +14,19 @@ native_shell_check() {
   (( $+_comps[git] )) || return 1
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in atuin bat eza fd rg tmux vivid zoxide nixpp
+  for command in bat eza fd rg vivid zoxide nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
       print -u2 -- "Nix-built Android command is not active: $command"
+      return 1
+    fi
+  done
+  for command in atuin tmux
+  do
+    if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
+    then
+      print -u2 -- "Termux APT command is not active: $command"
       return 1
     fi
   done
@@ -31,6 +39,7 @@ native_shell_check() {
   tmux -V >/dev/null || return
   zoxide --version >/dev/null || return
   nixpp switch --help >/dev/null 2>&1 || return
+  nixpp status --help >/dev/null 2>&1 || return
   "$GITSTATUS_DAEMON" --version || return
   termux-native-status || return
   local tmux_socket="native-smoke-$$"

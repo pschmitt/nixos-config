@@ -149,6 +149,109 @@ pub fn fetch(
     result.and(cleanup_result)
 }
 
+pub fn status(all: bool) -> Result<()> {
+    let home = env::var_os("HOME").context("HOME is not set")?;
+    let root = env::var_os("TERMUX_NATIVE_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(home).join(".local/share/termux-native"));
+    let generations_path = root.join("generations");
+    let current_path = root.join("current");
+    let active = fs::canonicalize(&current_path)
+        .ok()
+        .and_then(|path| path.file_name().map(OsStr::to_os_string))
+        .and_then(|name| name.into_string().ok());
+    let stdout = io::stdout();
+    let color = stdout.is_terminal()
+        && env::var_os("NO_COLOR").is_none()
+        && env::var("TERM").as_deref() != Ok("dumb");
+    let paint = |code: &str, value: &str| {
+        if color {
+            format!("\x1b[{code}m{value}\x1b[0m")
+        } else {
+            value.to_owned()
+        }
+    };
+
+    println!("\nnixpp ✨ Termux generations");
+    match &active {
+        Some(generation) => println!("  active: {}", paint("1;32", generation)),
+        None if current_path.symlink_metadata().is_ok() => {
+            println!("  active: {}", paint("1;31", "broken current link"))
+        }
+        None => println!("  active: {}", paint("2", "none")),
+    }
+
+    let mut generations = Vec::new();
+    if let Ok(entries) = fs::read_dir(&generations_path) {
+        for entry in entries {
+            let entry = entry.context("read generation directory entry")?;
+            let file_type = entry.file_type().context("inspect generation entry")?;
+            let name = entry.file_name();
+            let Some(name) = name.to_str() else {
+                continue;
+            };
+            if !file_type.is_dir()
+                || name.len() != 64
+                || !name.bytes().all(|byte| byte.is_ascii_hexdigit())
+            {
+                continue;
+            }
+            let modified = entry
+                .metadata()
+                .and_then(|metadata| metadata.modified())
+                .unwrap_or(std::time::UNIX_EPOCH);
+            generations.push((name.to_owned(), modified));
+        }
+    }
+    generations.sort_by(|left, right| right.1.cmp(&left.1));
+
+    if generations.is_empty() {
+        println!("  {}", paint("2", "No installed generations found."));
+        return Ok(());
+    }
+    let rollback_generations: Vec<_> = generations
+        .iter()
+        .filter(|(generation, _)| active.as_deref() != Some(generation.as_str()))
+        .collect();
+    println!(
+        "  rollback generations retained: {}",
+        rollback_generations.len()
+    );
+    let shown = if all {
+        rollback_generations.len()
+    } else {
+        rollback_generations.len().min(5)
+    };
+    for (generation, _) in rollback_generations.iter().take(shown) {
+        println!("    {generation}");
+    }
+    if shown < rollback_generations.len() {
+        println!(
+            "    {} more; pass --all to list every generation",
+            rollback_generations.len() - shown
+        );
+    }
+
+    if let Some(generation) = active {
+        let package_file = generations_path.join(generation).join("base-packages.txt");
+        if let Ok(packages) = fs::read_to_string(package_file) {
+            let packages: Vec<_> = packages.lines().filter(|line| !line.is_empty()).collect();
+            println!("  Termux APT packages: {}", packages.len());
+            if !packages.is_empty() {
+                println!("    {}", packages.join(" "));
+            }
+        }
+    }
+    println!(
+        "  {}",
+        paint(
+            "2",
+            "APT packages are shared across generations and are not rolled back."
+        )
+    );
+    Ok(())
+}
+
 pub fn switch_profile(flake: &str, builder: &str, public_key: &str) -> Result<()> {
     ensure!(!flake.is_empty(), "--flake is required");
     ensure!(

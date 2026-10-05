@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s install ARCHIVE TRUSTED_SHA256 | rollback GENERATION_SHA256\n' "$(basename "$0")"
+  printf 'Usage: %s preflight ARCHIVE TRUSTED_SHA256 | install ARCHIVE TRUSTED_SHA256 | rollback GENERATION_SHA256\n' "$(basename "$0")"
 }
 
 check_host() {
@@ -21,17 +21,31 @@ check_host() {
 
 switch_generation() {
   local root=$1 generation=$2 package installed
+  local -a packages=()
+  "$root/generations/$generation/bin/termux-nix-hello" || return
+  mapfile -t packages < "$root/generations/$generation/base-packages.txt"
+  for package in "${packages[@]}"
+  do
+    if [[ ! "$package" =~ ^[a-z0-9][a-z0-9+.-]*$ ]]
+    then
+      printf 'Invalid Termux package name in generation: %s\n' "$package" >&2
+      return 1
+    fi
+  done
+  if ((${#packages[@]} > 0))
+  then
+    pkg install -y "${packages[@]}" || return
+  fi
   while IFS= read -r package
   do
     # shellcheck disable=SC2016
     installed=$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null)
     if [[ "$installed" != 'install ok installed' ]]
     then
-      printf 'Missing base package: %s. Run bootstrap.sh first.\n' "$package" >&2
+      printf 'Termux APT did not install required package: %s\n' "$package" >&2
       return 1
     fi
   done < "$root/generations/$generation/base-packages.txt"
-  "$root/generations/$generation/bin/termux-nix-hello" || return
   timeout 45 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return
   ln -s "generations/$generation" "$root/.next" || return
@@ -40,12 +54,50 @@ switch_generation() {
     "$generation" "$PREFIX"
 }
 
+preflight_archive() (
+  local archive=$1 generation=$2 stage actual package
+  local -a packages=()
+  # Invoked by the EXIT trap.
+  # shellcheck disable=SC2329
+  cleanup_preflight() {
+    chmod -R u+w -- "$stage" 2>/dev/null || true
+    command rm -rf -- "$stage"
+  }
+  stage=$(mktemp -d "${TMPDIR:-$PREFIX/tmp}/termux-native-preflight.XXXXXXXX") || return
+  trap cleanup_preflight EXIT
+  cp -- "$archive" "$stage/archive.tar.gz" || return
+  actual=$(sha256sum "$stage/archive.tar.gz") || return
+  if [[ "${actual%% *}" != "$generation" ]]
+  then
+    printf 'Archive checksum mismatch during preflight.\n' >&2
+    return 1
+  fi
+  mkdir "$stage/tree" || return
+  tar --no-same-owner -xzf "$stage/archive.tar.gz" -C "$stage/tree" || return
+  if [[ ! -x "$stage/tree/bin/termux-nix-hello" ||
+    ! -s "$stage/tree/base-packages.txt" ]]
+  then
+    printf 'Generation archive is missing required bootstrap files.\n' >&2
+    return 1
+  fi
+  mapfile -t packages < "$stage/tree/base-packages.txt"
+  for package in "${packages[@]}"
+  do
+    if [[ ! "$package" =~ ^[a-z0-9][a-z0-9+.-]*$ ]]
+    then
+      printf 'Invalid Termux package name in generation: %s\n' "$package" >&2
+      return 1
+    fi
+  done
+  "$stage/tree/bin/termux-nix-hello"
+)
+
 transaction() (
   local action=$1 archive=$2 generation=$3
   local root="$HOME/.local/share/termux-native" stage actual
   mkdir -p "$root/generations" || return
   mkdir "$root/.lock" || return
-  trap 'rm -f -- "$root/.next"; rmdir -- "$root/.lock"' EXIT
+  trap 'command rm -f -- "$root/.next"; rmdir -- "$root/.lock"' EXIT
   if [[ "$action" == install ]]
   then
     stage=$(mktemp -d "$root/generations/.stage.XXXXXXXX") || return
@@ -66,13 +118,19 @@ transaction() (
       chmod u+w "$stage/tree" || return
       mv "$stage/tree" "$root/generations/$generation" || return
       chmod a-w "$root/generations/$generation" || return
-      rm -- "$stage/archive.tar.gz" || return
+      command rm -f -- "$stage/archive.tar.gz" || return
       rmdir "$stage" || return
       else
         printf 'Generation already exists; reusing it: %s\n' "$generation"
         chmod -R u+w -- "$stage" || return
-        rm -rf -- "$stage" || return
+        command rm -rf -- "$stage" || return
       fi
+    fi
+    if [[ ! -x "$root/generations/$generation/bin/termux-nix-hello" ||
+      ! -s "$root/generations/$generation/base-packages.txt" ]]
+    then
+      printf 'Generation archive is missing required bootstrap files: %s\n' "$generation" >&2
+      return 1
     fi
   switch_generation "$root" "$generation"
 )
@@ -85,6 +143,15 @@ main() {
       return 0
       ;;
     install)
+      if (($# != 3))
+      then
+        usage >&2
+        return 2
+      fi
+      archive=$2
+      generation=$3
+      ;;
+    preflight)
       if (($# != 3))
       then
         usage >&2
@@ -113,7 +180,12 @@ main() {
     return 2
   fi
   check_host || return
-  transaction "$action" "$archive" "$generation"
+  if [[ "$action" == preflight ]]
+  then
+    preflight_archive "$archive" "$generation"
+  else
+    transaction "$action" "$archive" "$generation"
+  fi
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
