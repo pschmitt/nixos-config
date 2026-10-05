@@ -9,7 +9,7 @@ let
   androidPkgs = target.pkgs;
 in
 androidPkgs.extend (
-  _final: prev:
+  _final: _prev:
   let
     withAptPackages =
       package: aptPackages:
@@ -78,46 +78,6 @@ androidPkgs.extend (
       nixpp = withAptPackages (pkgs.callPackage ../nixpp-termux { inherit inputs; }) [
         "ca-certificates"
       ];
-
-      bat = withAptPackages (fromNixpkgs {
-        package = pkgs.bat;
-        # Nix wraps bat with a store-specific less path; Termux supplies less on PATH.
-        skipPostFixup = true;
-      }) [ "less" ];
-
-      eza = fromNixpkgs {
-        package = pkgs.eza;
-        # The export contract ships eza's executable, not its Pandoc-built docs.
-        skipPostInstall = true;
-        crossPackage = prev.eza.overrideAttrs (old: {
-          outputs = [ "out" ];
-          meta = (old.meta or { }) // {
-            outputsToInstall = [ "out" ];
-          };
-          nativeBuildInputs = builtins.filter (input: pkgs.lib.getName input != "pandoc-cli") (
-            old.nativeBuildInputs or [ ]
-          );
-        });
-      };
-
-      fd = fromNixpkgs { package = pkgs.fd; };
-
-      zip = pkgs.callPackage ./zip.nix { package = prev.zip; };
-
-      unzip = pkgs.callPackage ./unzip.nix {
-        inherit (prev) bzip2;
-        package = prev.unzip;
-      };
-
-      ripgrep = fromNixpkgs {
-        package = pkgs.ripgrep;
-        # The upstream hook runs the Android binary under QEMU to generate docs;
-        # QEMU has no Android system linker on the build host.
-        skipPostFixup = true;
-        crossPackage = prev.ripgrep.override { withPCRE2 = true; };
-      };
-
-      gzip = pkgs.callPackage ./gzip.nix { package = prev.gzip; };
 
       ssh-to-age = fromGo {
         package = pkgs.ssh-to-age;
