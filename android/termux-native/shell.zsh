@@ -81,6 +81,12 @@ fi
 source "$_native_plugins/syntax-highlighting/zsh-syntax-highlighting.zsh"
 ZSH_HIGHLIGHT_STYLES[comment]='fg=006'
 unset _native_plugins
+
+# Zinit integrations may rewrite PATH while loading plugins. Restore the
+# selected generation and Termux package directories after those changes so
+# bundled commands such as nixpp stay available in the interactive shell.
+path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+
 typeset -g TERMUX_NATIVE_READY=1
 true
 
