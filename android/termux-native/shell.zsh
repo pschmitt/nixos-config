@@ -1,4 +1,3 @@
-source "${${(%):-%N}:A:h}/.zshenv"
 [[ -o interactive ]] || return 0
 
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"

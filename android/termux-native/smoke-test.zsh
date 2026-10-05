@@ -1,3 +1,14 @@
+native_smoke_run() {
+  local description=$1
+  shift
+  if "$@" >/dev/null
+  then
+    return 0
+  fi
+  print -u2 -- "Smoke command failed: $description"
+  return 1
+}
+
 native_shell_check() {
   [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
   if (( $+functions[zinit] || $+aliases[zinit] ))
@@ -43,7 +54,16 @@ native_shell_check() {
     print -u2 -- 'A prompt-plugin skip flag did not disable prompt plugins'
     return 1
   fi
-  (( $+widgets[history-substring-search-up] && $+widgets[edit-command-line] && $+widgets[_atuin_search_widget] )) || return 1
+  if (( ! $+widgets[history-substring-search-up] || ! $+widgets[edit-command-line] || ! $+widgets[_atuin_search_widget] ))
+  then
+    print -u2 -- 'Missing expected Zsh line editor widgets'
+    return 1
+  fi
+  if (( ! $+_comps[jc] ))
+  then
+    print -u2 -- 'The jc completion function is not registered'
+    return 1
+  fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/atuin/config.toml" ]]
   then
     print -u2 -- 'Termux generation is missing the Atuin settings file'
@@ -56,7 +76,8 @@ native_shell_check() {
     print -u2 -- 'Termux generation is missing shared jq configuration or the fd alias'
     return 1
   fi
-  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
+  if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_jc" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_revolver" ||
@@ -88,9 +109,13 @@ native_shell_check() {
     print -u2 -- 'A kubectl custom completion was declared but not registered'
     return 1
   fi
-  [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
+  if [[ $GITSTATUS_AUTO_INSTALL != 0 || ! -x $GITSTATUS_DAEMON ]]
+  then
+    print -u2 -- 'Gitstatus is not using the bundled daemon'
+    return 1
+  fi
   local command
-  for command in eget nixpp rbw ssh-to-age
+  for command in eget jc nixpp rbw ssh-to-age
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -106,7 +131,7 @@ native_shell_check() {
       return 1
     fi
   done
-  for command in atuin bat eza fd rg vivid kubectl shellcheck tmux zoxide gzip unzip zip
+  for command in atuin bat eza fd rg udocker vivid kubectl shellcheck tmux zoxide gzip unzip zip
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then
@@ -119,27 +144,42 @@ native_shell_check() {
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
     return 1
   fi
-  atuin --version >/dev/null || return
-  bat --version >/dev/null || return
-  eget --version >/dev/null || return
-  eza --version >/dev/null || return
-  fd --version >/dev/null || return
-  rg --version >/dev/null || return
-  assh --help >/dev/null 2>&1 || return
-  mani --help >/dev/null 2>&1 || return
-  rancher --help >/dev/null 2>&1 || return
-  vivid generate one-dark >/dev/null || return
-  gzip --version >/dev/null || return
-  unzip -v >/dev/null || return
-  zip -v >/dev/null || return
-  tmux -V >/dev/null || return
-  zoxide --version >/dev/null || return
-  shellcheck --version >/dev/null || return
-  nixpp switch --help >/dev/null 2>&1 || return
-  "$GITSTATUS_DAEMON" --version || return
-  termux-native-status || return
-  rbw --version >/dev/null || return
-  kubectl version --client --output=yaml >/dev/null || return
+  native_smoke_run 'Atuin version' atuin --version || return
+  native_smoke_run 'jc version' jc --version || return
+  native_smoke_run 'udocker help' udocker --help || return
+  if [[ "$UDOCKER_DEFAULT_EXECUTION_MODE" != P1 ||
+        "$UDOCKER_USE_PROOT_EXECUTABLE" != "$PREFIX/bin/proot" ]]
+  then
+    print -u2 -- 'udocker is missing its Termux proot configuration'
+    return 1
+  fi
+  if [[ ${path[1]:-} != "$TERMUX_GENERATION/bin" ||
+        ${commands[jc]:-} != "$TERMUX_GENERATION/bin/jc" ]]
+  then
+    print -u2 -- 'Termux generation commands do not take precedence in the active shell'
+    return 1
+  fi
+  native_smoke_run 'Zinit update shim' zinit_ask_update || return
+  native_smoke_run 'bat version' bat --version || return
+  native_smoke_run 'eget version' eget --version || return
+  native_smoke_run 'eza version' eza --version || return
+  native_smoke_run 'fd version' fd --version || return
+  native_smoke_run 'ripgrep version' rg --version || return
+  native_smoke_run 'assh help' assh --help || return
+  native_smoke_run 'mani help' mani --help || return
+  native_smoke_run 'rancher help' rancher --help || return
+  native_smoke_run 'vivid theme generation' vivid generate one-dark || return
+  native_smoke_run 'gzip version' gzip --version || return
+  native_smoke_run 'unzip version' unzip -v || return
+  native_smoke_run 'zip version' zip -v || return
+  native_smoke_run 'tmux version' tmux -V || return
+  native_smoke_run 'zoxide version' zoxide --version || return
+  native_smoke_run 'ShellCheck version' shellcheck --version || return
+  native_smoke_run 'nixpp switch help' nixpp switch --help || return
+  native_smoke_run 'gitstatus daemon version' "$GITSTATUS_DAEMON" --version || return
+  native_smoke_run 'Termux status helper' termux-native-status || return
+  native_smoke_run 'rbw version' rbw --version || return
+  native_smoke_run 'kubectl client version' kubectl version --client --output=yaml || return
   local tmux_socket="native-smoke-$$"
   tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
   tmux -L "$tmux_socket" has-session -t native-smoke || {

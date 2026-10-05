@@ -113,10 +113,11 @@ sha256sum result/environment.tar.gz
 ```
 
 Termux APT owns command line tools already in its repositories, including
-`bat`, `eza`, `fd`, `gzip`, `ripgrep`, `unzip`, `vivid`, and `zip`. APT resolves
-and tracks their dependencies. The bundle does not copy or install `.deb`
-files or libraries from Termux packages. Reserve Nix-built Android/Bionic
-outputs for tools Termux does not provide and generated configuration.
+`atuin`, `bat`, `eza`, `fd`, `gzip`, `ripgrep`, `tmux`, `udocker`, `unzip`,
+`vivid`, and `zip`. APT resolves and tracks their dependencies. The bundle does
+not copy or install `.deb` files or libraries from Termux packages. Reserve
+Nix-built Android/Bionic outputs for tools Termux does not provide and generated
+configuration.
 
 The result contains `environment.tar.gz`, `bootstrap.sh`, and `activate.sh`.
 Transfer all three to the phone through a trusted channel. In Termux, after
@@ -399,8 +400,10 @@ rebuilt with the Android Go toolchain and exported in the generation. The
 generic `fromNixpkgs` adapter can package
 compatible Android/Bionic cross derivations; it does not make arbitrary Linux
 packages Android-compatible. Termux APT supplies the other utilities,
-including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. Shared Zsh
-modules generate Termux runtime hooks for Atuin, direnv, fzf, vivid, and
+including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. The `jc`
+utility is a pure Python app that Termux APT does not provide, so the bundle
+ships its Python sources and runs them with Termux's APT-managed Python. Shared
+Zsh modules generate Termux runtime hooks for Atuin, direnv, fzf, vivid, and
 zoxide; `shell.zsh` sources that generated file instead of carrying duplicate
 hook definitions. Use APT for packages Termux provides: APT owns the package
 and resolves dependencies such as OpenSSL, ncurses, libevent,
@@ -413,11 +416,12 @@ checked for AArch64 ELF64, a valid Android linker when dynamically linked, and
 no remaining RPATH/RUNPATH. Dependency checks walk through package-local
 libraries and the Nix Android runtime closure. The profile also shares
 portable Neovim options from the regular Home Manager tree.
-At shell startup, `zshenv` resolves `current` to the immutable generation path,
-so an already-running shell keeps using the generation it started with after a
-later activation. Powerlevel10k's instant prompt is loaded early when present
-and respects the existing prompt-plugin skip flags. User-specific OS plugin
-files remain outside the bundle. The native shell sources the regular yadm
+At shell startup, `zshenv` resolves the `current` symlink to an immutable
+generation path, ignoring a stale generation inherited from the previous
+shell. An already-running shell keeps using the generation it started with
+after a later activation. Powerlevel10k's instant prompt loads early and
+respects the existing prompt-plugin skip flags. User-specific OS plugin files
+remain outside the bundle. The native shell sources the regular yadm
 aliases, helper library, named directories, OSC 7 hook, and interactive startup
 snippet directly from the user's home at runtime, including Termux package
 aliases. It skips the Zinit reload
@@ -572,3 +576,12 @@ relaunch, both devices returned to the managed Zsh prompt. The generation
 archive contains no copied Termux `.deb` files or APT-owned runtime libraries.
 The activation probe now matches a complete CR-terminated numeric result and
 closes each interactive PTY child once; it passed on both devices.
+
+A follow-up login-shell check found that Termux's login profile could put
+`~/.local/bin/jc` ahead of the generated `jc`. Startup now reapplies package
+precedence after the login profile, and every new shell resolves `current`
+instead of inheriting a stale generation. Bundle
+`8d6370bb04356b2ad85b97397dcff9de3ab840acc0e683bea5b5a6169a402e2d` passed
+the login smoke check on the Zenfone 10 and Mi Pad 4. New shells on both also
+selected the updated generation when started with a stale inherited value;
+cold app relaunch returned to the managed prompt without plugin downloads.

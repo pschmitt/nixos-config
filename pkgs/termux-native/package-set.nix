@@ -136,6 +136,10 @@ androidPkgs.extend (
         python = pkgs.python312;
       };
 
+      jc = pythonApplication {
+        package = pkgs.jc;
+      };
+
       assh = withAptPackages (fromGo {
         package = pkgs.assh;
         binary = "assh";
