@@ -99,6 +99,7 @@ in
 
       home.packages = [
         pkgsTermux.nixpp
+        pkgsTermux.obs-cli
         pkgsTermux.rbw
         pkgsTermux.ssh-to-age
         pkgsTermux.emoji-fzf

@@ -115,7 +115,7 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in eget jc nixpp rbw ssh-to-age
+  for command in eget jc nixpp obs-cli rbw ssh-to-age
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -145,6 +145,7 @@ native_shell_check() {
     return 1
   fi
   native_smoke_run 'Atuin version' atuin --version || return
+  native_smoke_run 'OBS CLI version' obs-cli --version || return
   native_smoke_run 'jc version' jc --version || return
   native_smoke_run 'udocker help' udocker --help || return
   if [[ "$UDOCKER_DEFAULT_EXECUTION_MODE" != P1 ||

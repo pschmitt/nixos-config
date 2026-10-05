@@ -140,6 +140,16 @@ androidPkgs.extend (
         package = pkgs.jc;
       };
 
+      obs-cli =
+        let
+          obsCliPackages = inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system};
+        in
+        withAptPackages (pythonApplication {
+          package = obsCliPackages.obs-cli;
+          python = pkgs.python312;
+          extraRuntimePackages = obsCliPackages.obsws-python.propagatedBuildInputs;
+        }) [ "python" ];
+
       assh = withAptPackages (fromGo {
         package = pkgs.assh;
         binary = "assh";
