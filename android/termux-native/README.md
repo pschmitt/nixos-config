@@ -331,6 +331,11 @@ the finished output; it does not evaluate Home Manager modules.
   current build fails on Bionic pthread and C++ library gaps even with LTO and
   GPU support disabled. It is not included in the Termux bundle; making it work
   would need a maintained package-specific port.
+  When Nixpkgs' Android cross build is unavailable or fails, Termux's
+  `build-package.sh` is the native porting path. It builds a Termux package from
+  a Termux recipe and its patches; it does not convert arbitrary Nix derivations
+  into Bionic binaries. Install its output through APT so APT owns upgrades,
+  dependency resolution, and removal.
 - **Paths and scripts:** Termux's normal prefix is
   `/data/data/com.termux/files/usr`. Forked app IDs and alternate Android users
   can break fixed paths. Avoid `/usr`, `/etc`, `/tmp` and Nix store paths in
