@@ -88,6 +88,7 @@ androidPkgs.extend (
       eget = fromGo {
         package = pkgs.eget;
         binary = "eget";
+        skipPostInstall = true;
       };
 
       mani = fromGo {

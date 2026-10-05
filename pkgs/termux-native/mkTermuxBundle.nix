@@ -28,6 +28,33 @@ let
     // extraSpecialArgs;
     modules = [ ../../modules/home-manager/termux.nix ] ++ modules;
   };
+  homeFileSources = map (
+    path:
+    let
+      absolutePath = "${homeManagerProfile.config.home.homeDirectory}/${lib.removePrefix "/" path}";
+      sourcePath =
+        if builtins.hasAttr path homeManagerProfile.config.home.file then
+          path
+        else if builtins.hasAttr absolutePath homeManagerProfile.config.home.file then
+          absolutePath
+        else
+          throw "Termux home file is not configured: ${path}";
+    in
+    {
+      inherit path;
+      source = builtins.path {
+        path = toString homeManagerProfile.config.home.file.${sourcePath}.source;
+        name = builtins.baseNameOf path;
+      };
+    }
+  ) homeManagerProfile.config.termux.homeFiles;
+  homeFiles = pkgs.runCommand "termux-native-home-files" { } ''
+    mkdir -p "$out/home"
+    ${lib.concatMapStringsSep "\n" (file: ''
+      mkdir -p "$out/home/$(dirname ${lib.escapeShellArg file.path})"
+      cp -RL ${lib.escapeShellArg (toString file.source)} "$out/home/${file.path}"
+    '') homeFileSources}
+  '';
   termuxNativePackages = builtins.filter (
     package: builtins.isAttrs ((package.passthru or { }).termuxNative or null)
   ) homeManagerProfile.config.home.packages;
@@ -142,10 +169,7 @@ let
         chmod u-w "$out/bin/gitstatusd"
         cp ${manifest} "$out/manifest.json"
         printf '%s\n' ${lib.escapeShellArgs termuxPackages} > "$out/base-packages.txt"
-        for file in ${pkgs.lib.escapeShellArgs homeManagerProfile.config.termux.homeFiles}; do
-          mkdir -p "$out/home/$(dirname "$file")"
-          cp -RL "${homeManagerProfile.config."home-files"}/$file" "$out/home/$file"
-        done
+        cp -RL ${homeFiles}/home/. "$out/home/"
         sed '/^export LOCALE_ARCHIVE_2_27=/d' \
           ${homeManagerProfile.config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh \
           > "$out/etc/profile.d/hm-session-vars.sh"

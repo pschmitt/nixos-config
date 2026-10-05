@@ -114,6 +114,7 @@ native_shell_check() {
   done
   atuin --version >/dev/null || return
   bat --version >/dev/null || return
+  eget --version >/dev/null || return
   eza --version >/dev/null || return
   fd --version >/dev/null || return
   rg --version >/dev/null || return
