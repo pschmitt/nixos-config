@@ -96,6 +96,7 @@ fn elapsed(duration: Duration) -> String {
 struct GenerationInfo {
     id: String,
     path: String,
+    current: bool,
     architecture: String,
     minimum_api: u64,
     apt_packages: Vec<String>,
@@ -103,23 +104,10 @@ struct GenerationInfo {
 }
 
 #[derive(Debug, serde::Serialize)]
-struct GenerationEntry {
-    id: String,
-    current: bool,
-}
-
-#[derive(Debug, serde::Serialize)]
-struct InvalidGeneration {
-    id: String,
-    error: String,
-}
-
-#[derive(Debug, serde::Serialize)]
 struct GenerationStatus {
     root: String,
-    current: Option<GenerationInfo>,
-    generations: Vec<GenerationEntry>,
-    invalid_generations: Vec<InvalidGeneration>,
+    current: Option<String>,
+    generations: Vec<GenerationInfo>,
 }
 
 fn valid_generation_id(id: &str) -> bool {
@@ -163,7 +151,7 @@ fn manifest_string_array(manifest: &serde_json::Value, name: &str) -> Result<Vec
         .collect()
 }
 
-fn inspect_generation(root: &Path, id: &str) -> Result<GenerationInfo> {
+fn inspect_generation(root: &Path, id: &str, current: bool) -> Result<GenerationInfo> {
     let path = root.join("generations").join(id);
     let metadata =
         fs::symlink_metadata(&path).with_context(|| format!("inspect generation {id}"))?;
@@ -196,6 +184,7 @@ fn inspect_generation(root: &Path, id: &str) -> Result<GenerationInfo> {
     Ok(GenerationInfo {
         id: id.to_owned(),
         path: path.display().to_string(),
+        current,
         architecture,
         minimum_api,
         apt_packages: manifest_string_array(&manifest, "basePackages")?,
@@ -241,36 +230,14 @@ fn inspect_generations(root: &Path) -> Result<GenerationStatus> {
     }
     ids.sort_unstable();
     ids.sort_by_key(|id| id != current.as_deref().unwrap_or_default());
-    let mut current_info = None;
-    let mut generations = Vec::new();
-    let mut invalid_generations = Vec::new();
-    for id in ids {
-        match inspect_generation(root, &id) {
-            Ok(info) if Some(&id) == current.as_ref() => current_info = Some(info),
-            Ok(_) => generations.push(GenerationEntry { id, current: false }),
-            Err(error) if Some(&id) == current.as_ref() => {
-                return Err(error).with_context(|| format!("inspect current generation {id}"));
-            }
-            Err(error) => invalid_generations.push(InvalidGeneration {
-                id,
-                error: format!("{error:#}"),
-            }),
-        }
-    }
-    if let Some(info) = &current_info {
-        generations.insert(
-            0,
-            GenerationEntry {
-                id: info.id.clone(),
-                current: true,
-            },
-        );
-    }
+    let generations = ids
+        .iter()
+        .map(|id| inspect_generation(root, id, Some(id) == current.as_ref()))
+        .collect::<Result<Vec<_>>>()?;
     Ok(GenerationStatus {
         root: root.display().to_string(),
-        current: current_info,
+        current,
         generations,
-        invalid_generations,
     })
 }
 
@@ -288,27 +255,29 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
     let ui = Progress::new();
     println!("{}", ui.paint("1;36", "nixpp ✨ Termux generations"));
     if let Some(current) = &status.current {
-        println!("Current: {}", ui.paint("1;32", &current.id));
-        println!(
-            "    {} · Android API {}+",
-            current.architecture, current.minimum_api
-        );
-        println!("    Termux APT: {}", current.apt_packages.join(", "));
-        println!("    Nix outputs: {}", current.nix_packages.join(", "));
-        println!("    Path: {}", current.path);
+        println!("Current: {}", ui.paint("1;32", current));
     } else {
         println!("Current: {}", ui.paint("1;33", "none"));
         println!("Run `nixpp switch --flake …` to install a generation.");
     }
-    println!(
-        "Readable generation manifests: {}",
-        status.generations.len()
-    );
-    if !status.invalid_generations.is_empty() {
-        println!(
-            "Unusable historical generations: {} (details: `nixpp status --json`)",
-            status.invalid_generations.len()
-        );
+    println!("Installed generations: {}", status.generations.len());
+    for generation in &status.generations {
+        let marker = if generation.current { "◆" } else { "◇" };
+        let id = if generation.current {
+            ui.paint("1;32", &generation.id)
+        } else {
+            ui.paint("2", &generation.id)
+        };
+        println!("  {marker} {id}");
+        if generation.current {
+            println!(
+                "    {} · Android API {}+",
+                generation.architecture, generation.minimum_api
+            );
+            println!("    Termux APT: {}", generation.apt_packages.join(", "));
+            println!("    Nix outputs: {}", generation.nix_packages.join(", "));
+            println!("    Path: {}", generation.path);
+        }
     }
     Ok(())
 }
@@ -331,12 +300,6 @@ fn print_generations(status: &GenerationStatus) {
             ui.paint("2", &generation.id)
         };
         println!("  {marker} {id}");
-    }
-    if !status.invalid_generations.is_empty() {
-        println!(
-            "Skipped {} unusable historical generation(s).",
-            status.invalid_generations.len()
-        );
     }
 }
 
@@ -406,109 +369,6 @@ pub fn fetch(
         fs::remove_file(&path).with_context(|| format!("remove temporary netrc {}", path.display()))
     });
     result.and(cleanup_result)
-}
-
-pub fn status(all: bool) -> Result<()> {
-    let home = env::var_os("HOME").context("HOME is not set")?;
-    let root = env::var_os("TERMUX_NATIVE_ROOT")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(home).join(".local/share/termux-native"));
-    let generations_path = root.join("generations");
-    let current_path = root.join("current");
-    let active = fs::canonicalize(&current_path)
-        .ok()
-        .and_then(|path| path.file_name().map(OsStr::to_os_string))
-        .and_then(|name| name.into_string().ok());
-    let stdout = io::stdout();
-    let color = stdout.is_terminal()
-        && env::var_os("NO_COLOR").is_none()
-        && env::var("TERM").as_deref() != Ok("dumb");
-    let paint = |code: &str, value: &str| {
-        if color {
-            format!("\x1b[{code}m{value}\x1b[0m")
-        } else {
-            value.to_owned()
-        }
-    };
-
-    println!("\nnixpp ✨ Termux generations");
-    match &active {
-        Some(generation) => println!("  active: {}", paint("1;32", generation)),
-        None if current_path.symlink_metadata().is_ok() => {
-            println!("  active: {}", paint("1;31", "broken current link"))
-        }
-        None => println!("  active: {}", paint("2", "none")),
-    }
-
-    let mut generations = Vec::new();
-    if let Ok(entries) = fs::read_dir(&generations_path) {
-        for entry in entries {
-            let entry = entry.context("read generation directory entry")?;
-            let file_type = entry.file_type().context("inspect generation entry")?;
-            let name = entry.file_name();
-            let Some(name) = name.to_str() else {
-                continue;
-            };
-            if !file_type.is_dir()
-                || name.len() != 64
-                || !name.bytes().all(|byte| byte.is_ascii_hexdigit())
-            {
-                continue;
-            }
-            let modified = entry
-                .metadata()
-                .and_then(|metadata| metadata.modified())
-                .unwrap_or(std::time::UNIX_EPOCH);
-            generations.push((name.to_owned(), modified));
-        }
-    }
-    generations.sort_by(|left, right| right.1.cmp(&left.1));
-
-    if generations.is_empty() {
-        println!("  {}", paint("2", "No installed generations found."));
-        return Ok(());
-    }
-    let rollback_generations: Vec<_> = generations
-        .iter()
-        .filter(|(generation, _)| active.as_deref() != Some(generation.as_str()))
-        .collect();
-    println!(
-        "  rollback generations retained: {}",
-        rollback_generations.len()
-    );
-    let shown = if all {
-        rollback_generations.len()
-    } else {
-        rollback_generations.len().min(5)
-    };
-    for (generation, _) in rollback_generations.iter().take(shown) {
-        println!("    {generation}");
-    }
-    if shown < rollback_generations.len() {
-        println!(
-            "    {} more; pass --all to list every generation",
-            rollback_generations.len() - shown
-        );
-    }
-
-    if let Some(generation) = active {
-        let package_file = generations_path.join(generation).join("base-packages.txt");
-        if let Ok(packages) = fs::read_to_string(package_file) {
-            let packages: Vec<_> = packages.lines().filter(|line| !line.is_empty()).collect();
-            println!("  Termux APT packages: {}", packages.len());
-            if !packages.is_empty() {
-                println!("    {}", packages.join(" "));
-            }
-        }
-    }
-    println!(
-        "  {}",
-        paint(
-            "2",
-            "APT packages are shared across generations and are not rolled back."
-        )
-    );
-    Ok(())
 }
 
 pub fn switch_profile(flake: &str, builder: &str, public_key: &str) -> Result<()> {
@@ -1647,61 +1507,12 @@ mod tests {
             .unwrap();
 
         let status = inspect_generations(&root).unwrap();
-        assert_eq!(
-            status.current.as_ref().map(|info| info.id.as_str()),
-            Some(current_id.as_str())
-        );
+        assert_eq!(status.current.as_deref(), Some(current_id.as_str()));
         assert_eq!(status.generations.len(), 2);
         assert!(status.generations[0].current);
-        assert_eq!(
-            status.current.as_ref().unwrap().apt_packages,
-            ["bash", "zsh"]
-        );
-        assert_eq!(status.current.as_ref().unwrap().nix_packages, ["nixpp"]);
+        assert_eq!(status.generations[0].apt_packages, ["bash", "zsh"]);
+        assert_eq!(status.generations[0].nix_packages, ["nixpp"]);
         assert!(!status.generations[1].current);
-
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn malformed_historical_generation_does_not_hide_current_generation() {
-        let root = temp_dir("malformed-history");
-        let generations = root.join("generations");
-        let current_id = "a".repeat(64);
-        let broken_id = "b".repeat(64);
-        let current_dir = generations.join(&current_id);
-        let broken_dir = generations.join(&broken_id);
-        fs::create_dir_all(&current_dir).unwrap();
-        fs::create_dir_all(&broken_dir).unwrap();
-        fs::write(
-            current_dir.join("manifest.json"),
-            serde_json::json!({
-                "schema": 1,
-                "architecture": "aarch64",
-                "minimumApi": 35,
-                "basePackages": ["bash"],
-                "homePackages": ["nixpp"]
-            })
-            .to_string(),
-        )
-        .unwrap();
-        fs::write(broken_dir.join("manifest.json"), "").unwrap();
-        std::os::unix::fs::symlink(format!("generations/{current_id}"), root.join("current"))
-            .unwrap();
-
-        let status = inspect_generations(&root).unwrap();
-        assert_eq!(
-            status.current.as_ref().map(|info| info.id.as_str()),
-            Some(current_id.as_str())
-        );
-        assert_eq!(status.generations.len(), 1);
-        assert_eq!(status.invalid_generations.len(), 1);
-        assert_eq!(status.invalid_generations[0].id, broken_id);
-        assert!(
-            status.invalid_generations[0]
-                .error
-                .contains("parse generation")
-        );
 
         fs::remove_dir_all(root).unwrap();
     }

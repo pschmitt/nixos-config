@@ -56,8 +56,9 @@ For ordinary Nixpkgs tools, `from-nixpkgs.nix` starts from the regular package
 (for example `pkgs.bat`), selects the same package name from
 `pkgs.pkgsCross.aarch64-android-prebuilt`, and infers its executable from
 `meta.mainProgram`. This builds the Nixpkgs recipe for Android/Bionic instead
-of trying to repair a Linux/glibc executable. A package-specific `crossPackage`
-can override the Android package when build options differ. The wrapper strips
+of trying to repair a Linux/glibc executable. Set `binaryPathOverride` when
+that metadata is absent or incorrect; set `crossPackage` when the Android
+derivation needs different build options. The wrapper strips
 the executable, then the exporter removes Nix RPATHs and resolves shared
 libraries from the Android runtime closure; missing or conflicting
 dependencies fail the build.
