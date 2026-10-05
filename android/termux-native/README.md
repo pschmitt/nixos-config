@@ -112,12 +112,11 @@ nix build '.#termux-native-bundle'
 sha256sum result/environment.tar.gz
 ```
 
-The bundle currently cross-builds Zip and Gzip utilities for Android/Bionic
-and exports them as native commands. Termux does not need APT's `zip`, `unzip`,
-or `gzip` packages for this profile. Keep packages that need Termux-specific
-patches or dependency integration in the official
-[Termux package recipes](https://github.com/termux/termux-packages); the Nix
-bundle does not copy or install `.deb` files.
+Termux APT owns command line tools already in its repositories, including
+`bat`, `eza`, `fd`, `gzip`, `ripgrep`, `unzip`, `vivid`, and `zip`. APT resolves
+and tracks their dependencies. The bundle does not copy or install `.deb`
+files or libraries from Termux packages. Reserve Nix-built Android/Bionic
+outputs for tools Termux does not provide and generated configuration.
 
 The result contains `environment.tar.gz`, `bootstrap.sh`, and `activate.sh`.
 Transfer all three to the phone through a trusted channel. In Termux, after
@@ -394,10 +393,9 @@ The profile splits packages by their runtime owner: entries in
 `termux.packages` are installed by Termux APT, while Home Manager packages
 with a `termuxNative` export declaration are built for Android/Bionic and
 copied into the generated profile. It reuses the regular CLI modules for
-`bat`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal Nixpkgs
-packages. Termux gets Android/Bionic builds of `bat`, `eza`, `fd`, `ripgrep`,
-and `vivid`; commands available from Termux APT, including `direnv`, `fzf`, and
-`zoxide`, are installed by APT. Shared Zsh modules generate Termux runtime
+`bat`, `eza`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal
+Nixpkgs packages. Termux APT supplies those utilities plus `direnv`, `fzf`,
+`zoxide`, Atuin, tmux, and Zsh. Shared Zsh modules generate Termux runtime
 hooks for Atuin, direnv, fzf, vivid, and zoxide; `shell.zsh` sources that
 generated file instead of carrying duplicate hook definitions. Termux APT
 supplies core and patched packages such as Atuin, Neovim, tmux, and Zsh. APT
@@ -506,10 +504,8 @@ described below.
 An earlier bundle was built on rofl-13 with Nixpkgs' Android cross packages for
 `ripgrep`, `fd`, and `bat`. Rust cross builds needed special handling to skip
 emulator-based checks and target post-fixup commands, and the generation
-launchers were verified on the Zenfone. Since Termux already packages these
-tools, the profile uses Termux APT for packages that are difficult to build
-or relocate, and retains Nix-built binaries for these four utilities. The
-earlier generation digest was
+launchers were verified on the Zenfone. These utilities have since moved to
+Termux APT. The earlier generation digest was
 `4b882492cc22e96a252e0efc4b82c1fef5599d522340e386b5eed4c4d118633a`.
 
 Atuin 18.23.0 was temporarily moved from `termux.packages` into the native
@@ -532,13 +528,10 @@ activated through the Termux app on both the Mi Pad 4 and Zenfone 10. On both
 devices, `rg -P '(?<=a)bc'` matched `abc`, and `rg --version` reported
 `15.2.0`.
 
-On 2026-10-04, the bundle added Nix-built Android/Bionic Zip, Unzip, and Gzip
-commands to the generation and removed their APT packages from the manifest.
-On the Zenfone, `zip` created an archive accepted by APT's `unzip`; native
-`unzip -t`, `zipgrep`, `gzip`, `zgrep`, `gunzip -t`, and `command -v unzip`
-passed from the active generation. The full 43 MiB `environment.tar.gz` was
-also transferred to the device and listed successfully with Android's system
-`tar -tzf`, using `/system/bin/gzip` before Termux's generation was available.
+On 2026-10-04, a prototype bundle added Nix-built Android/Bionic Zip, Unzip,
+and Gzip commands to the generation. The commands were smoke-tested on the
+Zenfone. This experiment was superseded: these tools are available in Termux
+APT and are now installed and tracked there.
 
 A direct Nixpkgs Android cross-build of tmux failed in its Android dependency
 graph before producing the package. The profile briefly imported tmux and its
@@ -559,10 +552,15 @@ connected to TCP port 443 from the Termux app on both the Zenfone 10 and Mi Pad
 the managed Zsh prompt without Zinit/plugin downloads. The package adapter
 change is on branch `codex/zsh-nix` at commit `d3f41d20`.
 
-On 2026-10-05, the updated bundle was rebuilt on rofl-13 and the complete
-bootstrap ran from each device's Termux app. Both reported all requested APT
-packages already installed, then passed the generation and no-Zinit smoke
-checks. After force-stop and cold relaunch, Atuin and tmux ran from Termux APT
-on both devices (`atuin` 18.19.0 / `tmux` 3.7b on the Mi Pad 4; `atuin`
-18.23.0 / `tmux` 3.7c on the Zenfone 10). This did not exercise APT downloads
-for missing packages; a first install still needs a working Termux mirror.
+On 2026-10-05, Termux APT became the owner of `bat`, `eza`, `fd`, `gzip`,
+`ripgrep`, `unzip`, `vivid`, and `zip` as well as Atuin and tmux. The exporter
+no longer builds or bundles those utilities. The 35 MiB bundle
+`0ba4f15d04007df34a8ae21e97d779e95f45b1317e3ceff3e4247906a0f25015` was
+built on rofl-13 and installed from the visible Termux app on both devices.
+APT installed `fd` on each; on the Mi Pad it also updated gzip, certificates,
+Atuin, diff-so-fancy, and tmux. Both bootstrap and interactive shell smoke
+tests passed, including the no-Zinit check. After a force-stop and cold app
+relaunch, both devices returned to the managed Zsh prompt. The generation
+archive contains no copied Termux `.deb` files or APT-owned runtime libraries.
+The activation probe now matches a complete CR-terminated numeric result and
+closes each interactive PTY child once; it passed on both devices.

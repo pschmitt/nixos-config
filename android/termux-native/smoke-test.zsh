@@ -21,9 +21,19 @@ native_shell_check() {
     print -u2 -- 'The yadm Termux package upgrade aliases were not loaded'
     return 1
   fi
-  if [[ -r "$XDG_CONFIG_HOME/zsh/osc.zsh" ]] && (( ! $+functions[__chpwd-osc7-pwd] ))
+  if (( ! $+functions[__chpwd-osc7-pwd] ))
   then
-    print -u2 -- 'The regular OSC 7 Zsh hook was not loaded from yadm'
+    print -u2 -- 'The shared OSC 7 Zsh hook was not loaded'
+    return 1
+  fi
+  local hook hook_count=0
+  for hook in $chpwd_functions
+  do
+    [[ "$hook" == __chpwd-osc7-pwd ]] && (( hook_count += 1 ))
+  done
+  if (( hook_count != 1 ))
+  then
+    print -u2 -- "The OSC 7 Zsh hook is registered $hook_count times"
     return 1
   fi
   if NO_PLUGINS=1 zsh::prompt-plugins-enabled ||
@@ -80,7 +90,7 @@ native_shell_check() {
   fi
   [[ $GITSTATUS_AUTO_INSTALL == 0 && -x $GITSTATUS_DAEMON ]] || return 1
   local command
-  for command in bat eza fd rg rbw ssh-to-age vivid nixpp
+  for command in rbw ssh-to-age nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -96,7 +106,7 @@ native_shell_check() {
       return 1
     fi
   done
-  for command in atuin kubectl shellcheck tmux zoxide
+  for command in atuin bat eza fd rg vivid kubectl shellcheck tmux zoxide gzip unzip zip
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then
@@ -118,6 +128,9 @@ native_shell_check() {
   mani --help >/dev/null 2>&1 || return
   rancher --help >/dev/null 2>&1 || return
   vivid generate one-dark >/dev/null || return
+  gzip --version >/dev/null || return
+  unzip -v >/dev/null || return
+  zip -v >/dev/null || return
   tmux -V >/dev/null || return
   zoxide --version >/dev/null || return
   shellcheck --version >/dev/null || return

@@ -6,16 +6,13 @@
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxVivid = pkgs.callPackage ../../../pkgs/termux-native/from-nixpkgs.nix {
-    package = pkgs.vivid;
-  };
   vividColors = pkgs.runCommand "vivid-generate" { } ''
     mkdir -p $out
     ${pkgs.vivid}/bin/vivid generate ${config.programs.vivid.activeTheme} > $out/ls_colors
   '';
 in
 {
-  home.packages = [ (if termuxMode then termuxVivid else pkgs.vivid) ];
+  home.packages = lib.optionals (!termuxMode) [ pkgs.vivid ];
 
   programs.vivid = {
     enable = true;

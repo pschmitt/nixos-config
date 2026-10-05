@@ -130,16 +130,13 @@ Closing and relaunching the app did not trigger Zinit plugin fetches.
 
 An earlier prototype run on 2026-10-03 used a builder-local Termux `.deb`
 directory to install `zoxide` through Termux APT. That builder-path
-integration has been removed. The current profile keeps Termux system packages
-under APT where they need Termux's patched runtime, and exports supported
-Home Manager packages as Android/Bionic binaries. Rust cross builds currently
-provide `bat`, `eza`, `fd`, `ripgrep`, `vivid`, and `zoxide`; host-Go builds
-provide `direnv`, `eget`, and `fzf`. The Rust `nixpp` client is cross-built
-for Android/Bionic. Atuin and tmux are installed and owned by Termux APT, which
-resolves and updates their dependencies normally, including OpenSSL, ncurses,
-libevent, libandroid-support, libandroid-glob, and utf8proc where required.
-Neovim also remains a Termux APT package. No Termux `.deb` artifacts or
-dependency libraries are extracted into Nix generations.
+integration has been removed. Termux APT provides `bat`, `eza`, `fd`, `gzip`,
+`ripgrep`, `unzip`, `vivid`, `zip`, and `zoxide`; it also owns `direnv`, `fzf`,
+Atuin, tmux, Neovim, and other Termux packages. The Rust `nixpp` client is
+cross-built for Android/Bionic. APT resolves and updates Atuin and tmux
+dependencies normally, including OpenSSL, ncurses, libevent,
+libandroid-support, libandroid-glob, and utf8proc where required. No Termux
+`.deb` artifacts or dependency libraries are extracted into Nix generations.
 The shared `home-manager/cli/eget.nix` module selects the normal Nixpkgs
 package on Linux and the Android binary in the Termux profile. Exported files are checked for
 Android ELF format and Nix store references. The Android cross toolchain runs

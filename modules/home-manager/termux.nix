@@ -11,7 +11,11 @@ let
 in
 {
   imports = [
+    ../../home-manager/cli/bat.nix
+    ../../home-manager/cli/eza.nix
+    ../../home-manager/cli/fd.nix
     ../../home-manager/cli/nvim/termux.nix
+    ../../home-manager/cli/ripgrep.nix
     ../../home-manager/cli/tmux
     ../../home-manager/cli/zsh/atuin.nix
     ../../home-manager/cli/zsh/completions
@@ -91,14 +95,7 @@ in
 
       home.packages = [
         pkgsTermux.nixpp
-        pkgsTermux.bat
-        pkgsTermux.eza
-        pkgsTermux.fd
         pkgsTermux.rbw
-        pkgsTermux.ripgrep
-        pkgsTermux.zip
-        pkgsTermux.unzip
-        pkgsTermux.gzip
         pkgsTermux.ssh-to-age
         pkgsTermux.emoji-fzf
       ];
@@ -116,7 +113,15 @@ in
         "less"
         "openssh"
         "atuin"
+        "bat"
+        "eza"
+        "fd"
+        "gzip"
         "tmux"
+        "ripgrep"
+        "unzip"
+        "vivid"
+        "zip"
         "procps"
         "python"
         "shellcheck"

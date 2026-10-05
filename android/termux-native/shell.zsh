@@ -29,7 +29,6 @@ then
     source "$ZDOTDIR/custom/hosts/$HOST/zprompt"
   fi
 
-  [[ -r "$ZDOTDIR/osc.zsh" ]] && source "$ZDOTDIR/osc.zsh"
   [[ -r "$ZDOTDIR/interactive.zsh" ]] && source "$ZDOTDIR/interactive.zsh"
   [[ -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"
 fi
