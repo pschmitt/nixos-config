@@ -24,6 +24,7 @@ androidPkgs.extend (
       {
         package,
         crossPackage ? null,
+        binaryPathOverride ? null,
         skipPostInstall ? false,
         skipPostFixup ? false,
       }:
@@ -31,6 +32,7 @@ androidPkgs.extend (
         inherit
           package
           crossPackage
+          binaryPathOverride
           skipPostInstall
           skipPostFixup
           target

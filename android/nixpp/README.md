@@ -91,6 +91,13 @@ for rollback through its `activate.sh`.
 cache. Use `fetch` for outputs already published to a standard Nix binary
 cache.
 
+Use `nixpp status` to inspect the active generation, its Termux APT
+requirements, and the Nix-built outputs it contains. `nixpp generations` lists
+installed generation IDs. To roll back, run
+`bash "$HOME/.local/share/termux-native/current/activate.sh" rollback ID`
+with the desired ID. Add `--json` to `nixpp status` for scripting. The Zsh
+helper `termux-native-status` delegates to the same status view.
+
 The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on
 `rofl-13`, then Nix wraps each archive as its own reference-free output. The
