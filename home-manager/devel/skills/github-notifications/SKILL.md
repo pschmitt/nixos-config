@@ -9,10 +9,10 @@ Use the GitHub CLI (`gh`) to inspect the authenticated user's notifications and 
 
 ## Modes and authorization
 
-- Default mode is read-only triage: fetch notifications, inspect PRs, review diffs and CI, and report. Do not merge, approve, comment, request changes, or mark notifications read.
+- Default mode is read-only triage: fetch notifications, inspect PRs, review diffs and CI, and report. Do not merge, approve, comment, request changes, or mark notifications read (the one exception is in the next bullets: merged PRs, which are marked done).
 - An explicit request such as “yolo merge the safe ones” authorizes merging qualifying PRs during that run. It does not authorize unrelated comments, approvals, branch deletion, or changes to non-PR issues.
 - Treat “review these PRs” as a request for analysis and a recommendation unless the user separately asks to submit a GitHub review.
-- Mark notifications read only when explicitly requested. Preserve unread state otherwise.
+- Mark notifications read only when explicitly requested, except for merged PRs: whenever a run is authorized to merge, mark the notification threads of PRs that are merged afterwards as done (see “Review and notification state”). Preserve unread state for everything else.
 - If a mutation is requested but the target, merge method, or scope is ambiguous, stop that mutation and report the ambiguity.
 
 ## Triage workflow
@@ -51,7 +51,7 @@ If any gate is uncertain, leave the PR unmerged and state the exact blocker. Nev
 
 ## Review and notification state
 
-Inspect review requests, submitted reviews, conversations, and the PR timeline when deciding whether something needs the user's attention. For issue mentions, identify the relevant comment or event and summarize the requested follow-up rather than merely repeating the issue body. Treat unresolved or unclear reviewer concerns as blockers for auto-merge. Do not submit an approval, comment, label change, assignment, or issue state change merely to clear a notification. If asked to mark notifications read, do so only after processing and record which threads were changed.
+Inspect review requests, submitted reviews, conversations, and the PR timeline when deciding whether something needs the user's attention. For issue mentions, identify the relevant comment or event and summarize the requested follow-up rather than merely repeating the issue body. Treat unresolved or unclear reviewer concerns as blockers for auto-merge. Do not submit an approval, comment, label change, assignment, or issue state change merely to clear a notification. If asked to mark notifications read, do so only after processing and record which threads were changed. In a merge-authorized run, also mark as done (removed from the inbox, not merely read) the threads of every PR that is `MERGED` or `CLOSED` — those merged in this run and PRs already merged or closed by the time they are inspected — using `gh api -X DELETE notifications/threads/<thread-id>` (`PATCH` would only mark them read and leave them in the inbox); verify the PR state first and never mark open PRs, issues, review requests, or mentions that still need a response.
 
 ## Final report
 
