@@ -141,14 +141,6 @@ let
           "$out/bin/gitstatusd"
         chmod u-w "$out/bin/gitstatusd"
         cp ${manifest} "$out/manifest.json"
-        bash ${../../android/termux-native/export-home-packages.sh} \
-          ${termuxNativePackageManifest} \
-          "$out" \
-          ${target.readelf} \
-          ${target.sysrootLib} \
-          ${pkgs.patchelf}/bin/patchelf \
-          ${elfCleaner}/bin/termux-elf-cleaner \
-          ${toString apiLevel}
         printf '%s\n' ${lib.escapeShellArgs termuxPackages} > "$out/base-packages.txt"
         for file in ${pkgs.lib.escapeShellArgs homeManagerProfile.config.termux.homeFiles}; do
           mkdir -p "$out/home/$(dirname "$file")"
@@ -177,6 +169,14 @@ let
         mkdir -p "$out/share/licenses"
         cp ${pkgs.gitstatus.src}/LICENSE "$out/share/licenses/gitstatus"
         cp ${pkgs.gitstatus.romkatv_libgit2.src}/COPYING "$out/share/licenses/libgit2"
+        bash ${../../android/termux-native/export-home-packages.sh} \
+          ${termuxNativePackageManifest} \
+          "$out" \
+          ${target.readelf} \
+          ${target.sysrootLib} \
+          ${pkgs.patchelf}/bin/patchelf \
+          ${elfCleaner}/bin/termux-elf-cleaner \
+          ${toString apiLevel}
       '';
   bundle = pkgs.runCommand "termux-native-bundle" { allowedReferences = [ ]; } ''
     mkdir -p "$out"

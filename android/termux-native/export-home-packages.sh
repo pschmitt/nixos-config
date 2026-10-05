@@ -74,6 +74,23 @@ validate_elf() {
   fi
 }
 
+bundle_has_library() {
+  local dependency=$1 candidate
+
+  for candidate in \
+    "$output"/native/*/lib/"$dependency" \
+    "$output"/native/*/lib64/"$dependency" \
+    "$output/lib/$dependency" \
+    "$output/lib64/$dependency"
+  do
+    if [[ -f "$candidate" ]]
+    then
+      return 0
+    fi
+  done
+  return 1
+}
+
 if ! jq -e '
   type == "array" and
   all(.[];
@@ -334,8 +351,38 @@ done < <(jq -c '.[]' "$manifest")
 
 while IFS= read -r -d '' bundled_file
 do
-  if "$readelf" -h "$bundled_file" >/dev/null 2>&1
+  if [[ -L "$bundled_file" ]]
   then
-    validate_elf 'bundle' "$bundled_file"
+    resolved_file=$(realpath -e -- "$bundled_file") || {
+      printf 'Broken symlink in Termux bundle: %s\n' "$bundled_file" >&2
+      exit 1
+    }
+    case "$resolved_file" in
+      "$output"/*) ;;
+      *)
+        printf 'Symlink escapes the Termux bundle: %s -> %s\n' \
+          "$bundled_file" "$resolved_file" >&2
+        exit 1
+        ;;
+    esac
+  else
+    resolved_file=$bundled_file
   fi
-done < <(find "$output" -type f -print0)
+
+  if "$readelf" -h "$resolved_file" >/dev/null 2>&1
+  then
+    validate_elf 'bundle' "$resolved_file"
+    dynamic_section=$("$readelf" -d "$resolved_file")
+    while IFS= read -r dependency
+    do
+      [[ -n "$dependency" ]] || continue
+      if [[ -f "$system_libraries/$dependency" ]] || bundle_has_library "$dependency"
+      then
+        continue
+      fi
+      printf 'Bundled ELF has an unavailable shared library: %s: %s\n' \
+        "$bundled_file" "$dependency" >&2
+      exit 1
+    done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
+  fi
+done < <(find "$output" \( -type f -o -type l \) -print0)
