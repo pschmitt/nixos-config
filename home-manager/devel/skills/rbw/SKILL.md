@@ -117,6 +117,30 @@ rbw sync
 - Never `pkill -f 'rbw edit'` from an agent shell; the pattern matches the
   shell's own command line.
 
+## Setting secrets without exposing them (2.18+)
+
+Never put a real secret on the `rbw` command line (`--password VALUE` lands
+in `ps`, shell history and the agent transcript). Use one of these instead;
+`rbw set` syncs afterwards, so consecutive calls are safe:
+
+```bash
+rbw set -y --password-file new-pw "$item"     # or --password-env VAR,
+                                               # or --password-stdin (needs -y)
+rbw set -y -g -l 32 --output-file new-pw "$item"  # generate+store,
+                                               # old pw -> history, nothing printed
+rbw set -y --field-file api-token=token.txt "$item"  # custom field
+                                               # (--field-env NAME=VAR too)
+```
+
+- `--output-file` is written (0600) only after the vault update succeeded.
+- `rbw set --if-revision "$(rbw get --raw "$item" | jq -r .revision_date)"`
+  refuses the update if the entry changed in the meantime.
+- Roll back a rotation: `rbw history -y "$item" --restore` (or
+  `--restore=N`).
+- Find rotation candidates: `rbw list --older-than 1year --fields
+  name,modified`, and `rbw audit [--hibp] [--json]` (weak/reused/breached;
+  never prints passwords).
+
 ## Passkeys in browser automation
 
 For using passkeys stored in `rbw` to authenticate automated browser sessions
