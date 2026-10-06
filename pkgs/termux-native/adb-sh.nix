@@ -26,6 +26,10 @@ pkgs.callPackage ./shell-script.nix {
       from = "#!/usr/bin/env bash";
       to = "#!/data/data/com.termux/files/usr/bin/bash";
     }
+    {
+      from = ''cd "$(readlink -f "$(dirname "$0")")" || exit 9'';
+      to = ''cd "$TERMUX_GENERATION/native/adb-sh-termux/bin" || exit 9'';
+    }
   ];
   aptPackages = [
     "android-tools"

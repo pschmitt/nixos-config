@@ -201,7 +201,19 @@ native_shell_check() {
   fi
   native_smoke_run 'Atuin version' atuin --version || return
   native_smoke_run 'ADB version' adb version || return
-  native_smoke_run 'ADB helper help' adb.sh --help || return
+  local adb_help_stderr
+  if adb_help_stderr=$(adb.sh --help 2>&1 >/dev/null)
+  then
+    if [[ -n "$adb_help_stderr" ]]
+    then
+      print -u2 -- "ADB helper help wrote to stderr: $adb_help_stderr"
+      return 1
+    fi
+    print -r -- '  Passed: ADB helper help'
+  else
+    print -u2 -- 'Smoke command failed: ADB helper help'
+    return 1
+  fi
   native_smoke_run 'tmux-slay help' tmux-slay --help || return
   native_smoke_run 'xpanes version' xpanes --version || return
   native_smoke_run 'OBS CLI version' obs-cli --version || return
