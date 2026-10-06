@@ -27,6 +27,8 @@ let
     PAGER = "less";
     MANPAGER = "less";
     DOMAIN = config.domains.main;
+    # The yadm zshenv exported this; plugins use it at load time (aliases).
+    EMAIL = config.mainUser.email or null;
     REPORTTIME = 10;
     KEYTIMEOUT = 1;
     CARGO_HOME = "${config.xdg.dataHome}/cargo";
@@ -83,7 +85,7 @@ let
   sessionVariableInit = lib.concatStringsSep "\n" (
     lib.mapAttrsToList (name: value: ''
       zsh::xdg-export ${lib.escapeShellArg name} ${lib.escapeShellArg (toString value)}
-    '') shellSessionVariables
+    '') (lib.filterAttrs (_: value: value != null) shellSessionVariables)
   );
 in
 {
