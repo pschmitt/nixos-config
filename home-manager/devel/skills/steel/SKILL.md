@@ -7,9 +7,10 @@ description: >-
 
 # Steel
 
-Use the `steel` MCP server for browser work that needs interaction or an
-isolated session. It connects to the self-hosted Steel service on fnuc without
-a Steel cloud account or API key.
+Use the host-specific Steel MCP that matches the browser capacity you want.
+Available servers are `steel-fnuc`, `steel-rofl-13`, and `steel-rofl-14`;
+each connects to that host's self-hosted Steel service without a Steel cloud
+account or API key.
 
 ## Choosing a tool
 
@@ -20,8 +21,9 @@ a Steel cloud account or API key.
   self-hosted Steel supports one active browser session at a time.
 - Use `steel_screenshot` when a visual result is needed, then release any
   session created for it.
-- The web UI is at `https://steel.fnuc.ts.brkn.lol/ui` for a person to inspect
-  or take over a session.
+- The web UI is at `https://steel.<host>.ts.brkn.lol/ui`, with `fnuc`,
+  `rofl-13`, or `rofl-14` as `<host>`, for a person to inspect or take over a
+  session.
 
 The self-hosted Steel build does not provide CAPTCHA solving, managed proxy,
 managed profiles, or credential injection. Do not claim a CAPTCHA was solved;
