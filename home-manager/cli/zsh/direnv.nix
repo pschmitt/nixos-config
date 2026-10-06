@@ -40,6 +40,7 @@ in
       ''
   );
 
-  xdg.configFile."zsh/termux/direnv-init.zsh".source =
-    lib.mkIf termuxMode "${direnvInitFile}/init.zsh";
+  xdg.configFile."zsh/termux/direnv-init.zsh" = lib.mkIf termuxMode {
+    source = "${direnvInitFile}/init.zsh";
+  };
 }

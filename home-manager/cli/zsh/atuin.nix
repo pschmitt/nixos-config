@@ -52,5 +52,7 @@ in
     );
   };
 
-  xdg.configFile."zsh/termux/atuin-init.zsh".source = lib.mkIf termuxMode "${atuinInitFile}/init.zsh";
+  xdg.configFile."zsh/termux/atuin-init.zsh" = lib.mkIf termuxMode {
+    source = "${atuinInitFile}/init.zsh";
+  };
 }

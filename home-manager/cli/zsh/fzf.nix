@@ -29,5 +29,7 @@ in
       ''
   );
 
-  xdg.configFile."zsh/termux/fzf-init.zsh".source = lib.mkIf termuxMode "${fzfInitFile}/init.zsh";
+  xdg.configFile."zsh/termux/fzf-init.zsh" = lib.mkIf termuxMode {
+    source = "${fzfInitFile}/init.zsh";
+  };
 }

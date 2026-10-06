@@ -38,5 +38,5 @@ in
       ''
   );
 
-  xdg.configFile."zsh/termux/vivid.zsh".source = lib.mkIf termuxMode vividInitFile;
+  xdg.configFile."zsh/termux/vivid.zsh" = lib.mkIf termuxMode { source = vividInitFile; };
 }

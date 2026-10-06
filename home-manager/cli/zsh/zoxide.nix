@@ -33,6 +33,7 @@ in
       ''
   );
 
-  xdg.configFile."zsh/termux/zoxide-init.zsh".source =
-    lib.mkIf termuxMode "${zoxideInitFile}/init.zsh";
+  xdg.configFile."zsh/termux/zoxide-init.zsh" = lib.mkIf termuxMode {
+    source = "${zoxideInitFile}/init.zsh";
+  };
 }
