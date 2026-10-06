@@ -1,5 +1,6 @@
 native_wait_for_result() {
-  local name=$1 marker=$2 response buffer='' line result child_status='' read_status
+  local name=$1 marker=$2 keep_open=${3:-0}
+  local response buffer='' line result child_status='' read_status
 
   # PTY reads can return several lines together; inspect each complete line.
   while true
@@ -17,11 +18,14 @@ native_wait_for_result() {
       line=${line//$'\r'/}
       [[ -n "$line" ]] && print -r -- "$line"
 
-      if [[ "$line" == *"$marker:"* ]]
+      if [[ "$line" == "$marker"* ]]
       then
-        result=${line##*"$marker:"}
-        child_status=${result%%[^0-9]*}
-        [[ -n "$child_status" ]] && break
+        result=${line#"$marker"}
+        if [[ -n "$result" && "$result" != *[^0-9]* ]]
+        then
+          child_status=$result
+          break
+        fi
       fi
     done
 
@@ -36,61 +40,80 @@ native_wait_for_result() {
     return 1
   fi
 
-  # The child exits after printing the marker; close its PTY exactly once here.
-  zpty -d "$name" 2>/dev/null
+  if [[ "$keep_open" != 1 ]]
+  then
+    # The child exits after printing the marker; close its PTY exactly once here.
+    zpty -d "$name" 2>/dev/null
+  fi
   return "$child_status"
 }
 
+native_start_interactive() {
+  local name=$1 nonce=$2
+  shift 2
+  zpty "$name" "$@" || return
+  zpty -w "$name" "stty -echo; print -r -- 'NATIVE_PTY_READY:$nonce:0'"$'\n' || return
+  native_wait_for_result "$name" "NATIVE_PTY_READY:$nonce:" 1
+}
+
 native_check_pty() {
-  local generation=$1 nonce script
+  local generation=$1 nonce startup_script
   zmodload zsh/zpty || return
   nonce="${$}-${RANDOM}-${RANDOM}"
-  script="
-    stty -echo
-    stty rows 24 cols 80
-    export TERMUX_NATIVE_GENERATION_OVERRIDE=${(q)generation}
-    export TERMUX_NATIVE_ZDOTDIR=${(q)generation}/home/.config/zsh
-    source ${(q)generation}/zshenv || exit 1
-    source \$ZDOTDIR/.zshenv || exit 1
-    if [[ -o login && -r \$ZDOTDIR/.zprofile ]]
-    then
-      source \$ZDOTDIR/.zprofile || exit 1
-    fi
-    if [[ -o interactive && -r \$ZDOTDIR/.zshrc ]]
-    then
-      source \$ZDOTDIR/.zshrc || exit 1
-    fi
-    if [[ -o login && -r \$ZDOTDIR/.zlogin ]]
-    then
-      source \$ZDOTDIR/.zlogin || exit 1
-    fi
-    source \"$generation/shell/smoke-test.zsh\"
-    smoke_status=\$?
-    print -r -- 'NATIVE_TEST_DONE:$nonce:'\$smoke_status
-    exit \$smoke_status
-  "
+  startup_script=$(mktemp "${TMPDIR:-/tmp}/termux-native-startup.XXXXXXXX") || return
+  trap 'rm -f -- "$startup_script"; zpty -d native 2>/dev/null' EXIT
+  {
+    print -r -- 'stty rows 24 cols 80'
+    print -r -- "export TERMUX_NATIVE_GENERATION_OVERRIDE=${(q)generation}"
+    print -r -- "export TERMUX_NATIVE_ZDOTDIR=${(q)generation}/home/.config/zsh"
+    print -r -- "source ${(q)generation}/zshenv || exit 1"
+    cat <<'EOF'
+source "$ZDOTDIR/.zshenv" || exit 1
+if [[ -o login && -r "$ZDOTDIR/.zprofile" ]]
+then
+  source "$ZDOTDIR/.zprofile" || exit 1
+fi
+if [[ -o interactive && -r "$ZDOTDIR/.zshrc" ]]
+then
+  source "$ZDOTDIR/.zshrc" || exit 1
+fi
+if [[ -o login && -r "$ZDOTDIR/.zlogin" ]]
+then
+  source "$ZDOTDIR/.zlogin" || exit 1
+fi
+source "${TERMUX_GENERATION}/shell/smoke-test.zsh"
+smoke_status=$?
+print -r -- 'NATIVE_TEST_DONE:NONCE:'$smoke_status
+exit $smoke_status
+EOF
+  } >| "$startup_script" || return
+  startup_script=${startup_script:A}
   local -a native_environment=(
     "COLUMNS=80" \
     "LINES=24" \
     "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "TERMUX_RUN_MODE=ci" \
+    "ZSH_SYNC_LOCAL_PLUGINS=1" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
   )
   if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
   then
     native_environment+=("TERMUX_NATIVE_YADM_CONFIG=1")
   fi
-  zpty native env "${native_environment[@]}" "$PREFIX/bin/zsh" -f -l -i -c ${(q)script} || return
-  trap 'zpty -d native 2>/dev/null' EXIT
-  native_wait_for_result native "NATIVE_TEST_DONE:$nonce"
+  trap 'rm -f -- "$startup_script"; zpty -d native 2>/dev/null' EXIT
+  native_start_interactive native "$nonce" \
+    env "${native_environment[@]}" "$PREFIX/bin/zsh" -f -l -i || return
+  zpty -w native "source ${(q)startup_script}"$'\n' || return
+  native_wait_for_result native 'NATIVE_TEST_DONE:NONCE:'
   local result=$?
   trap - EXIT
+  rm -f -- "$startup_script"
   return $result
 }
 
 native_check_no_plugins() {
-  local generation=$1 nonce script
+  local generation=$1 startup_script output result
   local -a native_environment=(
     "NO_PLUGINS=1" \
     "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
@@ -98,42 +121,45 @@ native_check_no_plugins() {
     "TERMUX_RUN_MODE=ci" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
   )
-  zmodload zsh/zpty || return
-  nonce="${$}-${RANDOM}-${RANDOM}"
-  script="
-    stty -echo
-    stty rows 24 cols 80
-    export TERMUX_NATIVE_GENERATION_OVERRIDE=${(q)generation}
-    export TERMUX_NATIVE_ZDOTDIR=${(q)generation}/home/.config/zsh
-    source ${(q)generation}/zshenv || exit 1
-    source \$ZDOTDIR/.zshenv || exit 1
-    if [[ -o login && -r \$ZDOTDIR/.zprofile ]]
-    then
-      source \$ZDOTDIR/.zprofile || exit 1
-    fi
-    if [[ -o interactive && -r \$ZDOTDIR/.zshrc ]]
-    then
-      source \$ZDOTDIR/.zshrc || exit 1
-    fi
-    if [[ -o login && -r \$ZDOTDIR/.zlogin ]]
-    then
-      source \$ZDOTDIR/.zlogin || exit 1
-    fi
-    if (( \$+functions[zinit] || \$+aliases[zinit] || \$+commands[zinit] )); then
-      print -r -- 'NO_PLUGINS_CHECK:$nonce:1'
-      exit 1
-    else
-      print -r -- 'NO_PLUGINS_CHECK:$nonce:0'
-      exit 0
-    fi
-  "
   if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
   then
     native_environment+=("TERMUX_NATIVE_YADM_CONFIG=1")
   fi
-  zpty no-plugins env "${native_environment[@]}" \
-    "$PREFIX/bin/zsh" -f -l -i -c ${(q)script} || return
-  native_wait_for_result no-plugins "NO_PLUGINS_CHECK:$nonce"
+  startup_script=$(mktemp "${TMPDIR:-/tmp}/termux-native-no-plugins.XXXXXXXX") || return
+  {
+    print -r -- "source ${(q)generation}/zshenv || exit 1"
+    cat <<'EOF'
+source "$ZDOTDIR/.zshenv" || exit 1
+if [[ -r "$ZDOTDIR/.zprofile" ]]
+then
+  source "$ZDOTDIR/.zprofile" || exit 1
+fi
+if [[ -r "$ZDOTDIR/.zshrc" ]]
+then
+  source "$ZDOTDIR/.zshrc" || exit 1
+fi
+if [[ -r "$ZDOTDIR/.zlogin" ]]
+then
+  source "$ZDOTDIR/.zlogin" || exit 1
+fi
+if (( $+functions[zinit] || $+aliases[zinit] || $+commands[zinit] ))
+then
+  print -r -- 'NO_PLUGINS_CHECK:1'
+  exit 1
+fi
+print -r -- 'NO_PLUGINS_CHECK:0'
+exit 0
+EOF
+  } >| "$startup_script" || return
+  output=$(env "${native_environment[@]}" "$PREFIX/bin/zsh" -f -l -c "source ${(q)startup_script}" 2>&1)
+  result=$?
+  rm -f -- "$startup_script"
+  print -r -- "$output"
+  if (( result != 0 )) || ! grep -Fxq 'NO_PLUGINS_CHECK:0' <<< "$output"
+  then
+    print -u2 -- 'The NO_PLUGINS configuration check failed'
+    return 1
+  fi
 }
 
 native_check_pty "$@" && native_check_no_plugins "$@"
