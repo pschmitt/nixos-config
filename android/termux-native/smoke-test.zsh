@@ -13,6 +13,12 @@ native_smoke_run() {
 
 native_shell_check() {
   [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
+  if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
+  then
+    [[ "$ZDOTDIR" == "$TERMUX_GENERATION/home/.config/zsh" ]] || return 1
+    [[ "$HISTFILE" == "$XDG_STATE_HOME/zsh/zhistory" ]] || return 1
+    [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" == 1 ]] || return 1
+  fi
   if (( $+functions[zinit] || $+aliases[zinit] ))
   then
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'

@@ -22,3 +22,10 @@ export ZDOTDIR
 
 typeset -U path
 path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+
+if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
+then
+  export TERMUX_NATIVE_YADM_CONFIG=1
+else
+  unset TERMUX_NATIVE_YADM_CONFIG
+fi
