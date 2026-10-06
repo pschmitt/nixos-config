@@ -12,6 +12,72 @@ let
     "rofl-14"
   ];
 
+  steelSkillsSrc = pkgs.fetchFromGitHub {
+    owner = "steel-dev";
+    repo = "skills";
+    rev = "35bf278371312964a177f15b679b5e290f9ef275";
+    hash = "sha256-adK6l+4m7lORZgn7cwZAPnM81t0JbCB+v2A6EcBgiyc=";
+  };
+
+  steelCliPackage = pkgs.stdenvNoCC.mkDerivation {
+    pname = "steel-cli";
+    version = "0.4.4";
+    src = pkgs.fetchurl {
+      url = "https://github.com/steel-dev/cli/releases/download/v0.4.4/steel-cli-x86_64-unknown-linux-gnu.tar.gz";
+      hash = "sha256-NYzMoPUlDctkuIcOIUjoPU11weDE6u8sLUoKQnqqMu8=";
+    };
+    sourceRoot = "steel-cli-x86_64-unknown-linux-gnu";
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+    installPhase = ''
+      install -Dm755 steel "$out/bin/steel"
+    '';
+  };
+
+  steelRemoteCli = pkgs.writeShellApplication {
+    name = "steel";
+    text = ''
+      host="''${STEEL_HOST:-fnuc}"
+      if [[ "''${1:-}" == "--host" ]]; then
+        host="''${2:?steel --host requires fnuc, rofl-13, or rofl-14}"
+        shift 2
+      fi
+
+      case "$host" in
+        fnuc|rofl-13|rofl-14) ;;
+        *) echo "Unsupported Steel host: $host" >&2; exit 2 ;;
+      esac
+
+      api_url="https://steel.$host.ts.${domainName}/v1"
+      export STEEL_API_KEY="''${STEEL_API_KEY:-local}"
+      exec ${steelCliPackage}/bin/steel --api-url "$api_url" "$@"
+    '';
+  };
+
+  steelMcpSource = pkgs.fetchFromGitHub {
+    owner = "steel-dev";
+    repo = "steel-mcp-server";
+    rev = "3ceb5c36257949b4d12890e65204e3eabc7e2fb4";
+    hash = "sha256-nmh4Js2mOg9kMss3aehVy5qMWB9E3fiAi0LCNDJxVFc=";
+  };
+
+  steelMcpPackage = pkgs.buildNpmPackage {
+    pname = "steel-mcp";
+    version = "3.0.0";
+    src = steelMcpSource;
+    patches = [ ./patches/steel-mcp-self-hosted-artifacts.patch ];
+    npmDepsHash = "sha256-bR8WsJRtjCwjxXTa6lu7NeRPry2cP87AQYRIDuqWHbA=";
+    nodejs = pkgs.nodejs_24;
+    npmBuildScript = "build";
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    installPhase = ''
+      mkdir -p "$out/lib/steel-mcp" "$out/bin"
+      cp -r dist node_modules package.json "$out/lib/steel-mcp/"
+      makeWrapper ${pkgs.nodejs_24}/bin/node "$out/bin/steel-mcp" \
+        --add-flags "$out/lib/steel-mcp/dist/stdio.js"
+    '';
+  };
+
   # One Browserless and one Steel MCP per host; each stays connected to its
   # matching self-hosted backend so agents can compare or select capacity.
   browserlessMcps = lib.listToAttrs (
@@ -35,11 +101,7 @@ let
     map (host: {
       name = "steel-${host}";
       value = {
-        command = "${pkgs.nodejs_24}/bin/npx";
-        args = [
-          "--yes"
-          "github:steel-dev/steel-mcp-server#3ceb5c36257949b4d12890e65204e3eabc7e2fb4"
-        ];
+        command = "${steelMcpPackage}/bin/steel-mcp";
         env = {
           STEEL_LOCAL = "true";
           STEEL_BASE_URL = "https://steel.${host}.ts.${domainName}";
@@ -58,6 +120,7 @@ let
 
   skillSources = [
     ./skills
+    steelSkillsSrc
     "${n8nSkillsSrc}/skills"
     pkgs.todoist-cli.skill
   ]
@@ -470,6 +533,7 @@ in
         antigravity-cli
         ccusage
         pkgs.playwright-mcp
+        steelRemoteCli
         # cursor-cli
         # kilocode-cli
 

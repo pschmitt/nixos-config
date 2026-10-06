@@ -1,0 +1,82 @@
+diff --git a/src/core/steel/rest.ts b/src/core/steel/rest.ts
+index 005ee49..3da0986 100644
+--- a/src/core/steel/rest.ts
++++ b/src/core/steel/rest.ts
+@@ -83 +83 @@ interface RequestSpec {
+-    responseType?: 'json' | 'text' | undefined;
++    responseType?: 'json' | 'text' | 'artifact' | undefined;
+@@ -170,0 +171,5 @@ export class SteelRestClient implements SteelApi {
++        if (spec.responseType === 'artifact') {
++            const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
++            if (contentType.includes('application/json')) return (await response.json()) as T;
++            return new Uint8Array(await response.arrayBuffer()) as T;
++        }
+@@ -222,2 +227,2 @@ export class SteelRestClient implements SteelApi {
+-    async pdf(request: ArtifactRequest, signal?: AbortSignal): Promise<ArtifactResponse> {
+-        return this.requireJson<ArtifactResponse>({
++    async pdf(request: ArtifactRequest, signal?: AbortSignal): Promise<ArtifactResponse | Uint8Array> {
++        const result = await this.request<ArtifactResponse | Uint8Array>({
+@@ -227,0 +233,2 @@ export class SteelRestClient implements SteelApi {
++            responseType: 'artifact',
++            accept: 'application/pdf, application/octet-stream, application/json',
+@@ -229,0 +237,4 @@ export class SteelRestClient implements SteelApi {
++        if (result === undefined) {
++            throw new SteelToolError('Steel returned an empty body for /pdf.', { code: 'steel_error' });
++        }
++        return result;
+diff --git a/src/core/steel/types.ts b/src/core/steel/types.ts
+index 29f5ffd..426400b 100644
+--- a/src/core/steel/types.ts
++++ b/src/core/steel/types.ts
+@@ -49 +49 @@ export interface ArtifactRequest {
+-/** Both `/v1/screenshot` and `/v1/pdf` answer with a hosted file URL, never with bytes. */
++/** Artifact metadata returned by hosted Steel. Self-hosted `/pdf` can instead return raw PDF bytes. */
+@@ -255 +255 @@ export interface SteelApi {
+-    pdf(request: ArtifactRequest, signal?: AbortSignal): Promise<ArtifactResponse>;
++    pdf(request: ArtifactRequest, signal?: AbortSignal): Promise<ArtifactResponse | Uint8Array>;
+diff --git a/src/core/tools/session.ts b/src/core/tools/session.ts
+index e4b3310..28c3898 100644
+--- a/src/core/tools/session.ts
++++ b/src/core/tools/session.ts
+@@ -790 +790,2 @@ export function registerSessionDiagnostics(host: ToolHost, deps: ServerDeps): vo
+-            description: 'Read live/released activity or list live handles; never starts a browser.',
++            description:
++                'Read live/released activity or list live handles; never starts a browser. Self-hosted Steel only supports list_live.',
+@@ -796,0 +798,12 @@ export function registerSessionDiagnostics(host: ToolHost, deps: ServerDeps): vo
++                if (deps.config.deployment === 'self_hosted') {
++                    return successResult(
++                        {
++                            result: 'Session event diagnostics are unavailable on this self-hosted Steel instance.',
++                            notes: [
++                                'The self-hosted API returns 404 for /sessions/{id}/agent-traces and /logs. ' +
++                                    'Use list_live=true to list MCP-owned live sessions; event history is a Steel Cloud capability.',
++                            ],
++                        },
++                        { supported: false }
++                    );
++                }
+diff --git a/src/core/tools/stateless.ts b/src/core/tools/stateless.ts
+index f6d85b6..2d7ecd7 100644
+--- a/src/core/tools/stateless.ts
++++ b/src/core/tools/stateless.ts
+@@ -366,0 +367,20 @@ export function registerPdf(host: ToolHost, deps: ServerDeps): void {
++                if (artifact instanceof Uint8Array) {
++                    const bytes = Buffer.from(artifact);
++                    return successResult(
++                        {
++                            result: `Rendered ${args.url} to PDF and attached the file.`,
++                            notes: ['The PDF is attached as an application/pdf resource.'],
++                        },
++                        { mime_type: 'application/pdf', size_bytes: bytes.byteLength },
++                        [
++                            {
++                                type: 'resource',
++                                resource: {
++                                    uri: 'steel://artifacts/page.pdf',
++                                    mimeType: 'application/pdf',
++                                    blob: bytes.toString('base64'),
++                                },
++                            },
++                        ]
++                    );
++                }
