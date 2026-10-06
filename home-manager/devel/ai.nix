@@ -19,6 +19,20 @@ let
     hash = "sha256-adK6l+4m7lORZgn7cwZAPnM81t0JbCB+v2A6EcBgiyc=";
   };
 
+  # Only the skill directories of the upstream repo. Merging the repo root into
+  # the skills dir drags in its `.claude-plugin/marketplace.json`, which makes
+  # Claude Code treat the skills dir as a marketplace and silently drops every
+  # personal plugin (including the generated `hm` plugin that carries all MCP
+  # servers).
+  steelSkills = pkgs.runCommandLocal "steel-skills" { } ''
+    mkdir -p "$out"
+    for dir in ${steelSkillsSrc}/*/; do
+      if [[ -f "$dir/SKILL.md" ]]; then
+        ln -s "''${dir%/}" "$out/$(basename "$dir")"
+      fi
+    done
+  '';
+
   steelCliPackage = pkgs.stdenvNoCC.mkDerivation {
     pname = "steel-cli";
     version = "0.4.4";
@@ -120,7 +134,7 @@ let
 
   skillSources = [
     ./skills
-    steelSkillsSrc
+    steelSkills
     "${n8nSkillsSrc}/skills"
     pkgs.todoist-cli.skill
   ]
