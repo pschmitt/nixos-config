@@ -9,7 +9,7 @@ Name tmux windows from the work they contain, using the tmux MCP server when it 
 
 ## Inspect the target windows
 
-- Check whether tmux is reachable by running a bounded tmux query such as `tmux list-sessions` or the preferred tmux MCP discovery tool. Do not treat an empty `$TMUX` or `$TMUX_PANE` in a subprocess as proof that tmux is inactive; execution tools often start a fresh shell without those variables.
+- Always check whether tmux is reachable by running a bounded tmux query such as `tmux list-sessions` or the preferred tmux MCP discovery tool. **Never skip this check or stop the task just because `$TMUX` or `$TMUX_PANE` is empty.** Execution tools often start a fresh shell without those variables, so their absence says nothing about whether a tmux server is running. Treat `$TMUX` and `$TMUX_PANE` only as hints for identifying the attached session and pane when they are available.
 - If tmux responds, continue with explicit session, window, and pane discovery. If no tmux server is reachable, report that and stop.
 - Identify the requested scope. For “all windows”, inspect every window in the accessible tmux server; otherwise limit inspection and changes to the requested session or windows.
 - Prefer tmux MCP tools for session, window, and pane discovery. When using the CLI, list sessions, windows, and panes with explicit session and window identifiers.
