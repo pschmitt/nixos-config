@@ -10,6 +10,21 @@ in
 {
   home.packages = lib.optionals (!termuxMode) [ pkgs.gitstatus ];
   programs.zsh.initContent = lib.mkMerge [
+    # p10k instant prompt: draw the cached prompt right away while the rest of
+    # .zshrc (and the deferred local plugins) load. Termux sources the shared
+    # yadm loader from termux-zsh-runtime.nix instead.
+    (lib.mkIf (!termuxMode) (
+      lib.mkOrder 400 ''
+        if [[ -o interactive &&
+              -z "''${NO_INSTANT_PROMPT:-}" &&
+              -z "''${NO_PLUGINS:-}" &&
+              -z "''${NO_PROMPT_PLUGINS:-}" &&
+              -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]
+        then
+          source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
+        fi
+      ''
+    ))
     (lib.mkIf termuxMode (
       lib.mkOrder 885 ''
         if zsh::prompt-plugins-enabled
