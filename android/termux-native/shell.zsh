@@ -17,13 +17,15 @@ then
   [[ -r "$ZDOTDIR/aliases.zsh" ]] && source "$ZDOTDIR/aliases.zsh"
   [[ -r "$ZDOTDIR/lib.zsh" ]] && source "$ZDOTDIR/lib.zsh"
 
-  # The regular startup's traps.zsh reloads Zinit, so the native shell keeps
-  # the Home Manager runtime hooks and reuses only these portable snippets.
+  # The regular custom loader applies the Termux and host overlays after its
+  # zboot files. Keep those yadm-owned files on-device and follow that order.
   [[ -r "$ZDOTDIR/custom/os/termux/zboot.zsh" ]] && source "$ZDOTDIR/custom/os/termux/zboot.zsh"
-  if [[ -n "$HOST" && -r "$ZDOTDIR/custom/hosts/$HOST/zprompt" ]]
-  then
-    source "$ZDOTDIR/custom/hosts/$HOST/zprompt"
-  fi
+  () {
+    setopt localoptions nullglob extendedglob
+    multisrc \
+      "$ZDOTDIR/custom/os/termux"/^zboot.zsh(N.) \
+      "$ZDOTDIR/custom/hosts/$HOST"/^zboot.zsh(N.)
+  }
 
   [[ -r "$ZDOTDIR/interactive.zsh" ]] && source "$ZDOTDIR/interactive.zsh"
   [[ -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"

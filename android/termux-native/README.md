@@ -171,6 +171,23 @@ There are two useful build approaches:
   Bionic for API 35. This makes the compiler target and runtime dependencies
   explicit. See [the NDK guide](https://developer.android.com/ndk/guides/other_build_systems).
 
+There is no general binary-only conversion from a regular Linux Nix package to
+a native Termux package. `patchelf` can edit ELF loader, RPATH, and dependency
+metadata; it cannot replace glibc with Bionic or make Linux ABI calls valid on
+Android. The Termux [execution environment](https://github.com/termux/termux-packages/wiki/Termux-execution-environment)
+requires Android/NDK-built binaries linked against Bionic. `termux-elf-cleaner`
+removes ELF metadata unsupported by Android linkers after a compatible build;
+it is cleanup, not an ABI converter.
+
+The reusable Nix route here is `termuxAdapters.fromNixpkgs`: it selects and
+builds the Nixpkgs Android cross derivation from source, then the bundle
+exporter checks its ELF and runtime-library closure. Some packages still need
+an Android-specific derivation or build-hook override. When a package needs
+Termux-specific source patches or build steps, the upstream
+[`termux-packages` builder](https://github.com/termux/termux-packages/wiki/Building-packages)
+is the native alternative; it builds package recipes into Termux packages for
+Termux APT to own and update. It does not generically transform Nix derivations.
+
 A binary cache can store either output, including an entire assembled
 environment. But it stores NAR objects and reference metadata, not a portable
 installation transaction. Native Termux does not have `/nix/store`, and moving a
@@ -444,13 +461,17 @@ generation path, ignoring a stale generation inherited from the previous
 shell. An already-running shell keeps using the generation it started with
 after a later activation. Powerlevel10k's instant prompt loads early and
 respects the existing prompt-plugin skip flags. User-specific OS plugin files
-remain outside the bundle. The native shell sources the regular yadm
-aliases, helper library, named directories, OSC 7 hook, and interactive startup
-snippet directly from the user's home at runtime. Termux package-management
-aliases and upgrade functions, prompt color, and selected completions come from
-Home Manager. The shell no longer reads Zinit's completion manifest. Local
+remain outside the bundle. The native shell sources the regular yadm aliases,
+helper library, named directories, and interactive startup snippet directly
+from the user's home. It applies the direct Termux and host custom overlays
+after their `zboot` files, using the same order as the regular custom loader.
+These files remain runtime inputs and are not copied into the bundle. Termux
+package-management aliases, prompt color, and selected completions come from
+Home Manager. The Termux environment also matches the regular shell's
+`NO_GLOBAL_RCS`, locale fallback, `VIMINIT` cleanup, and SSH terminal
+preference. The shell no longer reads Zinit's completion manifest. Local
 plugin files remain yadm-managed and are loaded by the Home Manager startup
-hook. It skips the Zinit reload traps and the general OS plugin aggregator;
+hook. The general OS plugin aggregator and Zinit reload traps stay disabled;
 plugins that still require Zinit need explicit Termux adapters before they can
 be enabled in the native shell.
 The regular Linux LazyVim plugin closure is deliberately not included in the

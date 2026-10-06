@@ -13,6 +13,15 @@
   ];
 
   programs.zsh.envExtra = lib.mkAfter ''
+    setopt NO_GLOBAL_RCS
+    export LC_ALL="''${LC_ALL:-en_US.UTF-8}"
+    unset VIMINIT
+
+    if [[ -n "''${TERM_SSH_CLIENT:-}" ]] && infocmp "''${TERM_SSH_CLIENT}" &>/dev/null
+    then
+      export TERM="$TERM_SSH_CLIENT"
+    fi
+
     fpath=("$ZDOTDIR/completions" $fpath)
 
     typeset -gA DOMAINS

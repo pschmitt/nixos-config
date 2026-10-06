@@ -150,7 +150,6 @@ in
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
         initContent = lib.mkAfter ''
-          alias -g DN='&> /dev/null' L='| less' J='| jq'
           ${builtins.readFile ../../android/termux-native/shell.zsh}
 
             if [[ -o interactive && -n "''${_comps+x}" ]]
