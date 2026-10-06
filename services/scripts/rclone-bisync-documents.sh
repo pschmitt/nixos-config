@@ -88,6 +88,7 @@ main() {
     --config "$config_path" \
     --check-access \
     --check-filename .rclone-test.empty \
+    --exclude "/Incoming/" \
     --recover \
     --remove-empty-dirs \
     --workdir "$rclone_workdir" \

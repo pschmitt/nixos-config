@@ -15,6 +15,7 @@ in
     ../../services/bentopdf.nix
     ../../services/changedetection-io-container.nix
     ../../services/dawarich.nix
+    ../../services/drive-events-puller.nix
     ../../services/endurain.nix
     ../../services/filebrowser-quantum.nix
     ../../services/forgejo.nix

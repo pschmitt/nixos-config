@@ -20,11 +20,21 @@ let
     text = builtins.readFile ./scripts/rclone-bisync-documents.sh;
   };
 
+  rcloneBisyncIncoming = pkgs.writeShellApplication {
+    name = "rclone-bisync-incoming";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.rclone
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ./scripts/rclone-bisync-incoming.sh;
+  };
+
   bisyncCmd =
-    extraArgs:
+    package: extraArgs:
     lib.concatStringsSep " " (
       [
-        "${rcloneBisyncDocuments}/bin/rclone-bisync-documents"
+        "${package}/bin/${package.name}"
         "--config"
         (lib.escapeShellArg rcloneConfig)
       ]
@@ -51,7 +61,39 @@ in
           User = "root";
         };
 
-        script = bisyncCmd [ ];
+        script = bisyncCmd rcloneBisyncDocuments [ ];
+      };
+
+      rclone-bisync-incoming = {
+        description = "Rclone bisync - Documents/Incoming (scanner inbox)";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          StateDirectory = "rclone";
+          CacheDirectory = "rclone";
+          TimeoutStartSec = "30min";
+          User = "root";
+        };
+
+        script = bisyncCmd rcloneBisyncIncoming [ ];
+      };
+
+      rclone-bisync-incoming-resync = {
+        description = "Rclone bisync - Documents/Incoming full resync";
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+
+        serviceConfig = {
+          Type = "oneshot";
+          StateDirectory = "rclone";
+          CacheDirectory = "rclone";
+          TimeoutStartSec = "30min";
+          User = "root";
+        };
+
+        script = bisyncCmd rcloneBisyncIncoming [ "--resync" ];
       };
 
       rclone-bisync-documents-resync = {
@@ -67,11 +109,20 @@ in
           User = "root";
         };
 
-        script = bisyncCmd [ "--resync" ];
+        script = bisyncCmd rcloneBisyncDocuments [ "--resync" ];
       };
     };
 
     timers = {
+      rclone-bisync-incoming = {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnBootSec = "2min";
+          OnUnitActiveSec = "1min";
+          AccuracySec = "5s";
+        };
+      };
+
       rclone-bisync-documents = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
