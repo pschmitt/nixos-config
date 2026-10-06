@@ -7,6 +7,8 @@ _: {
       size = 14;
     };
     settings = {
+      enable_audio_bell = "no";
+
       # Nord background override (slightly darker than stock Nord #2E3440)
       background = "#24282F";
 
