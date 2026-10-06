@@ -408,10 +408,11 @@ copied into the generated profile. It reuses the regular CLI modules for
 `bat`, `eget`, `eza`, `fd`, and `ripgrep`, and shares the tmux and Zsh
 configuration. Linux hosts use their normal Nixpkgs packages. `eget` is
 rebuilt with the Android Go toolchain and exported in the generation. The
-generic `fromNixpkgs` adapter can package
-compatible Android/Bionic cross derivations; it does not make arbitrary Linux
-packages Android-compatible. Termux APT supplies the other utilities,
-including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim, and Zsh. The `jc`,
+generic `fromNixpkgs` adapter only packages compatible Android/Bionic cross
+derivations; it does not make arbitrary Linux packages Android-compatible or
+replace Termux APT for software Termux already provides. Termux APT supplies
+the other utilities, including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim,
+and Zsh. The `jc`,
 `obs-cli`, and `slack-react` utilities are pure Python apps that Termux APT does
 not provide, so the bundle ships their Python sources and runs them with
 Termux's APT-managed Python. Shared
@@ -428,6 +429,10 @@ checked for AArch64 ELF64, a valid Android linker when dynamically linked, and
 no remaining RPATH/RUNPATH. Dependency checks walk through package-local
 libraries and the Nix Android runtime closure. The profile also shares
 portable Neovim options from the regular Home Manager tree.
+Keep fixed Termux settings in Home Manager modules: package ownership, Zsh
+options, aliases, function definitions, and preference values belong in Nix.
+Use runtime Zsh glue only for state discovered on the phone, such as the active
+generation and private yadm files. Local Zsh plugins remain yadm-managed.
 At shell startup, `zshenv` resolves the `current` symlink to an immutable
 generation path, ignoring a stale generation inherited from the previous
 shell. An already-running shell keeps using the generation it started with
