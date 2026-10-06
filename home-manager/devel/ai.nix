@@ -92,25 +92,8 @@ let
     '';
   };
 
-  # One Browserless and one Steel MCP per host; each stays connected to its
-  # matching self-hosted backend so agents can compare or select capacity.
-  browserlessMcps = lib.listToAttrs (
-    map (host: {
-      name = "browserless-${host}";
-      value = {
-        command = "${pkgs.nodejs_24}/bin/npx";
-        args = [
-          "--yes"
-          "@browserless.io/mcp@1.36.0"
-        ];
-        env = {
-          BROWSERLESS_TOKEN = "local";
-          BROWSERLESS_API_URL = "https://browserless.${host}.ts.${domainName}";
-        };
-      };
-    }) browserHosts
-  );
-
+  # One Steel MCP per host; each stays connected to its matching self-hosted
+  # backend so agents can select capacity.
   steelMcps = lib.listToAttrs (
     map (host: {
       name = "steel-${host}";
@@ -324,60 +307,7 @@ in
             SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
-
-        # Playwright attached to the persistent, KasmVNC-visible Chromium
-        # container on fnuc (see services/browser-mcp-chromium-container.nix) and to rofl-13's
-        # and rofl-14's own local Chromium. Reached over SSH from every host
-        # (including fnuc itself) so the loopback-only CDP ports never need
-        # to be exposed on the network.
-        #
-        # --output-dir must be a path that resolves to the same real,
-        # writable directory both here (where playwright-mcp itself runs, on
-        # the bare host) and inside the container (where Chromium actually
-        # writes downloads once told to over CDP) -- see the matching
-        # ${containerName}-mcp-downloads bind mount at the identical
-        # absolute path in services/browser-mcp-chromium-container.nix.
-        playwright-fnuc = {
-          command = "ssh";
-          # -q silences ssh-smart-proxy.sh's "⟶ fnuc: direct (fnuc)" route
-          # banner (fnuc's ProxyCommand), which otherwise leaks onto the
-          # terminal when this MCP server spawns.
-          args = [
-            "-q"
-            "-o"
-            "BatchMode=yes"
-            "fnuc"
-            "${pkgs.playwright-mcp}/bin/playwright-mcp"
-            "--cdp-endpoint=http://127.0.0.1:9222"
-            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
-          ];
-        };
-
-        playwright-rofl-13 = {
-          command = "ssh";
-          args = [
-            "-o"
-            "BatchMode=yes"
-            "rofl-13"
-            "${pkgs.playwright-mcp}/bin/playwright-mcp"
-            "--cdp-endpoint=http://127.0.0.1:9222"
-            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
-          ];
-        };
-
-        playwright-rofl-14 = {
-          command = "ssh";
-          args = [
-            "-o"
-            "BatchMode=yes"
-            "rofl-14"
-            "${pkgs.playwright-mcp}/bin/playwright-mcp"
-            "--cdp-endpoint=http://127.0.0.1:9222"
-            "--output-dir=/var/lib/browser-mcp-chromium/mcp-downloads"
-          ];
-        };
       }
-      // browserlessMcps
       // steelMcps
       // playwrightSteelMcps;
     };

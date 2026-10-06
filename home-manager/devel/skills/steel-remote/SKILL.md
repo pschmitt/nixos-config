@@ -23,6 +23,15 @@ to that host's `https://steel.<host>.ts.brkn.lol/v1` API. The existing
 `steel-fnuc`, `steel-rofl-13`, and `steel-rofl-14` MCP servers target the same
 instances.
 
+For Playwright-style snapshot/ref tools (`browser_navigate`, `browser_snapshot`,
+`browser_click`, `browser_run_code_unsafe`, ...) use the
+`playwright-steel-fnuc`, `playwright-steel-rofl-13`, or
+`playwright-steel-rofl-14` MCP servers. They attach `playwright-mcp` to the
+same host's Steel over its CDP websocket (`wss://steel.<host>.ts.brkn.lol/`),
+so they share that host's single browser session with the `steel-<host>` MCP
+and the CLI. The browser does not persist between connections: sign in again
+in each new session (use the `rbw` and `browser-passkey` skills).
+
 The official skill's cloud login setup does not apply here. Use this wrapper
 for CLI calls so they stay on the selected remote instance.
 
