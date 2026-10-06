@@ -70,6 +70,16 @@ native_shell_check() {
       return 1
     fi
   done
+  if [[ "${functions[prompt::simple]}${functions[prompt::reset]}" == *zinit* ]]
+  then
+    print -u2 -- 'The yadm prompt controls still depend on Zinit in the native shell'
+    return 1
+  fi
+  if [[ "${TERMUX_NATIVE_ENABLED:-}" != 1 ]]
+  then
+    print -u2 -- 'The native-shell compatibility flag is not enabled'
+    return 1
+  fi
   if (( ! $+functions[yup] || ! $+functions[yupnc] ))
   then
     print -u2 -- 'The Home Manager Termux package upgrade functions were not loaded'

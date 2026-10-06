@@ -363,9 +363,10 @@ shared Zsh settings and plugin modules, which source pinned plugin files from
 the Nix generation. The regular yadm/Zinit startup remains in use on non-Termux
 hosts. Termux startup also reuses selected yadm host and local configuration;
 Nix overrides the prompt controls and update hooks that would otherwise call
-the Zinit command. The compatibility function named `zinit::source-local-plugins`
-only forwards to the Nix-managed local plugin loader; it does not load or
-control Zinit.
+the Zinit command and sets `TERMUX_NATIVE_ENABLED=1` so retained yadm prompt
+functions skip Zinit-only actions. The compatibility function
+`zinit::source-local-plugins` only forwards to the Nix-managed local plugin
+loader; it does not load or control Zinit.
 
 This removes the Zinit scheduler and plugin-download phase from Termux shell
 startup. The public `termux.sh` helper commands are exported as Termux shell

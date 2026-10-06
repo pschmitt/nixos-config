@@ -149,6 +149,7 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
+        sessionVariables.TERMUX_NATIVE_ENABLED = "1";
         shellAliases = {
           tmux = lib.mkForce ''command tmux -f "$TERMUX_GENERATION/home/.config/tmux/tmux.conf"'';
         };
