@@ -26,6 +26,7 @@ in
     ../../home-manager/cli/zsh/fzf.nix
     ../../home-manager/cli/zsh/tools/fd.nix
     ../../home-manager/cli/zsh/tools/jq.nix
+    ../../home-manager/cli/zsh/tools/adb.nix
     ../../home-manager/cli/zsh/tools/termux/assh.nix
     ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
@@ -69,6 +70,7 @@ in
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
+        ".config/zsh/completions/_adb.sh"
         ".config/zsh/completions/_tmux-slay"
         ".config/tmux/bin/xpanes"
         ".config/zsh/completions/_xpanes"

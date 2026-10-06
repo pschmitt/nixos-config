@@ -126,8 +126,9 @@ sha256sum result/environment.tar.gz
 ```
 
 Termux APT owns command line tools already in its repositories, including
-`atuin`, `bat`, `eza`, `fd`, `gzip`, `ripgrep`, `tmux`, `tudo`, `udocker`,
-`unzip`, `vivid`, and `zip`. APT resolves and tracks their dependencies. The
+`android-tools` (`adb`), `atuin`, `bat`, `eza`, `fd`, `gawk`, `gzip`,
+`iproute2`, `nmap`, `perl`, `ripgrep`, `tmux`, `tudo`, `udocker`, `unzip`,
+`vivid`, and `zip`. APT resolves and tracks their dependencies. The
 bundle does not copy or install `.deb` files or libraries from Termux packages.
 Reserve Nix-built Android/Bionic outputs for tools Termux does not provide and
 generated configuration.

@@ -4,6 +4,7 @@
   name,
   script,
   supportFiles ? [ ],
+  supportTrees ? [ ],
   scriptReplacements ? [ ],
   aptPackages ? [ ],
   description,
@@ -14,6 +15,7 @@ let
   command = builtins.baseNameOf script;
   scriptPath = "bin/${command}";
   supportPaths = map (file: file.target) supportFiles;
+  supportTreePaths = map (tree: tree.target) supportTrees;
 in
 assert builtins.match "[A-Za-z0-9._+-]+" command != null;
 runCommand "${name}-termux"
@@ -25,7 +27,7 @@ runCommand "${name}-termux"
       binaries = [ ];
       files = [ scriptPath ] ++ supportPaths;
       scripts = [ scriptPath ];
-      trees = [ ];
+      trees = supportTreePaths;
     };
     meta = {
       inherit
@@ -50,4 +52,8 @@ runCommand "${name}-termux"
         ${lib.escapeShellArg (toString file.source)} \
         "$out/${file.target}"
     '') supportFiles}
+    ${lib.concatMapStringsSep "\n" (tree: ''
+      mkdir -p "$out/${tree.target}"
+      cp -R ${lib.escapeShellArg (toString tree.source)}/. "$out/${tree.target}/"
+    '') supportTrees}
   ''

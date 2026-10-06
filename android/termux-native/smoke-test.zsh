@@ -152,7 +152,7 @@ native_shell_check() {
     return 1
   fi
   if (( ! $+_comps[git] || ! $+_comps[ipmi] || ! $+_comps[kubectl] ||
-        ! $+_comps[linkding] || ! $+_comps[tmux-slay] || ! $+_comps[xpanes] ||
+        ! $+_comps[linkding] || ! $+_comps[adb.sh] || ! $+_comps[tmux-slay] || ! $+_comps[xpanes] ||
         ! $+_comps[mani] || ! $+_comps[ossh] || ! $+_comps[rbw] ||
         ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
   then
@@ -170,7 +170,7 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in eget jc linkding myl nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
+  for command in adb.sh eget jc linkding myl nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -186,7 +186,7 @@ native_shell_check() {
       return 1
     fi
   done
-  for command in atuin bat eza fd rg udocker vivid kubectl shellcheck tmux zoxide gzip unzip zip
+  for command in adb atuin bat eza fd rg udocker vivid kubectl shellcheck tmux zoxide gzip unzip zip
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then
@@ -200,6 +200,8 @@ native_shell_check() {
     return 1
   fi
   native_smoke_run 'Atuin version' atuin --version || return
+  native_smoke_run 'ADB version' adb version || return
+  native_smoke_run 'ADB helper help' adb.sh --help || return
   native_smoke_run 'tmux-slay help' tmux-slay --help || return
   native_smoke_run 'xpanes version' xpanes --version || return
   native_smoke_run 'OBS CLI version' obs-cli --version || return

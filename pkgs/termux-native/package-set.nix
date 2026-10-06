@@ -193,6 +193,8 @@ androidPkgs.extend (
     };
 
     termuxPackages = {
+      adb-sh = pkgs.callPackage ./adb-sh.nix { inherit pkgs; };
+
       nixpp = withAptPackages (pkgs.callPackage ../nixpp-termux { inherit inputs; }) [
         "ca-certificates"
       ];
