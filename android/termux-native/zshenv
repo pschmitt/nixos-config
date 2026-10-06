@@ -1,13 +1,20 @@
-if [[ -n "${TERMUX_NATIVE_ZDOTDIR:-}" ]]
+if [[ -n "${TERMUX_NATIVE_GENERATION_OVERRIDE:-}" ]]
 then
-  export ZDOTDIR="$TERMUX_NATIVE_ZDOTDIR"
+  export TERMUX_GENERATION="${TERMUX_NATIVE_GENERATION_OVERRIDE:A}"
 else
   typeset -g _termux_native_current="$HOME/.local/share/termux-native/current"
   if [[ -e "$_termux_native_current" ]]
   then
-    export ZDOTDIR="${_termux_native_current:A}/home/.config/zsh"
+    export TERMUX_GENERATION="${_termux_native_current:A}"
   else
-    export ZDOTDIR="$_termux_native_current/home/.config/zsh"
+    export TERMUX_GENERATION="$_termux_native_current"
   fi
   unset _termux_native_current
+fi
+
+if [[ -n "${TERMUX_NATIVE_ZDOTDIR:-}" ]]
+then
+  export ZDOTDIR="$TERMUX_NATIVE_ZDOTDIR"
+else
+  export ZDOTDIR="$TERMUX_GENERATION/home/.config/zsh"
 fi

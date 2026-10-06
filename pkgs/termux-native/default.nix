@@ -18,20 +18,15 @@ let
           android_sdk.accept_license = true;
         };
       };
-      android = pkgs.androidenv.composeAndroidPackages {
-        includeNDK = true;
-        ndkVersions = [ "27.2.12479018" ];
-        platformVersions = [ ];
-        buildToolsVersions = [ ];
-        includeEmulator = false;
-      };
-      ndkRoot = "${android.ndk-bundle}/libexec/android-sdk/ndk-bundle";
-      toolchain = "${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/bin";
+      target = import ./target.nix { inherit pkgs; };
+      inherit (target) apiLevel ndkRoot;
+      elfCleaner = pkgs.callPackage ./elf-cleaner.nix { };
       profile = import ../../android/termux-native/profile.nix { inherit pkgs inputs; };
       homeManagerProfile = inputs.home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         extraSpecialArgs = {
           inherit inputs;
+          hostname = "termux";
         }
         // extraSpecialArgs;
         modules = [ ../../modules/home-manager/termux.nix ] ++ modules;
@@ -70,19 +65,26 @@ let
                 inherit (package) name;
                 path = toString package;
                 inherit (package.passthru.termuxNative)
+                  abi
                   files
                   binaries
                   ;
                 scripts = package.passthru.termuxNative.scripts or [ ];
+                trees = package.passthru.termuxNative.trees or [ ];
+                aptPackages = package.passthru.termuxNative.aptPackages or [ ];
+                runtimeClosure = package.passthru.termuxNative.runtimeClosure or null;
               }) termuxNativePackages
             )
           );
+      termuxPackages = lib.unique (
+        homeManagerProfile.config.termux.packages
+        ++ lib.concatMap (package: package.passthru.termuxNative.aptPackages or [ ]) termuxNativePackages
+      );
       manifest = (pkgs.formats.json { }).generate "termux-native-manifest.json" {
         schema = 1;
-        architecture = "aarch64";
-        minimumApi = 24;
-        prefix = "/data/data/com.termux/files/usr";
-        basePackages = homeManagerProfile.config.termux.packages;
+        inherit (target) architecture prefix;
+        minimumApi = apiLevel;
+        basePackages = termuxPackages;
         homePackages = map (package: package.name) termuxNativePackages;
         homeFiles = homeManagerProfile.config.termux.homeFiles;
         plugins = builtins.attrNames profile.plugins;
@@ -105,41 +107,44 @@ let
               pkgs.coreutils
               pkgs.gnused
               pkgs.jq
+              pkgs.patchelf
+              elfCleaner
             ];
             allowedReferences = [ ];
           }
           ''
             mkdir -p "$out/bin" "$out/etc/profile.d" "$out/home" "$out/libexec" "$out/shell/plugins"
-            ${toolchain}/aarch64-linux-android24-clang \
+            ${target.cc} \
               -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,max-page-size=16384 \
               -Wl,-z,common-page-size=16384 \
               ${../../android/termux-native/hello.c} -o "$out/bin/termux-nix-hello"
-            ${toolchain}/llvm-strip "$out/bin/termux-nix-hello"
-            ${toolchain}/llvm-readelf -h -l -d "$out/bin/termux-nix-hello"
-            ${toolchain}/aarch64-linux-android24-clang \
+            ${target.strip} "$out/bin/termux-nix-hello"
+            ${target.readelf} -h -l -d "$out/bin/termux-nix-hello"
+            ${target.cc} \
               -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,max-page-size=16384 \
               -Wl,-z,common-page-size=16384 \
               ${../../android/termux-native/launcher.c} \
               -o "$out/libexec/termux-native-launcher"
-            ${toolchain}/llvm-strip "$out/libexec/termux-native-launcher"
-            ${toolchain}/llvm-readelf -h -l -d "$out/libexec/termux-native-launcher"
+            ${target.strip} "$out/libexec/termux-native-launcher"
+            ${target.readelf} -h -l -d "$out/libexec/termux-native-launcher"
             cp ${../../android/termux-native/plugin.zsh} "$out/shell/plugins/example.zsh"
             cp ${../../android/termux-native/activate.sh} "$out/activate.sh"
             cp ${../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
             cp ${../../android/termux-native/zshenv} "$out/zshenv"
             cp ${../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
             cp ${../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
-            cp ${../../android/termux-native/shell.zsh} "$out/shell/native-init.zsh"
             cp ${../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"
-            cp ${../../android/termux-native/keybindings.zsh} "$out/shell/keybindings.zsh"
             cp ${gitstatus}/bin/gitstatusd "$out/bin/gitstatusd"
             cp ${manifest} "$out/manifest.json"
             bash ${../../android/termux-native/export-home-packages.sh} \
               ${termuxNativePackageManifest} \
               "$out" \
-              ${toolchain}/llvm-readelf \
-              ${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/lib/aarch64-linux-android/24
-            printf '%s\n' ${lib.escapeShellArgs homeManagerProfile.config.termux.packages} > "$out/base-packages.txt"
+              ${target.readelf} \
+              ${target.sysrootLib} \
+              ${pkgs.patchelf}/bin/patchelf \
+              ${elfCleaner}/bin/termux-elf-cleaner \
+              ${toString apiLevel}
+            printf '%s\n' ${lib.escapeShellArgs termuxPackages} > "$out/base-packages.txt"
             for file in ${pkgs.lib.escapeShellArgs homeManagerProfile.config.termux.homeFiles}; do
               mkdir -p "$out/home/$(dirname "$file")"
               cp -RL "${homeManagerProfile.config."home-files"}/$file" "$out/home/$file"
@@ -151,6 +156,14 @@ let
               --replace-fail \
               '${homeManagerProfile.config.home.sessionVariablesPackage}' \
               '$TERMUX_GENERATION'
+            substituteInPlace "$out/home/.config/zsh/.zshenv" \
+              --replace-fail \
+              '${homeManagerProfile.config.home.sessionVariablesPackage}' \
+              '$TERMUX_GENERATION'
+            substituteInPlace "$out/home/.config/zsh/.zshenv" \
+              --replace-fail \
+              'export ZDOTDIR="${homeManagerProfile.config.xdg.configHome}/zsh"' \
+              'export ZDOTDIR="$TERMUX_GENERATION/home/.config/zsh"'
             ${pkgs.lib.concatStringsSep "\n" (
               pkgs.lib.mapAttrsToList (name: source: ''
                 cp -R ${source} "$out/shell/plugins/${name}"

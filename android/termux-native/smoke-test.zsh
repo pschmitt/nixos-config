@@ -35,6 +35,11 @@ native_shell_check() {
       return 1
     fi
   done
+  if ! prompt::simple || ! prompt::reset
+  then
+    print -u2 -- 'The prompt toggle still depends on Zinit in the native shell'
+    return 1
+  fi
   if [[ -r "$XDG_CONFIG_HOME/zsh/aliases.zsh" ]] &&
     (( ! $+aliases[yup] || ! $+aliases[yupnc] ))
   then
@@ -124,15 +129,15 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in bat eza fd rg vivid zoxide nixpp
+  for command in nixpp
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
-      print -u2 -- "Nix-built Android command is not active: $command"
+      print -u2 -- "Nix-built Android command is not active: $command (resolved to ${commands[$command]:-missing}; generation $TERMUX_GENERATION)"
       return 1
     fi
   done
-  for command in atuin tmux
+  for command in atuin bat eza fd rg tmux vivid zoxide
   do
     if [[ ${commands[$command]:-} != "$PREFIX/bin/$command" ]]
     then
@@ -140,26 +145,26 @@ native_shell_check() {
       return 1
     fi
   done
-  atuin --version >/dev/null || return
-  bat --version >/dev/null || return
-  eget --version >/dev/null || return
-  eza --version >/dev/null || return
-  fd --version >/dev/null || return
-  rg --version >/dev/null || return
-  assh --help >/dev/null 2>&1 || return
-  mani --help >/dev/null 2>&1 || return
-  rancher --help >/dev/null 2>&1 || return
-  vivid generate one-dark >/dev/null || return
-  gzip --version >/dev/null || return
-  unzip -v >/dev/null || return
-  zip -v >/dev/null || return
-  tmux -V >/dev/null || return
-  zoxide --version >/dev/null || return
-  shellcheck --version >/dev/null || return
-  nixpp switch --help >/dev/null 2>&1 || return
-  nixpp status --help >/dev/null 2>&1 || return
-  "$GITSTATUS_DAEMON" --version || return
-  termux-native-status || return
+  native_smoke_run 'Atuin' atuin --version || return
+  native_smoke_run 'bat' bat --version || return
+  native_smoke_run 'eget' eget --version || return
+  native_smoke_run 'eza' eza --version || return
+  native_smoke_run 'fd' fd --version || return
+  native_smoke_run 'ripgrep' rg --version || return
+  native_smoke_run 'assh' assh --help || return
+  native_smoke_run 'mani' mani --help || return
+  native_smoke_run 'Rancher CLI' rancher --help || return
+  native_smoke_run 'vivid theme generation' vivid generate one-dark || return
+  native_smoke_run 'gzip' gzip --version || return
+  native_smoke_run 'unzip' unzip -v || return
+  native_smoke_run 'zip' zip -v || return
+  native_smoke_run 'tmux' tmux -V || return
+  native_smoke_run 'zoxide' zoxide --version || return
+  native_smoke_run 'ShellCheck' shellcheck --version || return
+  native_smoke_run 'nixpp switch command' nixpp switch --help || return
+  native_smoke_run 'nixpp status command' nixpp status --help || return
+  native_smoke_run 'bundled gitstatus daemon' "$GITSTATUS_DAEMON" --version || return
+  native_smoke_run 'Termux generation status' termux-native-status || return
   local tmux_socket="$TMPDIR/native-smoke-$$.sock"
   tmux -S "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
   tmux -S "$tmux_socket" has-session -t native-smoke || {

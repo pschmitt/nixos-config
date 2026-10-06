@@ -110,7 +110,10 @@ androidPkgs.extend (
       ];
 
       emoji-fzf = pythonApplication {
-        package = pkgs.emoji-fzf;
+        package = pkgs.callPackage ../emoji-fzf {
+          python3 = pkgs.python312;
+        };
+        python = pkgs.python312;
       };
 
       jc = pythonApplication {

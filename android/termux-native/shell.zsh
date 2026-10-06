@@ -1,6 +1,7 @@
 [[ -o interactive ]] || return 0
 
 typeset -g _native_yadm_config=${TERMUX_NATIVE_YADM_CONFIG:-0}
+typeset -g _native_plugins="$TERMUX_GENERATION/shell/plugins"
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
 setopt rc_quotes
 alias -g DN='&> /dev/null' L='| less' J='| jq'
@@ -19,10 +20,15 @@ then
 
   [[ -r "$ZDOTDIR/aliases.zsh" ]] && source "$ZDOTDIR/aliases.zsh"
   [[ -r "$ZDOTDIR/lib.zsh" ]] && source "$ZDOTDIR/lib.zsh"
+  if [[ -r "$_native_plugins/zsh-defer/zsh-defer.plugin.zsh" ]]
+  then
+    source "$_native_plugins/zsh-defer/zsh-defer.plugin.zsh"
+  fi
 
+  # `services.zsh` defers the same OS and host zboot files used by regular Zinit.
+  [[ -r "$ZDOTDIR/services.zsh" ]] && source "$ZDOTDIR/services.zsh"
   # The regular startup's traps.zsh reloads Zinit, so the native shell keeps
   # the Home Manager runtime hooks and reuses only these portable snippets.
-  [[ -r "$ZDOTDIR/custom/os/termux/zboot.zsh" ]] && source "$ZDOTDIR/custom/os/termux/zboot.zsh"
   [[ -r "$ZDOTDIR/custom/os/termux/aliases.zsh" ]] && source "$ZDOTDIR/custom/os/termux/aliases.zsh"
   if [[ -n "$HOST" && -r "$ZDOTDIR/custom/hosts/$HOST/zprompt" ]]
   then

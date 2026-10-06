@@ -91,6 +91,71 @@ bundle_has_library() {
   return 1
 }
 
+declare -A bundled_dependencies=()
+
+bundle_dependencies() {
+  local package=$1 relative=$2 elf_file=$3 package_root=$4 runtime_closure=$5
+  local dynamic_section dependency candidate store_path destination key
+
+  dynamic_section=$("$readelf" -d "$elf_file" 2>/dev/null || true)
+  while IFS= read -r dependency
+  do
+    [[ -n "$dependency" ]] || continue
+    if [[ -f "$system_libraries/$dependency" ]]
+    then
+      continue
+    fi
+
+    key="$package_root:$dependency"
+    if [[ -n "${bundled_dependencies[$key]:-}" ]]
+    then
+      continue
+    fi
+    bundled_dependencies[$key]=1
+
+    candidate=''
+    for candidate in "$package_root/lib/$dependency" "$package_root/lib64/$dependency"
+    do
+      if [[ -f "$candidate" ]]
+      then
+        break
+      fi
+    done
+    if [[ ! -f "$candidate" && -f "$runtime_closure" ]]
+    then
+      while IFS= read -r store_path
+      do
+        for candidate in "$store_path/lib/$dependency" "$store_path/lib64/$dependency"
+        do
+          if [[ -f "$candidate" ]]
+          then
+            break 2
+          fi
+        done
+      done < "$runtime_closure"
+    fi
+    if [[ ! -f "$candidate" ]]
+    then
+      printf 'No Android runtime library for %s (%s): %s\n' \
+        "$package" "$relative" "$dependency" >&2
+      return 1
+    fi
+
+    destination="$package_root/lib/$dependency"
+    if [[ "$candidate" != "$package_root/"* ]]
+    then
+      mkdir -p "$(dirname "$destination")"
+      cp -L -- "$candidate" "$destination"
+      normalize_elf "$destination"
+    else
+      destination=$candidate
+    fi
+    validate_elf "$package" "$destination"
+    bundle_dependencies "$package" "lib/$dependency" "$destination" \
+      "$package_root" "$runtime_closure" || return
+  done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
+}
+
 if ! jq -e '
   type == "array" and
   all(.[];
@@ -186,8 +251,6 @@ do
   source_root=$(jq -r '.path' <<<"$package")
   runtime_closure=$(jq -r '.runtimeClosure // empty' <<<"$package")
   package_root="$output/native/$name"
-  declare -A scanned_elf=()
-
   while IFS= read -r tree
   do
     if [[ ! "$tree" =~ ^[A-Za-z0-9._+-]+(/[A-Za-z0-9._+-]+)*$ ]]
