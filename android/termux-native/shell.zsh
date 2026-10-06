@@ -14,7 +14,6 @@ then
   ZDOTDIR="$_native_yadm_zdotdir"
 
   [[ -r "$ZDOTDIR/aliases.zsh" ]] && source "$ZDOTDIR/aliases.zsh"
-  [[ -r "$ZDOTDIR/lib.zsh" ]] && source "$ZDOTDIR/lib.zsh"
 
   # The regular custom loader applies the Termux and host overlays after its
   # zboot files. Keep those yadm-owned files on-device and follow that order.

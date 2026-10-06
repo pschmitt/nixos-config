@@ -55,8 +55,13 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// List installed generation IDs that can be used for rollback.
+    /// List installed generations that can be used for rollback.
     Generations,
+    /// Roll back to a generation number or full SHA-256 ID.
+    Rollback {
+        /// Generation number shown by `nixpp status` or `nixpp generations`.
+        generation: String,
+    },
 }
 
 fn main() {
@@ -88,5 +93,6 @@ fn run(cli: Cli) -> Result<()> {
         } => nixpp::switch_profile(&flake, &builder, &public_key),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
+        Command::Rollback { generation } => nixpp::rollback(&generation),
     }
 }

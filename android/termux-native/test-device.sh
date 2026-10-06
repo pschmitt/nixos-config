@@ -16,9 +16,10 @@ main() (
     usage >&2
     return 2
   fi
-  local installer archive=$1 first=$2 second broken work selected
+  local installer archive=$1 first=$2 second broken work selected index first_number second_number
   installer="$(dirname "${BASH_SOURCE[0]}")/activate.sh"
   selected="$HOME/.local/share/termux-native/current"
+  index="$HOME/.local/share/termux-native/generation-index.tsv"
   work=$(mktemp -d "${TMPDIR:?}/termux-native-test.XXXXXXXX")
   bash "$installer" install "$archive" "$first"
   [[ "$(readlink "$selected")" == "generations/$first" ]]
@@ -34,8 +35,16 @@ main() (
   second=${second%% *}
   bash "$installer" install "$work/second.tar.gz" "$second"
   [[ "$(readlink "$selected")" == "generations/$second" ]]
+  first_number=$(awk -F '\t' -v id="$first" '$2 == id { print $1 }' "$index")
+  second_number=$(awk -F '\t' -v id="$second" '$2 == id { print $1 }' "$index")
+  [[ "$first_number" =~ ^[1-9][0-9]*$ && "$second_number" =~ ^[1-9][0-9]*$ ]]
+  ((second_number > first_number))
 
-  bash "$installer" rollback "$first"
+  bash "$installer" rollback "$first_number"
+  [[ "$(readlink "$selected")" == "generations/$first" ]]
+  bash "$installer" rollback "$second_number"
+  [[ "$(readlink "$selected")" == "generations/$second" ]]
+  bash "$installer" rollback "$first_number"
   [[ "$(readlink "$selected")" == "generations/$first" ]]
   if bash "$installer" install "$archive" "$(printf '%064d' 0)"
   then

@@ -155,8 +155,6 @@ let
         cp ${../../android/termux-native/activate.sh} "$out/activate.sh"
         cp ${../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
         cp ${../../android/termux-native/zshenv} "$out/zshenv"
-        substituteInPlace "$out/bootstrap.sh" \
-          --replace-fail '@termuxPackages@' '${lib.escapeShellArgs termuxPackages}'
         cp ${../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
         cp ${../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
         cp ${../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"

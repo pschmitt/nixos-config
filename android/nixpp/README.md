@@ -84,13 +84,15 @@ cache.
 
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.
-`nixpp generations` lists IDs whose manifests can be read. Malformed historical
-generations are reported in `nixpp status --json` and do not prevent inspecting
-or using the current generation. Rollback still checks the selected generation
-and its Termux APT requirements. To roll back, run
-`bash "$HOME/.local/share/termux-native/current/activate.sh" rollback ID`
-with the desired ID. Add `--json` to `nixpp status` for scripting. The Zsh
-helper `termux-native-status` delegates to the same status view.
+`nixpp generations` lists numbered generations and short IDs. The local
+generation index assigns stable sequence numbers as generations are activated;
+legacy generations receive deterministic numbers when the index is first
+created. Malformed historical generations are reported in `nixpp status --json`
+and do not prevent inspecting or using the current generation. Rollback still
+checks the selected generation and its Termux APT requirements. To roll back,
+run `nixpp rollback NUMBER`; the full SHA-256 ID also remains accepted. Add
+`--json` to `nixpp status` for scripting. The Zsh helper `termux-native-status`
+delegates to the same status view.
 
 The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on

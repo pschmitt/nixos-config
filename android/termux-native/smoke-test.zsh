@@ -58,7 +58,11 @@ native_shell_check() {
   local required
   for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
     autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
-    prompt::simple prompt::reset yqo
+    prompt::simple prompt::reset yqo os-release::value os-release::is os-release::kind \
+    is_termux is_nixos is_archlinux is_postmarketos is_fedora is_ubuntu is_distrobox \
+    in_flatpak not_in_vt zsh::reload zsh::get-parent-command zsh::running-in-guake \
+    suf version::at-least libc::version-at-least tmux::version-at-least falias multisrc \
+    source-grep _usage
   do
     if (( ! $+functions[$required] ))
     then

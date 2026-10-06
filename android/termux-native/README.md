@@ -133,8 +133,8 @@ termux-native-status
 
 Use the digest obtained directly from the trusted builder. The adjacent
 `SHA256SUMS` file is useful for checking accidental corruption, but is not a
-signature. To roll back, pass the previous generation's 64-character digest to
-`bash activate.sh rollback SHA256`.
+signature. To roll back, run `nixpp rollback NUMBER` or pass a generation number
+or 64-character digest to `bash activate.sh rollback NUMBER_OR_SHA256`.
 To restore the Termux zsh startup file, run `bash bootstrap.sh restore`; installed
 generations remain available until you remove them yourself.
 
@@ -405,7 +405,8 @@ cd android/termux-native
 nix build '.#bundle'
 nix develop 'path:.' -c statix check
 nix develop 'path:.' -c deadnix --fail
-nix develop 'path:.' -c shellcheck activate.sh bootstrap.sh test-device.sh
+nix develop 'path:.' -c shellcheck activate.sh bootstrap.sh test-apt-packages.sh test-device.sh
+bash test-apt-packages.sh
 nix-store -q --references result
 ```
 
@@ -485,17 +486,16 @@ The current installer trusts a digest obtained from the builder; it does not
 verify a release signature or hostile archive contents. It keeps previous
 generations for rollback but does not yet garbage-collect them, enforce an
 anti-downgrade policy, or recover interrupted lock directories automatically.
-APT package lifecycle is also install-only: bootstrap verifies the archive,
-holds the activation lock, stages the generation, and runs its standalone
-Android executable before asking APT to install the current manifest. Generation
-activation then runs the shell smoke checks after APT has provided their
-runtime dependencies and checks that required packages are installed. It
-does not remove packages when a later generation stops declaring them, and it
-does not record which packages were already installed before the first
-bootstrap. A future removal path must preserve that pre-existing set and
-remove only packages owned by this profile. Termux APT/dpkg should resolve
-shared dependencies; nixpp must not remove a dependency while any selected
-package still requires it. Generation rollback does not undo APT changes.
+APT package lifecycle tracks packages installed by this profile in
+`apt-owned-packages.txt`; packages that were already installed are never
+claimed or removed. After the new generation passes its shell health checks,
+bootstrap simulates removal of each obsolete owned package and removes it only
+when APT plans to remove that package alone. It does not run `autoremove`, so
+APT-managed dependencies remain available to other packages. If APT would also
+remove a dependent package, nixpp keeps the package and its ownership record.
+Generation rollback does not undo APT changes. The first bootstrap after this
+tracking is introduced does not claim packages installed by older bootstrap
+runs, because their original ownership cannot be established safely.
 The bootstrap saves the existing `$PREFIX/etc/zshenv` and Termux login shell
 before selecting the managed Zsh configuration. A cold app launch then starts
 the managed shell directly. `bash bootstrap.sh restore` restores both saved
