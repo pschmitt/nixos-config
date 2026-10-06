@@ -5,9 +5,9 @@
       (lib.mkOrder 500 ''
         # Interactive-only: `ssh host cmd` and zhj also load this file, and
         # these change script semantics (`#` globbing, redirects, quoting).
-        # The yadm zhj never set them either.
-        if [[ -o interactive ]]
-        then
+        # The yadm zhj never set them either. The local plugin cache compiler
+        # applies them too, since some (RC_QUOTES) change how files parse.
+        zsh::interactive-options() {
           setopt \
             AUTO_PUSHD \
             PUSHD_MINUS \
@@ -18,7 +18,8 @@
             AUTO_PARAM_SLASH \
             AUTO_REMOVE_SLASH \
             RC_QUOTES
-        fi
+        }
+        [[ -o interactive ]] && zsh::interactive-options
         [[ -d "${config.xdg.stateHome}/zsh" ]] || mkdir -p -- "${config.xdg.stateHome}/zsh"
         typeset -gA CUSTOM_COMPS CUSTOM_COMPS_STATIC
         autoload -Uz colors && colors

@@ -40,12 +40,19 @@ in
       # Functions to run once the local plugins are loaded (sync or async).
       typeset -ga zsh_after_local_plugins
 
+      typeset -ga zsh_local_plugin_dirs=(
+        "${config.xdg.configHome}/zsh/plugins/local"
+        "${config.xdg.configHome}/zsh/plugins/local/work"
+        "${config.xdg.configHome}/zsh/plugins/local/99-after"
+      )
+
       zsh::local-plugin-files() {
-        reply=(
-          "${config.xdg.configHome}/zsh/plugins/local"/*.zsh(N)
-          "${config.xdg.configHome}/zsh/plugins/local/work"/*.zsh(N)
-          "${config.xdg.configHome}/zsh/plugins/local/99-after"/*.zsh(N)
-        )
+        local dir
+        reply=()
+        for dir in $zsh_local_plugin_dirs
+        do
+          reply+=("$dir"/*.zsh(N))
+        done
         reply=("''${(@)reply:#*/zinit.zsh}")
       }
 
@@ -89,6 +96,14 @@ in
         then
           __init_custom_completions
         fi
+        # Autoload cache: functions an eager file redefined go back to stubs.
+        if (( ''${#__zlp_restub} ))
+        then
+          unfunction -- "''${__zlp_restub[@]}" 2>/dev/null
+          autoload -Uz -- "''${__zlp_restub[@]}"
+        fi
+        unset __zlp_restub
+
         local hook
         for hook in $zsh_after_local_plugins
         do
@@ -99,6 +114,11 @@ in
 
       zsh::source-local-plugins() {
         [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
+        if zsh::local-plugins-cache-load
+        then
+          zsh::local-plugins-finish
+          return 0
+        fi
         local -a reply
         local file
         zsh::local-plugin-files
@@ -119,13 +139,25 @@ in
         [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
         if [[ ! -o zle || -n "''${ZSH_SYNC_LOCAL_PLUGINS:-}" ]]
         then
+          zsh::local-plugins-cache-fresh || zsh::local-plugins-compile-async
           zsh::source-local-plugins
           return
         fi
 
+        # The queue holds commands, run one per idle tick. With a fresh
+        # autoload cache: register the stubs now (functions work at the
+        # first prompt), queue the replayed aliases and remaining files.
+        # Otherwise queue every plugin file and rebuild the cache.
         local -a reply
-        zsh::local-plugin-files
-        typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
+        if zsh::local-plugins-cache-fresh && zsh::local-plugins-cache-body
+        then
+          typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
+          source "$ZSH_LOCAL_PLUGIN_CACHE_DIR/current/head.zsh"
+        else
+          zsh::local-plugins-compile-async
+          zsh::local-plugin-files
+          typeset -ga __zsh_local_plugin_queue=("zsh::source-plugin "''${(@q)^reply})
+        fi
         typeset -g __zsh_local_plugin_log="''${ZSH_CACHE_DIR:-${config.xdg.cacheHome}/zsh}/local-plugins.log"
         : >| "$__zsh_local_plugin_log"
         zsh::local-plugins-prepare
@@ -144,7 +176,7 @@ in
 
         while (( ''${#__zsh_local_plugin_queue} && ! KEYS_QUEUED_COUNT && ! PENDING ))
         do
-          zsh::source-plugin "''${__zsh_local_plugin_queue[1]}" >>"$__zsh_local_plugin_log" 2>&1
+          eval "''${__zsh_local_plugin_queue[1]}" >>"$__zsh_local_plugin_log" 2>&1
           shift __zsh_local_plugin_queue
         done
 
@@ -174,6 +206,7 @@ in
       }
 
     '')
+    (lib.mkOrder 1355 (builtins.readFile ./local-plugin-cache.zsh))
     (lib.mkOrder 1600 ''
       zsh::reload-runtime() {
         zsh::source-local-plugins
