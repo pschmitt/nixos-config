@@ -92,6 +92,31 @@ if ! rbw unlocked 2>/dev/null; then
 fi
 ```
 
+## Editing entries non-interactively
+
+`rbw edit` (2.17.x) never launches `$EDITOR`/`$VISUAL` when stdin is not a
+TTY; it reads the new entry from stdin instead. Errors such as
+`failed to parse YAML: missing field name` or `EOF while parsing a value` mean
+it got empty stdin. With a TTY, `VISUAL=nvim` just hangs an agent shell.
+
+To update an entry (for example the notes of a secure note) from a script:
+
+```bash
+rbw get --raw "<item>" \
+  | jq --rawfile n new-notes.txt '.data.type="secure_note" | .notes=$n' \
+  | rbw edit --json "<item>"
+rbw sync
+```
+
+- `rbw get --raw` reports the type as `SecureNote`, but `edit --json` only
+  accepts `login`, `card`, `identity`, `secure_note` and `ssh_key`.
+- Back up the old notes and do a no-op round trip (`cmp` afterwards) before the
+  first real write.
+- `rbw get` appends a trailing newline, so each round trip adds one extra
+  newline to the note; harmless for YAML.
+- Never `pkill -f 'rbw edit'` from an agent shell; the pattern matches the
+  shell's own command line.
+
 ## Passkeys in browser automation
 
 For using passkeys stored in `rbw` to authenticate automated browser sessions
