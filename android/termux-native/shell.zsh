@@ -27,7 +27,7 @@ then
   }
 
   [[ -r "$ZDOTDIR/interactive.zsh" ]] && source "$ZDOTDIR/interactive.zsh"
-  [[ -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"
+  [[ -z "${NO_BS:-}" && -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"
 fi
 source "$TERMUX_GENERATION/home/.config/zsh/termux/prompt-color.zsh"
 ZDOTDIR="$_native_profile_zdotdir"

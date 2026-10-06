@@ -13,6 +13,8 @@
   ];
 
   programs.zsh = {
+    setOptions = [ "NO_GLOBAL_RCS" ];
+
     sessionVariables = {
       GITSTATUS_AUTO_INSTALL = "0";
       POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD = "true";
@@ -20,7 +22,6 @@
     };
 
     envExtra = lib.mkAfter ''
-      setopt NO_GLOBAL_RCS
       export LC_ALL="''${LC_ALL:-en_US.UTF-8}"
       unset VIMINIT
 
