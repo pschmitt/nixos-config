@@ -42,6 +42,8 @@ let
         command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
         args = [
           "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
+          # Browserless renders at 800x600; this restores a desktop viewport.
+          "--init-page=${./browserless-init-page.ts}"
           "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browserless-${host}"
         ];
       };

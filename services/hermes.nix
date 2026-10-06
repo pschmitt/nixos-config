@@ -113,6 +113,8 @@ let
         command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
         args = [
           "--cdp-endpoint=wss://browserless.${host}.ts.${config.domains.main}/chromium"
+          # Browserless renders at 800x600; this restores a desktop viewport.
+          "--init-page=${../home-manager/devel/browserless-init-page.ts}"
           "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browserless-${host}"
         ];
         connect_timeout = 30;
