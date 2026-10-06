@@ -70,6 +70,11 @@ in
           [[ -r "${config.xdg.configHome}/zsh/secrets.zsh" ]] && source "${config.xdg.configHome}/zsh/secrets.zsh" 2>/dev/null
         fi
 
+        if [[ "''${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
+        then
+          typeset -g TERMUX_NATIVE_USER_PLUGINS_READY=1
+        fi
+
         if (( $+functions[zsh::apply-plugin-overrides] ))
         then
           zsh::apply-plugin-overrides

@@ -66,10 +66,9 @@ native_shell_check() {
       return 1
     fi
   done
-  if [[ -r "$XDG_CONFIG_HOME/zsh/aliases.zsh" ]] &&
-    (( ! $+aliases[yup] || ! $+aliases[yupnc] ))
+  if (( ! $+functions[yup] || ! $+functions[yupnc] ))
   then
-    print -u2 -- 'The yadm Termux package upgrade aliases were not loaded'
+    print -u2 -- 'The Home Manager Termux package upgrade functions were not loaded'
     return 1
   fi
   if (( ! $+functions[__chpwd-osc7-pwd] ))

@@ -44,6 +44,8 @@ native_check_pty() {
   script="
     stty -echo
     stty rows 24 cols 80
+    export TERMUX_NATIVE_GENERATION_OVERRIDE=${(q)generation}
+    export TERMUX_NATIVE_ZDOTDIR=${(q)generation}/home/.config/zsh
     source ${(q)generation}/zshenv || exit 1
     source \$ZDOTDIR/.zshenv || exit 1
     if [[ -o login && -r \$ZDOTDIR/.zprofile ]]
@@ -97,6 +99,8 @@ native_check_no_plugins() {
   script="
     stty -echo
     stty rows 24 cols 80
+    export TERMUX_NATIVE_GENERATION_OVERRIDE=${(q)generation}
+    export TERMUX_NATIVE_ZDOTDIR=${(q)generation}/home/.config/zsh
     source ${(q)generation}/zshenv || exit 1
     source \$ZDOTDIR/.zshenv || exit 1
     if [[ -o login && -r \$ZDOTDIR/.zprofile ]]

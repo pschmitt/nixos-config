@@ -441,10 +441,13 @@ after a later activation. Powerlevel10k's instant prompt loads early and
 respects the existing prompt-plugin skip flags. User-specific OS plugin files
 remain outside the bundle. The native shell sources the regular yadm
 aliases, helper library, named directories, OSC 7 hook, and interactive startup
-snippet directly from the user's home at runtime, including Termux package
-aliases. It skips the Zinit reload
-traps and the general OS plugin aggregator; plugins that still require Zinit
-need explicit Termux adapters before they can be enabled in the native shell.
+snippet directly from the user's home at runtime. Termux package-management
+aliases and upgrade functions, prompt color, and selected completions come from
+Home Manager. The shell no longer reads Zinit's completion manifest. Local
+plugin files remain yadm-managed and are loaded by the Home Manager startup
+hook. It skips the Zinit reload traps and the general OS plugin aggregator;
+plugins that still require Zinit need explicit Termux adapters before they can
+be enabled in the native shell.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 
