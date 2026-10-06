@@ -190,6 +190,34 @@ in
           };
         };
 
+        # Provider MCPs use the two self-hosted browser backends on fnuc. The
+        # Browserless image has no TOKEN configured, so its MCP client uses a
+        # harmless local token value required by the MCP package. Steel's
+        # upstream MCP server recognizes STEEL_LOCAL and needs no API key.
+        browserless = {
+          command = "${pkgs.nodejs_24}/bin/npx";
+          args = [
+            "--yes"
+            "@browserless.io/mcp@1.36.0"
+          ];
+          env = {
+            BROWSERLESS_TOKEN = "local";
+            BROWSERLESS_API_URL = "https://browserless.fnuc.ts.${domainName}";
+          };
+        };
+
+        steel = {
+          command = "${pkgs.nodejs_24}/bin/npx";
+          args = [
+            "--yes"
+            "github:steel-dev/steel-mcp-server#3ceb5c36257949b4d12890e65204e3eabc7e2fb4"
+          ];
+          env = {
+            STEEL_LOCAL = "true";
+            STEEL_BASE_URL = "https://steel.fnuc.ts.${domainName}";
+          };
+        };
+
         # Playwright attached to the persistent, KasmVNC-visible Chromium
         # container on fnuc (see services/browser-mcp-chromium-container.nix) and to rofl-13's
         # and rofl-14's own local Chromium. Reached over SSH from every host
