@@ -431,8 +431,9 @@ libraries and the Nix Android runtime closure. The profile also shares
 portable Neovim options from the regular Home Manager tree.
 Keep fixed Termux settings in Home Manager modules: package ownership, Zsh
 options, aliases, function definitions, and preference values belong in Nix.
-Use runtime Zsh glue only for state discovered on the phone, such as the active
-generation and private yadm files. Local Zsh plugins remain yadm-managed.
+Have Nix generate shell code when behavior must run in the active shell. Keep
+yadm runtime sourcing for private configuration and local plugin files; local
+Zsh plugins remain yadm-managed.
 At shell startup, `zshenv` resolves the `current` symlink to an immutable
 generation path, ignoring a stale generation inherited from the previous
 shell. An already-running shell keeps using the generation it started with
