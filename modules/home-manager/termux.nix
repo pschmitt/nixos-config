@@ -31,6 +31,7 @@ in
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
     ../../home-manager/cli/zsh/tools/termux/linkding-cli.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
+    ../../home-manager/cli/zsh/tools/termux/myl.nix
     ../../home-manager/cli/zsh/tools/termux/rancher.nix
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
     ../../home-manager/cli/zsh/tools/termux/slack-react.nix

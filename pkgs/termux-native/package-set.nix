@@ -61,7 +61,9 @@ androidPkgs.extend (
         package,
         python ? pkgs.python3,
         entrypoint ? null,
+        checkEntrypoint ? true,
         extraRuntimePackages ? [ ],
+        excludedRuntimePackages ? [ ],
         extraFiles ? [ ],
       }:
       pkgs.callPackage ./python-application.nix {
@@ -69,7 +71,9 @@ androidPkgs.extend (
           package
           python
           entrypoint
+          checkEntrypoint
           extraRuntimePackages
+          excludedRuntimePackages
           extraFiles
           ;
       };
@@ -91,6 +95,14 @@ androidPkgs.extend (
             "test_empty_body"
           ];
         });
+        charset-normalizer =
+          (previous.charset-normalizer.override {
+            withMypyc = false;
+          }).overridePythonAttrs
+            (_: {
+              doCheck = false;
+              nativeCheckInputs = [ ];
+            });
         frozenlist = previous.frozenlist.overridePythonAttrs (_: {
           FROZENLIST_NO_EXTENSIONS = "1";
         });
@@ -115,6 +127,43 @@ androidPkgs.extend (
           YARL_NO_EXTENSIONS = "1";
         });
       };
+    };
+    mylDiscovery = python312Termux.pkgs.buildPythonApplication {
+      pname = "myl-discovery";
+      version = builtins.readFile "${inputs.myl-discovery}/myl-discovery-version.txt";
+      pyproject = true;
+      src = inputs.myl-discovery;
+      pythonRelaxDeps = [ "rich" ];
+      nativeBuildInputs = with python312Termux.pkgs; [
+        setuptools
+        setuptools-scm
+      ];
+      dependencies = with python312Termux.pkgs; [
+        dnspython
+        exchangelib
+        requests
+        rich
+        xmltodict
+      ];
+      pythonImportsCheck = [ "myldiscovery" ];
+    };
+    myl = python312Termux.pkgs.buildPythonApplication {
+      pname = "myl";
+      version = builtins.readFile "${inputs.myl}/myl-version.txt";
+      pyproject = true;
+      src = inputs.myl;
+      pythonRelaxDeps = [ "rich" ];
+      nativeBuildInputs = with python312Termux.pkgs; [
+        setuptools
+        setuptools-scm
+      ];
+      dependencies = with python312Termux.pkgs; [
+        html2text
+        imap-tools
+        mylDiscovery
+        rich
+      ];
+      pythonImportsCheck = [ "myl" ];
     };
   in
   {
@@ -188,6 +237,23 @@ androidPkgs.extend (
         python = python312Termux;
         extraFiles = [ "share/zsh/site-functions/_linkding" ];
       };
+
+      myl =
+        withAptPackages
+          (pythonApplication {
+            package = myl;
+            python = python312Termux;
+            checkEntrypoint = false;
+            excludedRuntimePackages = with python312Termux.pkgs; [
+              cffi
+              cryptography
+              lxml
+            ];
+          })
+          [
+            "python-cryptography"
+            "python-lxml"
+          ];
 
       assh = withAptPackages (fromGo {
         package = pkgs.assh;

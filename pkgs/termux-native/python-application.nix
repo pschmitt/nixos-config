@@ -4,7 +4,9 @@
   package,
   python,
   entrypoint ? null,
+  checkEntrypoint ? true,
   extraRuntimePackages ? [ ],
+  excludedRuntimePackages ? [ ],
   extraFiles ? [ ],
 }:
 let
@@ -41,6 +43,7 @@ runCommand "${termuxName}"
     export TERMUX_ADAPTER_SITE_PACKAGES="$package_path/${python.sitePackages}"
     export TERMUX_ADAPTER_COMMAND=${lib.escapeShellArg command}
     export TERMUX_ADAPTER_NAME=${lib.escapeShellArg termuxName}
+    export TERMUX_ADAPTER_CHECK_ENTRYPOINT=${if checkEntrypoint then "1" else "0"}
     export TERMUX_ADAPTER_ENTRYPOINT=${
       lib.escapeShellArg (if entrypoint == null then "" else entrypoint)
     }
@@ -50,7 +53,15 @@ runCommand "${termuxName}"
       "$package_path"
       ${lib.escapeShellArgs (map toString extraRuntimePackages)}
     )
+    excluded_runtime_packages=(
+      ${lib.escapeShellArgs (map toString excludedRuntimePackages)}
+    )
     declare -A runtime_seen=()
+    declare -A runtime_excluded=()
+    for runtime_package in "''${excluded_runtime_packages[@]}"
+    do
+      runtime_excluded["$runtime_package"]=1
+    done
     for extra_file in ${lib.escapeShellArgs extraFiles}
     do
       source_file="$package_path/$extra_file"
@@ -66,6 +77,10 @@ runCommand "${termuxName}"
     for ((package_index = 0; package_index < ''${#runtime_packages[@]}; package_index++))
     do
       runtime_package="''${runtime_packages[package_index]}"
+      if [[ -n "''${runtime_excluded[$runtime_package]:-}" ]]
+      then
+        continue
+      fi
       if [[ -n "''${runtime_seen[$runtime_package]:-}" ]]
       then
         continue
@@ -102,6 +117,7 @@ runCommand "${termuxName}"
     command = os.environ["TERMUX_ADAPTER_COMMAND"]
     package_name = os.environ["TERMUX_ADAPTER_NAME"]
     entrypoint = os.environ["TERMUX_ADAPTER_ENTRYPOINT"]
+    check_entrypoint = os.environ["TERMUX_ADAPTER_CHECK_ENTRYPOINT"] == "1"
     site_packages = pathlib.Path(os.environ["TERMUX_ADAPTER_SITE_PACKAGES"])
     output = pathlib.Path(os.environ["TERMUX_ADAPTER_OUTPUT"])
 
@@ -139,15 +155,16 @@ runCommand "${termuxName}"
         print(f"Unsupported Python entry point: {module}:{function}", file=sys.stderr)
         sys.exit(1)
 
-    sys.path.insert(0, str(output / "python"))
-    try:
-        entrypoint_object = getattr(importlib.import_module(module), function)
-    except (ImportError, AttributeError) as error:
-        print(f"Could not import Python entry point {module}:{function}: {error}", file=sys.stderr)
-        sys.exit(1)
-    if not callable(entrypoint_object):
-        print(f"Python entry point is not callable: {module}:{function}", file=sys.stderr)
-        sys.exit(1)
+    if check_entrypoint:
+        sys.path.insert(0, str(output / "python"))
+        try:
+            entrypoint_object = getattr(importlib.import_module(module), function)
+        except (ImportError, AttributeError) as error:
+            print(f"Could not import Python entry point {module}:{function}: {error}", file=sys.stderr)
+            sys.exit(1)
+        if not callable(entrypoint_object):
+            print(f"Python entry point is not callable: {module}:{function}", file=sys.stderr)
+            sys.exit(1)
 
     wrapper = output / "bin" / command
     wrapper.write_text(

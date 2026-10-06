@@ -170,7 +170,7 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in eget jc nixpp obs-cli rbw slack-react ssh-to-age
+  for command in eget jc linkding myl nixpp obs-cli rbw slack-react ssh-to-age
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -203,6 +203,7 @@ native_shell_check() {
   native_smoke_run 'OBS CLI version' obs-cli --version || return
   native_smoke_run 'jc version' jc --version || return
   native_smoke_run 'Linkding CLI help' command linkding --help || return
+  native_smoke_run 'myl help' command myl --help || return
   native_smoke_run 'Slack reaction CLI imports' env \
     "PYTHONPATH=$TERMUX_GENERATION/native/slack-react-termux/python" \
     PYTHONDONTWRITEBYTECODE=1 python -B -c \

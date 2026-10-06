@@ -96,11 +96,13 @@ modules in `PYTHONPATH`.
 The exporter rejects ELF files in this data tree and rejects Nix store
 references. This works for pure Python packages; packages with native Python
 extensions still need an Android build or a Termux APT package.
-`linkding-cli` is exported this way with Python 3.12, which matches the Termux
-APT interpreter. Its HTTP/YAML dependency stack uses upstream pure-Python
-fallbacks; the bundle contains no Python extension binaries and uses the
-network-capable Termux interpreter at runtime. Its generated Zsh completion is
-included with the application.
+`linkding-cli` and `myl` ship Python sources without version-specific bytecode
+or native extensions. The exporter checks them for native extensions and Nix
+store paths; the applications use the Termux APT interpreter at runtime. For
+`myl`, Termux APT provides
+the Python cryptography and lxml modules, and installs their native library
+dependencies through its normal dependency resolution. Linkding's generated
+Zsh completion is included with the application.
 `termux.homeFiles` is an export allowlist: only those generated files enter the
 archive. Keep private dotfiles out of this public bundle; add a path to the
 allowlist only when you intend that file to ship.
@@ -438,10 +440,12 @@ generic `fromNixpkgs` adapter only packages compatible Android/Bionic cross
 derivations; it does not make arbitrary Linux packages Android-compatible or
 replace Termux APT for software Termux already provides. Termux APT supplies
 the other utilities, including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim,
-and Zsh. The `jc`,
-`obs-cli`, and `slack-react` utilities are pure Python apps that Termux APT does
-not provide, so the bundle ships their Python sources and runs them with
-Termux's APT-managed Python. Zsh modules generate the Atuin, direnv, fzf, and
+and Zsh. The `jc`, `myl`, `obs-cli`, `slack-react`, and Linkding utilities are
+Python apps that Termux APT does not provide, so the bundle ships their Python
+sources and runs them with Termux's APT-managed Python; `myl`'s lxml and
+cryptography dependencies are installed through APT and the CLI is checked on
+the device after package activation. Zsh modules generate
+the Atuin, direnv, fzf, and
 zoxide initialization snippets and vivid color value while building the
 bundle. The Termux shell sources these fixed generated files; it does not run
 each tool's `init` or `generate` subcommand at every startup. Static Zsh
