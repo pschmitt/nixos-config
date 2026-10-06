@@ -492,24 +492,32 @@
         extraModules: [ privateIsoHostModule ] ++ extraModules ++ [ privateIsoFlakeModule ];
     in
     {
-      lib.termux.mkBundle =
-        {
-          modules ? [ ],
-          extraSpecialArgs ? { },
-        }:
-        let
-          system = "x86_64-linux";
-          basePkgs = import nixpkgs {
-            inherit system;
-            config = {
-              allowUnfree = true;
-              android_sdk.accept_license = true;
+      lib.termux = {
+        mkBundle =
+          {
+            modules ? [ ],
+            extraSpecialArgs ? { },
+          }:
+          let
+            system = "x86_64-linux";
+            basePkgs = import nixpkgs {
+              inherit system;
+              config = {
+                allowUnfree = true;
+                android_sdk.accept_license = true;
+              };
             };
+          in
+          (import ./pkgs/termux-native { inherit basePkgs inputs; }).mkTermuxBundle {
+            inherit modules extraSpecialArgs;
           };
-        in
-        (import ./pkgs/termux-native { inherit basePkgs inputs; }).mkTermuxBundle {
-          inherit modules extraSpecialArgs;
-        };
+
+        mkPackageSet =
+          { pkgs }:
+          import ./pkgs/termux-native/package-set.nix {
+            inherit inputs pkgs;
+          };
+      };
 
       # Your custom packages
       # Accessible through 'nix build', 'nix shell', etc

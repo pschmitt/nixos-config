@@ -199,6 +199,13 @@ Termux-specific source patches or build steps, the upstream
 [`termux-packages` builder](https://github.com/termux/termux-packages/wiki/Building-packages)
 is the native alternative; it builds package recipes into Termux packages for
 Termux APT to own and update. It does not generically transform Nix derivations.
+Downstream flakes can obtain this adapter set from
+`inputs.nixos-config.lib.termux.mkPackageSet { inherit pkgs; }`; use the returned
+`termuxAdapters.fromNixpkgs` with an ordinary package from the same `pkgs` set.
+The result is an Android/Bionic derivation that can be added to
+`lib.termux.mkBundle` modules when its runtime files are covered by the export
+contract. This is a public build interface, not a guarantee that every Nixpkgs
+package cross-compiles or runs unchanged on Termux.
 `fromNixpkgs` accepts a per-package export contract: `binaryPaths` for multiple
 commands, `extraFiles` and `trees` for runtime data, `scripts` for Termux-shell
 wrappers, and `runtimeInputs` plus `runtimeLibraries` for libraries loaded
