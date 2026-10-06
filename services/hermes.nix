@@ -83,6 +83,62 @@ let
     npmDepsHash = "sha256-rCK8vaZdsyOLgWRub54exa8TTgB7NeXjDnhlz5DBTOY=";
   };
 
+  steelBrowserHosts = [
+    "fnuc"
+    "rofl-13"
+    "rofl-14"
+  ];
+  steelMcpSource = pkgs.fetchFromGitHub {
+    owner = "steel-dev";
+    repo = "steel-mcp-server";
+    rev = "3ceb5c36257949b4d12890e65204e3eabc7e2fb4";
+    hash = "sha256-nmh4Js2mOg9kMss3aehVy5qMWB9E3fiAi0LCNDJxVFc=";
+  };
+  steelMcpPackage = pkgs.buildNpmPackage {
+    pname = "steel-mcp";
+    version = "3.0.0";
+    src = steelMcpSource;
+    patches = [ ../home-manager/devel/patches/steel-mcp-self-hosted-artifacts.patch ];
+    npmDepsHash = "sha256-bR8WsJRtjCwjxXTa6lu7NeRPry2cP87AQYRIDuqWHbA=";
+    nodejs = pkgs.nodejs_24;
+    npmBuildScript = "build";
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    installPhase = ''
+      mkdir -p "$out/lib/steel-mcp" "$out/bin"
+      cp -r dist node_modules package.json "$out/lib/steel-mcp/"
+      makeWrapper ${pkgs.nodejs_24}/bin/node "$out/bin/steel-mcp" \
+        --add-flags "$out/lib/steel-mcp/dist/stdio.js"
+    '';
+  };
+  steelMcps = lib.listToAttrs (
+    map (host: {
+      name = "steel-${host}";
+      value = {
+        command = "${steelMcpPackage}/bin/steel-mcp";
+        env = {
+          STEEL_LOCAL = "true";
+          STEEL_BASE_URL = "https://steel.${host}.ts.${config.domains.main}";
+        };
+        connect_timeout = 30;
+        timeout = 90;
+      };
+    }) steelBrowserHosts
+  );
+  playwrightSteelMcps = lib.listToAttrs (
+    map (host: {
+      name = "playwright-steel-${host}";
+      value = {
+        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+        args = [
+          "--cdp-endpoint=wss://steel.${host}.ts.${config.domains.main}/"
+          "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/steel-${host}"
+        ];
+        connect_timeout = 30;
+        timeout = 90;
+      };
+    }) steelBrowserHosts
+  );
+
   bitwardenCliDataPath = "${config.services.hermes-agent.stateDir}/.bitwarden-cli/data.json";
   hermesNixosApply = pkgs.writeShellApplication {
     name = "hermes-nixos-apply";
@@ -412,67 +468,9 @@ in
             connect_timeout = 30;
             timeout = 90;
           };
-          playwright-rofl-13 = {
-            command = "${pkgs.openssh}/bin/ssh";
-            args = [
-              "-o"
-              "BatchMode=yes"
-              "-o"
-              "IdentitiesOnly=yes"
-              "-o"
-              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
-              "-o"
-              "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
-              "-l"
-              "hermes"
-              "rofl-13"
-              "${pkgs.playwright-mcp}/bin/playwright-mcp"
-              "--cdp-endpoint=http://127.0.0.1:9222"
-            ];
-            connect_timeout = 30;
-            timeout = 90;
-          };
-          playwright-rofl-14 = {
-            command = "${pkgs.openssh}/bin/ssh";
-            args = [
-              "-o"
-              "BatchMode=yes"
-              "-o"
-              "IdentitiesOnly=yes"
-              "-o"
-              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
-              "-o"
-              "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
-              "-l"
-              "hermes"
-              "rofl-14"
-              "${pkgs.playwright-mcp}/bin/playwright-mcp"
-              "--cdp-endpoint=http://127.0.0.1:9222"
-            ];
-            connect_timeout = 30;
-            timeout = 90;
-          };
-          playwright-fnuc = {
-            command = "${pkgs.openssh}/bin/ssh";
-            args = [
-              "-o"
-              "BatchMode=yes"
-              "-o"
-              "IdentitiesOnly=yes"
-              "-o"
-              "IdentityFile=${config.sops.secrets."ssh/hermes/privateKey".path}"
-              "-o"
-              "UserKnownHostsFile=/etc/ssh/ssh_known_hosts"
-              "-l"
-              config.mainUser.username
-              "fnuc"
-              "${pkgs.playwright-mcp}/bin/playwright-mcp"
-              "--cdp-endpoint=http://127.0.0.1:9222"
-            ];
-            connect_timeout = 30;
-            timeout = 90;
-          };
-        };
+        }
+        // steelMcps
+        // playwrightSteelMcps;
         skills.external_dirs = [ "${hermesSkills}" ];
       };
     };
