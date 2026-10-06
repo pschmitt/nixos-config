@@ -155,6 +155,7 @@ in
         then
           typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
           source "$__zlp_build/head.zsh"
+          typeset -g ZSH_LOCAL_PLUGINS_CACHE_BUILD="$__zlp_build"
         else
           zsh::local-plugins-compile-async
           zsh::local-plugin-files

@@ -112,6 +112,7 @@ zsh::local-plugins-cache-load() {
   zsh::local-plugins-cache-body || return 1
   zsh::local-plugins-prepare
   source "$__zlp_build/head.zsh"
+  typeset -g ZSH_LOCAL_PLUGINS_CACHE_BUILD="$__zlp_build"
   local cmd
   for cmd in "${reply[@]}"
   do
@@ -141,20 +142,22 @@ zsh::local-plugins-compile-command() {
     zsh -f -i -c 'trap "" HUP; source "$ZDOTDIR/.zshenv"; source "$ZDOTDIR/.zshrc"; zsh::local-plugins-compile'
 }
 
+# Reports what this shell loaded: the environment fingerprint is only
+# meaningful before the plugins ran (they change the environment).
 zsh::local-plugins-cache-status() {
   local -a idx
   [[ -r "$ZSH_LOCAL_PLUGIN_CACHE_DIR/index" ]] && idx=("${(@ps:\0:)$(<"$ZSH_LOCAL_PLUGIN_CACHE_DIR/index")}")
   if ! zsh::local-plugins-cache-enabled
   then
     print -r -- "local plugin cache: disabled"
-  elif zsh::local-plugins-cache-fresh
+  elif [[ -n "${ZSH_LOCAL_PLUGINS_CACHE_BUILD:-}" ]]
   then
-    print -r -- "local plugin cache: fresh ($(<"$__zlp_build/summary"); $(( ${#idx} / 2 )) environment variant(s))"
+    print -r -- "local plugin cache: this shell loaded ${ZSH_LOCAL_PLUGINS_CACHE_BUILD:t} ($(<"$ZSH_LOCAL_PLUGINS_CACHE_BUILD/summary"); $(( ${#idx} / 2 )) environment variant(s))"
   elif zsh::local-plugins-compile-locked
   then
     print -r -- "local plugin cache: rebuilding"
   else
-    print -r -- "local plugin cache: stale or missing (run zsh::local-plugins-compile)"
+    print -r -- "local plugin cache: not used by this shell (stale or no build for its environment yet; $(( ${#idx} / 2 )) variant(s))"
   fi
 }
 
