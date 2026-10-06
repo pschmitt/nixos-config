@@ -120,7 +120,7 @@ in
         NETWORK_LOCATION="$(<"${config.xdg.cacheHome}/network-location.txt")"
       fi
       export XDG_DATA_DIRS="$HOME/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:''${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
-      mkdir -p -- "${config.xdg.cacheHome}/zsh"
+      [[ -d "${config.xdg.cacheHome}/zsh" ]] || mkdir -p -- "${config.xdg.cacheHome}/zsh"
       export ZSH_CACHE_DIR="${config.xdg.cacheHome}/zsh"
       if [[ -n "''${TERM_SSH_CLIENT:-}" ]] && infocmp "''${TERM_SSH_CLIENT}" &>/dev/null
       then
@@ -138,7 +138,10 @@ in
 
       if [[ -n "''${ZSH_EXECUTION_STRING:-}" && ! -o interactive && ! -o login && -z "''${ZHJ:-}" ]]
       then
-        export ZHJ=1 NO_COMPLETIONS=1 NO_PLUGINS=1
+        # Only ZHJ is exported (like the yadm zhjrc); exporting NO_* would
+        # leak into shells spawned from here (ssh -t host tmux, zhj tmux::attach).
+        export ZHJ=1
+        NO_COMPLETIONS=1 NO_PLUGINS=1
         source "$ZDOTDIR/.zshrc"
         zsh::source-local-plugins
         export ZHJ_MODE=eval
@@ -157,7 +160,7 @@ in
           is_nixos || multisrc "$custom_dir/os/not-nixos"/*.zsh
 
           multisrc \
-            "$custom_dir/os/$(os-release::kind)"/^zboot.zsh \
+            "$custom_dir/os/$__OS_KIND"/^zboot.zsh \
             "$custom_dir/hosts/$HOST"/^zboot.zsh
         }
       '')

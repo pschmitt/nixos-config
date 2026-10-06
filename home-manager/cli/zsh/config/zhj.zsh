@@ -16,7 +16,9 @@ then
   ZHJ_YADM=1 exec "$HOME/bin/zhj" "${orig_args[@]}"
 fi
 
-export ZHJ=1 NO_COMPLETIONS=1 NO_PLUGINS=1
+# Only ZHJ is exported; NO_* must not leak into shells zhj spawns (tmux).
+export ZHJ=1
+NO_COMPLETIONS=1 NO_PLUGINS=1
 source "$ZDOTDIR/.zshenv"
 source "$ZDOTDIR/.zshrc"
 zsh::source-local-plugins
