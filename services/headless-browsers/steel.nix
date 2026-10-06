@@ -14,7 +14,8 @@ in
   systemd.tmpfiles.rules = [ "d ${dataDir} 0700 root root - -" ];
 
   virtualisation.oci-containers.containers.steel = {
-    image = "ghcr.io/steel-dev/steel-browser@sha256:d8e93f8a6f847c3e1cc1dc1269446bc99e8123baccc5e5cc2df052c2b7aa5c16";
+    # renovate: datasource=docker depName=ghcr.io/steel-dev/steel-browser
+    image = "ghcr.io/steel-dev/steel-browser:latest@sha256:d8e93f8a6f847c3e1cc1dc1269446bc99e8123baccc5e5cc2df052c2b7aa5c16";
     autoStart = true;
     log-driver = "none";
     ports = [
