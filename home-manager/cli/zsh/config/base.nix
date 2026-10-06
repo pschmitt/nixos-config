@@ -1,21 +1,24 @@
 { config, lib, ... }:
 {
   programs.zsh = {
-    setOptions = [
-      "AUTO_PUSHD"
-      "PUSHD_MINUS"
-      "AUTOCD"
-      "EXTENDED_GLOB"
-      "INTERACTIVE_COMMENTS"
-      "AUTO_PARAM_SLASH"
-      "AUTO_REMOVE_SLASH"
-    ];
-
     initContent = lib.mkMerge [
       (lib.mkOrder 500 ''
-        # Script-visible behaviour: keep it out of `ssh host cmd` and zhj,
-        # which also load this file (the yadm zhj never set these).
-        [[ -o interactive ]] && setopt NO_CLOBBER RC_QUOTES
+        # Interactive-only: `ssh host cmd` and zhj also load this file, and
+        # these change script semantics (`#` globbing, redirects, quoting).
+        # The yadm zhj never set them either.
+        if [[ -o interactive ]]
+        then
+          setopt \
+            AUTO_PUSHD \
+            PUSHD_MINUS \
+            AUTOCD \
+            EXTENDED_GLOB \
+            INTERACTIVE_COMMENTS \
+            NO_CLOBBER \
+            AUTO_PARAM_SLASH \
+            AUTO_REMOVE_SLASH \
+            RC_QUOTES
+        fi
         mkdir -p -- "${config.xdg.stateHome}/zsh"
         typeset -gA CUSTOM_COMPS CUSTOM_COMPS_STATIC
         autoload -Uz colors && colors
