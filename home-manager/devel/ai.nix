@@ -124,6 +124,23 @@ let
     }) browserHosts
   );
 
+  # Playwright attached straight to each host's Steel over its CDP websocket
+  # (reachable over Tailscale, so no SSH hop). Every connection gets its own
+  # Steel session, which ends when the MCP server exits. Snapshots and
+  # downloads go to a per-host cache dir instead of the current directory.
+  playwrightSteelMcps = lib.listToAttrs (
+    map (host: {
+      name = "playwright-steel-${host}";
+      value = {
+        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+        args = [
+          "--cdp-endpoint=wss://steel.${host}.ts.${domainName}/"
+          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/steel-${host}"
+        ];
+      };
+    }) browserHosts
+  );
+
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
   n8nSkillsSrc = pkgs.fetchFromGitHub {
     owner = "czlonkowski";
@@ -361,7 +378,8 @@ in
         };
       }
       // browserlessMcps
-      // steelMcps;
+      // steelMcps
+      // playwrightSteelMcps;
     };
 
     programs = {
