@@ -48,12 +48,14 @@ zsh::local-plugins-cache-key() {
 
 zsh::local-plugins-cache-fresh() {
   zsh::local-plugins-cache-enabled || return 1
-  local cache="$ZSH_LOCAL_PLUGIN_CACHE_DIR/current" saved
+  local cache="$ZSH_LOCAL_PLUGIN_CACHE_DIR/current"
   [[ -r "$cache/key" && -r "$cache/head.zsh" && -r "$cache/body" ]] || return 1
+  # mapfile: `read` goes byte by byte, ~4 ms for the ~20 KB key
+  zmodload -F zsh/mapfile p:mapfile 2>/dev/null || return 1
   local -a reply
   local REPLY
   zsh::local-plugins-cache-key
-  IFS= read -r saved < "$cache/key" && [[ "$saved" == "$REPLY" ]]
+  [[ "${mapfile[$cache/key]%$'\n'}" == "$REPLY" ]]
 }
 
 # reply=the cached commands to run after head.zsh, in plugin order.
@@ -228,11 +230,6 @@ zsh::local-plugins-compile-into() {
     cc0=("${(@kv)CUSTOM_COMPS}") ccs0=("${(@kv)CUSTOM_COMPS_STATIC}")
     __zlp_effect=0 __zlp_compdefs=()
 
-    # Functions that look up where they were defined would see the cache
-    # instead of the plugin file: keep such files eager.
-    local text="$(<"$file")"
-    [[ "$text" == *'%x'* || "$text" == *functions_source* || "$text" == *funcsourcetrace* ]] && __zlp_effect=text
-
     zsh::source-plugin "$file" &>/dev/null
 
     local -a defined=() replay=()
@@ -244,6 +241,9 @@ zsh::local-plugins-compile-into() {
       [[ "$n" == (compdef|zle|bindkey|zstyle|zmodload|trap|sched|zsh::_zlp-*) ]] && continue
       defined+=("$n")
       [[ "$v" == "$file" ]] || effect="dynamic $n"
+      # Functions that look up where they were defined would see the cache
+      # instead of the plugin file (top-level code is unaffected).
+      [[ "${functions[$n]}" == *(%x|functions_source|funcsourcetrace)* ]] && effect="location $n"
       # traps, autoload stubs and unrepresentable names stay eager
       [[ "$n" == TRAP* || "$n" == */* || "$n" == .* ]] && effect="name $n"
     done
