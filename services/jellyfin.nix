@@ -7,7 +7,7 @@
 let
   # https://github.com/jellyfin/jellyfin/releases/tag/v12.0
   # renovate: datasource=docker depName=ghcr.io/linuxserver/jellyfin versioning=loose
-  jellyfinVersion = "12.1ubu2604-ls51";
+  jellyfinVersion = "12.2ubu2604-ls52";
 
   dataDir = "/srv/jellyfin";
   jellyfinConfigDir = "${dataDir}/config/jellyfin";
