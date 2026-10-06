@@ -5,6 +5,7 @@
   python,
   entrypoint ? null,
   extraRuntimePackages ? [ ],
+  extraFiles ? [ ],
 }:
 let
   packageName = lib.getName package;
@@ -25,7 +26,7 @@ runCommand "${termuxName}"
     allowedReferences = [ ];
     passthru.termuxNative = {
       abi = "android-bionic";
-      files = [ "bin/${command}" ];
+      files = [ "bin/${command}" ] ++ extraFiles;
       binaries = [ ];
       scripts = [ "bin/${command}" ];
       trees = [ "python" ];
@@ -49,14 +50,33 @@ runCommand "${termuxName}"
       "$package_path"
       ${lib.escapeShellArgs (map toString extraRuntimePackages)}
     )
-    if [[ -r "$package_path/nix-support/propagated-build-inputs" ]]
-    then
-      read -r -a propagated_packages < "$package_path/nix-support/propagated-build-inputs" || :
-      runtime_packages+=("''${propagated_packages[@]}")
-    fi
-    package_found=0
-    for runtime_package in "''${runtime_packages[@]}"
+    declare -A runtime_seen=()
+    for extra_file in ${lib.escapeShellArgs extraFiles}
     do
+      source_file="$package_path/$extra_file"
+      if [[ ! -f "$source_file" ]]
+      then
+        printf 'Python application extra file is missing: %s (%s)\\n' '${packageName}' "$extra_file" >&2
+        exit 1
+      fi
+      mkdir -p "$out/$(dirname "$extra_file")"
+      cp -L -- "$source_file" "$out/$extra_file"
+    done
+    package_found=0
+    for ((package_index = 0; package_index < ''${#runtime_packages[@]}; package_index++))
+    do
+      runtime_package="''${runtime_packages[package_index]}"
+      if [[ -n "''${runtime_seen[$runtime_package]:-}" ]]
+      then
+        continue
+      fi
+      runtime_seen["$runtime_package"]=1
+      if [[ -r "$runtime_package/nix-support/propagated-build-inputs" ]]
+      then
+        propagated_packages=()
+        read -r -a propagated_packages < "$runtime_package/nix-support/propagated-build-inputs" || :
+        runtime_packages+=("''${propagated_packages[@]}")
+      fi
       site_packages="$runtime_package/${python.sitePackages}"
       if [[ ! -d "$site_packages" ]]
       then
@@ -73,6 +93,7 @@ runCommand "${termuxName}"
     fi
     python - <<'PY'
     import configparser
+    import importlib
     import os
     import pathlib
     import re
@@ -116,6 +137,16 @@ runCommand "${termuxName}"
     identifier = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
     if not all(identifier.fullmatch(part) for part in module.split(".")) or not identifier.fullmatch(function):
         print(f"Unsupported Python entry point: {module}:{function}", file=sys.stderr)
+        sys.exit(1)
+
+    sys.path.insert(0, str(output / "python"))
+    try:
+        entrypoint_object = getattr(importlib.import_module(module), function)
+    except (ImportError, AttributeError) as error:
+        print(f"Could not import Python entry point {module}:{function}: {error}", file=sys.stderr)
+        sys.exit(1)
+    if not callable(entrypoint_object):
+        print(f"Python entry point is not callable: {module}:{function}", file=sys.stderr)
         sys.exit(1)
 
     wrapper = output / "bin" / command

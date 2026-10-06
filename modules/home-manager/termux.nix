@@ -29,6 +29,7 @@ in
     ../../home-manager/cli/zsh/tools/termux/assh.nix
     ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
+    ../../home-manager/cli/zsh/tools/termux/linkding-cli.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
     ../../home-manager/cli/zsh/tools/termux/rancher.nix
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
@@ -67,6 +68,7 @@ in
         ".config/zsh/completions/_ipmi"
         ".config/zsh/completions/_jc"
         ".config/zsh/completions/_kubectl"
+        ".config/zsh/completions/_linkding"
         ".config/zsh/completions/_mani"
         ".config/zsh/completions/_ossh"
         ".config/zsh/completions/_rbw"

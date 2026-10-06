@@ -62,6 +62,7 @@ androidPkgs.extend (
         python ? pkgs.python3,
         entrypoint ? null,
         extraRuntimePackages ? [ ],
+        extraFiles ? [ ],
       }:
       pkgs.callPackage ./python-application.nix {
         inherit
@@ -69,8 +70,52 @@ androidPkgs.extend (
           python
           entrypoint
           extraRuntimePackages
+          extraFiles
           ;
       };
+    python312Termux = pkgs.python312.override {
+      packageOverrides = _python: previous: {
+        aiohttp = previous.aiohttp.overridePythonAttrs (old: {
+          AIOHTTP_NO_EXTENSIONS = "1";
+          # These are Nixpkgs' optional speedups, not required by Linkding CLI.
+          dependencies = pkgs.lib.filter (
+            package:
+            !(builtins.elem (package.pname or null) [
+              "aiodns"
+              "backports-zstd"
+              "brotli"
+            ])
+          ) old.dependencies;
+          disabledTests = (old.disabledTests or [ ]) ++ [
+            "test_feed_eof_no_err_brotli"
+            "test_empty_body"
+          ];
+        });
+        frozenlist = previous.frozenlist.overridePythonAttrs (_: {
+          FROZENLIST_NO_EXTENSIONS = "1";
+        });
+        multidict = previous.multidict.overridePythonAttrs (_: {
+          MULTIDICT_NO_EXTENSIONS = "1";
+          doCheck = false;
+        });
+        propcache = previous.propcache.overridePythonAttrs (_: {
+          PROPCACHE_NO_EXTENSIONS = "1";
+          disabledTests = [ "c-extension-module" ];
+        });
+        ruamel-yaml = previous.ruamel-yaml.overridePythonAttrs (old: {
+          propagatedBuildInputs = pkgs.lib.filter (package: package != previous.ruamel-yaml-clib) (
+            old.propagatedBuildInputs or [ ]
+          );
+        });
+        shellingham = previous.shellingham.overridePythonAttrs (_: {
+          # Nixpkgs normally pins `ps` to its store path; Termux supplies it via APT.
+          postPatch = "";
+        });
+        yarl = previous.yarl.overridePythonAttrs (_: {
+          YARL_NO_EXTENSIONS = "1";
+        });
+      };
+    };
   in
   {
     termuxAdapters = {
@@ -117,7 +162,8 @@ androidPkgs.extend (
       };
 
       jc = pythonApplication {
-        package = pkgs.jc;
+        package = python312Termux.pkgs.jc;
+        python = python312Termux;
       };
 
       obs-cli =
@@ -133,6 +179,14 @@ androidPkgs.extend (
       slack-react = pythonApplication {
         package = inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.default;
         python = pkgs.python312;
+      };
+
+      linkding-cli = pythonApplication {
+        package = pkgs.callPackage ../linkding-cli {
+          python3 = python312Termux;
+        };
+        python = python312Termux;
+        extraFiles = [ "share/zsh/site-functions/_linkding" ];
       };
 
       assh = withAptPackages (fromGo {

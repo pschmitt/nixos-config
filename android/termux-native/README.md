@@ -96,6 +96,11 @@ modules in `PYTHONPATH`.
 The exporter rejects ELF files in this data tree and rejects Nix store
 references. This works for pure Python packages; packages with native Python
 extensions still need an Android build or a Termux APT package.
+`linkding-cli` is exported this way with Python 3.12, which matches the Termux
+APT interpreter. Its HTTP/YAML dependency stack uses upstream pure-Python
+fallbacks; the bundle contains no Python extension binaries and uses the
+network-capable Termux interpreter at runtime. Its generated Zsh completion is
+included with the application.
 `termux.homeFiles` is an export allowlist: only those generated files enter the
 archive. Keep private dotfiles out of this public bundle; add a path to the
 allowlist only when you intend that file to ship.

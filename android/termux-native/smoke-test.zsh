@@ -130,6 +130,7 @@ native_shell_check() {
     return 1
   fi
   if [[ ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_jc" ||
+        ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_linkding" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_mani" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ipmi" ||
         ! -r "$TERMUX_GENERATION/home/.config/zsh/completions/_ossh" ||
@@ -151,10 +152,11 @@ native_shell_check() {
     return 1
   fi
   if (( ! $+_comps[git] || ! $+_comps[ipmi] || ! $+_comps[kubectl] ||
+        ! $+_comps[linkding] ||
         ! $+_comps[mani] || ! $+_comps[ossh] || ! $+_comps[rbw] ||
         ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
   then
-    print -u2 -- "Missing shared completion registration: ipmi=$+_comps[ipmi] ossh=$+_comps[ossh] revolver=$+_comps[revolver] whatsmy=$+_comps[whatsmy] zunit=$+_comps[zunit]"
+    print -u2 -- "Missing shared completion registration: ipmi=$+_comps[ipmi] linkding=$+_comps[linkding] ossh=$+_comps[ossh] revolver=$+_comps[revolver] whatsmy=$+_comps[whatsmy] zunit=$+_comps[zunit]"
     return 1
   fi
   if (( $+commands[kubectl] && $+CUSTOM_COMPS[k] && ! $+_comps[k] ))
@@ -200,6 +202,7 @@ native_shell_check() {
   native_smoke_run 'Atuin version' atuin --version || return
   native_smoke_run 'OBS CLI version' obs-cli --version || return
   native_smoke_run 'jc version' jc --version || return
+  native_smoke_run 'Linkding CLI help' command linkding --help || return
   native_smoke_run 'Slack reaction CLI imports' env \
     "PYTHONPATH=$TERMUX_GENERATION/native/slack-react-termux/python" \
     PYTHONDONTWRITEBYTECODE=1 python -B -c \
