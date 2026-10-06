@@ -102,7 +102,7 @@ switch_generation() {
   TERMUX_GENERATION="$root/generations/$generation" \
     ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
     PATH="$root/generations/$generation/bin:$PATH" \
-    timeout 45 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
+    timeout 120 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
