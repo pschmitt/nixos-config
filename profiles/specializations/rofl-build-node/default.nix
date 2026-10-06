@@ -3,7 +3,6 @@
   imports = [
     ../../features/network/roflnet.nix
     ../server
-    ../tdarr-node
 
     ../../../services/esphome.nix
     ../../../services/forgejo-runner.nix
