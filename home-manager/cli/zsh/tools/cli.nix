@@ -1,7 +1,7 @@
 # Commands the local plugins check for, from Nix instead of zinit's polaris
 # bin. Termux imports the whole tools directory (./default.nix); jq.nix and
 # fd.nix stay Termux-only here: zinit links ~/.config/jq/{colors,plib} on
-# regular hosts and the CLI profile installs fd itself.
+# regular hosts, and the CLI profile installs fd and tmux-xpanes itself.
 {
   imports = [
     ./adb.nix
@@ -16,7 +16,6 @@
     ./netbird.nix
     ./tesmart.nix
     ./tmux-slay.nix
-    ./tmux-xpanes.nix
     ./yank.nix
   ];
 }
