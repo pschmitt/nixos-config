@@ -5,21 +5,6 @@
   pkgs,
   ...
 }:
-let
-  termuxZip = pkgs.callPackage ../../pkgs/termux-native/zip.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.zip;
-  };
-  termuxUnzip = pkgs.callPackage ../../pkgs/termux-native/unzip.nix {
-    bzip2 = pkgs.pkgsCross.aarch64-android-prebuilt.bzip2;
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.unzip;
-  };
-  termuxGzip = pkgs.callPackage ../../pkgs/termux-native/gzip.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.gzip;
-  };
-in
 {
   imports = [
     ../../home-manager/cli
@@ -32,6 +17,7 @@ in
       ".config/zsh/.zprofile"
       ".config/zsh/.zshenv"
       ".config/zsh/.zshrc"
+      ".config/zsh/completions/source-me.zsh"
       ".config/zsh/custom/os/home-manager/system.zsh"
       ".config/tmux/tmux.conf"
       ".config/nvim/init.lua"
@@ -64,24 +50,37 @@ in
 
       home.packages = [
         (pkgs.callPackage ../../pkgs/nixpp-termux { inherit inputs; })
-        termuxZip
-        termuxUnzip
-        termuxGzip
+        (pkgs.callPackage ../../pkgs/termux-native/go-binary.nix {
+          inherit pkgs;
+          package = pkgs.ssh-to-age;
+          binary = "ssh-to-age";
+        })
       ];
 
       termux.packages = [
         "bash"
+        "bat"
         "coreutils"
         "curl"
+        "direnv"
+        "eza"
+        "fd"
+        "fzf"
         "git"
         "grep"
+        "gzip"
         "jq"
         "libngtcp2"
         "openssh"
         "procps"
+        "ripgrep"
         "sed"
         "tar"
         "util-linux"
+        "unzip"
+        "vivid"
+        "zip"
+        "zoxide"
         "zsh"
       ];
 

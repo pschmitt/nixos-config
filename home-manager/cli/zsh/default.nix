@@ -111,10 +111,21 @@ in
       "zsh/completions/source-me.zsh".text = ''
         # bashcompinit is not needed here since we already do this in zinit
         # autoload -U +X bashcompinit && bashcompinit
-        # FIXME openbao is broken as of 2026-01-09
+        # FIXME openbao completion is broken as of 2026-01-09.
         # https://github.com/NixOS/nixpkgs/pull/478004
-        # complete -C "${pkgs.openbao}/bin/bao" bao
-        complete -C "${pkgs.vault}/bin/vault" vault
+        ${
+          if termuxMode then
+            ''
+              if (( $+commands[vault] ))
+              then
+                complete -C "$commands[vault]" vault
+              fi
+            ''
+          else
+            ''
+              complete -C "${pkgs.vault}/bin/vault" vault
+            ''
+        }
 
         if (( $+commands[rbw] ))
         then

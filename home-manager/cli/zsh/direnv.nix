@@ -6,14 +6,10 @@
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxDirenv = pkgs.callPackage ../../../pkgs/termux-native/go-binary.nix {
-    inherit pkgs;
-    package = pkgs.direnv;
-    binary = "direnv";
-  };
 in
 {
-  home.packages = if termuxMode then [ termuxDirenv ] else [ pkgs.direnv ];
+  termux.packages = lib.mkIf termuxMode [ "direnv" ];
+  home.packages = lib.optionals (!termuxMode) [ pkgs.direnv ];
 
   programs.direnv = {
     enable = !termuxMode;

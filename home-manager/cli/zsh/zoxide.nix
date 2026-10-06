@@ -6,13 +6,10 @@
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxZoxide = pkgs.callPackage ../../../pkgs/termux-native/zoxide.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.zoxide.override { withFzf = false; };
-  };
 in
 {
-  home.packages = [ (if termuxMode then termuxZoxide else pkgs.zoxide) ];
+  termux.packages = lib.mkIf termuxMode [ "zoxide" ];
+  home.packages = lib.optionals (!termuxMode) [ pkgs.zoxide ];
 
   xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (
     if termuxMode then

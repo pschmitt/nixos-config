@@ -94,10 +94,10 @@ nix build '.#termux-native-bundle'
 sha256sum result/environment.tar.gz
 ```
 
-The bundle currently cross-builds Zip and Gzip utilities for Android/Bionic
-and exports them as native commands. Termux does not need APT's `zip`, `unzip`,
-or `gzip` packages for this profile. Keep packages that need Termux-specific
-patches or dependency integration in the official
+The bundle exports supported Nix-built Android/Bionic artifacts and generated
+configuration. Termux APT owns packages available from its repositories,
+including their runtime libraries and transitive dependencies. Keep packages
+that need Termux-specific patches or dependency integration in the official
 [Termux package recipes](https://github.com/termux/termux-packages); the Nix
 bundle does not copy or install `.deb` files.
 
@@ -160,7 +160,7 @@ explicitly distinguishes reference-free objects from objects tied to a store
 directory.
 
 Use the Nix cache between builders and release exporters. Export the payload
-as tarballs or Termux `.deb` packages for phones. Nix signatures do not
+as a generation tarball for phones. Nix signatures do not
 automatically authenticate an exported tarball: sign the release manifest too.
 A custom native NAR downloader is possible, but must implement verification,
 reference traversal, safe extraction, and activation; it still cannot relocate
@@ -357,19 +357,21 @@ optimization; phones receive a tar archive, not NARs or Linux Nix closures.
 The profile splits packages by their runtime owner: entries in
 `termux.packages` are installed by Termux APT, while Home Manager packages
 with a `termuxNative` export declaration are built for Android/Bionic and
-copied into the generated profile. It reuses the regular CLI modules for
-`bat`, `eget`, `fd`, `ripgrep`, `tmux`, and Zsh. Linux hosts use their normal
-Nixpkgs packages. Termux gets Android/Bionic Rust builds of `bat`, `eza`, `fd`,
-`ripgrep`, `vivid`, and `zoxide`; `direnv`, `eget`, and `fzf` are built with
-the host Go compiler targeting Android/Bionic. Termux APT supplies core and
-patched packages such as Atuin, Neovim, tmux, and Zsh, with APT resolving and
-owning their runtime libraries and dependencies. No Termux `.deb` contents or
-libraries are copied into the Nix generation. The Go toolchain is patched to
-use Termux's `/etc` files so those binaries do not refer to the Nix store. Each
-exported ELF is checked for AArch64 ELF, an Android linker (or static linkage),
-and dependencies available from Android system libraries or libraries bundled
-with that Nix-built package. The profile also shares portable Neovim options
-from the regular Home Manager tree.
+copied into the generated profile. It reuses the regular CLI modules and keeps
+Linux hosts on their normal Nixpkgs packages. Termux APT supplies available
+utilities and runtime-heavy packages, including Atuin, tmux, OpenSSL, ncurses,
+libevent, libandroid-support, libandroid-glob, utf8proc, and their transitive
+dependencies. APT tracks those files and owns their updates and removal; no
+Termux `.deb` contents or libraries are copied into Nix generations. The
+bundle is reserved for supported Nix-built
+Android/Bionic artifacts and generated configuration. The Go toolchain is
+patched to use Termux's `/etc` files so exported binaries do not refer to the
+Nix store. Each exported ELF, including bundled libraries, is checked for
+AArch64 ELF, an Android linker (or static linkage), and dependencies available
+from Android system libraries or libraries bundled with that Nix-built
+package. Dependencies of bundled libraries are checked recursively. The
+profile also shares portable Neovim options and shell integrations from the
+regular Home Manager tree.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 
@@ -384,18 +386,14 @@ startup settings without removing installed generations.
 
 ## Verification record
 
-The records below include historical experiments. Termux `.deb` extraction
-was retired: the current profile leaves Termux-provided packages and all their
-dependencies to APT.
+The records below include historical experiments. The current profile leaves
+Termux-provided packages and all their dependencies to APT.
 
-On 2026-10-03, an earlier bundle prototype on the Zenfone 10's Termux app installed
-official Termux packages `bat` 0.26.1, `fd` 10.5.0, `fzf` 0.74.4,
+On 2026-10-03, an earlier bundle prototype on the Zenfone 10's Termux app
+installed official Termux packages `bat` 0.26.1, `fd` 10.5.0, `fzf` 0.74.4,
 `grep` 3.12, `procps` 4.0.7, `ripgrep` 15.2.0, `sed` 4.10, `unzip` 6.0,
-`zip` 3.0, and `zoxide` 0.10.0. Termux APT installed selected local `.deb` files;
-`dpkg-query` and each command reported the expected versions. The generation's
-interactive shell smoke test passed. This verifies Termux's package database
-and the Nixpp transport/activation path together; other selected tools still
-come from the configured Termux repositories.
+`zip` 3.0, and `zoxide` 0.10.0. APT installed and tracked these packages and
+the generation's interactive shell smoke test passed.
 
 The profile also declares nixpp in `home.packages`; its static Android/Bionic
 executable is copied into each generation. From the Zenfone's Termux app, that
@@ -442,27 +440,17 @@ Atuin was later moved into the bundle below.
 An earlier bundle was built on rofl-13 with Nixpkgs' Android cross packages for
 `ripgrep`, `fd`, and `bat`. Rust cross builds needed special handling to skip
 emulator-based checks and target post-fixup commands, and the generation
-launchers were verified on the Zenfone. Since Termux already packages these
-tools, the profile uses Termux APT for packages that are difficult to build
-or relocate, and retains Nix-built binaries for these four utilities. The
-earlier generation digest was
+launchers were verified on the Zenfone. The current profile uses Termux APT
+for these repository packages. The earlier generation digest was
 `4b882492cc22e96a252e0efc4b82c1fef5599d522340e386b5eed4c4d118633a`.
 
-An experimental Atuin bundle used Atuin 18.23.0 and OpenSSL 3.6.5 from pinned
-Termux `.deb` artifacts, with the OpenSSL libraries copied beside Atuin. This
-approach is retired; Atuin and its runtime dependencies are installed and
-updated by Termux APT. The Atuin bundle generation
-(`3344efc17ac1064a95c15cbb37e764b588808cf68a760a0e667059c82fe382b7`) was
-installed from the interactive Termux app on the Zenfone 10 and passed its
-then-current smoke test.
+An experimental Atuin bundle approach was retired. Atuin and its runtime
+dependencies are installed and updated by Termux APT; its Home Manager
+configuration and shell integration remain shared.
 
-On 2026-10-04, the bundle added Nix-built Android/Bionic Zip, Unzip, and Gzip
-commands to the generation and removed their APT packages from the manifest.
-On the Zenfone, `zip` created an archive accepted by APT's `unzip`; native
-`unzip -t`, `zipgrep`, `gzip`, `zgrep`, `gunzip -t`, and `command -v unzip`
-passed from the active generation. The full 43 MiB `environment.tar.gz` was
-also transferred to the device and listed successfully with Android's system
-`tar -tzf`, using `/system/bin/gzip` before Termux's generation was available.
+An earlier experiment bundled Nix-built Android/Bionic Zip, Unzip, and Gzip
+commands. These tools now come from Termux APT, which also owns their
+dependencies and updates.
 
 A direct Nixpkgs Android cross-build of tmux failed in its Android dependency
 graph before producing the package. A later experiment imported tmux and its
@@ -471,10 +459,14 @@ is retired, and current Termux hosts install tmux and its dependencies through
 APT. The shared Home Manager modules continue to generate its configuration
 without changing Linux package selection.
 
-The rebuilt tmux bundle `c1177457473d7715bf46e72eb0d13d79258112f2c73f99fa7134a3e399cf8ddc`
-was installed from the interactive official Termux app on the Zenfone 10. Its
-bootstrap reported that all declared APT packages were already installed (zero
-upgrades and installs), then completed the native execution and Zsh PTY checks.
-After a force-stop and cold app launch, `tmux` resolved from the active
-generation, reported version 3.7c, and created, checked, and killed a detached
-session. The bundle's APT manifest does not install tmux.
+The Termux APT tmux package was installed on the Zenfone 10 and verified by
+creating, checking, and killing a detached session. Its Home Manager
+configuration remains in the generated profile; the bundle does not include
+tmux binaries or libraries.
+
+On 2026-10-06, `curl -L yadm.brkn.lol | bash -s -- --nixpp` completed in the
+Zenfone's official Termux app. Both private archives passed integrity checks,
+the Nix-built native executable ran, the APT preparation completed, and the
+managed generation's Zsh smoke checks passed. The initializer then cloned the
+yadm repository, applied the `termux,notnixos` classes, and opened the managed
+Zsh prompt. The yadm-init commit used by the run is `e6a22df`.

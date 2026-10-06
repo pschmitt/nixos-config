@@ -1,5 +1,11 @@
 native_shell_check() {
   [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
+  if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
+  then
+    [[ "$ZDOTDIR" == "$HOME/.config/zsh" ]] || return 1
+    [[ "$HISTFILE" == "$XDG_STATE_HOME/zsh/zhistory" ]] || return 1
+    [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" == 1 ]] || return 1
+  fi
   local required
   for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
     autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status

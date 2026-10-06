@@ -6,18 +6,14 @@
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxVivid = pkgs.callPackage ../../../pkgs/termux-native/vivid.nix {
-    llvm = pkgs.llvmPackages.llvm;
-    package = pkgs.pkgsCross.aarch64-android-prebuilt.vivid;
-  };
 in
 {
-  home.packages = [ (if termuxMode then termuxVivid else pkgs.vivid) ];
+  termux.packages = lib.mkIf termuxMode [ "vivid" ];
+  home.packages = lib.optionals (!termuxMode) [ pkgs.vivid ];
 
   programs.vivid = {
-    enable = true;
+    enable = !termuxMode;
     activeTheme = "one-dark";
-    package = lib.mkIf termuxMode null;
   };
 
   xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (
