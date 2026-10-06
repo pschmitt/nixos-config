@@ -119,6 +119,9 @@ in
           zsh::local-plugins-finish
           return 0
         fi
+        # Stale/missing cache: rebuild in the background (also from scripts
+        # and `ssh host cmd`, so hosts without interactive use catch up).
+        zsh::local-plugins-compile-async
         local -a reply
         local file
         zsh::local-plugin-files
@@ -139,7 +142,6 @@ in
         [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
         if [[ ! -o zle || -n "''${ZSH_SYNC_LOCAL_PLUGINS:-}" ]]
         then
-          zsh::local-plugins-cache-fresh || zsh::local-plugins-compile-async
           zsh::source-local-plugins
           return
         fi

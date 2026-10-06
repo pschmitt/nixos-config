@@ -213,7 +213,7 @@ zsh::local-plugins-compile-into() {
   for n t in "${(@kv)parameters}"
   do
     [[ "$t" == *export* && "$t" != *special* ]] || continue
-    [[ "$n" == (HOME|USER|LOGNAME|SHELL|TERM|LANG|LC_*|TMPDIR|ZDOTDIR|XDG_*|NIX_*|LOCALE_ARCHIVE*|SSL_CERT_FILE|TZDIR|TERMUX_*|PREFIX|LD_PRELOAD|ANDROID_*) ]] && continue
+    [[ "$n" == (HOME|USER|LOGNAME|SHELL|TERM|LANG|LC_*|TMPDIR|ZDOTDIR|XDG_*|NIX_PATH|NIX_PROFILES|NIX_SSL_CERT_FILE|NIX_USER_PROFILE_DIR|NIX_REMOTE|LOCALE_ARCHIVE*|SSL_CERT_FILE|TZDIR|TERMUX_*|PREFIX|LD_PRELOAD|ANDROID_*) ]] && continue
     inherited_exports+=("$n")
   done
 
