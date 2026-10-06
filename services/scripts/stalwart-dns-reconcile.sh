@@ -1,8 +1,9 @@
 # shellcheck shell=bash
-api_key_file="${CREDENTIALS_DIRECTORY}/api-key"
+password_file="${CREDENTIALS_DIRECTORY}/password"
 export STALWART_URL="http://127.0.0.1:8080"
-stalwart_token="$(< "$api_key_file")"
-export STALWART_TOKEN="$stalwart_token"
+export STALWART_USER="dns-reconcile@brkn.lol"
+stalwart_password="$(< "$password_file")"
+export STALWART_PASSWORD="$stalwart_password"
 
 today="$(date -u +%F)"
 domains_json="$(stalwart-cli query Domain --fields id,name,dnsManagement --json)"

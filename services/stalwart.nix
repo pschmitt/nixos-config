@@ -179,7 +179,7 @@ in
     networkListeners = desiredNetworkListeners;
   };
 
-  sops.secrets."stalwart/dns-task-api-key" = config.sops.mkHostSecret {
+  sops.secrets."stalwart/dns-reconcile-password" = config.sops.mkHostSecret {
     owner = "stalwart";
     group = "stalwart";
     mode = "0400";
@@ -208,7 +208,7 @@ in
         Environment = "HOME=/run/stalwart-dns-reconcile";
         ExecStart = "${dnsReconcile}/bin/stalwart-dns-reconcile";
         LoadCredential = [
-          "api-key:${config.sops.secrets."stalwart/dns-task-api-key".path}"
+          "password:${config.sops.secrets."stalwart/dns-reconcile-password".path}"
         ];
       };
     };
