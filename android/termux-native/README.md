@@ -122,11 +122,11 @@ sha256sum result/environment.tar.gz
 ```
 
 Termux APT owns command line tools already in its repositories, including
-`atuin`, `bat`, `eza`, `fd`, `gzip`, `ripgrep`, `tmux`, `udocker`, `unzip`,
-`vivid`, and `zip`. APT resolves and tracks their dependencies. The bundle does
-not copy or install `.deb` files or libraries from Termux packages. Reserve
-Nix-built Android/Bionic outputs for tools Termux does not provide and generated
-configuration.
+`atuin`, `bat`, `eza`, `fd`, `gzip`, `ripgrep`, `tmux`, `tudo`, `udocker`,
+`unzip`, `vivid`, and `zip`. APT resolves and tracks their dependencies. The
+bundle does not copy or install `.deb` files or libraries from Termux packages.
+Reserve Nix-built Android/Bionic outputs for tools Termux does not provide and
+generated configuration.
 
 The result contains `environment.tar.gz`, `bootstrap.sh`, and `activate.sh`.
 Transfer all three to the phone through a trusted channel. In Termux, after

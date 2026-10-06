@@ -64,6 +64,7 @@ in
         ".config/zsh/termux/zoxide-init.zsh"
         ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
+        ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
         ".config/zsh/completions/_ipmi"
@@ -144,6 +145,7 @@ in
         "shellcheck"
         "sed"
         "tar"
+        "tudo"
         "util-linux"
         "zsh"
       ];
@@ -168,6 +170,13 @@ in
       };
 
       xdg.configFile = {
+        "termux/tasker/tudo" = {
+          executable = true;
+          text = ''
+            #!/data/data/com.termux/files/usr/bin/sh
+            exec "$PREFIX/bin/tudo" "$@"
+          '';
+        };
         "zsh/termux/prompt-color.zsh".text = ''
           typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
         '';
