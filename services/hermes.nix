@@ -88,24 +88,6 @@ let
     "rofl-13"
     "rofl-14"
   ];
-  browserlessMcps = lib.listToAttrs (
-    map (host: {
-      name = "browserless-${host}";
-      value = {
-        command = "${pkgs.nodejs_24}/bin/npx";
-        args = [
-          "--yes"
-          "@browserless.io/mcp@1.36.0"
-        ];
-        env = {
-          BROWSERLESS_TOKEN = "local";
-          BROWSERLESS_API_URL = "https://browserless.${host}.ts.${config.domains.main}";
-        };
-        connect_timeout = 30;
-        timeout = 90;
-      };
-    }) browserlessHosts
-  );
   playwrightBrowserlessMcps = lib.listToAttrs (
     map (host: {
       name = "playwright-browserless-${host}";
@@ -453,7 +435,6 @@ in
             timeout = 90;
           };
         }
-        // browserlessMcps
         // playwrightBrowserlessMcps;
         skills.external_dirs = [ "${hermesSkills}" ];
       };

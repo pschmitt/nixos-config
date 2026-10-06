@@ -12,25 +12,10 @@ let
     "rofl-14"
   ];
 
-  # One Browserless MCP and one Playwright MCP per host. Browserless starts a
-  # fresh Chrome per connection, so every MCP server gets its own browser.
-  browserlessMcps = lib.listToAttrs (
-    map (host: {
-      name = "browserless-${host}";
-      value = {
-        command = "${pkgs.nodejs_24}/bin/npx";
-        args = [
-          "--yes"
-          "@browserless.io/mcp@1.36.0"
-        ];
-        env = {
-          BROWSERLESS_TOKEN = "local";
-          BROWSERLESS_API_URL = "https://browserless.${host}.ts.${domainName}";
-        };
-      };
-    }) browserHosts
-  );
-
+  # One Playwright MCP per host, attached to that host's Browserless. Browserless
+  # starts a fresh Chrome per connection, so every MCP server gets its own browser.
+  # (@browserless.io/mcp targets the hosted API; most of its tools 404 against the
+  # self-hosted image, so it is not used.)
   # Playwright attached to each host's Browserless over its CDP websocket
   # (reachable over Tailscale, so no SSH hop). The browser lives as long as the
   # MCP server's connection. Snapshots and downloads go to a per-host cache dir
@@ -233,7 +218,6 @@ in
           };
         };
       }
-      // browserlessMcps
       // playwrightBrowserlessMcps;
     };
 
