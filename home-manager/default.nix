@@ -54,6 +54,7 @@ in
       dotfiles = {
         promptColor = config.dotfiles.promptColor;
         inherit (config.dotfiles) desktop;
+        zsh.nixShell.default = config.dotfiles.zsh.nixShell.default;
       };
       host = {
         sopsFile = config.sops.hostSopsFile;

@@ -7,6 +7,7 @@
     ./hm.nix
     ./portable.nix
     ./runtime.nix
+    ./zhj.nix
     ../plugins
   ];
 }
