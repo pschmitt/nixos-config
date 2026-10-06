@@ -154,7 +154,7 @@ in
         if zsh::local-plugins-cache-fresh && zsh::local-plugins-cache-body
         then
           typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
-          source "$ZSH_LOCAL_PLUGIN_CACHE_DIR/current/head.zsh"
+          source "$__zlp_build/head.zsh"
         else
           zsh::local-plugins-compile-async
           zsh::local-plugin-files
