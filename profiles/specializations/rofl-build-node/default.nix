@@ -5,7 +5,6 @@
     ../server
     ../tdarr-node
 
-    ../../../services/browser-mcp-chromium-container.nix
     ../../../services/esphome.nix
     ../../../services/forgejo-runner.nix
   ];
