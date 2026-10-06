@@ -187,6 +187,8 @@ Termux-specific source patches or build steps, the upstream
 [`termux-packages` builder](https://github.com/termux/termux-packages/wiki/Building-packages)
 is the native alternative; it builds package recipes into Termux packages for
 Termux APT to own and update. It does not generically transform Nix derivations.
+The bundle currently requires Android API 35; evaluation checks that the
+Nixpkgs cross target and explicit NDK toolchain use the same API level.
 
 A binary cache can store either output, including an entire assembled
 environment. But it stores NAR objects and reference metadata, not a portable

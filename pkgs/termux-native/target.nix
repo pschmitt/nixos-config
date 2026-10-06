@@ -15,6 +15,9 @@ let
   toolchain = "${ndkRoot}/toolchains/llvm/prebuilt/linux-x86_64/bin";
   triple = "aarch64-linux-android";
 in
+assert
+  toString pkgs.pkgsCross.aarch64-android-prebuilt.stdenv.targetPlatform.androidSdkVersion
+  == toString apiLevel;
 {
   abi = "android-bionic";
   architecture = "aarch64";
