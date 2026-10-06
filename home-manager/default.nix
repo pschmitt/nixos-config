@@ -45,7 +45,8 @@ in
     users.${config.mainUser.username} = {
       imports = [
         ./home.nix
-      ];
+      ]
+      ++ lib.optional config.dotfiles.zsh.nixShell.enable ./cli/zsh/config;
 
       # Bridge: feed system facts from the NixOS config into the (osConfig-free)
       # home config. Standalone hosts set these explicitly instead.

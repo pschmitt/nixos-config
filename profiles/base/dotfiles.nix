@@ -15,7 +15,7 @@
     etc = {
       "zshenv.local" = {
         text = ''
-          export ZDOTDIR="$HOME/.config/zsh"
+          export ZDOTDIR="''${ZDOTDIR:-$HOME/.config/zsh}"
         '';
         mode = "0644";
       };

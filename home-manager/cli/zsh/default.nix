@@ -19,8 +19,9 @@ in
 
   config = {
     programs.zsh = {
-      enable = false;
-      dotDir = "${config.xdg.configHome}/zsh/hm";
+      # Enabled by ./config when the Nix-managed shell is opted into.
+      enable = lib.mkDefault false;
+      dotDir = lib.mkDefault "${config.xdg.configHome}/zsh/hm";
     };
 
     home = {
