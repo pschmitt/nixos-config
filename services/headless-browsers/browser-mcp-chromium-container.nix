@@ -25,7 +25,7 @@ let
   # haIngressBypass = false: that test needs a map from
   # services/authelia-nginx-bypass.nix, which only the host running Home
   # Assistant's ingress imports, and nginx refuses to start without it.
-  autheliaConfig = import ./authelia-nginx-config.nix {
+  autheliaConfig = import ../authelia-nginx-config.nix {
     inherit config;
     haIngressBypass = false;
   };

@@ -2,6 +2,7 @@
 {
   imports = [
     ../../features/network/roflnet.nix
+    ../../headless-browsers.nix
     ../server
 
     ../../../services/esphome.nix
