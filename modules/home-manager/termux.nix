@@ -11,6 +11,7 @@ let
 in
 {
   imports = [
+    ../../modules/dotfiles.nix
     ../../home-manager/cli/bat.nix
     ../../home-manager/cli/eget.nix
     ../../home-manager/cli/eza.nix
@@ -55,6 +56,7 @@ in
         ".config/zsh/.zprofile"
         ".config/zsh/.zshenv"
         ".config/zsh/.zshrc"
+        ".config/zsh/termux/prompt-color.zsh"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
         ".config/zsh/completions/_ipmi"
@@ -142,19 +144,23 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
-        initContent = lib.mkAfter (
-          builtins.readFile ../../android/termux-native/shell.zsh
-          + ''
+        setOptions = [ "RC_QUOTES" ];
+        initContent = lib.mkAfter ''
+          alias -g DN='&> /dev/null' L='| less' J='| jq'
+          ${builtins.readFile ../../android/termux-native/shell.zsh}
+
             if [[ -o interactive && -n "''${_comps+x}" ]]
             then
               autoload -Uz _rbw
               compdef _rbw rbw
             fi
-          ''
-        );
+        '';
       };
 
       xdg.configFile = {
+        "zsh/termux/prompt-color.zsh".text = ''
+          typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+        '';
         "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
         "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
         "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''

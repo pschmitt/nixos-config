@@ -12,16 +12,47 @@ native_smoke_run() {
 }
 
 native_shell_check() {
-  [[ $TERMUX_NATIVE_READY == 1 ]] || return 1
+  if [[ ${TERMUX_NATIVE_READY:-} != 1 ]]
+  then
+    local generated_zshrc=missing
+    [[ -r "$ZDOTDIR/.zshrc" ]] && generated_zshrc=readable
+    print -u2 -- "The Termux-native Zsh environment is not marked ready (ZDOTDIR=$ZDOTDIR; generated zshrc=$generated_zshrc)"
+    return 1
+  fi
   if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
   then
-    [[ "$ZDOTDIR" == "$TERMUX_GENERATION/home/.config/zsh" ]] || return 1
-    [[ "$HISTFILE" == "$XDG_STATE_HOME/zsh/zhistory" ]] || return 1
-    [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" == 1 ]] || return 1
+    if [[ "$ZDOTDIR" != "$TERMUX_GENERATION/home/.config/zsh" ]]
+    then
+      print -u2 -- 'The managed Zsh is not using its active generation config directory'
+      return 1
+    fi
+    if [[ "$HISTFILE" != "$XDG_STATE_HOME/zsh/zhistory" ]]
+    then
+      print -u2 -- 'The managed Zsh history file is not under the XDG state directory'
+      return 1
+    fi
+    if [[ "${TERMUX_NATIVE_USER_PLUGINS_READY:-}" != 1 ]]
+    then
+      print -u2 -- 'The yadm Termux plugin configuration did not finish loading'
+      return 1
+    fi
   fi
   if (( $+functions[zinit] || $+aliases[zinit] ))
   then
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
+    return 1
+  fi
+  if (( ! $+galiases[DN] || ! $+galiases[L] || ! $+galiases[J] ))
+  then
+    print -u2 -- 'The Termux global aliases are not loaded'
+    return 1
+  fi
+  local prompt_color_file="$TERMUX_GENERATION/home/.config/zsh/termux/prompt-color.zsh"
+  local prompt_color_token="%F{${host_color:-}}"
+  if [[ ! -r "$prompt_color_file" || -z "${host_color:-}" ||
+        "${POWERLEVEL9K_CONTEXT_TEMPLATE:-}" != *"$prompt_color_token"* ]]
+  then
+    print -u2 -- 'The Termux prompt is not using the Nix-configured dotfiles.promptColor'
     return 1
   fi
   local required

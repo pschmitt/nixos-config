@@ -44,7 +44,7 @@ native_check_pty() {
   script="
     stty -echo
     stty rows 24 cols 80
-    source ${(q)PREFIX}/etc/zshenv || exit 1
+    source ${(q)generation}/zshenv || exit 1
     source \$ZDOTDIR/.zshenv || exit 1
     if [[ -o login && -r \$ZDOTDIR/.zprofile ]]
     then
@@ -97,7 +97,7 @@ native_check_no_plugins() {
   script="
     stty -echo
     stty rows 24 cols 80
-    source ${(q)PREFIX}/etc/zshenv || exit 1
+    source ${(q)generation}/zshenv || exit 1
     source \$ZDOTDIR/.zshenv || exit 1
     if [[ -o login && -r \$ZDOTDIR/.zprofile ]]
     then
