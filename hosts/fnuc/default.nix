@@ -4,6 +4,7 @@
     ../../profiles/specializations/homelab-server
 
     ../../services/browser-mcp-chromium-container.nix
+    ../../services/hrworks-browser-backends.nix
     ../../services/codex-ha-bridge.nix
     ../../services/go-hass-agent.nix
     ../../services/harmonia.nix
