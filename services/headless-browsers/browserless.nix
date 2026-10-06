@@ -1,7 +1,7 @@
 { config, ... }:
 let
   hosts = config.domains.meshHosts "browserless";
-  autheliaConfig = import "../authelia-nginx-config.nix" {
+  autheliaConfig = import ../authelia-nginx-config.nix {
     inherit config;
     haIngressBypass = false;
   };

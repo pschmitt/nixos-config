@@ -5,7 +5,7 @@
 let
   hosts = config.domains.meshHosts "steel";
   dataDir = "/var/lib/steel";
-  autheliaConfig = import "../authelia-nginx-config.nix" {
+  autheliaConfig = import ../authelia-nginx-config.nix {
     inherit config;
     haIngressBypass = false;
   };
