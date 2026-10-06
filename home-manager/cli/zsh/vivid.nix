@@ -21,6 +21,8 @@ in
   programs.vivid = {
     enable = true;
     activeTheme = "one-dark";
+    # LS_COLORS comes from the build-time init file below, not a startup fork.
+    enableZshIntegration = false;
     package = lib.mkIf termuxMode null;
   };
 
@@ -34,7 +36,7 @@ in
     else
       ''
         # vivid
-        export LS_COLORS="$(cat ${vividColors}/ls_colors)"
+        source ${vividInitFile}
       ''
   );
 

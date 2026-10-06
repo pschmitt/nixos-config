@@ -5,7 +5,7 @@
   programs.zsh.initContent = lib.mkOrder 1450 ''
     if [[ -o interactive ]]
     then
-      if [[ "$(os-release::kind)" == fedora && -r /etc/profile.d/vte.sh ]]
+      if is_fedora && [[ -r /etc/profile.d/vte.sh ]]
       then
         () {
           local TERM=xterm VTE_VERSION=99999

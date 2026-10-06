@@ -19,7 +19,7 @@
             AUTO_REMOVE_SLASH \
             RC_QUOTES
         fi
-        mkdir -p -- "${config.xdg.stateHome}/zsh"
+        [[ -d "${config.xdg.stateHome}/zsh" ]] || mkdir -p -- "${config.xdg.stateHome}/zsh"
         typeset -gA CUSTOM_COMPS CUSTOM_COMPS_STATIC
         autoload -Uz colors && colors
         zmodload zsh/terminfo zsh/zpty 2>/dev/null

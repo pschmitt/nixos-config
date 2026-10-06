@@ -1,7 +1,7 @@
 { lib, ... }:
 {
   programs.zsh.initContent = lib.mkOrder 1150 ''
-    case "$(os-release::kind)" in
+    case "$__OS_KIND" in
       nixos)
         alias y='nix search nixpkgs'
         alias ync='nix-shell --packages'

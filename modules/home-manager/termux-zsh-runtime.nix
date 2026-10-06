@@ -38,7 +38,7 @@
       fi
 
       export XDG_DATA_DIRS="$PREFIX/share:''${XDG_DATA_DIRS:-/usr/share}"
-      mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
+      [[ -d ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"} ]] || mkdir -p -- ${lib.escapeShellArg "${config.xdg.cacheHome}/zsh"}
       export ZSH_COMPDUMP=${lib.escapeShellArg "${config.xdg.cacheHome}/zsh/zcompdump-termux"}-''${TERMUX_GENERATION:t}
 
       # Match the regular yadm .zshenv while keeping private overrides at runtime.
