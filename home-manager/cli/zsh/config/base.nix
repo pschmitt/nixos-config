@@ -7,14 +7,15 @@
       "AUTOCD"
       "EXTENDED_GLOB"
       "INTERACTIVE_COMMENTS"
-      "NO_CLOBBER"
       "AUTO_PARAM_SLASH"
       "AUTO_REMOVE_SLASH"
-      "RC_QUOTES"
     ];
 
     initContent = lib.mkMerge [
       (lib.mkOrder 500 ''
+        # Script-visible behaviour: keep it out of `ssh host cmd` and zhj,
+        # which also load this file (the yadm zhj never set these).
+        [[ -o interactive ]] && setopt NO_CLOBBER RC_QUOTES
         mkdir -p -- "${config.xdg.stateHome}/zsh"
         typeset -gA CUSTOM_COMPS CUSTOM_COMPS_STATIC
         autoload -Uz colors && colors
