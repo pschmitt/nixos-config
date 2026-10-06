@@ -340,9 +340,13 @@ fn print_generations(status: &GenerationStatus) {
     }
 }
 
-pub fn status(json: bool) -> Result<()> {
+pub fn status(all: bool, json: bool) -> Result<()> {
     let status = inspect_generations(&termux_generation_root()?)?;
-    print_generation_status(&status, json)
+    print_generation_status(&status, json)?;
+    if all && !json {
+        print_generations(&status);
+    }
+    Ok(())
 }
 
 pub fn generations() -> Result<()> {

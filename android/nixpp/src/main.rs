@@ -48,6 +48,9 @@ enum Command {
     },
     /// Show the active generation and installed generation IDs.
     Status {
+        /// Show every retained generation.
+        #[arg(long)]
+        all: bool,
         /// Print machine-readable JSON.
         #[arg(long)]
         json: bool,
@@ -83,7 +86,7 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(&flake, &builder, &public_key),
-        Command::Status { json } => nixpp::status(json),
+        Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
     }
 }
