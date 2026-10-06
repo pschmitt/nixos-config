@@ -460,8 +460,10 @@ yadm runtime sourcing for private configuration and local plugin files; local
 Zsh plugins remain yadm-managed.
 At shell startup, `zshenv` resolves the `current` symlink to an immutable
 generation path, ignoring a stale generation inherited from the previous
-shell. An already-running shell keeps using the generation it started with
-after a later activation. Powerlevel10k's instant prompt loads early and
+shell. It also refreshes Home Manager session variables when that generation
+changes, without resetting overrides in same-generation nested shells. An
+already-running shell keeps using the generation it started with after a later
+activation. Powerlevel10k's instant prompt loads early and
 respects the existing prompt-plugin skip flags. User-specific OS plugin files
 remain outside the bundle. The native shell sources the regular yadm aliases,
 helper library, named directories, and interactive startup snippet directly
@@ -638,3 +640,12 @@ instead of inheriting a stale generation. Bundle
 the login smoke check on the Zenfone 10 and Mi Pad 4. New shells on both also
 selected the updated generation when started with a stale inherited value;
 cold app relaunch returned to the managed prompt without plugin downloads.
+
+On 2026-10-06, Termux's fixed Zsh preferences moved to Home Manager
+`sessionVariables`, and the Nvim wrapper became a generated Zsh function so
+it does not shadow a yadm-managed `nvim()` function. The native zshenv now
+refreshes Home Manager's session-variable marker only when the active
+generation changes. Bundle
+`465d904cedd595790b5367c63f4de6a99637871424e8529d897ac56de07cc90a` built on
+rofl-13; visible-app bootstrap, interactive smoke, no-plugin check, and cold
+relaunch passed on the Zenfone 10 and Mi Pad 4. APT made no package changes.

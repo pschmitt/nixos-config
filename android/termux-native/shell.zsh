@@ -2,6 +2,9 @@
 
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
 
+# This Nix-generated file defines the generation-aware nvim function.
+source "$ZDOTDIR/custom/os/home-manager/system.zsh"
+
 # Reuse selected yadm startup files as runtime inputs. Keep them in the user's
 # home; none of these private files are copied into the public bundle.
 typeset -g _native_profile_zdotdir="$ZDOTDIR"

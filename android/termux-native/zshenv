@@ -20,6 +20,15 @@ fi
 export TERMUX_GENERATION
 export ZDOTDIR
 
+# A child shell inherits Home Manager's session-vars-loaded marker. Clear it
+# only when the resolved generation changes so login shells load that
+# generation's variables while same-generation subshells preserve overrides.
+if [[ "${TERMUX_NATIVE_SESSION_VARS_GENERATION:-}" != "$TERMUX_GENERATION" ]]
+then
+  unset __HM_ZSH_SESS_VARS_SOURCED
+  export TERMUX_NATIVE_SESSION_VARS_GENERATION="$TERMUX_GENERATION"
+fi
+
 typeset -U path
 path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
 
