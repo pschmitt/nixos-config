@@ -7,7 +7,7 @@ let
     haIngressBypass = false;
   };
 
-  browserVhost = port: hosts: uiPath: {
+  browserVhost = port: hosts: rewriteSteelEndpoint: {
     ${builtins.head hosts} = {
       serverAliases = builtins.tail hosts;
       enableACME = true;
@@ -15,21 +15,35 @@ let
       forceSSL = true;
       extraConfig = autheliaConfig.server;
 
-      locations."= /".extraConfig = "return 302 ${uiPath};";
-
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString port}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location + ''
-          proxy_read_timeout 3600s;
-          proxy_send_timeout 3600s;
-        '';
+        extraConfig =
+          autheliaConfig.location
+          + ''
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+          ''
+          + (
+            if rewriteSteelEndpoint then
+              ''
+                # Steel advertises its internal loopback address in UI session responses.
+                # Rewrite it to the hostname the browser used, including the TLS scheme.
+                proxy_set_header Accept-Encoding "";
+                sub_filter_types application/json;
+                sub_filter_once off;
+                sub_filter "ws://127.0.0.1:3002" "wss://$http_host";
+                sub_filter "http://127.0.0.1:3002" "https://$http_host";
+              ''
+            else
+              ""
+          );
       };
     };
   };
 in
 {
   services.nginx.virtualHosts =
-    (browserVhost 3001 browserlessHosts "/debugger/") // (browserVhost 3002 steelHosts "/ui");
+    (browserVhost 3001 browserlessHosts false) // (browserVhost 3002 steelHosts true);
 }
