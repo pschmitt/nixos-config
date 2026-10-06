@@ -47,7 +47,6 @@ androidPkgs.extend (
         licenseFile ? null,
       }:
       pkgs.callPackage ./go-binary.nix {
-        targetCC = target.cc;
         inherit
           package
           binary
@@ -114,25 +113,6 @@ androidPkgs.extend (
         package = pkgs.callPackage ../emoji-fzf {
           python3 = pkgs.python312;
         };
-        python = pkgs.python312;
-      };
-
-      jc = pythonApplication {
-        package = pkgs.jc;
-      };
-
-      obs-cli =
-        let
-          obsCliPackages = inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system};
-        in
-        withAptPackages (pythonApplication {
-          package = obsCliPackages.obs-cli;
-          python = pkgs.python312;
-          extraRuntimePackages = obsCliPackages.obsws-python.propagatedBuildInputs;
-        }) [ "python" ];
-
-      slack-react = pythonApplication {
-        package = inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.default;
         python = pkgs.python312;
       };
 
