@@ -199,6 +199,10 @@ androidPkgs.extend (
         skipPostInstall = true;
       };
 
+      tmux-slay = pkgs.callPackage ./tmux-slay.nix { inherit inputs; };
+
+      tmux-xpanes = pkgs.callPackage ./tmux-xpanes.nix { inherit inputs; };
+
       rbw = withAptPackages inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-termux [
         "ca-certificates"
       ];

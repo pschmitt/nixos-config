@@ -64,6 +64,10 @@ libraries from the Android runtime closure; missing or conflicting
 dependencies fail the build.
 Stripping uses the selected Android derivation's target `objcopy`, so these
 exports do not need a separate host LLVM tool just for ELF stripping.
+Portable upstream shell tools use `shell-script.nix`: it stages the script,
+rewrites explicit interpreter paths to Termux, ships optional completion/man
+files, and records the APT runtime dependencies. `tmux-slay` and `xpanes` use
+this adapter; their user-specific Zsh integrations remain yadm-managed.
 By default, the adapter preserves upstream package hooks and outputs. The
 exporter selects only declared runtime files, removes Nix RPATHs, resolves
 shared libraries from the Android runtime closure, and cleans ELF metadata for

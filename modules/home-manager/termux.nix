@@ -36,6 +36,8 @@ in
     ../../home-manager/cli/zsh/tools/termux/rbw.nix
     ../../home-manager/cli/zsh/tools/termux/slack-react.nix
     ../../home-manager/cli/zsh/tools/termux/termux-tools.nix
+    ../../home-manager/cli/zsh/tools/termux/tmux-slay.nix
+    ../../home-manager/cli/zsh/tools/termux/tmux-xpanes.nix
     ../../home-manager/cli/zsh/tools/termux/udocker.nix
     ../../home-manager/cli/zsh/vivid.nix
     ../../home-manager/cli/zsh/zoxide.nix
@@ -67,6 +69,10 @@ in
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
+        ".config/zsh/completions/_tmux-slay"
+        ".config/tmux/bin/xpanes"
+        ".config/zsh/completions/_xpanes"
+        ".local/share/man/man1/xpanes.1"
         ".config/zsh/completions/_ipmi"
         ".config/zsh/completions/_jc"
         ".config/zsh/completions/_kubectl"
