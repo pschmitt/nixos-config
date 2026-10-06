@@ -73,6 +73,18 @@ if [[ -o login && -r "$ZDOTDIR/.zprofile" ]]
 then
   source "$ZDOTDIR/.zprofile" || exit 1
 fi
+termux-native-run-smoke() {
+  precmd_functions=(${precmd_functions:#termux-native-run-smoke})
+  source "${TERMUX_GENERATION}/shell/smoke-test.zsh"
+  local smoke_status=$?
+  print -r -- "NATIVE_TEST_DONE:NONCE:$smoke_status"
+  exit "$smoke_status"
+}
+termux-native-smoke-after-plugins() {
+  precmd_functions+=(termux-native-run-smoke)
+}
+typeset -ga zsh_after_local_plugins
+zsh_after_local_plugins+=(termux-native-smoke-after-plugins)
 if [[ -o interactive && -r "$ZDOTDIR/.zshrc" ]]
 then
   source "$ZDOTDIR/.zshrc" || exit 1
@@ -81,10 +93,6 @@ if [[ -o login && -r "$ZDOTDIR/.zlogin" ]]
 then
   source "$ZDOTDIR/.zlogin" || exit 1
 fi
-source "${TERMUX_GENERATION}/shell/smoke-test.zsh"
-smoke_status=$?
-print -r -- 'NATIVE_TEST_DONE:NONCE:'$smoke_status
-exit $smoke_status
 EOF
   } >| "$startup_script" || return
   startup_script=${startup_script:A}
@@ -94,7 +102,6 @@ EOF
     "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "TERMUX_RUN_MODE=ci" \
-    "ZSH_SYNC_LOCAL_PLUGINS=1" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
   )
   if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
