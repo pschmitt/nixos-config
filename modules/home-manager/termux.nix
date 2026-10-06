@@ -56,6 +56,11 @@ in
         ".config/zsh/.zprofile"
         ".config/zsh/.zshenv"
         ".config/zsh/.zshrc"
+        ".config/zsh/termux/atuin-init.zsh"
+        ".config/zsh/termux/direnv-init.zsh"
+        ".config/zsh/termux/fzf-init.zsh"
+        ".config/zsh/termux/zoxide-init.zsh"
+        ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
@@ -144,7 +149,6 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
-        setOptions = [ "RC_QUOTES" ];
         initContent = lib.mkAfter ''
           alias -g DN='&> /dev/null' L='| less' J='| jq'
           ${builtins.readFile ../../android/termux-native/shell.zsh}

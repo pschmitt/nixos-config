@@ -415,10 +415,15 @@ the other utilities, including `direnv`, `fzf`, `zoxide`, Atuin, tmux, Neovim,
 and Zsh. The `jc`,
 `obs-cli`, and `slack-react` utilities are pure Python apps that Termux APT does
 not provide, so the bundle ships their Python sources and runs them with
-Termux's APT-managed Python. Shared
-Zsh modules generate Termux runtime hooks for Atuin, direnv, fzf, vivid, and
-zoxide; `shell.zsh` sources that generated file instead of carrying duplicate
-hook definitions. Use APT for packages Termux provides: APT owns the package
+Termux's APT-managed Python. Zsh modules generate the Atuin, direnv, fzf, and
+zoxide initialization snippets and vivid color value while building the
+bundle. The Termux shell sources these fixed generated files; it does not run
+each tool's `init` or `generate` subcommand at every startup. Static Zsh
+preferences are declared through Home Manager's `programs.zsh` options.
+Runtime code remains for behavior that depends on live terminal or shell
+state, such as terminfo key bindings and loading yadm-managed local plugins.
+Local plugin files stay in the user's yadm configuration and are not copied
+into the Nix bundle. Use APT for packages Termux provides: APT owns the package
 and resolves dependencies such as OpenSSL, ncurses, libevent,
 libandroid-support, libandroid-glob, and utf8proc. Do not download or extract
 Termux `.deb` files or copy their dependency libraries into Nix generations.
@@ -583,6 +588,16 @@ relaunch, both devices returned to the managed Zsh prompt. The generation
 archive contains no copied Termux `.deb` files or APT-owned runtime libraries.
 The activation probe now matches a complete CR-terminated numeric result and
 closes each interactive PTY child once; it passed on both devices.
+
+On 2026-10-06, Zsh startup stopped invoking Atuin, direnv, fzf, vivid, and
+zoxide initialization commands on Termux. Their generated snippets are part of
+the bundle, with no Nix store object references in the shipped home tree. Static shell
+preferences now use Home Manager options. The updated bundle
+`96fb6507c4ff55a0792814440171b55a1df9859641b9bf8d27f68352d298f225` built on
+rofl-13 and passed interactive smoke and no-plugin-download checks through the
+visible Termux app on the Zenfone 10 and Mi Pad 4. After force-stop and cold
+relaunch, both returned to their managed prompts. Existing local plugins
+continue to load from yadm-managed files.
 
 On 2026-10-05, the profile added `obs-cli` because Termux APT does not provide
 it. The bundle ships its pure Python modules, including the explicit

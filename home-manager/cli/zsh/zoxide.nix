@@ -20,7 +20,7 @@ in
     if termuxMode then
       ''
         # zoxide
-        eval "$(zoxide init zsh --no-cmd)"
+        source "$TERMUX_GENERATION/home/.config/zsh/termux/zoxide-init.zsh"
         alias z=__zoxide_z
         alias zz=__zoxide_zi
       ''
@@ -32,4 +32,7 @@ in
         alias zz=__zoxide_zi
       ''
   );
+
+  xdg.configFile."zsh/termux/zoxide-init.zsh".source =
+    lib.mkIf termuxMode "${zoxideInitFile}/init.zsh";
 }

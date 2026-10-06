@@ -20,7 +20,7 @@ in
     if termuxMode then
       ''
         # fzf
-        eval "$(fzf --zsh)"
+        source "$TERMUX_GENERATION/home/.config/zsh/termux/fzf-init.zsh"
       ''
     else
       ''
@@ -28,4 +28,6 @@ in
         source ${fzfInitFile}/init.zsh
       ''
   );
+
+  xdg.configFile."zsh/termux/fzf-init.zsh".source = lib.mkIf termuxMode "${fzfInitFile}/init.zsh";
 }

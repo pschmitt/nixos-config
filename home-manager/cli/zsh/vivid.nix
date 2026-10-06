@@ -6,9 +6,13 @@
 }:
 let
   termuxMode = config.termux.enable or false;
+  activeTheme = if termuxMode then "catppuccin-mocha" else config.programs.vivid.activeTheme;
   vividColors = pkgs.runCommand "vivid-generate" { } ''
     mkdir -p $out
-    ${pkgs.vivid}/bin/vivid generate ${config.programs.vivid.activeTheme} > $out/ls_colors
+    ${pkgs.vivid}/bin/vivid generate ${activeTheme} > $out/ls_colors
+  '';
+  vividInitFile = pkgs.runCommand "vivid-zsh-init" { } ''
+    printf 'export LS_COLORS=%q\\n' "$(<${vividColors}/ls_colors)" > $out
   '';
 in
 {
@@ -24,7 +28,7 @@ in
     if termuxMode then
       ''
         # vivid
-        export LS_COLORS="$(vivid generate ${config.programs.vivid.activeTheme})"
+        source "$TERMUX_GENERATION/home/.config/zsh/termux/vivid.zsh"
         zstyle ':completion:*:default' list-colors "''${(s.:.)LS_COLORS}"
       ''
     else
@@ -33,4 +37,6 @@ in
         export LS_COLORS="$(cat ${vividColors}/ls_colors)"
       ''
   );
+
+  xdg.configFile."zsh/termux/vivid.zsh".source = lib.mkIf termuxMode vividInitFile;
 }

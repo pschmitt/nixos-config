@@ -9,6 +9,10 @@ let
   direnvInitFile = pkgs.runCommand "direnv-init" { } ''
     mkdir -p $out
     ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
+    ${lib.optionalString termuxMode ''
+      substituteInPlace $out/init.zsh \
+        --replace-fail '"${pkgs.direnv}/bin/direnv"' direnv
+    ''}
   '';
 in
 {
@@ -26,7 +30,7 @@ in
     if termuxMode then
       ''
         # direnv
-        eval "$(direnv hook zsh)"
+        source "$TERMUX_GENERATION/home/.config/zsh/termux/direnv-init.zsh"
         export DIRENV_LOG_FORMAT=
       ''
     else
@@ -35,4 +39,7 @@ in
         source ${direnvInitFile}/init.zsh
       ''
   );
+
+  xdg.configFile."zsh/termux/direnv-init.zsh".source =
+    lib.mkIf termuxMode "${direnvInitFile}/init.zsh";
 }

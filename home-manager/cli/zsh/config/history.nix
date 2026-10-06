@@ -1,6 +1,12 @@
 { config, ... }:
 {
   programs.zsh = {
+    setOptions = [
+      "HIST_REDUCE_BLANKS"
+      "HIST_VERIFY"
+      "APPEND_HISTORY"
+    ];
+
     history = {
       path = "${config.xdg.stateHome}/zsh/zhistory";
       size = 10000;
@@ -20,7 +26,6 @@
     };
     initContent = ''
       mkdir -p -- "${config.xdg.stateHome}/zsh"
-      setopt HIST_REDUCE_BLANKS HIST_VERIFY APPEND_HISTORY RC_QUOTES
     '';
   };
 }

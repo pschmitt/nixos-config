@@ -46,9 +46,11 @@ in
       + lib.optionalString termuxMode ''
         # Atuin shares this timestamp between its preexec and precmd hooks.
         typeset -g __atuin_preexec_time
-        eval "$(atuin init --disable-ctrl-r --disable-up-arrow zsh)"
+        source "$TERMUX_GENERATION/home/.config/zsh/termux/atuin-init.zsh"
         bindkey '^[r' _atuin_search_widget
       ''
     );
   };
+
+  xdg.configFile."zsh/termux/atuin-init.zsh".source = lib.mkIf termuxMode "${atuinInitFile}/init.zsh";
 }
