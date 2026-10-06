@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -16,9 +15,6 @@ let
     "linkding"
     "linkding-media-archiver"
   ];
-  mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
-    inherit config lib pkgs;
-  };
 in
 {
   sops.secrets."compose/linkding/media-archiver-token" = config.sops.mkHostSecret {
@@ -29,21 +25,19 @@ in
     LDMA_TOKEN=${config.sops.placeholder."compose/linkding/media-archiver-token"}
   '';
 
-  systemd.services =
-    mkMeshPortForwards { linkding = linkdingPort; }
-    // lib.genAttrs units (unit: {
-      requires = [ "rofl-10-container-networks.service" ];
-      after = [ "rofl-10-container-networks.service" ];
-      restartIfChanged = true;
-      restartTriggers =
-        if unit == "${backend}-linkding" then [ linkdingVersion ] else [ mediaArchiverVersion ];
-      # The archiver exits while linkding's API is still coming up after the
-      # container starts; the default 100ms restart delay burned through
-      # the start limit before linkding was ready, leaving it failed on boot.
-      serviceConfig = lib.optionalAttrs (unit == "${backend}-linkding-media-archiver") {
-        RestartSec = "10s";
-      };
-    });
+  systemd.services = lib.genAttrs units (unit: {
+    requires = [ "rofl-10-container-networks.service" ];
+    after = [ "rofl-10-container-networks.service" ];
+    restartIfChanged = true;
+    restartTriggers =
+      if unit == "${backend}-linkding" then [ linkdingVersion ] else [ mediaArchiverVersion ];
+    # The archiver exits while linkding's API is still coming up after the
+    # container starts; the default 100ms restart delay burned through
+    # the start limit before linkding was ready, leaving it failed on boot.
+    serviceConfig = lib.optionalAttrs (unit == "${backend}-linkding-media-archiver") {
+      RestartSec = "10s";
+    };
+  });
 
   services.containerServices.services.linkding = {
     port = linkdingPort;

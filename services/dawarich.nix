@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -20,9 +19,6 @@ let
     "dawarich-redis"
     "dawarich-sidekiq"
   ];
-  mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
-    inherit config lib pkgs;
-  };
 in
 {
   sops.secrets."compose/dawarich/database-password" = config.sops.mkHostSecret {
@@ -45,25 +41,23 @@ in
     '';
   };
 
-  systemd.services =
-    mkMeshPortForwards { dawarich = dawarichPort; }
-    // lib.genAttrs units (unit: {
-      requires = [ "rofl-10-container-networks.service" ];
-      after = [ "rofl-10-container-networks.service" ];
-      restartIfChanged = true;
-      restartTriggers =
-        if
-          builtins.elem unit [
-            "${backend}-dawarich"
-            "${backend}-dawarich-sidekiq"
-          ]
-        then
-          [ dawarichVersion ]
-        else if unit == "${backend}-dawarich-postgres" then
-          [ postgisVersion ]
-        else
-          [ redisVersion ];
-    });
+  systemd.services = lib.genAttrs units (unit: {
+    requires = [ "rofl-10-container-networks.service" ];
+    after = [ "rofl-10-container-networks.service" ];
+    restartIfChanged = true;
+    restartTriggers =
+      if
+        builtins.elem unit [
+          "${backend}-dawarich"
+          "${backend}-dawarich-sidekiq"
+        ]
+      then
+        [ dawarichVersion ]
+      else if unit == "${backend}-dawarich-postgres" then
+        [ postgisVersion ]
+      else
+        [ redisVersion ];
+  });
 
   services.containerServices.services.dawarich = {
     port = dawarichPort;

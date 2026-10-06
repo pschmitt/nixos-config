@@ -19,9 +19,6 @@ let
   ];
   serverAliases = lib.remove primaryHost hostnames;
   wildcardCert = "wildcard.${domain}";
-  mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
-    inherit config lib pkgs;
-  };
 in
 {
   # The existing Compose data tree is owned by numeric GID 1000. Give that
@@ -138,17 +135,15 @@ in
   };
 
   systemd.services =
-    mkMeshPortForwards { nextcloud = nextcloudPort; }
-    //
-      lib.genAttrs
-        [
-          "nextcloud-setup"
-          "nextcloud-cron"
-          "nextcloud-update-db"
-          "phpfpm-nextcloud"
-        ]
-        (_: {
-          requires = [ "mnt-data.mount" ];
-          after = [ "mnt-data.mount" ];
-        });
+    lib.genAttrs
+      [
+        "nextcloud-setup"
+        "nextcloud-cron"
+        "nextcloud-update-db"
+        "phpfpm-nextcloud"
+      ]
+      (_: {
+        requires = [ "mnt-data.mount" ];
+        after = [ "mnt-data.mount" ];
+      });
 }

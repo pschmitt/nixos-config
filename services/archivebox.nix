@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -23,9 +22,6 @@ let
     "archivebox-pihole"
     "archivebox-sonic"
   ];
-  mkMeshPortForwards = import ./mk-mesh-port-forwards.nix {
-    inherit config lib pkgs;
-  };
 in
 {
   sops.secrets = {
@@ -56,25 +52,23 @@ in
     '';
   };
 
-  systemd.services =
-    mkMeshPortForwards { archivebox = archiveboxPort; }
-    // lib.genAttrs units (unit: {
-      requires = [ "rofl-10-container-networks.service" ];
-      after = [ "rofl-10-container-networks.service" ];
-      restartIfChanged = true;
-      restartTriggers =
-        if
-          builtins.elem unit [
-            "${backend}-archivebox"
-            "${backend}-archivebox-scheduler"
-          ]
-        then
-          [ archiveboxVersion ]
-        else if unit == "${backend}-archivebox-pihole" then
-          [ piholeVersion ]
-        else
-          [ sonicVersion ];
-    });
+  systemd.services = lib.genAttrs units (unit: {
+    requires = [ "rofl-10-container-networks.service" ];
+    after = [ "rofl-10-container-networks.service" ];
+    restartIfChanged = true;
+    restartTriggers =
+      if
+        builtins.elem unit [
+          "${backend}-archivebox"
+          "${backend}-archivebox-scheduler"
+        ]
+      then
+        [ archiveboxVersion ]
+      else if unit == "${backend}-archivebox-pihole" then
+        [ piholeVersion ]
+      else
+        [ sonicVersion ];
+  });
 
   services.containerServices.services.archivebox = {
     port = archiveboxPort;
