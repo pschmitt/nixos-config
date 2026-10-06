@@ -30,5 +30,14 @@ in
         }
       fi
     '')
+    # Share the yadm-managed prompt config; Termux sources it from shell.zsh.
+    (lib.mkIf (!termuxMode) (
+      lib.mkOrder 891 ''
+        if zsh::prompt-plugins-enabled && [[ -r "${config.xdg.configHome}/zsh/p10k.zsh" ]]
+        then
+          zsh::source-plugin "${config.xdg.configHome}/zsh/p10k.zsh"
+        fi
+      ''
+    ))
   ];
 }
