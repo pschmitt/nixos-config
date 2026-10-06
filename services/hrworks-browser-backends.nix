@@ -7,13 +7,15 @@ let
     haIngressBypass = false;
   };
 
-  browserVhost = port: hosts: {
+  browserVhost = port: hosts: uiPath: {
     ${builtins.head hosts} = {
       serverAliases = builtins.tail hosts;
       enableACME = true;
       acmeRoot = null;
       forceSSL = true;
       extraConfig = autheliaConfig.server;
+
+      locations."= /".extraConfig = "return 302 ${uiPath};";
 
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString port}";
@@ -29,5 +31,5 @@ let
 in
 {
   services.nginx.virtualHosts =
-    (browserVhost 3001 browserlessHosts) // (browserVhost 3002 steelHosts);
+    (browserVhost 3001 browserlessHosts "/debugger/") // (browserVhost 3002 steelHosts "/ui");
 }
