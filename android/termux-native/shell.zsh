@@ -2,10 +2,6 @@
 
 mkdir -p "$XDG_CACHE_HOME/termux-native/${TERMUX_GENERATION:t}"
 
-# These are the shared Home Manager Zsh integrations. In Termux mode they call
-# the package-manager-provided commands instead of baking Linux store paths in.
-source "$ZDOTDIR/custom/os/home-manager/system.zsh"
-
 # Reuse selected yadm startup files as runtime inputs. Keep them in the user's
 # home; none of these private files are copied into the public bundle.
 typeset -g _native_profile_zdotdir="$ZDOTDIR"

@@ -88,6 +88,12 @@ let
 in
 {
   programs.zsh = {
+    shellAliases = {
+      irssi = "irssi --config=$XDG_CONFIG_HOME/irssi/config --home=$XDG_DATA_HOME/irssi";
+      mc = "mc --config-dir $XDG_CONFIG_HOME/mc";
+      tmux = "tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf";
+    };
+
     envExtra = lib.mkBefore ''
       zsh::xdg-export() {
         local name="$1" value="$2"
@@ -103,9 +109,6 @@ in
   };
 
   programs.zsh.initContent = ''
-    alias irssi="irssi --config=$XDG_CONFIG_HOME/irssi/config --home=$XDG_DATA_HOME/irssi"
-    alias mc="mc --config-dir $XDG_CONFIG_HOME/mc"
-    alias tmux="tmux -f $XDG_CONFIG_HOME/tmux/tmux.conf"
     (( $+commands[synergys] )) && alias synergys="synergys -c $XDG_CONFIG_HOME/synergy/synergy.conf"
     (( $+commands[gcalcli] )) && alias gcalcli="gcalcli --config-folder $XDG_DATA_HOME/gcalcli"
   '';

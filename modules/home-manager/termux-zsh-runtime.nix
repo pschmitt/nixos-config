@@ -24,11 +24,6 @@
 
     fpath=("$ZDOTDIR/completions" $fpath)
 
-    typeset -gA DOMAINS
-    DOMAINS[main]=${lib.escapeShellArg config.domains.main}
-    DOMAINS[netbird]=${lib.escapeShellArg config.domains.netbird}
-    DOMAINS[tailscale]=${lib.escapeShellArg config.domains.tailscale}
-
     if [[ -z "''${NETWORK_LOCATION:-}" && -r ${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"} ]]
     then
       NETWORK_LOCATION="$(<${lib.escapeShellArg "${config.xdg.cacheHome}/network-location.txt"})"

@@ -62,7 +62,6 @@ in
         ".config/zsh/termux/zoxide-init.zsh"
         ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
-        ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
         ".config/zsh/completions/_ipmi"
         ".config/zsh/completions/_jc"
@@ -149,6 +148,10 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
+        shellAliases = {
+          nvim = lib.mkForce ''XDG_CONFIG_HOME="$TERMUX_GENERATION/home/.config" command nvim'';
+          tmux = lib.mkForce ''command tmux -f "$TERMUX_GENERATION/home/.config/tmux/tmux.conf"'';
+        };
         initContent = lib.mkAfter ''
           ${builtins.readFile ../../android/termux-native/shell.zsh}
 
@@ -166,17 +169,6 @@ in
         '';
         "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
         "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
-        "zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-          # These generated configs live in the active profile generation. Keep
-          # the user's real $HOME/.config tree, including yadm-managed files, intact.
-          function nvim() {
-            XDG_CONFIG_HOME="$TERMUX_GENERATION/home/.config" command nvim "$@"
-          }
-
-          function tmux() {
-            command tmux -f "$TERMUX_GENERATION/home/.config/tmux/tmux.conf" "$@"
-          }
-        '';
       };
     }
     (lib.mkIf (config.termux.enable && config.programs.zsh.enable) {
