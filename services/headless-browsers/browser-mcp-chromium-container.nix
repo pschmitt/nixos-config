@@ -41,7 +41,7 @@ let
   );
 in
 {
-  imports = [ ./http.nix ];
+  imports = [ ../http.nix ];
 
   systemd.tmpfiles.rules = [
     "d ${dataDir} 0750 ${toString puid} ${toString pgid} - -"
