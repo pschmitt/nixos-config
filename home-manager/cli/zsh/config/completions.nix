@@ -19,6 +19,26 @@
       then
         autoload -Uz compaudit compinit
         () {
+          # Reuse the dump (compinit -C skips compaudit and the function scan)
+          # while fpath is unchanged -- store paths change on every rebuild --
+          # and no writable fpath dir is newer than the dump.
+          local dump="$ZSH_COMPDUMP" key="''${(j.:.)fpath}" saved dir fresh=0
+          if [[ -s "$dump" && -r "$dump.fpath" ]] && IFS= read -r saved < "$dump.fpath" && [[ "$saved" == "$key" ]]
+          then
+            fresh=1
+            for dir in $fpath
+            do
+              [[ "$dir" == /nix/store/* || ! "$dir" -nt "$dump" ]] && continue
+              fresh=0
+              break
+            done
+          fi
+          if (( fresh ))
+          then
+            compinit -C -d "$dump"
+            return
+          fi
+
           local audit_output audit_dir
           local -a insecure_paths
           audit_output="$(compaudit 2>/dev/null || true)"
@@ -34,6 +54,7 @@
           else
             compinit -d "$ZSH_COMPDUMP"
           fi
+          print -r -- "$key" >| "$dump.fpath"
         }
       fi
 
