@@ -6,6 +6,55 @@
 }:
 let
   termuxMode = config.termux.enable or false;
+  termuxYqo = import ./termux-yqo.nix;
+  genericYqo = ''
+    yqo() {
+      case "$(os-release::kind)" in
+        arch)
+          command yay -Qo "$@"
+          ;;
+        fedora)
+          command dnf provides "$@"
+          ;;
+        ubuntu)
+          local usage="Usage: $0 [--verbatim|-n] CMD"
+          if (( $# == 0 ))
+          then
+            print -ru2 -- "$usage"
+            return 2
+          fi
+
+          if [[ "$1" == (help|h|-h|--help) ]]
+          then
+            print -r -- "$usage"
+            return 0
+          fi
+
+          local query="$1" command_path
+          if [[ "$query" == --verbatim || "$query" == -n ]]
+          then
+            shift
+            if (( $# == 0 ))
+            then
+              print -ru2 -- 'Missing CMD'
+              return 2
+            fi
+            query="$1"
+          elif command_path="$(whence -p -- "$query" 2>/dev/null)" && [[ -n "$command_path" ]]
+          then
+            query="$command_path"
+          fi
+
+          print -r -- "Looking for: $query"
+          command dpkg -S "$query"
+          ;;
+        *)
+          command nix-env --query "$@"
+          ;;
+      esac
+    }
+  '';
+  yqoInit = if termuxMode then termuxYqo else genericYqo;
   updateAndDeploy = pkgs.writeShellApplication {
     name = "update-and-deploy";
     runtimeInputs = [
@@ -255,51 +304,7 @@ in
       }
     }
 
-    yqo() {
-      case "$(os-release::kind)" in
-        arch)
-          command yay -Qo "$@"
-          ;;
-        fedora)
-          command dnf provides "$@"
-          ;;
-        ubuntu)
-          local usage="Usage: $0 [--verbatim|-n] CMD"
-          if (( $# == 0 ))
-          then
-            print -ru2 -- "$usage"
-            return 2
-          fi
-
-          if [[ "$1" == (help|h|-h|--help) ]]
-          then
-            print -r -- "$usage"
-            return 0
-          fi
-
-          local query="$1" command_path
-          if [[ "$query" == --verbatim || "$query" == -n ]]
-          then
-            shift
-            if (( $# == 0 ))
-            then
-              print -ru2 -- 'Missing CMD'
-              return 2
-            fi
-            query="$1"
-          elif command_path="$(whence -p -- "$query" 2>/dev/null)" && [[ -n "$command_path" ]]
-          then
-            query="$command_path"
-          fi
-
-          print -r -- "Looking for: $query"
-          command dpkg -S "$query"
-          ;;
-        *)
-          command nix-env --query "$@"
-          ;;
-      esac
-    }
+    ${yqoInit}
 
     yrm() {
       local -a packages=("$@")

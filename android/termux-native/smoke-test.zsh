@@ -58,7 +58,7 @@ native_shell_check() {
   local required
   for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
     autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
-    prompt::simple prompt::reset
+    prompt::simple prompt::reset yqo
   do
     if (( ! $+functions[$required] ))
     then
