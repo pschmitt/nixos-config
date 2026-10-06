@@ -30,5 +30,17 @@ in
         }
       fi
     '')
+    # Share the yadm-managed prompt config; Termux sources it from shell.zsh.
+    # The host color comes from dotfiles.promptColor, overriding any
+    # custom/hosts/<host>/zprompt value; p10k.zsh expands it while loading.
+    (lib.mkIf (!termuxMode) (
+      lib.mkOrder 891 ''
+        if zsh::prompt-plugins-enabled && [[ -r "${config.xdg.configHome}/zsh/p10k.zsh" ]]
+        then
+          typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+          zsh::source-plugin "${config.xdg.configHome}/zsh/p10k.zsh"
+        fi
+      ''
+    ))
   ];
 }

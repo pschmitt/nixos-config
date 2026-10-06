@@ -10,6 +10,7 @@
     ./hass-vm.nix
     ./initrd-data-unlock.nix
     ./networking.nix
+    ./prompt.nix
     ./services.nix
     ./user-services.nix
     ./zsh.nix
