@@ -44,11 +44,18 @@ in
     }
 
     os-release::kind() {
-      if is_termux
-      then
+      ${lib.optionalString termuxMode ''
         print -r -- termux
         return 0
-      fi
+      ''}
+
+      ${lib.optionalString (!termuxMode) ''
+        if is_termux
+        then
+          print -r -- termux
+          return 0
+        fi
+      ''}
 
       case "$(os-release::value ID)" in
         neon|ubuntu) print -r -- ubuntu ;;
@@ -60,8 +67,15 @@ in
     }
 
     is_termux() {
-      [[ "''${TERMUX_RUN_MODE:-}" == ci ]] && return 0
-      [[ "$OSTYPE" == *android* ]] && (( $+commands[termux-info] ))
+      ${
+        if termuxMode then
+          "return 0"
+        else
+          ''
+            [[ "''${TERMUX_RUN_MODE:-}" == ci ]] && return 0
+            [[ "$OSTYPE" == *android* ]] && (( $+commands[termux-info] ))
+          ''
+      }
     }
 
     is_nixos() { os-release::is nixos || [[ -e /etc/NIXOS ]] }
@@ -216,21 +230,29 @@ in
     }
 
     yup() {
-      if is_termux
-      then
-        command pkg upgrade "$@"
-      else
-        command update-and-deploy "$@"
-      fi
+      ${
+        if termuxMode then
+          ''
+            command pkg upgrade "$@"
+          ''
+        else
+          ''
+            command update-and-deploy "$@"
+          ''
+      }
     }
 
     yupnc() {
-      if is_termux
-      then
-        command pkg upgrade -y "$@"
-      else
-        yup --flake-update --print-build-logs "$@"
-      fi
+      ${
+        if termuxMode then
+          ''
+            command pkg upgrade -y "$@"
+          ''
+        else
+          ''
+            yup --flake-update --print-build-logs "$@"
+          ''
+      }
     }
 
     yqo() {

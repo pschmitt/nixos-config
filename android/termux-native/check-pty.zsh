@@ -1,27 +1,31 @@
 native_wait_for_result() {
-  local name=$1 marker=$2 response child_status='' read_status
+  local name=$1 marker=$2 response buffer='' line result child_status='' read_status
 
-  # Read complete PTY lines and accept only the exact nonce and numeric status suffix.
+  # PTY reads can return several lines together; inspect each complete line.
   while true
   do
     response=''
     zpty -r "$name" response
     read_status=$?
-    response=${response%$'\n'}
-    response=${response%$'\r'}
-    if [[ -n "$response" ]]
-    then
-      print -r -- "$response"
-      if [[ $response == *"$marker:0" ]]
+    buffer+=$response
+    (( read_status == 0 )) || buffer+=$'\n'
+
+    while [[ "$buffer" == *$'\n'* ]]
+    do
+      line=${buffer%%$'\n'*}
+      buffer=${buffer#*$'\n'}
+      line=${line//$'\r'/}
+      [[ -n "$line" ]] && print -r -- "$line"
+
+      if [[ "$line" == *"$marker:"* ]]
       then
-        child_status=0
-        break
-      elif [[ $response == *"$marker:1" ]]
-      then
-        child_status=1
-        break
+        result=${line##*"$marker:"}
+        child_status=${result%%[^0-9]*}
+        [[ -n "$child_status" ]] && break
       fi
-    fi
+    done
+
+    [[ -n "$child_status" ]] && break
     (( read_status == 0 )) || break
   done
 
@@ -34,7 +38,7 @@ native_wait_for_result() {
 
   # The child exits after printing the marker; close its PTY exactly once here.
   zpty -d "$name" 2>/dev/null
-  (( child_status == 0 ))
+  return "$child_status"
 }
 
 native_check_pty() {

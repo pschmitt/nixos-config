@@ -1,4 +1,11 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  ...
+}:
+let
+  termuxMode = config.termux.enable or false;
+in
 {
   programs.zsh = {
     defaultKeymap = "viins";
@@ -39,14 +46,24 @@
           bindkey '^[[3^' kill-word
           ;;
         alacritty|screen-256color|xterm|xterm-256color|xterm-kitty|xterm-ghostty)
-          if is_termux
-          then
-            bindkey '^[[1~' beginning-of-line
-            bindkey '^[[4~' end-of-line
-          else
-            bindkey '^[[H' beginning-of-line
-            bindkey '^[[F' end-of-line
-          fi
+          ${
+            if termuxMode then
+              ''
+                bindkey '^[[1~' beginning-of-line
+                bindkey '^[[4~' end-of-line
+              ''
+            else
+              ''
+                if is_termux
+                then
+                  bindkey '^[[1~' beginning-of-line
+                  bindkey '^[[4~' end-of-line
+                else
+                  bindkey '^[[H' beginning-of-line
+                  bindkey '^[[F' end-of-line
+                fi
+              ''
+          }
           bindkey '^[[1;5C' forward-word
           bindkey '^[[1;5D' backward-word
           bindkey '^[[3;5~' kill-word
