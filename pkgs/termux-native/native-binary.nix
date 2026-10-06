@@ -4,6 +4,14 @@
   package,
   target ? import ./target.nix { inherit pkgs; },
   binaryPathOverride ? null,
+  binaryPaths ? null,
+  extraFiles ? [ ],
+  scripts ? [ ],
+  trees ? [ ],
+  aptPackages ? [ ],
+  aptLibraries ? [ ],
+  runtimeInputs ? [ ],
+  runtimeLibraries ? [ ],
   crossPackage ? null,
   skipPostInstall ? false,
   skipPostFixup ? false,
@@ -19,6 +27,8 @@ let
       "bin/${mainProgram}"
     else
       throw "${packageName} has no meta.mainProgram; set binary explicitly";
+  exportedBinaries = if binaryPaths == null then [ binaryPath ] else binaryPaths;
+  exportedFiles = lib.unique (exportedBinaries ++ scripts ++ extraFiles);
   androidPackages = target.pkgs.extend (
     _final: prev: {
       # Android's NDK linker is lld, but Nixpkgs' LLVM detection misses it in
@@ -57,27 +67,44 @@ let
   runtimeRoots = [
     unstripped
   ]
-  ++ map lib.getLib ((unstripped.buildInputs or [ ]) ++ (unstripped.propagatedBuildInputs or [ ]));
+  ++ map lib.getLib (
+    (unstripped.buildInputs or [ ]) ++ (unstripped.propagatedBuildInputs or [ ]) ++ runtimeInputs
+  );
   runtimeClosure = pkgs.closureInfo {
     rootPaths = lib.unique runtimeRoots;
   };
+  copyFiles = lib.concatMapStringsSep "\n" (path: ''
+    mkdir -p "$out/$(dirname ${lib.escapeShellArg path})"
+    cp ${unstripped}/${path} "$out/${path}"
+  '') exportedFiles;
+  stripBinaries = lib.concatMapStringsSep "\n" (path: ''
+    ${target.objcopy} --strip-unneeded "$out/${path}"
+  '') exportedBinaries;
 in
+assert exportedBinaries != [ ];
+assert aptLibraries == [ ] || aptPackages != [ ];
 runCommand "${lib.getName package}-termux"
   {
     nativeBuildInputs = [ targetBintools ];
     allowedReferences = [ ];
     passthru.termuxNative = {
       abi = "android-bionic";
-      files = [ binaryPath ];
-      binaries = [ binaryPath ];
+      files = exportedFiles;
+      binaries = exportedBinaries;
+      inherit
+        scripts
+        trees
+        aptPackages
+        aptLibraries
+        runtimeLibraries
+        ;
       runtimeClosure = "${runtimeClosure}/store-paths";
     };
     meta = lib.removeAttrs checkedAndroidPackage.meta [ "outputsToInstall" ] // {
-      mainProgram = builtins.baseNameOf binaryPath;
+      mainProgram = builtins.baseNameOf (builtins.head exportedBinaries);
     };
   }
   ''
-    mkdir -p "$out/$(dirname ${lib.escapeShellArg binaryPath})"
-    cp ${unstripped}/${binaryPath} "$out/${binaryPath}"
-    ${target.objcopy} --strip-unneeded "$out/${binaryPath}"
+    ${copyFiles}
+    ${stripBinaries}
   ''

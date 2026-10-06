@@ -96,6 +96,8 @@ let
             scripts = package.passthru.termuxNative.scripts or [ ];
             trees = package.passthru.termuxNative.trees or [ ];
             aptPackages = package.passthru.termuxNative.aptPackages or [ ];
+            aptLibraries = package.passthru.termuxNative.aptLibraries or [ ];
+            runtimeLibraries = package.passthru.termuxNative.runtimeLibraries or [ ];
             runtimeClosure = package.passthru.termuxNative.runtimeClosure or null;
           }) termuxNativePackages
         )

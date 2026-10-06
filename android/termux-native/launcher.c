@@ -93,9 +93,13 @@ int main(int argc, char **argv) {
 
   char package[NAME_MAX];
   char binary[PATH_MAX];
-  int fields = fscanf(config, "%254s %4095s", package, binary);
+  int use_apt_libraries = 0;
+  int fields = fscanf(config, "%254s %4095s %d", package, binary,
+                      &use_apt_libraries);
   fclose(config);
-  if (fields != 2 || !valid_component(package) ||
+  if ((fields != 2 && fields != 3) ||
+      (fields == 3 && use_apt_libraries != 0 && use_apt_libraries != 1) ||
+      !valid_component(package) ||
       !valid_binary_path(binary)) {
     return fail("invalid launcher configuration");
   }
@@ -108,21 +112,31 @@ int main(int argc, char **argv) {
   }
 
   const char *existing_library_path = getenv("LD_LIBRARY_PATH");
+  int has_existing_library_path =
+      existing_library_path != NULL && existing_library_path[0] != '\0';
+  const char *prefix = getenv("PREFIX");
+  if (prefix == NULL || prefix[0] == '\0') {
+    prefix = "/data/data/com.termux/files/usr";
+  }
   size_t library_path_size = strlen(generation) * 2 + strlen(package) * 2 +
                              sizeof("/native//lib:/native//lib64") + 1;
-  if (existing_library_path != NULL) {
+  if (use_apt_libraries) {
+    library_path_size += strlen(prefix) + sizeof(":/lib");
+  }
+  if (has_existing_library_path) {
     library_path_size += strlen(existing_library_path) + 1;
   }
   char *library_path = malloc(library_path_size);
   if (library_path == NULL) {
     return fail("out of memory");
   }
-  written = snprintf(library_path, library_path_size,
-                     "%s/native/%s/lib:%s/native/%s/lib64%s%s", generation,
-                     package, generation, package,
-                     existing_library_path == NULL ? "" : ":",
-                     existing_library_path == NULL ? "" :
-                                                     existing_library_path);
+  written = snprintf(
+      library_path, library_path_size,
+      "%s/native/%s/lib:%s/native/%s/lib64%s%s%s%s%s", generation, package,
+      generation, package, use_apt_libraries ? ":" : "",
+      use_apt_libraries ? prefix : "", use_apt_libraries ? "/lib" : "",
+      has_existing_library_path ? ":" : "",
+      has_existing_library_path ? existing_library_path : "");
   if (written < 0 || (size_t)written >= library_path_size ||
       setenv("LD_LIBRARY_PATH", library_path, 1) != 0) {
     free(library_path);
@@ -132,10 +146,6 @@ int main(int argc, char **argv) {
 
   const char *ssl_cert_file = getenv("SSL_CERT_FILE");
   if (ssl_cert_file == NULL || ssl_cert_file[0] == '\0') {
-    const char *prefix = getenv("PREFIX");
-    if (prefix == NULL || prefix[0] == '\0') {
-      prefix = "/data/data/com.termux/files/usr";
-    }
     char certificate_bundle[PATH_MAX];
     written = snprintf(certificate_bundle, sizeof(certificate_bundle),
                        "%s/etc/tls/cert.pem", prefix);

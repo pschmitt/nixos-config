@@ -25,6 +25,14 @@ androidPkgs.extend (
         package,
         crossPackage ? null,
         binaryPathOverride ? null,
+        binaryPaths ? null,
+        extraFiles ? [ ],
+        scripts ? [ ],
+        trees ? [ ],
+        aptPackages ? [ ],
+        aptLibraries ? [ ],
+        runtimeInputs ? [ ],
+        runtimeLibraries ? [ ],
         skipPostInstall ? false,
         skipPostFixup ? false,
       }:
@@ -33,6 +41,14 @@ androidPkgs.extend (
           package
           crossPackage
           binaryPathOverride
+          binaryPaths
+          extraFiles
+          scripts
+          trees
+          aptPackages
+          aptLibraries
+          runtimeInputs
+          runtimeLibraries
           skipPostInstall
           skipPostFixup
           target

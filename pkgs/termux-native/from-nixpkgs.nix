@@ -5,6 +5,14 @@
   target ? import ./target.nix { inherit pkgs; },
   crossPackage ? null,
   binaryPathOverride ? null,
+  binaryPaths ? null,
+  extraFiles ? [ ],
+  scripts ? [ ],
+  trees ? [ ],
+  aptPackages ? [ ],
+  aptLibraries ? [ ],
+  runtimeInputs ? [ ],
+  runtimeLibraries ? [ ],
   skipPostInstall ? false,
   skipPostFixup ? false,
 }:
@@ -15,6 +23,14 @@ pkgs.callPackage ./native-binary.nix {
     target
     crossPackage
     binaryPathOverride
+    binaryPaths
+    extraFiles
+    scripts
+    trees
+    aptPackages
+    aptLibraries
+    runtimeInputs
+    runtimeLibraries
     skipPostInstall
     skipPostFixup
     ;

@@ -198,6 +198,17 @@ Termux-specific source patches or build steps, the upstream
 [`termux-packages` builder](https://github.com/termux/termux-packages/wiki/Building-packages)
 is the native alternative; it builds package recipes into Termux packages for
 Termux APT to own and update. It does not generically transform Nix derivations.
+`fromNixpkgs` accepts a per-package export contract: `binaryPaths` for multiple
+commands, `extraFiles` and `trees` for runtime data, `scripts` for Termux-shell
+wrappers, and `runtimeInputs` plus `runtimeLibraries` for libraries loaded
+dynamically at runtime. The exporter adds each declared Nix runtime library
+and validates its own dependencies.
+Declare `aptPackages` and the exact `aptLibraries` SONAMEs when a Bionic output
+uses APT-owned shared libraries. In that case only that package's launchers
+add `$PREFIX/lib` to their library search path; the exporter validates the
+declared SONAMEs and never copies those libraries into the generation. The
+contract cannot discover `dlopen` dependencies or runtime data automatically,
+so each exported command still needs an on-device smoke check.
 The bundle currently requires Android API 35; evaluation checks that the
 Nixpkgs cross target and explicit NDK toolchain use the same API level.
 
