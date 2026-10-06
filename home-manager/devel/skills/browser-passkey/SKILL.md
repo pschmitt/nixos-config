@@ -9,10 +9,11 @@ description: >-
 # Browser Passkey Authentication
 
 Use this skill when an automated browser session driven by Playwright MCP
-(`playwright-steel-fnuc`, `playwright-steel-rofl-13`, `playwright-steel-rofl-14`;
-each attaches to that host's Steel browser over CDP) encounters a WebAuthn
-passkey or FIDO2 login challenge. The CDP `WebAuthn` virtual authenticator is
-known to work on Steel's Chromium.
+(`playwright-browserless-fnuc`, `playwright-browserless-rofl-13`,
+`playwright-browserless-rofl-14`; each attaches to that host's Browserless
+Chromium over CDP) encounters a WebAuthn passkey or FIDO2 login challenge. The
+CDP `WebAuthn` virtual authenticator worked on the previous Steel Chromium; it
+has not been re-verified on Browserless yet.
 
 ## Why this is needed
 
@@ -32,7 +33,7 @@ automatically and silently signs the WebAuthn challenge with zero human interact
    in the [rbw skill](file:///home/pschmitt/devel/private/pschmitt/nixos-config.git/home-manager/devel/skills/rbw/SKILL.md)
    (sending the Home Assistant phone notification).
 2. **Playwright MCP tool:** The Playwright MCP server must expose `browser_run_code_unsafe`.
-   The `playwright-steel-*` servers run on the local machine (not over SSH on
+   The `playwright-browserless-*` servers run on the local machine (not over SSH on
    the browser host), so the `rbw` call in the snippet below uses the local,
    unlocked vault.
 
@@ -139,8 +140,8 @@ resolves the assertion immediately in the background using the injected key.
 * **Session Scope:** Virtual authenticators in Chromium are scoped to the active CDP
   session. Because `page.context().newCDPSession(page)` attaches to the active
   Playwright MCP browser context, the authenticator remains alive and active for all
-  subsequent page interactions and navigations. A Steel session ends when the MCP
-  server disconnects or after its inactivity timeout, so inject the passkey again
+  subsequent page interactions and navigations. A Browserless session ends when the MCP
+  server disconnects or at its session timeout (one hour), so inject the passkey again
   in each new session.
 * **Security:** Keep private keys out of the conversational context. Do not dump
   the decrypted JSON or private key material into model output or log files.

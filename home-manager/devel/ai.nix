@@ -12,113 +12,37 @@ let
     "rofl-14"
   ];
 
-  steelSkillsSrc = pkgs.fetchFromGitHub {
-    owner = "steel-dev";
-    repo = "skills";
-    rev = "35bf278371312964a177f15b679b5e290f9ef275";
-    hash = "sha256-adK6l+4m7lORZgn7cwZAPnM81t0JbCB+v2A6EcBgiyc=";
-  };
-
-  # Only the skill directories of the upstream repo. Merging the repo root into
-  # the skills dir drags in its `.claude-plugin/marketplace.json`, which makes
-  # Claude Code treat the skills dir as a marketplace and silently drops every
-  # personal plugin (including the generated `hm` plugin that carries all MCP
-  # servers).
-  steelSkills = pkgs.runCommandLocal "steel-skills" { } ''
-    mkdir -p "$out"
-    for dir in ${steelSkillsSrc}/*/; do
-      if [[ -f "$dir/SKILL.md" ]]; then
-        ln -s "''${dir%/}" "$out/$(basename "$dir")"
-      fi
-    done
-  '';
-
-  steelCliPackage = pkgs.stdenvNoCC.mkDerivation {
-    pname = "steel-cli";
-    version = "0.4.4";
-    src = pkgs.fetchurl {
-      url = "https://github.com/steel-dev/cli/releases/download/v0.4.4/steel-cli-x86_64-unknown-linux-gnu.tar.gz";
-      hash = "sha256-NYzMoPUlDctkuIcOIUjoPU11weDE6u8sLUoKQnqqMu8=";
-    };
-    sourceRoot = "steel-cli-x86_64-unknown-linux-gnu";
-    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
-    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
-    installPhase = ''
-      install -Dm755 steel "$out/bin/steel"
-    '';
-  };
-
-  steelRemoteCli = pkgs.writeShellApplication {
-    name = "steel";
-    text = ''
-      host="''${STEEL_HOST:-fnuc}"
-      if [[ "''${1:-}" == "--host" ]]; then
-        host="''${2:?steel --host requires fnuc, rofl-13, or rofl-14}"
-        shift 2
-      fi
-
-      case "$host" in
-        fnuc|rofl-13|rofl-14) ;;
-        *) echo "Unsupported Steel host: $host" >&2; exit 2 ;;
-      esac
-
-      api_url="https://steel.$host.ts.${domainName}/v1"
-      export STEEL_API_KEY="''${STEEL_API_KEY:-local}"
-      exec ${steelCliPackage}/bin/steel --api-url "$api_url" "$@"
-    '';
-  };
-
-  steelMcpSource = pkgs.fetchFromGitHub {
-    owner = "steel-dev";
-    repo = "steel-mcp-server";
-    rev = "3ceb5c36257949b4d12890e65204e3eabc7e2fb4";
-    hash = "sha256-nmh4Js2mOg9kMss3aehVy5qMWB9E3fiAi0LCNDJxVFc=";
-  };
-
-  steelMcpPackage = pkgs.buildNpmPackage {
-    pname = "steel-mcp";
-    version = "3.0.0";
-    src = steelMcpSource;
-    patches = [ ./patches/steel-mcp-self-hosted-artifacts.patch ];
-    npmDepsHash = "sha256-bR8WsJRtjCwjxXTa6lu7NeRPry2cP87AQYRIDuqWHbA=";
-    nodejs = pkgs.nodejs_24;
-    npmBuildScript = "build";
-    nativeBuildInputs = [ pkgs.makeWrapper ];
-    installPhase = ''
-      mkdir -p "$out/lib/steel-mcp" "$out/bin"
-      cp -r dist node_modules package.json "$out/lib/steel-mcp/"
-      makeWrapper ${pkgs.nodejs_24}/bin/node "$out/bin/steel-mcp" \
-        --add-flags "$out/lib/steel-mcp/dist/stdio.js"
-    '';
-  };
-
-  # One Steel MCP per host; each stays connected to its matching self-hosted
-  # backend so agents can select capacity.
-  steelMcps = lib.listToAttrs (
+  # One Browserless MCP and one Playwright MCP per host. Browserless starts a
+  # fresh Chrome per connection, so every MCP server gets its own browser.
+  browserlessMcps = lib.listToAttrs (
     map (host: {
-      name = "steel-${host}";
+      name = "browserless-${host}";
       value = {
-        command = "${steelMcpPackage}/bin/steel-mcp";
+        command = "${pkgs.nodejs_24}/bin/npx";
+        args = [
+          "--yes"
+          "@browserless.io/mcp@1.36.0"
+        ];
         env = {
-          STEEL_LOCAL = "true";
-          STEEL_BASE_URL = "https://steel.${host}.ts.${domainName}";
+          BROWSERLESS_TOKEN = "local";
+          BROWSERLESS_API_URL = "https://browserless.${host}.ts.${domainName}";
         };
       };
     }) browserHosts
   );
 
-  # Playwright attached straight to each host's Steel over its CDP websocket
-  # (reachable over Tailscale, so no SSH hop). Every connection gets its own
-  # Steel session, which ends when the MCP server exits. Snapshots and
-  # downloads go to a per-host cache dir instead of the current directory.
-  playwrightSteelMcps = lib.listToAttrs (
+  # Playwright attached to each host's Browserless over its CDP websocket
+  # (reachable over Tailscale, so no SSH hop). The browser lives as long as the
+  # MCP server's connection. Snapshots and downloads go to a per-host cache dir
+  # instead of the current directory.
+  playwrightBrowserlessMcps = lib.listToAttrs (
     map (host: {
-      name = "playwright-steel-${host}";
+      name = "playwright-browserless-${host}";
       value = {
         command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
         args = [
-          "--cdp-endpoint=wss://steel.${host}.ts.${domainName}/"
-          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/steel-${host}"
+          "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
+          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browserless-${host}"
         ];
       };
     }) browserHosts
@@ -134,7 +58,6 @@ let
 
   skillSources = [
     ./skills
-    steelSkills
     "${n8nSkillsSrc}/skills"
     pkgs.todoist-cli.skill
   ]
@@ -308,8 +231,8 @@ in
           };
         };
       }
-      // steelMcps
-      // playwrightSteelMcps;
+      // browserlessMcps
+      // playwrightBrowserlessMcps;
     };
 
     programs = {
@@ -495,7 +418,6 @@ in
         antigravity-cli
         ccusage
         pkgs.playwright-mcp
-        steelRemoteCli
         # cursor-cli
         # kilocode-cli
 

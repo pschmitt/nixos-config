@@ -14,9 +14,10 @@ in
     log-driver = "none";
     ports = [ "127.0.0.1:3001:3000" ];
     environment = {
-      CONCURRENT = "1";
-      QUEUED = "1";
-      TIMEOUT = "300000";
+      CONCURRENT = "4";
+      QUEUED = "8";
+      # Interactive agent sessions can run long; one hour per connection.
+      TIMEOUT = "3600000";
     };
     extraOptions = [
       "--init"
@@ -30,6 +31,22 @@ in
     acmeRoot = null;
     forceSSL = true;
     extraConfig = autheliaConfig.server;
+
+    locations."= /" = {
+      proxyPass = "http://127.0.0.1:3001";
+      proxyWebsockets = true;
+      recommendedProxySettings = true;
+      extraConfig = autheliaConfig.location + ''
+        # Land browser visitors on the dashboard; leave WebSocket clients that
+        # connect to the bare host alone.
+        if ($http_upgrade = "") {
+          return 302 /debugger/;
+        }
+
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+      '';
+    };
 
     locations."/" = {
       proxyPass = "http://127.0.0.1:3001";
