@@ -34,26 +34,31 @@ in
       }
     '')
     (lib.mkOrder 1350 ''
-      zsh::source-local-plugins() {
-        [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
+      # The yadm-managed local plugins (~350 files) dominate startup. Load them
+      # synchronously for scripts (eval mode, zhj, reloads) and asynchronously,
+      # one file per idle zle tick, in interactive shells (see below).
+      # Functions to run once the local plugins are loaded (sync or async).
+      typeset -ga zsh_after_local_plugins
 
+      zsh::local-plugin-files() {
+        reply=(
+          "${config.xdg.configHome}/zsh/plugins/local"/*.zsh(N)
+          "${config.xdg.configHome}/zsh/plugins/local/work"/*.zsh(N)
+          "${config.xdg.configHome}/zsh/plugins/local/99-after"/*.zsh(N)
+        )
+        reply=("''${(@)reply:#*/zinit.zsh}")
+      }
+
+      zsh::local-plugins-prepare() {
         # This system alias prevents the unchanged local fallback function
         # from parsing in Zsh when docker-compose is not installed.
         if (( $+aliases[docker-compose] )) && (( ! $+commands[docker-compose] ))
         then
           unalias docker-compose
         fi
+      }
 
-        local file
-        for file in \
-          "${config.xdg.configHome}/zsh/plugins/local"/*.zsh(N) \
-          "${config.xdg.configHome}/zsh/plugins/local/work"/*.zsh(N) \
-          "${config.xdg.configHome}/zsh/plugins/local/99-after"/*.zsh(N)
-        do
-          [[ "''${file:t}" == zinit.zsh ]] && continue
-          zsh::source-plugin "$file"
-        done
-
+      zsh::local-plugins-finish() {
         if (( $+functions[zsh::override-local-path] ))
         then
           zsh::override-local-path
@@ -79,6 +84,93 @@ in
         then
           zsh::apply-plugin-overrides
         fi
+
+        if [[ -o interactive && -z "''${NO_COMPLETIONS:-}" ]] && (( $+functions[__init_custom_completions] ))
+        then
+          __init_custom_completions
+        fi
+        local hook
+        for hook in $zsh_after_local_plugins
+        do
+          (( $+functions[$hook] )) && "$hook"
+        done
+        typeset -g ZSH_LOCAL_PLUGINS_LOADED=1
+      }
+
+      zsh::source-local-plugins() {
+        [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
+        local -a reply
+        local file
+        zsh::local-plugin-files
+        zsh::local-plugins-prepare
+        for file in "''${reply[@]}"
+        do
+          zsh::source-plugin "$file"
+        done
+        zsh::local-plugins-finish
+      }
+
+      # Interactive shells: queue the files and source them from zle idle
+      # callbacks (the zsh-defer technique, without its `emulate -L zsh`, so
+      # plugins keep the user's options and their setopts persist). Loading
+      # pauses while keys are pending, so typing at the first prompt stays
+      # responsive. Plugin output goes to a log instead of over the prompt.
+      zsh::load-local-plugins() {
+        [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
+        if [[ ! -o zle || -n "''${ZSH_SYNC_LOCAL_PLUGINS:-}" ]]
+        then
+          zsh::source-local-plugins
+          return
+        fi
+
+        local -a reply
+        zsh::local-plugin-files
+        typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
+        typeset -g __zsh_local_plugin_log="''${ZSH_CACHE_DIR:-${config.xdg.cacheHome}/zsh}/local-plugins.log"
+        : >| "$__zsh_local_plugin_log"
+        zsh::local-plugins-prepare
+        zsh::local-plugins-schedule
+      }
+
+      zsh::local-plugins-schedule() {
+        local fd
+        exec {fd}</dev/null
+        zle -F "$fd" zsh::local-plugins-resume
+      }
+
+      zsh::local-plugins-resume() {
+        zle -F "$1"
+        exec {1}<&-
+
+        while (( ''${#__zsh_local_plugin_queue} && ! KEYS_QUEUED_COUNT && ! PENDING ))
+        do
+          zsh::source-plugin "''${__zsh_local_plugin_queue[1]}" >>"$__zsh_local_plugin_log" 2>&1
+          shift __zsh_local_plugin_queue
+        done
+
+        if (( ''${#__zsh_local_plugin_queue} ))
+        then
+          zsh::local-plugins-schedule
+          return 0
+        fi
+
+        zsh::local-plugins-finish >>"$__zsh_local_plugin_log" 2>&1
+        unset __zsh_local_plugin_queue
+
+        # Let the prompt, suggestions and highlighting pick up what loaded.
+        local hook
+        for hook in $precmd_functions
+        do
+          (( $+functions[$hook] )) && "$hook"
+        done
+        (( $+functions[_zsh_autosuggest_bind_widgets] )) && _zsh_autosuggest_bind_widgets
+        (( $+_ZSH_HIGHLIGHT_PRIOR_BUFFER )) && _ZSH_HIGHLIGHT_PRIOR_BUFFER=
+        zle && zle reset-prompt
+        if [[ -s "$__zsh_local_plugin_log" ]]
+        then
+          zle && zle -M "local plugins printed output: $__zsh_local_plugin_log"
+        fi
+        return 0
       }
 
     '')

@@ -1,10 +1,12 @@
 { lib, ... }:
 {
-  programs.zsh.initContent = lib.mkOrder 1410 ''
-    if [[ -o interactive ]] && ! is_nixos && (( $+functions[ssh-add-common] ))
-    then
+  # ssh-add-common comes from the (deferred) local plugins.
+  programs.zsh.initContent = lib.mkOrder 1390 ''
+    zsh::gpg-agent-ssh-add() {
+      [[ -o interactive ]] && ! is_nixos && (( $+functions[ssh-add-common] )) || return 0
       zmodload zsh/sched
       sched +1 'ssh-add-common 2>/dev/null'
-    fi
+    }
+    zsh_after_local_plugins+=(zsh::gpg-agent-ssh-add)
   '';
 }

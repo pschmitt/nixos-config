@@ -104,13 +104,7 @@
       (lib.mkOrder 1540 ''
         if [[ -o interactive && -z "''${NO_PLUGINS:-}" ]]
         then
-          zsh::source-local-plugins
-        fi
-      '')
-      (lib.mkOrder 1550 ''
-        if [[ -o interactive && -z "''${NO_COMPLETIONS:-}" ]] && (( $+functions[__init_custom_completions] ))
-        then
-          __init_custom_completions
+          zsh::load-local-plugins
         fi
       '')
       (lib.mkOrder 2000 ''

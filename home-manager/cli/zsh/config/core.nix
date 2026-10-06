@@ -167,8 +167,7 @@ in
       (lib.mkOrder 1400 ''
         if [[ -o interactive && -z "$NO_PLUGINS" ]]
         then
-          zsh::source-local-plugins
-          __init_custom_completions
+          zsh::load-local-plugins
         fi
       '')
     ];
