@@ -1,3 +1,6 @@
 {
-  dotfiles.zsh.nixShell.enable = true;
+  dotfiles.zsh.nixShell = {
+    enable = true;
+    default = true;
+  };
 }

@@ -12,5 +12,10 @@
       the Nix-managed Zsh shell (`zsh-nix` launcher and ~/.config/zsh-nix)
       alongside the yadm-managed shell
     '';
+
+    zsh.nixShell.default = lib.mkEnableOption ''
+      the Nix-managed Zsh config as the default ZDOTDIR (~/.config/zsh-nix);
+      the yadm-managed shell stays reachable via `zsh-yadm`
+    '';
   };
 }

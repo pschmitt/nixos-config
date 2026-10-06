@@ -37,11 +37,30 @@ let
       exec ${pkgs.zsh}/bin/zsh "$@"
     '';
   };
+  # Escape hatch back to the yadm/zinit shell when the Nix config is the
+  # default ZDOTDIR (dotfiles.zsh.nixShell.default).
+  zshYadm = pkgs.writeShellApplication {
+    name = "zsh-yadm";
+    runtimeInputs = [ pkgs.zsh ];
+    text = ''
+      unset ZHJ __HM_SESS_VARS_SOURCED __HM_ZSH_SESS_VARS_SOURCED
+      export ZDOTDIR="$HOME/.config/zsh"
+      exec ${pkgs.zsh}/bin/zsh "$@"
+    '';
+  };
 in
 {
   imports = [ ./base.nix ];
 
-  home.packages = [ zshNix ];
+  home.packages = [
+    zshNix
+    zshYadm
+  ];
+
+  # Let $ZDOTDIR/completions resolve when ~/.config/zsh-nix is used directly
+  # as ZDOTDIR (the launcher links these into its store copy instead).
+  xdg.configFile."zsh-nix/completions".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.xdg.configHome}/zsh/completions";
 
   # The regular yadm-managed shell owns ~/.zshenv. Keep its dotDir separate
   # while the launcher uses a store-backed copy for pre-activation testing.
