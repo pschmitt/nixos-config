@@ -20,8 +20,9 @@ in
 
   programs.vivid = {
     enable = !termuxMode;
+    activeTheme = "one-dark";
     # LS_COLORS comes from the build-time init file below, not a startup fork.
-    enableZshIntegration = !termuxMode;
+    enableZshIntegration = false;
   };
 
   xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (
