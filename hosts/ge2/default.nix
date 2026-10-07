@@ -13,6 +13,7 @@
     ./lan-mouse.nix
     ./networking.nix
     ./noctalia-obs.nix
+    ./prompt.nix
     ./user-services.nix
     ./wacom.nix
   ];

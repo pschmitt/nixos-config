@@ -6,5 +6,6 @@
     ./fprintd.nix
     ./hardware-configuration.nix
     ./networking.nix
+    ./prompt.nix
   ];
 }

@@ -11,5 +11,6 @@
     ./network.nix
     ./noctalia.nix
     ./power.nix
+    ./prompt.nix
   ];
 }
