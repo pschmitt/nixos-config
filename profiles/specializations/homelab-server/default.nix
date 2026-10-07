@@ -17,6 +17,7 @@
     ../../../services/kmscon.nix
     ../../../services/kvm-usb.nix
     ../../../services/nfs/nfs-server.nix
+    ./cli-tools.nix
     ./nix.nix
     ./ssh-clipboard.nix
   ];
