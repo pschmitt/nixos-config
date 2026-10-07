@@ -276,8 +276,9 @@ in
     # noctalia lan-mouse plugin (pschmitt/noctalia-plugins) to list peers.
     home.packages = [ cfg.package ];
 
-    xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter ''
-      lan-mouse::_control() {
+    # Autoloaded: one file per function in share/zsh/site-functions.
+    programs.zsh.siteFunctions = {
+      "lan-mouse::_control" = ''
         local action="$1"
         local peer
         local failed=0
@@ -299,20 +300,11 @@ in
         done
 
         return "$failed"
-      }
-
-      lan-mouse::start() {
-        lan-mouse::_control start
-      }
-
-      lan-mouse::stop() {
-        lan-mouse::_control stop
-      }
-
-      lan-mouse::restart() {
-        lan-mouse::_control restart || failed=1
-      }
-    '';
+      '';
+      "lan-mouse::start" = "lan-mouse::_control start";
+      "lan-mouse::stop" = "lan-mouse::_control stop";
+      "lan-mouse::restart" = "lan-mouse::_control restart";
+    };
 
     # Stable path (unlike goBackScript's own store path, which changes every
     # generation) for the noctalia lan-mouse plugin's lockscreen widget to
