@@ -8,11 +8,6 @@
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
 
-    alias-tips = {
-      url = "github:djui/alias-tips";
-      flake = false;
-    };
-
     zsh-diff-so-fancy = {
       url = "github:z-shell/zsh-diff-so-fancy";
       flake = false;

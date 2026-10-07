@@ -6,7 +6,6 @@
 {
   imports = [
     ../../home-manager/cli/zsh/config/runtime.nix
-    ../../home-manager/cli/zsh/plugins/alias-tips.nix
     ../../home-manager/cli/zsh/plugins/local-path.nix
     ../../home-manager/cli/zsh/plugins/local-yadm.nix
   ];

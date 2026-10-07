@@ -1,21 +1,5 @@
 {
   "nodes": {
-    "alias-tips": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1674152807,
-        "narHash": "sha256-ZFWrwcwwwSYP5d8k7Lr/hL3WKAZmgn51Q9hYL3bq9vE=",
-        "owner": "djui",
-        "repo": "alias-tips",
-        "rev": "41cb143ccc3b8cc444bf20257276cb43275f65c4",
-        "type": "github"
-      },
-      "original": {
-        "owner": "djui",
-        "repo": "alias-tips",
-        "type": "github"
-      }
-    },
     "anika-blue": {
       "inputs": {
         "flake-parts": "flake-parts",
@@ -3057,7 +3041,6 @@
     },
     "root": {
       "inputs": {
-        "alias-tips": "alias-tips",
         "anika-blue": "anika-blue",
         "bitwarden-mcp": "bitwarden-mcp",
         "bruvtab": "bruvtab",

@@ -2,7 +2,6 @@
 {
   # Copy unmodified sources, not Nixpkgs outputs with host shebangs/store paths.
   plugins = {
-    inherit (inputs) alias-tips;
     diff-so-fancy = "${pkgs.zsh-diff-so-fancy}/share/zsh/plugins/zsh-diff-so-fancy";
     autosuggestions = pkgs.zsh-autosuggestions.src;
     syntax-highlighting = pkgs.zsh-syntax-highlighting.src;
