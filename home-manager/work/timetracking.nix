@@ -19,7 +19,7 @@ in
     timew-sync-client
     timewarrior
     timewarrior-jirapush
-    python312Packages.bugwarrior
+    python3Packages.bugwarrior
   ];
 
   # Same values as the interactive shell's xdg.zsh (see also the noctalia
