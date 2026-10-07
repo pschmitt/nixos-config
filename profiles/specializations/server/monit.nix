@@ -195,12 +195,17 @@ in
     secrets = {
       "monit/config/httpd" = { };
       "monit/config/mmonit" = { };
+      "monarch/collector/password" = { };
     };
 
     templates.monitSecretConfig = {
       content = builtins.concatStringsSep "\n" [
         # only include the mmonit config if this is not a cattle server
         (lib.optionalString (!config.hardware.cattle) config.sops.placeholder."monit/config/mmonit")
+        # Monarch has no license to protect, so cattle servers report to it too
+        "set mmonit https://monit:${
+          config.sops.placeholder."monarch/collector/password"
+        }@monarch.${config.domains.main}/collector"
         config.sops.placeholder."monit/config/httpd"
       ];
 
