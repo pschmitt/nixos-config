@@ -694,4 +694,18 @@ managed prompt. `nixpp status` showed generation 55 on the Zenfone 10 and 122
 on the Mi Pad 4, with alphabetized APT and Nix package lists. The Mi Pad
 bootstrap took 1m16s; APT reported all requested packages already installed.
 This verification used a local test copy; the private cache's latest channel
-was not updated.
+was not updated at the time.
+
+Later on 2026-10-07, that verified bundle was published to the private Nix
+cache. The static channel now points to
+`/nix/store/2hkivv8iyhycgc37kg1rnb4wnfmscqpj-termux-native-bundle`. An
+authenticated download of the channel manifest, NAR metadata, and full NAR
+matched the uploaded files.
+
+The `curl -L yadm.brkn.lol | bash -s -- --nixpp` path was also run in the
+visible Zenfone 10 Termux app. It unlocked Bitwarden, fetched and verified the
+private archives, replaced the package prefix, completed yadm setup, and opened
+the managed Zsh prompt. The run took about six minutes by the device clock;
+the existing home directory was kept. A force-stop and app relaunch returned
+to the managed prompt, and `nixpp status` showed generation 54 with alphabetized
+package lists and no Zinit command.
