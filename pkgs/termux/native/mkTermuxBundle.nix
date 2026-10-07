@@ -28,6 +28,21 @@ let
     // extraSpecialArgs;
     modules = [ ../../../modules/home-manager/termux.nix ] ++ modules;
   };
+  nvimInitLua = homeManagerProfile.config.xdg.configFile."nvim/init.lua".text;
+  nvimDevPathParts = lib.splitString "dev = {\n  path = \"" nvimInitLua;
+  nvimDevPath =
+    if lib.length nvimDevPathParts == 2 then
+      lib.head (lib.splitString "\"" (lib.elemAt nvimDevPathParts 1))
+    else
+      throw "Termux Neovim init.lua does not contain the expected LazyVim dev path.";
+  nvimLazyPath = "${nvimDevPath}/lazy.nvim";
+  nvimPluginsPath =
+    if builtins.pathExists nvimLazyPath then
+      nvimDevPath
+    else
+      throw "Termux Neovim plugin bundle does not contain lazy.nvim.";
+  termuxHomeFiles = homeManagerProfile.config.termux.homeFiles;
+  exportedHomeFiles = lib.unique (termuxHomeFiles ++ [ ".local/share/nvim/lazy-dev" ]);
   homeFileSources = map (
     path:
     let
@@ -47,7 +62,7 @@ let
         name = builtins.baseNameOf path;
       };
     }
-  ) homeManagerProfile.config.termux.homeFiles;
+  ) termuxHomeFiles;
   homeFiles = pkgs.runCommand "termux-native-home-files" { } ''
     mkdir -p "$out/home"
     ${lib.concatMapStringsSep "\n" (file: ''
@@ -108,7 +123,7 @@ let
     minimumApi = apiLevel;
     basePackages = termuxPackages;
     homePackages = map (package: package.name) termuxNativePackages;
-    homeFiles = homeManagerProfile.config.termux.homeFiles;
+    homeFiles = exportedHomeFiles;
     plugins = builtins.attrNames profile.plugins;
     gitstatusVersion = pkgs.gitstatus.version;
   };
@@ -131,6 +146,7 @@ let
       {
         nativeBuildInputs = [
           pkgs.coreutils
+          pkgs.findutils
           pkgs.gnused
           pkgs.jq
           pkgs.patchelf
@@ -170,6 +186,54 @@ let
         cp ${manifest} "$out/manifest.json"
         printf '%s\n' ${lib.escapeShellArgs termuxPackages} > "$out/base-packages.txt"
         cp -RL ${homeFiles}/home/. "$out/home/"
+        chmod u+w "$out/home"
+        mkdir -p "$out/home/.local"
+        chmod u+w "$out/home/.local"
+        mkdir -p "$out/home/.local/share"
+        chmod u+w "$out/home/.local/share"
+        mkdir -p "$out/home/.local/share/nvim/lazy-dev"
+        cp -RL ${nvimPluginsPath}/. "$out/home/.local/share/nvim/lazy-dev/"
+        chmod -R u+w "$out/home/.local/share/nvim/lazy-dev"
+        find "$out/home/.local/share/nvim/lazy-dev" -type d -name nix-support -prune -exec rm -rf {} +
+        while IFS= read -r -d $'\0' plugin_file; do
+          if ! grep -Iq '/nix/store/' "$plugin_file"; then
+            continue
+          fi
+          case "$plugin_file" in
+            *.lua)
+              sed -i '1{/^#!\/nix\/store\//d;}' "$plugin_file"
+              ;;
+            *)
+              sed -i -E \
+                -e '1s|^#!/nix/store/[^/]+/bin/bash.*$|#!/data/data/com.termux/files/usr/bin/bash|' \
+                -e '1s|^#!/nix/store/[^/]+/bin/sh.*$|#!/data/data/com.termux/files/usr/bin/sh|' \
+                "$plugin_file"
+              ;;
+          esac
+        done < <(find "$out/home/.local/share/nvim/lazy-dev" -type f -print0)
+        if grep -RIl '/nix/store/' "$out/home/.local/share/nvim/lazy-dev"; then
+          echo "Neovim plugin bundle contains Nix store paths after sanitization." >&2
+          exit 1
+        fi
+        substituteInPlace "$out/home/.local/share/nvim/lazy-dev/lazy.nvim/lua/lazy/help.lua" \
+          --replace-fail \
+          'vim.cmd.helptags(Config.plugins["lazy.nvim"].dir .. "/doc")' \
+          '-- Termux plugin sources are immutable; their helptags are not regenerated.'
+        substituteInPlace "$out/home/.config/nvim/init.lua" \
+          --replace-fail ${lib.escapeShellArg "local lazypath = vim.fn.stdpath(\"data\") .. \"/lazy/lazy.nvim\""} \
+          ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/lazy.nvim\""} \
+          --replace-fail ${lib.escapeShellArg "path = \"${nvimDevPath}\""} \
+          ${lib.escapeShellArg "path = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev\""} \
+          --replace-fail ${lib.escapeShellArg "require(\"lazy\").setup({"} \
+          ${lib.escapeShellArg "vim.fn.mkdir(vim.fn.stdpath(\"state\"), \"p\")\nrequire(\"lazy\").setup({"} \
+          --replace-fail ${lib.escapeShellArg "  install = { colorscheme = { \"tokyonight\", \"habamax\" } },"} \
+          ${lib.escapeShellArg "  lockfile = vim.fn.stdpath(\"state\") .. \"/lazy-lock.json\",\n  install = { colorscheme = { \"tokyonight\", \"habamax\" } },"}
+        while IFS= read -r -d $'\0' plugin_file; do
+          if ${target.readelf} -h "$plugin_file" >/dev/null 2>&1; then
+            echo "Neovim plugin bundle contains a non-Termux ELF: $plugin_file" >&2
+            exit 1
+          fi
+        done < <(find "$out/home/.local/share/nvim/lazy-dev" -type f -print0)
         sed '/^export LOCALE_ARCHIVE_2_27=/d' \
           ${homeManagerProfile.config.home.sessionVariablesPackage}/etc/profile.d/hm-session-vars.sh \
           > "$out/etc/profile.d/hm-session-vars.sh"
