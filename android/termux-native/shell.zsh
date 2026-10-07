@@ -15,15 +15,10 @@ then
 
   [[ -r "$ZDOTDIR/aliases.zsh" ]] && source "$ZDOTDIR/aliases.zsh"
 
-  # The regular custom loader applies the Termux and host overlays after its
-  # zboot files. Keep those yadm-owned files on-device and follow that order.
+  # Keep Termux's early hostname setup, then use yadm's own loader for the
+  # remaining OS and host overlays instead of maintaining a second copy here.
   [[ -r "$ZDOTDIR/custom/os/termux/zboot.zsh" ]] && source "$ZDOTDIR/custom/os/termux/zboot.zsh"
-  () {
-    setopt localoptions nullglob extendedglob
-    multisrc \
-      "$ZDOTDIR/custom/os/termux"/^zboot.zsh(N.) \
-      "$ZDOTDIR/custom/hosts/$HOST"/^zboot.zsh(N.)
-  }
+  [[ -r "$ZDOTDIR/custom.zsh" ]] && source "$ZDOTDIR/custom.zsh"
 
   [[ -r "$ZDOTDIR/interactive.zsh" ]] && source "$ZDOTDIR/interactive.zsh"
   [[ -z "${NO_BS:-}" && -r "$ZDOTDIR/dirs.zsh" ]] && source "$ZDOTDIR/dirs.zsh"

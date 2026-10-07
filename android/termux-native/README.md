@@ -396,6 +396,8 @@ The Termux Home Manager profile does not install or start Zinit. It imports the
 shared Zsh settings and plugin modules, which source pinned plugin files from
 the Nix generation. The regular yadm/Zinit startup remains in use on non-Termux
 hosts. Termux startup also reuses selected yadm host and local configuration;
+after the Termux hostname setup it sources yadm's `custom.zsh` loader directly,
+so OS and host overlays follow the same ordering as the regular shell;
 Nix overrides the prompt controls and update hooks that would otherwise call
 the Zinit command and sets `TERMUX_NATIVE_ENABLED=1` so retained yadm prompt
 functions skip Zinit-only actions. The Termux profile exposes no Zinit manager
@@ -722,3 +724,11 @@ shell utilities and `kubectl`; no Termux `.deb` files or dependency libraries
 are copied into Nix generations. The bundle built on `rofl-13`, and all seven
 command help paths passed through the visible Termux app on the Zenfone 10 and
 Mi Pad 4.
+
+Later on 2026-10-07, Termux startup stopped maintaining its own copy of the
+yadm custom overlay loader. It now sources yadm's `custom.zsh` after the Termux
+hostname setup. Bundle
+`3b01bc73a40fe2e4d2337f5ef09c9f73840c9e4290a51ad55e547840a30a7b48` built on
+`rofl-13`, installed through each visible Termux app, and passed activation
+smoke checks. After force-stop and cold relaunch, both devices returned to
+their expected host prompt (`zf10` and `mp4`).
