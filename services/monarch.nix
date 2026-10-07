@@ -15,6 +15,7 @@ in
     "monarch/admin/username" = config.sops.mkHostSecret { };
     "monarch/admin/password" = config.sops.mkHostSecret { };
     "monarch/oidc/client-secret" = config.sops.mkHostSecret { };
+    "monarch/homeassistant/password" = config.sops.mkHostSecret { };
     # shared: monit agents report with it (see monit/config/mmonit)
     "monarch/collector/password" = { };
   };
@@ -43,6 +44,13 @@ in
       inherit domain;
     };
     ensureUsers = [
+      {
+        # Home Assistant (mmonit integration, Monarch mode); the API token it
+        # uses belongs to this account, operator allows service actions
+        username = "homeassistant";
+        role = "operator";
+        passwordFile = config.sops.secrets."monarch/homeassistant/password".path;
+      }
       {
         usernameFile = config.sops.secrets."monarch/admin/username".path;
         role = "admin";
