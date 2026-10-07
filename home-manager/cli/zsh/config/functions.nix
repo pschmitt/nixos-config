@@ -312,12 +312,14 @@ in
       fi
     }
 
-    echo_info() { print -r -- "$*" }
+    # stderr, like the yadm echo:: helpers: functions whose stdout is
+    # captured (rbw::get in gpg::auto-unlock) must not get these messages.
+    echo_info() { print -ru2 -- "$*" }
     echo_err() { print -ru2 -- "$*" }
     echo_error() { echo_err "$@" }
     echo_warning() { echo_err "$@" }
     echo_debug() { [[ -n "''${DEBUG:-}" ]] && print -ru2 -- "$*" }
-    echo_ok() { print -r -- "$*" }
+    echo_ok() { print -ru2 -- "$*" }
     echo_confirm() {
       print -n -u2 -- "$* [y/N] "
       read -rq REPLY
