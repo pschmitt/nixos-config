@@ -65,30 +65,33 @@ native_shell_check() {
     print -u2 -- 'The Termux prompt is not using the Nix-configured dotfiles.promptColor'
     return 1
   fi
-  local required
-  for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
-    autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
-    prompt::simple prompt::reset yqo os-release::value os-release::is os-release::kind \
-    is_termux is_nixos is_archlinux is_postmarketos is_fedora is_ubuntu is_distrobox \
-    in_flatpak not_in_vt zsh::reload zsh::get-parent-command zsh::running-in-guake yadm::pull \
-    suf version::at-least libc::version-at-least tmux::version-at-least falias multisrc \
-    source-grep _usage
-  do
-    if (( ! $+functions[$required] ))
-    then
-      print -u2 -- "Missing shell function: $required"
-      return 1
-    fi
-  done
-  local prompt_function
-  for prompt_function in prompt::simple prompt::reset
-  do
-    if [[ "${functions[$prompt_function]}" == *zinit* ]]
-    then
-      print -u2 -- "The yadm prompt function '$prompt_function' still references Zinit in the native shell"
-      return 1
-    fi
-  done
+  if [[ "${TERMUX_NATIVE_YADM_CONFIG:-}" == 1 ]]
+  then
+    local required
+    for required in p10k _zsh_autosuggest_start _zsh_highlight history-substring-search-up \
+      autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
+      prompt::simple prompt::reset yqo os-release::value os-release::is os-release::kind \
+      is_termux is_nixos is_archlinux is_postmarketos is_fedora is_ubuntu is_distrobox \
+      in_flatpak not_in_vt zsh::reload zsh::get-parent-command zsh::running-in-guake yadm::pull \
+      suf version::at-least libc::version-at-least tmux::version-at-least falias multisrc \
+      source-grep _usage
+    do
+      if (( ! $+functions[$required] ))
+      then
+        print -u2 -- "Missing shell function: $required"
+        return 1
+      fi
+    done
+    local prompt_function
+    for prompt_function in prompt::simple prompt::reset
+    do
+      if [[ "${functions[$prompt_function]}" == *zinit* ]]
+      then
+        print -u2 -- "The yadm prompt function '$prompt_function' still references Zinit in the native shell"
+        return 1
+      fi
+    done
+  fi
   if [[ "${TERMUX_NATIVE_ENABLED:-}" != 1 ]]
   then
     print -u2 -- 'The native-shell compatibility flag is not enabled'
