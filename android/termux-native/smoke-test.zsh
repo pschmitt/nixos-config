@@ -182,7 +182,7 @@ native_shell_check() {
   local command
   for command in adb.sh eget jc ketall kubectl-delete_all kubectl-list_all \
     kubectl-reveal_secret kubectl-socks5_proxy kubectl-watch linkding myl netbird-cli \
-    nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
+    hwatch nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -212,6 +212,7 @@ native_shell_check() {
     return 1
   fi
   native_smoke_run 'Atuin version' atuin --version || return
+  native_smoke_run 'hwatch version' hwatch --version || return
   native_smoke_run 'ADB version' adb version || return
   local adb_help_stderr
   if adb_help_stderr=$(adb.sh --help 2>&1 >/dev/null)

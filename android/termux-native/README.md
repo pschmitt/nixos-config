@@ -517,10 +517,11 @@ be enabled in the native shell.
 The regular Linux LazyVim plugin closure is deliberately not included in the
 Termux bundle.
 
-The current installer trusts a digest obtained from the builder; it does not
-verify a release signature or hostile archive contents. It keeps previous
-generations for rollback but does not yet garbage-collect them, enforce an
-anti-downgrade policy, or recover interrupted lock directories automatically.
+The installer trusts a digest obtained from the builder; it does not verify a
+release signature or enforce an anti-downgrade policy. It also does not recover
+interrupted lock directories automatically. `nixpp gc` prunes old generations
+after a dry-run preview while preserving the active and configured rollback
+generations.
 APT package lifecycle tracks packages installed by this profile in
 `apt-owned-packages.txt`; packages that were already installed are never
 claimed or removed. After the new generation passes its shell health checks,

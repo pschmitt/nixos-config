@@ -242,6 +242,10 @@ androidPkgs.extend (
         "ca-certificates"
       ];
 
+      hwatch = fromNixpkgs {
+        package = pkgs.hwatch;
+      };
+
       ssh-to-age = fromGo {
         package = pkgs.ssh-to-age;
         binary = "ssh-to-age";

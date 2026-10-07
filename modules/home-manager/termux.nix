@@ -124,6 +124,7 @@ in
       };
 
       home.packages = [
+        pkgsTermux.hwatch
         pkgsTermux.nixpp
         pkgsTermux.obs-cli
         pkgsTermux.rbw

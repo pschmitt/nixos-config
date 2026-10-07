@@ -9,5 +9,6 @@
     ./runtime.nix
     ./zhj.nix
     ../plugins
+    ../tools/cli.nix
   ];
 }

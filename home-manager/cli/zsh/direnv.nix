@@ -25,7 +25,7 @@ in
     nix-direnv.enable = !termuxMode;
     silent = true;
     # The hook is generated at build time and sourced from system.zsh.
-    enableZshIntegration = false;
+    enableZshIntegration = !termuxMode;
   };
 
   xdg.configFile."zsh/custom/os/home-manager/system.zsh".text = lib.mkAfter (

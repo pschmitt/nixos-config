@@ -13,7 +13,6 @@ in
     ./config/source-me.nix
     ./direnv.nix
     ./fzf.nix
-    ./tools/cli.nix
     ./vivid.nix
     ./zoxide.nix
   ];

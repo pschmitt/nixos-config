@@ -8,7 +8,7 @@
     syntax-highlighting = pkgs.zsh-syntax-highlighting.src;
     history-substring-search = pkgs.zsh-history-substring-search.src;
     autopair = pkgs.zsh-autopair.src;
-    completions = pkgs.zsh-completions.src;
+    completions = inputs.zsh-completions;
     powerlevel10k = pkgs.zsh-powerlevel10k.src;
     oh-my-zsh = pkgs.oh-my-zsh.src;
     prezto-archive = "${pkgs.zsh-prezto.src}/modules/archive";
