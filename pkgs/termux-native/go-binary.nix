@@ -6,6 +6,7 @@
   buildBinary ? binary,
   target,
   skipPostInstall ? false,
+  skipPostFixup ? false,
   licenseFile ? null,
 }:
 let
@@ -60,7 +61,7 @@ package.overrideAttrs (old: {
     ''}
   '';
 
-  postFixup = (old.postFixup or "") + ''
+  postFixup = (if skipPostFixup then "" else (old.postFixup or "")) + ''
     ${target.objcopy} --strip-unneeded "$out/bin/${binary}"
   '';
 

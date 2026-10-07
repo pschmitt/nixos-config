@@ -60,6 +60,7 @@ androidPkgs.extend (
         binary,
         buildBinary ? binary,
         skipPostInstall ? false,
+        skipPostFixup ? false,
         licenseFile ? null,
       }:
       pkgs.callPackage ./go-binary.nix {
@@ -68,6 +69,7 @@ androidPkgs.extend (
           binary
           buildBinary
           skipPostInstall
+          skipPostFixup
           licenseFile
           target
           ;
@@ -216,6 +218,13 @@ androidPkgs.extend (
         binary = "mani";
         skipPostInstall = true;
       };
+
+      krew = withAptPackages (fromGo {
+        package = pkgs.krew;
+        binary = "krew";
+        # Nixpkgs wraps krew with its Git path; Termux APT owns Git instead.
+        skipPostFixup = true;
+      }) [ "git" ];
 
       tmux-slay = pkgs.callPackage ./tmux-slay.nix { inherit inputs; };
 
