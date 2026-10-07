@@ -28,21 +28,17 @@ in
         pkgs.adb-completions
       ];
 
-  xdg.configFile."zsh/completions/_adb.sh" = lib.mkIf termuxMode {
-    source = "${adbCompletions}/share/zsh/site-functions/_adb";
-  };
+  # The package ships it as _adb (#compdef adb.sh ads); prepending its
+  # site-functions to fpath shadowed zsh's own _adb for the real adb.
+  xdg.configFile."zsh/completions/_adb.sh".source = "${adbCompletions}/share/zsh/site-functions/_adb";
 
-  programs.zsh.initContent =
-    if termuxMode then
-      lib.mkOrder 1500 ''
-        if [[ -o interactive && -n "''${_comps+x}" ]]
-        then
-          autoload -Uz _adb.sh
-          compdef _adb.sh adb.sh ads
-        fi
-      ''
-    else
-      ''
-        fpath=("${adbCompletions}/share/zsh/site-functions" $fpath)
-      '';
+  programs.zsh.initContent = lib.mkIf termuxMode (
+    lib.mkOrder 1500 ''
+      if [[ -o interactive && -n "''${_comps+x}" ]]
+      then
+        autoload -Uz _adb.sh
+        compdef _adb.sh adb.sh ads
+      fi
+    ''
+  );
 }

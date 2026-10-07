@@ -112,6 +112,9 @@ in
         typeset -g ZSH_LOCAL_PLUGINS_LOADED=1
       }
 
+      # yadm/zinit name for reloading the local plugins
+      alias zsrclocal=zsh::source-local-plugins
+
       zsh::source-local-plugins() {
         [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
         if zsh::local-plugins-cache-load

@@ -236,6 +236,10 @@ in
       version::at-least "$1" "$current"
     }
 
+    # The yadm lib set this as a side effect of tmux::version-at-least;
+    # plugins use it at load time (aliases like whatswrong).
+    typeset -g TMUX_BIN_HOME="''${TMUX_BIN_HOME:-${config.xdg.configHome}/tmux/bin}"
+
     tmux::version-at-least() {
       [[ $# == 1 ]] || return 2
       local current pid server
@@ -265,7 +269,7 @@ in
       fi
 
       current="''${current#next-}"
-      version::at-least "$current" "$1"
+      version::at-least "$1" "$current"
     }
 
     zsh::reload() {

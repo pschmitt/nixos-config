@@ -162,6 +162,14 @@ in
           multisrc \
             "$custom_dir/os/$__OS_KIND"/^zboot.zsh \
             "$custom_dir/hosts/$HOST"/^zboot.zsh
+
+          # Like the yadm dirs.zsh: a cd<name> alias for every named
+          # directory, including the host overlays' `hash -d` entries.
+          local name
+          for name in ''${(k)nameddirs}
+          do
+            (( $+aliases[cd$name] )) || alias "cd$name=cd ''${(q)nameddirs[$name]}"
+          done
         }
       '')
       (lib.mkOrder 1400 ''

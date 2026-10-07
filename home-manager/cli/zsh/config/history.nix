@@ -4,7 +4,6 @@
     setOptions = [
       "HIST_REDUCE_BLANKS"
       "HIST_VERIFY"
-      "APPEND_HISTORY"
     ];
 
     history = {
@@ -18,11 +17,11 @@
       findNoDups = true;
       share = true;
       ignoreSpace = true;
+      # Home Manager emits `unsetopt APPEND_HISTORY` otherwise (yadm sets it).
+      append = true;
     };
-    sessionVariables = {
-      HISTFILE = "${config.xdg.stateHome}/zsh/zhistory";
-      HISTSIZE = 10000;
-      SAVEHIST = 10000;
-    };
+    # HISTFILE/HISTSIZE/SAVEHIST come from `history` as plain shell
+    # parameters; exporting them would make child shells (bash) write to the
+    # zsh history file.
   };
 }

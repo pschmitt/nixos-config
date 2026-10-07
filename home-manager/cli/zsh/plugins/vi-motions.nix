@@ -14,7 +14,9 @@ let
   };
 in
 {
-  programs.zsh.initContent = lib.mkOrder 947 ''
+  # After bindkeys.nix (1300), like the yadm shell where zinit loads it late:
+  # its Home/End bindings (vi-beginning/end-of-line) win.
+  programs.zsh.initContent = lib.mkOrder 1310 ''
     if zsh::prompt-plugins-enabled && not_in_vt
     then
       zsh::source-plugin ${
