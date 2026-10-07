@@ -31,6 +31,8 @@ in
         client_id = "monarch";
         display_name = "Authelia";
         admin_groups = [ "admin" ];
+        # first sign-in adopts the local account with the same username
+        link_local_users = true;
         # nobody else in Authelia gets in
         default_role = "none";
       };
