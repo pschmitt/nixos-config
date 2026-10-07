@@ -95,6 +95,9 @@ in
 {
   sops.secrets = sopsSecrets;
 
+  # pinentry-program of the yadm gpg-agent.conf (##distro.nixos).
+  home.packages = [ pkgs.pinentry-guess ];
+
   programs.gpg = {
     enable = true;
     homedir = "${config.xdg.configHome}/gnupg";

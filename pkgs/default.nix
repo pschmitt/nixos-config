@@ -30,6 +30,8 @@ in
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;
   fzf-preview = pkgs.callPackage ./local/fzf-preview { };
+  ldif2json = pkgs.callPackage ./local/ldif2json { };
+  pinentry-guess = pkgs.callPackage ./local/pinentry-guess { };
   pycolumn = pkgs.callPackage ./local/pycolumn { };
   obs-control = pkgs.callPackage ./local/obs-control {
     inherit

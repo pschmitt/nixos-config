@@ -8,6 +8,7 @@
     ./fd.nix
     ./jq.nix
     ./ketall.nix
+    ./ldif2json.nix
     ./krew.nix
     ./kubectl-ksh.nix
     ./kubectl-socks5-proxy.nix
