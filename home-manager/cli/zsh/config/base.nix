@@ -5,8 +5,7 @@
       (lib.mkOrder 500 ''
         # Interactive-only: `ssh host cmd` and zhj also load this file, and
         # these change script semantics (`#` globbing, redirects, quoting).
-        # The yadm zhj never set them either. The local plugin cache compiler
-        # applies them too, since some (RC_QUOTES) change how files parse.
+        # The yadm zhj never set them either.
         zsh::interactive-options() {
           setopt \
             AUTO_PUSHD \
