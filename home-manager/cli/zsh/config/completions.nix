@@ -39,6 +39,11 @@
             return
           fi
 
+          # compinit only rebuilds an existing dump when the number of
+          # completion files changed; a rename (_adb -> _adb.sh) kept the
+          # stale one. fpath or a writable dir changed: start from scratch.
+          [[ -e "$dump" ]] && command rm -f -- "$dump" "$dump.zwc"
+
           local audit_output audit_dir
           local -a insecure_paths
           audit_output="$(compaudit 2>/dev/null || true)"
