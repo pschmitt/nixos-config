@@ -434,6 +434,42 @@ pub fn generations() -> Result<()> {
     Ok(())
 }
 
+pub fn gc(keep: usize, dry_run: bool) -> Result<()> {
+    ensure!(
+        (1..=1000).contains(&keep),
+        "--keep must be between 1 and 1000 generations"
+    );
+    let root = termux_generation_root()?;
+    let bootstrap = root.join("current/bootstrap.sh");
+    let ui = Progress::new();
+    ui.title();
+    ui.stage(
+        "🧹 Prune generations and unused Termux APT packages",
+        || {
+            let mut command = Command::new("bash");
+            command
+                .arg(&bootstrap)
+                .arg("gc")
+                .arg("--keep")
+                .arg(keep.to_string());
+            if dry_run {
+                command.arg("--dry-run");
+            }
+            let status = command.status().with_context(|| {
+                format!(
+                    "start generation garbage collection via {}",
+                    bootstrap.display()
+                )
+            })?;
+            ensure!(
+                status.success(),
+                "Termux generation garbage collection failed: {status}"
+            );
+            Ok(())
+        },
+    )
+}
+
 pub fn rollback(generation: &str) -> Result<()> {
     let root = termux_generation_root()?;
     let generation = resolve_generation(&root, generation)?;

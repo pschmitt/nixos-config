@@ -147,8 +147,12 @@ Use the digest obtained directly from the trusted builder. The adjacent
 `SHA256SUMS` file is useful for checking accidental corruption, but is not a
 signature. To roll back, run `nixpp rollback NUMBER` or pass a generation number
 or 64-character digest to `bash activate.sh rollback NUMBER_OR_SHA256`.
-To restore the Termux zsh startup file, run `bash bootstrap.sh restore`; installed
-generations remain available until you remove them yourself.
+`nixpp gc --dry-run` previews cleanup; `nixpp gc` retains the three newest
+generations and the active generation, then removes only nixpp-owned APT
+packages that no retained generation needs and that APT can remove without
+removing another package. Rollback does not reverse APT package or application
+data changes. To restore the Termux zsh startup file, run
+`bash bootstrap.sh restore`.
 
 ```text
 Home Manager config + pinned root flake inputs

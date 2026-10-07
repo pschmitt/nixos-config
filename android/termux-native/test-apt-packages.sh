@@ -93,7 +93,64 @@ MOCK_APT_GET
   assert_not_grep '-y remove -- safe-obsolete' "$MOCK_APT_LOG"
   assert_not_grep '-y remove -- protected-obsolete' "$MOCK_APT_LOG"
   assert_not_grep autoremove "$MOCK_APT_LOG"
-  printf 'PASS: preserves pre-existing and rollback-required APT packages, removes unreferenced owned packages, and blocks dependency cascades\n'
+
+  local newest_generation active_generation old_generation gc_output
+  old_generation=$generation
+  newest_generation=$(printf '%064d' 3)
+  active_generation=$(printf '%064d' 4)
+  mkdir -p "$root/generations/$newest_generation" "$root/generations/$active_generation"
+  for generation in "$old_generation" "$retained_generation" "$newest_generation" "$active_generation"
+  do
+    printf '{}\n' > "$root/generations/$generation/manifest.json"
+  done
+  printf '%s\t%s\n' \
+    1 "$old_generation" \
+    2 "$retained_generation" \
+    3 "$newest_generation" \
+    4 "$active_generation" \
+    > "$root/generation-index.tsv"
+  printf '%s\n' obsolete-owned protected-obsolete > "$root/generations/$old_generation/base-packages.txt"
+  printf '%s\n' retained-owned > "$root/generations/$retained_generation/base-packages.txt"
+  printf '%s\n' retained-owned > "$root/generations/$newest_generation/base-packages.txt"
+  printf '%s\n' current-owned > "$root/generations/$active_generation/base-packages.txt"
+  ln -s "generations/$active_generation" "$root/current"
+  printf '%s\n' obsolete-owned protected-obsolete retained-owned current-owned > "$root/apt-owned-packages.txt"
+  printf '%s\n' obsolete-owned protected-obsolete retained-owned current-owned > "$MOCK_INSTALLED_FILE"
+
+  gc_output=$(HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3 --dry-run)
+  grep -Fq "Would remove generation $old_generation" <<< "$gc_output"
+  grep -Fq 'Would remove obsolete Termux APT package: obsolete-owned' <<< "$gc_output"
+  [[ -d "$root/generations/$old_generation" ]]
+  grep -Fxq obsolete-owned "$MOCK_INSTALLED_FILE"
+  grep -Fxq obsolete-owned "$root/apt-owned-packages.txt"
+
+  HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3
+  [[ ! -e "$root/generations/$old_generation" ]]
+  [[ -d "$root/generations/$retained_generation" ]]
+  [[ -d "$root/generations/$newest_generation" ]]
+  [[ -d "$root/generations/$active_generation" ]]
+  grep -Fxq retained-owned "$MOCK_INSTALLED_FILE"
+  grep -Fxq current-owned "$MOCK_INSTALLED_FILE"
+  grep -Fxq protected-obsolete "$MOCK_INSTALLED_FILE"
+  assert_not_grep obsolete-owned "$MOCK_INSTALLED_FILE"
+  assert_not_grep obsolete-owned "$root/apt-owned-packages.txt"
+  grep -Fxq protected-obsolete "$root/apt-owned-packages.txt"
+  [[ "$(wc -l < "$root/generation-index.tsv")" -eq 3 ]]
+  assert_not_grep autoremove "$MOCK_APT_LOG"
+
+  local symlink_generation
+  symlink_generation=$(printf '%064d' 5)
+  ln -s "$temporary/outside-generation" "$root/generations/$symlink_generation"
+  if HOME="$temporary/home" bash "$script_dir/bootstrap.sh" gc --keep 3 >/dev/null 2>&1
+  then
+    printf 'Generation GC unexpectedly accepted a symlinked generation.\n' >&2
+    return 1
+  fi
+  [[ -d "$root/generations/$active_generation" ]]
+  grep -Fxq current-owned "$MOCK_INSTALLED_FILE"
+  rm -- "$root/generations/$symlink_generation"
+
+  printf 'PASS: APT ownership cleanup and generation GC retain rollback requirements, remove safe obsolete state, and block dependency cascades\n'
 )
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

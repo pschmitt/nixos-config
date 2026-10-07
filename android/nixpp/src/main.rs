@@ -62,6 +62,15 @@ enum Command {
         /// Generation number shown by `nixpp status` or `nixpp generations`.
         generation: String,
     },
+    /// Remove old generations and Termux APT packages no retained generation needs.
+    Gc {
+        /// Number of newest generations to retain, plus the active generation.
+        #[arg(long, default_value_t = 3)]
+        keep: usize,
+        /// Show what would be removed without changing generations or packages.
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() {
@@ -94,5 +103,6 @@ fn run(cli: Cli) -> Result<()> {
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
         Command::Rollback { generation } => nixpp::rollback(&generation),
+        Command::Gc { keep, dry_run } => nixpp::gc(keep, dry_run),
     }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore\n' "$(basename "$0")"
+  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run]\n' "$(basename "$0")"
 }
 
 restore_startup() {
@@ -146,7 +146,7 @@ install_apt_packages() {
 }
 
 remove_obsolete_apt_packages() {
-  local root=$1 package simulation removal_plan
+  local root=$1 dry_run=${2:-0} package simulation removal_plan
   local -a owned=() remaining=()
   [[ -f "$root/apt-owned-packages.txt" ]] || return 0
   mapfile -t owned < "$root/apt-owned-packages.txt" || return
@@ -183,6 +183,11 @@ remove_obsolete_apt_packages() {
       remaining+=("$package")
       continue
     fi
+    if [[ "$dry_run" == 1 ]]
+    then
+      printf 'Would remove obsolete Termux APT package: %s\n' "$package"
+      continue
+    fi
     if ! apt-get -y remove -- "$package" || apt_package_installed "$package"
     then
       printf 'Keeping ownership record for %s: APT did not remove it.\n' "$package" >&2
@@ -194,8 +199,226 @@ remove_obsolete_apt_packages() {
   write_owned_packages "$root" "${remaining[@]}"
 }
 
+gc_generations() (
+  local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.tsv"
+  local current_path current_id number id extra generation_dir ordered_index index_temp
+  local plan_root package_owner_file
+  local -A numbers=() used_numbers=() retained=()
+  local -a removal_candidates=()
+
+  if [[ ! -s "$index" ]]
+  then
+    printf 'Generation index is missing; refusing to remove generations.\n' >&2
+    return 1
+  fi
+
+  current_path=$(readlink -f -- "$root/current") || return
+  case "$current_path" in
+    "$root"/generations/*) ;;
+    *)
+      printf 'Current generation points outside the managed generation directory.\n' >&2
+      return 1
+      ;;
+  esac
+  current_id=${current_path##*/}
+  if [[ ! "$current_id" =~ ^[0-9a-f]{64}$ ||
+        ! -d "$root/generations/$current_id" ||
+        ! -f "$root/generations/$current_id/manifest.json" ||
+        ! -r "$root/generations/$current_id/base-packages.txt" ]]
+  then
+    printf 'Current generation is incomplete; refusing garbage collection.\n' >&2
+    return 1
+  fi
+
+  ordered_index=$(mktemp "$root/.gc-index.XXXXXXXX") || return
+  trap 'rm -f -- "$ordered_index"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
+  while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
+  do
+    [[ -n "$number$id$extra" ]] || continue
+    if [[ ! "$number" =~ ^[1-9][0-9]*$ ||
+          ! "$id" =~ ^[0-9a-f]{64}$ ||
+          -n "$extra" ||
+          -n "${numbers[$id]:-}" ||
+          -n "${used_numbers[$number]:-}" ]]
+    then
+      printf 'Invalid generation index entry; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    numbers[$id]=$number
+    used_numbers[$number]=1
+  done < "$index"
+
+  for id in "${!numbers[@]}"
+  do
+    generation_dir="$root/generations/$id"
+    if [[ -L "$generation_dir" || ( -e "$generation_dir" && ! -d "$generation_dir" ) ]]
+    then
+      printf 'Indexed generation is not a managed directory; refusing garbage collection: %s\n' "$id" >&2
+      return 1
+    fi
+  done
+
+  for generation_dir in "$root"/generations/*
+  do
+    id=${generation_dir##*/}
+    if [[ "$id" =~ ^[0-9a-f]{64}$ && -L "$generation_dir" ]]
+    then
+      printf 'Generation path is a symlink; refusing garbage collection: %s\n' "$id" >&2
+      return 1
+    fi
+    [[ -d "$generation_dir" && ! -L "$generation_dir" ]] || continue
+    [[ "$id" =~ ^[0-9a-f]{64}$ ]] || continue
+    if [[ -z "${numbers[$id]:-}" ]]
+    then
+      printf 'Generation is not present in the index; refusing garbage collection: %s\n' "$id" >&2
+      return 1
+    fi
+  done
+
+  while IFS=$'\t' read -r number id
+  do
+    if [[ -L "$root/generations/$id" ]]
+    then
+      printf 'Generation path is a symlink; refusing garbage collection: %s\n' "$id" >&2
+      return 1
+    fi
+    [[ -d "$root/generations/$id" ]] || continue
+    printf '%s\t%s\n' "$number" "$id"
+  done < "$index" | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
+
+  local retained_count=0
+  while IFS=$'\t' read -r number id
+  do
+    [[ -n "$id" ]] || continue
+    if (( retained_count < keep_count ))
+    then
+      retained[$id]=1
+      ((retained_count += 1))
+    fi
+  done < "$ordered_index"
+  retained[$current_id]=1
+
+  while IFS=$'\t' read -r number id
+  do
+    [[ -n "$id" ]] || continue
+    [[ -n "${retained[$id]:-}" ]] && continue
+    if [[ ! -f "$root/generations/$id/manifest.json" ||
+          ! -r "$root/generations/$id/base-packages.txt" ]]
+    then
+      printf 'Keeping incomplete generation: %s\n' "$id"
+      retained[$id]=1
+      continue
+    fi
+    removal_candidates+=("$id")
+  done < "$ordered_index"
+
+  printf 'Retaining %s generation(s), including the active generation.\n' "${#retained[@]}"
+  if ((${#removal_candidates[@]} == 0))
+  then
+    printf 'No old generations are eligible for removal.\n'
+  else
+    for id in "${removal_candidates[@]}"
+    do
+      if [[ "$dry_run" == 1 ]]
+      then
+        printf 'Would remove generation %s\n' "$id"
+      else
+        generation_dir="$root/generations/$id"
+        if ! chmod -R u+w -- "$generation_dir" || ! rm -rf -- "$generation_dir"
+        then
+          printf 'Keeping generation because removal failed: %s\n' "$id" >&2
+          retained[$id]=1
+          continue
+        fi
+        printf 'Removed generation %s\n' "$id"
+      fi
+    done
+  fi
+
+  if [[ "$dry_run" == 1 ]]
+  then
+    plan_root=$(mktemp -d "$root/.gc-plan.XXXXXXXX") || return
+    mkdir "$plan_root/generations" || return
+    for id in "${!retained[@]}"
+    do
+      [[ -d "$root/generations/$id" ]] || continue
+      ln -s "$root/generations/$id" "$plan_root/generations/$id" || return
+    done
+    package_owner_file="$root/apt-owned-packages.txt"
+    if [[ -f "$package_owner_file" ]]
+    then
+      cp -- "$package_owner_file" "$plan_root/apt-owned-packages.txt" || return
+    fi
+    remove_obsolete_apt_packages "$plan_root" 1
+    return
+  fi
+
+  index_temp=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+  while IFS=$'\t' read -r number id
+  do
+    [[ -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || continue
+    printf '%s\t%s\n' "$number" "$id"
+  done < "$ordered_index" | LC_ALL=C sort -t $'\t' -k1,1n > "$index_temp" || {
+    rm -f -- "$index_temp"
+    return 1
+  }
+  mv -f -- "$index_temp" "$index" || return
+  remove_obsolete_apt_packages "$root"
+)
+
+run_generation_gc() {
+  local root="$HOME/.local/share/termux-native"
+  local keep_count=$1 dry_run=$2
+  mkdir -p "$root/generations" || return
+  mkdir "$root/.lock" || {
+    printf 'Another Termux-native bootstrap, activation, or garbage collection is in progress.\n' >&2
+    return 1
+  }
+  trap cleanup_bootstrap_lock EXIT
+  gc_generations "$root" "$keep_count" "$dry_run"
+}
+
 main() {
   local installer root backup temporary shell_file generation archive checksum
+  local keep_count=3 dry_run=0
+
+  if [[ "${1:-}" == gc ]]
+  then
+    shift
+    while (($#))
+    do
+      case "$1" in
+        --keep)
+          if (($# < 2))
+          then
+            usage >&2
+            return 2
+          fi
+          keep_count=$2
+          shift 2
+          ;;
+        --dry-run)
+          dry_run=1
+          shift
+          ;;
+        -h | --help)
+          usage
+          return 0
+          ;;
+        *)
+          usage >&2
+          return 2
+          ;;
+      esac
+    done
+    if [[ ! "$keep_count" =~ ^[1-9][0-9]*$ ]] || ((keep_count > 1000))
+    then
+      printf 'Generation retention must be between 1 and 1000.\n' >&2
+      return 2
+    fi
+    run_generation_gc "$keep_count" "$dry_run"
+    return
+  fi
 
   case "${1:-}" in
     -h | --help)

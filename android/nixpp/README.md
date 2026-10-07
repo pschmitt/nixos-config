@@ -94,6 +94,15 @@ run `nixpp rollback NUMBER`; the full SHA-256 ID also remains accepted. Add
 `--json` to `nixpp status` for scripting. The Zsh helper `termux-native-status`
 delegates to the same status view.
 
+Use `nixpp gc --dry-run` to preview cleanup, then `nixpp gc` to prune old
+generations. By default it retains the three newest generations and always
+keeps the active generation; `--keep COUNT` changes that retention count. APT
+removal is limited to packages nixpp recorded as newly installed, no retained
+generation requires, and whose simulated APT removal would remove no other
+package. It never runs `autoremove`. A generation rollback changes the selected
+files and configuration; it does not reverse APT package changes or application
+data changes.
+
 The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on
 `rofl-13`, then Nix wraps each archive as its own reference-free output. The
