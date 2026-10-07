@@ -212,6 +212,8 @@ in
       mode = "0400";
       owner = "root";
       group = "root";
+      # monit does not pick up conf.d changes on its own
+      reloadUnits = [ "monit.service" ];
     };
   };
 
