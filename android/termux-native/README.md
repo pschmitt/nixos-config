@@ -520,13 +520,16 @@ anti-downgrade policy, or recover interrupted lock directories automatically.
 APT package lifecycle tracks packages installed by this profile in
 `apt-owned-packages.txt`; packages that were already installed are never
 claimed or removed. After the new generation passes its shell health checks,
-bootstrap simulates removal of each obsolete owned package and removes it only
-when APT plans to remove that package alone. It does not run `autoremove`, so
-APT-managed dependencies remain available to other packages. If APT would also
-remove a dependent package, nixpp keeps the package and its ownership record.
-Generation rollback does not undo APT changes. The first bootstrap after this
-tracking is introduced does not claim packages installed by older bootstrap
-runs, because their original ownership cannot be established safely.
+bootstrap checks every retained generation before considering an owned package
+obsolete. That keeps rollback generations' APT requirements installed. It then
+simulates removal and removes an unreferenced package only when APT plans to
+remove that package alone. It does not run `autoremove`, so APT-managed
+dependencies remain available to other packages. If APT would also remove a
+dependent package, nixpp keeps the package and its ownership record. Generation
+rollback does not undo APT changes; packages needed by any retained generation
+remain installed. The first bootstrap after this tracking is introduced does
+not claim packages installed by older bootstrap runs, because their original
+ownership cannot be established safely.
 The bootstrap saves the existing `$PREFIX/etc/zshenv` and Termux login shell
 before selecting the managed Zsh configuration. A cold app launch then starts
 the managed shell directly. `bash bootstrap.sh restore` restores both saved

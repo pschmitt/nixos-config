@@ -78,6 +78,19 @@ package_list_contains() {
   return 1
 }
 
+package_required_by_retained_generation() {
+  local root=$1 wanted=$2 generation package
+  for generation in "$root"/generations/*
+  do
+    [[ -d "$generation" && -r "$generation/base-packages.txt" ]] || continue
+    while IFS= read -r package
+    do
+      [[ "$package" == "$wanted" ]] && return 0
+    done < "$generation/base-packages.txt"
+  done
+  return 1
+}
+
 write_owned_packages() {
   local root=$1 temporary
   shift
@@ -133,12 +146,11 @@ install_apt_packages() {
 }
 
 remove_obsolete_apt_packages() {
-  local root=$1 generation=$2 package simulation removal_plan
-  local -a desired=() owned=() remaining=()
+  local root=$1 package simulation removal_plan
+  local -a owned=() remaining=()
   [[ -f "$root/apt-owned-packages.txt" ]] || return 0
-  mapfile -t desired < "$root/generations/$generation/base-packages.txt" || return
   mapfile -t owned < "$root/apt-owned-packages.txt" || return
-  for package in "${desired[@]}" "${owned[@]}"
+  for package in "${owned[@]}"
   do
     if [[ ! "$package" =~ ^[a-z0-9][a-z0-9+.-]*$ ]]
     then
@@ -148,7 +160,7 @@ remove_obsolete_apt_packages() {
   done
   for package in "${owned[@]}"
   do
-    if package_list_contains "$package" "${desired[@]}"
+    if package_required_by_retained_generation "$root" "$package"
     then
       remaining+=("$package")
       continue
@@ -240,7 +252,7 @@ main() {
   TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" preflight "$archive" "$generation" || return
   install_apt_packages "$root" "$generation" || return
   TERMUX_NATIVE_LOCK_HELD=1 bash "$installer" install "$archive" "$generation" || return
-  remove_obsolete_apt_packages "$root" "$generation" || return
+  remove_obsolete_apt_packages "$root" || return
   backup="$root/bootstrap-backup"
   shell_file="$HOME/.termux/shell"
   mkdir -p "$backup" || return

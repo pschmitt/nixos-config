@@ -11,13 +11,15 @@ assert_not_grep() {
 
 main() (
   set -euo pipefail
-  local script_dir temporary root generation
+  local script_dir temporary root generation retained_generation
   script_dir=$(dirname "${BASH_SOURCE[0]}")
   temporary=$(mktemp -d "${TMPDIR:-/tmp}/termux-native-apt-test.XXXXXXXX")
   trap 'rm -rf -- "$temporary"' EXIT
   root="$temporary/home/.local/share/termux-native"
   generation=$(printf '%064d' 1)
-  mkdir -p "$temporary/mock-bin" "$root/generations/$generation"
+  retained_generation=$(printf '%064d' 2)
+  mkdir -p "$temporary/mock-bin" "$root/generations/$generation" \
+    "$root/generations/$retained_generation"
   export MOCK_INSTALLED_FILE="$temporary/installed-packages.txt"
   export MOCK_APT_LOG="$temporary/apt.log"
   : > "$MOCK_APT_LOG"
@@ -66,25 +68,32 @@ MOCK_APT_GET
     new-package \
     safe-obsolete \
     protected-obsolete \
+    removable-obsolete \
     > "$root/generations/$generation/base-packages.txt"
+  printf '%s\n' safe-obsolete > "$root/generations/$retained_generation/base-packages.txt"
   install_apt_packages "$root" "$generation"
   grep -Fxq new-package "$MOCK_INSTALLED_FILE"
   grep -Fxq safe-obsolete "$MOCK_INSTALLED_FILE"
   grep -Fxq protected-obsolete "$MOCK_INSTALLED_FILE"
+  grep -Fxq removable-obsolete "$MOCK_INSTALLED_FILE"
   grep -Fxq new-package "$root/apt-owned-packages.txt"
   assert_not_grep preexisting-package "$root/apt-owned-packages.txt"
 
   printf '%s\n' preexisting-package new-package > "$root/generations/$generation/base-packages.txt"
-  remove_obsolete_apt_packages "$root" "$generation"
-  assert_not_grep safe-obsolete "$MOCK_INSTALLED_FILE"
+  remove_obsolete_apt_packages "$root"
+  grep -Fxq safe-obsolete "$MOCK_INSTALLED_FILE"
   grep -Fxq protected-obsolete "$MOCK_INSTALLED_FILE"
+  assert_not_grep removable-obsolete "$MOCK_INSTALLED_FILE"
+  grep -Fxq safe-obsolete "$root/apt-owned-packages.txt"
   grep -Fxq protected-obsolete "$root/apt-owned-packages.txt"
   grep -Fxq new-package "$root/apt-owned-packages.txt"
+  assert_not_grep removable-obsolete "$root/apt-owned-packages.txt"
   assert_not_grep preexisting-package "$root/apt-owned-packages.txt"
-  grep -Fxq -- '-y remove -- safe-obsolete' "$MOCK_APT_LOG"
+  grep -Fxq -- '-y remove -- removable-obsolete' "$MOCK_APT_LOG"
+  assert_not_grep '-y remove -- safe-obsolete' "$MOCK_APT_LOG"
   assert_not_grep '-y remove -- protected-obsolete' "$MOCK_APT_LOG"
   assert_not_grep autoremove "$MOCK_APT_LOG"
-  printf 'PASS: preserves pre-existing APT packages, removes only owned obsolete packages, and blocks removal of dependents\n'
+  printf 'PASS: preserves pre-existing and rollback-required APT packages, removes unreferenced owned packages, and blocks dependency cascades\n'
 )
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
