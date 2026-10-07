@@ -683,3 +683,15 @@ generation changes. Bundle
 `465d904cedd595790b5367c63f4de6a99637871424e8529d897ac56de07cc90a` built on
 rofl-13; visible-app bootstrap, interactive smoke, no-plugin check, and cold
 relaunch passed on the Zenfone 10 and Mi Pad 4. APT made no package changes.
+
+On 2026-10-07, the APT lifecycle now retains packages referenced by any
+generation still available for rollback, while removing safe, unreferenced
+profile-owned packages. Bundle
+`b1f7dc5bbc06f447cfa677c1eecbefdbaf95e66d42689032e64b0c0c40285026` built on
+rofl-13 and was installed through the visible Termux app on both devices.
+Interactive smoke and no-Zinit checks passed; cold relaunch returned to the
+managed prompt. `nixpp status` showed generation 55 on the Zenfone 10 and 122
+on the Mi Pad 4, with alphabetized APT and Nix package lists. The Mi Pad
+bootstrap took 1m16s; APT reported all requested packages already installed.
+This verification used a local test copy; the private cache's latest channel
+was not updated.
