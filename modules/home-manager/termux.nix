@@ -103,11 +103,20 @@ in
         ".config/nvim/lua"
         ".config/nvim/snippets"
         ".config/nvim/stylua.toml"
+      ]
+      ++ lib.optionals (config.termux.ssh.hostKeysSopsFile != null) [
+        ".local/share/termux-native/ssh-host-keys.sops.yaml"
       ];
       description = ''
         Relative Home Manager output files copied into a Termux generation.
         This allowlist keeps unrelated home and private dotfiles out of bundles.
       '';
+    };
+
+    ssh.hostKeysSopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Encrypted per-host OpenSSH host keys included in the Termux generation.";
     };
   };
 
@@ -115,8 +124,70 @@ in
   # explicitly added through home.packages must target Android/Bionic.
   config = lib.mkMerge [
     {
-      xdg.enable = true;
-      termux.enable = true;
+      termux = {
+        enable = true;
+        packages = [
+          "bash"
+          "ca-certificates"
+          "coreutils"
+          "curl"
+          "diff-so-fancy"
+          "git"
+          "grep"
+          "jq"
+          "libngtcp2"
+          "less"
+          "openssh"
+          "atuin"
+          "bat"
+          "eza"
+          "fd"
+          "gzip"
+          "tmux"
+          "ripgrep"
+          "unzip"
+          "vivid"
+          "zip"
+          "udocker"
+          "procps"
+          "python"
+          "shellcheck"
+          "sed"
+          "tar"
+          "tudo"
+          "util-linux"
+          "zsh"
+        ];
+      };
+
+      xdg = {
+        enable = true;
+        configFile = {
+          "termux/tasker/tudo" = {
+            executable = true;
+            text = ''
+              #!/data/data/com.termux/files/usr/bin/sh
+              exec "$PREFIX/bin/tudo" "$@"
+            '';
+          };
+          "zsh/termux/prompt-color.zsh".text = ''
+            if [[ -z "''${host_color:-}" ]]
+            then
+              typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+            fi
+          '';
+          "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
+          "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
+          "zsh/custom/os/home-manager/system.zsh".text = ''
+            functions[nvim]=${lib.escapeShellArg ''XDG_CONFIG_HOME="$TERMUX_GENERATION/home/.config" command nvim "$@"''}
+          '';
+        };
+        dataFile."termux-native/ssh-host-keys.sops.yaml" =
+          lib.mkIf (config.termux.ssh.hostKeysSopsFile != null)
+            {
+              source = config.termux.ssh.hostKeysSopsFile;
+            };
+      };
 
       home = {
         username = "termux";
@@ -133,41 +204,9 @@ in
         pkgsTermux.nixpp
         pkgsTermux.obs-cli
         pkgsTermux.rbw
+        pkgsTermux.sops
         pkgsTermux.ssh-to-age
         pkgsTermux.emoji-fzf
-      ];
-
-      termux.packages = [
-        "bash"
-        "ca-certificates"
-        "coreutils"
-        "curl"
-        "diff-so-fancy"
-        "git"
-        "grep"
-        "jq"
-        "libngtcp2"
-        "less"
-        "openssh"
-        "atuin"
-        "bat"
-        "eza"
-        "fd"
-        "gzip"
-        "tmux"
-        "ripgrep"
-        "unzip"
-        "vivid"
-        "zip"
-        "udocker"
-        "procps"
-        "python"
-        "shellcheck"
-        "sed"
-        "tar"
-        "tudo"
-        "util-linux"
-        "zsh"
       ];
 
       programs.zsh = {
@@ -189,26 +228,6 @@ in
         '';
       };
 
-      xdg.configFile = {
-        "termux/tasker/tudo" = {
-          executable = true;
-          text = ''
-            #!/data/data/com.termux/files/usr/bin/sh
-            exec "$PREFIX/bin/tudo" "$@"
-          '';
-        };
-        "zsh/termux/prompt-color.zsh".text = ''
-          if [[ -z "''${host_color:-}" ]]
-          then
-            typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
-          fi
-        '';
-        "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
-        "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
-        "zsh/custom/os/home-manager/system.zsh".text = ''
-          functions[nvim]=${lib.escapeShellArg ''XDG_CONFIG_HOME="$TERMUX_GENERATION/home/.config" command nvim "$@"''}
-        '';
-      };
     }
     (lib.mkIf (config.termux.enable && config.programs.zsh.enable) {
       programs.zsh.package = null;

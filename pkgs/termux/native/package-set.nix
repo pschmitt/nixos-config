@@ -308,6 +308,12 @@ androidPkgs.extend (
         licenseFile = "${pkgs.ssh-to-age.src}/LICENSE";
       };
 
+      sops = fromGo {
+        package = pkgs.sops;
+        binary = "sops";
+        licenseFile = "${pkgs.sops.src}/LICENSE";
+      };
+
       eget = fromGo {
         package = pkgs.eget;
         binary = "eget";
