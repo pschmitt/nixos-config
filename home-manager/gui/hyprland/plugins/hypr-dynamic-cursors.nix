@@ -1,10 +1,6 @@
 { pkgs, inputs, ... }:
 let
-  dynamicCursors =
-    inputs.hypr-dynamic-cursors.packages.${pkgs.stdenv.hostPlatform.system}.default.overrideAttrs
-      (old: {
-        patches = (old.patches or [ ]) ++ [ ./patches/dynamic-cursors-render-context.patch ];
-      });
+  dynamicCursors = inputs.hypr-dynamic-cursors.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   # Dynamic cursor effects (https://github.com/VirtCode/hypr-dynamic-cursors).
