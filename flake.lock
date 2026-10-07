@@ -1272,11 +1272,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791301473,
-        "narHash": "sha256-X9oZay8gG9KLaKZWbuEdi6MDbit7LG+7fbqewN2sLk4=",
+        "lastModified": 1791387197,
+        "narHash": "sha256-JZN0qfVAd111MR+0fcY5r5fTp30TtUMeMwyvkCSCQZY=",
         "owner": "pschmitt",
         "repo": "homeassistant-hrworks",
-        "rev": "150054e0309417ba2fdb443d25bae7529c74af74",
+        "rev": "13b6dbd6e2fe2e397cda51d218e2ea17e5e5e1ff",
         "type": "github"
       },
       "original": {
@@ -2223,11 +2223,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1791379870,
-        "narHash": "sha256-tZFFSLtUAIFgmwGb7C5CRntqSBnoXHIcHe4D+dgWGzw=",
+        "lastModified": 1791387227,
+        "narHash": "sha256-Lk2iz2zWVC2sTOmgd9/bNM3QRexgKk6KfMMvXP0cdJM=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "8e360b45e8fae4934d39d9f68bfa508f67671c42",
+        "rev": "7a28cf2b5d02f8b15379eb63e4fb7abf46d4233d",
         "type": "github"
       },
       "original": {
