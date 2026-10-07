@@ -440,8 +440,9 @@ cd android/termux-native
 nix build '.#bundle'
 nix develop 'path:.' -c statix check
 nix develop 'path:.' -c deadnix --fail
-nix develop 'path:.' -c shellcheck activate.sh bootstrap.sh test-apt-packages.sh test-device.sh
+nix develop 'path:.' -c shellcheck activate.sh bootstrap.sh test-apt-packages.sh test-bootstrap-retry.sh test-device.sh
 bash test-apt-packages.sh
+bash test-bootstrap-retry.sh
 nix-store -q --references result
 ```
 
