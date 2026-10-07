@@ -96,13 +96,6 @@ in
         then
           __init_custom_completions
         fi
-        # Autoload cache: functions an eager file redefined go back to stubs.
-        if (( ''${#__zlp_restub} ))
-        then
-          unfunction -- "''${__zlp_restub[@]}" 2>/dev/null
-          autoload -Uz -- "''${__zlp_restub[@]}"
-        fi
-        unset __zlp_restub
 
         local hook
         for hook in $zsh_after_local_plugins
@@ -117,14 +110,6 @@ in
 
       zsh::source-local-plugins() {
         [[ -n "''${NO_LOCAL_PLUGINS:-}" ]] && return 0
-        if zsh::local-plugins-cache-load
-        then
-          zsh::local-plugins-finish
-          return 0
-        fi
-        # Stale/missing cache: rebuild in the background (also from scripts
-        # and `ssh host cmd`, so hosts without interactive use catch up).
-        zsh::local-plugins-compile-async
         local -a reply
         local file
         zsh::local-plugin-files
@@ -149,21 +134,10 @@ in
           return
         fi
 
-        # The queue holds commands, run one per idle tick. With a fresh
-        # autoload cache: register the stubs now (functions work at the
-        # first prompt), queue the replayed aliases and remaining files.
-        # Otherwise queue every plugin file and rebuild the cache.
+        # The queue holds commands, run one per idle tick.
         local -a reply
-        if zsh::local-plugins-cache-fresh && zsh::local-plugins-cache-body
-        then
-          typeset -ga __zsh_local_plugin_queue=("''${reply[@]}")
-          source "$__zlp_build/head.zsh"
-          typeset -g ZSH_LOCAL_PLUGINS_CACHE_BUILD="$__zlp_build"
-        else
-          zsh::local-plugins-compile-async
-          zsh::local-plugin-files
-          typeset -ga __zsh_local_plugin_queue=("zsh::source-plugin "''${(@q)^reply})
-        fi
+        zsh::local-plugin-files
+        typeset -ga __zsh_local_plugin_queue=("zsh::source-plugin "''${(@q)^reply})
         typeset -g __zsh_local_plugin_log="''${ZSH_CACHE_DIR:-${config.xdg.cacheHome}/zsh}/local-plugins.log"
         : >| "$__zsh_local_plugin_log"
         zsh::local-plugins-prepare
@@ -212,7 +186,6 @@ in
       }
 
     '')
-    (lib.mkOrder 1355 (builtins.readFile ./local-plugin-cache.zsh))
     (lib.mkOrder 1600 ''
       zsh::reload-runtime() {
         zsh::source-local-plugins
