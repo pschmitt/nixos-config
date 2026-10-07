@@ -55,7 +55,7 @@ let
         local class classes changed
         classes="$(yadm config --get-all local.class)"
 
-        for class in termux notnixos
+        for class in termux impure
         do
           if ! grep -qx "$class" <<< "$classes"
           then
