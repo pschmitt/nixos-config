@@ -17,6 +17,7 @@
     ./netbird.nix
     ./tables.nix
     ./tesmart.nix
+    ./xcp.nix
     ./tmux-slay.nix
     ./yank.nix
   ];

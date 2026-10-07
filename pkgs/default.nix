@@ -45,6 +45,7 @@ in
   };
   inherit screencast-state;
   inherit soundboard;
+  xcp = pkgs.callPackage ./local/xcp { };
   zebra = pkgs.callPackage ./local/zebra { };
   zhj = pkgs.callPackage ./local/zhj { };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
