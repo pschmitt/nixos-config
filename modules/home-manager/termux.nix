@@ -186,7 +186,10 @@ in
           '';
         };
         "zsh/termux/prompt-color.zsh".text = ''
-          typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+          if [[ -z "''${host_color:-}" ]]
+          then
+            typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
+          fi
         '';
         "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
         "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
