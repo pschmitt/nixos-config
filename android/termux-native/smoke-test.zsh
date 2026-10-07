@@ -180,7 +180,9 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in adb.sh eget jc linkding myl nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
+  for command in adb.sh eget jc ketall kubectl-delete_all kubectl-list_all \
+    kubectl-reveal_secret kubectl-socks5_proxy kubectl-watch linkding myl netbird-cli \
+    nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
   do
     if [[ ${commands[$command]:-} != "$TERMUX_GENERATION/bin/$command" ]]
     then
@@ -268,6 +270,13 @@ native_shell_check() {
   native_smoke_run 'Termux status helper' termux-native-status || return
   native_smoke_run 'rbw version' rbw --version || return
   native_smoke_run 'kubectl client version' kubectl version --client --output=yaml || return
+  native_smoke_run 'ketall help' ketall --help || return
+  native_smoke_run 'kubectl delete-all help' kubectl-delete_all --help || return
+  native_smoke_run 'kubectl list-all help' kubectl-list_all --help || return
+  native_smoke_run 'kubectl reveal-secret help' kubectl-reveal_secret --help || return
+  native_smoke_run 'kubectl SOCKS5 proxy help' kubectl-socks5_proxy --help || return
+  native_smoke_run 'kubectl watch help' kubectl-watch --help || return
+  NB_API_TOKEN=smoke native_smoke_run 'NetBird CLI help' netbird-cli accounts help || return
   local tmux_socket="native-smoke-$$"
   tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
   tmux -L "$tmux_socket" has-session -t native-smoke || {

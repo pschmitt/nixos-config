@@ -11,6 +11,7 @@ in
 androidPkgs.extend (
   _final: _prev:
   let
+    inherit (pkgs) lib;
     withAptPackages =
       package: aptPackages:
       package.overrideAttrs (old: {
@@ -74,6 +75,45 @@ androidPkgs.extend (
           target
           ;
       };
+    termuxShellScripts =
+      {
+        package,
+        scripts,
+        aptPackages ? [ ],
+      }:
+      let
+        scriptPaths = map (script: "bin/${script.command}") scripts;
+        packageMeta = package.meta or { };
+        installScripts = lib.concatMapStringsSep "\n" (script: ''
+          {
+            printf '%s\n' '#!${target.prefix}/bin/bash'
+            ${pkgs.coreutils}/bin/tail -n +2 \
+              ${lib.escapeShellArg "${package.src}/${script.source}"}
+          } > "$out/bin/${script.command}"
+          chmod 0755 "$out/bin/${script.command}"
+        '') scripts;
+      in
+      assert scripts != [ ];
+      assert lib.all (script: builtins.match "[A-Za-z0-9._+-]+" script.command != null) scripts;
+      pkgs.runCommand "${lib.getName package}-termux"
+        {
+          allowedReferences = [ ];
+          passthru.termuxNative = {
+            abi = "android-bionic";
+            files = scriptPaths;
+            binaries = [ ];
+            scripts = scriptPaths;
+            trees = [ ];
+            inherit aptPackages;
+          };
+          meta = packageMeta // {
+            mainProgram = packageMeta.mainProgram or (builtins.head (map (script: script.command) scripts));
+          };
+        }
+        ''
+          mkdir -p "$out/bin"
+          ${installScripts}
+        '';
     pythonApplication =
       {
         package,
@@ -190,6 +230,7 @@ androidPkgs.extend (
         fromGo
         fromNixpkgs
         pythonApplication
+        termuxShellScripts
         withAptPackages
         ;
     };
@@ -225,6 +266,102 @@ androidPkgs.extend (
         # Nixpkgs wraps krew with its Git path; Termux APT owns Git instead.
         skipPostFixup = true;
       }) [ "git" ];
+
+      ketall = withAptPackages (fromGo {
+        package = pkgs.ketall;
+        binary = "ketall";
+        licenseFile = "${pkgs.ketall.src}/LICENSE";
+      }) [ "ca-certificates" ];
+
+      kubectlKsh = termuxShellScripts {
+        package = pkgs.kubectl-ksh;
+        scripts = [
+          {
+            command = "kubectl-delete_all";
+            source = "kubectl-delete-all.sh";
+          }
+          {
+            command = "kubectl-list_all";
+            source = "kubectl-list-all.sh";
+          }
+          {
+            command = "kubectl-reveal_secret";
+            source = "kubectl-reveal-secret.sh";
+          }
+        ];
+        aptPackages = [
+          "bash"
+          "coreutils"
+          "findutils"
+          "gawk"
+          "grep"
+          "jq"
+          "kubectl"
+          "sed"
+          "util-linux"
+        ];
+      };
+
+      kubectlSocks5Proxy = termuxShellScripts {
+        package = pkgs.kubectl-socks5-proxy;
+        scripts = [
+          {
+            command = "kubectl-socks5_proxy";
+            source = "kubectl-socks5-proxy";
+          }
+        ];
+        aptPackages = [
+          "bash"
+          "coreutils"
+          "gawk"
+          "grep"
+          "kubectl"
+          "ncurses-utils"
+          "sed"
+          "util-linux"
+        ];
+      };
+
+      kubectlWatch = termuxShellScripts {
+        package = pkgs.kubectl-watch;
+        scripts = [
+          {
+            command = "kubectl-watch";
+            source = "kubectl-watch";
+          }
+        ];
+        aptPackages = [
+          "bash"
+          "coreutils"
+          "gawk"
+          "grep"
+          "jq"
+          "kubecolor"
+          "kubectl"
+          "ncurses-utils"
+          "sed"
+        ];
+      };
+
+      netbirdCli = termuxShellScripts {
+        package = pkgs.netbird-cli;
+        scripts = [
+          {
+            command = "netbird-cli";
+            source = "netbird-cli.sh";
+          }
+        ];
+        aptPackages = [
+          "bash"
+          "coreutils"
+          "curl"
+          "gawk"
+          "grep"
+          "jq"
+          "sed"
+          "util-linux"
+        ];
+      };
 
       tmux-slay = pkgs.callPackage ./tmux-slay.nix { inherit inputs; };
 

@@ -27,7 +27,12 @@ in
     ../../home-manager/cli/zsh/tools/fd.nix
     ../../home-manager/cli/zsh/tools/jq.nix
     ../../home-manager/cli/zsh/tools/adb.nix
+    ../../home-manager/cli/zsh/tools/ketall.nix
     ../../home-manager/cli/zsh/tools/krew.nix
+    ../../home-manager/cli/zsh/tools/kubectl-ksh.nix
+    ../../home-manager/cli/zsh/tools/kubectl-socks5-proxy.nix
+    ../../home-manager/cli/zsh/tools/kubectl-watch.nix
+    ../../home-manager/cli/zsh/tools/netbird.nix
     ../../home-manager/cli/zsh/tools/termux/assh.nix
     ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix

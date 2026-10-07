@@ -709,3 +709,11 @@ the managed Zsh prompt. The run took about six minutes by the device clock;
 the existing home directory was kept. A force-stop and app relaunch returned
 to the managed prompt, and `nixpp status` showed generation 54 with alphabetized
 package lists and no Zinit command.
+
+On 2026-10-07, the Termux bundle added Android-native `ketall` and Termux-ready
+shell adapters for `kubectl-ksh`, `kubectl-socks5-proxy`, `kubectl-watch`, and
+`netbird-cli`. They reuse existing package sources and rely on Termux APT for
+shell utilities and `kubectl`; no Termux `.deb` files or dependency libraries
+are copied into Nix generations. The bundle built on `rofl-13`, and all seven
+command help paths passed through the visible Termux app on the Zenfone 10 and
+Mi Pad 4.
