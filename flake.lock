@@ -3132,6 +3132,7 @@
         "vpn-confinement": "vpn-confinement",
         "wezterm": "wezterm",
         "zen-browser": "zen-browser",
+        "zsh-completions": "zsh-completions",
         "zsh-diff-so-fancy": "zsh-diff-so-fancy"
       }
     },
@@ -4248,6 +4249,22 @@
         "owner": "jcollie",
         "ref": "v0.9.0",
         "repo": "zon2nix",
+        "type": "github"
+      }
+    },
+    "zsh-completions": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1789951822,
+        "narHash": "sha256-b6PG8N1eIEq59QND61ADgANK/R1+CagE5IOQ5jBiQuw=",
+        "owner": "zsh-users",
+        "repo": "zsh-completions",
+        "rev": "b5e8e0a22deb05a807bb8655aef809a29f3cffed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zsh-users",
+        "repo": "zsh-completions",
         "type": "github"
       }
     },

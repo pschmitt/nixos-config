@@ -139,6 +139,11 @@
       flake = false;
     };
 
+    zsh-completions = {
+      url = "github:zsh-users/zsh-completions";
+      flake = false;
+    };
+
     vi-motions = {
       url = "github:zsh-vi-more/vi-motions/c21a9e13be15166810e9487a015cd70c21229cf7";
       flake = false;

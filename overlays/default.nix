@@ -28,6 +28,7 @@
     // (import ./hotfixes.nix { inherit inputs final prev; })
     # // (import ./tmux.nix { inherit final prev; })
     // (import ./noctalia.nix { inherit inputs final prev; })
+    // (import ./zsh-completions.nix { inherit inputs final prev; })
     // {
       # GitHub's codeload tarball for Playwright v1.63.0 changed bytes after
       # nixpkgs recorded its hash.  Keep the main package set in sync with the
