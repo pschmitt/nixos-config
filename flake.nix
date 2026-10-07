@@ -482,7 +482,7 @@
             inherit inputs outputs;
           };
 
-          modules = modules ++ [ ./hosts/${hostname} ];
+          modules = modules ++ [ ./hosts/${hostname}/nix-on-droid.nix ];
           home-manager-path = inputs.home-manager.outPath;
         };
 
@@ -553,9 +553,9 @@
                     }
                   )
                   {
-                    mp4 = ./hosts/mp4/termux-native;
-                    p11 = ./hosts/p11/termux-native;
-                    zf10 = ./hosts/zf10/termux-native;
+                    mp4 = ./hosts/mp4;
+                    p11 = ./hosts/p11;
+                    zf10 = ./hosts/zf10;
                   };
               hostBundlePackages = nixpkgs.lib.mapAttrs' (
                 hostname: bundle: nixpkgs.lib.nameValuePair "termux-native-${hostname}-bundle" bundle.bundle

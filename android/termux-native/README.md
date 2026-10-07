@@ -117,9 +117,11 @@ The complete Termux Home Manager module is
 CLI modules, selects the Termux APT packages, and declares the allowlist used
 by this bundle. The bundle builder evaluates that same exported module.
 
-Termux device profiles live beside the regular host configurations in
-`hosts/mp4/termux-native`, `hosts/zf10/termux-native`, and
-`hosts/p11/termux-native`. Each host entrypoint composes its host-specific
+Termux host profiles use the regular host entrypoint layout:
+`hosts/mp4/default.nix`, `hosts/zf10/default.nix`, and
+`hosts/p11/default.nix`. The Zenfone's existing Nix-on-Droid configuration is
+kept in `hosts/zf10/nix-on-droid.nix` and remains exposed as
+`nixOnDroidConfigurations.zf10`. Each Termux profile composes host-specific
 settings on top of the shared Termux module. The bundle builder passes the real
 hostname into Home Manager, so the generated Zsh environment and prompt color
 match the selected device. Build the matching bundle for each phone or tablet.
