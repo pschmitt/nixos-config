@@ -144,6 +144,7 @@ in
       "authelia/oidc-issuer-private-key" = secretsAttrs autheliaUser;
       "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
+      "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
     };
     templates = {
       "authelia/duo.yml" = {
@@ -241,6 +242,27 @@ in
                   # error when this was set to client_secret_basic, unlike
                   # audiobookshelf above), not a configurable option there.
                   token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                - client_id: 'monarch'
+                  client_name: 'Monarch'
+                  client_secret: '${config.sops.placeholder."authelia/oidc-monarch-secret-hash"}'
+                  public: false
+                  authorization_policy: 'two_factor'
+                  require_pkce: true
+                  pkce_challenge_method: 'S256'
+                  redirect_uris:
+                    - 'https://monarch.${config.domains.main}/api/auth/oidc/callback'
+                  scopes:
+                    - 'openid'
+                    - 'profile'
+                    - 'groups'
+                    - 'email'
+                  response_types:
+                    - 'code'
+                  grant_types:
+                    - 'authorization_code'
+                  access_token_signed_response_alg: 'none'
+                  userinfo_signed_response_alg: 'none'
+                  token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
         '';
         owner = autheliaUser;
         group = autheliaGroup;

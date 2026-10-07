@@ -13,6 +13,7 @@ in
 
   sops.secrets = {
     "monarch/admin/password" = config.sops.mkHostSecret { };
+    "monarch/oidc/client-secret" = config.sops.mkHostSecret { };
     # shared: monit agents report with it (see monit/config/mmonit)
     "monarch/collector/password" = { };
   };
@@ -23,7 +24,17 @@ in
     settings = {
       listen = "127.0.0.1:${toString port}";
       public_url = "https://${domain}";
+      oidc = {
+        # client registered in services/authelia.nix (oidc.yml template)
+        issuer = "https://auth.${config.domains.main}";
+        client_id = "monarch";
+        display_name = "Authelia";
+        admin_groups = [ "admin" ];
+        # nobody else in Authelia gets in
+        default_role = "none";
+      };
     };
+    oidc.clientSecretFile = config.sops.secrets."monarch/oidc/client-secret".path;
     initialAdmin = {
       user = "admin";
       passwordFile = config.sops.secrets."monarch/admin/password".path;
