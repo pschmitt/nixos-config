@@ -20,6 +20,5 @@
     ./rescue-ssh.nix
     ./resource-control.nix
     ./services.nix
-    ./zsh.nix
   ];
 }

@@ -13,6 +13,5 @@
     ./prompt.nix
     ./services.nix
     ./user-services.nix
-    ./zsh.nix
   ];
 }

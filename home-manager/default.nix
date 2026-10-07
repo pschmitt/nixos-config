@@ -25,6 +25,13 @@ in
     inputs.home-manager.nixosModules.home-manager
   ];
 
+  # The Nix-managed Zsh config is the default shell config on every Home
+  # Manager host; `zsh-yadm` still starts the yadm/zinit one.
+  dotfiles.zsh.nixShell = {
+    enable = lib.mkDefault true;
+    default = lib.mkDefault true;
+  };
+
   systemd.services."home-manager-${config.mainUser.username}".serviceConfig.ExecStartPre =
     lib.mkBefore
       [ "+-${fixSshOwnership}" ];
