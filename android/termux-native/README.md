@@ -745,3 +745,14 @@ hostname setup. Bundle
 `rofl-13`, installed through each visible Termux app, and passed activation
 smoke checks. After force-stop and cold relaunch, both devices returned to
 their expected host prompt (`zf10` and `mp4`).
+
+Also on 2026-10-07, the existing SSH server keys for the Mi Pad 4 and Zenfone
+10 were captured over SSH and encrypted in device-specific SOPS files in the
+private configuration repository. Their Home Manager bundles carry only the
+SOPS ciphertext. The Android-built SOPS and `ssh-to-age` binaries decrypted
+the keys on each device, and both key pairs matched the live SSH identities.
+The updated bundles built on `rofl-13`; they have not been published to the
+private cache yet. The P11 is not reachable over SSH, so its existing keys are
+still pending. The yadm-init installer now checks for encrypted host keys
+before replacing the Termux package tree and restores them after deploying the
+device's personal SSH identity.
