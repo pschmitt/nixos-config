@@ -1904,6 +1904,26 @@
         "type": "github"
       }
     },
+    "monarch": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791398957,
+        "narHash": "sha256-rFszyfLmJDRCngaRjp3h2YrtnsY3HeJnrLeWgbD3PG4=",
+        "owner": "pschmitt",
+        "repo": "monarch",
+        "rev": "c2d3d2fb77d18b21ea27639176975974f2ba0211",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "monarch",
+        "type": "github"
+      }
+    },
     "mq": {
       "inputs": {
         "nixpkgs": [
@@ -3102,6 +3122,7 @@
         "luks-mount": "luks-mount",
         "luks-ssh-unlock": "luks-ssh-unlock",
         "manydots": "manydots",
+        "monarch": "monarch",
         "mq": "mq",
         "myl": "myl",
         "myl-discovery": "myl-discovery_2",
