@@ -12,6 +12,7 @@ in
   imports = [ inputs.monarch.nixosModules.default ];
 
   sops.secrets = {
+    "monarch/admin/username" = config.sops.mkHostSecret { };
     "monarch/admin/password" = config.sops.mkHostSecret { };
     "monarch/oidc/client-secret" = config.sops.mkHostSecret { };
     # shared: monit agents report with it (see monit/config/mmonit)
@@ -35,15 +36,16 @@ in
       };
     };
     oidc.clientSecretFile = config.sops.secrets."monarch/oidc/client-secret".path;
-    initialAdmin = {
-      user = "admin";
-      passwordFile = config.sops.secrets."monarch/admin/password".path;
-    };
     nginx = {
       enable = true;
       inherit domain;
     };
     ensureUsers = [
+      {
+        usernameFile = config.sops.secrets."monarch/admin/username".path;
+        role = "admin";
+        passwordFile = config.sops.secrets."monarch/admin/password".path;
+      }
       {
         username = "monit";
         role = "collector";
