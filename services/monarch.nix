@@ -28,6 +28,10 @@ in
       user = "admin";
       passwordFile = config.sops.secrets."monarch/admin/password".path;
     };
+    nginx = {
+      enable = true;
+      inherit domain;
+    };
     ensureUsers = [
       {
         username = "monit";
@@ -37,22 +41,6 @@ in
     ];
   };
 
-  services.nginx.virtualHosts.${domain} = {
-    enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
-    forceSSL = true;
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:${toString port}";
-      recommendedProxySettings = true;
-      extraConfig = ''
-        # live updates (server-sent events)
-        proxy_buffering off;
-        proxy_read_timeout 1h;
-        # large monit status documents (program output)
-        client_max_body_size 32m;
-      '';
-    };
-  };
+  # FIXME https://github.com/NixOS/nixpkgs/issues/210807
+  services.nginx.virtualHosts.${domain}.acmeRoot = null;
 }
