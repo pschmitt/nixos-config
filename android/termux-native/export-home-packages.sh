@@ -91,6 +91,40 @@ bundle_has_library() {
   return 1
 }
 
+find_bundle_library() {
+  local dependency=$1 directory candidate selected selected_hash candidate_hash
+  local -a search_roots=() candidates=()
+
+  for directory in "$output/lib" "$output/lib64" "$output"/native/*/lib "$output"/native/*/lib64
+  do
+    [[ -d "$directory" ]] && search_roots+=("$directory")
+  done
+
+  ((${#search_roots[@]})) || return 1
+  while IFS= read -r -d '' candidate
+  do
+    candidates+=("$candidate")
+  done < <(find "${search_roots[@]}" -type f -name "$dependency" -print0)
+
+  ((${#candidates[@]})) || return 1
+  selected=${candidates[0]}
+  selected_hash=$(sha256sum "$selected")
+  selected_hash=${selected_hash%% *}
+  for candidate in "${candidates[@]:1}"
+  do
+    candidate_hash=$(sha256sum "$candidate")
+    candidate_hash=${candidate_hash%% *}
+    if [[ "$candidate_hash" != "$selected_hash" ]]
+    then
+      printf 'Ambiguous bundled library %s: %s and %s differ.\n' \
+        "$dependency" "$selected" "$candidate" >&2
+      return 2
+    fi
+  done
+
+  printf '%s\n' "$selected"
+}
+
 apt_library_declared() {
   local dependency=$1 file=$2 package_name package
 
@@ -195,8 +229,7 @@ bundle_dependencies() {
         "$package" "$binary" "$dependency" >&2
       return 1
     fi
-    if [[ -f "$system_libraries/$dependency" ]] ||
-      jq -e --arg dependency "$dependency" '.aptLibraries | index($dependency) != null' <<<"$package" >/dev/null
+    if [[ -f "$system_libraries/$dependency" ]] || apt_library_declared "$dependency" "$file"
     then
       continue
     fi
@@ -207,6 +240,9 @@ bundle_dependencies() {
     elif [[ -f "$package_root/lib64/$dependency" ]]
     then
       candidate="$package_root/lib64/$dependency"
+    elif candidate=$(find_bundle_library "$dependency")
+    then
+      :
     elif candidate=$(find_runtime_library "$dependency" "$runtime_closure")
     then
       destination="$package_root/lib/$dependency"
@@ -227,6 +263,8 @@ bundle_dependencies() {
     bundle_dependencies "$package" "$binary" "$candidate" "$package_root" "$runtime_closure"
   done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
 }
+
+declare -A scanned_elf=()
 
 while IFS= read -r package
 do
@@ -426,6 +464,18 @@ done < <(jq -c '.[]' "$manifest")
 
 while IFS= read -r -d '' bundled_file
 do
+  if "$readelf" -h "$bundled_file" >/dev/null 2>&1
+  then
+    validate_elf 'bundle' "$bundled_file"
+    case "$bundled_file" in
+      "$output/native/"*) continue ;;
+    esac
+    bundle_dependencies 'bundle' "$bundled_file" "$bundled_file" "$output" ''
+  fi
+done < <(find "$output/lib" "$output/lib64" -type f -print0 2>/dev/null)
+
+while IFS= read -r -d '' bundled_file
+do
   if [[ -L "$bundled_file" ]]
   then
     resolved_file=$(realpath -e -- "$bundled_file") || {
@@ -462,3 +512,5 @@ do
     done < <(sed -n 's/.*Shared library: \[\([^]]*\)\].*/\1/p' <<<"$dynamic_section")
   fi
 done < <(find "$output" \( -type f -o -type l \) -print0)
+
+# vim: set ft=sh et ts=2 sw=2 :

@@ -36,8 +36,8 @@ rustPlatform.buildRustPackage {
   pname = "nixpp-termux";
   version = "0.2.0";
 
-  src = lib.cleanSource ./../../android/nixpp;
-  cargoLock.lockFile = ./../../android/nixpp/Cargo.lock;
+  src = lib.cleanSource ./../../../android/nixpp;
+  cargoLock.lockFile = ./../../../android/nixpp/Cargo.lock;
   doCheck = false;
   env = {
     CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER = "${ndkBin}/aarch64-linux-android24-clang";

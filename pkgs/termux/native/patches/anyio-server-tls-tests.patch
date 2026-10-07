@@ -1,0 +1,10 @@
+diff --git a/tests/streams/test_tls.py b/tests/streams/test_tls.py
+--- a/tests/streams/test_tls.py
++++ b/tests/streams/test_tls.py
+@@ -614,7 +614,6 @@ async def server() -> None:
+         async with await TLSStream.wrap(
+             server_stream,
+             server_side=True,
+-            hostname="localhost",
+             ssl_context=server_context,
+         ) as server_tls_stream:

@@ -32,8 +32,15 @@ then
   export TERMUX_NATIVE_SESSION_VARS_GENERATION="$TERMUX_GENERATION"
 fi
 
-typeset -U path
+typeset -g _termux_native_generation_root="$HOME/.local/share/termux-native/generations"
+typeset -g _termux_native_local_plugin_cache="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/local-plugins"
+typeset -U path fpath
+path=("${path[@]:#${_termux_native_generation_root}/*}")
+fpath=("${fpath[@]:#${_termux_native_generation_root}/*}")
+fpath=("${fpath[@]:#${_termux_native_local_plugin_cache}/*}")
 path=("$TERMUX_GENERATION/bin" "$PREFIX/bin" $path)
+unset ZSH_LOCAL_PLUGIN_CACHE_DIR ZSH_LOCAL_PLUGINS_CACHE_BUILD __zlp_build
+unset _termux_native_generation_root _termux_native_local_plugin_cache
 
 if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
 then
@@ -41,3 +48,5 @@ then
 else
   unset TERMUX_NATIVE_YADM_CONFIG
 fi
+
+# vim: set ft=zsh et ts=2 sw=2 :

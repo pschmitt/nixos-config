@@ -76,7 +76,7 @@ in
   linkding-cli = pkgs.callPackage ./linkding-cli { };
   lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
-  nixpp-termux = pkgs.callPackage ./nixpp-termux { inherit inputs; };
+  nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
   playconsole-cli = pkgs.callPackage ./playconsole-cli { };
@@ -87,7 +87,7 @@ in
   stui = pkgs.callPackage ./stui { };
   syncthing-nautilus = pkgs.callPackage ./syncthing-nautilus { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
-  termux-zinit-cache = pkgs.callPackage ./termux-zinit-cache { };
+  termux-zinit-cache = pkgs.callPackage ./termux/zinit-cache { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };

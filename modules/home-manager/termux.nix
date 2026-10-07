@@ -7,7 +7,7 @@
 }:
 let
   pkgsTermux =
-    (import ../../pkgs/termux-native/package-set.nix { inherit inputs pkgs; }).termuxPackages;
+    (import ../../pkgs/termux/native/package-set.nix { inherit inputs pkgs; }).termuxPackages;
 in
 {
   imports = [

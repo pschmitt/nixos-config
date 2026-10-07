@@ -13,11 +13,11 @@ let
       allowUnfree = true;
       android_sdk.accept_license = true;
     };
-    overlays = builtins.attrValues (import ../../overlays { inherit inputs; });
+    overlays = builtins.attrValues (import ../../../overlays { inherit inputs; });
   };
   target = import ./target.nix { inherit pkgs; };
   inherit (target) apiLevel ndkRoot;
-  profile = import ../../android/termux-native/profile.nix { inherit pkgs inputs; };
+  profile = import ../../../android/termux-native/profile.nix { inherit pkgs inputs; };
   elfCleaner = pkgs.callPackage ./elf-cleaner.nix { };
   homeManagerProfile = inputs.home-manager.lib.homeManagerConfiguration {
     inherit pkgs;
@@ -26,7 +26,7 @@ let
       hostname = "termux";
     }
     // extraSpecialArgs;
-    modules = [ ../../modules/home-manager/termux.nix ] ++ modules;
+    modules = [ ../../../modules/home-manager/termux.nix ] ++ modules;
   };
   homeFileSources = map (
     path:
@@ -125,7 +125,7 @@ let
     gitstatusSource = pkgs.gitstatus.src;
     libgit2Source = pkgs.gitstatus.romkatv_libgit2.src;
     allowedReferences = [ ];
-  } "bash ${../../android/termux-native/build-gitstatus.sh}";
+  } "bash ${../../../android/termux-native/build-gitstatus.sh}";
   environment =
     pkgs.runCommand "termux-native-environment"
       {
@@ -143,23 +143,23 @@ let
         ${target.cc} \
           -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,max-page-size=16384 \
           -Wl,-z,common-page-size=16384 \
-          ${../../android/termux-native/hello.c} -o "$out/bin/termux-nix-hello"
+          ${../../../android/termux-native/hello.c} -o "$out/bin/termux-nix-hello"
         ${target.strip} "$out/bin/termux-nix-hello"
         ${target.readelf} -h -l -d "$out/bin/termux-nix-hello"
         ${target.cc} \
           -O2 -Wall -Wextra -Werror -fPIE -pie -Wl,-z,max-page-size=16384 \
           -Wl,-z,common-page-size=16384 \
-          ${../../android/termux-native/launcher.c} \
+          ${../../../android/termux-native/launcher.c} \
           -o "$out/libexec/termux-native-launcher"
         ${target.strip} "$out/libexec/termux-native-launcher"
         ${target.readelf} -h -l -d "$out/libexec/termux-native-launcher"
-        cp ${../../android/termux-native/plugin.zsh} "$out/shell/plugins/example.zsh"
-        cp ${../../android/termux-native/activate.sh} "$out/activate.sh"
-        cp ${../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
-        cp ${../../android/termux-native/zshenv} "$out/zshenv"
-        cp ${../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
-        cp ${../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
-        cp ${../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"
+        cp ${../../../android/termux-native/plugin.zsh} "$out/shell/plugins/example.zsh"
+        cp ${../../../android/termux-native/activate.sh} "$out/activate.sh"
+        cp ${../../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
+        cp ${../../../android/termux-native/zshenv} "$out/zshenv"
+        cp ${../../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"
+        cp ${../../../android/termux-native/check-pty.zsh} "$out/shell/check-pty.zsh"
+        cp ${../../../android/termux-native/prompt.zsh} "$out/shell/prompt.zsh"
         cp ${gitstatus}/bin/gitstatusd "$out/bin/gitstatusd"
         chmod u+w "$out/bin/gitstatusd"
         ${elfCleaner}/bin/termux-elf-cleaner --api-level ${toString apiLevel} \
@@ -193,7 +193,7 @@ let
         mkdir -p "$out/share/licenses"
         cp ${pkgs.gitstatus.src}/LICENSE "$out/share/licenses/gitstatus"
         cp ${pkgs.gitstatus.romkatv_libgit2.src}/COPYING "$out/share/licenses/libgit2"
-        bash ${../../android/termux-native/export-home-packages.sh} \
+        bash ${../../../android/termux-native/export-home-packages.sh} \
           ${termuxNativePackageManifest} \
           "$out" \
           ${target.readelf} \

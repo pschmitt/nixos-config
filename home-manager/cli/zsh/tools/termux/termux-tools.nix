@@ -4,7 +4,7 @@
   ...
 }:
 let
-  termuxTools = pkgs.callPackage ../../../../../pkgs/termux-native/termux-tools.nix {
+  termuxTools = pkgs.callPackage ../../../../../pkgs/termux/native/termux-tools.nix {
     package = inputs.termux-tools;
   };
 in

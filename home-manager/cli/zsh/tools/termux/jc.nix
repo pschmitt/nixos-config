@@ -7,7 +7,7 @@
 }:
 let
   termuxMode = config.termux.enable or false;
-  termuxPackageSet = import ../../../../../pkgs/termux-native/package-set.nix {
+  termuxPackageSet = import ../../../../../pkgs/termux/native/package-set.nix {
     inherit inputs pkgs;
   };
   jc = if termuxMode then termuxPackageSet.termuxPackages.jc else pkgs.jc;

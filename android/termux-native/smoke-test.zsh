@@ -80,11 +80,15 @@ native_shell_check() {
       return 1
     fi
   done
-  if [[ "${functions[prompt::simple]}${functions[prompt::reset]}" == *zinit* ]]
-  then
-    print -u2 -- 'The yadm prompt controls still depend on Zinit in the native shell'
-    return 1
-  fi
+  local prompt_function
+  for prompt_function in prompt::simple prompt::reset
+  do
+    if [[ "${functions[$prompt_function]}" == *zinit* ]]
+    then
+      print -u2 -- "The yadm prompt function '$prompt_function' still references Zinit in the native shell"
+      return 1
+    fi
+  done
   if [[ "${TERMUX_NATIVE_ENABLED:-}" != 1 ]]
   then
     print -u2 -- 'The native-shell compatibility flag is not enabled'
@@ -276,7 +280,22 @@ native_shell_check() {
   native_smoke_run 'kubectl reveal-secret help' kubectl-reveal_secret --help || return
   native_smoke_run 'kubectl SOCKS5 proxy help' kubectl-socks5_proxy --help || return
   native_smoke_run 'kubectl watch help' kubectl-watch --help || return
-  NB_API_TOKEN=smoke native_smoke_run 'NetBird CLI help' netbird-cli accounts help || return
+  local netbird_usage netbird_status
+  if netbird_usage=$(command netbird-cli 2>&1)
+  then
+    netbird_status=0
+  else
+    netbird_status=$?
+  fi
+  if (( netbird_status != 2 )) ||
+    [[ "$netbird_usage" != *'Usage: netbird-cli'* ||
+      "$netbird_usage" != *'Missing item'* ]]
+  then
+    print -u2 -- 'NetBird CLI did not return its expected no-argument usage output'
+    print -u2 -- "$netbird_usage"
+    return 1
+  fi
+  print -r -- '  Passed: NetBird CLI usage'
   local tmux_socket="native-smoke-$$"
   tmux -L "$tmux_socket" -f /dev/null new-session -d -s native-smoke || return
   tmux -L "$tmux_socket" has-session -t native-smoke || {

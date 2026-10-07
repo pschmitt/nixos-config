@@ -519,13 +519,13 @@
               };
             };
           in
-          (import ./pkgs/termux-native { inherit basePkgs inputs; }).mkTermuxBundle {
+          (import ./pkgs/termux/native { inherit basePkgs inputs; }).mkTermuxBundle {
             inherit modules extraSpecialArgs;
           };
 
         mkPackageSet =
           { pkgs }:
-          import ./pkgs/termux-native/package-set.nix {
+          import ./pkgs/termux/native/package-set.nix {
             inherit inputs pkgs;
           };
       };
@@ -539,7 +539,7 @@
           customPackages = import ./pkgs { inherit pkgs inputs; };
           termuxNativePackages = nixpkgs.lib.optionalAttrs (system == "x86_64-linux") (
             let
-              termuxNative = import ./pkgs/termux-native {
+              termuxNative = import ./pkgs/termux/native {
                 basePkgs = pkgs;
                 inherit inputs;
               };
@@ -554,7 +554,7 @@
           termuxHomeArchive = builtins.getEnv "TERMUX_HOME_ARCHIVE";
           termuxArchivePackage =
             archivePath: archiveName:
-            pkgs.callPackage ./pkgs/termux-cache-archive {
+            pkgs.callPackage ./pkgs/termux/cache-archive {
               archive = builtins.path {
                 path = /. + archivePath;
                 name = "${archiveName}-source";
@@ -565,7 +565,7 @@
             nixpkgs.lib.optionalAttrs
               (system == "x86_64-linux" && termuxPrefixArchive != "" && termuxHomeArchive != "")
               {
-                termux-prefix-cache = pkgs.callPackage ./pkgs/termux-prefix-cache {
+                termux-prefix-cache = pkgs.callPackage ./pkgs/termux/prefix-cache {
                   archive = builtins.path {
                     path = /. + termuxPrefixArchive;
                     name = "termux-bootstrap-source";
@@ -626,7 +626,7 @@
       overlays = import ./overlays { inherit inputs; };
 
       # Build a Termux bundle with additional Home Manager modules and arguments.
-      lib.mkTermuxBundle = import ./pkgs/termux-native/mkTermuxBundle.nix;
+      lib.mkTermuxBundle = import ./pkgs/termux/native/mkTermuxBundle.nix;
 
       # Reusable nixos modules you might want to export
       # These are usually stuff you would upstream into nixpkgs

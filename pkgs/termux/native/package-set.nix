@@ -135,7 +135,7 @@ androidPkgs.extend (
           extraFiles
           ;
       };
-    python312Termux = pkgs.python312.override {
+    pythonTermux = pkgs.python3.override {
       packageOverrides = _python: previous: {
         aiohttp = previous.aiohttp.overridePythonAttrs (old: {
           AIOHTTP_NO_EXTENSIONS = "1";
@@ -151,6 +151,12 @@ androidPkgs.extend (
           disabledTests = (old.disabledTests or [ ]) ++ [
             "test_feed_eof_no_err_brotli"
             "test_empty_body"
+          ];
+        });
+        # Carry AnyIO upstream fix 818e4ac for its server-side TLS fixture.
+        anyio = previous.anyio.overridePythonAttrs (old: {
+          patches = (old.patches or [ ]) ++ [
+            ./patches/anyio-server-tls-tests.patch
           ];
         });
         charset-normalizer =
@@ -186,17 +192,67 @@ androidPkgs.extend (
         });
       };
     };
-    mylDiscovery = python312Termux.pkgs.buildPythonApplication {
+    obswsPython = pythonTermux.pkgs.buildPythonPackage rec {
+      pname = "obsws-python";
+      version = "1.6.2";
+      pyproject = true;
+      src = pythonTermux.pkgs.fetchPypi {
+        pname = "obsws_python";
+        inherit version;
+        hash = "sha256-cR1gnZ5FxZ76SD9GlHSIhv142ejsqs/Bp8wV1A1kfdw=";
+      };
+      nativeBuildInputs = [ pythonTermux.pkgs.hatchling ];
+      dependencies = with pythonTermux.pkgs; [
+        tomli
+        websocket-client
+      ];
+      doCheck = false;
+    };
+    obsCli = pythonTermux.pkgs.buildPythonApplication {
+      pname = "obs-cli";
+      version = "0.9.5";
+      src = inputs.obs-cli;
+      pyproject = true;
+      nativeBuildInputs = with pythonTermux.pkgs; [
+        setuptools
+        setuptools-scm
+        wheel
+      ];
+      dependencies = with pythonTermux.pkgs; [
+        obswsPython
+        rich
+        rich-argparse
+      ];
+      pythonImportsCheck = [ "obs_cli" ];
+    };
+    slackReact = pythonTermux.pkgs.buildPythonApplication {
+      pname = "slack-react";
+      version = "0.3.3";
+      src = inputs.slack-react;
+      pyproject = true;
+      nativeBuildInputs = with pythonTermux.pkgs; [
+        setuptools
+        setuptools-scm
+      ];
+      dependencies = with pythonTermux.pkgs; [
+        appdirs
+        certifi
+        rich
+        slack-sdk
+      ];
+      pythonImportsCheck = [ "slack_react" ];
+    };
+    mylDiscovery = pythonTermux.pkgs.buildPythonApplication {
       pname = "myl-discovery";
       version = builtins.readFile "${inputs.myl-discovery}/myl-discovery-version.txt";
       pyproject = true;
       src = inputs.myl-discovery;
       pythonRelaxDeps = [ "rich" ];
-      nativeBuildInputs = with python312Termux.pkgs; [
+      nativeBuildInputs = with pythonTermux.pkgs; [
         setuptools
         setuptools-scm
       ];
-      dependencies = with python312Termux.pkgs; [
+      dependencies = with pythonTermux.pkgs; [
         dnspython
         exchangelib
         requests
@@ -205,17 +261,17 @@ androidPkgs.extend (
       ];
       pythonImportsCheck = [ "myldiscovery" ];
     };
-    myl = python312Termux.pkgs.buildPythonApplication {
+    myl = pythonTermux.pkgs.buildPythonApplication {
       pname = "myl";
       version = builtins.readFile "${inputs.myl}/myl-version.txt";
       pyproject = true;
       src = inputs.myl;
       pythonRelaxDeps = [ "rich" ];
-      nativeBuildInputs = with python312Termux.pkgs; [
+      nativeBuildInputs = with pythonTermux.pkgs; [
         setuptools
         setuptools-scm
       ];
-      dependencies = with python312Termux.pkgs; [
+      dependencies = with pythonTermux.pkgs; [
         html2text
         imap-tools
         mylDiscovery
@@ -238,7 +294,7 @@ androidPkgs.extend (
     termuxPackages = {
       adb-sh = pkgs.callPackage ./adb-sh.nix { inherit pkgs; };
 
-      nixpp = withAptPackages (pkgs.callPackage ../nixpp-termux { inherit inputs; }) [
+      nixpp = withAptPackages (pkgs.callPackage ../nixpp { inherit inputs; }) [
         "ca-certificates"
       ];
 
@@ -376,37 +432,33 @@ androidPkgs.extend (
       ];
 
       emoji-fzf = pythonApplication {
-        package = pkgs.callPackage ../emoji-fzf {
-          python3 = pkgs.python312;
+        package = pkgs.callPackage ../../emoji-fzf {
+          inherit (pkgs) python3;
         };
-        python = pkgs.python312;
+        python = pkgs.python3;
       };
 
       jc = pythonApplication {
-        package = python312Termux.pkgs.jc;
-        python = python312Termux;
+        package = pythonTermux.pkgs.jc;
+        python = pythonTermux;
       };
 
-      obs-cli =
-        let
-          obsCliPackages = inputs.obs-cli.packages.${pkgs.stdenv.hostPlatform.system};
-        in
-        withAptPackages (pythonApplication {
-          package = obsCliPackages.obs-cli;
-          python = pkgs.python312;
-          extraRuntimePackages = obsCliPackages.obsws-python.propagatedBuildInputs;
-        }) [ "python" ];
+      obs-cli = withAptPackages (pythonApplication {
+        package = obsCli;
+        python = pythonTermux;
+        extraRuntimePackages = obswsPython.propagatedBuildInputs;
+      }) [ "python" ];
 
       slack-react = pythonApplication {
-        package = inputs.slack-react.packages.${pkgs.stdenv.hostPlatform.system}.default;
-        python = pkgs.python312;
+        package = slackReact;
+        python = pythonTermux;
       };
 
       linkding-cli = pythonApplication {
-        package = pkgs.callPackage ../linkding-cli {
-          python3 = python312Termux;
+        package = pkgs.callPackage ../../linkding-cli {
+          python3 = pythonTermux;
         };
-        python = python312Termux;
+        python = pythonTermux;
         extraFiles = [ "share/zsh/site-functions/_linkding" ];
       };
 
@@ -414,9 +466,9 @@ androidPkgs.extend (
         withAptPackages
           (pythonApplication {
             package = myl;
-            python = python312Termux;
+            python = pythonTermux;
             checkEntrypoint = false;
-            excludedRuntimePackages = with python312Termux.pkgs; [
+            excludedRuntimePackages = with pythonTermux.pkgs; [
               cffi
               cryptography
               lxml
