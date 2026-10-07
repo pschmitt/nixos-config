@@ -21,6 +21,7 @@ main() (
   : > "$temporary/installed-packages.txt"
   : > "$temporary/activation-attempts"
   : > "$temporary/apt.log"
+  mkdir "$root/.lock"
 
   cat > "$temporary/mock-bin/dpkg-query" <<'MOCK_DPKG_QUERY'
 #!/usr/bin/env bash
@@ -110,6 +111,14 @@ MOCK_ACTIVATE
   [[ "$(wc -l < "$MOCK_INSTALLED_FILE")" -eq 1 ]]
   grep -Fxq newly-installed-package "$root/apt-owned-packages.txt"
   [[ "$(wc -l < "$root/generation-index.tsv")" -eq 1 ]]
+
+  # shellcheck disable=SC1091
+  source "$script_dir/activate.sh"
+  mkdir "$root/.lock"
+  acquire_activation_lock "$root/.lock"
+  [[ -f "$root/.lock/owner" ]]
+  rm -f -- "$root/.lock/owner"
+  rmdir "$root/.lock"
 
   mkdir -p "$root/generations/$next_generation"
   printf '{}\n' > "$root/generations/$next_generation/manifest.json"

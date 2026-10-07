@@ -61,7 +61,81 @@ restore_startup() {
 cleanup_bootstrap_lock() {
   local root="$HOME/.local/share/termux-native"
   rm -f -- "$root/.next"
+  rm -f -- "$root/.lock/owner"
   rmdir -- "$root/.lock"
+}
+
+lock_process_is_active() {
+  local lock_dir=$1 owner_pid command_line process_file process_pid
+
+  if [[ -f "$lock_dir/owner" ]]
+  then
+    IFS= read -r owner_pid < "$lock_dir/owner" || return 1
+    [[ "$owner_pid" =~ ^[1-9][0-9]*$ && -r "/proc/$owner_pid/cmdline" ]] || return 1
+    command_line=$(tr '\0' ' ' < "/proc/$owner_pid/cmdline") || return 1
+    [[ "$command_line" == *bootstrap.sh* || "$command_line" == *activate.sh* ]]
+    return
+  fi
+
+  # Older releases left an empty lock directory. Detect their live installer
+  # processes before treating such a directory as stale.
+  for process_file in /proc/[0-9]*/cmdline
+  do
+    [[ -r "$process_file" ]] || continue
+    process_pid=${process_file#/proc/}
+    process_pid=${process_pid%/cmdline}
+    [[ "$process_pid" == "$$" ]] && continue
+    command_line=$(tr '\0' ' ' < "$process_file" 2>/dev/null) || continue
+    case "$command_line" in
+      *native-package/bootstrap.sh* | *native-package/activate.sh*)
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
+acquire_bootstrap_lock() {
+  local lock_dir=$1
+
+  if mkdir "$lock_dir" 2>/dev/null
+  then
+    if printf '%s\n' "$$" > "$lock_dir/owner"
+    then
+      return 0
+    fi
+    rmdir "$lock_dir"
+    return 1
+  fi
+
+  if lock_process_is_active "$lock_dir"
+  then
+    printf 'Another Termux-native bootstrap, activation, or garbage collection is in progress.\n' >&2
+    return 1
+  fi
+  if [[ ! -d "$lock_dir" || -L "$lock_dir" ]]
+  then
+    printf 'Could not acquire the Termux-native operation lock: %s\n' "$lock_dir" >&2
+    return 1
+  fi
+
+  rm -f -- "$lock_dir/owner" || return
+  if ! rmdir "$lock_dir"
+  then
+    printf 'Could not recover the stale Termux-native operation lock: %s\n' "$lock_dir" >&2
+    return 1
+  fi
+  if ! mkdir "$lock_dir"
+  then
+    printf 'Another Termux-native operation acquired the lock during recovery.\n' >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$$" > "$lock_dir/owner"
+  then
+    rmdir "$lock_dir"
+    return 1
+  fi
+  printf 'Recovered an interrupted Termux-native operation lock.\n' >&2
 }
 
 apt_package_installed() {
@@ -370,10 +444,7 @@ run_generation_gc() {
   local root="$HOME/.local/share/termux-native"
   local keep_count=$1 dry_run=$2
   mkdir -p "$root/generations" || return
-  mkdir "$root/.lock" || {
-    printf 'Another Termux-native bootstrap, activation, or garbage collection is in progress.\n' >&2
-    return 1
-  }
+  acquire_bootstrap_lock "$root/.lock" || return
   trap cleanup_bootstrap_lock EXIT
   gc_generations "$root" "$keep_count" "$dry_run"
 }
@@ -454,10 +525,7 @@ main() {
     return 1
   fi
   mkdir -p "$root/generations" || return
-  mkdir "$root/.lock" || {
-    printf 'Another Termux-native bootstrap or activation is in progress.\n' >&2
-    return 1
-  }
+  acquire_bootstrap_lock "$root/.lock" || return
   trap cleanup_bootstrap_lock EXIT
 
   checksum=$(sha256sum "$archive") || return

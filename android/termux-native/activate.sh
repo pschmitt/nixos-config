@@ -4,6 +4,77 @@ usage() {
   printf 'Usage: %s preflight ARCHIVE TRUSTED_SHA256 | install ARCHIVE TRUSTED_SHA256 | rollback GENERATION_NUMBER_OR_SHA256\n' "$(basename "$0")"
 }
 
+lock_process_is_active() {
+  local lock_dir=$1 owner_pid command_line process_file process_pid
+
+  if [[ -f "$lock_dir/owner" ]]
+  then
+    IFS= read -r owner_pid < "$lock_dir/owner" || return 1
+    [[ "$owner_pid" =~ ^[1-9][0-9]*$ && -r "/proc/$owner_pid/cmdline" ]] || return 1
+    command_line=$(tr '\0' ' ' < "/proc/$owner_pid/cmdline") || return 1
+    [[ "$command_line" == *bootstrap.sh* || "$command_line" == *activate.sh* ]]
+    return
+  fi
+
+  for process_file in /proc/[0-9]*/cmdline
+  do
+    [[ -r "$process_file" ]] || continue
+    process_pid=${process_file#/proc/}
+    process_pid=${process_pid%/cmdline}
+    [[ "$process_pid" == "$$" ]] && continue
+    command_line=$(tr '\0' ' ' < "$process_file" 2>/dev/null) || continue
+    case "$command_line" in
+      *native-package/bootstrap.sh* | *native-package/activate.sh*)
+        return 0
+        ;;
+    esac
+  done
+  return 1
+}
+
+acquire_activation_lock() {
+  local lock_dir=$1
+
+  if mkdir "$lock_dir" 2>/dev/null
+  then
+    if printf '%s\n' "$$" > "$lock_dir/owner"
+    then
+      return 0
+    fi
+    rmdir "$lock_dir"
+    return 1
+  fi
+
+  if lock_process_is_active "$lock_dir"
+  then
+    printf 'Another Termux-native bootstrap or activation is in progress.\n' >&2
+    return 1
+  fi
+  if [[ ! -d "$lock_dir" || -L "$lock_dir" ]]
+  then
+    printf 'Could not acquire the Termux-native operation lock: %s\n' "$lock_dir" >&2
+    return 1
+  fi
+
+  rm -f -- "$lock_dir/owner" || return
+  if ! rmdir "$lock_dir"
+  then
+    printf 'Could not recover the stale Termux-native operation lock: %s\n' "$lock_dir" >&2
+    return 1
+  fi
+  if ! mkdir "$lock_dir"
+  then
+    printf 'Another Termux-native operation acquired the lock during recovery.\n' >&2
+    return 1
+  fi
+  if ! printf '%s\n' "$$" > "$lock_dir/owner"
+  then
+    rmdir "$lock_dir"
+    return 1
+  fi
+  printf 'Recovered an interrupted Termux-native operation lock.\n' >&2
+}
+
 check_host() {
   if [[ "${PREFIX:-}" != /data/data/com.termux/files/usr || "$(uname -m)" != aarch64 ]]
   then
@@ -120,10 +191,10 @@ transaction() (
     [[ -d "$root/.lock" ]] || return 1
     owns_lock=0
   else
-    mkdir "$root/.lock" || return
+    acquire_activation_lock "$root/.lock" || return
   fi
   if (( owns_lock )); then
-    trap 'rm -f -- "$root/.next"; rmdir -- "$root/.lock"' EXIT
+    trap 'rm -f -- "$root/.next" "$root/.lock/owner"; rmdir -- "$root/.lock"' EXIT
   else
     trap 'rm -f -- "$root/.next"' EXIT
   fi
