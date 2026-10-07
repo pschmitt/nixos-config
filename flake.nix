@@ -139,6 +139,17 @@
       flake = false;
     };
 
+    # jq modules (~/.config/jq/{colors,plib}, `jq -L ~/.config/jq`)
+    colors-jq = {
+      url = "github:pschmitt/colors.jq";
+      flake = false;
+    };
+
+    plib-jq = {
+      url = "github:pschmitt/plib.jq";
+      flake = false;
+    };
+
     vi-motions = {
       url = "github:zsh-vi-more/vi-motions/c21a9e13be15166810e9487a015cd70c21229cf7";
       flake = false;

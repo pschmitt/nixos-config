@@ -182,6 +182,22 @@
         "type": "github"
       }
     },
+    "colors-jq": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1738593118,
+        "narHash": "sha256-YRS20MNDhGwCLwF3toE475rGVmhe9QSeI7UU1pN756E=",
+        "owner": "pschmitt",
+        "repo": "colors.jq",
+        "rev": "c653832ac158dac8c782b7fdbcf675b971efe2bd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "colors.jq",
+        "type": "github"
+      }
+    },
     "declaroid": {
       "inputs": {
         "nixpkgs": [
@@ -2748,6 +2764,22 @@
         "type": "github"
       }
     },
+    "plib-jq": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1779788206,
+        "narHash": "sha256-nu3hmVmTf9M3D0V+4DA9ttBqw9iomySl47Dv+poG23g=",
+        "owner": "pschmitt",
+        "repo": "plib.jq",
+        "rev": "c02ca973a5ca2d054051c73406f05975fe0a4434",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "plib.jq",
+        "type": "github"
+      }
+    },
     "poor-tools": {
       "inputs": {
         "flake-parts": "flake-parts_5",
@@ -3046,6 +3078,7 @@
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "codex-ha-bridge": "codex-ha-bridge",
+        "colors-jq": "colors-jq",
         "declaroid": "declaroid",
         "disko": "disko",
         "falcon-sensor": "falcon-sensor",
@@ -3089,6 +3122,7 @@
         "noctalia": "noctalia",
         "noctalia-plugins": "noctalia-plugins",
         "obs-cli": "obs-cli",
+        "plib-jq": "plib-jq",
         "poor-tools": "poor-tools",
         "pre-commit-hooks": "pre-commit-hooks_4",
         "printlabel": "printlabel",
