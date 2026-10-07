@@ -29,6 +29,7 @@ in
   codexbar = pkgs.callPackage ./local/codexbar { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;
+  fzf-preview = pkgs.callPackage ./local/fzf-preview { };
   pycolumn = pkgs.callPackage ./local/pycolumn { };
   obs-control = pkgs.callPackage ./local/obs-control {
     inherit

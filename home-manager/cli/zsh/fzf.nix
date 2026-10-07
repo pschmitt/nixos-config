@@ -12,7 +12,11 @@ let
   '';
 in
 {
-  home.packages = lib.optionals (!termuxMode) [ pkgs.fzf ];
+  # fzf-preview: the --preview helper the zsh fzf plugin and functions use.
+  home.packages = lib.optionals (!termuxMode) [
+    pkgs.fzf
+    pkgs.fzf-preview
+  ];
 
   termux.packages = lib.mkIf termuxMode [ "fzf" ];
 
