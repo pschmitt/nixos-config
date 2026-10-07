@@ -6,7 +6,6 @@
     ./colored-man-pages.nix
     ./cp.nix
     ./diff-so-fancy.nix
-    ./docker-compose.nix
     ./emoji-fzf.nix
     ./extract.nix
     ./gpg-agent.nix
