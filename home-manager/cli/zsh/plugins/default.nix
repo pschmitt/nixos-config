@@ -1,5 +1,6 @@
 {
   imports = [
+    ./alias-tips.nix
     ./auto-notify.nix
     ./autopair.nix
     ./autosuggestions.nix
