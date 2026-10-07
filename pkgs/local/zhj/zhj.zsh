@@ -1,3 +1,16 @@
+#  ╔══════════════════════════════════════════════════════════════════╗
+#  ║                                                                  ║
+#  ║        ███████╗ ██╗  ██╗      ██╗                                ║
+#  ║        ╚══███╔╝ ██║  ██║      ██║    ┌──────────────────────┐    ║
+#  ║          ███╔╝  ███████║      ██║    │  $ zhj your::thing   │    ║
+#  ║         ███╔╝   ██╔══██║ ██   ██║    │  ✓ done. no prompt,  │    ║
+#  ║        ███████╗ ██║  ██║ ╚█████╔╝    │    no fuss.          │    ║
+#  ║        ╚══════╝ ╚═╝  ╚═╝  ╚════╝     └──────────────────────┘    ║
+#  ║                                                                  ║
+#  ║               ~~~  zhj - zee handjob  ~~~                        ║
+#  ║                                                                  ║
+#  ╚══════════════════════════════════════════════════════════════════╝
+#
 # Nix-managed counterpart of the yadm zhjrc: run a function, alias, script or
 # command string with the Nix zsh config loaded (no prompt, plugins or
 # completions). Usage: zhj [-x] [-e VAR=value]... [--] CMD|FILE [ARGS...]
