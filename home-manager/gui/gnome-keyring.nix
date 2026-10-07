@@ -113,7 +113,7 @@ in
         if useSops then
           "${autoUnlock}"
         else
-          "${config.home.homeDirectory}/bin/zhj gnome-keyring::auto-unlock --verbose --no-callback";
+          "${lib.getExe pkgs.zhj} gnome-keyring::auto-unlock --verbose --no-callback";
     };
   };
 

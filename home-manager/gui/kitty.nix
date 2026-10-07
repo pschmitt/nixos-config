@@ -1,4 +1,5 @@
-_: {
+{ lib, pkgs, ... }:
+{
   programs.kitty = {
     enable = true;
     themeFile = "Nord";
@@ -46,7 +47,7 @@ _: {
     keybindings = {
       "ctrl+page_up" = "next_tab";
       "ctrl+page_down" = "previous_tab";
-      "ctrl+alt+t" = "combine | close_tab | launch --type=tab ~/bin/zhj tmux::attach";
+      "ctrl+alt+t" = "combine | close_tab | launch --type=tab ${lib.getExe pkgs.zhj} tmux::attach";
       "ctrl+plus" = "change_font_size all +1.0";
       "ctrl+minus" = "change_font_size all -1.0";
       "ctrl+0" = "change_font_size all 0";

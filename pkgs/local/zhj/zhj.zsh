@@ -13,6 +13,11 @@ zhjenv=(${zhjenv:#--env})
 # zinit only exists in the yadm shell
 if [[ -n "$WITH_ZINIT" || "$*" =~ (zi|zinit).* ]]
 then
+  if [[ ! -x "$HOME/bin/zhj" ]]
+  then
+    print -u2 -- "zhj: zinit is only available on zinit hosts (yadm ~/bin/zhj)"
+    return 1
+  fi
   ZHJ_YADM=1 exec "$HOME/bin/zhj" "${orig_args[@]}"
 fi
 

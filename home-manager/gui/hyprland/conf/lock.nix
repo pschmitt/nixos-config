@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 let
   h = import ../lua-helpers.nix { inherit lib; };
   inherit (h) bindOpts execBind execBindLocked;
@@ -10,7 +10,7 @@ in
     bind = [
       (execBind "SUPER + ALT + L" "${lock} --now")
       # locked = fires even while the screen is locked
-      (execBindLocked "SUPER + CONTROL + ALT + L" ''~/bin/zhj "lockscreen::restart"'')
+      (execBindLocked "SUPER + CONTROL + ALT + L" ''${lib.getExe pkgs.zhj} "lockscreen::restart"'')
       (execBindLocked "switch:off:Lid Switch" lock)
       (bindOpts "switch:on:Lid Switch" ''hl.dsp.dpms({ action = "on" })'' { locked = true; })
     ];

@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -8,7 +9,7 @@ let
   system = pkgs.stdenv.hostPlatform.system;
 
   gpcConfigPath = "${config.xdg.configHome}/gpc/config.json";
-  zhj = "${config.home.homeDirectory}/bin/zhj";
+  zhj = lib.getExe pkgs.zhj;
 
   # playconsole-cli hardcodes $HOME/.playconsole-cli/config.json as its config
   # default and has no XDG support, so pin --config to an XDG path instead.

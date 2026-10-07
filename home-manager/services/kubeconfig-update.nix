@@ -1,12 +1,12 @@
-{ config, ... }:
+{ lib, pkgs, ... }:
 {
   systemd.user = {
     services.kubeconfig-update = {
       Unit.Description = "Update kubeconfigs";
       Service = {
         Type = "oneshot";
-        ExecStartPre = "${config.home.homeDirectory}/bin/zhj rancher::login-cli-all";
-        ExecStart = "${config.home.homeDirectory}/bin/zhj kubectl::kubeconfig-export-rancher";
+        ExecStartPre = "${lib.getExe pkgs.zhj} rancher::login-cli-all";
+        ExecStart = "${lib.getExe pkgs.zhj} kubectl::kubeconfig-export-rancher";
       };
     };
 

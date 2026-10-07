@@ -15,6 +15,7 @@
     ./luks-mount.nix
     ./nbx.nix
     ./netbird.nix
+    ./tables.nix
     ./tesmart.nix
     ./tmux-slay.nix
     ./yank.nix

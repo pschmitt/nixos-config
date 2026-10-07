@@ -956,8 +956,8 @@ in
             # plugin runs these through /bin/sh -c, so the absolute path
             # matters (~/bin is on the interactive PATH, not the systemd user
             # service's).
-            start_command = "${config.mainUser.homeDirectory}/bin/zhj tw::work-start";
-            stop_command = "${config.mainUser.homeDirectory}/bin/zhj tw::work-stop";
+            start_command = "${lib.getExe pkgs.zhj} tw::work-start";
+            stop_command = "${lib.getExe pkgs.zhj} tw::work-stop";
             # tw::work-stop shuts the gec-debian VM down, closes Zoom/Teams
             # tabs and runs timewsync before it returns.
             command_timeout = 300;
@@ -972,7 +972,7 @@ in
             # a day's or a week's target.
             year_time_format = "{days}d {hours}h";
             sync_enabled = true;
-            sync_command = "${config.mainUser.homeDirectory}/bin/zhj taskwarrior::sync";
+            sync_command = "${lib.getExe pkgs.zhj} taskwarrior::sync";
             # The 16px default badge follows the Syncthing plugin's proven
             # path: purpose-drawn play/pause/beer SVGs on a 16-unit grid are
             # rasterized to 256px at build time, then Noctalia performs the

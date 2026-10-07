@@ -29,6 +29,7 @@ in
   codexbar = pkgs.callPackage ./local/codexbar { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   inherit osd;
+  pycolumn = pkgs.callPackage ./local/pycolumn { };
   obs-control = pkgs.callPackage ./local/obs-control {
     inherit
       inputs
@@ -43,6 +44,8 @@ in
   };
   inherit screencast-state;
   inherit soundboard;
+  zebra = pkgs.callPackage ./local/zebra { };
+  zhj = pkgs.callPackage ./local/zhj { };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
   inherit timew-status;
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
