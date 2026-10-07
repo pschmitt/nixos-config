@@ -42,6 +42,16 @@ native_shell_check() {
     print -u2 -- 'Zinit manager loaded in the Nix-managed Termux shell'
     return 1
   fi
+  if (( $+functions[zinit::source-local-plugins] || $+functions[zinit::sync-install] ))
+  then
+    print -u2 -- 'Zinit compatibility function loaded in the Nix-managed Termux shell'
+    return 1
+  fi
+  if [[ "${functions[yadm::pull]:-}" == *zinit* ]]
+  then
+    print -u2 -- 'The Termux yadm update function still depends on Zinit'
+    return 1
+  fi
   if (( ! $+galiases[DN] || ! $+galiases[L] || ! $+galiases[J] ))
   then
     print -u2 -- 'The Termux global aliases are not loaded'
@@ -60,7 +70,7 @@ native_shell_check() {
     autopair-insert extract _atuin_search _direnv_hook __zoxide_z termux-native-status \
     prompt::simple prompt::reset yqo os-release::value os-release::is os-release::kind \
     is_termux is_nixos is_archlinux is_postmarketos is_fedora is_ubuntu is_distrobox \
-    in_flatpak not_in_vt zsh::reload zsh::get-parent-command zsh::running-in-guake \
+    in_flatpak not_in_vt zsh::reload zsh::get-parent-command zsh::running-in-guake yadm::pull \
     suf version::at-least libc::version-at-least tmux::version-at-least falias multisrc \
     source-grep _usage
   do

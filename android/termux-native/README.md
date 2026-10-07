@@ -394,17 +394,15 @@ the Nix generation. The regular yadm/Zinit startup remains in use on non-Termux
 hosts. Termux startup also reuses selected yadm host and local configuration;
 Nix overrides the prompt controls and update hooks that would otherwise call
 the Zinit command and sets `TERMUX_NATIVE_ENABLED=1` so retained yadm prompt
-functions skip Zinit-only actions. The compatibility function
-`zinit::source-local-plugins` only forwards to the Nix-managed local plugin
-loader; it does not load or control Zinit.
+functions skip Zinit-only actions. The Termux profile exposes no Zinit manager
+or compatibility functions. Its Nix-managed `yadm::pull` override reloads
+yadm-managed local plugin files through the same Nix loader used at startup.
 
 This removes the Zinit scheduler and plugin-download phase from Termux shell
 startup. The public `termux.sh` helper commands are exported as Termux shell
 scripts by the Home Manager profile, without relying on Zinit's symlink-based
 installer. ShellCheck is provided by Termux APT; the old upstream x86_64/proot
-wrapper is not loaded by the native shell. The `zinit::source-local-plugins`
-forwarder is still a compatibility seam for private yadm files and remains to
-be removed when those call sites have native replacements.
+wrapper is not loaded by the native shell.
 Private yadm files remain runtime inputs from the phone's home directory and
 are not copied into the public bundle.
 
