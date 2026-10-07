@@ -44,12 +44,6 @@ in
           add-zsh-hook preexec _alias_tips__preexec
         fi
       }
-
-      zinit_ask_update() {
-        [[ $- == *i* ]] || return 0
-        print -r -- 'Zsh plugins are pinned in the Nix configuration.'
-        print -r -- 'Update those sources in the config and rebuild the Nix generation.'
-      }
     }
 
     zsh::apply-plugin-overrides

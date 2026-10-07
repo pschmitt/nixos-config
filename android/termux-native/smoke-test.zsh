@@ -250,7 +250,6 @@ native_shell_check() {
     print -u2 -- 'Termux generation commands do not take precedence in the active shell'
     return 1
   fi
-  native_smoke_run 'Zinit update shim' zinit_ask_update || return
   native_smoke_run 'bat version' bat --version || return
   native_smoke_run 'eget version' eget --version || return
   native_smoke_run 'eza version' eza --version || return
