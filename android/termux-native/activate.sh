@@ -75,7 +75,7 @@ ensure_generation_number() {
 }
 
 switch_generation() {
-  local root=$1 generation=$2 package installed
+  local root=$1 generation=$2 action=$3 package installed
   if [[ "$generation" =~ ^[1-9][0-9]*$ ]]
   then
     generation=$(generation_id_for_number "$root" "$generation") || {
@@ -172,7 +172,7 @@ transaction() (
     printf 'Preflight passed for generation %s.\n' "$generation"
     return 0
   fi
-  switch_generation "$root" "$generation"
+  switch_generation "$root" "$generation" "$action"
 )
 
 main() {
