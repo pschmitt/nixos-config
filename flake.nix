@@ -562,17 +562,12 @@
               inherit archiveName;
             };
           termuxArchivePackages =
-            nixpkgs.lib.optionalAttrs
-              (system == "x86_64-linux" && termuxPrefixArchive != "" && termuxHomeArchive != "")
-              {
-                termux-prefix-cache = pkgs.callPackage ./pkgs/termux/prefix-cache {
-                  archive = builtins.path {
-                    path = /. + termuxPrefixArchive;
-                    name = "termux-bootstrap-source";
-                  };
-                };
-                termux-home-cache = termuxArchivePackage termuxHomeArchive "termux-home.tar.gz";
-              };
+            nixpkgs.lib.optionalAttrs (system == "x86_64-linux" && termuxPrefixArchive != "") {
+              termux-prefix-cache = termuxArchivePackage termuxPrefixArchive "termux-prefix.tar.gz";
+            }
+            // nixpkgs.lib.optionalAttrs (system == "x86_64-linux" && termuxHomeArchive != "") {
+              termux-home-cache = termuxArchivePackage termuxHomeArchive "termux-home.tar.gz";
+            };
         in
         customPackages // termuxNativePackages // termuxArchivePackages
       );

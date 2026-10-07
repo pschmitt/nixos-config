@@ -87,6 +87,7 @@ in
   stui = pkgs.callPackage ./stui { };
   syncthing-nautilus = pkgs.callPackage ./syncthing-nautilus { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
+  termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
   termux-zinit-cache = pkgs.callPackage ./termux/zinit-cache { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
