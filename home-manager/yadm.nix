@@ -108,6 +108,9 @@ in
           Environment = [
             "TERM=xterm-256color"
             "ZINIT_SCHEDULER_BURST=1"
+            # zinit only exists in the yadm-managed config; the default
+            # ZDOTDIR is the Nix one (dotfiles.zsh.nixShell.default).
+            "ZDOTDIR=${config.xdg.configHome}/zsh"
           ];
           ExecStart = "${pkgs.zsh}/bin/zsh -ils -c -- '@zinit-scheduler burst'";
         };
