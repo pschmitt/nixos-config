@@ -543,12 +543,30 @@
                 basePkgs = pkgs;
                 inherit inputs;
               };
+              termuxHostBundles =
+                nixpkgs.lib.mapAttrs
+                  (
+                    hostname: hostModule:
+                    termuxNative.mkTermuxBundle {
+                      modules = [ hostModule ];
+                      extraSpecialArgs = { inherit hostname; };
+                    }
+                  )
+                  {
+                    mp4 = ./hosts/mp4/termux-native;
+                    p11 = ./hosts/p11/termux-native;
+                    zf10 = ./hosts/zf10/termux-native;
+                  };
+              hostBundlePackages = nixpkgs.lib.mapAttrs' (
+                hostname: bundle: nixpkgs.lib.nameValuePair "termux-native-${hostname}-bundle" bundle.bundle
+              ) termuxHostBundles;
             in
             {
               termux-native-bundle = termuxNative.bundle;
               termux-native-environment = termuxNative.environment;
               termux-native-gitstatus = termuxNative.gitstatus;
             }
+            // hostBundlePackages
           );
           termuxPrefixArchive = builtins.getEnv "TERMUX_PREFIX_ARCHIVE";
           termuxHomeArchive = builtins.getEnv "TERMUX_HOME_ARCHIVE";

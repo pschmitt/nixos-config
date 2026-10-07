@@ -117,11 +117,20 @@ The complete Termux Home Manager module is
 CLI modules, selects the Termux APT packages, and declares the allowlist used
 by this bundle. The bundle builder evaluates that same exported module.
 
+Termux device profiles live beside the regular host configurations in
+`hosts/mp4/termux-native`, `hosts/zf10/termux-native`, and
+`hosts/p11/termux-native`. Each host entrypoint composes its host-specific
+settings on top of the shared Termux module. The bundle builder passes the real
+hostname into Home Manager, so the generated Zsh environment and prompt color
+match the selected device. Build the matching bundle for each phone or tablet.
+
 Build the ready-to-install bundle on an x86_64 Linux builder (use `rofl-13` or
 `rofl-14`, not the phone):
 
 ```sh
-nix build '.#termux-native-bundle'
+nix build '.#termux-native-mp4-bundle'
+nix build '.#termux-native-zf10-bundle'
+nix build '.#termux-native-p11-bundle'
 sha256sum result/environment.tar.gz
 ```
 

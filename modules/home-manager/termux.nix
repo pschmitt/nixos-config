@@ -1,5 +1,6 @@
 {
   config,
+  hostname,
   inputs,
   lib,
   pkgs,
@@ -121,6 +122,10 @@ in
         username = "termux";
         homeDirectory = "/data/data/com.termux/files/home";
         stateVersion = "26.05";
+        sessionVariables = {
+          HOST = hostname;
+          HOSTNAME = hostname;
+        };
       };
 
       home.packages = [
