@@ -22,9 +22,15 @@ let
     host:
     let
       backendHost = "browserless.${host}.${config.domains.tailscale}";
+      # recommendedProxySettings is off on purpose: it would add a second Host
+      # header (nginx on the browser host answers 400 to duplicates) and forward
+      # the visitor's address, which would make the mesh host's own Authelia
+      # check treat this already-authenticated request as an outside one.
       proxy = autheliaConfig.location + ''
         proxy_ssl_server_name on;
         proxy_set_header Host ${backendHost};
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header X-Real-IP "";
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
       '';
@@ -38,15 +44,18 @@ let
       locations = {
         "/handoff/" = {
           proxyPass = "https://${backendHost}";
+          recommendedProxySettings = false;
           extraConfig = proxy;
         };
         "= /json/list" = {
           proxyPass = "https://${backendHost}";
+          recommendedProxySettings = false;
           extraConfig = proxy;
         };
         "~ ^/devtools/page/[0-9A-Fa-f]+$" = {
           proxyPass = "https://${backendHost}";
           proxyWebsockets = true;
+          recommendedProxySettings = false;
           extraConfig = proxy;
         };
         "/" = {
