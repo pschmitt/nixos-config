@@ -2,165 +2,422 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Browser handoff</title>
 <style>
-  :root { color-scheme: dark; --bg: #0b0d12; --fg: #e8eaf2; --muted: #98a0b8; --line: #262b38; --accent: #7c6cf0; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
-  body { display: flex; flex-direction: column; }
-  header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
-  header .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
-  #status { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-  #status.ok { color: #10b981; border-color: #10b981; }
-  #status.bad { color: #e11d48; border-color: #e11d48; }
-  main { flex: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 8px; }
-  canvas { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; touch-action: none; user-select: none; -webkit-user-select: none; }
-  form { display: flex; gap: 6px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); flex-wrap: wrap; }
-  input[type=text] { flex: 1 1 160px; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #141821; color: var(--fg); font-size: 16px; }
-  button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: #1b2030; color: var(--fg); font-size: 14px; }
-  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-  ul { list-style: none; margin: 0; padding: 12px; width: 100%; max-width: 560px; }
-  li button { width: 100%; text-align: left; margin-bottom: 8px; }
-  li small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .hint { padding: 0 12px 8px; font-size: 12px; color: var(--muted); }
+  :root { --bg: #0b0d12; --bar: #11141c; --fg: #e8eaf2; --muted: #98a0b8; --line: #262b38; --accent: #7c6cf0; --ok: #10b981; --bad: #e11d48; --btn: #1b2030; }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f5fa; --bar: #ffffff; --fg: #141725; --muted: #6b7189; --line: #dfe2ec; --btn: #eceef6; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; background: var(--bg); color: var(--fg);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  body { display: flex; flex-direction: column; height: 100dvh; padding-top: env(safe-area-inset-top); }
+
+  /* top bar */
+  #bar { display: flex; align-items: center; gap: 2px; padding: 4px 6px; background: var(--bar); border-bottom: 1px solid var(--line); flex: none; }
+  .ib { width: 40px; height: 40px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 12px;
+    background: transparent; color: var(--fg); cursor: pointer; }
+  .ib:active { background: var(--btn); }
+  .ib[disabled] { opacity: .35; }
+  .ib.on { background: color-mix(in oklab, var(--accent) 22%, transparent); color: var(--accent); }
+  .ib svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #pill { flex: 1; min-width: 0; height: 36px; margin: 0 4px; padding: 0 12px; display: flex; align-items: center; gap: 8px;
+    border-radius: 999px; background: var(--btn); font-size: 13.5px; }
+  #pill span#host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--muted); }
+  #dot.live { background: var(--ok); }
+  #dot.bad { background: var(--bad); }
+  #dot.wait { background: #d97706; animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  /* stage */
+  #stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
+  canvas { width: 100%; height: 100%; object-fit: contain; touch-action: pinch-zoom; display: block; background: #fff; }
+  #ripple { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; pointer-events: none; opacity: 0;
+    background: color-mix(in oklab, var(--accent) 45%, transparent); border: 2px solid var(--accent); }
+  #ripple.go { animation: ripple .45s ease-out; }
+  @keyframes ripple { from { opacity: .9; transform: scale(.4); } to { opacity: 0; transform: scale(1.5); } }
+  #overlay { position: absolute; inset: 0; display: none; flex-direction: column; gap: 14px; align-items: center; justify-content: center;
+    padding: 24px; text-align: center; background: color-mix(in oklab, var(--bg) 82%, transparent); backdrop-filter: blur(6px); }
+  #overlay.show { display: flex; }
+  #overlay p { margin: 0; color: var(--muted); max-width: 28ch; }
+  .spin { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn { padding: 12px 20px; border-radius: 14px; border: 0; background: var(--accent); color: #fff; font-size: 15px; font-weight: 600; }
+
+  /* keyboard helper row */
+  #keys { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; display: none; gap: 6px; padding: 6px 8px; background: var(--bar); border-top: 1px solid var(--line); overflow-x: auto; }
+  #keys.show { display: flex; }
+  #keys button { flex: none; min-width: 52px; height: 40px; padding: 0 14px; border-radius: 12px; border: 0; background: var(--btn); color: var(--fg); font-size: 14px; font-weight: 600; }
+  #keys button.primary { background: var(--accent); color: #fff; margin-left: auto; }
+  #bottom { flex: none; height: env(safe-area-inset-bottom); background: var(--bar); }
+
+  /* the local input that raises the phone's native keyboard */
+  #kb { position: fixed; left: 0; bottom: 0; width: 2px; height: 2px; padding: 0; border: 0; opacity: 0; font-size: 16px; /* >=16px: no iOS zoom */
+    color: transparent; background: transparent; caret-color: transparent; -webkit-user-select: text; user-select: text; }
+
+  /* page picker */
+  #list { width: 100%; max-width: 560px; margin: 0 auto; padding: 14px; overflow: auto; align-self: flex-start; }
+  #list h1 { font-size: 17px; margin: 4px 2px 12px; }
+  #list button { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--bar); color: var(--fg); font-size: 15px; }
+  #list small { display: block; margin-top: 2px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
-<header>
-  <span id="status">connecting</span>
-  <span class="url" id="url"></span>
-</header>
-<main id="main"></main>
-<div class="hint" id="hint"></div>
-<form id="form" hidden autocomplete="off">
-  <input type="text" id="text" placeholder="Type here, then Send" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
-  <button class="primary" type="submit">Send</button>
-  <button type="button" data-key="Enter">Enter</button>
-  <button type="button" data-key="Tab">Tab</button>
-  <button type="button" data-key="Backspace">&#9003;</button>
-</form>
+<div id="bar">
+  <button class="ib" id="back" aria-label="Back" disabled><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+  <button class="ib" id="fwd" aria-label="Forward" disabled><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+  <button class="ib" id="reload" aria-label="Reload"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg></button>
+  <div id="pill"><span id="dot" class="wait"></span><span id="host">connecting…</span></div>
+  <button class="ib" id="layout" aria-label="Mobile layout" title="Mobile layout"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></button>
+  <button class="ib" id="kbbtn" aria-label="Keyboard" title="Keyboard"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg></button>
+</div>
+<div id="stage">
+  <canvas id="view"></canvas>
+  <div id="ripple"></div>
+  <div id="overlay"><div class="spin" id="spin"></div><p id="msg">Connecting to the browser…</p><button class="btn" id="retry" hidden>Reconnect</button></div>
+  <div id="keys">
+    <button data-key="Tab">Tab</button>
+    <button data-key="Escape">Esc</button>
+    <button id="paste">Paste</button>
+    <button data-key="Enter" class="primary">Enter</button>
+  </div>
+</div>
+<div id="bottom"></div>
+<input id="kb" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1">
 <script>
 "use strict";
-// Mirrors one page of the Browserless browser over CDP: tap = click, drag = scroll,
-// the text box types into the focused field. Static, no dependencies.
+// Phone-friendly live view of ONE page of the Browserless browser, over CDP:
+//   tap = click, drag = scroll, tapping a text field raises the phone's native
+//   keyboard (a hidden local input mirrors the remote field and forwards what you
+//   type), mobile layout makes the remote page fit the phone. Static, no dependencies.
 const params = new URLSearchParams(location.search);
 const pageId = params.get("page");
+const testHost = params.get("host");               // testing only: talk to another Browserless
 const $ = (id) => document.getElementById(id);
-const statusEl = $("status"), urlEl = $("url"), mainEl = $("main"), formEl = $("form"), hintEl = $("hint");
+const E = { bar: $("bar"), stage: $("stage"), view: $("view"), ripple: $("ripple"), overlay: $("overlay"), msg: $("msg"), spin: $("spin"), retry: $("retry"),
+  dot: $("dot"), host: $("host"), kb: $("kb"), keys: $("keys"), back: $("back"), fwd: $("fwd"), reload: $("reload"), layout: $("layout"), kbbtn: $("kbbtn") };
+const ctx = E.view.getContext("2d");
 
-function setStatus(text, cls) {
-  statusEl.textContent = text;
-  statusEl.className = cls || "";
+/* ---------------------------------------------------------------- CDP */
+class Cdp {
+  constructor(url, handlers) {
+    this.handlers = handlers; this.id = 0; this.pending = new Map(); this.ws = new WebSocket(url);
+    this.ready = new Promise((res, rej) => { this.ws.onopen = res; this.ws.onerror = () => rej(new Error("connection failed")); });
+    this.ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.id) {
+        const p = this.pending.get(m.id); if (!p) return; this.pending.delete(m.id);
+        m.error ? p.rej(new Error(m.error.message)) : p.res(m.result);
+      } else if (m.method) this.handlers.event(m.method, m.params);
+    };
+    this.ws.onclose = () => { for (const p of this.pending.values()) p.rej(new Error("closed")); this.pending.clear(); this.handlers.close(); };
+  }
+  call(method, params = {}) {
+    return new Promise((res, rej) => {
+      if (this.ws.readyState !== 1) return rej(new Error("closed"));
+      const id = ++this.id; this.pending.set(id, { res, rej });
+      this.ws.send(JSON.stringify({ id, method, params }));
+    });
+  }
+  send(method, params) { this.call(method, params).catch(() => {}); }
+  close() { try { this.ws.close(); } catch { /* already closed */ } }
 }
 
+/* ---------------------------------------------------------------- state */
+let cdp = null, meta = { deviceWidth: 1280, deviceHeight: 800 };
+let mobileLayout = (localStorage.getItem("handoff.mobile") ?? (matchMedia("(pointer: coarse)").matches ? "1" : "0")) === "1";
+let refitting = false, manualKb = false, mirror = "", composing = false, resyncTimer = null, probeSeq = 0;
+
+function setState(kind, text) {
+  E.dot.className = kind === "live" ? "live" : kind === "bad" ? "bad" : "wait";
+  if (text) E.host.textContent = text;
+  const show = kind !== "live";
+  E.overlay.classList.toggle("show", show);
+  E.spin.hidden = kind === "bad";
+  E.retry.hidden = kind !== "bad";
+  if (show) E.msg.textContent = kind === "bad" ? (text || "Disconnected") : "Connecting to the browser…";
+}
+
+/* ---------------------------------------------------------------- connecting */
+async function connect() {
+  setState("wait");
+  const scheme = testHost || location.protocol === "https:" ? "wss://" : "ws://";
+  cdp = new Cdp(scheme + (testHost || location.host) + "/devtools/page/" + encodeURIComponent(pageId), {
+    event: onEvent,
+    close: () => setState("bad", "The browser session ended"),
+  });
+  try {
+    await cdp.ready;
+    await cdp.call("Page.enable");
+    await applyMetrics();
+    setState("live");
+    refreshInfo();
+  } catch (e) {
+    setState("bad", "Could not connect (" + e.message + ")");
+  }
+}
+
+// The remote page gets the size of this screen (like a real phone) or its own desktop size.
+async function applyMetrics() {
+  if (!cdp) return;
+  const r = E.stage.getBoundingClientRect();
+  const w = Math.max(200, Math.floor(r.width)), h = Math.max(200, Math.floor(r.height));
+  const dpr = Math.min(devicePixelRatio || 1, 3);
+  if (mobileLayout) await cdp.call("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: dpr, mobile: true, screenWidth: w, screenHeight: h });
+  else await cdp.call("Emulation.clearDeviceMetricsOverride");
+  await cdp.call("Page.stopScreencast").catch(() => {});
+  await cdp.call("Page.startScreencast", { format: "jpeg", quality: 80, maxWidth: Math.round(w * dpr), maxHeight: Math.round(h * dpr), everyNthFrame: 1 });
+  E.layout.classList.toggle("on", mobileLayout);
+}
+
+function onEvent(method, p) {
+  if (method === "Page.screencastFrame") {
+    const img = new Image();
+    img.meta = p.metadata;
+    img.onload = () => {
+      meta = img.meta;
+      // A frame of the new size means the re-fit is done.
+      if (refitting && Math.abs(meta.deviceWidth - fitSize.w) < 8 && Math.abs(meta.deviceHeight - fitSize.h) < 8) refitting = false;
+      if (E.view.width !== img.width || E.view.height !== img.height) { E.view.width = img.width; E.view.height = img.height; }
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = "data:image/jpeg;base64," + p.data;
+    cdp.send("Page.screencastFrameAck", { sessionId: p.sessionId });
+  } else if ((method === "Page.frameNavigated" && !p.frame.parentId) || method === "Page.loadEventFired" || method === "Page.navigatedWithinDocument") {
+    refreshInfo();
+  } else if (method === "Inspector.detached" || method === "Target.targetCrashed") {
+    setState("bad", "The page was closed");
+  }
+}
+
+async function refreshInfo() {
+  try {
+    const r = await cdp.call("Runtime.evaluate", { expression: "JSON.stringify({u: location.href, t: document.title})", returnByValue: true });
+    const { u, t } = JSON.parse(r.result.value);
+    let host = u; try { host = new URL(u).host || u; } catch { /* keep raw */ }
+    E.host.textContent = host; E.host.title = t || u;
+    document.title = (t ? t + " · " : "") + "Browser handoff";
+    const h = await cdp.call("Page.getNavigationHistory");
+    E.back.disabled = h.currentIndex <= 0;
+    E.fwd.disabled = h.currentIndex >= h.entries.length - 1;
+  } catch { /* page navigating */ }
+}
+
+/* ---------------------------------------------------------------- touch: tap = click, drag = scroll */
+function toPage(e) {
+  const r = E.view.getBoundingClientRect();
+  const s = Math.min(r.width / E.view.width, r.height / E.view.height);
+  const dw = E.view.width * s, dh = E.view.height * s;
+  const ox = r.left + (r.width - dw) / 2, oy = r.top + (r.height - dh) / 2;
+  const fx = (e.clientX - ox) / dw, fy = (e.clientY - oy) / dh;
+  if (fx < 0 || fx > 1 || fy < 0 || fy > 1) return null;
+  return { x: fx * meta.deviceWidth, y: fy * meta.deviceHeight, scale: meta.deviceHeight / dh };
+}
+
+let touch = null;
+E.view.addEventListener("pointerdown", (e) => {
+  if (!e.isPrimary) return;
+  E.view.setPointerCapture(e.pointerId);
+  touch = { x: e.clientX, y: e.clientY, lastY: e.clientY, moved: false, t: performance.now() };
+});
+E.view.addEventListener("pointermove", (e) => {
+  if (!touch || !e.isPrimary) return;
+  if (!touch.moved && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 9) touch.moved = true;
+  if (touch.moved) {
+    const p = toPage(e);
+    if (p) cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: (touch.lastY - e.clientY) * p.scale });
+    touch.lastY = e.clientY;
+  }
+});
+E.view.addEventListener("pointerup", (e) => {
+  if (!touch || !e.isPrimary) return;
+  const wasTap = !touch.moved;
+  touch = null;
+  if (!wasTap || refitting) return;       // the picture is about to change size: a tap would land wrong
+  const p = toPage(e);
+  if (!p) return;
+  // Raise the keyboard first, synchronously, inside the user gesture (phones only allow it
+  // there); probeFocus() lowers it again if the tapped element turns out not to be a text field.
+  E.kb.focus({ preventScroll: true });
+  tapFeedback(e.clientX, e.clientY);
+  cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y });
+  cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
+  cdp.send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1 });
+  setTimeout(probeFocus, 160);
+});
+E.view.addEventListener("pointercancel", () => { touch = null; });
+E.view.addEventListener("contextmenu", (e) => e.preventDefault());
+
+function tapFeedback(x, y) {
+  const r = E.stage.getBoundingClientRect();
+  E.ripple.style.left = x - r.left + "px"; E.ripple.style.top = y - r.top + "px";
+  E.ripple.classList.remove("go"); void E.ripple.offsetWidth; E.ripple.classList.add("go");
+  navigator.vibrate?.(8);
+}
+
+/* ---------------------------------------------------------------- native keyboard */
+// What is focused in the remote page? Text field -> mirror it into the local hidden input.
+const PROBE = `(() => {
+  let a = document.activeElement;
+  for (let i = 0; a && i < 8; i++) {
+    if (a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement;
+    else if (a.tagName === "IFRAME" || a.tagName === "FRAME") {
+      try { const d = a.contentDocument; if (d && d.activeElement && d.activeElement !== d.body) a = d.activeElement; else break; }
+      catch (e) { return { editable: false, frame: true }; }
+    } else break;
+  }
+  if (!a || a === document.body) return { editable: false };
+  const tag = (a.tagName || "").toLowerCase(), type = (a.type || "").toLowerCase();
+  const non = ["button","submit","checkbox","radio","range","color","file","image","reset","hidden"];
+  const editable = tag === "textarea" || (tag === "input" && !non.includes(type)) || a.isContentEditable;
+  if (!editable) return { editable: false };
+  const value = a.value !== undefined ? a.value : a.textContent || "";
+  try { a.setSelectionRange(value.length, value.length); } catch (e) {}
+  return { editable: true, tag, type: type || "text", value, inputmode: a.inputMode || "", enter: a.enterKeyHint || "", ro: !!(a.readOnly || a.disabled), ac: a.autocomplete || "" };
+})()`;
+
+async function probeFocus() {
+  const my = ++probeSeq;
+  let info;
+  try { info = (await cdp.call("Runtime.evaluate", { expression: PROBE, returnByValue: true })).result.value; } catch { return; }
+  if (my !== probeSeq) return;
+  if (info && info.editable && !info.ro) {
+    showKeyboard(info);
+  } else if (!manualKb) {
+    E.kb.blur();
+    E.keys.classList.remove("show");
+  }
+}
+
+// Input types whose native keyboard we mirror; anything else (number, date, ...) gets the text one.
+const KB_TYPES = new Set(["email", "tel", "url", "search", "password"]);
+function showKeyboard(info) {
+  const kb = E.kb;
+  const type = KB_TYPES.has(info.type) ? info.type : "text";
+  if (kb.type !== type) kb.type = type;
+  kb.inputMode = info.inputmode || (info.type === "number" ? "decimal" : "");
+  kb.enterKeyHint = info.enter || (info.tag === "textarea" ? "enter" : "go");
+  kb.setAttribute("autocomplete", type === "password" ? "current-password" : "off");
+  if (kb.value !== info.value) kb.value = info.value;
+  mirror = kb.value;
+  if (document.activeElement !== kb) kb.focus({ preventScroll: true });
+  try { kb.setSelectionRange(kb.value.length, kb.value.length); } catch { /* types without selection */ }
+  E.keys.classList.add("show");
+}
+
+// Forward what is typed: diff against the mirror (handles autocorrect/swipe typing/IME).
+E.kb.addEventListener("input", () => {
+  const now = E.kb.value;
+  let p = 0; const max = Math.min(mirror.length, now.length);
+  while (p < max && mirror[p] === now[p]) p++;
+  for (let i = mirror.length - p; i > 0; i--) pressKey("Backspace");
+  const added = now.slice(p);
+  if (added) cdp.send("Input.insertText", { text: added });
+  mirror = now;
+  clearTimeout(resyncTimer);
+  if (!composing) resyncTimer = setTimeout(resync, 350);
+});
+E.kb.addEventListener("compositionstart", () => { composing = true; });
+E.kb.addEventListener("compositionend", () => { composing = false; clearTimeout(resyncTimer); resyncTimer = setTimeout(resync, 350); });
+// The remote field may reformat or limit input (maxlength, masks): follow it.
+async function resync() {
+  try {
+    const info = (await cdp.call("Runtime.evaluate", { expression: PROBE, returnByValue: true })).result.value;
+    if (info && info.editable && info.value !== E.kb.value && !composing) { E.kb.value = info.value; mirror = info.value; }
+  } catch { /* ignore */ }
+}
+E.kb.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); pressKey("Enter"); setTimeout(probeFocus, 400); }
+  else if (e.key === "Tab") { e.preventDefault(); pressKey("Tab"); setTimeout(probeFocus, 200); }
+  else if (e.key === "Escape") { e.preventDefault(); pressKey("Escape"); }
+});
+E.kb.addEventListener("blur", () => { if (!manualKb) E.keys.classList.remove("show"); });
+
+const KEYS = { Enter: [13, "\r"], Tab: [9], Backspace: [8], Escape: [27] };
+function pressKey(key) {
+  const [vk, text] = KEYS[key];
+  cdp.send("Input.dispatchKeyEvent", { type: text ? "keyDown" : "rawKeyDown", key, code: key, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk, text });
+  cdp.send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+}
+
+/* ---------------------------------------------------------------- toolbar */
+// Buttons must not take focus from the local input, or the keyboard would close.
+for (const b of document.querySelectorAll("#bar button, #keys button")) b.addEventListener("pointerdown", (e) => e.preventDefault());
+E.back.onclick = () => navigateHistory(-1);
+E.fwd.onclick = () => navigateHistory(1);
+E.reload.onclick = () => cdp.send("Page.reload");
+async function navigateHistory(d) {
+  const h = await cdp.call("Page.getNavigationHistory");
+  const e = h.entries[h.currentIndex + d];
+  if (e) cdp.send("Page.navigateToHistoryEntry", { entryId: e.id });
+}
+E.layout.onclick = async () => {
+  mobileLayout = !mobileLayout;
+  localStorage.setItem("handoff.mobile", mobileLayout ? "1" : "0");
+  await applyMetrics();
+};
+E.kbbtn.onclick = () => {
+  manualKb = !manualKb;
+  E.kbbtn.classList.toggle("on", manualKb);
+  if (manualKb) { E.kb.focus({ preventScroll: true }); E.keys.classList.add("show"); probeFocus(); }
+  else { E.kb.blur(); E.keys.classList.remove("show"); }
+};
+document.querySelectorAll("#keys button[data-key]").forEach((b) => b.addEventListener("click", () => { pressKey(b.dataset.key); setTimeout(probeFocus, 300); }));
+$("paste").addEventListener("click", async () => {
+  try { const t = await navigator.clipboard.readText(); if (t) cdp.send("Input.insertText", { text: t }); } catch { /* clipboard not allowed */ }
+});
+E.retry.onclick = () => connect();
+
+// Re-fit the remote page when the screen really changes (rotation, native keyboard, browser bars).
+var fitTimer = null, fitSize = { w: 0, h: 0 };
+new ResizeObserver(() => {
+  const r = E.stage.getBoundingClientRect();
+  if (Math.abs(r.width - fitSize.w) < 10 && Math.abs(r.height - fitSize.h) < 30) return;
+  fitSize = { w: r.width, h: r.height };
+  if (!cdp || !mobileLayout) return;
+  refitting = true;                        // until the first frame of the new size arrives
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => applyMetrics().catch(() => {}).finally(() => setTimeout(() => { refitting = false; }, 1500)), 250);
+}).observe(E.stage);
+window.addEventListener("pagehide", () => cdp && cdp.close());   // also releases the size override
+
+// Desktop: type straight into the page.
+window.addEventListener("keydown", (e) => {
+  if (!cdp || document.activeElement === E.kb || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.key.length === 1) { cdp.send("Input.insertText", { text: e.key }); e.preventDefault(); }
+  else if (KEYS[e.key]) { pressKey(e.key); e.preventDefault(); }
+});
+
+/* ---------------------------------------------------------------- page picker (no ?page=) */
 async function pickPage() {
+  E.kbbtn.hidden = E.layout.hidden = E.reload.hidden = E.back.hidden = E.fwd.hidden = true;
+  E.overlay.classList.remove("show");
+  E.view.hidden = true;
   const list = await (await fetch("/json/list")).json();
-  const ul = document.createElement("ul");
+  const box = document.createElement("div");
+  box.id = "list";
+  box.innerHTML = "<h1>Which page?</h1>";
   for (const p of list.filter((x) => x.type === "page")) {
-    const li = document.createElement("li");
     const b = document.createElement("button");
     b.textContent = p.title || "(untitled)";
     const s = document.createElement("small");
     s.textContent = p.url;
     b.appendChild(s);
     b.onclick = () => { location.search = "?page=" + encodeURIComponent(p.id); };
-    li.appendChild(b);
-    ul.appendChild(li);
+    box.appendChild(b);
   }
-  mainEl.appendChild(ul);
-  hintEl.textContent = "Pick the page the agent asked you to look at.";
-  setStatus("choose", "");
+  E.stage.appendChild(box);
+  E.dot.className = ""; E.host.textContent = "Pick the page the agent asked you to look at";
 }
 
-function start() {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  mainEl.appendChild(canvas);
-  formEl.hidden = false;
-  hintEl.textContent = "Tap to click, drag to scroll. Tap a field, then type in the box below and press Send.";
-
-  // ?host=... points at another Browserless (testing); by default it is the one serving this page.
-  const target = params.get("host");
-  const ws = new WebSocket((target || location.protocol === "https:" ? "wss://" : "ws://") + (target || location.host) + "/devtools/page/" + encodeURIComponent(pageId));
-  let seq = 0, meta = { deviceWidth: 1280, deviceHeight: 800, offsetTop: 0 };
-  const send = (method, params = {}) => { if (ws.readyState === 1) ws.send(JSON.stringify({ id: ++seq, method, params })); };
-
-  ws.onopen = () => {
-    setStatus("live", "ok");
-    send("Page.enable");
-    send("Page.startScreencast", { format: "jpeg", quality: 70, maxWidth: 1600, maxHeight: 2400, everyNthFrame: 1 });
-  };
-  ws.onclose = () => setStatus("disconnected", "bad");
-  ws.onerror = () => setStatus("error", "bad");
-  ws.onmessage = (ev) => {
-    const msg = JSON.parse(ev.data);
-    if (msg.method === "Page.screencastFrame") {
-      const { data, metadata, sessionId } = msg.params;
-      meta = metadata;
-      const img = new Image();
-      img.onload = () => {
-        if (canvas.width !== img.width || canvas.height !== img.height) { canvas.width = img.width; canvas.height = img.height; }
-        ctx.drawImage(img, 0, 0);
-      };
-      img.src = "data:image/jpeg;base64," + data;
-      send("Page.screencastFrameAck", { sessionId });
-    } else if (msg.method === "Page.frameNavigated" && !msg.params.frame.parentId) {
-      urlEl.textContent = msg.params.frame.url;
-    }
-  };
-
-  // Map a pointer position on the canvas to CSS pixels of the page.
-  const point = (e) => {
-    const r = canvas.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * meta.deviceWidth, y: ((e.clientY - r.top) / r.height) * meta.deviceHeight };
-  };
-  let down = null;
-  canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture(e.pointerId); down = { x: e.clientX, y: e.clientY, lastY: e.clientY, moved: false }; e.preventDefault(); });
-  canvas.addEventListener("pointermove", (e) => {
-    if (!down) return;
-    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) down.moved = true;
-    if (down.moved) {
-      const p = point(e), r = canvas.getBoundingClientRect();
-      const dy = (down.lastY - e.clientY) * (meta.deviceHeight / r.height);
-      down.lastY = e.clientY;
-      send("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: dy });
-    }
-  });
-  canvas.addEventListener("pointerup", (e) => {
-    if (down && !down.moved) {
-      const p = point(e);
-      send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y });
-      send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
-      send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1 });
-    }
-    down = null;
-    e.preventDefault();
-  });
-
-  const KEYS = { Enter: { vk: 13, text: "\r" }, Tab: { vk: 9 }, Backspace: { vk: 8 }, Escape: { vk: 27 } };
-  const pressKey = (key) => {
-    const k = KEYS[key];
-    send("Input.dispatchKeyEvent", { type: k.text ? "keyDown" : "rawKeyDown", key, code: key, windowsVirtualKeyCode: k.vk, nativeVirtualKeyCode: k.vk, text: k.text });
-    send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: k.vk, nativeVirtualKeyCode: k.vk });
-  };
-  formEl.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const t = $("text");
-    if (t.value) send("Input.insertText", { text: t.value });
-    t.value = "";
-  });
-  formEl.querySelectorAll("button[data-key]").forEach((b) => b.addEventListener("click", () => pressKey(b.dataset.key)));
-  // Desktop: type straight into the page.
-  window.addEventListener("keydown", (e) => {
-    if (document.activeElement === $("text")) return;
-    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { send("Input.insertText", { text: e.key }); e.preventDefault(); }
-    else if (KEYS[e.key]) { pressKey(e.key); e.preventDefault(); }
-  });
-}
-
-if (pageId) start();
-else pickPage().catch((e) => { setStatus("error", "bad"); hintEl.textContent = String(e); });
+if (pageId) connect();
+else pickPage().catch((e) => setState("bad", String(e)));
 </script>
 </body>
 </html>

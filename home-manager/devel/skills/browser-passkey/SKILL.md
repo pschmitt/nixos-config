@@ -69,8 +69,10 @@ page**, so they can click and type in the very session you are driving:
   The link is `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>`, a
   small phone-friendly live view served by Browserless' nginx host (source:
   `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
-  = scroll, and a text box + Send/Enter/Tab/Backspace buttons type into the
-  focused field. Without `--match`/`--page` it shows a list of pages to pick.
+  = scroll, back/forward/reload, and tapping a text field raises the phone's
+  native keyboard (type and key hint mirror the field: email, password, ...;
+  the remote page is resized to the phone like a real mobile browser, toggle
+  in the top bar). Without `--match`/`--page` it shows a list of pages to pick.
   Do **not** use Browserless' own `/debugger/` or its
   `/devtools/inspector.html?wss=...` link for this: the DevTools viewer accepts
   mouse clicks on a desktop but is unusable on a phone (no typing, taps do not
