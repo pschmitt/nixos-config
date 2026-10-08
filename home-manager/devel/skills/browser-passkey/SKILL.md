@@ -66,10 +66,15 @@ page**, so they can click and type in the very session you are driving:
   page list (it must match exactly one page: the browser is shared with other
   agents, e.g. an open HR WORKS tab), or pass `--page ID` with your own page id:
   `(await (await page.context().newCDPSession(page)).send('Target.getTargetInfo')).targetInfo.targetId`.
-  The link is `https://browserless.<host>.ts.brkn.lol/devtools/inspector.html?wss=<same host>/devtools/page/<id>`:
-  Chromium DevTools with a screencast of the page you can click and type into.
-  It takes about 10 seconds to initialise. Without `--match`/`--page` the link
-  goes to the general `/debugger/` page, which only lists the sessions.
+  The link is `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>`, a
+  small phone-friendly live view served by Browserless' nginx host (source:
+  `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
+  = scroll, and a text box + Send/Enter/Tab/Backspace buttons type into the
+  focused field. Without `--match`/`--page` it shows a list of pages to pick.
+  Do **not** use Browserless' own `/debugger/` or its
+  `/devtools/inspector.html?wss=...` link for this: the DevTools viewer accepts
+  mouse clicks on a desktop but is unusable on a phone (no typing, taps do not
+  work), and `/debugger/` always starts its own new browser.
 - **Channels:** `--via push` (default; `notify.mobile_app_pixel_11_pro`, the
   user's main phone, `--phone` overrides), `--via signal` (`notify.signal_me`,
   with the `[BROWSER HANDOFF | CLAUDE CODE]` heading CONTEXT.md asks for) or

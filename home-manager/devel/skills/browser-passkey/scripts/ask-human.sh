@@ -21,11 +21,12 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE
   --title TITLE    push title (default: "Claude needs you in the browser")
   --harness NAME   harness shown in the Signal heading (default: CLAUDE CODE)
 
-Without --page/--match the link goes to the general debugger page, which lists
-all sessions. The direct link is
-https://browserless.HOST.\${BROWSERLESS_DOMAIN:-ts.brkn.lol}/devtools/inspector.html?wss=...
-(tailnet, no login; Authelia protects it elsewhere). The viewer takes about
-10 seconds to initialise.
+Without --page/--match the link opens a list of the browser's pages to pick
+from. The link is
+https://browserless.HOST.${BROWSERLESS_DOMAIN:-ts.brkn.lol}/handoff/?page=ID: a
+phone-friendly live view (tap = click, drag = scroll, a text box types into the
+focused field; source: services/headless-browsers/handoff.html in nixos-config).
+It is reachable on the tailnet without a login; Authelia protects it elsewhere.
 
 Tell the user in MESSAGE what to do ("Solve the CAPTCHA, then tap Next"), keep
 the page open and untouched meanwhile, then re-check it before continuing.
@@ -57,9 +58,9 @@ live_url() {
 
   if [[ -n "$page" ]]
   then
-    printf 'https://%s/devtools/inspector.html?wss=%s/devtools/page/%s' "$base" "$base" "$page"
+    printf 'https://%s/handoff/?page=%s' "$base" "$page"
   else
-    printf 'https://%s/debugger/' "$base"
+    printf 'https://%s/handoff/' "$base"
   fi
 }
 
