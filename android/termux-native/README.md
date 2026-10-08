@@ -765,3 +765,10 @@ limits caused by long immutable generation paths. On the Zenfone 10, the
 legacy yadm `init.lua` was temporarily moved aside; a fresh headless start
 reported zero plugin clones, missing sources, or errors, and an interactive
 app launch used the Nix config with an empty Lazy data directory.
+
+The Termux profile now declares APT-owned language servers for Lua, Go,
+Python (`ty` and Ruff), TOML, and Markdown. The Zenfone's generation 64
+attached each server to a matching scratch buffer; Python also returned Ruff
+lint diagnostics and a `ty` type error. Other configured LazyVim language
+extras remain available for syntax and editor support, but their LSP servers
+are disabled on Termux until a compatible APT package is available.

@@ -75,8 +75,14 @@ in
       "ripgrep"
       "fd"
       "clang"
+      "gopls"
+      "lua-language-server"
+      "marksman"
+      "ruff"
+      "taplo"
       "tree-sitter"
       "nodejs"
+      "ty"
     ];
 
     xdg.configFile =

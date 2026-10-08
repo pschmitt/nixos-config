@@ -1,12 +1,24 @@
 local is_termux = require("utils").is_termux()
 
+local termux_servers = {
+  gopls = true,
+  lua_ls = true,
+  marksman = true,
+  ruff = true,
+  taplo = true,
+  ty = true,
+}
+
 return {
   {
     "neovim/nvim-lspconfig",
-    opts = {
-      servers = {
+    opts = function(_, opts)
+      opts.servers = vim.tbl_deep_extend("force", opts.servers, {
         lua_ls = {
           -- do not install with meson on termux, it just fails
+          mason = not is_termux,
+        },
+        marksman = {
           mason = not is_termux,
         },
         -- cargo...
@@ -41,8 +53,29 @@ return {
             },
           },
         },
-      },
-    },
+      })
+
+      if is_termux then
+        -- Only start language servers that are part of the Termux APT profile.
+        -- This prevents LazyVim extras from trying unavailable Linux/Mason tools.
+        for server, server_opts in pairs(opts.servers) do
+          if server ~= "*" then
+            server_opts = type(server_opts) == "table" and server_opts or {}
+            server_opts.enabled = termux_servers[server] == true
+            server_opts.mason = false
+            opts.servers[server] = server_opts
+          end
+        end
+
+        for server in pairs(termux_servers) do
+          local server_opts = opts.servers[server]
+          server_opts = type(server_opts) == "table" and server_opts or {}
+          server_opts.enabled = true
+          server_opts.mason = false
+          opts.servers[server] = server_opts
+        end
+      end
+    end,
   },
 
   {
