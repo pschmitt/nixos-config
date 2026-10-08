@@ -14,6 +14,7 @@ in
   sops.secrets = {
     "monarch/admin/username" = config.sops.mkHostSecret { };
     "monarch/admin/password" = config.sops.mkHostSecret { };
+    "monarch/admin/email" = config.sops.mkHostSecret { };
     "monarch/oidc/client-secret" = config.sops.mkHostSecret { };
     "monarch/homeassistant/password" = config.sops.mkHostSecret { };
     # shared: monit agents report with it (see monit/config/mmonit)
@@ -53,6 +54,7 @@ in
       }
       {
         usernameFile = config.sops.secrets."monarch/admin/username".path;
+        emailFile = config.sops.secrets."monarch/admin/email".path;
         role = "admin";
         passwordFile = config.sops.secrets."monarch/admin/password".path;
       }
