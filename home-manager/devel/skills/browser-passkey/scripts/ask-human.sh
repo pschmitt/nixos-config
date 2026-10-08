@@ -16,17 +16,21 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE
   --match REGEX    pick the page whose URL matches REGEX instead; there must be
                    exactly one match (the browser is shared with other agents)
   --host HOST      browser host: fnuc (default), rofl-13, rofl-14
+  --url WHICH      which link: auto (default; the mesh link when Home Assistant
+                   says the user is home, else the public one), mesh or public
   --via WAY        push (default), signal or both
   --phone NAME     notify.mobile_app_NAME target (default: pixel_11_pro)
   --title TITLE    push title (default: "Claude needs you in the browser")
   --harness NAME   harness shown in the Signal heading (default: CLAUDE CODE)
 
 Without --page/--match the link opens a list of the browser's pages to pick
-from. The link is
-https://browserless.HOST.${BROWSERLESS_DOMAIN:-ts.brkn.lol}/handoff/?page=ID: a
-phone-friendly live view (tap = click, drag = scroll, a text box types into the
-focused field; source: services/headless-browsers/handoff.html in nixos-config).
-It is reachable on the tailnet without a login; Authelia protects it elsewhere.
+from. There are two links to the same phone-friendly live view (source:
+services/headless-browsers/handoff.html in nixos-config):
+  mesh    https://browserless.HOST.${BROWSERLESS_DOMAIN:-ts.brkn.lol}/handoff/?page=ID
+          tailnet/Netbird only, no login
+  public  https://browser-HOST.${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
+          reachable from anywhere, Authelia (owner only, two-factor)
+The user is usually not on the mesh when away, hence auto.
 
 Tell the user in MESSAGE what to do ("Solve the CAPTCHA, then tap Next"), keep
 the page open and untouched meanwhile, then re-check it before continuing.
@@ -35,6 +39,10 @@ EOF
 
 browserless_base() {
   printf 'browserless.%s.%s' "$1" "${BROWSERLESS_DOMAIN:-ts.brkn.lol}"
+}
+
+public_base() {
+  printf 'browser-%s.%s' "$1" "${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}"
 }
 
 # Prints the id of the one page whose URL matches the regex.
@@ -74,6 +82,16 @@ ha_credentials() {
     return 1
   fi
   printf '%s %s\n' "${url%/}" "$token"
+}
+
+# Is the user at home (and therefore on the mesh)? Home Assistant knows.
+user_is_home() {
+  local url token state
+
+  read -r url token < <(ha_credentials) || return 1
+  state="$(curl -fsS --max-time 10 -H "Authorization: Bearer ${token}" \
+    "${url}/api/states/person.philipp_schmitt" | jq -r '.state')" || return 1
+  [[ "$state" == home ]]
 }
 
 ha_call() {
@@ -117,7 +135,7 @@ send_signal() {
 
 main() {
   local host=fnuc phone=pixel_11_pro via=push harness="CLAUDE CODE"
-  local title="Claude needs you in the browser" message="" page="" match=""
+  local title="Claude needs you in the browser" message="" page="" match="" which=auto
   local base live
 
   while [[ -n "${1:-}" ]]
@@ -143,6 +161,10 @@ main() {
         via="$2"
         shift 2
         ;;
+      --url)
+        which="$2"
+        shift 2
+        ;;
       --phone)
         phone="$2"
         shift 2
@@ -162,7 +184,7 @@ main() {
     esac
   done
 
-  if [[ -z "$message" || ! "$via" =~ ^(push|signal|both)$ ]]
+  if [[ -z "$message" || ! "$via" =~ ^(push|signal|both)$ || ! "$which" =~ ^(auto|mesh|public)$ ]]
   then
     usage >&2
     return 2
@@ -173,7 +195,22 @@ main() {
   then
     page="$(find_page "$base" "$match")" || return 1
   fi
-  live="$(live_url "$base" "$page")"
+  if [[ "$which" == auto ]]
+  then
+    if user_is_home
+    then
+      which=mesh
+    else
+      which=public
+    fi
+    printf 'User is %s: using the %s link\n' "$([[ "$which" == mesh ]] && echo home || echo away)" "$which"
+  fi
+  if [[ "$which" == public ]]
+  then
+    live="$(live_url "$(public_base "$host")" "$page")"
+  else
+    live="$(live_url "$base" "$page")"
+  fi
 
   if [[ "$via" == push || "$via" == both ]]
   then

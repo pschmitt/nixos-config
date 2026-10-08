@@ -5,6 +5,7 @@
     ../../profiles/features/network/roflnet.nix
     ../../profiles/specializations/server
 
+    ./browserless-public.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     ./hardware.nix

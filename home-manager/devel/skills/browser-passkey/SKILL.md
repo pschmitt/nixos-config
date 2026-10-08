@@ -66,8 +66,16 @@ page**, so they can click and type in the very session you are driving:
   page list (it must match exactly one page: the browser is shared with other
   agents, e.g. an open HR WORKS tab), or pass `--page ID` with your own page id:
   `(await (await page.context().newCDPSession(page)).send('Target.getTargetInfo')).targetInfo.targetId`.
-  The link is `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>`, a
-  small phone-friendly live view served by Browserless' nginx host (source:
+  There are two links to the same view, chosen with `--url auto|mesh|public`
+  (`auto`, the default, asks Home Assistant where the user is):
+  `mesh` = `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>` (tailnet
+  only, no login, used when the user is home) and `public` =
+  `https://browser-<host>.brkn.lol/handoff/?page=<id>` (reachable from anywhere,
+  Authelia two-factor, owner only; used when away, since the user is then not on
+  the tailnet). The public vhost lives on rofl-10
+  (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,
+  `/json/list` and the websocket of one page, never Browserless' own API.
+  The view is a small phone-friendly page served by Browserless' nginx host (source:
   `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
   = scroll, back/forward/reload, and tapping a text field raises the phone's
   native keyboard (type and key hint mirror the field: email, password, ...;
