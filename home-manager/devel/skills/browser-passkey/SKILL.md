@@ -35,9 +35,42 @@ Verified on `playwright-browserless-fnuc` and `-rofl-13` (2026-10):
 - **Never `echo`, `cat` or return the credential**, and never print
   `rbw get --raw` output for passkey entries.
 - **Google sign-in shows a CAPTCHA** to these automated browsers before any
-  passkey is offered ("Type the text you hear or see"). That is a bot check;
-  do not try to solve or bypass it. Google accounts cannot be signed in this
-  way. Hand the task to the user (or find an API/import route) instead.
+  passkey is offered ("Type the text you hear or see"). Reproduced twice on
+  `playwright-browserless-fnuc` (home IP): the fresh `accounts.google.com`
+  page has no CAPTCHA, but it appears right after submitting the email, even
+  with a valid virtual authenticator loaded, so it is not caused by repeated
+  attempts. That is a bot check; do not try to solve or bypass it. Either
+  hand the task to the user (a file to import, an API route), or, if they are
+  willing, let them solve it in the live view (see "When a human has to step
+  in"). Decide that early, before a passkey is exposed for nothing.
+- **Verified end to end on Authelia** (`auth.brkn.lol`, 2026-10-08, via
+  `playwright-browserless-fnuc`): inject, open the login page, click "Sign in
+  with a passkey", and Authelia accepts the virtual passkey as first factor
+  ("Hi <name>"). Authelia's `two_factor` policy then still asks for the
+  password. Do not type it yourself from the vault into the page (it would
+  appear in your tool call): let the user enter it in the live view (see
+  below), or fetch it into the page with the same one-shot-server trick.
+
+## When a human has to step in (CAPTCHA, approval, 2FA on a device)
+
+Never solve or bypass a bot check yourself. If the user is willing to do it,
+send a push notification that opens the Browserless **live view** of the very
+session you are driving, so they can click and type in it:
+
+```bash
+"$SKILL_DIR/scripts/ask-human.sh" --host fnuc \
+  "Solve the Google CAPTCHA, then tap Next"
+```
+
+It calls `notify.mobile_app_pixel_11_pro` (the user's main phone; `--phone`
+overrides) with a tap action to
+`https://browserless.<host>.ts.brkn.lol/debugger/` (tailnet, no login;
+Authelia protects it elsewhere). `--host` is `fnuc` (default), `rofl-13` or
+`rofl-14`, matching the Playwright MCP server you use. Then wait without
+touching the page, and re-check it (`browser_snapshot`) before continuing.
+Whatever the user types in that view (a password, a code) never passes through
+you, which is the point. Keep the session open meanwhile: Browserless ends it
+after an hour or when the MCP server disconnects.
 
 ## Leak-free workflow
 
