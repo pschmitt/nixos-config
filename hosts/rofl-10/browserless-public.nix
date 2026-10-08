@@ -7,13 +7,14 @@ let
     "rofl-13"
     "rofl-14"
   ];
-  publicHost = host: "browser-${host}.${domain}";
+  publicHost = host: "browser.${host}.${domain}";
   autheliaConfig = import ../../services/authelia-nginx-config.nix { inherit config; };
 
   # Public entry to the human-handoff view of a Browserless (see
   # services/headless-browsers/handoff.html), for when the user is away from the
-  # mesh. *.${domain} already resolves to this host, which reaches the browser
-  # hosts over the mesh. Browserless itself can run arbitrary browser code, so
+  # mesh. The browser hosts (fnuc has no static IP) are not exposed themselves:
+  # browser.<host>.${domain} (DNS records in nixos-config-private's tofu) points
+  # at this host, which reaches them over the mesh. Browserless itself can run arbitrary browser code, so
   # ONLY what the handoff page needs is proxied: the page, its page list and the
   # CDP websocket of a single page. Everything else (/chromium, /function,
   # /sessions, ...) answers 404.
@@ -29,7 +30,9 @@ let
       '';
     in
     {
-      useACMEHost = "wildcard.${domain}";
+      # Two labels deep: not covered by the *.${domain} wildcard cert.
+      enableACME = true;
+      acmeRoot = null;
       forceSSL = true;
       extraConfig = autheliaConfig.server;
       locations = {

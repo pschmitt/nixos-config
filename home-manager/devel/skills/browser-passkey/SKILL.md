@@ -70,7 +70,7 @@ page**, so they can click and type in the very session you are driving:
   (`auto`, the default, asks Home Assistant where the user is):
   `mesh` = `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>` (tailnet
   only, no login, used when the user is home) and `public` =
-  `https://browser-<host>.brkn.lol/handoff/?page=<id>` (reachable from anywhere,
+  `https://browser.<host>.brkn.lol/handoff/?page=<id>` (reachable from anywhere,
   Authelia two-factor, owner only; used when away, since the user is then not on
   the tailnet). The public vhost lives on rofl-10
   (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,

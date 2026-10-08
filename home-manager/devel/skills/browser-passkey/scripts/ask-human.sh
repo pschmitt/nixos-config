@@ -28,7 +28,7 @@ from. There are two links to the same phone-friendly live view (source:
 services/headless-browsers/handoff.html in nixos-config):
   mesh    https://browserless.HOST.${BROWSERLESS_DOMAIN:-ts.brkn.lol}/handoff/?page=ID
           tailnet/Netbird only, no login
-  public  https://browser-HOST.${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
+  public  https://browser.HOST.${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
           reachable from anywhere, Authelia (owner only, two-factor)
 The user is usually not on the mesh when away, hence auto.
 
@@ -42,7 +42,7 @@ browserless_base() {
 }
 
 public_base() {
-  printf 'browser-%s.%s' "$1" "${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}"
+  printf 'browser.%s.%s' "$1" "${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}"
 }
 
 # Prints the id of the one page whose URL matches the regex.
