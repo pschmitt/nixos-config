@@ -24,6 +24,7 @@
     ./firewall.nix
     ./interactive/dotfiles.nix
     ./monit.nix
+    ./monit-clock-watch.nix
     ./networking.nix
     ./restic.nix
     ./snapper.nix

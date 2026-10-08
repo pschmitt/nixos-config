@@ -4,6 +4,7 @@
     ../../profiles/features/network/roflnet.nix
     ../../profiles/specializations/server
 
+    ./audit.nix
     ./hardware-configuration.nix
     ./hardware.nix
     ./host.nix
