@@ -54,23 +54,34 @@ Verified on `playwright-browserless-fnuc` and `-rofl-13` (2026-10):
 ## When a human has to step in (CAPTCHA, approval, 2FA on a device)
 
 Never solve or bypass a bot check yourself. If the user is willing to do it,
-send a push notification that opens the Browserless **live view** of the very
-session you are driving, so they can click and type in it:
+notify them with a link that opens the Browserless **live view of your own
+page**, so they can click and type in the very session you are driving:
 
 ```bash
-"$SKILL_DIR/scripts/ask-human.sh" --host fnuc \
+"$SKILL_DIR/scripts/ask-human.sh" --match 'accounts\.google\.com' --via both \
   "Solve the Google CAPTCHA, then tap Next"
 ```
 
-It calls `notify.mobile_app_pixel_11_pro` (the user's main phone; `--phone`
-overrides) with a tap action to
-`https://browserless.<host>.ts.brkn.lol/debugger/` (tailnet, no login;
-Authelia protects it elsewhere). `--host` is `fnuc` (default), `rofl-13` or
-`rofl-14`, matching the Playwright MCP server you use. Then wait without
-touching the page, and re-check it (`browser_snapshot`) before continuing.
-Whatever the user types in that view (a password, a code) never passes through
-you, which is the point. Keep the session open meanwhile: Browserless ends it
-after an hour or when the MCP server disconnects.
+- **Direct link:** `--match REGEX` picks your page by URL from the Browserless
+  page list (it must match exactly one page: the browser is shared with other
+  agents, e.g. an open HR WORKS tab), or pass `--page ID` with your own page id:
+  `(await (await page.context().newCDPSession(page)).send('Target.getTargetInfo')).targetInfo.targetId`.
+  The link is `https://browserless.<host>.ts.brkn.lol/devtools/inspector.html?wss=<same host>/devtools/page/<id>`:
+  Chromium DevTools with a screencast of the page you can click and type into.
+  It takes about 10 seconds to initialise. Without `--match`/`--page` the link
+  goes to the general `/debugger/` page, which only lists the sessions.
+- **Channels:** `--via push` (default; `notify.mobile_app_pixel_11_pro`, the
+  user's main phone, `--phone` overrides), `--via signal` (`notify.signal_me`,
+  with the `[BROWSER HANDOFF | CLAUDE CODE]` heading CONTEXT.md asks for) or
+  `--via both`.
+- **Host:** `--host fnuc` (default), `rofl-13` or `rofl-14`, matching the
+  Playwright MCP server you use. Tailnet only without a login; Authelia protects
+  it elsewhere.
+
+Then wait without touching the page, and re-check it (`browser_snapshot`)
+before continuing. Whatever the user types in that view (a password, a code)
+never passes through you, which is the point. Keep the session open meanwhile:
+Browserless ends it after an hour or when the MCP server disconnects.
 
 ## Leak-free workflow
 
