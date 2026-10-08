@@ -756,3 +756,12 @@ private cache yet. The P11 is not reachable over SSH, so its existing keys are
 still pending. The yadm-init installer now checks for encrypted host keys
 before replacing the Termux package tree and restores them after deploying the
 device's personal SSH identity.
+
+On 2026-10-08, the Termux Neovim generation began carrying every configured
+Lazy plugin source, with Lazy's automatic installer disabled. The generated
+`bin/nvim` launcher directs the existing yadm `nvim()` wrapper to the active
+generation config. Lazy's bytecode cache is disabled to avoid Android filename
+limits caused by long immutable generation paths. On the Zenfone 10, the
+legacy yadm `init.lua` was temporarily moved aside; a fresh headless start
+reported zero plugin clones, missing sources, or errors, and an interactive
+app launch used the Nix config with an empty Lazy data directory.

@@ -7,6 +7,7 @@ return {
   {
     "saghen/blink.cmp",
     dependencies = {
+      { "saghen/blink.lib" },
       {
         "saghen/blink.compat",
 
