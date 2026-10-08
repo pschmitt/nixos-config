@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Browser handoff</title>
+<style>
+  :root { color-scheme: dark; --bg: #0b0d12; --fg: #e8eaf2; --muted: #98a0b8; --line: #262b38; --accent: #7c6cf0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font: 15px/1.4 system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  header .url { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+  #status { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  #status.ok { color: #10b981; border-color: #10b981; }
+  #status.bad { color: #e11d48; border-color: #e11d48; }
+  main { flex: 1; min-height: 0; overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 8px; }
+  canvas { max-width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; touch-action: none; user-select: none; -webkit-user-select: none; }
+  form { display: flex; gap: 6px; padding: 8px 12px calc(8px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); flex-wrap: wrap; }
+  input[type=text] { flex: 1 1 160px; min-width: 0; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #141821; color: var(--fg); font-size: 16px; }
+  button { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: #1b2030; color: var(--fg); font-size: 14px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 12px; width: 100%; max-width: 560px; }
+  li button { width: 100%; text-align: left; margin-bottom: 8px; }
+  li small { display: block; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hint { padding: 0 12px 8px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <span id="status">connecting</span>
+  <span class="url" id="url"></span>
+</header>
+<main id="main"></main>
+<div class="hint" id="hint"></div>
+<form id="form" hidden autocomplete="off">
+  <input type="text" id="text" placeholder="Type here, then Send" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send">
+  <button class="primary" type="submit">Send</button>
+  <button type="button" data-key="Enter">Enter</button>
+  <button type="button" data-key="Tab">Tab</button>
+  <button type="button" data-key="Backspace">&#9003;</button>
+</form>
+<script>
+"use strict";
+// Mirrors one page of the Browserless browser over CDP: tap = click, drag = scroll,
+// the text box types into the focused field. Static, no dependencies.
+const params = new URLSearchParams(location.search);
+const pageId = params.get("page");
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status"), urlEl = $("url"), mainEl = $("main"), formEl = $("form"), hintEl = $("hint");
+
+function setStatus(text, cls) {
+  statusEl.textContent = text;
+  statusEl.className = cls || "";
+}
+
+async function pickPage() {
+  const list = await (await fetch("/json/list")).json();
+  const ul = document.createElement("ul");
+  for (const p of list.filter((x) => x.type === "page")) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.textContent = p.title || "(untitled)";
+    const s = document.createElement("small");
+    s.textContent = p.url;
+    b.appendChild(s);
+    b.onclick = () => { location.search = "?page=" + encodeURIComponent(p.id); };
+    li.appendChild(b);
+    ul.appendChild(li);
+  }
+  mainEl.appendChild(ul);
+  hintEl.textContent = "Pick the page the agent asked you to look at.";
+  setStatus("choose", "");
+}
+
+function start() {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  mainEl.appendChild(canvas);
+  formEl.hidden = false;
+  hintEl.textContent = "Tap to click, drag to scroll. Tap a field, then type in the box below and press Send.";
+
+  // ?host=... points at another Browserless (testing); by default it is the one serving this page.
+  const target = params.get("host");
+  const ws = new WebSocket((target || location.protocol === "https:" ? "wss://" : "ws://") + (target || location.host) + "/devtools/page/" + encodeURIComponent(pageId));
+  let seq = 0, meta = { deviceWidth: 1280, deviceHeight: 800, offsetTop: 0 };
+  const send = (method, params = {}) => { if (ws.readyState === 1) ws.send(JSON.stringify({ id: ++seq, method, params })); };
+
+  ws.onopen = () => {
+    setStatus("live", "ok");
+    send("Page.enable");
+    send("Page.startScreencast", { format: "jpeg", quality: 70, maxWidth: 1600, maxHeight: 2400, everyNthFrame: 1 });
+  };
+  ws.onclose = () => setStatus("disconnected", "bad");
+  ws.onerror = () => setStatus("error", "bad");
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    if (msg.method === "Page.screencastFrame") {
+      const { data, metadata, sessionId } = msg.params;
+      meta = metadata;
+      const img = new Image();
+      img.onload = () => {
+        if (canvas.width !== img.width || canvas.height !== img.height) { canvas.width = img.width; canvas.height = img.height; }
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = "data:image/jpeg;base64," + data;
+      send("Page.screencastFrameAck", { sessionId });
+    } else if (msg.method === "Page.frameNavigated" && !msg.params.frame.parentId) {
+      urlEl.textContent = msg.params.frame.url;
+    }
+  };
+
+  // Map a pointer position on the canvas to CSS pixels of the page.
+  const point = (e) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: ((e.clientX - r.left) / r.width) * meta.deviceWidth, y: ((e.clientY - r.top) / r.height) * meta.deviceHeight };
+  };
+  let down = null;
+  canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture(e.pointerId); down = { x: e.clientX, y: e.clientY, lastY: e.clientY, moved: false }; e.preventDefault(); });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!down) return;
+    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) down.moved = true;
+    if (down.moved) {
+      const p = point(e), r = canvas.getBoundingClientRect();
+      const dy = (down.lastY - e.clientY) * (meta.deviceHeight / r.height);
+      down.lastY = e.clientY;
+      send("Input.dispatchMouseEvent", { type: "mouseWheel", x: p.x, y: p.y, deltaX: 0, deltaY: dy });
+    }
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    if (down && !down.moved) {
+      const p = point(e);
+      send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y });
+      send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
+      send("Input.dispatchMouseEvent", { type: "mouseReleased", x: p.x, y: p.y, button: "left", clickCount: 1 });
+    }
+    down = null;
+    e.preventDefault();
+  });
+
+  const KEYS = { Enter: { vk: 13, text: "\r" }, Tab: { vk: 9 }, Backspace: { vk: 8 }, Escape: { vk: 27 } };
+  const pressKey = (key) => {
+    const k = KEYS[key];
+    send("Input.dispatchKeyEvent", { type: k.text ? "keyDown" : "rawKeyDown", key, code: key, windowsVirtualKeyCode: k.vk, nativeVirtualKeyCode: k.vk, text: k.text });
+    send("Input.dispatchKeyEvent", { type: "keyUp", key, code: key, windowsVirtualKeyCode: k.vk, nativeVirtualKeyCode: k.vk });
+  };
+  formEl.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = $("text");
+    if (t.value) send("Input.insertText", { text: t.value });
+    t.value = "";
+  });
+  formEl.querySelectorAll("button[data-key]").forEach((b) => b.addEventListener("click", () => pressKey(b.dataset.key)));
+  // Desktop: type straight into the page.
+  window.addEventListener("keydown", (e) => {
+    if (document.activeElement === $("text")) return;
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { send("Input.insertText", { text: e.key }); e.preventDefault(); }
+    else if (KEYS[e.key]) { pressKey(e.key); e.preventDefault(); }
+  });
+}
+
+if (pageId) start();
+else pickPage().catch((e) => { setStatus("error", "bad"); hintEl.textContent = String(e); });
+</script>
+</body>
+</html>
