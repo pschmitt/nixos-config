@@ -47,6 +47,15 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - If a git commit fails because the GPG key is locked, run `zhj gpg::auto-unlock` to unlock it.
 - `zhj gpg::auto-unlock` requires rbw to be unlocked. If it is not, use the `rbw` skill to unlock it first.
 
+## Leaked credentials
+
+- Keep secret values out of everything you can see or log: tool-call arguments, tool output, files the tools echo back (e.g. code passed to a browser tool is repeated in its output), transcripts and chat. Pass them by file, stdin, environment or a one-shot local channel instead, and mask them when diffing or listing.
+- If a credential (password, token, API key, private key, passkey, session cookie, ...) ends up somewhere it should not be, even briefly and even if you caused it, handle it **as soon as you notice**:
+  1. Tell the user plainly what was exposed and where, naming the credential (entry or key path), never its value.
+  2. Add a row under *Open* in the Obsidian note `homelab/🚨 Leaked credentials.md` (vault `/home/pschmitt/Documents/notes`; use the `obsidian` skill, or edit the file directly when the MCP cannot reach the vault): date, what, where it leaked, how to rotate, status. Never write the value into the note.
+  3. Contain what you can: revoke sessions and tokens you created, shred temporary files. Rotate the credential yourself only when that can be done without the value passing through your context (see `just sops-rotate` and the credential rotation note); otherwise leave it open for the user.
+  4. When something is rotated and verified, move its row to *Resolved*.
+
 ## Shell work
 
 - Do not duplicate shell style rules here.
