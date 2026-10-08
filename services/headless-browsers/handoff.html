@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#0b0d12">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,7 +37,11 @@
 
   /* stage */
   #stage { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: #000; overflow: hidden; }
-  canvas { width: 100%; height: 100%; object-fit: contain; touch-action: pinch-zoom; display: block; background: #fff; }
+  canvas { flex: none; width: 100%; height: 100%; object-fit: contain; touch-action: none; display: block; background: #fff; }
+  /* Mobile layout: the picture is shown 1:1 and only ever clipped, never rescaled, so the
+     keyboard opening/closing (which resizes the stage) does not zoom the page in and out. */
+  #stage.fixed { align-items: flex-start; }
+  #stage.fixed canvas { width: auto; height: auto; }
   #ripple { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%; pointer-events: none; opacity: 0;
     background: color-mix(in oklab, var(--accent) 45%, transparent); border: 2px solid var(--accent); }
   #ripple.go { animation: ripple .45s ease-out; }
@@ -176,6 +180,12 @@ async function applyMetrics() {
   E.layout.classList.toggle("on", mobileLayout);
 }
 
+function sizeCanvas() {
+  E.stage.classList.toggle("fixed", mobileLayout);
+  E.view.style.width = mobileLayout ? meta.deviceWidth + "px" : "";
+  E.view.style.height = mobileLayout ? meta.deviceHeight + "px" : "";
+}
+
 function onEvent(method, p) {
   if (method === "Page.screencastFrame") {
     const img = new Image();
@@ -185,6 +195,7 @@ function onEvent(method, p) {
       // A frame of the new size means the re-fit is done.
       if (refitting && Math.abs(meta.deviceWidth - fitSize.w) < 8 && Math.abs(meta.deviceHeight - fitSize.h) < 8) refitting = false;
       if (E.view.width !== img.width || E.view.height !== img.height) { E.view.width = img.width; E.view.height = img.height; }
+      sizeCanvas();
       ctx.drawImage(img, 0, 0);
     };
     img.src = "data:image/jpeg;base64," + p.data;
@@ -220,11 +231,36 @@ function toPage(e) {
   return { x: fx * meta.deviceWidth, y: fy * meta.deviceHeight, scale: meta.deviceHeight / dh };
 }
 
+// Is the element at (x, y) of the remote page a text field (or a label for one)?
+function hitExpr(x, y) {
+  return `(() => {
+    let d = document, x = ${x}, y = ${y}, el = null;
+    for (let i = 0; i < 6; i++) {
+      el = d.elementFromPoint(x, y);
+      if (!el) return false;
+      if (el.shadowRoot) { const s = el.shadowRoot.elementFromPoint(x, y); if (s) el = s; }
+      if ((el.tagName === "IFRAME" || el.tagName === "FRAME") && el.contentDocument) {
+        const r = el.getBoundingClientRect(); x -= r.left; y -= r.top; d = el.contentDocument; continue;
+      }
+      break;
+    }
+    const f = el.closest("input, textarea, label, [contenteditable]");
+    if (!f) return false;
+    if (f.tagName === "LABEL") return !!(f.control && f.control.matches("input, textarea"));
+    const non = ["button","submit","checkbox","radio","range","color","file","image","reset","hidden"];
+    return f.tagName === "TEXTAREA" || f.isContentEditable || !non.includes((f.type || "").toLowerCase());
+  })()`;
+}
+
 let touch = null;
 E.view.addEventListener("pointerdown", (e) => {
   if (!e.isPrimary) return;
   E.view.setPointerCapture(e.pointerId);
-  touch = { x: e.clientX, y: e.clientY, lastY: e.clientY, moved: false, t: performance.now() };
+  const t = touch = { x: e.clientX, y: e.clientY, lastY: e.clientY, moved: false, t: performance.now(), editable: false };
+  // Is there a text field under the finger? Asked now, so the answer is in by the time the finger lifts.
+  const p = toPage(e);
+  if (p && cdp) cdp.call("Runtime.evaluate", { expression: hitExpr(p.x, p.y), returnByValue: true })
+    .then((r) => { t.editable = r.result.value === true; }).catch(() => {});
 });
 E.view.addEventListener("pointermove", (e) => {
   if (!touch || !e.isPrimary) return;
@@ -238,13 +274,15 @@ E.view.addEventListener("pointermove", (e) => {
 E.view.addEventListener("pointerup", (e) => {
   if (!touch || !e.isPrimary) return;
   const wasTap = !touch.moved;
+  const editable = touch.editable;
   touch = null;
   if (!wasTap || refitting) return;       // the picture is about to change size: a tap would land wrong
   const p = toPage(e);
   if (!p) return;
-  // Raise the keyboard first, synchronously, inside the user gesture (phones only allow it
-  // there); probeFocus() lowers it again if the tapped element turns out not to be a text field.
-  E.kb.focus({ preventScroll: true });
+  // Raise the keyboard synchronously, inside the user gesture (phones only allow it there), but
+  // only when the hit test saw a text field: raising and lowering it again on every other tap
+  // resized the whole view each time. If the answer came in late, probeFocus() still raises it.
+  if (editable) E.kb.focus({ preventScroll: true });
   tapFeedback(e.clientX, e.clientY);
   cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: p.x, y: p.y });
   cdp.send("Input.dispatchMouseEvent", { type: "mousePressed", x: p.x, y: p.y, button: "left", clickCount: 1 });
@@ -361,6 +399,7 @@ E.layout.onclick = async () => {
   mobileLayout = !mobileLayout;
   localStorage.setItem("handoff.mobile", mobileLayout ? "1" : "0");
   await applyMetrics();
+  sizeCanvas();
 };
 E.kbbtn.onclick = () => {
   manualKb = !manualKb;
@@ -375,6 +414,10 @@ $("paste").addEventListener("click", async () => {
 E.retry.onclick = () => connect();
 
 // Re-fit the remote page when the screen really changes (rotation, native keyboard, browser bars).
+function keepFocusVisible() {
+  if (!E.keys.classList.contains("show")) return;
+  cdp.send("Runtime.evaluate", { expression: `(() => { let a = document.activeElement; while (a && a.shadowRoot && a.shadowRoot.activeElement) a = a.shadowRoot.activeElement; if (a && a !== document.body) a.scrollIntoView({ block: "nearest", inline: "nearest" }); })()` });
+}
 var fitTimer = null, fitSize = { w: 0, h: 0 };
 new ResizeObserver(() => {
   const r = E.stage.getBoundingClientRect();
@@ -383,7 +426,7 @@ new ResizeObserver(() => {
   if (!cdp || !mobileLayout) return;
   refitting = true;                        // until the first frame of the new size arrives
   clearTimeout(fitTimer);
-  fitTimer = setTimeout(() => applyMetrics().catch(() => {}).finally(() => setTimeout(() => { refitting = false; }, 1500)), 250);
+  fitTimer = setTimeout(() => applyMetrics().then(keepFocusVisible).catch(() => {}).finally(() => setTimeout(() => { refitting = false; }, 1500)), 250);
 }).observe(E.stage);
 window.addEventListener("pagehide", () => cdp && cdp.close());   // also releases the size override
 
