@@ -221,6 +221,20 @@ in
       // playwrightBrowserlessMcps;
     };
 
+    # Claude Code tracks workspace trust per path in ~/.claude.json (no
+    # settings.json knob), so pre-accept the trust dialog for $HOME.
+    home.activation.claudeTrustHome = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      config_file="$HOME/.claude.json"
+      if [[ -f "$config_file" ]]
+      then
+        tmp_file="$(${pkgs.coreutils}/bin/mktemp "$config_file.XXXXXX")"
+        ${pkgs.jq}/bin/jq --arg path "$HOME" \
+          '.projects[$path] = ((.projects[$path] // {}) + { hasTrustDialogAccepted: true })' \
+          "$config_file" > "$tmp_file" && mv "$tmp_file" "$config_file" \
+          || rm -f "$tmp_file"
+      fi
+    '';
+
     programs = {
       claude-code = {
         enable = true;
