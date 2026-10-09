@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ inputs, lib, ... }:
 
 {
   options.mainUser = {
@@ -34,16 +34,9 @@
 
     authorizedKeys = lib.mkOption {
       type = lib.types.listOf lib.types.str;
-      default =
-        let
-          authorizedKeysContent = lib.strings.fileContents (
-            builtins.fetchurl {
-              url = "https://github.com/pschmitt.keys";
-              sha256 = "sha256:1lbj6cwz16npdnaqjc8h5y90m6597khh1y1ir8dss9i9d3g78b6m";
-            }
-          );
-        in
-        lib.splitString "\n" authorizedKeysContent;
+      # Locked in flake.lock (github-keys input).
+      default = lib.splitString "\n" (lib.strings.fileContents inputs.github-keys);
+      defaultText = lib.literalMD "the keys published at <https://github.com/pschmitt.keys>";
       description = "Main SSH authorized keys file";
     };
 

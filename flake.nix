@@ -4,9 +4,36 @@
   inputs = {
     # Nixpkgs
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable"; # unstable by default
-    nixpkgs-stable.url = "github:nixos/nixpkgs/nixos-25.11";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-master.url = "github:nixos/nixpkgs/master";
+
+    # Old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages).
+    # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
+    nixpkgs-kubectl-123 = {
+      url = "github:NixOS/nixpkgs/611bf8f183e6360c2a215fa70dfd659943a9857f";
+      flake = false;
+    };
+    nixpkgs-terraform-157 = {
+      url = "github:NixOS/nixpkgs/4ab8a3de296914f3b631121e9ce3884f1d34e1e5";
+      flake = false;
+    };
+
+    # Main user's public SSH keys (mainUser.authorizedKeys); `nix flake update
+    # github-keys` picks up key changes.
+    github-keys = {
+      url = "file+https://github.com/pschmitt.keys";
+      flake = false;
+    };
+
+    # Shared flake plumbing; other inputs follow these to keep flake.lock lean.
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.systems.follows = "systems";
+    };
+    systems.url = "github:nix-systems/default";
 
     zsh-diff-so-fancy = {
       url = "github:z-shell/zsh-diff-so-fancy";
@@ -20,12 +47,18 @@
 
     anika-blue = {
       url = "github:pschmitt/anika-blue";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     bunq-sh = {
       url = "github:pschmitt/bunq-sh";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     codex-ha-bridge = {
@@ -50,7 +83,11 @@
 
     stricknani = {
       url = "github:pschmitt/stricknani";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
     };
 
     monarch = {
@@ -83,12 +120,18 @@
     rbw-auto = {
       # url = "path:/home/pschmitt/devel/private/pschmitt/rbw-auto.git";
       url = "github:pschmitt/rbw-auto";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rbw.follows = "rbw";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        rbw.follows = "rbw";
+      };
     };
 
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
+      inputs = {
+        flake-parts.follows = "flake-parts";
+        systems.follows = "systems";
+      };
     };
 
     fenix = {
@@ -106,10 +149,6 @@
     #   flake = false;
     # };
 
-    # flake-utils = {
-    #   url = "github:numtide/flake-utils";
-    # };
-
     flatpaks = {
       # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
       url = "github:in-a-dil-emma/declarative-flatpak/v3.1.0";
@@ -118,7 +157,11 @@
 
     ghostty = {
       url = "github:ghostty-org/ghostty";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+        systems.follows = "systems";
+      };
     };
 
     hardware.url = "github:nixos/nixos-hardware";
@@ -167,7 +210,11 @@
 
     hermes-agent = {
       url = "github:NousResearch/hermes-agent";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     bitwarden-mcp = {
@@ -177,13 +224,18 @@
 
     nix-on-droid = {
       url = "github:nix-community/nix-on-droid";
-      inputs.home-manager.follows = "home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        home-manager.follows = "home-manager";
+        nixpkgs.follows = "nixpkgs";
+      };
     };
 
     nixos-config-private = {
       url = "github:pschmitt/nixos-config-private";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
     };
 
     hyprland.url = "github:hyprwm/Hyprland";
@@ -193,8 +245,10 @@
     };
     hypr-dynamic-cursors = {
       url = "github:VirtCode/hypr-dynamic-cursors";
-      inputs.hyprland.follows = "hyprland";
-      inputs.nixpkgs.follows = "hyprland/nixpkgs";
+      inputs = {
+        hyprland.follows = "hyprland";
+        nixpkgs.follows = "hyprland/nixpkgs";
+      };
     };
     grim-hyprland = {
       url = "github:eriedaberrie/grim-hyprland";
@@ -205,12 +259,18 @@
 
     jcalapi = {
       url = "github:pschmitt/jcalapi";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     jellysync = {
       url = "github:pschmitt/jellysync";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     lan-mouse = {
@@ -220,17 +280,26 @@
 
     luks-ssh-unlock = {
       url = "github:pschmitt/luks-ssh-unlock";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     rbw = {
       url = "github:pschmitt/rbw";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
     };
 
     tmux-slay = {
       url = "github:pschmitt/tmux-slay";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     tmux-xpanes = {
@@ -240,22 +309,34 @@
 
     luks-mount = {
       url = "github:pschmitt/luks-mount.sh";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     lazyvim = {
       url = "github:pfassina/lazyvim-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     ldifj = {
       url = "github:pschmitt/ldifj";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     neovim-nightly = {
       url = "github:nix-community/neovim-nightly-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     nix-index-database = {
@@ -281,28 +362,43 @@
 
     nix-openclaw = {
       url = "github:openclaw/nix-openclaw";
-      inputs.home-manager.follows = "home-manager";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        home-manager.follows = "home-manager";
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     printlabel = {
       url = "github:pschmitt/printlabel";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
     # the myl family
     myl = {
       url = "github:pschmitt/myl";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     myl-discovery = {
       url = "github:pschmitt/myl-discovery";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     nbx = {
       url = "github:pschmitt/nbx";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     mq = {
@@ -312,17 +408,27 @@
 
     obs-cli = {
       url = "github:pschmitt/obs-cli";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     poor-tools = {
       url = "github:pschmitt/poor-tools";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
     };
 
     ruamel-fmt = {
       url = "github:pschmitt/ruamel-fmt";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     pschmitt-dev = {
@@ -332,7 +438,10 @@
 
     sendmyl = {
       url = "github:pschmitt/sendmyl";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     shelly-ble-rpc = {
@@ -342,12 +451,18 @@
 
     slack-react = {
       url = "github:pschmitt/slack-react";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     tdc = {
       url = "github:pschmitt/tdc";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     termux-tools = {
@@ -377,7 +492,10 @@
 
     update-systemd-resolved = {
       url = "github:jonathanio/update-systemd-resolved";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-parts.follows = "flake-parts";
+      };
     };
 
     # FIXME it does not build currently! (2025-11-01)
@@ -388,18 +506,25 @@
 
     vodafone-station-cli = {
       url = "github:pschmitt/vodafone-station-cli";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
     };
 
     wezterm = {
       url = "git+https://github.com/wez/wezterm.git?dir=nix&submodules=1";
       # https://github.com/NixOS/nixpkgs/issues/348832
       # inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
     };
 
     zen-browser = {
       url = "github:0xc000022070/zen-browser-flake";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        home-manager.follows = "home-manager";
+      };
     };
 
     # zjstatus = {
@@ -421,10 +546,7 @@
       inherit (self) outputs;
       forAllSystems = nixpkgs.lib.genAttrs [
         "aarch64-linux"
-        "i686-linux"
         "x86_64-linux"
-        "aarch64-darwin"
-        "x86_64-darwin"
       ];
 
       commonModules = [
@@ -442,6 +564,7 @@
           deviceType,
           homeManager ? false,
           hostModule ? ./hosts/${hostname},
+          extraModules ? [ ],
         }:
         let
           isServer = deviceType == "server";
@@ -456,6 +579,7 @@
           };
           modules =
             commonModules
+            ++ extraModules
             ++ [
               hostModule
               {
@@ -495,6 +619,9 @@
         modules:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
+          specialArgs = {
+            inherit inputs outputs;
+          };
           modules = modules ++ [ { hardware.type = "installation-media"; } ];
         };
       minimalIsoModules = [
@@ -526,6 +653,25 @@
           in
           (import ./pkgs/termux/native { inherit basePkgs inputs; }).mkTermuxBundle {
             inherit modules extraSpecialArgs;
+          };
+
+        # Wrap a prepared Termux archive (built outside Nix, e.g. by
+        # nixos-config-private's build-termux-bootstrap) as a reference-free
+        # store path. Needs --impure since the archive lives outside the flake:
+        #   nix build --impure --expr '(builtins.getFlake "path:/repo").lib.termux.mkCacheArchive {
+        #     archive = /abs/termux-prefix.tar.gz; }'
+        mkCacheArchive =
+          {
+            archive,
+            archiveName ? baseNameOf (toString archive),
+            system ? "x86_64-linux",
+          }:
+          nixpkgs.legacyPackages.${system}.callPackage ./pkgs/termux/cache-archive {
+            archive = builtins.path {
+              path = archive;
+              name = "${archiveName}-source";
+            };
+            inherit archiveName;
           };
 
         mkPackageSet =
@@ -573,26 +719,8 @@
             }
             // hostBundlePackages
           );
-          termuxPrefixArchive = builtins.getEnv "TERMUX_PREFIX_ARCHIVE";
-          termuxHomeArchive = builtins.getEnv "TERMUX_HOME_ARCHIVE";
-          termuxArchivePackage =
-            archivePath: archiveName:
-            pkgs.callPackage ./pkgs/termux/cache-archive {
-              archive = builtins.path {
-                path = /. + archivePath;
-                name = "${archiveName}-source";
-              };
-              inherit archiveName;
-            };
-          termuxArchivePackages =
-            nixpkgs.lib.optionalAttrs (system == "x86_64-linux" && termuxPrefixArchive != "") {
-              termux-prefix-cache = termuxArchivePackage termuxPrefixArchive "termux-prefix.tar.gz";
-            }
-            // nixpkgs.lib.optionalAttrs (system == "x86_64-linux" && termuxHomeArchive != "") {
-              termux-home-cache = termuxArchivePackage termuxHomeArchive "termux-home.tar.gz";
-            };
         in
-        customPackages // termuxNativePackages // termuxArchivePackages
+        customPackages // termuxNativePackages
       );
 
       # below is to make "nix fmt" work
@@ -652,7 +780,7 @@
 
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
-      homeManagerModules = import ./modules/home-manager;
+      homeModules = import ./modules/home-manager;
 
       nixOnDroidConfigurations = rec {
         zf10 = mkNixOnDroid "zf10" { };
@@ -735,40 +863,24 @@
                 system = "aarch64-linux";
                 deviceType = "server";
               };
+
+              # Raspberry Pis
+              pica4 = {
+                system = "aarch64-linux";
+                deviceType = "rpi";
+                extraModules = [ "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix" ];
+              };
+              # RPi Zero W — ARMv6 (BCM2835), camera + ustreamer only
+              picaz = {
+                system = "armv6l-linux";
+                deviceType = "rpi";
+                extraModules = [ "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-raspberrypi.nix" ];
+              };
             };
           in
           nixpkgs.lib.mapAttrs mkHost hostConfigs
         )
         // {
-          pica4 = nixpkgs.lib.nixosSystem {
-            system = "aarch64-linux";
-            specialArgs = {
-              inherit inputs outputs;
-            };
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-aarch64.nix"
-              inputs.sops-nix.nixosModules.sops
-              ./modules
-              ./hosts/pica4
-              { hardware.type = "rpi"; }
-            ];
-          };
-
-          # RPi Zero W — ARMv6 (BCM2835), camera + ustreamer only
-          picaz = nixpkgs.lib.nixosSystem {
-            system = "armv6l-linux";
-            specialArgs = {
-              inherit inputs outputs;
-            };
-            modules = [
-              "${nixpkgs}/nixos/modules/installer/sd-card/sd-image-raspberrypi.nix"
-              inputs.sops-nix.nixosModules.sops
-              ./modules
-              ./hosts/picaz
-              { hardware.type = "rpi"; }
-            ];
-          };
-
           # installation media
           iso = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
           # MultiOS loopback boot needs the scripted initrd to honor findiso=.
@@ -791,6 +903,9 @@
           );
           iso-private-netboot = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
+            specialArgs = {
+              inherit inputs outputs;
+            };
             modules = [
               "${nixpkgs}/nixos/modules/installer/netboot/netboot-minimal.nix"
               ./modules

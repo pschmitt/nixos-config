@@ -30,7 +30,7 @@
   # https://discourse.nixos.org/t/setting-the-user-profile-image-under-gnome/36233/7
   systemd.tmpfiles.rules =
     let
-      profilepic = builtins.fetchurl {
+      profilepic = pkgs.fetchurl {
         # NOTE setting the extension to .png is required for hyprlock to detect
         # the filetype correctly
         # https://github.com/hyprwm/hyprlock/issues/317

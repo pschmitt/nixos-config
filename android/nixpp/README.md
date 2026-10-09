@@ -103,7 +103,7 @@ package. It never runs `autoremove`. A generation rollback changes the selected
 files and configuration; it does not reverse APT package changes or application
 data changes.
 
-The flake also exposes `termux-prefix-cache` and `termux-home-cache`. The
+The flake exposes `lib.termux.mkCacheArchive` for these archives. The
 builder first prepares the Termux `$PREFIX` and Zinit/tool home cache on
 `rofl-13`, then Nix wraps each archive as its own reference-free output. The
 publisher signs those Nix outputs into the private binary cache. The phone

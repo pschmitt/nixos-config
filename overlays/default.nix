@@ -1,4 +1,35 @@
 { inputs, ... }:
+let
+  # GitHub's codeload tarball for Playwright v1.63.0 changed bytes after
+  # nixpkgs recorded its hash (a known codeload re-compression quirk, not a
+  # content change).
+  #
+  # pytest-playwright: doCheck is already false upstream, but preCheck still
+  # string-interpolates playwright-driver.browsers into
+  # PLAYWRIGHT_BROWSERS_PATH, which forces Nix to build the browsers even
+  # though the check phase never runs. That pulls in WebKit's minibrowser-wpe,
+  # whose autoPatchelf currently fails on a missing libmanette. Pulled in via
+  # paperless-ngx (hermes-agent) and netbox's test deps.
+  #
+  # Applied through pythonPackagesExtensions (composed into every python
+  # package set nixpkgs builds, unlike packageOverrides, which a package's own
+  # `python3.override { packageOverrides = ...; }` -- as netbox's does -- can
+  # shadow).
+  playwrightFixes = fetchFromGitHub: _pyfinal: pyprev: {
+    playwright = pyprev.playwright.overridePythonAttrs (_old: {
+      src = fetchFromGitHub {
+        owner = "microsoft";
+        repo = "playwright-python";
+        tag = "v${pyprev.playwright.version}";
+        hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
+      };
+    });
+
+    pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
+      preCheck = "";
+    });
+  };
+in
 {
   # This one brings our custom packages from the 'pkgs' directory
   additions =
@@ -30,31 +61,9 @@
     // (import ./noctalia.nix { inherit inputs final prev; })
     // (import ./zsh-completions.nix { inherit inputs final prev; })
     // {
-      # GitHub's codeload tarball for Playwright v1.63.0 changed bytes after
-      # nixpkgs recorded its hash.  Keep the main package set in sync with the
-      # equivalent nixpkgs-master workaround below; pytr uses this package set.
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+        (playwrightFixes final.fetchFromGitHub)
         (_pyfinal: pyprev: {
-          playwright = pyprev.playwright.overridePythonAttrs (_old: {
-            src = final.fetchFromGitHub {
-              owner = "microsoft";
-              repo = "playwright-python";
-              tag = "v${pyprev.playwright.version}";
-              hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
-            };
-          });
-
-          # Same libmanette/WebKit autoPatchelf breakage as the
-          # nixpkgs-master override below (nixpkgs' playwright-driver.browsers
-          # is missing libmanette in buildInputs). This main package set's
-          # pytest-playwright is pulled in transitively by paperless-ngx
-          # (via hermes-agent), so it needs the same preCheck drop -- nothing
-          # in preCheck's PLAYWRIGHT_BROWSERS_PATH setup is actually used
-          # since doCheck is already false upstream.
-          pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
-            preCheck = "";
-          });
-
           # The 8 kHz mp3 encoder-vs-ffmpeg-CLI comparison misses its 1e-3
           # tolerance (~1.7e-3) with the current ffmpeg. Pulled in by
           # paperless-ngx via sentence-transformers -> torchaudio.
@@ -64,52 +73,16 @@
         })
       ];
     }; # Continue merging additional overlays as needed
-  # When applied, the unstable nixpkgs set (declared in the flake inputs) will
-  # be accessible through 'pkgs.unstable'
-  unstable-packages = final: _prev: {
-    unstable = import inputs.nixpkgs-unstable {
-      inherit (final.stdenv.hostPlatform) system;
-      config.allowUnfree = true;
-    };
 
+  # nixpkgs master, accessible through 'pkgs.master'
+  master-packages = final: _prev: {
     master = import inputs.nixpkgs-master {
       inherit (final.stdenv.hostPlatform) system;
       config.allowUnfree = true;
       overlays = [
         (mfinal: mprev: {
-          # GitHub's codeload tarball for this tag changed bytes after
-          # nixpkgs-master recorded its hash (a known codeload
-          # re-compression quirk, not a content change) -- pulled in
-          # transitively by netbox's django-polymorphic/drf-spectacular
-          # test deps. Goes in via pythonPackagesExtensions (composed into
-          # every python package set nixpkgs builds, unlike
-          # packageOverrides, which a package's own `python3.override
-          # { packageOverrides = ...; }` -- as netbox's does -- can
-          # shadow) so it reaches netbox's self-referential python
-          # reconstruction too. Drop once nixpkgs-master catches up.
           pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
-            (_pyfinal: pyprev: {
-              playwright = pyprev.playwright.overridePythonAttrs (_old: {
-                src = mfinal.fetchFromGitHub {
-                  owner = "microsoft";
-                  repo = "playwright-python";
-                  tag = "v${pyprev.playwright.version}";
-                  hash = "sha256-RwIn+0EcHnStjORVFmT7gp4bGjl+qer1FgtI3+aPF2w=";
-                };
-              });
-
-              # doCheck is already false upstream, but preCheck still
-              # string-interpolates playwright-driver.browsers (the actual
-              # WebKit/Chromium/Firefox binaries) into PLAYWRIGHT_BROWSERS_PATH,
-              # which forces Nix to build them even though the check phase
-              # that would use it never runs. That pulls in an unrelated,
-              # currently-broken nixpkgs-master bug (WebKit's minibrowser-wpe
-              # is missing libmanette for autoPatchelf). Drop preCheck instead
-              # of chasing that bug -- nothing here ever gets used.
-              pytest-playwright = pyprev.pytest-playwright.overridePythonAttrs (_old: {
-                preCheck = "";
-              });
-            })
+            (playwrightFixes mfinal.fetchFromGitHub)
           ];
         })
       ];
@@ -132,15 +105,7 @@
   llm-agents = inputs.llm-agents.overlays.shared-nixpkgs;
 
   old-packages = final: _prev: {
-    # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
-    kubectl-123 = import (builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/611bf8f183e6360c2a215fa70dfd659943a9857f.tar.gz";
-      sha256 = "sha256:1rhrajxywl1kaa3pfpadkpzv963nq2p4a2y4vjzq0wkba21inr9k";
-    }) { inherit (final.stdenv.hostPlatform) system; };
-
-    terraform-157 = import (builtins.fetchTarball {
-      url = "https://github.com/NixOS/nixpkgs/archive/4ab8a3de296914f3b631121e9ce3884f1d34e1e5.tar.gz";
-      sha256 = "sha256:095mc0mlag8m9n9zmln482a32nmbkr4aa319f2cswyfrln9j41cr";
-    }) { inherit (final.stdenv.hostPlatform) system; };
+    kubectl-123 = import inputs.nixpkgs-kubectl-123 { inherit (final.stdenv.hostPlatform) system; };
+    terraform-157 = import inputs.nixpkgs-terraform-157 { inherit (final.stdenv.hostPlatform) system; };
   };
 }

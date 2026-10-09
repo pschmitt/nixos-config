@@ -113,7 +113,7 @@ allowlist only when you intend that file to ship.
 
 The complete Termux Home Manager module is
 `modules/home-manager/termux.nix`, exported as
-`homeManagerModules.termux`. It sets Termux's home identity, imports the shared
+`homeModules.termux`. It sets Termux's home identity, imports the shared
 CLI modules, selects the Termux APT packages, and declares the allowlist used
 by this bundle. The bundle builder evaluates that same exported module.
 
@@ -459,7 +459,7 @@ nix-store -q --references result
 
 The complete Termux Home Manager module is
 `modules/home-manager/termux.nix`, exported by the main configuration flake as
-`homeManagerModules.termux`. The bundle evaluates that same module directly,
+`homeModules.termux`. The bundle evaluates that same module directly,
 without resolving the whole NixOS flake graph. The bundle build
 copies only `termux.homeFiles` and declared `home.packages` files, then rejects
 any Nix store references in the result. It also includes the Termux-native

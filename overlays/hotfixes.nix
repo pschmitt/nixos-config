@@ -97,7 +97,7 @@
   # (d3194c02c2440bf7350b5c92836a38111882800e, merged into nixpkgs master
   # 2026-09-16) but not yet in nixos-unstable. Build playwright-mcp from the
   # nixpkgs-master package set (already tracked as `master` in
-  # unstable-packages below) instead of reimplementing the fix locally.
+  # overlays/default.nix master-packages) instead of reimplementing the fix locally.
   # Revert to plain `prev.playwright-mcp` once nixos-unstable catches up.
   playwright-mcp = final.master.playwright-mcp;
 
