@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -44,17 +43,22 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "audiobookshelf" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart audiobookshelf.service"
-        if failed
-          port ${toString audiobookshelfPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      audiobookshelf = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "audiobookshelf.service";
+        conditions = ''
+          if failed
+            port ${toString audiobookshelfPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

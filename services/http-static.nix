@@ -151,18 +151,22 @@ lib.mkMerge [
       config.services.http-static.extraVirtualHosts
     ];
 
-    services.monit.config = lib.mkIf config.services.http-static.enableDefaultSites (
-      lib.mkAfter ''
-        check host "http-static-blobs" with address "blobs.${config.domains.main}"
-          group nginx
-          group services
-          if failed
-            port 443
-            protocol https
-            with timeout 15 seconds
+    services.monit.checks.http-static-blobs = {
+      enable = config.services.http-static.enableDefaultSites;
+      type = "host";
+      address = "blobs.${config.domains.main}";
+      group = [
+        "nginx"
+        "services"
+      ];
+      conditions = ''
+        if failed
+          port 443
+          protocol https
+          with timeout 15 seconds
         then alert
-      ''
-    );
+      '';
+    };
   }
 
   # Authelia (authelia.nix) is on this same host, so these can be spliced

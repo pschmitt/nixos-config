@@ -103,6 +103,10 @@ let
       listener = "sieve";
     }
   ];
+  mailGroups = [
+    "mail"
+    "services"
+  ];
   mkMailPortCheck =
     {
       name,
@@ -110,18 +114,25 @@ let
       protocol ? null,
       tls ? false,
     }:
-    ''
-      check host "stalwart-${name}" with address "127.0.0.1"
-        group mail
-        group services
-        depends on "stalwart"
-        if failed
-          port ${toString (listenerPort listener)}
-          ${lib.optionalString (protocol != null) "protocol ${protocol}\n        "}with timeout 15 seconds
-          ${lib.optionalString tls "and certificate valid for 5 days\n        "}for 3 cycles
-        then alert
-    '';
-  mailPortChecksConfig = lib.concatStringsSep "\n" (map mkMailPortCheck mailPortChecks);
+    lib.nameValuePair "stalwart-${name}" {
+      type = "host";
+      address = "127.0.0.1";
+      group = mailGroups;
+      dependsOn = [ "stalwart" ];
+      conditions = lib.concatLines (
+        [
+          "if failed"
+          "  port ${toString (listenerPort listener)}"
+        ]
+        ++ lib.optional (protocol != null) "  protocol ${protocol}"
+        ++ [ "  with timeout 15 seconds" ]
+        ++ lib.optional tls "  and certificate valid for 5 days"
+        ++ [
+          "  for 3 cycles"
+          "then alert"
+        ]
+      );
+    };
   mailHealthCheck = pkgs.writeShellApplication {
     name = "stalwart-mail-health";
     runtimeInputs = [
@@ -251,24 +262,29 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "stalwart" with address "127.0.0.1"
-      group mail
-      group services
-      if failed
-        port ${toString (listenerPort "http")}
-        protocol http
-        with timeout 15 seconds
-        for 3 cycles
-      then alert
+  services.monit.checks = {
+    stalwart = {
+      type = "host";
+      address = "127.0.0.1";
+      group = mailGroups;
+      conditions = ''
+        if failed
+          port ${toString (listenerPort "http")}
+          protocol http
+          with timeout 15 seconds
+          for 3 cycles
+        then alert
+      '';
+    };
 
-    ${mailPortChecksConfig}
-
-    check program "stalwart-mail-health" with path "${mailHealthCheck}/bin/stalwart-mail-health ${mainDomain} ${dkimSelector}"
-      group mail
-      group services
-      depends on "stalwart"
-      every 2 cycles
-      if status != 0 for 3 cycles then alert
-  '';
+    stalwart-mail-health = {
+      type = "program";
+      path = "${lib.getExe mailHealthCheck} ${mainDomain} ${dkimSelector}";
+      group = mailGroups;
+      dependsOn = [ "stalwart" ];
+      every = 2;
+      conditions = "if status != 0 for 3 cycles then alert";
+    };
+  }
+  // lib.listToAttrs (map mkMailPortCheck mailPortChecks);
 }

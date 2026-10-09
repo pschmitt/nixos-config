@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -50,12 +49,19 @@
     ];
   };
 
-  services.monit.config = lib.mkAfter ''
-    check program "nginx" with path "${pkgs.systemd}/bin/systemctl is-active nginx"
-      group nginx
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart nginx"
-      if status > 0 then restart
-      if 5 restarts within 10 cycles then alert
-  '';
+  services.monit.checks = {
+    nginx = {
+      type = "program";
+      path = "${pkgs.systemd}/bin/systemctl is-active nginx";
+      group = [
+        "nginx"
+        "services"
+      ];
+      restartUnit = "nginx";
+      conditions = ''
+        if status > 0 then restart
+        if 5 restarts within 10 cycles then alert
+      '';
+    };
+  };
 }

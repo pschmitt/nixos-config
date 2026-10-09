@@ -7,7 +7,6 @@
     ../../services/seerr.nix
     ../../services/tor.nix
 
-    ./monit.nix
     ./restic.nix
   ];
 

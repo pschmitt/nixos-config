@@ -5,42 +5,45 @@
   ...
 }:
 let
-  netbirdStatus = pkgs.writeShellScript "netbird-status" ''
-    export PATH="/run/current-system/sw/bin:${pkgs.gnugrep}:$PATH"
-    NB_BIN="netbird-netbird-io"
-    export HOME="/var/lib/$NB_BIN" # prevent warning about HOME not being set
+  netbird = config.services.netbird.clients.netbird-io.wrapper;
+  netbirdBin = lib.getExe netbird;
 
-    if "$NB_BIN" status | \
-      grep -q "NeedsLogin"
-    then
-      echo "Netbird login required" >&2
-      exit 1
-    fi
+  netbirdStatus = pkgs.writeShellApplication {
+    name = "netbird-status";
+    runtimeInputs = [ pkgs.gnugrep ];
+    text = ''
+      export HOME=/var/lib/netbird-netbird-io # prevent warning about HOME not being set
 
-    # Display status info
-    netbird-netbird-io status
-    exit 0
-  '';
+      if ${netbirdBin} status | grep -q "NeedsLogin"
+      then
+        echo "Netbird login required" >&2
+        exit 1
+      fi
 
-  netbirdHostname = pkgs.writeShellScript "netbird-hostname" ''
-    export PATH="/run/current-system/sw/bin:${pkgs.jq}:$PATH"
-    NB_BIN="netbird-netbird-io"
-    export HOME="/var/lib/$NB_BIN" # prevent warning about HOME not being set
+      # Display status info
+      ${netbirdBin} status
+    '';
+  };
 
-    NB_HOSTNAME=$("$NB_BIN" status --json | \
-      jq -er '.fqdn | split(".")[0]')
-    NB_HOSTNAME_EXPECTED="${config.networking.hostName}"
+  netbirdHostname = pkgs.writeShellApplication {
+    name = "netbird-hostname";
+    runtimeInputs = [ pkgs.jq ];
+    text = ''
+      export HOME=/var/lib/netbird-netbird-io # prevent warning about HOME not being set
 
-    if [[ $NB_HOSTNAME != $NB_HOSTNAME_EXPECTED ]]
-    then
-      echo "Netbird hostname $NB_HOSTNAME != $NB_HOSTNAME_EXPECTED" >&2
-      exit 1
-    fi
+      NB_HOSTNAME=$(${netbirdBin} status --json | jq -er '.fqdn | split(".")[0]')
+      NB_HOSTNAME_EXPECTED="${config.networking.hostName}"
 
-    # Display hostname info
-    echo "Netbird hostname: $NB_HOSTNAME"
-    exit 0
-  '';
+      if [[ $NB_HOSTNAME != "$NB_HOSTNAME_EXPECTED" ]]
+      then
+        echo "Netbird hostname $NB_HOSTNAME != $NB_HOSTNAME_EXPECTED" >&2
+        exit 1
+      fi
+
+      # Display hostname info
+      echo "Netbird hostname: $NB_HOSTNAME"
+    '';
+  };
 
   interfaceIsUp = pkgs.writeShellScript "interface-is-up" ''
     INTERFACE="$1"
@@ -52,53 +55,63 @@ let
       ${pkgs.jq}/bin/jq -er '.[0].flags | index("UP")' >/dev/null
   '';
 
-  monitNetbird = ''
-    check program "netbird login" with path "${netbirdStatus}"
-      group "network"
-      group "netbird"
-      restart program = "/run/current-system/sw/bin/netbird-netbird-io up"
+in
+{
+  services.monit.checks = {
+    "netbird login" = {
+      type = "program";
+      path = lib.getExe netbirdStatus;
+      group = [
+        "network"
+        "netbird"
+      ];
+      restartProgram = "${netbirdBin} up";
       # NOTE: Program checks run async: monit evaluates the *previous* run's
       # exit code each cycle. With a bare "then restart" a single transient
       # failure restarts the service, the next run executes while it is still
       # coming up, fails and restarts it again -- forever.
-      if status != 0 for 2 cycles then restart
-      # recovery
-      else if succeeded then exec "${pkgs.coreutils}/bin/true"
+      conditions = ''
+        if status != 0 for 2 cycles then restart
+        # recovery
+        else if succeeded then exec "${pkgs.coreutils}/bin/true"
 
-      if 5 restarts within 10 cycles then alert
+        if 5 restarts within 10 cycles then alert
+      '';
+    };
 
-    check program "netbird hostname" with path "${netbirdHostname}"
-      group "network"
-      group "netbird"
-      if status != 0 then alert
+    "netbird hostname" = {
+      type = "program";
+      path = lib.getExe netbirdHostname;
+      group = [
+        "network"
+        "netbird"
+      ];
+      conditions = "if status != 0 then alert";
+    };
 
-    check program "netbird interface" with path "${interfaceIsUp} nb-netbird-io"
-      group "network"
-      group "netbird"
-      depends on "netbird login"
-      restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io-autoconnect"
+    "netbird interface" = {
+      type = "program";
+      path = "${interfaceIsUp} nb-netbird-io";
+      group = [
+        "network"
+        "netbird"
+      ];
+      dependsOn = [ "netbird login" ];
+      restartUnit = "netbird-netbird-io-autoconnect";
       # NOTE: "for 2 cycles" avoids restart loops (see "netbird login" above)
-      if status != 0 for 2 cycles then restart
-      # recovery
-      else if succeeded then exec "${pkgs.coreutils}/bin/true"
-      if 5 restarts within 10 cycles then alert
+      conditions = ''
+        if status != 0 for 2 cycles then restart
+        # recovery
+        else if succeeded then exec "${pkgs.coreutils}/bin/true"
+        if 5 restarts within 10 cycles then alert
+      '';
+    };
 
-    # FIXME Below check seems to be able to tell reliably when the interface is
-    # up. It's probably due to the fact that the operstate of the netbird
-    # interface is UNKNOWN.
-    # But then: why does this not impact the tailscale interface?!
+    # FIXME A `check network` on nb-netbird-io does not reliably tell when the
+    # interface is up, probably because its operstate is UNKNOWN. But then:
+    # why does this not impact the tailscale interface?!
     # See: ip -j link  | jq '.[] | select(.ifname | test("netbird|tailsc"))'
-    # check network netbird with interface nb-netbird-io
-    #   group "network"
-    #   depends on "netbird login"
-    #   restart program = "${pkgs.systemd}/bin/systemctl restart netbird-netbird-io"
-    #   if link down for 2 cycles then restart
-    #   if 5 restarts within 10 cycles then alert
-  '';
-in
-{
-  # monit configuration
-  services.monit.config = lib.mkAfter monitNetbird;
+  };
   systemd.services.monit.after = [
     "netbird-netbird-io.service"
   ];

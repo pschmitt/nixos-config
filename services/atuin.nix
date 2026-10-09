@@ -23,13 +23,18 @@ in
       };
     };
 
-    monit.config = ''
-      check host "atuin" with address 127.0.0.1
-        group application
-        start program = "${config.systemd.package}/bin/systemctl start atuin.service"
-        stop program = "${config.systemd.package}/bin/systemctl stop atuin.service"
-        if failed port ${toString config.services.atuin.port} protocol http request "/" for 3 cycles then restart
-        if 3 restarts within 5 cycles then alert
-    '';
+    monit.checks = {
+      atuin = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "application";
+        startProgram = "${config.systemd.package}/bin/systemctl start atuin.service";
+        stopProgram = "${config.systemd.package}/bin/systemctl stop atuin.service";
+        conditions = ''
+          if failed port ${toString config.services.atuin.port} protocol http request "/" for 3 cycles then restart
+          if 3 restarts within 5 cycles then alert
+        '';
+      };
+    };
   };
 }

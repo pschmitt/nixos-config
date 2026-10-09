@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 
@@ -198,63 +197,8 @@ let
     in
     if override != null then override else base;
 
-  monitCheckText =
-    {
-      serviceName,
-      restartCommand,
-      monitoredPort,
-      proto,
-      extraClause,
-      dependsOn,
-      group,
-    }:
-    ''
-      check host "${serviceName}" with address "127.0.0.1"
-        group container-services
-        ${optionalString (group != null) "group ${group}"}
-        ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
-        restart program = "${restartCommand}"
-          with timeout 180 seconds
-        if failed
-          port ${monitoredPort}
-          protocol ${proto}${optionalString (extraClause != "") " ${extraClause}"}
-          with timeout 90 seconds
-        then restart
-        if 5 restarts within 10 cycles then alert
-    '';
-
-  monitProgramCheckText =
-    {
-      serviceName,
-      restartCommand,
-      program,
-      dependsOn,
-      group,
-      restartAfterFailures,
-    }:
-    let
-      restartCondition =
-        if restartAfterFailures == 1 then
-          "if status != 0 then restart"
-        else
-          "if status != 0 for ${toString restartAfterFailures} cycles then restart";
-    in
-    ''
-      check program "${serviceName}" with path "${program}"
-        group container-services
-        ${optionalString (group != null) "group ${group}"}
-        ${optionalString (dependsOn != null) "depends on ${dependsOn}"}
-        restart program = "${restartCommand}"
-          with timeout 180 seconds
-      ${restartCondition}
-        if 5 restarts within 10 cycles then alert
-    '';
-
-  restartProgram =
-    service: "${pkgs.systemd}/bin/systemctl restart ${service.monitoring.restart.systemdUnit}";
-
-  generateMonitCheck =
-    serviceName: service:
+  mkMonitCheck =
+    _serviceName: service:
     let
       inherit (service.monitoring)
         expectedHttpStatusCode
@@ -262,45 +206,49 @@ let
         dependsOn
         group
         program
+        restartAfterFailures
         ;
-      inherit (service.monitoring) restartAfterFailures;
       monitorClauses =
         optional (path != null) "request \"${path}\""
         ++ optional (expectedHttpStatusCode != null) "status ${toString expectedHttpStatusCode}";
       extraClause = concatStringsSep " " monitorClauses;
-      monitoredPort = toString service.port;
       proto = if service.tls then "https" else "http";
-      restartCommand = restartProgram service;
     in
-    if program != null then
-      monitProgramCheckText {
-        inherit
-          serviceName
-          restartCommand
-          program
-          dependsOn
-          group
-          restartAfterFailures
-          ;
-      }
-    else
-      monitCheckText {
-        inherit
-          serviceName
-          restartCommand
-          monitoredPort
-          proto
-          extraClause
-          dependsOn
-          group
-          ;
-      };
-
-  monitExtraConfig =
-    let
-      checks = mapAttrs (serviceName: service: generateMonitCheck serviceName service) cfg.services;
-    in
-    concatStringsSep "\n\n" (attrValues checks);
+    {
+      group = [ "container-services" ] ++ optional (group != null) group;
+      dependsOn = optional (dependsOn != null) dependsOn;
+      restartUnit = service.monitoring.restart.systemdUnit;
+      restartTimeout = 180;
+    }
+    // (
+      if program != null then
+        {
+          type = "program";
+          path = program;
+          conditions = ''
+            ${
+              if restartAfterFailures == 1 then
+                "if status != 0 then restart"
+              else
+                "if status != 0 for ${toString restartAfterFailures} cycles then restart"
+            }
+            if 5 restarts within 10 cycles then alert
+          '';
+        }
+      else
+        {
+          type = "host";
+          address = "127.0.0.1";
+          conditions = ''
+            if failed
+              port ${toString service.port}
+              protocol ${proto}${optionalString (extraClause != "") " ${extraClause}"}
+              with timeout 90 seconds
+            then restart
+            if 5 restarts within 10 cycles then alert
+          '';
+        }
+    );
 
   authOptionAssertions = concatMap (
     serviceName:
@@ -504,7 +452,7 @@ in
   config = mkIf cfg.enable {
     assertions = authOptionAssertions ++ restartOptionAssertions;
     services.nginx.virtualHosts = virtualHosts;
-    services.monit.config = lib.mkAfter monitExtraConfig;
+    services.monit.checks = mapAttrs mkMonitCheck cfg.services;
 
     networking.nftables = mkIf cfg.enableRedirection {
       enable = true;

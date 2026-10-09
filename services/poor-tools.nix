@@ -60,17 +60,22 @@ in
         "poor.${config.domains.main}" = nginxConfig;
       };
 
-    monit.config = lib.mkAfter ''
-      check host "poor-installer-web" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart poor-installer-web.service"
-        if failed
-          port ${toString config.services.poor-installer-web.bindPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      poor-installer-web = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "poor-installer-web.service";
+        conditions = ''
+          if failed
+            port ${toString config.services.poor-installer-web.bindPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

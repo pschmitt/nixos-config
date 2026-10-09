@@ -573,8 +573,9 @@
           inherit system;
           specialArgs = {
             inherit inputs outputs hostname;
-            # Source tree of this (public) flake, so modules living in
-            # private input flakes can import shared helpers from here.
+            # Public modules the private flake input may import.
+            publicModules = self.nixosModules;
+            # TODO drop once nixos-config-private no longer uses it.
             publicSrc = self;
           };
           modules =
@@ -774,9 +775,14 @@
       # Build a Termux bundle with additional Home Manager modules and arguments.
       lib.mkTermuxBundle = import ./pkgs/termux/native/mkTermuxBundle.nix;
 
-      # Reusable nixos modules you might want to export
-      # These are usually stuff you would upstream into nixpkgs
-      # nixosModules = import ./modules/nixos;
+      # Public service modules, also handed to nixos-config-private as the
+      # `publicModules` specialArg.
+      nixosModules = {
+        am-i-mullvad = ./profiles/features/network/snek/am-i-mullvad.nix;
+        harmonia = ./services/harmonia.nix;
+        http = ./services/http.nix;
+        nfs-client = ./services/nfs/nfs-client.nix;
+      };
 
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager

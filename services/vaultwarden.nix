@@ -93,18 +93,23 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "vaultwarden" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart vaultwarden.service"
-        if failed
-          port ${toString vaultwardenPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      vaultwarden = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "vaultwarden.service";
+        conditions = ''
+          if failed
+            port ${toString vaultwardenPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   systemd = {

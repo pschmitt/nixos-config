@@ -75,17 +75,22 @@ in
     };
   };
 
-  services.monit.config = ''
-    check host "mealie" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-mealie.service"
-        with timeout 180 seconds
-      if failed
-        port ${toString mealiePort}
-        protocol http
-        with timeout 90 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    mealie = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-mealie.service";
+      conditions = ''
+          with timeout 180 seconds
+        if failed
+          port ${toString mealiePort}
+          protocol http
+          with timeout 90 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

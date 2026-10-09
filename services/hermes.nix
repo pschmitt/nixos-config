@@ -499,31 +499,41 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "hermes" with address "127.0.0.1"
-        group container-services
-        restart program = "${pkgs.systemd}/bin/systemctl restart hermes-dashboard.service"
-          with timeout 180 seconds
-        if failed
-          port ${toString dashboardPort}
-          protocol http
-          request "/api/status"
-          with timeout 90 seconds
-        then restart
-        if 5 restarts within 10 cycles then alert
+    monit.checks = {
+      hermes = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "container-services";
+        restartUnit = "hermes-dashboard.service";
+        conditions = ''
+            with timeout 180 seconds
+          if failed
+            port ${toString dashboardPort}
+            protocol http
+            request "/api/status"
+            with timeout 90 seconds
+          then restart
+          if 5 restarts within 10 cycles then alert
+        '';
+      };
 
-      check host "hermes-signal-cli" with address "127.0.0.1"
-        group container-services
-        restart program = "${pkgs.systemd}/bin/systemctl restart signal-cli-daemon.service"
-          with timeout 180 seconds
-        if failed
-          port ${toString signalCliPort}
-          protocol http
-          request "/api/v1/check"
-          with timeout 90 seconds
-        then restart
-        if 5 restarts within 10 cycles then alert
-    '';
+      hermes-signal-cli = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "container-services";
+        restartUnit = "signal-cli-daemon.service";
+        conditions = ''
+            with timeout 180 seconds
+          if failed
+            port ${toString signalCliPort}
+            protocol http
+            request "/api/v1/check"
+            with timeout 90 seconds
+          then restart
+          if 5 restarts within 10 cycles then alert
+        '';
+      };
+    };
   };
 
   systemd = {

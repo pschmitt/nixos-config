@@ -52,20 +52,25 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "immich" with address "${primaryHost}"
-        group services
-        depends on postgresql
-        restart program = "${pkgs.systemd}/bin/systemctl restart immich-server"
-        if failed
-          port 443
-          protocol https
-          with timeout 15 seconds
-          and certificate valid for 5 days
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      immich = {
+        type = "host";
+        address = primaryHost;
+        group = "services";
+        dependsOn = [ "postgresql" ];
+        restartUnit = "immich-server";
+        conditions = ''
+          if failed
+            port 443
+            protocol https
+            with timeout 15 seconds
+            and certificate valid for 5 days
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
 }

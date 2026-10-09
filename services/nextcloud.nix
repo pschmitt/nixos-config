@@ -119,19 +119,24 @@ in
       ];
     };
 
-    monit.config = lib.mkAfter ''
-      check host "nextcloud" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart phpfpm-nextcloud.service"
-        if failed
-          port ${toString nextcloudPort}
-          protocol https
-          request "/status.php"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 5 restarts within 10 cycles then alert
-    '';
+    monit.checks = {
+      nextcloud = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "phpfpm-nextcloud.service";
+        conditions = ''
+          if failed
+            port ${toString nextcloudPort}
+            protocol https
+            request "/status.php"
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 5 restarts within 10 cycles then alert
+        '';
+      };
+    };
   };
 
   systemd.services =

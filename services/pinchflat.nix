@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -71,17 +70,22 @@ in
         };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "pinchflat" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart pinchflat.service"
-        if failed
-          port ${toString pinchflatPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      pinchflat = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "pinchflat.service";
+        conditions = ''
+          if failed
+            port ${toString pinchflatPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

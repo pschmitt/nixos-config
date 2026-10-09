@@ -105,15 +105,20 @@ in
     ) vpnInterfaces
   );
 
-  services.monit.config = lib.mkAfter ''
-    check host "esphome" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${containerUnit}"
-      if failed
-        port 6055
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    esphome = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${containerUnit}";
+      conditions = ''
+        if failed
+          port 6055
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

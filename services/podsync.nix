@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -117,16 +116,21 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "podsync" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-podsync.service"
-      if failed
-        port ${toString listenPort}
-        protocol http request "/health" status 200
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    podsync = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-podsync.service";
+      conditions = ''
+        if failed
+          port ${toString listenPort}
+          protocol http request "/health" status 200
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

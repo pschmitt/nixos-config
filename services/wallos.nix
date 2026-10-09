@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
   # renovate: datasource=docker depName=bellamy/wallos versioning=semver-coerced
   wallosVersion = "4.6.0";
@@ -32,17 +32,22 @@ in
     };
   };
 
-  services.monit.config = ''
-    check host "wallos" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-wallos.service"
-        with timeout 180 seconds
-      if failed
-        port ${toString wallosPort}
-        protocol http
-        with timeout 90 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    wallos = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-wallos.service";
+      conditions = ''
+          with timeout 180 seconds
+        if failed
+          port ${toString wallosPort}
+          protocol http
+          with timeout 90 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

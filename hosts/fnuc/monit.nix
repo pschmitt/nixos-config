@@ -1,5 +1,4 @@
 {
-  lib,
   pkgs,
   ...
 }:
@@ -46,14 +45,24 @@ let
   '';
 in
 {
-  services.monit.config = lib.mkAfter ''
-    check program "thermals" with path "${thermals}/bin/fnuc-thermals 90"
-      if status > 0 for 5 cycles then alert
+  services.monit.checks = {
+    thermals = {
+      type = "program";
+      path = "${thermals}/bin/fnuc-thermals 90";
+      conditions = ''
+        if status > 0 for 5 cycles then alert
+      '';
+    };
 
     # The e1000e driver can report carrier up while its TX ring is wedged.
     # Keep this alert-only: recovery may require diagnosis or a reboot.
-    check program "fnuc wired network health" with path "${fnucNetworkHealth}"
-      group network
-      if status > 0 for 2 cycles then alert
-  '';
+    "fnuc wired network health" = {
+      type = "program";
+      path = "${fnucNetworkHealth}";
+      group = "network";
+      conditions = ''
+        if status > 0 for 2 cycles then alert
+      '';
+    };
+  };
 }

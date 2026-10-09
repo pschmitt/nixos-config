@@ -86,20 +86,25 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "n8n" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart ${systemdUnit}.service"
-        if failed
-          port ${toString n8nPort}
-          protocol http
-          with timeout 15 seconds
-          # Image pulls during upgrades can keep the port unavailable for
-          # several minutes before the container is ready.
-          for 10 cycles
-        then restart
-        if 3 restarts within 35 cycles then alert
-    '';
+    monit.checks = {
+      n8n = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "${systemdUnit}.service";
+        conditions = ''
+          if failed
+            port ${toString n8nPort}
+            protocol http
+            with timeout 15 seconds
+            # Image pulls during upgrades can keep the port unavailable for
+            # several minutes before the container is ready.
+            for 10 cycles
+          then restart
+          if 3 restarts within 35 cycles then alert
+        '';
+      };
+    };
   };
 
   # Trust the n8n container network like the default docker0 bridge already

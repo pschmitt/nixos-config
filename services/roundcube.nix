@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -121,18 +120,23 @@ in
       '';
     };
 
-    monit.config = lib.mkAfter ''
-      check host "roundcube" with address "127.0.0.1"
-        group services
-        if failed
-          port 8443
-          protocol https
-          with hostheader "${mailHost}"
-          request "/"
-          with timeout 15 seconds
-        for 3 cycles
-        then alert
-    '';
+    monit.checks = {
+      roundcube = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        conditions = ''
+          if failed
+            port 8443
+            protocol https
+            with hostheader "${mailHost}"
+            request "/"
+            with timeout 15 seconds
+          for 3 cycles
+          then alert
+        '';
+      };
+    };
   };
 
 }

@@ -1,18 +1,22 @@
 {
   config,
+  lib,
   pkgs,
   ...
 }:
 let
   netbirdForceRoutes = pkgs.writeShellApplication {
     name = "netbird-force-routes";
-    runtimeInputs = with pkgs; [
-      coreutils # sort
-      findutils # xargs
-      gawk
-      iproute2
-      jq
-    ];
+    runtimeInputs =
+      (with pkgs; [
+        coreutils # sort
+        findutils # xargs
+        gawk
+        iproute2
+        jq
+      ])
+      # netbird-<instance> CLI wrappers
+      ++ map (c: c.wrapper) (builtins.attrValues config.services.netbird.clients);
     text = builtins.readFile ./scripts/netbird-force-routes.sh;
   };
 in
@@ -58,7 +62,7 @@ in
 
       nb_has_routes() {
         local routes
-        if ! routes=$(/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME routes list)
+        if ! routes=$(${lib.getExe config.services.netbird.clients.wiit.wrapper} routes list)
         then
           return 1
         fi

@@ -106,17 +106,22 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "grafana" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart grafana.service"
-      if failed
-        port ${toString config.services.grafana.settings.server.http_port}
-        protocol http
-        request "/api/health"
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    grafana = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "services";
+      restartUnit = "grafana.service";
+      conditions = ''
+        if failed
+          port ${toString config.services.grafana.settings.server.http_port}
+          protocol http
+          request "/api/health"
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

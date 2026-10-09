@@ -96,18 +96,23 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "healthchecks" with address "127.0.0.1"
-        group services
-        if failed
-          port ${toString healthchecksPort}
-          protocol http
-          with hostheader "${healthchecksHost}"
-          request "/"
-          with timeout 10 seconds
-        for 3 cycles
-        then alert
-    '';
+    monit.checks = {
+      healthchecks = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        conditions = ''
+          if failed
+            port ${toString healthchecksPort}
+            protocol http
+            with hostheader "${healthchecksHost}"
+            request "/"
+            with timeout 10 seconds
+          for 3 cycles
+          then alert
+        '';
+      };
+    };
   };
 
   systemd.services =

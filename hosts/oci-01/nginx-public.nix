@@ -405,17 +405,24 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "oci-01-public-https" with address "127.0.0.1"
-      group nginx
-      group services
-      if failed
-        port 8443
-        protocol https
-        with hostheader "pschmitt.dev"
-        request "/"
-        with timeout 15 seconds
-      for 3 cycles
-      then alert
-  '';
+  services.monit.checks = {
+    oci-01-public-https = {
+      type = "host";
+      address = "127.0.0.1";
+      group = [
+        "nginx"
+        "services"
+      ];
+      conditions = ''
+        if failed
+          port 8443
+          protocol https
+          with hostheader "pschmitt.dev"
+          request "/"
+          with timeout 15 seconds
+        for 3 cycles
+        then alert
+      '';
+    };
+  };
 }

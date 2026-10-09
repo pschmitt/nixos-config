@@ -1,7 +1,5 @@
 {
   config,
-  lib,
-  pkgs,
   ...
 }:
 let
@@ -32,16 +30,21 @@ in
     "Z ${dataDir} 0750 ${config.services.taskchampion-sync-server.user} ${config.services.taskchampion-sync-server.group} - -"
   ];
 
-  services.monit.config = lib.mkAfter ''
-    check host "taskchampion-sync-server" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart taskchampion-sync-server.service"
-      if failed
-        port ${toString listenPort}
-        protocol http
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    taskchampion-sync-server = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "services";
+      restartUnit = "taskchampion-sync-server.service";
+      conditions = ''
+        if failed
+          port ${toString listenPort}
+          protocol http
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

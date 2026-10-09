@@ -1,7 +1,5 @@
 {
   config,
-  lib,
-  pkgs,
   ...
 }:
 let
@@ -92,18 +90,23 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "searxng" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart searx.service"
-        if failed
-          port ${toString config.services.searx.settings.server.port}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      searxng = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "searx.service";
+        conditions = ''
+          if failed
+            port ${toString config.services.searx.settings.server.port}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   # searx.settings.server.bind_address above is 0.0.0.0 for two trusted paths

@@ -28,6 +28,7 @@ in
   ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   codexbar = pkgs.callPackage ./local/codexbar { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
+  mullvad-expiration = pkgs.callPackage ./local/mullvad-expiration { };
   inherit osd;
   fzf-preview = pkgs.callPackage ./local/fzf-preview { };
   ldif2json = pkgs.callPackage ./local/ldif2json { };

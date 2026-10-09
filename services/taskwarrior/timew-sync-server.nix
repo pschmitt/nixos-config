@@ -41,18 +41,23 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "timew-sync-server" with address "127.0.0.1"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart timew-sync-server.service"
-      if failed
-        port ${toString listenPort}
-        # TODO the next release (> 1.2.0) has a /api/health endpoint we can
-        # use instead, it should repond with "OK" and a 200 status
-        protocol http request "/api/sync" status 400
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    timew-sync-server = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "services";
+      restartUnit = "timew-sync-server.service";
+      conditions = ''
+        if failed
+          port ${toString listenPort}
+          # TODO the next release (> 1.2.0) has a /api/health endpoint we can
+          # use instead, it should repond with "OK" and a 200 status
+          protocol http request "/api/sync" status 400
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

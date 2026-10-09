@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 {
   imports = [
     ../../features/network/roflnet.nix
@@ -20,5 +20,5 @@
   };
 
   systemd.services.nix-gc.serviceConfig.ExecStartPre =
-    "/run/current-system/sw/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +5";
+    "${config.nix.package}/bin/nix-env --profile /nix/var/nix/profiles/system --delete-generations +5";
 }

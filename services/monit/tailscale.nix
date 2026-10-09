@@ -1,29 +1,34 @@
 {
-  lib,
-  pkgs,
-  ...
-}:
-let
-  monitTailscale = ''
-    check network tailscale with interface tailscale0
-      group "network"
-      group "tailscale"
-      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
-      if link down for 2 cycles then restart
-      if 5 restarts within 10 cycles then alert
+  services.monit.checks = {
+    tailscale = {
+      type = "network";
+      interface = "tailscale0";
+      group = [
+        "network"
+        "tailscale"
+      ];
+      restartUnit = "tailscaled";
+      conditions = ''
+        if link down for 2 cycles then restart
+        if 5 restarts within 10 cycles then alert
+      '';
+    };
 
-    check host "tailscale magicdns" with address 100.100.100.100
-      group "network"
-      group "tailscale"
-      depends on "tailscale"
-      restart program = "${pkgs.systemd}/bin/systemctl restart tailscaled"
-      if failed ping for 2 cycles then restart
-      if 3 restarts within 10 cycles then alert
-  '';
-
-in
-{
-  services.monit.config = lib.mkAfter monitTailscale;
+    "tailscale magicdns" = {
+      type = "host";
+      address = "100.100.100.100";
+      group = [
+        "network"
+        "tailscale"
+      ];
+      dependsOn = [ "tailscale" ];
+      restartUnit = "tailscaled";
+      conditions = ''
+        if failed ping for 2 cycles then restart
+        if 3 restarts within 10 cycles then alert
+      '';
+    };
+  };
 
   systemd.services.monit.after = [
     "tailscaled.service"

@@ -29,11 +29,11 @@
 
   networking.firewall.trustedInterfaces = lib.mkAfter [ "docker0" ];
 
-  services.monit.config = lib.mkIf (config.virtualisation.oci-containers.backend == "docker") (
-    lib.mkAfter ''
-      check program "dockerd" with path "${pkgs.systemd}/bin/systemctl is-active docker"
-        group docker
-        if status > 0 then alert
-    ''
-  );
+  services.monit.checks.dockerd = {
+    enable = config.virtualisation.docker.enable;
+    type = "program";
+    path = "${pkgs.systemd}/bin/systemctl is-active docker";
+    group = "docker";
+    conditions = "if status > 0 then alert";
+  };
 }

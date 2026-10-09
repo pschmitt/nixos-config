@@ -7,9 +7,10 @@
     ./falcon-sensor-vm.nix
     ./hardware.nix
     ./hermes.nix
+    ./ktunnel.nix
     ./main-user.nix
-    ./nginx-vhost.nix
     ./monit-checks.nix
+    ./nginx-vhost.nix
     ./nix-host-overrides.nix
     ./nixos-config-symlink.nix
     ./options

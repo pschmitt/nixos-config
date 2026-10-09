@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   ...
 }:
 let
@@ -35,17 +34,22 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "go-autoconfig" with address "127.0.0.1"
-        group services
-        if failed
-          port 8081
-          protocol http
-          with hostheader "${autoconfigHost}"
-          request "/mail/config-v1.1.xml"
-          with timeout 10 seconds
-          for 3 cycles
-        then alert
-    '';
+    monit.checks = {
+      go-autoconfig = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        conditions = ''
+          if failed
+            port 8081
+            protocol http
+            with hostheader "${autoconfigHost}"
+            request "/mail/config-v1.1.xml"
+            with timeout 10 seconds
+            for 3 cycles
+          then alert
+        '';
+      };
+    };
   };
 }

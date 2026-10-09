@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -72,18 +71,23 @@ in
 
       nginx.virtualHosts = virtualHosts;
 
-      monit.config = lib.mkAfter ''
-        check host "harmonia" with address "127.0.0.1"
-          group services
-          restart program = "${pkgs.systemd}/bin/systemctl restart harmonia"
-          if failed
-            port 42766
-            protocol http request "/nix-cache-info" status 200
-            with timeout 15 seconds
-            for 3 cycles
-          then restart
-          if 3 restarts within 15 cycles then alert
-      '';
+      monit.checks = {
+        harmonia = {
+          type = "host";
+          address = "127.0.0.1";
+          group = "services";
+          restartUnit = "harmonia";
+          conditions = ''
+            if failed
+              port 42766
+              protocol http request "/nix-cache-info" status 200
+              with timeout 15 seconds
+              for 3 cycles
+            then restart
+            if 3 restarts within 15 cycles then alert
+          '';
+        };
+      };
     };
 
     nix.extraOptions = ''

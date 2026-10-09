@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -273,19 +272,24 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "matrix-synapse" with address "127.0.0.1"
-        group services
-        depends on postgresql
-        if failed
-          port 8008
-          protocol http
-          request "/_matrix/federation/v1/version"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 5 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      matrix-synapse = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        dependsOn = [ "postgresql" ];
+        conditions = ''
+          if failed
+            port 8008
+            protocol http
+            request "/_matrix/federation/v1/version"
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 5 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   systemd.tmpfiles.rules = [

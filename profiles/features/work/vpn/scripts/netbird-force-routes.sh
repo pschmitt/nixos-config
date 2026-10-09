@@ -2,8 +2,8 @@
 # the main routing table.
 #
 # Wrapped by writeShellApplication: the shebang, `set -euo pipefail` and PATH
-# (runtimeInputs) are injected by Nix. NB_BIN is resolved at runtime against
-# the current system profile.
+# (runtimeInputs, including the netbird-<instance> wrappers) are injected by
+# Nix.
 
 set -x
 
@@ -40,7 +40,7 @@ main() {
 
   NB_INSTANCE_NAME="${NB_INSTANCE_NAME:-wiit}"
   NB_INTERFACE_NAME="${NB_INTERFACE_NAME:-nb-$NB_INSTANCE_NAME}"
-  NB_BIN="/run/current-system/sw/bin/netbird-$NB_INSTANCE_NAME"
+  NB_BIN="netbird-$NB_INSTANCE_NAME"
 
   case "${1:-}" in
     -h|--help)

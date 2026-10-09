@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -134,20 +133,25 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "netbox" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart netbox.service netbox-rq.service"
-        if failed
-          port ${toString netboxPort}
-          protocol http
-          request "/"
-          with hostheader "${netboxHost}"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      netbox = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartProgram = "${pkgs.systemd}/bin/systemctl restart netbox.service netbox-rq.service";
+        conditions = ''
+          if failed
+            port ${toString netboxPort}
+            protocol http
+            request "/"
+            with hostheader "${netboxHost}"
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   # NetBox's upstream module hardcodes StateDirectory = "netbox", which only

@@ -47,11 +47,16 @@ in
 
     # The monit check lives here (not in monit.nix) so that hosts without
     # restic backups do not get a permanently failing check.
-    services.monit.config = ''
-      check program "restic backup status" with path "${resticLastBackup}"
-        group storage
-        every 5 cycles
-        if status > 0 then alert
-    '';
+    services.monit.checks = {
+      "restic backup status" = {
+        type = "program";
+        path = "${resticLastBackup}";
+        group = "storage";
+        every = 5;
+        conditions = ''
+          if status > 0 then alert
+        '';
+      };
+    };
   };
 }

@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -311,12 +310,17 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "authelia" with address "127.0.0.1"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart ${autheliaService}"
-        if failed port ${toString autheliaPort} for 3 cycles then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      authelia = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "services";
+        restartUnit = "${autheliaService}";
+        conditions = ''
+          if failed port ${toString autheliaPort} for 3 cycles then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

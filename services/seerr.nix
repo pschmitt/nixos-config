@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
@@ -57,16 +56,21 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "seerr" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-seerr.service"
-      if failed
-        port ${toString seerrPort}
-        protocol http
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    seerr = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-seerr.service";
+      conditions = ''
+        if failed
+          port ${toString seerrPort}
+          protocol http
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

@@ -163,7 +163,9 @@ in
               # Give noctalia a moment to reconnect its logind session-lock
               # monitor before touching anything.
               sleep 1
-              ${pkgs.master.hyprland}/bin/hyprctl --instance 0 eval "hl.clear_crashed_lockscreen()" >/dev/null 2>&1 || true
+              ${
+                inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland
+              }/bin/hyprctl --instance 0 eval "hl.clear_crashed_lockscreen()" >/dev/null 2>&1 || true
               while IFS= read -r sid; do
                 [[ -z "$sid" ]] && continue
                 ${pkgs.systemd}/bin/loginctl lock-session "$sid" >/dev/null 2>&1 || true

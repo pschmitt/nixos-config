@@ -110,20 +110,30 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "gitea-mirror" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${serviceUnit}"
-      if failed
-        port ${toString listenPort}
-        protocol http request "/api/health" status 200
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
+  services.monit.checks = {
+    gitea-mirror = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${serviceUnit}";
+      conditions = ''
+        if failed
+          port ${toString listenPort}
+          protocol http request "/api/health" status 200
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
 
-    check program "gitea-mirror mirror-health" with path "${mirrorHealthCheckScript}"
-      group container-services
-      if status != 0 for 2 cycles then alert
-  '';
+    "gitea-mirror mirror-health" = {
+      type = "program";
+      path = "${mirrorHealthCheckScript}";
+      group = "container-services";
+      conditions = ''
+        if status != 0 for 2 cycles then alert
+      '';
+    };
+  };
 }

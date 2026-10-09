@@ -262,17 +262,22 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "endurain" with address "127.0.0.1"
-        group container-services
-        restart program = "${pkgs.systemd}/bin/systemctl restart ${endurainUnit}"
-        if failed
-          port ${toString endurainPort}
-          protocol http
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      endurain = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "container-services";
+        restartUnit = "${endurainUnit}";
+        conditions = ''
+          if failed
+            port ${toString endurainPort}
+            protocol http
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

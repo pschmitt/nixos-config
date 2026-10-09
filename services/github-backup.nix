@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -63,11 +62,16 @@ in
     ];
   };
 
-  services.monit.config = lib.mkAfter ''
+  services.monit.checks = {
     # Alert when the last backup is older than 48h
-    check program "github-backup" with path "${githubLastBackup} 172800"
-      group backup
-      every 2 cycles
-      if status > 0 then alert
-  '';
+    github-backup = {
+      type = "program";
+      path = "${githubLastBackup} 172800";
+      group = "backup";
+      every = 2;
+      conditions = ''
+        if status > 0 then alert
+      '';
+    };
+  };
 }

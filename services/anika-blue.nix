@@ -1,8 +1,6 @@
 {
   config,
   inputs,
-  lib,
-  pkgs,
   ...
 }:
 let
@@ -41,17 +39,22 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "anika-blue" with address "anika-blue.${config.domains.main}"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart anika-blue"
-        if failed
-          port 443
-          protocol https
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      anika-blue = {
+        type = "host";
+        address = "anika-blue.${config.domains.main}";
+        group = "services";
+        restartUnit = "anika-blue";
+        conditions = ''
+          if failed
+            port 443
+            protocol https
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 }

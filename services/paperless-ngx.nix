@@ -127,22 +127,25 @@ in
       };
     };
 
-    monit.config = lib.mkAfter ''
-      check host "paperless-ngx" with address "${config.services.paperless.address}"
-        group services
-        restart program = "${pkgs.systemd}/bin/systemctl restart paperless-consumer.service paperless-scheduler.service paperless-task-queue.service paperless-web.service redis-paperless.service"
-
-        if failed
-          port ${toString config.services.paperless.port}
-          protocol http
-          request "/"
-          with hostheader "${primaryHost}"
-          with timeout 15 seconds
-          for 3 cycles
-        then restart
-
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      paperless-ngx = {
+        type = "host";
+        address = "${config.services.paperless.address}";
+        group = "services";
+        restartProgram = "${pkgs.systemd}/bin/systemctl restart paperless-consumer.service paperless-scheduler.service paperless-task-queue.service paperless-web.service redis-paperless.service";
+        conditions = ''
+          if failed
+            port ${toString config.services.paperless.port}
+            protocol http
+            request "/"
+            with hostheader "${primaryHost}"
+            with timeout 15 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   users.users."${config.mainUser.username}" = {

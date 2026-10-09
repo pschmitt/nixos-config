@@ -1525,19 +1525,24 @@ in
       };
     };
 
-    monit.config = ''
-      check host "glance" with address "127.0.0.1"
-        group container-services
-        restart program = "${config.systemd.package}/bin/systemctl restart glance.service"
-          with timeout 180 seconds
-        if failed
-          port ${toString glancePort}
-          protocol http
-          with timeout 90 seconds
-          for 3 cycles
-        then restart
-        if 3 restarts within 15 cycles then alert
-    '';
+    monit.checks = {
+      glance = {
+        type = "host";
+        address = "127.0.0.1";
+        group = "container-services";
+        restartProgram = "${config.systemd.package}/bin/systemctl restart glance.service";
+        conditions = ''
+            with timeout 180 seconds
+          if failed
+            port ${toString glancePort}
+            protocol http
+            with timeout 90 seconds
+            for 3 cycles
+          then restart
+          if 3 restarts within 15 cycles then alert
+        '';
+      };
+    };
   };
 
   # Require Authelia before proxying, matching the other private dashboards

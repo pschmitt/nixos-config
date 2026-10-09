@@ -75,20 +75,30 @@ in
       };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "forgejo" with address "${config.services.forgejo.settings.server.HTTP_ADDR}"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart forgejo.service"
-      if failed
-        port ${toString config.services.forgejo.settings.server.HTTP_PORT}
-        protocol http
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
+  services.monit.checks = {
+    forgejo = {
+      type = "host";
+      address = "${config.services.forgejo.settings.server.HTTP_ADDR}";
+      group = "services";
+      restartUnit = "forgejo.service";
+      conditions = ''
+        if failed
+          port ${toString config.services.forgejo.settings.server.HTTP_PORT}
+          protocol http
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
 
-    check program "forgejo mirror-sync health" with path "${mirrorSyncFailureCheckScript}"
-      group services
-      if status != 0 for 2 cycles then alert
-  '';
+    "forgejo mirror-sync health" = {
+      type = "program";
+      path = "${mirrorSyncFailureCheckScript}";
+      group = "services";
+      conditions = ''
+        if status != 0 for 2 cycles then alert
+      '';
+    };
+  };
 }

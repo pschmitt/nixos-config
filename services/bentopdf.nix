@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
   # renovate: datasource=docker depName=ghcr.io/alam00000/bentopdf
   bentopdfVersion = "v1.15.3";
@@ -25,17 +25,22 @@ in
     };
   };
 
-  services.monit.config = ''
-    check host "bentopdf" with address "127.0.0.1"
-      group container-services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-bentopdf.service"
-        with timeout 180 seconds
-      if failed
-        port ${toString bentopdfPort}
-        protocol http
-        with timeout 90 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    bentopdf = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "container-services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-bentopdf.service";
+      conditions = ''
+          with timeout 180 seconds
+        if failed
+          port ${toString bentopdfPort}
+          protocol http
+          with timeout 90 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

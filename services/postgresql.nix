@@ -76,11 +76,16 @@ in
     )
   ];
 
-  services.monit.config = lib.mkAfter ''
-    check program "postgresql" with path "${config.services.postgresql.package}/bin/pg_isready -q"
-      group database
-      restart program = "${pkgs.systemd}/bin/systemctl restart postgresql.service"
-      if status > 0 then restart
-      if 5 restarts within 10 cycles then alert
-  '';
+  services.monit.checks = {
+    postgresql = {
+      type = "program";
+      path = "${config.services.postgresql.package}/bin/pg_isready -q";
+      group = "database";
+      restartUnit = "postgresql.service";
+      conditions = ''
+        if status > 0 then restart
+        if 5 restarts within 10 cycles then alert
+      '';
+    };
+  };
 }

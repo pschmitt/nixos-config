@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -24,20 +23,35 @@ in
     # of the VPN name (unreachable from the hypervisor itself).
     home-assistant.sshfs.host = "10.5.1.1";
 
-    monit.config = lib.mkAfter ''
-      check process "libvirt ${cfg.domainName}" with pidfile /var/run/libvirt/qemu/${cfg.domainName}.pid
-        start program "${virsh} start ${cfg.domainName}"
-        stop program "${virsh} stop ${cfg.domainName}"
+    monit.checks = {
+      "libvirt ${cfg.domainName}" = {
+        type = "process";
+        pidfile = "/var/run/libvirt/qemu/${cfg.domainName}.pid";
+        conditions = ''
+          start program "${virsh} start ${cfg.domainName}"
+          stop program "${virsh} stop ${cfg.domainName}"
+        '';
+      };
 
-      check host "libvirt ${cfg.domainName} (net)" with address 10.5.1.1
-        start program "${virsh} start ${cfg.domainName}"
-        stop program "${virsh} stop ${cfg.domainName}"
-        if failed icmp type echo count 5 with timeout 30 seconds then restart
+      "libvirt ${cfg.domainName} (net)" = {
+        type = "host";
+        address = "10.5.1.1";
+        conditions = ''
+          start program "${virsh} start ${cfg.domainName}"
+          stop program "${virsh} stop ${cfg.domainName}"
+          if failed icmp type echo count 5 with timeout 30 seconds then restart
+        '';
+      };
 
-      check host "hass-fnuc" with address 10.5.1.1
-        if failed port 8123 for 5 cycles then alert
-        if failed port 1883 for 5 cycles then alert
-        if failed port 8883 for 5 cycles then alert
-    '';
+      hass-fnuc = {
+        type = "host";
+        address = "10.5.1.1";
+        conditions = ''
+          if failed port 8123 for 5 cycles then alert
+          if failed port 1883 for 5 cycles then alert
+          if failed port 8883 for 5 cycles then alert
+        '';
+      };
+    };
   };
 }
