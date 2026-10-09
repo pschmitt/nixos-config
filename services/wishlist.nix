@@ -5,7 +5,7 @@
 }:
 let
   # renovate: datasource=docker depName=ghcr.io/cmintey/wishlist
-  wishlistVersion = "v0.67.1";
+  wishlistVersion = "v0.68.0";
   primaryHost = "wish.${config.domains.main}";
   # hostnames = [
   #   primaryHost
