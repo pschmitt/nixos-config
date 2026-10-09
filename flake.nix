@@ -13,7 +13,7 @@
       flake = false;
     };
     nixpkgs-terraform-157 = {
-      url = "github:NixOS/nixpkgs/4ab8a3de296914f3b631121e9ce3884f1d34e1e5";
+      url = "github:NixOS/nixpkgs/2ecf00d8378ab450211eca3881809aa72cc0f498";
       flake = false;
     };
 
