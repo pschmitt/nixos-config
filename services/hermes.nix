@@ -341,6 +341,19 @@ in
       package = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
         version = hermesVersion;
       };
+      # Home Assistant left core for the catalog plugin. Hermes' own
+      # `plugins install`/`enable` runs a uv venv sync against the read-only
+      # store path and fails, so install it declaratively. Pinned to the sha
+      # in hermes-agent's plugin-catalog/homeassistant.yaml.
+      extraPlugins = [
+        (pkgs.fetchFromGitHub {
+          name = "homeassistant";
+          owner = "NousResearch";
+          repo = "hermes-homeassistant";
+          rev = "ba30cb0cf86c52bdb5cde98974bc062e97966529"; # 2.0.1
+          hash = "sha256-Pg4smvkiVpmcmUola0rziMBfq5V7UjzX8864Dem76pI=";
+        })
+      ];
       addToSystemPackages = true;
       stateDir = "/srv/hermes";
       workingDirectory = "/srv/hermes/workspace";
@@ -364,6 +377,7 @@ in
         codex
       ]);
       settings = {
+        plugins.enabled = [ "homeassistant" ];
         model = {
           provider = "openai-codex";
           default = "gpt-6-luna";
