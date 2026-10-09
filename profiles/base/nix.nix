@@ -153,13 +153,8 @@
   # https://www.reddit.com/r/NixOS/comments/16t2njf/small_trick_for_people_using_nixos_with_flakes/
   environment.etc."nixos-source".source = ./../..;
 
-  # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
+  # system.stateVersion is set per host in hosts/<host>/default.nix.
   system = {
-    stateVersion = "25.11";
-    # autoUpgrade = {
-    #   enable = true;
-    #   channel = "https://nixos.org/channels/nixos-23.05";
-    # };
     activationScripts = lib.mkIf (config.hardware.type != "rpi") {
       nixos-needsreboot = {
         supportsDryActivation = true;
