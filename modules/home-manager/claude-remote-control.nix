@@ -2,20 +2,11 @@
   config,
   hostname ? null,
   lib,
-  osConfig ? null,
   pkgs,
   ...
 }:
 let
   cfg = config.services.claude-remote-control;
-
-  effectiveHostname =
-    if hostname != null then
-      hostname
-    else if osConfig != null then
-      osConfig.networking.hostName
-    else
-      "unknown";
 
   # Use .claude-wrapped to bypass the HM wrapper that prepends --plugin-dir,
   # which remote-control does not accept as an argument.
@@ -40,12 +31,19 @@ let
     fi
 
     exec ${claudeBin} remote-control \
-      --name ${effectiveHostname}-svc \
+      --name ${lib.escapeShellArg cfg.name} \
       --permission-mode bypassPermissions
   '';
 in
 {
   options.services.claude-remote-control = {
+    name = lib.mkOption {
+      type = lib.types.str;
+      default = "${if hostname != null then hostname else "unknown"}-svc";
+      defaultText = lib.literalExpression ''"''${hostname}-svc"'';
+      description = "Session name shown for the remote control server.";
+    };
+
     configDir = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
