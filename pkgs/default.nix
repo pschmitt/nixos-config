@@ -14,7 +14,12 @@ let
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
   udocker-engines = pkgs.callPackage ./udocker-engines { };
   soundboard = pkgs.callPackage ./local/soundboard { };
-  timew-status = pkgs.callPackage ./local/timew-status { };
+  timew-is-on = pkgs.callPackage ./local/timew-is-on { };
+  timew-total = pkgs.callPackage ./local/timew-total { };
+  timew-week-breakdown = pkgs.callPackage ./local/timew-week-breakdown { };
+  timew-status = pkgs.callPackage ./local/timew-status {
+    inherit timew-is-on timew-total timew-week-breakdown;
+  };
   osd = pkgs.callPackage ./local/osd { };
   screencast-state = pkgs.callPackage ./local/screencast-state { };
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
@@ -52,7 +57,12 @@ in
   zebra = pkgs.callPackage ./local/zebra { };
   zhj = pkgs.callPackage ./local/zhj { };
   systemctl-service-exec = pkgs.callPackage ./local/systemctl-service-exec { };
-  inherit timew-status;
+  inherit
+    timew-is-on
+    timew-status
+    timew-total
+    timew-week-breakdown
+    ;
   udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;
