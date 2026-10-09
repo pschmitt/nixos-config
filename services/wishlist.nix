@@ -1,10 +1,11 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
+  # renovate: datasource=docker depName=ghcr.io/cmintey/wishlist
+  wishlistVersion = "v0.67.1";
   primaryHost = "wish.${config.domains.main}";
   # hostnames = [
   #   primaryHost
@@ -25,7 +26,7 @@ in
 
   virtualisation.oci-containers.containers.wishlist = {
     autoStart = true;
-    image = "ghcr.io/cmintey/wishlist:latest";
+    image = "ghcr.io/cmintey/wishlist:${wishlistVersion}";
     pull = "always";
     volumes = [
       "${dataDir}/uploads:/usr/src/app/uploads"
@@ -63,16 +64,21 @@ in
     };
   };
 
-  services.monit.config = lib.mkAfter ''
-    check host "wishlist" with address "${primaryHost}"
-      group services
-      restart program = "${pkgs.systemd}/bin/systemctl restart ${config.virtualisation.oci-containers.backend}-wishlist.service"
-      if failed
-        port 443
-        protocol https
-        with timeout 15 seconds
-        for 3 cycles
-      then restart
-      if 3 restarts within 15 cycles then alert
-  '';
+  services.monit.checks = {
+    wishlist = {
+      type = "host";
+      address = primaryHost;
+      group = "services";
+      restartUnit = "${config.virtualisation.oci-containers.backend}-wishlist.service";
+      conditions = ''
+        if failed
+          port 443
+          protocol https
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
+    };
+  };
 }

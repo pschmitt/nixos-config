@@ -9,6 +9,7 @@
     ./hermes.nix
     ./main-user.nix
     ./nginx-vhost.nix
+    ./monit-checks.nix
     ./nix-host-overrides.nix
     ./nixos-config-symlink.nix
     ./options

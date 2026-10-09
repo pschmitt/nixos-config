@@ -5,6 +5,8 @@
   ...
 }:
 let
+  # renovate: datasource=docker depName=esphome/esphome
+  esphomeVersion = "2026.9.1";
   dataDir = "/srv/esphome";
   # 6052 = device-builder dashboard (HTTP), 6055 = peer-link (remote compile)
   exposedPorts = [
@@ -33,7 +35,7 @@ in
 
   virtualisation.oci-containers.containers.esphome = {
     autoStart = true;
-    image = "esphome/esphome:latest";
+    image = "esphome/esphome:${esphomeVersion}";
     pull = "always";
     # Install and run esphome-device-builder which adds the peer-link server on
     # port 6055 on top of the regular dashboard on port 6052.

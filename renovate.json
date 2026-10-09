@@ -30,6 +30,16 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
       ]
+    },
+    {
+      "description": "Images without usable version tags (nightly/develop/own builds) are pinned as image = \"repo:tag@sha256:...\"; keep the digest current for that tag. Prefer a \"# renovate:\" version tag wherever upstream publishes releases.",
+      "fileMatch": [
+        "\\.nix$"
+      ],
+      "matchStrings": [
+        "image = \"(?<depName>[^:@\"\\s]+):(?<currentValue>[^@\"\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker"
     }
   ],
   "includePaths": [

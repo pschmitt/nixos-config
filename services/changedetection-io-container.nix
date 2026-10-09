@@ -5,6 +5,8 @@
   ...
 }:
 let
+  # renovate: datasource=docker depName=ghcr.io/dgtlmoon/changedetection.io
+  changedetectionVersion = "0.60.8";
   domain = "changes.${config.domains.main}";
   dataDir = "/mnt/data/srv/changedetection-io";
   listenPort = 24264;
@@ -26,7 +28,7 @@ in
 
   virtualisation.oci-containers.containers = {
     changedetection-io-playwright = {
-      image = "dgtlmoon/sockpuppetbrowser:latest";
+      image = "dgtlmoon/sockpuppetbrowser:latest@sha256:7116c61ef9cfce3d48a7efd9355d2fbe19f593ea3cfb52a5ded40ecbcb0a3f9d";
       autoStart = true;
       hostname = "changedetection-io-playwright";
       capabilities.SYS_ADMIN = true;
@@ -40,7 +42,7 @@ in
     };
 
     changedetection-io = {
-      image = "ghcr.io/dgtlmoon/changedetection.io:latest";
+      image = "ghcr.io/dgtlmoon/changedetection.io:${changedetectionVersion}";
       pull = "always";
       autoStart = true;
       hostname = "changedetection";

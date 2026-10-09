@@ -1,11 +1,13 @@
 { config, pkgs, ... }:
 let
+  # renovate: datasource=docker depName=bellamy/wallos versioning=semver-coerced
+  wallosVersion = "4.6.0";
   wallosHost = "subs.${config.domains.main}";
   wallosPort = 8282;
 in
 {
   virtualisation.oci-containers.containers.wallos = {
-    image = "bellamy/wallos:latest";
+    image = "bellamy/wallos:${wallosVersion}";
     autoStart = true;
     ports = [
       "127.0.0.1:${toString wallosPort}:80"

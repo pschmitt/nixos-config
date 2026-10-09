@@ -5,6 +5,8 @@
   ...
 }:
 let
+  # renovate: datasource=docker depName=ghcr.io/raylabshq/gitea-mirror
+  giteaMirrorVersion = "v3.40.3";
   dataDir = "/srv/gitea-mirror";
   listenPort = 54439;
   containerBackend = config.virtualisation.oci-containers.backend;
@@ -75,7 +77,7 @@ in
   # https://github.com/RayLabsHQ/gitea-mirror/blob/main/docs/NIX_DEPLOYMENT.md
   virtualisation.oci-containers.containers.gitea-mirror = {
     autoStart = true;
-    image = "ghcr.io/raylabshq/gitea-mirror:latest";
+    image = "ghcr.io/raylabshq/gitea-mirror:${giteaMirrorVersion}";
     pull = "always";
     user = "${toString containerUid}:${toString containerGid}";
     ports = [

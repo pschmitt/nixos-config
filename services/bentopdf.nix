@@ -1,11 +1,13 @@
 { config, pkgs, ... }:
 let
+  # renovate: datasource=docker depName=ghcr.io/alam00000/bentopdf
+  bentopdfVersion = "v1.15.3";
   bentopdfHost = "pdf.${config.domains.main}";
   bentopdfPort = 23686;
 in
 {
   virtualisation.oci-containers.containers.bentopdf = {
-    image = "ghcr.io/alam00000/bentopdf:latest";
+    image = "ghcr.io/alam00000/bentopdf:${bentopdfVersion}";
     autoStart = true;
     ports = [
       "127.0.0.1:${toString bentopdfPort}:8080"
