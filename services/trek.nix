@@ -18,14 +18,21 @@ in
   };
 
   sops = {
-    secrets."trek/encryption-key" = config.sops.mkHostSecret {
-      mode = "0400";
-      restartUnits = [ "${containerBackend}-trek.service" ];
-    };
+    secrets = {
+      "trek/encryption-key" = config.sops.mkHostSecret {
+        mode = "0400";
+        restartUnits = [ "${containerBackend}-trek.service" ];
+      };
 
-    secrets."trek/smtp-password" = config.sops.mkHostSecret {
-      mode = "0400";
-      restartUnits = [ "${containerBackend}-trek.service" ];
+      "trek/smtp-password" = config.sops.mkHostSecret {
+        mode = "0400";
+        restartUnits = [ "${containerBackend}-trek.service" ];
+      };
+
+      "trek/places-api-key" = config.sops.mkHostSecret {
+        mode = "0400";
+        restartUnits = [ "${containerBackend}-trek.service" ];
+      };
     };
 
     templates."trek/env" = {
@@ -40,6 +47,7 @@ in
         SMTP_USER=trek@${config.domains.main}
         SMTP_PASS=${config.sops.placeholder."trek/smtp-password"}
         SMTP_FROM=TREK <trek@${config.domains.main}>
+        PLACES_API_KEY=${config.sops.placeholder."trek/places-api-key"}
       '';
       mode = "0400";
       restartUnits = [ "${containerBackend}-trek.service" ];
