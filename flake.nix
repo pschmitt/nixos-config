@@ -9,7 +9,7 @@
     # Old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages).
     # https://lazamar.co.uk/nix-versions/?channel=nixpkgs-unstable&package=kubectl
     nixpkgs-kubectl-123 = {
-      url = "github:NixOS/nixpkgs/611bf8f183e6360c2a215fa70dfd659943a9857f";
+      url = "github:NixOS/nixpkgs/2ecf00d8378ab450211eca3881809aa72cc0f498";
       flake = false;
     };
     nixpkgs-terraform-157 = {
