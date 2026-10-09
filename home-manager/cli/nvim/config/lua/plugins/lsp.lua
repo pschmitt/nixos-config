@@ -82,8 +82,15 @@ return {
     "mason-org/mason.nvim",
     opts = function(_, opts)
       if is_termux then
-        opts.ensure_installed =
-          require("utils").remove_element(opts.ensure_installed, "stylua")
+        opts.ensure_installed = {}
+      end
+    end,
+  },
+  {
+    "mason-org/mason-lspconfig.nvim",
+    opts = function(_, opts)
+      if is_termux then
+        opts.ensure_installed = {}
       end
     end,
   },

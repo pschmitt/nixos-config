@@ -1,7 +1,7 @@
 local M = {}
 
 function M.is_termux()
-  return vim.fn.executable("termux-info") == 1
+  return vim.env.TERMUX_NATIVE_ENABLED == "1" or vim.fn.executable("termux-info") == 1
 end
 
 local function parse_os_release()

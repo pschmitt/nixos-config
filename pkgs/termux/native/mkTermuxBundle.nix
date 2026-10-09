@@ -335,7 +335,9 @@ let
           --replace-fail ${lib.escapeShellArg "local lazypath = vim.fn.stdpath(\"data\") .. \"/lazy/lazy.nvim\""} \
           ${lib.escapeShellArg "local lazypath = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/lazy.nvim\""} \
           --replace-fail ${lib.escapeShellArg "path = \"${nvimDevPath}\""} \
-          ${lib.escapeShellArg "path = vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev\""} \
+          ${lib.escapeShellArg "path = function(plugin) return vim.env.TERMUX_GENERATION .. \"/home/.local/share/nvim/lazy-dev/\" .. vim.fn.fnamemodify(plugin.name, \":t\") end"} \
+          --replace-fail ${lib.escapeShellArg "patterns = {},  -- Don't automatically match, use explicit dev = true"} \
+          ${lib.escapeShellArg "patterns = { \"\" }, -- Use the bundled local plugin sources"} \
           --replace-fail ${lib.escapeShellArg "  -- User plugins"} \
           ${lib.escapeShellArg "  -- Nix-managed Termux plugin sources\n${termuxNvimPluginSpecs}\n  -- User plugins"} \
           --replace-fail ${lib.escapeShellArg "require(\"lazy\").setup({"} \
