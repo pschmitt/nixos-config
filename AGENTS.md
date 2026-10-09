@@ -11,6 +11,21 @@
 - After any SOPS change, always verify the diff by decrypting the previous version and the new version, then diffing the plaintexts.
 - Default to SOPS for anything that even remotely smells like a secret or an identifier — not just passwords/tokens/keys, but also things like TLS/SSH fingerprints, device serials, account IDs, or other values that authorize access or identify a specific person/device. When in doubt, treat it as SOPS-worthy rather than committing it in cleartext to a tracked Nix file (it would otherwise land in the world-readable Nix store). Inject such values at activation/runtime (e.g. `sops.templates` referencing `config.sops.placeholder.*`, or `config.sops.secrets.*.path`) rather than baking them into generated config via `pkgs.formats.*` at eval time.
 
+## Evaluation and builds
+- **Never run Nix evaluation or builds on the local machine** (fnuc runs the
+  Home Assistant VM). That covers `nix eval`, `nix build`, `nix run
+  nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and
+  `nix-instantiate`, not just host evaluations. Plain binaries already on
+  PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
+- Evaluate on `rofl-13`/`rofl-14` instead: rsync the working tree(s) to
+  `~/build/<project>` (exclude `.git/`, and remove any stale `.git` there so
+  the path flake sees untracked files), then run `nix` over SSH with
+  `--override-input nixos-config-private path:<remote private checkout>`
+  for uncommitted private changes. Lock-file updates run there too; copy
+  `flake.lock` back afterwards.
+- Background jobs on the remote: start them detached (`nohup ... &`) and poll
+  with a pattern that cannot match the polling command itself.
+
 ## Deployment
 - Prefer committing only verified, working changes.
 - After making changes, deploy to the target systems:
@@ -24,6 +39,8 @@
 - **Verifying refactors are behavior-preserving**:
   - Compare secrets evaluation: `nix eval .#nixosConfigurations.<host>.config.sops.secrets --apply 's: builtins.mapAttrs (n: v: toString v.sopsFile) s' --json` and diff.
   - Compare full system: compare `config.system.build.toplevel.drvPath`. Use `nix-diff <before.drv> <after.drv>` to confirm differences are limited to flake input hashes (`etc`, `etc-profile`, `etc-nix-registry.json`) and not systemd units, packages, or services.
+  - `profiles/base` embeds the whole repo as `/etc/nixos-source`, so any edit changes every host's drvPath. Mask it when comparing: `nix eval --raw '.#nixosConfigurations.<host>' --apply 'c: (c.extendModules { modules = [ { environment.etc."nixos-source".enable = false; } ]; }).config.system.build.toplevel.drvPath'`.
+  - Take the baseline from a clean `git archive HEAD` export (public and private), evaluate every host (ISOs included), and also diff the rendered service configs a change touches: nginx config (build the `nginx.conf` derivation referenced by the nginx unit), `config.services.monit.config`, `config.security.acme.certs`, and `config.sops.secrets` (sopsFile per secret).
 - **Ad-hoc backups on hosts**: before a risky live operation (service major upgrade, DB migration, manual data fix), store safety backups under `/mnt/data/backups/<service>/<date>-<what>` (e.g. `/mnt/data/backups/netbox/2026-10-02-pre-4.7-dump`), mode `700`, owned by root or the service user. Don't scatter them elsewhere (e.g. `/mnt/data/srv/<service>-backup`), and report the path so it can be cleaned up afterwards.
 
 ## Private configuration repository
@@ -69,6 +86,12 @@
   encrypted, obfuscated, or needed by a script. If a public module needs one,
   expose a runtime or activation interface and source the value from the
   private input, SOPS, or a host/runtime secret path.
+- The private flake gets the public modules it may use through the
+  `publicModules` specialArg (this flake's `nixosModules`). Export a module
+  there (or an option-based module under `modules/`) instead of letting the
+  private repo import files or helper functions from this tree by path.
+  Removing or renaming an export is a breaking change for the pinned private
+  input: land the private side and `bump my privates` first.
 
 ## Repository layout
 - `hosts/`: Per-host NixOS configurations (`hosts/<hostname>/default.nix`).
@@ -85,13 +108,64 @@
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
-- `statix` checks should pass. After Nix code changes, run `statix check` from within `nix develop`.
-- Also run `deadnix` to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
+- `statix` checks should pass. After Nix code changes, run `statix check` (the binary on PATH, or `nix develop` on rofl-13/rofl-14; see "Evaluation and builds").
+- Also run `deadnix` (on rofl-13/rofl-14 when it is not on PATH) to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 - Don't use `with lib;`. Qualify explicitly (`lib.mkOption`, `lib.types.str`, `lib.mkIf`) — that is the repo-wide style. For many uses in one scope, prefer `inherit (lib) mkOption mkIf types;` over `with`. This applies to package `meta` blocks too (`meta = { license = lib.licenses.mit; ... }`, and `maintainers = with lib.maintainers; [ pschmitt ];`).
 - New files must be staged with `git add` (e.g. `git add -N <file>`) before they are visible to flake evaluation.
 - Build structured configuration with `pkgs.formats.{yaml,toml,json,ini}` and an attrset, not hand-concatenated strings. Example: `(pkgs.formats.yaml { }).generate "x.yaml" { ... }`.
+- Nothing is fetched at evaluation time: no `builtins.fetchurl`,
+  `builtins.fetchTarball` or `builtins.fetchGit`. Use a flake input (with
+  `flake = false` for non-flakes; `file+https://` for single files) or
+  `pkgs.fetchurl`/`fetchFromGitHub` with a hash.
+- Reference executables through their package (`lib.getExe pkg`,
+  `${pkg}/bin/x`, a NetBird client's `wrapper`, `config.nix.package`), not
+  `/run/current-system/sw/bin/...`. Keep `/run/current-system` only where a
+  runtime path is the point: commands run on *another* host over SSH, PATHs
+  of user sessions, sudo/polkit rules that must match the invoked path, or
+  tools that must match the running compositor.
+- New flake inputs follow ours where they take them: `nixpkgs`,
+  `home-manager`, `flake-utils`, `flake-parts`, `systems`,
+  `pre-commit-hooks`. Leave an input unfollowed only on purpose (binary cache
+  hits or a pinned toolchain) and say why in a comment.
+- `system.stateVersion` is set per host in `hosts/<host>/default.nix`. Never
+  set it in a shared profile and never bump an existing host's value.
+
+## Service conventions
+- **nginx**: every certificate uses DNS-01; `modules/nginx-vhost.nix`
+  defaults `acmeRoot` to null, so do not set it per vhost. Put a vhost behind
+  Authelia with `authelia.enable = true` (plus `authelia.haIngressBypass`,
+  `forceHeaderBypass`, `apiKeyBypass` or `resolver` as needed); every
+  location then gets the auth_request directives, and a location that must
+  stay public sets `authelia = false` (redirect-only locations, feeds,
+  endpoints with their own auth).
+- **Monit**: declare checks with `services.monit.checks.<name>`
+  (`modules/monit-checks.nix`): typed target/group/dependsOn/restartUnit/
+  every, rule statements in `conditions`. Do not append raw text to
+  `services.monit.config`. Check names are attribute names, so a host-local
+  check must not reuse a shared check's name.
+- **ktunnel**: use `services.ktunnel.tunnels.<unit>` (`modules/ktunnel.nix`).
+- **Containers** (`virtualisation.oci-containers`):
+  - Prefer the native NixOS module when one exists. Moving a stateful
+    service (databases, app data) from a container to a native module needs
+    a backup under `/mnt/data/backups/<service>/` and the user's go-ahead.
+  - Pin a release tag with a Renovate annotation, never a bare `latest`:
+    ```nix
+    # renovate: datasource=docker depName=ghcr.io/org/app
+    appVersion = "v1.2.3";
+    # ...
+    image = "ghcr.io/org/app:${appVersion}";
+    ```
+    Add `versioning=semver-coerced` when upstream mixes `1.2.3` and `v1.2.3`
+    tags. Renovate opens the bump PRs.
+  - Only images without usable release tags (nightly/develop channels, own
+    images without releases) use `image = "repo:tag@sha256:<digest>";`; the
+    digest rule in `renovate.json` keeps those current.
+  - When pinning an image that currently floats, pin what the host is
+    running (`docker|podman image inspect`, then find the tag with the same
+    digest, e.g. with `crane digest`) so the pin itself does not change the
+    deployed version.
 - Shell scripts in Nix:
   - Follow the `shell` skill for script bodies.
   - Non-trivial scripts (branching/loops): put the body in a sibling `scripts/<name>.sh` and wrap it with `pkgs.writeShellApplication` with appropriate `runtimeInputs`. The wrapper provides `set -euo pipefail` and build-time shellcheck.
