@@ -35,6 +35,13 @@ let
   # sufficient until the one-line py-modules fix lands upstream. (Checked for
   # other root-level .py files missing from py-modules: only mini_swe_runner
   # is also missing, but it's test-only, never imported at runtime.)
+  # Upstream's flake never passes `version` to nix/hermes-agent.nix, so the
+  # install stamp reports baseVersion "0.0.0" and every plugin gated by
+  # `requires_hermes` (e.g. the homeassistant plugin, which left core) refuses
+  # to install: "requires hermes >=0.21.5, running 0.0.0". Stamp the latest
+  # release tag reachable from the locked hermes-agent rev; bump it alongside
+  # the flake input.
+  hermesVersion = "0.21.6";
   hermesPyModulesShim = pkgs.runCommand "hermes-py-modules-shim" { } ''
     mkdir -p $out
     cp ${inputs.hermes-agent}/registration_lifecycle.py $out/
@@ -332,6 +339,9 @@ in
   services = {
     hermes-agent = {
       enable = true;
+      package = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+        version = hermesVersion;
+      };
       addToSystemPackages = true;
       stateDir = "/srv/hermes";
       workingDirectory = "/srv/hermes/workspace";
