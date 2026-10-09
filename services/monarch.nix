@@ -65,7 +65,4 @@ in
       }
     ];
   };
-
-  # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-  services.nginx.virtualHosts.${domain}.acmeRoot = null;
 }

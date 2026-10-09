@@ -82,8 +82,6 @@ in
     nginx.virtualHosts."${domain}" = {
       forceSSL = true;
       enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
 
       locations."/" = {
         # NOT server.bind_address (0.0.0.0 -- a bind wildcard, not a valid

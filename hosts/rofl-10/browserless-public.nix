@@ -8,7 +8,6 @@ let
     "rofl-14"
   ];
   publicHost = host: "browser.${host}.${domain}";
-  autheliaConfig = import ../../services/authelia-nginx-config.nix { inherit config; };
 
   # Public entry to the human-handoff view of a Browserless (see
   # services/headless-browsers/handoff.html), for when the user is away from the
@@ -26,7 +25,7 @@ let
       # header (nginx on the browser host answers 400 to duplicates) and forward
       # the visitor's address, which would make the mesh host's own Authelia
       # check treat this already-authenticated request as an outside one.
-      proxy = autheliaConfig.location + ''
+      proxy = ''
         proxy_ssl_server_name on;
         proxy_set_header Host ${backendHost};
         proxy_set_header X-Forwarded-For "";
@@ -38,9 +37,8 @@ let
     {
       # Two labels deep: not covered by the *.${domain} wildcard cert.
       enableACME = true;
-      acmeRoot = null;
       forceSSL = true;
-      extraConfig = autheliaConfig.server;
+      authelia.enable = true;
       locations = {
         "/handoff/" = {
           proxyPass = "https://${backendHost}";
@@ -59,7 +57,7 @@ let
           extraConfig = proxy;
         };
         "/" = {
-          extraConfig = autheliaConfig.location + ''
+          extraConfig = ''
             return 404;
           '';
         };

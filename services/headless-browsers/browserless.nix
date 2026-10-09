@@ -1,10 +1,6 @@
 { config, pkgs, ... }:
 let
   hosts = config.domains.meshHosts "browserless";
-  autheliaConfig = import ../authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
   # A phone-friendly live view of one browser page (tap = click, drag = scroll,
   # a text box types into the focused field), used when an agent needs the user
   # to solve a CAPTCHA or enter a password: /handoff/?page=<page id>.
@@ -32,16 +28,18 @@ in
   services.nginx.virtualHosts.${builtins.head hosts} = {
     serverAliases = builtins.tail hosts;
     enableACME = true;
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia = {
+      enable = true;
+      haIngressBypass = false;
+    };
 
     locations = {
       "= /" = {
         proxyPass = "http://127.0.0.1:3001";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location + ''
+        extraConfig = ''
           # Land browser visitors on the dashboard; leave WebSocket clients that
           # connect to the bare host alone.
           if ($http_upgrade = "") {
@@ -55,14 +53,13 @@ in
 
       "/handoff/" = {
         alias = "${handoff}/";
-        extraConfig = autheliaConfig.location;
       };
 
       "/" = {
         proxyPass = "http://127.0.0.1:3001";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location + ''
+        extraConfig = ''
           proxy_read_timeout 3600s;
           proxy_send_timeout 3600s;
         '';

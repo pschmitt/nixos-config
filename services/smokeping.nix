@@ -9,10 +9,6 @@ let
   smokepingMeshHosts = config.domains.meshHosts "smokeping";
   smokepingHost = builtins.head smokepingMeshHosts;
   smokepingAliases = builtins.tail smokepingMeshHosts;
-  autheliaConfig = import ./authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
 in
 {
   services.smokeping = {
@@ -290,14 +286,15 @@ in
     ${smokepingHost} = {
       serverAliases = smokepingAliases;
       enableACME = true;
-      acmeRoot = null;
       forceSSL = true;
-      extraConfig = autheliaConfig.server;
+      authelia = {
+        enable = true;
+        haIngressBypass = false;
+      };
 
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString smokepingPort}";
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
       };
     };
   };

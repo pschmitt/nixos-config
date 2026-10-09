@@ -58,7 +58,6 @@ let
     export GH_TOKEN="''${GH_PSCHMITT_TOKEN:?GH_PSCHMITT_TOKEN is not set}"
     exec ${pkgs.gh}/bin/gh "$@"
   '';
-  autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
   # Import every agentskills.io-compatible shared skill. This keeps Hermes in
   # sync with Home Manager without an ever-growing per-skill mapping here.
@@ -454,10 +453,8 @@ in
       ${hermesHost} = {
         enableACME = false;
         useACMEHost = "wildcard.${config.domains.main}";
-        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-        acmeRoot = null;
         forceSSL = true;
-        extraConfig = autheliaConfig.server;
+        authelia.enable = true;
         locations."/" = {
           proxyPass = "http://127.0.0.1:${toString dashboardPort}";
           proxyWebsockets = true;
@@ -465,7 +462,6 @@ in
           # would overwrite the loopback Host header Hermes requires.
           recommendedProxySettings = false;
           extraConfig = ''
-            ${autheliaConfig.location}
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
@@ -484,8 +480,6 @@ in
       ${aiHost} = {
         enableACME = false;
         useACMEHost = "wildcard.${config.domains.main}";
-        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-        acmeRoot = null;
         forceSSL = true;
         locations."/".return = "308 https://${hermesHost}$request_uri";
       };

@@ -17,8 +17,6 @@ let
   ];
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
-
-  autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 in
 {
   systemd.tmpfiles.rules = [
@@ -49,16 +47,13 @@ in
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia.enable = true;
 
     locations."/" = {
       proxyPass = "http://127.0.0.1:${toString seerrPort}";
       proxyWebsockets = true;
       recommendedProxySettings = true;
-      extraConfig = autheliaConfig.location;
     };
   };
 

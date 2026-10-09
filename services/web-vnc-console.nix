@@ -10,10 +10,6 @@ let
   allHosts = meshHostsVnc ++ meshHostsWebVnc;
   primaryHost = builtins.head allHosts;
   serverAliases = builtins.tail allHosts;
-  autheliaConfig = import ./authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
 in
 {
   imports = [ ./http.nix ];
@@ -37,11 +33,14 @@ in
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia = {
+      enable = true;
+      haIngressBypass = false;
+    };
 
     locations."= /" = {
+      authelia = false;
       return = "302 /vnc.html?autoconnect=true&resize=remote";
     };
 
@@ -49,7 +48,7 @@ in
       proxyPass = "http://127.0.0.1:${toString port}";
       proxyWebsockets = true;
       recommendedProxySettings = true;
-      extraConfig = autheliaConfig.location + ''
+      extraConfig = ''
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
       '';

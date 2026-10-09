@@ -69,8 +69,6 @@ in
 
     nginx.virtualHosts."sync.${config.domains.main}" = {
       enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
       forceSSL = true;
       basicAuthFile = config.sops.secrets."htpasswd".path;
 

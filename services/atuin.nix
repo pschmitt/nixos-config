@@ -15,8 +15,6 @@ in
     nginx.virtualHosts = {
       "atuin.${domain}" = {
         forceSSL = true;
-        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-        acmeRoot = null;
         useACMEHost = "wildcard.${domain}";
         locations."/" = {
           proxyPass = "http://127.0.0.1:${toString config.services.atuin.port}";

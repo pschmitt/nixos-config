@@ -27,8 +27,6 @@ let
     }:
     {
       enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
       forceSSL = true;
       basicAuthFile = if basicAuth then config.sops.secrets."nix/credentials/htpasswd".path else null;
 

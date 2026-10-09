@@ -233,8 +233,6 @@ in
     nginx.virtualHosts = {
       "${matrixHost}" = {
         enableACME = true;
-        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-        acmeRoot = null;
         forceSSL = true;
         locations = {
           "= /.well-known/matrix/server".extraConfig = mkWellKnown {
@@ -261,8 +259,6 @@ in
 
       "${elementHost}" = {
         enableACME = true;
-        # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-        acmeRoot = null;
         forceSSL = true;
         root = pkgs.element-web.override {
           conf = {

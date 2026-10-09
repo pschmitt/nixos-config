@@ -88,8 +88,6 @@ in
     };
   };
 
-  services.nginx.virtualHosts."${mainHost}".acmeRoot = null;
-
   # Dedicated non-admin account for AI-assisted testing (Android app end-to-end
   # verification etc.) so an agent never touches the real users' project/yarn
   # data. `stricknani-cli user create` upserts (creates or resets the

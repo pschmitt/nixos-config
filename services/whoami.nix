@@ -24,8 +24,6 @@ in
 
   services.nginx.virtualHosts."${hostName}" = {
     enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
     forceSSL = true;
 
     locations."/" = {

@@ -23,8 +23,6 @@ in
   services.nginx.virtualHosts = {
     "${domain}" = {
       enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
       forceSSL = true;
       locations."/" = {
         proxyPass = "http://${config.services.changedetection-io.listenAddress}:${toString config.services.changedetection-io.port}";

@@ -42,8 +42,6 @@ lib.mkMerge [
       (lib.mkIf config.services.http-static.enableDefaultSites {
         "blobs.${config.domains.main}" = {
           enableACME = true;
-          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-          acmeRoot = null;
           forceSSL = false; # disabled on purpose!
           addSSL = true; # required to actually response on https requests
           root = "/mnt/data/blobs";
@@ -136,8 +134,6 @@ lib.mkMerge [
 
         "p.${config.domains.main}" = {
           enableACME = true;
-          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-          acmeRoot = null;
           forceSSL = true;
           locations."/" = {
             root = inputs.pschmitt-dev.packages.${pkgs.stdenv.hostPlatform.system}.default;
@@ -146,8 +142,6 @@ lib.mkMerge [
 
         "y.${config.domains.main}" = {
           enableACME = true;
-          # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-          acmeRoot = null;
           forceSSL = true;
           locations."/" = {
             return = "301 https://raw.githubusercontent.com/pschmitt/yadm-init/main/init.sh";

@@ -14,7 +14,6 @@ let
   pinchflatExtrasDir = "/var/lib/pinchflat/extras";
   pinchflatYtDlpConfigDir = "${pinchflatExtrasDir}/yt-dlp-configs";
   pinchflatYtDlpProxy = "socks5h://turris.${config.domains.netbird}:1081";
-  autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 in
 {
   environment.etc."pinchflat/yt-dlp-configs/base-config.txt".text = ''
@@ -55,18 +54,17 @@ in
 
     nginx.virtualHosts."${pinchflatDomain}" = {
       enableACME = true;
-      # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-      acmeRoot = null;
       forceSSL = true;
-      extraConfig = autheliaConfig.server;
+      authelia.enable = true;
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString pinchflatPort}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
       };
       locations."~* (^/sources/[^/]+/feed(_image)?|^/media/[^/]+/(stream|episode_image))(\\.[a-zA-Z0-9]+)?$" =
         {
+          # Podcast feeds and media stay reachable for podcast apps.
+          authelia = false;
           proxyPass = "http://127.0.0.1:${toString pinchflatPort}";
           proxyWebsockets = true;
           recommendedProxySettings = true;

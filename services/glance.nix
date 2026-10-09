@@ -13,7 +13,6 @@ let
   # like mesh traffic (and is two-factor on purpose, see below).
   meshHosts = config.domains.meshHosts "home";
   glancePort = 9832;
-  autheliaConfig = import ./authelia-nginx-config.nix { inherit config; };
 
   # custom-api widgets have no native header icon slot (unlike e.g. bookmarks
   # or monitor, which accept a per-item `icon`), so the default header is
@@ -77,28 +76,29 @@ let
   # only in how they get their certificate, and in whether Authelia lets the
   # request through (see the access_control rule below).
   glanceVirtualHost = {
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia.enable = true;
     locations = {
       "/" = {
         proxyPass = "http://127.0.0.1:${toString glancePort}";
         proxyWebsockets = true;
         # Only these three codes are intercepted, so glance's own 404s and
         # friends still pass through untouched.
-        extraConfig = autheliaConfig.location + ''
+        extraConfig = ''
           proxy_intercept_errors on;
           error_page 502 503 504 = @restarting;
         '';
       };
       ${opsgenieAckPath}.extraConfig = opsgenieAckConfig;
       ${githubMergePath}.extraConfig = githubMergeConfig;
-      "@restarting".extraConfig = ''
-        default_type text/html;
-        add_header Retry-After 5 always;
-        return 503 '${glanceRestartingPage}';
-      '';
+      "@restarting" = {
+        authelia = false;
+        extraConfig = ''
+          default_type text/html;
+          add_header Retry-After 5 always;
+          return 503 '${glanceRestartingPage}';
+        '';
+      };
     };
   };
 
@@ -738,8 +738,7 @@ let
       path,
       auth,
     }:
-    autheliaConfig.location
-    + ''
+    ''
       limit_except ${method} { deny all; }
       if ($http_x_glance != "1") { return 403; }
       resolver 127.0.0.53 valid=30s;

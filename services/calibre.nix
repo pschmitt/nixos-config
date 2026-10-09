@@ -26,7 +26,6 @@ let
       name = hostname;
       value = {
         enableACME = true;
-        acmeRoot = null;
         forceSSL = true;
         locations."/" = {
           proxyPass = calibreWebAutomatedUpstream;

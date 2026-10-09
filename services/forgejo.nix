@@ -56,8 +56,6 @@ in
             name = hostName;
             value = {
               enableACME = true;
-              # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-              acmeRoot = null;
               forceSSL = true;
               locations."/" = {
                 proxyPass = "http://${config.services.forgejo.settings.server.HTTP_ADDR}:${toString config.services.forgejo.settings.server.HTTP_PORT}";

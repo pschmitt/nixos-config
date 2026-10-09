@@ -10,10 +10,6 @@ let
   meshHosts = config.domains.meshHosts "watchyourlan";
   primaryHost = builtins.head meshHosts;
   serverAliases = builtins.tail meshHosts;
-  autheliaConfig = import ./authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
 in
 {
   config = {
@@ -57,15 +53,16 @@ in
     services.nginx.virtualHosts.${primaryHost} = {
       inherit serverAliases;
       enableACME = true;
-      acmeRoot = null;
       forceSSL = true;
-      extraConfig = autheliaConfig.server;
+      authelia = {
+        enable = true;
+        haIngressBypass = false;
+      };
 
       locations."/" = {
         proxyPass = "http://127.0.0.1:${toString listenPort}";
         proxyWebsockets = true;
         recommendedProxySettings = true;
-        extraConfig = autheliaConfig.location;
       };
     };
   };

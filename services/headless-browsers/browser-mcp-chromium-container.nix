@@ -25,10 +25,6 @@ let
   # haIngressBypass = false: that test needs a map from
   # services/authelia-nginx-bypass.nix, which only the host running Home
   # Assistant's ingress imports, and nginx refuses to start without it.
-  autheliaConfig = import ../authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
   # Docker/host restarts never give Chromium a clean shutdown (exit_type
   # stays "Crashed"), and Chromium's cookie store purges session-only
   # cookies (no expiry, e.g. most SSO logins) at the *next* startup whenever
@@ -80,16 +76,17 @@ in
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
-    # FIXME https://github.com/NixOS/nixpkgs/issues/210807
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia = {
+      enable = true;
+      haIngressBypass = false;
+    };
 
     locations."/" = {
       proxyPass = "http://127.0.0.1:${toString containerPort}";
       proxyWebsockets = true;
       recommendedProxySettings = true;
-      extraConfig = autheliaConfig.location + ''
+      extraConfig = ''
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
       '';

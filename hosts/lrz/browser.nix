@@ -3,10 +3,6 @@ let
   meshHosts = config.domains.meshHosts "browser";
   primaryHost = builtins.head meshHosts;
   serverAliases = builtins.tail meshHosts;
-  autheliaConfig = import ../../services/authelia-nginx-config.nix {
-    inherit config;
-    haIngressBypass = false;
-  };
   waitForDisplay = pkgs.writeShellApplication {
     name = "lrz-browser-vnc";
     runtimeInputs = [
@@ -112,11 +108,14 @@ in
   services.nginx.virtualHosts."${primaryHost}" = {
     inherit serverAliases;
     enableACME = true;
-    acmeRoot = null;
     forceSSL = true;
-    extraConfig = autheliaConfig.server;
+    authelia = {
+      enable = true;
+      haIngressBypass = false;
+    };
 
     locations."= /" = {
+      authelia = false;
       return = "302 /vnc.html?autoconnect=true&resize=remote";
     };
 
@@ -124,7 +123,7 @@ in
       proxyPass = "http://127.0.0.1:6081";
       proxyWebsockets = true;
       recommendedProxySettings = true;
-      extraConfig = autheliaConfig.location + ''
+      extraConfig = ''
         proxy_read_timeout 3600s;
         proxy_send_timeout 3600s;
       '';
