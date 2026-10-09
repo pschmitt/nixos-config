@@ -20,6 +20,14 @@
         "pkgs/**"
       ],
       "separateMinorPatch": true
+    },
+    {
+      "description": "Deliberately old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages); never bump them.",
+      "matchDepNames": [
+        "nixpkgs-kubectl-123",
+        "nixpkgs-terraform-157"
+      ],
+      "enabled": false
     }
   ],
   "regexManagers": [
