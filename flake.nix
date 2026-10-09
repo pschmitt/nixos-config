@@ -575,8 +575,6 @@
             inherit inputs outputs hostname;
             # Public modules the private flake input may import.
             publicModules = self.nixosModules;
-            # TODO drop once nixos-config-private no longer uses it.
-            publicSrc = self;
           };
           modules =
             commonModules
