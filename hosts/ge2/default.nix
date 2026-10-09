@@ -16,6 +16,7 @@
     ./prompt.nix
     ./user-services.nix
     ./wacom.nix
+    ./zsh.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.

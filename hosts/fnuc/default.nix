@@ -8,7 +8,6 @@
     ../../services/go-hass-agent.nix
     ../../services/harmonia.nix
     ../../services/kubeconfig-update.nix
-
     ./authorized-keys.nix
     ./backups.nix
     ./disk-config.nix
@@ -20,6 +19,7 @@
     ./rescue-ssh.nix
     ./resource-control.nix
     ./services.nix
+    ./zsh.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.

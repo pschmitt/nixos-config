@@ -7,6 +7,7 @@
     ./hardware-configuration.nix
     ./networking.nix
     ./prompt.nix
+    ./zsh.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.
