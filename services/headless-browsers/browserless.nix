@@ -1,12 +1,13 @@
-{ config, pkgs, ... }:
+{ config, ... }:
 let
   browserlessHosts = config.domains.meshHosts "browserless";
   browserHosts = config.domains.meshHosts "browser";
   hosts = browserlessHosts ++ browserHosts;
-  # A phone-friendly live view of one browser page (tap = click, drag = scroll,
-  # a text box types into the focused field), used when an agent needs the user
-  # to solve a CAPTCHA or enter a password: /handoff/?page=<page id>.
-  handoff = pkgs.writeTextDir "index.html" (builtins.readFile ./handoff.html);
+  meshNodes = [
+    "fnuc"
+    "rofl-13"
+    "rofl-14"
+  ];
 in
 {
   services = {
@@ -14,6 +15,9 @@ in
       enable = true;
       bind = "127.0.0.1:3001";
       maxSessions = 8;
+      nodeName = config.networking.hostName;
+      publicUrl = "https://browser.${config.networking.hostName}.${config.domains.tailscale}";
+      peers = map (h: "https://browser.${h}.${config.domains.tailscale}") meshNodes;
     };
 
     nginx.virtualHosts.${builtins.head hosts} = {
@@ -25,20 +29,14 @@ in
         haIngressBypass = false;
       };
 
-      locations = {
-        "/handoff/" = {
-          alias = "${handoff}/";
-        };
-
-        "/" = {
-          proxyPass = "http://127.0.0.1:3001";
-          proxyWebsockets = true;
-          recommendedProxySettings = true;
-          extraConfig = ''
-            proxy_read_timeout 3600s;
-            proxy_send_timeout 3600s;
-          '';
-        };
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:3001";
+        proxyWebsockets = true;
+        recommendedProxySettings = true;
+        extraConfig = ''
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;
+        '';
       };
     };
 
