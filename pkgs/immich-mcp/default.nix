@@ -7,13 +7,13 @@
 
 buildDotnetModule rec {
   pname = "immich-mcp";
-  version = "3.3.3";
+  version = "3.3.5";
 
   src = fetchFromGitHub {
     owner = "barryw";
     repo = "ImmichMCP";
     tag = "v${version}";
-    hash = "sha256-uSR2SVDBFdsGBNplCBll1A9ULUF7HYRbLzGE9hfpoRw=";
+    hash = "sha256-bQMlqlAttqC0KInFARiJiF/O3qNPH+HrsbkdIyu4XZE=";
   };
 
   projectFile = "ImmichMCP/ImmichMCP.csproj";
