@@ -10,6 +10,12 @@ let
   ];
 in
 {
+  sops.secrets."browser-daemon/cluster-secret" = {
+    owner = "browser-daemon";
+    group = "browser-daemon";
+    mode = "0440";
+  };
+
   services = {
     browser-daemon = {
       enable = true;
@@ -18,6 +24,7 @@ in
       nodeName = config.networking.hostName;
       publicUrl = "https://browser.${config.networking.hostName}.${config.domains.tailscale}";
       peers = map (h: "https://browser.${h}.${config.domains.tailscale}") meshNodes;
+      clusterSecretFile = config.sops.secrets."browser-daemon/cluster-secret".path;
     };
 
     nginx.virtualHosts.${builtins.head hosts} = {
