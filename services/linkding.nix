@@ -8,7 +8,7 @@ let
   # renovate: datasource=docker depName=sissbruecker/linkding
   linkdingVersion = "1.47.0";
   # renovate: datasource=docker depName=proog/linkding-media-archiver
-  mediaArchiverVersion = "v0.6.0";
+  mediaArchiverVersion = "v0.7.0";
   linkdingPort = 54653;
   linkdingContainerPort = 9090;
   units = map (name: "${backend}-${name}") [
