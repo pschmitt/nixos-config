@@ -15,77 +15,25 @@ let
     ${pkgs.gnugrep}/bin/grep -q 'Reboot not required' <<< "$OUTPUT"
   '';
 
-  failedTimers = pkgs.writeShellScript "failed-systemd-timers" ''
-    SYSTEMCTL=${pkgs.systemd}/bin/systemctl
+  failedTimers = pkgs.writeShellApplication {
+    name = "failed-systemd-timers";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.systemd
+    ];
+    text = builtins.readFile ./scripts/failed-systemd-timers.sh;
+  };
 
-    TIMER_LINES=$($SYSTEMCTL \
-      list-timers \
-      --all \
-      --output=json \
-      --no-pager \
-      | ${pkgs.jq}/bin/jq -er '
-        .[] | select(.last != 0) | [.unit, (.activates // "")] | @tsv
-      '
-    )
-
-    if [[ -z "$TIMER_LINES" ]]
-    then
-      echo "✅ No systemd timers found."
-      exit 0
-    fi
-
-    FAILURES=()
-
-    while IFS=$'\t' read -r TIMER SERVICE
-    do
-      if [[ -z "$TIMER" || -z "$SERVICE" ]]
-      then
-        continue
-      fi
-
-      RESULT=$($SYSTEMCTL show "$SERVICE" --property=Result --value)
-      STATE=$($SYSTEMCTL show "$SERVICE" --property=ActiveState --value)
-
-      if [[ "$RESULT" != "success" || "$STATE" == "failed" ]]
-      then
-        FAILURES+=("$TIMER -> $SERVICE (result=$RESULT state=$STATE)")
-      fi
-    done <<< "$TIMER_LINES"
-
-    if [[ ''${#FAILURES[@]} -eq 0 ]]
-    then
-      echo "✅ No failed systemd timer targets detected."
-      exit 0
-    fi
-
-    echo "🚨 Failed systemd timer targets detected:"
-    printf '%s\n' "''${FAILURES[@]}"
-    exit 1
-  '';
-
-  failedServices = pkgs.writeShellScript "failed-systemd-services" ''
-    SYSTEMCTL=${pkgs.systemd}/bin/systemctl
-
-    FAILED_SERVICES=$($SYSTEMCTL \
-      --failed \
-      --type=service \
-      --output=json \
-      --no-pager \
-      | ${pkgs.jq}/bin/jq -er '
-        .[] | select((.active // "") == "failed" or (.sub // "") == "failed") | .unit
-      ' \
-    )
-
-    if [[ -z "$FAILED_SERVICES" ]]
-    then
-      echo "✅ No failed systemd services detected."
-      exit 0
-    fi
-
-    echo "🚨 Failed systemd services detected:"
-    echo "$FAILED_SERVICES"
-    exit 1
-  '';
+  failedServices = pkgs.writeShellApplication {
+    name = "failed-systemd-services";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.systemd
+    ];
+    text = builtins.readFile ./scripts/failed-systemd-services.sh;
+  };
 
   monitGeneral = ''
     set daemon 60
@@ -137,13 +85,13 @@ let
   '';
 
   monitFailedTimers = ''
-    check program "systemd timers" with path "${failedTimers}"
+    check program "systemd timers" with path "${lib.getExe failedTimers}"
       group system
       if status > 0 then alert
   '';
 
   monitFailedServices = ''
-    check program "systemd services" with path "${failedServices}"
+    check program "systemd services" with path "${lib.getExe failedServices}"
       group system
       if status > 0 then alert
   '';
