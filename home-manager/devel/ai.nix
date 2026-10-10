@@ -12,28 +12,34 @@ let
     "rofl-14"
   ];
 
-  # One Playwright MCP per host, attached to that host's Browserless. Browserless
-  # starts a fresh Chrome per connection, so every MCP server gets its own browser.
-  # (@browserless.io/mcp targets the hosted API; most of its tools 404 against the
-  # self-hosted image, so it is not used.)
-  # Playwright attached to each host's Browserless over its CDP websocket
-  # (reachable over Tailscale, so no SSH hop). The browser lives as long as the
-  # MCP server's connection. Snapshots and downloads go to a per-host cache dir
-  # instead of the current directory.
-  playwrightBrowserlessMcps = lib.listToAttrs (
-    map (host: {
-      name = "playwright-browserless-${host}";
-      value = {
-        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
-        args = [
-          "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
-          # Browserless renders at 800x600 and uses HeadlessChrome; this restores
-          # a desktop viewport and masquerades as standard Chrome.
-          "--init-page=${./browserless-init-page.ts}"
-          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browserless-${host}"
-        ];
-      };
-    }) browserHosts
+  # Browser automation MCPs attached to each host's native browser-daemon over CDP.
+  # browser-daemon starts a fresh, isolated Chrome per connection.
+  # Provides modern browser-${host} and legacy playwright-browserless-${host}.
+  browserMcps = lib.listToAttrs (
+    lib.concatMap (host: [
+      {
+        name = "browser-${host}";
+        value = {
+          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+          args = [
+            "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
+            "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
+          ];
+        };
+      }
+      {
+        name = "playwright-browserless-${host}";
+        value = {
+          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+          args = [
+            "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
+            # Retain init-page for legacy client hints compatibility
+            "--init-page=${./browserless-init-page.ts}"
+            "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browserless-${host}"
+          ];
+        };
+      }
+    ]) browserHosts
   );
 
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
@@ -219,7 +225,7 @@ in
           };
         };
       }
-      // playwrightBrowserlessMcps;
+      // browserMcps;
     };
 
     # Claude Code tracks workspace trust per path in ~/.claude.json (no

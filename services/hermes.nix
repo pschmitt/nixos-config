@@ -94,22 +94,36 @@ let
     "rofl-13"
     "rofl-14"
   ];
-  playwrightBrowserlessMcps = lib.listToAttrs (
-    map (host: {
-      name = "playwright-browserless-${host}";
-      value = {
-        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
-        args = [
-          "--cdp-endpoint=wss://browserless.${host}.ts.${config.domains.main}/chromium"
-          # Browserless renders at 800x600 and uses HeadlessChrome; this restores
-          # a desktop viewport and masquerades as standard Chrome.
-          "--init-page=${../home-manager/devel/browserless-init-page.ts}"
-          "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browserless-${host}"
-        ];
-        connect_timeout = 30;
-        timeout = 90;
-      };
-    }) browserlessHosts
+  browserMcps = lib.listToAttrs (
+    lib.concatMap (host: [
+      {
+        name = "browser-${host}";
+        value = {
+          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+          args = [
+            "--cdp-endpoint=wss://browserless.${host}.ts.${config.domains.main}/chromium"
+            "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browser-${host}"
+          ];
+          connect_timeout = 30;
+          timeout = 90;
+        };
+      }
+      {
+        name = "playwright-browserless-${host}";
+        value = {
+          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+          args = [
+            "--cdp-endpoint=wss://browserless.${host}.ts.${config.domains.main}/chromium"
+            # Browserless renders at 800x600 and uses HeadlessChrome; this restores
+            # a desktop viewport and masquerades as standard Chrome.
+            "--init-page=${../home-manager/devel/browserless-init-page.ts}"
+            "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browserless-${host}"
+          ];
+          connect_timeout = 30;
+          timeout = 90;
+        };
+      }
+    ]) browserlessHosts
   );
 
   bitwardenCliDataPath = "${config.services.hermes-agent.stateDir}/.bitwarden-cli/data.json";
@@ -459,7 +473,7 @@ in
             timeout = 90;
           };
         }
-        // playwrightBrowserlessMcps;
+        // browserMcps;
         skills.external_dirs = [ "${hermesSkills}" ];
       };
     };

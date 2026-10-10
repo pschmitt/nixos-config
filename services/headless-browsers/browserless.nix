@@ -1,6 +1,8 @@
 { config, pkgs, ... }:
 let
-  hosts = config.domains.meshHosts "browserless";
+  browserlessHosts = config.domains.meshHosts "browserless";
+  browserHosts = config.domains.meshHosts "browser";
+  hosts = browserlessHosts ++ browserHosts;
   # A phone-friendly live view of one browser page (tap = click, drag = scroll,
   # a text box types into the focused field), used when an agent needs the user
   # to solve a CAPTCHA or enter a password: /handoff/?page=<page id>.
