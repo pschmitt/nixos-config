@@ -9,14 +9,11 @@ let
   ];
   publicHost = host: "browser.${host}.${domain}";
 
-  # Public entry to the human-handoff view of a Browserless (see
-  # services/headless-browsers/handoff.html), for when the user is away from the
-  # mesh. The browser hosts (fnuc has no static IP) are not exposed themselves:
-  # browser.<host>.${domain} (DNS records in nixos-config-private's tofu) points
-  # at this host, which reaches them over the mesh. Browserless itself can run arbitrary browser code, so
-  # ONLY what the handoff page needs is proxied: the page, its page list and the
-  # CDP websocket of a single page. Everything else (/chromium, /function,
-  # /sessions, ...) answers 404.
+  # Public entry to browser-daemon's dashboard and mobile handoff view,
+  # for when the user is away from the mesh. The browser hosts (fnuc has no static
+  # IP) are not exposed themselves: browser.<host>.${domain} (DNS records in
+  # nixos-config-private's tofu) points at this host, which reaches them over the
+  # mesh. Protected end-to-end by Authelia two-factor authentication.
   vhost =
     host:
     let
@@ -40,26 +37,11 @@ let
       forceSSL = true;
       authelia.enable = true;
       locations = {
-        "/handoff/" = {
-          proxyPass = "https://${backendHost}";
-          recommendedProxySettings = false;
-          extraConfig = proxy;
-        };
-        "= /json/list" = {
-          proxyPass = "https://${backendHost}";
-          recommendedProxySettings = false;
-          extraConfig = proxy;
-        };
-        "~ ^/devtools/page/[0-9A-Fa-f]+$" = {
+        "/" = {
           proxyPass = "https://${backendHost}";
           proxyWebsockets = true;
           recommendedProxySettings = false;
           extraConfig = proxy;
-        };
-        "/" = {
-          extraConfig = ''
-            return 404;
-          '';
         };
       };
     };
