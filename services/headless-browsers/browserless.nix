@@ -9,7 +9,7 @@ in
 {
   virtualisation.oci-containers.containers.browserless = {
     # renovate: datasource=docker depName=ghcr.io/browserless/chromium
-    image = "ghcr.io/browserless/chromium:latest@sha256:2c5ab1d430a07e53259f8dacfb290a1932ff14dba76dcb8ad0157d6a62bf4fa7";
+    image = "ghcr.io/browserless/chromium:latest@sha256:f879b7f27dea0d8798228ceead6e971d3d61dce845e08803136ed04bb2b5caf9";
     autoStart = true;
     log-driver = "none";
     ports = [ "127.0.0.1:3001:3000" ];
