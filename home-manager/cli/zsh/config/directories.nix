@@ -47,7 +47,7 @@ in
 {
   programs.zsh = {
     # Keep these shared locations as defaults so a host module can replace
-    # paths that differ on that machine (for example fnuc's /srv/hass).
+    # paths that differ on that machine.
     dirHashes = lib.mapAttrs (_: value: lib.mkDefault value) staticDirectories;
     shellAliases = lib.mapAttrs' (name: directory: {
       name = "cd${name}";
