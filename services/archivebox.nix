@@ -6,7 +6,7 @@
 let
   backend = config.virtualisation.oci-containers.backend;
   # renovate: datasource=docker depName=archivebox/archivebox
-  archiveboxVersion = "0.9.71";
+  archiveboxVersion = "0.9.73";
   # renovate: datasource=docker depName=pihole/pihole
   piholeVersion = "2026.09.0";
   # renovate: datasource=docker depName=valeriansaliou/sonic
