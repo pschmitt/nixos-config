@@ -7,63 +7,54 @@ let
   handoff = pkgs.writeTextDir "index.html" (builtins.readFile ./handoff.html);
 in
 {
-  virtualisation.oci-containers.containers.browserless = {
-    # renovate: datasource=docker depName=ghcr.io/browserless/chromium
-    image = "ghcr.io/browserless/chromium:latest@sha256:f879b7f27dea0d8798228ceead6e971d3d61dce845e08803136ed04bb2b5caf9";
-    autoStart = true;
-    log-driver = "none";
-    ports = [ "127.0.0.1:3001:3000" ];
-    environment = {
-      CONCURRENT = "4";
-      QUEUED = "8";
-      # Interactive agent sessions can run long; one hour per connection.
-      TIMEOUT = "3600000";
-    };
-    extraOptions = [
-      "--init"
-      "--shm-size=2g"
-    ];
-  };
-
-  services.nginx.virtualHosts.${builtins.head hosts} = {
-    serverAliases = builtins.tail hosts;
-    enableACME = true;
-    forceSSL = true;
-    authelia = {
+  services = {
+    browser-daemon = {
       enable = true;
-      haIngressBypass = false;
+      bind = "127.0.0.1:3001";
+      maxSessions = 8;
     };
 
-    locations = {
-      "= /" = {
-        proxyPass = "http://127.0.0.1:3001";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = ''
-          # Land browser visitors on the dashboard; leave WebSocket clients that
-          # connect to the bare host alone.
-          if ($http_upgrade = "") {
-            return 302 /debugger/;
-          }
-
-          proxy_read_timeout 3600s;
-          proxy_send_timeout 3600s;
-        '';
+    nginx.virtualHosts.${builtins.head hosts} = {
+      serverAliases = builtins.tail hosts;
+      enableACME = true;
+      forceSSL = true;
+      authelia = {
+        enable = true;
+        haIngressBypass = false;
       };
 
-      "/handoff/" = {
-        alias = "${handoff}/";
-      };
+      locations = {
+        "/handoff/" = {
+          alias = "${handoff}/";
+        };
 
-      "/" = {
-        proxyPass = "http://127.0.0.1:3001";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = ''
-          proxy_read_timeout 3600s;
-          proxy_send_timeout 3600s;
-        '';
+        "/" = {
+          proxyPass = "http://127.0.0.1:3001";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+          extraConfig = ''
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+          '';
+        };
       };
+    };
+
+    monit.checks.browser-daemon = {
+      type = "host";
+      address = "127.0.0.1";
+      group = "services";
+      restartUnit = "browser-daemon.service";
+      conditions = ''
+        if failed
+          port 3001
+          protocol http
+          request "/health"
+          with timeout 15 seconds
+          for 3 cycles
+        then restart
+        if 3 restarts within 15 cycles then alert
+      '';
     };
   };
 }

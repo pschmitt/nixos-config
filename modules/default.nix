@@ -1,6 +1,7 @@
 {
   imports = [
     ./browser.nix
+    ./browser-daemon.nix
     ./cli-proxy-api.nix
     ./dotfiles.nix
     ./domains.nix

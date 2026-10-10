@@ -89,6 +89,29 @@
         "type": "github"
       }
     },
+    "browser-daemon": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1791628104,
+        "narHash": "sha256-9X8XHRwJ4yfok3re9JJzojznnglv+LKqxKWpjHt9+x4=",
+        "owner": "pschmitt",
+        "repo": "browser-daemon",
+        "rev": "b4bcad37a9026b1538ea8da9eef11ceeb6ae97bb",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "browser-daemon",
+        "type": "github"
+      }
+    },
     "bruvtab": {
       "inputs": {
         "nixpkgs": [
@@ -2425,6 +2448,7 @@
       "inputs": {
         "anika-blue": "anika-blue",
         "bitwarden-mcp": "bitwarden-mcp",
+        "browser-daemon": "browser-daemon",
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
         "codex-ha-bridge": "codex-ha-bridge",

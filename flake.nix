@@ -71,6 +71,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    browser-daemon = {
+      url = "github:pschmitt/browser-daemon";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
+
     declaroid = {
       url = "github:pschmitt/declaroid";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -777,6 +785,7 @@
       # `publicModules` specialArg.
       nixosModules = {
         am-i-mullvad = ./profiles/features/network/snek/am-i-mullvad.nix;
+        browser-daemon = ./modules/browser-daemon.nix;
         harmonia = ./services/harmonia.nix;
         http = ./services/http.nix;
         nfs-client = ./services/nfs/nfs-client.nix;

@@ -69,7 +69,7 @@ in
   };
   ha-walker = pkgs.callPackage ./local/ha-walker { };
 
-  # external pkgs
+  browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   inherit emoji-fzf;
   inherit udocker-engines;
