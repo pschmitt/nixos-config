@@ -25,30 +25,11 @@ buildNpmPackage (finalAttrs: {
 
   nativeBuildInputs = [ installShellFiles ];
 
-  # Under qemu-user aarch64 emulation (cross builds on x86_64), `npm ci`
-  # occasionally dies with "qemu: uncaught target signal 4 (Illegal
-  # instruction)" -- a qemu TCG threading race hit by Node's JIT/worker
-  # threads, not a bug in this package. Shadow `npm` on PATH with a retry
-  # wrapper so a single flaky emulator crash doesn't fail the (cross-)build.
-  # Native builds are unaffected and left alone.
-  postPatch = lib.optionalString stdenv.hostPlatform.isAarch64 ''
-    npmRetryDir="$TMPDIR/npm-retry-wrapper"
-    mkdir -p "$npmRetryDir"
-    realNpm="$(command -v npm)"
-    cat > "$npmRetryDir/npm" <<EOF
-    #!/bin/sh
-    set -e
-    for attempt in 1 2 3; do
-      if "$realNpm" "\$@"; then
-        exit 0
-      fi
-      echo "npm \$* failed (attempt \$attempt/3); retrying..." >&2
-    done
-    exit 1
-    EOF
-    chmod +x "$npmRetryDir/npm"
-    export PATH="$npmRetryDir:$PATH"
-  '';
+  # Under qemu-user aarch64 emulation (cross builds on x86_64), Node's V8 JIT
+  # hits a known QEMU TCG translation cache threading race causing SIGILL
+  # (signal 4: Illegal instruction). Running with --jitless forces bytecode
+  # interpretation, preventing dynamic code generation races in QEMU.
+  env.NODE_OPTIONS = lib.optionalString stdenv.hostPlatform.isAarch64 "--jitless";
 
   postInstall = ''
     tabtabTemplates=$out/lib/node_modules/@doist/todoist-cli/node_modules/@pnpm/tabtab/lib/templates
