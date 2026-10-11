@@ -64,8 +64,8 @@ let
 
   networkName = "endurain";
 
-  # renovate: datasource=docker depName=codeberg.org/endurain-project/endurain
-  endurainVersion = "v0.19.2";
+  # renovate: datasource=docker depName=ghcr.io/endurain-project/endurain
+  endurainVersion = "v0.19.3";
 
   runtimePkg =
     if containerBackend == "docker" then
@@ -208,7 +208,7 @@ in
     };
 
     endurain = {
-      image = "codeberg.org/endurain-project/endurain:${endurainVersion}";
+      image = "ghcr.io/endurain-project/endurain:${endurainVersion}";
       pull = "always";
       autoStart = true;
       dependsOn = [ "endurain-postgres" ];
