@@ -21,6 +21,9 @@ in
       enable = true;
       bind = "127.0.0.1:3001";
       maxSessions = 8;
+      sessionMemoryMaxMB = 2048;
+      memoryMax = "6G";
+      cpuQuota = "300%";
       nodeName = config.networking.hostName;
       publicUrl = "https://browser.${config.networking.hostName}.${config.domains.tailscale}";
       peers = map (h: "https://browser.${h}.${config.domains.tailscale}") meshNodes;
