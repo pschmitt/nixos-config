@@ -14,6 +14,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ./home-manager.nix
+    ./memory-snapshot.nix
     ./monit.nix
     ./networking.nix
     ./prompt.nix
