@@ -108,6 +108,7 @@ in
 
         PAPERLESS_OCR_LANGUAGE = "deu+fra+eng";
         PAPERLESS_CONSUMER_RECURSIVE = true;
+        PAPERLESS_CONSUMER_DELETE_DUPLICATES = true;
 
         PAPERLESS_FILENAME_FORMAT = "{original_name}";
       };
