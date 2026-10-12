@@ -63,10 +63,12 @@ if omitted).
 
 ## Poll for unlock
 
-After triggering the webhook, poll until unlocked (2-minute timeout):
+After triggering the webhook, poll until unlocked (5-minute timeout). Give
+the tool call running the loop a longer timeout than that (e.g. 330000 ms);
+agent shells often default to 2 minutes and would cut the wait short.
 
 ```bash
-for i in $(seq 1 24); do
+for i in $(seq 1 60); do
   rbw unlocked 2>/dev/null && break
   sleep 5
 done
@@ -83,8 +85,8 @@ if ! rbw unlocked 2>/dev/null; then
     -d "{\"host\": \"${HOST:-fnuc}\", \"agent\": \"Claude\"}" || {
     echo "Failed to reach HA webhook" >&2; exit 1
   }
-  echo "Waiting for Accept tap on phone (up to 2 minutes)..."
-  for i in $(seq 1 24); do
+  echo "Waiting for Accept tap on phone (up to 5 minutes)..."
+  for i in $(seq 1 60); do
     rbw unlocked 2>/dev/null && { echo "rbw unlocked"; break; }
     sleep 5
   done
