@@ -8,6 +8,7 @@
     ../../services/go-hass-agent.nix
     ../../services/harmonia.nix
     ../../services/kubeconfig-update.nix
+    ./agent-limits.nix
     ./authorized-keys.nix
     ./backups.nix
     ./disk-config.nix
