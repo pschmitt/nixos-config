@@ -6,19 +6,21 @@ description: Authenticate automated browser sessions (Playwright MCP) using WebA
 # Browser Passkey Authentication
 
 Use this skill when an automated browser session driven by Playwright MCP
-(`playwright-browserless-fnuc`, `playwright-browserless-rofl-13`,
-`playwright-browserless-rofl-14`; each attaches to that host's Browserless
-Chromium over CDP) hits a WebAuthn passkey or FIDO2 login challenge.
+(`browser-fnuc`, `browser-rofl-13`, `browser-rofl-14`; each attaches to
+that host's native browser-daemon Chromium over CDP) hits a WebAuthn passkey or FIDO2 login challenge.
 
-In these containerized browsers there is no USB key, no phone proximity check
-and no platform authenticator. Instead, a CDP `WebAuthn` virtual authenticator is
-created in the page and seeded with the passkey private key from `rbw`. With
+In these remote browsers there is no USB key, no phone proximity check
+and no platform authenticator. Instead, `rbw passkey inject` creates a CDP `WebAuthn` virtual authenticator
+in the page and seeds it directly from the vault. With
 `automaticPresenceSimulation` and `isUserVerified`, Chromium signs the challenge
 without any human interaction.
 
 ## Read this first: what does not work
 
-Verified on `playwright-browserless-fnuc` and `-rofl-13` (2026-10):
+The older `playwright-browserless-*` MCP names and `browserless.*` hostnames
+are compatibility aliases for browser-daemon. Use the modern names for new work.
+
+Verified on the Chromium Playwright MCPs (2026-10):
 
 - **The code sandbox of `browser_run_code_unsafe` has no Node.** `require`,
   `process`, `Buffer`, `URL`, `atob` and global `fetch` are all undefined, and
@@ -49,12 +51,12 @@ Verified on `playwright-browserless-fnuc` and `-rofl-13` (2026-10):
   ("Hi <name>"). Authelia's `two_factor` policy then still asks for the
   password. Do not type it yourself from the vault into the page (it would
   appear in your tool call): let the user enter it in the live view (see
-  below), or fetch it into the page with the same one-shot-server trick.
+  below).
 
 ## When a human has to step in (CAPTCHA, approval, 2FA on a device)
 
 Never solve or bypass a bot check yourself. If the user is willing to do it,
-notify them with a link that opens the Browserless **live view of your own
+notify them with a link that opens the browser-daemon **live view of your own
 page**, so they can click and type in the very session you are driving:
 
 ```bash
@@ -62,29 +64,26 @@ page**, so they can click and type in the very session you are driving:
   "Solve the Google CAPTCHA, then tap Next"
 ```
 
-- **Direct link:** `--match REGEX` picks your page by URL from the Browserless
+- **Direct link:** `--match REGEX` picks your page by URL from the browser-daemon
   page list (it must match exactly one page: the browser is shared with other
   agents, e.g. an open HR WORKS tab), or pass `--page ID` with your own page id:
   `(await (await page.context().newCDPSession(page)).send('Target.getTargetInfo')).targetInfo.targetId`.
   There are two links to the same view, chosen with `--url auto|mesh|public`
   (`auto`, the default, asks Home Assistant where the user is):
-  `mesh` = `https://browserless.<host>.ts.brkn.lol/handoff/?page=<id>` (tailnet
+  `mesh` = `https://browser.<host>.ts.brkn.lol/handoff/?page=<id>` (tailnet
   only, no login, used when the user is home) and `public` =
   `https://browser.<host>.brkn.lol/handoff/?page=<id>` (reachable from anywhere,
   Authelia two-factor, owner only; used when away, since the user is then not on
   the tailnet). The public vhost lives on rofl-10
   (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,
   `/json/list` and the websocket of one page, never Browserless' own API.
-  The view is a small phone-friendly page served by Browserless' nginx host (source:
+  The view is a small phone-friendly page served by browser-daemon (source:
   `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
   = scroll, back/forward/reload, and tapping a text field raises the phone's
   native keyboard (type and key hint mirror the field: email, password, ...;
   the remote page is resized to the phone like a real mobile browser, toggle
   in the top bar). Without `--match`/`--page` it shows a list of pages to pick.
-  Do **not** use Browserless' own `/debugger/` or its
-  `/devtools/inspector.html?wss=...` link for this: the DevTools viewer accepts
-  mouse clicks on a desktop but is unusable on a phone (no typing, taps do not
-  work), and `/debugger/` always starts its own new browser.
+  Use the page-specific `/handoff/` link for mobile interaction.
 - **Channels:** `--via push` (default; `notify.mobile_app_pixel_11_pro`, the
   user's main phone, `--phone` overrides), `--via signal` (`notify.signal_me`,
   with the `[BROWSER HANDOFF | CLAUDE CODE]` heading CONTEXT.md asks for) or
@@ -96,101 +95,74 @@ page**, so they can click and type in the very session you are driving:
 Then wait without touching the page, and re-check it (`browser_snapshot`)
 before continuing. Whatever the user types in that view (a password, a code)
 never passes through you, which is the point. Keep the session open meanwhile:
-Browserless ends it after an hour or when the MCP server disconnects.
+browser-daemon owns session lifetime; keep the CDP connection open while
+waiting for the user.
 
-## Leak-free workflow
+## Passkey injection and counter synchronization
 
-The credential travels `rbw` -> one-shot local HTTP server -> the browser's own
-`fetch` -> CDP. It never appears in a tool call or its output.
+Use `rbw passkey inject` for automated passkey logins. It fetches the current
+vault counter, reserves the next value on the server before enabling the
+virtual authenticator, sends the private key directly to Chromium via CDP,
+and writes back the browser assertion counter. The reservation survives a
+browser disconnect or timeout. The virtual authenticator is removed after
+one assertion; inject again for another assertion.
 
-### Step 0: prerequisites
+Do not seed a credential with `signCount: 0` or copy its private key into
+Playwright code. Browser counters must be synchronized with the vault: a
+fresh virtual authenticator otherwise repeats a counter and Authelia flags
+the credential as cloned. Bitwarden increments and saves nonzero counters
+and syncs before using them. After enabling counters on a previously zero
+credential, refresh/sync the ordinary Bitwarden client before using it.
 
-- `rbw` must be unlocked. `rbw unlocked` prints nothing and exits 0 when it is;
-  if it is locked, follow the `rbw` skill (Home Assistant phone notification).
-- Find the exact entry. Names can be ambiguous (several `google.com (...)`
-  entries): `rbw get "https://accounts.google.com" "user@example.com" --raw`
-  fails with a list of matches that includes each entry's `uid`. Prefer the uid.
-- Check, without printing secrets, that the entry has a passkey:
-  `rbw get UID --raw | jq '{passkeys: ((.data.fido2_credentials // [])|length)}'`
+1. Ensure rbw is unlocked (`rbw unlocked`; use the `rbw` skill if needed).
+2. Identify your exact browser page ID using Playwright:
 
-### Step 1: serve the passkey once
+   ```javascript
+   async (page) => {
+     const cdp = await page.context().newCDPSession(page);
+     const result = await cdp.send('Target.getTargetInfo');
+     await cdp.detach();
+     return { pageId: result.targetInfo.targetId };
+   }
+   ```
 
-Run the helper in the background (it prints a one-time URL on its first line
-and exits after serving a single request, or after 120 s):
+3. Start the command while keeping Playwright's page open:
+
+   ```bash
+   rbw passkey inject ENTRY --rp-id auth.example.com \
+     --cdp-url https://browser.fnuc.ts.brkn.lol --page-id PAGE_ID
+   ```
+
+   Use the trusted mesh endpoint for the same host as your Playwright server
+   (`fnuc`, `rofl-13`, or `rofl-14`). Do not target another agent's page.
+   The command prints `Passkey ready` once the reservation is saved and the
+   authenticator is enabled. Keep the process running while driving the login.
+   It waits 120 seconds by default (`--timeout` accepts up to 3600).
+
+4. Click the passkey sign-in button. Wait for the rbw process to report
+   `vault synchronized` and exit successfully. An assertion being generated
+   does not itself prove the site accepted the login; check the page too.
+   A writeback error requires attention before further logins. If cleanup
+   fails, close your browser page. Never leave a privileged authenticated
+   session open after finishing work.
+
+Counter inspection and recovery use:
 
 ```bash
-SKILL_DIR=...   # the "Base directory for this skill" shown above
-"$SKILL_DIR/scripts/passkey-serve.sh" UID_OR_NAME > /tmp/passkey.url &
-sleep 1; cat /tmp/passkey.url
+rbw passkey counter ENTRY --rp-id auth.example.com
+rbw passkey counter ENTRY --rp-id auth.example.com --set 5
 ```
 
-The URL contains a random token. It is bound to the docker0 address by default
-(`172.17.0.1`), which is how `playwright-browserless-fnuc`'s browser reaches the
-host. For `-rofl-13` / `-rofl-14` pass `--bind ADDR` with an address of this
-machine that those hosts can reach (tailnet or LAN IP). `--rp-id` picks one
-passkey when the entry has several.
+`--set` only advances counters. Choose a value from verified server state,
+not a guessed large number. Existing relying-party clone flags are separate
+from the vault counter and may need a targeted repair or re-registration.
+The server rejects competing updates using its revision timestamp; rbw also
+locks the item against concurrent injections on the same machine. Avoid
+simultaneous use of the same passkey across clients, since counters cannot
+serialize assertion delivery across browsers.
 
-### Step 2: inject it, before opening the login page
-
-`fetch` runs inside the browser (via `page.evaluate`), so do it on `about:blank`
-(an `https://` page cannot fetch an `http://` URL). Only the URL is in the code:
-
-```javascript
-async (page) => {
-  await page.goto('about:blank');
-  const cred = await page.evaluate((u) => fetch(u).then((r) => r.json()), 'URL_FROM_STEP_1');
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('WebAuthn.enable');
-  const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', {
-    options: {
-      protocol: 'ctap2', transport: 'internal',
-      hasResidentKey: true, hasUserVerification: true, isUserVerified: true,
-      automaticPresenceSimulation: true,
-      defaultBackupEligibility: true, defaultBackupState: true,
-    },
-  });
-  await cdp.send('WebAuthn.addCredential', { authenticatorId, credential: cred });
-  const { credentials } = await cdp.send('WebAuthn.getCredentials', { authenticatorId });
-  // Return counts and ids only, never `cred`.
-  return { authenticatorId, rpId: cred.rpId, stored: credentials.length };
-}
-```
-
-Verified: the authenticator **survives navigation and later tool calls** (a
-fresh `newCDPSession` can still `getCredentials` for the same
-`authenticatorId`), so inject once, then navigate to the login page and click
-"Sign in with a passkey". A Browserless session ends when the MCP server
-disconnects or after one hour; inject again in each new session.
-
-### Step 3: log in
-
-`browser_navigate` to the site, click the passkey / "Use your passkey" button.
-`navigator.credentials.get()` is then signed silently. (The credential's
-`rpId` must match the site: a `google.com` passkey only works on `google.com`.)
-
-### Step 4: clean up
-
-When you are done, remove the credential from the browser:
-
-```javascript
-async (page) => {
-  const cdp = await page.context().newCDPSession(page);
-  await cdp.send('WebAuthn.enable');
-  await cdp.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId: 'ID' });
-}
-```
-
-then `browser_close`. Do not leave a signed-in session for a high-value account
-(Google, a password manager, ...) in a shared remote browser.
-
-## Technical details
-
-- `key_value` in rbw is a PKCS#8 DER EC (`prime256v1`) private key in
-  URL-safe base64; CDP wants standard padded base64 (`-`->`+`, `_`->`/`).
-- `credential_id` may be a UUID string (Bitwarden): CDP wants the base64 of its
-  raw bytes. The helper converts both; do not redo it by hand.
-- The helper script (`scripts/passkey-serve.sh`) is the only place the key is
-  handled; it prints nothing but the one-time URL.
+The historical `scripts/passkey-serve.sh` now forwards to the native inject
+command with the same arguments. It no longer exports a private key over HTTP.
 
 ## Security
 
