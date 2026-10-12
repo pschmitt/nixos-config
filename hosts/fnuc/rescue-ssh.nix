@@ -2,9 +2,26 @@
 # when user.slice is throttled, capped or being killed by systemd-oomd.
 # Without PAM, pam_systemd never moves the login into user.slice: the shell
 # stays in this service's cgroup, with reserved memory and top CPU/IO weight.
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   port = 2222;
+
+  # Rescue-shell counterpart of the zsh ps::worst-offenders function.
+  worstOffenders = pkgs.writeShellApplication {
+    name = "worst-offenders";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.procps
+    ];
+    text = builtins.readFile ./scripts/worst-offenders.sh;
+  };
+
   configFile =
     lib.pipe
       {
@@ -37,6 +54,8 @@ in
   # Without PAM, sshd refuses "locked" accounts ("!"). "*" is just as
   # password-less (no hash can match it) but not considered locked.
   users.users.root.hashedPassword = lib.mkForce "*";
+
+  environment.systemPackages = [ worstOffenders ];
 
   systemd.services.sshd-rescue = {
     description = "Rescue SSH daemon (root only, outside user.slice)";
