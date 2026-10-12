@@ -4,6 +4,6 @@
   # so interactive agent browsers and automation workers do not interfere.
   # Dashboard (behind Authelia): https://browser.<host>.<mesh domain>/
   imports = [
-    ../services/headless-browsers/browserless.nix
+    ../services/headless-browsers/browser-daemon.nix
   ];
 }
