@@ -106,6 +106,16 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
 
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
+
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
@@ -185,6 +195,16 @@ jobs:
           KEY_PATH="${HOME}/.ssh/id_ed25519"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
+
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
 
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
@@ -282,6 +302,16 @@ jobs:
           KEY_PATH="${HOME}/.ssh/id_ed25519"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
+
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
 
       - name: Setup known_hosts
         if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
@@ -436,6 +466,16 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
 
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
+
       - name: Setup known_hosts
         uses: nick-fields/retry@v4
         with:
@@ -536,6 +576,16 @@ jobs:
           KEY_PATH="${HOME}/.ssh/id_ed25519"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
+
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
 
       - name: Setup known_hosts
         uses: nick-fields/retry@v4
@@ -699,6 +749,16 @@ jobs:
           KEY_PATH="${HOME}/.ssh/id_ed25519"
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
           chmod 400 "$KEY_PATH"
+
+          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
+          # kills remote builds that go quiet (e.g. rustc linking the final
+          # crate) with "unexpected end-of-file". Keep the connection
+          # alive; system-wide since the root nix-daemon opens it.
+          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
+          Host *
+            ServerAliveInterval 30
+            ServerAliveCountMax 10
+          SSHCONF
 
       - name: Setup known_hosts
         uses: nick-fields/retry@v4
