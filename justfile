@@ -54,6 +54,10 @@ nix-update *args:
 deploy host='' *args:
   ./just/deploy.sh "$@"
 
+# Reinstall the pre-commit hook and pin the dev shell (after flake.lock bumps)
+dev-hooks *args:
+  ./just/dev-hooks.sh "$@"
+
 renovate *args:
   ./just/renovate.sh "$@"
 

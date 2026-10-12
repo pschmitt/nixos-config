@@ -113,6 +113,10 @@
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 - Don't use `with lib;`. Qualify explicitly (`lib.mkOption`, `lib.types.str`, `lib.mkIf`) — that is the repo-wide style. For many uses in one scope, prefer `inherit (lib) mkOption mkIf types;` over `with`. This applies to package `meta` blocks too (`meta = { license = lib.licenses.mit; ... }`, and `maintainers = with lib.maintainers; [ pschmitt ];`).
+- The git-hooks.nix pre-commit hook calls a `pre-commit` from the dev shell.
+  If a commit fails because that binary is missing, run `just dev-hooks`: it
+  evaluates the dev shell on rofl-13, reinstalls the hook and pins the shell
+  with a GC root. Never bypass the hook with `--no-verify` instead.
 - New files must be staged with `git add` (e.g. `git add -N <file>`) before they are visible to flake evaluation.
 - Build structured configuration with `pkgs.formats.{yaml,toml,json,ini}` and an attrset, not hand-concatenated strings. Example: `(pkgs.formats.yaml { }).generate "x.yaml" { ... }`.
 - Nothing is fetched at evaluation time: no `builtins.fetchurl`,
