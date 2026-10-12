@@ -2,7 +2,7 @@
 
 # Ask the user for help in a headless browser (CAPTCHA, approval on another
 # device, a password they should type themselves, ...): send a Home Assistant
-# notification (phone push, Signal, or both) whose link opens the Browserless
+# notification (phone push, Signal, or both) whose link opens the browser-daemon
 # live view of the agent's own page, where the user can click and type in the
 # very session the agent is driving.
 
@@ -26,9 +26,9 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE
 Without --page/--match the link opens a list of the browser's pages to pick
 from. There are two links to the same phone-friendly live view (source:
 services/headless-browsers/handoff.html in nixos-config):
-  mesh    https://browserless.HOST.${BROWSERLESS_DOMAIN:-ts.brkn.lol}/handoff/?page=ID
+  mesh    https://browser.HOST.${BROWSER_MESH_DOMAIN:-ts.brkn.lol}/handoff/?page=ID
           tailnet/Netbird only, no login
-  public  https://browser.HOST.${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
+  public  https://browser.HOST.${BROWSER_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
           reachable from anywhere, Authelia (owner only, two-factor)
 The user is usually not on the mesh when away, hence auto.
 
@@ -37,12 +37,12 @@ the page open and untouched meanwhile, then re-check it before continuing.
 EOF
 }
 
-browserless_base() {
-  printf 'browserless.%s.%s' "$1" "${BROWSERLESS_DOMAIN:-ts.brkn.lol}"
+mesh_base() {
+  printf 'browser.%s.%s' "$1" "${BROWSER_MESH_DOMAIN:-ts.brkn.lol}"
 }
 
 public_base() {
-  printf 'browser.%s.%s' "$1" "${BROWSERLESS_PUBLIC_DOMAIN:-brkn.lol}"
+  printf 'browser.%s.%s' "$1" "${BROWSER_PUBLIC_DOMAIN:-brkn.lol}"
 }
 
 # Prints the id of the one page whose URL matches the regex.
@@ -190,7 +190,7 @@ main() {
     return 2
   fi
 
-  base="$(browserless_base "$host")"
+  base="$(mesh_base "$host")"
   if [[ -z "$page" && -n "$match" ]]
   then
     page="$(find_page "$base" "$match")" || return 1

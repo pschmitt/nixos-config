@@ -17,9 +17,6 @@ without any human interaction.
 
 ## Read this first: what does not work
 
-The older `playwright-browserless-*` MCP names and `browserless.*` hostnames
-are compatibility aliases for browser-daemon. Use the modern names for new work.
-
 Verified on the Chromium Playwright MCPs (2026-10):
 
 - **The code sandbox of `browser_run_code_unsafe` has no Node.** `require`,
@@ -38,7 +35,7 @@ Verified on the Chromium Playwright MCPs (2026-10):
   `rbw get --raw` output for passkey entries.
 - **Google sign-in shows a CAPTCHA** to these automated browsers before any
   passkey is offered ("Type the text you hear or see"). Reproduced twice on
-  `playwright-browserless-fnuc` (home IP): the fresh `accounts.google.com`
+  `browser-fnuc` (home IP): the fresh `accounts.google.com`
   page has no CAPTCHA, but it appears right after submitting the email, even
   with a valid virtual authenticator loaded, so it is not caused by repeated
   attempts. That is a bot check; do not try to solve or bypass it. Either
@@ -46,7 +43,7 @@ Verified on the Chromium Playwright MCPs (2026-10):
   willing, let them solve it in the live view (see "When a human has to step
   in"). Decide that early, before a passkey is exposed for nothing.
 - **Verified end to end on Authelia** (`auth.brkn.lol`, 2026-10-08, via
-  `playwright-browserless-fnuc`): inject, open the login page, click "Sign in
+  `browser-fnuc`): inject, open the login page, click "Sign in
   with a passkey", and Authelia accepts the virtual passkey as first factor
   ("Hi <name>"). Authelia's `two_factor` policy then still asks for the
   password. Do not type it yourself from the vault into the page (it would
@@ -76,7 +73,7 @@ page**, so they can click and type in the very session you are driving:
   Authelia two-factor, owner only; used when away, since the user is then not on
   the tailnet). The public vhost lives on rofl-10
   (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,
-  `/json/list` and the websocket of one page, never Browserless' own API.
+  `/json/list` and the websocket of one page, never browser-daemon's own API.
   The view is a small phone-friendly page served by browser-daemon (source:
   `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
   = scroll, back/forward/reload, and tapping a text field raises the phone's

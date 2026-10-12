@@ -14,32 +14,17 @@ let
 
   # Browser automation MCPs attached to each host's native browser-daemon over CDP.
   # browser-daemon starts a fresh, isolated Chrome per connection.
-  # Provides modern browser-${host} and legacy playwright-browserless-${host}.
   browserMcps = lib.listToAttrs (
-    lib.concatMap (host: [
-      {
-        name = "browser-${host}";
-        value = {
-          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
-          args = [
-            "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
-            "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
-          ];
-        };
-      }
-      {
-        name = "playwright-browserless-${host}";
-        value = {
-          command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
-          args = [
-            "--cdp-endpoint=wss://browserless.${host}.ts.${domainName}/chromium"
-            # Retain init-page for legacy client hints compatibility
-            "--init-page=${./browserless-init-page.ts}"
-            "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browserless-${host}"
-          ];
-        };
-      }
-    ]) browserHosts
+    map (host: {
+      name = "browser-${host}";
+      value = {
+        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+        args = [
+          "--cdp-endpoint=wss://browser.${host}.ts.${domainName}/chromium"
+          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
+        ];
+      };
+    }) browserHosts
   );
 
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills

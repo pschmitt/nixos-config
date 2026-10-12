@@ -1,7 +1,7 @@
 { config, ... }:
 let
   domain = config.domains.main;
-  # The hosts running Browserless (profiles/headless-browsers.nix).
+  # The hosts running browser-daemon (profiles/headless-browsers.nix).
   browserHosts = [
     "fnuc"
     "rofl-13"
@@ -17,7 +17,7 @@ let
   vhost =
     host:
     let
-      backendHost = "browserless.${host}.${config.domains.tailscale}";
+      backendHost = "browser.${host}.${config.domains.tailscale}";
       # recommendedProxySettings is off on purpose: it would add a second Host
       # header (nginx on the browser host answers 400 to duplicates) and forward
       # the visitor's address, which would make the mesh host's own Authelia

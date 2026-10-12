@@ -1,8 +1,6 @@
 { config, ... }:
 let
-  browserlessHosts = config.domains.meshHosts "browserless";
-  browserHosts = config.domains.meshHosts "browser";
-  hosts = browserlessHosts ++ browserHosts;
+  hosts = config.domains.meshHosts "browser";
   meshNodes = [
     "fnuc"
     "rofl-13"
