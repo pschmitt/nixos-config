@@ -63,6 +63,9 @@ rustPlatform.buildRustPackage {
     binaries = [ "bin/nixpp" ];
   };
 
+  # The NDK compiler runs on x86_64 Linux, while the binary targets Android/AArch64.
+  passthru.ciBuildSystems = [ "x86_64-linux" ];
+
   meta = {
     description = "Small Nix binary-cache client for Termux-managed outputs";
     homepage = "https://github.com/pschmitt/nixos-config/tree/main/android/nixpp";

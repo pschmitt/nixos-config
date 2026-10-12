@@ -39,7 +39,9 @@ list_package_metadata() {
         supportsSystem = pkg:
           let
             platforms =
-              if pkg ? meta && pkg.meta ? platforms then
+              if pkg ? passthru && pkg.passthru ? ciBuildSystems then
+                pkg.passthru.ciBuildSystems
+              else if pkg ? meta && pkg.meta ? platforms then
                 pkg.meta.platforms
               else
                 null;

@@ -120,10 +120,16 @@ in
   # oci pkgs
   inherit oci-consistent-device-naming;
   oracle-cloud-agent = pkgs.callPackage ./oci/oracle-cloud-agent { };
-  oci-kexec-installer-aarch64-linux = pkgs.callPackage ./oci/oci-kexec-installer {
-    inherit inputs oci-consistent-device-naming;
-    system = "aarch64-linux";
-  };
+  oci-kexec-installer-aarch64-linux =
+    (pkgs.callPackage ./oci/oci-kexec-installer {
+      inherit inputs oci-consistent-device-naming;
+      system = "aarch64-linux";
+    }).overrideAttrs
+      (oldAttrs: {
+        meta = (oldAttrs.meta or { }) // {
+          platforms = [ "aarch64-linux" ];
+        };
+      });
 
   # Fonts
   ComicCode = pkgs.callPackage ./fonts/ComicCode { };
