@@ -44,8 +44,10 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## GPG and commit signing
 
-- If a git commit fails because the GPG key is locked, run `zhj gpg::auto-unlock` to unlock it.
-- `zhj gpg::auto-unlock` requires rbw to be unlocked. If it is not, use the `rbw` skill to unlock it first.
+- Before creating any GPG-signed commit or tag (including amend, cherry-pick, and rebase), run `zsh -lc 'zhj gpg::auto-unlock'`. The helper checks the cache first and returns immediately when the personal key is already unlocked. Do this before invoking Git; a curses pinentry prompt can corrupt the agent's terminal UI.
+- If unlocking requires rbw and the vault is locked, use the `rbw` skill to unlock it first. Never enter or capture a passphrase in an agent terminal, command argument, transcript, or chat.
+- After auto-unlock, check the repository's actual signing key with a prompt-free signing probe: `gpg --batch --no-tty --pinentry-mode error --local-user "$(git config user.signingkey)" --detach-sign --output /dev/null </dev/null`. Require a configured `user.signingkey` and a successful probe before invoking Git. The helper unlocks the personal key; repositories using another key need that key unlocked separately. If the probe fails, resolve the unlock problem before proceeding; never retry with interactive pinentry or disable signing.
+- Keep normal interactive GPG configuration intact. Any GPG wrapper used for agent Git signing must pass `--batch --no-tty --pinentry-mode error` so an expired cache fails without opening pinentry, and must be scoped to the agent command rather than installed as a global Git/GPG setting.
 
 ## Leaked credentials
 
