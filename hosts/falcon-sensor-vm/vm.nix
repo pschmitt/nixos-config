@@ -1,4 +1,13 @@
+{ lib, ... }:
 {
+  # Only ever run as `system.build.vm`, whose qemu module overrides these.
+  # They only make the plain toplevel (built by CI) evaluate.
+  fileSystems."/" = {
+    device = "/dev/disk/by-label/nixos";
+    fsType = "ext4";
+  };
+  boot.loader.grub.devices = lib.mkDefault [ "nodev" ];
+
   virtualisation.vmVariant.virtualisation = {
     graphics = false;
     memorySize = 1024;
