@@ -23,8 +23,11 @@ in
       memoryMax = "6G";
       cpuQuota = "300%";
       nodeName = config.networking.hostName;
-      publicUrl = "https://browser.${config.networking.hostName}.${config.domains.tailscale}";
-      peers = map (h: "https://browser.${h}.${config.domains.tailscale}") meshNodes;
+      # NetBird rather than Tailscale: fnuc's Tailscale path loses packets
+      # under load (a 170 KB page took ~3 s instead of ~0.3 s), which made
+      # screenshots and peer requests crawl.
+      publicUrl = "https://browser.${config.networking.hostName}.${config.domains.netbird}";
+      peers = map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
       clusterSecretFile = config.sops.secrets."browser-daemon/cluster-secret".path;
     };
 

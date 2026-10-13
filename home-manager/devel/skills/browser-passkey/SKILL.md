@@ -67,11 +67,11 @@ page**, so they can click and type in the very session you are driving:
   `(await (await page.context().newCDPSession(page)).send('Target.getTargetInfo')).targetInfo.targetId`.
   There are two links to the same view, chosen with `--url auto|mesh|public`
   (`auto`, the default, asks Home Assistant where the user is):
-  `mesh` = `https://browser.<host>.ts.brkn.lol/handoff/?page=<id>` (tailnet
+  `mesh` = `https://browser.<host>.nb.brkn.lol/handoff/?page=<id>` (mesh
   only, no login, used when the user is home) and `public` =
   `https://browser.<host>.brkn.lol/handoff/?page=<id>` (reachable from anywhere,
   Authelia two-factor, owner only; used when away, since the user is then not on
-  the tailnet). The public vhost lives on rofl-10
+  the mesh). The public vhost lives on rofl-10
   (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,
   `/json/list` and the websocket of one page, never browser-daemon's own API.
   The view is a small phone-friendly page served by browser-daemon (source:
@@ -127,7 +127,7 @@ credential, refresh/sync the ordinary Bitwarden client before using it.
 
    ```bash
    rbw passkey inject ENTRY --rp-id auth.example.com \
-     --cdp-url https://browser.fnuc.ts.brkn.lol --page-id PAGE_ID
+     --cdp-url https://browser.fnuc.nb.brkn.lol --page-id PAGE_ID
    ```
 
    Use the trusted mesh endpoint for the same host as your Playwright server

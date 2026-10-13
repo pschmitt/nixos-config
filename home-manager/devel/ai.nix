@@ -20,7 +20,7 @@ let
       value = {
         command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
         args = [
-          "--cdp-endpoint=wss://browser.${host}.ts.${domainName}/chromium"
+          "--cdp-endpoint=wss://browser.${host}.${config.domains.netbird}/chromium"
           "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
         ];
       };

@@ -17,7 +17,9 @@ let
   vhost =
     host:
     let
-      backendHost = "browser.${host}.${config.domains.tailscale}";
+      # NetBird: fnuc's Tailscale path loses packets under load (a 170 KB page
+      # took ~3 s instead of ~0.3 s), which made screenshots crawl.
+      backendHost = "browser.${host}.${config.domains.netbird}";
       # recommendedProxySettings is off on purpose: it would add a second Host
       # header (nginx on the browser host answers 400 to duplicates) and forward
       # the visitor's address, which would make the mesh host's own Authelia

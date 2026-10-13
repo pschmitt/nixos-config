@@ -100,7 +100,7 @@ let
       value = {
         command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
         args = [
-          "--cdp-endpoint=wss://browser.${host}.ts.${config.domains.main}/chromium"
+          "--cdp-endpoint=wss://browser.${host}.${config.domains.netbird}/chromium"
           "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browser-${host}"
         ];
         connect_timeout = 30;

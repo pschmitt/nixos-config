@@ -26,7 +26,7 @@ Usage: $(basename "$0") [OPTIONS] MESSAGE
 Without --page/--match the link opens a list of the browser's pages to pick
 from. There are two links to the same phone-friendly live view (source:
 services/headless-browsers/handoff.html in nixos-config):
-  mesh    https://browser.HOST.${BROWSER_MESH_DOMAIN:-ts.brkn.lol}/handoff/?page=ID
+  mesh    https://browser.HOST.${BROWSER_MESH_DOMAIN:-nb.brkn.lol}/handoff/?page=ID
           tailnet/Netbird only, no login
   public  https://browser.HOST.${BROWSER_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
           reachable from anywhere, Authelia (owner only, two-factor)
@@ -38,7 +38,7 @@ EOF
 }
 
 mesh_base() {
-  printf 'browser.%s.%s' "$1" "${BROWSER_MESH_DOMAIN:-ts.brkn.lol}"
+  printf 'browser.%s.%s' "$1" "${BROWSER_MESH_DOMAIN:-nb.brkn.lol}"
 }
 
 public_base() {
