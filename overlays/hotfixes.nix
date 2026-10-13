@@ -117,12 +117,17 @@
   # GCC 16 ships the C++26 <simd> header, whose API dropped the
   # std::experimental names (native_simd, rebind_simd_t, static_simd_cast)
   # contour's vtbackend relies on. Keep it on <experimental/simd>.
-  contour = prev.contour.overrideAttrs (old: {
-    postPatch = (old.postPatch or "") + ''
-      substituteInPlace src/vtbackend/Image.cpp \
-        --replace-fail '#if __has_include(<simd>)' '#if 0'
-    '';
-  });
+  # Since 0.7.0, upstream checks the feature macro instead of header availability.
+  contour =
+    if final.lib.versionOlder prev.contour.version "0.7.0" then
+      prev.contour.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace src/vtbackend/Image.cpp \
+            --replace-fail '#if __has_include(<simd>)' '#if 0'
+        '';
+      })
+    else
+      prev.contour;
 
   # GCC 16 defaults to C++20, whose std::lerp makes rxvt-unicode's own
   # lerp() overloads ambiguous. Pulled in via srvos' terminfo mixin.
