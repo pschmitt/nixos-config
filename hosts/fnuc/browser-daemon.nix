@@ -9,6 +9,9 @@
       enable = true;
       encoder = "vaapi";
     };
+    # Render Chromium on the iGPU too: WebGL then reports the Intel GPU instead
+    # of a software renderer, a bot tell.
+    gpu.enable = true;
   };
 
   # VAAPI driver for the Comet Lake iGPU (Mesa ships none for Intel).
