@@ -151,8 +151,26 @@ rbw passkey counter ENTRY --rp-id auth.example.com --set 5
 ```
 
 `--set` only advances counters. Choose a value from verified server state,
-not a guessed large number. Existing relying-party clone flags are separate
-from the vault counter and may need a targeted repair or re-registration.
+not a guessed large number. For Authelia, also inspect the matching server
+credential's `sign_count` and `clone_warning`. Equal vault and server counters are normal after a successful
+assertion; the next assertion must exceed the server counter. Equality alone
+does not prove recovery.
+
+Authelia persists `clone_warning`, and its go-webauthn dependency does not clear
+an existing warning when a later assertion advances the counter. Once flagged,
+the credential can remain rejected even with synchronized, increasing counters.
+`rbw passkey counter --set` cannot clear that server flag. Diagnose from server
+logs and credential state before repeating attempts; the portal's generic
+"Failed to initiate security key sign in process" can mask a clone rejection.
+
+Recovery requires re-registration or a targeted server repair after verifying
+that the flagged credential is the intended vault passkey and that the warning
+came from the known counter mismatch. Before a manual database repair, create a
+restricted SQLite backup using the backup API, preserve `sign_count`, and clear
+only that credential's warning. Sync the ordinary Bitwarden client before
+retrying, then verify site acceptance and the server's counter and warning.
+A completed rbw writeback proves vault synchronization, not server acceptance.
+
 The server rejects competing updates using its revision timestamp; rbw also
 locks the item against concurrent injections on the same machine. Avoid
 simultaneous use of the same passkey across clients, since counters cannot
@@ -160,6 +178,35 @@ serialize assertion delivery across browsers.
 
 The historical `scripts/passkey-serve.sh` now forwards to the native inject
 command with the same arguments. It no longer exports a private key over HTTP.
+
+## Passkeys in the live view (a human signing in)
+
+When a person uses a site through the browser-daemon live view (handoff), a
+passkey sign-in they start there gets a prompt in the view instead of the
+browser's own dialog (which the view cannot reach). It shows whether rbw is
+locked, which vault entry would be used (`rbw passkey find --rp-id SITE`:
+names and users, no secrets) and a picker when several entries match.
+Approving sends the request to `browser-daemon passkey-helper`, a user
+service on fnuc (`hosts/fnuc/browser-daemon.nix`) that serves all nodes and
+asks the phone to unlock rbw first if needed:
+
+- Chromium sessions: it runs `rbw passkey inject` for the page, as above.
+- Firefox sessions: it runs `rbw passkey assert --origin ORIGIN --challenge
+  CHALLENGE`, which signs outside the browser; the page answers the site's
+  `navigator.credentials.get()` with the result. The node takes the origin
+  from the browser's page list, never from page script, and rbw refuses an
+  origin outside the passkey's relying party.
+
+What this means for agents:
+
+- Without a view attached, or when the request did not follow input in the
+  view within 15 s, the page's request goes to the browser unchanged, so the
+  inject flow above keeps working. A human typing in the view right before
+  the agent clicks the passkey button gets the prompt instead; either answer
+  works ("Use the passkey from the vault" also signs in).
+- Google refuses sign-ins in Firefox sessions ("Couldn't sign you in")
+  before any passkey is asked for; use a Chromium session for Google.
+- Autofill (conditional) passkey requests are never intercepted.
 
 ## Security
 
