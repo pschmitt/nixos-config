@@ -11,6 +11,7 @@
     ./initrd-wifi.nix
     ./kmscon.nix
     ./lan-mouse.nix
+    ./lumine-capture.nix
     ./networking.nix
     ./noctalia-obs.nix
     ./prompt.nix
