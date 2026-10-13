@@ -99,11 +99,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791928513,
-        "narHash": "sha256-B+VFZTUU2KaYZ+R3IWAhMfVQ/xecnbRT4BSI5bpEXz0=",
+        "lastModified": 1791929153,
+        "narHash": "sha256-CcvWTq5r9z/00UO+BnHRMNab1vHreosrDIyyxduZwFc=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "48d123de6250f897151e76d400ea6506e698048e",
+        "rev": "018d8bfd57d9ac44e4bd06d3ceef8e7355e8d965",
         "type": "github"
       },
       "original": {
@@ -2408,11 +2408,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791926967,
-        "narHash": "sha256-HkSoJEhctbanf6b0HnssqeHeTBpRAsUkCNbw6HT7QMY=",
+        "lastModified": 1791928912,
+        "narHash": "sha256-j46bjCkwSmPYEr386BxLidoAz8+TP694GDFpeCdApn0=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "50ad213a7ffaed7a9bf8d7c54a4908042e8e51f0",
+        "rev": "e3766821106d5b2fe7bad5a1f713f8d1b526226b",
         "type": "github"
       },
       "original": {
