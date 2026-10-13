@@ -39,6 +39,7 @@
       };
 
       binds = {
+        allow_pin_fullscreen = true;
         workspace_back_and_forth = true;
         allow_workspace_cycles = true;
       };
