@@ -6,7 +6,8 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] [NIXOS-REBUILD OPTIONS]
 
-Update /etc/nixos and switch to the resulting NixOS configuration.
+Update the NixOS configuration repository and switch to the resulting configuration.
+Uses NIXOS_CONFIG_DIR, /etc/nixos, or ~/devel/private/pschmitt/nixos-config.git.
 
 Options:
   -f, -u, --flake-update  Update flake inputs before rebuilding
@@ -61,7 +62,7 @@ checkout_main() {
     return 0
   fi
 
-  printf 'Switching /etc/nixos to %s\n' "$main_branch"
+  printf 'Switching %s to %s\n' "$repo_dir" "$main_branch"
   git -C "$repo_dir" switch "$main_branch"
 }
 
@@ -90,7 +91,12 @@ main() {
     esac
   done
 
-  if [[ ! -d "$repo_dir/.git" ]]
+  if [[ -z "${NIXOS_CONFIG_DIR:-}" && ! -e "$repo_dir/.git" ]]
+  then
+    repo_dir="$HOME/devel/private/pschmitt/nixos-config.git"
+  fi
+
+  if [[ ! -e "$repo_dir/.git" ]] || ! git -C "$repo_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1
   then
     printf 'NixOS configuration repository not found: %s\n' "$repo_dir" >&2
     return 1
