@@ -16,7 +16,10 @@ let
   forwarder = pkgs.writers.writePython3Bin "paperless-forwarder" {
     flakeIgnore = [ "E501" ];
   } (builtins.readFile ./scripts/paperless-forwarder.py);
-  forwarderStaging = "${config.services.paperless.dataDir}/forwarder-staging";
+  # Inside the consume dir (ignored by the consumer) so the final rename
+  # stays on one mount: ReadWritePaths bind-mounts each path separately.
+  forwarderStagingName = ".forwarder-staging";
+  forwarderStaging = "${config.services.paperless.consumptionDir}/${forwarderStagingName}";
   forwarderStateDir = "/var/lib/paperless-forwarder";
   forwarderArgs = [
     (lib.getExe forwarder)
@@ -72,7 +75,6 @@ in
         NoNewPrivileges = true;
         ReadWritePaths = [
           config.services.paperless.consumptionDir
-          forwarderStaging
           forwarderStateDir
         ];
       };
@@ -145,6 +147,7 @@ in
         PAPERLESS_OCR_LANGUAGE = "deu+fra+eng";
         PAPERLESS_CONSUMER_RECURSIVE = true;
         PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS = true;
+        PAPERLESS_CONSUMER_IGNORE_DIRS = builtins.toJSON [ forwarderStagingName ];
         PAPERLESS_CONSUMER_DELETE_DUPLICATES = true;
 
         PAPERLESS_FILENAME_FORMAT = "{original_name}";

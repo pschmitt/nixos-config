@@ -83,10 +83,13 @@ def destination(consume, rel):
 def forward(src, target, staging):
     staging.mkdir(parents=True, exist_ok=True)
     tmp = staging / f"{os.getpid()}-{target.name}"
-    shutil.copyfile(src, tmp)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    # Rename so Paperless never sees a partially written file.
-    os.replace(tmp, target)
+    try:
+        shutil.copyfile(src, tmp)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Rename so Paperless never sees a partially written file.
+        os.replace(tmp, target)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def main():
@@ -115,7 +118,7 @@ def main():
     extensions = set(args.extensions.lower().split(","))
     now = time.time()
     seen = {}
-    forwarded = recorded = 0
+    forwarded = recorded = failed = 0
 
     for rel in walk(args.source, set(args.exclude), extensions):
         src = args.source / rel
@@ -145,16 +148,23 @@ def main():
             target = destination(args.consume, rel)
             log(f"forward {key} -> {target.relative_to(args.consume)}")
             if not args.dry_run:
-                forward(src, target, args.staging)
+                try:
+                    forward(src, target, args.staging)
+                except OSError as e:
+                    # Not recorded, so it is retried on the next run.
+                    log(f"failed {key}: {e}")
+                    seen.pop(key)
+                    failed += 1
+                    continue
             forwarded += 1
         state["hashes"].add(digest)
 
     state["files"] = seen
-    log(f"{len(seen)} files tracked, {forwarded} forwarded, {recorded} recorded without forwarding")
+    log(f"{len(seen)} files tracked, {forwarded} forwarded, {recorded} recorded without forwarding, {failed} failed")
     if not args.dry_run:
         args.state.parent.mkdir(parents=True, exist_ok=True)
         save_state(args.state, state)
-    return 0
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
