@@ -99,11 +99,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791912755,
-        "narHash": "sha256-Y+5GBlXIKgGYVzW6tjcfrkQ+YR1rNsk8RHE7Gw2BHvc=",
+        "lastModified": 1791913348,
+        "narHash": "sha256-LRX8MIjpa139pRIsiq8MvhnTZOwF0aOzOsH/A/IJKcc=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "ef9eb6edc29229466774a3e35cfdf66e6dda6406",
+        "rev": "882882039a32c20c75be5ea36517e42915b60f2e",
         "type": "github"
       },
       "original": {
