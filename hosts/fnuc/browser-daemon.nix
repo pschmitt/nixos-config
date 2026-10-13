@@ -1,14 +1,9 @@
 { pkgs, ... }:
 {
   services.browser-daemon = {
-    # An X display per session, so each session's screen can be captured on its own
-    displayMode = "per-session";
-    # and streamed to the handoff view as H.264, encoded on the Intel GPU: an
-    # animated page cost ~13% of a core this way vs ~147% as a JPEG screencast.
-    video = {
-      enable = true;
-      encoder = "vaapi";
-    };
+    # The live view's H.264 encoded on the Intel GPU: an animated page cost ~13%
+    # of a core this way vs ~67% with x264 and ~147% as a JPEG screencast.
+    video.encoder = "vaapi";
     # Render Chromium on the iGPU too: WebGL then reports the Intel GPU instead
     # of a software renderer, a bot tell.
     gpu.enable = true;

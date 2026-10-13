@@ -29,6 +29,11 @@ in
       publicUrl = "https://browser.${config.networking.hostName}.${config.domains.netbird}";
       peers = map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
       clusterSecretFile = config.sops.secrets."browser-daemon/cluster-secret".path;
+      # An X display per session, streamed to the handoff view as H.264 (x264
+      # unless a host has a GPU encoder): under motion ~67% of a core instead of
+      # ~147% for the JPEG screencast.
+      displayMode = "per-session";
+      video.enable = true;
     };
 
     nginx.virtualHosts.${builtins.head hosts} = {
