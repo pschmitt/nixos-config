@@ -11,6 +11,7 @@
     ./agent-limits.nix
     ./authorized-keys.nix
     ./backups.nix
+    ./browser-daemon.nix
     ./disk-config.nix
     ./hardware-configuration.nix
     ./home-manager.nix
