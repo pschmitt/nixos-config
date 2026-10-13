@@ -170,6 +170,13 @@ androidPkgs.extend (
         frozenlist = previous.frozenlist.overridePythonAttrs (_: {
           FROZENLIST_NO_EXTENSIONS = "1";
         });
+        # The overrides above rebuild moto (via slack-sdk's checks) from source;
+        # this test fails there with ExecutionAlreadyExists.
+        moto = previous.moto.overridePythonAttrs (old: {
+          disabledTests = (old.disabledTests or [ ]) ++ [
+            "test_create_state_machine_twice_after_success"
+          ];
+        });
         multidict = previous.multidict.overridePythonAttrs (_: {
           MULTIDICT_NO_EXTENSIONS = "1";
           doCheck = false;
