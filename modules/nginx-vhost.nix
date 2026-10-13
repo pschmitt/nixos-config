@@ -89,6 +89,9 @@ let
       proxy_set_header X-Forwarded-For $remote_addr;
       proxy_set_header Content-Length "";
       proxy_set_header Connection "";
+      ${optionalString (!a.forwardAuthorization) ''
+        proxy_set_header Authorization "";
+      ''}
 
       ## Basic Proxy Configuration
       proxy_pass_request_body off;
@@ -134,6 +137,16 @@ let
             default = cfg.authzURL;
             defaultText = literalExpression "config.services.nginx.authelia.authzURL";
             description = "Authelia authz endpoint used for the auth_request subrequest.";
+          };
+
+          forwardAuthorization = mkOption {
+            type = types.bool;
+            default = true;
+            description = ''
+              Forward the client's Authorization header to Authelia. Disable
+              for applications with separate Basic credentials so cached
+              browser credentials do not override the Authelia session cookie.
+            '';
           };
 
           haIngressBypass = mkOption {
