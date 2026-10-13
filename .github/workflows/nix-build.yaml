@@ -18,7 +18,8 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Only supersede PR runs; a push to main must not kill a running main build
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
@@ -427,7 +428,7 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
@@ -536,7 +537,7 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
@@ -716,7 +717,7 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ always() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
