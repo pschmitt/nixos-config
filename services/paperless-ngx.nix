@@ -12,6 +12,25 @@ let
   primaryHost = builtins.head hostnames;
   serverAliases = lib.remove primaryHost hostnames;
   hostnamesWithSchema = map (host: "https://${host}") hostnames;
+
+  forwarder = pkgs.writers.writePython3Bin "paperless-forwarder" {
+    flakeIgnore = [ "E501" ];
+  } (builtins.readFile ./scripts/paperless-forwarder.py);
+  forwarderStaging = "${config.services.paperless.dataDir}/forwarder-staging";
+  forwarderStateDir = "/var/lib/paperless-forwarder";
+  forwarderArgs = [
+    (lib.getExe forwarder)
+    "--source"
+    "/mnt/data/srv/syncthing/documents"
+    "--consume"
+    config.services.paperless.consumptionDir
+    "--staging"
+    forwarderStaging
+    "--state"
+    "${forwarderStateDir}/state.json"
+    "--exclude"
+    "notes"
+  ];
 in
 {
   sops.secrets."paperless-ngx/adminPassword" = config.sops.mkHostSecret {
@@ -30,18 +49,40 @@ in
   # };
 
   systemd = {
-    # lsyncd -nodaemon never exits, so this must be a long-running service:
-    # as a oneshot its start job never completed, which hung
-    # switch-to-configuration whenever the unit changed.
-    services.lsyncd = {
-      description = "Lsyncd - Live Sync Daemon";
-      wantedBy = [ "multi-user.target" ];
-      script = ''
-        ${pkgs.lsyncd}/bin/lsyncd -nodaemon /etc/lsyncd/lsyncd.conf.lua
-      '';
+    # Forward new files from the Syncthing documents tree into the consume
+    # dir. Unlike a mirror (lsyncd), it remembers what it already forwarded,
+    # so restarts never re-feed the library after Paperless consumed it.
+    # A fresh host needs a one-time baseline: `paperless-forwarder --init`.
+    services.paperless-forwarder = {
+      description = "Forward new documents to the Paperless consume dir";
+      after = [ "paperless-consumer.service" ];
       serviceConfig = {
-        Restart = "on-failure";
-        RestartSec = 30;
+        Type = "oneshot";
+        ExecStart = lib.escapeShellArgs forwarderArgs;
+        User = config.services.paperless.user;
+        Group = config.services.paperless.user;
+        # Read-only access to library files that are not world-readable.
+        AmbientCapabilities = [ "CAP_DAC_READ_SEARCH" ];
+        CapabilityBoundingSet = [ "CAP_DAC_READ_SEARCH" ];
+        Nice = 10;
+        IOSchedulingClass = "idle";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        NoNewPrivileges = true;
+        ReadWritePaths = [
+          config.services.paperless.consumptionDir
+          forwarderStaging
+          forwarderStateDir
+        ];
+      };
+    };
+
+    timers.paperless-forwarder = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "5min";
+        OnUnitInactiveSec = "5min";
       };
     };
 
@@ -59,24 +100,19 @@ in
         "${config.services.paperless.dataDir}".d = defaultRule;
         "${config.services.paperless.mediaDir}".d = defaultRule;
         "${config.services.paperless.consumptionDir}".d = defaultRule;
+        "${forwarderStaging}".d = defaultRule;
+        "${forwarderStateDir}".d = defaultRule;
       };
   };
 
-  environment.etc."lsyncd/lsyncd.conf.lua".text = ''
-    sync {
-      default.rsync,
-      source = "/mnt/data/srv/syncthing/documents",
-      target = "${config.services.paperless.consumptionDir}",
-      rsync = {
-        binary   = "${pkgs.rsync}/bin/rsync",
-        verbose  = true,
-        archive  = true,
-        compress = true,
-        perms    = true,
-        chown    = "${config.services.paperless.user}:${config.services.paperless.user}"
-      }
-    }
-  '';
+  environment.systemPackages = [
+    (pkgs.writeShellScriptBin "paperless-forwarder" ''
+      exec ${lib.getExe' pkgs.util-linux "setpriv"} --reuid=${config.services.paperless.user} \
+        --regid=${config.services.paperless.user} --init-groups \
+        --inh-caps=+dac_read_search --ambient-caps=+dac_read_search -- \
+        ${lib.escapeShellArgs forwarderArgs} "$@"
+    '')
+  ];
 
   services = {
     paperless = {
@@ -108,6 +144,7 @@ in
 
         PAPERLESS_OCR_LANGUAGE = "deu+fra+eng";
         PAPERLESS_CONSUMER_RECURSIVE = true;
+        PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS = true;
         PAPERLESS_CONSUMER_DELETE_DUPLICATES = true;
 
         PAPERLESS_FILENAME_FORMAT = "{original_name}";
