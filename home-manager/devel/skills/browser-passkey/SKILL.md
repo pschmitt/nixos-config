@@ -203,7 +203,7 @@ What this means for agents:
   view within 15 s, the page's request goes to the browser unchanged, so the
   inject flow above keeps working. A human typing in the view right before
   the agent clicks the passkey button gets the prompt instead; either answer
-  works ("Use the passkey from the vault" also signs in).
+  works ("Use passkey" also signs in).
 - Google refuses sign-ins in Firefox sessions ("Couldn't sign you in")
   before any passkey is asked for; use a Chromium session for Google.
 - Autofill (conditional) passkey requests are never intercepted.
