@@ -9,8 +9,7 @@ let
     ;
 
   bin = "~/.config/hypr/bin";
-  swayBin = "~/.config/sway/bin";
-  playerctl = "${swayBin}/playerctl-wrapper.sh";
+  playerctl = "${bin}/playerctl-wrapper.sh";
 
   resizeSubmap = "↔️ resize";
   reset = combo: bind combo ''hl.dsp.submap("reset")'';
@@ -159,6 +158,7 @@ in
       (execBindLocked "XF86AudioNext" "${playerctl} next")
       (execBindLocked "XF86AudioPrev" "${playerctl} previous")
       (execBindLocked "CONTROL + ALT + up" "${playerctl} toggle")
+      (execBindLocked "CONTROL + ALT + down" "${playerctl} pause")
       (execBindLocked "CONTROL + ALT + right" "${playerctl} next")
       (execBindLocked "CONTROL + ALT + left" "${playerctl} previous")
       (execBindLocked "SUPER + ALT + b" "obs-control brb --mute")

@@ -1,11 +1,25 @@
 { lib, pkgs, ... }:
 let
+  scriptLib = import ../../../../modules/home-manager/script-lib.nix { inherit lib pkgs; };
   scriptsDir = ./scripts;
   scripts = lib.filterAttrs (_: type: type == "regular") (builtins.readDir scriptsDir);
   mkScriptFile = name: {
     name = ".config/hypr/bin/${name}";
     value = {
-      source = scriptsDir + "/${name}";
+      source =
+        if name == "playerctl-wrapper.sh" then
+          scriptLib.wrapScript {
+            dir = scriptsDir;
+            inherit name;
+            runtimeInputs = [
+              pkgs.coreutils
+              pkgs.gnugrep
+              pkgs.libnotify
+              pkgs.playerctl
+            ];
+          }
+        else
+          scriptsDir + "/${name}";
       executable = true;
     };
   };
