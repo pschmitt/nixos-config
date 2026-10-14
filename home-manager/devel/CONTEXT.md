@@ -58,6 +58,10 @@ Use this file as lightweight shared context for AI tooling in this repository.
   3. Contain what you can: revoke sessions and tokens you created, shred temporary files. Rotate the credential yourself only when that can be done without the value passing through your context (see `just sops-rotate` and the credential rotation note); otherwise leave it open for the user.
   4. When something is rotated and verified, move its row to *Resolved*.
 
+## Browser MCPs
+
+- The browser MCPs (`browser-fnuc`, `browser-rofl-13`, `browser-rofl-14`) tell the browser-daemon dashboard which agent and conversation drive a session. When you start using one, label your sessions with what you are doing, a few words like a tmux window name: `browser-agent-topic "netbox invoice lookup"`. Run it again when the task changes.
+
 ## Shell work
 
 - Do not duplicate shell style rules here.

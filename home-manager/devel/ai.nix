@@ -12,16 +12,41 @@ let
     "rofl-14"
   ];
 
+  browserNode = host: "https://browser.${host}.${config.domains.netbird}";
+
+  # Starts the Playwright MCP and tells the node which agent connects (agent,
+  # conversation, project), shown on the node's dashboard.
+  browserMcp = pkgs.writeShellApplication {
+    name = "browser-mcp";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.playwright-mcp
+    ];
+    text = builtins.readFile ./scripts/browser-mcp.sh;
+  };
+
+  # Labels this agent conversation's browser sessions with a topic.
+  browserAgentTopic = pkgs.writeShellApplication {
+    name = "browser-agent-topic";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.jq
+    ];
+    runtimeEnv.BROWSER_AGENT_NODES = lib.concatMapStringsSep " " browserNode browserHosts;
+    text = builtins.readFile ./scripts/browser-agent-topic.sh;
+  };
+
   # Browser automation MCPs attached to each host's native browser-daemon over CDP.
   # browser-daemon starts a fresh, isolated Chrome per connection.
   browserMcps = lib.listToAttrs (
     map (host: {
       name = "browser-${host}";
       value = {
-        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+        command = lib.getExe browserMcp;
         args = [
-          "--cdp-endpoint=wss://browser.${host}.${config.domains.netbird}/chromium"
-          "--output-dir=${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
+          "wss://browser.${host}.${config.domains.netbird}/chromium"
+          "${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
         ];
       };
     }) browserHosts
@@ -401,25 +426,29 @@ in
       file.".claude/keybindings.json".source = ./claude-keybindings.json;
       file.".gemini/antigravity-cli/settings.json".force = true;
 
-      packages = with pkgs.llm-agents; [
-        # vscode forks
-        # antigravity
-        # code-cursor
+      packages =
+        with pkgs.llm-agents;
+        [
+          # vscode forks
+          # antigravity
+          # code-cursor
 
-        # cli
-        antigravity-cli
-        ccusage
-        pkgs.playwright-mcp
-        # cursor-cli
-        # kilocode-cli
+          # cli
+          antigravity-cli
+          ccusage
+          pkgs.playwright-mcp
+          # cursor-cli
+          # kilocode-cli
 
-        # FIXME vibe-cli is broken as of 2026-02-25
-        # (pkgs.writeShellScriptBin "vibe" ''
-        #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
-        #
-        #   exec ${mistral-vibe}/bin/vibe "$@"
-        # '')
-      ];
+          # FIXME vibe-cli is broken as of 2026-02-25
+          # (pkgs.writeShellScriptBin "vibe" ''
+          #   export VIBE_HOME="''${VIBE_HOME:-${config.xdg.configHome}/vibe}"
+          #
+          #   exec ${mistral-vibe}/bin/vibe "$@"
+          # '')
+        ]
+        # Agents label their browser sessions with it (see CONTEXT.md).
+        ++ [ browserAgentTopic ];
     };
   };
 }
