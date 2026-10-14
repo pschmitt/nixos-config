@@ -9,5 +9,7 @@
       ../../services/agy-warmup.nix
       ./immich-mcp.nix
     ];
+
+    services.codex-remote-control.enable = true;
   };
 }

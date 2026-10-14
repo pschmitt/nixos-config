@@ -17,9 +17,16 @@ let
     export CODEX_HOME=${lib.escapeShellArg codexHome}
     exec ${lib.escapeShellArg codexStandaloneBin} remote-control start
   '';
+
+  codexRemoteControlRestart = pkgs.writeShellScript "codex-remote-control-restart" ''
+    export CODEX_HOME=${lib.escapeShellArg codexHome}
+    exec ${lib.escapeShellArg codexStandaloneBin} app-server daemon restart
+  '';
 in
 {
   options.services.codex-remote-control = {
+    enable = lib.mkEnableOption "the Codex remote-control daemon";
+
     configDir = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -27,12 +34,19 @@ in
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     home.activation.codex-remote-control-standalone = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       codex_standalone_bin=${lib.escapeShellArg codexStandaloneBin}
+      codex_standalone_target=$(readlink "$codex_standalone_bin" 2>/dev/null || :)
 
       $DRY_RUN_CMD mkdir -p "$(dirname "$codex_standalone_bin")"
       $DRY_RUN_CMD ln -sfn ${lib.escapeShellArg codexBin} "$codex_standalone_bin"
+
+      if [[ "$codex_standalone_target" != ${lib.escapeShellArg codexBin} ]] &&
+        systemctl --user is-active --quiet codex-remote-control.service
+      then
+        $DRY_RUN_CMD ${lib.escapeShellArg codexRemoteControlRestart}
+      fi
     '';
 
     systemd.user.services.codex-remote-control = {
@@ -45,7 +59,7 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         ExecStart = "${codexRemoteControlStart}";
-        ExecStop = "${lib.escapeShellArg codexStandaloneBin} remote-control stop";
+        ExecStop = "${lib.escapeShellArg codexStandaloneBin} app-server daemon stop";
         WorkingDirectory = "%h";
         StandardInput = "null";
         StandardOutput = "append:${config.home.homeDirectory}/.local/state/codex-remote-control.log";
