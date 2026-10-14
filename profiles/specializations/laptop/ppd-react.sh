@@ -153,6 +153,32 @@ has_battery() {
   return 1
 }
 
+# Icon for running on battery: the current system battery level, rounded to
+# the nearest 10 (Adwaita ships battery-level-{0..100}-symbolic).
+battery_level_icon() {
+  local supply type scope capacity
+
+  for supply in "${PPD_REACT_POWER_SUPPLY_ROOT:-/sys/class/power_supply}"/*
+  do
+    [[ -r "$supply/type" && -r "$supply/capacity" ]] || continue
+    IFS= read -r type <"$supply/type"
+    [[ "$type" == Battery ]] || continue
+    scope=""
+    if [[ -r "$supply/scope" ]]
+    then
+      IFS= read -r scope <"$supply/scope"
+    fi
+    # Skip peripheral batteries (mice, headsets, ...)
+    [[ "$scope" == Device ]] && continue
+    IFS= read -r capacity <"$supply/capacity"
+    [[ "$capacity" =~ ^[0-9]+$ ]] || continue
+    printf 'battery-level-%d-symbolic\n' "$(( (capacity + 5) / 10 * 10 ))"
+    return 0
+  done
+
+  printf '%s\n' battery-good-symbolic
+}
+
 external_power_state() {
   if has_external_power
   then
@@ -166,8 +192,9 @@ external_power_state() {
 }
 
 notify_all_sessions() {
-  local summary="$1"
-  local body="$2"
+  local icon="$1"
+  local summary="$2"
+  local body="$3"
 
   if ! should_notify
   then
@@ -198,7 +225,7 @@ notify_all_sessions() {
 
     if ! XDG_RUNTIME_DIR="$runtime_dir" \
       DBUS_SESSION_BUS_ADDRESS="unix:path=$bus" \
-      runuser -u "$user" -- notify-send -a "$NOTIFY_APP_NAME" "$summary" "$body"
+      runuser -u "$user" -- notify-send -a "$NOTIFY_APP_NAME" -i "$icon" "$summary" "$body"
     then
       log_warn "notify-send failed for user $user (uid $uid)"
     fi
@@ -314,16 +341,17 @@ format_unit_list() {
 }
 
 notify_unit_change() {
-  local summary="$1"
-  local action="$2"
-  shift 2
+  local icon="$1"
+  local summary="$2"
+  local action="$3"
+  shift 3
 
   if (($# == 0))
   then
     return 0
   fi
 
-  notify_all_sessions "$summary" "$action: $(format_unit_list "$@")"
+  notify_all_sessions "$icon" "$summary" "$action: $(format_unit_list "$@")"
 }
 
 user_systemctl() {
@@ -507,10 +535,10 @@ apply_power_saver_units() {
     start_resume_units
     if [[ "$notify_change" == power && "$power_state" == connected ]]
     then
-      notify_unit_change "External power connected" "Started" "${STARTED_UNITS[@]}"
+      notify_unit_change battery-full-charging-symbolic "External power connected" "Started" "${STARTED_UNITS[@]}"
     elif [[ "$notify_change" == power ]]
     then
-      notify_unit_change "Power source unavailable" "Started" "${STARTED_UNITS[@]}"
+      notify_unit_change battery-missing-symbolic "Power source unavailable" "Started" "${STARTED_UNITS[@]}"
     fi
     return 0
   fi
@@ -520,10 +548,10 @@ apply_power_saver_units() {
   manage_user_units stop "${USER_UNITS_STOP_ON_POWER_SAVER[@]}"
   if [[ "$notify_change" == profile ]]
   then
-    notify_unit_change "Power profile: power-saver" "Stopped" "${STOPPED_UNITS[@]}"
+    notify_unit_change power-profile-power-saver-symbolic "Power profile: power-saver" "Stopped" "${STOPPED_UNITS[@]}"
   elif [[ "$notify_change" == power ]]
   then
-    notify_unit_change "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
+    notify_unit_change "$(battery_level_icon)" "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
   fi
 }
 
@@ -547,7 +575,7 @@ apply_profile() {
       restore_captured_units
       if [[ -n "$profile_changed" && "$power_state" == battery ]]
       then
-        notify_unit_change "Power profile: $profile" "Started" "${RESUMED_UNITS[@]}"
+        notify_unit_change "power-profile-${profile}-symbolic" "Power profile: $profile" "Started" "${RESUMED_UNITS[@]}"
       fi
     ;;
   esac
@@ -675,9 +703,9 @@ main() {
       then
         if [[ "$current_power_state" == connected ]]
         then
-          notify_unit_change "External power connected" "Started" "${STARTED_UNITS[@]}"
+          notify_unit_change battery-full-charging-symbolic "External power connected" "Started" "${STARTED_UNITS[@]}"
         else
-          notify_unit_change "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
+          notify_unit_change "$(battery_level_icon)" "External power disconnected" "Stopped" "${STOPPED_UNITS[@]}"
         fi
       else
         apply_power_saver_units "$current_power_state" power
