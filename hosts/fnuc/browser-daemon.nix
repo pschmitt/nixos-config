@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   inherit (config.mainUser) username;
   meshNodes = [
@@ -9,6 +14,8 @@ let
 in
 {
   services.browser-daemon = {
+    # fnuc also runs the Home Assistant VM: keep the browser load modest.
+    maxSessions = lib.mkForce 5;
     # The live view's H.264 encoded on the Intel GPU: an animated page cost ~13%
     # of a core this way vs ~67% with x264 and ~147% as a JPEG screencast.
     video.encoder = "vaapi";

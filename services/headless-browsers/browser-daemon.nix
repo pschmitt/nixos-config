@@ -18,7 +18,7 @@ in
     browser-daemon = {
       enable = true;
       bind = "127.0.0.1:3001";
-      maxSessions = 8;
+      maxSessions = 10;
       sessionMemoryMaxMB = 2048;
       memoryMax = "6G";
       cpuQuota = "300%";
