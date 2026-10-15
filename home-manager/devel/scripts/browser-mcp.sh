@@ -64,13 +64,20 @@ main() {
   local endpoint="$1"
   local output_dir="$2"
   local query
+  local sep="?"
 
   query="agent=$(uri "$(agent_label)")"
   query+="&conversation=$(uri "$(conversation_id)")"
   query+="&cwd=$(uri "$PWD")"
   query+="&machine=$(uri "$(uname -n)")"
 
-  exec playwright-mcp --cdp-endpoint="${endpoint}?${query}" --output-dir="$output_dir"
+  # The endpoint may already carry a query, e.g. ?profile=work
+  if [[ "$endpoint" == *\?* ]]
+  then
+    sep="&"
+  fi
+
+  exec playwright-mcp --cdp-endpoint="${endpoint}${sep}${query}" --output-dir="$output_dir"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

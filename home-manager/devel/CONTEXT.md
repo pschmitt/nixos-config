@@ -60,7 +60,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Browser MCPs
 
-- The browser MCPs (`browser-fnuc`, `browser-rofl-13`, `browser-rofl-14`) tell the browser-daemon dashboard which agent and conversation drive a session. When you start using one, label your sessions with what you are doing, a few words like a tmux window name: `browser-agent-topic "netbox invoice lookup"`. Run it again when the task changes.
+- For work web UIs (Outlook, OpsGenie), use `browser-fnuc-work`: it opens the persistent browser-daemon profile `work`, which is usually still signed in.
+- The browser MCPs (`browser-fnuc`, `browser-fnuc-work`, `browser-rofl-13`, `browser-rofl-14`) tell the browser-daemon dashboard which agent and conversation drive a session. When you start using one, label your sessions with what you are doing, a few words like a tmux window name: `browser-agent-topic "netbox invoice lookup"`. Run it again when the task changes.
 - Look at or manage browser sessions from the shell with `browser-daemon session list|show|new|stop|rename|tabs|open`, and the same for `profile`, `recording` and `node` (`--json` for scripts, `--url` for another node, `browser-daemon tui` for a terminal UI). Only stop sessions you started: others belong to other agents.
 
 ## Shell work

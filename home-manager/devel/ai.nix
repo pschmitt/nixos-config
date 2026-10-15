@@ -39,18 +39,30 @@ let
 
   # Browser automation MCPs attached to each host's native browser-daemon over CDP.
   # browser-daemon starts a fresh, isolated Chrome per connection.
-  browserMcps = lib.listToAttrs (
-    map (host: {
-      name = "browser-${host}";
-      value = {
+  browserMcps =
+    lib.listToAttrs (
+      map (host: {
+        name = "browser-${host}";
+        value = {
+          command = lib.getExe browserMcp;
+          args = [
+            "wss://browser.${host}.${config.domains.netbird}/chromium"
+            "${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
+          ];
+        };
+      }) browserHosts
+    )
+    // {
+      # Persistent "work" profile on fnuc, already signed in to Microsoft
+      # (Outlook) and OpsGenie.
+      browser-fnuc-work = {
         command = lib.getExe browserMcp;
         args = [
-          "wss://browser.${host}.${config.domains.netbird}/chromium"
-          "${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
+          "wss://browser.fnuc.${config.domains.netbird}/chromium?profile=work"
+          "${config.xdg.cacheHome}/playwright-mcp/browser-fnuc-work"
         ];
       };
-    }) browserHosts
-  );
+    };
 
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
   n8nSkillsSrc = pkgs.fetchFromGitHub {
