@@ -151,7 +151,6 @@ mute_mic_chain() {
   local -a nodes
   mapfile -t nodes < <(mic_chain_nodes | jq -r '.[]
     | select(.info.props["node.name"] == "rnnoise_source"
-      or .info.props["node.name"] == "meeting_source"
       or .info.props["node.name"] == "capture.rnnoise_source"
       or .info.props["device.api"] != null) | .id')
   for node in "${nodes[@]}"
