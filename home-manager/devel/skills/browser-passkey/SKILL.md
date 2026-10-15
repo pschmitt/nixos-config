@@ -171,6 +171,14 @@ only that credential's warning. Sync the ordinary Bitwarden client before
 retrying, then verify site acceptance and the server's counter and warning.
 A completed rbw writeback proves vault synchronization, not server acceptance.
 
+Never inject a passkey on a relying party the ordinary Bitwarden client also
+signs in to (Authelia, auth.brkn.lol) unless that client's counter is known to
+follow: the injector advances the server's `sign_count` past what the client
+sends, and the client is then rejected as a clone (seen 2026-10-15: server and
+vault at 25, client below, warning latched). The repair used there: SQLite
+backup under `/mnt/data/backups/authelia/`, then `clone_warning=0` and
+`sign_count=0` for that one credential, so the client's next assertion passes.
+
 The server rejects competing updates using its revision timestamp; rbw also
 locks the item against concurrent injections on the same machine. Avoid
 simultaneous use of the same passkey across clients, since counters cannot
