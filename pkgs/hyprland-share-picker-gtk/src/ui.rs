@@ -7,7 +7,7 @@ use std::{
     path::PathBuf,
     process::{self, Command},
     rc::Rc,
-    sync::mpsc::{Receiver, Sender, channel},
+    sync::mpsc::{Receiver, Sender, channel, sync_channel},
     thread,
     time::{Duration, Instant},
 };
@@ -130,7 +130,9 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     let highlighter = OverlayHighlighter::new(&config);
     let desktop_reg = Rc::new(DesktopRegistry::new());
 
-    let (frame_tx, frame_rx) = channel::<FrameMessage>();
+    // Frame delivery stops when the native window is unmapped. Bound both
+    // shm and dmabuf messages and let the worker drop frames instead of block.
+    let (frame_tx, frame_rx) = sync_channel::<FrameMessage>(16);
     let capture_mgr = Rc::new(CaptureManager::new(frame_tx));
     let monitors = query_monitors();
     let clients = query_clients();
@@ -1599,7 +1601,10 @@ fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
 fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
     let window = state.borrow().window.clone();
     if let Some(win) = window {
-        win.set_visible(true);
+        // Reusing the hidden native surface can leave GTK's widget mapped
+        // while its Wayland surface stays unmapped after slurp exits. Drop
+        // that surface so present() creates a new toplevel and frame clock.
+        WidgetExt::unrealize(&win);
         win.present();
     }
     eprintln!("hyprland-share-picker: restored picker after chooser");

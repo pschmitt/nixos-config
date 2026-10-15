@@ -2,7 +2,9 @@ use std::{
     any::Any,
     collections::HashMap,
     os::fd::OwnedFd,
-    sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError, channel},
+    sync::mpsc::{
+        Receiver, RecvTimeoutError, Sender, SyncSender, TryRecvError, TrySendError, channel,
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -145,7 +147,7 @@ pub struct CaptureManager {
 }
 
 impl CaptureManager {
-    pub fn new(frame_sender: Sender<FrameMessage>) -> Self {
+    pub fn new(frame_sender: SyncSender<FrameMessage>) -> Self {
         let (cmd_sender, cmd_receiver) = channel::<CaptureCommand>();
         thread::Builder::new()
             .name("hyprland-capture-worker".into())
@@ -259,7 +261,7 @@ struct Worker {
     /// until nothing references them any more.
     retired: Vec<WayshotConnection>,
     conn: WayshotConnection,
-    frame_sender: Sender<FrameMessage>,
+    frame_sender: SyncSender<FrameMessage>,
     cards: HashMap<usize, CardEntry>,
     active_tab: String,
     paused: bool,
@@ -272,7 +274,7 @@ struct Worker {
     next_buffer_id: u64,
 }
 
-fn run_worker(receiver: Receiver<CaptureCommand>, frame_sender: Sender<FrameMessage>) {
+fn run_worker(receiver: Receiver<CaptureCommand>, frame_sender: SyncSender<FrameMessage>) {
     let Some((conn, dmabuf)) = connect() else {
         return;
     };
@@ -515,7 +517,7 @@ impl Worker {
                 };
                 match capture_shm_target(&mut self.conn, &target, scale, toplevel) {
                     Ok(frame) => {
-                        let _ = self.frame_sender.send(FrameMessage {
+                        let _ = self.frame_sender.try_send(FrameMessage {
                             card_id: id,
                             frame: FramePayload::Shm(frame),
                         });
@@ -582,12 +584,21 @@ impl Worker {
             .push(self.next_buffer_id);
         self.next_buffer_id += 1;
 
-        self.frame_sender
-            .send(FrameMessage {
-                card_id: id,
-                frame: FramePayload::Dmabuf(frame),
-            })
-            .map_err(|_| anyhow!("frame channel closed"))?;
+        let buffer_id = frame.buffer_id;
+        if let Err(err) = self.frame_sender.try_send(FrameMessage {
+            card_id: id,
+            frame: FramePayload::Dmabuf(frame),
+        }) {
+            // A hidden or stalled UI must not retain frames indefinitely.
+            // Release both the queued fd and the worker's backing buffer.
+            self.held.remove(&buffer_id);
+            if let Some(ids) = self.inflight.get_mut(&id) {
+                ids.retain(|held_id| *held_id != buffer_id);
+            }
+            if matches!(err, TrySendError::Disconnected(_)) {
+                return Err(anyhow!("frame channel closed"));
+            }
+        }
 
         Ok(())
     }
