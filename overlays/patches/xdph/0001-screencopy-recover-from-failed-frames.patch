@@ -1,0 +1,46 @@
+diff --git a/src/portals/Screencopy.cpp b/src/portals/Screencopy.cpp
+index 8c84c16..6e1265e 100644
+--- a/src/portals/Screencopy.cpp
++++ b/src/portals/Screencopy.cpp
+@@ -442,6 +442,20 @@ void CScreencopyPortal::SSession::initCallbacks() {
+             if (!self)
+                 return;
+             sharingData.status = FRAME_FAILED;
++
++            // The compositor fails a frame when the source changes size
++            // between announcing its buffer and the copy, e.g. while a
++            // shared window is resized. Clean up like onReady does: hand
++            // the dequeued buffer back (flagged corrupt), queue the next
++            // frame and drop the dead callback. Otherwise every later
++            // startCopy() bails with "already scheduled" and the stream
++            // stalls until it is restarted.
++            g_pPortalManager->m_sPortals.screencopy->m_pPipewire->enqueue(this);
++
++            if (g_pPortalManager->m_sPortals.screencopy->m_pPipewire->streamFromSession(this))
++                g_pPortalManager->m_sPortals.screencopy->queueNextShareFrame(this);
++
++            sharingData.frameCallback.reset();
+         });
+         sharingData.frameCallback->setDamage([this, self = self](CCZwlrScreencopyFrameV1* r, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+             Debug::log(TRACE, "[sc] wlrOnDamage for {}", (void*)self.get());
+@@ -560,6 +574,20 @@ void CScreencopyPortal::SSession::initCallbacks() {
+             if (!self)
+                 return;
+             sharingData.status = FRAME_FAILED;
++
++            // The compositor fails a frame when the source changes size
++            // between announcing its buffer and the copy, e.g. while a
++            // shared window is resized. Clean up like onReady does: hand
++            // the dequeued buffer back (flagged corrupt), queue the next
++            // frame and drop the dead callback. Otherwise every later
++            // startCopy() bails with "already scheduled" and the stream
++            // stalls until it is restarted.
++            g_pPortalManager->m_sPortals.screencopy->m_pPipewire->enqueue(this);
++
++            if (g_pPortalManager->m_sPortals.screencopy->m_pPipewire->streamFromSession(this))
++                g_pPortalManager->m_sPortals.screencopy->queueNextShareFrame(this);
++
++            sharingData.windowFrameCallback.reset();
+         });
+         sharingData.windowFrameCallback->setDamage([this, self = self](CCHyprlandToplevelExportFrameV1* r, uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
+             Debug::log(TRACE, "[sc] hlOnDamage for {}", (void*)self.get());

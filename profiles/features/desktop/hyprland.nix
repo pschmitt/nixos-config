@@ -7,7 +7,14 @@
 
 let
   hyprlandPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-  xdphPkg = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
+  xdphPkg =
+    inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland.overrideAttrs
+      (old: {
+        patches = (old.patches or [ ]) ++ [
+          # A failed frame (e.g. resizing a shared window) stalls the stream.
+          ../../../overlays/patches/xdph/0001-screencopy-recover-from-failed-frames.patch
+        ];
+      });
 in
 {
   nix.settings = {
