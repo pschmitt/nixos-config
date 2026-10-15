@@ -12,6 +12,7 @@
   imports = [
     ./bin
     ./conf
+    ./mcp.nix
     ./plugins
     ./quickshell-bar
     ./services

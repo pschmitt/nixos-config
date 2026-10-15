@@ -79,6 +79,15 @@ in
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
+  hypruse = pkgs.python3Packages.callPackage ./hypruse {
+    inherit (pkgs)
+      grim
+      hyprland
+      systemd
+      wl-clipboard
+      wtype
+      ;
+  };
   immich-face-to-album = pkgs.callPackage ./immich-face-to-album { };
   immich-mcp = pkgs.callPackage ./immich-mcp { };
   jsonrepair = pkgs.callPackage ./jsonrepair { };
