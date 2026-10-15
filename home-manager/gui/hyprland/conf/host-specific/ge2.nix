@@ -1,6 +1,7 @@
 { lib, ... }:
 let
   inherit (lib.generators) mkLuaInline;
+  layout = import ../layout-helpers.nix { inherit lib; };
 in
 {
   # Both verified via `hyprctl monitors -j`, 2026-09-07: scale 1.0, no
@@ -26,6 +27,24 @@ in
       logicalHeight = 1440.0;
     }
   ];
+
+  # The internal panel is Hyprland's first (initially focused) monitor and
+  # hosts ws2, so autostart windows that map before the hyprland.start focus
+  # handler below runs would open on ws2. Pin them to ws1 (on the LG)
+  # regardless of that race. Registered at config-parse time, not inside
+  # hyprland.start, so it catches early XDG autostart windows.
+  wayland.windowManager.hyprland.extraConfig = layout.mkStartupLayoutLua {
+    rules = [
+      {
+        class = "firefox";
+        workspace = 1;
+      }
+      {
+        class = "kitty-tmux";
+        workspace = 1;
+      }
+    ];
+  };
 
   wayland.windowManager.hyprland.settings = {
     # lan-mouse presents remote input as a virtual keyboard. Apply the GPD
