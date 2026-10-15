@@ -6,8 +6,8 @@ description: Authenticate automated browser sessions (Playwright MCP) using WebA
 # Browser Passkey Authentication
 
 Use this skill when an automated browser session driven by Playwright MCP
-(`browser-fnuc`, `browser-rofl-13`, `browser-rofl-14`; each attaches to
-that host's native browser-daemon Chromium over CDP) hits a WebAuthn passkey or FIDO2 login challenge.
+(the `browser` MCP; it attaches to a browser-daemon node's Chromium over CDP,
+`browser_use node=...` picks the node) hits a WebAuthn passkey or FIDO2 login challenge.
 
 In these remote browsers there is no USB key, no phone proximity check
 and no platform authenticator. Instead, `rbw passkey inject` creates a CDP `WebAuthn` virtual authenticator
@@ -30,12 +30,12 @@ Verified on the Chromium Playwright MCPs (2026-10):
   private key in the code, or in a file loaded via `filename`, **leaks it into
   the transcript and logs**. This happened once; that passkey had to be
   rotated. `filename` is also limited to
-  `~/.cache/playwright-mcp/<server>/` and the nixos-config checkout.
+  `~/.cache/playwright-mcp/browser/<node>-<profile or throwaway>/` and the nixos-config checkout.
 - **Never `echo`, `cat` or return the credential**, and never print
   `rbw get --raw` output for passkey entries.
 - **Google sign-in shows a CAPTCHA** to these automated browsers before any
   passkey is offered ("Type the text you hear or see"). Reproduced twice on
-  `browser-fnuc` (home IP): the fresh `accounts.google.com`
+  the fnuc node (home IP; `browser_use node=fnuc`): the fresh `accounts.google.com`
   page has no CAPTCHA, but it appears right after submitting the email, even
   with a valid virtual authenticator loaded, so it is not caused by repeated
   attempts. That is a bot check; do not try to solve or bypass it. Either
@@ -43,7 +43,7 @@ Verified on the Chromium Playwright MCPs (2026-10):
   willing, let them solve it in the live view (see "When a human has to step
   in"). Decide that early, before a passkey is exposed for nothing.
 - **Verified end to end on Authelia** (`auth.brkn.lol`, 2026-10-08, via
-  `browser-fnuc`): inject, open the login page, click "Sign in
+  the fnuc node): inject, open the login page, click "Sign in
   with a passkey", and Authelia accepts the virtual passkey as first factor
   ("Hi <name>"). Authelia's `two_factor` policy then still asks for the
   password. Do not type it yourself from the vault into the page (it would

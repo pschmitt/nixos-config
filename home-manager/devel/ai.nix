@@ -37,32 +37,25 @@ let
     text = builtins.readFile ./scripts/browser-agent-topic.sh;
   };
 
-  # Browser automation MCPs attached to each host's native browser-daemon over CDP.
-  # browser-daemon starts a fresh, isolated Chrome per connection.
-  browserMcps =
-    lib.listToAttrs (
-      map (host: {
-        name = "browser-${host}";
-        value = {
-          command = lib.getExe browserMcp;
-          args = [
-            "wss://browser.${host}.${config.domains.netbird}/chromium"
-            "${config.xdg.cacheHome}/playwright-mcp/browser-${host}"
-          ];
-        };
-      }) browserHosts
-    )
-    // {
-      # Persistent "work" profile on fnuc, already signed in to Microsoft
-      # (Outlook) and OpsGenie.
-      browser-fnuc-work = {
-        command = lib.getExe browserMcp;
-        args = [
-          "wss://browser.fnuc.${config.domains.netbird}/chromium?profile=work"
-          "${config.xdg.cacheHome}/playwright-mcp/browser-fnuc-work"
-        ];
-      };
-    };
+  # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
+  # MCP on a browser-daemon node, a throwaway browser on the node with the most room
+  # unless the agent asks otherwise (`browser_use`). Profiles keep their logins, so
+  # agents may only open the ones allowed here; `work` is signed in to Microsoft
+  # (Outlook) and OpsGenie.
+  browserMcps.browser = {
+    command = lib.getExe' pkgs.browser-daemon "browser-daemon";
+    args = [
+      "mcp"
+      "--url"
+      (browserNode "rofl-14")
+      "--playwright-cmd"
+      (lib.getExe browserMcp)
+      "--output-dir"
+      "${config.xdg.cacheHome}/playwright-mcp/browser"
+      "--allow-profile"
+      "work"
+    ];
+  };
 
   # External n8n skill set — https://github.com/czlonkowski/n8n-skills
   n8nSkillsSrc = pkgs.fetchFromGitHub {
