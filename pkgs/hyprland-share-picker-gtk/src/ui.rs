@@ -1553,24 +1553,34 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
 }
 
 fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
-    if let Some(ref h) = state.borrow().highlighter {
-        h.clear();
-    }
-    if let Some(ref win) = state.borrow().window {
-        win.set_visible(false);
-    }
-    // Nothing is on screen to preview while slurp owns the display, and the
-    // compositor should not be doing capture work during the drag.
-    state.borrow().capture_mgr.set_paused(true);
-
-    let monitors = state.borrow().monitors.clone();
     let (tx, rx) = channel::<Option<String>>();
+    let (window, monitors) = {
+        let mut s = state.borrow_mut();
+        if s.pick_receiver.is_some() {
+            return;
+        }
+        s.pick_receiver = Some(rx);
+        s.capture_mgr.set_paused(true);
+        if let Some(ref h) = s.highlighter {
+            h.clear();
+        }
+        (s.window.clone(), s.monitors.clone())
+    };
+    // Mapping emits GTK signals synchronously; do not hold AppState across it.
+    if let Some(window) = window {
+        window.set_visible(false);
+    }
+    eprintln!("hyprland-share-picker: starting region chooser");
     thread::spawn(move || {
         let res = Command::new("slurp")
             .args(["-f", "%o %x %y %w %h"])
             .output();
 
         let selection = if let Ok(out) = res {
+            eprintln!(
+                "hyprland-share-picker: region chooser exited: {}",
+                out.status
+            );
             if out.status.success() {
                 let s = String::from_utf8_lossy(&out.stdout);
                 parse_region(&s, &monitors)
@@ -1578,20 +1588,21 @@ fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
                 None
             }
         } else {
+            eprintln!("hyprland-share-picker: could not start region chooser");
             None
         };
 
         let _ = tx.send(selection);
     });
-
-    state.borrow_mut().pick_receiver = Some(rx);
 }
 
 fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
-    if let Some(ref win) = state.borrow().window {
+    let window = state.borrow().window.clone();
+    if let Some(win) = window {
         win.set_visible(true);
         win.present();
     }
+    eprintln!("hyprland-share-picker: restored picker after chooser");
     state.borrow().capture_mgr.set_paused(false);
 
     if let Some(sel) = selection {

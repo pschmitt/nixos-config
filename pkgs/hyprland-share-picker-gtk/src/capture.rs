@@ -451,6 +451,7 @@ impl Worker {
     }
 
     fn capture_card(&mut self, id: usize) {
+        let started = Instant::now();
         let Some((target, scale, fps)) = self
             .cards
             .get(&id)
@@ -468,6 +469,7 @@ impl Worker {
 
         let mut error: Option<anyhow::Error> = None;
         let mut delivered = false;
+        let mut used_shm = false;
 
         // Resolve the source once: both paths need it, and the lookup may
         // rebuild the connection.
@@ -506,6 +508,7 @@ impl Worker {
             }
 
             if !delivered {
+                used_shm = true;
                 let toplevel = match resolved {
                     Some(WayshotTarget::Toplevel(handle)) => Some(handle),
                     _ => None,
@@ -536,7 +539,14 @@ impl Worker {
             }
         }
 
-        let interval = Duration::from_secs_f32(1.0 / fps.max(0.2));
+        // CPU previews copy and downscale an entire output, including for a
+        // region. Keep them below 5 fps and leave at least as much idle time
+        // as the capture consumed. The configured high rate is for dmabufs.
+        let interval = if used_shm {
+            Duration::from_secs_f32(1.0 / fps.clamp(0.2, 5.0)).max(started.elapsed())
+        } else {
+            Duration::from_secs_f32(1.0 / fps.max(0.2))
+        };
         card.next_capture = Instant::now() + interval;
     }
 
