@@ -180,8 +180,10 @@ sync_mic_overlay() {
   if mic_is_muted
   then
     obscli item -s "$DEFAULT_SCENE" show "$MIC_OFF_ITEM" 2>/dev/null || true
+    notify "🔇 Microphone muted"
   else
     obscli item -s "$DEFAULT_SCENE" hide "$MIC_OFF_ITEM" 2>/dev/null || true
+    notify "🎙️ Microphone unmuted"
   fi
 }
 
