@@ -12,6 +12,9 @@ in
     owner = "browser-daemon";
     group = "browser-daemon";
     mode = "0440";
+    # Read once at startup: a rotated secret needs the daemon restarted (its
+    # sessions survive that).
+    restartUnits = [ "browser-daemon.service" ];
   };
 
   services = {
