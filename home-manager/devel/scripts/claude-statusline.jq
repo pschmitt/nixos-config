@@ -26,14 +26,14 @@ def format_relative(diff):
   if diff <= 0 then "<1m"
   elif diff < 3600 then
     ((diff / 60) | floor) as $m | if $m == 0 then "<1m" else "\($m)m" end
-  elif diff < 86400 then
+  elif diff < 7200 then
     ((diff / 3600) | floor) as $h |
     (((diff % 3600) / 60) | floor) as $m |
     if $m > 0 then "\($h)h\($m)m" else "\($h)h" end
+  elif diff < 86400 then
+    "\((diff + 1800) / 3600 | floor)h"
   else
-    ((diff / 86400) | floor) as $d |
-    (((diff % 86400) / 3600) | floor) as $h |
-    if $h > 0 then "\($d)d\($h)h" else "\($d)d" end
+    "\((diff + 43200) / 86400 | floor)d"
   end;
 
 def format_usd(amt):
@@ -51,8 +51,7 @@ def format_usd(amt):
   ),
 
   (
-    ($in.workspace.current_dir // "") | split("/") | last | select(. != null and . != "") |
-    "📁 \(.)"
+    ($in.workspace.current_dir // "") | split("/") | last | select(. != null and . != "")
   ),
 
   (
@@ -81,7 +80,7 @@ def format_usd(amt):
       format_relative(.value.resets_at - now)
     else "" end) as $rel |
     if $rel != "" then
-      "\($c)\($name) \($pct)%\(reset) \(dim)(\($rel))\(reset)"
+      "\($c)\($name) \($pct)%\(reset)\(dim)(\($rel))\(reset)"
     else
       "\($c)\($name) \($pct)%\(reset)"
     end
