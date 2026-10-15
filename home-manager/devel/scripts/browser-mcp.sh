@@ -12,11 +12,27 @@ EOF
 }
 
 # claude-code_2-1-296_harness -> "claude-code 2.1.296"; plus "(work)" for the
-# claude-work profile. Codex sets no AI_AGENT: recognized by its variables.
+# claude-work profile. Agents that set no AI_AGENT are recognized by what they set
+# themselves, which beats an inherited AI_AGENT (an agent started from another):
+# Antigravity (ANTIGRAVITY_AGENT), OpenCode (OPENCODE), Gemini CLI (GEMINI_CLI),
+# Codex (CODEX_*). Failing those, the MCP client's own name (BROWSER_MCP_CLIENT,
+# its `initialize`), e.g. "gemini-cli-mcp-client" -> "gemini-cli".
 agent_label() {
   local label="" name="" rest="" version=""
 
-  if [[ -n "${AI_AGENT:-}" ]]
+  if [[ -n "${ANTIGRAVITY_AGENT:-}" ]]
+  then
+    label="agy"
+  elif [[ -n "${OPENCODE:-}" ]]
+  then
+    label="opencode"
+  elif [[ -n "${GEMINI_CLI:-}" ]]
+  then
+    label="gemini-cli"
+  elif [[ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}${CODEX_SANDBOX:-}" ]]
+  then
+    label="codex"
+  elif [[ -n "${AI_AGENT:-}" ]]
   then
     name="${AI_AGENT%%_*}"
     rest="${AI_AGENT#*_}"
@@ -26,12 +42,13 @@ agent_label() {
     then
       label="$name ${version//-/.}"
     fi
-  elif [[ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}${CODEX_SANDBOX:-}" ]]
+  elif [[ -n "${BROWSER_MCP_CLIENT:-}" ]]
   then
-    label="codex"
+    label="${BROWSER_MCP_CLIENT%-mcp-client}"
+    label="${label%-client}"
   fi
 
-  if [[ -n "$label" && "${CLAUDE_CONFIG_DIR:-}" == */claude-work ]]
+  if [[ "$label" == claude* && "${CLAUDE_CONFIG_DIR:-}" == */claude-work ]]
   then
     label="$label (work)"
   fi
@@ -40,7 +57,7 @@ agent_label() {
 }
 
 conversation_id() {
-  printf '%s' "${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-}}}"
+  printf '%s' "${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-${ANTIGRAVITY_CONVERSATION_ID:-}}}}"
 }
 
 uri() {
