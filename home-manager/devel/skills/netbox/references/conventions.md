@@ -12,7 +12,7 @@ Retrieve credentials with the runtime-appropriate method:
 - **Local Codex/shell:** use:
 
 ```bash
-zhj rbw::get --json "Netbox (AI Agent)"
+rbw get --json "Netbox (AI Agent)"
 ```
 
 Notes:

@@ -2,13 +2,15 @@
 name: rbw
 description: >-
   Unlock rbw (Bitwarden CLI) via a Home Assistant phone notification.
-  Use when rbw commands fail with "not unlocked", before calling
-  rbw::get/rbw::find, or whenever the vault needs to be unlocked.
+  Use when rbw commands fail with "not unlocked" or whenever the vault needs
+  to be unlocked.
 ---
 
 # rbw
 
-Use this skill when rbw needs to be unlocked before a command can run.
+Use this skill when the `rbw` CLI needs to be unlocked before a command can
+run. For vault operations, call `rbw` directly; do not use legacy `zhj
+rbw::get` or `zhj rbw::find` wrappers.
 
 ## This is a private fork
 

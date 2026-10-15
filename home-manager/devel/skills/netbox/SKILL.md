@@ -17,7 +17,7 @@ Use this skill for NetBox inventory and metadata work.
    - **Local Codex/shell:** use:
 
 ```bash
-zhj rbw::get --json "Netbox (AI Agent)"
+rbw get --json "Netbox (AI Agent)"
 ```
 
    If local rbw is locked, invoke the `rbw` skill to unlock it first.

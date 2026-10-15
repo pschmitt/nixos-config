@@ -12,7 +12,7 @@ Retrieve credentials with the runtime-appropriate method:
 - **Local Codex/shell:** use:
 
 ```bash
-zhj rbw::get --field "API Token" bichon.brkn.lol
+rbw get --field "API Token" bichon.brkn.lol
 ```
 
 If using local rbw and it is locked, invoke the `rbw` skill first.
