@@ -4,6 +4,10 @@
   ...
 }:
 let
+  claudeWorkSettings = (pkgs.formats.json { }).generate "claude-work-settings.json" {
+    statusLine = config.programs.claude-code.settings.statusLine;
+  };
+
   claudeWork = pkgs.writeShellApplication {
     name = "claude-work";
 
@@ -12,8 +16,11 @@ let
 
       export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
       export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+      export CLAUDE_PROFILE="work"
 
-      exec ${config.programs.claude-code.finalPackage}/bin/claude "$@"
+      exec ${config.programs.claude-code.finalPackage}/bin/claude \
+        --settings "${claudeWorkSettings}" \
+        "$@"
     '';
   };
 in

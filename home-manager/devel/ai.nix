@@ -37,6 +37,24 @@ let
     text = builtins.readFile ./scripts/browser-agent-topic.sh;
   };
 
+  claudeStatusline = pkgs.writeShellApplication {
+    name = "claude-statusline";
+    runtimeInputs = [
+      pkgs.git
+      pkgs.jq
+    ];
+    text = ''
+      branch=""
+      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        branch=$(git branch --show-current 2>/dev/null || true)
+      fi
+
+      profile="''${CLAUDE_PROFILE:-personal}"
+
+      exec jq -r --arg branch "$branch" --arg profile "$profile" -f "${./scripts/claude-statusline.jq}"
+    '';
+  };
+
   # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
   # unless the agent asks otherwise (`browser_use`). Profiles keep their logins, so
@@ -266,6 +284,10 @@ in
         settings = {
           skipDangerousModePermissionPrompt = true;
           theme = "dark";
+          statusLine = {
+            type = "command";
+            command = lib.getExe claudeStatusline;
+          };
         };
         rules = {
           context = ./CONTEXT.md;
@@ -453,7 +475,10 @@ in
           # '')
         ]
         # Agents label their browser sessions with it (see CONTEXT.md).
-        ++ [ browserAgentTopic ];
+        ++ [
+          browserAgentTopic
+          claudeStatusline
+        ];
     };
   };
 }
