@@ -59,7 +59,8 @@ let
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
   # unless the agent asks otherwise (`browser_use`). Profiles keep their logins, so
   # agents may only open the ones allowed here; `work` is signed in to Microsoft
-  # (Outlook) and OpsGenie.
+  # (Outlook) and OpsGenie, `home-assistant` to Home Assistant (ha.brkn.lol, for
+  # dashboard checks; see the HA repo's AGENTS.md).
   browserMcps.browser = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
     args = [
@@ -72,6 +73,8 @@ let
       "${config.xdg.cacheHome}/playwright-mcp/browser"
       "--allow-profile"
       "work"
+      "--allow-profile"
+      "home-assistant"
     ];
   };
 
