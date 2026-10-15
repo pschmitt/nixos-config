@@ -19,6 +19,7 @@ in
           panel_show_stream_button = false;
           mic_input_name = "mic";
           launch_command = "gtk-launch obs-studio-custom";
+          bar_hide_icon_when_running = true;
         };
       };
       plugins = {
