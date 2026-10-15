@@ -110,7 +110,7 @@ fn main() {
     }
 
     let app = Application::builder()
-        .application_id("lol.brkn.HyprlandSharePicker")
+        .application_id(hyprland::PICKER_APP_ID)
         .flags(gio::ApplicationFlags::NON_UNIQUE)
         .build();
 

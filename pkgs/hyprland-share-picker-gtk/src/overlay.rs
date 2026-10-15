@@ -1,20 +1,17 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+    rc::Rc,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use gtk4::{DrawingArea, Window, cairo, gdk, prelude::*};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
     config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, parse_rgba_color},
-    hyprland::{Client, Monitor, RegionDetails},
+    hyprland::{Client, Monitor, Rect, RegionDetails, spawn_picker_bounds_watcher},
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Rect {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-}
 
 struct MonitorOverlay {
     window: Window,
@@ -25,10 +22,15 @@ struct MonitorOverlay {
 
 struct OverlayState {
     active_rect: Option<Rect>,
+    picker_rect: Option<Rect>,
     dim_all: bool,
 }
 
 pub struct OverlayHighlighter {
+    tracking: Cell<bool>,
+    picker_bounds: Cell<Option<Rect>>,
+    tracking_tx: Sender<bool>,
+    bounds_rx: Receiver<Rect>,
     overlays: HashMap<String, MonitorOverlay>,
     config: PickerConfig,
     r: f64,
@@ -46,11 +48,19 @@ pub struct OverlayHighlighter {
 
 impl OverlayHighlighter {
     pub fn new(config: &PickerConfig) -> Option<Self> {
+        if !gtk4_layer_shell::is_supported() {
+            return None;
+        }
         let display = gdk::Display::default()?;
+        let (tracking_tx, bounds_rx) = spawn_picker_bounds_watcher();
         let (r, g, b, _) = parse_rgba_color(&config.highlight_color, DEFAULT_HIGHLIGHT_RGBA);
         let (dim_r, dim_g, dim_b, _) = parse_rgba_color(&config.dim_color, (0.0, 0.0, 0.0, 1.0));
 
         let mut highlighter = Self {
+            tracking: Cell::new(false),
+            picker_bounds: Cell::new(None),
+            tracking_tx,
+            bounds_rx,
             overlays: HashMap::new(),
             config: config.clone(),
             r,
@@ -100,6 +110,7 @@ impl OverlayHighlighter {
 
         let state = Rc::new(RefCell::new(OverlayState {
             active_rect: None,
+            picker_rect: None,
             dim_all: false,
         }));
 
@@ -175,6 +186,19 @@ impl OverlayHighlighter {
                     let _ = cr.stroke();
                     let _ = cr.restore();
                 }
+            }
+            // Keep the regular picker window clear of the layer-shell tint.
+            if let Some(picker) = s.picker_rect {
+                let _ = cr.save();
+                cr.set_operator(cairo::Operator::Clear);
+                cr.rectangle(
+                    picker.x as f64,
+                    picker.y as f64,
+                    picker.width as f64,
+                    picker.height as f64,
+                );
+                let _ = cr.fill();
+                let _ = cr.restore();
             }
         });
 
@@ -273,6 +297,8 @@ impl OverlayHighlighter {
     }
 
     pub fn clear(&self) {
+        self.set_tracking(false);
+        self.picker_bounds.set(None);
         for entry in self.overlays.values() {
             let mut s = entry.state.borrow_mut();
             if s.active_rect.is_some() || s.dim_all {
@@ -285,13 +311,38 @@ impl OverlayHighlighter {
     }
 
     fn show_entry(&self, entry: &MonitorOverlay, active_rect: Option<Rect>, dim_all: bool) {
+        self.set_tracking(true);
         {
             let mut s = entry.state.borrow_mut();
             s.active_rect = active_rect;
             s.dim_all = dim_all;
         }
-        entry.window.set_visible(true);
+        entry.window.set_visible(self.picker_bounds.get().is_some());
         entry.drawing_area.queue_draw();
+    }
+
+    fn set_tracking(&self, enabled: bool) {
+        if self.tracking.replace(enabled) != enabled {
+            let _ = self.tracking_tx.send(enabled);
+        }
+    }
+
+    pub fn refresh_picker_bounds(&self) {
+        let Some(bounds) = self.bounds_rx.try_iter().last() else {
+            return;
+        };
+        if !self.tracking.get() {
+            return;
+        }
+        self.picker_bounds.set(Some(bounds));
+        for entry in self.overlays.values() {
+            let mut state = entry.state.borrow_mut();
+            state.picker_rect = self.relative_rect(bounds, entry.geom);
+            entry
+                .window
+                .set_visible(state.active_rect.is_some() || state.dim_all);
+            entry.drawing_area.queue_draw();
+        }
     }
 
     fn relative_rect(&self, global: Rect, geom: gdk::Rectangle) -> Option<Rect> {

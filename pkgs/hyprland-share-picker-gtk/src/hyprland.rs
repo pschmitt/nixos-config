@@ -4,13 +4,15 @@ use std::{
     os::unix::net::UnixStream,
     path::PathBuf,
     process::Command,
-    sync::mpsc::{Receiver, RecvTimeoutError, channel},
+    sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel},
     thread,
     time::Duration,
 };
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+pub const PICKER_APP_ID: &str = "lol.brkn.HyprlandSharePicker";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {
@@ -125,6 +127,14 @@ pub struct PortalWindowEntry {
     pub address: Option<String>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rect {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RegionDetails {
     pub output: String,
@@ -142,6 +152,7 @@ pub fn parse_window_list(raw: &str) -> Vec<PortalWindowEntry> {
     ).unwrap();
 
     re.captures_iter(raw)
+        .filter(|cap| &cap["class"] != PICKER_APP_ID)
         .map(|cap| {
             let address = cap.name("address").map(|m| {
                 let s = m.as_str();
@@ -366,6 +377,55 @@ pub fn spawn_state_watcher() -> Receiver<HyprState> {
     state_rx
 }
 
+/// Track only the picker's bounds while highlight overlays are visible. The
+/// compositor owns toplevel positioning; Wayland clients cannot read it from
+/// GDK. Keep this polling off the UI thread and stop it when overlays are hidden.
+pub fn spawn_picker_bounds_watcher() -> (Sender<bool>, Receiver<Rect>) {
+    let (control_tx, control_rx) = channel::<bool>();
+    let (bounds_tx, bounds_rx) = channel();
+    thread::Builder::new()
+        .name("picker-bounds".into())
+        .spawn(move || {
+            while let Ok(enabled) = control_rx.recv() {
+                if !enabled {
+                    continue;
+                }
+                let mut previous = None;
+                loop {
+                    let bounds = hyprland_ipc_query::<Vec<serde_json::Value>>("j/clients")
+                        .and_then(|clients| {
+                            clients.into_iter().find(|client| {
+                                client["pid"].as_u64() == Some(u64::from(std::process::id()))
+                            })
+                        })
+                        .and_then(|client| serde_json::from_value::<Client>(client).ok())
+                        .filter(|client| client.at.len() == 2 && client.size.len() == 2)
+                        .map(|client| Rect {
+                            x: client.at[0],
+                            y: client.at[1],
+                            width: client.size[0],
+                            height: client.size[1],
+                        });
+                    if bounds != previous {
+                        if let Some(bounds) = bounds {
+                            if bounds_tx.send(bounds).is_err() {
+                                return;
+                            }
+                        }
+                        previous = bounds;
+                    }
+                    match control_rx.recv_timeout(Duration::from_millis(33)) {
+                        Ok(false) => break,
+                        Ok(true) | Err(RecvTimeoutError::Timeout) => {}
+                        Err(RecvTimeoutError::Disconnected) => return,
+                    }
+                }
+            }
+        })
+        .expect("spawn picker bounds watcher");
+    (control_tx, bounds_rx)
+}
+
 pub fn listen_socket2<F: Fn(&str) + Send + 'static>(callback: F) -> Option<thread::JoinHandle<()>> {
     let his = hyprland_instance_signature()?;
     let uid = rustix::process::getuid().as_raw();
@@ -425,7 +485,11 @@ pub fn hyprland_ipc_query<T: for<'de> Deserialize<'de>>(req: &str) -> Option<T> 
 }
 
 pub fn query_clients() -> Vec<Client> {
-    hyprland_ipc_query("j/clients").unwrap_or_default()
+    hyprland_ipc_query::<Vec<Client>>("j/clients")
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|client| client.class != PICKER_APP_ID)
+        .collect()
 }
 
 pub fn query_monitors() -> Vec<Monitor> {

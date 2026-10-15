@@ -18,7 +18,6 @@ use gtk4::{
     Orientation, Picture, PolicyType, PropagationPhase, ScrolledWindow, SelectionMode, Stack,
     StackTransitionType, ToggleButton, Widget, gdk, glib, prelude::*,
 };
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
     capture::{
@@ -261,16 +260,10 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     window.set_size_request(640, 460);
     window.add_css_class("share-picker");
 
-    let mut init_x = 0;
-    let mut init_y = 0;
-
-    if gtk4_layer_shell::is_supported() {
-        window.init_layer_shell();
-        window.set_layer(Layer::Overlay);
-        window.set_keyboard_mode(KeyboardMode::OnDemand);
-        window.set_exclusive_zone(-1);
-        window.set_namespace("hyprland-share-picker");
-
+    // A regular toplevel participates in Hyprland's move/resize bindings.
+    // The existing app-ID rules make it floating, centered, and pinned.
+    window.set_decorated(false);
+    {
         let display = gdk::Display::default();
         let focused_name = monitors.iter().find(|m| m.focused).map(|m| m.name.as_str());
         let mut target_gdk_mon = None;
@@ -293,7 +286,6 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         }
 
         let (mon_w, mon_h) = if let Some(ref mon) = target_gdk_mon {
-            window.set_monitor(mon);
             let geom = mon.geometry();
             (geom.width(), geom.height())
         } else {
@@ -302,16 +294,7 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
 
         let win_w = 1180.min(mon_w - 60).max(640);
         let win_h = 800.min(mon_h - 60).max(460);
-        init_x = ((mon_w - win_w) / 2).max(0);
-        init_y = ((mon_h - win_h) / 2).max(0);
-
         window.set_default_size(win_w, win_h);
-        window.set_anchor(Edge::Top, true);
-        window.set_anchor(Edge::Left, true);
-        window.set_margin(Edge::Left, init_x);
-        window.set_margin(Edge::Top, init_y);
-    } else {
-        window.set_default_size(1180, 800);
     }
 
     // Key handling: Esc to quit, Enter to share
@@ -347,44 +330,46 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     header.set_margin_start(28);
     header.set_margin_end(28);
 
-    if gtk4_layer_shell::is_supported() {
-        header.set_cursor_from_name(Some("grab"));
-        header.set_tooltip_text(Some("Drag to move · Double-click to center"));
+    header.set_cursor_from_name(Some("grab"));
+    header.set_tooltip_text(Some(
+        "Drag to move · Super+drag anywhere · Double-click to center",
+    ));
 
-        let drag = GestureDrag::new();
-        let header_begin = header.clone();
-        drag.connect_drag_begin(move |_g, _x, _y| {
-            header_begin.set_cursor_from_name(Some("grabbing"));
-        });
+    let drag = GestureDrag::new();
+    let win_drag = window.clone();
+    drag.connect_drag_begin(move |gesture, x, y| {
+        let Some(event) = gesture.current_event() else {
+            return;
+        };
+        let Some(device) = event.device() else { return };
+        let Some(surface) = win_drag.surface().and_downcast::<gdk::Toplevel>() else {
+            return;
+        };
+        let (x, y) = event.position().unwrap_or((x, y));
+        surface.begin_move(&device, 1, x, y, event.time());
+    });
+    header.add_controller(drag);
 
-        let win_drag = window.clone();
-        drag.connect_drag_update(move |_g, offset_x, offset_y| {
-            // Gesture offsets are relative to the moving surface, so they
-            // measure the distance still to move from its current position.
-            let x = win_drag.margin(Edge::Left) + offset_x.round() as i32;
-            let y = win_drag.margin(Edge::Top) + offset_y.round() as i32;
-            win_drag.set_margin(Edge::Left, x);
-            win_drag.set_margin(Edge::Top, y);
-        });
-
-        let header_end = header.clone();
-        drag.connect_drag_end(move |_g, _offset_x, _offset_y| {
-            header_end.set_cursor_from_name(Some("grab"));
-        });
-
-        header.add_controller(drag);
-
-        let double_click = GestureClick::new();
-        double_click.set_button(1);
-        let win_reset = window.clone();
-        double_click.connect_pressed(move |_g, n_press, _x, _y| {
-            if n_press == 2 {
-                win_reset.set_margin(Edge::Left, init_x);
-                win_reset.set_margin(Edge::Top, init_y);
-            }
-        });
-        header.add_controller(double_click);
-    }
+    let double_click = GestureClick::new();
+    double_click.set_button(1);
+    double_click.connect_pressed(move |_gesture, n_press, _x, _y| {
+        if n_press == 2 {
+            thread::spawn(|| {
+                let dispatch = format!(
+                    "hl.dsp.window.center({{ window = \"pid:{}\" }})",
+                    process::id()
+                );
+                if !Command::new("hyprctl")
+                    .args(["dispatch", &dispatch])
+                    .output()
+                    .is_ok_and(|output| output.status.success())
+                {
+                    eprintln!("hyprland-share-picker: could not center the picker");
+                }
+            });
+        }
+    });
+    header.add_controller(double_click);
 
     let title_label = Label::new(Some("Choose what to share"));
     title_label.set_xalign(0.0);
@@ -521,6 +506,9 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     window.add_tick_callback(move |_widget, _clock| {
         let selected = {
             let s = frame_state.borrow();
+            if let Some(highlighter) = s.highlighter.as_ref() {
+                highlighter.refresh_picker_bounds();
+            }
             s.selected_window_id.zip(s.selected_window_preview.clone())
         };
         deliver_frames(
