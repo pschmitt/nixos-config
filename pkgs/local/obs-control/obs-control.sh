@@ -109,34 +109,76 @@ filter_disable() {
 }
 
 # ── Microphone / PulseAudio ────────────────────────────────────────────────
-# Non-monitor sources, one name per line.
-list_real_sources() {
-  pactl list short sources | awk -F'\t' '$2 !~ /\.monitor/ { print $2 }'
+# Use the voice source as a fallback when the combined meeting source is absent.
+microphone_source() {
+  if pactl -f json list sources | jq -e 'any(.[]; .name == "rnnoise_source")' >/dev/null
+  then
+    echo rnnoise_source
+  else
+    echo @DEFAULT_SOURCE@
+  fi
 }
 
-default_source_is_muted() {
-  pactl get-source-mute @DEFAULT_SOURCE@ 2>/dev/null | grep -qi 'yes'
+# Return only the voice/mix nodes and the physical source feeding RNNoise.
+mic_chain_nodes() {
+  pw-dump | jq '
+    [.[] | select(.type == "PipeWire:Interface:Node"
+      and .info.props["node.name"] == "capture.rnnoise_source") | .id] as $capture
+    | [.[] | select(.type == "PipeWire:Interface:Link"
+      and (.info["input-node-id"] as $id | $capture | index($id)))
+      | .info["output-node-id"]] as $hardware
+    | [.[] | select(.type == "PipeWire:Interface:Node")
+      | select((.info.props["node.name"] as $name
+          | ["capture.rnnoise_source", "rnnoise_source", "meeting-mic-input",
+             "meeting-mic-mix", "soundboard-sink", "meeting-mix-monitor", "meeting_source"]
+          | index($name)) or (.id as $id | $hardware | index($id)))]'
 }
 
-mute_all_sources() {
-  local source
-  while IFS= read -r source
+mic_is_muted() {
+  local nodes
+  nodes="$(mic_chain_nodes)" || return
+  if [[ "$nodes" != "[]" ]]
+  then
+    jq -e 'any(.[]; any(.info.params.Props[]?; .mute == true or .softMute == true)
+      or (.info.props["node.name"] == "soundboard-sink" and any(.info.params.Props[]?; .monitorMute == true)))' <<< "$nodes" >/dev/null
+  else
+    pactl get-source-mute @DEFAULT_SOURCE@ | grep -qi 'yes'
+  fi
+}
+
+mute_mic_chain() {
+  local node
+  local -a nodes
+  mapfile -t nodes < <(mic_chain_nodes | jq -r '.[]
+    | select(.info.props["node.name"] == "rnnoise_source"
+      or .info.props["node.name"] == "meeting_source"
+      or .info.props["node.name"] == "capture.rnnoise_source"
+      or .info.props["device.api"] != null) | .id')
+  for node in "${nodes[@]}"
   do
-    [[ -n "$source" ]] && pactl set-source-mute "$source" 1 || true
-  done < <(list_real_sources)
+    wpctl set-mute "$node" 1 || return
+  done
+  pactl set-source-mute "$(microphone_source)" 1
 }
 
-unmute_all_sources() {
-  local source
-  while IFS= read -r source
+unmute_mic_chain() {
+  local node
+  local -a nodes
+  mapfile -t nodes < <(mic_chain_nodes | jq -r '.[].id')
+  for node in "${nodes[@]}"
   do
-    [[ -n "$source" ]] && pactl set-source-mute "$source" 0 || true
-  done < <(list_real_sources)
+    wpctl set-mute "$node" 0 || return
+  done
+  if pactl -f json list sources | jq -e 'any(.[]; .name == "soundboard-sink.monitor")' >/dev/null
+  then
+    pactl set-source-mute soundboard-sink.monitor 0
+  fi
+  pactl set-source-mute "$(microphone_source)" 0
 }
 
 # Mirror the OBS "Microphone off" overlay to the current mute state.
 sync_mic_overlay() {
-  if default_source_is_muted
+  if mic_is_muted
   then
     obscli item -s "$DEFAULT_SCENE" show "$MIC_OFF_ITEM" 2>/dev/null || true
   else
@@ -145,23 +187,21 @@ sync_mic_overlay() {
 }
 
 mute_mic() {
-  mute_all_sources
+  mute_mic_chain
   sync_mic_overlay
 }
 
 unmute_mic() {
-  unmute_all_sources
+  unmute_mic_chain
   sync_mic_overlay
 }
 
 toggle_mute() {
-  if default_source_is_muted
+  if mic_is_muted
   then
-    unmute_all_sources
-    sync_mic_overlay
+    unmute_mic
   else
-    mute_all_sources
-    sync_mic_overlay
+    mute_mic
   fi
 }
 
@@ -295,6 +335,10 @@ case "$verb" in
   toggle-mute)
     toggle_mute
     ;;
+  mic-is-muted)
+    mic_is_muted
+    exit $?
+    ;;
   update | sync)
     NO_NOTIFICATION=1 sync_mic_overlay
     ;;
@@ -367,3 +411,5 @@ case "${1:-}" in
 esac
 
 wait
+
+# vim: set ft=sh et ts=2 sw=2 :

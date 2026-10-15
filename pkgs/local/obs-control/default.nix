@@ -5,6 +5,8 @@
   writeShellApplication,
   inputs,
   pulseaudio,
+  pipewire,
+  wireplumber,
   v4l-utils,
   jq,
   gnugrep,
@@ -23,6 +25,8 @@ writeShellApplication {
   runtimeInputs = [
     obs-cli
     pulseaudio # pactl
+    pipewire # pw-dump
+    wireplumber # wpctl
     v4l-utils # v4l2-ctl
     jq
     gnugrep

@@ -149,10 +149,10 @@ in
       # obs-control also syncs OBS's "mic off" overlay (see pkgs/local/obs-control),
       # but it's only on PATH when go-hass-agent.enableWorkCommands is set
       # (ge2) — everywhere else (gk4, ...) it's missing from PATH entirely,
-      # which silently no-ops the bind. Fall back to Noctalia's own native
-      # mic-mute IPC, which works unconditionally and fires its own OSD.
-      (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute || noctalia msg mic-mute")
-      (execBindLocked "SUPER + space" "obs-control toggle-mute || noctalia msg mic-mute")
+      # which silently no-ops the bind. Fall back to the RNNoise voice source,
+      # then Noctalia's native mic mute if the filter is unavailable.
+      (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute || pactl set-source-mute rnnoise_source toggle || noctalia msg mic-mute")
+      (execBindLocked "SUPER + space" "obs-control toggle-mute || pactl set-source-mute rnnoise_source toggle || noctalia msg mic-mute")
       (execBindLocked "XF86AudioPlay" "${playerctl} toggle")
       (execBindLocked "XF86AudioPause" "${playerctl} pause")
       (execBindLocked "XF86AudioNext" "${playerctl} next")

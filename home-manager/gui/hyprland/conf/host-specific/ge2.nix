@@ -58,7 +58,7 @@ in
             function()
                 hl.dispatch(hl.dsp.focus({ monitor = "desc:LG" }))
                 hl.dispatch(hl.dsp.focus({ workspace = 1 }))
-                hl.exec_cmd("pactl set-source-mute @DEFAULT_SOURCE@ true")
+                hl.exec_cmd("obs-control mute")
             end
           '')
         ];

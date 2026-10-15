@@ -6,6 +6,48 @@ in
   home.packages = [ pkgs.soundboard ];
 
   xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
+    "context.modules" = [
+      {
+        name = "libpipewire-module-loopback";
+        args = {
+          "audio.position" = [
+            "FL"
+            "FR"
+          ];
+          "capture.props" = {
+            "node.name" = "meeting-mic-input";
+            "target.object" = "rnnoise_source";
+            "node.dont-fallback" = true;
+            "node.passive" = true;
+          };
+          "playback.props" = {
+            "node.name" = "meeting-mic-mix";
+            "target.object" = "soundboard-sink";
+            "node.dont-fallback" = true;
+            "node.passive" = true;
+          };
+        };
+      }
+      {
+        name = "libpipewire-module-loopback";
+        args = {
+          "audio.position" = [ "MONO" ];
+          "capture.props" = {
+            "node.name" = "meeting-mix-monitor";
+            "target.object" = "soundboard-sink";
+            "node.dont-fallback" = true;
+            "stream.capture.sink" = true;
+            "node.passive" = true;
+          };
+          "playback.props" = {
+            "node.name" = "meeting_source";
+            "node.description" = "Meeting Microphone";
+            "media.class" = "Audio/Source";
+            "priority.session" = 2500;
+          };
+        };
+      }
+    ];
     "context.objects" = [
       {
         factory = "adapter";
@@ -14,6 +56,11 @@ in
           "media.class" = "Audio/Sink";
           "node.name" = "soundboard-sink";
           "node.description" = "Soundboard Sink";
+          "audio.position" = [
+            "FL"
+            "FR"
+          ];
+          "priority.session" = 0;
           "adapter.auto-port-config" = {
             mode = "dsp";
             monitor = true;

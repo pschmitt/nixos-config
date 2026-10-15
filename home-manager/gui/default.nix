@@ -15,6 +15,7 @@
     ./lan-mouse.nix
     ./mcp-browser.nix
     ./media.nix
+    ./microphone.nix
     ./notes.nix
     ./playerctl.nix
     ./profile-picture.nix
