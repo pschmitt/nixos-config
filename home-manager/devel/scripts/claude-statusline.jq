@@ -80,9 +80,9 @@ def format_usd(amt):
       format_relative(.value.resets_at - now)
     else "" end) as $rel |
     if $rel != "" then
-      "\($c)\($name) \($pct)%\(reset)\(dim)(\($rel))\(reset)"
+      "\($name) \($c)\($pct)%\(reset) \(dim)\($rel)\(reset)"
     else
-      "\($c)\($name) \($pct)%\(reset)"
+      "\($name) \($c)\($pct)%\(reset)"
     end
   )
 ] | join("  ")
