@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Workspace {
+    // Hyprland omits the ID when no special workspace is active.
+    #[serde(default)]
     pub id: i64,
     pub name: String,
 }
@@ -457,6 +459,27 @@ pub fn window_at_point<'a>(x: i32, y: i32, clients: &'a [Client]) -> Option<&'a 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_monitor_with_inactive_special_workspace() {
+        let monitors: Vec<Monitor> = serde_json::from_value(serde_json::json!([{
+            "id": 0,
+            "name": "DP-1",
+            "width": 1920,
+            "height": 1080,
+            "activeWorkspace": { "id": 1, "name": "1" },
+            "specialWorkspace": { "address": "", "type": "", "name": "" }
+        }]))
+        .expect("an inactive special workspace must not discard the monitor list");
+
+        assert_eq!(monitors.len(), 1);
+        assert_eq!(monitors[0].active_workspace.as_ref().unwrap().id, 1);
+        assert_eq!(monitors[0].special_workspace.as_ref().unwrap().id, 0);
+        assert_eq!(
+            parse_region("DP-1 100 200 640 480", &monitors).as_deref(),
+            Some("region:DP-1@100,200,640,480")
+        );
+    }
 
     #[test]
     fn test_parse_window_list() {

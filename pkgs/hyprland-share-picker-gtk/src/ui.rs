@@ -21,8 +21,9 @@ use gtk4::{
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
-    capture::{CaptureCommand, CaptureManager, CaptureTarget, DmabufFrame, FrameMessage,
-        FramePayload},
+    capture::{
+        CaptureCommand, CaptureManager, CaptureTarget, DmabufFrame, FrameMessage, FramePayload,
+    },
     config::{PickerConfig, load_config},
     css::install_css,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
@@ -100,6 +101,9 @@ pub struct AppState {
     pub has_window_list_raw: bool,
     pub next_card_id: usize,
     pub desktop_reg: Rc<DesktopRegistry>,
+    pub selected_window_preview: Option<Picture>,
+    pub selected_window_heading: Option<Label>,
+    pub selected_window_id: Option<usize>,
     pub window_flow: Option<FlowBox>,
     pub window_group_lead: Option<ToggleButton>,
     pub window_cards: HashMap<String, WindowCardItem>,
@@ -168,6 +172,9 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         has_window_list_raw,
         next_card_id: 0,
         desktop_reg,
+        selected_window_preview: None,
+        selected_window_heading: None,
+        selected_window_id: None,
         window_flow: None,
         window_group_lead: None,
         window_cards: HashMap::new(),
@@ -512,9 +519,19 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     // Frame delivery rides the frame clock instead of a timer, so a texture is
     // swapped in right before the frame that will show it, and no work happens
     // while the window is hidden.
+    let frame_state = state.clone();
     let release_sender = capture_mgr.command_sender();
     window.add_tick_callback(move |_widget, _clock| {
-        deliver_frames(&frame_rx, &pictures_loop, &release_sender);
+        let selected = {
+            let s = frame_state.borrow();
+            s.selected_window_id.zip(s.selected_window_preview.clone())
+        };
+        deliver_frames(
+            &frame_rx,
+            &pictures_loop,
+            &release_sender,
+            selected.as_ref(),
+        );
         glib::ControlFlow::Continue
     });
 
@@ -537,6 +554,7 @@ fn deliver_frames(
     frame_rx: &Receiver<FrameMessage>,
     pictures: &Rc<RefCell<HashMap<usize, Picture>>>,
     release_sender: &Sender<CaptureCommand>,
+    selected: Option<&(usize, Picture)>,
 ) {
     let mut latest: HashMap<usize, FramePayload> = HashMap::new();
     while let Ok(msg) = frame_rx.try_recv() {
@@ -556,6 +574,16 @@ fn deliver_frames(
             continue;
         };
 
+        if picture.paintable().is_none()
+            && std::env::var_os("HYPRLAND_SHARE_PICKER_DEBUG").is_some()
+        {
+            let (width, height) = match &payload {
+                FramePayload::Shm(frame) => (frame.width, frame.height),
+                FramePayload::Dmabuf(frame) => (frame.width, frame.height),
+            };
+            eprintln!("hyprland-share-picker: first preview for card {card_id}: {width}x{height}");
+        }
+
         match payload {
             FramePayload::Shm(frame) => {
                 let texture = gdk::MemoryTexture::new(
@@ -573,6 +601,11 @@ fn deliver_frames(
                 }
             }
         }
+        if let Some((selected_id, expanded)) = selected {
+            if *selected_id == card_id {
+                expanded.set_paintable(picture.paintable().as_ref());
+            }
+        }
     }
 }
 
@@ -587,7 +620,10 @@ fn release_payload(payload: FramePayload, release_sender: &Sender<CaptureCommand
 /// Wraps a compositor-written dmabuf in a GDK texture. Nothing is copied: the
 /// buffer stays on the GPU and the capture worker keeps it alive until the
 /// release closure fires.
-fn import_dmabuf(frame: DmabufFrame, release_sender: &Sender<CaptureCommand>) -> Option<gdk::Texture> {
+fn import_dmabuf(
+    frame: DmabufFrame,
+    release_sender: &Sender<CaptureCommand>,
+) -> Option<gdk::Texture> {
     let display = gdk::Display::default()?;
 
     let builder = gdk::DmabufTextureBuilder::new();
@@ -829,7 +865,7 @@ fn make_window_page(
     state: Rc<RefCell<AppState>>,
     desktop_reg: &DesktopRegistry,
     next_id: &mut usize,
-) -> ScrolledWindow {
+) -> GtkBox {
     let flow = FlowBox::new();
     flow.set_selection_mode(SelectionMode::None);
     let cols = state.borrow().config.columns;
@@ -932,7 +968,38 @@ fn make_window_page(
     scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
     scroll.set_child(Some(&flow));
     watch_scroll_for_culling(&scroll, state.clone());
-    scroll
+    scroll.set_hexpand(true);
+
+    let expanded = GtkBox::new(Orientation::Vertical, 12);
+    expanded.set_size_request(360, -1);
+    expanded.set_margin_end(28);
+    expanded.set_margin_bottom(16);
+    expanded.set_visible(false);
+
+    let heading = Label::new(None);
+    heading.add_css_class("heading");
+    heading.set_wrap(true);
+    heading.set_max_width_chars(32);
+    expanded.append(&heading);
+
+    let preview = Picture::new();
+    preview.add_css_class("region-preview");
+    preview.set_can_shrink(true);
+    preview.set_content_fit(ContentFit::Contain);
+    preview.set_size_request(360, 240);
+    preview.set_vexpand(true);
+    expanded.append(&preview);
+
+    {
+        let mut s = state.borrow_mut();
+        s.selected_window_preview = Some(preview);
+        s.selected_window_heading = Some(heading);
+    }
+
+    let page = GtkBox::new(Orientation::Horizontal, 14);
+    page.append(&scroll);
+    page.append(&expanded);
+    page
 }
 
 fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> ScrolledWindow {
@@ -1112,7 +1179,7 @@ fn make_source_card(
 
     let preview = Picture::new();
     preview.set_can_shrink(true);
-    preview.set_content_fit(ContentFit::Cover);
+    preview.set_content_fit(ContentFit::Contain);
     preview.set_halign(gtk4::Align::Fill);
     preview.set_valign(gtk4::Align::Fill);
     preview.set_hexpand(true);
@@ -1191,9 +1258,19 @@ fn make_source_card(
         s.card_widgets.insert(card_id, card.clone());
     }
 
+    // A tab switch can park cards before GTK maps the new page. Resume each
+    // card when it is actually mapped, even if the scroll allocation is unchanged.
+    let state_mapped = state.clone();
+    card.connect_map(move |_| {
+        if let Ok(s) = state_mapped.try_borrow() {
+            update_card_fps(&s);
+        }
+    });
+
     // Toggle event
     let state_toggle = state.clone();
     let sel_toggle = sel_str.clone();
+    let name_label_for_preview = clean_title.clone();
     card.connect_toggled(move |c| {
         if c.is_active() {
             {
@@ -1202,6 +1279,20 @@ fn make_source_card(
                     Err(_) => return,
                 };
                 s.selection = Some(sel_toggle.clone());
+                if sel_toggle.starts_with("window:") {
+                    s.selected_window_id = Some(card_id);
+                    if let Some(expanded) = s.selected_window_preview.as_ref() {
+                        if let Some(picture) = s.pictures.borrow().get(&card_id) {
+                            expanded.set_paintable(picture.paintable().as_ref());
+                        }
+                        if let Some(panel) = expanded.parent() {
+                            panel.set_visible(true);
+                        }
+                    }
+                    if let Some(heading) = s.selected_window_heading.as_ref() {
+                        heading.set_label(&name_label_for_preview);
+                    }
+                }
                 if let Some(ref btn) = s.share_button {
                     btn.set_sensitive(true);
                 }
@@ -1327,7 +1418,10 @@ fn update_card_fps(state: &AppState) {
             Some(card) => card_is_in_viewport(card),
         };
 
-        let fps = if Some(*id) == focused_id {
+        let fps = if Some(*id) == focused_id
+            || Some(*id) == state.selected_window_id
+            || (state.active_tab == "regions" && state.card_widgets.get(id).is_none())
+        {
             high_fps
         } else if visible {
             1.0

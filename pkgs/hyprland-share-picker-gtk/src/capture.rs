@@ -8,10 +8,7 @@ use std::{
 };
 
 use anyhow::{Context, Result, anyhow};
-use libwayshot::{
-    WayshotConnection, WayshotTarget,
-    region::{LogicalRegion, Position, Region, Size},
-};
+use libwayshot::{WayshotConnection, WayshotTarget};
 use wayland_client::Connection;
 
 /// dmabuf frames per card that may be in flight (owned by GDK) before the
@@ -585,8 +582,7 @@ impl Worker {
         Ok(())
     }
 
-    /// `Ok(None)` means the target has no ext-image-copy source: regions are
-    /// captured through wlr-screencopy's region path instead.
+    /// `Ok(None)` means the target needs the CPU crop path for a region.
     fn resolve_target(&mut self, target: &CaptureTarget) -> Result<Option<WayshotTarget>> {
         match target {
             CaptureTarget::Output(name) => {
@@ -706,24 +702,34 @@ fn capture_shm_target(
                 .iter()
                 .find(|candidate| candidate.name == *output)
                 .with_context(|| format!("no Wayland output named {output:?}"))?;
-            let output_region = out.logical_region;
-            let region = LogicalRegion {
-                inner: Region {
-                    position: Position {
-                        x: output_region.inner.position.x + x,
-                        y: output_region.inner.position.y + y,
-                    },
-                    size: Size {
-                        width: *width,
-                        height: *height,
-                    },
-                },
+            // libwayshot's ext-image-copy backend ignores capture_region but
+            // labels the full frame as that region. Capture the output first
+            // and crop its transformed pixels ourselves on either backend.
+            let logical = out.logical_region.inner.size;
+            if *x < 0 || *y < 0 || logical.width == 0 || logical.height == 0 {
+                return Err(anyhow!("region is outside the output"));
+            }
+            let image = connection.screenshot_single_output(out, false)?;
+            let pixel_x = |value: u32| {
+                ((u64::from(value) * u64::from(image.width())) / u64::from(logical.width))
+                    .min(u64::from(image.width())) as u32
             };
-            connection.screenshot(region, false)?
+            let pixel_y = |value: u32| {
+                ((u64::from(value) * u64::from(image.height())) / u64::from(logical.height))
+                    .min(u64::from(image.height())) as u32
+            };
+            let left = pixel_x(*x as u32);
+            let top = pixel_y(*y as u32);
+            let right = pixel_x((*x as u32).saturating_add(*width));
+            let bottom = pixel_y((*y as u32).saturating_add(*height));
+            if right <= left || bottom <= top {
+                return Err(anyhow!("region does not intersect the output"));
+            }
+            image.crop_imm(left, top, right - left, bottom - top)
         }
         CaptureTarget::Window(_) => {
-            let handle = toplevel
-                .context("the shm window path needs a resolved toplevel handle")?;
+            let handle =
+                toplevel.context("the shm window path needs a resolved toplevel handle")?;
             connection.screenshot_toplevel(&handle, false)?
         }
     };
