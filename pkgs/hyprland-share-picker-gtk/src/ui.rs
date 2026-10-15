@@ -349,25 +349,22 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
 
     if gtk4_layer_shell::is_supported() {
         header.set_cursor_from_name(Some("grab"));
+        header.set_tooltip_text(Some("Drag to move · Double-click to center"));
 
         let drag = GestureDrag::new();
-        let start_pos = Rc::new(RefCell::new((0i32, 0i32)));
-        let start_pos_begin = start_pos.clone();
-        let win_begin = window.clone();
         let header_begin = header.clone();
         drag.connect_drag_begin(move |_g, _x, _y| {
             header_begin.set_cursor_from_name(Some("grabbing"));
-            let cur_x = win_begin.margin(Edge::Left);
-            let cur_y = win_begin.margin(Edge::Top);
-            *start_pos_begin.borrow_mut() = (cur_x, cur_y);
         });
 
         let win_drag = window.clone();
-        let start_pos_update = start_pos.clone();
         drag.connect_drag_update(move |_g, offset_x, offset_y| {
-            let (sx, sy) = *start_pos_update.borrow();
-            win_drag.set_margin(Edge::Left, sx + offset_x as i32);
-            win_drag.set_margin(Edge::Top, sy + offset_y as i32);
+            // Gesture offsets are relative to the moving surface, so they
+            // measure the distance still to move from its current position.
+            let x = win_drag.margin(Edge::Left) + offset_x.round() as i32;
+            let y = win_drag.margin(Edge::Top) + offset_y.round() as i32;
+            win_drag.set_margin(Edge::Left, x);
+            win_drag.set_margin(Edge::Top, y);
         });
 
         let header_end = header.clone();
