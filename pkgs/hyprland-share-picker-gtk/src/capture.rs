@@ -22,6 +22,9 @@ const MAX_INFLIGHT_PER_CARD: usize = 2;
 /// for the rest of the session.
 const DMABUF_FAILURE_LIMIT: usize = 3;
 
+/// Paint the pointer into previews so they match what the stream will show.
+const CURSOR_OVERLAY: bool = true;
+
 /// Render nodes tried when opening a GBM device for zero-copy capture.
 const DRM_DEVICE_CANDIDATES: [&str; 3] = [
     "/dev/dri/renderD128",
@@ -558,7 +561,7 @@ impl Worker {
     fn capture_dmabuf(&mut self, id: usize, source: &WayshotTarget) -> Result<()> {
         let (format, guard, bo) = self
             .conn
-            .capture_target_frame_dmabuf(source, false, None)
+            .capture_target_frame_dmabuf(source, CURSOR_OVERLAY, None)
             .map_err(|err| anyhow!("{err}"))?;
 
         let fd = bo
@@ -709,7 +712,7 @@ fn capture_shm_target(
                 .iter()
                 .find(|o| o.name == *name)
                 .with_context(|| format!("no Wayland output named {name:?}"))?;
-            connection.screenshot_single_output(output, false)?
+            connection.screenshot_single_output(output, CURSOR_OVERLAY)?
         }
         CaptureTarget::Region {
             output,
@@ -730,7 +733,7 @@ fn capture_shm_target(
             if *x < 0 || *y < 0 || logical.width == 0 || logical.height == 0 {
                 return Err(anyhow!("region is outside the output"));
             }
-            let image = connection.screenshot_single_output(out, false)?;
+            let image = connection.screenshot_single_output(out, CURSOR_OVERLAY)?;
             let pixel_x = |value: u32| {
                 ((u64::from(value) * u64::from(image.width())) / u64::from(logical.width))
                     .min(u64::from(image.width())) as u32
@@ -751,7 +754,7 @@ fn capture_shm_target(
         CaptureTarget::Window(_) => {
             let handle =
                 toplevel.context("the shm window path needs a resolved toplevel handle")?;
-            connection.screenshot_toplevel(&handle, false)?
+            connection.screenshot_toplevel(&handle, CURSOR_OVERLAY)?
         }
     };
 

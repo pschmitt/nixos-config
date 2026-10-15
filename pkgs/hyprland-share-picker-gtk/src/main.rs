@@ -8,6 +8,7 @@ mod config;
 mod css;
 mod desktop;
 mod hyprland;
+mod indicator;
 mod overlay;
 mod ui;
 
@@ -26,6 +27,10 @@ struct Args {
 
     #[arg(long)]
     runtime_check: bool,
+
+    /// Draw a border around a shared region or window until its stream ends.
+    #[arg(long, value_name = "TARGET")]
+    indicator: Option<String>,
 
     #[arg(index = 1)]
     window_list: Option<String>,
@@ -96,6 +101,10 @@ fn main() {
     if args.self_test {
         run_self_test();
         process::exit(0);
+    }
+
+    if let Some(target) = args.indicator {
+        indicator::run(&target);
     }
 
     if args.runtime_check {

@@ -11,6 +11,7 @@
   gdk-pixbuf,
   libglvnd,
   libgbm,
+  pipewire,
   slurp,
   makeWrapper,
 }:
@@ -50,7 +51,12 @@ rustPlatform.buildRustPackage {
 
   postInstall = ''
     wrapProgram $out/bin/hyprland-share-picker-gtk \
-      --prefix PATH : ${lib.makeBinPath [ slurp ]}
+      --prefix PATH : ${
+        lib.makeBinPath [
+          pipewire
+          slurp
+        ]
+      }
   '';
 
   meta = {
