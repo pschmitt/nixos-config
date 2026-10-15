@@ -187,6 +187,33 @@ serialize assertion delivery across browsers.
 The historical `scripts/passkey-serve.sh` now forwards to the native inject
 command with the same arguments. It no longer exports a private key over HTTP.
 
+## Signing in without a person: agent-passkey
+
+`rbw passkey inject` arms one page, so it fails where a sign-in hops across
+origins or asks for the assertion the moment a page loads. Microsoft is the
+case: `login.microsoft.com/common/bridge/fido` calls `navigator.credentials.get()`
+on load, answers a reload with AADSTS10040141, and a virtual authenticator armed
+earlier does not follow the hop. Use `scripts/agent-passkey.mjs` instead; it
+answers every passkey request of the whole browser, signed by `rbw passkey
+assert` outside the browser (verified: Outlook signed in unattended):
+
+1. Start the session (`browser_use profile=...`, navigate once) and find its
+   debugging port: `browser-daemon session list --json` (`port`). For a session
+   on another node, forward it first (`ssh -L PORT:127.0.0.1:PORT NODE`).
+2. Start the helper in the background, before the sign-in:
+   `node scripts/agent-passkey.mjs http://127.0.0.1:PORT --timeout 300 &`
+   (waits for `agent-passkey: ready` on stderr).
+3. Sign in as usual: type the username (secrets over CDP, never in tool
+   arguments), click Next. The passkey step completes by itself.
+4. Stop the helper (`kill` its job) when done; it also exits after `--timeout`.
+
+The origin passed to rbw comes from the browser's target list, never from page
+script, and rbw refuses an origin outside the passkey's relying party. Run one
+helper per browser: two make parallel assertions and rbw's item lock rejects one
+("another passkey injection is active"). Autofill (conditional) requests are left
+to the browser. Chromium only. The Authelia warning above applies here too: do
+not use this for a relying party your ordinary Bitwarden client also uses.
+
 ## Passkeys in the live view (a human signing in)
 
 When a person uses a site through the browser-daemon live view (handoff), a
