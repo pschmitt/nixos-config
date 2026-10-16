@@ -1,30 +1,11 @@
 {
   config,
-  lib,
-  pkgs,
   ...
 }:
 let
   grafanaHost = "grafana.${config.networking.hostName}.${config.domains.main}";
-  grafanaElasticsearchPlugin = pkgs.grafanaPlugins.grafanaPlugin {
-    pname = "elasticsearch";
-    version = "12.8.0";
-    zipHash = {
-      aarch64-linux = "sha256-ZM1m/zskQOxQg6zafp5YZrHENXeMxANmzS6rUOystLw=";
-      x86_64-linux = "sha256-3NI+cnxRPUC4fFnfDD4H9vFufrJiiugKy53JTJ2B9P0=";
-    };
-  };
 in
 {
-  # FIXME parsedmarc's provision.elasticsearch pulls in pkgs.elasticsearch
-  # (7.17.27), which nixpkgs now marks insecure (ES7 EOL since 2026-01-15,
-  # multiple 2026 CVEs). There's no ES8/OpenSearch package in nixpkgs and
-  # the parsedmarc module doesn't support an external backend, so allow it
-  # for now. It only listens on 127.0.0.1:9200, not network-exposed. Revisit
-  # by migrating to a self-managed OpenSearch/ES8 instance and disabling
-  # provision.elasticsearch.
-  nixpkgs.config.permittedInsecurePackages = [ "elasticsearch-7.17.27" ];
-
   sops.secrets = {
     "geoip/licenseKey" = config.sops.mkHostSecret {
     };
@@ -49,7 +30,6 @@ in
 
     grafana = {
       enable = true;
-      declarativePlugins = lib.mkAfter [ grafanaElasticsearchPlugin ];
       settings = {
         server = {
           http_addr = "127.0.0.1";
@@ -75,7 +55,7 @@ in
     parsedmarc = {
       enable = true;
       provision.geoIp = true;
-      provision.elasticsearch = true;
+      provision.opensearch = true;
 
       # https://domainaware.github.io/parsedmarc/usage.html
       settings = {
