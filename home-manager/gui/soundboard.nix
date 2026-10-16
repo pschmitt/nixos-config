@@ -9,6 +9,9 @@ in
     run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
   '';
 
+  # Loopback streams set node.linger: with node.dont-fallback alone,
+  # WirePlumber destroys a stream whose target is not there yet (e.g. at boot),
+  # which unloads the whole loopback module for good.
   xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
     "context.modules" = [
       {
@@ -22,12 +25,14 @@ in
             "node.name" = "meeting-mic-input";
             "target.object" = "rnnoise_source";
             "node.dont-fallback" = true;
+            "node.linger" = true;
             "node.passive" = true;
           };
           "playback.props" = {
             "node.name" = "meeting-mic-mix";
             "target.object" = "soundboard-sink";
             "node.dont-fallback" = true;
+            "node.linger" = true;
             "node.passive" = true;
           };
         };
@@ -40,6 +45,7 @@ in
             "node.name" = "meeting-mix-monitor";
             "target.object" = "soundboard-sink";
             "node.dont-fallback" = true;
+            "node.linger" = true;
             "stream.capture.sink" = true;
             "node.passive" = true;
           };
