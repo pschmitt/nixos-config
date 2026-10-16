@@ -46,9 +46,10 @@ Verified on the Chromium Playwright MCPs (2026-10):
   the fnuc node): inject, open the login page, click "Sign in
   with a passkey", and Authelia accepts the virtual passkey as first factor
   ("Hi <name>"). Authelia's `two_factor` policy then still asks for the
-  password. Do not type it yourself from the vault into the page (it would
-  appear in your tool call): let the user enter it in the live view (see
-  below).
+  password. Never type it yourself through a browser tool (it would appear
+  in your tool call): use `browser_fill_secret` when the entry is allowed
+  for agents (its tool description lists them), otherwise let the user
+  enter it in the live view (see below).
 
 ## When a human has to step in (CAPTCHA, approval, 2FA on a device)
 
@@ -203,8 +204,8 @@ assert` outside the browser (verified: Outlook signed in unattended):
 2. Start the helper in the background, before the sign-in:
    `node scripts/agent-passkey.mjs http://127.0.0.1:PORT --timeout 300 &`
    (waits for `agent-passkey: ready` on stderr).
-3. Sign in as usual: type the username (secrets over CDP, never in tool
-   arguments), click Next. The passkey step completes by itself.
+3. Sign in as usual: type the username (secrets with `browser_fill_secret`,
+   never in tool arguments), click Next. The passkey step completes by itself.
 4. Stop the helper (`kill` its job) when done; it also exits after `--timeout`.
 
 The origin passed to rbw comes from the browser's target list, never from page
