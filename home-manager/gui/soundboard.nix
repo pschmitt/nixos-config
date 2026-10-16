@@ -2,7 +2,7 @@
 let
   serviceName = "soundboard-tagesschau";
   restartAudio = ''
-    run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
+    run ${import ./restart-audio.nix pkgs}/bin/restart-audio pipewire.service pipewire-pulse.service wireplumber.service
   '';
 in
 {
