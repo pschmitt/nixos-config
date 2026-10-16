@@ -57,14 +57,15 @@ let
 
   # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
-  # unless the agent asks otherwise (`browser_use`). Profiles keep their logins, so
-  # agents may only open the ones allowed here: `work` is signed in to Microsoft
-  # (Outlook) and OpsGenie, `home-assistant` to Home Assistant (ha.brkn.lol, for
+  # unless the agent asks otherwise (`browser_use`). Profiles keep their logins;
+  # agents may open the ones allowed here (`*`: all of them): `work` is signed in
+  # to Microsoft (Outlook) and OpsGenie, `home-assistant` to Home Assistant (ha.brkn.lol, for
   # dashboard checks; see the HA repo's AGENTS.md), `hrworks` to HR WORKS,
   # `google-pschmitt` and `google` to two of Philipp's Google accounts (`google`
   # is the one Frigate+ and other "Sign in with Google" sites use).
-  # browser_fill_secret types the rbw entries named with `--allow-secret` into
-  # login forms on their own sites without the agent seeing the value.
+  # browser_fill_secret types the rbw entries named with `--allow-secret` (`*`:
+  # every entry) into login forms on their own sites without the agent seeing
+  # the value.
   browserMcps.browser = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
     args = [
@@ -76,19 +77,9 @@ let
       "--output-dir"
       "${config.xdg.cacheHome}/playwright-mcp/browser"
       "--allow-profile"
-      "work"
-      "--allow-profile"
-      "home-assistant"
-      "--allow-profile"
-      "hrworks"
-      "--allow-profile"
-      "google-pschmitt"
-      "--allow-profile"
-      "google"
+      "*"
       "--allow-secret"
-      "Home Assistant (AI Agent)"
-      "--allow-secret"
-      "hrworks.de"
+      "*"
       "--rbw"
       (lib.getExe' pkgs.rbw "rbw")
     ];
