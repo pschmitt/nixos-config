@@ -1,5 +1,7 @@
 {
   config,
+  lib,
+  guiEnable,
   pkgs,
   inputs,
   ...
@@ -28,6 +30,18 @@
     enable = true;
     settings = {
       primaryAccount = "default";
+      browser.clients = lib.mkIf guiEnable {
+        firefox = {
+          browser = "firefox";
+          extensions = [ "rbw-browser@pschmitt.dev" ];
+          executableRoots = [ "${pkgs.firefox-unwrapped}" ];
+        };
+        chromium = {
+          browser = "chromium";
+          extensions = [ "cnmnibgkcloflchecoolkkimmohfhckg" ];
+          executableRoots = [ "${pkgs.chromium.browser}" ];
+        };
+      };
       agent = {
         lockTimeout = 86400;
         syncInterval = 3600;
