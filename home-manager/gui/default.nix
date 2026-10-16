@@ -17,6 +17,7 @@
     ./media.nix
     ./microphone.nix
     ./notes.nix
+    ./pipewire-rt.nix
     ./playerctl.nix
     ./profile-picture.nix
     ./yt-dlp-cookies-tx.nix
