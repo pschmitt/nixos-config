@@ -34,7 +34,12 @@
         firefox = {
           browser = "firefox";
           extensions = [ "rbw-browser@pschmitt.dev" ];
-          executableRoots = [ "${pkgs.firefox-unwrapped}" ];
+          # Home Manager wraps Firefox again to register native hosts.
+          # Enroll the actual final package as well as the system browser.
+          executableRoots = [
+            "${pkgs.firefox}"
+          ]
+          ++ lib.optional config.programs.firefox.enable "${config.programs.firefox.finalPackage}";
         };
         chromium = {
           browser = "chromium";
