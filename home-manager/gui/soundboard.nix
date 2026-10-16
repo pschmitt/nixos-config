@@ -5,6 +5,10 @@ in
 {
   home.packages = [ pkgs.soundboard ];
 
+  xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".onChange = ''
+    run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
+  '';
+
   xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
     "context.modules" = [
       {

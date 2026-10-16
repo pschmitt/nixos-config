@@ -1,5 +1,10 @@
 { pkgs, ... }:
 {
+  # Home Manager can update the graph after PipeWire has already started.
+  xdg.configFile."pipewire/pipewire.conf.d/90-microphone.conf".onChange = ''
+    run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
+  '';
+
   # Restrict the denoiser to physical microphones, never the combined source.
   xdg.configFile."pipewire/pipewire.conf.d/90-microphone.conf".text = builtins.toJSON {
     "context.modules" = [
