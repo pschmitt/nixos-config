@@ -94,14 +94,40 @@ let
     "rofl-13"
     "rofl-14"
   ];
+  # browser-daemon wants a token on every route: its dashboard page hands one
+  # out as a cookie to anyone Authelia lets through, which is how the MCP gets it.
+  browserMcpWrapper = pkgs.writeShellApplication {
+    name = "browser-mcp-wrapper";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+      pkgs.gnugrep
+      pkgs.gnused
+      pkgs.playwright-mcp
+    ];
+    text = ''
+      host="$1"
+      output_dir="$2"
+      token="$(
+        curl -fsS --max-time 15 -D - -o /dev/null "https://$host/" \
+          | grep -i '^set-cookie: bd_auth=' \
+          | head -n1 \
+          | sed -E 's/^[^=]*=([^;]*).*/\1/' \
+          | tr -d '\r'
+      )"
+      exec playwright-mcp \
+        --cdp-endpoint="wss://$host/chromium''${token:+?auth=$token}" \
+        --output-dir="$output_dir"
+    '';
+  };
   browserMcps = lib.listToAttrs (
     map (host: {
       name = "browser-${host}";
       value = {
-        command = "${pkgs.playwright-mcp}/bin/playwright-mcp";
+        command = lib.getExe browserMcpWrapper;
         args = [
-          "--cdp-endpoint=wss://browser.${host}.${config.domains.netbird}/chromium"
-          "--output-dir=${config.services.hermes-agent.stateDir}/playwright-mcp/browser-${host}"
+          "browser.${host}.${config.domains.netbird}"
+          "${config.services.hermes-agent.stateDir}/playwright-mcp/browser-${host}"
         ];
         connect_timeout = 30;
         timeout = 90;

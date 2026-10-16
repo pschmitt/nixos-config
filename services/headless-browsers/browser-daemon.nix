@@ -6,6 +6,13 @@ let
     "rofl-13"
     "rofl-14"
   ];
+  # The names rofl-10's public vhosts (hosts/rofl-10/browserless-public.nix)
+  # answer to: a browser sends them as Origin while the vhost rewrites Host.
+  publicNames = [
+    "browser.${config.domains.main}"
+  ]
+  ++ map (h: "browser.${h}.${config.domains.main}") meshNodes
+  ++ map (m: "browser.rofl-10.${m}") config.domains.mesh;
 in
 {
   sops.secrets."browser-daemon/cluster-secret" = {
@@ -30,6 +37,9 @@ in
       # under load (a 170 KB page took ~3 s instead of ~0.3 s), which made
       # screenshots and peer requests crawl.
       publicUrl = "https://browser.${config.networking.hostName}.${config.domains.netbird}";
+      # The daemon answers only to its own Host and Origin names (DNS rebinding
+      # guard): every name the nginx vhost serves, and the public ones.
+      allowedHosts = hosts ++ publicNames;
       peers = map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
       clusterSecretFile = config.sops.secrets."browser-daemon/cluster-secret".path;
       # An X display per session, streamed to the handoff view as H.264 (x264
