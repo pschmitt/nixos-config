@@ -129,8 +129,7 @@ mic_chain_nodes() {
       | .info["output-node-id"]] as $hardware
     | [.[] | select(.type == "PipeWire:Interface:Node")
       | select((.info.props["node.name"] as $name
-          | ["capture.rnnoise_source", "rnnoise_source", "meeting-mic-input",
-             "meeting-mic-mix", "soundboard-sink", "meeting-mix-monitor", "meeting_source"]
+          | ["capture.rnnoise_source", "rnnoise_source", "meeting_source"]
           | index($name)) or (.id as $id | $hardware | index($id)))]'
 }
 
@@ -139,8 +138,7 @@ mic_is_muted() {
   nodes="$(mic_chain_nodes)" || return
   if [[ "$nodes" != "[]" ]]
   then
-    jq -e 'any(.[]; any(.info.params.Props[]?; .mute == true or .softMute == true)
-      or (.info.props["node.name"] == "soundboard-sink" and any(.info.params.Props[]?; .monitorMute == true)))' <<< "$nodes" >/dev/null
+    jq -e 'any(.[]; any(.info.params.Props[]?; .mute == true or .softMute == true))' <<< "$nodes" >/dev/null
   else
     pactl get-source-mute @DEFAULT_SOURCE@ | grep -qi 'yes'
   fi
@@ -168,10 +166,6 @@ unmute_mic_chain() {
   do
     wpctl set-mute "$node" 0 || return
   done
-  if pactl -f json list sources | jq -e 'any(.[]; .name == "soundboard-sink.monitor")' >/dev/null
-  then
-    pactl set-source-mute soundboard-sink.monitor 0
-  fi
   pactl set-source-mute "$(microphone_source)" 0
 }
 

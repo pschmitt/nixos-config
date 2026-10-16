@@ -1,84 +1,54 @@
 { config, pkgs, ... }:
 let
   serviceName = "soundboard-tagesschau";
+  restartAudio = ''
+    run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
+  '';
 in
 {
   home.packages = [ pkgs.soundboard ];
 
-  xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".onChange = ''
-    run ${pkgs.systemd}/bin/systemctl --user try-restart pipewire.service pipewire-pulse.service wireplumber.service
-  '';
-
-  # Loopback streams set node.linger: with node.dont-fallback alone,
-  # WirePlumber destroys a stream whose target is not there yet (e.g. at boot),
-  # which unloads the whole loopback module for good.
-  xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf".text = builtins.toJSON {
-    "context.modules" = [
-      {
-        name = "libpipewire-module-loopback";
-        args = {
-          "audio.position" = [
-            "FL"
-            "FR"
-          ];
-          "capture.props" = {
-            "node.name" = "meeting-mic-input";
-            "target.object" = "rnnoise_source";
-            "node.dont-fallback" = true;
-            "node.linger" = true;
-            "node.passive" = true;
-          };
-          "playback.props" = {
-            "node.name" = "meeting-mic-mix";
-            "target.object" = "soundboard-sink";
-            "node.dont-fallback" = true;
-            "node.linger" = true;
-            "node.passive" = true;
-          };
-        };
-      }
-      {
-        name = "libpipewire-module-loopback";
-        args = {
-          "audio.position" = [ "MONO" ];
-          "capture.props" = {
-            "node.name" = "meeting-mix-monitor";
-            "target.object" = "soundboard-sink";
-            "node.dont-fallback" = true;
-            "node.linger" = true;
-            "stream.capture.sink" = true;
-            "node.passive" = true;
-          };
-          "playback.props" = {
+  # "Meeting Microphone": a virtual source that the denoised microphone and
+  # soundboard clips are linked into by the WirePlumber script below.
+  xdg.configFile."pipewire/pipewire.conf.d/99-soundboard.conf" = {
+    onChange = restartAudio;
+    text = builtins.toJSON {
+      "context.objects" = [
+        {
+          factory = "adapter";
+          args = {
+            "factory.name" = "support.null-audio-sink";
+            "media.class" = "Audio/Source/Virtual";
             "node.name" = "meeting_source";
             "node.description" = "Meeting Microphone";
-            "media.class" = "Audio/Source";
+            "audio.position" = [
+              "FL"
+              "FR"
+            ];
             "priority.session" = 2500;
+            "adapter.auto-port-config" = {
+              mode = "dsp";
+              monitor = false;
+              position = "preserve";
+            };
           };
-        };
-      }
-    ];
-    "context.objects" = [
-      {
-        factory = "adapter";
-        args = {
-          "factory.name" = "support.null-audio-sink";
-          "media.class" = "Audio/Sink";
-          "node.name" = "soundboard-sink";
-          "node.description" = "Soundboard Sink";
-          "audio.position" = [
-            "FL"
-            "FR"
-          ];
-          "priority.session" = 0;
-          "adapter.auto-port-config" = {
-            mode = "dsp";
-            monitor = true;
-            position = "preserve";
-          };
-        };
-      }
-    ];
+        }
+      ];
+    };
+  };
+
+  xdg.configFile."wireplumber/wireplumber.conf.d/90-meeting-mic.conf" = {
+    onChange = restartAudio;
+    text = builtins.toJSON {
+      "wireplumber.components" = [
+        {
+          name = "${./wireplumber/meeting-mic.lua}";
+          type = "script/lua";
+          provides = "custom.meeting-mic";
+        }
+      ];
+      "wireplumber.profiles".main."custom.meeting-mic" = "required";
+    };
   };
 
   systemd.user.services.${serviceName} = {

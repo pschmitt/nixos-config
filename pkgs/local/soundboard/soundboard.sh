@@ -1,6 +1,6 @@
 # soundboard — Nix-native replacement for the zhj-backed soundboard:: zsh
-# helpers. Plays local sound files into the (declaratively-created)
-# "soundboard-sink" PipeWire mixing bus, exposed as the Meeting Microphone.
+# helpers. Plays local sound files into the Meeting Microphone: the stream is
+# tagged meeting-mic.feed and linked by the meeting-mic WirePlumber script.
 # A separate playback stream makes clips audible locally without mic sidetone.
 #
 # Scope vs the zsh original: local playback + routing only. The --tts,
@@ -10,7 +10,6 @@
 shopt -s nullglob
 
 SOUNDBOARD_DIR="${SOUNDBOARD_DIR:-${HOME}/Music/Soundboard}"
-SOUNDBOARD_SINK="${SOUNDBOARD_SINK:-soundboard-sink}"
 SOUNDBOARD_VOLUME="${SOUNDBOARD_VOLUME:-70}" # percent
 
 # Routing is declared in Home Manager. Keep this command for existing callers.
@@ -66,7 +65,9 @@ sb_play() {
   connect
 
   volume="$(awk -v v="$SOUNDBOARD_VOLUME" 'BEGIN { print v / 100.0 }')"
-  pw-play --target "$SOUNDBOARD_SINK" --volume "$volume" "$file" &
+  pw-play --volume "$volume" \
+    --properties '{ node.autoconnect = false, meeting-mic.feed = true }' \
+    "$file" &
   local meeting_playback=$!
   pw-play --volume "$volume" "$file"
   wait "$meeting_playback"
