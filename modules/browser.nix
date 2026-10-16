@@ -6,6 +6,10 @@
   ...
 }:
 let
+  rbwBrowserPackages = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system};
+  rbwNativeHost = rbwBrowserPackages.browser-native-host;
+  rbwFirefoxAddon = rbwBrowserPackages.firefox-addon;
+  rbwChromiumAddon = rbwBrowserPackages.chromium-addon;
   bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
   bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
   bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
@@ -47,6 +51,7 @@ in
         type = lib.types.listOf lib.types.package;
         default = with pkgs; [
           bruvtabPkg
+          rbwNativeHost
           fx-cast-bridge
           native-client
           tridactyl-native
@@ -60,6 +65,7 @@ in
           auto-tab-discard
           bitwarden
           bruvtabFirefoxAddon
+          rbwFirefoxAddon
           consent-o-matic
           don-t-fuck-with-paste
           external-application
@@ -299,13 +305,21 @@ in
 
       nativeMessagingHosts = lib.mkOption {
         type = lib.types.listOf lib.types.package;
-        default = [ bruvtabPkg ];
+        default = [
+          bruvtabPkg
+          rbwNativeHost
+        ];
         description = "Chromium native messaging host packages.";
       };
 
       extensions = lib.mkOption {
         type = lib.types.listOf lib.types.attrs;
         default = [
+          {
+            id = rbwChromiumAddon.extensionId;
+            crxPath = "${rbwChromiumAddon}/rbw.crx";
+            inherit (rbwChromiumAddon) version;
+          }
           {
             id = "nngceckbapebfimnlniiiahkandclblb";
           }
