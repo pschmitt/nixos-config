@@ -52,6 +52,9 @@ in
           "http://10.5.1.1:8123/api/webhook/rbw_unlock_request"
           "--unlock-host"
           config.networking.hostName
+          # A fill into a site the vault entry is not saved for notifies the phone.
+          "--notify-webhook"
+          "http://10.5.1.1:8123/api/webhook/browser_daemon_any_site_fill"
         ]
         ++ map (h: "--node https://browser.${h}.${config.domains.netbird}") meshNodes
       );
