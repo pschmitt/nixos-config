@@ -1,0 +1,226 @@
+/* Tomorrow Night, ported from the previous Vimium theme.
+   Sections: ui (hints, HUD) and omni (Vomnibar). */
+:root {
+  --font-size: 20px;
+  --font: tewi, "Source Code Pro", sans-serif;
+  --padding: 2px;
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --fg: #c5c8c6;
+  --bg: #282a2e;
+  --border: #373b41;
+  --main-fg: #81a2be;
+  --accent-fg: #52c196;
+}
+
+/* -------- HINTS -------- */
+.LH {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: var(--shadow);
+  padding: 3px 4px;
+}
+
+.HM {
+  color: var(--main-fg);
+  font: var(--font-size) var(--font);
+  text-shadow: none;
+}
+
+.MC,
+.MH,
+.BH {
+  color: var(--main-fg);
+}
+
+.MC {
+  opacity: 0.3;
+}
+
+/* -------- HUD -------- */
+.HUD {
+  color: var(--fg);
+  font-family: var(--font);
+}
+
+.HUD:after {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: var(--shadow);
+}
+
+/* #omni */
+:root {
+  --bg: #282a2e;
+  --border: #373b41;
+  --title: #eee;
+  --url: #3f87f5;
+  --dim: #9a9a9a;
+}
+
+body {
+  animation: show 200ms cubic-bezier(0, 0, 0.2, 1) forwards;
+  background: var(--bg);
+  border-radius: 10px;
+  box-shadow: 0 2px 7px 0.5px rgba(0, 0, 0, 0.8);
+}
+
+body::after {
+  border: none;
+}
+
+@keyframes show {
+  0% {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#bar,
+#bar.empty {
+  background: transparent;
+  border: none;
+  border-radius: 10px 10px 0 0;
+  height: 26px;
+}
+
+#input {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  caret-color: var(--title);
+  color: var(--title);
+}
+
+#list {
+  background: transparent;
+  border-top: 1px solid var(--border);
+}
+
+.item {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  height: 64px;
+  padding-top: 10px;
+}
+
+.b {
+  height: 66px;
+}
+
+.item:hover,
+.item.p {
+  background-color: transparent;
+}
+
+/* Only the selected row is highlighted (not hover or the previous selection). */
+.item.s,
+.item.s:hover {
+  background-color: var(--border);
+}
+
+.top,
+.top > .title {
+  color: var(--title);
+}
+
+.icon,
+.tab,
+.math {
+  --vc-c: var(--dim);
+}
+
+/* The type icon holds the favicon as a background offset to its right. */
+.top {
+  height: 26px;
+  line-height: 26px;
+}
+
+.icon {
+  background-position: 32px center;
+  background-size: 18px;
+  height: 22px;
+  margin: 2px 6px 0 0;
+  padding-right: 32px;
+  vertical-align: top;
+  width: 22px;
+}
+
+/* Tabs rely on their favicon: hide the tab glyph and pull the favicon (and the
+   URL below it) to the left edge. History/bookmark glyphs stay. */
+.tab {
+  display: none;
+}
+
+.icon:has(.tab) {
+  background-position: 0 center;
+  margin-right: 10px;
+  padding-right: 0;
+  width: 18px;
+}
+
+/* Line the URL up with the title: past the icon box (22px + 32px padding + 6px margin). */
+.bottom {
+  margin-left: 60px;
+  margin-top: 4px;
+}
+
+/* Tab rows have no glyph: icon box is 18px + 10px margin. */
+.item:has(.icon .tab) .bottom {
+  margin-left: 28px;
+}
+
+a {
+  color: var(--url);
+}
+
+match {
+  color: inherit;
+  font-weight: bold;
+}
+
+.label,
+.time {
+  display: none;
+}
+
+/* The dark/light toggle does not do anything with a fixed theme. */
+#toggle-dark {
+  display: none;
+}
+
+/* -------- CLOSE BUTTON -------- */
+#toolbar {
+  align-items: center;
+  display: flex;
+  height: 46px;
+  padding-right: 0;
+  right: 12px;
+  top: 0;
+}
+
+.button {
+  align-items: center;
+  border-radius: 50%;
+  color: var(--dim);
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  margin-left: 4px;
+  width: 28px;
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--title);
+}
+
+.button .btn_svg {
+  height: 16px;
+  width: 16px;
+}

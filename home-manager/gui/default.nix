@@ -22,6 +22,7 @@
     ./yt-dlp-cookies-tx.nix
     ./soundboard.nix
     ./theme.nix
+    ./vimium-c.nix
     ./xdg-portal.nix
     ./yup-startup.nix
 

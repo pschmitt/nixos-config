@@ -77,6 +77,7 @@ in
           sponsorblock
           ublock-origin
           video-downloadhelper
+          vimium-c
         ];
         description = "Firefox extension packages for the default profile.";
       };
