@@ -21,6 +21,7 @@ rec {
       rules,
       timeoutMs ? 60000,
       debug ? false,
+      splitOrder ? [ ],
     }:
     let
       ruleToLua =
@@ -30,18 +31,47 @@ rec {
         in
         "{ class = \"${r.class}\", workspace = ${toString r.workspace}${refocusField} }";
       rulesLua = lib.concatMapStringsSep ",\n        " ruleToLua rules;
+      splitOrderLua = lib.concatMapStringsSep ", " (class: "\"${class}\"") splitOrder;
     in
     ''
       do
           local _debug = ${if debug then "true" else "false"}
           local _logPath = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/hyprland-startup-layout.log"
           local _sequence = 0
+          local _splitOrder = { ${splitOrderLua} }
+          local _firstStartupClass
+          local _secondStartupClass
+          local _splitReset = false
           local function _log(message)
               if not _debug then return end
               local file = io.open(_logPath, "a")
               if file then
                   file:write(os.date("%Y-%m-%dT%H:%M:%S"), " ", message, "\n")
                   file:close()
+              end
+          end
+          local function _restoreSplit(reason)
+              if _splitReset then return end
+              hl.config({ dwindle = { smart_split = true, force_split = 0 } })
+              _splitReset = true
+              _log("split-reset " .. reason)
+          end
+          local function _prepareSplitForNextWindow(cls)
+              if #_splitOrder ~= 2 then return end
+              if not _firstStartupClass then
+                  if cls ~= _splitOrder[1] and cls ~= _splitOrder[2] then return end
+                  _firstStartupClass = cls
+                  local nextClass = cls == _splitOrder[1] and _splitOrder[2] or _splitOrder[1]
+                  local forceSplit = cls == _splitOrder[1] and 2 or 1
+                  hl.config({ dwindle = { smart_split = false, force_split = forceSplit } })
+                  _log("split-prepare first=" .. cls .. " next=" .. nextClass .. " force_split=" .. forceSplit)
+                  hl.timer(function()
+                      if not _splitReset then
+                          _restoreSplit("timeout")
+                      end
+                  end, { timeout = 10000, type = "oneshot" })
+              elseif cls ~= _firstStartupClass and not _splitReset then
+                  _secondStartupClass = cls
               end
           end
           _log("listener-register")
@@ -54,6 +84,7 @@ rec {
               _sequence = _sequence + 1
               local eventId = _sequence
               local cls = w.class or ""
+              _prepareSplitForNextWindow(cls)
               local initialWorkspace = w.workspace and tostring(w.workspace.id) or "none"
               _log("event id=" .. eventId .. " class=" .. cls .. " workspace=" .. initialWorkspace)
               hl.timer(function()
@@ -74,6 +105,9 @@ rec {
                           end
                           break
                       end
+                  end
+                  if _secondStartupClass == cls then
+                      _restoreSplit("second=" .. cls)
                   end
               end, { timeout = 100, type = "oneshot" })
           end)

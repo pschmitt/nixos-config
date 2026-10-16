@@ -33,8 +33,14 @@ in
   # handler below runs would open on ws2. Pin them to ws1 (on the LG)
   # regardless of that race. Registered at config-parse time, not inside
   # hyprland.start, so it catches early XDG autostart windows.
+  # Keep Firefox on the left and kitty-tmux on the right. The helper briefly
+  # overrides dwindle's cursor-based split direction for the second app.
   wayland.windowManager.hyprland.extraConfig = layout.mkStartupLayoutLua {
     debug = true;
+    splitOrder = [
+      "firefox"
+      "kitty-tmux"
+    ];
     rules = [
       {
         class = "firefox";
@@ -48,6 +54,8 @@ in
   };
 
   wayland.windowManager.hyprland.settings = {
+    config.dwindle.force_split = 0;
+
     # lan-mouse presents remote input as a virtual keyboard. Apply the GPD
     # Pocket 4 layout here when gk4's built-in keyboard is controlling ge2.
     device = [
