@@ -34,6 +34,7 @@ in
   # regardless of that race. Registered at config-parse time, not inside
   # hyprland.start, so it catches early XDG autostart windows.
   wayland.windowManager.hyprland.extraConfig = layout.mkStartupLayoutLua {
+    debug = true;
     rules = [
       {
         class = "firefox";
