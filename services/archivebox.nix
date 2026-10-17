@@ -8,7 +8,7 @@ let
   # renovate: datasource=docker depName=archivebox/archivebox
   archiveboxVersion = "0.9.73";
   # renovate: datasource=docker depName=pihole/pihole
-  piholeVersion = "2026.09.0";
+  piholeVersion = "2026.10.0";
   # renovate: datasource=docker depName=valeriansaliou/sonic
   sonicVersion = "v1.10.2";
   archiveboxPort = 27244;
