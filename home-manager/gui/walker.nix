@@ -125,7 +125,6 @@ in
           "desktopapplications"
           "calc"
           "websearch"
-          "menus:home-assistant"
         ];
         prefixes = [
           {
@@ -161,15 +160,19 @@ in
             provider = "menus:soundboard-tts";
           }
           {
-            prefix = "@";
-            provider = "menus:home-assistant";
-          }
-          {
             prefix = ":ha";
             provider = "menus:home-assistant";
           }
           {
             prefix = ":h";
+            provider = "menus:home-assistant";
+          }
+          {
+            prefix = ":";
+            provider = "menus:home-assistant";
+          }
+          {
+            prefix = "@";
             provider = "menus:home-assistant";
           }
         ];
