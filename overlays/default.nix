@@ -78,7 +78,10 @@ in
   master-packages = final: _prev: {
     master = import inputs.nixpkgs-master {
       inherit (final.stdenv.hostPlatform) system;
-      config.allowUnfree = true;
+      config = {
+        allowUnfree = true;
+        allowBroken = true;
+      };
       overlays = [
         (mfinal: mprev: {
           pythonPackagesExtensions = mprev.pythonPackagesExtensions ++ [
