@@ -75,6 +75,13 @@ in
       # (observed on GK4's rotated internal panel).
       ./patches/noctalia/0007-screencopy-transformed-dimensions.patch
 
+      # Persist caffeine (idle inhibitor) state across Noctalia restarts via
+      # state.toml. Previously m_idleInhibitor was strictly in-memory and
+      # defaulted to disabled on startup, losing caffeine whenever Noctalia
+      # was restarted or reloaded. Also re-syncs inhibitor in setLogindService
+      # so logind acquires the inhibit lock on startup if caffeine was enabled.
+      ./patches/noctalia/0008-caffeine-state-persistence.patch
+
       # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
       # for the syncthing plugin's events-API attempt) is intentionally not
       # applied: that plugin rewrite was reverted 2026-09-05 (see
