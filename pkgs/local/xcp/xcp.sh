@@ -588,8 +588,11 @@ get_clipboard_content() {
         elif has_xsel
         then
           backend="xsel"
+        elif has wl-paste && wl-paste --list-types >/dev/null 2>&1
+        then
+          backend="wl-paste"
         else
-          echo_debug "Neither lemonade, xclip nor xsel are installed"
+          echo_debug "Neither a usable clipboard backend nor wl-paste are available"
           return 1
         fi
       fi
@@ -968,3 +971,5 @@ then
 
   exit 0
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :
