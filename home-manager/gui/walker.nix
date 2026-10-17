@@ -169,6 +169,10 @@ in
             provider = "clipboard";
           }
           {
+            prefix = "?";
+            provider = "websearch";
+          }
+          {
             prefix = "@";
             provider = "menus:home-assistant";
           }
