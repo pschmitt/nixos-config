@@ -47,6 +47,21 @@ in
         description = "Whether to enable Firefox.";
       };
 
+      policies = lib.mkOption {
+        inherit (pkgs.formats.json { }) type;
+        default = {
+          ExtensionSettings."rbw-browser@pschmitt.dev" = {
+            installation_mode = "normal_installed";
+            # A new store path triggers Firefox's managed update mechanism.
+            # Profile symlinks keep Nix's fixed mtime and can retain stale metadata.
+            install_url = "file://${rbwFirefoxAddon}/rbw-browser@pschmitt.dev.xpi";
+            updates_disabled = true;
+            default_area = "navbar";
+          };
+        };
+        description = "Firefox enterprise policies shared by system and user wrappers.";
+      };
+
       nativeMessagingHosts = lib.mkOption {
         type = lib.types.listOf lib.types.package;
         default = with pkgs; [
@@ -65,7 +80,6 @@ in
           auto-tab-discard
           bitwarden
           bruvtabFirefoxAddon
-          rbwFirefoxAddon
           consent-o-matic
           don-t-fuck-with-paste
           external-application

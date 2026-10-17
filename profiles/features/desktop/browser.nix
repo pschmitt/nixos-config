@@ -13,7 +13,10 @@ in
     }
     (lib.mkIf cfg.enable {
       # NOTE see also home-manager/gui/browser.nix
-      programs.firefox.enable = cfg.firefox.enable;
+      programs.firefox = {
+        enable = cfg.firefox.enable;
+        inherit (cfg.firefox) policies;
+      };
 
       environment.systemPackages = cfg.systemPackages;
     })

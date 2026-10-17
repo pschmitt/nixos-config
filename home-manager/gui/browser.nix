@@ -45,7 +45,7 @@ in
       programs.firefox = {
         enable = cfg.firefox.enable;
         configPath = "${config.xdg.configHome}/mozilla/firefox";
-        inherit (cfg.firefox) nativeMessagingHosts;
+        inherit (cfg.firefox) nativeMessagingHosts policies;
 
         profiles.default = {
           extensions.packages = cfg.firefox.extensions;
