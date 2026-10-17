@@ -48,6 +48,10 @@ in
     "elephant/emoji-list.txt".source = emojiList;
   };
 
+  xdg.dataFile = {
+    "icons/hicolor/scalable/apps/home-assistant.svg".source = ./walker/home-assistant.svg;
+  };
+
   systemd.user = {
     services = {
       walker.Unit = {
@@ -58,6 +62,7 @@ in
         Unit.X-Restart-Triggers = [
           "${./walker/emoji.lua}"
           "${./walker/home-assistant.lua}"
+          "${./walker/home-assistant.svg}"
           "${./walker/obs-reaction.lua}"
           "${./walker/soundboard.lua}"
           "${./walker/soundboard-tts.lua}"
@@ -160,16 +165,8 @@ in
             provider = "menus:soundboard-tts";
           }
           {
-            prefix = ":ha";
-            provider = "menus:home-assistant";
-          }
-          {
-            prefix = ":h";
-            provider = "menus:home-assistant";
-          }
-          {
             prefix = ":";
-            provider = "menus:home-assistant";
+            provider = "clipboard";
           }
           {
             prefix = "@";

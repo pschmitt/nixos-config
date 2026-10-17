@@ -1,6 +1,6 @@
 Name = "home-assistant"
 NamePretty = "Home Assistant"
-Icon = "home"
+Icon = "home-assistant"
 Terminal = false
 Cache = false
 FixedOrder = true
@@ -308,7 +308,7 @@ function GetEntries(query)
     return {
       Text = (item.pinned and "📌 " or "") .. item.name,
       Subtext = item.subtext or (item.domain .. " • " .. item.state),
-      Icon = item.icon or "home",
+      Icon = item.icon or "home-assistant",
       Value = item.id,
       Keywords = {
         raw_q,

@@ -65,7 +65,7 @@ DEFAULT_PINS = [
 ]
 
 
-def notify(msg, icon="home"):
+def notify(msg, icon="home-assistant"):
     """Send a desktop notification via notify-send."""
     try:
         subprocess.Popen(
