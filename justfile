@@ -71,7 +71,7 @@ build-rpi-img *args='':
 
 alias fetch-blobs := fetch-proprietary-garbage
 fetch-proprietary-garbage *args:
-  ./scripts/fetch-proprietary-garbage.sh {{args}}
+  ./just/fetch-proprietary-garbage.sh "$@"
 
 # All tofu recipes (tofu, tofu-remote, tofu-yolo) are private-repo-only now —
 # the tofu config itself lives there. Run them from the private checkout:
