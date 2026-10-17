@@ -22,6 +22,7 @@
     ./profile-picture.nix
     ./yt-dlp-cookies-tx.nix
     ./soundboard.nix
+    ./swappy.nix
     ./theme.nix
     ./vimium-c.nix
     ./xdg-portal.nix
