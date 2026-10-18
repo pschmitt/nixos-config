@@ -893,6 +893,7 @@ in
           };
           "pschmitt/ha" = {
             bar_display_mode = "single";
+            bar_dynamic_widgets_first = true;
             action_right_click = "control_entity";
             action_scroll_up = "control_entity";
             action_scroll_down = "control_entity";
