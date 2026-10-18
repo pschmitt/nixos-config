@@ -225,6 +225,21 @@
         "type": "github"
       }
     },
+    "crane": {
+      "locked": {
+        "lastModified": 1792350552,
+        "narHash": "sha256-292lvpvxTGKryKxh3/3tcIVi85CwYGdl4oOi113Sob8=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "e675a36b7377bebe41d548388a2501cbb16d380d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "declaroid": {
       "inputs": {
         "nixpkgs": [
@@ -2390,6 +2405,7 @@
     },
     "rbw": {
       "inputs": {
+        "crane": "crane",
         "home-manager": [
           "home-manager"
         ],
@@ -2398,11 +2414,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792360543,
-        "narHash": "sha256-MopbJba2lMdn8QdbjSDQMcxvULUTKIuqM09ooaZaqtU=",
+        "lastModified": 1792364899,
+        "narHash": "sha256-w292GIciY/kgpF0ghPIwCdk86MTkk8mjZ17oKKVj7nY=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "5b2ffddd3aa91a2d84904bad385e8ad74bc2f83f",
+        "rev": "687c83b221ee02418c2b2dba1f2a484396d732d4",
         "type": "github"
       },
       "original": {
