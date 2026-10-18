@@ -37,9 +37,56 @@ in
       bar.main.end = lib.mkForce [
         "media"
         "group:sync-tray"
-        "obs-studio"
         "group:volume"
         "group:notif-battery"
+      ];
+      bar.main.capsule_group = lib.mkForce [
+        {
+          id = "ai-usage";
+          members = [ "ha-ai-usage" ];
+          padding = 12;
+        }
+        {
+          id = "weather-date";
+          members = [
+            "weather"
+            "clock"
+            "timewarrior"
+          ];
+          padding = 12;
+          widget_spacing = 20;
+        }
+        {
+          id = "notif-battery";
+          members = [
+            "network"
+            "bluetooth"
+            "battery-icon"
+            "notifications"
+          ];
+          padding = 12;
+        }
+        {
+          id = "sync-tray";
+          members = [
+            "ha"
+            "syncthing"
+            "tray"
+            "obs-studio"
+            "lan-mouse"
+          ];
+          padding = 12;
+        }
+        {
+          id = "volume";
+          members = [
+            "screencast"
+            "input-volume"
+            "output-volume"
+          ];
+          padding = 12;
+          accordion = false;
+        }
       ];
     };
 

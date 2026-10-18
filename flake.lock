@@ -2101,19 +2101,41 @@
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
-        ]
+        ],
+        "noctalia": "noctalia_2"
       },
       "locked": {
-        "lastModified": 1792082193,
-        "narHash": "sha256-Kks8befvPu+JOO/cH96IkqING3xJC0vW8mSh9CLDIxQ=",
+        "lastModified": 1792346568,
+        "narHash": "sha256-ecIUSUq182efpHG0d42urg+Zv5hei0RrAm9dpbrrZhc=",
         "owner": "pschmitt",
         "repo": "noctalia-plugins",
-        "rev": "edff9fdff8b31960689d8c21c2f01e12fc3f9b7a",
+        "rev": "0007fef718b68e5c302923876e79543b12c4c92b",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
         "repo": "noctalia-plugins",
+        "type": "github"
+      }
+    },
+    "noctalia_2": {
+      "inputs": {
+        "nixpkgs": [
+          "noctalia-plugins",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792329654,
+        "narHash": "sha256-BzbLkrJpMpnqqzt3rD8ZV1gQlDep6RvDsmbVv7IYHrM=",
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
+        "rev": "47945ecb84fd6d9284cf82480273fccd20bb1fa9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "noctalia-dev",
+        "repo": "noctalia",
         "type": "github"
       }
     },
