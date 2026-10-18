@@ -42,7 +42,7 @@
 
     # input emulation
     dotool
-    inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default
+    pkgs.lan-mouse
     libinput # libinput debug-events
     wlrctl
     wtype

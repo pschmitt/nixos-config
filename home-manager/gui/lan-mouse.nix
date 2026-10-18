@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  inputs,
   hostname,
   ...
 }:
@@ -147,8 +146,14 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = inputs.lan-mouse.packages.${pkgs.stdenv.hostPlatform.system}.default;
+      default = pkgs.lan-mouse;
       description = "The lan-mouse package to run.";
+    };
+
+    inputKeymapFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "XKB keymap used by Lan Mouse's virtual keyboard for incoming remote input.";
     };
 
     port = lib.mkOption {
@@ -342,6 +347,7 @@ in
       };
 
       Service = {
+        Environment = lib.optional (cfg.inputKeymapFile != null) "LAN_MOUSE_KEYMAP=${cfg.inputKeymapFile}";
         ExecStart = lib.concatStringsSep " " (
           [ "${cfg.package}/bin/lan-mouse" ]
           ++ lib.optionals (cfg.captureBackend != null) [

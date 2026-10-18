@@ -56,15 +56,6 @@ in
   wayland.windowManager.hyprland.settings = {
     config.dwindle.force_split = 0;
 
-    # lan-mouse presents remote input as a virtual keyboard. Apply the GPD
-    # Pocket 4 layout here when gk4's built-in keyboard is controlling ge2.
-    device = [
-      {
-        name = "hl-virtual-keyboard-.lan-mouse-wrapped";
-        kb_layout = "gpdpocket4-de,gpdpocket4-us,us,de";
-      }
-    ];
-
     workspace_rule = [
       {
         workspace = "1";

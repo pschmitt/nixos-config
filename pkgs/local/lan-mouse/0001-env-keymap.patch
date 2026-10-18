@@ -1,0 +1,37 @@
+diff --git a/input-emulation/src/wlroots.rs b/input-emulation/src/wlroots.rs
+index ab9ef8f..a384404 100644
+--- a/input-emulation/src/wlroots.rs
++++ b/input-emulation/src/wlroots.rs
+@@ -4,6 +4,7 @@ use super::{Emulation, error::WlrootsEmulationCreationError};
+ use async_trait::async_trait;
+ use bitflags::bitflags;
+ use std::collections::HashMap;
++use std::fs::File;
+ use std::io;
+ use std::os::fd::{AsFd, OwnedFd};
+ use std::sync::{Arc, Mutex};
+@@ -71,11 +72,23 @@ impl WlrootsEmulation {
+             .map_err(|e| WaylandBindError::new(e, "virtual-keyboard-unstable-v1"))?;
+
+         let input_for_client: HashMap<EmulationHandle, VirtualInput> = HashMap::new();
++        // A configured keymap belongs to Lan Mouse's virtual keyboard only;
++        // it does not change the compositor's keymap for physical keyboards.
++        let keymap = match std::env::var_os("LAN_MOUSE_KEYMAP") {
++            Some(path) => {
++                let file = File::open(path)?;
++                let size = file.metadata()?.len().try_into().map_err(|_| {
++                    io::Error::new(io::ErrorKind::InvalidData, "keymap file is too large")
++                })?;
++                Some((1, OwnedFd::from(file), size))
++            }
++            None => None,
++        };
+
+         let mut emulate = WlrootsEmulation {
+             last_flush_failed: false,
+             state: State {
+-                keymap: None,
++                keymap,
+                 keyboard: None,
+                 input_for_client,
+                 seat,

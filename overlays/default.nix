@@ -61,6 +61,19 @@ in
     // (import ./noctalia.nix { inherit inputs final prev; })
     // (import ./zsh-completions.nix { inherit inputs final prev; })
     // {
+      # Lan Mouse normally assigns its Wayland virtual keyboard the local
+      # compositor's keymap. Allow a service-specific map so remote input can
+      # use the peer's layout without changing physical keyboards.
+      lan-mouse =
+        inputs.lan-mouse.packages.${final.stdenv.hostPlatform.system}.default.overrideAttrs
+          (_old: {
+            src = final.applyPatches {
+              name = "lan-mouse-patched";
+              src = inputs.lan-mouse;
+              patches = [ ../pkgs/local/lan-mouse/0001-env-keymap.patch ];
+            };
+          });
+
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (playwrightFixes final.fetchFromGitHub)
         (_pyfinal: pyprev: {
