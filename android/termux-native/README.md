@@ -757,6 +757,13 @@ still pending. The yadm-init installer now checks for encrypted host keys
 before replacing the Termux package tree and restores them after deploying the
 device's personal SSH identity.
 
+The P11 bundle also carries a separate SOPS-encrypted copy of the fleet's
+generated global known-hosts file. Activation decrypts it on-device with the
+Termux SSH host identity, installs it at
+`$PREFIX/etc/ssh/ssh_known_hosts.d/nixpp`, and adds that path to
+`GlobalKnownHostsFile` through `$PREFIX/etc/ssh/ssh_config.d/nixpp.conf` while
+retaining both Termux global files. `UserKnownHostsFile` remains unchanged.
+
 On 2026-10-08, the Termux Neovim generation began carrying every configured
 Lazy plugin source, with Lazy's automatic installer disabled. The generated
 `bin/nvim` launcher directs the existing yadm `nvim()` wrapper to the active

@@ -107,6 +107,9 @@ in
       ]
       ++ lib.optionals (config.termux.ssh.hostKeysSopsFile != null) [
         ".local/share/termux-native/ssh-host-keys.sops.yaml"
+      ]
+      ++ lib.optionals (config.termux.ssh.knownHostsSopsFile != null) [
+        ".local/share/termux-native/ssh-known-hosts.sops.yaml"
       ];
       description = ''
         Relative Home Manager output files copied into a Termux generation.
@@ -118,6 +121,12 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "Encrypted per-host OpenSSH host keys included in the Termux generation.";
+    };
+
+    ssh.knownHostsSopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Encrypted OpenSSH known-hosts entries materialized on the Termux host.";
     };
   };
 
@@ -189,6 +198,11 @@ in
           lib.mkIf (config.termux.ssh.hostKeysSopsFile != null)
             {
               source = config.termux.ssh.hostKeysSopsFile;
+            };
+        dataFile."termux-native/ssh-known-hosts.sops.yaml" =
+          lib.mkIf (config.termux.ssh.knownHostsSopsFile != null)
+            {
+              source = config.termux.ssh.knownHostsSopsFile;
             };
       };
 
