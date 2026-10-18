@@ -1,0 +1,10 @@
+diff --git a/src/saml2/xml/schema/__init__.py b/src/saml2/xml/schema/__init__.py
+--- a/src/saml2/xml/schema/__init__.py
++++ b/src/saml2/xml/schema/__init__.py
+@@ -3,0 +4 @@
++from xmlschema import XMLResource as _XMLResource
+@@ -63 +64,3 @@
+-        validator.validate(doc)
++        # xmlschema 4 also sandboxes the document being validated.
++        # Load it explicitly to preserve the previous behavior.
++        validator.validate(_XMLResource(doc))

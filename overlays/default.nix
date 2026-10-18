@@ -84,6 +84,16 @@ in
             disabledTests = (old.disabledTests or [ ]) ++ [ "test_audio_against_cli" ];
           });
         })
+        (_pyfinal: pyprev: {
+          # xmlschema 4 applies its sandbox to validated documents as well as
+          # schemas. pysaml2 7.5.4 passes file paths directly, so its schema
+          # validation tests fail when the fixtures are outside the schema
+          # directory. Loading them as XMLResource restores the xmlschema 2/3
+          # behavior; this patch is upstream PR #1044.
+          pysaml2 = pyprev.pysaml2.overridePythonAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./patches/pysaml2-xmlschema4.patch ];
+          });
+        })
       ];
     }; # Continue merging additional overlays as needed
 
