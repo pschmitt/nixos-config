@@ -74,6 +74,13 @@ in
             };
           });
 
+      # The SAML configuration checks exposed by enabling pysaml2 also need
+      # pytz, which the Nixpkgs Matrix Synapse package omits from its SAML extra.
+      matrix-synapse-unwrapped = prev.matrix-synapse-unwrapped.overridePythonAttrs (old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ final.python3Packages.pytz ];
+        propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ [ final.python3Packages.pytz ];
+      });
+
       pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
         (playwrightFixes final.fetchFromGitHub)
         (_pyfinal: pyprev: {
@@ -93,6 +100,16 @@ in
           pysaml2 = pyprev.pysaml2.overridePythonAttrs (old: {
             patches = (old.patches or [ ]) ++ [ ./patches/pysaml2-xmlschema4.patch ];
           });
+        })
+        (_pyfinal: pyprev: {
+          # xmlschema 4.3.1 introspects class attributes while clearing cached
+          # properties. zope.interface's __provides__ descriptor raises
+          # AttributeError on class access; skip descriptors that do so.
+          # Matrix Synapse imports pysaml2 in its test suite and exposes this.
+          xmlschema = pyprev.xmlschema.overridePythonAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./patches/xmlschema-zope-interface.patch ];
+          });
+
         })
       ];
     }; # Continue merging additional overlays as needed
