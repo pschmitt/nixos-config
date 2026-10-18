@@ -68,6 +68,7 @@ in
         ".config/zsh/.zprofile"
         ".config/zsh/.zshenv"
         ".config/zsh/.zshrc"
+        ".config/zsh/zhj.zsh"
         ".config/zsh/termux/atuin-init.zsh"
         ".config/zsh/termux/direnv-init.zsh"
         ".config/zsh/termux/fzf-init.zsh"
@@ -135,6 +136,7 @@ in
           "git"
           "grep"
           "jq"
+          "yadm"
           "libngtcp2"
           "less"
           "openssh"
@@ -176,6 +178,7 @@ in
               typeset -g host_color=${lib.escapeShellArg config.dotfiles.promptColor}
             fi
           '';
+          "zsh/zhj.zsh".text = builtins.readFile ../../pkgs/local/zhj/zhj.zsh;
           "zsh/completions/_rbw".source = "${pkgsTermux.rbw}/share/zsh/site-functions/_rbw";
           "zsh/completions/_extract".source = "${pkgs.oh-my-zsh}/share/oh-my-zsh/plugins/extract/_extract";
           "zsh/custom/os/home-manager/system.zsh".text = ''
@@ -207,6 +210,7 @@ in
         pkgsTermux.sops
         pkgsTermux.ssh-to-age
         pkgsTermux.emoji-fzf
+        pkgsTermux.zhj
       ];
 
       programs.zsh = {

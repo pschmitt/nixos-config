@@ -309,6 +309,42 @@ androidPkgs.extend (
         package = pkgs.hwatch;
       };
 
+      zhj =
+        pkgs.runCommand "zhj-termux"
+          {
+            allowedReferences = [ ];
+            passthru.termuxNative = {
+              abi = "android-bionic";
+              files = [ "bin/zhj" ];
+              binaries = [ ];
+              scripts = [ "bin/zhj" ];
+              trees = [ ];
+              aptPackages = [
+                "bash"
+                "zsh"
+              ];
+            };
+            meta = {
+              description = "Run commands with the Termux native Zsh configuration loaded";
+              mainProgram = "zhj";
+              platforms = lib.platforms.unix;
+            };
+          }
+          ''
+            mkdir -p "$out/bin"
+            cat > "$out/bin/zhj" <<'EOF'
+            #!${target.prefix}/bin/bash
+            set -e
+            PREFIX="''${PREFIX:-/data/data/com.termux/files/usr}"
+            TERMUX_GENERATION="''${TERMUX_GENERATION:-$HOME/.local/share/termux-native/current}"
+            TERMUX_GENERATION="$(cd "$TERMUX_GENERATION" && pwd -P)"
+            export PREFIX TERMUX_GENERATION
+            export ZDOTDIR="$TERMUX_GENERATION/home/.config/zsh"
+            exec "$PREFIX/bin/zsh" -f -c 'source "$ZDOTDIR/zhj.zsh" "$@"' zhj "$@"
+            EOF
+            chmod 0755 "$out/bin/zhj"
+          '';
+
       ssh-to-age = fromGo {
         package = pkgs.ssh-to-age;
         binary = "ssh-to-age";
