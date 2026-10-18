@@ -16,13 +16,13 @@ let
   source = fetchFromGitHub {
     owner = "Netflate";
     repo = "LumineCapture";
-    rev = "v0.2.0";
-    hash = "sha256-AdPGPoyqpWAQhhxTg2j6AR7N3rscAU1fHwMhvEr5ti8=";
+    rev = "v0.3.0";
+    hash = "sha256-/xudAWQlgB0tnwSYM0ZCxQiYD+8vwdJ9GcPEk6EB5nk=";
   };
 in
 rustPlatform.buildRustPackage {
   pname = "lumine-capture";
-  version = "0.2.0";
+  version = "0.3.0";
 
   src = source;
 
