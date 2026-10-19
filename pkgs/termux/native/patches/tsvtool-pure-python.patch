@@ -1,0 +1,59 @@
+--- a/tsvtool
++++ b/tsvtool
+@@ -21,7 +21,7 @@
+ from dataclasses import dataclass
+ from typing import List, Mapping, NamedTuple, Optional, Sequence, Tuple, Union
+ 
+-import regex as re
++import re
+ import wcwidth
+ import yaml
+ from rich.color import ColorParseError
+@@ -121,11 +121,6 @@
+         highlight=False,
+     )
+ 
+-GRAPHEME_RE = re.compile(r"\X")
+-EMOJI_RE = re.compile(
+-    r"(?:\p{Extended_Pictographic}\\x{FE0F}?(?:\\x{200D}\p{Extended_Pictographic}\\x{FE0F}?)*)(?:\s*)",
+-    re.UNICODE,
+-)
+ 
+ 
+ def env_truthy(name: str, default: bool = False) -> bool:
+@@ -143,17 +138,32 @@
+ 
+ 
+ def remove_emojis(text: str) -> str:
+-    return EMOJI_RE.sub("", text)
++    kept: List[str] = []
++    skip_space = False
++    for cluster in grapheme_clusters(text):
++        if skip_space and cluster.isspace():
++            continue
++        skip_space = False
++        if _is_emoji_cluster(cluster):
++            skip_space = True
++        else:
++            kept.append(cluster)
++    return "".join(kept)
+ 
+ 
+ def grapheme_clusters(text: str) -> List[str]:
+-    return GRAPHEME_RE.findall(text)
++    return list(wcwidth.iter_graphemes(text))
+ 
+ 
+ def _is_emoji_cluster(cluster: str) -> bool:
+     if "\u200d" in cluster or "\ufe0f" in cluster:
+         return True
+-    return bool(re.search(r"\p{Extended_Pictographic}", cluster))
++    return any(
++        0x1F000 <= ord(char) <= 0x1FAFF
++        or 0x2600 <= ord(char) <= 0x27BF
++        or 0x2300 <= ord(char) <= 0x23FF
++        for char in cluster
++    )
+ 
+ 
+ def cluster_width(cluster: str) -> int:

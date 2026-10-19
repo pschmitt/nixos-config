@@ -7,7 +7,6 @@
 }:
 let
   python = python3.withPackages (ps: [
-    ps.regex
     ps.wcwidth
   ]);
 in

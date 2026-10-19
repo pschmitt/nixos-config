@@ -33,12 +33,16 @@ in
     ../../home-manager/cli/zsh/tools/kubectl-ksh.nix
     ../../home-manager/cli/zsh/tools/kubectl-socks5-proxy.nix
     ../../home-manager/cli/zsh/tools/kubectl-watch.nix
+    ../../home-manager/cli/zsh/tools/nbx.nix
     ../../home-manager/cli/zsh/tools/netbird.nix
+    ../../home-manager/cli/zsh/tools/tables.nix
+    ../../home-manager/cli/zsh/tools/yank.nix
     ../../home-manager/cli/zsh/tools/xcp.nix
     ../../home-manager/cli/zsh/tools/termux/assh.nix
     ../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
     ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
+    ../../home-manager/cli/zsh/tools/termux/ldifj.nix
     ../../home-manager/cli/zsh/tools/termux/linkding-cli.nix
     ../../home-manager/cli/zsh/tools/termux/mani.nix
     ../../home-manager/cli/zsh/tools/termux/myl.nix

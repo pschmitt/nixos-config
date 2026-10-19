@@ -11,13 +11,11 @@ import argparse
 import sys
 from typing import List
 
-import regex as re  # type: ignore[import]  # Pyright: external module installed at runtime
+import re
 import wcwidth
 
-# Precompiled patterns (regex supports \X and Unicode properties)
 ANSI_CSI_RE = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
 ANSI_OSC8_RE = re.compile(r"\x1B]8;;.*?(?:\x07|\x1B\\)")
-GRAPHEME_RE = re.compile(r"\X")
 
 
 def strip_ansi(text: str) -> str:
@@ -33,7 +31,12 @@ def _is_emoji_cluster(cluster: str) -> bool:
         return True
     if "\ufe0f" in cluster:  # VS16 (emoji presentation)
         return True
-    return bool(re.search(r"\p{Extended_Pictographic}", cluster))
+    return any(
+        0x1F000 <= ord(char) <= 0x1FAFF
+        or 0x2600 <= ord(char) <= 0x27BF
+        or 0x2300 <= ord(char) <= 0x23FF
+        for char in cluster
+    )
 
 
 def _cluster_width(cluster: str) -> int:
@@ -50,7 +53,7 @@ def _cluster_width(cluster: str) -> int:
 def visible_width(text: str) -> int:
     """Display width of text, measured by grapheme clusters."""
     clean = strip_ansi(text)
-    return sum(_cluster_width(g) for g in GRAPHEME_RE.findall(clean))
+    return sum(_cluster_width(g) for g in wcwidth.iter_graphemes(clean))
 
 
 def main() -> None:

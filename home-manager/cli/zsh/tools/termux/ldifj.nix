@@ -1,4 +1,25 @@
-{ inputs, pkgs, ... }:
 {
-  home.packages = [ inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default ];
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
+let
+  termuxMode = config.termux.enable or false;
+  inherit
+    (import ../../../../../pkgs/termux/native/package-set.nix {
+      inherit inputs pkgs;
+    })
+    termuxPackages
+    ;
+in
+{
+  home.packages = [
+    (
+      if termuxMode then
+        termuxPackages.ldifj
+      else
+        inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default
+    )
+  ];
 }

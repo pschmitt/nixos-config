@@ -1,6 +1,6 @@
 # Commands the local plugins check for, from Nix instead of zinit's polaris
-# bin. Termux imports the whole tools directory (./default.nix); the CLI
-# profile installs tmux-xpanes itself.
+# bin. Termux imports compatible tools individually; the CLI profile installs
+# tmux-xpanes itself.
 {
   imports = [
     ./adb.nix

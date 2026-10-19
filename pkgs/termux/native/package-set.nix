@@ -135,6 +135,31 @@ androidPkgs.extend (
           extraFiles
           ;
       };
+    pythonScriptApplication =
+      {
+        pname,
+        src,
+        sourceFile,
+        python ? pkgs.python3,
+        dependencies,
+        entrypoint,
+      }:
+      let
+        package = python.pkgs.buildPythonApplication {
+          inherit pname src;
+          version = "1.0.0";
+          format = "other";
+          propagatedBuildInputs = dependencies;
+          dontBuild = true;
+          installPhase = ''
+            install -Dm644 "$src/${sourceFile}" "$out/${python.sitePackages}/${pname}.py"
+          '';
+        };
+      in
+      pythonApplication {
+        inherit package python entrypoint;
+        checkEntrypoint = false;
+      };
     pythonTermuxOverrides = _python: previous: {
       aiohttp = previous.aiohttp.overridePythonAttrs (old: {
         AIOHTTP_NO_EXTENSIONS = "1";
@@ -151,6 +176,11 @@ androidPkgs.extend (
           "test_feed_eof_no_err_brotli"
           "test_empty_body"
         ];
+      });
+      django = previous.django.overridePythonAttrs (_: {
+        # Django is a transitive runtime dependency of Termux CLI tools; its
+        # full test suite is unrelated to exporting the application runtime.
+        doCheck = false;
       });
       # Carry AnyIO upstream fix 818e4ac for its server-side TLS fixture.
       anyio = previous.anyio.overridePythonAttrs (old: {
@@ -172,9 +202,17 @@ androidPkgs.extend (
       # The overrides above rebuild moto (via slack-sdk's checks) from source;
       # this test fails there with ExecutionAlreadyExists.
       moto = previous.moto.overridePythonAttrs (old: {
+        # Moto is only bundled as a runtime dependency; its full service
+        # emulator suite does not validate the exported Termux applications.
+        doCheck = false;
         disabledTests = (old.disabledTests or [ ]) ++ [
           "test_create_state_machine_twice_after_success"
         ];
+      });
+      slack-sdk = previous.slack-sdk.overridePythonAttrs (_: {
+        # It is shipped only as slack-react's runtime dependency; its full
+        # upstream API test suite is not part of this Termux export.
+        doCheck = false;
       });
       multidict = previous.multidict.overridePythonAttrs (_: {
         MULTIDICT_NO_EXTENSIONS = "1";
@@ -188,6 +226,11 @@ androidPkgs.extend (
         propagatedBuildInputs = pkgs.lib.filter (package: package != previous.ruamel-yaml-clib) (
           old.propagatedBuildInputs or [ ]
         );
+      });
+      pyyaml = previous.pyyaml.overridePythonAttrs (_: {
+        # Build PyYAML's pure-Python fallback; its optional libyaml extension
+        # is a host ELF and cannot be included in a Termux bundle.
+        buildInputs = [ ];
       });
       shellingham = previous.shellingham.overridePythonAttrs (_: {
         # Nixpkgs normally pins `ps` to its store path; Termux supplies it via APT.
@@ -375,6 +418,49 @@ androidPkgs.extend (
         aptPackages = [ "termux-api" ];
       };
 
+      nbx = termuxShellScripts {
+        package = {
+          pname = "nbx";
+          src = inputs.nbx;
+          meta.mainProgram = "nbx";
+        };
+        scripts = [
+          {
+            command = "nbx";
+            source = "nbx.sh";
+          }
+        ];
+        aptPackages = [
+          "bash"
+          "coreutils"
+          "curl"
+          "fzf"
+          "gawk"
+          "grep"
+          "jq"
+          "util-linux"
+        ];
+      };
+
+      yank = termuxShellScripts {
+        package = {
+          pname = "yank";
+          src = pkgs.yank-osc52.src;
+          meta.mainProgram = "yank";
+        };
+        scripts = [
+          {
+            command = "yank";
+            source = "bin/yank";
+          }
+        ];
+        aptPackages = [
+          "coreutils"
+          "grep"
+          "tmux"
+        ];
+      };
+
       zhj =
         pkgs.runCommand "zhj-termux"
           {
@@ -556,6 +642,84 @@ androidPkgs.extend (
       jc = pythonApplication {
         package = pythonTermux.pkgs.jc;
         python = pythonTermux;
+      };
+
+      pycolumn = pythonScriptApplication {
+        pname = "pycolumn";
+        src = ../../local/pycolumn;
+        sourceFile = "pycolumn.py";
+        dependencies = [ pythonTermux.pkgs.wcwidth ];
+        entrypoint = "pycolumn:main";
+      };
+
+      tsvtool =
+        let
+          package = pythonTermux.pkgs.buildPythonApplication {
+            pname = "tsvtool";
+            version = "0.1.0";
+            src = inputs.tsvtool;
+            format = "other";
+            patches = [ ./patches/tsvtool-pure-python.patch ];
+            propagatedBuildInputs = with pythonTermux.pkgs; [
+              rich
+              rich-argparse
+              pyyaml
+              tomli
+              tomli-w
+              wcwidth
+            ];
+            dontBuild = true;
+            installPhase = ''
+              install -Dm644 tsvtool "$out/${pythonTermux.sitePackages}/tsvtool.py"
+            '';
+          };
+        in
+        pythonApplication {
+          inherit package;
+          python = pythonTermux;
+          entrypoint = "tsvtool:main";
+        };
+
+      ldifj =
+        let
+          ldifjPackage = pythonTermux.pkgs.buildPythonApplication {
+            pname = "ldifj";
+            version = "0.1.1";
+            src = inputs.ldifj;
+            pyproject = true;
+            nativeBuildInputs = with pythonTermux.pkgs; [
+              setuptools
+              setuptools-scm
+            ];
+            pythonRemoveDeps = [ "python-ldap" ];
+            dependencies = with pythonTermux.pkgs; [
+              rich
+              rich-argparse
+            ];
+            doCheck = false;
+          };
+          ldifModule = pkgs.runCommand "python-ldif-module" { } ''
+            module_source=${pythonTermux.pkgs.python-ldap.src}
+            install -Dm644 \
+              "$module_source/Lib/ldif.py" \
+              "$out/${pythonTermux.sitePackages}/ldif.py"
+            install -Dm644 "$module_source/LICENCE" \
+              "$out/${pythonTermux.sitePackages}/python-ldap-LICENCE.txt"
+          '';
+        in
+        pythonApplication {
+          package = ldifjPackage;
+          python = pythonTermux;
+          entrypoint = "ldifj:main";
+          extraRuntimePackages = [ ldifModule ];
+        };
+
+      zebra = pythonScriptApplication {
+        pname = "zebra";
+        src = ../../local/zebra;
+        sourceFile = "zebra.py";
+        dependencies = [ pkgs.python3Packages.wcwidth ];
+        entrypoint = "zebra:main";
       };
 
       obs-cli = withAptPackages (pythonApplication {
