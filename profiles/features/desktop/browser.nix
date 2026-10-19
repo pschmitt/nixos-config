@@ -37,7 +37,11 @@ in
           group = config.users.users.${config.mainUser.username}.group;
           mode = "0440";
           content = runtimeJSON {
-            "3rdparty".extensions.${chromiumId}.allowedDaemonOrigins = allowlist;
+            "3rdparty".extensions.${chromiumId} = {
+              allowedDaemonOrigins = allowlist;
+              # Named without asking when it pairs.
+              defaultName = "${config.networking.hostName}-chromium";
+            };
           };
         };
         "browser-node-firefox-policy" = {
@@ -48,7 +52,10 @@ in
             name = "browser-daemon-node@pschmitt.dev";
             description = "Allowed browser daemon origins";
             type = "storage";
-            data.allowedDaemonOrigins = allowlist;
+            data = {
+              allowedDaemonOrigins = allowlist;
+              defaultName = "${config.networking.hostName}-firefox";
+            };
           };
         };
       };
