@@ -8,6 +8,10 @@ let
   ];
   # The names rofl-10's public vhosts (hosts/rofl-10/browserless-public.nix)
   # answer to: a browser sends them as Origin while the vhost rewrites Host.
+  # Public share links (/share/<node>/<token>[/<what>]): no login, the daemon
+  # checks the token. Only these paths: its other pages hand out a sign-in
+  # cookie and rely on Authelia in front.
+  shareLocation = "~ ^/share/[A-Za-z0-9_.-]+/[A-Za-z0-9_-]+(/[a-z]+)?$";
   publicNames = [
     "browser.${config.domains.main}"
   ]
@@ -37,6 +41,9 @@ in
       # under load (a 170 KB page took ~3 s instead of ~0.3 s), which made
       # screenshots and peer requests crawl.
       publicUrl = "https://browser.${config.networking.hostName}.${config.domains.netbird}";
+      # Public share links go out under the name the public reaches the mesh by
+      # (rofl-10's vhost, see hosts/rofl-10/browserless-public.nix).
+      shareUrl = "https://browser.${config.domains.main}";
       # The daemon answers only to its own Host and Origin names (DNS rebinding
       # guard): every name the nginx vhost serves, and the public ones.
       allowedHosts = hosts ++ publicNames;
@@ -58,14 +65,24 @@ in
         haIngressBypass = false;
       };
 
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:3001";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        extraConfig = ''
-          proxy_read_timeout 3600s;
-          proxy_send_timeout 3600s;
-        '';
+      locations = {
+        "/" = {
+          proxyPass = "http://127.0.0.1:3001";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+          extraConfig = ''
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+          '';
+        };
+        ${shareLocation} = {
+          proxyPass = "http://127.0.0.1:3001";
+          recommendedProxySettings = true;
+          authelia = false;
+          extraConfig = ''
+            proxy_read_timeout 3600s;
+          '';
+        };
       };
     };
 

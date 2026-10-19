@@ -75,18 +75,33 @@ let
   anyVhost = {
     forceSSL = true;
     authelia.enable = true;
-    locations."/" = {
-      proxyPass = "http://browser_daemon";
-      proxyWebsockets = true;
-      recommendedProxySettings = false;
-      # A request (or a new CDP connection) that reaches a host just going down
-      # is retried on the next one rather than failing.
-      extraConfig = ''
-        proxy_next_upstream error timeout http_502 http_503 http_504;
-        proxy_next_upstream_tries 3;
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-      '';
+    locations = {
+      "/" = {
+        proxyPass = "http://browser_daemon";
+        proxyWebsockets = true;
+        recommendedProxySettings = false;
+        # A request (or a new CDP connection) that reaches a host just going down
+        # is retried on the next one rather than failing.
+        extraConfig = ''
+          proxy_next_upstream error timeout http_502 http_503 http_504;
+          proxy_next_upstream_tries 3;
+          proxy_read_timeout 3600s;
+          proxy_send_timeout 3600s;
+        '';
+      };
+      # Public share links of browser-daemon (/share/<node>/<token>[/<what>]):
+      # no login, the daemon checks the token, and any node forwards to the one
+      # in the link. Only these paths: the daemon's other pages hand out a
+      # sign-in cookie and rely on Authelia here.
+      "~ ^/share/[A-Za-z0-9_.-]+/[A-Za-z0-9_-]+(/[a-z]+)?$" = {
+        proxyPass = "http://browser_daemon";
+        recommendedProxySettings = false;
+        authelia = false;
+        extraConfig = ''
+          proxy_next_upstream error timeout http_502 http_503 http_504;
+          proxy_read_timeout 3600s;
+        '';
+      };
     };
   };
   names = map publicHost browserHosts ++ [ anyHost ];
