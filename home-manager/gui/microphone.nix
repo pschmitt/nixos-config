@@ -10,6 +10,10 @@ in
 
   # Restrict the denoiser to physical microphones, never the combined source.
   xdg.configFile."pipewire/pipewire.conf.d/90-microphone.conf".text = builtins.toJSON {
+    # RNNoise's recurrent state decays into denormals on (near-)silent input
+    # such as a muted mic. Denormal math is slow enough to keep the realtime
+    # data loop busy past RLIMIT_RTTIME, and the kernel then kills PipeWire.
+    "context.properties"."cpu.zero.denormals" = true;
     "context.modules" = [
       {
         name = "libpipewire-module-filter-chain";
