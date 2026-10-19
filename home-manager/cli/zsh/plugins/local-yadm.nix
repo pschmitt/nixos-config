@@ -4,6 +4,85 @@
     zsh::override-local-yadm() {
       unset 'CUSTOM_COMPS[zi::jd]'
 
+      yadm::classes() {
+        local help
+        zparseopts -D -E -K -- \
+          {h,-help}=help
+
+        if [[ -n "$help" ]]
+        then
+          print -u2 'Usage: yadm::classes'
+          print -u2 'List the classes configured for this yadm repository.'
+          return 0
+        fi
+
+        if (( $# > 0 ))
+        then
+          print -u2 'Usage: yadm::classes'
+          return 2
+        fi
+
+        yadm config --get-all local.class
+      }
+
+      yadm::class-add() {
+        local help class classes
+        zparseopts -D -E -K -- \
+          {h,-help}=help
+
+        if [[ -n "$help" ]]
+        then
+          print -u2 'Usage: yadm::class-add CLASS'
+          print -u2 'Add a class and reapply yadm alternates.'
+          return 0
+        fi
+
+        if (( $# != 1 )) || [[ -z "$1" ]]
+        then
+          print -u2 'Usage: yadm::class-add CLASS'
+          return 2
+        fi
+
+        class="$1"
+        classes="$(yadm config --get-all local.class 2>/dev/null || :)"
+        if grep -qxF -- "$class" <<< "$classes"
+        then
+          return 0
+        fi
+
+        yadm config --add local.class "$class" || return
+        yadm alt
+      }
+
+      yadm::class-remove() {
+        local help class classes
+        zparseopts -D -E -K -- \
+          {h,-help}=help
+
+        if [[ -n "$help" ]]
+        then
+          print -u2 'Usage: yadm::class-remove CLASS'
+          print -u2 'Remove a class and reapply yadm alternates.'
+          return 0
+        fi
+
+        if (( $# != 1 )) || [[ -z "$1" ]]
+        then
+          print -u2 'Usage: yadm::class-remove CLASS'
+          return 2
+        fi
+
+        class="$1"
+        classes="$(yadm config --get-all local.class 2>/dev/null || :)"
+        if ! grep -qxF -- "$class" <<< "$classes"
+        then
+          return 0
+        fi
+
+        yadm config --fixed-value --unset-all local.class "$class" || return
+        yadm alt
+      }
+
       yadm::pull() {
         local decrypt lazy_update force verbose
         zparseopts -D -E -K -- \
