@@ -1,7 +1,7 @@
 { config, ... }:
 let
   # renovate: datasource=docker depName=ghcr.io/alam00000/bentopdf
-  bentopdfVersion = "2.8.8";
+  bentopdfVersion = "2.8.10";
   bentopdfHost = "pdf.${config.domains.main}";
   bentopdfPort = 23686;
 in
