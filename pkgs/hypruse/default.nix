@@ -14,11 +14,11 @@
 
 buildPythonApplication rec {
   pname = "hypruse";
-  version = "0.12.1";
+  version = "0.13.0";
 
   src = fetchurl {
     url = "https://github.com/IlyasKhallouki/hypruse/archive/refs/tags/v${version}.tar.gz";
-    hash = "sha256-dcXYaghPHkWaBbScplWHC6qnN1EAWt/QvxvjtUWCGsI=";
+    hash = "sha256-azVNDgPFL25HJ6/UbUbHRNWrHz0ytZicEAkKEK13Huc=";
   };
 
   pyproject = true;
