@@ -66,6 +66,18 @@ in
       };
 
       locations = {
+        "= /api/extension/connect" = {
+          proxyPass = "http://127.0.0.1:3001";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+          # Authenticated by the daemon's origin-bound, single-use pairing
+          # code in the first frame. Extensions cannot use Authelia cookies.
+          authelia = false;
+          extraConfig = ''
+            proxy_read_timeout 60s;
+            proxy_send_timeout 60s;
+          '';
+        };
         "/" = {
           proxyPass = "http://127.0.0.1:3001";
           proxyWebsockets = true;

@@ -10,6 +10,7 @@ let
   rbwNativeHost = rbwBrowserPackages.browser-native-host;
   rbwFirefoxAddon = rbwBrowserPackages.firefox-addon;
   rbwChromiumAddon = rbwBrowserPackages.chromium-addon;
+  nodePackages = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system};
   bruvtabPkg = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.default;
   bruvtabFirefoxAddon = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.firefoxAddon;
   bruvtabChromeCrx = inputs.bruvtab.packages.${pkgs.stdenv.hostPlatform.system}.chromeCrx;
@@ -20,6 +21,8 @@ in
 {
   options.dotfiles.desktop.browser = {
     enable = lib.mkEnableOption "shared browser stack";
+
+    node.enable = lib.mkEnableOption "temporary selected-tab browser nodes and the Firefox control companion";
 
     systemPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
@@ -49,28 +52,43 @@ in
 
       policies = lib.mkOption {
         inherit (pkgs.formats.json { }) type;
-        default = {
-          ExtensionSettings."rbw-browser@pschmitt.dev" = {
-            installation_mode = "normal_installed";
-            # A new store path triggers Firefox's managed update mechanism.
-            # Profile symlinks keep Nix's fixed mtime and can retain stale metadata.
-            install_url = "file://${rbwFirefoxAddon}/rbw-browser@pschmitt.dev.xpi";
-            updates_disabled = true;
-            default_area = "navbar";
-          };
-        };
+        default =
+          lib.recursiveUpdate
+            {
+              ExtensionSettings."rbw-browser@pschmitt.dev" = {
+                installation_mode = "normal_installed";
+                # A new store path triggers Firefox's managed update mechanism.
+                # Profile symlinks keep Nix's fixed mtime and can retain stale metadata.
+                install_url = "file://${rbwFirefoxAddon}/rbw-browser@pschmitt.dev.xpi";
+                updates_disabled = true;
+                default_area = "navbar";
+              };
+            }
+            (
+              lib.optionalAttrs config.dotfiles.desktop.browser.node.enable {
+                ExtensionSettings."browser-daemon-node@pschmitt.dev" = {
+                  installation_mode = "normal_installed";
+                  install_url = "file://${nodePackages.firefox-addon}/browser-daemon-node@pschmitt.dev.xpi";
+                  updates_disabled = true;
+                  default_area = "navbar";
+                };
+              }
+            );
         description = "Firefox enterprise policies shared by system and user wrappers.";
       };
 
       nativeMessagingHosts = lib.mkOption {
         type = lib.types.listOf lib.types.package;
-        default = with pkgs; [
-          bruvtabPkg
-          rbwNativeHost
-          fx-cast-bridge
-          native-client
-          tridactyl-native
-        ];
+        default =
+          with pkgs;
+          [
+            bruvtabPkg
+            rbwNativeHost
+            fx-cast-bridge
+            native-client
+            tridactyl-native
+          ]
+          ++ lib.optional config.dotfiles.desktop.browser.node.enable nodePackages.browser-native-host;
         description = "Firefox native messaging host packages.";
       };
 
@@ -328,24 +346,30 @@ in
 
       extensions = lib.mkOption {
         type = lib.types.listOf lib.types.attrs;
-        default = [
-          {
-            id = rbwChromiumAddon.extensionId;
-            crxPath = "${rbwChromiumAddon}/rbw.crx";
-            inherit (rbwChromiumAddon) version;
+        default =
+          lib.optional config.dotfiles.desktop.browser.node.enable {
+            id = nodePackages.chromium-addon.extensionId;
+            crxPath = "${nodePackages.chromium-addon}/browser-daemon-node.crx";
+            inherit (nodePackages.chromium-addon) version;
           }
-          {
-            id = "nngceckbapebfimnlniiiahkandclblb";
-          }
-          {
-            id = bruvtabChromeExtensionId;
-            crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
-            inherit (bruvtabPkg) version;
-          }
-          {
-            id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
-          }
-        ];
+          ++ [
+            {
+              id = rbwChromiumAddon.extensionId;
+              crxPath = "${rbwChromiumAddon}/rbw.crx";
+              inherit (rbwChromiumAddon) version;
+            }
+            {
+              id = "nngceckbapebfimnlniiiahkandclblb";
+            }
+            {
+              id = bruvtabChromeExtensionId;
+              crxPath = "${bruvtabChromeCrx}/bruvtab.crx";
+              inherit (bruvtabPkg) version;
+            }
+            {
+              id = "ddkjiahejlhfcafbddmgiahcphecmpfh";
+            }
+          ];
         description = "Chromium extension definitions.";
       };
     };

@@ -26,7 +26,28 @@ in
       dotfiles.desktop.browser.enable = lib.mkDefault true;
     }
     (lib.mkIf cfg.enable {
-      home.packages = cfg.userPackages;
+      home.packages =
+        cfg.userPackages
+        ++ lib.optional cfg.node.enable (
+          pkgs.writeShellApplication {
+            name = "firefox-browser-node";
+            text = ''
+              exec env MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 ${lib.getExe config.programs.firefox.finalPackage} --marionette "$@"
+            '';
+          }
+        );
+
+      xdg.desktopEntries.firefox-browser-node = lib.mkIf cfg.node.enable {
+        name = "Firefox (Browser Node Control)";
+        genericName = "Web Browser";
+        exec = "firefox-browser-node %U";
+        icon = "firefox";
+        terminal = false;
+        categories = [
+          "Network"
+          "WebBrowser"
+        ];
+      };
 
       sops = {
         secrets = {
