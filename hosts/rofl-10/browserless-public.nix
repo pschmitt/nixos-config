@@ -45,6 +45,11 @@ let
     forceSSL = true;
     authelia.enable = true;
     locations."/" = proxyLocation host;
+    locations."= /api/extension/connect" = proxyLocation host // {
+      # Only this socket authenticates its first frame with an origin-bound
+      # browser credential. All dashboard/API routes retain Authelia.
+      authelia = false;
+    };
   };
 
   # browser.${domain} goes through an upstream so nginx can fail over, but an
@@ -76,6 +81,17 @@ let
     forceSSL = true;
     authelia.enable = true;
     locations = {
+      "= /api/extension/connect" = {
+        proxyPass = "http://browser_daemon";
+        proxyWebsockets = true;
+        recommendedProxySettings = false;
+        authelia = false;
+        extraConfig = ''
+          proxy_next_upstream error timeout http_502 http_503 http_504;
+          proxy_read_timeout 60s;
+          proxy_send_timeout 60s;
+        '';
+      };
       "/" = {
         proxyPass = "http://browser_daemon";
         proxyWebsockets = true;

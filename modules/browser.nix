@@ -22,7 +22,14 @@ in
   options.dotfiles.desktop.browser = {
     enable = lib.mkEnableOption "shared browser stack";
 
-    node.enable = lib.mkEnableOption "temporary selected-tab browser nodes and the Firefox control companion";
+    node = {
+      enable = lib.mkEnableOption "temporary selected-tab browser nodes and the Firefox control companion";
+      allowlistSecret = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "SOPS secret containing a JSON array of exact allowed browser daemon origins, rendered into browser managed storage at activation.";
+      };
+    };
 
     systemPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;

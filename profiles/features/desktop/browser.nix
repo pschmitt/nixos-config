@@ -1,10 +1,19 @@
 {
   config,
+  inputs,
   lib,
+  pkgs,
   ...
 }:
 let
   cfg = config.dotfiles.desktop.browser;
+  allowlist = config.sops.placeholder.${cfg.node.allowlistSecret};
+  # Keep the array as a runtime SOPS substitution, outside the Nix store.
+  runtimeJSON =
+    value:
+    builtins.replaceStrings [ (builtins.toJSON allowlist) ] [ allowlist ] (builtins.toJSON value);
+  chromiumId =
+    inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.chromium-addon.extensionId;
 in
 {
   config = lib.mkMerge [
@@ -19,6 +28,30 @@ in
       };
 
       environment.systemPackages = cfg.systemPackages;
+    })
+    (lib.mkIf (cfg.enable && cfg.node.enable && cfg.node.allowlistSecret != null) {
+      sops.templates = {
+        "browser-node-chromium-policy" = {
+          path = "/etc/chromium/policies/managed/browser-daemon-node.json";
+          owner = "root";
+          group = config.users.users.${config.mainUser.username}.group;
+          mode = "0440";
+          content = runtimeJSON {
+            "3rdparty".extensions.${chromiumId}.allowedDaemonOrigins = allowlist;
+          };
+        };
+        "browser-node-firefox-policy" = {
+          path = "${config.mainUser.homeDirectory}/.mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json";
+          owner = config.mainUser.username;
+          mode = "0400";
+          content = runtimeJSON {
+            name = "browser-daemon-node@pschmitt.dev";
+            description = "Allowed browser daemon origins";
+            type = "storage";
+            data.allowedDaemonOrigins = allowlist;
+          };
+        };
+      };
     })
   ];
 }
