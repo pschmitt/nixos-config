@@ -38,14 +38,14 @@ let
 in
 python3.pkgs.buildPythonApplication rec {
   pname = "tewi";
-  version = "2.6.0";
+  version = "3.0.0";
   pyproject = true;
 
   src = fetchFromGitHub {
     owner = "anlar";
     repo = "tewi";
     rev = "v${version}";
-    hash = "sha256-VOITB8YN+TXkG3Wpqv/twwbPuxPkVa8F1Su/914kPE8=";
+    hash = "sha256-/PsXoij2JO3/50YlGLcPgd0aHf8T09qq3K+uMopAbJo=";
   };
 
   # The upstream release references a shell completion that is absent from
