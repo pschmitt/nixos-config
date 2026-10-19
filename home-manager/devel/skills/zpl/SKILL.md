@@ -24,6 +24,16 @@ plugins/local/
 
 Files are sourced automatically by zinit on shell startup — no registration step needed. New `.zsh` files dropped in the root or subdirectories are picked up on the next shell start (or `source`).
 
+## Autoloaded functions
+
+Many plugins register a topic with `zsh::autoload-dir <topic>`. Functions for that topic live in `$ZSH_FUNCTIONS_DIR/<topic>/`,
+normally `~/.config/zsh/functions/<topic>/`, with one file per function named exactly after the function. Each file contains the
+function body only, without a `name() { ... }` wrapper. Plugin files keep guards, aliases, completions, and setup, and register
+the topic after any capability guards.
+
+When adding a function to an autoloaded topic, edit or create its function file rather than defining it in the plugin file. Keep
+the plugin file's loader registration only when the topic is new or not already registered.
+
 ## Naming conventions
 
 - Functions use `namespace::verb` style, e.g. `http::serve`, `files::delete-sync-artifacts`
@@ -97,5 +107,6 @@ filtering automatically.
 - This directory is managed by **yadm**, not git. Stage/commit with `yadm add`,
   `yadm commit`, etc.
 - Edit files directly with standard file tools — no build step
-- Test immediately: `source ~/.config/zsh/plugins/local/<file>.zsh`
-- Or reload the full plugin set: `exec zsh`
+- For plugin file changes, source `~/.config/zsh/plugins/local/<file>.zsh` or reload the full plugin set with `exec zsh`.
+- For autoload function changes, use `zsh::reload-file ~/.config/zsh/functions/<topic>/<function-name>` in an interactive shell, or
+  restart the shell with `exec zsh`.
