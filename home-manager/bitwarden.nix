@@ -54,6 +54,7 @@
       pinentry = {
         command = "pinentry";
       };
+      passwordGen.length = 40;
       tui = {
         keys = {
           # Matches the <M-Q> "rage quit" mapping in neovim: exit the TUI
