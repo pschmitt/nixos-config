@@ -34,7 +34,9 @@ in
     ../../home-manager/cli/zsh/tools/kubectl-socks5-proxy.nix
     ../../home-manager/cli/zsh/tools/kubectl-watch.nix
     ../../home-manager/cli/zsh/tools/netbird.nix
+    ../../home-manager/cli/zsh/tools/xcp.nix
     ../../home-manager/cli/zsh/tools/termux/assh.nix
+    ../../home-manager/cli/zsh/tools/termux/home-assistant-cli.nix
     ../../home-manager/cli/zsh/tools/termux/jc.nix
     ../../home-manager/cli/zsh/tools/termux/kubectl.nix
     ../../home-manager/cli/zsh/tools/termux/linkding-cli.nix
@@ -84,6 +86,7 @@ in
         ".config/zsh/completions/_xpanes"
         ".local/share/man/man1/xpanes.1"
         ".config/zsh/completions/_ipmi"
+        ".config/zsh/completions/_hass-cli"
         ".config/zsh/completions/_jc"
         ".config/zsh/completions/_kubectl"
         ".config/zsh/completions/_linkding"
@@ -110,6 +113,9 @@ in
       ]
       ++ lib.optionals (config.termux.ssh.knownHostsSopsFile != null) [
         ".local/share/termux-native/ssh-known-hosts.sops.yaml"
+      ]
+      ++ lib.optionals (config.termux.gpg.sopsFile != null) [
+        ".local/share/termux-native/gpg.sops.yaml"
       ];
       description = ''
         Relative Home Manager output files copied into a Termux generation.
@@ -128,6 +134,12 @@ in
       default = null;
       description = "Encrypted OpenSSH known-hosts entries materialized on the Termux host.";
     };
+
+    gpg.sopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = inputs.nixos-config-private.outPath + "/secrets/nixos-gpg.sops.yaml";
+      description = "Encrypted GPG secret-key data imported into the Termux user's GnuPG home.";
+    };
   };
 
   # Disable Linux packages for programs supplied by the Termux prefix. Packages
@@ -140,6 +152,7 @@ in
           "bash"
           "ca-certificates"
           "coreutils"
+          "gnupg"
           "curl"
           "diff-so-fancy"
           "git"
@@ -194,16 +207,19 @@ in
             functions[nvim]=${lib.escapeShellArg ''XDG_CONFIG_HOME="$TERMUX_GENERATION/home/.config" command nvim "$@"''}
           '';
         };
-        dataFile."termux-native/ssh-host-keys.sops.yaml" =
-          lib.mkIf (config.termux.ssh.hostKeysSopsFile != null)
-            {
-              source = config.termux.ssh.hostKeysSopsFile;
-            };
-        dataFile."termux-native/ssh-known-hosts.sops.yaml" =
-          lib.mkIf (config.termux.ssh.knownHostsSopsFile != null)
-            {
-              source = config.termux.ssh.knownHostsSopsFile;
-            };
+        dataFile = {
+          "termux-native/ssh-host-keys.sops.yaml" = lib.mkIf (config.termux.ssh.hostKeysSopsFile != null) {
+            source = config.termux.ssh.hostKeysSopsFile;
+          };
+          "termux-native/ssh-known-hosts.sops.yaml" =
+            lib.mkIf (config.termux.ssh.knownHostsSopsFile != null)
+              {
+                source = config.termux.ssh.knownHostsSopsFile;
+              };
+          "termux-native/gpg.sops.yaml" = lib.mkIf (config.termux.gpg.sopsFile != null) {
+            source = config.termux.gpg.sopsFile;
+          };
+        };
       };
 
       home = {
@@ -213,6 +229,7 @@ in
         sessionVariables = {
           HOST = hostname;
           HOSTNAME = hostname;
+          GNUPGHOME = "${config.xdg.configHome}/gnupg";
         };
       };
 

@@ -179,6 +179,10 @@ switch_generation() {
     PATH="$root/generations/$generation/bin:$PATH" \
     "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
     "$root/generations/$generation" || return
+  TERMUX_GENERATION="$root/generations/$generation" \
+    PATH="$root/generations/$generation/bin:$PATH" \
+    "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
+    "$root/generations/$generation" || return
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
   mv -Tf "$root/.next" "$root/current" || return

@@ -135,69 +135,70 @@ androidPkgs.extend (
           extraFiles
           ;
       };
+    pythonTermuxOverrides = _python: previous: {
+      aiohttp = previous.aiohttp.overridePythonAttrs (old: {
+        AIOHTTP_NO_EXTENSIONS = "1";
+        # These are Nixpkgs' optional speedups, not required by Linkding CLI.
+        dependencies = pkgs.lib.filter (
+          package:
+          !(builtins.elem (package.pname or null) [
+            "aiodns"
+            "backports-zstd"
+            "brotli"
+          ])
+        ) old.dependencies;
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_feed_eof_no_err_brotli"
+          "test_empty_body"
+        ];
+      });
+      # Carry AnyIO upstream fix 818e4ac for its server-side TLS fixture.
+      anyio = previous.anyio.overridePythonAttrs (old: {
+        patches = (old.patches or [ ]) ++ [
+          ./patches/anyio-server-tls-tests.patch
+        ];
+      });
+      charset-normalizer =
+        (previous.charset-normalizer.override {
+          withMypyc = false;
+        }).overridePythonAttrs
+          (_: {
+            doCheck = false;
+            nativeCheckInputs = [ ];
+          });
+      frozenlist = previous.frozenlist.overridePythonAttrs (_: {
+        FROZENLIST_NO_EXTENSIONS = "1";
+      });
+      # The overrides above rebuild moto (via slack-sdk's checks) from source;
+      # this test fails there with ExecutionAlreadyExists.
+      moto = previous.moto.overridePythonAttrs (old: {
+        disabledTests = (old.disabledTests or [ ]) ++ [
+          "test_create_state_machine_twice_after_success"
+        ];
+      });
+      multidict = previous.multidict.overridePythonAttrs (_: {
+        MULTIDICT_NO_EXTENSIONS = "1";
+        doCheck = false;
+      });
+      propcache = previous.propcache.overridePythonAttrs (_: {
+        PROPCACHE_NO_EXTENSIONS = "1";
+        disabledTests = [ "c-extension-module" ];
+      });
+      ruamel-yaml = previous.ruamel-yaml.overridePythonAttrs (old: {
+        propagatedBuildInputs = pkgs.lib.filter (package: package != previous.ruamel-yaml-clib) (
+          old.propagatedBuildInputs or [ ]
+        );
+      });
+      shellingham = previous.shellingham.overridePythonAttrs (_: {
+        # Nixpkgs normally pins `ps` to its store path; Termux supplies it via APT.
+        postPatch = "";
+      });
+      yarl = previous.yarl.overridePythonAttrs (_: {
+        YARL_NO_EXTENSIONS = "1";
+      });
+    };
     pythonTermux = pkgs.python3.override {
-      packageOverrides = _python: previous: {
-        aiohttp = previous.aiohttp.overridePythonAttrs (old: {
-          AIOHTTP_NO_EXTENSIONS = "1";
-          # These are Nixpkgs' optional speedups, not required by Linkding CLI.
-          dependencies = pkgs.lib.filter (
-            package:
-            !(builtins.elem (package.pname or null) [
-              "aiodns"
-              "backports-zstd"
-              "brotli"
-            ])
-          ) old.dependencies;
-          disabledTests = (old.disabledTests or [ ]) ++ [
-            "test_feed_eof_no_err_brotli"
-            "test_empty_body"
-          ];
-        });
-        # Carry AnyIO upstream fix 818e4ac for its server-side TLS fixture.
-        anyio = previous.anyio.overridePythonAttrs (old: {
-          patches = (old.patches or [ ]) ++ [
-            ./patches/anyio-server-tls-tests.patch
-          ];
-        });
-        charset-normalizer =
-          (previous.charset-normalizer.override {
-            withMypyc = false;
-          }).overridePythonAttrs
-            (_: {
-              doCheck = false;
-              nativeCheckInputs = [ ];
-            });
-        frozenlist = previous.frozenlist.overridePythonAttrs (_: {
-          FROZENLIST_NO_EXTENSIONS = "1";
-        });
-        # The overrides above rebuild moto (via slack-sdk's checks) from source;
-        # this test fails there with ExecutionAlreadyExists.
-        moto = previous.moto.overridePythonAttrs (old: {
-          disabledTests = (old.disabledTests or [ ]) ++ [
-            "test_create_state_machine_twice_after_success"
-          ];
-        });
-        multidict = previous.multidict.overridePythonAttrs (_: {
-          MULTIDICT_NO_EXTENSIONS = "1";
-          doCheck = false;
-        });
-        propcache = previous.propcache.overridePythonAttrs (_: {
-          PROPCACHE_NO_EXTENSIONS = "1";
-          disabledTests = [ "c-extension-module" ];
-        });
-        ruamel-yaml = previous.ruamel-yaml.overridePythonAttrs (old: {
-          propagatedBuildInputs = pkgs.lib.filter (package: package != previous.ruamel-yaml-clib) (
-            old.propagatedBuildInputs or [ ]
-          );
-        });
-        shellingham = previous.shellingham.overridePythonAttrs (_: {
-          # Nixpkgs normally pins `ps` to its store path; Termux supplies it via APT.
-          postPatch = "";
-        });
-        yarl = previous.yarl.overridePythonAttrs (_: {
-          YARL_NO_EXTENSIONS = "1";
-        });
-      };
+      packageOverrides = pythonTermuxOverrides;
     };
     obswsPython = pythonTermux.pkgs.buildPythonPackage rec {
       pname = "obsws-python";
@@ -286,6 +287,50 @@ androidPkgs.extend (
       ];
       pythonImportsCheck = [ "myl" ];
     };
+    homeAssistantPython = pkgs.python3.override {
+      packageOverrides =
+        python: previous:
+        let
+          termuxPackages = pythonTermuxOverrides python previous;
+        in
+        termuxPackages
+        // {
+          markupsafe = previous.markupsafe.overridePythonAttrs (old: {
+            postInstall = (old.postInstall or "") + ''
+              find "$out" -type f -name '*_speedups*.so' -delete
+            '';
+          });
+          zeroconf = previous.zeroconf.overridePythonAttrs (_: {
+            SKIP_CYTHON = "1";
+          });
+        };
+    };
+    homeAssistantCli = homeAssistantPython.pkgs.buildPythonApplication {
+      pname = "homeassistant-cli";
+      version = pkgs.home-assistant-cli.version;
+      src = pkgs.home-assistant-cli.src;
+      pyproject = true;
+      pythonRelaxDeps = true;
+      pythonRemoveDeps = [
+        "dateparser"
+        "netdisco"
+        "regex"
+      ];
+      nativeBuildInputs = [ homeAssistantPython.pkgs.poetry-core ];
+      dependencies = with homeAssistantPython.pkgs; [
+        aiohttp
+        click
+        click-log
+        jinja2
+        jsonpath-ng
+        requests
+        ruamel-yaml
+        tabulate
+        zeroconf
+      ];
+      pythonImportsCheck = [ "homeassistant_cli" ];
+      meta.mainProgram = "hass-cli";
+    };
   in
   {
     termuxAdapters = {
@@ -307,6 +352,27 @@ androidPkgs.extend (
 
       hwatch = fromNixpkgs {
         package = pkgs.hwatch;
+      };
+
+      xcp = termuxShellScripts {
+        package = {
+          pname = "xcp";
+          src = pkgs.runCommand "xcp-termux-source" { } ''
+            mkdir -p "$out"
+            {
+              printf '%s\n' '#!/bin/bash'
+              cat ${../../local/xcp/xcp.sh}
+            } > "$out/xcp.sh"
+          '';
+          meta = pkgs.xcp.meta;
+        };
+        scripts = [
+          {
+            command = "xcp";
+            source = "xcp.sh";
+          }
+        ];
+        aptPackages = [ "termux-api" ];
       };
 
       zhj =
@@ -496,6 +562,11 @@ androidPkgs.extend (
         package = obsCli;
         python = pythonTermux;
         extraRuntimePackages = obswsPython.propagatedBuildInputs;
+      }) [ "python" ];
+
+      home-assistant-cli = withAptPackages (pythonApplication {
+        package = homeAssistantCli;
+        python = pythonTermux;
       }) [ "python" ];
 
       slack-react = pythonApplication {

@@ -280,6 +280,8 @@ let
         cp ${../../../android/termux-native/activate.sh} "$out/activate.sh"
         cp ${../../../android/termux-native/setup-known-hosts.sh} "$out/setup-known-hosts.sh"
         chmod 755 "$out/setup-known-hosts.sh"
+        cp ${../../../android/termux-native/setup-gpg-keys.sh} "$out/setup-gpg-keys.sh"
+        chmod 755 "$out/setup-gpg-keys.sh"
         cp ${../../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
         cp ${../../../android/termux-native/zshenv} "$out/zshenv"
         cp ${../../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"

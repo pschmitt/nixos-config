@@ -764,6 +764,15 @@ Termux SSH host identity, installs it at
 `GlobalKnownHostsFile` through `$PREFIX/etc/ssh/ssh_config.d/nixpp.conf` while
 retaining both Termux global files. `UserKnownHostsFile` remains unchanged.
 
+Termux bundles carry the encrypted `secrets/nixos-gpg.sops.yaml` file from the
+private configuration input. Activation decrypts it on-device with the
+Termux SSH host identity, imports the personal and work secret keys into
+`~/.config/gnupg`, and marks their primary keys fully trusted, matching the
+Home Manager GPG import services. Decrypted key material is kept in a private
+temporary directory and removed after import; only SOPS ciphertext is included
+in the bundle. The Termux host identities are authorized recipients of the GPG
+ciphertext.
+
 On 2026-10-08, the Termux Neovim generation began carrying every configured
 Lazy plugin source, with Lazy's automatic installer disabled. The generated
 `bin/nvim` launcher directs the existing yadm `nvim()` wrapper to the active

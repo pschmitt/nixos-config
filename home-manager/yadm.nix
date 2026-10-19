@@ -29,7 +29,6 @@ let
   yadmApplyAlternatesScript = pkgs.writeShellScript "yadm-apply-alternates" ''
     set -euo pipefail
 
-    ${pkgs.yadm}/bin/yadm config --replace-all local.class trusted
     ${pkgs.yadm}/bin/yadm alt
   '';
 in
