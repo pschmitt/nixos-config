@@ -486,6 +486,7 @@ in
         lockscreen = {
           enabled = true;
           lock_before_suspend = true;
+          grace_period_seconds = 5;
           fingerprint = true;
           transition = [ "zoom" ];
           allow_empty_password = false;
