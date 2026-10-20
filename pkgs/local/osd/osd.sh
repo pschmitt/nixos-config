@@ -67,10 +67,8 @@ use_noctalia() {
   command -v noctalia &>/dev/null && noctalia msg status &>/dev/null
 }
 
-# Noctalia panel geometry is static per [[panel]] entry. Keep short messages
-# compact, then select a wider bucket from the longest displayed line. The
-# estimate assumes roughly 8px per character at the default font size and
-# includes the host inset, icon, and icon-to-text gap.
+# Keep legacy entry IDs here so dismiss/hide/status also handle direct callers.
+# The host measures the actual rendered content; the wrapper only picks height.
 NOCTALIA_PANELS=(
   pschmitt/osd:compact
   pschmitt/osd:toast
@@ -83,42 +81,11 @@ NOCTALIA_PANELS=(
 )
 
 noctalia_panel() {
-  local message="$1"
-  local details="$2"
-  local show_icon="${3:-true}"
-  local max_length=${#message}
-  if (( ${#details} > max_length ))
+  if [[ -n "$1" ]]
   then
-    max_length=${#details}
-  fi
-
-  # Without the glyph the row loses the icon and its text gap (20 + 10px).
-  local base_width=58
-  if [[ "$show_icon" == false ]]
-  then
-    base_width=28
-  fi
-
-  local required_width=$((base_width + max_length * 8))
-  local suffix=""
-  if (( required_width > 252 ))
-  then
-    suffix="-medium"
-  fi
-  if (( required_width > 320 ))
-  then
-    suffix="-wide"
-  fi
-  if (( required_width > 400 ))
-  then
-    suffix="-xwide"
-  fi
-
-  if [[ -n "$details" ]]
-  then
-    echo "pschmitt/osd:toast${suffix}"
+    echo "pschmitt/osd:toast"
   else
-    echo "pschmitt/osd:compact${suffix}"
+    echo "pschmitt/osd:compact"
   fi
 }
 
@@ -152,13 +119,8 @@ send() {
       '{summary:$summary, body:$body, severity:$severity, category:$category,
         command:$command, timeout_ms:$timeout_ms, profile:$profile, style:$style}
        | with_entries(select(.value != null and .value != "" and .value != {}))')
-    local show_icon=true
-    if [[ "$(jq -r '.show_icon // empty' <<< "$style")" == false ]]
-    then
-      show_icon=false
-    fi
     noctalia msg panel-open \
-      "$(noctalia_panel "$message" "$details" "$show_icon")" "$payload" &>/dev/null && return 0
+      "$(noctalia_panel "$details")" "$payload" &>/dev/null && return 0
   fi
 
   local -a args

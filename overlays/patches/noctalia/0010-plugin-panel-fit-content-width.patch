@@ -1,0 +1,101 @@
+diff --git a/src/app/application_plugins.cpp b/src/app/application_plugins.cpp
+index bcac6ba..38143ca 100644
+--- a/src/app/application_plugins.cpp
++++ b/src/app/application_plugins.cpp
+@@ -125,6 +125,7 @@ void Application::reloadPluginPanels() {
+                 .height = resolved.entry->panelHeight,
+                 .widthFill = resolved.entry->panelWidthFill,
+                 .heightFill = resolved.entry->panelHeightFill,
++                .fitContentWidth = resolved.entry->panelFitContentWidth,
+                 .dismissOnOutsideClick = resolved.entry->panelDismissOnOutsideClick,
+                 .keyboardFocus = resolved.entry->panelKeyboardFocus,
+                 .persistent = resolved.entry->panelPersistent,
+diff --git a/src/scripting/plugin_manifest.cpp b/src/scripting/plugin_manifest.cpp
+index 91df9fc..6da794d 100644
+--- a/src/scripting/plugin_manifest.cpp
++++ b/src/scripting/plugin_manifest.cpp
+@@ -461,6 +461,17 @@ namespace scripting {
+           if (const std::string placement = tableString(*entryTable, "placement"); !placement.empty()) {
+             entry.panelPlacementDefault = placement;
+           }
++          if (const auto fit = (*entryTable)["fit_content_width"]; fit) {
++            if (!fit.is_boolean()) {
++              error = "panel entry '" + entry.id + "': fit_content_width must be a boolean";
++              return false;
++            }
++            entry.panelFitContentWidth = fit.value_or(false);
++          }
++          if (entry.panelFitContentWidth && entry.panelWidthFill) {
++            error = "panel entry '" + entry.id + "': fit_content_width cannot be combined with width=fill";
++            return false;
++          }
+           if ((entry.panelWidthFill || entry.panelHeightFill) && entry.panelPlacementDefault != "floating") {
+             error = "panel entry '" + entry.id + R"(': width/height "fill" requires placement = "floating")";
+             return false;
+diff --git a/src/scripting/plugin_manifest.h b/src/scripting/plugin_manifest.h
+index 29a9414..be4f705 100644
+--- a/src/scripting/plugin_manifest.h
++++ b/src/scripting/plugin_manifest.h
+@@ -121,6 +121,8 @@ namespace scripting {
+     double panelHeight = 0.0;
+     bool panelWidthFill = false;
+     bool panelHeightFill = false;
++    // Shrink a floating panel to its rendered tree; panelWidth is the cap.
++    bool panelFitContentWidth = false;
+     // Host-standard shell settings (see plugin_panel_shell.*). Optional
+     // [[panel]] keys provide defaults; injected settings use "{id}_placement",
+     // "{id}_layer", and the corresponding canonical suffixes.
+diff --git a/src/shell/panel/plugin_panel.cpp b/src/shell/panel/plugin_panel.cpp
+index 2eae530..0274798 100644
+--- a/src/shell/panel/plugin_panel.cpp
++++ b/src/shell/panel/plugin_panel.cpp
+@@ -65,6 +65,7 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
+       m_settings(std::move(context.settings)), m_fileWatcher(context.fileWatcher), m_httpClient(context.httpClient),
+       m_clipboard(context.clipboard),
+       m_preferredWidth(options.width > 0.0 ? static_cast<float>(options.width) : kDefaultPanelWidth),
++      m_maxContentWidth(m_preferredWidth), m_fitContentWidth(options.fitContentWidth),
+       m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight),
+       m_widthFill(options.widthFill), m_heightFill(options.heightFill),
+       m_dismissOnOutsideClick(options.dismissOnOutsideClick),
+@@ -293,6 +294,20 @@ void PluginPanel::doLayout(Renderer& renderer, float width, float height) {
+     m_reconciler.setScale(contentScale());
+     (void)m_reconciler.reconcile(*m_contentFlex, *m_tree, renderer);
+     m_treeDirty = false;
++    if (m_fitContentWidth && !m_persistent && m_shellConfig.placement == PanelPlacement::Floating) {
++      const float padding = scaled(Style::panelPadding * 2.0F);
++      LayoutConstraints constraints;
++      constraints.setMaxWidth(std::max(1.0F, scaled(m_maxContentWidth) - padding));
++      const auto measured = m_contentFlex->measure(renderer, constraints);
++      const float preferred = std::clamp(
++          std::ceil((measured.width + padding) / contentScale()),
++          1.0F, m_maxContentWidth
++      );
++      if (preferred != m_preferredWidth) {
++        m_preferredWidth = preferred;
++        PanelManager::instance().relayoutActivePanelPreferredSize();
++      }
++    }
+   }
+   m_flex->setSize(width, height);
+   m_flex->layout(renderer);
+diff --git a/src/shell/panel/plugin_panel.h b/src/shell/panel/plugin_panel.h
+index 6daf7c0..783f400 100644
+--- a/src/shell/panel/plugin_panel.h
++++ b/src/shell/panel/plugin_panel.h
+@@ -37,6 +37,7 @@ struct PluginPanelOptions {
+   // only the fallback if the compositor never assigns one.
+   bool widthFill = false;
+   bool heightFill = false;
++  bool fitContentWidth = false;
+   bool dismissOnOutsideClick = true;
+   // One of scripting::kPanelKeyboardFocusModes.
+   std::string keyboardFocus = "on_demand";
+@@ -143,6 +144,8 @@ private:
+   bool m_hasOnIpc = false;
+   bool m_hasOnIpcKnown = false;
+   float m_preferredWidth;
++  float m_maxContentWidth;
++  bool m_fitContentWidth = false;
+   float m_preferredHeight;
+   bool m_widthFill = false;
+   bool m_heightFill = false;
