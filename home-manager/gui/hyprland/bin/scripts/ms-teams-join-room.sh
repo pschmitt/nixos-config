@@ -3,7 +3,9 @@
 cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
 # BROWSER=firefox
-BROWSER=chromium
+# Disable Teams' annoying PiP window, which stays on top of Chromium when
+# switching to Chat or another view within a meeting.
+BROWSER='chromium --disable-features=DocumentPictureInPictureAPI'
 
 # Edge Stack
 HOME_ROOM_URL=$(ms-teams url "home room")
