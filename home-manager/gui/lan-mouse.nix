@@ -37,6 +37,18 @@ let
   # $XDG_RUNTIME_DIR is inherited from lan-mouse.service's own environment
   # (set by pam_systemd for the user session); the remote side gets it the
   # same way lan-mouse.service does there, via its own login session.
+  # Keep exactly one notification ID per session, and let the peer close its
+  # stale toast as soon as control moves onto this host.
+  notificationHelper = pkgs.writeShellApplication {
+    name = "lan-mouse-notify";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.glib
+      pkgs.libnotify
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ./scripts/lan-mouse-notify.sh;
+  };
   awaySentinel = "$XDG_RUNTIME_DIR/lan-mouse-away";
   # Complements awaySentinel from the *receiving* side: present (holding the
   # source host's name) on a host while a peer's input is flowing into it,
@@ -55,12 +67,9 @@ let
     pkgs.writeShellScript "lan-mouse-notify-${peer.name}" ''
       rm -f "${incomingSentinel}"
       echo "${peer.name}" > "${awaySentinel}"
-      # Opening an OSD panel can make layer-shell lose its pointer grab.
-      # Desktop notifications use a passive notification surface instead.
-      ${pkgs.libnotify}/bin/notify-send -a lan-mouse -i input-mouse -t 2000 \
-        -h string:x-canonical-private-synchronous:lan-mouse "Mouse away: ${peer.name}"
+      ${notificationHelper}/bin/lan-mouse-notify show ${lib.escapeShellArg peer.name}
       ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 ${peer.name} \
-        'rm -f "${awaySentinel}"; echo "${hostname}" > "${incomingSentinel}"' &
+        'rm -f "${awaySentinel}"; ${notificationHelper}/bin/lan-mouse-notify dismiss; echo "${hostname}" > "${incomingSentinel}"' &
     '';
 
   clientsToml = lib.concatMapStringsSep "\n" (peer: ''
@@ -105,28 +114,40 @@ let
   # `activate_on_startup`.
   goBackScript = pkgs.writeShellScript "lan-mouse-go-back" ''
     rm -f "${incomingSentinel}"
+    ${notificationHelper}/bin/lan-mouse-notify dismiss
     systemctl --user restart lan-mouse.service &
     for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
       ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
-        'systemctl --user restart lan-mouse.service; rm -f "${awaySentinel}"' &
+        'systemctl --user restart lan-mouse.service; rm -f "${awaySentinel}"; ${notificationHelper}/bin/lan-mouse-notify dismiss' &
     done
     wait
   '';
 
-  # Hooks cannot observe every return path. In particular, layer-shell can
-  # lose its pointer grab when the compositor opens another surface. Clear
-  # the away indicator on all logged capture releases, including incoming
-  # input, disconnects and releaseBind, so it cannot outlive the actual grab.
+  # releaseBind bypasses enter hooks; the journal line is its only external
+  # signal. Also clear our toast if the compositor releases layer-shell capture.
   releaseWatcherScript = pkgs.writeShellScript "lan-mouse-release-watcher" ''
     ${pkgs.systemd}/bin/journalctl --user -u lan-mouse.service -f -n 0 -o cat | while IFS= read -r line; do
       case "$line" in
-        *"releasing capture:"*|*"compositor released mouse"*)
-          rm -f "${awaySentinel}"
+        *"releasing capture: release-bind pressed"*)
+          incoming_peer=""
+          if [[ -r "${incomingSentinel}" ]]; then
+            IFS= read -r incoming_peer < "${incomingSentinel}"
+          fi
+          rm -f "${awaySentinel}" "${incomingSentinel}"
+          ${notificationHelper}/bin/lan-mouse-notify dismiss
           for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
+            remote_command='rm -f "${incomingSentinel}"'
+            if [[ "$peer" == "$incoming_peer" ]]; then
+              remote_command+="; ${notificationHelper}/bin/lan-mouse-notify dismiss"
+            fi
             ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
-              'rm -f "${incomingSentinel}"' &
+              "$remote_command" &
           done
           wait
+          ;;
+        *"compositor released mouse"*)
+          rm -f "${awaySentinel}"
+          ${notificationHelper}/bin/lan-mouse-notify dismiss
           ;;
       esac
     done
