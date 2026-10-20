@@ -244,7 +244,7 @@ in
     claudeAccounts = lib.mkOption {
       type = lib.types.attrsOf lib.types.str;
       default = {
-        private = "${config.home.homeDirectory}/.claude/.credentials.json";
+        private = "${config.xdg.configHome}/claude/.credentials.json";
         work = "${config.xdg.configHome}/claude-work/.credentials.json";
       };
       defaultText = lib.literalMD "the `claude` and `claude-work` credential stores";

@@ -289,6 +289,7 @@ in
       claude-code = {
         enable = true;
         package = pkgs.llm-agents.claude-code;
+        configDir = "${config.xdg.configHome}/claude";
         skills = allSkills;
         enableMcpIntegration = true;
         settings = {
@@ -456,11 +457,12 @@ in
     #     "vibe/prompts/${vibeCustomPromptId}.md".text = vibeCustomPrompt;
     #   };
 
+    xdg.configFile."claude/keybindings.json".source = ./claude-keybindings.json;
+
     home = {
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
-      file.".claude/keybindings.json".source = ./claude-keybindings.json;
       file.".gemini/antigravity-cli/settings.json".force = true;
 
       packages =
