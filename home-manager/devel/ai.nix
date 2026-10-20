@@ -429,7 +429,9 @@ in
 
       github-copilot-cli = {
         enable = true;
-        package = pkgs.llm-agents.copilot-cli;
+        # FIXME: Return to nixpkgs-unstable when its Copilot CLI binary works
+        # on our build hosts; pinned master currently provides working 1.0.98.
+        package = pkgs.master.github-copilot-cli;
         skills = allSkills;
         context = ./CONTEXT.md;
         enableMcpIntegration = true;
