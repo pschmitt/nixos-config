@@ -14,6 +14,7 @@ let
     builtins.replaceStrings [ (builtins.toJSON allowlist) ] [ allowlist ] (builtins.toJSON value);
   chromiumId =
     inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.chromium-addon.extensionId;
+  rbwChromiumId = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.chromium-addon.extensionId;
 in
 {
   config = lib.mkMerge [
@@ -28,6 +29,11 @@ in
       };
 
       environment.systemPackages = cfg.systemPackages;
+      environment.etc."chromium/policies/managed/rbw.json".source =
+        (pkgs.formats.json { }).generate "rbw-chromium-managed-policy.json"
+          {
+            "3rdparty".extensions.${rbwChromiumId}.allowHttpFill = true;
+          };
     })
     (lib.mkIf (cfg.enable && cfg.node.enable && cfg.node.allowlistSecret != null) {
       sops.templates = {

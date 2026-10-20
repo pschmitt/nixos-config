@@ -79,6 +79,15 @@ in
         };
       };
 
+      home.file.".mozilla/managed-storage/rbw-browser@pschmitt.dev.json".source =
+        (pkgs.formats.json { }).generate "rbw-browser-managed-storage.json"
+          {
+            name = "rbw-browser@pschmitt.dev";
+            description = "Managed rbw browser extension preferences";
+            type = "storage";
+            data.allowHttpFill = true;
+          };
+
       programs.chromium = {
         enable = cfg.chromium.enable;
         inherit (cfg.chromium)
