@@ -1,0 +1,24 @@
+diff --git a/src/app/application_ipc.cpp b/src/app/application_ipc.cpp
+index a3023e8..cbd5648 100644
+--- a/src/app/application_ipc.cpp
++++ b/src/app/application_ipc.cpp
+@@ -638,7 +638,9 @@ void Application::initIpc() {
+       return "error: no default input\n";
+     }
+     float volume = source->volume;
+-    if (parts.size() == 1) {
++    const bool overrideMuted = parts.size() == 1 && parts[0] == "muted";
++    const bool overrideUnmuted = parts.size() == 1 && parts[0] == "unmuted";
++    if (parts.size() == 1 && !overrideMuted && !overrideUnmuted) {
+       const auto value =
+           noctalia::ipc::parseNormalizedOrPercent(parts[0], maxAudioVolume(m_configService.config().audio) * 100.0F);
+       if (!value.has_value()) {
+@@ -646,7 +648,7 @@ void Application::initIpc() {
+       }
+       volume = *value;
+     }
+-    m_audioOsd.showInputValue(volume, source->muted);
++    m_audioOsd.showInputValue(volume, overrideMuted || (!overrideUnmuted && source->muted));
+     return "ok\n";
+   });
+   m_configService.registerIpc(m_ipcService);

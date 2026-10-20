@@ -82,6 +82,10 @@ in
       # so logind acquires the inhibit lock on startup if caffeine was enabled.
       ./patches/noctalia/0008-caffeine-state-persistence.patch
 
+      # Voice-chain mute can differ from the default meeting mix, which also
+      # carries the soundboard. Allow display-only mute-state overrides.
+      ./patches/noctalia/0009-mic-osd-mute-override.patch
+
       # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
       # for the syncthing plugin's events-API attempt) is intentionally not
       # applied: that plugin rewrite was reverted 2026-09-05 (see

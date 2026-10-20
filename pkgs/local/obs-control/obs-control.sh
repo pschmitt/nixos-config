@@ -169,15 +169,22 @@ unmute_mic_chain() {
   pactl set-source-mute "$(microphone_source)" 0
 }
 
+# Show the native microphone OSD with the voice-chain state. The default
+# meeting mix remains unmuted so soundboard clips still reach the call.
+notify_mic() {
+  [[ -n "${NO_NOTIFICATION:-}" ]] && return 0
+  osd native mic-volume "$1" || notify "$2"
+}
+
 # Mirror the OBS "Microphone off" overlay to the current mute state.
 sync_mic_overlay() {
   if mic_is_muted
   then
     obscli item -s "$DEFAULT_SCENE" show "$MIC_OFF_ITEM" 2>/dev/null || true
-    notify "🔇 Microphone muted"
+    notify_mic muted "🔇 Microphone muted"
   else
     obscli item -s "$DEFAULT_SCENE" hide "$MIC_OFF_ITEM" 2>/dev/null || true
-    notify "🎙️ Microphone unmuted"
+    notify_mic unmuted "🎙️ Microphone unmuted"
   fi
 }
 

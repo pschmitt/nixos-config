@@ -1,7 +1,7 @@
 # osd — fire an ad-hoc on-screen notification.
 #
 # Tries, in order: Noctalia's pschmitt/osd plugin panels (see
-# pkgs/local/noctalia-osd), then notify-send/mako — so scripts and keybinds get
+# ../noctalia-plugins.git/plugins/osd), then notify-send/mako — so scripts and keybinds get
 # a native-looking OSD when Noctalia is active. Noctalia has no
 # generic "show a custom OSD" primitive of its own (only fixed-purpose ones:
 # brightness-osd, volume-osd, ...), hence the dedicated plugin.
@@ -18,9 +18,18 @@ export WAYLAND_DISPLAY
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] MESSAGE...
+       $(basename "$0") native TYPE [VALUE]
        $(basename "$0") dismiss CATEGORY
        $(basename "$0") hide
        $(basename "$0") status
+
+Native OSDs (display only; do not change the device setting):
+  volume [VALUE]                    Speaker volume (defaults to current)
+  mic-volume [VALUE]                Microphone volume (defaults to current)
+  brightness VALUE                  Display brightness
+  keyboard-backlight VALUE          Keyboard backlight
+  VALUE is a percentage from 0 to 100. mic-volume also accepts
+  muted / unmuted to display a voice-chain mute state.
 
 Options:
   -s, --severity {info,warn,error}   Severity (default: info)
@@ -45,7 +54,7 @@ Options:
   -S, --style JSON                   Raw style object merged under --icon /
                                       --icon-color, for any other knob the
                                       plugin exposes (Noctalia only). See
-                                      pkgs/local/noctalia-osd/README.md
+                                      noctalia-plugins/plugins/osd/README.md
   -a, --app-name NAME                notify-send app name (fallback only,
                                       default: osd)
   -t, --timeout MS                   Auto-dismiss timeout in ms (Noctalia and
@@ -172,6 +181,67 @@ send() {
   notify-send "${args[@]}" "$message" "$details"
 }
 
+native_osd() {
+  local kind="${1:-}"
+  if (( $# > 0 ))
+  then
+    shift
+  fi
+
+  case "$kind" in
+    volume|mic-volume)
+      ;;
+    brightness|keyboard-backlight)
+      if [[ $# -eq 0 ]]
+      then
+        printf 'Missing percentage for %s\n' "$kind" >&2
+        return 2
+      fi
+      ;;
+    *)
+      printf 'Unknown native OSD: %s\n' "$kind" >&2
+      usage >&2
+      return 2
+      ;;
+  esac
+
+  local mute_override=""
+  if [[ "$kind" == mic-volume && $# -eq 1 && ( "$1" == muted || "$1" == unmuted ) ]]
+  then
+    mute_override=1
+  fi
+
+  if (( $# > 1 ))
+  then
+    printf 'Expected at most one value\n' >&2
+    return 2
+  fi
+  if [[ -z "$mute_override" ]] && (( $# == 1 ))
+  then
+    if ! jq -en --arg value "$1" \
+      '$value | tonumber | . >= 0 and . <= 100' >/dev/null 2>&1
+    then
+      printf 'Expected a percentage from 0 to 100\n' >&2
+      return 2
+    fi
+  fi
+
+  if ! use_noctalia
+  then
+    printf 'Native OSDs require a running Noctalia instance\n' >&2
+    return 1
+  fi
+  if [[ -n "$mute_override" ]]
+  then
+    noctalia msg "${kind}-osd" "$1"
+  elif (( $# == 1 ))
+  then
+    noctalia msg "${kind}-osd" "${1}%"
+  else
+    noctalia msg "${kind}-osd"
+  fi
+}
+
 ipc_dismiss() {
   local category="$1"
 
@@ -241,6 +311,11 @@ main() {
     -h|--help)
       usage
       return 0
+      ;;
+    native)
+      shift
+      native_osd "$@"
+      return $?
       ;;
     dismiss)
       shift
