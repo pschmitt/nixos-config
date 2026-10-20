@@ -55,7 +55,10 @@ let
     pkgs.writeShellScript "lan-mouse-notify-${peer.name}" ''
       rm -f "${incomingSentinel}"
       echo "${peer.name}" > "${awaySentinel}"
-      ${pkgs.osd}/bin/osd -a lan-mouse -c lan-mouse -i mouse -t 2000 "Mouse away: ${peer.name}"
+      # Opening an OSD panel can make layer-shell lose its pointer grab.
+      # Desktop notifications use a passive notification surface instead.
+      ${pkgs.libnotify}/bin/notify-send -a lan-mouse -i input-mouse -t 2000 \
+        -h string:x-canonical-private-synchronous:lan-mouse "Mouse away: ${peer.name}"
       ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 ${peer.name} \
         'rm -f "${awaySentinel}"; echo "${hostname}" > "${incomingSentinel}"' &
     '';
@@ -110,23 +113,14 @@ let
     wait
   '';
 
-  # `releaseBind` forces capture back entirely inside lan-mouse's own
-  # capture backend, before events are forwarded -- it never runs
-  # enter_hook or anything else external, so neither sentinel above ever
-  # updates when it's used (confirmed live: bar icon/lockscreen button
-  # left stuck). lan-mouse exposes no hook, IPC event stream, or `cli`
-  # subcommand for this (checked: `cli --help` has no watch/events/status
-  # verb, and the daemon logs "releasing capture: release-bind pressed"
-  # with nothing else configurable around it) -- the journal line is the
-  # only externally observable signal at all. This tails this host's own
-  # lan-mouse.service journal continuously and reacts to that exact line:
-  # clears this host's own awaySentinel (control is back locally) and, over
-  # ssh, clears every peer's incomingSentinel -- the same bookkeeping
-  # goBackScript does, just triggered by the log line instead of a click.
+  # Hooks cannot observe every return path. In particular, layer-shell can
+  # lose its pointer grab when the compositor opens another surface. Clear
+  # the away indicator on all logged capture releases, including incoming
+  # input, disconnects and releaseBind, so it cannot outlive the actual grab.
   releaseWatcherScript = pkgs.writeShellScript "lan-mouse-release-watcher" ''
     ${pkgs.systemd}/bin/journalctl --user -u lan-mouse.service -f -n 0 -o cat | while IFS= read -r line; do
       case "$line" in
-        *"releasing capture: release-bind pressed"*)
+        *"releasing capture:"*|*"compositor released mouse"*)
           rm -f "${awaySentinel}"
           for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
             ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
@@ -198,12 +192,11 @@ in
       # lan-mouse fires this per-client "enter hook" locally as the mouse
       # leaves this host to enter that peer's screen, so it's the natural
       # place to surface "your input now lives on <peer>" -- there's no
-      # equivalent hook for the mouse coming back (see enter_hook in
-      # https://github.com/feschber/lan-mouse). We piggyback an ssh call to
-      # the peer so both screens get a toast, not just the one being left.
+      # equivalent hook for the mouse coming back. The journal watcher
+      # clears the indicator on capture releases.
       # `releaseBind` below is the way back to this host.
       default = true;
-      description = "Show an OSD notification (via osd(1)) on both this host and the peer when the mouse switches between them.";
+      description = "Show a desktop notification on the host whose mouse switches to a peer.";
     };
 
     releaseBind = lib.mkOption {
@@ -371,7 +364,7 @@ in
     # a now-dead journalctl stream from the old process).
     systemd.user.services.lan-mouse-release-watcher = {
       Unit = {
-        Description = "Clears lan-mouse sentinels when release_bind forces capture back";
+        Description = "Clears lan-mouse sentinels when input capture is released";
         After = [ "lan-mouse.service" ];
         PartOf = [ "lan-mouse.service" ];
       };
