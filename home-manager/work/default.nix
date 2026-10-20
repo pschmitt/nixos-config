@@ -24,9 +24,9 @@
     lego
 
     # azure ad etc
-    azure-cli
-    azure-cli-extensions.ad
-    azure-cli-extensions.fzf
+    master.azure-cli
+    master.azure-cli-extensions.ad
+    master.azure-cli-extensions.fzf
     inputs.ldifj.packages.${pkgs.stdenv.hostPlatform.system}.default
     openldap
 
