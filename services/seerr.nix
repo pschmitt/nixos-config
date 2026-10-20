@@ -25,7 +25,7 @@ in
 
   virtualisation.oci-containers.containers.seerr = {
     autoStart = true;
-    image = "ghcr.io/seerr-team/seerr:develop@sha256:68d9146b3df503f8fef71d115638aec9d86acccd47fac316423e850a69771943";
+    image = "ghcr.io/seerr-team/seerr:develop@sha256:ae30447a83f5e2c5c0899216ab7914e9e75b5df4c8f7d7b65861ada67a3dc9b5";
     pull = "always";
     extraOptions = [
       "--init"
