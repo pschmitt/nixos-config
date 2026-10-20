@@ -19,6 +19,7 @@
     ../../../services/nfs/nfs-server.nix
     ./cli-tools.nix
     ./nix.nix
+    ./smartd.nix
     ./ssh-clipboard.nix
   ];
 
