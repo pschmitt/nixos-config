@@ -60,20 +60,23 @@ in
 
       home.packages = [ pkgs.caffeine ];
 
-      # A shutdown can interrupt `zhj feierabend countdown` before its EXIT
-      # trap removes these files. Clear them before Noctalia's first start so
-      # an interrupted countdown cannot be resurrected on the next boot. Keep
-      # this oneshot active: Noctalia may restart while a new countdown is
-      # running, and that restart must not clear its live state.
+      # Clear state that should not survive a host reboot before Noctalia's
+      # first start. Keep this oneshot active: Noctalia may restart during the
+      # same boot, and that restart must not clear live state.
       systemd.user.services.feierabend-state-cleanup = {
         Unit = {
-          Description = "Clear stale Feierabend countdown state";
+          Description = "Clear stale Noctalia startup state";
           Before = [ "noctalia.service" ];
         };
 
         Service = {
           Type = "oneshot";
-          ExecStart = pkgs.writeShellScript "clear-feierabend-state" ''
+          ExecStart = pkgs.writeShellScript "clear-noctalia-startup-state" ''
+            state_file="${config.xdg.stateHome}/noctalia/state.toml"
+            if [[ -f "$state_file" ]]; then
+              ${pkgs.yq}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
+            fi
+
             rm -f -- \
               "${config.xdg.stateHome}/feierabend-countdown" \
               "${config.xdg.stateHome}/feierabend-event"
