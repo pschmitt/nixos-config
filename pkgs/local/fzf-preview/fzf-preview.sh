@@ -223,6 +223,7 @@ main() {
     printf "\n\033[1;35m━━━ Process Tree ━━━\033[0m\n"
     pstree -a -p -s -H "$maybe_pid" -C age -U "$maybe_pid" 2>/dev/null || pstree -a -p "$maybe_pid" 2>/dev/null
     printf "\n\033[1;34m━━━ Open File Descriptors ━━━\033[0m\n"
+    # shellcheck disable=SC2012 # ls shows the coloured fd symlink targets
     ls --color=always -l "/proc/$maybe_pid/fd" 2>/dev/null | tail -n +2
     return 0
   fi
