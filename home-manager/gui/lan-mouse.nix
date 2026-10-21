@@ -16,16 +16,13 @@ let
 
   # enter_hook only fires locally, on the host the mouse is *leaving* (see
   # notifyOnSwitch below) -- lan-mouse has no equivalent hook on the
-  # receiving side. We only want a toast for "control just left this host"
-  # (not one announcing arrival elsewhere), but the peer's away-sentinel
-  # still needs clearing so its own bar icon/panel go quiet -- so still ssh
-  # into the peer (same user, key-based, already relied on for `just
-  # deploy`), just to clear its sentinel, without firing an osd there. Built
-  # as a script (rather than an inline TOML string) so the nested
-  # ssh-remote-command quoting doesn't have to survive a TOML string *and*
-  # lan-mouse's `sh -c` unescaped -- absolute store paths throughout so
-  # neither the local systemd user PATH nor the ssh session's PATH matter
-  # (mirrors bluez-headset-callback's approach).
+  # receiving side. Verify over SSH that the peer's own Lan Mouse service is
+  # active before announcing a handoff: an edge hit can fire this hook even
+  # when the peer is powered off. The peer's away-sentinel still needs
+  # clearing so its own bar icon/panel go quiet, so the check also clears its
+  # sentinel and sets its incoming one. The hook body lives in a sibling
+  # script so nested ssh-remote-command quoting survives both the TOML string
+  # and lan-mouse's `sh -c` unescaped.
   #
   # lan-mouse also has no way to *query* which side currently owns the
   # cursor (`lan-mouse cli list` only reports whether a client connection is
@@ -49,6 +46,15 @@ let
     ];
     text = builtins.readFile ./scripts/lan-mouse-notify.sh;
   };
+  enterHookHelper = pkgs.writeShellApplication {
+    name = "lan-mouse-enter-hook";
+    runtimeInputs = [
+      pkgs.openssh
+      pkgs.coreutils
+      notificationHelper
+    ];
+    text = builtins.readFile ./scripts/lan-mouse-enter-hook.sh;
+  };
   awaySentinel = "$XDG_RUNTIME_DIR/lan-mouse-away";
   # Complements awaySentinel from the *receiving* side: present (holding the
   # source host's name) on a host while a peer's input is flowing into it,
@@ -64,12 +70,19 @@ let
   incomingSentinel = "$XDG_RUNTIME_DIR/lan-mouse-incoming";
   notifyScript =
     peer:
+    let
+      remoteCommand = ''
+        systemctl --user is-active --quiet lan-mouse.service && {
+          rm -f "${awaySentinel}"
+          ${notificationHelper}/bin/lan-mouse-notify dismiss
+          printf '%s\n' ${lib.escapeShellArg hostname} > "${incomingSentinel}"
+        }
+      '';
+    in
     pkgs.writeShellScript "lan-mouse-notify-${peer.name}" ''
-      rm -f "${incomingSentinel}"
-      echo "${peer.name}" > "${awaySentinel}"
-      ${notificationHelper}/bin/lan-mouse-notify show ${lib.escapeShellArg peer.name}
-      ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 ${peer.name} \
-        'rm -f "${awaySentinel}"; ${notificationHelper}/bin/lan-mouse-notify dismiss; echo "${hostname}" > "${incomingSentinel}"' &
+      ${enterHookHelper}/bin/lan-mouse-enter-hook \
+        ${lib.escapeShellArg peer.name} \
+        ${lib.escapeShellArg remoteCommand}
     '';
 
   clientsToml = lib.concatMapStringsSep "\n" (peer: ''
