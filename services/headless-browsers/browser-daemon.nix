@@ -47,6 +47,11 @@ in
       # The daemon answers only to its own Host and Origin names (DNS rebinding
       # guard): every name the nginx vhost serves, and the public ones.
       allowedHosts = hosts ++ publicNames;
+      # The extension discovers the whole cluster through this list. Include
+      # public aliases and each mesh endpoint so every configured entry works.
+      extensionOrigins =
+        map (host: "https://${host}") (hosts ++ publicNames)
+        ++ map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
       peers = map (h: "https://browser.${h}.${config.domains.netbird}") meshNodes;
       clusterSecretFile = config.sops.secrets."browser-daemon/cluster-secret".path;
       # An X display per session, streamed to the handoff view as H.264 (x264
@@ -66,6 +71,12 @@ in
       };
 
       locations = {
+        "= /api/extension/config" = {
+          proxyPass = "http://127.0.0.1:3001";
+          recommendedProxySettings = true;
+          # Public, read-only endpoint used by extension origin discovery.
+          authelia = false;
+        };
         "= /api/extension/connect" = {
           proxyPass = "http://127.0.0.1:3001";
           proxyWebsockets = true;

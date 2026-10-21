@@ -7,11 +7,6 @@
 }:
 let
   cfg = config.dotfiles.desktop.browser;
-  allowlist = config.sops.placeholder.${cfg.node.allowlistSecret};
-  # Keep the array as a runtime SOPS substitution, outside the Nix store.
-  runtimeJSON =
-    value:
-    builtins.replaceStrings [ (builtins.toJSON allowlist) ] [ allowlist ] (builtins.toJSON value);
   chromiumId =
     inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.chromium-addon.extensionId;
   rbwChromiumId = inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.chromium-addon.extensionId;
@@ -35,51 +30,44 @@ in
             "3rdparty".extensions.${rbwChromiumId}.allowHttpFill = true;
           };
     })
-    (lib.mkIf (cfg.enable && cfg.node.enable && cfg.node.allowlistSecret != null) {
-      # SOPS creates missing parent directories as root. Home Manager also
-      # writes Firefox managed storage, so these directories must be user-owned.
-      systemd.tmpfiles.rules =
-        map
-          (
-            directory:
-            "d ${config.mainUser.homeDirectory}/${directory} 0755 ${config.mainUser.username} ${
-              config.users.users.${config.mainUser.username}.group
-            } - -"
-          )
-          [
-            ".mozilla"
-            ".mozilla/managed-storage"
-          ];
+    (lib.mkIf (cfg.enable && cfg.node.enable) {
+      assertions = [
+        {
+          assertion = cfg.node.allowlistMode != "auto" || cfg.node.discoveryOrigin != null;
+          message = "dotfiles.desktop.browser.node.discoveryOrigin is required when allowlistMode is auto.";
+        }
+      ];
+      environment.etc."chromium/policies/managed/browser-daemon-node.json".text = builtins.toJSON (
+        {
+          "3rdparty".extensions.${chromiumId} = {
+            allowedDaemonOriginsMode = cfg.node.allowlistMode;
+            # Named without asking when it pairs.
+            defaultName = "${config.networking.hostName}-chromium";
+          };
+        }
+        // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
+          "3rdparty".extensions.${chromiumId}.daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+        }
+      );
 
-      sops.templates = {
-        "browser-node-chromium-policy" = {
-          path = "/etc/chromium/policies/managed/browser-daemon-node.json";
-          owner = "root";
-          group = config.users.users.${config.mainUser.username}.group;
-          mode = "0440";
-          content = runtimeJSON {
-            "3rdparty".extensions.${chromiumId} = {
-              allowedDaemonOrigins = allowlist;
-              # Named without asking when it pairs.
-              defaultName = "${config.networking.hostName}-chromium";
-            };
-          };
+      home-manager.users.${config.mainUser.username}.home.file.".mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json" =
+        {
+          force = true;
+          text = builtins.toJSON (
+            {
+              name = "browser-daemon-node@pschmitt.dev";
+              description = "Allowed browser daemon origins";
+              type = "storage";
+              data = {
+                allowedDaemonOriginsMode = cfg.node.allowlistMode;
+                defaultName = "${config.networking.hostName}-firefox";
+              };
+            }
+            // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
+              data.daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+            }
+          );
         };
-        "browser-node-firefox-policy" = {
-          path = "${config.mainUser.homeDirectory}/.mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json";
-          owner = config.mainUser.username;
-          mode = "0400";
-          content = runtimeJSON {
-            name = "browser-daemon-node@pschmitt.dev";
-            description = "Allowed browser daemon origins";
-            type = "storage";
-            data = {
-              allowedDaemonOrigins = allowlist;
-              defaultName = "${config.networking.hostName}-firefox";
-            };
-          };
-        };
-      };
     })
   ];
 }

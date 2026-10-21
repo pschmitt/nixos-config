@@ -44,11 +44,16 @@ let
     enableACME = true;
     forceSSL = true;
     authelia.enable = true;
-    locations."/" = proxyLocation host;
-    locations."= /api/extension/connect" = proxyLocation host // {
-      # Only this socket authenticates its first frame with an origin-bound
-      # browser credential. All dashboard/API routes retain Authelia.
-      authelia = false;
+    locations = {
+      "/" = proxyLocation host;
+      "= /api/extension/config" = proxyLocation host // {
+        authelia = false;
+      };
+      "= /api/extension/connect" = proxyLocation host // {
+        # Only this socket authenticates its first frame with an origin-bound
+        # browser credential. All dashboard/API routes retain Authelia.
+        authelia = false;
+      };
     };
   };
 
@@ -81,6 +86,11 @@ let
     forceSSL = true;
     authelia.enable = true;
     locations = {
+      "= /api/extension/config" = {
+        proxyPass = "http://browser_daemon";
+        recommendedProxySettings = false;
+        authelia = false;
+      };
       "= /api/extension/connect" = {
         proxyPass = "http://browser_daemon";
         proxyWebsockets = true;

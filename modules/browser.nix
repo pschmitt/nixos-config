@@ -24,10 +24,18 @@ in
 
     node = {
       enable = lib.mkEnableOption "temporary selected-tab browser nodes and the Firefox control companion";
-      allowlistSecret = lib.mkOption {
+      allowlistMode = lib.mkOption {
+        type = lib.types.enum [
+          "auto"
+          "custom"
+        ];
+        default = "custom";
+        description = "Whether daemon origins are discovered from a configured daemon or entered explicitly.";
+      };
+      discoveryOrigin = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
         default = null;
-        description = "SOPS secret containing a JSON array of exact allowed browser daemon origins, rendered into browser managed storage at activation.";
+        description = "Trusted daemon origin that supplies the automatic daemon origin list.";
       };
     };
 
