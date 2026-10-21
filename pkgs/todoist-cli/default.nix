@@ -10,16 +10,16 @@
 
 buildNpmPackage (finalAttrs: {
   pname = "todoist-cli";
-  version = "5.5.5";
+  version = "5.5.6";
 
   src = fetchFromGitHub {
     owner = "Doist";
     repo = finalAttrs.pname;
     rev = "v${finalAttrs.version}";
-    hash = "sha256-wKWy7VXE5uGTc7uDGdwSV18fvJkOnSln/R0yUee/T0E=";
+    hash = "sha256-2ypG4MHXLRRCfbTqXjf/28AcS5qWh0VXTrKR9w1I1vc=";
   };
 
-  npmDepsHash = "sha256-xYHJq7bLsyorYhf68mUWyx9X6QGkqbLw1SgLVneH9Zs=";
+  npmDepsHash = "sha256-m+AY+XpLlRb9nNhmTdNo8d3q55N8nNJoLLzRWbK5eZ8=";
 
   doCheck = false;
 
