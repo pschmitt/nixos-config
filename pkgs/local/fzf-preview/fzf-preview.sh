@@ -214,6 +214,21 @@ main() {
     return 2
   fi
 
+  # If input looks like a process (starts with a number PID)
+  local maybe_pid="${file%% *}"
+  if [[ "$maybe_pid" =~ ^[0-9]+$ ]] && kill -0 "$maybe_pid" 2>/dev/null
+  then
+    echo "=== Process Info ==="
+    ps -fp "$maybe_pid" 2>/dev/null
+    echo ""
+    echo "=== Process Tree ==="
+    pstree -p -a -s "$maybe_pid" 2>/dev/null || pstree -p "$maybe_pid" 2>/dev/null
+    echo ""
+    echo "=== File Descriptors ==="
+    ls -l "/proc/$maybe_pid/fd" 2>/dev/null
+    return 0
+  fi
+
   local line_number
   if [[ ! -e "$file" ]]
   then
@@ -222,7 +237,7 @@ main() {
 
     if [[ ! -e "$file2" ]]
     then
-      echo "File2 not found: $file"
+      echo "File not found: $file" >&2
       return 1
     fi
 
