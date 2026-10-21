@@ -37,36 +37,32 @@ in
           message = "dotfiles.desktop.browser.node.discoveryOrigin is required when allowlistMode is auto.";
         }
       ];
-      environment.etc."chromium/policies/managed/browser-daemon-node.json".text = builtins.toJSON (
-        {
-          "3rdparty".extensions.${chromiumId} = {
-            allowedDaemonOriginsMode = cfg.node.allowlistMode;
-            # Named without asking when it pairs.
-            defaultName = "${config.networking.hostName}-chromium";
-          };
+      environment.etc."chromium/policies/managed/browser-daemon-node.json".text = builtins.toJSON {
+        "3rdparty".extensions.${chromiumId} = {
+          allowedDaemonOriginsMode = cfg.node.allowlistMode;
+          # Named without asking when it pairs.
+          defaultName = "${config.networking.hostName}-chromium";
         }
         // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
-          "3rdparty".extensions.${chromiumId}.daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
-        }
-      );
+          daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+        };
+      };
 
       home-manager.users.${config.mainUser.username}.home.file.".mozilla/managed-storage/browser-daemon-node@pschmitt.dev.json" =
         {
           force = true;
-          text = builtins.toJSON (
-            {
-              name = "browser-daemon-node@pschmitt.dev";
-              description = "Allowed browser daemon origins";
-              type = "storage";
-              data = {
-                allowedDaemonOriginsMode = cfg.node.allowlistMode;
-                defaultName = "${config.networking.hostName}-firefox";
-              };
+          text = builtins.toJSON {
+            name = "browser-daemon-node@pschmitt.dev";
+            description = "Allowed browser daemon origins";
+            type = "storage";
+            data = {
+              allowedDaemonOriginsMode = cfg.node.allowlistMode;
+              defaultName = "${config.networking.hostName}-firefox";
             }
             // lib.optionalAttrs (cfg.node.discoveryOrigin != null) {
-              data.daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
-            }
-          );
+              daemonDiscoveryOrigin = cfg.node.discoveryOrigin;
+            };
+          };
         };
     })
   ];
