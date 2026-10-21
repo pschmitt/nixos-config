@@ -6,9 +6,22 @@ let
   wallosPort = 8282;
 in
 {
+  sops.secrets."wallos/oidc-client-secret" = config.sops.mkHostSecret { };
+
+  sops.templates."wallos/oidc.env" = {
+    content = ''
+      OIDC_CLIENT_SECRET=${config.sops.placeholder."wallos/oidc-client-secret"}
+    '';
+    owner = "root";
+    group = "root";
+    mode = "0400";
+    restartUnits = [ "${config.virtualisation.oci-containers.backend}-wallos.service" ];
+  };
+
   virtualisation.oci-containers.containers.wallos = {
     image = "bellamy/wallos:${wallosVersion}";
     autoStart = true;
+    environmentFiles = [ config.sops.templates."wallos/oidc.env".path ];
     ports = [
       "127.0.0.1:${toString wallosPort}:80"
     ];
@@ -18,10 +31,21 @@ in
     ];
     environment = {
       TZ = config.time.timeZone;
+      OIDC_ENABLED = "true";
+      OIDC_PROVIDER_NAME = "Authelia";
+      OIDC_CLIENT_ID = "wallos";
+      OIDC_ISSUER = "https://auth.${config.domains.main}";
+      OIDC_REDIRECT_URL = "https://${wallosHost}/index.php";
+      OIDC_USER_IDENTIFIER = "sub";
+      OIDC_SCOPES = "openid email profile";
+      OIDC_AUTO_CREATE_USER = "false";
+      OIDC_DISABLE_PASSWORD_LOGIN = "true";
+      OIDC_REQUIRE_EMAIL_VERIFIED = "true";
     };
   };
 
   services.nginx.virtualHosts."${wallosHost}" = {
+    authelia.enable = true;
     enableACME = true;
     forceSSL = true;
 

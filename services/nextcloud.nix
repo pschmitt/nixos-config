@@ -19,6 +19,52 @@ let
   ];
   serverAliases = lib.remove primaryHost hostnames;
   wildcardCert = "wildcard.${domain}";
+  php84Fixed = (import ../pkgs/php84-fixed.nix { inherit pkgs; }).withExtensions (
+    { all, ... }: with all;
+    [
+      bcmath
+      calendar
+      curl
+      ctype
+      dom
+      exif
+      fileinfo
+      filter
+      ftp
+      gd
+      gettext
+      gmp
+      iconv
+      intl
+      ldap
+      mbstring
+      mysqli
+      mysqlnd
+      openssl
+      pcntl
+      pdo
+      pdo_mysql
+      pdo_odbc
+      pdo_pgsql
+      pdo_sqlite
+      pgsql
+      posix
+      readline
+      session
+      simplexml
+      sockets
+      soap
+      sodium
+      sysvsem
+      sqlite3
+      tokenizer
+      xmlreader
+      xmlwriter
+      zip
+      zlib
+      opcache
+    ]
+  );
 in
 {
   # The existing Compose data tree is owned by numeric GID 1000. Give that
@@ -50,6 +96,11 @@ in
           hash = "sha256-ftMF6IAZLYBLqDF5oZ3SIldnlgjWMWGmEc4/ipGNKqY=";
         };
       });
+      phpPackage = php84Fixed;
+      phpOptions = {
+        # Keep PHP session upload progress disabled as defense in depth.
+        "session.upload_progress.enabled" = lib.mkForce "Off";
+      };
       fastcgiTimeout = 3600;
       database.createLocally = true;
       config = {

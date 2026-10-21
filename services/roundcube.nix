@@ -9,7 +9,7 @@ let
   roundcubeUser = "roundcube";
   roundcubeGroup = roundcubeUser;
   roundcubePackage = pkgs.roundcube;
-  phpPackage = pkgs.php84.withExtensions (
+  phpPackage = (import ../pkgs/php84-fixed.nix { inherit pkgs; }).withExtensions (
     {
       enabled,
       all,
@@ -97,6 +97,7 @@ in
     };
 
     nginx.virtualHosts.${mailHost} = {
+      authelia.enable = true;
       root = "${roundcubePackage}/public_html";
       locations."/" = {
         index = "index.php";

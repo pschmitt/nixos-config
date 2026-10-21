@@ -144,6 +144,7 @@ in
       "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
+      "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
     };
     templates = {
       "authelia/duo.yml" = {
@@ -262,6 +263,27 @@ in
                   access_token_signed_response_alg: 'none'
                   userinfo_signed_response_alg: 'none'
                   token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                - client_id: 'wallos'
+                  client_name: 'Wallos'
+                  client_secret: '${config.sops.placeholder."authelia/oidc-wallos-secret-hash"}'
+                  public: false
+                  authorization_policy: 'two_factor'
+                  # Wallos v5.10's authorization-code exchange does not use PKCE.
+                  require_pkce: false
+                  redirect_uris:
+                    - 'https://subs.${config.domains.main}/index.php'
+                  scopes:
+                    - 'openid'
+                    - 'profile'
+                    - 'email'
+                  response_types:
+                    - 'code'
+                  grant_types:
+                    - 'authorization_code'
+                  access_token_signed_response_alg: 'none'
+                  userinfo_signed_response_alg: 'none'
+                  # Wallos sends the secret in the form body during token exchange.
+                  token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
         '';
         owner = autheliaUser;
         group = autheliaGroup;
