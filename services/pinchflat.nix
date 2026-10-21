@@ -38,7 +38,7 @@ in
   services = {
     pinchflat = {
       enable = true;
-      package = pkgs.pinchflat;
+      package = pkgs.pinchflat-ngx;
       user = pinchflatUser;
       group = pinchflatGroup;
       port = pinchflatPort;
