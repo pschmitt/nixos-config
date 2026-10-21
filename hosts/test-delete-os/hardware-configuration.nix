@@ -1,4 +1,4 @@
 { ... }:
 {
-  imports = [ ../../hardware/openstack-wiit.nix ];
+  imports = [ ../../profiles/hardware/openstack-wiit.nix ];
 }

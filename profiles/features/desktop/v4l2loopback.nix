@@ -1,8 +1,15 @@
 { config, ... }:
 {
   boot = {
-    # v4l2loopback is patched via overlays/hotfixes.nix (PR 467572).
-    extraModulePackages = [ config.boot.kernelPackages.v4l2loopback ];
+    extraModulePackages = [
+      (config.boot.kernelPackages.v4l2loopback.overrideAttrs (old: {
+        # modules_install otherwise runs depmod and creates modules.alias etc.,
+        # which collide with the kernel's metadata. NixOS runs depmod after
+        # combining the kernel and external modules.
+        makeFlags = (old.makeFlags or [ ]) ++ [ "DEPMOD=true" ];
+        installFlags = (old.installFlags or [ ]) ++ [ "DEPMOD=true" ];
+      }))
+    ];
     kernelModules = [ "v4l2loopback" ];
     extraModprobeConfig = ''
       # exclusive_caps: Skype, Zoom, Teams etc. will only show device when actually streaming

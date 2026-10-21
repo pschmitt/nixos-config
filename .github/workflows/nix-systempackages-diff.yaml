@@ -12,12 +12,12 @@ on:
       - "flake.lock"
       - "**/*.nix"
       - "common/**"
-      - "hardware/**"
       - "home-manager/**"
       - "hosts/**"
       - "modules/**"
       - "overlays/**"
       - "pkgs/**"
+      - "profiles/**"
       - "services/**"
       - "workarounds/**"
   workflow_dispatch:

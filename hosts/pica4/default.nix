@@ -3,6 +3,7 @@
     ../../profiles/base
     ../../profiles/features/network
     ../../profiles/features/network/wifi.nix
+    ../../profiles/specializations/rpi
     ../../profiles/specializations/server/interactive/dotfiles.nix
 
     ./hardware-configuration.nix

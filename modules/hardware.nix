@@ -1,7 +1,7 @@
 { lib, config, ... }:
 {
   imports = [
-    ../hardware/watchdog.nix
+    ../profiles/hardware/watchdog.nix
   ];
 
   options = {

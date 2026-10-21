@@ -6,6 +6,24 @@
 }:
 
 {
+  # Qt 6.12's generated QML Type collides with muse::extensions::Type when
+  # Audacity combines their source files in a unity translation unit.
+  audacity = prev.audacity.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      echo 'set_target_properties(muse_extensions_qml PROPERTIES UNITY_BUILD OFF)' \
+        >> muse/framework/extensions/qml/Muse/Extensions/CMakeLists.txt
+    '';
+  });
+
+  # Newer Rust rejects Squeekboard's incorrect libc close() declaration.
+  squeekboard = prev.squeekboard.overrideAttrs (old: {
+    postPatch = (old.postPatch or "") + ''
+      substituteInPlace src/vkeyboard.rs \
+        --replace-fail 'fn close(fd: u32);' 'fn close(fd: i32) -> i32;' \
+        --replace-fail 'close(self.fd as u32);' 'close(self.fd as i32);'
+    '';
+  });
+
   python313Packages = prev.python313Packages.overrideScope (
     _finalPy: prevPy: {
       pipx = prevPy.pipx.overridePythonAttrs (old: {

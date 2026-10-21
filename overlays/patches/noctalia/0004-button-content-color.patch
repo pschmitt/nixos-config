@@ -15,9 +15,9 @@
    ButtonPalette m_palette;
    std::optional<ButtonPalette> m_customPalette;
 +  std::optional<ColorSpec> m_contentColor;
-   // Animation: snapshot of colors at transition start
-   Color m_fromBg{};
-   Color m_fromBorder{};
+   Color m_displayedBg{};
+   Color m_displayedBorder{};
+   Color m_displayedLabel{};
 --- a/src/ui/controls/button.cpp
 +++ b/src/ui/controls/button.cpp
 @@ -300,6 +300,14 @@

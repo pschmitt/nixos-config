@@ -92,6 +92,31 @@ in
           });
         })
         (_pyfinal: pyprev: {
+          # Pygments changed HTML escaping for quoted docstrings, making these
+          # diff-cover snapshot tests fail while its runtime behavior remains
+          # unaffected. Needed by sqlfluff in the ge2 system closure.
+          diff-cover = pyprev.diff-cover.overridePythonAttrs (old: {
+            disabledTests = (old.disabledTests or [ ]) ++ [
+              "test_added_file_pycodestyle_html"
+              "test_all_reports"
+              "test_added_file_pyflakes_html"
+              "test_added_file_pylint_html"
+              "test_fail_under_html"
+              "test_fail_under_pass_html"
+            ];
+          });
+        })
+        (_pyfinal: pyprev: {
+          # jwcrypto now enforces RFC 7518's 256-bit minimum for HS256 keys;
+          # these websockify tests use a 72-bit fixture key.
+          websockify = pyprev.websockify.overridePythonAttrs (old: {
+            disabledTests = (old.disabledTests or [ ]) ++ [
+              "test_symmetric_jws_token_plugin"
+              "test_symmetric_jws_token_plugin_with_illigal_key_exception"
+            ];
+          });
+        })
+        (_pyfinal: pyprev: {
           # xmlschema 4 applies its sandbox to validated documents as well as
           # schemas. pysaml2 7.5.4 passes file paths directly, so its schema
           # validation tests fail when the fixtures are outside the schema
@@ -116,6 +141,11 @@ in
 
   # nixpkgs master, accessible through 'pkgs.master'
   master-packages = final: _prev: {
+    stable = import inputs.nixpkgs-stable {
+      inherit (final.stdenv.hostPlatform) system;
+      config.allowUnfree = true;
+    };
+
     master = import inputs.nixpkgs-master {
       inherit (final.stdenv.hostPlatform) system;
       config = {

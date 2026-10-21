@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   ...
@@ -10,8 +9,9 @@
       # Enable all MagicSysRq keys
       "kernel.sysrq" = 1;
     };
-    # RPi hosts get their downstream kernel from nixos-hardware
-    kernelPackages = lib.mkIf (config.hardware.type != "rpi") (lib.mkDefault pkgs.linuxPackages_latest);
+    # Keep this as a fallback so hardware profiles and specializations can
+    # select their own kernel packages.
+    kernelPackages = lib.mkOverride 1100 pkgs.linuxPackages_latest;
     tmp = {
       cleanOnBoot = lib.mkDefault true;
     };

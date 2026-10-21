@@ -12,8 +12,8 @@
     inputs.hardware.nixosModules.gpd-pocket-4
     ./disko-config.nix
 
-    ../../hardware/fprintd.nix
-    ../../hardware/touchscreen.nix
+    ../../profiles/hardware/fprintd.nix
+    ../../profiles/hardware/touchscreen.nix
   ];
 
   swapDevices = [

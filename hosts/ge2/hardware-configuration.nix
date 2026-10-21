@@ -13,7 +13,7 @@
     inputs.hardware.nixosModules.common-pc-ssd
     ./disko-config.nix
     ./fans.nix
-    ../../hardware/fprintd.nix
+    ../../profiles/hardware/fprintd.nix
 
     # gpus
     ./intel-gpu.nix

@@ -1,5 +1,12 @@
-{ inputs, lib, ... }:
 {
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+{
+  hardware.rpi.kernelPackages = pkgs.linuxKernel.packages.linux_rpi1;
+
   # RPi Zero W — BCM2835, ARMv6
   nixpkgs.hostPlatform = lib.mkDefault "armv6l-linux";
 

@@ -28,7 +28,15 @@ in
 {
   # Expose the AMD SMU so ryzenadj can adjust the HX 370 power limits.
   boot = {
-    extraModulePackages = [ config.boot.kernelPackages.ryzen-smu ];
+    extraModulePackages = [
+      (config.boot.kernelPackages.ryzen-smu.overrideAttrs (old: {
+        # This package installs its module directly, bypassing the kernel's
+        # modules_install digest step required by the combined module tree.
+        postInstall = (old.postInstall or "") + ''
+          ${pkgs.kmodigest}/bin/kmodigest "$out/lib/modules/${config.boot.kernelPackages.kernel.modDirVersion}/kernel/drivers/ryzen_smu/ryzen_smu.ko"
+        '';
+      }))
+    ];
     kernelModules = [ "ryzen_smu" ];
   };
 

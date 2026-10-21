@@ -161,7 +161,7 @@ is_nix_related_change() {
       flake.nix|flake.lock|*.nix)
         return 0
         ;;
-      common/*|hardware/*|home-manager/*|hosts/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*)
+      common/*|home-manager/*|hosts/*|modules/*|overlays/*|pkgs/*|profiles/*|services/*|workarounds/*)
         return 0
         ;;
     esac
@@ -275,7 +275,7 @@ select_hosts() {
         host="${host%%/*}"
         wanted["$host"]=1
         ;;
-      flake.nix|flake.lock|common/*|hardware/*|home-manager/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*|*.nix)
+      flake.nix|flake.lock|common/*|home-manager/*|modules/*|overlays/*|pkgs/*|profiles/*|services/*|workarounds/*|*.nix)
         global_change=1
         ;;
     esac
@@ -324,7 +324,7 @@ select_homes() {
         home="${home%%/*}"
         wanted["$home"]=1
         ;;
-      flake.nix|flake.lock|common/*|hardware/*|home-manager/*|modules/*|overlays/*|pkgs/*|services/*|workarounds/*|*.nix)
+      flake.nix|flake.lock|common/*|home-manager/*|modules/*|overlays/*|pkgs/*|profiles/*|services/*|workarounds/*|*.nix)
         global_change=1
         ;;
     esac

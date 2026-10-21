@@ -4,7 +4,7 @@
     # See disk-config.nix: this needs the custom oci-kexec-installer image
     # (kexec_tarball_url in test-delete-oci.tf) to resolve during install -
     # the udev rule that provides it otherwise only applies to the final
-    # booted system (hardware/oci.nix), not the ephemeral kexec+disko
+    # booted system (profiles/hardware/oci.nix), not the ephemeral kexec+disko
     # environment. LUN 2 (the first additional attachment after boot's
     # LUN 1) maps to oraclevdb per Oracle's own convention.
     device = lib.mkDefault "/dev/oracleoci/oraclevdb";

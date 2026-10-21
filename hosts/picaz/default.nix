@@ -5,6 +5,7 @@
     ../../profiles/base/ssh-server.nix
     ../../profiles/base/users/hermes.nix
     ../../profiles/base/users/root.nix
+    ../../profiles/specializations/rpi
 
     ./camera.nix
     ./config-txt.nix

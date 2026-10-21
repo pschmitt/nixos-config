@@ -36,6 +36,21 @@ in
           };
     })
     (lib.mkIf (cfg.enable && cfg.node.enable && cfg.node.allowlistSecret != null) {
+      # SOPS creates missing parent directories as root. Home Manager also
+      # writes Firefox managed storage, so these directories must be user-owned.
+      systemd.tmpfiles.rules =
+        map
+          (
+            directory:
+            "d ${config.mainUser.homeDirectory}/${directory} 0755 ${config.mainUser.username} ${
+              config.users.users.${config.mainUser.username}.group
+            } - -"
+          )
+          [
+            ".mozilla"
+            ".mozilla/managed-storage"
+          ];
+
       sops.templates = {
         "browser-node-chromium-policy" = {
           path = "/etc/chromium/policies/managed/browser-daemon-node.json";

@@ -8,7 +8,7 @@
   imports = [
     (modulesPath + "/installer/scan/not-detected.nix")
     ./disko-config.nix
-    ../../hardware/fprintd.nix
+    ../../../profiles/hardware/fprintd.nix
   ];
 
   boot.initrd.availableKernelModules = [

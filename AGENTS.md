@@ -104,7 +104,7 @@
 - `services/`: Service modules, including reusable Home Manager user services.
 - `pkgs/`: Custom package definitions.
 - `overlays/`: Nixpkgs overlays.
-- `hardware/`: Hardware-specific configuration snippets.
+- `profiles/hardware/`: Hardware-specific configuration snippets.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.

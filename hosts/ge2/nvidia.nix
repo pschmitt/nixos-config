@@ -1,20 +1,10 @@
 # https://nixos.wiki/wiki/Nvidia
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, ... }:
 {
   imports = [
     # Uncomment to completely disable the NVIDIA GPU
     # inputs.hardware.nixosModules.common-gpu-nvidia-disable
   ];
-
-  # Newer kernels might not be compatible with the Nvidia crap.
-  boot.kernelPackages = lib.mkForce pkgs.linuxPackages_7_2;
-
-  # boot.kernelPackages = lib.mkForce pkgs.linuxPackages_zen;
 
   hardware = {
     graphics.enable = true;

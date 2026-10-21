@@ -2,7 +2,7 @@
 # oci-consistent-device-naming udev rule baked in so /dev/oracleoci/oraclevdX
 # device paths already resolve during disko partitioning - normally that
 # naming only appears once the target's own final NixOS config is booted
-# (see hardware/oci.nix), not during the ephemeral kexec+disko install
+# (see profiles/hardware/oci.nix), not during the ephemeral kexec+disko install
 # phase, which runs nixos-anywhere's own generic installer image instead of
 # ours.
 #

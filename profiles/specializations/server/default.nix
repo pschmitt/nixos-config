@@ -16,8 +16,8 @@
     ../../../services/autoupgrade.nix
     ../../../services/initrd-luks-ssh-unlock.nix
 
-    ../../../hardware/openstack-wiit.nix
-    ../../../hardware/oci.nix
+    ../../hardware/openstack-wiit.nix
+    ../../hardware/oci.nix
 
     ./ansible.nix
     ./boot.nix

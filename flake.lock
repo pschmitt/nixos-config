@@ -1951,6 +1951,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-stable": {
+      "locked": {
+        "lastModified": 1792503283,
+        "narHash": "sha256-vhe2jyvRCgufWPqDuDq1S3t3ypE+ka46IFutV02xKso=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "cd4ea8d57de16f4810bc5f14207bac45fbf19f67",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs-terraform-157": {
       "flake": false,
       "locked": {
@@ -2446,11 +2462,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792533649,
-        "narHash": "sha256-TD4E8LiaFbTPhGb6tanG43KYBCD2h5QFDbxAHZARWxs=",
+        "lastModified": 1792533769,
+        "narHash": "sha256-XZdeLgZCy3I2cLoQpgsaf5X4eOFWQ8AfGSjBSKLnFBg=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "3124d3fe461fc76a1484c8450aca2f8e8e60711e",
+        "rev": "6d249cac8a15b5b3b15abf506fd8ee427ff7c1fd",
         "type": "github"
       },
       "original": {
@@ -2533,6 +2549,7 @@
         "nixpkgs": "nixpkgs_6",
         "nixpkgs-kubectl-123": "nixpkgs-kubectl-123",
         "nixpkgs-master": "nixpkgs-master",
+        "nixpkgs-stable": "nixpkgs-stable",
         "nixpkgs-terraform-157": "nixpkgs-terraform-157",
         "nixpkgs-wayland": "nixpkgs-wayland",
         "noctalia": "noctalia",
