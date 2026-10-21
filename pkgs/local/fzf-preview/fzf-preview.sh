@@ -219,11 +219,11 @@ main() {
   if [[ "$maybe_pid" =~ ^[0-9]+$ ]] && kill -0 "$maybe_pid" 2>/dev/null
   then
     printf "\033[1;36m━━━ Process Info (%s) ━━━\033[0m\n" "$maybe_pid"
-    ps u -p "$maybe_pid" 2>/dev/null | awk 'NR==1 {print "\033[1;37m" $0 "\033[0m"} NR>1 {print "\033[32m" $1 "\033[0m \033[1;33m" $2 "\033[0m " substr($0, index($0,$3))}'
+    ps u -p "$maybe_pid" 2>/dev/null | sed '1s/^/\x1b[1;37m/; 1s/$/\x1b[0m/'
     printf "\n\033[1;35m━━━ Process Tree ━━━\033[0m\n"
     pstree -a -p -s -H "$maybe_pid" -C age -U "$maybe_pid" 2>/dev/null || pstree -a -p "$maybe_pid" 2>/dev/null
     printf "\n\033[1;34m━━━ Open File Descriptors ━━━\033[0m\n"
-    ls --color=always -l "/proc/$maybe_pid/fd" 2>/dev/null | awk 'NR>1'
+    ls --color=always -l "/proc/$maybe_pid/fd" 2>/dev/null | tail -n +2
     return 0
   fi
 
