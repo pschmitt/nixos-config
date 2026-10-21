@@ -56,7 +56,6 @@ in
         dbtype = "pgsql";
         dbname = "nextcloud";
         dbuser = "nextcloud";
-        adminuser = null;
       };
       settings = {
         datadirectory = nextcloudDataDir;
