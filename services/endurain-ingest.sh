@@ -3,7 +3,7 @@
 # Wrapped by pkgs.writeShellApplication, which prepends the shebang and
 # errexit/nounset/pipefail. Configuration comes from the environment, set by
 # the systemd unit:
-#   ENDURAIN_HOST, ENDURAIN_USERNAME, ENDURAIN_PASSWORD, ENDURAIN_TZ,
+#   ENDURAIN_HOST, ENDURAIN_USERNAME, ENDURAIN_PASSWORD,
 #   ENDURAIN_WATCH_DIR, ENDURAIN_STATE_DIR
 #
 # Triggered by a systemd .path unit (plus a sparse backstop timer). The watch
@@ -63,6 +63,8 @@ DEDUP_LOOKBACK=20
 # Retry empty scans briefly before declaring that there is nothing to ingest.
 EMPTY_SCAN_RETRIES=3
 EMPTY_SCAN_RETRY_SECONDS=10
+UPLOAD_POLL_ATTEMPTS=90
+UPLOAD_POLL_SECONDS=2
 
 # Filled by collect_todo, consumed by main.
 todo=()
@@ -190,12 +192,12 @@ recent_start_times() {
     curl -sS -o "$resp" -w '%{http_code}' \
       -H "Authorization: Bearer $token" \
       -H 'X-Client-Type: mobile' \
-      "https://$host/api/v1/activities/user/$user_id/page_number/1/num_records/$DEDUP_LOOKBACK"
+      "https://$host/api/v1/activities?page_number=1&num_records=$DEDUP_LOOKBACK&sort_by=start_time&sort_order=desc"
   )" || code='000'
 
   if [[ "$code" == '200' ]]
   then
-    jq -r '.[].start_time' <"$resp"
+    jq -r '.items[]?.start_time // empty' <"$resp"
   fi
   rm -f "$resp"
 }
@@ -203,8 +205,8 @@ recent_start_times() {
 # Sets is_duplicate=1 when an activity already exists within
 # DEDUP_WINDOW_SECONDS of this GPX's first trackpoint. Only .gpx is checked
 # (the only format seen duplicated in practice) and start_time comparisons
-# happen in epoch seconds: the GPX's own <time> is UTC, Endurain's returned
-# start_time is local wall-clock time in $tz.
+# happen in epoch seconds: the GPX's own <time> is UTC, and v0.20.0 returns
+# Endurain activity start_time values as UTC-aware timestamps.
 is_duplicate=""
 
 # Extract the first trackpoint's <time>. A plain greedy `.*<time>...` sed
@@ -224,7 +226,6 @@ check_duplicate() {
   local host="$2"
   local token="$3"
   local user_id="$4"
-  local tz="$5"
   local gpx_time
   local epoch
   local existing_start
@@ -252,7 +253,7 @@ check_duplicate() {
     then
       continue
     fi
-    existing_epoch="$(TZ="$tz" date -d "$existing_start" +%s)" || continue
+    existing_epoch="$(date -d "$existing_start" +%s)" || continue
     delta=$(( existing_epoch - epoch ))
     if (( delta > -DEDUP_WINDOW_SECONDS && delta < DEDUP_WINDOW_SECONDS ))
     then
@@ -332,6 +333,68 @@ fix_gpx_spikes() {
 }
 
 # Upload one file, setting upload_outcome to uploaded, rejected or transient.
+poll_upload() {
+  local host="$1"
+  local token="$2"
+  local job_id="$3"
+  local base="$4"
+  local marker="$5"
+  local resp
+  local code
+  local status
+  local error_code
+  local attempt
+
+  for (( attempt = 1; attempt <= UPLOAD_POLL_ATTEMPTS; attempt++ ))
+  do
+    resp="$(mktemp)"
+    code="$(
+      curl -sS -o "$resp" -w '%{http_code}' \
+        -H "Authorization: Bearer $token" \
+        -H 'X-Client-Type: mobile' \
+        "https://$host/api/v1/activities/ingestion-jobs/$job_id"
+    )" || code='000'
+
+    if [[ "$code" != '200' ]]
+    then
+      err "TRANSIENT (job poll HTTP $code), will retry: $base"
+      rm -f "$resp"
+      upload_outcome='transient'
+      return 0
+    fi
+
+    status="$(jq -r '.status // empty' <"$resp")"
+    error_code="$(jq -r '.error_code // empty' <"$resp")"
+    rm -f "$resp"
+
+    case "$status" in
+      completed)
+        : >"$marker"
+        log "uploaded: $base"
+        upload_outcome='uploaded'
+        return 0
+        ;;
+      failed)
+        printf 'rejected: Endurain ingestion job failed (%s)\n' "${error_code:-unknown}" >"$marker"
+        err "REJECTED (ingestion job failed: ${error_code:-unknown}): $base"
+        upload_outcome='rejected'
+        return 0
+        ;;
+      pending | processing)
+        sleep "$UPLOAD_POLL_SECONDS"
+        ;;
+      *)
+        err "TRANSIENT (unexpected ingestion job status), will retry: $base"
+        upload_outcome='transient'
+        return 0
+        ;;
+    esac
+  done
+
+  err "TRANSIENT (ingestion job still pending after $((UPLOAD_POLL_ATTEMPTS * UPLOAD_POLL_SECONDS))s), will retry: $base"
+  upload_outcome='transient'
+}
+
 upload_file() {
   local host="$1"
   local token="$2"
@@ -341,25 +404,34 @@ upload_file() {
   local resp
   local code
   local body
+  local job_id
 
   resp="$(mktemp)"
   code="$(
     curl -sS -o "$resp" -w '%{http_code}' \
       -H "Authorization: Bearer $token" \
       -H 'X-Client-Type: mobile' \
+      -H "Idempotency-Key: ${marker##*/}" \
       -F "file=@$upload_path;filename=$base" \
-      "https://$host/api/v1/activities/create/upload"
+      "https://$host/api/v1/activities/upload"
   )" || code='000'
+  if [[ "$code" == '202' ]]
+  then
+    job_id="$(jq -er '.id' <"$resp")" || job_id=''
+  fi
   body="$(head -c 300 "$resp")"
   rm -f "$resp"
 
   upload_outcome='transient'
 
   case "$code" in
-    201)
-      : >"$marker"
-      log "uploaded: $base"
-      upload_outcome='uploaded'
+    202)
+      if [[ -z "$job_id" ]]
+      then
+        err "TRANSIENT (upload response had no job id), will retry: $base"
+        return 0
+      fi
+      poll_upload "$host" "$token" "$job_id" "$base" "$marker"
       ;;
     400 | 413 | 415 | 422)
       # The file itself is unacceptable (e.g. a GPX with no track segments).
@@ -377,7 +449,6 @@ upload_file() {
 
 main() {
   local host="${ENDURAIN_HOST:?}"
-  local tz="${ENDURAIN_TZ:?}"
   local watch_dir="${ENDURAIN_WATCH_DIR:?}"
   local state_dir="${ENDURAIN_STATE_DIR:?}"
   local token
@@ -419,7 +490,7 @@ main() {
     base="$(basename "$f")"
     marker="$state_dir/${todo_hash[$f]}"
 
-    check_duplicate "$f" "$host" "$token" "$user_id" "$tz"
+    check_duplicate "$f" "$host" "$token" "$user_id"
     if [[ -n "$is_duplicate" ]]
     then
       printf 'duplicate: activity within %ss of an existing one\n' "$DEDUP_WINDOW_SECONDS" >"$marker"

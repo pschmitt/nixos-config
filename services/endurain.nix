@@ -141,7 +141,6 @@ in
           EnvironmentFile = config.sops.secrets."endurain-ingest/env".path;
           Environment = [
             "ENDURAIN_HOST=${endurainHost}"
-            "ENDURAIN_TZ=${config.time.timeZone}"
             "ENDURAIN_WATCH_DIR=${gadgetbridgeGpxDir}"
             "ENDURAIN_STATE_DIR=${ingestStateDir}/markers"
             "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt"
