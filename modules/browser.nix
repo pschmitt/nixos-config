@@ -74,7 +74,8 @@ in
             (
               lib.optionalAttrs config.dotfiles.desktop.browser.node.enable {
                 ExtensionSettings."browser-daemon-node@pschmitt.dev" = {
-                  installation_mode = "normal_installed";
+                  # Keep the managed node installed and its declared permissions enforced.
+                  installation_mode = "force_installed";
                   install_url = "file://${nodePackages.firefox-addon}/browser-daemon-node@pschmitt.dev.xpi";
                   updates_disabled = true;
                   default_area = "navbar";

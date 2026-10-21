@@ -32,7 +32,7 @@ in
           pkgs.writeShellApplication {
             name = "firefox-browser-node";
             text = ''
-              exec env MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 ${lib.getExe config.programs.firefox.finalPackage} --marionette "$@"
+              exec env MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 ${lib.getExe config.programs.firefox.finalPackage} --remote-debugging-port=9222 "$@"
             '';
           }
         );
