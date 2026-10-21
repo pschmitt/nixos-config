@@ -12,9 +12,9 @@ do
     --store-path|--store-path=*)
       if [[ -n "$TARGET_HOST" ]]
       then
-        ssh "$TARGET_HOST" sudo nixos-rebuild switch --use-substitutes "$@"
+        ssh "$TARGET_HOST" sudo nixos-rebuild switch --no-reexec --use-substitutes "$@"
       else
-        sudo nixos-rebuild switch --use-substitutes "$@"
+        sudo nixos-rebuild switch --no-reexec --use-substitutes "$@"
       fi
       exit 0
       ;;
