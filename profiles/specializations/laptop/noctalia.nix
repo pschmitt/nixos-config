@@ -848,6 +848,7 @@ in
         plugin_settings = {
           "pschmitt/lan-mouse".start_command = "zsh -lc 'zhj lan-mouse::start'";
           "pschmitt/lan-mouse".ssh_command = lib.getExe pkgs.openssh;
+          "pschmitt/lan-mouse".poll_interval = 1;
           "pschmitt/ha-ai-usage" = {
             # Both paths resolve to sops-nix runtime files, never to values in
             # the Nix store. The plugin reads them immediately before each
