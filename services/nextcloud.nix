@@ -19,7 +19,7 @@ let
   ];
   serverAliases = lib.remove primaryHost hostnames;
   wildcardCert = "wildcard.${domain}";
-  php84Fixed = (import ../pkgs/php84-fixed.nix { inherit pkgs; }).withExtensions (
+  phpPackage = pkgs.master.php84.withExtensions (
     { all, ... }: with all;
     [
       bcmath
@@ -96,7 +96,7 @@ in
           hash = "sha256-ftMF6IAZLYBLqDF5oZ3SIldnlgjWMWGmEc4/ipGNKqY=";
         };
       });
-      phpPackage = php84Fixed;
+      inherit phpPackage;
       phpOptions = {
         # Keep PHP session upload progress disabled as defense in depth.
         "session.upload_progress.enabled" = lib.mkForce "Off";

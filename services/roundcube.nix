@@ -9,7 +9,7 @@ let
   roundcubeUser = "roundcube";
   roundcubeGroup = roundcubeUser;
   roundcubePackage = pkgs.roundcube;
-  phpPackage = (import ../pkgs/php84-fixed.nix { inherit pkgs; }).withExtensions (
+  phpPackage = pkgs.master.php84.withExtensions (
     {
       enabled,
       all,
