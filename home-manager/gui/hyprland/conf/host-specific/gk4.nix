@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 let
   h = import ../../lua-helpers.nix { inherit lib; };
   inherit (h) execBind;
@@ -35,8 +35,8 @@ in
     # NOTE: resolve_binds_by_sym = 1 would make this less keymap-dependent
     #       (bind "grave" instead of dead_circumflex).
     bind = [
-      (execBind "CTRL + dead_circumflex" "~/.config/hypr/bin/scratchpad.sh term")
-      (execBind "CTRL + escape" "~/.config/hypr/bin/scratchpad.sh term")
+      (execBind "CTRL + dead_circumflex" "${config.xdg.configHome}/hypr/bin/scratchpad.sh term")
+      (execBind "CTRL + escape" "${config.xdg.configHome}/hypr/bin/scratchpad.sh term")
     ];
 
     config.input.touchdevice = {

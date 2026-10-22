@@ -1,8 +1,13 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   h = import ../lua-helpers.nix { inherit lib; };
   inherit (h) bindOpts execBind execBindLocked;
-  lock = "~/.config/hypr/bin/lock.sh";
+  lock = "${config.xdg.configHome}/hypr/bin/lock.sh";
 in
 {
   # Lock binds + idle-inhibit window rules.

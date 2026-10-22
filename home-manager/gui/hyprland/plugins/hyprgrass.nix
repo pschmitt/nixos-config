@@ -1,4 +1,9 @@
-{ pkgs, inputs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 {
   # Touchscreen gestures (https://github.com/horriblename/hyprgrass), Lua API via
   # PR #381 (lua-func branch).
@@ -29,7 +34,7 @@
         hl.plugin.hyprgrass.bind({ pattern = {kind = "edge", origin = "down", direction = "left"},  action = hl.dsp.focus({ workspace = "+1" }) })
         hl.plugin.hyprgrass.bind({ pattern = {kind = "edge", origin = "down", direction = "right"}, action = hl.dsp.focus({ workspace = "-1" }) })
 
-        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",  origin = "down", direction = "up"},   action = hl.dsp.exec_cmd("~/.config/hypr/bin/toggle-soft-keyboard.sh") })
+        hl.plugin.hyprgrass.bind({ pattern = {kind = "edge",  origin = "down", direction = "up"},   action = hl.dsp.exec_cmd("${config.xdg.configHome}/hypr/bin/toggle-soft-keyboard.sh") })
         hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4,     direction = "down"}, action = hl.dsp.window.kill() })
         hl.plugin.hyprgrass.bind({ pattern = {kind = "swipe", fingers = 4,     direction = "up"},   action = hl.dsp.exec_cmd("kitty") })
 

@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ config, lib, ... }:
 let
   h = import ../lua-helpers.nix { inherit lib; };
   inherit (h)
@@ -8,7 +8,7 @@ let
     execBindLocked
     ;
 
-  bin = "~/.config/hypr/bin";
+  bin = "${config.xdg.configHome}/hypr/bin";
   playerctl = "${bin}/playerctl-wrapper.sh";
 
   resizeSubmap = "↔️ resize";

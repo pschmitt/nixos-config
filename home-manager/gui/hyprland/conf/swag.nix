@@ -153,6 +153,6 @@ in
     ];
 
     # Import GTK settings on every config load (hl.exec_cmd at parse time).
-    exec_cmd = [ "~/.config/sway/bin/import-gsettings.sh" ];
+    exec_cmd = [ "${config.xdg.configHome}/sway/bin/import-gsettings.sh" ];
   };
 }
