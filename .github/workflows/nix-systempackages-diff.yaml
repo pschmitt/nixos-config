@@ -2,11 +2,7 @@ name: NixOS systemPackages diff
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - ready_for_review
+    types: [opened, reopened, synchronize, ready_for_review]
     paths:
       - "flake.nix"
       - "flake.lock"
@@ -20,59 +16,162 @@ on:
       - "profiles/**"
       - "services/**"
       - "workarounds/**"
+      - ".github/workflows/nix-systempackages-diff.yaml"
+      - ".github/workflows/scripts/pr-impact*"
+      - ".github/workflows/scripts/pr-packages-diff-comment.sh"
   workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: Open PR to compare and update
+        required: true
+        type: string
 
 permissions:
   contents: read
   pull-requests: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.pull_request_number || github.ref }}
   cancel-in-progress: true
 
 env:
   nix-conf: |-
     extra-experimental-features = nix-command flakes
     accept-flake-config = true
-    # PAT so nix can fetch the private nixos-config-private input
     access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
 jobs:
   pr-systempackages-diff:
-    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.draft }}
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Checkout code (PR head)
-        uses: actions/checkout@v7
+      - name: Resolve current PR commits
+        id: pr
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pull_request_number }}
         with:
+          script: |
+            const number = Number(process.env.PR_NUMBER);
+            if (!Number.isSafeInteger(number) || number < 1) {
+              throw new Error('A valid PR number is required');
+            }
+            const {data: pr} = await github.rest.pulls.get({
+              ...context.repo, pull_number: number,
+            });
+            if (pr.state !== 'open') throw new Error('The PR must be open');
+            // A delayed older event must not supersede a newer commit's report.
+            if (context.payload.pull_request &&
+                context.payload.pull_request.head.sha !== pr.head.sha) {
+              core.setOutput('stale', 'true');
+              return;
+            }
+            core.setOutput('number', String(number));
+            core.setOutput('base', pr.base.sha);
+            core.setOutput('head', pr.head.sha);
+
+      # Use the default branch reporter, while evaluating the exact PR commits.
+      - uses: actions/checkout@v7
+        if: steps.pr.outputs.stale != 'true'
+        with:
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Fetch comparison commits
+        if: steps.pr.outputs.stale != 'true'
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+        run: git fetch origin "$BASE_SHA" "$HEAD_SHA"
 
       - name: Install Nix
+        if: steps.pr.outputs.stale != 'true'
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
+        if: steps.pr.outputs.stale != 'true'
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
+          save: false
 
-      - name: Generate comment body
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          MAX_LINES: "400"
-        shell: bash
-        run: |
-          set -euo pipefail
-          ./.github/workflows/scripts/pr-packages-diff-comment.sh > /tmp/pr-systempackages-diff.md
-
-      - name: Comment on PR
-        uses: peter-evans/create-or-update-comment@v5
+      - name: Restore evaluated snapshots
+        if: steps.pr.outputs.stale != 'true'
+        id: snapshots
+        continue-on-error: true
+        uses: actions/cache/restore@v6
         with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: /tmp/pr-systempackages-diff.md
-          body-includes: "pr-systempackages-diff"
-          edit-mode: replace
+          path: .cache/pr-impact/snapshots
+          key: pr-impact-v1-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/pr-impact-snapshot.nix') }}-${{ steps.pr.outputs.base }}-${{ steps.pr.outputs.head }}
+          restore-keys: |
+            pr-impact-v1-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/pr-impact-snapshot.nix') }}-${{ steps.pr.outputs.base }}-
+            pr-impact-v1-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/pr-impact-snapshot.nix') }}-
 
+      - name: Generate impact report
+        if: steps.pr.outputs.stale != 'true'
+        id: report
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+          MAX_LINES: "80"
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: ./.github/workflows/scripts/pr-packages-diff-comment.sh --merge-base --output .cache/pr-impact/report.md
+
+      - name: Save successful snapshots
+        if: ${{ !cancelled() && steps.snapshots.outputs.cache-primary-key != '' && steps.snapshots.outputs.cache-hit != 'true' && hashFiles('.cache/pr-impact/snapshots/*.json') != '' }}
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/pr-impact/snapshots
+          key: ${{ steps.snapshots.outputs.cache-primary-key }}
+
+      - name: Upload full report
+        if: ${{ !cancelled() && steps.report.outcome != 'skipped' && hashFiles('.cache/pr-impact/report.md') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-impact-${{ steps.pr.outputs.number }}
+          path: .cache/pr-impact/report*
+          include-hidden-files: true
+          retention-days: 7
+
+      - name: Update PR comment and job summary
+        if: ${{ !cancelled() && steps.report.outcome != 'skipped' && hashFiles('.cache/pr-impact/report.md') != '' }}
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('.cache/pr-impact/report.md', 'utf8');
+            await core.summary.addRaw(body).write();
+            const issue_number = Number(process.env.PR_NUMBER);
+            const {data: pr} = await github.rest.pulls.get({
+              ...context.repo, pull_number: issue_number,
+            });
+            if (pr.state !== 'open' || pr.head.sha !== process.env.HEAD_SHA) {
+              core.info('PR changed while evaluating; leaving its comment alone');
+              return;
+            }
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number, per_page: 100,
+            });
+            const previous = comments.filter(c =>
+              c.user?.login === 'github-actions[bot]' &&
+              c.body?.startsWith('<!-- pr-systempackages-diff -->'));
+            if (previous.length) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: previous[0].id, body,
+              });
+              for (const duplicate of previous.slice(1)) {
+                await github.rest.issues.deleteComment({
+                  ...context.repo, comment_id: duplicate.id,
+                });
+              }
+            } else {
+              await github.rest.issues.createComment({...context.repo, issue_number, body});
+            }

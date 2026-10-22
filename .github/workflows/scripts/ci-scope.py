@@ -22,10 +22,19 @@ def main():
         # is unavailable. Checkout fetches history for push and PR comparisons.
         files = output("git", "diff", "--name-only", "--no-renames", base, "HEAD").splitlines()
 
-    def documentation(path):
-        return path.endswith(".md") or path.startswith("docs/")
+    def needs_build(path):
+        reporting_files = {
+            ".github/workflows/nix-systempackages-diff.yaml",
+            ".github/workflows/nix-update.yaml",
+            ".github/workflows/scripts/pr-impact.py",
+            ".github/workflows/scripts/pr-impact-snapshot.nix",
+            ".github/workflows/scripts/pr-packages-diff-comment.sh",
+            "scripts/nix-update-release-notes.py",
+            "scripts/nix-update-release-notes.sh",
+        }
+        return not (path.endswith(".md") or path.startswith("docs/") or path in reporting_files)
 
-    relevant = None if files is None else [f for f in files if not documentation(f)]
+    relevant = None if files is None else [f for f in files if needs_build(f)]
     if relevant == []:
         matrix = {"pkgs": {k: [] for k in ("free", "nonfree", "oci")},
                   "hosts": {"amd64": [], "aarch64": []}, "droid": False}

@@ -3,7 +3,8 @@
 The build workflow compares the PR base (or the previous main commit) with
 its checkout. It uses paths, not PR authors or titles, to select targets:
 
-- Markdown and `docs/` changes: no builds or host evaluation.
+- Markdown, `docs/`, and PR reporter/release-note automation changes: no builds
+  or host evaluation in the build workflow.
 - Files inside a known package directory: build that package on its supported
   architectures and evaluate every host, without building host closures.
 - Files inside a known host directory: build that host and evaluate every host.
@@ -32,3 +33,24 @@ for another workflow. The merge workflow only executes default-branch code.
 Build outputs continue to be copied to the persistent remote Nix store and reused
 through the SSH substituter. The Actions cache primarily accelerates evaluation;
 it is not the repository's binary build cache.
+
+## PR impact comments
+
+The impact job compares the PR branch point and head commits, so changes that
+landed on main after the branch forked are not incorrectly attributed to the PR. Each selected
+configuration is evaluated once per revision for its kernel, system/Home Manager
+package names and versions, and OCI image references defined entirely in public modules. Two workers bound memory
+and CPU use. Successful JSON snapshots are cached by commit, target and snapshot
+schema, so synchronizing a PR can reuse its base evaluation.
+
+Identical changes are grouped in one editable bot comment. Unchanged targets
+are collapsed; evaluation failures are explicit and fail the job. The artifact
+contains full Markdown and JSON reports. ISO configurations are excluded from
+broad changes, but included when their host directory is edited or explicitly
+selected. Stale standalone Home Manager profiles are not evaluated.
+
+The manual trigger accepts an open PR number. Reporter code comes from the
+default branch, and obsolete runs cannot replace a newer head's comment.
+The report describes metadata changes, not full system closures or runtime
+service settings; unchanged versions do not prove unchanged package contents.
+
