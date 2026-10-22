@@ -21,6 +21,7 @@ in
     value = {
       command = lib.getExe' pkgs.openssh "ssh";
       args = [
+        "-q"
         "-T"
         "-o"
         "BatchMode=yes"
