@@ -296,7 +296,9 @@
     };
 
     rbw = {
-      url = "github:pschmitt/rbw";
+      # The `release` branch: the latest release with its signed browser
+      # packages (never unreleased work on main).
+      url = "github:pschmitt/rbw/release";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         home-manager.follows = "home-manager";

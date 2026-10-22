@@ -2511,6 +2511,7 @@
       },
       "original": {
         "owner": "pschmitt",
+        "ref": "release",
         "repo": "rbw",
         "type": "github"
       }
