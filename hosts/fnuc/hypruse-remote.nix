@@ -9,7 +9,10 @@ let
 
   hypruseHub = pkgs.writers.writePython3Bin "hypruse-hub" {
     libraries = [ pkgs.python3Packages.mcp ];
-    flakeIgnore = [ "E501" ];
+    flakeIgnore = [
+      "E501"
+      "W503"
+    ];
   } (builtins.readFile ./scripts/hypruse-hub.py);
 in
 {

@@ -9,6 +9,9 @@ and every agent gets its own SSH sessions.
 import argparse
 import asyncio
 import contextlib
+import json
+import os
+import pathlib
 import sys
 
 import anyio
@@ -20,6 +23,13 @@ from mcp.server.stdio import stdio_server
 
 CONNECT_TIMEOUT = 20
 CALL_TIMEOUT = 120
+CACHE_FILE = (
+    pathlib.Path(
+        os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache"
+    )
+    / "hypruse-hub"
+    / "tools.json"
+)
 
 
 def log(msg):
@@ -112,10 +122,51 @@ def main():
                 errors.append(f"{host}: {exc!r}")
         raise RuntimeError("no host reachable: " + "; ".join(errors))
 
+    def load_cache():
+        try:
+            return [
+                types.Tool.model_validate(t)
+                for t in json.loads(CACHE_FILE.read_text())
+            ]
+        except (OSError, ValueError):
+            return []
+
+    def save_cache(tools):
+        try:
+            CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            CACHE_FILE.write_text(
+                json.dumps([t.model_dump(mode="json", exclude_none=True) for t in tools])
+            )
+        except OSError as exc:
+            log(f"cannot write tool cache: {exc!r}")
+
+    async def refresh_cache():
+        try:
+            tools = await fetch_tools()
+        except Exception as exc:  # noqa: BLE001
+            log(f"tool cache not refreshed: {exc}")
+            return
+        tools_cache[:] = tools
+        save_cache(tools)
+
+    background = set()
+
     @server.list_tools()
     async def list_tools():
+        # Answer from the cache so the server works with every laptop off;
+        # refresh it from a live host in the background.
         if not tools_cache:
-            tools_cache.extend(await fetch_tools())
+            tools_cache.extend(load_cache())
+            if tools_cache:
+                task = asyncio.create_task(refresh_cache())
+                background.add(task)
+                task.add_done_callback(background.discard)
+            else:
+                await refresh_cache()
+        if not tools_cache:
+            raise RuntimeError(
+                "no hypruse tool list cached and no host reachable yet"
+            )
         out = []
         for tool in tools_cache:
             schema = dict(tool.inputSchema or {"type": "object"})

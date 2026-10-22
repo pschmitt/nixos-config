@@ -23,6 +23,7 @@
     ./rescue-ssh.nix
     ./resource-control.nix
     ./services.nix
+    ./signal-mcp.nix
     ./zsh.nix
   ];
 
