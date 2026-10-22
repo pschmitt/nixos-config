@@ -66,6 +66,13 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
+  # Sends Signal messages through the signal-cli daemon of the Hermes gateway
+  # (services/hermes.nix), which is reachable over the mesh only.
+  signalMcp = pkgs.writers.writePython3Bin "signal-mcp" {
+    libraries = [ pkgs.python3Packages.mcp ];
+    flakeIgnore = [ "E501" ];
+  } (builtins.readFile ./scripts/signal-mcp.py);
+
   # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
   # unless the agent asks otherwise (`browser_use`). Profiles keep their logins;
@@ -238,6 +245,11 @@ in
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
+        # The user's own number, behind the `me` recipient of the signal MCP.
+        "signal/me" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
         # MCP uses the same host-specific Philipp Schmitt PAT:
         # `nixos-config (<HOSTNAME>)`.
         "home-assistant/token" = {
@@ -270,6 +282,15 @@ in
         };
         tmux = {
           command = "${pkgs.tmux-mcp}/bin/tmux-mcp-rs";
+        };
+        signal = {
+          command = lib.getExe signalMcp;
+          args = [
+            "--url"
+            "http://rofl-10.${config.domains.netbird}:8712"
+            "--recipient"
+            "me=${config.sops.secrets."signal/me".path}"
+          ];
         };
         slack = {
           command = "${pkgs.slack-mcp-server}/bin/slack-mcp-server";
