@@ -27,13 +27,16 @@ env:
   NIX_BUILDER: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} aarch64-linux,i686-linux,x86_64-linux /home/runner/.ssh/id_ed25519 - - - - -"
   # NOTE: Use `ssh://` (legacy protocol) for maximum compatibility with older Nix versions on the destination host.
   # `ssh-ng://` will fail with "protocol mismatch, got 'started'" when the remote Nix only speaks the legacy protocol.
-  NIX_DEST_STORE_URL: "ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519"
+  NIX_DEST_STORE_URL: "ssh://${{ secrets.SSH_USERNAME }}@cache.rofl-14.brkn.lol?ssh-key=/home/runner/.ssh/id_ed25519"
+  NIX_CACHE_PUBLISH_HOST: "${{ secrets.SSH_USERNAME }}@cache.rofl-14.brkn.lol"
+  NIX_CACHE_SCOPE: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || (github.ref == 'refs/heads/main' && 'main' || 'manual') }}
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
     extra-experimental-features = nix-command flakes
     accept-flake-config = true
     substituters = https://cache.nixos.org/ https://hyprland.cachix.org https://nix-community.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=
+    extra-substituters = ssh://${{ secrets.SSH_USERNAME }}@cache.rofl-14.brkn.lol?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
     extra-platforms = aarch64-linux i686-linux
     builders-use-substitutes = true
     # NOTE needs a PAT (not the workflow's GITHUB_TOKEN, which is scoped to
@@ -180,11 +183,21 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up QEMU
-        if: ${{ matrix.system == 'aarch64-linux' }}
+        if: ${{ steps.cache.outputs.hit != 'true' && matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Build package
@@ -199,7 +212,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 
@@ -257,14 +270,25 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --nonfree --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up QEMU
-        if: ${{ matrix.system == 'aarch64-linux' }}
+        if: ${{ steps.cache.outputs.hit != 'true' && matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Fetch proprietary garbage
+        if: steps.cache.outputs.hit != 'true'
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -276,6 +300,7 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
+        if: steps.cache.outputs.hit != 'true'
         run: |-
           git add --intent-to-add --force .
 
@@ -292,7 +317,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 
@@ -349,20 +374,32 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --oci --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up QEMU
-        if: ${{ matrix.system == 'aarch64-linux' }}
+        if: ${{ steps.cache.outputs.hit != 'true' && matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
+        if: steps.cache.outputs.hit != 'true'
         id: netbird
         uses: Alemiz112/netbird-connect@master
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
+        if: steps.cache.outputs.hit != 'true'
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
@@ -434,7 +471,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 
@@ -503,10 +540,21 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --host '${{ matrix.host }}' --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fetch proprietary garbage
+        if: steps.cache.outputs.hit != 'true'
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -518,6 +566,7 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Add proprietary garbage to Nix store
+        if: steps.cache.outputs.hit != 'true'
         run: |
           find . -name sha256sum.txt | while read -r checksum_file
           do
@@ -544,7 +593,7 @@ jobs:
           max_attempts: 3
           command: |
             # DEBUG
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 
@@ -613,10 +662,21 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --host '${{ matrix.host }}' --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Fetch proprietary garbage
+        if: steps.cache.outputs.hit != 'true'
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -628,6 +688,7 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Add proprietary garbage to Nix store
+        if: steps.cache.outputs.hit != 'true'
         run: |
           find . -name sha256sum.txt | while read -r checksum_file
           do
@@ -643,9 +704,11 @@ jobs:
           done
 
       - name: Set up QEMU
+        if: steps.cache.outputs.hit != 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
+        if: steps.cache.outputs.hit != 'true'
         id: netbird
         uses: Alemiz112/netbird-connect@master
         with:
@@ -653,6 +716,7 @@ jobs:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
+        if: steps.cache.outputs.hit != 'true'
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
@@ -723,7 +787,7 @@ jobs:
           max_attempts: 3
           command: |
             # DEBUG
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 
@@ -785,10 +849,21 @@ jobs:
           shell: bash
           command: |
             set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" | \
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh --droid '${{ matrix.droid }}' --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up QEMU
+        if: steps.cache.outputs.hit != 'true'
         uses: docker/setup-qemu-action@v4
 
       - name: Build nixOnDroidConfiguration
@@ -802,7 +877,7 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}"
+            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
             echo "Known hosts:"
             cat /etc/ssh/ssh_known_hosts
 

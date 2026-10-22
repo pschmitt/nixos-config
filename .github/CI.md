@@ -43,9 +43,19 @@ for another workflow. The merge workflow only executes default-branch code. Main
 not trigger redundant merge checks. Updater workflows have bounded timeouts and
 serialize overlapping scheduled/manual runs without interrupting active updates.
 
-Build outputs continue to be copied to the persistent remote Nix store and reused
-through the SSH substituter. The Actions cache primarily accelerates evaluation;
-it is not the repository's binary build cache.
+CI first checks the primary store on rofl-14. A cache hit is retained remotely
+without building or downloading its closure to the runner; proprietary-source,
+QEMU and Netbird setup are skipped where unnecessary. Cache misses are signed,
+copied to the primary and rooted after signature verification through Harmonia.
+Incoming closures are checked against available space, keeping a 15 GiB reserve.
+
+The persistent population worker on rofl-14 fills missing main outputs in bounded
+passes and replicates retained main closures to rofl-13. Main retains the latest
+successful output per target; PR/manual roots expire after three days. The worker
+also imports a canary through authenticated HTTPS into an empty store and verifies
+signatures and contents. See [cache operations](../services/harmonia/README.md)
+for limits, state and failure reporting. The Actions cache accelerates evaluation;
+Harmonia and explicit GC roots provide the artifact cache and retention.
 
 ## PR impact comments
 

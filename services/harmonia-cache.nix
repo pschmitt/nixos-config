@@ -78,11 +78,14 @@ in
             "network-online.target"
             "harmonia.service"
           ];
+          # Run independently of nixos-rebuild's activation jobs. A long cache
+          # pass must not hold a system switch open until every build finishes.
+          restartIfChanged = false;
           serviceConfig = {
-            Type = "oneshot";
+            Type = "exec";
             ExecStart = lib.getExe populate;
             StateDirectory = "nixos-config-cache-populate";
-            TimeoutStartSec = "4h";
+            RuntimeMaxSec = "4h";
             Nice = 15;
             IOSchedulingClass = "idle";
             CPUQuota = "200%";

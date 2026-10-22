@@ -134,6 +134,8 @@ def main():
                     ".github/actions/",
                     ".github/tests/",
                     "scripts/nix-update",
+                    "services/harmonia",
+                    "profiles/specializations/server/scripts/filesystem-available.sh",
                 )
             )
             for p in files or []

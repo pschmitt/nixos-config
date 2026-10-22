@@ -19,6 +19,7 @@ Package options:
 
 General options:
   --copy                Copy the target(s) to \$NIX_DEST_STORE_URL instead of building
+  --check-cache         Retain an existing remote output; return 1 on a cache miss
   -h, --help            Show this help
 EOF
 }
@@ -96,6 +97,43 @@ should_use_builders() {
   return 1
 }
 
+resolve_output_paths() {
+  local ref="$1"
+  local impure="${2:-}"
+  local -a cmd=(nix eval --json)
+  if [[ -n "$impure" ]]
+  then
+    cmd+=(--impure)
+  fi
+  # shellcheck disable=SC2016 # This interpolation belongs to Nix.
+  "${cmd[@]}" "$ref" --apply 'drv: builtins.map (name: drv.${name}.outPath) drv.outputs'
+}
+
+cached_output_paths() {
+  local ref="$1"
+  local impure="${2:-}"
+  local paths_json paths_text
+  local -a paths
+  [[ -n "${NIX_DEST_STORE_URL:-}" && -n "${NIX_CACHE_PUBLISH_HOST:-}" && -n "${NIX_CACHE_SCOPE:-}" ]] || return 1
+  paths_json="$(resolve_output_paths "$ref" "$impure")" || return 1
+  paths_text="$(jq -er '.[]' <<< "$paths_json")" || return 1
+  readarray -t paths <<< "$paths_text"
+  nix path-info --store "$NIX_DEST_STORE_URL" "${paths[@]}" >/dev/null 2>&1 || return 1
+  printf '%s\n' "$paths_json"
+}
+
+retain_ref() {
+  local ref="$1"
+  local paths_json="$2"
+  local revision timestamp
+  revision="$(git rev-parse HEAD)"
+  timestamp="$(git show -s --format=%ct HEAD)"
+  jq -cn --arg target "${ref#*#}" --arg scope "$NIX_CACHE_SCOPE" \
+    --arg revision "$revision" --argjson timestamp "$timestamp" --argjson paths "$paths_json" \
+    '{target: $target, scope: $scope, revision: $revision, timestamp: $timestamp, paths: $paths}' | \
+    ssh "$NIX_CACHE_PUBLISH_HOST" /run/current-system/sw/bin/nix-cache-retain publish
+}
+
 build_ref() {
   local ref="$1"
   local use_builders="${2:-}"
@@ -112,6 +150,15 @@ build_ref() {
     cmd+=(--impure)
   fi
 
+  local cached
+  if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
+  then
+    # Pin the remote hit now, before a later CI step or GC can race us.
+    retain_ref "$ref" "$cached" || return
+    printf 'Already cached and retained: %s\n' "$ref"
+    return 0
+  fi
+
   cmd+=("$ref")
   "${cmd[@]}"
 }
@@ -120,43 +167,51 @@ copy_refs() {
   local impure="${1:-}"
   shift
   local -a refs=("$@")
-  local key_file
   local -a path_info_cmd=(nix path-info --recursive)
-  local -a copy_cmd=(nix copy --to "$NIX_DEST_STORE_URL")
+  local -a copy_cmd=()
+  local -a paths_query=(nix path-info)
+  local ref paths paths_json cached key_file closure_json
 
-  if [[ ${#refs[@]} -eq 0 ]]
+  if [[ ${#refs[@]} -eq 0 || -z "${NIX_DEST_STORE_URL:-}" || -z "${NIX_CACHE_PUBLISH_HOST:-}" || -z "${NIX_CACHE_SCOPE:-}" ]]
   then
-    echo "No refs to copy" >&2
-    return 1
+    printf 'Copy requires refs, NIX_DEST_STORE_URL, NIX_CACHE_PUBLISH_HOST and NIX_CACHE_SCOPE\n' >&2
+    return 2
   fi
 
-  if [[ -z "${NIX_DEST_STORE_URL:-}" ]]
-  then
-    echo "NIX_DEST_STORE_URL is required for --copy" >&2
-    return 1
-  fi
-
-  if [[ -z "${NIX_STORE_PRIVKEY:-}" ]]
-  then
-    echo "NIX_STORE_PRIVKEY is required for --copy" >&2
-    return 1
-  fi
-
+  copy_cmd=(nix copy --substitute-on-destination --to "$NIX_DEST_STORE_URL")
   if [[ -n "$impure" ]]
   then
     path_info_cmd+=(--impure)
+    paths_query+=(--impure)
     copy_cmd+=(--impure)
   fi
 
-  key_file="$(mktemp)"
-  # shellcheck disable=SC2064
-  trap "rm -f '$key_file'" RETURN
+  for ref in "${refs[@]}"
+  do
+    if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
+    then
+      retain_ref "$ref" "$cached"
+      continue
+    fi
+    if [[ -z "${NIX_STORE_PRIVKEY:-}" ]]
+    then
+      printf 'NIX_STORE_PRIVKEY is required to upload new outputs\n' >&2
+      return 2
+    fi
+    closure_json="$("${path_info_cmd[@]}" --json "$ref")"
+    ssh "$NIX_CACHE_PUBLISH_HOST" /run/current-system/sw/bin/nix-cache-retain capacity <<< "$closure_json"
 
-  umask 077
-  printf '%s' "$NIX_STORE_PRIVKEY" > "$key_file"
-  "${path_info_cmd[@]}" "${refs[@]}" | \
-    nix store sign --key-file "$key_file" --stdin
-  "${copy_cmd[@]}" "${refs[@]}"
+    key_file="$(mktemp)"
+    # shellcheck disable=SC2064
+    trap "rm -f '$key_file'" RETURN
+    umask 077
+    printf '%s' "$NIX_STORE_PRIVKEY" > "$key_file"
+    "${path_info_cmd[@]}" "$ref" | nix store sign --key-file "$key_file" --stdin
+    "${copy_cmd[@]}" "$ref"
+    paths="$("${paths_query[@]}" "$ref")"
+    paths_json="$(jq -Rsc 'split("\n") | map(select(length > 0))' <<< "$paths")"
+    retain_ref "$ref" "$paths_json"
+  done
 }
 
 build_package() {
@@ -248,6 +303,7 @@ copy_droid() {
 
 main() {
   local copy
+  local check_cache
   local nonfree
   local oci
   local pkg=""
@@ -257,6 +313,7 @@ main() {
   local system=""
 
   copy=
+  check_cache=
   nonfree=
   oci=
 
@@ -282,6 +339,10 @@ main() {
       --system)
         system="${2:-}"
         shift 2
+        ;;
+      --check-cache)
+        check_cache=1
+        shift
         ;;
       --copy)
         copy=1
@@ -320,6 +381,34 @@ main() {
     echo "Missing --pkg, --host, --home or --droid" >&2
     usage >&2
     return 2
+  fi
+
+  if [[ -n "$check_cache" ]]
+  then
+    local ref impure cached
+    impure="$nonfree"
+    if [[ -n "$copy" ]]
+    then
+      printf 'Choose either --copy or --check-cache\n' >&2
+      return 2
+    fi
+    if [[ -n "$pkg" ]]
+    then
+      [[ -n "$system" ]] || return 2
+      ref="$(package_ref "$pkg" "$system")"
+    elif [[ -n "$host" ]]
+    then
+      ref="$(host_ref "$host")"
+    elif [[ -n "$home" ]]
+    then
+      ref="$(home_ref "$home")"
+    else
+      ref="$(droid_ref "$droid")"
+      impure=1
+    fi
+    cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)" || return 1
+    retain_ref "$ref" "$cached"
+    return
   fi
 
   if [[ -n "$pkg" ]]
