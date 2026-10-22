@@ -111,7 +111,14 @@ def save(state):
 def populate(state):
     # Resolve main once so every target in this pass uses the same revision.
     metadata = json.loads(
-        command(NIX, "flake", "metadata", "--json", "github:pschmitt/nixos-config/main")
+        command(
+            NIX,
+            "flake",
+            "metadata",
+            "--refresh",
+            "--json",
+            "github:pschmitt/nixos-config/main",
+        )
     )
     revision = metadata["locked"]["rev"]
     timestamp = metadata["locked"]["lastModified"]
