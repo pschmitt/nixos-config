@@ -59,6 +59,29 @@ class CacheHitTests(unittest.TestCase):
             )
             return log.read_text().splitlines()
 
+    def test_matrix_preserves_existing_nix_configuration(self):
+        script = r"""nix() {
+  if [[ "$NIX_CONFIG" != $'accept-flake-config = true\nconnect-timeout = 7' ]]
+  then
+    return 87
+  fi
+  if [[ "$*" == *nixosConfigurations* ]]
+  then
+    printf '%s\n' '{}'
+  else
+    printf '%s\n' '[]'
+  fi
+}
+source .github/workflows/scripts/nix-gh-build-matrix.sh
+"""
+        subprocess.run(
+            ["bash", "-c", script],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            env={**os.environ, "NIX_CONFIG": "connect-timeout = 7"},
+        )
+
     def test_cache_hit_is_retained_without_local_build(self):
         calls = self.run_script(True)
         self.assertIn("retained", calls)

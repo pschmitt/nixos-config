@@ -2,7 +2,8 @@
 
 set -euo pipefail
 
-export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
+NIX_CONFIG="$(printf 'accept-flake-config = true\n%s' "${NIX_CONFIG:-}")"
+export NIX_CONFIG
 
 JSON_NIXOS_CONFIGS_X86_64='[]'
 JSON_NIXOS_CONFIGS_AARCH64='[]'

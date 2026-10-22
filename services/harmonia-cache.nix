@@ -81,6 +81,7 @@ in
           # Run independently of nixos-rebuild's activation jobs. A long cache
           # pass must not hold a system switch open until every build finishes.
           restartIfChanged = false;
+          environment.NIX_CONFIG = "accept-flake-config = true";
           serviceConfig = {
             Type = "exec";
             ExecStart = lib.getExe populate;
