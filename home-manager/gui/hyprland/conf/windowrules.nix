@@ -17,9 +17,20 @@
       peeppee.class = "^.*(-peepee)$";
       porn.title = "(?i).*porn.*";
       bitwarden.title = "(?i).*bitwarden.*";
+      rbwUnlock = {
+        class = "^(org\\.rbw\\.Unlock)$";
+        title = "^Unlock rbw$";
+      };
       noctalia.class = "^(dev\\.noctalia\\.Noctalia)$";
     in
     [
+      # rbw password/fingerprint dialog
+      {
+        match = rbwUnlock;
+        float = true;
+        center = true;
+      }
+
       # Noctalia Settings
       {
         match = noctalia;
