@@ -2,7 +2,6 @@
   config,
   lib,
   pkgs,
-  hostname,
   ...
 }:
 let
@@ -14,28 +13,8 @@ let
   # sops instead -- see sops.secrets/sops.templates in `config` below.
   tomlList = values: "[ ${lib.concatMapStringsSep ", " (v: ''"${v}"'') values} ]";
 
-  # enter_hook only fires locally, on the host the mouse is *leaving* (see
-  # notifyOnSwitch below) -- lan-mouse has no equivalent hook on the
-  # receiving side. Verify over SSH that the peer's own Lan Mouse service is
-  # active before announcing a handoff: an edge hit can fire this hook even
-  # when the peer is powered off. The peer's away-sentinel still needs
-  # clearing so its own bar icon/panel go quiet, so the check also clears its
-  # sentinel and sets its incoming one. The hook body lives in a sibling
-  # script so nested ssh-remote-command quoting survives both the TOML string
-  # and lan-mouse's `sh -c` unescaped.
-  #
-  # lan-mouse also has no way to *query* which side currently owns the
-  # cursor (`lan-mouse cli list` only reports whether a client connection is
-  # active, not who has input focus) -- so alongside the toast, drop a
-  # sentinel file that a consumer (e.g. the noctalia lan-mouse plugin) can
-  # poll: present (holding the peer's name) on this host while control is
-  # away, absent while it's here. The peer's own hook clears its copy when
-  # control arrives there.
-  # $XDG_RUNTIME_DIR is inherited from lan-mouse.service's own environment
-  # (set by pam_systemd for the user session); the remote side gets it the
-  # same way lan-mouse.service does there, via its own login session.
-  # Keep exactly one notification ID per session, and let the peer close its
-  # stale toast as soon as control moves onto this host.
+  # Notifications subscribe to local daemon snapshots/events. They do not
+  # write widget state or contact another host.
   notificationHelper = pkgs.writeShellApplication {
     name = "lan-mouse-notify";
     runtimeInputs = [
@@ -46,44 +25,14 @@ let
     ];
     text = builtins.readFile ./scripts/lan-mouse-notify.sh;
   };
-  enterHookHelper = pkgs.writeShellApplication {
-    name = "lan-mouse-enter-hook";
-    runtimeInputs = [
-      pkgs.openssh
-      pkgs.coreutils
-      notificationHelper
-    ];
-    text = builtins.readFile ./scripts/lan-mouse-enter-hook.sh;
+  stateNotifyScript = pkgs.writeText "lan-mouse-state-notify.py" (
+    builtins.readFile ./scripts/lan-mouse-state-notify.py
+  );
+  goBackScript = pkgs.writeShellApplication {
+    name = "lan-mouse-go-back";
+    runtimeInputs = [ pkgs.systemd ];
+    text = "systemctl --user restart lan-mouse.service";
   };
-  awaySentinel = "$XDG_RUNTIME_DIR/lan-mouse-away";
-  # Complements awaySentinel from the *receiving* side: present (holding the
-  # source host's name) on a host while a peer's input is flowing into it,
-  # absent otherwise. Lets the noctalia lan-mouse plugin's lockscreen "bring
-  # input back" button show up only when it's actually relevant, instead of
-  # unconditionally -- see lockscreen.luau. Written remotely below (by the
-  # host that's leaving, onto the peer it's entering); cleared locally both
-  # here (when *this* host starts sending elsewhere, it can't simultaneously
-  # be receiving), in goBackScript (clicking the button is itself "input is
-  # back"), and remotely by releaseWatcherScript below (releaseBind's
-  # physical key combo bypasses every hook lan-mouse fires, so this is the
-  # only other place that ever notices it happened at all).
-  incomingSentinel = "$XDG_RUNTIME_DIR/lan-mouse-incoming";
-  notifyScript =
-    peer:
-    let
-      remoteCommand = ''
-        systemctl --user is-active --quiet lan-mouse.service && {
-          rm -f "${awaySentinel}"
-          ${notificationHelper}/bin/lan-mouse-notify dismiss
-          printf '%s\n' ${lib.escapeShellArg hostname} > "${incomingSentinel}"
-        }
-      '';
-    in
-    pkgs.writeShellScript "lan-mouse-notify-${peer.name}" ''
-      ${enterHookHelper}/bin/lan-mouse-enter-hook \
-        ${lib.escapeShellArg peer.name} \
-        ${lib.escapeShellArg remoteCommand}
-    '';
 
   clientsToml = lib.concatMapStringsSep "\n" (peer: ''
     [[clients]]
@@ -91,80 +40,11 @@ let
     ips = ${tomlList peer.ips}
     position = "${peer.position}"
     activate_on_startup = ${lib.boolToString peer.activateOnStartup}
-    ${lib.optionalString cfg.notifyOnSwitch ''enter_hook = "${notifyScript peer}"''}
   '') cfg.peers;
 
   fingerprintsToml = lib.concatMapStringsSep "\n" (
     peer: ''"${config.sops.placeholder.${peer.fingerprintSecret}}" = "${peer.name}"''
   ) cfg.peers;
-
-  # `releaseBind` is the real fix for "stuck on a locked peer" (see its own
-  # comment), but it needs the physical keyboard, which not everyone reaches
-  # for. This gives the noctalia lan-mouse plugin's lockscreen widget the
-  # same escape hatch as a click.
-  #
-  # Went through worse designs first, both confirmed live 2026-09-17:
-  # - `lan-mouse cli deactivate`+`activate` on the specific client (on the
-  #   peer, over ssh) left that peer's daemon silently skipping enter_hook
-  #   on the *next* real capture into it -- capture itself kept working,
-  #   just without ever notifying anyone.
-  # - restarting only the *peer's* service over ssh (no local restart) fixed
-  #   that, but the release still depended on ssh reaching the peer at
-  #   exactly the right moment, and the away side still went stale on its
-  #   own at least once more.
-  #
-  # Restarting *this* host's own lan-mouse.service needs no ssh for the
-  # release itself: killing this end's connection is what the peer's own
-  # daemon already treats as "releasing capture: not connected" (seen live
-  # in its logs on ordinary disconnects) -- the exact same clean release
-  # path a real disconnect takes. Restarting the *peer's* service too, in
-  # parallel over ssh, is redundant belt-and-suspenders on top of that (not
-  # required for the release itself, which this end's own restart already
-  # guarantees) -- cheap insurance since both ends drop the same
-  # connection either way, and it doubles as the moment to also clear the
-  # peer's own awaySentinel file, so its bar icon doesn't stay stuck
-  # showing "away: <this host>" once the connection re-establishes via
-  # `activate_on_startup`.
-  goBackScript = pkgs.writeShellScript "lan-mouse-go-back" ''
-    rm -f "${incomingSentinel}"
-    ${notificationHelper}/bin/lan-mouse-notify dismiss
-    systemctl --user restart lan-mouse.service &
-    for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
-      ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
-        'systemctl --user restart lan-mouse.service; rm -f "${awaySentinel}"; ${notificationHelper}/bin/lan-mouse-notify dismiss' &
-    done
-    wait
-  '';
-
-  # releaseBind bypasses enter hooks; the journal line is its only external
-  # signal. Also clear our toast if the compositor releases layer-shell capture.
-  releaseWatcherScript = pkgs.writeShellScript "lan-mouse-release-watcher" ''
-    ${pkgs.systemd}/bin/journalctl --user -u lan-mouse.service -f -n 0 -o cat | while IFS= read -r line; do
-      case "$line" in
-        *"releasing capture: release-bind pressed"*)
-          incoming_peer=""
-          if [[ -r "${incomingSentinel}" ]]; then
-            IFS= read -r incoming_peer < "${incomingSentinel}"
-          fi
-          rm -f "${awaySentinel}" "${incomingSentinel}"
-          ${notificationHelper}/bin/lan-mouse-notify dismiss
-          for peer in ${lib.concatMapStringsSep " " (p: p.name) cfg.peers}; do
-            remote_command='rm -f "${incomingSentinel}"'
-            if [[ "$peer" == "$incoming_peer" ]]; then
-              remote_command+="; ${notificationHelper}/bin/lan-mouse-notify dismiss"
-            fi
-            ${pkgs.openssh}/bin/ssh -o BatchMode=yes -o ConnectTimeout=2 "$peer" \
-              "$remote_command" &
-          done
-          wait
-          ;;
-        *"compositor released mouse"*)
-          rm -f "${awaySentinel}"
-          ${notificationHelper}/bin/lan-mouse-notify dismiss
-          ;;
-      esac
-    done
-  '';
 
   peerNames = lib.concatMapStringsSep " " (peer: lib.escapeShellArg peer.name) cfg.peers;
 in
@@ -223,12 +103,8 @@ in
 
     notifyOnSwitch = lib.mkOption {
       type = lib.types.bool;
-      # lan-mouse fires this per-client "enter hook" locally as the mouse
-      # leaves this host to enter that peer's screen, so it's the natural
-      # place to surface "your input now lives on <peer>" -- there's no
-      # equivalent hook for the mouse coming back. The journal watcher
-      # clears the indicator on capture releases.
-      # `releaseBind` below is the way back to this host.
+      # Subscribe to acknowledged outgoing routing and release events over
+      # local IPC, independently of the Noctalia widget.
       default = true;
       description = "Show a desktop notification on the host whose mouse switches to a peer.";
     };
@@ -341,7 +217,7 @@ in
     # Stable path (unlike goBackScript's own store path, which changes every
     # generation) for the noctalia lan-mouse plugin's lockscreen widget to
     # exec directly.
-    home.file.".config/lan-mouse/go-back".source = goBackScript;
+    home.file.".config/lan-mouse/go-back".source = "${goBackScript}/bin/lan-mouse-go-back";
 
     sops.secrets = builtins.listToAttrs (
       map (peer: {
@@ -390,22 +266,17 @@ in
       Install.WantedBy = lib.optionals cfg.autoStart [ "graphical-session.target" ];
     };
 
-    # See releaseWatcherScript's own comment: the only way to react to
-    # release_bind at all is tailing lan-mouse.service's own journal.
-    # `PartOf = [ "lan-mouse.service" ]` propagates both stop *and* restart
-    # from lan-mouse.service to this unit (goBackScript restarts
-    # lan-mouse.service directly, which would otherwise leave this tailing
-    # a now-dead journalctl stream from the old process).
-    systemd.user.services.lan-mouse-release-watcher = {
+    systemd.user.services.lan-mouse-state-notify = lib.mkIf cfg.notifyOnSwitch {
       Unit = {
-        Description = "Clears lan-mouse sentinels when input capture is released";
+        Description = "Lan Mouse notifications from local input state";
         After = [ "lan-mouse.service" ];
         PartOf = [ "lan-mouse.service" ];
       };
 
       Service = {
-        ExecStart = "${releaseWatcherScript}";
-        Restart = "on-failure";
+        ExecStart = "${lib.getExe pkgs.python3} ${stateNotifyScript} ${notificationHelper}/bin/lan-mouse-notify";
+        ExecStopPost = "${notificationHelper}/bin/lan-mouse-notify dismiss";
+        Restart = "always";
         RestartSec = 1;
       };
 

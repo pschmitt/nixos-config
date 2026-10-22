@@ -70,7 +70,10 @@ in
             src = final.applyPatches {
               name = "lan-mouse-patched";
               src = inputs.lan-mouse;
-              patches = [ ../pkgs/local/lan-mouse/0001-env-keymap.patch ];
+              patches = [
+                ../pkgs/local/lan-mouse/0001-env-keymap.patch
+                ../pkgs/local/lan-mouse/0002-input-state.patch
+              ];
             };
           });
 

@@ -1,0 +1,578 @@
+diff --git a/input-capture/src/layer_shell.rs b/input-capture/src/layer_shell.rs
+index dc1d525..718f148 100644
+--- a/input-capture/src/layer_shell.rs
++++ b/input-capture/src/layer_shell.rs
+@@ -751,6 +751,10 @@ impl Dispatch<WlPointer, ()> for State {
+                  */
+                 if app.pointer_lock.is_some() {
+                     log::warn!("compositor released mouse");
++                    if let Some(window) = &app.focused {
++                        app.pending_events
++                            .push_back((window.pos, CaptureEvent::End));
++                    }
+                 }
+                 app.ungrab();
+             }
+diff --git a/input-capture/src/lib.rs b/input-capture/src/lib.rs
+index 6a850b3..aa9ec9b 100644
+--- a/input-capture/src/lib.rs
++++ b/input-capture/src/lib.rs
+@@ -39,6 +39,8 @@ pub type CaptureHandle = u64;
+ pub enum CaptureEvent {
+     /// capture on this capture handle is now active
+     Begin,
++    /// The compositor ended this capture unexpectedly.
++    End,
+     /// input event coming from capture handle
+     Input(Event),
+ }
+@@ -47,6 +49,7 @@ impl Display for CaptureEvent {
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         match self {
+             CaptureEvent::Begin => write!(f, "begin capture"),
++            CaptureEvent::End => write!(f, "end capture"),
+             CaptureEvent::Input(e) => write!(f, "{e}"),
+         }
+     }
+diff --git a/lan-mouse-cli/src/lib.rs b/lan-mouse-cli/src/lib.rs
+index 13fed2e..c0b845d 100644
+--- a/lan-mouse-cli/src/lib.rs
++++ b/lan-mouse-cli/src/lib.rs
+@@ -51,6 +51,11 @@ enum CliSubcommand {
+     Deactivate { id: ClientHandle },
+     /// list configured clients
+     List,
++    /// Print a JSON input-routing snapshot, optionally followed by changes.
++    InputState {
++        #[arg(long)]
++        watch: bool,
++    },
+     /// change hostname
+     SetHost {
+         id: ClientHandle,
+@@ -124,6 +129,17 @@ async fn execute(cmd: CliSubcommand) -> Result<(), CliError> {
+         CliSubcommand::Deactivate { id } => {
+             tx.request(FrontendRequest::Activate(id, false)).await?
+         }
++        CliSubcommand::InputState { watch } => {
++            tx.request(FrontendRequest::InputState).await?;
++            while let Some(e) = rx.next().await {
++                if let FrontendEvent::InputState(state) = e? {
++                    println!("{}", state.to_json());
++                    if !watch {
++                        break;
++                    }
++                }
++            }
++        }
+         CliSubcommand::List => {
+             tx.request(FrontendRequest::Enumerate()).await?;
+             while let Some(e) = rx.next().await {
+diff --git a/lan-mouse-gtk/src/lib.rs b/lan-mouse-gtk/src/lib.rs
+index 5daf57f..35ce9fc 100644
+--- a/lan-mouse-gtk/src/lib.rs
++++ b/lan-mouse-gtk/src/lib.rs
+@@ -297,6 +297,7 @@ fn build_ui(app: &Application) {
+                         window.update_client_config(handle, config);
+                         window.update_client_state(handle, state);
+                     }
++                    FrontendEvent::InputState(_) => {}
+                     FrontendEvent::NoSuchClient(_) => {}
+                     FrontendEvent::Error(e) => window.show_toast(e.as_str()),
+                     FrontendEvent::Enumerate(clients) => window.update_client_list(clients),
+diff --git a/lan-mouse-ipc/src/lib.rs b/lan-mouse-ipc/src/lib.rs
+index 95f4d1f..6147574 100644
+--- a/lan-mouse-ipc/src/lib.rs
++++ b/lan-mouse-ipc/src/lib.rs
+@@ -187,8 +187,35 @@ pub struct ClientState {
+     pub peer_commit: Option<[u8; 8]>,
+ }
+
++/// A recoverable snapshot of actual input routing, independent of connection activation.
++#[derive(Debug, Clone, Default, Serialize, Deserialize)]
++pub struct InputState {
++    pub outgoing: Option<String>,
++    pub pending: Option<String>,
++    pub incoming: Vec<String>,
++    pub capture_enabled: bool,
++    pub emulation_enabled: bool,
++    pub peers: Vec<InputPeer>,
++}
++
++#[derive(Debug, Clone, Serialize, Deserialize)]
++pub struct InputPeer {
++    pub id: ClientHandle,
++    pub hostname: String,
++    pub position: Position,
++    pub active: bool,
++    pub connected: bool,
++}
++
++impl InputState {
++    pub fn to_json(&self) -> String {
++        serde_json::to_string(self).expect("input state is serializable")
++    }
++}
++
+ #[derive(Debug, Clone, Serialize, Deserialize)]
+ pub enum FrontendEvent {
++    InputState(InputState),
+     /// a client was created
+     Created(ClientHandle, ClientConfig, ClientState),
+     /// no such client
+@@ -225,11 +252,15 @@ pub enum FrontendEvent {
+     /// incoming disconnected
+     IncomingDisconnected(SocketAddr),
+     /// failed connection attempt (approval for fingerprint required)
+-    ConnectionAttempt { fingerprint: String },
++    ConnectionAttempt {
++        fingerprint: String,
++    },
+ }
+
+ #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+ pub enum FrontendRequest {
++    /// Request current routing state; also emitted whenever routing changes.
++    InputState,
+     /// activate/deactivate client
+     Activate(ClientHandle, bool),
+     /// add a new client
+diff --git a/lan-mouse-proto/src/lib.rs b/lan-mouse-proto/src/lib.rs
+index bff42db..ba9e698 100644
+--- a/lan-mouse-proto/src/lib.rs
++++ b/lan-mouse-proto/src/lib.rs
+@@ -63,6 +63,8 @@ pub enum ProtoEvent {
+     Ping,
+     /// Response to [`ProtoEvent::Ping`], true if emulation is enabled / available
+     Pong(bool),
++    /// Current outgoing capture state; periodically reconciles lost Leave messages.
++    CaptureState(bool),
+     /// Build identification for the sending peer. Sent by the
+     /// connect side once after the connection authenticates, and
+     /// echoed back by the listen side in reply, so each end can
+@@ -82,6 +84,7 @@ impl Display for ProtoEvent {
+             ProtoEvent::Ack(s) => write!(f, "Ack({s})"),
+             ProtoEvent::Input(e) => write!(f, "{e}"),
+             ProtoEvent::Ping => write!(f, "ping"),
++            ProtoEvent::CaptureState(active) => write!(f, "capture-state: {active}"),
+             ProtoEvent::Pong(alive) => {
+                 write!(
+                     f,
+@@ -112,6 +115,7 @@ pub enum EventType {
+     Leave,
+     Ack,
+     Hello,
++    CaptureState,
+ }
+
+ impl ProtoEvent {
+@@ -131,6 +135,7 @@ impl ProtoEvent {
+             },
+             ProtoEvent::Ping => EventType::Ping,
+             ProtoEvent::Pong(_) => EventType::Pong,
++            ProtoEvent::CaptureState(_) => EventType::CaptureState,
+             ProtoEvent::Enter(_) => EventType::Enter,
+             ProtoEvent::Leave(_) => EventType::Leave,
+             ProtoEvent::Ack(_) => EventType::Ack,
+@@ -186,6 +191,7 @@ impl TryFrom<[u8; MAX_EVENT_SIZE]> for ProtoEvent {
+             ))),
+             EventType::Ping => Ok(Self::Ping),
+             EventType::Pong => Ok(Self::Pong(decode_u8(&mut buf)? != 0)),
++            EventType::CaptureState => Ok(Self::CaptureState(decode_u8(&mut buf)? != 0)),
+             EventType::Enter => Ok(Self::Enter(decode_u8(&mut buf)?.try_into()?)),
+             EventType::Leave => Ok(Self::Leave(decode_u32(&mut buf)?)),
+             EventType::Ack => Ok(Self::Ack(decode_u32(&mut buf)?)),
+@@ -257,6 +263,7 @@ impl From<ProtoEvent> for ([u8; MAX_EVENT_SIZE], usize) {
+                 },
+                 ProtoEvent::Ping => {}
+                 ProtoEvent::Pong(alive) => encode_u8(buf, len, alive as u8),
++                ProtoEvent::CaptureState(active) => encode_u8(buf, len, active as u8),
+                 ProtoEvent::Enter(pos) => encode_u8(buf, len, pos as u8),
+                 ProtoEvent::Leave(serial) => encode_u32(buf, len, serial),
+                 ProtoEvent::Ack(serial) => encode_u32(buf, len, serial),
+diff --git a/src/capture.rs b/src/capture.rs
+index 9ae1ba1..c92bca9 100644
+--- a/src/capture.rs
++++ b/src/capture.rs
+@@ -37,6 +37,7 @@ pub(crate) enum ICaptureEvent {
+     /// either the remote client leaving its device region,
+     /// a new device entering the screen or the release bind.
+     ClientEntered(u64),
++    ClientAcknowledged(u64),
+     /// The previously active client was left, i.e. capture
+     /// was released for the given handle. Mirrors
+     /// [`ICaptureEvent::ClientEntered`] for the leave side
+@@ -250,6 +251,8 @@ impl CaptureTask {
+
+         let r = self.do_capture_session(&mut capture).await;
+
++        // A backend exit must end routing too, including stale modifier state.
++        let _ = self.release_capture(&mut capture).await;
+         // FIXME replace with async drop when stabilized
+         capture.terminate().await?;
+
+@@ -290,7 +293,11 @@ impl CaptureTask {
+                         // connection acknowlegded => set state to Sending
+                         ProtoEvent::Ack(_) => {
+                             log::info!("client {handle} acknowledged the connection!");
+-                            self.state = State::Sending;
++                            if self.active_client == Some(handle) && self.state != State::Sending {
++                                self.conn.set_capturing(Some(handle));
++                                self.event_tx.send(ICaptureEvent::ClientAcknowledged(handle)).expect("channel closed");
++                                self.state = State::Sending;
++                            }
+                         }
+                         // client disconnected
+                         ProtoEvent::Leave(_) => {
+@@ -365,6 +372,13 @@ impl CaptureTask {
+         // activated a new client
+         if event == CaptureEvent::Begin && Some(handle) != self.active_client {
+             self.state = State::WaitingForAck;
++            if let Some(previous) = self.active_client.take() {
++                self.conn.set_capturing(None);
++                self.event_tx
++                    .send(ICaptureEvent::ClientLeft(previous))
++                    .expect("channel closed");
++                let _ = self.conn.send(ProtoEvent::Leave(0), previous).await;
++            }
+             self.active_client.replace(handle);
+             self.event_tx
+                 .send(ICaptureEvent::ClientEntered(handle))
+@@ -374,6 +388,12 @@ impl CaptureTask {
+         let opposite_pos = to_proto_pos(self.get_pos(handle).opposite());
+
+         let event = match event {
++            CaptureEvent::End => {
++                if self.active_client == Some(handle) {
++                    return self.release_capture(capture).await;
++                }
++                return Ok(());
++            }
+             CaptureEvent::Begin => ProtoEvent::Enter(opposite_pos),
+             CaptureEvent::Input(e) => match self.state {
+                 // connection not acknowledged, repeat `Enter` event
+@@ -395,6 +415,7 @@ impl CaptureTask {
+     }
+
+     async fn release_capture(&mut self, capture: &mut InputCapture) -> Result<(), CaptureError> {
++        self.conn.set_capturing(None);
+         // If we have an active client, notify them we're leaving
+         if let Some(handle) = self.active_client.take() {
+             // Surface the leave to the service layer so it can fire
+diff --git a/src/connect.rs b/src/connect.rs
+index 417d913..4dbabc9 100644
+--- a/src/connect.rs
++++ b/src/connect.rs
+@@ -100,6 +100,7 @@ pub(crate) struct LanMouseConnection {
+     recv_rx: Receiver<(ClientHandle, ProtoEvent)>,
+     recv_tx: Sender<(ClientHandle, ProtoEvent)>,
+     ping_response: Rc<RefCell<HashSet<SocketAddr>>>,
++    capturing: Rc<std::cell::Cell<Option<ClientHandle>>>,
+ }
+
+ impl LanMouseConnection {
+@@ -113,9 +114,14 @@ impl LanMouseConnection {
+             recv_rx,
+             recv_tx,
+             ping_response: Default::default(),
++            capturing: Default::default(),
+         }
+     }
+
++    pub(crate) fn set_capturing(&self, handle: Option<ClientHandle>) {
++        self.capturing.set(handle);
++    }
++
+     pub(crate) async fn recv(&mut self) -> (ClientHandle, ProtoEvent) {
+         self.recv_rx.recv().await.expect("channel closed")
+     }
+@@ -141,6 +147,7 @@ impl LanMouseConnection {
+                     Err(e) => {
+                         log::warn!("client {handle} failed to send: {e}");
+                         disconnect(&self.client_manager, handle, addr, &self.conns).await;
++                        return Err(e.into());
+                     }
+                 }
+                 log::trace!("{event} >->->->->- {addr}");
+@@ -161,6 +168,7 @@ impl LanMouseConnection {
+                 self.connecting.clone(),
+                 self.recv_tx.clone(),
+                 self.ping_response.clone(),
++                self.capturing.clone(),
+             ));
+         }
+         Err(LanMouseConnectionError::NotConnected)
+@@ -175,6 +183,7 @@ async fn connect_to_handle(
+     connecting: Rc<Mutex<HashSet<ClientHandle>>>,
+     tx: Sender<(ClientHandle, ProtoEvent)>,
+     ping_response: Rc<RefCell<HashSet<SocketAddr>>>,
++    capturing: Rc<std::cell::Cell<Option<ClientHandle>>>,
+ ) -> Result<(), LanMouseConnectionError> {
+     log::info!("client {handle} connecting ...");
+     // sending did not work, figure out active conn.
+@@ -212,7 +221,13 @@ async fn connect_to_handle(
+         }
+
+         // poll connection for active
+-        spawn_local(ping_pong(addr, conn.clone(), ping_response.clone()));
++        spawn_local(ping_pong(
++            addr,
++            conn.clone(),
++            ping_response.clone(),
++            capturing,
++            handle,
++        ));
+
+         // receiver
+         spawn_local(receive_loop(
+@@ -234,12 +249,20 @@ async fn ping_pong(
+     addr: SocketAddr,
+     conn: Arc<dyn Conn + Send + Sync>,
+     ping_response: Rc<RefCell<HashSet<SocketAddr>>>,
++    capturing: Rc<std::cell::Cell<Option<ClientHandle>>>,
++    handle: ClientHandle,
+ ) {
+     loop {
+         let (buf, len) = ProtoEvent::Ping.into();
+
+         // send 4 pings, at least one must be answered
+         for _ in 0..4 {
++            let (state_buf, state_len) =
++                ProtoEvent::CaptureState(capturing.get() == Some(handle)).into();
++            if conn.send(&state_buf[..state_len]).await.is_err() {
++                let _ = conn.close().await;
++                return;
++            }
+             if let Err(e) = conn.send(&buf[..len]).await {
+                 log::warn!("{addr}: send error `{e}`, closing connection");
+                 let _ = conn.close().await;
+@@ -274,6 +297,12 @@ async fn receive_loop(
+                 log::trace!("{addr} <==<==<== {event}");
+                 match event {
+                     ProtoEvent::Pong(b) => {
++                        // The connection can stay healthy while the peer's
++                        // emulation backend fails. Release an idle capture too,
++                        // rather than waiting for the next physical input.
++                        if !b && client_manager.alive(handle) {
++                            let _ = tx.send((handle, ProtoEvent::Leave(0)));
++                        }
+                         client_manager.set_active_addr(handle, Some(addr));
+                         client_manager.set_alive(handle, b);
+                         ping_response.borrow_mut().insert(addr);
+@@ -293,6 +322,8 @@ async fn receive_loop(
+     }
+     log::warn!("recv error");
+     disconnect(&client_manager, handle, addr, &conns).await;
++    // Release even if the physical mouse remains still after peer loss.
++    let _ = tx.send((handle, ProtoEvent::Leave(0)));
+ }
+
+ async fn disconnect(
+diff --git a/src/emulation.rs b/src/emulation.rs
+index 923bf99..d73c223 100644
+--- a/src/emulation.rs
++++ b/src/emulation.rs
+@@ -25,6 +25,10 @@ pub(crate) struct Emulation {
+ }
+
+ pub(crate) enum EmulationEvent {
++    Routing {
++        addr: SocketAddr,
++        active: bool,
++    },
+     Connected {
+         addr: SocketAddr,
+         fingerprint: String,
+@@ -156,7 +160,14 @@ impl ListenTask {
+                                     self.event_tx.send(EmulationEvent::Entered{addr, pos: to_ipc_pos(pos), fingerprint}).expect("channel closed");
+                                 }
+                             }
++                            ProtoEvent::CaptureState(active) => {
++                                if !active {
++                                    self.emulation_proxy.remove(addr);
++                                }
++                                self.event_tx.send(EmulationEvent::Routing { addr, active }).expect("channel closed");
++                            }
+                             ProtoEvent::Leave(_) => {
++                                self.event_tx.send(EmulationEvent::Routing { addr, active: false }).expect("channel closed");
+                                 self.emulation_proxy.remove(addr);
+                                 self.listener.reply(addr, ProtoEvent::Ack(0)).await;
+                             }
+@@ -198,7 +209,11 @@ impl ListenTask {
+                     // reenable emulation
+                     EmulationRequest::Reenable => self.emulation_proxy.reenable(),
+                     // notify the other end that we hit a barrier (should release capture)
+-                    EmulationRequest::Release(addr) => self.listener.reply(addr, ProtoEvent::Leave(0)).await,
++                    EmulationRequest::Release(addr) => {
++                        self.listener.reply(addr, ProtoEvent::Leave(0)).await;
++                        self.emulation_proxy.remove(addr);
++                        self.event_tx.send(EmulationEvent::Routing { addr, active: false }).expect("channel closed");
++                    }
+                     EmulationRequest::ChangePort(port) => {
+                         self.listener.request_port_change(port);
+                         let result = self.listener.port_changed().await;
+diff --git a/src/service.rs b/src/service.rs
+index 71e8b7f..9062403 100644
+--- a/src/service.rs
++++ b/src/service.rs
+@@ -67,6 +67,9 @@ pub struct Service {
+     /// map from capture handle to connection info
+     incoming_conn_info: HashMap<ClientHandle, Incoming>,
+     next_trigger_handle: u64,
++    outgoing: Option<ClientHandle>,
++    pending: Option<ClientHandle>,
++    receiving: HashSet<SocketAddr>,
+ }
+
+ #[derive(Debug)]
+@@ -123,6 +126,9 @@ impl Service {
+             incoming_conn_info: Default::default(),
+             incoming_conns: Default::default(),
+             next_trigger_handle: 0,
++            outgoing: None,
++            pending: None,
++            receiving: Default::default(),
+         };
+         Ok(service)
+     }
+@@ -189,6 +195,7 @@ impl Service {
+             FrontendRequest::EnableCapture => self.capture.reenable(),
+             FrontendRequest::EnableEmulation => self.emulation.reenable(),
+             FrontendRequest::Enumerate() => self.enumerate(),
++            FrontendRequest::InputState => self.publish_input_state(),
+             FrontendRequest::UpdateFixIps(handle, fix_ips) => {
+                 self.update_fix_ips(handle, fix_ips);
+                 self.save_config();
+@@ -283,6 +290,7 @@ impl Service {
+                 pos,
+                 fingerprint,
+             } => {
++                self.receiving.insert(addr);
+                 // check if already registered
+                 if !self.incoming_conns.contains(&addr) {
+                     self.add_incoming(addr, pos, fingerprint.clone());
+@@ -295,7 +303,18 @@ impl Service {
+                     self.update_incoming(addr, pos, fingerprint);
+                 }
+             }
++            EmulationEvent::Routing { addr, active } => {
++                if active
++                    && self.emulation_status == Status::Enabled
++                    && self.incoming_conns.contains(&addr)
++                {
++                    self.receiving.insert(addr);
++                } else {
++                    self.receiving.remove(&addr);
++                }
++            }
+             EmulationEvent::Disconnected { addr } => {
++                self.receiving.remove(&addr);
+                 if let Some(addr) = self.remove_incoming(addr) {
+                     self.notify_frontend(FrontendEvent::IncomingDisconnected(addr));
+                 }
+@@ -310,6 +329,7 @@ impl Service {
+             },
+             EmulationEvent::EmulationDisabled => {
+                 self.emulation_status = Status::Disabled;
++                self.receiving.clear();
+                 self.notify_frontend(FrontendEvent::EmulationStatus(self.emulation_status));
+             }
+             EmulationEvent::EmulationEnabled => {
+@@ -332,6 +352,7 @@ impl Service {
+                 }
+             }
+         }
++        self.publish_input_state();
+     }
+
+     fn handle_capture_event(&mut self, event: ICaptureEvent) {
+@@ -344,6 +365,8 @@ impl Service {
+                 }
+             }
+             ICaptureEvent::CaptureDisabled => {
++                self.outgoing = None;
++                self.pending = None;
+                 self.capture_status = Status::Disabled;
+                 self.notify_frontend(FrontendEvent::CaptureStatus(self.capture_status));
+             }
+@@ -351,15 +374,27 @@ impl Service {
+                 self.capture_status = Status::Enabled;
+                 self.notify_frontend(FrontendEvent::CaptureStatus(self.capture_status));
+             }
++            ICaptureEvent::ClientAcknowledged(handle) => {
++                self.outgoing = Some(handle);
++                self.pending = None;
++            }
+             ICaptureEvent::ClientEntered(handle) => {
++                self.pending = Some(handle);
+                 log::info!("entering client {handle} ...");
+                 self.spawn_hook_command(handle, HookKind::Enter);
+             }
+             ICaptureEvent::ClientLeft(handle) => {
++                if self.pending == Some(handle) {
++                    self.pending = None;
++                }
++                if self.outgoing == Some(handle) {
++                    self.outgoing = None;
++                }
+                 log::info!("leaving client {handle} ...");
+                 self.spawn_hook_command(handle, HookKind::Leave);
+             }
+         }
++        self.publish_input_state();
+     }
+
+     fn handle_resolver_event(&mut self, event: DnsEvent) {
+@@ -387,7 +422,52 @@ impl Service {
+         }
+     }
+
++    fn publish_input_state(&mut self) {
++        let keys = self.authorized_keys.read().expect("lock");
++        let mut incoming: Vec<String> = self
++            .incoming_conn_info
++            .values()
++            .filter(|i| {
++                self.emulation_status == Status::Enabled && self.receiving.contains(&i.addr)
++            })
++            .map(|i| {
++                keys.get(&i.fingerprint)
++                    .cloned()
++                    .unwrap_or_else(|| "peer".into())
++            })
++            .collect();
++        incoming.sort();
++        incoming.dedup();
++        drop(keys);
++        let peers = self
++            .client_manager
++            .get_client_states()
++            .into_iter()
++            .map(|(id, c, s)| lan_mouse_ipc::InputPeer {
++                id,
++                hostname: c.hostname.unwrap_or_else(|| "peer".into()),
++                position: c.pos,
++                active: s.active,
++                connected: s.active_addr.is_some() && s.alive,
++            })
++            .collect();
++        let state = lan_mouse_ipc::InputState {
++            outgoing: self
++                .outgoing
++                .and_then(|h| self.client_manager.get_hostname(h)),
++            pending: self
++                .pending
++                .and_then(|h| self.client_manager.get_hostname(h)),
++            incoming,
++            capture_enabled: self.capture_status == Status::Enabled,
++            emulation_enabled: self.emulation_status == Status::Enabled,
++            peers,
++        };
++        self.notify_frontend(FrontendEvent::InputState(state));
++    }
++
+     fn sync_frontend(&mut self) {
++        self.publish_input_state();
+         self.enumerate();
+         self.notify_frontend(FrontendEvent::EmulationStatus(self.emulation_status));
+         self.notify_frontend(FrontendEvent::CaptureStatus(self.capture_status));

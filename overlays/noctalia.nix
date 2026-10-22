@@ -8,6 +8,14 @@ let
   base = inputs.noctalia.packages.${system}.default;
 in
 {
+  noctalia-lan-mouse = final.callPackage "${
+    final.applyPatches {
+      name = "noctalia-plugins-input-state";
+      src = inputs.noctalia-plugins;
+      patches = [ ./patches/noctalia-plugins/0002-lan-mouse-input-state.patch ];
+    }
+  }/pkgs/noctalia-lan-mouse" { };
+
   noctalia = base.overrideAttrs (old: {
     # Upstream's Luau plugin API (noctalia.notify/notifyError) hardcodes the
     # notification appName to "Noctalia" and never forwards an icon, so every
