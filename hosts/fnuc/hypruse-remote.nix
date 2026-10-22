@@ -6,30 +6,25 @@
 }:
 let
   user = config.mainUser.username;
-  # Same module as the laptops' local hypruse MCP: it finds the running
-  # Hyprland session by itself, so a plain SSH command is enough.
-  remoteCommand = "/etc/profiles/per-user/${user}/bin/hypruse-session";
 
-  laptops = [
-    "ge2"
-    "gk4"
-  ];
+  hypruseHub = pkgs.writers.writePython3Bin "hypruse-hub" {
+    libraries = [ pkgs.python3Packages.mcp ];
+    flakeIgnore = [ "E501" ];
+  } (builtins.readFile ./scripts/hypruse-hub.py);
 in
 {
-  home-manager.users.${user}.programs.mcp.servers = lib.genAttrs' laptops (host: {
-    name = "hypruse-${host}";
-    value = {
-      command = lib.getExe' pkgs.openssh "ssh";
-      args = [
-        "-q"
-        "-T"
-        "-o"
-        "BatchMode=yes"
-        "-o"
-        "ServerAliveInterval=30"
-        host
-        remoteCommand
-      ];
-    };
-  });
+  # One hypruse MCP for all laptops: tools take a `host` argument and the
+  # hub opens SSH sessions to that host's hypruse-session on demand (see
+  # home-manager/gui/hyprland/mcp.nix).
+  home-manager.users.${user}.programs.mcp.servers.hypruse = {
+    command = lib.getExe hypruseHub;
+    args = [
+      "--ssh"
+      (lib.getExe' pkgs.openssh "ssh")
+      "--remote-cmd"
+      "/etc/profiles/per-user/${user}/bin/hypruse-session"
+      "ge2"
+      "gk4"
+    ];
+  };
 }
