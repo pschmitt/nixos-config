@@ -1,0 +1,18 @@
+{
+  "volumeIncrement": 5,
+  "usePreciseScroll": true,
+  "useCustomPreciseScrollThreshold": false,
+  "customPreciseScrollThreshold": 10,
+  "useRoundToNearestIncrement": true,
+  "invertScrollDirection": false,
+  "useOverlay": true,
+  "overlayColor": "#ffffff",
+  "useOverlayBackground": true,
+  "overlayBackgroundOpacity": 65,
+  "overlayDuration": 2000,
+  "useDutchAngle": true,
+  "dutchAngleValue": 6,
+  "overlayBarSide": "right",
+  "showNumericValue": false,
+  "fontSize": 80
+}
