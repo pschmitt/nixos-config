@@ -52,6 +52,9 @@
           executableRoots = [ "${pkgs.chromium.browser}" ];
         };
       };
+      # Start the extension's fingerprint scan as soon as its popup opens
+      # on a locked account with fingerprint unlock enrolled.
+      browser.fingerprintAutoStart = lib.mkIf guiEnable true;
       agent = {
         lockTimeout = 86400;
         syncInterval = 3600;
