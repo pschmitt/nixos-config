@@ -5,8 +5,11 @@ receives with it, so this server never consumes incoming messages.
 """
 
 import argparse
+import base64
 import itertools
 import json
+import mimetypes
+import pathlib
 import urllib.error
 import urllib.request
 
@@ -39,16 +42,37 @@ def rpc(method, params=None):
     return payload.get("result")
 
 
+def data_uri(path):
+    """Inline a local file: the daemon runs on another host and cannot read it."""
+    file = pathlib.Path(path).expanduser()
+    if not file.is_file():
+        raise ValueError(f"attachment not found: {path}")
+    mime = mimetypes.guess_type(file.name)[0] or "application/octet-stream"
+    data = base64.b64encode(file.read_bytes()).decode()
+    return f"data:{mime};filename={file.name};base64,{data}"
+
+
 @mcp.tool()
-def send_message(message: str, recipient: str = "", group_id: str = "") -> str:
-    """Send a Signal message from the bot account.
+def send_message(
+    message: str = "",
+    recipient: str = "",
+    group_id: str = "",
+    attachments: list[str] | None = None,
+) -> str:
+    """Send a Signal message from the bot account, optionally with files.
 
     Give either `recipient` (phone number in +E.164 form, or a UUID) or
-    `group_id` (from list_groups). Messages leave as the Hermes bot account.
+    `group_id` (from list_groups). `attachments` are paths of files on this
+    machine (images, PDFs, ...); `message` may be empty when sending files.
+    Messages leave as the Hermes bot account.
     """
     if bool(recipient) == bool(group_id):
         raise ValueError("pass exactly one of recipient or group_id")
+    if not message and not attachments:
+        raise ValueError("pass a message, attachments, or both")
     params = {"message": message}
+    if attachments:
+        params["attachments"] = [data_uri(a) for a in attachments]
     if group_id:
         params["groupId"] = group_id
     else:
