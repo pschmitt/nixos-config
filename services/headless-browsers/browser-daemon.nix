@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, lib, ... }:
 let
   hosts = config.domains.meshHosts "browser";
   meshNodes = [
@@ -25,7 +25,10 @@ in
     mode = "0440";
     # Read once at startup: a rotated secret needs the daemon restarted (its
     # sessions survive that).
-    restartUnits = [ "browser-daemon.service" ];
+    restartUnits = [
+      "browser-daemon.service"
+    ]
+    ++ lib.optional config.services.browser-daemon.secretAgent.enable "browser-daemon-secret-agent.service";
   };
 
   services = {
