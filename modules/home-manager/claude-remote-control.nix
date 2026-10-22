@@ -46,7 +46,8 @@ in
 
     configDir = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
-      default = null;
+      default = config.programs.claude-code.configDir;
+      defaultText = lib.literalExpression "config.programs.claude-code.configDir";
       description = "Override CLAUDE_CONFIG_DIR (and ANTHROPIC_CONFIG_DIR) for the remote control service.";
     };
 

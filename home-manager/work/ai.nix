@@ -39,7 +39,7 @@ in
     # "claude-code-home-manager" personal plugin. Symlink that same plugin
     # in here so claude-work gets the same MCP servers.
     ".config/claude-work/skills/claude-code-home-manager".source =
-      config.lib.file.mkOutOfStoreSymlink "${config.xdg.configHome}/claude/skills/claude-code-home-manager";
+      config.lib.file.mkOutOfStoreSymlink "${config.programs.claude-code.configDir}/skills/claude-code-home-manager";
   };
 
   home.packages = [ claudeWork ];
