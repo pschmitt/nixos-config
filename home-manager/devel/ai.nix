@@ -55,6 +55,17 @@ let
     '';
   };
 
+  # SessionStart hook: names the agent's tmux window after the project dir.
+  claudeTmuxRename = pkgs.writeShellApplication {
+    name = "claude-tmux-rename";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.tmux
+    ];
+    text = builtins.readFile ./scripts/claude-tmux-rename.sh;
+  };
+
   # One browser MCP for every node and profile: `browser-daemon mcp` runs Playwright
   # MCP on a browser-daemon node, a throwaway browser on the node with the most room
   # unless the agent asks otherwise (`browser_use`). Profiles keep their logins;
@@ -299,6 +310,21 @@ in
             type = "command";
             command = lib.getExe claudeStatusline;
           };
+          hooks.SessionStart = [
+            {
+              hooks = [
+                {
+                  type = "command";
+                  command = lib.getExe claudeTmuxRename;
+                }
+              ];
+            }
+          ];
+        };
+        # Keep the tmux tools loaded up front: deferred (ToolSearch) tools were
+        # skipped for the window rename. Overrides the shared server for Claude only.
+        mcpServers.tmux = config.programs.mcp.servers.tmux // {
+          alwaysLoad = true;
         };
         rules = {
           context = ./CONTEXT.md;
@@ -492,6 +518,7 @@ in
         ++ [
           browserAgentTopic
           claudeStatusline
+          claudeTmuxRename
         ];
     };
   };
