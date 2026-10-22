@@ -24,10 +24,15 @@
     master.bitwarden-cli
   ];
 
-  # rbw itself is installed by programs.rbw.declarative below (same
-  # derivation as the `rbw` overlay in overlays/rbw.nix).
+  # Desktop sessions include the optional native GTK unlock dialog.
+  # Other hosts keep the smaller CLI package from the rbw overlay.
   programs.rbw.declarative = {
     enable = true;
+    package =
+      if guiEnable && pkgs.stdenv.hostPlatform.isLinux then
+        inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-gtk
+      else
+        pkgs.rbw;
     settings = {
       primaryAccount = "default";
       browser.clients = lib.mkIf guiEnable {
