@@ -122,12 +122,12 @@ let
   };
   browserMcps = lib.listToAttrs (
     map (host: {
-      name = "browser-${host}";
+      name = "browser-daemon-${host}";
       value = {
         command = lib.getExe browserMcpWrapper;
         args = [
           "browser.${host}.${config.domains.netbird}"
-          "${config.services.hermes-agent.stateDir}/playwright-mcp/browser-${host}"
+          "${config.services.hermes-agent.stateDir}/playwright-mcp/browser-daemon-${host}"
         ];
         connect_timeout = 30;
         timeout = 90;
@@ -414,7 +414,7 @@ in
           };
         };
         mcp_servers = {
-          n8n = {
+          n8n-mcp = {
             url = "https://n8n.${config.domains.main}/mcp-server/http";
             headers.Authorization = "Bearer \${MCP_N8N_API_KEY}";
             connect_timeout = 30;
