@@ -15,6 +15,7 @@
     ./disk-config.nix
     ./hardware-configuration.nix
     ./home-manager.nix
+    ./hypruse-remote.nix
     ./memory-snapshot.nix
     ./monit.nix
     ./networking.nix
