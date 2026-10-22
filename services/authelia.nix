@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
@@ -11,6 +12,17 @@ let
   autheliaService = "authelia-${instanceName}.service";
   autheliaPort = 28843;
   stateDir = "/var/lib/${autheliaUser}";
+  # Go-webauthn latches clone_warning for good once a sign count fails to
+  # advance, and Authelia never clears it. This resets it (with a backup).
+  unfuck = pkgs.writeShellApplication {
+    name = "authelia-passkey-unfuck";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.sqlite
+    ];
+    text = builtins.readFile ./scripts/authelia-passkey-unfuck.sh;
+  };
   secretsAttrs =
     owner:
     config.sops.mkHostSecret {
@@ -124,246 +136,250 @@ let
   };
 in
 {
-  config.sops = {
-    secrets = {
-      "authelia/jwt-secret" = secretsAttrs autheliaUser;
-      "authelia/storage-encryption-key" = secretsAttrs autheliaUser;
-      "authelia/users-database" = secretsAttrs autheliaUser;
-      "authelia/duo/hostname" = secretsAttrs autheliaUser;
-      "authelia/duo/integration-key" = secretsAttrs autheliaUser;
-      "authelia/duo/secret-key" = secretsAttrs autheliaUser;
-      "authelia/smtp/address" = secretsAttrs autheliaUser;
-      "authelia/smtp/username" = secretsAttrs autheliaUser;
-      "authelia/smtp/password" = secretsAttrs autheliaUser;
-      "authelia/smtp/sender" = secretsAttrs autheliaUser;
-      # OIDC provider (identity_providers.oidc): the HMAC secret and the JWKS
-      # issuer private key are wired via the module's secrets.oidc*File options;
-      # the per-client secret hash is rendered into the oidc.yml template below.
-      "authelia/oidc-hmac-secret" = secretsAttrs autheliaUser;
-      "authelia/oidc-issuer-private-key" = secretsAttrs autheliaUser;
-      "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
-      "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
-      "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
-      "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
-      "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
-    };
-    templates = {
-      "authelia/duo.yml" = {
-        content = ''
-          duo_api:
-            disable: false
-            hostname: ${config.sops.placeholder."authelia/duo/hostname"}
-            integration_key: ${config.sops.placeholder."authelia/duo/integration-key"}
-            secret_key: ${config.sops.placeholder."authelia/duo/secret-key"}
-            enable_self_enrollment: true
-        '';
-        owner = autheliaUser;
-        group = autheliaGroup;
-        mode = "0400";
-        restartUnits = [ autheliaService ];
-      };
-      "authelia/smtp.yml" = {
-        content = ''
-          notifier:
-            smtp:
-              address: ${config.sops.placeholder."authelia/smtp/address"}
-              username: ${config.sops.placeholder."authelia/smtp/username"}
-              password: ${config.sops.placeholder."authelia/smtp/password"}
-              sender: ${config.sops.placeholder."authelia/smtp/sender"}
-        '';
-        owner = autheliaUser;
-        group = autheliaGroup;
-        mode = "0400";
-        restartUnits = [ autheliaService ];
-      };
-      # OIDC clients live in their own settings file so the per-client secret
-      # hash stays in sops. hmac_secret + jwks come from the module's
-      # secrets.oidc*File options; this only adds the clients list. New OIDC
-      # apps get another entry here (+ a secret hash + redirect URIs).
-      "authelia/oidc.yml" = {
-        content = ''
-          identity_providers:
-            oidc:
-              clients:
-                - client_id: 'audiobookshelf'
-                  client_name: 'Audiobookshelf'
-                  client_secret: '${config.sops.placeholder."authelia/oidc-audiobookshelf-secret-hash"}'
-                  public: false
-                  authorization_policy: 'two_factor'
-                  require_pkce: true
-                  pkce_challenge_method: 'S256'
-                  redirect_uris:
-                    # ABS is served under the /audiobookshelf sub-path, so its
-                    # redirect_uri carries that prefix; root variants kept as a
-                    # fallback in case the sub-path is dropped later.
-                    - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/callback'
-                    - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/mobile-redirect'
-                    - 'https://abs.${config.domains.main}/auth/openid/callback'
-                    - 'https://abs.${config.domains.main}/auth/openid/mobile-redirect'
-                    # Native ABS mobile app (Android/iOS) custom-scheme redirect.
-                    - 'audiobookshelf://oauth'
-                  scopes:
-                    - 'openid'
-                    - 'profile'
-                    - 'groups'
-                    - 'email'
-                  response_types:
-                    - 'code'
-                  grant_types:
-                    - 'authorization_code'
-                  access_token_signed_response_alg: 'none'
-                  userinfo_signed_response_alg: 'none'
-                  token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
-                - client_id: 'filebrowser-quantum'
-                  client_name: 'FileBrowser Quantum'
-                  client_secret: '${config.sops.placeholder."authelia/oidc-filebrowser-secret-hash"}'
-                  public: false
-                  authorization_policy: 'two_factor'
-                  # FileBrowser Quantum's OIDC client doesn't send a
-                  # code_challenge (confirmed by Authelia rejecting the
-                  # authorization request with "Clients must include a
-                  # 'code_challenge'... but it is missing" once PKCE was
-                  # required), unlike audiobookshelf above.
-                  require_pkce: false
-                  redirect_uris:
-                    - 'https://files.${config.domains.main}/api/auth/oidc/callback'
-                  scopes:
-                    - 'openid'
-                    - 'profile'
-                    - 'groups'
-                    - 'email'
-                  response_types:
-                    - 'code'
-                  grant_types:
-                    - 'authorization_code'
-                  access_token_signed_response_alg: 'none'
-                  userinfo_signed_response_alg: 'none'
-                  # FileBrowser Quantum's OIDC client sends the secret via
-                  # client_secret_post (confirmed by the token-exchange
-                  # error when this was set to client_secret_basic, unlike
-                  # audiobookshelf above), not a configurable option there.
-                  token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
-                - client_id: 'monarch'
-                  client_name: 'Monarch'
-                  client_secret: '${config.sops.placeholder."authelia/oidc-monarch-secret-hash"}'
-                  public: false
-                  authorization_policy: 'two_factor'
-                  require_pkce: true
-                  pkce_challenge_method: 'S256'
-                  redirect_uris:
-                    - 'https://monarch.${config.domains.main}/api/auth/oidc/callback'
-                  scopes:
-                    - 'openid'
-                    - 'profile'
-                    - 'groups'
-                    - 'email'
-                  response_types:
-                    - 'code'
-                  grant_types:
-                    - 'authorization_code'
-                  access_token_signed_response_alg: 'none'
-                  userinfo_signed_response_alg: 'none'
-                  token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
-                - client_id: 'nextcloud'
-                  client_name: 'Nextcloud'
-                  client_secret: '${config.sops.placeholder."authelia/oidc-nextcloud-secret-hash"}'
-                  public: false
-                  authorization_policy: 'two_factor'
-                  require_pkce: true
-                  pkce_challenge_method: 'S256'
-                  redirect_uris:
-                    - 'https://c.${config.domains.main}/apps/user_oidc/code'
-                  scopes:
-                    - 'openid'
-                    - 'profile'
-                    - 'email'
-                    - 'groups'
-                  response_types:
-                    - 'code'
-                  grant_types:
-                    - 'authorization_code'
-                  access_token_signed_response_alg: 'none'
-                  userinfo_signed_response_alg: 'none'
-                  token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
-                - client_id: 'wallos'
-                  client_name: 'Wallos'
-                  client_secret: '${config.sops.placeholder."authelia/oidc-wallos-secret-hash"}'
-                  public: false
-                  authorization_policy: 'two_factor'
-                  # Wallos v5.10's authorization-code exchange does not use PKCE.
-                  require_pkce: false
-                  redirect_uris:
-                    - 'https://subs.${config.domains.main}/index.php'
-                  scopes:
-                    - 'openid'
-                    - 'profile'
-                    - 'email'
-                  response_types:
-                    - 'code'
-                  grant_types:
-                    - 'authorization_code'
-                  access_token_signed_response_alg: 'none'
-                  userinfo_signed_response_alg: 'none'
-                  # Wallos sends the secret in the form body during token exchange.
-                  token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
-        '';
-        owner = autheliaUser;
-        group = autheliaGroup;
-        mode = "0400";
-        restartUnits = [ autheliaService ];
-      };
-    };
-  };
-
-  config.services = {
-    authelia.instances.${instanceName} = {
-      enable = true;
-      user = autheliaUser;
-      group = autheliaGroup;
-      settingsFiles = [
-        config.sops.templates."authelia/duo.yml".path
-        config.sops.templates."authelia/smtp.yml".path
-        config.sops.templates."authelia/oidc.yml".path
-      ];
+  config = {
+    sops = {
       secrets = {
-        jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
-        storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
-        # Enables the OIDC provider: HMAC via env, and the module templates the
-        # JWKS issuer key into the generated oidc-jwks config file.
-        oidcHmacSecretFile = config.sops.secrets."authelia/oidc-hmac-secret".path;
-        oidcIssuerPrivateKeyFile = config.sops.secrets."authelia/oidc-issuer-private-key".path;
+        "authelia/jwt-secret" = secretsAttrs autheliaUser;
+        "authelia/storage-encryption-key" = secretsAttrs autheliaUser;
+        "authelia/users-database" = secretsAttrs autheliaUser;
+        "authelia/duo/hostname" = secretsAttrs autheliaUser;
+        "authelia/duo/integration-key" = secretsAttrs autheliaUser;
+        "authelia/duo/secret-key" = secretsAttrs autheliaUser;
+        "authelia/smtp/address" = secretsAttrs autheliaUser;
+        "authelia/smtp/username" = secretsAttrs autheliaUser;
+        "authelia/smtp/password" = secretsAttrs autheliaUser;
+        "authelia/smtp/sender" = secretsAttrs autheliaUser;
+        # OIDC provider (identity_providers.oidc): the HMAC secret and the JWKS
+        # issuer private key are wired via the module's secrets.oidc*File options;
+        # the per-client secret hash is rendered into the oidc.yml template below.
+        "authelia/oidc-hmac-secret" = secretsAttrs autheliaUser;
+        "authelia/oidc-issuer-private-key" = secretsAttrs autheliaUser;
+        "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
       };
-      settings = autheliaSettings;
+      templates = {
+        "authelia/duo.yml" = {
+          content = ''
+            duo_api:
+              disable: false
+              hostname: ${config.sops.placeholder."authelia/duo/hostname"}
+              integration_key: ${config.sops.placeholder."authelia/duo/integration-key"}
+              secret_key: ${config.sops.placeholder."authelia/duo/secret-key"}
+              enable_self_enrollment: true
+          '';
+          owner = autheliaUser;
+          group = autheliaGroup;
+          mode = "0400";
+          restartUnits = [ autheliaService ];
+        };
+        "authelia/smtp.yml" = {
+          content = ''
+            notifier:
+              smtp:
+                address: ${config.sops.placeholder."authelia/smtp/address"}
+                username: ${config.sops.placeholder."authelia/smtp/username"}
+                password: ${config.sops.placeholder."authelia/smtp/password"}
+                sender: ${config.sops.placeholder."authelia/smtp/sender"}
+          '';
+          owner = autheliaUser;
+          group = autheliaGroup;
+          mode = "0400";
+          restartUnits = [ autheliaService ];
+        };
+        # OIDC clients live in their own settings file so the per-client secret
+        # hash stays in sops. hmac_secret + jwks come from the module's
+        # secrets.oidc*File options; this only adds the clients list. New OIDC
+        # apps get another entry here (+ a secret hash + redirect URIs).
+        "authelia/oidc.yml" = {
+          content = ''
+            identity_providers:
+              oidc:
+                clients:
+                  - client_id: 'audiobookshelf'
+                    client_name: 'Audiobookshelf'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-audiobookshelf-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      # ABS is served under the /audiobookshelf sub-path, so its
+                      # redirect_uri carries that prefix; root variants kept as a
+                      # fallback in case the sub-path is dropped later.
+                      - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/callback'
+                      - 'https://abs.${config.domains.main}/audiobookshelf/auth/openid/mobile-redirect'
+                      - 'https://abs.${config.domains.main}/auth/openid/callback'
+                      - 'https://abs.${config.domains.main}/auth/openid/mobile-redirect'
+                      # Native ABS mobile app (Android/iOS) custom-scheme redirect.
+                      - 'audiobookshelf://oauth'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'groups'
+                      - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                  - client_id: 'filebrowser-quantum'
+                    client_name: 'FileBrowser Quantum'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-filebrowser-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    # FileBrowser Quantum's OIDC client doesn't send a
+                    # code_challenge (confirmed by Authelia rejecting the
+                    # authorization request with "Clients must include a
+                    # 'code_challenge'... but it is missing" once PKCE was
+                    # required), unlike audiobookshelf above.
+                    require_pkce: false
+                    redirect_uris:
+                      - 'https://files.${config.domains.main}/api/auth/oidc/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'groups'
+                      - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    # FileBrowser Quantum's OIDC client sends the secret via
+                    # client_secret_post (confirmed by the token-exchange
+                    # error when this was set to client_secret_basic, unlike
+                    # audiobookshelf above), not a configurable option there.
+                    token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                  - client_id: 'monarch'
+                    client_name: 'Monarch'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-monarch-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://monarch.${config.domains.main}/api/auth/oidc/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'groups'
+                      - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                  - client_id: 'nextcloud'
+                    client_name: 'Nextcloud'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-nextcloud-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://c.${config.domains.main}/apps/user_oidc/code'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                      - 'groups'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                  - client_id: 'wallos'
+                    client_name: 'Wallos'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-wallos-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    # Wallos v5.10's authorization-code exchange does not use PKCE.
+                    require_pkce: false
+                    redirect_uris:
+                      - 'https://subs.${config.domains.main}/index.php'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    # Wallos sends the secret in the form body during token exchange.
+                    token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+          '';
+          owner = autheliaUser;
+          group = autheliaGroup;
+          mode = "0400";
+          restartUnits = [ autheliaService ];
+        };
+      };
     };
 
-    nginx.virtualHosts.${autheliaDomain} = {
-      enableACME = true;
-      forceSSL = true;
-      locations."/" = {
-        proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
-        proxyWebsockets = true;
-        recommendedProxySettings = true;
-        # Allow auth.brkn.lol to be embedded in the HA sidebar iframe.
-        # Authelia sends X-Frame-Options: DENY and frame-ancestors 'none' by
-        # default; strip both and replace with a targeted CSP.
-        extraConfig = ''
-          proxy_hide_header X-Frame-Options;
-          proxy_hide_header Content-Security-Policy;
-          add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self'; frame-ancestors 'self' https://ha.${config.domains.main}; frame-src 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline';" always;
-        '';
-      };
-    };
+    environment.systemPackages = [ unfuck ];
 
-    monit.checks = {
-      authelia = {
-        type = "host";
-        address = "127.0.0.1";
-        group = "services";
-        restartUnit = "${autheliaService}";
-        conditions = ''
-          if failed port ${toString autheliaPort} for 3 cycles then restart
-          if 3 restarts within 15 cycles then alert
-        '';
+    services = {
+      authelia.instances.${instanceName} = {
+        enable = true;
+        user = autheliaUser;
+        group = autheliaGroup;
+        settingsFiles = [
+          config.sops.templates."authelia/duo.yml".path
+          config.sops.templates."authelia/smtp.yml".path
+          config.sops.templates."authelia/oidc.yml".path
+        ];
+        secrets = {
+          jwtSecretFile = config.sops.secrets."authelia/jwt-secret".path;
+          storageEncryptionKeyFile = config.sops.secrets."authelia/storage-encryption-key".path;
+          # Enables the OIDC provider: HMAC via env, and the module templates the
+          # JWKS issuer key into the generated oidc-jwks config file.
+          oidcHmacSecretFile = config.sops.secrets."authelia/oidc-hmac-secret".path;
+          oidcIssuerPrivateKeyFile = config.sops.secrets."authelia/oidc-issuer-private-key".path;
+        };
+        settings = autheliaSettings;
+      };
+
+      nginx.virtualHosts.${autheliaDomain} = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:${toString autheliaPort}/";
+          proxyWebsockets = true;
+          recommendedProxySettings = true;
+          # Allow auth.brkn.lol to be embedded in the HA sidebar iframe.
+          # Authelia sends X-Frame-Options: DENY and frame-ancestors 'none' by
+          # default; strip both and replace with a targeted CSP.
+          extraConfig = ''
+            proxy_hide_header X-Frame-Options;
+            proxy_hide_header Content-Security-Policy;
+            add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; connect-src 'self'; frame-ancestors 'self' https://ha.${config.domains.main}; frame-src 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline';" always;
+          '';
+        };
+      };
+
+      monit.checks = {
+        authelia = {
+          type = "host";
+          address = "127.0.0.1";
+          group = "services";
+          restartUnit = "${autheliaService}";
+          conditions = ''
+            if failed port ${toString autheliaPort} for 3 cycles then restart
+            if 3 restarts within 15 cycles then alert
+          '';
+        };
       };
     };
   };
