@@ -33,6 +33,11 @@ in
         mode = "0400";
         restartUnits = [ "${containerBackend}-trek.service" ];
       };
+
+      "trek/oidc-client-secret" = config.sops.mkHostSecret {
+        mode = "0400";
+        restartUnits = [ "${containerBackend}-trek.service" ];
+      };
     };
 
     templates."trek/env" = {
@@ -41,6 +46,11 @@ in
         ALLOWED_ORIGINS=https://${trekHost}
         APP_URL=https://${trekHost}
         TRUST_PROXY=1
+        OIDC_ISSUER=https://auth.${config.domains.main}
+        OIDC_CLIENT_ID=trek
+        OIDC_CLIENT_SECRET=${config.sops.placeholder."trek/oidc-client-secret"}
+        OIDC_DISPLAY_NAME=Authelia
+        OIDC_SCOPE=openid email profile groups
         TZ=${config.time.timeZone}
         SMTP_HOST=mail.${config.domains.main}
         SMTP_PORT=465

@@ -159,6 +159,7 @@ in
         "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-trek-secret-hash" = secretsAttrs autheliaUser;
       };
       templates = {
         "authelia/duo.yml" = {
@@ -319,6 +320,27 @@ in
                     userinfo_signed_response_alg: 'none'
                     # Wallos sends the secret in the form body during token exchange.
                     token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                  - client_id: 'trek'
+                    client_name: 'TREK'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-trek-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://trek.${config.domains.main}/api/auth/oidc/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                      - 'groups'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
           '';
           owner = autheliaUser;
           group = autheliaGroup;
