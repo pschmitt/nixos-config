@@ -97,6 +97,19 @@ jobs:
           needed="$(python3 .github/workflows/scripts/ci-scope.py --classify-only)"
           echo "needed=${needed}" >> "$GITHUB_OUTPUT"
 
+      - name: Set up SSH stores
+        if: steps.scope.outputs.needed == 'true'
+        uses: ./.github/actions/nix-ssh
+        with:
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
+
+      - name: Set up evaluation emulation
+        if: steps.scope.outputs.needed == 'true'
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
       - name: Set up Nix
         if: steps.scope.outputs.needed == 'true'
         uses: ./.github/actions/nix-setup
@@ -129,7 +142,7 @@ jobs:
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
       - name: Save evaluated derivations
-        if: steps.scope.outputs.needed == 'true'
+        if: ${{ !cancelled() && steps.scope.outputs.needed == 'true' }}
         uses: actions/cache/save@v6
         continue-on-error: true
         with:
@@ -158,33 +171,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -212,10 +203,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
               --pkg '${{ matrix.pkg.name }}' \
               --system '${{ matrix.system }}' \
@@ -245,33 +232,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -317,10 +282,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
               --pkg '${{ matrix.pkg.name }}' \
               --system '${{ matrix.system }}' \
@@ -349,33 +310,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -471,10 +410,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
               --pkg '${{ matrix.pkg.name }}' \
               --system '${{ matrix.system }}' \
@@ -515,33 +450,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -592,11 +505,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            # DEBUG
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
               --host '${{ matrix.host }}' \
               --copy
@@ -637,33 +545,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-              sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -786,11 +672,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            # DEBUG
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
               --host '${{ matrix.host }}' \
               --copy
@@ -824,33 +705,11 @@ jobs:
         with:
           nix-conf: ${{ env.nix-conf }}
 
-      - name: Store SSH key on disk
-        run: |-
-          mkdir -p "${HOME}/.ssh"
-          KEY_PATH="${HOME}/.ssh/id_ed25519"
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > "$KEY_PATH"
-          chmod 400 "$KEY_PATH"
-
-          # GitHub runners (Azure) drop TCP flows idle for ~4 minutes, which
-          # kills remote builds that go quiet (e.g. rustc linking the final
-          # crate) with "unexpected end-of-file". Keep the connection
-          # alive; system-wide since the root nix-daemon opens it.
-          sudo tee /etc/ssh/ssh_config.d/99-keepalive.conf >/dev/null <<'SSHCONF'
-          Host *
-            ServerAliveInterval 30
-            ServerAliveCountMax 10
-          SSHCONF
-
-      - name: Setup known_hosts
-        uses: nick-fields/retry@v4
+      - name: Set up SSH stores
+        uses: ./.github/actions/nix-ssh
         with:
-          timeout_minutes: 1
-          max_attempts: 3
-          shell: bash
-          command: |
-            set -o pipefail
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol | \
-             sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
+          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
 
       - name: Check retained remote output
         id: cache
@@ -877,10 +736,6 @@ jobs:
           timeout_minutes: 10
           max_attempts: 3
           command: |
-            ssh-keyscan "${{ secrets.SSH_HOST }}" cache.rofl-14.brkn.lol
-            echo "Known hosts:"
-            cat /etc/ssh/ssh_known_hosts
-
             ./.github/workflows/scripts/ci-build.sh \
              --droid '${{ matrix.droid }}' \
              --copy

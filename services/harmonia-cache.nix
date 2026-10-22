@@ -19,6 +19,7 @@ let
     runtimeInputs = [
       config.nix.package
       pkgs.bash
+      pkgs.git
       pkgs.jq
       pkgs.openssh
     ];
@@ -26,6 +27,7 @@ let
       export NIX_BIN=${config.nix.package}/bin/nix
       export NIX_CACHE_HTTP_URL=https://cache.${config.networking.hostName}.${config.domains.main}
       export NIX_CACHE_RETAIN=${lib.getExe retain}
+      export NIX_CACHE_SIGN_KEY=${config.sops.secrets."nix/store/privkey".path}
       export NIX_CACHE_REPLICA=${lib.escapeShellArg "nix-remote-builder@${cfg.replicaHost}"}
       export NIX_SSHOPTS="-i ${
         config.sops.secrets."ssh/nix-remote-builder/privkey".path

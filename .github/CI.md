@@ -43,6 +43,10 @@ for another workflow. The merge workflow only executes default-branch code. Main
 not trigger redundant merge checks. Updater workflows have bounded timeouts and
 serialize overlapping scheduled/manual runs without interrupting active updates.
 
+Matrix evaluation has authenticated SSH access and ARM emulation for Android
+import-from-derivation helpers. Successful derivation snapshots are saved even
+when a different target fails.
+
 CI first checks the primary store on rofl-14. A cache hit is retained remotely
 without building or downloading its closure to the runner; proprietary-source,
 QEMU and Netbird setup are skipped where unnecessary. Cache misses are signed,

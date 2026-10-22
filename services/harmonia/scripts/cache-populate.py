@@ -49,6 +49,11 @@ def replicate(state):
             continue
         try:
             store = f"ssh://{REPLICA}"
+            # HTTP narinfos are signed by Harmonia on demand. Also persist the
+            # primary's signatures for direct SSH copies of third-party paths.
+            subprocess.run([NIX, "store", "sign", "--recursive", "--key-file",
+                            os.environ["NIX_CACHE_SIGN_KEY"], *record["paths"]],
+                           check=True, timeout=300)
             closure = command(
                 NIX, "path-info", "--json", "--recursive", *record["paths"]
             )

@@ -20,7 +20,9 @@ The root-owned `nix-cache-populate` service on rofl-14:
   per pass, preserving its cursor across commits. Existing outputs are retained
   without rebuilding; missing outputs are built one at a time with two cores.
 - Pauses missing builds/copies below 15 GiB available space on either node.
-- Replicates retained main closures directly to rofl-13 and creates roots there.
+- Signs complete retained main closures with the primary’s runtime key, then
+  replicates them directly to rofl-13 and creates roots there. The key remains
+  on the cache host.
   PR outputs stay on the primary to bound replica storage.
 - Imports a small canary closure through HTTP into an empty temporary store and
   verifies its contents and signatures. The temporary store is removed afterward.
