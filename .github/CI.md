@@ -7,6 +7,9 @@ its checkout. It uses paths, not PR authors or titles, to select targets:
 - Files inside a known package directory: build that package on its supported
   architectures and evaluate every host, without building host closures.
 - Files inside a known host directory: build that host and evaluate every host.
+- Service-only changes (including container tag bumps): compare evaluated host
+  and Android derivations against the base and build only changed systems;
+  skip the standalone package matrix.
 - Shared definitions, lock files, workflows, unknown paths, or manual runs:
   evaluate and build all targets.
 - Draft PRs: defer the build workflow until ready for review.

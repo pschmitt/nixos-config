@@ -7,13 +7,8 @@ export NIX_CONFIG="accept-flake-config = true${NIX_CONFIG:+ $NIX_CONFIG}"
 JSON_NIXOS_CONFIGS_X86_64='[]'
 JSON_NIXOS_CONFIGS_AARCH64='[]'
 
-nix_host_architecture() {
-  local host="$1"
-  nix eval --raw ".#nixosConfigurations.${host}.config.nixpkgs.system"
-}
-
 list_nixos_configurations() {
-  nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.attrNames configs'
+  nix eval --json '.#nixosConfigurations' --apply 'configs: builtins.mapAttrs (_: c: c.config.nixpkgs.system) configs'
 }
 
 list_package_names() {
@@ -149,16 +144,16 @@ categorize_packages "$PACKAGE_METADATA_X86_64_JSON" "PKGS_X86_64"
 categorize_packages "$PACKAGE_METADATA_AARCH64_JSON" "PKGS_AARCH64"
 
 NIXOS_CONFIGS_JSON="$(list_nixos_configurations)"
-if ! jq -e 'type == "array"' <<< "$NIXOS_CONFIGS_JSON" >/dev/null
+if ! jq -e 'type == "object"' <<< "$NIXOS_CONFIGS_JSON" >/dev/null
 then
   echo "Failed to list nixosConfigurations" >&2
   exit 1
 fi
 
-mapfile -t NIXOS_CONFIGS < <(jq -er '.[]' <<< "$NIXOS_CONFIGS_JSON")
+mapfile -t NIXOS_CONFIGS < <(jq -er 'keys[]' <<< "$NIXOS_CONFIGS_JSON")
 for h in "${NIXOS_CONFIGS[@]}"
 do
-  case "$(nix_host_architecture "$h")" in
+  case "$(jq -r --arg host "$h" ' .[$host]' <<< "$NIXOS_CONFIGS_JSON")" in
     x86_64-linux)
       JSON_NIXOS_CONFIGS_X86_64=$(jq -cn \
         --argjson arr "$JSON_NIXOS_CONFIGS_X86_64" \

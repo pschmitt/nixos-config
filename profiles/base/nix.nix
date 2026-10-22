@@ -35,9 +35,9 @@
       !include ${config.sops.templates.nix-access-token-github.path}
     '';
 
-    # This will add each flake input as a registry
-    # To make nix3 commands consistent with your flake
-    registry = lib.mapAttrs (_: value: { flake = value; }) inputs;
+    # Register dependencies, but not this checkout: a self entry also places
+    # the entire repository in nix-path and changes every system on every edit.
+    registry = lib.mapAttrs (_: value: { flake = value; }) (builtins.removeAttrs inputs [ "self" ]);
 
     gc = {
       automatic = true;
