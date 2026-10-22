@@ -109,8 +109,6 @@ in
       cmd = [
         "schedule"
         "--foreground"
-        "--update"
-        "--every=day"
       ];
       environment.TIMEOUT = "120";
       networks = [ "archivebox_default" ];
