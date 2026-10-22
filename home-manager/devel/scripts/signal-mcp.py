@@ -148,8 +148,8 @@ PLACEHOLDER = "\ufffc"
 def prepare_text(message, styled):
     """Split a message into (text, text styles, mentions).
 
-    @{name} mentions a group member (name: a list_recipients name, number or
-    UUID); Signal wants a placeholder character at the mention's position.
+    @{name} mentions someone (name: a list_recipients name, number or UUID);
+    Signal wants a placeholder character at the mention's position.
     """
     names = MENTION.findall(message)
     text = MENTION.sub(PLACEHOLDER, message)
@@ -217,8 +217,9 @@ def send_message(
     Markdown-ish markers become Signal text styles: **bold**, *italic*,
     ~~strikethrough~~, ||spoiler||, `monospace` and ```fenced monospace```
     (Signal has no real code block). Styles nest, code is literal, and a
-    backslash escapes a marker. `@{name}` mentions a group member (name as
-    for `recipient`; groups only). Messages leave as the Hermes bot account.
+    backslash escapes a marker. `@{name}` mentions someone (name as for
+    `recipient`; shown as a highlighted @contact name, also in a 1:1 chat).
+    Messages leave as the Hermes bot account.
 
     To reply to a message, pass `quote_timestamp` and `quote_author` (a name
     or number, `self` for the bot's own messages; `quote_message` is the
