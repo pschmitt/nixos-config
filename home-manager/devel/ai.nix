@@ -250,6 +250,12 @@ in
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
+        # The bot account's own number, behind `self` (quote or react to its
+        # own messages).
+        "signal/self" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
         # MCP uses the same host-specific Philipp Schmitt PAT:
         # `nixos-config (<HOSTNAME>)`.
         "home-assistant/token" = {
@@ -290,6 +296,8 @@ in
             "http://rofl-10.${config.domains.netbird}:8712"
             "--recipient"
             "me=${config.sops.secrets."signal/me".path}"
+            "--recipient"
+            "self=${config.sops.secrets."signal/self".path}"
           ];
         };
         slack = {
