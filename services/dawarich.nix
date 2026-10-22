@@ -21,23 +21,53 @@ let
   ];
 in
 {
-  sops.secrets."compose/dawarich/database-password" = config.sops.mkHostSecret {
-    restartUnits = map (name: "${backend}-${name}.service") [
-      "dawarich"
-      "dawarich-postgres"
-      "dawarich-sidekiq"
-    ];
+  sops.secrets = {
+    "compose/dawarich/database-password" = config.sops.mkHostSecret {
+      restartUnits = map (name: "${backend}-${name}.service") [
+        "dawarich"
+        "dawarich-postgres"
+        "dawarich-sidekiq"
+      ];
+    };
+
+    "compose/dawarich/oidc-client-id" = config.sops.mkHostSecret {
+      restartUnits = map (name: "${backend}-${name}.service") [
+        "dawarich"
+        "dawarich-sidekiq"
+      ];
+    };
+
+    "compose/dawarich/oidc-client-secret" = config.sops.mkHostSecret {
+      restartUnits = map (name: "${backend}-${name}.service") [
+        "dawarich"
+        "dawarich-sidekiq"
+      ];
+    };
   };
 
   sops.templates = {
     "compose/dawarich.env".content = ''
       DATABASE_PASSWORD=${config.sops.placeholder."compose/dawarich/database-password"}
+      OIDC_CLIENT_ID=${config.sops.placeholder."compose/dawarich/oidc-client-id"}
+      OIDC_CLIENT_SECRET=${config.sops.placeholder."compose/dawarich/oidc-client-secret"}
+      OIDC_ISSUER=https://auth.${config.domains.main}
+      OIDC_REDIRECT_URI=https://dawarich.${config.domains.main}/users/auth/openid_connect/callback
+      OIDC_PROVIDER_NAME=Authelia
+      OIDC_AUTO_REGISTER=false
+      ALLOW_EMAIL_PASSWORD_LOGIN=true
     '';
     "compose/dawarich-postgres.env".content = ''
       POSTGRES_PASSWORD=${config.sops.placeholder."compose/dawarich/database-password"}
     '';
     "compose/dawarich-sidekiq.env".content = ''
       DATABASE_PASSWORD=${config.sops.placeholder."compose/dawarich/database-password"}
+      OIDC_CLIENT_ID=${config.sops.placeholder."compose/dawarich/oidc-client-id"}
+      OIDC_CLIENT_SECRET=${config.sops.placeholder."compose/dawarich/oidc-client-secret"}
+      OIDC_ISSUER=https://auth.${config.domains.main}
+      OIDC_REDIRECT_URI=https://dawarich.${config.domains.main}/users/auth/openid_connect/callback
+      OIDC_PROVIDER_NAME=Authelia
+      OIDC_AUTO_REGISTER=false
+      ALLOW_EMAIL_PASSWORD_LOGIN=true
     '';
   };
 

@@ -155,6 +155,7 @@ in
         "authelia/oidc-hmac-secret" = secretsAttrs autheliaUser;
         "authelia/oidc-issuer-private-key" = secretsAttrs autheliaUser;
         "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-dawarich-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
@@ -221,6 +222,26 @@ in
                       - 'profile'
                       - 'groups'
                       - 'email'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    access_token_signed_response_alg: 'none'
+                    userinfo_signed_response_alg: 'none'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                  - client_id: '${config.sops.placeholder."compose/dawarich/oidc-client-id"}'
+                    client_name: 'Dawarich'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-dawarich-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    require_pkce: false
+                    redirect_uris:
+                      - 'https://dawarich.${config.domains.main}/users/auth/openid_connect/callback'
+                    scopes:
+                      - 'openid'
+                      - 'profile'
+                      - 'email'
+                      - 'groups'
                     response_types:
                       - 'code'
                     grant_types:
@@ -340,7 +361,7 @@ in
                       - 'authorization_code'
                     access_token_signed_response_alg: 'none'
                     userinfo_signed_response_alg: 'none'
-                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                    token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
           '';
           owner = autheliaUser;
           group = autheliaGroup;
