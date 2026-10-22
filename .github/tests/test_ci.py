@@ -3,6 +3,8 @@
 import importlib.util
 import io
 import json
+import os
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -89,6 +91,47 @@ class ScopeTests(unittest.TestCase):
             ".github/workflows/scripts/pr-impact.py",
         ]:
             self.assertFalse(scope.needs_build(path))
+
+
+class DerivationCacheTests(unittest.TestCase):
+    attribute = "nixosConfigurations.fnuc.config.system.build.toplevel.drvPath"
+    drv = "/nix/store/" + "a" * 32 + "-system.drv"
+
+    def test_cache_is_reused_only_for_exact_commit_and_target(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"CI_DRV_CACHE": directory, "CI_HEAD_SHA": "head"}),
+            patch.object(scope, "output", return_value=self.drv) as command,
+        ):
+            self.assertEqual(scope.evaluate_drv(self.attribute), self.drv)
+            self.assertEqual(scope.evaluate_drv(self.attribute), self.drv)
+            self.assertEqual(command.call_count, 1)
+            scope.evaluate_drv(self.attribute, revision="different")
+            scope.evaluate_drv(self.attribute.replace("fnuc", "rofl-10"))
+            self.assertEqual(command.call_count, 3)
+
+    def test_corrupt_cache_is_reevaluated(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"CI_DRV_CACHE": directory, "CI_HEAD_SHA": "head"}),
+            patch.object(scope, "output", return_value=self.drv) as command,
+        ):
+            scope.evaluate_drv(self.attribute)
+            next(Path(directory).glob("*.json")).write_text("broken")
+            self.assertEqual(scope.evaluate_drv(self.attribute), self.drv)
+            self.assertEqual(command.call_count, 2)
+
+    def test_failed_evaluations_are_not_cached(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"CI_DRV_CACHE": directory, "CI_HEAD_SHA": "head"}),
+            patch.object(
+                scope, "output", side_effect=RuntimeError("evaluation failed")
+            ),
+        ):
+            with self.assertRaises(RuntimeError):
+                scope.evaluate_drv(self.attribute)
+            self.assertEqual(list(Path(directory).iterdir()), [])
 
 
 class ReportTests(unittest.TestCase):

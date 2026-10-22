@@ -11,7 +11,10 @@ its checkout. It uses paths, not PR authors or titles, to select targets:
   Package metadata and unrelated host modules are not evaluated.
 - Service-only changes (including container tag bumps): compare evaluated host
   and Android derivations against the base and build only changed systems;
-  skip the standalone package matrix.
+  skip the standalone package matrix. Successful derivation paths are cached by
+  exact commit, target and evaluator version, so unchanged baselines can be reused.
+  Missing or invalid cache entries are evaluated again; failed evaluations are
+  never cached.
 - Shared definitions, lock files, workflows, unknown paths, or manual runs:
   evaluate and build all targets.
 - Draft PRs: defer the build workflow until ready for review.

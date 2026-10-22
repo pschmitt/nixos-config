@@ -101,9 +101,21 @@ jobs:
           nix-conf: ${{ env.nix-conf }}
           save-cache: "true"
 
+      - name: Restore evaluated derivations
+        if: steps.scope.outputs.needed == 'true'
+        uses: actions/cache/restore@v6
+        continue-on-error: true
+        with:
+          path: .cache/ci-drvs
+          key: ci-drvs-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/ci-scope.py') }}-${{ github.sha }}
+          restore-keys: |
+            ci-drvs-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/ci-scope.py') }}-${{ github.event.pull_request.base.sha || github.event.before }}
+
       - name: Generate build matrix
         id: set-matrix
         env:
+          CI_DRV_CACHE: .cache/ci-drvs
+          CI_HEAD_SHA: ${{ github.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           EVENT_NAME: ${{ github.event_name }}
         shell: bash
@@ -112,6 +124,14 @@ jobs:
           # not propagate through a command substitution inside echo)
           matrix="$(python3 .github/workflows/scripts/ci-scope.py)"
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+      - name: Save evaluated derivations
+        if: steps.scope.outputs.needed == 'true'
+        uses: actions/cache/save@v6
+        continue-on-error: true
+        with:
+          path: .cache/ci-drvs
+          key: ci-drvs-${{ runner.os }}-${{ hashFiles('.github/workflows/scripts/ci-scope.py') }}-${{ github.sha }}
 
   build-pkgs-free:
     if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).pkgs.free) != '[]' }}

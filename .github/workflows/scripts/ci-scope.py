@@ -2,16 +2,57 @@
 """Select build targets from the complete diff; unknown changes build everything."""
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 
 
 def output(*args):
     return subprocess.check_output(args, text=True).strip()
+
+
+def evaluate_drv(attribute, root=".", revision=None):
+    """Cache successful derivation paths by exact commit, target and evaluator."""
+    cache_dir = os.environ.get("CI_DRV_CACHE")
+    revision = revision or os.environ.get("CI_HEAD_SHA")
+    cached = None
+    if cache_dir and revision:
+        schema = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        key = hashlib.sha256(f"{schema}:{revision}:{attribute}".encode()).hexdigest()
+        cached = Path(cache_dir) / f"{key}.json"
+        try:
+            value = json.loads(cached.read_text())
+            if (
+                value.get("revision") == revision
+                and value.get("attribute") == attribute
+                and re.fullmatch(
+                    r"/nix/store/[a-z0-9]{32}-[^/\n]+\.drv", value.get("drv", "")
+                )
+            ):
+                return value["drv"]
+        except (OSError, ValueError, AttributeError, TypeError):
+            pass
+    args = ["nix", "eval", "--raw"]
+    if attribute.startswith("nixOnDroidConfigurations."):
+        args.append("--impure")
+    drv = output(*args, f"{root}#{attribute}")
+    if cached is not None:
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        # A unique temporary file keeps concurrent host evaluations independent.
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=cached.parent, delete=False
+        ) as handle:
+            json.dump(
+                {"revision": revision, "attribute": attribute, "drv": drv}, handle
+            )
+            temporary = Path(handle.name)
+        temporary.replace(cached)
+    return drv
 
 
 def empty_matrix():
@@ -121,11 +162,8 @@ def main():
                 architectures = {"x86_64-linux": "amd64", "aarch64-linux": "aarch64"}
                 if system not in architectures:
                     raise ValueError(f"Unsupported host architecture: {host}: {system}")
-                output(
-                    "nix",
-                    "eval",
-                    "--raw",
-                    f".#nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
+                evaluate_drv(
+                    f"nixosConfigurations.{host}.config.system.build.toplevel.drvPath"
                 )
                 matrix["hosts"][architectures[system]].append(host)
             print(json.dumps(matrix, separators=(",", ":")))
@@ -155,12 +193,11 @@ def main():
 
     # Evaluate every host, including package-only changes: evaluating a package
     # alone does not catch module assertions or host integration failures.
-    def evaluate_host(host, root="."):
-        return output(
-            "nix",
-            "eval",
-            "--raw",
-            f"{root}#nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
+    def evaluate_host(host, root=".", revision=None):
+        return evaluate_drv(
+            f"nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
+            root,
+            revision,
         )
 
     # Bound evaluation too: two workers shorten setup without evaluating every
@@ -183,17 +220,15 @@ def main():
                     zip(
                         ordered_hosts,
                         workers.map(
-                            lambda host: evaluate_host(host, f"path:{baseline}"),
+                            lambda host: evaluate_host(host, f"path:{baseline}", base),
                             ordered_hosts,
                         ),
                     )
                 )
             hosts = {host for host in host_names if host_drvs[host] != base_drvs[host]}
             droid_attr = "nixOnDroidConfigurations.zf10.activationPackage.drvPath"
-            droid = output(
-                "nix", "eval", "--impure", "--raw", f".#{droid_attr}"
-            ) != output(
-                "nix", "eval", "--impure", "--raw", f"path:{baseline}#{droid_attr}"
+            droid = evaluate_drv(droid_attr) != evaluate_drv(
+                droid_attr, f"path:{baseline}", base
             )
         broad = False
 
