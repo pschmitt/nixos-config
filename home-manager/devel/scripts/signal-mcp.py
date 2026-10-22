@@ -57,32 +57,80 @@ def resolve_recipient(recipient):
     return recipient
 
 
+# (marker, signal style, literal): longest markers first
+MARKERS = (
+    ("```", "MONOSPACE", True),
+    ("**", "BOLD", False),
+    ("~~", "STRIKETHROUGH", False),
+    ("||", "SPOILER", False),
+    ("`", "MONOSPACE", True),
+    ("*", "ITALIC", False),
+)
+ESCAPABLE = "*~|`"
+
+
+def utf16_len(text):
+    return len(text.encode("utf-16-le")) // 2
+
+
 def style_markup(text):
-    """Turn **bold** and *italic* markers into Signal text styles."""
+    """Turn Markdown-ish markers into Signal text styles.
+
+    **bold**, *italic*, ~~strikethrough~~, ||spoiler||, `monospace` and
+    ```fenced monospace``` (Signal has no code block, only the monospace
+    style). Styles nest; code is literal. A backslash escapes a marker
+    character. Returns (plain text, ["start:length:STYLE", ...]) with offsets
+    in UTF-16 code units, as signal-cli expects.
+    """
     plain = []
     styles = []
+    size = 0
     index = 0
+
+    def emit(chunk):
+        nonlocal size
+        plain.append(chunk)
+        size += utf16_len(chunk)
+
     while index < len(text):
-        if text.startswith("**", index):
-            marker, style = "**", "BOLD"
-        elif text.startswith("*", index):
-            marker, style = "*", "ITALIC"
+        char = text[index]
+        if char == "\\" and text[index + 1 : index + 2] and text[index + 1] in ESCAPABLE:
+            emit(text[index + 1])
+            index += 2
+            continue
+        for marker, style, literal in MARKERS:
+            if not text.startswith(marker, index):
+                continue
+            start = index + len(marker)
+            end = text.find(marker, start)
+            if end <= start:
+                continue
+            body = text[start:end]
+            if not literal and (body[0].isspace() or body[-1].isspace()):
+                continue
+            if marker == "*" and index > 0 and text[index - 1].isalnum():
+                continue
+            if marker == "```":
+                body = body.removeprefix("\n").removesuffix("\n")
+                first, sep, rest = body.partition("\n")
+                if sep and first.isidentifier():
+                    body = rest
+            begin = size
+            if literal:
+                emit(body)
+                inner = []
+            else:
+                inner_plain, inner = style_markup(body)
+                emit(inner_plain)
+            styles.append(f"{begin}:{size - begin}:{style}")
+            styles.extend(
+                f"{begin + int(s.split(':')[0])}:{s.split(':', 1)[1]}" for s in inner
+            )
+            index = end + len(marker)
+            break
         else:
-            plain.append(text[index])
+            emit(char)
             index += 1
-            continue
-        start = index + len(marker)
-        end = text.find(marker, start)
-        if end <= start:
-            plain.append(text[index])
-            index += 1
-            continue
-        body = text[start:end]
-        offset = len("".join(plain).encode("utf-16-le")) // 2
-        length = len(body.encode("utf-16-le")) // 2
-        styles.append(f"{offset}:{length}:{style}")
-        plain.append(body)
-        index = end + len(marker)
     return "".join(plain), styles
 
 
@@ -109,9 +157,11 @@ def send_message(
     Give either `recipient` (a name from list_recipients such as "me", a
     phone number in +E.164 form, or a UUID) or `group_id` (from list_groups).
     `attachments` are paths of files on this machine (images, PDFs, ...);
-    `message` may be empty when sending files. With `format`, **bold** and
-    *italic* markers become Signal text styles. Messages leave as the Hermes
-    bot account.
+    `message` may be empty when sending files. With `format` (default),
+    Markdown-ish markers become Signal text styles: **bold**, *italic*,
+    ~~strikethrough~~, ||spoiler||, `monospace` and ```fenced monospace```
+    (Signal has no real code block). Styles nest, code is literal, and a
+    backslash escapes a marker. Messages leave as the Hermes bot account.
     """
     if bool(recipient) == bool(group_id):
         raise ValueError("pass exactly one of recipient or group_id")
