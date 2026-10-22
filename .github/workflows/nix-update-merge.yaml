@@ -1,0 +1,32 @@
+name: Merge checked package updates
+
+on:
+  workflow_run:
+    workflows: ["Nix build", "Statix Lint"]
+    types: [completed]
+  schedule:
+    # Also catches labels added just after CI finished, without holding a runner.
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-update-merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Run only the trusted default branch script, never PR code or artifacts.
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - name: Merge eligible updates whose checks passed
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
+        run: python3 .github/workflows/scripts/merge-checked-updates.py

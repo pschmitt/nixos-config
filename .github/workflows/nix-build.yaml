@@ -10,6 +10,8 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+  schedule:
+    - cron: "17 1 * * 6" # Weekly full validation, including reverse dependencies
   workflow_dispatch: # allows manual triggering
 
 permissions:
@@ -18,8 +20,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # Only supersede PR runs; a push to main must not kill a running main build
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
@@ -41,12 +42,16 @@ env:
 
 jobs:
   setup-matrix:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -61,46 +66,45 @@ jobs:
 
       - name: Generate build matrix
         id: set-matrix
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
         shell: bash
         run: |
           # Assign first so a failing script fails this step (errexit does
           # not propagate through a command substitution inside echo)
-          matrix="$(./.github/workflows/scripts/nix-gh-build-matrix.sh)"
+          matrix="$(python3 .github/workflows/scripts/ci-scope.py)"
           echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
 
   build-pkgs-free:
+    if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).pkgs.free) != '[]' }}
     name: build ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.free }}
-        system:
-          - x86_64-linux
-          - aarch64-linux
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.free }}
     steps:
       - name: Checkout code
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v7
 
       - name: Install Nix
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -118,7 +122,6 @@ jobs:
           SSHCONF
 
       - name: Setup known_hosts
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
@@ -130,18 +133,16 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
+        if: ${{ matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Build package
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
             --system '${{ matrix.system }}'
 
       - name: "Nix copy package"
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
@@ -157,40 +158,36 @@ jobs:
               --copy
 
   build-pkgs-nonfree:
+    if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree) != '[]' }}
     name: build-nonfree ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIXPKGS_ALLOW_UNFREE: 1
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree }}
-        system:
-          - x86_64-linux
-          - aarch64-linux
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree }}
     steps:
       - name: Checkout code
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v7
 
       - name: Install Nix
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -208,7 +205,6 @@ jobs:
           SSHCONF
 
       - name: Setup known_hosts
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
@@ -220,11 +216,10 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
+        if: ${{ matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Fetch proprietary garbage
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -236,12 +231,10 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           git add --intent-to-add --force .
 
       - name: Build package
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
@@ -249,7 +242,6 @@ jobs:
             --nonfree
 
       - name: "Nix copy package"
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
@@ -266,38 +258,34 @@ jobs:
               --copy
 
   build-pkgs-oci:
+    if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci) != '[]' }}
     name: build-oci ${{ matrix.pkg.name }} (${{ matrix.system }})
     needs: setup-matrix
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
-        pkg: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci }}
-        system:
-          - x86_64-linux
-          - aarch64-linux
+        include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci }}
     steps:
       - name: Checkout code
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: actions/checkout@v7
 
       - name: Install Nix
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: ${{ env.nix-conf }}
 
       - uses: nix-community/cache-nix-action@v7
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         with:
           primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
       - name: Store SSH key on disk
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           mkdir -p "${HOME}/.ssh"
           KEY_PATH="${HOME}/.ssh/id_ed25519"
@@ -315,7 +303,6 @@ jobs:
           SSHCONF
 
       - name: Setup known_hosts
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 1
@@ -327,18 +314,16 @@ jobs:
               sudo tee -a "${HOME}/.ssh/known_hosts" /etc/ssh/ssh_known_hosts
 
       - name: Set up QEMU
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) && matrix.system == 'aarch64-linux' }}
+        if: ${{ matrix.system == 'aarch64-linux' }}
         uses: docker/setup-qemu-action@v4
 
       - name: Netbird Connect
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         id: netbird
         uses: Alemiz112/netbird-connect@master
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
@@ -398,7 +383,6 @@ jobs:
           exit 1
 
       - name: Build package
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
             --pkg '${{ matrix.pkg.name }}' \
@@ -406,7 +390,6 @@ jobs:
             --oci
 
       - name: "Nix copy package"
-        if: ${{ contains(toJson(matrix.pkg.systems), matrix.system) }}
         uses: nick-fields/retry@v4
         with:
           timeout_minutes: 10
@@ -428,11 +411,13 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).hosts.amd64) != '[]' }}
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.amd64 }}
@@ -537,12 +522,14 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64) != '[]' }}
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     # runs-on: ubuntu-24.04-arm
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64 }}
@@ -717,11 +704,13 @@ jobs:
       - build-pkgs-free
       - build-pkgs-nonfree
       - build-pkgs-oci
-    if: ${{ !cancelled() && (needs.setup-matrix.result == 'success') }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && fromJson(needs.setup-matrix.outputs.matrix).droid }}
+    timeout-minutes: 120
     runs-on: ubuntu-latest
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
+      max-parallel: 1
       fail-fast: false
       matrix:
         droid: [ "zf10" ]

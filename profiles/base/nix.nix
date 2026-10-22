@@ -149,10 +149,6 @@
     nixos-rebuild-ng
   ];
 
-  # Add symlink to flake source that built the current gen
-  # https://www.reddit.com/r/NixOS/comments/16t2njf/small_trick_for_people_using_nixos_with_flakes/
-  environment.etc."nixos-source".source = ./../..;
-
   # system.stateVersion is set per host in hosts/<host>/default.nix.
   system = {
     activationScripts = lib.mkIf (config.hardware.type != "rpi") {

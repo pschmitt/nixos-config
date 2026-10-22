@@ -2,11 +2,16 @@ name: Statix Lint
 
 on:
   push:
+    branches: [main]
     paths:
       - "**/*.nix"
   pull_request:
     paths:
       - "**/*.nix"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:

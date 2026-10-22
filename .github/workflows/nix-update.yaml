@@ -62,6 +62,7 @@ jobs:
     needs: list-packages
     if: needs.list-packages.outputs.matrix-default != ''
     strategy:
+      max-parallel: 2
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-default) }}
     runs-on: ubuntu-latest
@@ -194,19 +195,26 @@ jobs:
 
             ${{ steps.release_notes.outputs.markdown }}
 
-      - name: Wait for package checks and merge patch update
-        if: steps.prmeta.outputs.auto_merge_patch == 'true' && steps.cpr.outputs.pull-request-number != ''
+      - name: Mark patch update for merge after checks
+        if: steps.cpr.outputs.pull-request-number != ''
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
+          PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+          AUTO_MERGE_PATCH: ${{ steps.prmeta.outputs.auto_merge_patch }}
         run: |
-          ./.github/workflows/scripts/auto-merge-nix-update.sh \
-          "${{ steps.cpr.outputs.pull-request-number }}" \
-          "${{ matrix.package }}"
+          gh label create nix-update-patch --description 'Patch update eligible for automatic merge after CI' --force
+          if [[ "$AUTO_MERGE_PATCH" == "true" ]]
+          then
+            gh pr edit "$PR_NUMBER" --add-label nix-update-patch
+          else
+            gh pr edit "$PR_NUMBER" --remove-label nix-update-patch
+          fi
 
   update-oci:
     needs: list-packages
     if: needs.list-packages.outputs.matrix-oci != ''
     strategy:
+      max-parallel: 2
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-oci) }}
     runs-on: ubuntu-latest
