@@ -144,6 +144,7 @@ in
       "authelia/oidc-audiobookshelf-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-filebrowser-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-monarch-secret-hash" = secretsAttrs autheliaUser;
+      "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
       "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
     };
     templates = {
@@ -263,6 +264,27 @@ in
                   access_token_signed_response_alg: 'none'
                   userinfo_signed_response_alg: 'none'
                   token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                - client_id: 'nextcloud'
+                  client_name: 'Nextcloud'
+                  client_secret: '${config.sops.placeholder."authelia/oidc-nextcloud-secret-hash"}'
+                  public: false
+                  authorization_policy: 'two_factor'
+                  require_pkce: true
+                  pkce_challenge_method: 'S256'
+                  redirect_uris:
+                    - 'https://c.${config.domains.main}/apps/user_oidc/code'
+                  scopes:
+                    - 'openid'
+                    - 'profile'
+                    - 'email'
+                    - 'groups'
+                  response_types:
+                    - 'code'
+                  grant_types:
+                    - 'authorization_code'
+                  access_token_signed_response_alg: 'none'
+                  userinfo_signed_response_alg: 'none'
+                  token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
                 - client_id: 'wallos'
                   client_name: 'Wallos'
                   client_secret: '${config.sops.placeholder."authelia/oidc-wallos-secret-hash"}'

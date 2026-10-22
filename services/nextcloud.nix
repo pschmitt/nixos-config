@@ -129,7 +129,12 @@ in
         loglevel = 0;
       };
       extraApps = {
-        inherit (pkgs.nextcloud35Packages.apps) contacts integration_paperless notes;
+        inherit (pkgs.nextcloud35Packages.apps)
+          contacts
+          integration_paperless
+          notes
+          user_oidc
+          ;
       };
       appstoreEnable = true;
     };
@@ -189,6 +194,8 @@ in
     };
   };
 
+  sops.secrets."nextcloud/oidc-client-secret" = config.sops.mkHostSecret { owner = "nextcloud"; };
+
   systemd.services =
     lib.genAttrs
       [
@@ -200,5 +207,33 @@ in
       (_: {
         requires = [ "mnt-data.mount" ];
         after = [ "mnt-data.mount" ];
-      });
+      })
+    // {
+      # Register Authelia as an OpenID Connect login provider (user_oidc app).
+      # Idempotent: user_oidc:provider creates or updates it by identifier.
+      nextcloud-oidc-provider = {
+        description = "Configure Authelia OIDC provider for Nextcloud";
+        wantedBy = [ "multi-user.target" ];
+        after = [ "nextcloud-setup.service" ];
+        requires = [ "nextcloud-setup.service" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = "nextcloud";
+        };
+        script = ''
+          ${config.services.nextcloud.occ}/bin/nextcloud-occ user_oidc:provider Authelia \
+            --clientid=nextcloud \
+            --clientsecret="$(< ${config.sops.secrets."nextcloud/oidc-client-secret".path})" \
+            --discoveryuri=https://auth.${domain}/.well-known/openid-configuration \
+            --scope="openid email profile groups" \
+            --unique-uid=0 \
+            --mapping-uid=preferred_username \
+            --mapping-display-name=name \
+            --mapping-email=email \
+            --check-bearer=0 \
+            --send-id-token-hint=1
+        '';
+      };
+    };
 }
