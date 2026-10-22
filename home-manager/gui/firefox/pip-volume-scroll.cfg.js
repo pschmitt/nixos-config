@@ -1,5 +1,9 @@
-// Scroll over the Picture-in-Picture window to change the volume, with the
-// same volume bar overlay and scroll behavior as the Volume Scroll extension.
+// Mouse controls for the Picture-in-Picture window, like the YouTube player:
+// - scroll over the video to change the volume, with the same volume bar
+//   overlay and scroll behavior as the Volume Scroll extension
+// - click the video to play/pause
+// - a play/pause icon flashes in the middle whenever playback starts or stops,
+//   whatever caused it (click, the play/pause button, space, media keys)
 //
 // Why this is an autoconfig script and not an extension: the PiP window is a
 // privileged chrome document (chrome://global/content/pictureinpicture/
@@ -14,6 +18,17 @@
 // the page's volume control stays in sync as well. Driving the slider (instead
 // of messaging the actor directly) also keeps the PiP widget itself in sync and
 // reuses PiP's mute/unmute handling when reaching 0.
+//
+// Click to play/pause: Firefox's PiP window does nothing on a single click on
+// the video (the click lands on the #controls overlay; only a double click is
+// handled, for fullscreen). Clicks on #controls therefore press PiP's own
+// #playpause button, so its state and controls handling stay intact. A double
+// click toggles twice (net no change) before going fullscreen, as in YouTube.
+//
+// The icon is driven by PiP's own play state: PiP toggles the "playing" class on
+// #controls whenever the originating video starts or stops, so a MutationObserver
+// on it covers every way of toggling. Changes during the first moments after
+// the window opens are the initial state, not a toggle, and are ignored.
 //
 // Volume Scroll settings: SETTINGS below is a snapshot of the extension's
 // settings (pip-volume-scroll.settings.json, injected at build time by
@@ -42,6 +57,13 @@
   const IDLE_MS = 400;
   const FADE_MS = 250;
 
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const STATE_ICON_MS = 600;
+  // Play state changes this soon after opening are the initial state
+  const STATE_SETTLE_MS = 1000;
+  // A press that moved further than this is a window drag, not a click
+  const CLICK_SLOP_PX = 5;
+
   // The originating player echoes every change back and the PiP window then
   // resets its slider to the echoed value. Step from our own target (in whole
   // percent) instead of the slider, or a stale echo between two wheel ticks
@@ -51,6 +73,9 @@
   let scrollAccumulator = 0;
   let lastScrollTime = 0;
   let overlay = null;
+  let stateIcon = null;
+  let pressX = 0;
+  let pressY = 0;
 
   // Port of Volume Scroll's updateVolume(): returns the new volume in percent.
   const nextVolume = (previous, direction) => {
@@ -237,6 +262,104 @@
     };
   };
 
+  // YouTube style play/pause flash: a white glyph on a translucent disc in the
+  // middle of the video that fades out while growing.
+  const createStateIcon = doc => {
+    const root = doc.createElement("div");
+    Object.assign(root.style, {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      width: "104px",
+      height: "104px",
+      marginTop: "-52px",
+      marginLeft: "-52px",
+      borderRadius: "50%",
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
+      display: "none",
+      alignItems: "center",
+      justifyContent: "center",
+      pointerEvents: "none",
+      zIndex: "9999999",
+    });
+    const svg = doc.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "60");
+    svg.setAttribute("height", "60");
+    svg.setAttribute("fill", "#ffffff");
+    root.appendChild(svg);
+    doc.body.appendChild(root);
+
+    const shape = (tag, attrs) => {
+      const el = doc.createElementNS(SVG_NS, tag);
+      for (const [name, value] of Object.entries(attrs)) {
+        el.setAttribute(name, value);
+      }
+      svg.appendChild(el);
+    };
+
+    let animation = null;
+    return {
+      // started: playback was just started (play icon), else paused (pause icon)
+      show(started) {
+        svg.replaceChildren();
+        if (started) {
+          shape("path", {
+            d: "M8 5.5v13c0 .8.9 1.3 1.6.8l10-6.5c.6-.4.6-1.2 0-1.6l-10-6.5C8.9 4.2 8 4.7 8 5.5z",
+          });
+        } else {
+          shape("rect", { x: "6", y: "5", width: "4", height: "14", rx: "1.5" });
+          shape("rect", { x: "14", y: "5", width: "4", height: "14", rx: "1.5" });
+        }
+        root.style.display = "flex";
+
+        animation?.cancel();
+        animation = root.animate(
+          [
+            { opacity: 1, transform: "scale(1)" },
+            { opacity: 0, transform: "scale(1.4)" },
+          ],
+          { duration: STATE_ICON_MS, easing: "ease-out", fill: "forwards" }
+        );
+      },
+    };
+  };
+
+  const onClick = (win, event) => {
+    // Only the bare video surface; buttons, the scrubber and panels have their
+    // own ids. Presses that moved were a window drag.
+    if (
+      event.button !== 0 ||
+      event.target.id !== "controls" ||
+      Math.abs(event.screenX - pressX) > CLICK_SLOP_PX ||
+      Math.abs(event.screenY - pressY) > CLICK_SLOP_PX
+    ) {
+      return;
+    }
+    win.document.getElementById("playpause").click();
+  };
+
+  // Flash the icon whenever the play state flips, see the header comment
+  const watchPlayState = win => {
+    const doc = win.document;
+    const controls = doc.getElementById("controls");
+    const openedAt = Date.now();
+    let playing = controls.classList.contains("playing");
+    new win.MutationObserver(() => {
+      const now = controls.classList.contains("playing");
+      if (now === playing) {
+        return;
+      }
+      playing = now;
+      if (Date.now() - openedAt < STATE_SETTLE_MS) {
+        return;
+      }
+      stateIcon ??= createStateIcon(doc);
+      // Started playing: play icon. Paused: pause icon.
+      stateIcon.show(now);
+    }).observe(controls, { attributes: true, attributeFilter: ["class"] });
+  };
+
   const onWheel = (win, event) => {
     const slider = win.document.getElementById("audio-scrubber");
     const delta = event.deltaY || event.deltaX;
@@ -295,10 +418,17 @@
           }
           // Per-window state: a new PiP window starts without an overlay
           overlay = null;
+          stateIcon = null;
           target = null;
           win.document.addEventListener("wheel", e => onWheel(win, e), {
             passive: false,
           });
+          win.document.addEventListener("mousedown", e => {
+            pressX = e.screenX;
+            pressY = e.screenY;
+          });
+          win.document.addEventListener("click", e => onClick(win, e));
+          watchPlayState(win);
         },
         { once: true }
       );
