@@ -54,3 +54,9 @@ default branch, and obsolete runs cannot replace a newer head's comment.
 The report describes metadata changes, not full system closures or runtime
 service settings; unchanged versions do not prove unchanged package contents.
 
+Package update PRs store their generated body in a file. Upstream release notes
+are collapsed, line endings normalized, relative links point to the tagged
+upstream repository, and long notes link to the complete release. A release
+that only links to a Markdown changelog also includes the public file from its
+release tag, while retaining the original link. Code fences
+are preserved and closed before ending the collapsible section.
