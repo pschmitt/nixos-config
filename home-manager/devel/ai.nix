@@ -84,7 +84,7 @@ let
   # browser_fill_secret types the rbw entries named with `--allow-secret` (`*`:
   # every entry) into login forms on their own sites without the agent seeing
   # the value.
-  browserMcps.browser = {
+  browserMcps.browser-daemon = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
     args = [
       "mcp"

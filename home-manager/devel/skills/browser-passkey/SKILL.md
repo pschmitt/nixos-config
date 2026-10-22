@@ -6,7 +6,7 @@ description: Authenticate automated browser sessions (Playwright MCP) using WebA
 # Browser Passkey Authentication
 
 Use this skill when an automated browser session driven by Playwright MCP
-(the `browser` MCP; it attaches to a browser-daemon node's Chromium over CDP,
+(the `browser-daemon` MCP; it attaches to a browser-daemon node's Chromium over CDP,
 `browser_use node=...` picks the node) hits a WebAuthn passkey or FIDO2 login challenge.
 
 In these remote browsers there is no USB key, no phone proximity check
