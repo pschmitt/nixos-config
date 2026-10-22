@@ -6,6 +6,7 @@
     ./walker.nix
     ./bookmarks.nix
     ./browser.nix
+    ./firefox/pip-volume-scroll.nix
     ./chat.nix
     ./default-apps.nix
     ./dotool.nix
