@@ -8,7 +8,7 @@ let
       systemd
     ];
     text = ''
-      exec ${config.home.homeDirectory}/.config/hypr/bin/hypridle-callback.sh "$@"
+      exec ${config.xdg.configHome}/hypr/bin/hypridle-callback.sh "$@"
     '';
   };
   hyprIdleCallback = "${hyprIdleCallbackWrapper}/bin/hypridle-callback";

@@ -7,7 +7,7 @@
 let
   inherit (lib) escapeShellArgs getExe;
   hypreventsBin = getExe pkgs.hyprevents;
-  hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
+  hyprBinDir = "${config.xdg.configHome}/hypr/bin";
 in
 {
   home.packages = [

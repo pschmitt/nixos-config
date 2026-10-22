@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let
-  xdgConfigHome = "${config.home.homeDirectory}/.config";
-  xdgDataHome = "${config.home.homeDirectory}/.local/share";
+  xdgConfigHome = config.xdg.configHome;
+  xdgDataHome = config.xdg.dataHome;
 
   timewsyncWrapper = pkgs.writeShellApplication {
     name = "timewsync-wrapper";

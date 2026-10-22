@@ -76,7 +76,7 @@ in
         RestartSec = "10s";
         WorkingDirectory = cfg.workingDirectory;
         StandardInput = "null";
-        StandardOutput = "append:${config.home.homeDirectory}/.local/state/claude-remote-control.log";
+        StandardOutput = "append:${config.xdg.stateHome}/claude-remote-control.log";
         StandardError = "journal";
       };
       Install.WantedBy = [ "default.target" ];

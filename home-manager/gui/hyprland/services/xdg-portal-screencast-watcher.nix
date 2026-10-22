@@ -1,6 +1,6 @@
 { config, ... }:
 let
-  hyprBinDir = "${config.home.homeDirectory}/.config/hypr/bin";
+  hyprBinDir = "${config.xdg.configHome}/hypr/bin";
 in
 {
   systemd.user.services."xdg-portal-screencast-watcher" = {

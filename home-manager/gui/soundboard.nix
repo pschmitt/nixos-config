@@ -55,7 +55,7 @@ in
     Unit = {
       Description = "Play Tagesschau Jingle";
       Documentation = [
-        "file://${config.home.homeDirectory}/.config/zsh/plugins/local/soundboard.zsh"
+        "file://${config.xdg.configHome}/zsh/plugins/local/soundboard.zsh"
       ];
     };
 

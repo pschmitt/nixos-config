@@ -22,7 +22,7 @@ let
       upower
     ];
     text = ''
-      exec ${config.home.homeDirectory}/.config/hypr/bin/hyprlock-widgets.sh "$@"
+      exec ${config.xdg.configHome}/hypr/bin/hyprlock-widgets.sh "$@"
     '';
   };
   hyprlockWidgetsScript = "${hyprlockWidgetsWrapper}/bin/hyprlock-widgets";
@@ -114,7 +114,7 @@ in
         }
         {
           monitor = "";
-          text = "cmd[update:1000] cat ${config.home.homeDirectory}/.local/state/feierabend-countdown 2>/dev/null | xargs -I{} printf '🍻 {}s before Feierabend'";
+          text = "cmd[update:1000] cat ${config.xdg.stateHome}/feierabend-countdown 2>/dev/null | xargs -I{} printf '🍻 {}s before Feierabend'";
           color = "rgba(255, 80, 80, 1.0)";
           font_size = feierabendFontSize;
           font_family = font;

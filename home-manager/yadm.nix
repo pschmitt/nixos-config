@@ -52,7 +52,7 @@ in
             "network-online.target"
             "sops-nix.service"
           ];
-          ConditionPathExists = "!${config.home.homeDirectory}/.local/share/yadm/repo.git";
+          ConditionPathExists = "!${config.xdg.dataHome}/yadm/repo.git";
         };
 
         Service = {
@@ -84,7 +84,7 @@ in
           Description = "Enforce yadm classes and apply alternates";
           After = [ "yadm-clone.service" ];
           Wants = [ "yadm-clone.service" ];
-          ConditionPathExists = "${config.home.homeDirectory}/.local/share/yadm/repo.git";
+          ConditionPathExists = "${config.xdg.dataHome}/yadm/repo.git";
         };
 
         Service = {

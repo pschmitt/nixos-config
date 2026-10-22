@@ -7,8 +7,7 @@
 let
   cfg = config.services.codex-remote-control;
 
-  codexHome =
-    if cfg.configDir != null then cfg.configDir else "${config.home.homeDirectory}/.config/codex";
+  codexHome = if cfg.configDir != null then cfg.configDir else "${config.xdg.configHome}/codex";
 
   codexBin = "${config.programs.codex.package}/bin/codex";
   codexStandaloneBin = "${codexHome}/packages/standalone/current/codex";
@@ -62,7 +61,7 @@ in
         ExecStop = "${lib.escapeShellArg codexStandaloneBin} app-server daemon stop";
         WorkingDirectory = "%h";
         StandardInput = "null";
-        StandardOutput = "append:${config.home.homeDirectory}/.local/state/codex-remote-control.log";
+        StandardOutput = "append:${config.xdg.stateHome}/codex-remote-control.log";
         StandardError = "journal";
         Environment = [ "CODEX_HOME=${codexHome}" ];
       };
