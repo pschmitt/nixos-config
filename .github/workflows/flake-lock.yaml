@@ -4,8 +4,13 @@ on:
   schedule:
     - cron: "37 2 * * *" # runs daily at ~02:37 AM (UTC); off-the-hour to avoid GH Actions scheduler congestion
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   lockfile:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

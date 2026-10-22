@@ -1,45 +1,135 @@
 #!/usr/bin/env python3
 """Select build targets from the complete diff; unknown changes build everything."""
 
-from concurrent.futures import ThreadPoolExecutor
+import argparse
 import json
 import os
-from pathlib import PurePosixPath
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import PurePosixPath
 
 
 def output(*args):
     return subprocess.check_output(args, text=True).strip()
 
 
+def empty_matrix():
+    return {
+        "pkgs": {k: [] for k in ("free", "nonfree", "oci")},
+        "hosts": {"amd64": [], "aarch64": []},
+        "droid": False,
+    }
+
+
+def needs_build(path):
+    automation = {
+        ".github/workflows/nix-systempackages-diff.yaml",
+        ".github/workflows/nix-update.yaml",
+        ".github/workflows/nix-update-merge.yaml",
+        ".github/workflows/flake-lock.yaml",
+        ".github/workflows/statix.yml",
+        ".github/workflows/scripts/pr-impact.py",
+        ".github/workflows/scripts/pr-impact-snapshot.nix",
+        ".github/workflows/scripts/pr-packages-diff-comment.sh",
+        ".github/workflows/scripts/merge-checked-updates.py",
+        ".github/workflows/scripts/auto-merge-nix-update.sh",
+        "scripts/nix-update-release-notes.py",
+        "scripts/nix-update-release-notes.sh",
+    }
+    return not (
+        path.endswith(".md")
+        or path.startswith(("docs/", ".github/tests/"))
+        or path in automation
+    )
+
+
+def changed_files(base, event):
+    if event == "workflow_dispatch" or not base or set(base) == {"0"}:
+        return None
+    # Include both sides of renames; a missing base fails instead of guessing.
+    return output(
+        "git", "diff", "--name-only", "--no-renames", base, "HEAD"
+    ).splitlines()
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--classify-only",
+        action="store_true",
+        help="Print whether Nix setup is needed, without invoking Nix",
+    )
+    parser.add_argument(
+        "--tooling-only",
+        action="store_true",
+        help="Print whether CI tooling checks are needed",
+    )
+    args = parser.parse_args()
     base = os.environ.get("BASE_SHA", "")
     event = os.environ.get("EVENT_NAME", "workflow_dispatch")
-    files = None
-    if event != "workflow_dispatch" and base and set(base) != {"0"}:
-        # Include both sides of renames, and fail rather than guess if the base
-        # is unavailable. Checkout fetches history for push and PR comparisons.
-        files = output("git", "diff", "--name-only", "--no-renames", base, "HEAD").splitlines()
-
-    def needs_build(path):
-        reporting_files = {
-            ".github/workflows/nix-systempackages-diff.yaml",
-            ".github/workflows/nix-update.yaml",
-            ".github/workflows/scripts/pr-impact.py",
-            ".github/workflows/scripts/pr-impact-snapshot.nix",
-            ".github/workflows/scripts/pr-packages-diff-comment.sh",
-            "scripts/nix-update-release-notes.py",
-            "scripts/nix-update-release-notes.sh",
-        }
-        return not (path.endswith(".md") or path.startswith("docs/") or path in reporting_files)
-
-    relevant = None if files is None else [f for f in files if needs_build(f)]
-    if relevant == []:
-        matrix = {"pkgs": {k: [] for k in ("free", "nonfree", "oci")},
-                  "hosts": {"amd64": [], "aarch64": []}, "droid": False}
-        print(json.dumps(matrix, separators=(",", ":")))
+    files = changed_files(base, event)
+    if args.tooling_only:
+        needed = files is None or any(
+            p == "flake.lock"
+            or p.startswith(
+                (
+                    ".github/workflows/",
+                    ".github/actions/",
+                    ".github/tests/",
+                    "scripts/nix-update",
+                )
+            )
+            for p in files or []
+        )
+        print("true" if needed else "false")
         return
+    relevant = None if files is None else [f for f in files if needs_build(f)]
+    if args.classify_only:
+        print("false" if relevant == [] else "true")
+        return
+    if relevant == []:
+        print(json.dumps(empty_matrix(), separators=(",", ":")))
+        return
+
+    # Discover only names for host-only edits. Do not instantiate all package
+    # metadata or unrelated host modules just to classify one host's change.
+    host_only = relevant and all(
+        len(PurePosixPath(p).parts) >= 3 and p.startswith("hosts/") for p in relevant
+    )
+    if host_only:
+        names = json.loads(
+            output(
+                "nix",
+                "eval",
+                "--json",
+                ".#nixosConfigurations",
+                "--apply",
+                "builtins.attrNames",
+            )
+        )
+        selected = {PurePosixPath(p).parts[1] for p in relevant}
+        if selected <= set(names):
+            matrix = empty_matrix()
+            for host in sorted(selected):
+                system = output(
+                    "nix",
+                    "eval",
+                    "--raw",
+                    f".#nixosConfigurations.{host}.config.nixpkgs.system",
+                )
+                architectures = {"x86_64-linux": "amd64", "aarch64-linux": "aarch64"}
+                if system not in architectures:
+                    raise ValueError(f"Unsupported host architecture: {host}: {system}")
+                output(
+                    "nix",
+                    "eval",
+                    "--raw",
+                    f".#nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
+                )
+                matrix["hosts"][architectures[system]].append(host)
+            print(json.dumps(matrix, separators=(",", ":")))
+            return
 
     matrix = json.loads(output("./.github/workflows/scripts/nix-gh-build-matrix.sh"))
     package_names = {p["name"] for p in matrix["pkgs"]["all"]}
@@ -66,8 +156,12 @@ def main():
     # Evaluate every host, including package-only changes: evaluating a package
     # alone does not catch module assertions or host integration failures.
     def evaluate_host(host, root="."):
-        return output("nix", "eval", "--raw",
-                      f"{root}#nixosConfigurations.{host}.config.system.build.toplevel.drvPath")
+        return output(
+            "nix",
+            "eval",
+            "--raw",
+            f"{root}#nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
+        )
 
     # Bound evaluation too: two workers shorten setup without evaluating every
     # system concurrently and exhausting the runner's memory.
@@ -85,12 +179,22 @@ def main():
             archive = subprocess.check_output(["git", "archive", base])
             subprocess.run(["tar", "-x", "-C", baseline], input=archive, check=True)
             with ThreadPoolExecutor(max_workers=2) as workers:
-                base_drvs = dict(zip(ordered_hosts, workers.map(
-                    lambda host: evaluate_host(host, f"path:{baseline}"), ordered_hosts)))
+                base_drvs = dict(
+                    zip(
+                        ordered_hosts,
+                        workers.map(
+                            lambda host: evaluate_host(host, f"path:{baseline}"),
+                            ordered_hosts,
+                        ),
+                    )
+                )
             hosts = {host for host in host_names if host_drvs[host] != base_drvs[host]}
             droid_attr = "nixOnDroidConfigurations.zf10.activationPackage.drvPath"
-            droid = output("nix", "eval", "--impure", "--raw", f".#{droid_attr}") != output(
-                "nix", "eval", "--impure", "--raw", f"path:{baseline}#{droid_attr}")
+            droid = output(
+                "nix", "eval", "--impure", "--raw", f".#{droid_attr}"
+            ) != output(
+                "nix", "eval", "--impure", "--raw", f"path:{baseline}#{droid_attr}"
+            )
         broad = False
 
     for category in ("free", "nonfree", "oci"):

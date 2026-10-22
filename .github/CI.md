@@ -7,7 +7,8 @@ its checkout. It uses paths, not PR authors or titles, to select targets:
   or host evaluation in the build workflow.
 - Files inside a known package directory: build that package on its supported
   architectures and evaluate every host, without building host closures.
-- Files inside a known host directory: build that host and evaluate every host.
+- Files inside known host directories only: evaluate and build just those hosts.
+  Package metadata and unrelated host modules are not evaluated.
 - Service-only changes (including container tag bumps): compare evaluated host
   and Android derivations against the base and build only changed systems;
   skip the standalone package matrix.
@@ -19,6 +20,12 @@ Mixed changes select the union of targets; any shared or unknown path selects
 full validation. A weekly full run also covers reverse dependencies. A package-only change does not build its reverse dependencies;
 shared definition changes and broad input updates get full builds.
 
+Documentation/reporting-only changes skip Nix installation and cache restoration.
+CI tooling changes run actionlint, ShellCheck, Ruff and fast regression tests before
+build setup; tools use the locked nixpkgs revision. Unrelated changes skip that
+tooling setup. The stable `Nix build result` check aggregates selected builds and
+tooling results; intentional skips pass, while failures and cancellations fail.
+
 Each build matrix runs one job at a time. The package categories can occupy
 three runners together; the host/Android phase can also occupy three.
 This is a per-run limit, not an account-wide limit. Separate PRs can overlap.
@@ -28,7 +35,9 @@ ISO and Raspberry Pi images build weekly and on manual dispatch. Package
 updates run daily, with two concurrent update jobs per category. Eligible patch
 updates receive a label; a short workflow checks their current versions, policy,
 commit and CI results after builds finish, with an hourly retry. No runner waits
-for another workflow. The merge workflow only executes default-branch code.
+for another workflow. The merge workflow only executes default-branch code. Main-branch completions do
+not trigger redundant merge checks. Updater workflows have bounded timeouts and
+serialize overlapping scheduled/manual runs without interrupting active updates.
 
 Build outputs continue to be copied to the persistent remote Nix store and reused
 through the SSH substituter. The Actions cache primarily accelerates evaluation;

@@ -9,8 +9,13 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   list-packages:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     outputs:
       matrix-default: ${{ steps.packages.outputs.matrix-default }}
@@ -45,8 +50,8 @@ jobs:
             fi
           done
 
-          MATRIX_DEFAULT=$(printf "%s\n" "${DEFAULT_PACKAGES[@]}" | jq -R . | jq -cs 'map({"package": .})')
-          MATRIX_OCI=$(printf "%s\n" "${OCI_PACKAGES_FILTERED[@]}" | jq -R . | jq -cs 'map({"package": .})')
+          MATRIX_DEFAULT=$(printf "%s\0" "${DEFAULT_PACKAGES[@]}" | jq -Rs 'split("\u0000") | map(select(length > 0) | {"package": .})')
+          MATRIX_OCI=$(printf "%s\0" "${OCI_PACKAGES_FILTERED[@]}" | jq -Rs 'split("\u0000") | map(select(length > 0) | {"package": .})')
 
           if [[ "$(jq 'length' <<<"$MATRIX_DEFAULT")" != "0" ]]
           then
@@ -65,6 +70,7 @@ jobs:
       max-parallel: 2
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-default) }}
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -110,9 +116,11 @@ jobs:
             title="chore: update ${pkg} from ${old_version} to ${new_version}"
           fi
 
-          echo "title=${title}" >>"$GITHUB_OUTPUT"
-          echo "commit_message=${title}" >>"$GITHUB_OUTPUT"
-          echo "new_version=${new_version}" >>"$GITHUB_OUTPUT"
+          {
+            echo "title=${title}"
+            echo "commit_message=${title}"
+            echo "new_version=${new_version}"
+          } >> "$GITHUB_OUTPUT"
 
           merge_policy="$(nix eval --raw --impure ".#packages.x86_64-linux.${pkg}.passthru.updatePolicy.autoMerge" 2>/dev/null || true)"
           auto_merge_patch=
@@ -207,6 +215,7 @@ jobs:
       max-parallel: 2
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-oci) }}
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -320,9 +329,11 @@ jobs:
             title="chore: update ${pkg} from ${old_version} to ${new_version}"
           fi
 
-          echo "title=${title}" >>"$GITHUB_OUTPUT"
-          echo "commit_message=${title}" >>"$GITHUB_OUTPUT"
-          echo "new_version=${new_version}" >>"$GITHUB_OUTPUT"
+          {
+            echo "title=${title}"
+            echo "commit_message=${title}"
+            echo "new_version=${new_version}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Detect prerelease for ${{ matrix.package }}
         id: prerelease_check

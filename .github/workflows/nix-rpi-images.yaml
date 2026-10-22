@@ -71,7 +71,8 @@ jobs:
           }
 
           IMG_ZST=$(find "${SD_DIR}" -maxdepth 1 -type f -name "*.img.zst" | head -n 1)
-          if [[ -z "$IMG_ZST" ]]; then
+          if [[ -z "$IMG_ZST" ]]
+          then
             echo "No .img.zst file found in ${SD_DIR}" >&2
             ls -la "${SD_DIR}" >&2 || true
             exit 1
@@ -89,9 +90,11 @@ jobs:
           ARTIFACT_NAME="$REMOTE_IMG_NAME"  # artifact label; file path unchanged
           ARTIFACT_PATH="$IMG_ZST"
 
-          echo "REMOTE_IMG_NAME=${REMOTE_IMG_NAME}" >> "$GITHUB_ENV"
-          echo "ARTIFACT_NAME=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
-          echo "ARTIFACT_PATH=${ARTIFACT_PATH}" >> "$GITHUB_ENV"
+          {
+            echo "REMOTE_IMG_NAME=${REMOTE_IMG_NAME}"
+            echo "ARTIFACT_NAME=${ARTIFACT_NAME}"
+            echo "ARTIFACT_PATH=${ARTIFACT_PATH}"
+          } >> "$GITHUB_ENV"
 
       - name: Upload SD image artifact
         uses: actions/upload-artifact@v7
@@ -113,6 +116,7 @@ jobs:
           TARGET_DIR: /mnt/data/blobs/img/${{ matrix.target }}/
         run: |
           # Ensure remote directory exists
+          # shellcheck disable=SC2029 # Expand the workflow-controlled destination locally.
           ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" "mkdir -p \"${TARGET_DIR}\""
           # Transfer the file without duplicating locally
           scp -v "${{ env.ARTIFACT_PATH }}" \
@@ -125,5 +129,6 @@ jobs:
         run: |
           KEEP_INDEX=$(( KEEP_IMAGE_COUNT + 1 ))
           # Delete all but the KEEP most recent .img.zst files
+          # shellcheck disable=SC2029 # Expand the workflow-controlled destination locally.
           ssh "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_BLOBS_HOST }}" \
             "bash -c 'cd \"$TARGET_DIR\" || exit 9; ls -1t -- *.img.zst 2>/dev/null | tail -n +${KEEP_INDEX} | xargs -r rm -f'"

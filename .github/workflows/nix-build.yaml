@@ -32,7 +32,7 @@ env:
     fallback = true # build from source if a binary substitute fails
     extra-experimental-features = nix-command flakes
     accept-flake-config = true
-    substituters = https://cache.nixos.org/ https://hyprland.cachix.org https://hyprland.cachix.org https://nix-community.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
+    substituters = https://cache.nixos.org/ https://hyprland.cachix.org https://nix-community.cachix.org ssh://${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}?ssh-key=/home/runner/.ssh/id_ed25519&trusted=true
     trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc= nix-cache.brkn.lol:k/zdgSv+6lcJ/9DRILjA7H18eIlFSA0OwzyqqXEwySM= nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs= rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0= rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=
     extra-platforms = aarch64-linux i686-linux
     builders-use-substitutes = true
@@ -41,7 +41,39 @@ env:
     access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
 jobs:
+  tooling:
+    name: CI tooling
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Select tooling checks
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          needed="$(python3 .github/workflows/scripts/ci-scope.py --tooling-only)"
+          echo "needed=${needed}" >> "$GITHUB_OUTPUT"
+      - uses: DeterminateSystems/nix-installer-action@main
+        if: steps.scope.outputs.needed == 'true'
+      - name: Check workflows, shell and Python
+        if: steps.scope.outputs.needed == 'true'
+        run: |
+          revision="$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)"
+          nix shell \
+            "github:NixOS/nixpkgs/${revision}#actionlint" \
+            "github:NixOS/nixpkgs/${revision}#shellcheck" \
+            "github:NixOS/nixpkgs/${revision}#ruff" \
+            --command bash .github/workflows/scripts/check-ci.sh
+      - name: Run CI regression tests
+        if: steps.scope.outputs.needed == 'true'
+        run: python3 -m unittest discover -s .github/tests -v
+
   setup-matrix:
+    needs: tooling
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
@@ -53,16 +85,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: ${{ env.nix-conf }}
+      - name: Classify changes before Nix setup
+        id: scope
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          needed="$(python3 .github/workflows/scripts/ci-scope.py --classify-only)"
+          echo "needed=${needed}" >> "$GITHUB_OUTPUT"
 
-      - uses: nix-community/cache-nix-action@v7
+      - name: Set up Nix
+        if: steps.scope.outputs.needed == 'true'
+        uses: ./.github/actions/nix-setup
         with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          gc-max-store-size-linux: 2G
+          nix-conf: ${{ env.nix-conf }}
+          save-cache: "true"
 
       - name: Generate build matrix
         id: set-matrix
@@ -93,16 +130,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -176,16 +207,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -274,16 +299,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -434,16 +453,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -486,10 +499,13 @@ jobs:
 
       - name: Add proprietary garbage to Nix store
         run: |
-          find . -name sha256sum.txt | while read checksum_file; do
+          find . -name sha256sum.txt | while read -r checksum_file
+          do
             dir=$(dirname "$checksum_file")
-            awk '{print $2}' "$checksum_file" | while read filename; do
-              if [ -f "$dir/$filename" ]; then
+            awk '{print $2}' "$checksum_file" | while read -r filename
+            do
+              if [[ -f "$dir/$filename" ]]
+              then
                 echo "Adding $dir/$filename to Nix store..."
                 nix-store --add-fixed sha256 "$dir/$filename"
               fi
@@ -547,16 +563,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -599,10 +609,13 @@ jobs:
 
       - name: Add proprietary garbage to Nix store
         run: |
-          find . -name sha256sum.txt | while read checksum_file; do
+          find . -name sha256sum.txt | while read -r checksum_file
+          do
             dir=$(dirname "$checksum_file")
-            awk '{print $2}' "$checksum_file" | while read filename; do
-              if [ -f "$dir/$filename" ]; then
+            awk '{print $2}' "$checksum_file" | while read -r filename
+            do
+              if [[ -f "$dir/$filename" ]]
+              then
                 echo "Adding $dir/$filename to Nix store..."
                 nix-store --add-fixed sha256 "$dir/$filename"
               fi
@@ -722,16 +735,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
         with:
-          extra-conf: ${{ env.nix-conf }}
-
-      - uses: nix-community/cache-nix-action@v7
-        with:
-          primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-          restore-prefixes-first-match: nix-${{ runner.os }}-
-          save: false
+          nix-conf: ${{ env.nix-conf }}
 
       - name: Store SSH key on disk
         run: |-
@@ -786,3 +793,16 @@ jobs:
   # pr-nvd-diff was intentionally removed.
   # A dedicated PR workflow now handles per-host diffs without builds:
   # `.github/workflows/nix-systempackages-diff.yaml`.
+
+  build-result:
+    name: Nix build result
+    if: ${{ always() }}
+    needs: [tooling, setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-x86_64, build-hosts-aarch64, build-droids-aarch64]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check selected builds
+        env:
+          RESULTS: ${{ toJson(needs) }}
+        run: |
+          jq -e 'all(.[]; .result == "success" or .result == "skipped")' <<< "$RESULTS"

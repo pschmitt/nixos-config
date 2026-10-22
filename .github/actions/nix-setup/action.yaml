@@ -1,0 +1,21 @@
+name: Set up Nix for CI
+description: Install Nix and restore the shared evaluation cache
+inputs:
+  nix-conf:
+    description: Additional Nix configuration
+    required: true
+  save-cache:
+    description: Save the evaluation cache after this job
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - uses: DeterminateSystems/nix-installer-action@main
+      with:
+        extra-conf: ${{ inputs.nix-conf }}
+    - uses: nix-community/cache-nix-action@v7
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+        save: ${{ inputs.save-cache }}
+        gc-max-store-size-linux: 2G
