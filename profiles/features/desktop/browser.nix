@@ -27,7 +27,13 @@ in
       environment.etc."chromium/policies/managed/rbw.json".source =
         (pkgs.formats.json { }).generate "rbw-chromium-managed-policy.json"
           {
-            "3rdparty".extensions.${rbwChromiumId}.allowHttpFill = true;
+            "3rdparty".extensions.${rbwChromiumId} = {
+              allowHttpFill = true;
+              # Copy the TOTP code / card security code to the clipboard
+              # after filling (needs rbw >= the release adding copyTotp).
+              copyTotp = true;
+              cardSecurityCode = "clipboard";
+            };
           };
     })
     (lib.mkIf (cfg.enable && cfg.node.enable) {

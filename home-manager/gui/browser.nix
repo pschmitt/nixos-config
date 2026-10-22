@@ -85,7 +85,13 @@ in
             name = "rbw-browser@pschmitt.dev";
             description = "Managed rbw browser extension preferences";
             type = "storage";
-            data.allowHttpFill = true;
+            data = {
+              allowHttpFill = true;
+              # Copy the TOTP code / card security code to the clipboard
+              # after filling (needs rbw >= the release adding copyTotp).
+              copyTotp = true;
+              cardSecurityCode = "clipboard";
+            };
           };
 
       programs.chromium = {
