@@ -35,6 +35,12 @@ let
     text = builtins.readFile ./scripts/failed-systemd-services.sh;
   };
 
+  filesystemAvailable = pkgs.writeShellApplication {
+    name = "filesystem-available";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = builtins.readFile ./scripts/filesystem-available.sh;
+  };
+
   monitGeneral = ''
     set daemon 60
     include /etc/monit/conf.d/*
@@ -173,6 +179,20 @@ in
     # monit runs on every server; cattle servers merely skip the M/Monit
     # registration (see the sops template above) to stay off the license.
     enable = true;
+    # Btrfs can report substantial free blocks that are unavailable for writes
+    # because they belong to allocated metadata chunks. Monit's native usage
+    # check uses total free blocks; also check the available-to-writers value.
+    checks = builtins.listToAttrs (
+      map (mountpoint: {
+        name = "filesystem available ${mountpoint}";
+        value = {
+          type = "program";
+          path = "${lib.getExe filesystemAvailable} ${lib.escapeShellArg mountpoint}";
+          group = "storage";
+          conditions = "if status != 0 then alert";
+        };
+      }) mountPoints
+    );
     # NOTE The restic check lives in restic.nix so that hosts without
     # restic backups (cattle) do not get a permanently failing check.
     config = lib.strings.concatStringsSep "\n" [

@@ -15,6 +15,7 @@
     ./rclone-bisync.nix
     ./service-identities.nix
     ./services.nix
+    ./storage.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.
