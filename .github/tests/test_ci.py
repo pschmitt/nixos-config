@@ -121,6 +121,21 @@ class DerivationCacheTests(unittest.TestCase):
             self.assertEqual(scope.evaluate_drv(self.attribute), self.drv)
             self.assertEqual(command.call_count, 2)
 
+    def test_old_revisions_are_pruned(self):
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.dict(os.environ, {"CI_DRV_CACHE": directory, "CI_HEAD_SHA": "head"}),
+        ):
+            for revision in ["base", "head", "old"]:
+                (Path(directory) / f"{revision}.json").write_text(
+                    json.dumps({"revision": revision})
+                )
+            scope.prune_cache("base")
+            self.assertEqual(
+                sorted(p.name for p in Path(directory).iterdir()),
+                ["base.json", "head.json"],
+            )
+
     def test_failed_evaluations_are_not_cached(self):
         with (
             tempfile.TemporaryDirectory() as directory,

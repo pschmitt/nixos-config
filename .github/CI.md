@@ -14,7 +14,7 @@ its checkout. It uses paths, not PR authors or titles, to select targets:
   skip the standalone package matrix. Successful derivation paths are cached by
   exact commit, target and evaluator version, so unchanged baselines can be reused.
   Missing or invalid cache entries are evaluated again; failed evaluations are
-  never cached.
+  never cached. Restored caches retain only the two compared revisions.
 - Shared definitions, lock files, workflows, unknown paths, or manual runs:
   evaluate and build all targets.
 - Draft PRs: defer the build workflow until ready for review.
@@ -23,7 +23,8 @@ Mixed changes select the union of targets; any shared or unknown path selects
 full validation. A weekly full run also covers reverse dependencies. A package-only change does not build its reverse dependencies;
 shared definition changes and broad input updates get full builds.
 
-Documentation/reporting-only changes skip Nix installation and cache restoration.
+The build setup skips Nix installation and cache restoration for documentation
+and reporting-only changes. Documentation-only changes also skip tooling setup.
 CI tooling changes run actionlint, ShellCheck, Ruff and fast regression tests before
 build setup; tools use the locked nixpkgs revision. Unrelated changes skip that
 tooling setup. The stable `Nix build result` check aggregates selected builds and

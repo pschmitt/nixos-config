@@ -55,6 +55,21 @@ def evaluate_drv(attribute, root=".", revision=None):
     return drv
 
 
+def prune_cache(base):
+    """Keep only the compared revisions so restored caches do not grow forever."""
+    directory = os.environ.get("CI_DRV_CACHE")
+    if not directory:
+        return
+    revisions = {base, os.environ.get("CI_HEAD_SHA")}
+    for entry in Path(directory).glob("*.json"):
+        try:
+            if json.loads(entry.read_text()).get("revision") in revisions:
+                continue
+        except (OSError, ValueError, AttributeError):
+            pass
+        entry.unlink(missing_ok=True)
+
+
 def empty_matrix():
     return {
         "pkgs": {k: [] for k in ("free", "nonfree", "oci")},
@@ -132,6 +147,8 @@ def main():
     if relevant == []:
         print(json.dumps(empty_matrix(), separators=(",", ":")))
         return
+
+    prune_cache(base)
 
     # Discover only names for host-only edits. Do not instantiate all package
     # metadata or unrelated host modules just to classify one host's change.
