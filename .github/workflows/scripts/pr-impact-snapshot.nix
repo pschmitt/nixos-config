@@ -23,16 +23,24 @@ let
     builtins.substring 0 (builtins.stringLength publicPrefix) definition.file == publicPrefix;
   publicNames = builtins.concatLists (
     builtins.map (
-      definition: if isPublic definition then builtins.attrNames definition.value else [ ]
+      definition:
+      if isPublic definition then
+        builtins.filter (name: definition.value.${name} ? image) (builtins.attrNames definition.value)
+      else
+        [ ]
     ) definitions
   );
   otherNames = builtins.concatLists (
     builtins.map (
-      definition: if isPublic definition then [ ] else builtins.attrNames definition.value
+      definition:
+      if isPublic definition then
+        [ ]
+      else
+        builtins.filter (name: definition.value.${name} ? image) (builtins.attrNames definition.value)
     ) definitions
   );
-  # Only report images whose definitions are entirely in this public checkout.
-  # A private module may override a public container or define additional ones.
+  # Report public image definitions even when private modules add environment
+  # files or other settings. Exclude images defined or overridden privately.
   reportedNames = builtins.filter (
     name: builtins.hasAttr name containers && !(builtins.elem name otherNames)
   ) publicNames;
