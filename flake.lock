@@ -716,11 +716,11 @@
         "uv2nix": "uv2nix"
       },
       "locked": {
-        "lastModified": 1792741524,
-        "narHash": "sha256-hjS5Ue+q5E52MhjMm4ks0SyY9JHnUtDsewboHlbvKVw=",
+        "lastModified": 1792527476,
+        "narHash": "sha256-S7QPySxg+rzmrEaFURVcgnc+j/2Kz435zTd6ldq4Yp8=",
         "owner": "NousResearch",
         "repo": "hermes-agent",
-        "rev": "df722c88648ace75510abe6e6cfceb6dcc77da69",
+        "rev": "71633f762d2d74faebe604d0b8a2a2e6cf48346a",
         "type": "github"
       },
       "original": {
@@ -2502,11 +2502,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792747825,
-        "narHash": "sha256-eZDZD7TNOsfKa+hF2gtN2qiZ70etvGb71lU/htvWOWE=",
+        "lastModified": 1792757653,
+        "narHash": "sha256-Bj3vFquKi+4MTdDQk8vkJfaGKXci57nZihj5FQ1IKyQ=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "c9f8e5eb14dd9ed3a7eed2fcc20f403e740dffaf",
+        "rev": "e03f0ed5f4a4aefa048694f6f54691a4cd9eed0d",
         "type": "github"
       },
       "original": {
@@ -3156,11 +3156,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792151315,
-        "narHash": "sha256-PMtgvHuGijoIAtPtrBm7kJOI6fxzX4LYPAIK+QVGY+Y=",
+        "lastModified": 1785277507,
+        "narHash": "sha256-9Tq3UDX2hD/aveW/HvkBlAmEwJTOlY5HQXJM+L5BGmE=",
         "owner": "pyproject-nix",
         "repo": "uv2nix",
-        "rev": "7aba73a3d85454f1118f8cf9de97979b4d26bcac",
+        "rev": "5a836d395cbf5fc22670eb98dd4aa4fc4d406977",
         "type": "github"
       },
       "original": {
