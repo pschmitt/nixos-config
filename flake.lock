@@ -98,14 +98,16 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rbw": "rbw"
+        "rbw": [
+          "rbw"
+        ]
       },
       "locked": {
-        "lastModified": 1792777336,
-        "narHash": "sha256-duLjfZttA0ZJkbcvzrD2VgE+Iqoom+h7bBv6dyqvno4=",
+        "lastModified": 1792798654,
+        "narHash": "sha256-ERdPKRnfKtYz7BBkNzfctqhdCoE13JkoSaK6gYP5DZo=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "bb52acfe26c4aee1591828005992e3cf0cbd4441",
+        "rev": "cf4a214aeab83a602a4beb8ca2551d74f49ee62b",
         "type": "github"
       },
       "original": {
@@ -2453,17 +2455,26 @@
       }
     },
     "rbw": {
-      "flake": false,
+      "inputs": {
+        "crane": "crane_3",
+        "home-manager": [
+          "home-manager"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1792679925,
-        "narHash": "sha256-oKptU21stWoN4Qh52NvYGi9TdWEltafDhr60jqoxyUA=",
+        "lastModified": 1792797042,
+        "narHash": "sha256-P8WylqEEAM+/ieyBLEq+/OmDL5Unwpop2sdEJyp4+A4=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "7f7128d1ed8a58e9b648ea1f65b5ae1946854124",
+        "rev": "2bc7e415db578dcaaf503c4e6c655336bd9fea25",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
+        "ref": "release",
         "repo": "rbw",
         "type": "github"
       }
@@ -2488,31 +2499,6 @@
       "original": {
         "owner": "pschmitt",
         "repo": "rbw-auto",
-        "type": "github"
-      }
-    },
-    "rbw_2": {
-      "inputs": {
-        "crane": "crane_3",
-        "home-manager": [
-          "home-manager"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1792791155,
-        "narHash": "sha256-Ku+z/eKuIDncSSTVXbFDQvqLqtky7KK42aF1yaPxy4A=",
-        "owner": "pschmitt",
-        "repo": "rbw",
-        "rev": "9147ce3f51ab50fddb093f915ba74a7cee2ff100",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "ref": "release",
-        "repo": "rbw",
         "type": "github"
       }
     },
@@ -2578,7 +2564,7 @@
         "pre-commit-hooks": "pre-commit-hooks_2",
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
-        "rbw": "rbw_2",
+        "rbw": "rbw",
         "rbw-auto": "rbw-auto",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
