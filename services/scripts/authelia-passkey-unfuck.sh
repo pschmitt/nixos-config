@@ -14,7 +14,7 @@ USAGE
 }
 
 list() {
-  sqlite3 -readonly -header -column "$DB" \
+  sqlite3 -cmd ".timeout 30000" -readonly -header -column "$DB" \
     'SELECT id, username, description, sign_count, clone_warning, last_used_at
      FROM webauthn_credentials'
 }
@@ -49,7 +49,7 @@ main() {
       return 2
     fi
   else
-    mapfile -t ids < <(sqlite3 "$DB" \
+    mapfile -t ids < <(sqlite3 -cmd ".timeout 30000" "$DB" \
       'SELECT id FROM webauthn_credentials WHERE clone_warning = 1')
     if [[ ${#ids[@]} -eq 0 ]]
     then
@@ -61,11 +61,11 @@ main() {
 
   dir="$BACKUP_ROOT/$(date +%F-%H%M%S)-pre-unfuck"
   install -d -m 0700 "$dir"
-  sqlite3 "$DB" ".backup '$dir/db.sqlite3'"
+  sqlite3 -cmd ".timeout 30000" "$DB" ".backup '$dir/db.sqlite3'"
   chmod 0600 "$dir/db.sqlite3"
   echo "Backup: $dir/db.sqlite3"
 
-  sqlite3 "$DB" "UPDATE webauthn_credentials
+  sqlite3 -cmd ".timeout 30000" "$DB" "UPDATE webauthn_credentials
     SET clone_warning = 0, sign_count = 0
     WHERE id IN ($(IFS=,; echo "${ids[*]}"))"
 
