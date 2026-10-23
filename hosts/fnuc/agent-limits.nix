@@ -4,8 +4,9 @@
 # swap used, TBs re-read from disk, while systemd-oomd never picked a victim.
 # Interactive codex runs in its own transient scope and both remote-control
 # servers get the same caps, so only the runaway session stalls or dies.
-# The remote-control servers also only ever grow (5-6G RAM + 2-3G swap after
-# a week), so they get restarted every night.
+# Claude's remote-control server also grows over time, so it gets restarted
+# every night. Keep Codex out of that recycle to avoid disconnecting remote
+# sessions; its per-unit memory limits still bound its resource use.
 {
   config,
   lib,
@@ -23,7 +24,6 @@ let
 
   remoteControlUnits = [
     "claude-remote-control.service"
-    "codex-remote-control.service"
   ];
 
   codex = pkgs.llm-agents.codex;

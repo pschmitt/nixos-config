@@ -59,6 +59,11 @@ in
         RemainAfterExit = true;
         ExecStart = "${codexRemoteControlStart}";
         ExecStop = "${lib.escapeShellArg codexStandaloneBin} app-server daemon stop";
+        # A restart can race a transient remote-control disconnect. Retry
+        # failed starts so one connection error does not leave this
+        # RemainAfterExit unit offline until the next activation.
+        Restart = "on-failure";
+        RestartSec = "30s";
         WorkingDirectory = "%h";
         StandardInput = "null";
         StandardOutput = "append:${config.xdg.stateHome}/codex-remote-control.log";
