@@ -7,9 +7,9 @@ index bcac6ba..38143ca 100644
                  .widthFill = resolved.entry->panelWidthFill,
                  .heightFill = resolved.entry->panelHeightFill,
 +                .fitContentWidth = resolved.entry->panelFitContentWidth,
+                 .heightContent = resolved.entry->panelHeightContent,
+                 .maxHeight = resolved.entry->panelMaxHeight,
                  .dismissOnOutsideClick = resolved.entry->panelDismissOnOutsideClick,
-                 .keyboardFocus = resolved.entry->panelKeyboardFocus,
-                 .persistent = resolved.entry->panelPersistent,
 diff --git a/src/scripting/plugin_manifest.cpp b/src/scripting/plugin_manifest.cpp
 index 91df9fc..6da794d 100644
 --- a/src/scripting/plugin_manifest.cpp
@@ -36,27 +36,17 @@ diff --git a/src/scripting/plugin_manifest.h b/src/scripting/plugin_manifest.h
 index 29a9414..be4f705 100644
 --- a/src/scripting/plugin_manifest.h
 +++ b/src/scripting/plugin_manifest.h
-@@ -121,6 +121,8 @@ namespace scripting {
-     double panelHeight = 0.0;
-     bool panelWidthFill = false;
-     bool panelHeightFill = false;
+@@ -125,0 +126,2 @@ namespace scripting {
 +    // Shrink a floating panel to its rendered tree; panelWidth is the cap.
 +    bool panelFitContentWidth = false;
-     // Host-standard shell settings (see plugin_panel_shell.*). Optional
-     // [[panel]] keys provide defaults; injected settings use "{id}_placement",
-     // "{id}_layer", and the corresponding canonical suffixes.
 diff --git a/src/shell/panel/plugin_panel.cpp b/src/shell/panel/plugin_panel.cpp
 index 2eae530..0274798 100644
 --- a/src/shell/panel/plugin_panel.cpp
 +++ b/src/shell/panel/plugin_panel.cpp
-@@ -65,6 +65,7 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
-       m_settings(std::move(context.settings)), m_fileWatcher(context.fileWatcher), m_httpClient(context.httpClient),
-       m_clipboard(context.clipboard),
+@@ -65,2 +65,3 @@ PluginPanel::PluginPanel(scripting::PluginRuntimeContext context, PluginPanelOpt
        m_preferredWidth(options.width > 0.0 ? static_cast<float>(options.width) : kDefaultPanelWidth),
 +      m_maxContentWidth(m_preferredWidth), m_fitContentWidth(options.fitContentWidth),
        m_preferredHeight(options.height > 0.0 ? static_cast<float>(options.height) : kDefaultPanelHeight),
-       m_widthFill(options.widthFill), m_heightFill(options.heightFill),
-       m_dismissOnOutsideClick(options.dismissOnOutsideClick),
 @@ -293,6 +294,20 @@ void PluginPanel::doLayout(Renderer& renderer, float width, float height) {
      m_reconciler.setScale(contentScale());
      (void)m_reconciler.reconcile(*m_contentFlex, *m_tree, renderer);
@@ -82,14 +72,8 @@ diff --git a/src/shell/panel/plugin_panel.h b/src/shell/panel/plugin_panel.h
 index 6daf7c0..783f400 100644
 --- a/src/shell/panel/plugin_panel.h
 +++ b/src/shell/panel/plugin_panel.h
-@@ -37,6 +37,7 @@ struct PluginPanelOptions {
-   // only the fallback if the compositor never assigns one.
-   bool widthFill = false;
-   bool heightFill = false;
+@@ -39,0 +40 @@ struct PluginPanelOptions {
 +  bool fitContentWidth = false;
-   bool dismissOnOutsideClick = true;
-   // One of scripting::kPanelKeyboardFocusModes.
-   std::string keyboardFocus = "on_demand";
 @@ -143,6 +144,8 @@ private:
    bool m_hasOnIpc = false;
    bool m_hasOnIpcKnown = false;
