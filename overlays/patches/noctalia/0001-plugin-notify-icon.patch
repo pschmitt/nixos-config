@@ -36,7 +36,7 @@
  
 --- a/src/scripting/luau_host.h
 +++ b/src/scripting/luau_host.h
-@@ -199,8 +199,8 @@
+@@ -199,7 +199,7 @@
    void scriptSetUpdateInterval(int ms);
    [[nodiscard]] bool scriptLoadSound(std::string name, std::string path, int callbackRef);
    void scriptPlaySound(std::string name);
