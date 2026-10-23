@@ -62,7 +62,7 @@ index 2eae530..0274798 100644
 +      );
 +      if (preferred != m_preferredWidth) {
 +        m_preferredWidth = preferred;
-+        PanelManager::instance().relayoutActivePanelPreferredSize();
++        PanelManager::instance().requestLayout();
 +      }
 +    }
    }
