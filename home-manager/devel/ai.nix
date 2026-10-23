@@ -86,6 +86,7 @@ let
   # the value.
   browserMcps.browser-daemon = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
+    env.XDG_RUNTIME_DIR = "/run/user/${toString config.host.uid}";
     args = [
       "mcp"
       "--url"
