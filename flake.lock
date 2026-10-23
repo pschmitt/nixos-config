@@ -101,11 +101,11 @@
         "rbw": "rbw"
       },
       "locked": {
-        "lastModified": 1792688188,
-        "narHash": "sha256-zfAQlMCU+WkEOSefB4MGNuu+mUGoJ1rOTcDkbCGFcVg=",
+        "lastModified": 1792755292,
+        "narHash": "sha256-V/xM/VQTded3fpji9KFGmRbXHcLmwv/1WymjX9X+NsM=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "70d2bf2982cd8e1244bc94d39651c83d60799132",
+        "rev": "e261105f84e968affda98ded9e89d17e4f7574b0",
         "type": "github"
       },
       "original": {
