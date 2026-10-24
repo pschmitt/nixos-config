@@ -19,7 +19,7 @@ let
   ];
   serverAliases = lib.remove primaryHost hostnames;
   wildcardCert = "wildcard.${domain}";
-  phpPackage = pkgs.master.php84.withExtensions (
+  phpPackage = pkgs.php84.withExtensions (
     { all, ... }: with all;
     [
       bcmath
