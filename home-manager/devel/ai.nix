@@ -6,6 +6,9 @@
 }:
 let
   domainName = config.domains.main;
+  # Keep the proxy on the stable Python set: unstable mcp-proxy requires MCP
+  # 1.27.1, while unstable currently ships MCP 2.x.
+  mcpProxy = pkgs.stable.mcp-proxy;
   browserHosts = [
     "fnuc"
     "rofl-13"
@@ -175,7 +178,7 @@ let
       tokenFile,
     }:
     {
-      command = "${pkgs.mcp-proxy}/bin/mcp-proxy";
+      command = "${mcpProxy}/bin/mcp-proxy";
       args = [
         "--transport"
         "streamablehttp"
@@ -211,7 +214,7 @@ let
             --data-urlencode client_id="$client_id" \
             --data-urlencode client_secret="$client_secret" \
             ${lib.escapeShellArg tokenUrl} | jq --exit-status --raw-output .access_token)
-          API_ACCESS_TOKEN="$access_token" exec ${pkgs.mcp-proxy}/bin/mcp-proxy \
+          API_ACCESS_TOKEN="$access_token" exec ${mcpProxy}/bin/mcp-proxy \
             --transport streamablehttp \
             --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
             ${lib.escapeShellArg url}
