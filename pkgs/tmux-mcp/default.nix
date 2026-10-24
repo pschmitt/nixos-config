@@ -17,6 +17,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   cargoHash = "sha256-wNzYDsk2r5O/BCOe9Zwj/PlHVUwm9JieLyX2M503hyc=";
 
+  # The TmuxStub tests mutate process-wide environment variables. nixpkgs'
+  # cargoCheckHook has a dedicated switch to serialize their test harness.
+  dontUseCargoParallelTests = true;
+
   meta = {
     description = "MCP server for tmux — lets AI assistants create sessions, split panes, run commands, and capture output";
     homepage = "https://github.com/bnomei/tmux-mcp";
