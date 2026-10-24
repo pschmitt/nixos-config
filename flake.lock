@@ -796,6 +796,26 @@
         "type": "github"
       }
     },
+    "hypr-rdp": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792500774,
+        "narHash": "sha256-ET288ku/qt/gAezulqMuBwOznIJde6bvktQmkCv6VoA=",
+        "owner": "MuNeNiCK",
+        "repo": "hypr-rdp",
+        "rev": "730020b8795b6f6a57a69f441414a80d2a8505d5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "MuNeNiCK",
+        "repo": "hypr-rdp",
+        "type": "github"
+      }
+    },
     "hyprcursor": {
       "inputs": {
         "hyprlang": [
@@ -1727,11 +1747,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1792795903,
-        "narHash": "sha256-tzYqOw6j3LKZ3w9A5oXvlhG6+OmW1s3UWsNGNBjX2gY=",
+        "lastModified": 1792852866,
+        "narHash": "sha256-j0Q1C8E+C/16jXp8kouHcZqvIFKEpva5cUK0QZ2fUB8=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "dbc51dc0d96b476f4116a73356ff6e4e00ca6fb4",
+        "rev": "aa504ce4b9eb802ea74dd6fc1836c5ccb5637c19",
         "type": "github"
       },
       "original": {
@@ -2526,6 +2546,7 @@
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
         "hypr-dynamic-cursors": "hypr-dynamic-cursors",
+        "hypr-rdp": "hypr-rdp",
         "hyprgrass": "hyprgrass",
         "hyprland": "hyprland",
         "jcalapi": "jcalapi",
