@@ -17,8 +17,13 @@
         "file://${config.home.homeDirectory}/Videos 🎥 videos"
         "file:///tmp 🗑 tmp"
         "file:///mnt/data 🖧 data"
+        "file:///mnt/fnuc 🖧 fnuc"
         "file:///mnt/turris 🖧 turris"
         "file:///mnt/ha 🖧 ha"
+        "file:///mnt/ha-dieppe 🖧 ha-dieppe"
+        "file:///mnt/oci-01 🖧 oci-01"
+        "file:///mnt/rofl-10 🖧 rofl-10"
+        "file:///mnt/rofl-11 🖧 rofl-11"
       ];
     };
   };
