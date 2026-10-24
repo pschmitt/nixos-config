@@ -77,6 +77,8 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
+        # The live view's vault comes from rbw: the same release as ours.
+        rbw.follows = "rbw";
       };
     };
 

@@ -66,6 +66,31 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
+  # agy refuses clipboard image paste whenever an SSH session is detected
+  # (`SSH_CLIENT`, `SSH_TTY`, or `SSH_CONNECTION` is non-empty, unless the
+  # terminal is iTerm2), aborting with "Image upload is not supported in this
+  # terminal" before checking the local clipboard. Even without that check,
+  # agy's `hasDisplayClipboard` / `ReadClipboardMedia` only uses `wl-paste`
+  # when `WAYLAND_DISPLAY` is set and otherwise requires both `DISPLAY` and
+  # `xclip` on `PATH` (whereas our `wl-paste-shim` only exposes `wl-paste` and
+  # `wl-copy`). Unset the SSH variables, default `DISPLAY` to the headless
+  # `ssh-clipboard` Xvfb (`:99`), and put `xclip` on `PATH` so image pasting
+  # works over SSH via `ssh-clipboard`.
+  antigravityCli = pkgs.symlinkJoin {
+    name = "antigravity-cli-wrapped";
+    paths = [ pkgs.llm-agents.antigravity-cli ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      wrapProgram $out/bin/agy \
+        --unset SSH_CLIENT \
+        --unset SSH_TTY \
+        --unset SSH_CONNECTION \
+        --set-default DISPLAY :99 \
+        --prefix PATH : ${lib.makeBinPath [ pkgs.xclip ]}
+    '';
+    meta.mainProgram = "agy";
+  };
+
   # Sends Signal messages through the signal-cli daemon of the Hermes gateway
   # (services/hermes.nix), which is reachable over the mesh only.
   signalMcp = pkgs.writers.writePython3Bin "signal-mcp" {
@@ -414,7 +439,7 @@ in
 
       antigravity-cli = {
         enable = true;
-        package = pkgs.llm-agents.antigravity-cli;
+        package = antigravityCli;
         skills = allSkills;
         enableMcpIntegration = true;
         settings = {
@@ -531,7 +556,6 @@ in
           # code-cursor
 
           # cli
-          antigravity-cli
           ccusage
           pkgs.playwright-mcp
           # cursor-cli

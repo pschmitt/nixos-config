@@ -4,7 +4,6 @@
     ../../services/audiobookshelf.nix
     ../../services/authelia-nginx-bypass.nix
     ../../services/http.nix
-    ../../services/seerr.nix
     ../../services/tor.nix
 
     ./restic.nix

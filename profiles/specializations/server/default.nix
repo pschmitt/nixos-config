@@ -20,6 +20,7 @@
     ../../hardware/oci.nix
 
     ./ansible.nix
+    ./audit.nix
     ./boot.nix
     ./firewall.nix
     ./interactive/dotfiles.nix
