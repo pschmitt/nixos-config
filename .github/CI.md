@@ -87,3 +87,21 @@ upstream repository, and long notes link to the complete release. A release
 that only links to a Markdown changelog also includes the public file from its
 release tag, while retaining the original link. Code fences
 are preserved and closed before ending the collapsible section.
+
+## Runner budget
+
+All checked-in workflow jobs share two repository-wide concurrency groups:
+
+- `nixos-config-runner-nix`: one Nix build, evaluation, update or image job.
+- `nixos-config-runner-light`: one tooling, lint, merge or final-result job.
+
+This caps these workflows at two occupied runners across all PRs and workflows.
+`queue: max` lets jobs wait without consuming runners or replacing other PRs'
+pending jobs (up to GitHub's 100-job queue limit per group). Workflow-level
+concurrency still cancels obsolete runs for the same PR/ref. Matrix limits alone
+only apply inside one matrix and cannot enforce this repository-wide budget.
+
+GitHub-managed default CodeQL setup and other automatically generated workflows
+are outside this budget. CodeQL needs an explicit advanced-setup workflow using
+these groups to join the limit. Already-running revisions keep their old policy;
+existing PR branches acquire the budget when updated from main.

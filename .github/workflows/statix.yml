@@ -16,6 +16,11 @@ concurrency:
 jobs:
   lint:
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-light
+      cancel-in-progress: false
+      queue: max
     steps:
       - uses: actions/checkout@v7
       - name: Install Nix

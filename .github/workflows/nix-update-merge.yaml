@@ -20,6 +20,11 @@ jobs:
   merge:
     if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request') }}
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-light
+      cancel-in-progress: false
+      queue: max
     timeout-minutes: 5
     steps:
       # Run only the trusted default branch script, never PR code or artifacts.

@@ -47,6 +47,11 @@ jobs:
   tooling:
     name: CI tooling
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-light
+      cancel-in-progress: false
+      queue: max
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -80,6 +85,11 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -155,6 +165,11 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
@@ -214,6 +229,11 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIXPKGS_ALLOW_UNFREE: 1
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
@@ -294,6 +314,11 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
@@ -425,6 +450,11 @@ jobs:
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).hosts.amd64) != '[]' }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
@@ -518,6 +548,11 @@ jobs:
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64) != '[]' }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     # runs-on: ubuntu-24.04-arm
@@ -685,6 +720,11 @@ jobs:
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && fromJson(needs.setup-matrix.outputs.matrix).droid }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     env:
       NIX_STORE_PRIVKEY: ${{ secrets.NIX_STORE_PRIVKEY }}
     strategy:
@@ -749,6 +789,11 @@ jobs:
     if: ${{ always() }}
     needs: [tooling, setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-x86_64, build-hosts-aarch64, build-droids-aarch64]
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-light
+      cancel-in-progress: false
+      queue: max
     timeout-minutes: 2
     steps:
       - name: Check selected builds

@@ -17,6 +17,11 @@ jobs:
   list-packages:
     timeout-minutes: 15
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     outputs:
       matrix-default: ${{ steps.packages.outputs.matrix-default }}
       matrix-oci: ${{ steps.packages.outputs.matrix-oci }}
@@ -72,6 +77,11 @@ jobs:
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-default) }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -217,6 +227,11 @@ jobs:
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-oci) }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

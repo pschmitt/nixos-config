@@ -23,6 +23,11 @@ env:
 jobs:
   build-iso-artifacts:
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     strategy:
       max-parallel: 1
       fail-fast: false

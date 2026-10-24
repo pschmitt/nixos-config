@@ -44,6 +44,11 @@ jobs:
   pr-systempackages-diff:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    # Shared across workflows and PRs; queued jobs do not occupy runners.
+    concurrency:
+      group: nixos-config-runner-nix
+      cancel-in-progress: false
+      queue: max
     timeout-minutes: 30
     steps:
       - name: Resolve current PR commits
