@@ -249,6 +249,11 @@
       };
     };
 
+    hypr-rdp = {
+      url = "github:MuNeNiCK/hypr-rdp";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     hyprland.url = "github:hyprwm/Hyprland";
     hyprgrass = {
       url = "github:horriblename/hyprgrass";

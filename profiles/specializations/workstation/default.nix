@@ -1,6 +1,19 @@
 # workstation — interactive desktop/laptop hosts (ge2, gk4, x13): the shared
 # GUI + laptop + work base every personal machine runs.
-{ config, lib, ... }:
+{
+  config,
+  inputs,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  hyprRdp = inputs.hypr-rdp.packages.${pkgs.stdenv.hostPlatform.system}.hypr-rdp.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [
+      (inputs.nixos-config-private.outPath + "/pkgs/hypr-rdp-rotated-output.patch")
+    ];
+  });
+in
 {
   imports = [
     ../../base
@@ -39,6 +52,7 @@
     imports = [
       ../../../home-manager/ssh-clipboard-peers.nix
     ];
+    home.packages = [ hyprRdp ];
     services.fievel = {
       enable = true;
       # Fievel grabs all physical keyboards and exposes one virtual keyboard.
