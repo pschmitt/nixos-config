@@ -79,7 +79,8 @@ in
   happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
-  hypruse = pkgs.python3Packages.callPackage ./hypruse {
+  # Hypruse 0.13 requires MCP 1.x; the unstable package set now has MCP 2.x.
+  hypruse = pkgs.stable.python3Packages.callPackage ./hypruse {
     inherit (pkgs)
       grim
       hyprland
