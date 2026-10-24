@@ -103,11 +103,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792839783,
-        "narHash": "sha256-zPnBTZ803i9xRF4jZ82JADkmU34nItiU+qAF24Vm/hc=",
+        "lastModified": 1792860739,
+        "narHash": "sha256-kfHZGk3254kKN0wSRq6E3TijyDDS5tdtcXIboFSI8ps=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "bea5b257d4892830a9bfdc417776ef7257bc3ddc",
+        "rev": "6c0a9e311f30eefc650372215b47b494822f5547",
         "type": "github"
       },
       "original": {
@@ -793,6 +793,26 @@
       "original": {
         "owner": "VirtCode",
         "repo": "hypr-dynamic-cursors",
+        "type": "github"
+      }
+    },
+    "hypr-rdp": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1792500774,
+        "narHash": "sha256-ET288ku/qt/gAezulqMuBwOznIJde6bvktQmkCv6VoA=",
+        "owner": "MuNeNiCK",
+        "repo": "hypr-rdp",
+        "rev": "730020b8795b6f6a57a69f441414a80d2a8505d5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "MuNeNiCK",
+        "repo": "hypr-rdp",
         "type": "github"
       }
     },
@@ -2465,11 +2485,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792855950,
-        "narHash": "sha256-C6woeE9SICbEIhrfjgStIaUvuSxWrqMtqC3sP7hr3uI=",
+        "lastModified": 1792859239,
+        "narHash": "sha256-TnCikNSfXHiltPB1Hv9qou6Dmo3468wJhcKOiAv4kkw=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "7cc950f392061d72366a0b91d111bb01917750da",
+        "rev": "684176047290e18d4d979ec14f71b0d23b600173",
         "type": "github"
       },
       "original": {
@@ -2526,6 +2546,7 @@
         "hermes-agent": "hermes-agent",
         "home-manager": "home-manager",
         "hypr-dynamic-cursors": "hypr-dynamic-cursors",
+        "hypr-rdp": "hypr-rdp",
         "hyprgrass": "hyprgrass",
         "hyprland": "hyprland",
         "jcalapi": "jcalapi",
