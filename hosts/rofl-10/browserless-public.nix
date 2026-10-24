@@ -49,6 +49,12 @@ let
       "= /api/extension/config" = proxyLocation host // {
         authelia = false;
       };
+      # The live view's extensions (its vault): static files of the daemon. Their
+      # sandboxed frames load them as an opaque origin, without the Authelia
+      # cookie, so they cannot be behind it.
+      "^~ /handoff/ext/" = proxyLocation host // {
+        authelia = false;
+      };
       "= /api/extension/connect" = proxyLocation host // {
         # Only this socket authenticates its first frame with an origin-bound
         # browser credential. All dashboard/API routes retain Authelia.
@@ -90,6 +96,13 @@ let
         proxyPass = "http://browser_daemon";
         recommendedProxySettings = false;
         authelia = false;
+      };
+      # The live view's extensions (see the vhosts above).
+      "^~ /handoff/ext/" = {
+        proxyPass = "http://browser_daemon";
+        recommendedProxySettings = false;
+        authelia = false;
+        extraConfig = "proxy_next_upstream error timeout http_502 http_503 http_504;";
       };
       "= /api/extension/connect" = {
         proxyPass = "http://browser_daemon";
