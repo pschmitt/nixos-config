@@ -27,9 +27,9 @@
     # keyring (keyname "cryptsetup"); pam_systemd_loadkey reads it back out and
     # sets it as the PAM authtok, so pam_gnome_keyring (enabled for autologin
     # above) unlocks the login keyring with it — no second password prompt, no
-    # rbw/sops in the login path. Requires boot.initrd.systemd.enable
-    # (profiles/features/desktop/gnome-keyring.nix) and the login keyring password to equal
-    # the LUKS passphrase (true on all workstations: ge2, gk4, x13).
+    # rbw/sops in the login path. This requires a systemd initrd and a login
+    # keyring password matching the LUKS passphrase (true on all workstations:
+    # ge2, gk4, x13).
     #
     # This only unlocks at login. gnome-keyring-daemon crashes periodically and
     # respawns with a locked keyring; the gnome-keyring-auto-unlock

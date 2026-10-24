@@ -31,7 +31,6 @@
     enable = true;
     # NOTE the command to unlock is: $ systemd-tty-ask-password-agent
     systemd = {
-      enable = true;
       emergencyAccess = true;
 
       # network.enable = true;

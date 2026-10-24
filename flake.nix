@@ -905,14 +905,8 @@
         // {
           # installation media
           iso = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
-          # MultiOS loopback boot needs the scripted initrd to honor findiso=.
-          iso-multios = mkIso (
-            minimalIsoModules
-            ++ [
-              ./hosts/iso
-              { boot.initrd.systemd.enable = false; }
-            ]
-          );
+          # MultiOS loopback boot needs the initrd to honor findiso=.
+          iso-multios = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
           iso-graphical = mkIso [
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
@@ -920,9 +914,7 @@
             ./hosts/iso
           ];
           iso-private = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
-          iso-private-multios = mkIso (
-            minimalIsoModules ++ privateIsoModules [ { boot.initrd.systemd.enable = false; } ]
-          );
+          iso-private-multios = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
           iso-private-netboot = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = {
