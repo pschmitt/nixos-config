@@ -17,18 +17,29 @@
       peeppee.class = "^.*(-peepee)$";
       porn.title = "(?i).*porn.*";
       bitwarden.title = "(?i).*bitwarden.*";
-      rbwUnlock = {
-        class = "^(org\\.rbw\\.Unlock)$";
-        title = "^Unlock rbw$";
-      };
+      # The title carries the version ("Unlock rbw 2.31.5"), so match the class.
+      rbwUnlock.class = "^(org\\.rbw\\.Unlock)$";
       noctalia.class = "^(dev\\.noctalia\\.Noctalia)$";
     in
     [
-      # rbw password/fingerprint dialog
+      # rbw password/fingerprint dialog: keeps the keyboard like the GNOME
+      # keyring prompt
       {
         match = rbwUnlock;
         float = true;
         center = true;
+      }
+      {
+        match = rbwUnlock;
+        pin = true;
+      }
+      {
+        match = rbwUnlock;
+        stay_focused = true;
+      }
+      {
+        match = rbwUnlock;
+        no_screen_share = true;
       }
 
       # Noctalia Settings
