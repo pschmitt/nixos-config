@@ -2,6 +2,8 @@
 
 selection=clipboard
 requested_type=
+# A selection owner that stops answering would block xclip forever
+xclip_timeout="${WL_PASTE_TIMEOUT:-5}"
 no_newline=0
 watch_command=()
 
@@ -40,7 +42,7 @@ set_display() {
 }
 
 offered_targets() {
-  xclip -selection "$selection" -target TARGETS -out
+  timeout "$xclip_timeout" xclip -selection "$selection" -target TARGETS -out
 }
 
 is_internal_target() {
@@ -126,7 +128,7 @@ read_target() {
   local target="$1"
   local output="$2"
   local -a xclip_args=( -selection "$selection" -target "$target" -out )
-  xclip "${xclip_args[@]}" >"$output"
+  timeout "$xclip_timeout" xclip "${xclip_args[@]}" >"$output"
 }
 
 read_clipboard() {

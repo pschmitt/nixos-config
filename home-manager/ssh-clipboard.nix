@@ -63,6 +63,17 @@ let
   ++ lib.optional cfg.headlessX11 "ssh-clipboard-xvfb.service";
 
   serviceWantedBy = if cfg.headlessX11 then "default.target" else "graphical-session.target";
+
+  watchdog = pkgs.writeShellApplication {
+    name = "ssh-clipboard-watchdog";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.procps
+      pkgs.systemd
+      pkgs.xclip
+    ];
+    text = builtins.readFile ./scripts/ssh-clipboard-watchdog.sh;
+  };
 in
 {
   options.services.ssh-clipboard = {
@@ -144,29 +155,57 @@ in
     };
     xdg.configFile."ssh-clipboard/config.json".source = configFile;
 
-    systemd.user.services.ssh-clipboard-xvfb = lib.mkIf cfg.headlessX11 {
-      Unit.Description = "Private virtual X11 display for ssh-clipboard";
-      Service = {
-        ExecStart = "${pkgs.xorg-server}/bin/Xvfb :99 -screen 0 1280x720x24 -nolisten tcp -noreset";
-        Restart = "on-failure";
-        RestartSec = 1;
-      };
-      Install.WantedBy = [ "default.target" ];
-    };
+    systemd.user = {
+      services = {
+        ssh-clipboard-xvfb = lib.mkIf cfg.headlessX11 {
+          Unit.Description = "Private virtual X11 display for ssh-clipboard";
+          Service = {
+            ExecStart = "${pkgs.xorg-server}/bin/Xvfb :99 -screen 0 1280x720x24 -nolisten tcp -noreset";
+            Restart = "on-failure";
+            RestartSec = 1;
+          };
+          Install.WantedBy = [ "default.target" ];
+        };
 
-    systemd.user.services.ssh-clipboard = {
-      Unit = {
-        Description = "Native encrypted clipboard synchronization over SSH";
-        After = serviceAfter;
-        Wants = serviceWants;
+        ssh-clipboard = {
+          Unit = {
+            Description = "Native encrypted clipboard synchronization over SSH";
+            After = serviceAfter;
+            Wants = serviceWants;
+          };
+          Service = {
+            ExecStart = "${cfg.package}/bin/ssh-clipboard daemon";
+            Environment = serviceEnvironment;
+            Restart = "always";
+            RestartSec = 1;
+          };
+          Install.WantedBy = [ serviceWantedBy ];
+        };
+
+        # ssh-clipboard can keep owning the selection after its X11 server thread
+        # failed (MaximumRequestLengthExceeded on large images); every clipboard
+        # reader then hangs until the daemon is restarted.
+        ssh-clipboard-watchdog = lib.mkIf cfg.headlessX11 {
+          Unit = {
+            Description = "Restart ssh-clipboard when its clipboard stops answering";
+            After = [ "ssh-clipboard.service" ];
+          };
+          Service = {
+            Type = "oneshot";
+            ExecStart = lib.getExe watchdog;
+            Environment = [ "DISPLAY=:99" ];
+          };
+        };
       };
-      Service = {
-        ExecStart = "${cfg.package}/bin/ssh-clipboard daemon";
-        Environment = serviceEnvironment;
-        Restart = "always";
-        RestartSec = 1;
+
+      timers.ssh-clipboard-watchdog = lib.mkIf cfg.headlessX11 {
+        Unit.Description = "Probe the ssh-clipboard X11 clipboard every minute";
+        Timer = {
+          OnActiveSec = "1min";
+          OnUnitActiveSec = "1min";
+        };
+        Install.WantedBy = [ "timers.target" ];
       };
-      Install.WantedBy = [ serviceWantedBy ];
     };
   };
 }
