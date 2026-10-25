@@ -17,6 +17,9 @@ buildGoModule rec {
 
   vendorHash = "sha256-eqw6M7aimVTq/V9uPElH7g2gvpVXQ6DfyAM8UGKU2WI=";
 
+  # Integration tests require explicit build tags and real Shelly devices.
+  excludedPackages = [ "integration_test" ];
+
   ldflags = [
     "-s"
     "-w"
