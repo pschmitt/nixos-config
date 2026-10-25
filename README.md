@@ -1,5 +1,7 @@
 # pschmitt's nixos book of horrors
 
+[![nixbot](https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config/badge.svg?branch=main)](https://nixbot.brkn.lol/repos/github/pschmitt/nixos-config)
+
 Description: tdb.
 
 ## NixOS on `fnuc`
