@@ -75,10 +75,9 @@ let
   # terminal" before checking the local clipboard. Even without that check,
   # agy's `hasDisplayClipboard` / `ReadClipboardMedia` only uses `wl-paste`
   # when `WAYLAND_DISPLAY` is set and otherwise requires both `DISPLAY` and
-  # `xclip` on `PATH` (whereas our `wl-paste-shim` only exposes `wl-paste` and
-  # `wl-copy`). Unset the SSH variables, default `DISPLAY` to the headless
-  # `ssh-clipboard` Xvfb (`:99`), and put `xclip` on `PATH` so image pasting
-  # works over SSH via `ssh-clipboard`.
+  # `xclip` on `PATH`. Unset the SSH variables and default `WAYLAND_DISPLAY`
+  # to the headless `ssh-clipboard` compositor so image pasting works over SSH
+  # via `ssh-clipboard`.
   antigravityCli = pkgs.symlinkJoin {
     name = "antigravity-cli-wrapped";
     paths = [ pkgs.llm-agents.antigravity-cli ];
@@ -88,8 +87,7 @@ let
         --unset SSH_CLIENT \
         --unset SSH_TTY \
         --unset SSH_CONNECTION \
-        --set-default DISPLAY :99 \
-        --prefix PATH : ${lib.makeBinPath [ pkgs.xclip ]}
+        --set-default WAYLAND_DISPLAY wayland-ssh-clipboard
     '';
     meta.mainProgram = "agy";
   };

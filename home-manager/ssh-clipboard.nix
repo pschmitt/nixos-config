@@ -30,6 +30,27 @@ let
     headless_x11 = cfg.headlessX11;
   };
 
+  headless = cfg.headlessX11 || cfg.headlessWayland;
+
+  # sway names its socket wayland-N; a stable symlink lets sessions and the
+  # daemon find it without guessing N
+  waylandSocket = "wayland-ssh-clipboard";
+
+  swayConfig = pkgs.writeText "ssh-clipboard-sway.conf" ''
+    xwayland disable
+    exec ${pkgs.coreutils}/bin/ln -sfn "$WAYLAND_DISPLAY" "$XDG_RUNTIME_DIR/${waylandSocket}"
+  '';
+
+  waitForSocket = pkgs.writeShellScript "ssh-clipboard-sway-wait" ''
+    for _ in $(${pkgs.coreutils}/bin/seq 100)
+    do
+      [[ -S "$XDG_RUNTIME_DIR/${waylandSocket}" ]] && exit 0
+      ${pkgs.coreutils}/bin/sleep 0.1
+    done
+    echo "sway did not create its Wayland socket" >&2
+    exit 1
+  '';
+
   serviceEnvironment = [
     "PATH=${
       lib.makeBinPath [
@@ -49,20 +70,23 @@ let
     }"
     "SSH_CLIPBOARD_DISABLE_AUTO_UPDATE=1"
   ]
-  ++ lib.optional cfg.headlessX11 "DISPLAY=:99";
+  ++ lib.optional cfg.headlessX11 "DISPLAY=:99"
+  ++ lib.optional cfg.headlessWayland "WAYLAND_DISPLAY=${waylandSocket}";
 
   serviceAfter = [
     "network-online.target"
   ]
   ++ lib.optional cfg.headlessX11 "ssh-clipboard-xvfb.service"
-  ++ lib.optional (!cfg.headlessX11) "graphical-session.target";
+  ++ lib.optional cfg.headlessWayland "ssh-clipboard-sway.service"
+  ++ lib.optional (!headless) "graphical-session.target";
 
   serviceWants = [
     "network-online.target"
   ]
-  ++ lib.optional cfg.headlessX11 "ssh-clipboard-xvfb.service";
+  ++ lib.optional cfg.headlessX11 "ssh-clipboard-xvfb.service"
+  ++ lib.optional cfg.headlessWayland "ssh-clipboard-sway.service";
 
-  serviceWantedBy = if cfg.headlessX11 then "default.target" else "graphical-session.target";
+  serviceWantedBy = if headless then "default.target" else "graphical-session.target";
 
   watchdog = pkgs.writeShellApplication {
     name = "ssh-clipboard-watchdog";
@@ -73,6 +97,26 @@ let
       pkgs.xclip
     ];
     text = builtins.readFile ./scripts/ssh-clipboard-watchdog.sh;
+  };
+
+  # xclip-backed stand-ins for wl-clipboard on the headless Xvfb display
+  wlPasteShim = pkgs.writeShellApplication {
+    name = "wl-paste";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.xclip
+    ];
+    text = builtins.readFile ./scripts/wl-paste.sh;
+  };
+
+  wlCopyShim = pkgs.writeShellApplication {
+    name = "wl-copy";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.perl
+      pkgs.xclip
+    ];
+    text = builtins.readFile ./scripts/wl-copy.sh;
   };
 in
 {
@@ -131,6 +175,10 @@ in
 
     headlessX11 = lib.mkEnableOption "a private Xvfb clipboard for headless Linux hosts";
 
+    headlessWayland = lib.mkEnableOption ''
+      a private headless sway clipboard for headless Linux hosts. Sessions get
+      WAYLAND_DISPLAY pointing at it and the real wl-clipboard tools'';
+
     sessionDisplay = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -144,13 +192,29 @@ in
         assertion = !cfg.headlessX11 || pkgs ? xorg-server;
         message = "services.ssh-clipboard.headlessX11 requires pkgs.xorg-server";
       }
+      {
+        assertion = !(cfg.headlessX11 && cfg.headlessWayland);
+        message = "services.ssh-clipboard.headlessX11 and headlessWayland are mutually exclusive";
+      }
     ];
 
     home = {
-      packages = [ cfg.package ];
-      sessionVariables = lib.mkIf (cfg.sessionDisplay != null) {
-        DISPLAY = cfg.sessionDisplay;
-      };
+      packages = [
+        cfg.package
+      ]
+      ++ lib.optionals cfg.headlessX11 [
+        wlCopyShim
+        wlPasteShim
+      ]
+      ++ lib.optional cfg.headlessWayland pkgs.wl-clipboard;
+      sessionVariables = lib.mkMerge [
+        (lib.mkIf (cfg.sessionDisplay != null) {
+          DISPLAY = cfg.sessionDisplay;
+        })
+        (lib.mkIf cfg.headlessWayland {
+          WAYLAND_DISPLAY = waylandSocket;
+        })
+      ];
       file.".local/bin/ssh-clipboard".source = "${cfg.package}/bin/ssh-clipboard";
     };
     xdg.configFile."ssh-clipboard/config.json".source = configFile;
@@ -167,11 +231,30 @@ in
           Install.WantedBy = [ "default.target" ];
         };
 
+        ssh-clipboard-sway = lib.mkIf cfg.headlessWayland {
+          Unit.Description = "Private headless Wayland compositor for ssh-clipboard";
+          Service = {
+            ExecStart = "${lib.getExe pkgs.sway} --config ${swayConfig}";
+            ExecStartPost = "${waitForSocket}";
+            ExecStopPost = "${pkgs.coreutils}/bin/rm -f %t/${waylandSocket}";
+            Environment = [
+              "WLR_BACKENDS=headless"
+              "WLR_LIBINPUT_NO_DEVICES=1"
+              "WLR_RENDERER=pixman"
+            ];
+            Restart = "on-failure";
+            RestartSec = 1;
+          };
+          Install.WantedBy = [ "default.target" ];
+        };
+
         ssh-clipboard = {
           Unit = {
             Description = "Native encrypted clipboard synchronization over SSH";
             After = serviceAfter;
             Wants = serviceWants;
+            # A restarted compositor drops the daemon's Wayland connection
+            PartOf = lib.optional cfg.headlessWayland "ssh-clipboard-sway.service";
           };
           Service = {
             ExecStart = "${cfg.package}/bin/ssh-clipboard daemon";

@@ -3,7 +3,7 @@
 # Only what's genuinely identical between the two host configs lives here;
 # host-specific values (network interfaces, VM staging vs. production,
 # backup/migration state) stay in hosts/fnuc/ and hosts/lrz/.
-{ config, lib, ... }:
+{ lib, ... }:
 {
   imports = [
     ../interactive-server
@@ -21,10 +21,6 @@
     ./nix.nix
     ./smartd.nix
     ./ssh-clipboard.nix
-  ];
-
-  home-manager.users.${config.mainUser.username}.imports = [
-    ../../../home-manager/wl-paste-shim.nix
   ];
 
   services = {

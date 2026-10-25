@@ -20,6 +20,12 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   cargoHash = "sha256-Oq5Wbs62+Zolp7ZpQb0LhWIdQGbQE1IWGNZuETHVRM4=";
 
+  patches = [
+    # Treat an empty Wayland clipboard as empty instead of logging a capture
+    # failure on every poll
+    ./empty-wayland-clipboard.patch
+  ];
+
   nativeBuildInputs = [ pkg-config ];
   nativeCheckInputs = [ xorg-server ];
   buildInputs = [ wayland ];
