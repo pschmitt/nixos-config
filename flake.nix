@@ -788,6 +788,8 @@
           # The packages output uses plain legacyPackages, where unfree
           # packages (or wrappers around one, like falcon-sensor-wiit)
           # refuse to evaluate; take those from an unfree-enabled set.
+          # Decided from meta.available, which never forces a derivation
+          # (forcing drvPath would run every package's IFD).
           unfreePackages =
             system:
             import ./pkgs {
@@ -797,13 +799,21 @@
               };
               inherit inputs;
             };
+          unavailable =
+            pkg:
+            let
+              result = builtins.tryEval (
+                !(pkg.meta.available or true) || !(pkg.unwrapped.meta.available or true)
+              );
+            in
+            result.success && result.value;
           ciPackages =
             system:
             let
               unfree = unfreePackages system;
             in
             lib.mapAttrs (
-              name: pkg: if (builtins.tryEval pkg.drvPath).success then pkg else unfree.${name} or pkg
+              name: pkg: if unavailable pkg then unfree.${name} or pkg else pkg
             ) self.packages.${system};
           buildable =
             system: name: pkg:

@@ -10,7 +10,9 @@ let
   # must have is known at evaluation time.
   sources = map (pkg: {
     inherit (pkg.proprietarySource) name url;
-    path = (pkgs.requireFile pkg.proprietarySource).outPath;
+    # Plain text: with its context, writing the JSON would try to build
+    # the requireFile derivation, which is exactly what fails without it.
+    path = builtins.unsafeDiscardStringContext (pkgs.requireFile pkg.proprietarySource).outPath;
   }) cfg.packages;
   seed = pkgs.writeShellApplication {
     name = "nix-proprietary-sources";
