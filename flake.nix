@@ -774,9 +774,10 @@
       );
 
       # Jobs for nixbot (self-hosted CI on rofl-14, see nixbot.toml): every
-      # x86_64/aarch64 host system, the free, supported custom packages (the
-      # free part of the GitHub Actions matrix) and the flake checks. Not in
-      # `checks` itself, which `nix flake check` builds locally.
+      # x86_64/aarch64 host system, the supported custom packages and the
+      # flake checks. Not in `checks` itself, which `nix flake check` builds
+      # locally. Proprietary sources are seeded on rofl-14
+      # (services/nix-proprietary-sources.nix).
       herculesCI =
         let
           inherit (nixpkgs) lib;
@@ -784,12 +785,26 @@
             "aarch64-linux"
             "x86_64-linux"
           ];
-          isFree =
-            license:
-            if builtins.isList license then
-              builtins.any isFree license
-            else
-              builtins.isAttrs license && (license.free or false);
+          # The packages output uses plain legacyPackages, where unfree
+          # packages (or wrappers around one, like falcon-sensor-wiit)
+          # refuse to evaluate; take those from an unfree-enabled set.
+          unfreePackages =
+            system:
+            import ./pkgs {
+              pkgs = import nixpkgs {
+                inherit system;
+                config.allowUnfree = true;
+              };
+              inherit inputs;
+            };
+          ciPackages =
+            system:
+            let
+              unfree = unfreePackages system;
+            in
+            lib.mapAttrs (
+              name: pkg: if (builtins.tryEval pkg.drvPath).success then pkg else unfree.${name} or pkg
+            ) self.packages.${system};
           buildable =
             system: name: pkg:
             let
@@ -797,7 +812,6 @@
                 lib.isDerivation pkg
                 # Needs OCI credentials; built by the GitHub workflow.
                 && name != "oracle-cloud-agent"
-                && isFree (pkg.meta.license or null)
                 && (
                   if pkg ? passthru.ciBuildSystems then
                     lib.elem system pkg.passthru.ciBuildSystems
@@ -816,9 +830,7 @@
                 _: host: lib.elem host.pkgs.stdenv.hostPlatform.system ciSystems
               ) self.nixosConfigurations
             );
-            packages = lib.genAttrs ciSystems (
-              system: lib.filterAttrs (buildable system) self.packages.${system}
-            );
+            packages = lib.genAttrs ciSystems (system: lib.filterAttrs (buildable system) (ciPackages system));
             checks = lib.genAttrs ciSystems (system: self.checks.${system});
           };
         };
