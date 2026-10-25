@@ -182,12 +182,6 @@ androidPkgs.extend (
         # full test suite is unrelated to exporting the application runtime.
         doCheck = false;
       });
-      # Carry AnyIO upstream fix 818e4ac for its server-side TLS fixture.
-      anyio = previous.anyio.overridePythonAttrs (old: {
-        patches = (old.patches or [ ]) ++ [
-          ./patches/anyio-server-tls-tests.patch
-        ];
-      });
       charset-normalizer =
         (previous.charset-normalizer.override {
           withMypyc = false;
