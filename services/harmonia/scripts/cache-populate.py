@@ -146,13 +146,24 @@ def populate(state):
         )
     )
     ordered = targets(matrix)
+    known = state.get("targets", {})
+    # Host systems behind main go first, so a merge reaches the caches (and
+    # the S3/LAN mirrors) within a pass or two instead of a full rotation.
+    # One attempt per revision: a host that failed waits for the next one.
+    stale = [
+        t
+        for t in ordered
+        if t[0].startswith("nixosConfigurations.")
+        and known.get(t[0], {}).get("revision") != revision
+    ]
     cursor = state.get("cursor", "")
-    ordered = [t for t in ordered if t[0] > cursor] + [
+    rotation = [t for t in ordered if t[0] > cursor] + [
         t for t in ordered if t[0] <= cursor
     ]
+    rotation = [t for t in rotation if t not in stale]
     started = time.monotonic()
     failures = []
-    for target, impure in ordered[:8]:
+    for target, impure in (stale + rotation)[:8]:
         if time.monotonic() - started > 7200 or time.monotonic() >= DEADLINE:
             break
         try:
@@ -215,7 +226,8 @@ def populate(state):
                 "revision": revision,
                 "status": "failed",
             }
-        state["cursor"] = target
+        if (target, impure) in rotation:
+            state["cursor"] = target
         state["revision"] = revision
         state["total_targets"] = len(ordered)
         state["updated"] = int(time.time())
