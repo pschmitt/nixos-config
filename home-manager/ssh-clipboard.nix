@@ -99,6 +99,20 @@ let
     text = builtins.readFile ./scripts/ssh-clipboard-watchdog.sh;
   };
 
+  # Processes started without WAYLAND_DISPLAY (older shells, tmux panes,
+  # non-login SSH) still find the headless compositor
+  wlClipboardHeadless = pkgs.symlinkJoin {
+    name = "wl-clipboard-headless";
+    paths = [ pkgs.wl-clipboard ];
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+    postBuild = ''
+      for bin in wl-copy wl-paste
+      do
+        wrapProgram "$out/bin/$bin" --set-default WAYLAND_DISPLAY ${waylandSocket}
+      done
+    '';
+  };
+
   # xclip-backed stand-ins for wl-clipboard on the headless Xvfb display
   wlPasteShim = pkgs.writeShellApplication {
     name = "wl-paste";
@@ -206,7 +220,7 @@ in
         wlCopyShim
         wlPasteShim
       ]
-      ++ lib.optional cfg.headlessWayland pkgs.wl-clipboard;
+      ++ lib.optional cfg.headlessWayland wlClipboardHeadless;
       sessionVariables = lib.mkMerge [
         (lib.mkIf (cfg.sessionDisplay != null) {
           DISPLAY = cfg.sessionDisplay;
