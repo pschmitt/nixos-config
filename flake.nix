@@ -773,10 +773,10 @@
         }
       );
 
-      # Jobs for nixbot (self-hosted CI on rofl-14): every x86_64/aarch64 host
-      # system and the free, supported custom packages, like the free part of
-      # the GitHub Actions matrix. Not in `checks`, which `nix flake check`
-      # builds locally.
+      # Jobs for nixbot (self-hosted CI on rofl-14, see nixbot.toml): every
+      # x86_64/aarch64 host system, the free, supported custom packages (the
+      # free part of the GitHub Actions matrix) and the flake checks. Not in
+      # `checks` itself, which `nix flake check` builds locally.
       herculesCI =
         let
           inherit (nixpkgs) lib;
@@ -819,6 +819,7 @@
             packages = lib.genAttrs ciSystems (
               system: lib.filterAttrs (buildable system) self.packages.${system}
             );
+            checks = lib.genAttrs ciSystems (system: self.checks.${system});
           };
         };
 
