@@ -820,6 +820,8 @@
             let
               result = builtins.tryEval (
                 lib.isDerivation pkg
+                # Re-exported input; its own repository owns the CI build.
+                && name != "browser-daemon"
                 # Needs OCI credentials; built by the GitHub workflow.
                 && name != "oracle-cloud-agent"
                 && (
