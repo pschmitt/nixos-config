@@ -162,7 +162,9 @@ androidPkgs.extend (
       };
     pythonTermuxOverrides = _python: previous: {
       aiohttp = previous.aiohttp.overridePythonAttrs (old: {
-        AIOHTTP_NO_EXTENSIONS = "1";
+        env = (old.env or { }) // {
+          AIOHTTP_NO_EXTENSIONS = "1";
+        };
         # These are Nixpkgs' optional speedups, not required by Linkding CLI.
         dependencies = pkgs.lib.filter (
           package:
@@ -190,8 +192,10 @@ androidPkgs.extend (
             doCheck = false;
             nativeCheckInputs = [ ];
           });
-      frozenlist = previous.frozenlist.overridePythonAttrs (_: {
-        FROZENLIST_NO_EXTENSIONS = "1";
+      frozenlist = previous.frozenlist.overridePythonAttrs (old: {
+        env = (old.env or { }) // {
+          FROZENLIST_NO_EXTENSIONS = "1";
+        };
       });
       # The overrides above rebuild moto (via slack-sdk's checks) from source;
       # this test fails there with ExecutionAlreadyExists.
@@ -208,12 +212,16 @@ androidPkgs.extend (
         # upstream API test suite is not part of this Termux export.
         doCheck = false;
       });
-      multidict = previous.multidict.overridePythonAttrs (_: {
-        MULTIDICT_NO_EXTENSIONS = "1";
+      multidict = previous.multidict.overridePythonAttrs (old: {
+        env = (old.env or { }) // {
+          MULTIDICT_NO_EXTENSIONS = "1";
+        };
         doCheck = false;
       });
-      propcache = previous.propcache.overridePythonAttrs (_: {
-        PROPCACHE_NO_EXTENSIONS = "1";
+      propcache = previous.propcache.overridePythonAttrs (old: {
+        env = (old.env or { }) // {
+          PROPCACHE_NO_EXTENSIONS = "1";
+        };
         disabledTests = [ "c-extension-module" ];
       });
       ruamel-yaml = previous.ruamel-yaml.overridePythonAttrs (old: {
@@ -230,8 +238,10 @@ androidPkgs.extend (
         # Nixpkgs normally pins `ps` to its store path; Termux supplies it via APT.
         postPatch = "";
       });
-      yarl = previous.yarl.overridePythonAttrs (_: {
-        YARL_NO_EXTENSIONS = "1";
+      yarl = previous.yarl.overridePythonAttrs (old: {
+        env = (old.env or { }) // {
+          YARL_NO_EXTENSIONS = "1";
+        };
       });
     };
     pythonTermux = pkgs.python3.override {
