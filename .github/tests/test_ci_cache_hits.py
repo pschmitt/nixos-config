@@ -24,6 +24,9 @@ nix() {
 retain_ref() {
   printf '%s\n' retained >> "$NIX_TEST_LOG"
 }
+publish_s3_ref() {
+  printf '%s\n' published >> "$NIX_TEST_LOG"
+}
 if [[ "$NIX_TEST_ACTION" == copy ]]
 then
   copy_refs "" '.#test'
@@ -105,6 +108,7 @@ source .github/workflows/scripts/nix-gh-build-matrix.sh
     def test_cached_copy_needs_no_local_closure_or_signing_key(self):
         calls = self.run_script(True, action="copy")
         self.assertIn("retained", calls)
+        self.assertIn("published", calls)
         self.assertFalse(any(c.startswith(("copy ", "store sign ")) for c in calls))
 
 
