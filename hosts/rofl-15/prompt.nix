@@ -1,0 +1,3 @@
+{
+  dotfiles.promptColor = "cyan";
+}
