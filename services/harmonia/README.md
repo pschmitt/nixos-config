@@ -34,6 +34,13 @@ sources still need to be supplied by the existing credentialed CI jobs. Store
 and authenticated HTTP access continue to use the existing Nix/SOPS credentials;
 no signing keys or credentials are added here.
 
+With `services.harmonia.publication.s3Mirror` enabled (rofl-14), retained
+main outputs are also mirrored to the niks3 S3 cache. `nix-cache-s3-sync`
+starts when `/var/lib/nixos-config-cache/main` changes and pushes only
+targets whose outputs changed; `nix-cache-s3-sync-all` re-checks every
+target nightly. Each output is pinned as `main-<target>-<index>`, and pins of
+targets no longer retained are removed. PR/manual outputs are not mirrored.
+
 Inspect progress with:
 
 ```console
@@ -41,6 +48,8 @@ systemctl status nix-cache-populate.service
 journalctl -u nix-cache-populate.service
 cat /var/lib/nixos-config-cache-populate/state.json
 nix-cache-retain list
+journalctl -u nix-cache-s3-sync.service -u nix-cache-s3-sync-all.service
+cat /var/lib/nixos-config-cache-s3/mirrored.json
 ```
 
 This provides eventual coverage and explicit retention, not unlimited history.

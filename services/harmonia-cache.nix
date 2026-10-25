@@ -35,6 +35,7 @@ let
       exec ${lib.getExe pkgs.python3} ${./harmonia/scripts/cache-populate.py} ${pkgs.hello}
     '';
   };
+  mirror = cfg.s3Mirror;
 in
 {
   options.services.harmonia.publication = {
@@ -44,6 +45,18 @@ in
       type = lib.types.str;
       default = "";
       description = "SSH hostname of the replica (using the existing remote-builder key).";
+    };
+    s3Mirror = {
+      enable = lib.mkEnableOption "mirroring retained main outputs to a niks3 S3 cache";
+      package = lib.mkPackageOption pkgs "niks3" { };
+      serverUrl = lib.mkOption {
+        type = lib.types.str;
+        description = "URL of the niks3 server.";
+      };
+      authTokenFile = lib.mkOption {
+        type = lib.types.str;
+        description = "Runtime path of a niks3 token allowed to push and manage `main-*` pins.";
+      };
     };
   };
 
@@ -73,6 +86,42 @@ in
             ExecStart = "${lib.getExe retain} prune";
           };
         };
+        nix-cache-s3-sync = lib.mkIf mirror.enable {
+          description = "Mirror retained main outputs to the niks3 S3 cache";
+          wants = [ "network-online.target" ];
+          after = [ "network-online.target" ];
+          restartIfChanged = false;
+          environment = {
+            NIKS3_BIN = lib.getExe' mirror.package "niks3";
+            NIKS3_SERVER_URL = mirror.serverUrl;
+            NIKS3_AUTH_TOKEN_FILE = mirror.authTokenFile;
+          };
+          serviceConfig = {
+            Type = "oneshot";
+            # Path-triggered runs only push targets whose outputs changed.
+            # Let a burst of publications (and their atomic renames) land.
+            ExecStartPre = "${lib.getExe' pkgs.coreutils "sleep"} 60";
+            ExecStart = "${lib.getExe retain} s3-sync";
+            StateDirectory = "nixos-config-cache-s3";
+            RuntimeMaxSec = "12h";
+            Nice = 15;
+            IOSchedulingClass = "idle";
+            CPUQuota = "200%";
+          };
+        };
+        nix-cache-s3-sync-all = lib.mkIf mirror.enable {
+          description = "Re-check every retained main output in the niks3 S3 cache";
+          inherit (config.systemd.services.nix-cache-s3-sync)
+            wants
+            after
+            restartIfChanged
+            environment
+            ;
+          serviceConfig = config.systemd.services.nix-cache-s3-sync.serviceConfig // {
+            ExecStartPre = [ ];
+            ExecStart = "${lib.getExe retain} s3-sync --all";
+          };
+        };
         nix-cache-populate = lib.mkIf cfg.populate {
           description = "Populate and replicate main outputs and verify Harmonia delivery";
           wants = [ "network-online.target" ];
@@ -96,7 +145,21 @@ in
           };
         };
       };
+      # CI and nix-cache-populate publish over SSH; mirror asynchronously
+      # instead of holding their sessions open during uploads.
+      paths.nix-cache-s3-sync = lib.mkIf mirror.enable {
+        wantedBy = [ "paths.target" ];
+        pathConfig.PathChanged = "/var/lib/nixos-config-cache/main";
+      };
       timers = {
+        nix-cache-s3-sync-all = lib.mkIf mirror.enable {
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnCalendar = "daily";
+            RandomizedDelaySec = "1h";
+            Persistent = true;
+          };
+        };
         nix-cache-retention = {
           wantedBy = [ "timers.target" ];
           timerConfig = {
