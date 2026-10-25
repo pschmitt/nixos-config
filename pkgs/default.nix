@@ -7,6 +7,9 @@
 }:
 
 let
+  # The flake's packages output imports this file without overlays, so
+  # pkgs.stable only exists when called through the overlay.
+  stablePkgs = pkgs.stable or inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   zsh-tools = pkgs.callPackage ./zsh-tools { inherit inputs; };
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
   # libcaption = pkgs.callPackage ./libcaption { };
@@ -80,7 +83,7 @@ in
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   # Hypruse 0.13 requires MCP 1.x; the unstable package set now has MCP 2.x.
-  hypruse = pkgs.stable.python3Packages.callPackage ./hypruse {
+  hypruse = stablePkgs.python3Packages.callPackage ./hypruse {
     inherit (pkgs)
       grim
       hyprland
