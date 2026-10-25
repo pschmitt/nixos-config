@@ -16,7 +16,7 @@ import re
 import urllib.error
 import urllib.request
 
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--url", required=True, help="signal-cli daemon base URL")
@@ -30,7 +30,7 @@ ap.add_argument(
 args = ap.parse_args()
 aliases = dict(r.split("=", 1) for r in args.recipient)
 
-mcp = FastMCP("signal")
+mcp = MCPServer("signal")
 ids = itertools.count(1)
 
 
