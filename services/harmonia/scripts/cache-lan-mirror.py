@@ -8,12 +8,33 @@ first) and rooting them lets the local Harmonia serve them to LAN clients.
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
 
 ROOTS = Path(os.environ.get("NIX_LAN_MIRROR_ROOTS", "/nix/var/nix/gcroots/lan-mirror"))
 NIX_STORE = os.environ.get("NIX_STORE_BIN", "nix-store")
+# Free space that must remain on the store's filesystem after a fetch.
+MIN_FREE = int(os.environ.get("NIX_LAN_MIRROR_MIN_FREE", str(100 * 1024**3)))
+UNITS = {"KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
+
+
+def fetch_size(path):
+    """Unpacked bytes `nix-store --realise path` would add to the store."""
+    output = subprocess.run(
+        [NIX_STORE, "--realise", "--dry-run", path],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stderr
+    match = re.search(r"([0-9.]+) (KiB|MiB|GiB|TiB) unpacked", output)
+    return int(float(match[1]) * UNITS[match[2]]) if match else 0
+
+
+def available():
+    usage = os.statvfs("/nix/store")
+    return usage.f_bavail * usage.f_frsize
 
 
 def main():
@@ -42,6 +63,18 @@ def main():
         incoming = ROOTS / f".incoming-{name}"
         incoming.unlink(missing_ok=True)
         try:
+            # Keep the previous output (still served) rather than risk the
+            # filesystem, which on a typical host is shared with / and VMs.
+            needed = fetch_size(path)
+            if available() - needed < MIN_FREE:
+                print(
+                    f"Skipping {name}: needs {needed / 1024**3:.1f} GiB, "
+                    f"{available() / 1024**3:.1f} GiB free, "
+                    f"keeping {MIN_FREE / 1024**3:.0f} GiB",
+                    flush=True,
+                )
+                failed.append(name)
+                continue
             subprocess.run(
                 [NIX_STORE, "--realise", path, "--add-root", str(incoming)],
                 check=True,
