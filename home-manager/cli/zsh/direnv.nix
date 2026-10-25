@@ -10,8 +10,10 @@ let
     mkdir -p $out
     ${pkgs.direnv}/bin/direnv hook zsh > $out/init.zsh
     ${lib.optionalString termuxMode ''
+      # Only the store path: direnv quotes it differently across releases
+      # ("..." up to 2.37, $'...' since 2.38).
       substituteInPlace $out/init.zsh \
-        --replace-fail '"${pkgs.direnv}/bin/direnv"' direnv
+        --replace-fail '${pkgs.direnv}/bin/direnv' direnv
     ''}
   '';
 in
