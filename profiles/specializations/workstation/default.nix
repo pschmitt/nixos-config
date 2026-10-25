@@ -19,6 +19,7 @@ in
     ../../base
     ../../features/network
     ../../features/desktop
+    ../../features/diagnostics/reboot-logging.nix
 
     # Desktop + display manager; these laptops run Hyprland and GNOME under
     # GDM.

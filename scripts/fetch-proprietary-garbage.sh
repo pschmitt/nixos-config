@@ -20,10 +20,16 @@ get_proprietary_packages() {
     let
       flake = builtins.getFlake (builtins.toString ./.);
       pkgs = flake.packages.x86_64-linux;
-      hasProprietarySource = n:
-        let res = builtins.tryEval (pkgs.${n}.proprietarySource or null);
-        in res.success && res.value != null;
-      proprietaryPkgs = builtins.filter hasProprietarySource (builtins.attrNames pkgs);
+      # Do not probe every package: evaluating unrelated package attributes can
+      # fail before tryEval gets a value (tryEval only catches throw).
+      proprietaryPkgs = [
+        "ComicCode"
+        "ComicCodeNF"
+        "MonoLisa"
+        "MonoLisa-Custom"
+        "MonoLisa-CustomNF"
+        "MonoLisaNF"
+      ];
     in
       proprietaryPkgs
   ' | jq -r '.[]'
@@ -183,7 +189,17 @@ then
   fi
 
   echo "Discovering proprietary packages"
-  mapfile -t PROPRIETARY_PACKAGES < <(get_proprietary_packages)
+  if ! proprietary_packages=$(get_proprietary_packages)
+  then
+    echo "❌ Failed to discover proprietary packages" >&2
+    exit 1
+  fi
+
+  PROPRIETARY_PACKAGES=()
+  if [[ -n "$proprietary_packages" ]]
+  then
+    mapfile -t PROPRIETARY_PACKAGES <<< "$proprietary_packages"
+  fi
 
   if [[ ${#PROPRIETARY_PACKAGES[@]} -eq 0 ]]
   then
