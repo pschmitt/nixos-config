@@ -220,7 +220,9 @@ def main():
     with (STATE / ".lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         if args.action == "s3-sync":
-            records = [json.loads(p.read_text()) for p in (STATE / "main").glob("*.json")]
+            records = [
+                json.loads(p.read_text()) for p in (STATE / "main").glob("*.json")
+            ]
             # Uploads can take hours; do not block publications meanwhile.
             fcntl.flock(lock, fcntl.LOCK_UN)
             s3_sync(records, everything=args.all)

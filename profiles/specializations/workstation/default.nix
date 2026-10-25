@@ -83,7 +83,9 @@ in
     trusted-public-keys = [ "fnuc:X/5wlLoWwSvNyAm369jFXOgwx7og2VLIs/bzTsoZ85Q=" ];
   };
 
-  nixHost.extraSubstituters = [ "https://cache.fnuc.${config.domains.vpn}" ];
+  # Ask fnuc (LAN, mirrors the workstations' systems) before the S3 cache
+  # (priority 30) and cache.nixos.org (40).
+  nixHost.extraSubstituters = [ "https://cache.fnuc.${config.domains.vpn}?priority=20" ];
 
   systemd.services.nix-daemon.serviceConfig = {
     CPUWeight = lib.mkDefault 50;

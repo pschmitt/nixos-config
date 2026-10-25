@@ -19,6 +19,7 @@
     ./memory-snapshot.nix
     ./monit.nix
     ./networking.nix
+    ./nix-cache-mirror.nix
     ./prompt.nix
     ./rescue-ssh.nix
     ./resource-control.nix
