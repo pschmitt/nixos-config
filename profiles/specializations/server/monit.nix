@@ -110,7 +110,20 @@ let
   nonNFSFileSystems = lib.filterAttrs (
     _name: fs: fs.fsType != "nfs" && !lib.elem "bind" (fs.options or [ ])
   ) config.fileSystems;
-  mountPoints = lib.mapAttrsToList (_name: fs: fs.mountPoint) nonNFSFileSystems;
+  # Btrfs subvolumes share capacity. Keep the first mountpoint (normally /)
+  # for each backing device so both capacity checks report it only once.
+  # Other filesystem types retain their individual mount checks.
+  monitoredFileSystems = lib.foldl' (
+    selected: fs:
+    if
+      fs.fsType == "btrfs"
+      && lib.any (other: other.fsType == "btrfs" && other.device == fs.device) selected
+    then
+      selected
+    else
+      selected ++ [ fs ]
+  ) [ ] (builtins.attrValues nonNFSFileSystems);
+  mountPoints = map (fs: fs.mountPoint) monitoredFileSystems;
   monitFilesystems = lib.strings.concatMapStringsSep "\n" monitFilesystem mountPoints;
 
   renderMonitConfig = pkgs.writeShellScript "render-monit-config" ''
