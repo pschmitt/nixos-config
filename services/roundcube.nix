@@ -66,12 +66,12 @@ in
     phpfpm.pools.roundcube = {
       user = roundcubeUser;
       group = roundcubeGroup;
-      phpOptions = ''
-        error_log = '/dev/stderr'
-        log_errors = on
-        post_max_size = 25M
-        upload_max_filesize = 25M
-      '';
+      phpOptions = {
+        error_log = "/dev/stderr";
+        log_errors = "on";
+        post_max_size = "25M";
+        upload_max_filesize = "25M";
+      };
       settings = {
         "listen.owner" = config.services.nginx.user;
         "listen.group" = config.services.nginx.group;

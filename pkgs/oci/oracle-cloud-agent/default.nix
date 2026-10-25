@@ -31,25 +31,25 @@ stdenv.mkDerivation rec {
   yum_repo = "yum.eu-frankfurt-1.oci.oraclecloud.com";
   src = fetchurl {
     url =
-      if stdenv.isAarch64 then
+      if stdenv.hostPlatform.isAarch64 then
         "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/aarch64/getPackage/oracle-cloud-agent-${version}-${release}.aarch64.rpm"
-      else if stdenv.isx86_64 then
+      else if stdenv.hostPlatform.isx86_64 then
         "https://${yum_repo}/repo/OracleLinux/OL9/oci/included/x86_64/getPackage/oracle-cloud-agent-${version}-${release}.x86_64.rpm"
       else
         throw "Unsupported platform";
     hash =
-      if stdenv.isAarch64 then
+      if stdenv.hostPlatform.isAarch64 then
         hashAarch64
-      else if stdenv.isx86_64 then
+      else if stdenv.hostPlatform.isx86_64 then
         hashX86_64
       else
         throw "Unsupported platform";
   };
   # Manually downloaded RPMs
   # src =
-  #   if stdenv.isAarch64 then
+  #   if stdenv.hostPlatform.isAarch64 then
   #     ./src/oracle-cloud-agent-1.38.0-7.el9.aarch64.rpm
-  #   else if stdenv.isx86_64 then
+  #   else if stdenv.hostPlatform.isx86_64 then
   #     ./src/oracle-cloud-agent-1.38.0-10815.el9.x86_64.rpm
   #   else
   #     throw "Unsupported platform";
