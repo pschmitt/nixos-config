@@ -773,6 +773,55 @@
         }
       );
 
+      # Jobs for nixbot (self-hosted CI on rofl-14): every x86_64/aarch64 host
+      # system and the free, supported custom packages, like the free part of
+      # the GitHub Actions matrix. Not in `checks`, which `nix flake check`
+      # builds locally.
+      herculesCI =
+        let
+          inherit (nixpkgs) lib;
+          ciSystems = [
+            "aarch64-linux"
+            "x86_64-linux"
+          ];
+          isFree =
+            license:
+            if builtins.isList license then
+              builtins.any isFree license
+            else
+              builtins.isAttrs license && (license.free or false);
+          buildable =
+            system: name: pkg:
+            let
+              result = builtins.tryEval (
+                lib.isDerivation pkg
+                # Needs OCI credentials; built by the GitHub workflow.
+                && name != "oracle-cloud-agent"
+                && isFree (pkg.meta.license or null)
+                && (
+                  if pkg ? passthru.ciBuildSystems then
+                    lib.elem system pkg.passthru.ciBuildSystems
+                  else
+                    lib.meta.availableOn (lib.systems.elaborate system) pkg
+                )
+              );
+            in
+            result.success && result.value;
+        in
+        {
+          inherit ciSystems;
+          onPush.default.outputs = {
+            hosts = lib.mapAttrs (_: host: host.config.system.build.toplevel) (
+              lib.filterAttrs (
+                _: host: lib.elem host.pkgs.stdenv.hostPlatform.system ciSystems
+              ) self.nixosConfigurations
+            );
+            packages = lib.genAttrs ciSystems (
+              system: lib.filterAttrs (buildable system) self.packages.${system}
+            );
+          };
+        };
+
       # Devshell for bootstrapping
       # Accessible through 'nix develop' or 'nix-shell' (legacy)
       devShells = forAllSystems (
