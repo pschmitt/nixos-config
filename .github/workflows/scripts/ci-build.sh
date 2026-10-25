@@ -134,6 +134,16 @@ retain_ref() {
     ssh "$NIX_CACHE_PUBLISH_HOST" /run/current-system/sw/bin/nix-cache-retain publish
 }
 
+publish_s3_ref() {
+  local ref="$1"
+  local paths_json="$2"
+  local paths_text
+  local -a paths
+  paths_text="$(jq -er '.[]' <<< "$paths_json")" || return
+  readarray -t paths <<< "$paths_text"
+  bash "$(dirname -- "${BASH_SOURCE[0]}")/ci-push-cache.sh" "${ref#*#}" "${paths[@]}"
+}
+
 build_ref() {
   local ref="$1"
   local use_builders="${2:-}"
@@ -191,6 +201,7 @@ copy_refs() {
     if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
     then
       retain_ref "$ref" "$cached"
+      publish_s3_ref "$ref" "$cached"
       continue
     fi
     if [[ -z "${NIX_STORE_PRIVKEY:-}" ]]
@@ -211,6 +222,7 @@ copy_refs() {
     paths="$("${paths_query[@]}" "$ref")"
     paths_json="$(jq -Rsc 'split("\n") | map(select(length > 0))' <<< "$paths")"
     retain_ref "$ref" "$paths_json"
+    publish_s3_ref "$ref" "$paths_json"
   done
 }
 

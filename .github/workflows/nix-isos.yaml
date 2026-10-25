@@ -5,11 +5,16 @@ on:
     - cron: "17 3 * * 0"
   workflow_dispatch: # allows manual triggering
 
+permissions:
+  contents: read
+  id-token: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
+  NIKS3_SERVER_URL: ${{ vars.NIKS3_SERVER_URL }}
   nix-conf: |-
     fallback = true # build from source if a binary substitute fails
     extra-experimental-features = nix-command flakes
@@ -60,6 +65,11 @@ jobs:
           fi
 
           nix build --print-build-logs ".#nixosConfigurations.${ISO}.config.system.build.isoImage"
+
+      - name: Publish ISO to S3 cache
+        env:
+          CACHE_TARGET: iso-${{ matrix.target }}
+        run: bash .github/workflows/scripts/ci-push-cache.sh "$CACHE_TARGET" "$(readlink -e result)"
 
       - name: Prepare asset upload
         id: prepare_asset_upload
