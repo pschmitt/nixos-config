@@ -1,1 +1,1 @@
-{"disks":{"root":{"az":"sz1","id":"891d5f36-2528-42b2-87b0-5203c44ab36c","name":"rofl-13-boot-volume"}},"network":{"floating_ip":"89.163.172.85"}}
+{"disks":{"root":{"az":"sz1","id":"ea0247b7-d8b5-434f-9385-a3192e3768f6","name":"rofl-13-boot-volume"}},"network":{"floating_ip":"89.163.172.85"}}
