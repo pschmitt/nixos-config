@@ -93,6 +93,7 @@ let
     "fnuc"
     "rofl-13"
     "rofl-14"
+    "rofl-15"
   ];
   # browser-daemon wants a token on every route: its dashboard page hands one
   # out as a cookie to anyone Authelia lets through, which is how the MCP gets it.

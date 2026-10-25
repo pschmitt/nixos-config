@@ -5,6 +5,7 @@ let
     "fnuc"
     "rofl-13"
     "rofl-14"
+    "rofl-15"
   ];
   # The names rofl-10's public vhosts (hosts/rofl-10/browserless-public.nix)
   # answer to: a browser sends them as Origin while the vhost rewrites Host.

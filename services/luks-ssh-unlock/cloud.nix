@@ -14,6 +14,7 @@ let
     "rofl-12"
     "rofl-13"
     "rofl-14"
+    "rofl-15"
   ];
 
   # Define a function to create an instance with common defaults

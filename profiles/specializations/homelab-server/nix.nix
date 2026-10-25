@@ -1,6 +1,6 @@
 {
   imports = [
-    # Offload compilation tasks to remote build machines (rofl-13, rofl-14, rofl-10).
+    # Offload compilation tasks to remote build machines (rofl-13, rofl-14, rofl-15, rofl-10).
     ../../../services/nix-distributed-build.nix
   ];
 

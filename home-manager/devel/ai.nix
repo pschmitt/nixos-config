@@ -13,6 +13,7 @@ let
     "fnuc"
     "rofl-13"
     "rofl-14"
+    "rofl-15"
   ];
 
   browserNode = host: "https://browser.${host}.${config.domains.netbird}";
