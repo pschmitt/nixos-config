@@ -6,7 +6,6 @@
     ./hardware-configuration.nix
     ./networking.nix
     ./prompt.nix
-    ./proprietary-sources.nix
   ];
 
   # Pinned per host: bumping it changes stateful service defaults.

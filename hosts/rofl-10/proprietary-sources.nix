@@ -1,5 +1,7 @@
-# nixbot builds the proprietary packages here; their `requireFile` sources
-# come from the password-protected blobs host (dedicated `nixbot` user).
+# nixbot's proprietary packages: their `requireFile` sources can't be built,
+# so they are seeded into this store (nixbot's), from which the build nodes
+# get them as inputs. They come from the password-protected blobs host
+# (dedicated `nixbot` user).
 { config, pkgs, ... }:
 {
   imports = [ ../../services/nix-proprietary-sources.nix ];

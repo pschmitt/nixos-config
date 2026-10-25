@@ -773,10 +773,10 @@
         }
       );
 
-      # Jobs for nixbot (self-hosted CI on rofl-14, see nixbot.toml): every
+      # Jobs for nixbot (self-hosted CI on rofl-10, see nixbot.toml): every
       # x86_64/aarch64 host system, the supported custom packages and the
       # flake checks. Not in `checks` itself, which `nix flake check` builds
-      # locally. Proprietary sources are seeded on rofl-14
+      # locally. Proprietary sources are seeded on rofl-10
       # (services/nix-proprietary-sources.nix).
       herculesCI =
         let

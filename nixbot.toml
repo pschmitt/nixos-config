@@ -1,3 +1,3 @@
-# nixbot (self-hosted CI on rofl-14) builds this attribute instead of
+# nixbot (self-hosted CI on rofl-10) builds this attribute instead of
 # `checks`; see `herculesCI` in flake.nix.
 attribute = "herculesCI.onPush.default.outputs"
