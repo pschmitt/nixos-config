@@ -62,6 +62,24 @@
         ];
       }
       {
+        hostName = "rofl-16.${config.domains.main}";
+        protocol = "ssh-ng";
+        sshUser = "nix-remote-builder";
+        sshKey = config.sops.secrets."ssh/nix-remote-builder/privkey".path;
+        # NOTE we rely on the public keys being setup by programs.ssh.knownHosts
+        systems = [
+          "aarch64-linux"
+          "x86_64-linux"
+        ];
+        maxJobs = 28;
+        speedFactor = 3;
+        supportedFeatures = [
+          "nixos-test"
+          "benchmark"
+          "big-parallel"
+        ];
+      }
+      {
         hostName = "rofl-10.${config.domains.main}";
         protocol = "ssh-ng";
         sshUser = "nix-remote-builder";

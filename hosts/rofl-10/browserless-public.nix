@@ -7,6 +7,7 @@ let
     "rofl-13"
     "rofl-14"
     "rofl-15"
+    "rofl-16"
   ];
   publicHost = host: "browser.${host}.${domain}";
   # Any browser-daemon: fnuc, or a rofl one while fnuc is down.
@@ -75,6 +76,7 @@ let
       "rofl-13" = 18082;
       "rofl-14" = 18083;
       "rofl-15" = 18084;
+      "rofl-16" = 18085;
     }
     .${host};
   hop = host: {

@@ -93,6 +93,12 @@ let
       hasInitrdCheck = true;
       healthcheckCmd = encryptedRootHealthcheck;
     }
+    {
+      name = "rofl-16";
+      hostname = "rofl-16.brkn.lol";
+      hasInitrdCheck = true;
+      healthcheckCmd = encryptedRootHealthcheck;
+    }
   ];
 
   # By default, each importing host unlocks every other fleet member.

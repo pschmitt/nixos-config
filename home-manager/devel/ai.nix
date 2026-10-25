@@ -14,6 +14,7 @@ let
     "rofl-13"
     "rofl-14"
     "rofl-15"
+    "rofl-16"
   ];
 
   browserNode = host: "https://browser.${host}.${config.domains.netbird}";
