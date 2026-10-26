@@ -21,7 +21,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "kubectl-ksh";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2023-12-08";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;

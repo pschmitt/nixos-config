@@ -23,7 +23,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "tesmart-cli";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2023-04-14";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
