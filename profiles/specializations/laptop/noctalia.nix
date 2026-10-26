@@ -550,9 +550,9 @@ in
                     format = "{:%Y-%m-%d %H:%M:%S}";
                     # on_surface (bright/high-contrast) and on_surface_variant
                     # (standard muted secondary-text) both still read too
-                    # bright here; outline is the dimmest role in the
+                    # bright here; outline_variant is the dimmest role in the
                     # palette (normally used for borders/dividers).
-                    color = "outline";
+                    color = "outline_variant";
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     center_text = true;
@@ -648,7 +648,7 @@ in
                   box_height = 0.0;
                   settings = {
                     layout = "horizontal";
-                    color = "outline"; # match datetime-${name}'s color
+                    color = "outline_variant"; # match datetime-${name}'s color
                     font_family = "ComicCode Nerd Font";
                     shadow = true;
                     hide_when_no_media = true;
