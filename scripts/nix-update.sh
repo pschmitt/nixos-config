@@ -221,15 +221,19 @@ has_update_script() {
 run_update() {
   local package_name="$1"
   local target_system="$2"
+  local version_mode="${3:-}"
 
-  # NOTE We need to set pure-eval to false to allow building nonfree pkgs
   # Unstable versions track a branch; their repos may have no releases.
-  local version_mode=stable
-  if [[ "$(get_package_version "$package_name" "$target_system")" == *unstable-* ]]
+  if [[ -z "$version_mode" ]]
   then
-    version_mode=branch
+    version_mode=stable
+    if [[ "$(get_package_version "$package_name" "$target_system")" == *unstable-* ]]
+    then
+      version_mode=branch
+    fi
   fi
 
+  # NOTE We need to set pure-eval to false to allow building nonfree pkgs
   local args=(--flake "$package_name" --format --version "$version_mode" --option pure-eval false)
 
   if has_update_script "$package_name" "$target_system"
@@ -416,11 +420,15 @@ main() {
 
   local pkg
   local system
+  local version_mode
   for pkg in "${packages[@]}"
   do
+    # The first system picks the version; the others only refresh their
+    # hashes, so a second lookup cannot pick a different release.
+    version_mode=""
     for system in "${systems[@]}"
     do
-      if ! run_update "$pkg" "$system"
+      if ! run_update "$pkg" "$system" "$version_mode"
       then
         echo "Failed to update package: $pkg (${system})" >&2
 
@@ -429,6 +437,7 @@ main() {
           return 1
         fi
       fi
+      version_mode=skip
     done
   done
 }

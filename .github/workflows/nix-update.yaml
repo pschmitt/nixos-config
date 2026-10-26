@@ -213,11 +213,15 @@ jobs:
           AUTO_MERGE_PATCH: ${{ steps.prmeta.outputs.auto_merge_patch }}
         run: |
           gh label create nix-update-patch --description 'Patch update eligible for automatic merge after CI' --force
+          # REST, not `gh pr edit`: its GraphQL query needs read:org, which
+          # the update token lacks.
+          labels="repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels"
           if [[ "$AUTO_MERGE_PATCH" == "true" ]]
           then
-            gh pr edit "$PR_NUMBER" --add-label nix-update-patch
+            gh api --silent "$labels" -f 'labels[]=nix-update-patch'
           else
-            gh pr edit "$PR_NUMBER" --remove-label nix-update-patch
+            # 404 when the label is not set.
+            gh api --silent -X DELETE "${labels}/nix-update-patch" || true
           fi
 
   update-oci:
