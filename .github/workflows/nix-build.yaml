@@ -172,13 +172,10 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Native aarch64 builds on free arm runners, outside the shared runner
+    # budget: serialized, a full run took 8+ hours.
     strategy:
-      max-parallel: 1
+      max-parallel: 8
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.free }}
@@ -234,16 +231,13 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Native aarch64 builds on free arm runners, outside the shared runner
+    # budget: serialized, a full run took 8+ hours.
     env:
       NIXPKGS_ALLOW_UNFREE: 1
       SSH_PRIVATE_KEY_PATH: "/home/runner/.ssh/id_ed25519"
     strategy:
-      max-parallel: 1
+      max-parallel: 8
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.nonfree }}
@@ -318,13 +312,10 @@ jobs:
     needs: setup-matrix
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Native aarch64 builds on free arm runners, outside the shared runner
+    # budget: serialized, a full run took 8+ hours.
     strategy:
-      max-parallel: 1
+      max-parallel: 8
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci }}
@@ -452,13 +443,10 @@ jobs:
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && toJson(fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64) != '[]' }}
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Native aarch64 builds on free arm runners, outside the shared runner
+    # budget: serialized, a full run took 8+ hours.
     strategy:
-      max-parallel: 1
+      max-parallel: 8
       fail-fast: false
       matrix:
         host: ${{ fromJson(needs.setup-matrix.outputs.matrix).hosts.aarch64 }}
@@ -620,13 +608,10 @@ jobs:
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && fromJson(needs.setup-matrix.outputs.matrix).droid }}
     timeout-minutes: 120
     runs-on: ubuntu-24.04-arm
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Native aarch64 builds on free arm runners, outside the shared runner
+    # budget: serialized, a full run took 8+ hours.
     strategy:
-      max-parallel: 1
+      max-parallel: 8
       fail-fast: false
       matrix:
         droid: [ "zf10" ]

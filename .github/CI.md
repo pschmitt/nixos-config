@@ -31,10 +31,9 @@ tools use the locked nixpkgs revision. Unrelated changes skip that tooling setup
 The stable `Nix build result` check aggregates selected builds and
 tooling results; intentional skips pass, while failures and cancellations fail.
 
-Each build matrix runs one job at a time. The package categories can occupy
-three runners together; the host/Android phase can also occupy three.
-This is a per-run limit, not an account-wide limit. Separate PRs can overlap.
-New commits cancel obsolete builds of the same branch or PR.
+The aarch64 build matrices run natively on GitHub arm runners, up to eight
+jobs each, outside the runner budget below. New commits cancel obsolete PR
+builds; main runs finish so their outputs reach niks3.
 
 ISO and Raspberry Pi images build weekly and on manual dispatch. Package
 updates run daily, with two concurrent update jobs per category. Eligible patch
@@ -93,7 +92,7 @@ are preserved and closed before ending the collapsible section.
 
 All checked-in workflow jobs share two repository-wide concurrency groups:
 
-- `nixos-config-runner-nix`: one Nix build, evaluation, update or image job.
+- `nixos-config-runner-nix`: one Nix evaluation, update or image job.
 - `nixos-config-runner-light`: one tooling, lint, merge or final-result job.
 
 This caps these workflows at two occupied runners across all PRs and workflows.
