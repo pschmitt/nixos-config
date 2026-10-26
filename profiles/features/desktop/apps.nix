@@ -3,7 +3,7 @@
   # https://app.cachix.org/cache/lan-mouse
   nix.settings = {
     # lan-mouse flake
-    substituters = [
+    extra-substituters = [
       "https://ghostty.cachix.org"
       "https://lan-mouse.cachix.org"
     ];

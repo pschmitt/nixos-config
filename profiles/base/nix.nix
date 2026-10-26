@@ -67,7 +67,7 @@
       # Fallback quickly if substituters are not available.
       connect-timeout = 5;
 
-      substituters = [
+      extra-substituters = [
         # NOTE cache.nixos.org is enabled by default, adding it here only
         # duplicates it
         # "https://cache.nixos.org"
