@@ -29,6 +29,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
   checkFlags = [
     # Spawns the real service, which the build sandbox forbids (EACCES)
     "--skip=real_container_service_start_stop_restart_and_ssh_revival"
+    # Drives a GTK client through python3, which is not in the sandbox
+    "--skip=headless_x11_round_trip"
   ];
 
   nativeBuildInputs = [ pkg-config ];
