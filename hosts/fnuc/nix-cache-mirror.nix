@@ -17,9 +17,8 @@
     enable = true;
     # Above min-free, so the mirror never relies on emergency GC.
     minFreeGiB = 100;
-    sourceHost = "nix-remote-builder@rofl-14.${config.domains.main}";
-    sshKeyFile = config.sops.secrets."ssh/nix-remote-builder/privkey".path;
-    targets = map (host: "nixosConfigurations.${host}.config.system.build.toplevel") [
+    sourceUrl = "https://nixbot.${config.domains.main}/nix-outputs/github/pschmitt/nixos-config/main";
+    targets = map (host: "herculesCI.onPush.default.outputs.hosts.${host}") [
       "ge2"
       "gk4"
       "x13"

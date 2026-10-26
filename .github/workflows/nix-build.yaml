@@ -22,7 +22,9 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Let main runs finish: a cancelled job pushes nothing to niks3, so slow
+  # aarch64 builds (pica4) would never reach the cache. PRs still cancel.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   # https://nix.dev/manual/nix/2.18/advanced-topics/distributed-builds
