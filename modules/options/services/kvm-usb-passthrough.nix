@@ -9,7 +9,7 @@ let
     zbdongle-e = "1a86:55d4";
     zwave-stick = "0658:0200";
     rfxtrx = "0403:6001";
-    ais-sdr = "0bda:2838";
+    ais-sdr = "0bda:2832";
   };
 in
 {

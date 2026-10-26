@@ -158,7 +158,7 @@ let
   replugSonoffDongle = mkReplugScript "kvm-usb-replug-sonoff-dongle" "1a86:55d4";
   replugZbt2 = mkReplugScript "kvm-usb-replug-zbt2" "303a:831a";
   replugZwa2 = mkReplugScript "kvm-usb-replug-zwa2" "303a:4001";
-  replugAisSdr = mkReplugScript "kvm-usb-replug-ais-sdr" "0bda:2838";
+  replugAisSdr = mkReplugScript "kvm-usb-replug-ais-sdr" "0bda:2832";
 in
 {
   config = lib.mkIf cfg.enable {
