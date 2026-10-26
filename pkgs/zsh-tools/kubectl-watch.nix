@@ -21,7 +21,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "kubectl-watch";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2023-08-21";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;

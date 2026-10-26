@@ -21,7 +21,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "kubectl-socks5-proxy";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2025-10-23";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
