@@ -781,10 +781,10 @@
       herculesCI =
         let
           inherit (nixpkgs) lib;
-          ciSystems = [
-            "aarch64-linux"
-            "x86_64-linux"
-          ];
+          # aarch64-linux builds natively on GitHub's arm runners
+          # (.github/workflows/nix-build.yaml); the build nodes could only
+          # emulate it.
+          ciSystems = [ "x86_64-linux" ];
           # The packages output uses plain legacyPackages, where unfree
           # packages (or wrappers around one, like falcon-sensor-wiit)
           # refuse to evaluate; take those from an unfree-enabled set.
@@ -830,7 +830,10 @@
                 )
               );
             in
-            result.success && result.value;
+            # Keep packages whose check fails to evaluate: nixbot then
+            # reports them as failed evaluations instead of silently
+            # dropping them from the build.
+            !result.success || result.value;
         in
         {
           inherit ciSystems;

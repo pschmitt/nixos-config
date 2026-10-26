@@ -46,10 +46,12 @@ check_and_merge() {
           )
         ) | .bucket];
 
+      # x86_64-linux is built by nixbot (a GitHub App check run, no
+      # workflow); GitHub Actions builds the aarch64-linux packages.
       [
         check_buckets("Nix build"; "setup-matrix"),
         check_buckets("Statix Lint"; "lint"),
-        package_buckets("x86_64-linux"),
+        check_buckets(""; "nixbot/nix-build"),
         package_buckets("aarch64-linux")
       ] as $required
       | if any($required[]; any(.[]; . == "fail" or . == "cancel")) then

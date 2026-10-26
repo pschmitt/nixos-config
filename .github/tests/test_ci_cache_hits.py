@@ -1,4 +1,4 @@
-"""Exercise the CI shell entrypoints with Nix and SSH publication mocked."""
+"""Exercise the CI shell entrypoints with Nix and niks3 publication mocked."""
 
 import os
 import subprocess
@@ -14,15 +14,18 @@ resolve_output_paths() {
 }
 nix() {
   printf '%s\n' "$*" >> "$NIX_TEST_LOG"
-  if [[ "$1" == path-info ]]
+  if [[ "$1" == path-info && "$*" == *--store* ]]
   then
     [[ -n "${NIX_TEST_HIT:-}" ]]
+  elif [[ "$1" == path-info ]]
+  then
+    printf '%s\n' /nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-example
   else
     return 0
   fi
 }
-retain_ref() {
-  printf '%s\n' retained >> "$NIX_TEST_LOG"
+publish_ref() {
+  printf 'published %s\n' "${3:-built}" >> "$NIX_TEST_LOG"
 }
 if [[ "$NIX_TEST_ACTION" == copy ]]
 then
@@ -45,11 +48,10 @@ class CacheHitTests(unittest.TestCase):
                 "NIX_TEST_LOG": str(log),
                 "NIX_TEST_ACTION": action,
                 "NIX_TEST_HIT": "1" if hit else "",
-                "NIX_DEST_STORE_URL": "ssh://fixture",
-                "NIX_CACHE_PUBLISH_HOST": "fixture",
+                "NIKS3_S3_STORE": "s3://fixture",
+                "NIKS3_SERVER_URL": "https://fixture",
                 "NIX_CACHE_SCOPE": "main",
             }
-            env.pop("NIX_STORE_PRIVKEY", None)
             subprocess.run(
                 ["bash", "-c", SCRIPT],
                 cwd=ROOT,
@@ -82,19 +84,16 @@ source .github/workflows/scripts/nix-gh-build-matrix.sh
             env={**os.environ, "NIX_CONFIG": "connect-timeout = 7"},
         )
 
-    def test_cache_hit_is_retained_without_local_build(self):
+    def test_cache_hit_skips_local_build(self):
         calls = self.run_script(True)
-        self.assertIn("retained", calls)
         self.assertFalse(any(c.startswith("build ") for c in calls))
 
     def test_cache_miss_builds_normally(self):
         calls = self.run_script(False)
         self.assertTrue(any(c.startswith("build ") for c in calls))
-        self.assertNotIn("retained", calls)
 
-    def test_preflight_hit_is_retained(self):
+    def test_preflight_hit_does_not_build(self):
         calls = self.run_script(True, action="check")
-        self.assertIn("retained", calls)
         self.assertFalse(any(c.startswith("build ") for c in calls))
 
     def test_preflight_miss_does_not_build(self):
@@ -102,10 +101,14 @@ source .github/workflows/scripts/nix-gh-build-matrix.sh
             self.run_script(False, action="check")
         self.assertEqual(result.exception.returncode, 1)
 
-    def test_cached_copy_needs_no_local_closure_or_signing_key(self):
+    def test_cached_copy_only_pins(self):
         calls = self.run_script(True, action="copy")
-        self.assertIn("retained", calls)
-        self.assertFalse(any(c.startswith(("copy ", "store sign ")) for c in calls))
+        self.assertIn("published 1", calls)
+        self.assertFalse(any(c.startswith("copy ") for c in calls))
+
+    def test_built_copy_pushes(self):
+        calls = self.run_script(False, action="copy")
+        self.assertIn("published built", calls)
 
 
 if __name__ == "__main__":

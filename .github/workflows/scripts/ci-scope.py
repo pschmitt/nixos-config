@@ -11,6 +11,10 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path, PurePosixPath
 
+# nixbot builds and evaluates every x86_64-linux target; GitHub Actions only
+# builds aarch64-linux, natively on arm runners.
+GITHUB_SYSTEM = "aarch64-linux"
+
 
 def output(*args):
     return subprocess.check_output(args, text=True).strip()
@@ -73,7 +77,7 @@ def prune_cache(base):
 def empty_matrix():
     return {
         "pkgs": {k: [] for k in ("free", "nonfree", "oci")},
-        "hosts": {"amd64": [], "aarch64": []},
+        "hosts": {"aarch64": []},
         "droid": False,
     }
 
@@ -178,13 +182,14 @@ def main():
                     "--raw",
                     f".#nixosConfigurations.{host}.config.nixpkgs.system",
                 )
-                architectures = {"x86_64-linux": "amd64", "aarch64-linux": "aarch64"}
-                if system not in architectures:
+                if system == "x86_64-linux":
+                    continue
+                if system != GITHUB_SYSTEM:
                     raise ValueError(f"Unsupported host architecture: {host}: {system}")
                 evaluate_drv(
                     f"nixosConfigurations.{host}.config.system.build.toplevel.drvPath"
                 )
-                matrix["hosts"][architectures[system]].append(host)
+                matrix["hosts"]["aarch64"].append(host)
             print(json.dumps(matrix, separators=(",", ":")))
             return
 
@@ -210,8 +215,9 @@ def main():
         else:
             broad = True
 
-    # Evaluate every host, including package-only changes: evaluating a package
-    # alone does not catch module assertions or host integration failures.
+    # Evaluate every aarch64 host, including package-only changes: evaluating a
+    # package alone does not catch module assertions or host integration
+    # failures.
     def evaluate_host(host, root=".", revision=None):
         return evaluate_drv(
             f"nixosConfigurations.{host}.config.system.build.toplevel.drvPath",
@@ -221,7 +227,7 @@ def main():
 
     # Bound evaluation too: two workers shorten setup without evaluating every
     # system concurrently and exhausting the runner's memory.
-    ordered_hosts = sorted(host_names)
+    ordered_hosts = sorted(matrix["hosts"]["aarch64"])
     with ThreadPoolExecutor(max_workers=2) as workers:
         host_drvs = dict(zip(ordered_hosts, workers.map(evaluate_host, ordered_hosts)))
 
@@ -244,7 +250,9 @@ def main():
                         ),
                     )
                 )
-            hosts = {host for host in host_names if host_drvs[host] != base_drvs[host]}
+            hosts = {
+                host for host in ordered_hosts if host_drvs[host] != base_drvs[host]
+            }
             droid_attr = "nixOnDroidConfigurations.zf10.activationPackage.drvPath"
             droid = evaluate_drv(droid_attr) != evaluate_drv(
                 droid_attr, f"path:{baseline}", base
@@ -257,12 +265,11 @@ def main():
             for package in matrix["pkgs"][category]
             if broad or package["name"] in packages
             for system in package["systems"]
+            if system == GITHUB_SYSTEM
         ]
-    if not broad:
-        for architecture in matrix["hosts"]:
-            matrix["hosts"][architecture] = [
-                host for host in matrix["hosts"][architecture] if host in hosts
-            ]
+    matrix["hosts"] = {
+        "aarch64": [host for host in ordered_hosts if broad or host in hosts]
+    }
     matrix["droid"] = droid
     print(json.dumps(matrix, separators=(",", ":")))
 

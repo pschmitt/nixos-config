@@ -69,10 +69,25 @@ class ScopeTests(unittest.TestCase):
                 else "/nix/store/system.drv"
             )
 
+        # x86_64 hosts are nixbot's: not evaluated or built on GitHub.
         result, calls = self.run_scope(["hosts/fnuc/default.nix"], command)
-        self.assertEqual(
-            json.loads(result)["hosts"], {"amd64": ["fnuc"], "aarch64": []}
-        )
+        self.assertEqual(json.loads(result)["hosts"], {"aarch64": []})
+        self.assertEqual(calls.call_count, 2)
+
+    def test_host_only_builds_aarch64_hosts(self):
+        def command(*args):
+            self.assertEqual(args[:2], ("nix", "eval"))
+            if "builtins.attrNames" in args:
+                return '["fnuc", "pica4"]'
+            self.assertIn("nixosConfigurations.pica4.", args[-1])
+            return (
+                "aarch64-linux"
+                if args[-1].endswith(".system")
+                else "/nix/store/system.drv"
+            )
+
+        result, calls = self.run_scope(["hosts/pica4/default.nix"], command)
+        self.assertEqual(json.loads(result)["hosts"], {"aarch64": ["pica4"]})
         self.assertEqual(calls.call_count, 3)
 
     def test_unknown_and_shared_paths_require_builds(self):

@@ -7,15 +7,50 @@ inputs:
   save-cache:
     description: Save the evaluation cache after this job
     default: "false"
+  s3-store:
+    description: niks3's S3 store URL (using the `niks3` AWS profile); added as a substituter
+    default: ""
+  s3-access-key:
+    description: Read-only access key for the S3 store
+    default: ""
+  s3-secret-key:
+    description: Read-only secret key for the S3 store
+    default: ""
 runs:
   using: composite
   steps:
+    - name: Configure the S3 cache
+      id: s3
+      shell: bash
+      env:
+        S3_STORE: ${{ inputs.s3-store }}
+        S3_ACCESS_KEY: ${{ inputs.s3-access-key }}
+        S3_SECRET_KEY: ${{ inputs.s3-secret-key }}
+      run: |
+        if [[ -z "$S3_STORE" || -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" ]]
+        then
+          echo "conf=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        # The nix-daemon (root) substitutes, the client checks the cache.
+        credentials="$(printf '[niks3]\naws_access_key_id = %s\naws_secret_access_key = %s\n' \
+          "$S3_ACCESS_KEY" "$S3_SECRET_KEY")"
+        for home in "$HOME" /root
+        do
+          sudo install -d -m 700 "$home/.aws"
+          sudo tee "$home/.aws/credentials" > /dev/null <<< "$credentials"
+          sudo chmod 600 "$home/.aws/credentials"
+        done
+        sudo chown -R "$(id -u):$(id -g)" "$HOME/.aws"
+        echo "conf=extra-substituters = $S3_STORE" >> "$GITHUB_OUTPUT"
     - uses: DeterminateSystems/nix-installer-action@main
       with:
-        extra-conf: ${{ inputs.nix-conf }}
+        extra-conf: |
+          ${{ inputs.nix-conf }}
+          ${{ steps.s3.outputs.conf }}
     - uses: nix-community/cache-nix-action@v7
       with:
-        primary-key: nix-${{ runner.os }}-${{ hashFiles('flake.lock') }}
-        restore-prefixes-first-match: nix-${{ runner.os }}-
+        primary-key: nix-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-${{ runner.arch }}-
         save: ${{ inputs.save-cache }}
         gc-max-store-size-linux: 2G

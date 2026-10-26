@@ -18,7 +18,7 @@ Package options:
   --oci                 Treat the package as OCI-specific
 
 General options:
-  --copy                Copy the target(s) to \$NIX_DEST_STORE_URL instead of building
+  --copy                Push the target(s) to niks3 (\$NIKS3_SERVER_URL) instead of building
   --check-cache         Retain an existing remote output; return 1 on a cache miss
   -h, --help            Show this help
 EOF
@@ -84,17 +84,12 @@ show_result_tree() {
   fi
 }
 
+# Build natively on the runner (aarch64 targets run on arm runners); only
+# hand a foreign system to $NIX_BUILDER.
 should_use_builders() {
   local system="$1"
-  local nonfree="${2:-}"
-  local oci="${3:-}"
 
-  if [[ -n "$nonfree" || -n "$oci" || "$system" == "aarch64-linux" ]]
-  then
-    return 0
-  fi
-
-  return 1
+  [[ "$system" != "$(uname -m)-linux" ]]
 }
 
 resolve_output_paths() {
@@ -114,24 +109,56 @@ cached_output_paths() {
   local impure="${2:-}"
   local paths_json paths_text
   local -a paths
-  [[ -n "${NIX_DEST_STORE_URL:-}" && -n "${NIX_CACHE_PUBLISH_HOST:-}" && -n "${NIX_CACHE_SCOPE:-}" ]] || return 1
+  [[ -n "${NIKS3_S3_STORE:-}" ]] || return 1
   paths_json="$(resolve_output_paths "$ref" "$impure")" || return 1
   paths_text="$(jq -er '.[]' <<< "$paths_json")" || return 1
   readarray -t paths <<< "$paths_text"
-  nix path-info --store "$NIX_DEST_STORE_URL" "${paths[@]}" >/dev/null 2>&1 || return 1
+  nix path-info --store "$NIKS3_S3_STORE" "${paths[@]}" >/dev/null 2>&1 || return 1
   printf '%s\n' "$paths_json"
 }
 
-retain_ref() {
+# The niks3 client of the server's release (nixos-config-private's niks3
+# input); the upstream cache supplies it.
+NIKS3_CLI="github:Mic92/niks3/a79dc58832332ebd953974e71160ab69e2371d62#niks3"
+
+# Push a target's outputs to niks3 with a GitHub OIDC token. main pins them
+# (gh-main-<target>-<output index>); pull requests push unpinned, so niks3's
+# GC collects them. Outputs already in the cache are only pinned.
+publish_ref() {
   local ref="$1"
   local paths_json="$2"
-  local revision timestamp
-  revision="$(git rev-parse HEAD)"
-  timestamp="$(git show -s --format=%ct HEAD)"
-  jq -cn --arg target "${ref#*#}" --arg scope "$NIX_CACHE_SCOPE" \
-    --arg revision "$revision" --argjson timestamp "$timestamp" --argjson paths "$paths_json" \
-    '{target: $target, scope: $scope, revision: $revision, timestamp: $timestamp, paths: $paths}' | \
-    ssh "$NIX_CACHE_PUBLISH_HOST" /run/current-system/sw/bin/nix-cache-retain publish
+  local cached="${3:-}"
+  local cli helper path pin index
+  local -a auth
+
+  if [[ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" ]]
+  then
+    printf 'No GitHub OIDC token available (fork PR?); not publishing %s\n' "$ref" >&2
+    return 0
+  fi
+  if [[ "$NIX_CACHE_SCOPE" != main && -n "$cached" ]]
+  then
+    return 0
+  fi
+
+  cli="$(nix build --no-link --print-out-paths "$NIKS3_CLI")"
+  helper="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/niks3-oidc-token.py"
+  auth=(--server-url "$NIKS3_SERVER_URL" --auth-token-script "python3 $helper")
+  index=0
+  while read -r path
+  do
+    pin="gh-main-${ref#*#}-${index}"
+    if [[ "$NIX_CACHE_SCOPE" != main ]]
+    then
+      "$cli/bin/niks3" push "${auth[@]}" "$path"
+    elif [[ -n "$cached" ]]
+    then
+      "$cli/bin/niks3" pins create "${auth[@]}" "$pin" "$path"
+    else
+      "$cli/bin/niks3" push "${auth[@]}" --pin "$pin" "$path"
+    fi
+    index=$((index + 1))
+  done < <(jq -r '.[]' <<< "$paths_json")
 }
 
 build_ref() {
@@ -151,11 +178,9 @@ build_ref() {
   fi
 
   local cached
-  if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
+  if cached_output_paths "$ref" "$impure" >/dev/null 2>&1
   then
-    # Pin the remote hit now, before a later CI step or GC can race us.
-    retain_ref "$ref" "$cached" || return
-    printf 'Already cached and retained: %s\n' "$ref"
+    printf 'Already cached: %s\n' "$ref"
     return 0
   fi
 
@@ -167,50 +192,30 @@ copy_refs() {
   local impure="${1:-}"
   shift
   local -a refs=("$@")
-  local -a path_info_cmd=(nix path-info --recursive)
-  local -a copy_cmd=()
   local -a paths_query=(nix path-info)
-  local ref paths paths_json cached key_file closure_json
+  local ref paths paths_json cached
 
-  if [[ ${#refs[@]} -eq 0 || -z "${NIX_DEST_STORE_URL:-}" || -z "${NIX_CACHE_PUBLISH_HOST:-}" || -z "${NIX_CACHE_SCOPE:-}" ]]
+  if [[ ${#refs[@]} -eq 0 || -z "${NIKS3_SERVER_URL:-}" || -z "${NIX_CACHE_SCOPE:-}" ]]
   then
-    printf 'Copy requires refs, NIX_DEST_STORE_URL, NIX_CACHE_PUBLISH_HOST and NIX_CACHE_SCOPE\n' >&2
+    printf 'Copy requires refs, NIKS3_SERVER_URL and NIX_CACHE_SCOPE\n' >&2
     return 2
   fi
 
-  copy_cmd=(nix copy --substitute-on-destination --to "$NIX_DEST_STORE_URL")
   if [[ -n "$impure" ]]
   then
-    path_info_cmd+=(--impure)
     paths_query+=(--impure)
-    copy_cmd+=(--impure)
   fi
 
   for ref in "${refs[@]}"
   do
     if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
     then
-      retain_ref "$ref" "$cached"
+      publish_ref "$ref" "$cached" 1
       continue
     fi
-    if [[ -z "${NIX_STORE_PRIVKEY:-}" ]]
-    then
-      printf 'NIX_STORE_PRIVKEY is required to upload new outputs\n' >&2
-      return 2
-    fi
-    closure_json="$("${path_info_cmd[@]}" --json "$ref")"
-    ssh "$NIX_CACHE_PUBLISH_HOST" /run/current-system/sw/bin/nix-cache-retain capacity <<< "$closure_json"
-
-    key_file="$(mktemp)"
-    # shellcheck disable=SC2064
-    trap "rm -f '$key_file'" RETURN
-    umask 077
-    printf '%s' "$NIX_STORE_PRIVKEY" > "$key_file"
-    "${path_info_cmd[@]}" "$ref" | nix store sign --key-file "$key_file" --stdin
-    "${copy_cmd[@]}" "$ref"
     paths="$("${paths_query[@]}" "$ref")"
     paths_json="$(jq -Rsc 'split("\n") | map(select(length > 0))' <<< "$paths")"
-    retain_ref "$ref" "$paths_json"
+    publish_ref "$ref" "$paths_json"
   done
 }
 
@@ -218,14 +223,15 @@ build_package() {
   local pkg="$1"
   local system="$2"
   local nonfree="${3:-}"
-  local oci="${4:-}"
+  local use_builders
 
-  if should_use_builders "$system" "$nonfree" "$oci"
+  use_builders=
+  if should_use_builders "$system"
   then
-    build_ref "$(package_ref "$pkg" "$system")" 1 "$nonfree"
-  else
-    build_ref "$(package_ref "$pkg" "$system")" "" ""
+    use_builders=1
   fi
+
+  build_ref "$(package_ref "$pkg" "$system")" "$use_builders" "$nonfree"
 
   show_result_tree
 }
@@ -245,7 +251,7 @@ build_host() {
 
   system="$(host_system "$host")"
   use_builders=
-  if [[ "$system" == "aarch64-linux" ]]
+  if should_use_builders "$system"
   then
     use_builders=1
   fi
@@ -266,7 +272,7 @@ build_home() {
 
   system="$(home_system "$home")"
   use_builders=
-  if [[ "$system" == "aarch64-linux" ]]
+  if should_use_builders "$system"
   then
     use_builders=1
   fi
@@ -287,7 +293,7 @@ build_droid() {
 
   system="$(droid_system "$droid")"
   use_builders=
-  if [[ "$system" == "aarch64-linux" ]]
+  if should_use_builders "$system"
   then
     use_builders=1
   fi
@@ -406,9 +412,7 @@ main() {
       ref="$(droid_ref "$droid")"
       impure=1
     fi
-    cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)" || return 1
-    retain_ref "$ref" "$cached"
-    return
+    cached_output_paths "$ref" "$impure" >/dev/null 2>&1
   fi
 
   if [[ -n "$pkg" ]]
@@ -423,7 +427,7 @@ main() {
     then
       copy_package "$pkg" "$system" "$nonfree"
     else
-      build_package "$pkg" "$system" "$nonfree" "$oci"
+      build_package "$pkg" "$system" "$nonfree"
     fi
 
     return 0
