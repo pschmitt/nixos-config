@@ -72,12 +72,11 @@ jobs:
           echo "needed=${needed}" >> "$GITHUB_OUTPUT"
       - uses: DeterminateSystems/nix-installer-action@main
         if: steps.scope.outputs.needed == 'true'
-      - name: Check workflows, shell and Python
+      - name: Check shell and Python
         if: steps.scope.outputs.needed == 'true'
         run: |
           revision="$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)"
           nix shell \
-            "github:NixOS/nixpkgs/${revision}#actionlint" \
             "github:NixOS/nixpkgs/${revision}#shellcheck" \
             "github:NixOS/nixpkgs/${revision}#ruff" \
             --command bash .github/workflows/scripts/check-ci.sh

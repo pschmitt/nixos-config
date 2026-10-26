@@ -25,9 +25,10 @@ shared definition changes and broad input updates get full builds.
 
 The build setup skips Nix installation and cache restoration for documentation
 and reporting-only changes. Documentation-only changes also skip tooling setup.
-CI tooling changes run actionlint, ShellCheck, Ruff and fast regression tests before
-build setup; tools use the locked nixpkgs revision. Unrelated changes skip that
-tooling setup. The stable `Nix build result` check aggregates selected builds and
+Workflow changes run actionlint in a dedicated path-filtered workflow. Other CI
+tooling changes run ShellCheck, Ruff and fast regression tests before build setup;
+tools use the locked nixpkgs revision. Unrelated changes skip that tooling setup.
+The stable `Nix build result` check aggregates selected builds and
 tooling results; intentional skips pass, while failures and cancellations fail.
 
 Each build matrix runs one job at a time. The package categories can occupy
