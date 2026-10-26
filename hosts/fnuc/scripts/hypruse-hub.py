@@ -24,7 +24,9 @@ from mcp.server.stdio import stdio_server
 CONNECT_TIMEOUT = 20
 CALL_TIMEOUT = 120
 CACHE_FILE = (
-    pathlib.Path(os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache")
+    pathlib.Path(
+        os.environ.get("XDG_CACHE_HOME") or pathlib.Path.home() / ".cache"
+    )
     / "hypruse-hub"
     / "tools.json"
 )
@@ -123,7 +125,8 @@ def main():
     def load_cache():
         try:
             return [
-                types.Tool.model_validate(t) for t in json.loads(CACHE_FILE.read_text())
+                types.Tool.model_validate(t)
+                for t in json.loads(CACHE_FILE.read_text())
             ]
         except (OSError, ValueError):
             return []
@@ -132,9 +135,7 @@ def main():
         try:
             CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
             CACHE_FILE.write_text(
-                json.dumps(
-                    [t.model_dump(mode="json", exclude_none=True) for t in tools]
-                )
+                json.dumps([t.model_dump(mode="json", exclude_none=True) for t in tools])
             )
         except OSError as exc:
             log(f"cannot write tool cache: {exc!r}")
@@ -163,7 +164,9 @@ def main():
             else:
                 await refresh_cache()
         if not tools_cache:
-            raise RuntimeError("no hypruse tool list cached and no host reachable yet")
+            raise RuntimeError(
+                "no hypruse tool list cached and no host reachable yet"
+            )
         out = []
         for tool in tools_cache:
             schema = dict(tool.inputSchema or {"type": "object"})

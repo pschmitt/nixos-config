@@ -16,7 +16,9 @@ RUNTIME_DIR = os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}"
 CACHE_DIR = os.path.join(RUNTIME_DIR, "elephant-ha")
 CACHE_FILE = os.path.join(CACHE_DIR, "states.json")
 
-DATA_DIR = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+DATA_DIR = os.environ.get("XDG_DATA_HOME") or os.path.expanduser(
+    "~/.local/share"
+)
 PINS_FILE = os.path.join(DATA_DIR, "elephant", "ha-pins")
 
 INTERACTIVE_DOMAINS = {
@@ -80,7 +82,9 @@ def get_credentials():
     server = os.environ.get("HASS_SERVER")
     if not server:
         for path in [
-            os.path.expanduser("~/.config/sops-nix/secrets/home-assistant/server"),
+            os.path.expanduser(
+                "~/.config/sops-nix/secrets/home-assistant/server"
+            ),
             "/run/secrets/home-assistant/server",
         ]:
             if os.path.isfile(path):
@@ -97,7 +101,9 @@ def get_credentials():
     token = os.environ.get("HASS_TOKEN")
     if not token:
         for path in [
-            os.path.expanduser("~/.config/sops-nix/secrets/home-assistant/token"),
+            os.path.expanduser(
+                "~/.config/sops-nix/secrets/home-assistant/token"
+            ),
             "/run/secrets/home-assistant/token",
         ]:
             if os.path.isfile(path):
@@ -122,7 +128,9 @@ def api_request(endpoint, method="GET", data=None, timeout=8):
         "Content-Type": "application/json",
     }
     body = json.dumps(data).encode("utf-8") if data is not None else None
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    req = urllib.request.Request(
+        url, data=body, headers=headers, method=method
+    )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
@@ -209,7 +217,10 @@ def format_entity(entity, pins):
     pinned = eid in pins
 
     icon = "🏠"
-    subtext = f"{domain.capitalize()} • {state} • {area or 'Home'}  [↵ Select • ^P Pin]"
+    subtext = (
+        f"{domain.capitalize()} • {state} • {area or 'Home'}  "
+        "[↵ Select • ^P Pin]"
+    )
     keywords = [domain, eid, name.lower()]
     if area:
         keywords.append(area.lower())
@@ -267,7 +278,9 @@ def format_entity(entity, pins):
         if s_lower in ("heat", "auto"):
             icon = "🔥"
             target_str = (
-                f"Target: {target_temp}°C" if target_temp is not None else "Heat"
+                f"Target: {target_temp}°C"
+                if target_temp is not None
+                else "Heat"
             )
             cur_str = f"{cur_temp}°C" if cur_temp is not None else ""
             hum_str = f" • 💧{humidity}%" if humidity is not None else ""
@@ -279,7 +292,9 @@ def format_entity(entity, pins):
             keywords.append("heating")
         else:
             icon = "❄️"
-            cur_str = f" • Current: {cur_temp}°C" if cur_temp is not None else ""
+            cur_str = (
+                f" • Current: {cur_temp}°C" if cur_temp is not None else ""
+            )
             hum_str = f" • 💧{humidity}%" if humidity is not None else ""
             subtext = (
                 f"❄️ OFF{cur_str}{hum_str} • {area or 'Thermostat'}  "
@@ -328,14 +343,17 @@ def format_entity(entity, pins):
             keywords.append("cleaning")
         else:
             icon = "🏠"
-            subtext = f"🏠 {state.capitalize()}{bat_str}  [↵ Clean • ^U Clean • ^P Pin]"
+            subtext = (
+                f"🏠 {state.capitalize()}{bat_str}  "
+                "[↵ Clean • ^U Clean • ^P Pin]"
+            )
             keywords.append(s_lower)
 
     elif domain == "media_player":
         title = attrs.get("media_title")
         artist = attrs.get("media_artist")
         vol = attrs.get("volume_level")
-        vol_str = f" • Vol: {round(vol * 100)}%" if vol is not None else ""
+        vol_str = f" • Vol: {round(vol*100)}%" if vol is not None else ""
         track_str = f" • {title}" if title else ""
         if artist and title:
             track_str = f" • {artist} - {title}"
@@ -343,18 +361,23 @@ def format_entity(entity, pins):
         if s_lower == "playing":
             icon = "▶️"
             subtext = (
-                f"▶️ Playing{track_str}{vol_str}  [↵ Pause • ^U Vol+ • ^D Vol- • ^P Pin]"
+                f"▶️ Playing{track_str}{vol_str}  "
+                "[↵ Pause • ^U Vol+ • ^D Vol- • ^P Pin]"
             )
             keywords.append("playing")
         elif s_lower == "paused":
             icon = "⏸️"
             subtext = (
-                f"⏸️ Paused{track_str}{vol_str}  [↵ Play • ^U Vol+ • ^D Vol- • ^P Pin]"
+                f"⏸️ Paused{track_str}{vol_str}  "
+                "[↵ Play • ^U Vol+ • ^D Vol- • ^P Pin]"
             )
             keywords.append("paused")
         else:
             icon = "📺"
-            subtext = f"📺 {state.capitalize()} • {area or 'Media'}  [↵ Power • ^P Pin]"
+            subtext = (
+                f"📺 {state.capitalize()} • {area or 'Media'}  "
+                "[↵ Power • ^P Pin]"
+            )
             keywords.append(s_lower)
 
     elif domain == "script":
@@ -389,7 +412,8 @@ def format_entity(entity, pins):
     elif domain == "automation":
         icon = "⚙️"
         subtext = (
-            f"⚙️ Automation ({state.upper()}) • {area or 'System'}  [↵ Toggle • ^P Pin]"
+            f"⚙️ Automation ({state.upper()}) • {area or 'System'}  "
+            "[↵ Toggle • ^P Pin]"
         )
         keywords.extend(["automation", state.lower()])
 
@@ -399,25 +423,41 @@ def format_entity(entity, pins):
         keywords.extend(["sensor", dc, unit])
         if "door" in dc or "window" in dc or "opening" in dc:
             icon = "🚪" if s_lower == "on" else "🔒"
-            subtext = f"{icon} {state.upper()} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"{icon} {state.upper()} • {area or 'Sensor'}  "
+                "[↵ Copy • ^P Pin]"
+            )
         elif "motion" in dc or "presence" in dc or "occupancy" in dc:
             icon = "🚶" if s_lower == "on" else "⚪"
-            subtext = f"{icon} {state.upper()} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"{icon} {state.upper()} • {area or 'Sensor'}  "
+                "[↵ Copy • ^P Pin]"
+            )
         elif "temperature" in dc or "temperature" in eid:
             icon = "🌡️"
-            subtext = f"🌡️ {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"🌡️ {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            )
         elif "humidity" in dc or "humidity" in eid:
             icon = "💧"
-            subtext = f"💧 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"💧 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            )
         elif "battery" in dc:
             icon = "🔋"
-            subtext = f"🔋 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"🔋 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            )
         elif "power" in dc or "energy" in dc or "watt" in eid:
             icon = "⚡"
-            subtext = f"⚡ {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"⚡ {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            )
         else:
             icon = "📊"
-            subtext = f"📊 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            subtext = (
+                f"📊 {state} {unit} • {area or 'Sensor'}  [↵ Copy • ^P Pin]"
+            )
 
     return {
         "id": eid,
@@ -494,7 +534,9 @@ def call_service(domain, service, payload, optimistic_state=None):
         save_cache(cache)
 
     try:
-        api_request(f"services/{domain}/{service}", method="POST", data=payload)
+        api_request(
+            f"services/{domain}/{service}", method="POST", data=payload
+        )
         return True
     except Exception as e:
         sys.stderr.write(f"Service call failed: {e}\n")
@@ -510,7 +552,11 @@ def action_toggle(eid):
 
     if domain == "light":
         new_state = "off" if cur_state == "on" else "on"
-        pct = round((item.get("brightness") or 255) / 255 * 100) if item else 100
+        pct = (
+            round((item.get("brightness") or 255) / 255 * 100)
+            if item
+            else 100
+        )
         if new_state == "on":
             sub = (
                 f"💡 ON ({pct}%) • {item.get('area') or 'Light'}  "
@@ -521,30 +567,37 @@ def action_toggle(eid):
             opt = {"state": "on", "icon": "💡", "subtext": sub}
         else:
             sub = (
-                f"🌑 OFF • {item.get('area') or 'Light'}  [↵ Turn On • ^P Pin]"
+                f"🌑 OFF • {item.get('area') or 'Light'}  "
+                "[↵ Turn On • ^P Pin]"
                 if item
                 else "🌑 OFF"
             )
             opt = {"state": "off", "icon": "🌑", "subtext": sub}
-        call_service("light", "toggle", {"entity_id": eid}, optimistic_state=opt)
+        call_service(
+            "light", "toggle", {"entity_id": eid}, optimistic_state=opt
+        )
         notify(f"💡 {item['name'] if item else eid}: {new_state.upper()}")
     elif domain in ("switch", "input_boolean"):
         new_state = "off" if cur_state == "on" else "on"
         if new_state == "on":
             sub = (
-                f"⚡ ON • {item.get('area') or 'Switch'}  [↵ Toggle • ^P Pin]"
+                f"⚡ ON • {item.get('area') or 'Switch'}  "
+                "[↵ Toggle • ^P Pin]"
                 if item
                 else "⚡ ON"
             )
             opt = {"state": "on", "icon": "⚡", "subtext": sub}
         else:
             sub = (
-                f"🔌 OFF • {item.get('area') or 'Switch'}  [↵ Toggle • ^P Pin]"
+                f"🔌 OFF • {item.get('area') or 'Switch'}  "
+                "[↵ Toggle • ^P Pin]"
                 if item
                 else "🔌 OFF"
             )
             opt = {"state": "off", "icon": "🔌", "subtext": sub}
-        call_service(domain, "toggle", {"entity_id": eid}, optimistic_state=opt)
+        call_service(
+            domain, "toggle", {"entity_id": eid}, optimistic_state=opt
+        )
         notify(f"⚡ {item['name'] if item else eid}: {new_state.upper()}")
     elif domain == "fan":
         new_state = "off" if cur_state == "on" else "on"
@@ -559,7 +612,8 @@ def action_toggle(eid):
             opt = {"state": "on", "icon": "🌀", "subtext": sub}
         else:
             sub = (
-                f"💨 OFF • {item.get('area') or 'Fan'}  [↵ Turn On • ^P Pin]"
+                f"💨 OFF • {item.get('area') or 'Fan'}  "
+                "[↵ Turn On • ^P Pin]"
                 if item
                 else "💨 OFF"
             )
@@ -679,7 +733,9 @@ def action_up(eid):
         )
         notify(f"🌡️ {item['name'] if item else eid}: Target {new_temp}°C")
     elif domain == "light":
-        cur_pct = round((item.get("brightness") or 0) / 255 * 100) if item else 0
+        cur_pct = (
+            round((item.get("brightness") or 0) / 255 * 100) if item else 0
+        )
         new_pct = min(100, cur_pct + 15)
         new_b = round(new_pct / 100 * 255)
         sub = (
@@ -765,7 +821,9 @@ def action_down(eid):
         )
         notify(f"🌡️ {item['name'] if item else eid}: Target {new_temp}°C")
     elif domain == "light":
-        cur_pct = round((item.get("brightness") or 0) / 255 * 100) if item else 0
+        cur_pct = (
+            round((item.get("brightness") or 0) / 255 * 100) if item else 0
+        )
         new_pct = max(0, cur_pct - 15)
         new_b = round(new_pct / 100 * 255)
         sub = (
@@ -891,7 +949,8 @@ def action_set_brightness(eid, pct_str):
         name = item["name"] if item else eid
         if pct <= 0:
             sub = (
-                f"🌑 OFF • {item.get('area') or 'Light'}  [↵ Turn On • ^P Pin]"
+                f"🌑 OFF • {item.get('area') or 'Light'}  "
+                "[↵ Turn On • ^P Pin]"
                 if item
                 else "🌑 OFF"
             )
@@ -901,7 +960,9 @@ def action_set_brightness(eid, pct_str):
                 "subtext": sub,
                 "brightness": 0,
             }
-            call_service("light", "turn_off", {"entity_id": eid}, optimistic_state=opt)
+            call_service(
+                "light", "turn_off", {"entity_id": eid}, optimistic_state=opt
+            )
             notify(f"💡 Turned off {name}")
         else:
             pct = min(100, pct)
@@ -938,7 +999,8 @@ def action_set_fan_speed(eid, pct_str):
         name = item["name"] if item else eid
         if pct <= 0:
             sub = (
-                f"💨 OFF • {item.get('area') or 'Fan'}  [↵ Turn On • ^P Pin]"
+                f"💨 OFF • {item.get('area') or 'Fan'}  "
+                "[↵ Turn On • ^P Pin]"
                 if item
                 else "💨 OFF"
             )
@@ -948,7 +1010,9 @@ def action_set_fan_speed(eid, pct_str):
                 "subtext": sub,
                 "percentage": 0,
             }
-            call_service("fan", "turn_off", {"entity_id": eid}, optimistic_state=opt)
+            call_service(
+                "fan", "turn_off", {"entity_id": eid}, optimistic_state=opt
+            )
             notify(f"🌀 Turned off {name}")
         else:
             pct = min(100, pct)
@@ -998,8 +1062,12 @@ def stream_events():
     pins = load_pins()
 
     last_flush = time.time()
-    last_disk_mtime = os.path.getmtime(CACHE_FILE) if os.path.isfile(CACHE_FILE) else 0
-    last_pins_mtime = os.path.getmtime(PINS_FILE) if os.path.isfile(PINS_FILE) else 0
+    last_disk_mtime = (
+        os.path.getmtime(CACHE_FILE) if os.path.isfile(CACHE_FILE) else 0
+    )
+    last_pins_mtime = (
+        os.path.getmtime(PINS_FILE) if os.path.isfile(PINS_FILE) else 0
+    )
     dirty = False
 
     def flush_cache(force=False):
@@ -1050,7 +1118,9 @@ def stream_events():
                             domain = eid.split(".", 1)[0]
                             if domain not in INTERACTIVE_DOMAINS:
                                 if domain in ("sensor", "binary_sensor"):
-                                    attrs = (new_state or {}).get("attributes", {})
+                                    attrs = (new_state or {}).get(
+                                        "attributes", {}
+                                    )
                                     dc = attrs.get("device_class", "")
                                     if dc not in SENSOR_DEVICE_CLASSES:
                                         continue
@@ -1091,7 +1161,9 @@ def stream_events():
                     if dirty and (time.time() - last_flush) >= 0.5:
                         flush_cache(force=True)
         except Exception as e:
-            sys.stderr.write(f"Stream error: {e}. Reconnecting in {backoff}s...\n")
+            sys.stderr.write(
+                f"Stream error: {e}. Reconnecting in {backoff}s...\n"
+            )
             sys.stderr.flush()
             time.sleep(backoff)
             backoff = min(backoff * 2, 60)
@@ -1100,7 +1172,10 @@ def stream_events():
 def main():
     """Entrypoint for CLI commands."""
     if len(sys.argv) < 2:
-        print("Usage: ha-walker {sync|stream|toggle|up|down|pin|copy|open|call} ...")
+        print(
+            "Usage: ha-walker "
+            "{sync|stream|toggle|up|down|pin|copy|open|call} ..."
+        )
         sys.exit(1)
 
     cmd = sys.argv[1]

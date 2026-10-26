@@ -100,15 +100,8 @@ def main():
     p.add_argument("--state", type=pathlib.Path, required=True)
     p.add_argument("--exclude", action="append", default=[])
     p.add_argument("--extensions", default="pdf,png,jpg,jpeg,tif,tiff,gif,webp,heic")
-    p.add_argument(
-        "--min-age",
-        type=int,
-        default=60,
-        help="skip files modified within this many seconds",
-    )
-    p.add_argument(
-        "--init", action="store_true", help="record the current tree without forwarding"
-    )
+    p.add_argument("--min-age", type=int, default=60, help="skip files modified within this many seconds")
+    p.add_argument("--init", action="store_true", help="record the current tree without forwarding")
     p.add_argument("--dry-run", action="store_true")
     args = p.parse_args()
 
@@ -167,9 +160,7 @@ def main():
         state["hashes"].add(digest)
 
     state["files"] = seen
-    log(
-        f"{len(seen)} files tracked, {forwarded} forwarded, {recorded} recorded without forwarding, {failed} failed"
-    )
+    log(f"{len(seen)} files tracked, {forwarded} forwarded, {recorded} recorded without forwarding, {failed} failed")
     if not args.dry_run:
         args.state.parent.mkdir(parents=True, exist_ok=True)
         save_state(args.state, state)

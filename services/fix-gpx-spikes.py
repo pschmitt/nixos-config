@@ -47,10 +47,9 @@ def haversine(lat1, lon1, lat2, lon2):
     p1, p2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dphi / 2) ** 2
-        + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
-    )
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(
+        dlambda / 2
+    ) ** 2
     return 2 * r * math.asin(math.sqrt(a))
 
 
@@ -196,7 +195,8 @@ def main():
         d_before = total_distance(text)
         d_after = total_distance(cleaned_text)
         print(
-            "distance: {:.3f} km -> {:.3f} km (-{:.3f} km via {} point(s))".format(
+            "distance: {:.3f} km -> {:.3f} km "
+            "(-{:.3f} km via {} point(s))".format(
                 d_before / 1000,
                 d_after / 1000,
                 (d_before - d_after) / 1000,

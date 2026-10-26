@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import posixpath
 from dataclasses import dataclass, field
 from enum import StrEnum
+import posixpath
 from typing import Any, Iterable
 
 
@@ -67,25 +67,15 @@ class FolderSnapshot:
             for item in need.get(section, [])
             if isinstance(need.get(section, []), list)
         ]
-        error_items = (
-            errors.get("errors", [])
-            if isinstance(errors.get("errors", []), list)
-            else []
-        )
+        error_items = errors.get("errors", []) if isinstance(errors.get("errors", []), list) else []
         need_paths = paths_from(need_items, "name")
         error_paths = paths_from(error_items, "path")
         return cls(
             need_paths=frozenset(need_paths),
             error_paths=frozenset(error_paths),
-            need_total=int(
-                status.get("needTotalItems", status.get("needFiles", 0)) or 0
-            ),
+            need_total=int(status.get("needTotalItems", status.get("needFiles", 0)) or 0),
             receive_only_changed_total=int(
-                status.get(
-                    "receiveOnlyChangedTotalItems",
-                    status.get("receiveOnlyChangedFiles", 0),
-                )
-                or 0
+                status.get("receiveOnlyChangedTotalItems", status.get("receiveOnlyChangedFiles", 0)) or 0
             ),
             pull_errors=int(status.get("pullErrors", 0) or 0),
             state=str(status.get("state", "unknown")),
@@ -105,11 +95,7 @@ class FolderSnapshot:
 
     @property
     def folder_is_synced(self) -> bool:
-        return (
-            not self.folder_has_pending_work
-            and self.pull_errors == 0
-            and not self.error_paths
-        )
+        return not self.folder_has_pending_work and self.pull_errors == 0 and not self.error_paths
 
     def status_for(self, relative_path: str, *, is_directory: bool) -> Status:
         relative_path = normalise_relative_path(relative_path)

@@ -21,7 +21,8 @@ lint_nix() {
 lint_scripts() {
   tracked '*.sh' | xargs -0 shellcheck
   tracked '*.py' | xargs -0 ruff check
-  tracked '*.py' | xargs -0 ruff format --check
+  # Formatting only for the CI tooling, see ruff.toml.
+  tracked '.github/*.py' | xargs -0 ruff format --check
 }
 
 main() {

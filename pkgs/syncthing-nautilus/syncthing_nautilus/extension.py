@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import os
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable
 
 from .cache import StatusCache
 from .discovery import SyncthingConfiguration, discover
 from .model import Status
 from .syncthing import SyncthingClient, SyncthingUnavailable
+
 
 EMBLEMS = {
     # Names chosen from Adwaita's actual icon set: Adwaita ships no
@@ -42,9 +43,7 @@ class ExtensionCore:
     def __init__(self, schedule_main: Callable[..., Any]) -> None:
         self._schedule_main = schedule_main
         self._cache = StatusCache()
-        self._executor = ThreadPoolExecutor(
-            max_workers=2, thread_name_prefix="syncthing-nautilus"
-        )
+        self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="syncthing-nautilus")
         self._lock = threading.Lock()
         self._refreshing: set[str] = set()
         # Keep a small, short-lived set of FileInfo instances so a background
@@ -56,9 +55,7 @@ class ExtensionCore:
         # has no matching FileInfo instances to invalidate after discovery.
         self._install_configuration(discover())
 
-    def update_file_info(
-        self, file_info: Any, path: str, *, is_directory: bool
-    ) -> None:
+    def update_file_info(self, file_info: Any, path: str, *, is_directory: bool) -> None:
         folder, status = self._cache.status_for(path, is_directory=is_directory)
         if folder is None:
             return
@@ -75,9 +72,7 @@ class ExtensionCore:
     def _install_configuration(self, configuration: SyncthingConfiguration) -> bool:
         self._cache.set_configuration(configuration)
         if configuration.endpoint:
-            self._executor.submit(
-                self._event_loop, SyncthingClient(configuration.endpoint)
-            )
+            self._executor.submit(self._event_loop, SyncthingClient(configuration.endpoint))
         self._invalidate_visible()
         return False
 

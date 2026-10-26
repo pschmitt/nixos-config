@@ -20,9 +20,7 @@ def main():
     notify(helper, "dismiss")
     try:
         with socket.socket(socket.AF_UNIX) as connection:
-            connection.connect(
-                os.path.join(os.environ["XDG_RUNTIME_DIR"], "lan-mouse-socket.sock")
-            )
+            connection.connect(os.path.join(os.environ["XDG_RUNTIME_DIR"], "lan-mouse-socket.sock"))
             connection.sendall(b'"InputState"\n')
             with connection.makefile("r") as events:
                 for line in events:

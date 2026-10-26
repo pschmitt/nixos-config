@@ -97,11 +97,7 @@ def style_markup(text):
 
     while index < len(text):
         char = text[index]
-        if (
-            char == "\\"
-            and text[index + 1 : index + 2]
-            and text[index + 1] in ESCAPABLE
-        ):
+        if char == "\\" and text[index + 1:index + 2] and text[index + 1] in ESCAPABLE:
             emit(text[index + 1])
             index += 2
             continue

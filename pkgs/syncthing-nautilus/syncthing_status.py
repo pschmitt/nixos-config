@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
+import sys
 from urllib.parse import unquote, urlsplit
 
 import gi
 
 gi.require_version("Nautilus", "4.1")
 from gi.repository import GLib, GObject, Nautilus  # noqa: E402
+
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2] / "syncthing-nautilus"
 if str(PACKAGE_ROOT) not in sys.path:
@@ -32,9 +33,7 @@ class SyncthingStatusExtension(GObject.GObject, Nautilus.InfoProvider):
             path = unquote(urlsplit(file_info.get_uri()).path)
             if not path:
                 return
-            self._core.update_file_info(
-                file_info, path, is_directory=file_info.is_directory()
-            )
+            self._core.update_file_info(file_info, path, is_directory=file_info.is_directory())
         except Exception:
             # Extension boundaries must be fail-closed: Nautilus remains usable.
             return

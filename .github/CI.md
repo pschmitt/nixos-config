@@ -30,7 +30,9 @@ ShellCheck and Ruff; and the CI regression tests. New files are covered without
 editing a list: opt out with the linter's own directives (`# shellcheck
 disable=...`, `# noqa`). Linters come from the locked nixpkgs, settings from
 `.shellcheckrc` and `ruff.toml`; `.github/workflows/scripts/lint.sh nix|scripts`
-runs the same checks locally. The stable `Nix build result` check aggregates
+runs the same checks locally. Ruff's import order and formatting only apply to
+`.github/`: Nix writers (`writePython3`) flake8-check packaged scripts at build
+time with conflicting rules (79 columns, E203, W503). The stable `Nix build result` check aggregates
 selected builds; intentional skips pass, while failures and cancellations fail.
 
 The aarch64 build matrices run natively on GitHub arm runners, up to eight
