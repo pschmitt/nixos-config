@@ -49,43 +49,7 @@ env:
     access-tokens = github.com=${{ secrets.GH_TOKEN_FOR_UPDATES }}
 
 jobs:
-  tooling:
-    name: CI tooling
-    runs-on: ubuntu-latest
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-light
-      cancel-in-progress: false
-      queue: max
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Select tooling checks
-        id: scope
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          needed="$(python3 .github/workflows/scripts/ci-scope.py --tooling-only)"
-          echo "needed=${needed}" >> "$GITHUB_OUTPUT"
-      - uses: DeterminateSystems/nix-installer-action@main
-        if: steps.scope.outputs.needed == 'true'
-      - name: Check shell and Python
-        if: steps.scope.outputs.needed == 'true'
-        run: |
-          revision="$(jq -r '.nodes.nixpkgs.locked.rev' flake.lock)"
-          nix shell \
-            "github:NixOS/nixpkgs/${revision}#shellcheck" \
-            "github:NixOS/nixpkgs/${revision}#ruff" \
-            --command bash .github/workflows/scripts/check-ci.sh
-      - name: Run CI regression tests
-        if: steps.scope.outputs.needed == 'true'
-        run: python3 -m unittest discover -s .github/tests -v
-
   setup-matrix:
-    needs: tooling
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
@@ -670,7 +634,7 @@ jobs:
   build-result:
     name: Nix build result
     if: ${{ always() }}
-    needs: [tooling, setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-aarch64, build-droids-aarch64]
+    needs: [setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-aarch64, build-droids-aarch64]
     runs-on: ubuntu-latest
     # Shared across workflows and PRs; queued jobs do not occupy runners.
     concurrency:

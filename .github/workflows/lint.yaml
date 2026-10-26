@@ -1,0 +1,66 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+    paths: &paths
+      - "**.nix"
+      - "**.sh"
+      - "**.py"
+      - ".github/**"
+      - ".shellcheckrc"
+      - "ruff.toml"
+      # Pins the linter versions (nix shell --inputs-from).
+      - "flake.lock"
+  pull_request:
+    paths: *paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Each job lints every tracked file of its kind; all are quick enough that
+# selecting them by changed path is not worth it.
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Lint GitHub Actions workflows
+        uses: raven-actions/actionlint@v2
+        with:
+          version: 1.7.12
+          flags: -ignore=unexpected.key.*queue.*concurrency
+          pyflakes: false
+
+  # Required by auto-merge-nix-update.sh.
+  nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: statix, deadnix, nixfmt
+        run: |
+          nix shell --inputs-from . nixpkgs#statix nixpkgs#deadnix nixpkgs#nixfmt \
+            --command .github/workflows/scripts/lint.sh nix
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: ShellCheck, Ruff
+        run: |
+          nix shell --inputs-from . nixpkgs#shellcheck nixpkgs#ruff \
+            --command .github/workflows/scripts/lint.sh scripts
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: CI regression tests
+        run: python3 -m unittest discover -s .github/tests -v

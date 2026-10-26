@@ -88,7 +88,10 @@ def needs_build(path):
         ".github/workflows/nix-update.yaml",
         ".github/workflows/nix-update-merge.yaml",
         ".github/workflows/flake-lock.yaml",
-        ".github/workflows/statix.yml",
+        ".github/workflows/lint.yaml",
+        ".github/workflows/scripts/lint.sh",
+        ".shellcheckrc",
+        "ruff.toml",
         ".github/workflows/scripts/pr-impact.py",
         ".github/workflows/scripts/pr-impact-snapshot.nix",
         ".github/workflows/scripts/pr-packages-diff-comment.sh",
@@ -120,32 +123,10 @@ def main():
         action="store_true",
         help="Print whether Nix setup is needed, without invoking Nix",
     )
-    parser.add_argument(
-        "--tooling-only",
-        action="store_true",
-        help="Print whether CI tooling checks are needed",
-    )
     args = parser.parse_args()
     base = os.environ.get("BASE_SHA", "")
     event = os.environ.get("EVENT_NAME", "workflow_dispatch")
     files = changed_files(base, event)
-    if args.tooling_only:
-        needed = files is None or any(
-            p == "flake.lock"
-            or p.startswith(
-                (
-                    ".github/workflows/",
-                    ".github/actions/",
-                    ".github/tests/",
-                    "scripts/nix-update",
-                    "services/harmonia",
-                    "profiles/specializations/server/scripts/filesystem-available.sh",
-                )
-            )
-            for p in files or []
-        )
-        print("true" if needed else "false")
-        return
     relevant = None if files is None else [f for f in files if needs_build(f)]
     if args.classify_only:
         print("false" if relevant == [] else "true")

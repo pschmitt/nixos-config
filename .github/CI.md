@@ -24,12 +24,14 @@ full validation. A weekly full run also covers reverse dependencies. A package-o
 shared definition changes and broad input updates get full builds.
 
 The build setup skips Nix installation and cache restoration for documentation
-and reporting-only changes. Documentation-only changes also skip tooling setup.
-Workflow changes run actionlint in a dedicated path-filtered workflow. Other CI
-tooling changes run ShellCheck, Ruff and fast regression tests before build setup;
-tools use the locked nixpkgs revision. Unrelated changes skip that tooling setup.
-The stable `Nix build result` check aggregates selected builds and
-tooling results; intentional skips pass, while failures and cancellations fail.
+and reporting-only changes. The `Lint` workflow runs four parallel jobs over
+every tracked file of their kind: Actionlint; statix, deadnix and nixfmt;
+ShellCheck and Ruff; and the CI regression tests. New files are covered without
+editing a list: opt out with the linter's own directives (`# shellcheck
+disable=...`, `# noqa`). Linters come from the locked nixpkgs, settings from
+`.shellcheckrc` and `ruff.toml`; `.github/workflows/scripts/lint.sh nix|scripts`
+runs the same checks locally. The stable `Nix build result` check aggregates
+selected builds; intentional skips pass, while failures and cancellations fail.
 
 The aarch64 build matrices run natively on GitHub arm runners, up to eight
 jobs each, outside the runner budget below. New commits cancel obsolete PR
@@ -90,12 +92,13 @@ are preserved and closed before ending the collapsible section.
 
 ## Runner budget
 
-All checked-in workflow jobs share two repository-wide concurrency groups:
+Most checked-in workflow jobs share two repository-wide concurrency groups:
 
 - `nixos-config-runner-nix`: one Nix evaluation, update or image job.
-- `nixos-config-runner-light`: one tooling, lint, merge or final-result job.
+- `nixos-config-runner-light`: one merge or final-result job.
 
-This caps these workflows at two occupied runners across all PRs and workflows.
+Each group allows one occupied runner across all PRs. The `Lint` jobs and the
+aarch64 builds are outside the budget.
 `queue: max` lets jobs wait without consuming runners or replacing other PRs'
 pending jobs (up to GitHub's 100-job queue limit per group). Workflow-level
 concurrency still cancels obsolete runs for the same PR/ref. Matrix limits alone

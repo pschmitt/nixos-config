@@ -2,7 +2,7 @@ name: Merge checked package updates
 
 on:
   workflow_run:
-    workflows: ["Nix build", "Statix Lint"]
+    workflows: ["Nix build", "Lint"]
     types: [completed]
   schedule:
     # Also catches labels added just after CI finished, without holding a runner.
