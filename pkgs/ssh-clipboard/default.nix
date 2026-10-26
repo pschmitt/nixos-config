@@ -9,16 +9,16 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "ssh-clipboard";
-  version = "0.2.11";
+  version = "0.2.18";
 
   src = fetchFromGitHub {
     owner = "standardagents";
     repo = "ssh-clipboard";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-iXfEk9oir4OlKWGUZAH/czGn+A1kO/1+v3rOaEKwLxM=";
+    hash = "sha256-CmbDKM84U+IOP5JlGEdYNBjoMvVkY37GF+tk8ZDNogc=";
   };
 
-  cargoHash = "sha256-Oq5Wbs62+Zolp7ZpQb0LhWIdQGbQE1IWGNZuETHVRM4=";
+  cargoHash = "sha256-LFyW5do7IZCrBU7KJmO2Mqb+5+BcUAEjVBfoheDCYn0=";
 
   patches = [
     # Treat an empty Wayland clipboard as empty instead of logging a capture
