@@ -305,7 +305,11 @@ def main():
                         snapshots.append(
                             snapshot(roots[side], revision, target, args.cache_dir)
                         )
-                    except (subprocess.CalledProcessError, ValueError, OSError) as error:
+                    except (
+                        subprocess.CalledProcessError,
+                        ValueError,
+                        OSError,
+                    ) as error:
                         snapshots.append(None)
                         detail = (getattr(error, "stderr", None) or str(error)).strip()
                         if any(marker in detail for marker in UNREACHABLE):
@@ -323,7 +327,9 @@ def main():
                 return target, snapshots, errors, skipped
 
             with ThreadPoolExecutor(max_workers=2) as workers:
-                for target, snapshots, errors, skipped in workers.map(evaluate, targets):
+                for target, snapshots, errors, skipped in workers.map(
+                    evaluate, targets
+                ):
                     if skipped and not errors:
                         unreachable.append(target)
                         continue
@@ -335,8 +341,15 @@ def main():
                 base, head, targets, results, failures, max_lines, run_url, unreachable
             )
             full_report = render(
-                base, head, targets, results, failures, sys.maxsize, run_url,
-                unreachable, False,
+                base,
+                head,
+                targets,
+                results,
+                failures,
+                sys.maxsize,
+                run_url,
+                unreachable,
+                False,
             )
             details = {
                 "base": base,
