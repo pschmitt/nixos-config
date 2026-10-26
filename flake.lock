@@ -193,6 +193,34 @@
         "type": "github"
       }
     },
+    "cluster-operator": {
+      "inputs": {
+        "flake-parts": [
+          "nixos-config-private",
+          "flake-parts"
+        ],
+        "nixpkgs": [
+          "nixos-config-private",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "host": "git.wiit.one",
+        "lastModified": 1792706959,
+        "narHash": "sha256-/uznsrI0UwtYMkTV6Eu+8UzxenwAqJp0GxrjV7Lp5Tw=",
+        "owner": "kubernetes%2Fcode",
+        "repo": "cluster-operator",
+        "rev": "305e0e9912e0b2c455b8cfb35a50bc7defd3392d",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "git.wiit.one",
+        "owner": "kubernetes%2Fcode",
+        "ref": "dev",
+        "repo": "cluster-operator",
+        "type": "gitlab"
+      }
+    },
     "codex-ha-bridge": {
       "inputs": {
         "nixpkgs": [
@@ -465,6 +493,27 @@
     "flake-parts": {
       "inputs": {
         "nixpkgs-lib": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1790898470,
+        "narHash": "sha256-zTwuwezD0w3hpga6a6P8emidzAZFyWqlNeRBlpWOOl8=",
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "rev": "024633cd702b10285db5cb19b40ad48d2399ba60",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "flake-parts_2": {
+      "inputs": {
+        "nixpkgs-lib": [
+          "nixos-config-private",
           "nixpkgs"
         ]
       },
@@ -1656,6 +1705,8 @@
     },
     "nixos-config-private": {
       "inputs": {
+        "cluster-operator": "cluster-operator",
+        "flake-parts": "flake-parts_2",
         "hrworks": "hrworks",
         "niks3": "niks3",
         "nixbot": "nixbot",
@@ -1668,11 +1719,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793032311,
-        "narHash": "sha256-yxgvRG/v74oj03zbYzJW3feXTQ0VH3l8XsTSpGf5AIs=",
+        "lastModified": 1793032765,
+        "narHash": "sha256-NAuEWM/7dNKWXuJieg+HITEfQKZLyFPRT9XvvM8lgGU=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "47f9c0ef15b5c73233c02fcdcd3cf338eeb1be46",
+        "rev": "6e044c74e8be1e01c43ee8e62d373971f85127f8",
         "type": "github"
       },
       "original": {
