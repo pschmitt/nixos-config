@@ -1190,11 +1190,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1790415134,
-        "narHash": "sha256-3Zy6zvAfxBojwkGpaOAhUlxjYV07GFfQpIjlmO88xTw=",
+        "lastModified": 1792995427,
+        "narHash": "sha256-PK9ixnFBuH8QzYX+2pkBgpwgfI1r1V0W1UF4+uoVLxA=",
         "owner": "pschmitt",
         "repo": "jellysync",
-        "rev": "a29e8c150501fcfb75a33c0079c836020927a689",
+        "rev": "9f817865e65e446b25ffeb85fd262e1e3b848818",
         "type": "github"
       },
       "original": {
@@ -2532,11 +2532,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792946720,
-        "narHash": "sha256-cnSAsvndMHkzEv6EB+vi1cQDVClMijkFrnULu6IIYnY=",
+        "lastModified": 1792994958,
+        "narHash": "sha256-9yFoa7w1fsRlDI1EVdcKUZJ7qu77nEveQI/gl52Ix50=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "d6eaa3f53cf04c2fff08bb64bbe3b8d25d997438",
+        "rev": "ce01cdb6a94e5b6c13161b85e8a84e24f8c71661",
         "type": "github"
       },
       "original": {
