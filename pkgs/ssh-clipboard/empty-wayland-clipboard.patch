@@ -1,21 +1,21 @@
-diff --git a/src/clipboard.rs b/src/clipboard.rs
-index 61397ee..7e6454b 100644
 --- a/src/clipboard.rs
 +++ b/src/clipboard.rs
-@@ -89,9 +89,13 @@ impl NativeClipboard {
-             .context
-             .lock()
-             .map_err(|_| anyhow::anyhow!("clipboard lock poisoned"))?;
--        let mut formats = context
--            .available_formats()
--            .map_err(|error| anyhow::anyhow!("enumerate clipboard formats: {error}"))?;
-+        let mut formats = match context.available_formats() {
-+            Ok(formats) => formats,
-+            // Wayland reports an empty clipboard as an error; without change
-+            // events the poll loop would log it on every tick.
-+            Err(error) if error.to_string().contains("seat is empty") => return Ok(None),
-+            Err(error) => return Err(anyhow::anyhow!("enumerate clipboard formats: {error}")),
-+        };
+@@ -114,9 +114,15 @@
+         let mut formats = if self.x11_owner.is_some() {
+             x11_read::formats()?
+         } else {
+-            context
+-                .available_formats()
+-                .map_err(|error| anyhow::anyhow!("enumerate clipboard formats: {error}"))?
++            match context.available_formats() {
++                Ok(formats) => formats,
++                // Wayland reports an empty clipboard as an error; without
++                // change events the poll loop would log it on every tick.
++                Err(error) if error.to_string().contains("seat is empty") => return Ok(None),
++                Err(error) => {
++                    return Err(anyhow::anyhow!("enumerate clipboard formats: {error}"));
++                }
++            }
+         };
          formats.sort();
          formats.dedup();
-         if formats.iter().any(|format| is_sensitive_marker(format)) {

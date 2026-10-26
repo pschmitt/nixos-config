@@ -104,6 +104,33 @@ jobs:
           restore-prefixes-first-match: nix-${{ runner.os }}-
           save: false
 
+      # Work hosts pull inputs from the internal GitLab, reachable via Netbird.
+      - name: Netbird Connect
+        if: steps.pr.outputs.stale != 'true'
+        uses: Alemiz112/netbird-connect@master
+        with:
+          setup-key: ${{ secrets.NB_SETUP_KEY }}
+
+      - name: Wait for Netbird routes
+        if: steps.pr.outputs.stale != 'true'
+        env:
+          GITLAB_HOST: git.wiit.one
+          WAIT_SECS: "180"
+        run: |
+          deadline=$((SECONDS + WAIT_SECS))
+
+          echo "Waiting for $GITLAB_HOST to become reachable"
+
+          until curl -sS -o /dev/null --max-time 5 "https://${GITLAB_HOST}/"
+          do
+            if (( SECONDS >= deadline ))
+            then
+              echo "$GITLAB_HOST is not reachable, continuing anyway" >&2
+              exit 0
+            fi
+            sleep 3
+          done
+
       - name: Restore evaluated snapshots
         if: steps.pr.outputs.stale != 'true'
         id: snapshots
