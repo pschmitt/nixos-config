@@ -26,6 +26,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     ./empty-wayland-clipboard.patch
   ];
 
+  checkFlags = [
+    # Spawns the real service, which the build sandbox forbids (EACCES)
+    "--skip=real_container_service_start_stop_restart_and_ssh_revival"
+  ];
+
   nativeBuildInputs = [ pkg-config ];
   nativeCheckInputs = [ xorg-server ];
   buildInputs = [ wayland ];
