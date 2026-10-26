@@ -81,6 +81,7 @@ in
         ".config/zsh/termux/zoxide-init.zsh"
         ".config/zsh/termux/vivid.zsh"
         ".config/zsh/termux/prompt-color.zsh"
+        ".config/nixpp/config.toml"
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
@@ -191,6 +192,17 @@ in
       xdg = {
         enable = true;
         configFile = {
+          "nixpp/config.toml".text = ''
+            [defaults]
+            substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
+            flake = "path:/home/pschmitt/build/termux-bootstrap/nixos-config#termux-native-${hostname}-bundle"
+            builder = "rofl-13"
+            public_keys = [
+              "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0=",
+              "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=",
+            ]
+            aws_credentials_file = "~/.aws/credentials"
+          '';
           "termux/tasker/tudo" = {
             executable = true;
             text = ''

@@ -38,10 +38,35 @@ file result-nixpp-termux/bin/nixpp
 readelf -l -d result-nixpp-termux/bin/nixpp
 ```
 
-The `fetch` command delegates HTTPS, DNS, and basic authentication to Termux's
-`curl`; Rust verifies Nix cache signatures and hashes before extracting the
-NAR. Termux's `gzip` and `xz` commands decompress those supported cache formats.
+The `fetch` command delegates HTTP(S), basic authentication, and AWS SigV4
+requests to Termux's `curl`; Rust verifies Nix cache signatures and hashes
+before extracting the NAR. `s3://` substituters use the AWS shared credentials
+file and path-style requests, which supports our private Ceph RGW bucket.
+Termux's `gzip` and `xz` commands decompress those supported cache formats.
 The phone does not need Rust, Cargo, or Nix.
+
+By default, nixpp reads `~/.config/nixpp/config.toml` (override with
+`NIXPP_CONFIG`). For example:
+
+```toml
+[defaults]
+substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
+flake = "path:/home/pschmitt/devel/private/pschmitt/nixos-config.git#termux-native-zf10-bundle"
+builder = "rofl-13"
+public_keys = [
+  "rofl-10:BASE64_PUBLIC_KEY",
+  "rofl-13:BASE64_PUBLIC_KEY",
+]
+aws_credentials_file = "~/.aws/credentials"
+```
+
+`--cache`, `--flake`, `--builder`, and `--public-key` override these defaults.
+If neither a `--public-key` nor `NIXPP_PUBLIC_KEY` is set, all configured
+public keys are tried. For S3, nixpp reads the selected `profile` from the
+configured AWS credentials file (or `AWS_SHARED_CREDENTIALS_FILE`). The file
+must be a regular file with mode `0600` or stricter. Credentials are passed to
+curl through a short-lived mode-`0600` config file and removed when the fetch
+completes.
 
 ## Build and switch from Termux
 
@@ -68,7 +93,8 @@ nixpp switch \
   --builder rofl-13
 ```
 
-`--public-key` can be used instead of `NIXPP_PUBLIC_KEY`. The builder needs
+The flake, builder, and trusted signing key can be supplied in the config;
+command-line options and environment variables override those defaults. The builder needs
 Nix, a configured signing key, and SSH access from Termux. Termux must already
 trust the builder's SSH host key and have an SSH key authorized there. The
 flake installable must produce exactly one reference-free directory containing
@@ -80,7 +106,7 @@ for rollback through its `activate.sh`.
 
 `switch` streams the signed NAR over SSH and does not publish it to an HTTP
 cache. Use `fetch` for outputs already published to a standard Nix binary
-cache.
+cache, including a configured private S3 cache.
 
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.
@@ -113,9 +139,9 @@ real Nix store path without requiring Nix or `/nix/store` on Termux.
 
 ## Fetch one output
 
-The requested full store path identifies one output in the cache. Pass the
-bootstrap's private netrc file rather than putting credentials in command
-arguments or child process environments:
+The requested full store path identifies one output in the cache. For the
+private HTTP bootstrap mirror, pass the bootstrap's private netrc file rather
+than putting credentials in command arguments or child process environments:
 
 ```sh
   nixpp fetch \

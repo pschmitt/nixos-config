@@ -1,6 +1,7 @@
 use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::env;
@@ -16,6 +17,40 @@ use url::Url;
 const NIX_BASE32: &[u8; 32] = b"0123456789abcdfghijklmnpqrsvwxyz";
 const MAX_NAR_SIZE: u64 = 20 << 30;
 const MAX_NAR_STRING: u64 = 1 << 30;
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct NixppConfig {
+    defaults: ConfigDefaults,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(default)]
+struct ConfigDefaults {
+    substituter: Option<String>,
+    flake: Option<String>,
+    builder: Option<String>,
+    public_keys: Vec<String>,
+    aws_credentials_file: Option<PathBuf>,
+}
+
+#[derive(Debug)]
+struct CacheTarget {
+    base: Url,
+    s3: Option<S3Cache>,
+}
+
+#[derive(Debug)]
+struct S3Cache {
+    region: String,
+    profile: String,
+    credentials_file: PathBuf,
+}
+
+struct CacheAuth {
+    netrc: Option<PathBuf>,
+    curl_config: Option<TempFile>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct NarInfo {
@@ -488,38 +523,61 @@ pub fn rollback(generation: &str) -> Result<()> {
 }
 
 pub fn fetch(
-    cache: &str,
+    cache: Option<&str>,
     store_path: &str,
     destination: &Path,
-    public_key: &str,
+    public_key: Option<&str>,
     netrc_file: Option<&Path>,
 ) -> Result<()> {
+    let config = load_config()?;
+    let cache = cache
+        .or(config.defaults.substituter.as_deref())
+        .context("no cache specified; pass --cache or set defaults.substituter in the config")?;
+    let public_keys = public_key
+        .map(|key| vec![key.to_owned()])
+        .unwrap_or_else(|| config.defaults.public_keys.clone());
+    ensure!(
+        !public_keys.is_empty(),
+        "no trusted public keys specified; pass --public-key or set defaults.public_keys in the config"
+    );
     let store_hash = store_hash(store_path)?;
-    let base = parse_cache_url(cache)?;
+    let target = parse_cache_target(cache, config.defaults.aws_credentials_file.as_deref())?;
     let has_credentials = env::var_os("NIXPP_USERNAME").is_some()
         || env::var_os("NIXPP_PASSWORD").is_some()
-        || netrc_file.is_some();
+        || netrc_file.is_some()
+        || target.s3.is_some();
     ensure!(
-        base.scheme() == "https" || !has_credentials,
+        target.base.scheme() == "https" || !has_credentials,
         "refusing to send cache credentials over plain HTTP"
     );
 
-    let (netrc, remove_netrc) = match netrc_file {
-        Some(path) => {
+    let (netrc, remove_netrc) = match (target.s3.as_ref(), netrc_file) {
+        (Some(_), Some(_)) => bail!("--netrc-file cannot be used with an S3 substituter"),
+        (Some(_), None) => (None, None),
+        (None, Some(path)) => {
             validate_netrc(path)?;
             (Some(path.to_path_buf()), None)
         }
-        None => make_netrc(base.host_str().context("cache URL has no host")?)?,
+        (None, None) => make_netrc(target.base.host_str().context("cache URL has no host")?)?,
+    };
+    let auth = match target.s3.as_ref() {
+        Some(s3) => CacheAuth {
+            netrc: None,
+            curl_config: Some(make_s3_curl_config(s3)?),
+        },
+        None => CacheAuth {
+            netrc,
+            curl_config: None,
+        },
     };
     let result = (|| {
-        let mut info_url = base.clone();
+        let mut info_url = target.base.clone();
         info_url
             .path_segments_mut()
             .map_err(|_| anyhow::anyhow!("cache URL cannot accept a path"))?
             .pop_if_empty()
             .push(&format!("{store_hash}.narinfo"));
-        let narinfo =
-            curl_read(info_url.as_str(), netrc.as_deref(), 1 << 20).context("fetch narinfo")?;
+        let narinfo = curl_read(info_url.as_str(), &auth, 1 << 20).context("fetch narinfo")?;
         let info = parse_nar_info(&narinfo)?;
         ensure!(
             info.store_path == store_path,
@@ -529,14 +587,14 @@ pub fn fetch(
             info.references.is_empty(),
             "refusing cache output with Nix store references"
         );
-        verify_signature(&info, public_key)?;
+        verify_any_signature(&info, &public_keys)?;
         ensure!(
             matches!(info.compression.as_str(), "none" | "gzip" | "xz"),
             "unsupported cache compression {:?}; supported formats are none, gzip, and xz",
             info.compression
         );
-        let archive_url = safe_cache_url(&base, &info.url)?;
-        download_and_extract(&archive_url, netrc.as_deref(), &info, destination)
+        let archive_url = safe_cache_url(&target.base, &info.url)?;
+        download_and_extract(&archive_url, &auth, &info, destination)
     })();
     let cleanup_result = remove_netrc.map_or(Ok(()), |path| {
         fs::remove_file(&path).with_context(|| format!("remove temporary netrc {}", path.display()))
@@ -544,7 +602,277 @@ pub fn fetch(
     result.and(cleanup_result)
 }
 
-pub fn switch_profile(flake: &str, builder: &str, public_key: &str) -> Result<()> {
+fn load_config() -> Result<NixppConfig> {
+    let path = if let Some(path) = env::var_os("NIXPP_CONFIG") {
+        PathBuf::from(path)
+    } else {
+        let config_home = env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
+            .context("cannot locate config; set HOME, XDG_CONFIG_HOME, or NIXPP_CONFIG")?;
+        config_home.join("nixpp/config.toml")
+    };
+    match fs::read_to_string(&path) {
+        Ok(contents) => toml::from_str(&contents)
+            .with_context(|| format!("parse nixpp config {}", path.display())),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(NixppConfig::default()),
+        Err(error) => Err(error).with_context(|| format!("read nixpp config {}", path.display())),
+    }
+}
+
+fn parse_cache_target(value: &str, configured_credentials: Option<&Path>) -> Result<CacheTarget> {
+    if value.starts_with("s3://") {
+        let s3_url = Url::parse(value).context("invalid S3 cache URL")?;
+        ensure!(
+            s3_url.scheme() == "s3",
+            "cache must use s3://, http://, or https://"
+        );
+        let bucket = s3_url.host_str().context("S3 cache URL has no bucket")?;
+        ensure!(!bucket.is_empty(), "S3 bucket name cannot be empty");
+        ensure!(
+            s3_url.username().is_empty()
+                && s3_url.password().is_none()
+                && s3_url.fragment().is_none(),
+            "S3 cache URL cannot contain credentials or a fragment"
+        );
+        let mut options = HashMap::new();
+        for (name, value) in s3_url.query_pairs() {
+            ensure!(
+                matches!(
+                    name.as_ref(),
+                    "endpoint" | "region" | "scheme" | "profile" | "priority"
+                ),
+                "unsupported S3 cache option {name:?}"
+            );
+            ensure!(
+                options
+                    .insert(name.to_string(), value.to_string())
+                    .is_none(),
+                "duplicate S3 cache option {name:?}"
+            );
+        }
+        let endpoint = options
+            .get("endpoint")
+            .context("S3 cache URL requires endpoint=<S3 endpoint>")?;
+        let region = options
+            .get("region")
+            .map(String::as_str)
+            .unwrap_or("us-east-1");
+        let scheme = options.get("scheme").map(String::as_str).unwrap_or("https");
+        let profile = options
+            .get("profile")
+            .map(String::as_str)
+            .unwrap_or("default");
+        ensure!(
+            matches!(scheme, "https" | "http"),
+            "S3 cache scheme must be http or https"
+        );
+        ensure!(
+            scheme == "https",
+            "S3 cache credentials require an HTTPS endpoint"
+        );
+        ensure!(
+            !region.is_empty() && !profile.is_empty(),
+            "S3 region and profile must be non-empty"
+        );
+        let endpoint_url =
+            Url::parse(&format!("{scheme}://{endpoint}/")).context("invalid S3 endpoint")?;
+        ensure!(
+            endpoint_url.host_str().is_some()
+                && endpoint_url.username().is_empty()
+                && endpoint_url.password().is_none()
+                && endpoint_url.path() == "/"
+                && endpoint_url.query().is_none()
+                && endpoint_url.fragment().is_none(),
+            "S3 endpoint must be a host name with an optional port"
+        );
+        let mut base = endpoint_url;
+        {
+            let mut segments = base.path_segments_mut().expect("hierarchical endpoint URL");
+            segments.pop_if_empty();
+            segments.push(bucket);
+            for segment in s3_url
+                .path_segments()
+                .into_iter()
+                .flatten()
+                .filter(|part| !part.is_empty())
+            {
+                segments.push(segment);
+            }
+        }
+        let credentials_file = s3_credentials_path(configured_credentials)?;
+        Ok(CacheTarget {
+            base,
+            s3: Some(S3Cache {
+                region: region.to_owned(),
+                profile: profile.to_owned(),
+                credentials_file,
+            }),
+        })
+    } else {
+        Ok(CacheTarget {
+            base: parse_http_cache_url(value)?,
+            s3: None,
+        })
+    }
+}
+
+fn s3_credentials_path(configured: Option<&Path>) -> Result<PathBuf> {
+    let path = env::var_os("AWS_SHARED_CREDENTIALS_FILE")
+        .map(PathBuf::from)
+        .or_else(|| configured.map(Path::to_path_buf))
+        .or_else(|| env::var_os("HOME").map(|home| PathBuf::from(home).join(".aws/credentials")))
+        .context("cannot locate AWS credentials; set AWS_SHARED_CREDENTIALS_FILE or defaults.aws_credentials_file")?;
+    Ok(expand_home(&path))
+}
+
+fn expand_home(path: &Path) -> PathBuf {
+    if path == Path::new("~") {
+        return env::var_os("HOME")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| path.to_path_buf());
+    }
+    if let Ok(value) = path.strip_prefix("~") {
+        if let Some(home) = env::var_os("HOME") {
+            return PathBuf::from(home).join(value);
+        }
+    }
+    path.to_path_buf()
+}
+
+fn make_s3_curl_config(s3: &S3Cache) -> Result<TempFile> {
+    let (access_key, secret_key, session_token) =
+        load_aws_profile(&s3.credentials_file, &s3.profile)?;
+    let (path, mut file) = create_private_file(&env::temp_dir(), ".nixpp-s3-auth")?;
+    let write_result = (|| {
+        writeln!(
+            file,
+            "aws-sigv4 = \"aws:amz:{}:s3\"",
+            curl_config_escape(&s3.region)
+        )?;
+        writeln!(
+            file,
+            "user = \"{}:{}\"",
+            curl_config_escape(&access_key),
+            curl_config_escape(&secret_key)
+        )?;
+        if let Some(token) = session_token {
+            writeln!(
+                file,
+                "header = \"x-amz-security-token: {}\"",
+                curl_config_escape(&token)
+            )?;
+        }
+        file.sync_all().context("sync S3 curl config")
+    })();
+    if let Err(error) = write_result {
+        drop(file);
+        return match fs::remove_file(&path) {
+            Ok(()) => Err(error),
+            Err(cleanup) => {
+                Err(error.context(format!("also failed to remove S3 auth config: {cleanup}")))
+            }
+        };
+    }
+    Ok(TempFile { file, path })
+}
+
+fn curl_config_escape(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"")
+        .replace('\n', "\\n")
+        .replace('\r', "\\r")
+}
+
+fn load_aws_profile(path: &Path, profile: &str) -> Result<(String, String, Option<String>)> {
+    let metadata = fs::symlink_metadata(path)
+        .with_context(|| format!("inspect AWS credentials file {}", path.display()))?;
+    ensure!(
+        metadata.file_type().is_file(),
+        "AWS credentials path must be a regular file"
+    );
+    ensure!(
+        metadata.permissions().mode() & 0o077 == 0,
+        "AWS credentials file must have mode 0600 or stricter"
+    );
+    let contents = fs::read_to_string(path)
+        .with_context(|| format!("read AWS credentials file {}", path.display()))?;
+    let mut current_profile = "default";
+    let mut fields = HashMap::<String, String>::new();
+    for line in contents.lines() {
+        let line = line.trim();
+        if line.is_empty() || line.starts_with('#') || line.starts_with(';') {
+            continue;
+        }
+        if line.starts_with('[') && line.ends_with(']') {
+            current_profile = line[1..line.len() - 1].trim();
+            continue;
+        }
+        if current_profile != profile {
+            continue;
+        }
+        if let Some((name, value)) = line.split_once('=') {
+            fields.insert(name.trim().to_owned(), value.trim().to_owned());
+        }
+    }
+    let access_key = fields
+        .remove("aws_access_key_id")
+        .context("AWS profile is missing aws_access_key_id")?;
+    let secret_key = fields
+        .remove("aws_secret_access_key")
+        .context("AWS profile is missing aws_secret_access_key")?;
+    let session_token = fields.remove("aws_session_token");
+    ensure!(
+        !access_key.is_empty()
+            && !secret_key.is_empty()
+            && !access_key.contains(['\n', '\r'])
+            && !secret_key.contains(['\n', '\r'])
+            && session_token
+                .as_ref()
+                .is_none_or(|token| !token.is_empty() && !token.contains(['\n', '\r'])),
+        "AWS profile credentials are invalid"
+    );
+    Ok((access_key, secret_key, session_token))
+}
+
+fn parse_http_cache_url(value: &str) -> Result<Url> {
+    let url = Url::parse(value).context("cache must be an HTTP(S) or S3 URL")?;
+    ensure!(
+        matches!(url.scheme(), "http" | "https"),
+        "cache must be an HTTP(S) or S3 URL"
+    );
+    ensure!(url.host_str().is_some(), "cache URL has no host");
+    ensure!(
+        url.username().is_empty() && url.password().is_none(),
+        "cache URL must not contain credentials"
+    );
+    ensure!(
+        url.query().is_none() && url.fragment().is_none(),
+        "HTTP cache URL must not contain a query or fragment"
+    );
+    Ok(url)
+}
+
+pub fn switch_profile(
+    flake: Option<&str>,
+    builder: Option<&str>,
+    public_key: Option<&str>,
+) -> Result<()> {
+    let config = load_config()?;
+    let flake = flake
+        .or(config.defaults.flake.as_deref())
+        .context("no flake specified; pass --flake or set defaults.flake in the config")?;
+    let builder = builder
+        .or(config.defaults.builder.as_deref())
+        .context("no builder specified; pass --builder or set defaults.builder in the config")?;
+    let public_keys = public_key
+        .map(|key| vec![key.to_owned()])
+        .unwrap_or_else(|| config.defaults.public_keys.clone());
+    ensure!(
+        !public_keys.is_empty(),
+        "no trusted public keys specified; pass --public-key or set defaults.public_keys in the config"
+    );
     ensure!(!flake.is_empty(), "--flake is required");
     ensure!(
         flake.len() <= 4096 && !flake.contains(['\0', '\r', '\n']),
@@ -553,10 +881,6 @@ pub fn switch_profile(flake: &str, builder: &str, public_key: &str) -> Result<()
     ensure!(
         valid_ssh_target(builder),
         "builder must be an SSH host or user@host alias without command-line options"
-    );
-    ensure!(
-        !public_key.is_empty(),
-        "a trusted signing key is required; pass --public-key or set NIXPP_PUBLIC_KEY"
     );
     ensure!(
         env::var("PREFIX").as_deref() == Ok("/data/data/com.termux/files/usr"),
@@ -598,7 +922,7 @@ pub fn switch_profile(flake: &str, builder: &str, public_key: &str) -> Result<()
                 parsed.references.is_empty(),
                 "refusing Termux bundle with Nix store references"
             );
-            verify_signature(&parsed, public_key).context("verify builder signature")?;
+            verify_any_signature(&parsed, &public_keys).context("verify builder signature")?;
             info = Some(parsed);
             Ok(())
         })?;
@@ -840,24 +1164,6 @@ fn create_private_file(parent: &Path, prefix: &str) -> Result<(PathBuf, File)> {
     )
 }
 
-fn parse_cache_url(value: &str) -> Result<Url> {
-    let url = Url::parse(value).context("cache must be an HTTP(S) URL")?;
-    ensure!(
-        matches!(url.scheme(), "http" | "https"),
-        "cache must be an HTTP(S) URL"
-    );
-    ensure!(url.host_str().is_some(), "cache URL has no host");
-    ensure!(
-        url.username().is_empty() && url.password().is_none(),
-        "cache URL must not contain credentials"
-    );
-    ensure!(
-        url.query().is_none() && url.fragment().is_none(),
-        "cache URL must not contain a query or fragment"
-    );
-    Ok(url)
-}
-
 fn safe_cache_url(base: &Url, path: &str) -> Result<String> {
     ensure!(
         !path.is_empty()
@@ -939,7 +1245,7 @@ fn netrc_quote(value: &str) -> String {
     format!("\"{}\"", value.replace('\\', "\\\\").replace('"', "\\\""))
 }
 
-fn curl_args(netrc: Option<&Path>, progress: bool) -> Vec<String> {
+fn curl_args(auth: &CacheAuth, progress: bool) -> Vec<String> {
     let mut arguments = vec![
         "--fail".to_owned(),
         "--show-error".to_owned(),
@@ -954,16 +1260,19 @@ fn curl_args(netrc: Option<&Path>, progress: bool) -> Vec<String> {
     } else {
         arguments.push("--silent".to_owned());
     }
-    if let Some(path) = netrc {
+    if let Some(path) = auth.netrc.as_deref() {
         arguments.extend(["--netrc-file".to_owned(), path.display().to_string()]);
+    }
+    if let Some(config) = auth.curl_config.as_ref() {
+        arguments.extend(["--config".to_owned(), config.path.display().to_string()]);
     }
     arguments
 }
 
-fn curl_read(url: &str, netrc: Option<&Path>, max_size: u64) -> Result<Vec<u8>> {
+fn curl_read(url: &str, auth: &CacheAuth, max_size: u64) -> Result<Vec<u8>> {
     let mut command = Command::new("curl");
     command
-        .args(curl_args(netrc, false))
+        .args(curl_args(auth, false))
         .args([
             "--max-filesize",
             &max_size.to_string(),
@@ -1121,9 +1430,27 @@ fn verify_signature(info: &NarInfo, public_key: &str) -> Result<()> {
     bail!("narinfo has no valid signature from trusted cache key {name:?}")
 }
 
+fn verify_any_signature(info: &NarInfo, public_keys: &[String]) -> Result<()> {
+    let mut last_error = None;
+    for public_key in public_keys {
+        match verify_signature(info, public_key) {
+            Ok(()) => return Ok(()),
+            Err(error) => last_error = Some(error),
+        }
+    }
+    let names = public_keys
+        .iter()
+        .filter_map(|key| key.split_once(':').map(|(name, _)| name))
+        .collect::<Vec<_>>()
+        .join(", ");
+    Err(last_error.unwrap_or_else(|| anyhow::anyhow!("no trusted cache keys configured"))).context(
+        format!("narinfo has no valid signature from configured cache keys ({names})"),
+    )
+}
+
 fn download_and_extract(
     url: &str,
-    netrc: Option<&Path>,
+    auth: &CacheAuth,
     info: &NarInfo,
     destination: &Path,
 ) -> Result<()> {
@@ -1144,7 +1471,7 @@ fn download_and_extract(
         let compressed_limit = info
             .file_size
             .unwrap_or_else(|| info.nar_size.saturating_add(1 << 20));
-        curl_download(url, netrc, &compressed_path, compressed_limit)?;
+        curl_download(url, auth, &compressed_path, compressed_limit)?;
         let (file_hash, file_size) = hash_file(&compressed_path)?;
         if let Some(expected_size) = info.file_size {
             ensure!(
@@ -1191,10 +1518,10 @@ fn download_and_extract(
     result.and(cleanup)
 }
 
-fn curl_download(url: &str, netrc: Option<&Path>, destination: &Path, maximum: u64) -> Result<()> {
+fn curl_download(url: &str, auth: &CacheAuth, destination: &Path, maximum: u64) -> Result<()> {
     let mut command = Command::new("curl");
     command
-        .args(curl_args(netrc, true))
+        .args(curl_args(auth, true))
         .args(["--max-filesize", &maximum.to_string(), "--output"])
         .arg(destination)
         .arg(url)
@@ -1870,7 +2197,7 @@ mod tests {
 
     #[test]
     fn cache_urls_reject_unsafe_paths() {
-        let base = parse_cache_url("https://cache.example/private/termux/cache").unwrap();
+        let base = parse_http_cache_url("https://cache.example/private/termux/cache").unwrap();
         for candidate in [
             "../outside",
             "/outside",
@@ -1887,6 +2214,81 @@ mod tests {
             safe_cache_url(&base, "nar/abc.nar.xz").unwrap(),
             "https://cache.example/private/termux/cache/nar/abc.nar.xz"
         );
+    }
+
+    #[test]
+    fn parses_nix_s3_substituter_as_path_style_https_url() {
+        let target = parse_cache_target(
+            "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30",
+            Some(Path::new("~/.aws/credentials")),
+        )
+        .unwrap();
+        assert_eq!(
+            target.base.as_str(),
+            "https://s3.openstack.de-west-01.wiit-cloud.io/nix-cache-brkn-lol"
+        );
+        let object = safe_cache_url(&target.base, "nar/abc.nar.xz").unwrap();
+        assert_eq!(
+            object,
+            "https://s3.openstack.de-west-01.wiit-cloud.io/nix-cache-brkn-lol/nar/abc.nar.xz"
+        );
+        assert_eq!(target.s3.unwrap().region, "default");
+    }
+
+    #[test]
+    fn rejects_ambiguous_or_unknown_s3_substituter_options() {
+        for url in [
+            "s3://cache.example?endpoint=s3.example&profile=one&profile=two",
+            "s3://cache.example?endpoint=s3.example&token=secret",
+        ] {
+            assert!(parse_cache_target(url, None).is_err(), "accepted {url}");
+        }
+    }
+
+    #[test]
+    fn loads_private_aws_profile_for_s3_signing() {
+        let directory = temp_dir("aws-credentials");
+        let path = directory.join("credentials");
+        fs::write(
+            &path,
+            "[default]\naws_access_key_id = ignored\naws_secret_access_key = ignored\n\
+             [niks3]\naws_access_key_id = test-access\naws_secret_access_key = test-secret\n\
+             aws_session_token = test-session\n",
+        )
+        .unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(
+            load_aws_profile(&path, "niks3").unwrap(),
+            (
+                "test-access".to_owned(),
+                "test-secret".to_owned(),
+                Some("test-session".to_owned())
+            )
+        );
+        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).unwrap();
+        assert!(load_aws_profile(&path, "niks3").is_err());
+        fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn reads_default_fetch_and_switch_settings_from_config() {
+        let config: NixppConfig = toml::from_str(
+            r#"
+                [defaults]
+                substituter = "s3://cache.example?endpoint=s3.example&profile=cache"
+                flake = "path:/tmp/nixos-config#termux-native-zf10-bundle"
+                builder = "builder"
+                public_keys = ["cache:abc", "builder:def"]
+                aws_credentials_file = "~/.aws/credentials"
+            "#,
+        )
+        .unwrap();
+        assert_eq!(
+            config.defaults.substituter.as_deref(),
+            Some("s3://cache.example?endpoint=s3.example&profile=cache")
+        );
+        assert_eq!(config.defaults.public_keys, ["cache:abc", "builder:def"]);
+        assert_eq!(config.defaults.builder.as_deref(), Some("builder"));
     }
 
     #[test]

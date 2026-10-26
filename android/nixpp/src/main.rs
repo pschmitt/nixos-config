@@ -20,7 +20,7 @@ enum Command {
     Fetch {
         /// Nix binary cache URL.
         #[arg(long)]
-        cache: String,
+        cache: Option<String>,
         /// Full path of the output in the Nix store.
         #[arg(long)]
         store_path: String,
@@ -29,7 +29,7 @@ enum Command {
         destination: PathBuf,
         /// Trusted cache key in NAME:BASE64 format.
         #[arg(long, env = "NIXPP_PUBLIC_KEY")]
-        public_key: String,
+        public_key: Option<String>,
         /// Private netrc file for authenticated caches (mode 0600 or stricter).
         #[arg(long)]
         netrc_file: Option<PathBuf>,
@@ -38,13 +38,13 @@ enum Command {
     Switch {
         /// Flake installable that produces a Termux bundle.
         #[arg(long)]
-        flake: String,
+        flake: Option<String>,
         /// SSH host with Nix and a signing key configured.
         #[arg(long, env = "NIXPP_BUILDER")]
-        builder: String,
+        builder: Option<String>,
         /// Trusted cache key in NAME:BASE64 format.
         #[arg(long, env = "NIXPP_PUBLIC_KEY")]
-        public_key: String,
+        public_key: Option<String>,
     },
     /// Show the active generation and installed generation IDs.
     Status {
@@ -89,17 +89,17 @@ fn run(cli: Cli) -> Result<()> {
             public_key,
             netrc_file,
         } => nixpp::fetch(
-            &cache,
+            cache.as_deref(),
             &store_path,
             &destination,
-            &public_key,
+            public_key.as_deref(),
             netrc_file.as_deref(),
         ),
         Command::Switch {
             flake,
             builder,
             public_key,
-        } => nixpp::switch_profile(&flake, &builder, &public_key),
+        } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
         Command::Rollback { generation } => nixpp::rollback(&generation),
