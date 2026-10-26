@@ -1,6 +1,6 @@
-# Keep the workstations' current main systems in fnuc's store so they
-# substitute them over the LAN from fnuc's Harmonia (see the workstation
-# profile's substituter priority) instead of fetching from S3 themselves.
+# Keep the workstations' and lrz's current main systems in fnuc's store so they
+# substitute them over the LAN from fnuc's Harmonia
+# (profiles/features/network/fnuc-nix-cache.nix) instead of fetching from S3.
 { config, ... }:
 {
   imports = [ ../../services/harmonia-lan-mirror.nix ];
@@ -21,6 +21,7 @@
     targets = map (host: "herculesCI.onPush.default.outputs.hosts.${host}") [
       "ge2"
       "gk4"
+      "lrz"
       "x13"
     ];
   };

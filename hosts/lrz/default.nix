@@ -1,5 +1,6 @@
 {
   imports = [
+    ../../profiles/features/network/fnuc-nix-cache.nix
     ../../profiles/specializations/homelab-server
 
     ./backups.nix
