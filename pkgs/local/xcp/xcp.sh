@@ -558,8 +558,7 @@ get_clipboard_content() {
     else
       if has_xclip
       then
-        local image_target
-        if image_target="$(xclip_first_image_target "$SELECTION")"
+        if xclip_first_image_target "$SELECTION" >/dev/null
         then
           backend="xclip"
         fi
@@ -567,8 +566,7 @@ get_clipboard_content() {
 
       if [[ -z "$backend" ]] && has_xsel
       then
-        local image_target
-        if image_target="$(xsel_first_image_target "$SELECTION")"
+        if xsel_first_image_target "$SELECTION" >/dev/null
         then
           backend="xsel"
         fi

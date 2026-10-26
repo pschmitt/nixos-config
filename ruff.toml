@@ -1,0 +1,3 @@
+# Repo-wide Ruff settings; the Lint workflow checks every tracked Python file.
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]

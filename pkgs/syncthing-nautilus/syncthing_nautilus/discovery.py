@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import ipaddress
 import os
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import urlsplit
-import xml.etree.ElementTree as ET
 
 
 @dataclass(frozen=True)
@@ -122,7 +122,10 @@ def discover(environ: dict[str, str] | None = None) -> SyncthingConfiguration:
             continue
 
         folders = tuple(
-            Folder(id=element.attrib["id"], path=normalise_local_path(element.attrib["path"]))
+            Folder(
+                id=element.attrib["id"],
+                path=normalise_local_path(element.attrib["path"]),
+            )
             for element in root.findall("folder")
             if element.attrib.get("id") and element.attrib.get("path")
         )
@@ -130,13 +133,31 @@ def discover(environ: dict[str, str] | None = None) -> SyncthingConfiguration:
         if gui is None or gui.attrib.get("enabled", "true").lower() != "true":
             return SyncthingConfiguration(folders=folders, endpoint=None)
 
-        api_key = environ.get("SYNCTHING_API_KEY") or (gui.findtext("apikey") or "").strip()
+        api_key = (
+            environ.get("SYNCTHING_API_KEY") or (gui.findtext("apikey") or "").strip()
+        )
         configured_url = _url_from_gui(
             gui.findtext("address") or "127.0.0.1:8384",
             gui.attrib.get("tls", "false").lower() == "true",
         )
-        url = _local_url(environ.get("SYNCTHING_URL", "")) if environ.get("SYNCTHING_URL") else configured_url
-        certificate = config_dir / "https-cert.pem" if url and url.startswith("https://") else None
-        endpoint = Endpoint(url, api_key, certificate if certificate and certificate.is_file() else None) if url and api_key else None
+        url = (
+            _local_url(environ.get("SYNCTHING_URL", ""))
+            if environ.get("SYNCTHING_URL")
+            else configured_url
+        )
+        certificate = (
+            config_dir / "https-cert.pem"
+            if url and url.startswith("https://")
+            else None
+        )
+        endpoint = (
+            Endpoint(
+                url,
+                api_key,
+                certificate if certificate and certificate.is_file() else None,
+            )
+            if url and api_key
+            else None
+        )
         return SyncthingConfiguration(folders=folders, endpoint=endpoint)
     return SyncthingConfiguration(folders=(), endpoint=None)

@@ -7,6 +7,7 @@
 import argparse
 import re
 import sys
+
 from wcwidth import wcswidth
 
 # Custom mapping of background color names (including dim variants)

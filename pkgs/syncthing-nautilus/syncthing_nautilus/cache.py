@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import threading
 import time
+from dataclasses import dataclass
 
-from .discovery import Folder, SyncthingConfiguration, folder_for_path, relative_to_folder
+from .discovery import (
+    Folder,
+    SyncthingConfiguration,
+    folder_for_path,
+    relative_to_folder,
+)
 from .model import FolderSnapshot, Status
 
 
@@ -36,14 +41,22 @@ class StatusCache:
         with self._lock:
             self._configuration = configuration
             valid_ids = {folder.id for folder in configuration.folders}
-            self._snapshots = {key: value for key, value in self._snapshots.items() if key in valid_ids}
-            self._last_attempt = {key: value for key, value in self._last_attempt.items() if key in valid_ids}
+            self._snapshots = {
+                key: value for key, value in self._snapshots.items() if key in valid_ids
+            }
+            self._last_attempt = {
+                key: value
+                for key, value in self._last_attempt.items()
+                if key in valid_ids
+            }
 
     def folder_for_path(self, path: str) -> Folder | None:
         with self._lock:
             return folder_for_path(self._configuration.folders, path)
 
-    def status_for(self, path: str, *, is_directory: bool) -> tuple[Folder | None, Status | None]:
+    def status_for(
+        self, path: str, *, is_directory: bool
+    ) -> tuple[Folder | None, Status | None]:
         folder = self.folder_for_path(path)
         if folder is None:
             return None, None
@@ -51,7 +64,9 @@ class StatusCache:
             cached = self._snapshots.get(folder.id)
         if cached is None:
             return folder, Status.UNKNOWN
-        return folder, cached.snapshot.status_for(relative_to_folder(path, folder), is_directory=is_directory)
+        return folder, cached.snapshot.status_for(
+            relative_to_folder(path, folder), is_directory=is_directory
+        )
 
     def refresh_due(self, folder: Folder, *, now: float | None = None) -> bool:
         now = time.monotonic() if now is None else now
@@ -66,9 +81,13 @@ class StatusCache:
         with self._lock:
             self._last_attempt[folder.id] = time.monotonic() if now is None else now
 
-    def store(self, folder: Folder, snapshot: FolderSnapshot, *, now: float | None = None) -> None:
+    def store(
+        self, folder: Folder, snapshot: FolderSnapshot, *, now: float | None = None
+    ) -> None:
         with self._lock:
-            self._snapshots[folder.id] = CachedSnapshot(snapshot, time.monotonic() if now is None else now)
+            self._snapshots[folder.id] = CachedSnapshot(
+                snapshot, time.monotonic() if now is None else now
+            )
 
     def invalidate(self, folder_id: str | None = None) -> None:
         with self._lock:

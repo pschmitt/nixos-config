@@ -3,6 +3,7 @@ set -euo pipefail
 
 if [[ -f /etc/profile.d/nix.sh ]]
 then
+  # shellcheck source=/dev/null
   source /etc/profile.d/nix.sh
 fi
 TARGET_HOST="${1:-}"
@@ -28,6 +29,7 @@ then
 fi
 
 BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh hm)"
+# shellcheck disable=SC2064 # expand the path now
 trap "rm -rf '$BUILD_DIR'" EXIT
 
 OLD_PROFILE="$(readlink -f ~/.local/state/nix/profiles/home-manager 2>/dev/null || true)"

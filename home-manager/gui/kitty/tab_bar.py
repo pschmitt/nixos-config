@@ -1,4 +1,5 @@
 import math
+
 from kitty.fast_data_types import Screen, get_options
 from kitty.tab_bar import (
     DrawData,

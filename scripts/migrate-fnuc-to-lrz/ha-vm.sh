@@ -57,6 +57,7 @@ migrate_ha_vm() (
   [[ "$(source_vm_disk)" == "$vm_img" ]] || die "Unexpected source disk/overlay; resolve the backing chain before copying"
   [[ "$(source_vm_disk --inactive)" == "$vm_img" ]] || die "Persistent source domain does not reference the expected base disk"
 
+  # shellcheck disable=SC2329 # invoked by the EXIT trap
   snapshot_failure() {
     if [[ -n "$snapshot_attempted" ]]
     then

@@ -21,6 +21,7 @@ for ((i = 0; i < ${#args[@]}; i++)); do
 done
 if [[ -n "$build_host" ]]; then
   BUILD_DIR="$(./scripts/copy-to-nix-tmp.sh --host "$build_host" nixos)"
+  # shellcheck disable=SC2064 # expand the paths now
   trap "ssh '$build_host' rm -rf '$BUILD_DIR'" EXIT
   ssh "$build_host" \
     nix build --print-build-logs \

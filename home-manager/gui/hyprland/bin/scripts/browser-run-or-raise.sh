@@ -67,6 +67,7 @@ then
 
   cd "$(cd "$(dirname "$0")" >/dev/null 2>&1; pwd -P)" || exit 9
 
+  # shellcheck source=/dev/null
   source run-or-raise.sh
 
   BROWSER_BIN=$(cut -d' ' -f1 <<< "$BROWSER")

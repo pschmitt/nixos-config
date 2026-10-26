@@ -1,0 +1,2 @@
+# Script bodies without a shebang are bash (pkgs.writeShellApplication).
+shell=bash

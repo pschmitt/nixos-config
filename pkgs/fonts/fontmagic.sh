@@ -67,7 +67,8 @@ archive_fonts() {
 
 encrypt_fonts() {
   local outdir="${1:-${OUTDIR:-${PWD}/out}}"
-  local zip_file="$(archive_fonts "$outdir")"
+  local zip_file
+  zip_file="$(archive_fonts "$outdir")"
   local age_file="${zip_file}.age"
 
   rm -f "$age_file"
@@ -111,13 +112,11 @@ patch_fonts() {
   do
     echo_info "🔧 Patching fonts in '${dir}'..."
 
-    docker run --pull always --rm \
+    if ! docker run --pull always --rm \
       -v "${dir}:/in:Z" \
       -v "${outdir}:/out:Z" \
       nerdfonts/patcher \
       "${extra_args[@]}"
-
-    if [[ "$?" -ne 0 ]]
     then
       echo_error "🔴 Failed to patch fonts in '${dir}'"
       rc=1
@@ -146,7 +145,7 @@ kill_container() {
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
   ARGS=()
-  ACTION=patch
+  ACTION="patch"
 
   while [[ -n "$*" ]]
   do
@@ -254,7 +253,7 @@ then
       RC="$?"
       ;;
     decrypt)
-      decrypt_fonts $@
+      decrypt_fonts "$@"
       RC="$?"
       ;;
     archive)

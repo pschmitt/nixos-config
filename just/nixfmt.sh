@@ -3,6 +3,7 @@ set -euo pipefail
 
 if [[ -f /etc/profile.d/nix.sh ]]
 then
+  # shellcheck source=/dev/null
   source /etc/profile.d/nix.sh
 fi
 mapfile -t files < <(find . -name '*.nix' -print)

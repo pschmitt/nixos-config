@@ -8,10 +8,10 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from typing import List
 
-import re
 import wcwidth
 
 ANSI_CSI_RE = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
@@ -100,9 +100,7 @@ def main() -> None:
         out_fields: List[str] = []
         for i, field in enumerate(row):
             pad = max_widths[i] - visible_width(field)
-            out_fields.append(
-                str(field) + (" " * pad)
-            )
+            out_fields.append(str(field) + (" " * pad))
         print(args.out_separator.join(out_fields))
 
 

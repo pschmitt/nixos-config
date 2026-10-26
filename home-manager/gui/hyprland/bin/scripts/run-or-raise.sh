@@ -8,6 +8,7 @@ app_address() {
   local class="$1"
   local title="$2"
 
+  # shellcheck disable=SC2016 # jq variable, not shell
   local filter='.class == $class'
 
   if [[ -n "$title" ]]

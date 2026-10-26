@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 from urllib.error import URLError
 
 from syncthing_nautilus.cache import StatusCache
-from syncthing_nautilus.discovery import Endpoint, Folder, SyncthingConfiguration, discover, folder_for_path
+from syncthing_nautilus.discovery import (
+    Endpoint,
+    Folder,
+    SyncthingConfiguration,
+    discover,
+    folder_for_path,
+)
 from syncthing_nautilus.model import FolderSnapshot, Status, is_conflict_path
 from syncthing_nautilus.syncthing import SyncthingClient, SyncthingUnavailable
 
@@ -18,7 +24,9 @@ class FolderMatchingTests(unittest.TestCase):
             Folder("root", Path("/home/alice/sync")),
             Folder("nested", Path("/home/alice/sync/work")),
         )
-        self.assertEqual(folder_for_path(folders, "/home/alice/sync/work/note.md").id, "nested")
+        self.assertEqual(
+            folder_for_path(folders, "/home/alice/sync/work/note.md").id, "nested"
+        )
         self.assertIsNone(folder_for_path(folders, "/home/alice/sync-old/note.md"))
 
     def test_discovery_uses_state_config_and_env_endpoint_override(self) -> None:
@@ -54,24 +62,46 @@ class StatusTests(unittest.TestCase):
     def setUp(self) -> None:
         self.snapshot = FolderSnapshot.from_api(
             {"needTotalItems": 2, "pullErrors": 1, "state": "syncing"},
-            {"progress": [{"name": "downloading/file.txt"}], "queued": [{"name": "later.txt"}], "rest": []},
+            {
+                "progress": [{"name": "downloading/file.txt"}],
+                "queued": [{"name": "later.txt"}],
+                "rest": [],
+            },
             {"errors": [{"path": "broken/file.txt", "error": "permission denied"}]},
             page_size=1024,
         )
 
     def test_status_mapping_for_files_and_directories(self) -> None:
-        self.assertEqual(self.snapshot.status_for("downloading/file.txt", is_directory=False), Status.SYNCING)
-        self.assertEqual(self.snapshot.status_for("downloading", is_directory=True), Status.SYNCING)
-        self.assertEqual(self.snapshot.status_for("broken/file.txt", is_directory=False), Status.ERROR)
-        self.assertEqual(self.snapshot.status_for("broken", is_directory=True), Status.ERROR)
-        self.assertEqual(self.snapshot.status_for("unlisted.txt", is_directory=False), Status.UNKNOWN)
+        self.assertEqual(
+            self.snapshot.status_for("downloading/file.txt", is_directory=False),
+            Status.SYNCING,
+        )
+        self.assertEqual(
+            self.snapshot.status_for("downloading", is_directory=True), Status.SYNCING
+        )
+        self.assertEqual(
+            self.snapshot.status_for("broken/file.txt", is_directory=False),
+            Status.ERROR,
+        )
+        self.assertEqual(
+            self.snapshot.status_for("broken", is_directory=True), Status.ERROR
+        )
+        self.assertEqual(
+            self.snapshot.status_for("unlisted.txt", is_directory=False), Status.UNKNOWN
+        )
 
     def test_idle_folder_maps_to_synced_and_conflict_wins(self) -> None:
         snapshot = FolderSnapshot.from_api({"state": "idle"}, {}, {}, page_size=1024)
-        self.assertEqual(snapshot.status_for("plain.txt", is_directory=False), Status.SYNCED)
-        self.assertTrue(is_conflict_path("plain.sync-conflict-20260905-120000-DEVICE.txt"))
         self.assertEqual(
-            snapshot.status_for("plain.sync-conflict-20260905-120000-DEVICE.txt", is_directory=False),
+            snapshot.status_for("plain.txt", is_directory=False), Status.SYNCED
+        )
+        self.assertTrue(
+            is_conflict_path("plain.sync-conflict-20260905-120000-DEVICE.txt")
+        )
+        self.assertEqual(
+            snapshot.status_for(
+                "plain.sync-conflict-20260905-120000-DEVICE.txt", is_directory=False
+            ),
             Status.CONFLICT,
         )
 
@@ -114,7 +144,11 @@ class ApiTests(unittest.TestCase):
         payloads = iter(
             [
                 {"needTotalItems": 1, "state": "syncing"},
-                {"progress": [{"name": "file with spaces.txt"}], "queued": [], "rest": []},
+                {
+                    "progress": [{"name": "file with spaces.txt"}],
+                    "queued": [],
+                    "rest": [],
+                },
                 {"errors": []},
             ]
         )
@@ -123,7 +157,9 @@ class ApiTests(unittest.TestCase):
             requests.append(request)
             return Response(next(payloads))
 
-        client = SyncthingClient(Endpoint("http://127.0.0.1:8384", "test-key"), opener=opener)
+        client = SyncthingClient(
+            Endpoint("http://127.0.0.1:8384", "test-key"), opener=opener
+        )
         snapshot = client.folder_snapshot(Folder("one", Path("/tmp/sync")))
         self.assertIn("file with spaces.txt", snapshot.need_paths)
         self.assertEqual(len(requests), 3)
@@ -133,6 +169,8 @@ class ApiTests(unittest.TestCase):
         def opener(*_args, **_kwargs):
             raise URLError("connection refused")
 
-        client = SyncthingClient(Endpoint("http://127.0.0.1:8384", "test-key"), opener=opener)
+        client = SyncthingClient(
+            Endpoint("http://127.0.0.1:8384", "test-key"), opener=opener
+        )
         with self.assertRaises(SyncthingUnavailable):
             client.folder_snapshot(Folder("one", Path("/tmp/sync")))

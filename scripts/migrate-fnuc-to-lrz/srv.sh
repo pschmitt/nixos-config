@@ -17,6 +17,7 @@ migrate_srv() (
   local unit unit_state
   local srv_status=0
 
+  # shellcheck disable=SC2329 # invoked by the EXIT trap
   restore_srv_units() {
     local restore_status=0
     for unit in "${stopped_units[@]}"; do
