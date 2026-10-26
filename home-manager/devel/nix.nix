@@ -17,7 +17,7 @@
     };
 
     templates."nix-access-tokens".content = ''
-      access-tokens = github.com=${config.sops.placeholder."nix/github_token"} git.wiit.one=${
+      access-tokens = github.com=${config.sops.placeholder."nix/github_token"} git.wiit.one=PAT:${
         config.sops.placeholder."glab/git.wiit.one/token"
       }
     '';
