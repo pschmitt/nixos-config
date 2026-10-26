@@ -22,6 +22,13 @@ in
     "netbird-${netbirdClientName}"
   ];
 
+  # The hardened client runs as netbird-<name> and registers its DNS
+  # resolver with systemd-resolved over D-Bus; the nixpkgs module allows
+  # that through a polkit rule, which needs polkit running (servers have no
+  # desktop to enable it). Without it DNS routes (e.g. the OCI yum repo)
+  # never resolve.
+  security.polkit.enable = lib.mkIf config.services.resolved.enable true;
+
   services = {
     netbird = {
       enable = true;
