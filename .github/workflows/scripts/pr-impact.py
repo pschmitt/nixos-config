@@ -287,10 +287,14 @@ def main():
                         snapshots.append(
                             snapshot(roots[side], revision, target, args.cache_dir)
                         )
-                    except (subprocess.CalledProcessError, ValueError, OSError):
+                    except (subprocess.CalledProcessError, ValueError, OSError) as error:
                         errors.append(side)
                         snapshots.append(None)
                         print(f"Evaluation failed: {side} {target}", file=sys.stderr)
+                        # Keep the log useful without dumping a whole trace.
+                        detail = (getattr(error, "stderr", None) or str(error)).strip()
+                        for line in detail.splitlines()[-15:]:
+                            print(f"  {line[:300]}", file=sys.stderr)
                 return target, snapshots, errors
 
             with ThreadPoolExecutor(max_workers=2) as workers:
