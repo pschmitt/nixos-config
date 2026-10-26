@@ -21,11 +21,36 @@ archiving (`rbw archive`/`rbw unarchive`, `--archived`/`--include-archived`
 on `list`/`search`), trash restore (`rbw restore`, `--trashed`/
 `--include-trashed`), a `--force` flag on `rbw remove`/`rbw delete` for an
 actual permanent delete (plain `remove` is a safe soft-delete-to-trash),
-`rbw collection <subcommand>` for organization collections, and a TUI
-(`rbw tui`). When in doubt about a command's exact behavior, check
+`rbw collection <subcommand>` for organization collections, `--redact`
+(hide secrets, see below), multiple accounts, and a TUI (`rbw tui`). When in doubt about a command's exact behavior, check
 `rbw <command> --help` or the fork's own `README.md`/`TODO.md`
 (`~/devel/private/pschmitt/rbw.git`) rather than assuming upstream
 `doy/rbw` documentation applies.
+
+## Look without seeing secrets: `--redact`
+
+Add the global `--redact` flag (aliases `--mask`, `--no-secrets`; or export
+`RBW_REDACT=1`) whenever you only need to find, identify or inspect entries.
+It masks every secret as `••••••••` -- passwords, TOTP seeds, card numbers and
+codes, SSH private keys, passkey keys, hidden fields, identity numbers, old
+passwords and **notes** -- in `get`, `show`, `history`, `list`, `search`
+(including `--json`/`--yaml`), the `set` diff and the TUI. Commands whose job is
+to output a secret (`code`, `inject`, `run`, `copy`, `export`, `edit`,
+`attachment get`, `passkey assert`, `get` without `--field`, `--insecure`, ...)
+refuse instead. So `rbw --redact show NAME` or `rbw --redact get --json NAME`
+is safe to run in a transcript, while `rbw get --field username NAME` still
+works. Drop the flag only for the call that really needs the value, and pipe
+that value to its consumer instead of printing it.
+
+## Several accounts
+
+`get`, `show`, `search` and `list` look in every configured account; from
+2.32 `edit`, `set`, `remove`, `archive`, `unarchive`, `history` and
+`attachment` do too and act on the account that holds the entry. Older
+builds only searched the primary account for those, failing with `no entry
+found` even though `get` worked: pass `-a ACCOUNT` (for example `-a wiit`
+for the work vault) there. `collection assign|unassign` and `move` still
+need `-a`.
 
 ## Hermes Agent
 
