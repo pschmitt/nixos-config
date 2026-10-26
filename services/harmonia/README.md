@@ -1,58 +1,41 @@
-# Retained CI cache
+# CI cache delivery
 
-rofl-14 is the primary publication store; rofl-13 holds a replica of retained
-main outputs. Both serve their local store through Harmonia. CI uploads complete
-signed closures to the primary, then registers direct GC roots through
-`nix-cache-retain publish`. Successful publication requires valid local closures
-and valid signatures from Harmonia's HTTP endpoint.
+nixbot builds x86_64 outputs and uploads their closures to niks3. GitHub's
+native ARM runners build aarch64 outputs and upload with short-lived OIDC
+tokens. Default-branch outputs are pinned; PR outputs remain unpinned and
+expire according to the cache server's GC policy.
 
-Roots live under `/nix/var/nix/gcroots/nixos-config/<scope>/<target>/`.
-Publication metadata lives under `/var/lib/nixos-config-cache/`. Main retains
-one successful output set per target until replaced; older commit timestamps
-cannot replace newer ones. PR/manual outputs expire three days after publication.
-Temporary roots protect incoming outputs while verification runs. Failed
-verification preserves the previous successful output set.
+nixbot's post-build pin step is required: an upload or pin failure fails the
+attribute. A pin protects its closure, and replacing it releases the previous
+closure for eventual collection. Pin names distinguish nixbot outputs
+(`nixbot-*`) from GitHub ARM outputs (`gh-main-*`). Server credentials and
+retention settings live in the private configuration repository.
 
-The root-owned `nix-cache-populate` service on rofl-14:
+Harmonia continues to serve each host's local store as an additional
+substituter. The former `nix-cache-populate`, `nix-cache-retain` and S3 mirror
+services are retired; CI no longer publishes over SSH to the cache hosts.
 
-- Resolves and pins main once per pass, using its locked private input.
-- Rotates through eight exported package/architecture, host and Android targets
-  per pass, preserving its cursor across commits. Existing outputs are retained
-  without rebuilding; missing outputs are built one at a time with two cores.
-- Pauses missing builds/copies below 15 GiB available space on either node.
-- Signs complete retained main closures with the primary’s runtime key, then
-  replicates them directly to rofl-13 and creates roots there. The key remains
-  on the cache host.
-  PR outputs stay on the primary to bound replica storage.
-- Imports a small canary closure through HTTP into an empty temporary store and
-  verifies its contents and signatures. The temporary store is removed afterward.
+## LAN mirror
 
-The timer runs again 15–20 minutes after a pass finishes. A pass has a bounded
-runtime and reports build, publication and replication failures; unsupported or
-credential-dependent failures are not silently counted as coverage. Proprietary
-sources still need to be supplied by the existing credentialed CI jobs. Store
-and authenticated HTTP access continue to use the existing Nix/SOPS credentials;
-no signing keys or credentials are added here.
-
-With `services.harmonia.publication.s3Mirror` enabled (rofl-14), retained
-main outputs are also mirrored to the niks3 S3 cache. `nix-cache-s3-sync`
-starts when `/var/lib/nixos-config-cache/main` changes and pushes only
-targets whose outputs changed; `nix-cache-s3-sync-all` re-checks every
-target nightly. Each output is pinned as `main-<target>-<index>`, and pins of
-targets no longer retained are removed. PR/manual outputs are not mirrored.
-
-Inspect progress with:
+`services/harmonia-lan-mirror.nix` reads selected default-branch outputs from
+nixbot's `/nix-outputs` endpoint, fetches their closures using the configured
+substituters and creates local GC roots. LAN clients can then substitute from
+that host's Harmonia. A failed fetch preserves the previous root. The mirror
+also reserves free space before fetching and releases roots of removed targets.
 
 ```console
-systemctl status nix-cache-populate.service
-journalctl -u nix-cache-populate.service
-cat /var/lib/nixos-config-cache-populate/state.json
-nix-cache-retain list
-journalctl -u nix-cache-s3-sync.service -u nix-cache-s3-sync-all.service
-cat /var/lib/nixos-config-cache-s3/mirrored.json
+systemctl status nix-cache-lan-mirror.timer
+journalctl -u nix-cache-lan-mirror.service
 ```
 
-This provides eventual coverage and explicit retention, not unlimited history.
-Low disk space or failed builds leave visible gaps to resolve; they do not evict
-current main roots automatically. Increasing the retained target set can require
-more storage. Both machines currently use their root filesystem for `/nix`.
+## Verification
+
+Before retiring a cache path, compare its replacement pin with nixbot's
+published output, download a small pinned closure from S3 into an empty store,
+and verify its signatures and contents. Check that the LAN mirror fetched and
+rooted its configured outputs. A rejected pin request must fail the required
+post-build step while preserving the previous pin.
+
+Legacy `main-*` pins and `/nix/var/nix/gcroots/nixos-config` roots can be
+removed after every retained target has a replacement. Keep Harmonia and its
+signing keys while hosts still use it as a substituter.

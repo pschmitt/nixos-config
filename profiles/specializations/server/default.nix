@@ -11,7 +11,6 @@
     ../../features/network
     ../../../services/mail
 
-    ../../base/users/github-actions.nix
     ../../base/users/nix-remote-builder.nix
     ../../../services/autoupgrade.nix
     ../../../services/initrd-luks-ssh-unlock.nix

@@ -702,7 +702,7 @@
       );
 
       # Jobs for nixbot (self-hosted CI on rofl-10, see nixbot.toml): every
-      # x86_64/aarch64 host system, the supported custom packages and the
+      # x86_64 host system and ISO image, supported custom packages and the
       # flake checks. Not in `checks` itself, which `nix flake check` builds
       # locally. Proprietary sources are seeded on rofl-10
       # (services/nix-proprietary-sources.nix).
@@ -773,6 +773,16 @@
             );
             packages = lib.genAttrs ciSystems (system: lib.filterAttrs (buildable system) (ciPackages system));
             checks = lib.genAttrs ciSystems (system: self.checks.${system});
+            images = lib.genAttrs [
+              "iso"
+              "iso-graphical"
+              "iso-legacy"
+              "iso-multios"
+              "iso-private"
+              "iso-private-legacy"
+              "iso-private-multios"
+            ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage);
+            effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
           };
         };
 

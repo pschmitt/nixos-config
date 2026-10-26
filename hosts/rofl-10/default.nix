@@ -1,5 +1,6 @@
 {
   imports = [
+    ../../profiles/base/users/github-actions.nix
     ../../profiles/base/users/k8s-backdoor.nix
     ../../profiles/features/network/ha-sshfs.nix
     ../../profiles/features/network/roflnet.nix

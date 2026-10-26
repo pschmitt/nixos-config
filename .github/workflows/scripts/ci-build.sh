@@ -84,12 +84,15 @@ show_result_tree() {
   fi
 }
 
-# Build natively on the runner (aarch64 targets run on arm runners); only
-# hand a foreign system to $NIX_BUILDER.
-should_use_builders() {
+# Every CI build runs on a runner of its target architecture.
+require_native_system() {
   local system="$1"
 
-  [[ "$system" != "$(uname -m)-linux" ]]
+  if [[ "$system" != "$(uname -m)-linux" ]]
+  then
+    printf 'Use a native runner for %s\n' "$system" >&2
+    return 2
+  fi
 }
 
 resolve_output_paths() {
@@ -163,14 +166,8 @@ publish_ref() {
 
 build_ref() {
   local ref="$1"
-  local use_builders="${2:-}"
-  local impure="${3:-}"
+  local impure="${2:-}"
   local -a cmd=(nix build --print-build-logs)
-
-  if [[ -n "$use_builders" ]]
-  then
-    cmd+=(--builders "$NIX_BUILDER")
-  fi
 
   if [[ -n "$impure" ]]
   then
@@ -223,15 +220,10 @@ build_package() {
   local pkg="$1"
   local system="$2"
   local nonfree="${3:-}"
-  local use_builders
 
-  use_builders=
-  if should_use_builders "$system"
-  then
-    use_builders=1
-  fi
+  require_native_system "$system" || return $?
 
-  build_ref "$(package_ref "$pkg" "$system")" "$use_builders" "$nonfree"
+  build_ref "$(package_ref "$pkg" "$system")" "$nonfree"
 
   show_result_tree
 }
@@ -247,16 +239,11 @@ copy_package() {
 build_host() {
   local host="$1"
   local system
-  local use_builders
 
   system="$(host_system "$host")"
-  use_builders=
-  if should_use_builders "$system"
-  then
-    use_builders=1
-  fi
+  require_native_system "$system" || return $?
 
-  build_ref "$(host_ref "$host")" "$use_builders" ""
+  build_ref "$(host_ref "$host")" ""
 }
 
 copy_host() {
@@ -268,16 +255,11 @@ copy_host() {
 build_home() {
   local home="$1"
   local system
-  local use_builders
 
   system="$(home_system "$home")"
-  use_builders=
-  if should_use_builders "$system"
-  then
-    use_builders=1
-  fi
+  require_native_system "$system" || return $?
 
-  build_ref "$(home_ref "$home")" "$use_builders" ""
+  build_ref "$(home_ref "$home")" ""
 }
 
 copy_home() {
@@ -289,16 +271,11 @@ copy_home() {
 build_droid() {
   local droid="$1"
   local system
-  local use_builders
 
   system="$(droid_system "$droid")"
-  use_builders=
-  if should_use_builders "$system"
-  then
-    use_builders=1
-  fi
+  require_native_system "$system" || return $?
 
-  build_ref "$(droid_ref "$droid")" "$use_builders" 1
+  build_ref "$(droid_ref "$droid")" 1
 }
 
 copy_droid() {
