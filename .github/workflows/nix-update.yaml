@@ -55,8 +55,8 @@ jobs:
             fi
           done
 
-          MATRIX_DEFAULT=$(printf "%s\0" "${DEFAULT_PACKAGES[@]}" | jq -Rs 'split("\u0000") | map(select(length > 0) | {"package": .})')
-          MATRIX_OCI=$(printf "%s\0" "${OCI_PACKAGES_FILTERED[@]}" | jq -Rs 'split("\u0000") | map(select(length > 0) | {"package": .})')
+          MATRIX_DEFAULT=$(printf "%s\0" "${DEFAULT_PACKAGES[@]}" | jq -cRs 'split("\u0000") | map(select(length > 0) | {"package": .})')
+          MATRIX_OCI=$(printf "%s\0" "${OCI_PACKAGES_FILTERED[@]}" | jq -cRs 'split("\u0000") | map(select(length > 0) | {"package": .})')
 
           if [[ "$(jq 'length' <<<"$MATRIX_DEFAULT")" != "0" ]]
           then
