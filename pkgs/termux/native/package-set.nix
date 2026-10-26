@@ -161,6 +161,13 @@ androidPkgs.extend (
         checkEntrypoint = false;
       };
     pythonTermuxOverrides = _python: previous: {
+      wcwidth = previous.wcwidth.overridePythonAttrs (old: {
+        # wcwidth's optional accelerator is built for the Linux builder, while
+        # Termux uses its APT-provided Python runtime. Keep the pure-Python path.
+        postInstall = (old.postInstall or "") + ''
+          find "$out" -type f -name '_wcwidth_c*.so' -delete
+        '';
+      });
       aiohttp = previous.aiohttp.overridePythonAttrs (old: {
         env = (old.env or { }) // {
           AIOHTTP_NO_EXTENSIONS = "1";
@@ -722,7 +729,7 @@ androidPkgs.extend (
         pname = "zebra";
         src = ../../local/zebra;
         sourceFile = "zebra.py";
-        dependencies = [ pkgs.python3Packages.wcwidth ];
+        dependencies = [ pythonTermux.pkgs.wcwidth ];
         entrypoint = "zebra:main";
       };
 
