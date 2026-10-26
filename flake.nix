@@ -782,8 +782,10 @@
               "iso-private-legacy"
               "iso-private-multios"
             ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage);
-            effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
           };
+          # nixbot.toml selects default.outputs as the build job set. Keep
+          # effect derivations outside it; nixbot discovers all onPush effects.
+          onPush.publish.outputs.effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
         };
 
       # Devshell for bootstrapping
