@@ -23,7 +23,7 @@ stdenvNoCC.mkDerivation {
   inherit src;
 
   pname = "netbird-cli";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2025-10-05";
   nativeBuildInputs = [ makeWrapper ];
   dontUnpack = true;
   dontBuild = true;
