@@ -94,11 +94,11 @@ are preserved and closed before ending the collapsible section.
 
 Most checked-in workflow jobs share two repository-wide concurrency groups:
 
-- `nixos-config-runner-nix`: one Nix evaluation, update or image job.
+- `nixos-config-runner-nix`: one Nix update or image job.
 - `nixos-config-runner-light`: one merge or final-result job.
 
 Each group allows one occupied runner across all PRs. The `Lint` jobs and the
-aarch64 builds are outside the budget.
+`Nix build` jobs except its result check are outside the budget.
 `queue: max` lets jobs wait without consuming runners or replacing other PRs'
 pending jobs (up to GitHub's 100-job queue limit per group). Workflow-level
 concurrency still cancels obsolete runs for the same PR/ref. Matrix limits alone

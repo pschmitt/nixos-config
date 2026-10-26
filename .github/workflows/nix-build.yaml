@@ -53,11 +53,8 @@ jobs:
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     timeout-minutes: 120
     runs-on: ubuntu-latest
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
+    # Outside the runner budget like the aarch64 builds: in the shared queue
+    # it waited behind every nix-update job.
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
