@@ -7,6 +7,8 @@
 
     ../../../services/esphome.nix
     ../../../services/forgejo-runner.nix
+    # Serve the store, so other hosts substitute what nixbot built here.
+    ../../../services/harmonia.nix
   ];
 
   hardware = {
