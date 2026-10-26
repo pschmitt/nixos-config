@@ -13,7 +13,7 @@ let
 in
 stdenvNoCC.mkDerivation {
   pname = "adb-zsh-completions";
-  version = "unstable-2026-09-26";
+  version = "0-unstable-2024-09-28";
   inherit src;
   dontBuild = true;
   dontConfigure = true;
