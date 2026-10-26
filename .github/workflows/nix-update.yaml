@@ -212,9 +212,14 @@ jobs:
           PR_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
           AUTO_MERGE_PATCH: ${{ steps.prmeta.outputs.auto_merge_patch }}
         run: |
-          gh label create nix-update-patch --description 'Patch update eligible for automatic merge after CI' --force
-          # REST, not `gh pr edit`: its GraphQL query needs read:org, which
-          # the update token lacks.
+          # REST, not `gh label create` / `gh pr edit`: their GraphQL queries
+          # need read:org, which the update token lacks.
+          label_desc='Patch update eligible for automatic merge after CI'
+          # 422 when the label already exists: update its description instead.
+          gh api --silent "repos/${GITHUB_REPOSITORY}/labels" \
+            -f name=nix-update-patch -f "description=${label_desc}" ||
+            gh api --silent -X PATCH "repos/${GITHUB_REPOSITORY}/labels/nix-update-patch" \
+              -f "description=${label_desc}"
           labels="repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/labels"
           if [[ "$AUTO_MERGE_PATCH" == "true" ]]
           then
