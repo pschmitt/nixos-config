@@ -73,7 +73,7 @@ Nix, a configured signing key, and SSH access from Termux. Termux must already
 trust the builder's SSH host key and have an SSH key authorized there. The
 flake installable must produce exactly one reference-free directory containing
 `environment.tar.gz`, `SHA256SUMS`, and `bootstrap.sh`, as the root flake's
-`.#termux-native-bundle` output does. The archive is verified before the
+`.#termux-native-zf10-bundle` output does. The archive is verified before the
 existing generation installer receives it. Each invocation builds and
 activates the selected flake output; the previous generation remains available
 for rollback through its `activate.sh`.

@@ -12,16 +12,13 @@ let
   stablePkgs = pkgs.stable or inputs.nixpkgs-stable.legacyPackages.${pkgs.stdenv.hostPlatform.system};
   zsh-tools = pkgs.callPackage ./zsh-tools { inherit inputs; };
   font-resizer = pkgs.python3Packages.callPackage ./fonts/font-resizer { };
-  # libcaption = pkgs.callPackage ./libcaption { };
   # Hoisted so obs-control can depend on them (not top-level nixpkgs attrs).
   emoji-fzf = pkgs.callPackage ./emoji-fzf { };
-  udocker-engines = pkgs.callPackage ./udocker-engines { };
   soundboard = pkgs.callPackage ./local/soundboard { };
   timew-is-on = pkgs.callPackage ./local/timew-is-on { };
   timew-total = pkgs.callPackage ./local/timew-total { };
-  timew-week-breakdown = pkgs.callPackage ./local/timew-week-breakdown { };
   timew-status = pkgs.callPackage ./local/timew-status {
-    inherit timew-is-on timew-total timew-week-breakdown;
+    inherit timew-is-on timew-total;
   };
   osd = pkgs.callPackage ./local/osd { };
   screencast-state = pkgs.callPackage ./local/screencast-state { };
@@ -33,7 +30,6 @@ in
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { inherit osd; };
   caffeine = pkgs.callPackage ./local/caffeine { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };
-  ai-usagebar = pkgs.callPackage ./local/ai-usagebar { };
   codexbar = pkgs.callPackage ./local/codexbar { };
   ms-teams = pkgs.callPackage ./local/ms-teams { inherit inputs; };
   mullvad-expiration = pkgs.callPackage ./local/mullvad-expiration { };
@@ -51,9 +47,6 @@ in
       ;
     inherit (pkgs) walker;
   };
-  quickshell-bar = pkgs.callPackage ./local/quickshell-bar {
-    inherit timew-status screencast-state;
-  };
   inherit screencast-state;
   inherit soundboard;
   xcp = pkgs.callPackage ./local/xcp { };
@@ -64,9 +57,7 @@ in
     timew-is-on
     timew-status
     timew-total
-    timew-week-breakdown
     ;
-  udev-custom-callback = pkgs.callPackage ./local/udev-custom-callback { };
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;
   };
@@ -75,11 +66,8 @@ in
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   inherit emoji-fzf;
-  inherit udocker-engines;
   firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
-  fievel = pkgs.callPackage ./fievel { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
-  happy-hacking-gnu = pkgs.callPackage ./happy-hacking-gnu { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
   # Hypruse 0.13 requires MCP 1.x; the unstable package set now has MCP 2.x.
@@ -110,10 +98,8 @@ in
   ssh-clipboard = pkgs.callPackage ./ssh-clipboard { };
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
-  syncthing-nautilus = pkgs.callPackage ./syncthing-nautilus { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
   termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
-  termux-zinit-cache = pkgs.callPackage ./termux/zinit-cache { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
   todoist-cli = pkgs.callPackage ./todoist-cli { };
@@ -153,17 +139,9 @@ in
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
-  # OBS Studio
-  # obs-studio-plugins.obs-freeze-filter = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-freeze-filter { };
-  # obs-studio-plugins.obs-replay-source = pkgs.qt6Packages.callPackage ./obs-studio/plugins/obs-replay-source { inherit libcaption; };
-
   tmux-mcp = pkgs.callPackage ./tmux-mcp { };
 
-  # Lab
-  davcli = pkgs.callPackage ./davcli { };
-  qs-hyprview = pkgs.callPackage ./qs-hyprview { };
   quickshell-overview = pkgs.callPackage ./quickshell-overview { };
-  # netbird-dashboard = pkgs.callPackage ./netbird-dashboard { };
 
   falcon-sensor-wiit = pkgs.callPackage ./falcon-sensor-wiit { inherit inputs; };
 }

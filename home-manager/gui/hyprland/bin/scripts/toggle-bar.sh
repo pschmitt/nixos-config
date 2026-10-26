@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Ordered wishlist of bar services to cycle through. Hosts that don't enable
 # a given service just skip it.
-CANDIDATE_BARS=(quickshell-bar noctalia)
+CANDIDATE_BARS=(noctalia)
 
 available_bars() {
   local bar

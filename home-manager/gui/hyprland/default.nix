@@ -14,7 +14,6 @@
     ./conf
     ./mcp.nix
     ./plugins
-    ./quickshell-bar
     ./services
     ./tools
     ./xdph.nix

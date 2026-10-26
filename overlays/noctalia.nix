@@ -91,14 +91,6 @@ in
       # Opt-in intrinsic width for floating plugin panels. Used by the custom
       # OSD to fit the actual rendered text and glyph instead of width buckets.
       ./patches/noctalia/0010-plugin-panel-fit-content-width.patch
-
-      # 0003-batch-http-stream-lines.patch (httpStream line-batching, written
-      # for the syncthing plugin's events-API attempt) is intentionally not
-      # applied: that plugin rewrite was reverted 2026-09-05 (see
-      # profiles/specializations/laptop/noctalia.nix) after httpStream's own stream-key reuse
-      # turned out to race the plugin's reconnect pattern, and nothing else in
-      # this repo uses noctalia.httpStream. Left in the patches directory in
-      # case a future attempt needs it again.
     ];
   });
 }

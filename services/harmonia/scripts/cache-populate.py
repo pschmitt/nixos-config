@@ -113,7 +113,6 @@ def targets(matrix):
             result.append(
                 (f"nixosConfigurations.{host}.config.system.build.toplevel", False)
             )
-    result.append(("nixOnDroidConfigurations.zf10.activationPackage", True))
     return sorted(set(result))
 
 

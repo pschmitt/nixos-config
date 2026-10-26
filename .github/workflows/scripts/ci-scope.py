@@ -78,7 +78,6 @@ def empty_matrix():
     return {
         "pkgs": {k: [] for k in ("free", "nonfree", "oci")},
         "hosts": {"aarch64": []},
-        "droid": False,
     }
 
 
@@ -216,7 +215,6 @@ def main():
     # package matrix. Compare evaluated systems to cover shared service imports
     # without maintaining an inaccurate service-to-host map.
     service_only = relevant and all(p.startswith("services/") for p in relevant)
-    droid = broad
     if service_only and base:
         with tempfile.TemporaryDirectory(prefix="ci-base-") as baseline:
             archive = subprocess.check_output(["git", "archive", base])
@@ -234,10 +232,6 @@ def main():
             hosts = {
                 host for host in ordered_hosts if host_drvs[host] != base_drvs[host]
             }
-            droid_attr = "nixOnDroidConfigurations.zf10.activationPackage.drvPath"
-            droid = evaluate_drv(droid_attr) != evaluate_drv(
-                droid_attr, f"path:{baseline}", base
-            )
         broad = False
 
     for category in ("free", "nonfree", "oci"):
@@ -251,7 +245,6 @@ def main():
     matrix["hosts"] = {
         "aarch64": [host for host in ordered_hosts if broad or host in hosts]
     }
-    matrix["droid"] = droid
     print(json.dumps(matrix, separators=(",", ":")))
 
 

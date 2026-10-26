@@ -53,11 +53,9 @@ in
     final: prev:
     (import ./hass-cli.nix { inherit final prev; })
     // (import ./go-task.nix { inherit final prev; })
-    # // (import ./netbird.nix { inherit final prev; })
     // (import ./rbw.nix { inherit inputs final prev; })
     // (import ./wireguard-tools.nix { inherit final prev; })
     // (import ./hotfixes.nix { inherit inputs final prev; })
-    # // (import ./tmux.nix { inherit final prev; })
     // (import ./noctalia.nix { inherit inputs final prev; })
     // (import ./zsh-completions.nix { inherit inputs final prev; })
     // {

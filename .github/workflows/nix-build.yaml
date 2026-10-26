@@ -560,70 +560,6 @@ jobs:
               --host '${{ matrix.host }}' \
               --copy
 
-  build-droids-aarch64:
-    needs:
-      - setup-matrix
-      - build-pkgs-free
-      - build-pkgs-nonfree
-      - build-pkgs-oci
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.setup-matrix.result == 'success' && fromJson(needs.setup-matrix.outputs.matrix).droid }}
-    timeout-minutes: 120
-    runs-on: ubuntu-24.04-arm
-    # Native aarch64 builds on free arm runners, outside the shared runner
-    # budget: serialized, a full run took 8+ hours.
-    strategy:
-      max-parallel: 8
-      fail-fast: false
-      matrix:
-        droid: [ "zf10" ]
-    steps:
-      - uses: wimpysworld/nothing-but-nix@main
-        with:
-          hatchet-protocol: 'cleave'
-
-      - name: Checkout code
-        uses: actions/checkout@v7
-
-      - name: Set up Nix
-        uses: ./.github/actions/nix-setup
-        with:
-          nix-conf: ${{ env.nix-conf }}
-          s3-store: ${{ env.NIKS3_S3_STORE }}
-          s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
-          s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
-
-      - name: Set up SSH stores
-        uses: ./.github/actions/nix-ssh
-        with:
-          private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-          hosts: ${{ secrets.SSH_HOST }} cache.rofl-14.brkn.lol
-
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh --droid '${{ matrix.droid }}' --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
-
-      - name: Build nixOnDroidConfiguration
-        run: |-
-          ./.github/workflows/scripts/ci-build.sh \
-            --droid '${{ matrix.droid }}'
-
-      - name: "Push nixOnDroidConfiguration to niks3"
-        uses: nick-fields/retry@v4
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: |
-            ./.github/workflows/scripts/ci-build.sh \
-             --droid '${{ matrix.droid }}' \
-             --copy
-
   # pr-nvd-diff was intentionally removed.
   # A dedicated PR workflow now handles per-host diffs without builds:
   # `.github/workflows/nix-systempackages-diff.yaml`.
@@ -631,7 +567,7 @@ jobs:
   build-result:
     name: Nix build result
     if: ${{ always() }}
-    needs: [setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-aarch64, build-droids-aarch64]
+    needs: [setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-aarch64]
     runs-on: ubuntu-latest
     # Shared across workflows and PRs; queued jobs do not occupy runners.
     concurrency:

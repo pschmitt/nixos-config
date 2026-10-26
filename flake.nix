@@ -41,11 +41,6 @@
       flake = false;
     };
 
-    # attic = {
-    #   url = "github:zhaofengli/attic";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
     anika-blue = {
       url = "github:pschmitt/anika-blue";
       inputs = {
@@ -155,11 +150,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # flake-registry = {
-    #   url = "github:NixOS/flake-registry";
-    #   flake = false;
-    # };
-
     flatpaks = {
       # https://github.com/GermanBread/declarative-flatpak/blob/dev/docs/branches.md
       url = "github:in-a-dil-emma/declarative-flatpak/v3.1.0";
@@ -231,14 +221,6 @@
     bitwarden-mcp = {
       url = "github:bitwarden/mcp-server/v2026.7.0";
       flake = false;
-    };
-
-    nix-on-droid = {
-      url = "github:nix-community/nix-on-droid";
-      inputs = {
-        home-manager.follows = "home-manager";
-        nixpkgs.follows = "nixpkgs";
-      };
     };
 
     nixos-config-private = {
@@ -372,10 +354,6 @@
       # NOTE Caching is nice, maybe don't override nixpkgs here
       # inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs-wayland = {
-      url = "github:nix-community/nixpkgs-wayland";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
 
     nix-openclaw = {
       url = "github:openclaw/nix-openclaw";
@@ -416,11 +394,6 @@
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
       };
-    };
-
-    mq = {
-      url = "github:harehare/mq";
-      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     obs-cli = {
@@ -487,11 +460,6 @@
       flake = false;
     };
 
-    tudo = {
-      url = "github:agnostic-apollo/tudo";
-      flake = false;
-    };
-
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -515,12 +483,6 @@
       };
     };
 
-    # FIXME it does not build currently! (2025-11-01)
-    # vicinae = {
-    #   url = "github:vicinaehq/vicinae";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
     vodafone-station-cli = {
       url = "github:pschmitt/vodafone-station-cli";
       inputs = {
@@ -543,14 +505,6 @@
         home-manager.follows = "home-manager";
       };
     };
-
-    # zjstatus = {
-    #   url = "github:dj95/zjstatus";
-    #   inputs.nixpkgs.follows = "nixpkgs";
-    # };
-
-    # HOTFIXES: Overrides, pending PRs, etc
-    # droidcam-obs.url = "github:NixOS/nixpkgs?ref=refs/pull/382559/head";
   };
 
   outputs =
@@ -608,27 +562,6 @@
             ++ nixpkgs.lib.optionals isServer [
               inputs.srvos.nixosModules.mixins-terminfo
             ];
-        };
-
-      mkNixOnDroid =
-        hostname:
-        {
-          system ? "aarch64-linux",
-          modules ? [ ],
-        }:
-        inputs.nix-on-droid.lib.nixOnDroidConfiguration {
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-            overlays = [ inputs.nix-on-droid.overlays.default ] ++ builtins.attrValues outputs.overlays;
-          };
-
-          extraSpecialArgs = {
-            inherit inputs outputs;
-          };
-
-          modules = modules ++ [ ./hosts/${hostname}/nix-on-droid.nix ];
-          home-manager-path = inputs.home-manager.outPath;
         };
 
       mkIso =
@@ -728,12 +661,7 @@
                 hostname: bundle: nixpkgs.lib.nameValuePair "termux-native-${hostname}-bundle" bundle.bundle
               ) termuxHostBundles;
             in
-            {
-              termux-native-bundle = termuxNative.bundle;
-              termux-native-environment = termuxNative.environment;
-              termux-native-gitstatus = termuxNative.gitstatus;
-            }
-            // hostBundlePackages
+            hostBundlePackages
           );
         in
         customPackages // termuxNativePackages
@@ -878,12 +806,6 @@
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
       homeModules = import ./modules/home-manager;
-
-      nixOnDroidConfigurations = rec {
-        zf10 = mkNixOnDroid "zf10" { };
-        default = zf10;
-        phone = zf10;
-      };
 
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
@@ -1035,12 +957,10 @@
     extra-substituters = [
       "https://nixos-raspberrypi.cachix.org"
       "https://cache.numtide.com"
-      "https://nix-on-droid.cachix.org"
     ];
     extra-trusted-public-keys = [
       "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
       "niks3.numtide.com-1:DTx8wZduET09hRmMtKdQDxNNthLQETkc/yaX7M4qK0g="
-      "nix-on-droid.cachix.org-1:56snoMJTXmDRC1Ei24CmKoUqvHJ9XCp+nidK7qkMQrU="
     ];
   };
 }

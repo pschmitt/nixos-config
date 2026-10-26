@@ -1,5 +1,4 @@
 # Noctalia — the default Quickshell bar on all laptops (ge2/gk4/x13).
-# SUPER+SHIFT+B (toggle-bar.sh) cycles quickshell-bar -> noctalia.
 {
   inputs,
   config,
@@ -15,16 +14,6 @@ let
   # opacity -- so it renders ~/.face as a plain square. Pre-crop a circular
   # copy instead of asking Noctalia to do it.
   avatarCircularPath = "${config.mainUser.homeDirectory}/.local/share/noctalia-avatar-circular.png";
-
-  # A polling->events-API rewrite of this plugin's service.luau was tried
-  # locally (overlays/patches/noctalia-plugins/0001-syncthing-events-api.patch)
-  # to replace the fixed poll interval with Syncthing's /rest/events
-  # long-poll. Reverted 2026-09-05: reconnecting after every event (or burst
-  # of events — pause/resume-all, or just noctalia's own restart replaying a
-  # backlog) intermittently raced noctalia's own httpStream stream-key reuse
-  # and tripped its error budget, auto-disabling the plugin service with no
-  # log output to point at a fix. Left in the patches directory in case a
-  # future noctalia release closes that race and this becomes viable again.
 in
 {
   home-manager.users.${config.mainUser.username} = hmArgs: {
@@ -327,10 +316,6 @@ in
             # mouse/keyboard control -- see home-manager/gui/lan-mouse.nix's
             # enter_hook (away sentinel) and pschmitt/noctalia-plugins.
             "pschmitt/lan-mouse"
-            # AI plan quota (community plugin, felipeartur/ai-usagebar) —
-            # tried and disabled again: didn't like the look, and Codex
-            # support wasn't solid. pkgs/local/ai-usagebar is still built
-            # below in case it's worth another look later.
           ];
           # The official/community git sources aren't actually hardcoded —
           # they're seeded into runtime state on first launch, so declaring
@@ -838,8 +823,6 @@ in
           battery-icon.type = "pschmitt/battery-icon:bar";
           syncthing.type = "pschmitt/syncthing:bar";
           screencast.type = "pschmitt/screencast:bar";
-          # ai_usage (felipeartur/ai-usagebar:bar) — disabled, see
-          # plugins.enabled below.
         };
         # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
         # above. Role names here (e.g. "on_surface") are resolved against the

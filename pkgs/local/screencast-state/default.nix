@@ -1,7 +1,6 @@
 # Single source of truth for "is something screencasting, and what?", read
-# straight from the PipeWire graph. Shared by the quickshell-bar indicator
-# and the go-hass-agent screencast sensor, both of which
-# used to read /tmp/screencast.json written by the (now disabled)
+# straight from the PipeWire graph. Used by the go-hass-agent screencast
+# sensor, which used to read /tmp/screencast.json written by the (now disabled)
 # xdg-portal-screencast-watcher service.
 {
   lib,
