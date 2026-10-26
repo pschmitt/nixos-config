@@ -22,6 +22,11 @@ DISCOVER = """f: {
 }"""
 
 
+# Inputs hosted on internal servers cannot be fetched from a CI runner; such
+# hosts are skipped instead of reported as broken.
+UNREACHABLE = ("Could not connect to server", "Could not resolve host")
+
+
 def command(*args):
     return subprocess.check_output(args, text=True, stderr=subprocess.PIPE).strip()
 
@@ -146,7 +151,15 @@ def changes(before, after):
 
 
 def render(
-    base, head, targets, results, failures, max_lines, run_url, limit_comment=True
+    base,
+    head,
+    targets,
+    results,
+    failures,
+    max_lines,
+    run_url,
+    unreachable=(),
+    limit_comment=True,
 ):
     groups = defaultdict(list)
     unchanged = []
@@ -175,6 +188,11 @@ def render(
         ),
         "",
     ]
+    if unreachable:
+        lines += [
+            f"Skipped (inputs unreachable from CI): {html.escape(', '.join(unreachable))}.",
+            "",
+        ]
     for delta, hosts in sorted(groups.items(), key=lambda item: item[1]):
         names = html.escape(", ".join(hosts))
         collapsed = len(delta) > 12 or len(groups) > 3
@@ -262,7 +280,7 @@ def main():
     files = command(
         "git", "diff", "--name-only", "--no-renames", base, head
     ).splitlines()
-    results, failures = {}, defaultdict(list)
+    results, failures, unreachable = {}, defaultdict(list), []
     run_url = os.getenv("RUN_URL", "")
     max_lines = max(1, int(os.getenv("MAX_LINES", "80")))
     try:
@@ -278,7 +296,7 @@ def main():
             )
 
             def evaluate(target):
-                snapshots, errors = [], []
+                snapshots, errors, skipped = [], [], False
                 for side, revision in (("base", base), ("head", head)):
                     if target not in configs[side]:
                         snapshots.append(None)
@@ -288,23 +306,37 @@ def main():
                             snapshot(roots[side], revision, target, args.cache_dir)
                         )
                     except (subprocess.CalledProcessError, ValueError, OSError) as error:
-                        errors.append(side)
                         snapshots.append(None)
+                        detail = (getattr(error, "stderr", None) or str(error)).strip()
+                        if any(marker in detail for marker in UNREACHABLE):
+                            skipped = True
+                            print(
+                                f"Skipped {side} {target}: input unreachable from CI",
+                                file=sys.stderr,
+                            )
+                            continue
+                        errors.append(side)
                         print(f"Evaluation failed: {side} {target}", file=sys.stderr)
                         # Keep the log useful without dumping a whole trace.
-                        detail = (getattr(error, "stderr", None) or str(error)).strip()
                         for line in detail.splitlines()[-15:]:
                             print(f"  {line[:300]}", file=sys.stderr)
-                return target, snapshots, errors
+                return target, snapshots, errors, skipped
 
             with ThreadPoolExecutor(max_workers=2) as workers:
-                for target, snapshots, errors in workers.map(evaluate, targets):
+                for target, snapshots, errors, skipped in workers.map(evaluate, targets):
+                    if skipped and not errors:
+                        unreachable.append(target)
+                        continue
                     results[target] = snapshots
                     if errors:
                         failures[target] = errors
-            report = render(base, head, targets, results, failures, max_lines, run_url)
+            targets = [t for t in targets if t not in unreachable]
+            report = render(
+                base, head, targets, results, failures, max_lines, run_url, unreachable
+            )
             full_report = render(
-                base, head, targets, results, failures, sys.maxsize, run_url, False
+                base, head, targets, results, failures, sys.maxsize, run_url,
+                unreachable, False,
             )
             details = {
                 "base": base,
