@@ -112,6 +112,38 @@ is_local_package() {
   return 1
 }
 
+# nix-update can only bump packages defined in this repo whose src was
+# fetched; local sources and flake inputs (flake.lock) are skipped.
+has_updatable_source() {
+  local package_name="$1"
+  local target_system="$2"
+
+  local result
+  # shellcheck disable=SC2016
+  result="$(NIXPKGS_ALLOW_UNFREE=1 nix eval --json --impure --expr "
+    let
+      flake = builtins.getFlake (builtins.toString ./.);
+      pkg = flake.packages.${target_system}.${package_name};
+      root = toString flake.outPath;
+      position = pkg.meta.position or \"\";
+      src = pkg.src or null;
+    in
+      builtins.substring 0 (builtins.stringLength root) position == root
+      && builtins.isAttrs src
+      && (src ? url || src ? urls)
+  " 2>/dev/null)" || return 1
+
+  [[ "$result" == "true" ]]
+}
+
+get_package_version() {
+  local package_name="$1"
+  local target_system="$2"
+
+  NIXPKGS_ALLOW_UNFREE=1 nix eval --raw --impure \
+    ".#packages.${target_system}.${package_name}.version" 2>/dev/null
+}
+
 is_ignored_package() {
   local package_name="$1"
   shift
@@ -191,7 +223,14 @@ run_update() {
   local target_system="$2"
 
   # NOTE We need to set pure-eval to false to allow building nonfree pkgs
-  local args=(--flake "$package_name" --format --version stable --option pure-eval false)
+  # Unstable versions track a branch; their repos may have no releases.
+  local version_mode=stable
+  if [[ "$(get_package_version "$package_name" "$target_system")" == *unstable-* ]]
+  then
+    version_mode=branch
+  fi
+
+  local args=(--flake "$package_name" --format --version "$version_mode" --option pure-eval false)
 
   if has_update_script "$package_name" "$target_system"
   then
@@ -348,6 +387,13 @@ main() {
     if is_local_package "$pkg" "$primary_system"
     then
       echo "Skipping local package: $pkg" >&2
+      continue
+    fi
+
+    if ! has_update_script "$pkg" "$primary_system" &&
+      ! has_updatable_source "$pkg" "$primary_system"
+    then
+      echo "Skipping package without a fetched source in this repo: $pkg" >&2
       continue
     fi
 

@@ -4,11 +4,12 @@
 {
   lib,
   pkgs,
-  buildGoModule,
+  buildGo127Module,
   ...
 }:
 
-buildGoModule rec {
+# go.mod requires Go >= 1.27.3.
+buildGo127Module rec {
   pname = "go-hass-agent";
   version = "14.15.1";
 
