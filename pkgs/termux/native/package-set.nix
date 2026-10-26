@@ -163,10 +163,13 @@ androidPkgs.extend (
     pythonTermuxOverrides = _python: previous: {
       wcwidth = previous.wcwidth.overridePythonAttrs (old: {
         # wcwidth's optional accelerator is built for the Linux builder, while
-        # Termux uses its APT-provided Python runtime. Keep the pure-Python path.
-        postInstall = (old.postInstall or "") + ''
-          find "$out" -type f -name '_wcwidth_c*.so' -delete
-        '';
+        # Termux uses its APT-provided Python runtime. Keep the pure-Python path:
+        # skip the extension, and test in Python mode (the tests otherwise
+        # require it).
+        env = (old.env or { }) // {
+          WCWIDTH_NO_EXTENSION = "1";
+          WCWIDTH_PYTHON = "1";
+        };
       });
       aiohttp = previous.aiohttp.overridePythonAttrs (old: {
         env = (old.env or { }) // {
@@ -354,8 +357,11 @@ androidPkgs.extend (
               find "$out" -type f -name '*_speedups*.so' -delete
             '';
           });
-          zeroconf = previous.zeroconf.overridePythonAttrs (_: {
-            SKIP_CYTHON = "1";
+          zeroconf = previous.zeroconf.overridePythonAttrs (old: {
+            # Under __structuredAttrs only `env` reaches the builder.
+            env = (old.env or { }) // {
+              SKIP_CYTHON = "1";
+            };
           });
         };
     };
