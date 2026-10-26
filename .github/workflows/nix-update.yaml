@@ -17,17 +17,17 @@ jobs:
   list-packages:
     timeout-minutes: 15
     runs-on: ubuntu-latest
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
     outputs:
       matrix-default: ${{ steps.packages.outputs.matrix-default }}
       matrix-oci: ${{ steps.packages.outputs.matrix-oci }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # The branch tip, not the run's commit: PR branches based on an
+          # older main show its later workflow changes, which the update
+          # token may not push.
+          ref: ${{ github.ref }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -71,20 +71,22 @@ jobs:
   update:
     needs: list-packages
     if: needs.list-packages.outputs.matrix-default != ''
+    # Builds on the runner itself; the shared runner budget only made the
+    # matrix wait hours between jobs.
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-default) }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # The branch tip, not the run's commit: PR branches based on an
+          # older main show its later workflow changes, which the update
+          # token may not push.
+          ref: ${{ github.ref }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
@@ -221,20 +223,22 @@ jobs:
   update-oci:
     needs: list-packages
     if: needs.list-packages.outputs.matrix-oci != ''
+    # Builds on the runner itself; the shared runner budget only made the
+    # matrix wait hours between jobs.
     strategy:
-      max-parallel: 2
+      max-parallel: 4
       fail-fast: false
       matrix: ${{ fromJson(needs.list-packages.outputs.matrix-oci) }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
-    # Shared across workflows and PRs; queued jobs do not occupy runners.
-    concurrency:
-      group: nixos-config-runner-nix
-      cancel-in-progress: false
-      queue: max
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          # The branch tip, not the run's commit: PR branches based on an
+          # older main show its later workflow changes, which the update
+          # token may not push.
+          ref: ${{ github.ref }}
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main

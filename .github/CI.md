@@ -40,7 +40,7 @@ jobs each, outside the runner budget below. New commits cancel obsolete PR
 builds; main runs finish so their outputs reach niks3.
 
 ISO and Raspberry Pi images build weekly and on manual dispatch. Package
-updates run daily, with two concurrent update jobs per category. Eligible patch
+updates run daily, with four concurrent update jobs per category. Eligible patch
 updates receive a label; a short workflow checks their current versions, policy,
 commit and CI results after builds finish, with an hourly retry. No runner waits
 for another workflow. The merge workflow only executes default-branch code. Main-branch completions do
@@ -96,7 +96,7 @@ are preserved and closed before ending the collapsible section.
 
 Most checked-in workflow jobs share two repository-wide concurrency groups:
 
-- `nixos-config-runner-nix`: one Nix update or image job.
+- `nixos-config-runner-nix`: one Nix image, flake-lock or system diff job.
 - `nixos-config-runner-light`: one merge or final-result job.
 
 Each group allows one occupied runner across all PRs. The `Lint` jobs and the
