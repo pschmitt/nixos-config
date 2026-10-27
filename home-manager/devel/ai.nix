@@ -316,7 +316,8 @@ in
           args = [ "${config.xdg.userDirs.documents}/notes" ];
         };
         tmux = {
-          command = "${pkgs.tmux-mcp}/bin/tmux-mcp-rs";
+          command = lib.getExe pkgs.tmux-mcp-compat;
+          args = [ "${pkgs.tmux-mcp}/bin/tmux-mcp-rs" ];
         };
         signal = {
           command = lib.getExe signalMcp;

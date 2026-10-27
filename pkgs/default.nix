@@ -142,6 +142,7 @@ in
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
   tmux-mcp = pkgs.callPackage ./tmux-mcp { };
+  tmux-mcp-compat = pkgs.callPackage ./tmux-mcp-compat { };
 
   quickshell-overview = pkgs.callPackage ./quickshell-overview { };
 
