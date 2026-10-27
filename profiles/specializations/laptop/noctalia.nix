@@ -964,6 +964,7 @@ in
             # a day's or a week's target.
             year_time_format = "{days}d {hours}h";
             sync_enabled = true;
+            sync_after_changes = true;
             sync_command = "${lib.getExe pkgs.zhj} taskwarrior::sync";
             # The 16px default badge follows the Syncthing plugin's proven
             # path: purpose-drawn play/pause/beer SVGs on a 16-unit grid are
