@@ -112,14 +112,16 @@ existing generation installer receives it. Each invocation builds and
 activates the selected flake output; the previous generation remains available
 for rollback through its `activate.sh`.
 
-`switch` streams the signed NAR over SSH and does not publish it to an HTTP
-cache. Use `fetch` for outputs already published to a standard Nix binary
+`switch` streams the signed NAR over SSH and does not publish it to a cache.
+Use `fetch` for a known store path already published to a standard Nix binary
 cache, including a configured private S3 cache.
 
-Run `nixpp upgrade` to rebuild and activate the default flake profile from
-`defaults.flake`, `defaults.builder`, and `defaults.public_keys` in the config.
-It is the no-argument form of `nixpp switch` and picks up the current flake
-contents from the configured builder checkout.
+Run `nixpp upgrade` to build the default flake profile on `defaults.builder`,
+then fetch and verify that output from the configured S3 `defaults.substituter`
+before activating it. It uses `defaults.flake`, `defaults.public_keys`, and
+`defaults.aws_credentials_file` from the config. The bundle must already have
+been published to Niks3; a missing cache entry fails without activating a
+generation. Publish updates through the Termux bootstrap build workflow.
 
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.

@@ -102,7 +102,7 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
-        Command::Upgrade => nixpp::switch_profile(None, None, None),
+        Command::Upgrade => nixpp::upgrade_profile(),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
         Command::Rollback { generation } => nixpp::rollback(&generation),

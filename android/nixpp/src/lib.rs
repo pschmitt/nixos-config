@@ -861,6 +861,19 @@ pub fn switch_profile(
     builder: Option<&str>,
     public_key: Option<&str>,
 ) -> Result<()> {
+    switch_profile_with_source(flake, builder, public_key, false)
+}
+
+pub fn upgrade_profile() -> Result<()> {
+    switch_profile_with_source(None, None, None, true)
+}
+
+fn switch_profile_with_source(
+    flake: Option<&str>,
+    builder: Option<&str>,
+    public_key: Option<&str>,
+    use_s3: bool,
+) -> Result<()> {
     let config = load_config()?;
     let flake = flake
         .or(config.defaults.flake.as_deref())
@@ -875,6 +888,21 @@ pub fn switch_profile(
         !public_keys.is_empty(),
         "no trusted public keys specified; pass --public-key or set defaults.public_keys in the config"
     );
+    let substituter = if use_s3 {
+        let value = config
+            .defaults
+            .substituter
+            .as_deref()
+            .context("no S3 substituter configured; set defaults.substituter in the config")?;
+        let target = parse_cache_target(value, config.defaults.aws_credentials_file.as_deref())?;
+        ensure!(
+            target.s3.is_some(),
+            "nixpp upgrade requires an s3:// defaults.substituter"
+        );
+        Some(value)
+    } else {
+        None
+    };
     ensure!(!flake.is_empty(), "--flake is required");
     ensure!(
         flake.len() <= 4096 && !flake.contains(['\0', '\r', '\n']),
@@ -907,67 +935,71 @@ pub fn switch_profile(
     })?;
 
     let mut remote_temp = None;
+    let stage = make_staging_directory("nixpp-switch-")?;
     let result = (|| {
-        let mut info = None;
-        ui.stage("🔏 Sign and inspect the Nix output", || {
-            let path = remote_output_cache(builder, &store_path)?;
-            remote_temp = Some(path.clone());
-            let store_hash = store_hash(&store_path)?;
-            let metadata_path = format!("{path}/cache/{store_hash}.narinfo");
-            let data = remote_output(builder, &format!("cat -- {}", shell_quote(&metadata_path)))?;
-            let parsed = parse_nar_info(data.as_bytes())?;
-            ensure!(
-                parsed.store_path == store_path,
-                "builder metadata StorePath does not match the requested flake output"
-            );
-            ensure!(
-                parsed.references.is_empty(),
-                "refusing Termux bundle with Nix store references"
-            );
-            verify_any_signature(&parsed, &public_keys).context("verify builder signature")?;
-            info = Some(parsed);
-            Ok(())
-        })?;
-        let info = info.context("builder returned no Nix metadata")?;
-
-        let stage = make_staging_directory("nixpp-switch-")?;
-        let result = (|| {
-            let mut archive_path = PathBuf::new();
-            let mut digest = String::new();
-            let mut bootstrap_path = PathBuf::new();
+        let bundle_dir = stage.join("bundle");
+        if let Some(cache) = substituter {
+            ui.stage(
+                "☁️ Fetch and verify the bundle from the S3 cache",
+                || {
+                    fetch(Some(cache), &store_path, &bundle_dir, None, None)
+                        .context("fetch built Termux bundle from the configured S3 cache")?;
+                    Ok(())
+                },
+            )?;
+        } else {
+            let mut info = None;
+            ui.stage("🔏 Sign and inspect the Nix output", || {
+                let path = remote_output_cache(builder, &store_path)?;
+                remote_temp = Some(path.clone());
+                let store_hash = store_hash(&store_path)?;
+                let metadata_path = format!("{path}/cache/{store_hash}.narinfo");
+                let data =
+                    remote_output(builder, &format!("cat -- {}", shell_quote(&metadata_path)))?;
+                let parsed = parse_nar_info(data.as_bytes())?;
+                ensure!(
+                    parsed.store_path == store_path,
+                    "builder metadata StorePath does not match the requested flake output"
+                );
+                ensure!(
+                    parsed.references.is_empty(),
+                    "refusing Termux bundle with Nix store references"
+                );
+                verify_any_signature(&parsed, &public_keys).context("verify builder signature")?;
+                info = Some(parsed);
+                Ok(())
+            })?;
+            let info = info.context("builder returned no Nix metadata")?;
             ui.stage("📦 Transfer and verify the bundle", || {
                 let nar_path = stage.join("output.nar");
                 remote_nar(builder, &store_path, &nar_path, info.nar_size)?;
-                let bundle_dir = stage.join("bundle");
-                extract_verified_nar(&nar_path, &info, &bundle_dir)?;
-                archive_path = bundle_dir.join("environment.tar.gz");
-                digest = read_archive_digest(&bundle_dir.join("SHA256SUMS"))?;
-                verify_file_sha256(&archive_path, &digest).context("verify Termux archive")?;
-                bootstrap_path = bundle_dir.join("bootstrap.sh");
-                ensure!(
-                    fs::metadata(&bootstrap_path)
-                        .is_ok_and(|metadata| metadata.file_type().is_file()),
-                    "Termux bundle is missing a regular bootstrap.sh"
-                );
-                Ok(())
+                extract_verified_nar(&nar_path, &info, &bundle_dir)
             })?;
-            ui.stage("🚀 Install and health-check the new generation", || {
-                let status = Command::new("bash")
-                    .arg(&bootstrap_path)
-                    .arg("install")
-                    .arg(&archive_path)
-                    .arg(&digest)
-                    .status()
-                    .context("start Termux generation activation")?;
-                ensure!(status.success(), "activate Termux generation: {status}");
-                Ok(())
-            })
-        })();
-        let cleanup = fs::remove_dir_all(&stage)
-            .with_context(|| format!("remove local staging directory {}", stage.display()));
-        result.and(cleanup)
-    })();
+        }
 
+        let archive_path = bundle_dir.join("environment.tar.gz");
+        let digest = read_archive_digest(&bundle_dir.join("SHA256SUMS"))?;
+        verify_file_sha256(&archive_path, &digest).context("verify Termux archive")?;
+        let bootstrap_path = bundle_dir.join("bootstrap.sh");
+        ensure!(
+            fs::metadata(&bootstrap_path).is_ok_and(|metadata| metadata.file_type().is_file()),
+            "Termux bundle is missing a regular bootstrap.sh"
+        );
+        ui.stage("🚀 Install and health-check the new generation", || {
+            let status = Command::new("bash")
+                .arg(&bootstrap_path)
+                .arg("install")
+                .arg(&archive_path)
+                .arg(&digest)
+                .status()
+                .context("start Termux generation activation")?;
+            ensure!(status.success(), "activate Termux generation: {status}");
+            Ok(())
+        })
+    })();
+    let cleanup = fs::remove_dir_all(&stage)
+        .with_context(|| format!("remove local staging directory {}", stage.display()));
+    let result = result.and(cleanup);
     if let Some(path) = remote_temp
         && let Err(error) = remote_run(builder, &format!("rm -rf -- {}", shell_quote(&path)))
     {
