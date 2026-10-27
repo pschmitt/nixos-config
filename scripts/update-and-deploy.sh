@@ -66,6 +66,20 @@ checkout_main() {
   git -C "$repo_dir" switch "$main_branch"
 }
 
+show_diff() {
+  local old_system="$1" new_system
+
+  new_system="$(readlink -f /run/current-system)"
+  if [[ "$old_system" == "$new_system" ]]
+  then
+    printf 'System closure unchanged, nothing to diff\n'
+    return 0
+  fi
+
+  printf 'Changes in the active system:\n'
+  nvd --color always diff "$old_system" "$new_system" || true
+}
+
 main() {
   local flake_update=0
   local repo_dir="${NIXOS_CONFIG_DIR:-/etc/nixos}"
@@ -116,9 +130,15 @@ main() {
     nix flake update --flake "$repo_dir"
   fi
 
+  local old_system rc=0
+  old_system="$(readlink -f /run/current-system)"
+
   printf 'Deploying NixOS configuration\n'
   cd "$repo_dir" || return 1
-  just deploy "" "$@"
+  just deploy "" "$@" || rc=$?
+
+  show_diff "$old_system"
+  return "$rc"
 }
 
 main "$@"
