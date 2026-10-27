@@ -2056,11 +2056,11 @@
         "noctalia": "noctalia_2"
       },
       "locked": {
-        "lastModified": 1793108112,
-        "narHash": "sha256-ew9nMCXC7bfS7XNjxwF/LHrvnretGCeGtdDmMAtT7Ac=",
+        "lastModified": 1793108659,
+        "narHash": "sha256-yMrSCyIyiZa57WyXEhH95XuNTvs4Ctsm9RU+MwKNf5k=",
         "owner": "pschmitt",
         "repo": "noctalia-plugins",
-        "rev": "b6be9d058a6fc44152f27fd37324e5fb9d251dee",
+        "rev": "14c187a8c91267f5d53171836f6b3c6cb86c139c",
         "type": "github"
       },
       "original": {
