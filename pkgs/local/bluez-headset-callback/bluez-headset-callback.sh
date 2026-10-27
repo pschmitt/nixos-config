@@ -57,7 +57,7 @@ bt_disconnected() {
   # --icon takes a Tabler glyph name, so the summary stays plain text instead
   # of carrying a hardcoded nerd-font codepoint that only renders in a font
   # the OSD may not be using.
-  osd -c bluetooth -i bluetooth-off -I error -d "$name" "Bluetooth device disconnected"
+  osd -c bluetooth -i bluetooth-off --inactive -d "$name" "Bluetooth device disconnected"
 }
 
 event_type() {

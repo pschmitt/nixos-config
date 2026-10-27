@@ -306,9 +306,6 @@ in
             "pschmitt/battery-icon"
             # iPhone Duo-inspired circular battery and Wi-Fi indicator
             "pschmitt/duo-status"
-            # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
-            # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
-            "pschmitt/osd"
             # Lockscreen-only: "🍻 {N}s before Feierabend" while `zhj
             # feierabend countdown-start`'s shutdown timer is armed. Ported
             # from the old hyprlock label (home-manager/gui/hyprland/services/
@@ -377,12 +374,6 @@ in
               name = "pschmitt-fan-control";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-fan-control}/share/noctalia-plugins";
-              enabled = true;
-            }
-            {
-              name = "pschmitt-osd";
-              kind = "path";
-              location = "${noctaliaPlugins.noctalia-osd}/share/noctalia-plugins";
               enabled = true;
             }
             {

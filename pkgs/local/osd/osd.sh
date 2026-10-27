@@ -1,17 +1,4 @@
-# osd — fire an ad-hoc on-screen notification.
-#
-# Tries, in order: Noctalia's pschmitt/osd plugin panels (see
-# ../noctalia-plugins.git/plugins/osd), then notify-send/mako — so scripts and keybinds get
-# a native-looking OSD when Noctalia is active. Noctalia has no
-# generic "show a custom OSD" primitive of its own (only fixed-purpose ones:
-# brightness-osd, volume-osd, ...), hence the dedicated plugin.
-#
-# use_noctalia() below shells out to the noctalia binary, which needs
-# WAYLAND_DISPLAY to reach the compositor. Callers invoked from a systemd
-# --user service that starts before the session's environment import runs
-# (see home-manager/bluetooth.nix) would otherwise see a WAYLAND_DISPLAY-less
-# environment and silently fall back to notify-send. Default to Hyprland's
-# usual first instance name rather than let that happen quietly.
+# Show a native Noctalia OSD, falling back to a desktop notification.
 : "${WAYLAND_DISPLAY:=wayland-1}"
 export WAYLAND_DISPLAY
 
@@ -19,47 +6,20 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] MESSAGE...
        $(basename "$0") native TYPE [VALUE]
-       $(basename "$0") dismiss CATEGORY
-       $(basename "$0") hide
-       $(basename "$0") status
-
-Native OSDs (display only; do not change the device setting):
-  volume [VALUE]                    Speaker volume (defaults to current)
-  mic-volume [VALUE]                Microphone volume (defaults to current)
-  brightness VALUE                  Display brightness
-  keyboard-backlight VALUE          Keyboard backlight
-  VALUE is a percentage from 0 to 100. mic-volume also accepts
-  muted / unmuted to display a voice-chain mute state.
 
 Options:
-  -s, --severity {info,warn,error}   Severity (default: info)
-  -c, --category CATEGORY            Dedupe/update-in-place key (Noctalia
-                                      only; repeated calls with the same
-                                      category replace the previous toast
-                                      instead of stacking). Defaults to
-                                      --app-name.
-  -d, --details TEXT                 Extra detail line (Noctalia only)
-  -x, --command CMD                  Command run when the toast is clicked
-                                      (Noctalia only)
-  -i, --icon GLYPH                   Tabler glyph name shown instead of the
-                                      severity icon, eg. bluetooth-connected
-                                      (Noctalia only)
-  -I, --icon-color COLOR             Icon color: a Noctalia palette role
-                                      (error, on_surface, ...) or #RRGGBB
-                                      (Noctalia only)
-  -n, --no-icon                      Show no glyph at all, text only
-                                      (Noctalia only)
-  -p, --profile NAME                 Named profile_rules entry to apply
-                                      (Noctalia only)
-  -S, --style JSON                   Raw style object merged under --icon /
-                                      --icon-color, for any other knob the
-                                      plugin exposes (Noctalia only). See
-                                      noctalia-plugins/plugins/osd/README.md
-  -a, --app-name NAME                notify-send app name (fallback only,
-                                      default: osd)
-  -t, --timeout MS                   Auto-dismiss timeout in ms (Noctalia and
-                                      notify-send fallback)
-  -h, --help                         Show this help
+  -i, --icon GLYPH        Noctalia glyph (default: info-circle)
+  -s, --severity LEVEL    info, warn, or error
+  -d, --details TEXT      Append detail to the message
+  -a, --app-name NAME     Notification fallback app name
+  -c, --category NAME     Notification fallback replacement key
+  -t, --timeout MS        Notification fallback timeout
+  --inactive              Use the inactive appearance
+  --progress VALUE        Progress from 0 to 1
+  -h, --help              Show this help
+
+Native types: volume, mic-volume, brightness. Values are percentages;
+mic-volume also accepts muted and unmuted for the voice chain.
 EOF
 }
 
@@ -67,127 +27,30 @@ use_noctalia() {
   command -v noctalia &>/dev/null && noctalia msg status &>/dev/null
 }
 
-# Keep legacy entry IDs here so dismiss/hide/status also handle direct callers.
-# The host measures the actual rendered content; the wrapper only picks height.
-NOCTALIA_PANELS=(
-  pschmitt/osd:compact
-  pschmitt/osd:toast
-  pschmitt/osd:compact-medium
-  pschmitt/osd:toast-medium
-  pschmitt/osd:compact-wide
-  pschmitt/osd:toast-wide
-  pschmitt/osd:compact-xwide
-  pschmitt/osd:toast-xwide
-)
-
-noctalia_panel() {
-  if [[ -n "$1" ]]
-  then
-    echo "pschmitt/osd:toast"
-  else
-    echo "pschmitt/osd:compact"
-  fi
-}
-
-send() {
-  local severity="$1"
-  local message="$2"
-  local details="$3"
-  local cmd="$4"
-  local category="$5"
-  local app_name="$6"
-  local timeout="$7"
-  local profile="$8"
-  local style="${9:-\{\}}"
-
-  if use_noctalia
-  then
-    # Every per-toast override the plugin understands rides in the payload:
-    # "style" is the same key set as its settings, so nothing here needs a
-    # config change or a plugin reload. Empty members are dropped so the
-    # plugin falls back to its own defaults rather than seeing "".
-    local payload
-    payload=$(jq -nc \
-      --arg summary "$message" \
-      --arg body "$details" \
-      --arg severity "$severity" \
-      --arg category "$category" \
-      --arg command "$cmd" \
-      --arg profile "$profile" \
-      --argjson timeout_ms "${timeout:-null}" \
-      --argjson style "$style" \
-      '{summary:$summary, body:$body, severity:$severity, category:$category,
-        command:$command, timeout_ms:$timeout_ms, profile:$profile, style:$style}
-       | with_entries(select(.value != null and .value != "" and .value != {}))')
-    noctalia msg panel-open \
-      "$(noctalia_panel "$details")" "$payload" &>/dev/null && return 0
-  fi
-
-  local -a args
-  args=(--app-name "$app_name")
-  [[ -n "$timeout" ]] && args+=(-t "$timeout")
-  [[ -n "$category" ]] && args+=(--hint "string:x-canonical-private-synchronous:${category}")
-
-  case "$severity" in
-    error)
-      args+=(--urgency critical)
-      ;;
-    warn)
-      args+=(--urgency normal)
-      ;;
-    *)
-      args+=(--urgency low)
-      ;;
-  esac
-
-  notify-send "${args[@]}" "$message" "$details"
-}
-
 native_osd() {
   local kind="${1:-}"
-  if (( $# > 0 ))
-  then
-    shift
-  fi
-
+  shift || true
   case "$kind" in
-    volume|mic-volume)
-      ;;
-    brightness|keyboard-backlight)
+    volume|mic-volume) ;;
+    brightness)
       if [[ $# -eq 0 ]]
       then
         printf 'Missing percentage for %s\n' "$kind" >&2
         return 2
       fi
       ;;
-    *)
-      printf 'Unknown native OSD: %s\n' "$kind" >&2
-      usage >&2
-      return 2
-      ;;
+    *) printf 'Unknown native OSD: %s\n' "$kind" >&2; return 2 ;;
   esac
-
   local mute_override=""
   if [[ "$kind" == mic-volume && $# -eq 1 && ( "$1" == muted || "$1" == unmuted ) ]]
   then
     mute_override=1
   fi
-
-  if (( $# > 1 ))
+  if (( $# > 1 )) || { (( $# == 1 )) && [[ -z "$mute_override" ]] && ! jq -en --arg v "$1" '$v | tonumber | . >= 0 and . <= 100' >/dev/null 2>&1; }
   then
-    printf 'Expected at most one value\n' >&2
+    printf 'Expected a percentage from 0 to 100\n' >&2
     return 2
   fi
-  if [[ -z "$mute_override" ]] && (( $# == 1 ))
-  then
-    if ! jq -en --arg value "$1" \
-      '$value | tonumber | . >= 0 and . <= 100' >/dev/null 2>&1
-    then
-      printf 'Expected a percentage from 0 to 100\n' >&2
-      return 2
-    fi
-  fi
-
   if ! use_noctalia
   then
     printf 'Native OSDs require a running Noctalia instance\n' >&2
@@ -204,207 +67,75 @@ native_osd() {
   fi
 }
 
-ipc_dismiss() {
-  local category="$1"
-
-  if use_noctalia
-  then
-    # Either entry may be the one showing this category.
-    local panel rc=1
-    for panel in "${NOCTALIA_PANELS[@]}"
-    do
-      noctalia msg plugin "$panel" all dismiss "$category" &>/dev/null && rc=0
-    done
-    [[ "$rc" -eq 0 ]] && return 0
-  fi
-
-  command -v makoctl &>/dev/null || return 1
-  command -v jq &>/dev/null || return 1
-
-  local id rc=1
-  while IFS= read -r id
-  do
-    [[ -n "$id" ]] || continue
-    makoctl dismiss -n "$id"
-    rc=0
-  done < <(makoctl list 2>/dev/null | jq -er --arg n "$category" '.data[0][] | select(.["app-name"].data == $n).id.data' 2>/dev/null)
-
-  return "$rc"
-}
-
-ipc_hide() {
-  if use_noctalia
-  then
-    local panel rc=1
-    for panel in "${NOCTALIA_PANELS[@]}"
-    do
-      noctalia msg panel-close "$panel" &>/dev/null && rc=0
-    done
-    [[ "$rc" -eq 0 ]] && return 0
-  fi
-
-  command -v makoctl &>/dev/null || return 1
-  makoctl dismiss --all
-}
-
-ipc_status() {
-  if use_noctalia
-  then
-    local active panel
-    active=$(noctalia msg status | jq -r '.activePanelId // ""')
-    for panel in "${NOCTALIA_PANELS[@]}"
-    do
-      if [[ "$active" == "$panel" ]]
-      then
-        echo "active"
-        return 0
-      fi
-    done
-    echo "inactive"
-    return 0
-  fi
-
-  echo "neither noctalia nor a notification fallback is running" >&2
-  return 1
-}
-
 main() {
-  case "${1:-}" in
-    -h|--help)
-      usage
-      return 0
-      ;;
-    native)
-      shift
-      native_osd "$@"
-      return $?
-      ;;
-    dismiss)
-      shift
-      if [[ -z "${1:-}" ]]
-      then
-        printf 'Missing category\n' >&2
-        usage >&2
-        return 2
-      fi
-      ipc_dismiss "$1"
-      return $?
-      ;;
-    hide)
-      ipc_hide
-      return $?
-      ;;
-    status)
-      ipc_status
-      return $?
-      ;;
-  esac
-
-  local severity=info category="" details="" cmd="" app_name=osd timeout=""
-  local icon="" icon_color="" profile="" style="{}" no_icon=
-
+  if [[ "${1:-}" == native ]]
+  then
+    shift
+    native_osd "$@"
+    return $?
+  fi
+  local icon="" severity=info details="" app_name=osd category="" timeout="" progress="" inactive=""
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
-      -s|--severity)
-        severity="$2"
+      -h|--help) usage; return 0 ;;
+      --inactive) inactive=1; shift ;;
+      -i|--icon|-s|--severity|-d|--details|-a|--app-name|-c|--category|-t|--timeout|--progress)
+        if [[ -z "${2:-}" ]]
+        then
+          printf 'Missing value for %s\n' "$1" >&2
+          return 2
+        fi
+        case "$1" in
+          -i|--icon) icon="$2" ;;
+          -s|--severity) severity="$2" ;;
+          -d|--details) details="$2" ;;
+          -a|--app-name) app_name="$2" ;;
+          -c|--category) category="$2" ;;
+          -t|--timeout) timeout="$2" ;;
+          --progress) progress="$2" ;;
+        esac
         shift 2
         ;;
-      -c|--category)
-        category="$2"
-        shift 2
-        ;;
-      -d|--details)
-        details="$2"
-        shift 2
-        ;;
-      -x|--command)
-        cmd="$2"
-        shift 2
-        ;;
-      -a|--app-name)
-        app_name="$2"
-        shift 2
-        ;;
-      -t|--timeout)
-        timeout="$2"
-        shift 2
-        ;;
-      -i|--icon)
-        icon="$2"
-        shift 2
-        ;;
-      -I|--icon-color)
-        icon_color="$2"
-        shift 2
-        ;;
-      -n|--no-icon)
-        no_icon=false
-        shift
-        ;;
-      -p|--profile)
-        profile="$2"
-        shift 2
-        ;;
-      -S|--style)
-        style="$2"
-        shift 2
-        ;;
-      -h|--help)
-        usage
-        return 0
-        ;;
-      --)
-        shift
-        break
-        ;;
-      -*)
-        printf 'Unknown option: %s\n' "$1" >&2
-        usage >&2
-        return 2
-        ;;
-      *)
-        break
-        ;;
+      --) shift; break ;;
+      -*) printf 'Unknown option: %s\n' "$1" >&2; return 2 ;;
+      *) break ;;
     esac
   done
-
   if [[ -z "${1:-}" ]]
   then
     printf 'Missing message\n' >&2
-    usage >&2
     return 2
   fi
-
   case "$severity" in
-    info|warn|error)
-      ;;
-    *)
-      printf 'Invalid severity: %s (expected info|warn|error)\n' "$severity" >&2
-      return 2
-      ;;
+    info) icon="${icon:-info-circle}" ;;
+    warn) icon="${icon:-alert-triangle}" ;;
+    error) icon="${icon:-alert-circle}" ;;
+    *) printf 'Invalid severity: %s\n' "$severity" >&2; return 2 ;;
   esac
-
-  [[ -z "$category" ]] && category="$app_name"
-
-  if ! jq -e 'type == "object"' <<< "$style" >/dev/null 2>&1
+  if [[ -n "$progress" ]] && ! jq -en --arg v "$progress" '$v | tonumber | . >= 0 and . <= 1' >/dev/null 2>&1
   then
-    printf -- '--style must be a JSON object: %s\n' "$style" >&2
+    printf 'Expected progress from 0 to 1\n' >&2
     return 2
   fi
-
-  # --icon / --icon-color / --no-icon are just shorthands for style keys, so
-  # they win over the same keys inside --style.
-  style=$(jq -c \
-    --arg icon "$icon" \
-    --arg icon_color "$icon_color" \
-    --argjson show_icon "${no_icon:-null}" \
-    '. + ({icon:$icon, icon_color:$icon_color} | with_entries(select(.value != "")))
-       + (if $show_icon == null then {} else {show_icon:$show_icon} end)' \
-    <<< "$style")
-
-  send "$severity" "$*" "$details" "$cmd" "$category" "$app_name" "$timeout" \
-    "$profile" "$style"
+  local message="$*" payload
+  [[ -n "$details" ]] && message+=" — $details"
+  if use_noctalia
+  then
+    payload=$(jq -nc --arg icon "$icon" --arg value "$message" \
+      --argjson progress "${progress:-null}" --arg inactive "$inactive" \
+      '{icon:$icon, value:$value} + (if $progress == null then {} else {progress:$progress} end) + (if $inactive == "" then {} else {inactive:true} end)')
+    noctalia msg osd-show "$payload" &>/dev/null && return 0
+  fi
+  local -a args=(--app-name "$app_name")
+  [[ -n "$timeout" ]] && args+=(-t "$timeout")
+  [[ -n "$category" ]] && args+=(--hint "string:x-canonical-private-synchronous:${category}")
+  case "$severity" in
+    error) args+=(--urgency critical) ;;
+    warn) args+=(--urgency normal) ;;
+    *) args+=(--urgency low) ;;
+  esac
+  notify-send "${args[@]}" "$*" "$details"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
