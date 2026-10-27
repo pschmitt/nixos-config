@@ -175,14 +175,17 @@ switch_generation() {
     PATH="$root/generations/$generation/bin:$PATH" \
     timeout 120 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return
-  TERMUX_GENERATION="$root/generations/$generation" \
-    PATH="$root/generations/$generation/bin:$PATH" \
-    "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
-    "$root/generations/$generation" || return
-  TERMUX_GENERATION="$root/generations/$generation" \
-    PATH="$root/generations/$generation/bin:$PATH" \
-    "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
-    "$root/generations/$generation" || return
+  if [[ "${TERMUX_NATIVE_SKIP_SOPS_SETUP:-}" != 1 ]]
+  then
+    TERMUX_GENERATION="$root/generations/$generation" \
+      PATH="$root/generations/$generation/bin:$PATH" \
+      "$PREFIX/bin/bash" "$root/generations/$generation/setup-known-hosts.sh" \
+      "$root/generations/$generation" || return
+    TERMUX_GENERATION="$root/generations/$generation" \
+      PATH="$root/generations/$generation/bin:$PATH" \
+      "$PREFIX/bin/bash" "$root/generations/$generation/setup-gpg-keys.sh" \
+      "$root/generations/$generation" || return
+  fi
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
   mv -Tf "$root/.next" "$root/current" || return
