@@ -21,6 +21,7 @@ in
         && ! is_termux
       then
         zsh::source-plugin ${autoNotify}/auto-notify.plugin.zsh
+        AUTO_NOTIFY_IGNORE+=(journalctl watch)
         export AUTO_NOTIFY_THRESHOLD=30 AUTO_NOTIFY_EXPIRE_TIME=5000
       fi
     ''
