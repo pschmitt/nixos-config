@@ -8,8 +8,9 @@ The initial supported contract is intentionally small:
 
 - outputs are signed by a trusted Nix cache Ed25519 key;
 - the requested store path has no Nix references;
-- cache NAR compression is `none`, `gzip`, or `xz` (`xz-utils` is already in
-  the Termux prefix used by this bootstrap);
+- cache NAR compression is `none`, `gzip`, `xz`, or `zstd`; Zstandard is
+  decompressed in Rust, while `xz-utils` is already in the Termux prefix used
+  by this bootstrap;
 - the output is unpacked into a new directory, which is atomically renamed into
   place only after signature, size, hash, and archive checks pass;
 - NAR paths and symlinks cannot escape the destination.
@@ -42,7 +43,8 @@ The `fetch` command delegates HTTP(S), basic authentication, and AWS SigV4
 requests to Termux's `curl`; Rust verifies Nix cache signatures and hashes
 before extracting the NAR. `s3://` substituters use the AWS shared credentials
 file and path-style requests, which supports our private Ceph RGW bucket.
-Termux's `gzip` and `xz` commands decompress those supported cache formats.
+Termux's `gzip` and `xz` commands decompress those formats; Zstandard is built
+into nixpp.
 The phone does not need Rust, Cargo, or Nix.
 
 By default, nixpp reads `~/.config/nixpp/config.toml` (override with

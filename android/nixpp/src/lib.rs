@@ -17,6 +17,8 @@ use url::Url;
 const NIX_BASE32: &[u8; 32] = b"0123456789abcdfghijklmnpqrsvwxyz";
 const MAX_NAR_SIZE: u64 = 20 << 30;
 const MAX_NAR_STRING: u64 = 1 << 30;
+const MAX_NARINFO_SIZE: u64 = 1 << 20;
+const ZSTD_MAGIC: &[u8; 4] = b"\x28\xb5\x2f\xfd";
 
 #[derive(Debug, Default, Deserialize)]
 #[serde(default)]
@@ -577,8 +579,8 @@ pub fn fetch(
             .map_err(|_| anyhow::anyhow!("cache URL cannot accept a path"))?
             .pop_if_empty()
             .push(&format!("{store_hash}.narinfo"));
-        let narinfo = curl_read(info_url.as_str(), &auth, 1 << 20).context("fetch narinfo")?;
-        let info = parse_nar_info(&narinfo)?;
+        let narinfo = curl_read(info_url.as_str(), &auth, MAX_NARINFO_SIZE)?;
+        let info = parse_nar_info_response(&narinfo)?;
         ensure!(
             info.store_path == store_path,
             "narinfo StorePath does not match requested store path"
@@ -589,8 +591,8 @@ pub fn fetch(
         );
         verify_any_signature(&info, &public_keys)?;
         ensure!(
-            matches!(info.compression.as_str(), "none" | "gzip" | "xz"),
-            "unsupported cache compression {:?}; supported formats are none, gzip, and xz",
+            matches!(info.compression.as_str(), "none" | "gzip" | "xz" | "zstd"),
+            "unsupported cache compression {:?}; supported formats are none, gzip, xz, and zstd",
             info.compression
         );
         let archive_url = safe_cache_url(&target.base, &info.url)?;
@@ -1373,6 +1375,25 @@ fn parse_nar_info(data: &[u8]) -> Result<NarInfo> {
     })
 }
 
+fn parse_nar_info_response(data: &[u8]) -> Result<NarInfo> {
+    if data.starts_with(ZSTD_MAGIC) {
+        let decoder = ruzstd::decoding::StreamingDecoder::new(data)
+            .context("start Zstandard narinfo decompressor")?;
+        let mut decoded = Vec::new();
+        decoder
+            .take(MAX_NARINFO_SIZE + 1)
+            .read_to_end(&mut decoded)
+            .context("decompress Zstandard narinfo")?;
+        ensure!(
+            decoded.len() as u64 <= MAX_NARINFO_SIZE,
+            "decompressed narinfo exceeds its size limit"
+        );
+        parse_nar_info(&decoded)
+    } else {
+        parse_nar_info(data)
+    }
+}
+
 fn optional_single<'a>(
     fields: &'a std::collections::HashMap<&str, Vec<&'a str>>,
     key: &str,
@@ -1659,6 +1680,24 @@ fn decompress_to_file(
         }
         "gzip" => run_decompressor("gzip", source, destination, maximum),
         "xz" => run_decompressor("xz", source, destination, maximum),
+        "zstd" => {
+            let input = File::open(source).context("open compressed NAR file")?;
+            let mut decoder = ruzstd::decoding::StreamingDecoder::new(input)
+                .context("start Zstandard NAR decompressor")?;
+            let mut output = OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .mode(0o600)
+                .open(destination)
+                .context("create NAR file")?;
+            let size = io::copy(&mut decoder.by_ref().take(maximum + 1), &mut output)
+                .context("decompress Zstandard NAR")?;
+            ensure!(
+                size <= maximum,
+                "uncompressed NAR exceeds its signed size limit"
+            );
+            output.sync_all().context("sync NAR file")
+        }
         other => bail!("unsupported cache compression {other:?}"),
     }
 }
@@ -2193,6 +2232,34 @@ mod tests {
             .unwrap()
             .replace("References: \n", "");
         assert!(parse_nar_info(without_references.as_bytes()).is_err());
+    }
+
+    #[test]
+    fn parses_zstandard_narinfo_and_decompresses_zstandard_nars() {
+        use ruzstd::encoding::{CompressionLevel, compress_to_vec};
+
+        let narinfo = b"StorePath: /nix/store/0123456789abcdfghijklmnpqrsvwxyz-package\n\
+            URL: nar/test.nar.zst\n\
+            Compression: zstd\n\
+            NarHash: sha256:1b8m03r63zqhnjf7l5wnldhh7c134ap5vpj0850ymkq1iyzicy5s\n\
+            NarSize: 3\n\
+            References: \n\
+            Sig: test:signature\n";
+        let compressed_info = compress_to_vec(narinfo.as_slice(), CompressionLevel::Fastest);
+        let info = parse_nar_info_response(&compressed_info).unwrap();
+        assert_eq!(info.compression, "zstd");
+
+        let directory = temp_dir("zstd-nar");
+        let source = directory.join("source.zst");
+        let destination = directory.join("nar");
+        fs::write(
+            &source,
+            compress_to_vec(b"nar".as_slice(), CompressionLevel::Fastest),
+        )
+        .unwrap();
+        decompress_to_file("zstd", &source, &destination, 3).unwrap();
+        assert_eq!(fs::read(&destination).unwrap(), b"nar");
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]
