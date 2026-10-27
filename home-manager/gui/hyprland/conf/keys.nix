@@ -146,13 +146,10 @@ in
       (execBindLocked "XF86AudioRaiseVolume" "pactl set-sink-volume @DEFAULT_SINK@ +5%")
       (execBindLocked "XF86AudioLowerVolume" "pactl set-sink-volume @DEFAULT_SINK@ -5%")
       (execBindLocked "XF86AudioMute" "pactl set-sink-mute @DEFAULT_SINK@ toggle")
-      # obs-control also syncs OBS's "mic off" overlay (see pkgs/local/obs-control),
-      # but it's only on PATH when go-hass-agent.enableWorkCommands is set
-      # (ge2) — everywhere else (gk4, ...) it's missing from PATH entirely,
-      # which silently no-ops the bind. Fall back to the RNNoise voice source,
-      # then Noctalia's native mic mute if the filter is unavailable.
+      # The hardware mic key retains the legacy fallback chain. Super+Space
+      # uses a helper that shows the native Noctalia OSD even without OBS.
       (execBindLocked "XF86AudioMicMute" "obs-control toggle-mute || pactl set-source-mute rnnoise_source toggle || noctalia msg mic-mute")
-      (execBindLocked "SUPER + space" "obs-control toggle-mute || pactl set-source-mute rnnoise_source toggle || noctalia msg mic-mute")
+      (execBindLocked "SUPER + space" "${bin}/toggle-mic-mute.sh")
       (execBindLocked "XF86AudioPlay" "${playerctl} toggle")
       (execBindLocked "XF86AudioPause" "${playerctl} pause")
       (execBindLocked "XF86AudioNext" "${playerctl} next")
