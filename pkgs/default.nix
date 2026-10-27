@@ -66,7 +66,6 @@ in
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   inherit emoji-fzf;
-  firefox-devtools-mcp = pkgs.callPackage ./firefox-devtools-mcp { };
   go-hass-agent = pkgs.callPackage ./go-hass-agent { };
   hyprland-share-picker-gtk = pkgs.callPackage ./hyprland-share-picker-gtk { };
   hyprevents = pkgs.callPackage ./hyprevents { };
