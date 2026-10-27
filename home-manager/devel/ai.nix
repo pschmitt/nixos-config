@@ -336,6 +336,10 @@ in
             SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
+        todoist = {
+          command = lib.getExe pkgs.todoist-mcp;
+          env.TODOIST_API_KEY.file = config.sops.secrets."todoist/api_token".path;
+        };
       }
       // browserMcps;
     };
