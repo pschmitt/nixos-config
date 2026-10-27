@@ -1,5 +1,29 @@
 {
   "nodes": {
+    "agent-skills": {
+      "inputs": {
+        "nixpkgs": [
+          "nixos-config-private",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "host": "git.wiit.one",
+        "lastModified": 1793112420,
+        "narHash": "sha256-VeSv+Bz8LffMtN5XEmdHXhciVyG/bSeCTDZHAtHZsZY=",
+        "owner": "kubernetes",
+        "repo": "agent-skills",
+        "rev": "ea82cfd11fd597f238b272485d8627365a63b617",
+        "type": "gitlab"
+      },
+      "original": {
+        "host": "git.wiit.one",
+        "owner": "kubernetes",
+        "repo": "agent-skills",
+        "rev": "ea82cfd11fd597f238b272485d8627365a63b617",
+        "type": "gitlab"
+      }
+    },
     "anika-blue": {
       "inputs": {
         "flake-parts": [
@@ -1705,6 +1729,7 @@
     },
     "nixos-config-private": {
       "inputs": {
+        "agent-skills": "agent-skills",
         "cluster-operator": "cluster-operator",
         "flake-parts": "flake-parts_2",
         "hrworks": "hrworks",
@@ -1719,11 +1744,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793103219,
-        "narHash": "sha256-HLxG3eFqOyypvU/Lc9b6tvGfJ7KqiuuUm19/XM5mPZ4=",
+        "lastModified": 1793113072,
+        "narHash": "sha256-98mIUDO5JfFrMpNw1jS/XmnzH1ce8EHT825Lh8cZJEM=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "2f239b3a849f62c3b9da3344735717d8d385c8a0",
+        "rev": "f6700d252044599716d8d8b7a4135733597b748d",
         "type": "github"
       },
       "original": {
