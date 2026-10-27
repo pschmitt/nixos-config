@@ -549,7 +549,13 @@ in
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
-      file.".gemini/antigravity-cli/settings.json".force = true;
+      file = {
+        ".gemini/antigravity-cli/keybindings.json" = {
+          source = ./antigravity-keybindings.json;
+          force = true;
+        };
+        ".gemini/antigravity-cli/settings.json".force = true;
+      };
 
       packages =
         with pkgs.llm-agents;
