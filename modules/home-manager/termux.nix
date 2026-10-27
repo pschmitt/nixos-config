@@ -121,6 +121,9 @@ in
       ]
       ++ lib.optionals (config.termux.gpg.sopsFile != null) [
         ".local/share/termux-native/gpg.sops.yaml"
+      ]
+      ++ lib.optionals (config.termux.cache.credentialsSopsFile != null) [
+        ".local/share/termux-native/nix-cache.sops.yaml"
       ];
       description = ''
         Relative Home Manager output files copied into a Termux generation.
@@ -144,6 +147,12 @@ in
       type = lib.types.nullOr lib.types.path;
       default = inputs.nixos-config-private.outPath + "/secrets/nixos-gpg.sops.yaml";
       description = "Encrypted GPG secret-key data imported into the Termux user's GnuPG home.";
+    };
+
+    cache.credentialsSopsFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = inputs.nixos-config-private.outPath + "/secrets/nixos-shared.sops.yaml";
+      description = "Encrypted read credentials for the private Niks3 cache.";
     };
   };
 
@@ -235,6 +244,9 @@ in
           "termux-native/gpg.sops.yaml" = lib.mkIf (config.termux.gpg.sopsFile != null) {
             source = config.termux.gpg.sopsFile;
           };
+          "termux-native/nix-cache.sops.yaml" = lib.mkIf (config.termux.cache.credentialsSopsFile != null) {
+            source = config.termux.cache.credentialsSopsFile;
+          };
         };
       };
 
@@ -264,6 +276,12 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
+        envExtra = lib.mkAfter ''
+          if [[ -n "''${TERMUX_GENERATION:-}" && -r "$TERMUX_GENERATION/home/.config/nixpp/config.toml" ]]
+          then
+            export NIXPP_CONFIG="$TERMUX_GENERATION/home/.config/nixpp/config.toml"
+          fi
+        '';
         sessionVariables.TERMUX_NATIVE_ENABLED = "1";
         shellAliases = {
           tmux = lib.mkForce ''command tmux -f "$TERMUX_GENERATION/home/.config/tmux/tmux.conf"'';

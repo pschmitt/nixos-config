@@ -172,6 +172,7 @@ switch_generation() {
   "$root/generations/$generation/bin/termux-nix-hello" || return
   TERMUX_GENERATION="$root/generations/$generation" \
     ZDOTDIR="$root/generations/$generation/home/.config/zsh" \
+    TMUX_TMPDIR="$PREFIX/tmp" \
     PATH="$root/generations/$generation/bin:$PATH" \
     timeout 120 "$PREFIX/bin/zsh" -f "$root/generations/$generation/shell/check-pty.zsh" \
     "$root/generations/$generation" || return

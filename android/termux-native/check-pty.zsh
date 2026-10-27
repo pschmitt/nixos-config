@@ -102,6 +102,7 @@ EOF
     "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "TERMUX_RUN_MODE=ci" \
+    "TMUX_TMPDIR=$PREFIX/tmp" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
   )
   if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]
@@ -126,6 +127,7 @@ native_check_no_plugins() {
     "TERMUX_NATIVE_GENERATION_OVERRIDE=$generation" \
     "TERMUX_NATIVE_ZDOTDIR=$generation/home/.config/zsh" \
     "TERMUX_RUN_MODE=ci" \
+    "TMUX_TMPDIR=$PREFIX/tmp" \
     "PATH=$PREFIX/bin:$generation/bin:$PATH" \
   )
   if [[ -r "$HOME/.config/zsh/.zshenv" && -r "$HOME/.config/zsh/.zshrc" ]]

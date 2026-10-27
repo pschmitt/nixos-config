@@ -70,6 +70,12 @@ must be a regular file with mode `0600` or stricter. Credentials are passed to
 curl through a short-lived mode-`0600` config file and removed when the fetch
 completes.
 
+In the managed Termux shell, `NIXPP_CONFIG` points to the active generation's
+config file. The Termux bootstrap uses its authenticated HTTPS mirror for the
+first install, then yadm restores the personal SSH identity and provisions the
+SOPS-protected Niks3 credentials at `~/.aws/credentials`. Later nixpp fetches
+use the configured S3 cache.
+
 ## Build and switch from Termux
 
 `switch` asks an SSH builder to evaluate and build a flake installable, then
