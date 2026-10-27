@@ -3,9 +3,9 @@
   stdenv,
   buildNpmPackage,
   fetchFromGitHub,
+  installAgentSkills,
   installShellFiles,
   nodejs,
-  runCommand,
 }:
 
 buildNpmPackage (finalAttrs: {
@@ -23,7 +23,14 @@ buildNpmPackage (finalAttrs: {
 
   doCheck = false;
 
-  nativeBuildInputs = [ installShellFiles ];
+  nativeBuildInputs = [
+    installAgentSkills
+    installShellFiles
+  ];
+
+  # The source tree may carry its own SKILL.md; the skill below is generated
+  # from the installed package, so install it explicitly.
+  dontInstallAgentSkills = true;
 
   # Under qemu-user aarch64 emulation (cross builds on x86_64), Node's V8 JIT
   # hits a known QEMU TCG translation cache threading race causing SIGILL
@@ -46,15 +53,16 @@ buildNpmPackage (finalAttrs: {
       --bash "$TMPDIR/completions/td.bash" \
       --zsh "$TMPDIR/completions/_td" \
       --fish "$TMPDIR/completions/td.fish"
-  '';
 
-  passthru.skill = runCommand "todoist-cli-skill" { } ''
-    mkdir -p "$out/todoist-cli"
-    TD_SKILL_OUT="$out/todoist-cli/SKILL.md" \
+    # Ship the skill of the CLI: $out/share/skills/todoist-cli/todoist-cli/
+    mkdir -p "$TMPDIR/skill/todoist-cli"
+    TD_PKG="$out/lib/node_modules/@doist/todoist-cli" \
+    TD_SKILL_OUT="$TMPDIR/skill/todoist-cli/SKILL.md" \
     ${nodejs}/bin/node --input-type=module << 'JSEOF'
-    import { SKILL_NAME, SKILL_DESCRIPTION, SKILL_COMPATIBILITY, SKILL_CONTENT } from '${finalAttrs.finalPackage}/lib/node_modules/@doist/todoist-cli/dist/lib/skills/content.js';
     import { readFileSync, writeFileSync } from 'node:fs';
-    const pkg = JSON.parse(readFileSync('${finalAttrs.finalPackage}/lib/node_modules/@doist/todoist-cli/package.json', 'utf-8'));
+    const pkgDir = process.env.TD_PKG;
+    const { SKILL_NAME, SKILL_DESCRIPTION, SKILL_COMPATIBILITY, SKILL_CONTENT } = await import(pkgDir + '/dist/lib/skills/content.js');
+    const pkg = JSON.parse(readFileSync(pkgDir + '/package.json', 'utf-8'));
     const frontmatter = '---\n'
       + 'name: ' + SKILL_NAME + '\n'
       + 'description: ' + JSON.stringify(SKILL_DESCRIPTION) + '\n'
@@ -66,6 +74,7 @@ buildNpmPackage (finalAttrs: {
       + '---\n\n';
     writeFileSync(process.env.TD_SKILL_OUT, frontmatter + SKILL_CONTENT, 'utf-8');
     JSEOF
+    installSkill "$TMPDIR/skill/todoist-cli"
   '';
 
   passthru.updatePolicy.autoMerge = "patch";

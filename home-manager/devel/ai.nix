@@ -143,7 +143,7 @@ let
   skillSources = [
     ./skills
     "${n8nSkillsSrc}/skills"
-    pkgs.todoist-cli.skill
+    "${pkgs.todoist-cli}/share/skills/todoist-cli"
   ]
   ++ config.dotfiles.aiSkills.extraSources;
 

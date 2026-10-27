@@ -76,7 +76,7 @@ let
     ++ [
       {
         name = "todoist-cli";
-        path = pkgs.todoist-cli.skill;
+        path = "${pkgs.todoist-cli}/share/skills/todoist-cli/todoist-cli";
       }
     ]
   );

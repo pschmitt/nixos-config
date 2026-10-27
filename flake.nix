@@ -682,6 +682,17 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
+          # Every shared skill follows the Agent Skills spec (frontmatter, name
+          # equals folder name). The skills of the private repo are not covered.
+          skills =
+            pkgs.runCommand "validate-skills" { nativeBuildInputs = [ self.packages.${system}.skills-ref ]; }
+              ''
+                for dir in ${./home-manager/devel/skills}/*/; do
+                  agentskills validate "$dir"
+                done
+                touch $out
+              '';
+
           pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
             src = ./.;
             hooks = {
