@@ -14,14 +14,9 @@ toggle_mic_mute() {
     return $?
   fi
 
-  local mute_state
-  mute_state="$(pactl get-source-mute rnnoise_source)"
-  if [[ "$mute_state" == *yes* ]]
-  then
-    osd native mic-volume muted || notify-send '🔇 Microphone muted'
-  else
-    osd native mic-volume unmuted || notify-send '🎙️ Microphone unmuted'
-  fi
+  # Noctalia's native mic OSD follows the default meeting mix, which remains
+  # unmuted for soundboard playback. The mic-state bar widget tracks the voice
+  # source and updates independently.
 }
 
 main() {

@@ -260,7 +260,7 @@ in
                 # nothing now that this capsule is not an accordion (see
                 # below) -- that index is only special while one is.
                 "screencast"
-                "input-volume"
+                "mic-state"
                 "output-volume"
               ];
               padding = 12;
@@ -316,6 +316,9 @@ in
             # mouse/keyboard control -- see home-manager/gui/lan-mouse.nix's
             # enter_hook (away sentinel) and pschmitt/noctalia-plugins.
             "pschmitt/lan-mouse"
+            # Native-style status for the RNNoise voice branch, separate
+            # from the open meeting mix carrying soundboard audio.
+            "pschmitt/mic-state"
           ];
           # The official/community git sources aren't actually hardcoded —
           # they're seeded into runtime state on first launch, so declaring
@@ -392,6 +395,12 @@ in
               name = "pschmitt-lan-mouse";
               kind = "path";
               location = "${pkgs.noctalia-lan-mouse}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-mic-state";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-mic-state}/share/noctalia-plugins";
               enabled = true;
             }
           ];
@@ -790,11 +799,6 @@ in
             show_progress = true;
           };
           network.show_label = false;
-          input-volume = {
-            type = "volume";
-            device = "input";
-            show_label = false; # mic level as a number isn't useful at a glance
-          };
           output-volume = {
             type = "volume";
             device = "output";
@@ -824,6 +828,7 @@ in
           duo-status.type = "pschmitt/duo-status:bar";
           syncthing.type = "pschmitt/syncthing:bar";
           screencast.type = "pschmitt/screencast:bar";
+          mic-state.type = "pschmitt/mic-state:bar";
         };
         # Plugin-level settings (Settings -> Plugins gear), see plugins.enabled
         # above. Role names here (e.g. "on_surface") are resolved against the
