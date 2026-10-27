@@ -1,17 +1,5 @@
 { pkgs, ... }:
 let
-  updateAndDeploy = pkgs.writeShellApplication {
-    name = "update-and-deploy";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.git
-      pkgs.just
-      pkgs.nix
-      pkgs.nvd
-    ];
-    text = builtins.readFile ../../scripts/update-and-deploy.sh;
-  };
-
   yupStartup = pkgs.writeShellApplication {
     name = "yup-startup";
     runtimeInputs = [
@@ -22,7 +10,7 @@ let
   };
 in
 {
-  home.packages = [ updateAndDeploy ];
+  home.packages = [ pkgs.update-and-deploy ];
 
   systemd.user.services."yup-startup" = {
     Unit = {
@@ -41,7 +29,7 @@ in
 
     Service = {
       Type = "oneshot";
-      ExecStart = "${yupStartup}/bin/yup-startup ${updateAndDeploy}/bin/update-and-deploy";
+      ExecStart = "${yupStartup}/bin/yup-startup ${pkgs.update-and-deploy}/bin/update-and-deploy";
     };
   };
 }

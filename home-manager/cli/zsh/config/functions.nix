@@ -65,20 +65,9 @@ let
     }
   '';
   yqoInit = if termuxMode then termuxYqo else genericYqo;
-  updateAndDeploy = pkgs.writeShellApplication {
-    name = "update-and-deploy";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.git
-      pkgs.just
-      pkgs.nix
-      pkgs.nvd
-    ];
-    text = builtins.readFile ../../../../scripts/update-and-deploy.sh;
-  };
 in
 {
-  home.packages = lib.optionals (!termuxMode) [ updateAndDeploy ];
+  home.packages = lib.optionals (!termuxMode) [ pkgs.update-and-deploy ];
 
   programs.zsh.initContent = lib.mkOrder 520 ''
     if [[ -n "''${DISTROBOX_ENTER_PATH:-}" && "$TERM" == wezterm ]]

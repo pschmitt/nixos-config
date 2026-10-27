@@ -38,6 +38,7 @@ in
   ldif2json = pkgs.callPackage ./local/ldif2json { };
   pinentry-guess = pkgs.callPackage ./local/pinentry-guess { };
   pycolumn = pkgs.callPackage ./local/pycolumn { };
+  update-and-deploy = pkgs.callPackage ./local/update-and-deploy { };
   obs-control = pkgs.callPackage ./local/obs-control {
     inherit
       inputs
