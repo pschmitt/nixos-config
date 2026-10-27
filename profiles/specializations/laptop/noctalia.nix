@@ -235,6 +235,7 @@ in
                 "network"
                 "bluetooth"
                 "battery-icon"
+                "duo-status"
                 "notifications"
               ];
               padding = 12;
@@ -303,6 +304,8 @@ in
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pschmitt/noctalia-plugins.
             "pschmitt/battery-icon"
+            # iPhone Duo-inspired circular battery and Wi-Fi indicator
+            "pschmitt/duo-status"
             # Ad-hoc custom OSD toast, panel-only (no bar widget) — see
             # pschmitt/noctalia-plugins and pkgs/local/osd/osd.sh.
             "pschmitt/osd"
@@ -356,6 +359,12 @@ in
               name = "pschmitt-battery-icon";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-battery-icon}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-duo-status";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-duo-status}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -821,6 +830,7 @@ in
           ha.type = "pschmitt/ha:bar";
           ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
           battery-icon.type = "pschmitt/battery-icon:bar";
+          duo-status.type = "pschmitt/duo-status:bar";
           syncthing.type = "pschmitt/syncthing:bar";
           screencast.type = "pschmitt/screencast:bar";
         };
