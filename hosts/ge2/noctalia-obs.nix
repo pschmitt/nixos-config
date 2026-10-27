@@ -81,7 +81,7 @@ in
           id = "volume";
           members = [
             "screencast"
-            "input-volume"
+            "mic-state"
             "output-volume"
           ];
           padding = 12;

@@ -58,7 +58,10 @@ in
     (lib.mkIf config.programs.noctalia.enable {
       xdg.configFile."noctalia/config.toml".force = true;
 
-      home.packages = [ pkgs.caffeine ];
+      home.packages = [
+        pkgs.caffeine
+        pkgs.cava
+      ];
 
       # Clear state that should not survive a host reboot before Noctalia's
       # first start. Keep this oneshot active: Noctalia may restart during the
