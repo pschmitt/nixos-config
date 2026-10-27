@@ -863,9 +863,9 @@ in
             # in the tooltip and panel.
             bar_display_mode = "detailed";
             # Panel cards stick to each account's headline session/weekly
-            # windows, hiding Copilot's Chat/Completions rows and Antigravity's 3P
-            # model rows -- those never carry a fixed-length window of their
-            # own and just added noise here.
+            # windows (including Antigravity's Gemini, 3P, and Argon buckets),
+            # hiding Copilot's Chat/Completions category rows -- those never
+            # carry a fixed-length window of their own and just added noise here.
             panel_all_metrics = false;
             # Smaller rings/padding/fonts so every card fits the panel height
             # without scrolling.
@@ -873,7 +873,7 @@ in
             # Keep one metric widget per row by default; set to "2" to pair
             # metrics side by side in both compact and regular panel modes.
             panel_columns = "2";
-            panel_size = "h670";
+            panel_size = "h760";
           };
           "pschmitt/ha" = {
             bar_display_mode = "single";
