@@ -190,8 +190,27 @@ switch_generation() {
   ensure_generation_number "$root" "$generation" "$action" || return
   ln -s "generations/$generation" "$root/.next" || return
   mv -Tf "$root/.next" "$root/current" || return
+  link_nixpp_config || return
   printf 'Activated %s. Start the managed shell with:\n  exec "%s/bin/zsh" -l\n' \
     "$generation" "$PREFIX"
+}
+
+link_nixpp_config() {
+  local config_dir="$HOME/.config/nixpp"
+  local config_path="$config_dir/config.toml"
+  local managed_target="$HOME/.local/share/termux-native/current/home/.config/nixpp/config.toml"
+
+  if [[ -e "$config_path" || -L "$config_path" ]]
+  then
+    if [[ -L "$config_path" && "$(readlink -- "$config_path")" == "$managed_target" ]]
+    then
+      return 0
+    fi
+    return 0
+  fi
+
+  mkdir -p -- "$config_dir" || return
+  ln -s -- "$managed_target" "$config_path"
 }
 
 transaction() (

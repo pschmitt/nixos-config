@@ -53,7 +53,7 @@ By default, nixpp reads `~/.config/nixpp/config.toml` (override with
 ```toml
 [defaults]
 substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
-flake = "path:/home/pschmitt/devel/private/pschmitt/nixos-config.git#termux-native-zf10-bundle"
+flake = "github:pschmitt/nixos-config#termux-native-zf10-bundle"
 builder = "rofl-13"
 public_keys = [
   "rofl-10:BASE64_PUBLIC_KEY",
@@ -70,11 +70,14 @@ must be a regular file with mode `0600` or stricter. Credentials are passed to
 curl through a short-lived mode-`0600` config file and removed when the fetch
 completes.
 
-In the managed Termux shell, `NIXPP_CONFIG` points to the active generation's
-config file. The Termux bootstrap uses its authenticated HTTPS mirror for the
-first install, then yadm restores the personal SSH identity and provisions the
-SOPS-protected Niks3 credentials at `~/.aws/credentials`. Later nixpp fetches
-use the configured S3 cache.
+The Termux bootstrap links the active generation's config file to
+`~/.config/nixpp/config.toml`, nixpp's default config path. The flake URL points
+to the `pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the
+configured builder to evaluate that flake, so the builder needs its usual
+GitHub access token for the private flake input. The bootstrap uses its
+authenticated HTTPS mirror for the first install, then yadm restores the
+personal SSH identity and provisions the SOPS-protected Niks3 credentials at
+`~/.aws/credentials`. Later nixpp fetches use the configured S3 cache.
 
 ## Build and switch from Termux
 

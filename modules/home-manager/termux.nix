@@ -204,7 +204,7 @@ in
           "nixpp/config.toml".text = ''
             [defaults]
             substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
-            flake = "path:/home/pschmitt/build/termux-bootstrap/nixos-config#termux-native-${hostname}-bundle"
+            flake = "github:pschmitt/nixos-config#termux-native-${hostname}-bundle"
             builder = "rofl-13"
             public_keys = [
               "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0=",
@@ -276,12 +276,6 @@ in
         enable = lib.mkForce true;
         enableCompletion = false;
         dotDir = lib.mkForce "${config.xdg.configHome}/zsh";
-        envExtra = lib.mkAfter ''
-          if [[ -n "''${TERMUX_GENERATION:-}" && -r "$TERMUX_GENERATION/home/.config/nixpp/config.toml" ]]
-          then
-            export NIXPP_CONFIG="$TERMUX_GENERATION/home/.config/nixpp/config.toml"
-          fi
-        '';
         sessionVariables.TERMUX_NATIVE_ENABLED = "1";
         shellAliases = {
           tmux = lib.mkForce ''command tmux -f "$TERMUX_GENERATION/home/.config/tmux/tmux.conf"'';
