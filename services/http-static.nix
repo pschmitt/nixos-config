@@ -48,17 +48,30 @@ lib.mkMerge [
           locations = {
             "/" = {
               extraConfig = ''
-                autoindex on;
-                autoindex_localtime on;
+                fancyindex on;
+                fancyindex_css_href /fancyindex.css;
+                fancyindex_header ${./http-static/fancyindex-header.html} local;
+                fancyindex_footer ${./http-static/fancyindex-footer.html} local;
+                fancyindex_show_path off;
+                fancyindex_exact_size off;
+                fancyindex_localtime on;
               '';
             };
+
+            "= /fancyindex.css".alias = ./http-static/fancyindex.css;
+            "= /fancyindex.js".alias = ./http-static/fancyindex.js;
 
             "/private/" = {
               # Keep browser access through Authelia and allow Basic Auth for
               # download clients that cannot complete an interactive login.
               extraConfig = ''
-                autoindex on;
-                autoindex_localtime on;
+                fancyindex on;
+                fancyindex_css_href /fancyindex.css;
+                fancyindex_header ${./http-static/fancyindex-header.html} local;
+                fancyindex_footer ${./http-static/fancyindex-footer.html} local;
+                fancyindex_show_path off;
+                fancyindex_exact_size off;
+                fancyindex_localtime on;
 
                 satisfy any;
                 auth_basic "Private blob downloads";

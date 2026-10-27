@@ -31,7 +31,12 @@
 
   services.nginx = {
     enable = true;
-    package = pkgs.nginxStable.override { modules = [ pkgs.nginxModules.zstd ]; };
+    package = pkgs.nginxStable.override {
+      modules = [
+        pkgs.nginxModules.fancyindex
+        pkgs.nginxModules.zstd
+      ];
+    };
 
     recommendedTlsSettings = true;
     recommendedGzipSettings = true;
