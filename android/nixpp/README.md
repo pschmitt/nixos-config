@@ -116,6 +116,11 @@ for rollback through its `activate.sh`.
 cache. Use `fetch` for outputs already published to a standard Nix binary
 cache, including a configured private S3 cache.
 
+Run `nixpp upgrade` to rebuild and activate the default flake profile from
+`defaults.flake`, `defaults.builder`, and `defaults.public_keys` in the config.
+It is the no-argument form of `nixpp switch` and picks up the current flake
+contents from the configured builder checkout.
+
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.
 `nixpp generations` lists numbered generations and short IDs. The local

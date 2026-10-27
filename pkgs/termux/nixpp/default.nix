@@ -34,7 +34,7 @@ let
 in
 rustPlatform.buildRustPackage {
   pname = "nixpp-termux";
-  version = "0.2.0";
+  version = "0.3.0";
 
   src = lib.cleanSource ./../../../android/nixpp;
   cargoLock.lockFile = ./../../../android/nixpp/Cargo.lock;

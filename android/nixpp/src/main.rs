@@ -46,6 +46,8 @@ enum Command {
         #[arg(long, env = "NIXPP_PUBLIC_KEY")]
         public_key: Option<String>,
     },
+    /// Upgrade to the configured default Termux profile.
+    Upgrade,
     /// Show the active generation and installed generation IDs.
     Status {
         /// Show every retained generation.
@@ -100,6 +102,7 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
+        Command::Upgrade => nixpp::switch_profile(None, None, None),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
         Command::Rollback { generation } => nixpp::rollback(&generation),
