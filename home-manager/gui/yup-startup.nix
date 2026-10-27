@@ -7,6 +7,7 @@ let
       pkgs.git
       pkgs.just
       pkgs.nix
+      pkgs.nvd
     ];
     text = builtins.readFile ../../scripts/update-and-deploy.sh;
   };
