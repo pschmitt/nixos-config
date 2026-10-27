@@ -134,6 +134,16 @@ a:focus-visible {
   box-shadow: var(--shadow);
 }
 
+.current-directory {
+  min-width: 0;
+  overflow: hidden;
+  flex: 1;
+  color: var(--muted);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .theme-toggle {
   display: grid;
   width: 2.85rem;
@@ -250,6 +260,19 @@ a:focus-visible {
   background: var(--surface-raised);
 }
 
+#list tbody tr.parent-directory {
+  background: var(--surface-raised);
+}
+
+#list tbody tr.parent-directory td {
+  color: var(--muted);
+}
+
+#list tbody tr.parent-directory a {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
 #list td.link {
   overflow-wrap: anywhere;
   font-weight: 580;
@@ -276,6 +299,16 @@ a:focus-visible {
   padding: 2rem 1rem;
   color: var(--muted);
   text-align: center;
+}
+
+.list-summary {
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-top: 1px solid var(--line);
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: right;
 }
 
 @media (max-width: 42rem) {

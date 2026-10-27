@@ -58,6 +58,7 @@ lib.mkMerge [
               '';
             };
 
+            "= /favicon.svg".alias = ./http-static/favicon.svg;
             "= /fancyindex.css".alias = ./http-static/fancyindex.css;
             "= /fancyindex.js".alias = ./http-static/fancyindex.js;
 
