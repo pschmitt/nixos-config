@@ -873,7 +873,6 @@ in
             # Keep one metric widget per row by default; set to "2" to pair
             # metrics side by side in both compact and regular panel modes.
             panel_columns = "2";
-            panel_size = "h790";
           };
           "pschmitt/ha" = {
             bar_display_mode = "single";
