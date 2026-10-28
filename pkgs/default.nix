@@ -107,8 +107,6 @@ in
   todoist-mcp = pkgs.callPackage ./todoist-mcp { };
   waypoint = pkgs.callPackage ./waypoint { };
   inherit (zsh-tools)
-    adb-sh
-    adb-completions
     kubectl-ksh
     kubectl-socks5-proxy
     kubectl-watch
