@@ -111,7 +111,23 @@ let
   # is the one Frigate+ and other "Sign in with Google" sites use).
   # browser_fill_secret types the rbw entries named with `--allow-secret` (`*`:
   # every entry) into login forms on their own sites without the agent seeing
-  # the value.
+  # the value. browser_passkey has the nodes' secret agent sign passkey
+  # sign-ins on the `--allow-passkey` sites: not auth.brkn.lol, whose Authelia
+  # flags the Bitwarden client as a clone once the vault counter moves on
+  # (skills/browser-login/references/counters.md). browser_ask_human sends the
+  # user a live-view link of the agent's page (the browser-login skill's
+  # ask-human.sh).
+  browserAskHuman = pkgs.writeShellApplication {
+    name = "browser-ask-human";
+    runtimeInputs = [
+      pkgs.curl
+      pkgs.gnugrep
+      pkgs.jq
+      pkgs.rbw
+      pkgs.zsh
+    ];
+    text = builtins.readFile ./skills/browser-login/scripts/ask-human.sh;
+  };
   browserMcps.browser-daemon = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
     env.XDG_RUNTIME_DIR = "/run/user/${toString config.host.uid}";
@@ -127,6 +143,10 @@ let
       "*"
       "--allow-secret"
       "*"
+      "--allow-passkey"
+      "microsoft.com"
+      "--ask-human-cmd"
+      (lib.getExe browserAskHuman)
       "--rbw"
       (lib.getExe' pkgs.rbw "rbw")
     ];
