@@ -275,9 +275,9 @@ remove_obsolete_apt_packages() {
 
 gc_generations() (
   local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.tsv"
-  local current_path current_id number max_number id extra generation_dir ordered_index index_temp
+  local current_path current_id number max_number index_exists id extra generation_dir ordered_index index_temp
   local plan_root package_owner_file
-  local -A numbers=() used_numbers=() retained=()
+  local -A numbers=() retention_numbers=() used_numbers=() retained=()
   local -a removal_candidates=()
 
   current_path=$(readlink -f -- "$root/current") || return
@@ -302,8 +302,10 @@ gc_generations() (
   trap 'rm -f -- "$ordered_index"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
   number=0
   max_number=0
+  index_exists=0
   if [[ -s "$index" ]]
   then
+    index_exists=1
     while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
     do
       [[ -n "$number$id$extra" ]] || continue
@@ -317,6 +319,7 @@ gc_generations() (
         return 1
       fi
       numbers[$id]=$number
+      retention_numbers[$id]=$number
       used_numbers[$number]=1
       if (( number > max_number ))
       then
@@ -350,6 +353,14 @@ gc_generations() (
       ((max_number += 1))
       numbers[$id]=$max_number
       used_numbers[$max_number]=1
+      if (( index_exists ))
+      then
+        # A stray directory predates or was missed by the existing stable index.
+        # Keep it behind indexed generations so GC can remove it when appropriate.
+        retention_numbers[$id]=0
+      else
+        retention_numbers[$id]=$max_number
+      fi
       if [[ "$dry_run" == 1 ]]
       then
         printf 'Would assign generation number %s to unindexed generation %s\n' "$max_number" "$id"
@@ -363,7 +374,7 @@ gc_generations() (
   do
     generation_dir="$root/generations/$id"
     [[ -d "$generation_dir" && ! -L "$generation_dir" ]] || continue
-    printf '%s\t%s\n' "${numbers[$id]}" "$id"
+    printf '%s\t%s\n' "${retention_numbers[$id]}" "$id"
   done | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
 
   local retained_count=0
@@ -437,7 +448,7 @@ gc_generations() (
   while IFS=$'\t' read -r number id
   do
     [[ -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || continue
-    printf '%s\t%s\n' "$number" "$id"
+    printf '%s\t%s\n' "${numbers[$id]}" "$id"
   done < "$ordered_index" | LC_ALL=C sort -t $'\t' -k1,1n > "$index_temp" || {
     rm -f -- "$index_temp"
     return 1
