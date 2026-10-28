@@ -54,30 +54,40 @@ By default, nixpp reads `~/.config/nixpp/config.toml` (override with
 [defaults]
 substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
 flake = "github:pschmitt/nixos-config#termux-native-zf10-bundle"
-builder = "rofl-13"
+builders = ["rofl-13", "rofl-14", "rofl-15", "rofl-16"]
 public_keys = [
   "rofl-10:BASE64_PUBLIC_KEY",
   "rofl-13:BASE64_PUBLIC_KEY",
+  "rofl-14:BASE64_PUBLIC_KEY",
+  "rofl-15:BASE64_PUBLIC_KEY",
+  "rofl-16:BASE64_PUBLIC_KEY",
+  "gh-actions:BASE64_PUBLIC_KEY",
 ]
-aws_credentials_file = "~/.aws/credentials"
+aws_credentials_command = ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
 ```
 
 `--cache`, `--flake`, `--builder`, and `--public-key` override these defaults.
+Builders are tried in order; nixpp uses the first one that can build the
+configured flake. `--builder` selects one machine for a single `switch`.
 If neither a `--public-key` nor `NIXPP_PUBLIC_KEY` is set, all configured
-public keys are tried. For S3, nixpp reads the selected `profile` from the
-configured AWS credentials file (or `AWS_SHARED_CREDENTIALS_FILE`). The file
-must be a regular file with mode `0600` or stricter. Credentials are passed to
-curl through a short-lived mode-`0600` config file and removed when the fetch
-completes.
+public keys are tried. For S3, nixpp uses `defaults.aws_credentials_command`
+when configured, otherwise it reads the selected `profile` from
+`defaults.aws_credentials_file`, `AWS_SHARED_CREDENTIALS_FILE`, or
+`~/.aws/credentials`. The command is an argv array, never a shell string. Its
+stdout must be rbw JSON for a Login item: the username is the AWS access key,
+the password is the secret key, and an optional custom field named
+`aws_session_token` supplies a session token. nixpp keeps those values in
+memory and passes curl's SigV4 config through stdin; it creates no plaintext
+credentials or curl-auth file.
 
 The Termux bootstrap links the active generation's config file to
 `~/.config/nixpp/config.toml`, nixpp's default config path. The flake URL points
 to the `pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the
-configured builder to evaluate that flake, so the builder needs its usual
+configured builders to evaluate that flake, so each builder needs its usual
 GitHub access token for the private flake input. The bootstrap uses its
 authenticated HTTPS mirror for the first install, then yadm restores the
-personal SSH identity and provisions the SOPS-protected Niks3 credentials at
-`~/.aws/credentials`. Later nixpp fetches use the configured S3 cache.
+personal SSH identity. Later nixpp fetches retrieve the Niks3 credentials from
+rbw when needed; rbw must be unlocked for `nixpp upgrade`.
 
 ## Build and switch from Termux
 
@@ -119,14 +129,22 @@ for rollback through its `activate.sh`.
 Use `fetch` for a known store path already published to a standard Nix binary
 cache, including a configured private S3 cache.
 
-Run `nixpp upgrade` to build the default flake profile on `defaults.builder`,
+Run `nixpp upgrade` to build the default flake profile on the first available
+machine in `defaults.builders`,
 then fetch and verify that output from the configured S3 `defaults.substituter`
 before activating it. It uses `defaults.flake`, `defaults.public_keys`, and
-`defaults.aws_credentials_file` from the config. The bundle must already have
+the configured AWS credential source. The bundle must already have
 been published to Niks3; a missing cache entry fails without activating a
 generation. Publish updates through the Termux bootstrap build workflow.
 After activation, `upgrade` shows the changes from the generation that was
-active when the upgrade started.
+active when the upgrade started. Run `nixpp upgrade --dry-run` to build and
+fetch the candidate, run the bundle preflight in a temporary home, and show the
+proposed diff without activating or retaining a generation.
+
+Run `nixpp doctor` to validate the config and trusted keys, retrieve and check
+the rbw credentials, verify authenticated access to the S3 cache, and check
+SSH/Nix availability on the configured builders; it succeeds if one or more
+are reachable.
 
 Run `nixpp diff` to compare the current generation with the latest other
 generation. Pass two generation numbers or IDs to choose both sides, or one
@@ -148,6 +166,11 @@ generation. Rollback still checks the selected generation and its Termux APT
 requirements. To roll back, run `nixpp rollback NUMBER`; the full SHA-256 ID
 also remains accepted. Add `--json` to `nixpp status` for scripting. The Zsh
 helper `termux-native-status` delegates to the same status view.
+
+Use `nixpp pin GENERATION` to protect a known-good generation from garbage
+collection; remove the protection with `nixpp unpin GENERATION`. Pins are
+stored in `~/.local/share/termux-native/pinned-generations.json` and shown by
+`nixpp generations` and `nixpp status --json`.
 
 Use `nixpp gc --dry-run` to preview cleanup, then `nixpp gc` to prune old
 generations. By default it retains the three newest generations and always

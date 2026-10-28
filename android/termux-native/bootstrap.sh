@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run]\n' "$(basename "$0")"
+  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run] | pin|unpin GENERATION_ID\n' "$(basename "$0")"
 }
 
 restore_startup() {
@@ -284,6 +284,60 @@ generation_index_json_valid() {
   ' "$1" >/dev/null
 }
 
+generation_pins_valid() {
+  jq -e '
+    type == "array" and
+    all(.[]; type == "string" and test("^[0-9a-f]{64}$")) and
+    length == (unique | length)
+  ' "$1" >/dev/null
+}
+
+set_generation_pin() (
+  local root=$1 id=$2 action=$3 pins="$1/pinned-generations.json" temporary
+  local -a generations=()
+  [[ "$id" =~ ^[0-9a-f]{64}$ && -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || {
+    printf 'Generation is not installed: %s\n' "$id" >&2
+    return 1
+  }
+  if [[ -s "$pins" ]]
+  then
+    generation_pins_valid "$pins" || {
+      printf 'Invalid pinned-generations.json; refusing to change pins.\n' >&2
+      return 1
+    }
+    mapfile -t generations < <(jq -r '.[]' "$pins") || return
+  fi
+  local -a updated=()
+  local generation found=0
+  for generation in "${generations[@]}"
+  do
+    if [[ "$generation" == "$id" ]]
+    then
+      found=1
+      [[ "$action" == pin ]] && updated+=("$generation")
+    else
+      updated+=("$generation")
+    fi
+  done
+  if [[ "$action" == pin && "$found" == 0 ]]
+  then
+    updated+=("$id")
+  fi
+  temporary=$(mktemp "$root/.pinned-generations.XXXXXXXX") || return
+  printf '%s\n' "${updated[@]}" | jq -Rsc 'split("\n") | map(select(length > 0)) | sort' > "$temporary" || {
+    rm -f -- "$temporary"
+    return 1
+  }
+  chmod 0600 "$temporary" || return
+  mv -f -- "$temporary" "$pins" || return
+  if [[ "$action" == pin ]]
+  then
+    printf 'Pinned generation %s.\n' "$id"
+  else
+    printf 'Unpinned generation %s.\n' "$id"
+  fi
+)
+
 gc_generations() (
   local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.json"
   local legacy_index="$1/generation-index.tsv"
@@ -447,6 +501,25 @@ gc_generations() (
     fi
   done < "$ordered_index"
   retained[$current_id]=1
+  local pins="$root/pinned-generations.json"
+  if [[ -s "$pins" ]]
+  then
+    if ! generation_pins_valid "$pins"
+    then
+      printf 'Invalid pinned-generations.json; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    while IFS= read -r id
+    do
+      [[ -n "$id" ]] || continue
+      if [[ ! -d "$root/generations/$id" || -L "$root/generations/$id" ]]
+      then
+        printf 'Pinned generation is missing or invalid: %s\n' "$id" >&2
+        return 1
+      fi
+      retained[$id]=1
+    done < <(jq -r '.[]' "$pins")
+  fi
 
   while IFS=$'\t' read -r number id
   do
@@ -577,6 +650,24 @@ main() {
       return 2
     fi
     run_generation_gc "$keep_count" "$dry_run"
+    return
+  fi
+
+  if [[ "${1:-}" == pin || "${1:-}" == unpin ]]
+  then
+    local action=$1 generation_id
+    shift
+    if (($# != 1)) || [[ ! "$1" =~ ^[0-9a-f]{64}$ ]]
+    then
+      usage >&2
+      return 2
+    fi
+    generation_id=$1
+    root="$HOME/.local/share/termux-native"
+    mkdir -p "$root/generations" || return
+    acquire_bootstrap_lock "$root/.lock" || return
+    trap cleanup_bootstrap_lock EXIT
+    set_generation_pin "$root" "$generation_id" "$action"
     return
   fi
 

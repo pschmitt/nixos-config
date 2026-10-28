@@ -282,8 +282,6 @@ let
         chmod 755 "$out/setup-known-hosts.sh"
         cp ${../../../android/termux-native/setup-gpg-keys.sh} "$out/setup-gpg-keys.sh"
         chmod 755 "$out/setup-gpg-keys.sh"
-        cp ${../../../android/termux-native/setup-nixpp-cache.sh} "$out/setup-nixpp-cache.sh"
-        chmod 755 "$out/setup-nixpp-cache.sh"
         cp ${../../../android/termux-native/bootstrap.sh} "$out/bootstrap.sh"
         cp ${../../../android/termux-native/zshenv} "$out/zshenv"
         cp ${../../../android/termux-native/smoke-test.zsh} "$out/shell/smoke-test.zsh"

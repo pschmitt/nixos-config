@@ -121,9 +121,6 @@ in
       ]
       ++ lib.optionals (config.termux.gpg.sopsFile != null) [
         ".local/share/termux-native/gpg.sops.yaml"
-      ]
-      ++ lib.optionals (config.termux.cache.credentialsSopsFile != null) [
-        ".local/share/termux-native/nix-cache.sops.yaml"
       ];
       description = ''
         Relative Home Manager output files copied into a Termux generation.
@@ -149,11 +146,6 @@ in
       description = "Encrypted GPG secret-key data imported into the Termux user's GnuPG home.";
     };
 
-    cache.credentialsSopsFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = inputs.nixos-config-private.outPath + "/secrets/nixos-shared.sops.yaml";
-      description = "Encrypted read credentials for the private Niks3 cache.";
-    };
   };
 
   # Disable Linux packages for programs supplied by the Termux prefix. Packages
@@ -205,12 +197,22 @@ in
             [defaults]
             substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
             flake = "github:pschmitt/nixos-config#termux-native-${hostname}-bundle"
-            builder = "rofl-13"
+            builders = [ "rofl-13", "rofl-14", "rofl-15", "rofl-16" ]
             public_keys = [
               "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0=",
               "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=",
+              "rofl-14:XkEHSleW71wOnEnAcTZnYi/badnlAJAUxt6SIzbYsG8=",
+              "rofl-15:x68gyyrKadDfvJKdpPkRvmPckrYF6XqzlKaqs2xheVw=",
+              "rofl-16:DB8WQ415B8v3P9r1R8U4pO1iKrOAldbBHbSz+chryXI=",
+              "gh-actions:x+pfxw4yRpZbonnjaCR0nIm5eN1wOGAki0soDQyFjJQ=",
             ]
-            aws_credentials_file = "~/.aws/credentials"
+            aws_credentials_command = [
+              "rbw",
+              "get",
+              "--raw",
+              "--exact",
+              "nixpp Niks3 cache"
+            ]
           '';
           "termux/tasker/tudo" = {
             executable = true;
@@ -243,9 +245,6 @@ in
               };
           "termux-native/gpg.sops.yaml" = lib.mkIf (config.termux.gpg.sopsFile != null) {
             source = config.termux.gpg.sopsFile;
-          };
-          "termux-native/nix-cache.sops.yaml" = lib.mkIf (config.termux.cache.credentialsSopsFile != null) {
-            source = config.termux.cache.credentialsSopsFile;
           };
         };
       };

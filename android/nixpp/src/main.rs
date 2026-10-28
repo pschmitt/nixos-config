@@ -23,6 +23,8 @@ enum Command {
         /// Newer generation number or full SHA-256 ID (defaults to the current generation).
         new: Option<String>,
     },
+    /// Check the nixpp configuration, S3 cache, credentials, and builder.
+    Doctor,
     /// Fetch one reference-free output from a signed Nix binary cache.
     Fetch {
         /// Nix binary cache URL.
@@ -52,9 +54,19 @@ enum Command {
     },
     /// List installed generations that can be used for rollback.
     Generations,
+    /// Pin an installed generation so garbage collection keeps it.
+    Pin {
+        /// Generation number or full SHA-256 ID.
+        generation: String,
+    },
     /// Roll back to a generation number or full SHA-256 ID.
     Rollback {
         /// Generation number shown by `nixpp status` or `nixpp generations`.
+        generation: String,
+    },
+    /// Remove a generation pin.
+    Unpin {
+        /// Generation number or full SHA-256 ID.
         generation: String,
     },
     /// Show the active generation and installed generation IDs.
@@ -79,7 +91,11 @@ enum Command {
         public_key: Option<String>,
     },
     /// Upgrade to the configured default Termux profile.
-    Upgrade,
+    Upgrade {
+        /// Build and compare the configured profile without activating it.
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 fn main() {
@@ -109,11 +125,14 @@ fn run(cli: Cli) -> Result<()> {
             builder,
             public_key,
         } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
-        Command::Upgrade => nixpp::upgrade_profile(),
+        Command::Upgrade { dry_run } => nixpp::upgrade_profile(dry_run),
+        Command::Doctor => nixpp::doctor(),
         Command::Diff { old, new } => nixpp::diff(old.as_deref(), new.as_deref()),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
+        Command::Pin { generation } => nixpp::pin(&generation, true),
         Command::Rollback { generation } => nixpp::rollback(&generation),
+        Command::Unpin { generation } => nixpp::pin(&generation, false),
         Command::Gc { keep, dry_run } => nixpp::gc(keep, dry_run),
     }
 }
