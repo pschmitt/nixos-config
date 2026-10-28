@@ -93,47 +93,14 @@ credential in a response, URL, committed file, or command output.
 
 The remaining instructions apply to local Codex and shell workflows.
 
-## Check unlock status
+## Unlock via Home Assistant
 
-```bash
-rbw unlocked
-```
-
-Returns 0 if unlocked, non-zero if locked.
-
-## Request unlock via Home Assistant
-
-POST to the HA webhook to send an actionable notification to the phone.
-On **Accept**, HA SSHes to the target host and pipes the master password
-from HA secrets to `rbw unlock --stdin`.
-
-```bash
-curl -fsS -X POST "http://10.5.1.1:8123/api/webhook/rbw_unlock_request" \
-  -H "Content-Type: application/json" \
-  -d "{\"host\": \"${HOST:-fnuc}\", \"agent\": \"Claude\"}"
-```
-
-The `host` field is optional and defaults to `fnuc`. Known short names that
-HA maps to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
-
-The `agent` field is shown in the phone notification (defaults to `Claude`
-if omitted).
-
-## Poll for unlock
-
-After triggering the webhook, poll until unlocked (5-minute timeout). Give
-the tool call running the loop a longer timeout than that (e.g. 330000 ms);
-agent shells often default to 2 minutes and would cut the wait short.
-
-```bash
-for i in $(seq 1 60); do
-  rbw unlocked 2>/dev/null && break
-  sleep 5
-done
-rbw unlocked || { echo "rbw unlock timed out"; exit 1; }
-```
-
-## Full unlock flow (copy-paste ready)
+`rbw unlocked` returns 0 when the vault is unlocked. If it is locked, POST to
+the HA webhook: it sends an actionable notification to the phone, and on
+**Accept** HA SSHes to the host and pipes the master password from HA secrets
+to `rbw unlock --stdin`. Then poll for up to 5 minutes. Give the tool call a
+longer timeout than that (e.g. 330000 ms); agent shells often default to 2
+minutes and would cut the wait short.
 
 ```bash
 if ! rbw unlocked 2>/dev/null; then
@@ -152,54 +119,16 @@ if ! rbw unlocked 2>/dev/null; then
 fi
 ```
 
-## Editing entries non-interactively
+- `host` is optional and defaults to `fnuc`. Known short names that HA maps
+  to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
+- `agent` is shown in the phone notification (default `Claude`).
 
-`rbw edit` never launches `$EDITOR`/`$VISUAL` when stdin is not a
-TTY; it reads the new entry from stdin instead. Errors such as
-`failed to parse YAML: missing field name` or `EOF while parsing a value` mean
-it got empty stdin. With a TTY, `VISUAL=nvim` just hangs an agent shell.
+## Writing to the vault
 
-To update an entry (for example the notes of a secure note) from a script:
-
-```bash
-rbw get --raw "<item>" \
-  | jq --rawfile n new-notes.txt '.data.type="secure_note" | .notes=$n' \
-  | rbw edit --json "<item>"
-rbw sync
-```
-
-- `rbw get --raw` reports the type as `SecureNote`, but `edit --json` only
-  accepts `login`, `card`, `identity`, `secure_note` and `ssh_key`.
-- Back up the old notes and do a no-op round trip (`cmp` afterwards) before the
-  first real write.
-- `rbw get` appends a trailing newline, so each round trip adds one extra
-  newline to the note; harmless for YAML.
-- Never `pkill -f 'rbw edit'` from an agent shell; the pattern matches the
-  shell's own command line.
-
-## Setting secrets without exposing them (2.18+)
-
-Never put a real secret on the `rbw` command line (`--password VALUE` lands
-in `ps`, shell history and the agent transcript). Use one of these instead;
-`rbw set` syncs afterwards, so consecutive calls are safe:
-
-```bash
-rbw set -y --password-file new-pw "$item"     # or --password-env VAR,
-                                               # or --password-stdin (needs -y)
-rbw set -y -g -l 32 --output-file new-pw "$item"  # generate+store,
-                                               # old pw -> history, nothing printed
-rbw set -y --field-file api-token=token.txt "$item"  # custom field
-                                               # (--field-env NAME=VAR too)
-```
-
-- `--output-file` is written (0600) only after the vault update succeeded.
-- `rbw set --if-revision "$(rbw get --raw "$item" | jq -r .revision_date)"`
-  refuses the update if the entry changed in the meantime.
-- Roll back a rotation: `rbw history -y "$item" --restore` (or
-  `--restore=N`).
-- Find rotation candidates: `rbw list --older-than 1year --fields
-  name,modified`, and `rbw audit [--hibp] [--json]` (weak/reused/breached;
-  never prints passwords).
+To edit an entry or set a password or custom field, read
+[references/writing-entries.md](references/writing-entries.md) first. Never
+put a secret on the `rbw` command line, and never let `rbw edit` open an
+editor in an agent shell.
 
 ## Passkeys in browser automation
 
