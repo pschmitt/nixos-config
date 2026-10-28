@@ -1,0 +1,41 @@
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index e3fc65188..94c1f4242 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -499 +499,9 @@ namespace {
+-        label->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
++        auto updateCursor = [label, plain, &renderer](const InputArea::PointerData& data) {
++          float sceneX = 0.0F, sceneY = 0.0F;
++          Node::mapToScene(label, data.localX, data.localY, sceneX, sceneY);
++          const bool overLink = !notification::linkAt(plain, label->textIndexAt(renderer, sceneX, sceneY)).empty();
++          label->setCursorShape(overLink ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER
++                                        : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
++        };
++        label->setOnEnter(updateCursor);
++        label->setOnMotion(updateCursor);
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index eeaf13662..d1e41e8a6 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -1148,6 +1148,2 @@ void NotificationToast::addCardToInstance(Instance& inst, std::size_t entryIndex
+-  const bool hasDefaultAction = hasNotificationAction(entry.actions, "default");
+-
+-  card->setOnEnter([this, notificationId, progressBarPtr, cardInput, hasDefaultAction](const InputArea::PointerData&) {
+-    cardInput->setCursorShape(
+-        hasDefaultAction ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT
+-    );
++  card->setOnEnter([this, notificationId, progressBarPtr, cardInput](const InputArea::PointerData& data) {
++    cardInput->dispatchMotion(data.localX, data.localY);
+@@ -2444 +2440 @@ InputArea* NotificationToast::buildCard(
+-  viewport->setCursorShape(!link.empty() || hasNotificationAction(entry.actions, "default")
++  viewport->setCursorShape(hasNotificationAction(entry.actions, "default")
+@@ -2841,0 +2838,9 @@ InputArea* NotificationToast::buildCard(
++  viewport->setOnMotion([area = viewport.get(), summaryLabel, bodyLabel, displaySummary, displayBody,
++                         hasDefaultAction = hasNotificationAction(entry.actions, "default"), &renderer](const InputArea::PointerData& data) {
++    float sceneX = 0.0F, sceneY = 0.0F;
++    Node::mapToScene(area, data.localX, data.localY, sceneX, sceneY);
++    const bool overLink = !notification::linkAt(displaySummary, summaryLabel->textIndexAt(renderer, sceneX, sceneY)).empty()
++        || !notification::linkAt(displayBody, bodyLabel->textIndexAt(renderer, sceneX, sceneY)).empty();
++    area->setCursorShape(overLink || hasDefaultAction ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER
++                                                     : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
++  });
