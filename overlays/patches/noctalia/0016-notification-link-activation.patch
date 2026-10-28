@@ -1,0 +1,41 @@
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index 94c1f4242..0a14d3b13 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -87 +87,2 @@ namespace {
+-  std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale, std::function<void()> refresh = {}) {
++  std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale, std::function<void()> refresh = {},
++                                         std::function<std::string()> activationToken = {}) {
+@@ -95,2 +96,2 @@ namespace {
+-    button->setOnClick([url, refresh = std::move(refresh)] {
+-      if (net::openInBrowser(url)) {
++    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken)] {
++      if (net::openInBrowser(url, activationToken ? activationToken() : std::string{})) {
+@@ -442 +443,2 @@ namespace {
+-        std::function<void(uint32_t, bool)> onRemove, const std::function<void(uint32_t, const std::string&)>& onAction
++        std::function<void(uint32_t, bool)> onRemove, const std::function<void(uint32_t, const std::string&)>& onAction,
++        const std::function<std::string()>& activationToken
+@@ -508 +510 @@ namespace {
+-        label->setOnClick([label, plain, &renderer, refreshLinks](const InputArea::PointerData& data) {
++        label->setOnClick([label, plain, &renderer, refreshLinks, activationToken](const InputArea::PointerData& data) {
+@@ -510 +512 @@ namespace {
+-          if (!url.empty() && net::openInBrowser(url)) {
++          if (!url.empty() && net::openInBrowser(url, activationToken())) {
+@@ -537 +539 @@ namespace {
+-          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks));
++          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken));
+@@ -712 +714,5 @@ public:
+-        [this](uint32_t id, const std::string& key) { m_owner.invokeNotificationAction(id, key); }
++        [this](uint32_t id, const std::string& key) { m_owner.invokeNotificationAction(id, key); },
++        [this] {
++          auto* platform = m_owner.m_platform;
++          return platform != nullptr ? platform->requestActivationToken(platform->lastPointerSurface()) : std::string{};
++        }
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index d1e41e8a6..4bbf7b9f8 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -2859 +2859,2 @@ InputArea* NotificationToast::buildCard(
+-      if (net::openInBrowser(url)) {
++      const std::string token = m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
++      if (net::openInBrowser(url, token)) {

@@ -100,6 +100,15 @@ in
 
       # Hit-test links in the text layout for individual URL clicks.
       ./patches/noctalia/0013-notification-link-hit-testing.patch
+
+      # Mark opened notification links as visited for the current session.
+      ./patches/noctalia/0014-notification-visited-links.patch
+
+      # Show a pointer over notification links.
+      ./patches/noctalia/0015-notification-link-cursor.patch
+
+      # Pass a desktop activation token when opening notification links.
+      ./patches/noctalia/0016-notification-link-activation.patch
     ];
   });
 }
