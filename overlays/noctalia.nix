@@ -91,6 +91,9 @@ in
       # Opt-in intrinsic width for floating plugin panels. Used by the custom
       # OSD to fit the actual rendered text and glyph instead of width buckets.
       ./patches/noctalia/0010-plugin-panel-fit-content-width.patch
+
+      # Offer browser buttons for HTTP(S) links in notification history.
+      ./patches/noctalia/0011-notification-history-links.patch
     ];
   });
 }

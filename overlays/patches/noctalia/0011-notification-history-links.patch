@@ -1,0 +1,119 @@
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index be8477057..c7f888fdd 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -5,0 +6 @@
++#include "cursor-shape-v1-client-protocol.h"
+@@ -7,0 +9 @@
++#include "net/url_open.h"
+@@ -31,0 +34 @@
++#include <regex>
+@@ -66,0 +70,28 @@ namespace {
++  std::vector<std::string> notificationLinks(const Notification& notification) {
++    static const std::regex pattern(R"(https?://[^\s<>"']+)");
++    const std::string text = notification.summary + "\n" + notification.body;
++    std::vector<std::string> links;
++    for (std::sregex_iterator it(text.begin(), text.end(), pattern), end; it != end; ++it) {
++      std::string url = it->str();
++      while (!url.empty() && std::string_view(".,;:!?").find(url.back()) != std::string_view::npos) {
++        url.pop_back();
++      }
++      if (!url.empty() && std::ranges::find(links, url) == links.end()) {
++        links.push_back(std::move(url));
++      }
++    }
++    return links;
++  }
++
++  std::unique_ptr<Button> makeLinkButton(const std::string& url, std::size_t index, float scale) {
++    auto button = ui::button({
++        .text = "Open link " + std::to_string(index + 1),
++        .glyph = "external-link",
++        .fontSize = Style::fontSizeCaption * scale,
++        .variant = ButtonVariant::Default,
++        .tooltip = url,
++    });
++    button->setOnClick([url] { (void)net::openInBrowser(url); });
++    return button;
++  }
++
+@@ -68 +99 @@ namespace {
+-      Renderer& renderer, const std::vector<std::string>& actions, float cardTextWidth, float scale
++      Renderer& renderer, const std::vector<std::string>& actions, const std::vector<std::string>& links, float cardTextWidth, float scale
+@@ -70 +101 @@ namespace {
+-    if (actions.empty()) {
++    if (actions.empty() && links.empty()) {
+@@ -93,0 +125,4 @@ namespace {
++    for (std::size_t i = 0; i < links.size(); ++i) {
++      buttons.push_back(makeLinkButton(links[i], i, scale));
++    }
++
+@@ -280,3 +315,5 @@ namespace {
+-    const float actionsRowHeight = showHistoryActions
+-        ? measureHistoryActionsRowHeight(renderer, entry.notification.actions, metrics.cardTextWidth, scale)
+-        : 0.0F;
++    const auto links = notificationLinks(entry.notification);
++    const float actionsRowHeight = measureHistoryActionsRowHeight(
++        renderer, showHistoryActions ? entry.notification.actions : std::vector<std::string>{}, links,
++        metrics.cardTextWidth, scale
++    );
+@@ -447 +484,12 @@ namespace {
+-      if (showHistoryActions && !entry.notification.actions.empty()) {
++      const auto links = notificationLinks(entry.notification);
++      // Only make the text clickable when its destination is unambiguous.
++      for (Label* label : {m_summary, m_body}) {
++        label->setHitTestVisible(links.size() == 1);
++        label->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER);
++        label->setOnClick(links.size() == 1
++            ? std::function<void(const InputArea::PointerData&)>([url = links.front()](const InputArea::PointerData&) {
++                (void)net::openInBrowser(url);
++              })
++            : nullptr);
++      }
++      if ((showHistoryActions && !entry.notification.actions.empty()) || !links.empty()) {
+@@ -449 +497,2 @@ namespace {
+-        const std::size_t limit = std::min(entry.notification.actions.size(), kMaxNotificationActions * 2);
++        const std::size_t limit = showHistoryActions
++            ? std::min(entry.notification.actions.size(), kMaxNotificationActions * 2) : 0;
+@@ -465,0 +515,4 @@ namespace {
++        for (std::size_t i = 0; i < links.size(); ++i) {
++          buttons.push_back(makeLinkButton(links[i], i, m_scale));
++        }
++
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index 1eefbef79..a19497c0d 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -12,0 +13 @@
++#include "net/url_open.h"
+@@ -32,0 +34 @@
++#include <regex>
+@@ -70,0 +73,17 @@ namespace {
++  std::string singleNotificationLink(std::string_view summary, std::string_view body) {
++    static const std::regex pattern(R"(https?://[^\s<>"']+)");
++    const std::string text = std::string(summary) + "\n" + std::string(body);
++    std::string result;
++    for (std::sregex_iterator it(text.begin(), text.end(), pattern), end; it != end; ++it) {
++      std::string url = it->str();
++      while (!url.empty() && std::string_view(".,;:!?").find(url.back()) != std::string_view::npos) {
++        url.pop_back();
++      }
++      if (!result.empty() && result != url) {
++        return {};
++      }
++      result = std::move(url);
++    }
++    return result;
++  }
++
+@@ -2421 +2440,2 @@ InputArea* NotificationToast::buildCard(
+-  viewport->setOnClick([this, id = entry.notificationId, sourceSurface,
++  const std::string link = singleNotificationLink(entry.summary, entry.body);
++  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
+@@ -2425,0 +2446,2 @@ InputArea* NotificationToast::buildCard(
++    } else if (data.button == BTN_LEFT && !link.empty()) {
++      (void)net::openInBrowser(link);
+@@ -2434 +2456,2 @@ InputArea* NotificationToast::buildCard(
+-  viewport->setCursorShape(WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
++  viewport->setCursorShape(!link.empty() || hasNotificationAction(entry.actions, "default")
++      ? WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_POINTER : WP_CURSOR_SHAPE_DEVICE_V1_SHAPE_DEFAULT);
