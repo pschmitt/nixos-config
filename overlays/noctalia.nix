@@ -109,6 +109,9 @@ in
 
       # Pass a desktop activation token when opening notification links.
       ./patches/noctalia/0016-notification-link-activation.patch
+
+      # Focus the configured URI handler when it already has a window.
+      ./patches/noctalia/0017-notification-browser-focus.patch
     ];
   });
 }

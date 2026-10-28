@@ -1,0 +1,81 @@
+diff --git a/src/notification/link_focus.h b/src/notification/link_focus.h
+new file mode 100644
+index 000000000..8c28b1a2a
+--- /dev/null
++++ b/src/notification/link_focus.h
+@@ -0,0 +1,36 @@
++#pragma once
++
++#include "compositors/compositor_platform.h"
++#include "system/desktop_entry.h"
++#include "util/string_utils.h"
++
++#include <gio/gio.h>
++#include <string>
++#include <string_view>
++
++namespace notification {
++  // Some existing browser instances ignore activation tokens sent by xdg-open.
++  // Focus an existing window of the configured URI handler after launching it.
++  inline void focusLinkHandler(CompositorPlatform* platform, std::string_view url) {
++    if (platform == nullptr) return;
++    const auto colon = url.find(':');
++    if (colon == std::string_view::npos) return;
++    const std::string scheme(url.substr(0, colon));
++    GAppInfo* app = g_app_info_get_default_for_uri_scheme(scheme.c_str());
++    if (app == nullptr) return;
++    const char* appId = g_app_info_get_id(app);
++    std::string id = appId != nullptr ? StringUtils::toLower(appId) : std::string{};
++    g_object_unref(app);
++    if (id.empty()) return;
++    std::string wmClass;
++    for (const auto& entry : desktopEntries()) {
++      if (entry.idLower == id || entry.idLower + ".desktop" == id) {
++        wmClass = entry.startupWmClassLower;
++        break;
++      }
++    }
++    if (id.ends_with(".desktop")) id.resize(id.size() - 8);
++    const auto windows = platform->windowsForApp(id, wmClass);
++    if (!windows.empty()) platform->activateToplevelInfo(windows.back());
++  }
++}
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index 0a14d3b13..b0ec17a2c 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -10,0 +11 @@
++#include "notification/link_focus.h"
+@@ -88 +89,2 @@ namespace {
+-                                         std::function<std::string()> activationToken = {}) {
++                                         std::function<std::string()> activationToken = {},
++                                         std::function<void(const std::string&)> focusLink = {}) {
+@@ -96 +98 @@ namespace {
+-    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken)] {
++    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken), focusLink = std::move(focusLink)] {
+@@ -99,0 +102 @@ namespace {
++        if (focusLink) focusLink(url);
+@@ -444 +447,2 @@ namespace {
+-        const std::function<std::string()>& activationToken
++        const std::function<std::string()>& activationToken,
++        const std::function<void(const std::string&)>& focusLink
+@@ -510 +514 @@ namespace {
+-        label->setOnClick([label, plain, &renderer, refreshLinks, activationToken](const InputArea::PointerData& data) {
++        label->setOnClick([label, plain, &renderer, refreshLinks, activationToken, focusLink](const InputArea::PointerData& data) {
+@@ -514,0 +519 @@ namespace {
++            focusLink(url);
+@@ -539 +544 @@ namespace {
+-          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken));
++          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken, focusLink));
+@@ -718 +723,2 @@ public:
+-        }
++        },
++        [this](const std::string& url) { notification::focusLinkHandler(m_owner.m_platform, url); }
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index 4bbf7b9f8..93acf355b 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -14,0 +15 @@
++#include "notification/link_focus.h"
+@@ -2863,0 +2865 @@ InputArea* NotificationToast::buildCard(
++        notification::focusLinkHandler(m_platform, url);
