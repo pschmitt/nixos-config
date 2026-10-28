@@ -24,6 +24,8 @@ _: {
       profile = "niks3";
       prefix = "nixbot-pschmitt-nixos-config-";
     };
+    # nixbot (rofl-10) connects here after pinning a host.
+    trigger.port = 8723;
     targets = map (host: "hosts.${host}") [
       "ge2"
       "gk4"
