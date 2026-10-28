@@ -79,6 +79,13 @@ impl Progress {
         Self { color }
     }
 
+    fn for_stdout() -> Self {
+        let color = io::stdout().is_terminal()
+            && env::var_os("NO_COLOR").is_none()
+            && env::var("TERM").as_deref() != Ok("dumb");
+        Self { color }
+    }
+
     fn paint(&self, code: &str, value: &str) -> String {
         if self.color {
             format!("\x1b[{code}m{value}\x1b[0m")
@@ -501,7 +508,7 @@ fn generation_label(generation: &GenerationInfo) -> String {
     format!("{number} · {}", &generation.id[..12])
 }
 
-fn print_set_diff(label: &str, old: &[String], new: &[String]) -> bool {
+fn print_set_diff(ui: &Progress, label: &str, old: &[String], new: &[String]) -> bool {
     let old: BTreeSet<_> = old.iter().collect();
     let new: BTreeSet<_> = new.iter().collect();
     let removed: Vec<_> = old.difference(&new).collect();
@@ -510,12 +517,12 @@ fn print_set_diff(label: &str, old: &[String], new: &[String]) -> bool {
         return false;
     }
 
-    println!("{label}:");
+    println!("{}:", ui.paint("1", label));
     for item in removed {
-        println!("  - {item}");
+        println!("  {} {item}", ui.paint("31", "-"));
     }
     for item in added {
-        println!("  + {item}");
+        println!("  {} {item}", ui.paint("32", "+"));
     }
     true
 }
@@ -567,9 +574,17 @@ fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<St
     Ok(format!("file:{mode:o}:{}", hex(&hasher.finalize())))
 }
 
-fn print_home_file_diff(root: &Path, old: &GenerationInfo, new: &GenerationInfo) -> Result<bool> {
+fn print_home_file_diff(
+    ui: &Progress,
+    root: &Path,
+    old: &GenerationInfo,
+    new: &GenerationInfo,
+) -> Result<bool> {
     let (Some(old_files), Some(new_files)) = (&old.home_files, &new.home_files) else {
-        println!("Generated home files: not recorded in both generation manifests");
+        println!(
+            "{}: not recorded in both generation manifests",
+            ui.paint("1", "Generated home files")
+        );
         return Ok(false);
     };
 
@@ -579,12 +594,12 @@ fn print_home_file_diff(root: &Path, old: &GenerationInfo, new: &GenerationInfo)
     let added: Vec<_> = new_set.difference(&old_set).collect();
     let mut changed = !removed.is_empty() || !added.is_empty();
     if changed {
-        println!("Generated home files:");
+        println!("{}:", ui.paint("1", "Generated home files"));
         for path in removed {
-            println!("  - {path}");
+            println!("  {} {path}", ui.paint("31", "-"));
         }
         for path in added {
-            println!("  + {path}");
+            println!("  {} {path}", ui.paint("32", "+"));
         }
     }
 
@@ -600,10 +615,10 @@ fn print_home_file_diff(root: &Path, old: &GenerationInfo, new: &GenerationInfo)
     }
     if !content_changes.is_empty() {
         if !changed {
-            println!("Generated home files:");
+            println!("{}:", ui.paint("1", "Generated home files"));
         }
         for path in content_changes {
-            println!("  ~ {path}");
+            println!("  {} {path}", ui.paint("33", "~"));
         }
         changed = true;
     }
@@ -615,7 +630,7 @@ fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> 
     let numbers = generation_numbers(root)?;
     let old = inspect_generation(root, old_id, numbers.get(old_id).copied())?;
     let new = inspect_generation(root, new_id, numbers.get(new_id).copied())?;
-    let ui = Progress::new();
+    let ui = Progress::for_stdout();
     println!(
         "{} {} → {}",
         ui.paint("1;36", "nixpp ✨ generation diff:"),
@@ -625,35 +640,50 @@ fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> 
 
     let mut changed = false;
     if old.architecture != new.architecture {
-        println!("Architecture: {} → {}", old.architecture, new.architecture);
+        println!(
+            "Architecture: {} → {}",
+            ui.paint("31", &old.architecture),
+            ui.paint("32", &new.architecture)
+        );
         changed = true;
     }
     if old.minimum_api != new.minimum_api {
         println!(
             "Minimum Android API: {} → {}",
-            old.minimum_api, new.minimum_api
+            ui.paint("31", &old.minimum_api.to_string()),
+            ui.paint("32", &new.minimum_api.to_string())
         );
         changed = true;
     }
     if old.gitstatus_version != new.gitstatus_version {
         match (&old.gitstatus_version, &new.gitstatus_version) {
-            (Some(old), Some(new)) => println!("Git status: {old} → {new}"),
+            (Some(old), Some(new)) => println!(
+                "Git status: {} → {}",
+                ui.paint("31", old),
+                ui.paint("32", new)
+            ),
             (old, new) => println!("Git status: {old:?} → {new:?}"),
         }
         changed = true;
     }
     changed |= print_set_diff(
+        &ui,
         "Termux APT package requirements",
         &old.apt_packages,
         &new.apt_packages,
     );
-    changed |= print_set_diff("Nix output packages", &old.nix_packages, &new.nix_packages);
+    changed |= print_set_diff(
+        &ui,
+        "Nix output packages",
+        &old.nix_packages,
+        &new.nix_packages,
+    );
     if let Some(old_plugins) = &old.plugins {
         if let Some(new_plugins) = &new.plugins {
-            changed |= print_set_diff("Shell plugins", old_plugins, new_plugins);
+            changed |= print_set_diff(&ui, "Shell plugins", old_plugins, new_plugins);
         }
     }
-    changed |= print_home_file_diff(root, &old, &new)?;
+    changed |= print_home_file_diff(&ui, root, &old, &new)?;
     if !changed {
         println!("No recorded changes.");
     }
