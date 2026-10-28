@@ -120,13 +120,28 @@ impl Progress {
     fn stage(&self, label: &str, action: impl FnOnce() -> Result<()>) -> Result<()> {
         eprintln!("  {} {label}", self.paint("36", "✦"));
         let started = Instant::now();
-        match action() {
+        let result = action();
+        self.report_stage_completion(started.elapsed(), result)
+    }
+
+    fn report_stage_result(
+        &self,
+        label: &str,
+        duration: Duration,
+        result: Result<()>,
+    ) -> Result<()> {
+        eprintln!("  {} {label}", self.paint("36", "✦"));
+        self.report_stage_completion(duration, result)
+    }
+
+    fn report_stage_completion(&self, duration: Duration, result: Result<()>) -> Result<()> {
+        match result {
             Ok(()) => {
                 eprintln!(
                     "  {} {} ({})",
                     self.paint("1;32", "✓"),
                     self.paint("32", "Done"),
-                    elapsed(started.elapsed())
+                    elapsed(duration)
                 );
                 Ok(())
             }
@@ -135,7 +150,7 @@ impl Progress {
                     "  {} {} ({})",
                     self.paint("1;31", "✗"),
                     self.paint("31", "Failed"),
-                    elapsed(started.elapsed())
+                    elapsed(duration)
                 );
                 Err(error)
             }
@@ -670,12 +685,12 @@ pub fn doctor() -> Result<()> {
         "🔐 Validate trusted cache keys and AWS credentials",
         || Ok(()),
     )?;
-    let reachable_builders = std::thread::scope(|scope| -> Result<usize> {
-        let ui = &ui;
+    let (cache_check, builder_checks) = std::thread::scope(|scope| -> Result<_> {
         let target = &target;
         let auth = &auth;
         let cache_check = scope.spawn(move || {
-            ui.stage("☁️ Check access to the configured S3 cache", || {
+            let started = Instant::now();
+            let result = (|| {
                 let url = safe_cache_url(&target.base, "nix-cache-info")?;
                 let data = curl_read(&url, &auth, 1 << 20)?;
                 let text = std::str::from_utf8(&data).context("nix-cache-info is not UTF-8")?;
@@ -684,51 +699,71 @@ pub fn doctor() -> Result<()> {
                     "cache returned invalid nix-cache-info"
                 );
                 Ok(())
-            })
+            })();
+            (started.elapsed(), result)
         });
         let builder_checks: Vec<_> = builders
             .iter()
             .map(|builder| {
-                let ui = ui;
                 scope.spawn(move || {
-                    ui.stage(&format!("🔌 Check SSH and Nix on {builder}"), || {
+                    let started = Instant::now();
+                    let result = (|| {
+                        let output = Command::new("ssh")
+                            .args([
+                                "-o",
+                                "BatchMode=yes",
+                                "-o",
+                                "ConnectTimeout=10",
+                                builder,
+                                "command -v nix >/dev/null",
+                            ])
+                            .output()
+                            .context("start SSH check")?;
                         ensure!(
-                            Command::new("ssh")
-                                .args([
-                                    "-o",
-                                    "BatchMode=yes",
-                                    "-o",
-                                    "ConnectTimeout=10",
-                                    builder,
-                                    "nix --version"
-                                ])
-                                .status()
-                                .context("start SSH check")?
-                                .success(),
-                            "builder SSH or Nix check failed"
+                            output.status.success(),
+                            "builder SSH or Nix check failed: {}",
+                            String::from_utf8_lossy(&output.stderr).trim()
                         );
                         Ok(())
-                    })
+                    })();
+                    (started.elapsed(), result)
                 })
             })
             .collect();
 
-        cache_check
+        let cache_check = cache_check
             .join()
-            .map_err(|_| anyhow::anyhow!("S3 cache check panicked"))??;
-
-        let mut reachable = 0;
-        for check in builder_checks {
-            if check
-                .join()
-                .map_err(|_| anyhow::anyhow!("builder check panicked"))?
-                .is_ok()
-            {
-                reachable += 1;
-            }
-        }
-        Ok(reachable)
+            .map_err(|_| anyhow::anyhow!("S3 cache check panicked"))?;
+        let builder_checks = builder_checks
+            .into_iter()
+            .map(|check| {
+                check
+                    .join()
+                    .map_err(|_| anyhow::anyhow!("builder check panicked"))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok((cache_check, builder_checks))
     })?;
+
+    let cache_result = ui.report_stage_result(
+        "☁️ Check access to the configured S3 cache",
+        cache_check.0,
+        cache_check.1,
+    );
+    let mut reachable_builders = 0;
+    for (builder, (duration, result)) in builders.iter().zip(builder_checks) {
+        if ui
+            .report_stage_result(
+                &format!("🔌 Check SSH and Nix on {builder}"),
+                duration,
+                result,
+            )
+            .is_ok()
+        {
+            reachable_builders += 1;
+        }
+    }
+    cache_result?;
     ensure!(
         reachable_builders > 0,
         "no configured Nix builders are reachable"
