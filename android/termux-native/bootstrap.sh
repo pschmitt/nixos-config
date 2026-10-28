@@ -275,16 +275,10 @@ remove_obsolete_apt_packages() {
 
 gc_generations() (
   local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.tsv"
-  local current_path current_id number id extra generation_dir ordered_index index_temp
+  local current_path current_id number max_number id extra generation_dir ordered_index index_temp
   local plan_root package_owner_file
   local -A numbers=() used_numbers=() retained=()
   local -a removal_candidates=()
-
-  if [[ ! -s "$index" ]]
-  then
-    printf 'Generation index is missing; refusing to remove generations.\n' >&2
-    return 1
-  fi
 
   current_path=$(readlink -f -- "$root/current") || return
   case "$current_path" in
@@ -306,21 +300,30 @@ gc_generations() (
 
   ordered_index=$(mktemp "$root/.gc-index.XXXXXXXX") || return
   trap 'rm -f -- "$ordered_index"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
-  while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
-  do
-    [[ -n "$number$id$extra" ]] || continue
-    if [[ ! "$number" =~ ^[1-9][0-9]*$ ||
-          ! "$id" =~ ^[0-9a-f]{64}$ ||
-          -n "$extra" ||
-          -n "${numbers[$id]:-}" ||
-          -n "${used_numbers[$number]:-}" ]]
-    then
-      printf 'Invalid generation index entry; refusing garbage collection.\n' >&2
-      return 1
-    fi
-    numbers[$id]=$number
-    used_numbers[$number]=1
-  done < "$index"
+  number=0
+  max_number=0
+  if [[ -s "$index" ]]
+  then
+    while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
+    do
+      [[ -n "$number$id$extra" ]] || continue
+      if [[ ! "$number" =~ ^[1-9][0-9]*$ ||
+            ! "$id" =~ ^[0-9a-f]{64}$ ||
+            -n "$extra" ||
+            -n "${numbers[$id]:-}" ||
+            -n "${used_numbers[$number]:-}" ]]
+      then
+        printf 'Invalid generation index entry; refusing garbage collection.\n' >&2
+        return 1
+      fi
+      numbers[$id]=$number
+      used_numbers[$number]=1
+      if (( number > max_number ))
+      then
+        max_number=$number
+      fi
+    done < "$index"
+  fi
 
   for id in "${!numbers[@]}"
   do
@@ -344,21 +347,24 @@ gc_generations() (
     [[ "$id" =~ ^[0-9a-f]{64}$ ]] || continue
     if [[ -z "${numbers[$id]:-}" ]]
     then
-      printf 'Generation is not present in the index; refusing garbage collection: %s\n' "$id" >&2
-      return 1
+      ((max_number += 1))
+      numbers[$id]=$max_number
+      used_numbers[$max_number]=1
+      if [[ "$dry_run" == 1 ]]
+      then
+        printf 'Would assign generation number %s to unindexed generation %s\n' "$max_number" "$id"
+      else
+        printf 'Assigning generation number %s to unindexed generation %s\n' "$max_number" "$id"
+      fi
     fi
   done
 
-  while IFS=$'\t' read -r number id
+  for id in "${!numbers[@]}"
   do
-    if [[ -L "$root/generations/$id" ]]
-    then
-      printf 'Generation path is a symlink; refusing garbage collection: %s\n' "$id" >&2
-      return 1
-    fi
-    [[ -d "$root/generations/$id" ]] || continue
-    printf '%s\t%s\n' "$number" "$id"
-  done < "$index" | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
+    generation_dir="$root/generations/$id"
+    [[ -d "$generation_dir" && ! -L "$generation_dir" ]] || continue
+    printf '%s\t%s\n' "${numbers[$id]}" "$id"
+  done | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
 
   local retained_count=0
   while IFS=$'\t' read -r number id

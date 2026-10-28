@@ -535,6 +535,9 @@ their owner and recover stale directories left by interrupted processes, while
 still refusing a lock held by a live bootstrap or activation. `nixpp gc` prunes
 old generations after a dry-run preview while preserving the active and
 configured rollback generations.
+If the generation index is missing or does not include an installed generation,
+GC assigns stable numbers to those generations before applying the retention
+policy; `--dry-run` shows the numbers without changing the index.
 APT package lifecycle tracks packages installed by this profile in
 `apt-owned-packages.txt`; packages that were already installed are never
 claimed or removed. After the new generation passes its shell health checks,
