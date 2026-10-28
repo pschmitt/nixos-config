@@ -1264,12 +1264,21 @@ fn switch_profile_with_source(
             Ok(status) => {
                 if let Some(current) = status.current
                     && current.id != previous
-                    && let Err(error) =
-                        print_generation_diff(&generation_root, &previous, &current.id)
                 {
-                    ui.warning(&format!(
-                        "upgrade succeeded, but generation diff failed: {error:#}"
-                    ));
+                    let diff = Command::new(generation_root.join("current/bin/nixpp"))
+                        .arg("diff")
+                        .arg(&previous)
+                        .arg(&current.id)
+                        .status();
+                    match diff {
+                        Ok(status) if status.success() => {}
+                        Ok(status) => ui.warning(&format!(
+                            "upgrade succeeded, but generation diff exited with {status}"
+                        )),
+                        Err(error) => ui.warning(&format!(
+                            "upgrade succeeded, but could not run the new generation diff: {error}"
+                        )),
+                    }
                 }
             }
             Err(error) => ui.warning(&format!(
