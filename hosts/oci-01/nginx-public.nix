@@ -202,12 +202,12 @@ in
     additionalModules = [ pkgs.nginxModules.upstream-check ];
 
     upstreams.hass_mesh = {
-      # Order doesn't matter functionally (the check module drives up/down
-      # state, and `backup` only decides which one nginx prefers while both
-      # are healthy); Tailscale primary, Netbird backup.
+      # Prefer Netbird: Tailscale can select HA's LAN endpoint over a
+      # Netbird subnet route, nesting the tunnels and slowing bulk transfers.
+      # Keep Tailscale as the actively checked backup.
       servers = {
-        "ha.${config.domains.tailscale}:8123" = { };
-        "ha.${config.domains.netbird}:8123" = {
+        "ha.${config.domains.netbird}:8123" = { };
+        "ha.${config.domains.tailscale}:8123" = {
           backup = true;
         };
       };
