@@ -81,13 +81,15 @@ memory and passes curl's SigV4 config through stdin; it creates no plaintext
 credentials or curl-auth file.
 
 The Termux bootstrap links the active generation's config file to
-`~/.config/nixpp/config.toml`, nixpp's default config path. The flake URL points
-to the `pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the
-configured builders to evaluate that flake, so each builder needs its usual
-GitHub access token for the private flake input. The bootstrap uses its
-authenticated HTTPS mirror for the first install, then yadm restores the
-personal SSH identity. Later nixpp fetches retrieve the Niks3 credentials from
-rbw when needed; rbw must be unlocked for `nixpp upgrade`.
+`~/.config/nixpp/config.toml`, nixpp's default config path. Its first-stage
+verifier, checksum, channel manifest, signed package prefix, and managed
+generation all come directly from Niks3. The bootstrap and nixpp read AWS
+credentials from rbw and keep them in memory. The flake URL points to the
+`pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the configured
+builders to evaluate that flake, so each builder needs its usual GitHub access
+token for the private flake input. The bootstrap restores the personal SSH
+identity during yadm setup. Later nixpp operations also retrieve Niks3
+credentials from rbw when needed; rbw must be unlocked for `nixpp upgrade`.
 
 ## Build and switch from Termux
 
@@ -218,9 +220,9 @@ and ran the extracted binary on-device.
 
 The full private-cache flow now publishes three reference-free Nix outputs:
 the `nixpp` client, the Termux package prefix, and the Zinit/tool home cache.
-`yadm-init` downloads the first-stage client and channel manifest from the
-authenticated private blob directory, then uses the client to fetch and verify
-the prefix and home outputs from the signed Nix cache. This flow has been run
+`yadm-init` downloads the first-stage client and channel manifest from fixed
+bootstrap object keys in the Niks3 S3 bucket, then uses the client to fetch and
+verify the prefix and home outputs from the signed Nix cache. This flow has been run
 through the Termux app on a Zenfone 10 after clearing Termux app data. The
 client verified cache signatures, NAR hashes and sizes,
 and extracted both outputs; the resulting shell reported the expected Termux
@@ -251,12 +253,11 @@ types). Both remain Termux APT packages.
 ## First-stage bootstrap
 
 `nixpp` cannot fetch itself on an empty Termux install. The curl-piped yadm-init
-entrypoint therefore downloads the small AArch64 client and its checksum from
-the authenticated private blob directory, then uses it for the signed Nix
-outputs. Stable links select the current immutable client and channel manifest;
-the manifest carries the client, prefix, and home store paths. The client
-checksum currently relies on the authenticated HTTPS blob endpoint, while the
-large prefix and home payloads are authenticated by Nix cache signatures. The
+entrypoint uses the stock Termux curl client and unlocked rbw credentials to
+download the small AArch64 client, its checksum, and the channel manifest from
+fixed S3 object keys. The manifest carries the current client, prefix, and
+home store paths. The client checksum is checked before execution; the prefix
+and home payloads are authenticated by Nix cache signatures. The
 latest cold app-driven run took about 11 minutes from entering the curl-piped
 provisioner, after the official Termux app's first-run setup, to the configured
 Zsh prompt. It excludes installing and opening the Termux app and its initial
