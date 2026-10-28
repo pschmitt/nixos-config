@@ -1291,7 +1291,7 @@ fn switch_profile_with_source(
 
 fn remote_build(builder: &str, flake: &str) -> Result<String> {
     let command = format!(
-        "nix build --accept-flake-config --no-link --print-out-paths -- {}",
+        "nix build --refresh --accept-flake-config --no-link --print-out-paths -- {}",
         shell_quote(flake)
     );
     let output =
