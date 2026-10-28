@@ -70,8 +70,8 @@ Other skills only name the entry and field they need (for example
 4. Browser logins never take a value from the shell: use the browser MCP's
    `browser_fill_secret entry=... field=password|username|totp` when the
    entry is allowed there, otherwise hand the login to the user (see the
-   [browser-passkey skill](../browser-passkey/SKILL.md), "When a human has to
-   step in").
+   [browser-login skill](../browser-login/SKILL.md),
+   [human handoff](../browser-login/references/human-handoff.md)).
 
 ## Several accounts
 
@@ -133,5 +133,5 @@ editor in an agent shell.
 ## Passkeys in browser automation
 
 For using passkeys stored in `rbw` to authenticate automated browser sessions
-(Playwright MCP), see the [browser-passkey skill](../browser-passkey/SKILL.md).
+(Playwright MCP), see the [browser-login skill](../browser-login/SKILL.md).
 
