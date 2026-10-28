@@ -429,8 +429,10 @@ in
 
           projects = {
             "/etc/nixos".trust_level = "trusted";
+            "/etc/profiles/per-user/pschmitt/bin".trust_level = "trusted";
             "/mnt/ha".trust_level = "trusted";
             "/mnt/turris".trust_level = "trusted";
+            "/run/current-system/sw/bin".trust_level = "trusted";
             "${config.home.homeDirectory}".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
           };
