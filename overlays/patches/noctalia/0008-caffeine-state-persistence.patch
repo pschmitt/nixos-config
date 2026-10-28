@@ -1,9 +1,27 @@
+diff --git a/src/app/application_services.cpp b/src/app/application_services.cpp
+index e7b705d20..566464abf 100644
+--- a/src/app/application_services.cpp
++++ b/src/app/application_services.cpp
+@@ -947,7 +947,11 @@ void Application::initWaylandCallbacks() {
+     );
+   }
+   m_idleInhibitor.initialize(m_wayland);
++  if (m_configService.stateBool("caffeine", "enabled").value_or(false)) {
++    m_idleInhibitor.setEnabled(true);
++  }
+   m_idleInhibitor.setChangeCallback([this, shouldRefreshControlCenter] {
++    (void)m_configService.setStateBool("caffeine", "enabled", m_idleInhibitor.enabled());
+     if (m_configService.config().osd.kinds.caffeine) {
+       m_osdOverlay.show(caffeineOsdContent(m_idleInhibitor.enabled()));
+     }
+diff --git a/src/idle/idle_inhibitor.cpp b/src/idle/idle_inhibitor.cpp
+index 5426df5d0..c9cda568b 100644
 --- a/src/idle/idle_inhibitor.cpp
 +++ b/src/idle/idle_inhibitor.cpp
 @@ -32,7 +32,12 @@ bool IdleInhibitor::initialize(WaylandConnection& wayland) {
    return true;
  }
-
+ 
 -void IdleInhibitor::setLogindService(LogindService* logind) { m_logind = logind; }
 +void IdleInhibitor::setLogindService(LogindService* logind) {
 +  m_logind = logind;
@@ -11,20 +29,6 @@
 +    syncInhibitor(true);
 +  }
 +}
-
+ 
  void IdleInhibitor::setAnchorSurfacesProvider(AnchorSurfacesProvider provider) {
    m_anchorSurfacesProvider = std::move(provider);
---- a/src/app/application_services.cpp
-+++ b/src/app/application_services.cpp
-@@ -933,7 +933,11 @@ void Application::initBasicServices() {
-     );
-   }
-   m_idleInhibitor.initialize(m_wayland);
-+  if (m_configService.stateBool("caffeine", "enabled").value_or(false)) {
-+    m_idleInhibitor.setEnabled(true);
-+  }
-   m_idleInhibitor.setChangeCallback([this, shouldRefreshControlCenter]() {
-+    (void)m_configService.setStateBool("caffeine", "enabled", m_idleInhibitor.enabled());
-     if (m_configService.config().osd.kinds.caffeine) {
-       m_osdOverlay.show(caffeineOsdContent(m_idleInhibitor.enabled()));
-     }

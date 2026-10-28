@@ -1,7 +1,8 @@
+diff --git a/src/compositors/hyprland/hyprland_keyboard_backend.cpp b/src/compositors/hyprland/hyprland_keyboard_backend.cpp
+index 318b6aa92..a579fbdf8 100644
 --- a/src/compositors/hyprland/hyprland_keyboard_backend.cpp
 +++ b/src/compositors/hyprland/hyprland_keyboard_backend.cpp
-@@ -1,30 +1,65 @@
- #include "compositors/hyprland/hyprland_keyboard_backend.h"
+@@ -2,10 +2,34 @@
  
  #include "compositors/hyprland/hyprland_runtime.h"
  
@@ -37,12 +38,7 @@
  
  HyprlandKeyboardBackend::~HyprlandKeyboardBackend() { cleanup(); }
  
- bool HyprlandKeyboardBackend::isAvailable() const noexcept { return m_runtime.available(); }
- 
- bool HyprlandKeyboardBackend::cycleLayout() const { return m_runtime.request("switchxkblayout all next").has_value(); }
- 
- std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const {
-   const auto current = currentLayoutName();
+@@ -18,10 +42,21 @@ std::optional<KeyboardLayoutState> HyprlandKeyboardBackend::layoutState() const
    if (!current.has_value()) {
      return std::nullopt;
    }
@@ -64,13 +60,7 @@
    if (m_currentLayoutName.empty()) {
      return std::nullopt;
    }
-   return m_currentLayoutName;
- }
- 
-@@ -36,38 +71,72 @@ void HyprlandKeyboardBackend::notifyChanged() {
-   }
- }
- 
+@@ -39,11 +74,13 @@ void HyprlandKeyboardBackend::notifyChanged() {
  void HyprlandKeyboardBackend::notifyCleanup() {
    m_currentLayoutName.clear();
    m_mainKeyboardName.clear();
@@ -85,10 +75,7 @@
    const auto json = m_runtime.requestJson("j/devices");
    if (!json || !json->is_object()) {
      return;
-   }
- 
-   const auto keyboardsIt = json->find("keyboards");
-   if (keyboardsIt == json->end() || !keyboardsIt->is_array()) {
+@@ -54,17 +91,49 @@ void HyprlandKeyboardBackend::seedLayoutFromDevices() {
      return;
    }
  
@@ -141,13 +128,7 @@
  }
  
  void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_view data) {
- 
-   if (event != "activelayout") {
-     return;
-@@ -77,14 +146,25 @@ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_vi
-   if (comma == std::string_view::npos || comma + 1 >= data.size()) {
-     return;
-   }
+@@ -80,11 +149,22 @@ void HyprlandKeyboardBackend::handleEvent(std::string_view event, std::string_vi
  
    const std::string_view keyboardName = data.substr(0, comma);
    const std::string_view layoutName = data.substr(comma + 1);
@@ -175,11 +156,11 @@
 +    notifyChanged();
 +  }
  }
+diff --git a/src/compositors/hyprland/hyprland_keyboard_backend.h b/src/compositors/hyprland/hyprland_keyboard_backend.h
+index a04b69be6..aa4f45590 100644
 --- a/src/compositors/hyprland/hyprland_keyboard_backend.h
 +++ b/src/compositors/hyprland/hyprland_keyboard_backend.h
-@@ -1,11 +1,12 @@
- #pragma once
- 
+@@ -3,6 +3,7 @@
  #include "compositors/keyboard_backend.h"
  #include "hyprland_event_handler.h"
  
@@ -187,14 +168,8 @@
  #include <functional>
  #include <nlohmann/json.hpp>
  #include <optional>
- #include <string>
- #include <string_view>
- #include <vector>
-@@ -28,13 +29,30 @@ public:
-   void setChangeCallback(ChangeCallback callback);
-   void cleanup();
-   void notifyCleanup();
-   void notifyChanged();
+@@ -31,10 +32,27 @@ public:
+   void notifyChanged() override;
  
  private:
 -  void seedLayoutFromDevices();
@@ -214,7 +189,7 @@
 +  // widget hidden as a "single layout" and the OSD priming on an empty name.
 +  void seedLayoutFromDevices() const;
 +  void refreshMainKeyboard() const;
-   void handleEvent(std::string_view event, std::string_view data);
+   void handleEvent(std::string_view event, std::string_view data) override;
  
 -  std::string m_currentLayoutName;
 -  std::string m_mainKeyboardName;

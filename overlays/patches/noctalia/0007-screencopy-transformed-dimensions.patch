@@ -1,19 +1,19 @@
+diff --git a/src/capture/screencopy_util.cpp b/src/capture/screencopy_util.cpp
+index deb3fbd34..4f633493b 100644
 --- a/src/capture/screencopy_util.cpp
 +++ b/src/capture/screencopy_util.cpp
-@@ -180,9 +180,17 @@
+@@ -180,6 +180,14 @@ namespace {
      const bool dimsMatchLogical = image.width == output.logicalWidth && image.height == output.logicalHeight;
      const bool dimsMatchPhysical =
          output.width > 0 && output.height > 0 && image.width == output.width && image.height == output.height;
-+    const bool transformSwapsAxes = output.transform == WL_OUTPUT_TRANSFORM_90
-+        || output.transform == WL_OUTPUT_TRANSFORM_270 || output.transform == WL_OUTPUT_TRANSFORM_FLIPPED_90
-+        || output.transform == WL_OUTPUT_TRANSFORM_FLIPPED_270;
++    const std::int32_t transform = output.effectiveTransform();
++    const bool transformSwapsAxes = transform == WL_OUTPUT_TRANSFORM_90 || transform == WL_OUTPUT_TRANSFORM_270
++        || transform == WL_OUTPUT_TRANSFORM_FLIPPED_90 || transform == WL_OUTPUT_TRANSFORM_FLIPPED_270;
 +    const bool dimsMatchTransformedPhysical = transformSwapsAxes && output.width > 0 && output.height > 0
 +        && image.width == output.height && image.height == output.width;
-     if (dimsMatchLogical && !dimsMatchPhysical) {
-       return false;
-     }
 +    if (dimsMatchTransformedPhysical) {
 +      return false;
 +    }
-     return true;
+     return !dimsMatchLogical || dimsMatchPhysical;
    }
+ 
