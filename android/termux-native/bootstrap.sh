@@ -273,9 +273,21 @@ remove_obsolete_apt_packages() {
   write_owned_packages "$root" "${remaining[@]}"
 }
 
+generation_index_json_valid() {
+  jq -e '
+    type == "object" and
+    all(to_entries[];
+      (.key | test("^[0-9a-f]{64}$")) and
+      (.value | type == "number" and floor == . and . > 0)
+    ) and
+    ([to_entries[].value] | length == (unique | length))
+  ' "$1" >/dev/null
+}
+
 gc_generations() (
-  local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.tsv"
-  local current_path current_id number max_number index_exists id extra generation_dir ordered_index index_temp
+  local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.json"
+  local legacy_index="$1/generation-index.tsv"
+  local current_path current_id number max_number index_exists id extra generation_dir ordered_index index_temp json_temp
   local plan_root package_owner_file
   local -A numbers=() retention_numbers=() used_numbers=() retained=()
   local -a removal_candidates=()
@@ -299,23 +311,68 @@ gc_generations() (
   fi
 
   ordered_index=$(mktemp "$root/.gc-index.XXXXXXXX") || return
-  trap 'rm -f -- "$ordered_index"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
+  trap 'rm -f -- "$ordered_index" "${index_temp:-}" "${json_temp:-}"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
   number=0
   max_number=0
   index_exists=0
   if [[ -s "$index" ]]
   then
     index_exists=1
+    if ! generation_index_json_valid "$index"
+    then
+      printf 'Invalid JSON generation index; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    jq -r 'to_entries[] | "\(.value)\t\(.key)"' "$index" > "$ordered_index" || return
+  fi
+  if [[ -s "$legacy_index" ]]
+  then
+    index_exists=1
+  fi
+
+  while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
+  do
+    [[ -n "$number$id$extra" ]] || continue
+    if [[ ! "$number" =~ ^[1-9][0-9]*$ ||
+          ! "$id" =~ ^[0-9a-f]{64}$ ||
+          -n "$extra" ||
+          -n "${numbers[$id]:-}" ||
+          -n "${used_numbers[$number]:-}" ]]
+    then
+      printf 'Invalid generation index entry; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    numbers[$id]=$number
+    retention_numbers[$id]=$number
+    used_numbers[$number]=1
+    if (( number > max_number ))
+    then
+      max_number=$number
+    fi
+  done < "$ordered_index"
+
+  if [[ -s "$legacy_index" ]]
+  then
     while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
     do
       [[ -n "$number$id$extra" ]] || continue
-      if [[ ! "$number" =~ ^[1-9][0-9]*$ ||
-            ! "$id" =~ ^[0-9a-f]{64}$ ||
-            -n "$extra" ||
-            -n "${numbers[$id]:-}" ||
-            -n "${used_numbers[$number]:-}" ]]
+      if [[ ! "$number" =~ ^[1-9][0-9]*$ || ! "$id" =~ ^[0-9a-f]{64}$ || -n "$extra" ]]
       then
-        printf 'Invalid generation index entry; refusing garbage collection.\n' >&2
+        printf 'Invalid legacy generation index entry; refusing garbage collection.\n' >&2
+        return 1
+      fi
+      if [[ -n "${numbers[$id]:-}" ]]
+      then
+        if [[ "${numbers[$id]}" != "$number" ]]
+        then
+          printf 'Conflicting generation numbers for %s; refusing garbage collection.\n' "$id" >&2
+          return 1
+        fi
+        continue
+      fi
+      if [[ -n "${used_numbers[$number]:-}" ]]
+      then
+        printf 'Duplicate generation number in legacy index; refusing garbage collection.\n' >&2
         return 1
       fi
       numbers[$id]=$number
@@ -325,7 +382,7 @@ gc_generations() (
       then
         max_number=$number
       fi
-    done < "$index"
+    done < "$legacy_index"
   fi
 
   for id in "${!numbers[@]}"
@@ -370,12 +427,14 @@ gc_generations() (
     fi
   done
 
+  : > "$ordered_index"
   for id in "${!numbers[@]}"
   do
     generation_dir="$root/generations/$id"
     [[ -d "$generation_dir" && ! -L "$generation_dir" ]] || continue
-    printf '%s\t%s\n' "${retention_numbers[$id]}" "$id"
-  done | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
+    printf '%s\t%s\n' "${retention_numbers[$id]}" "$id" >> "$ordered_index" || return
+  done
+  LC_ALL=C sort -t $'\t' -k1,1nr "$ordered_index" -o "$ordered_index" || return
 
   local retained_count=0
   while IFS=$'\t' read -r number id
@@ -445,15 +504,28 @@ gc_generations() (
   fi
 
   index_temp=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+  json_temp=$(mktemp "$root/.generation-index.XXXXXXXX") || return
   while IFS=$'\t' read -r number id
   do
     [[ -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || continue
     printf '%s\t%s\n' "${numbers[$id]}" "$id"
   done < "$ordered_index" | LC_ALL=C sort -t $'\t' -k1,1n > "$index_temp" || {
-    rm -f -- "$index_temp"
+    rm -f -- "$index_temp" "$json_temp"
     return 1
   }
-  mv -f -- "$index_temp" "$index" || return
+  if ! jq -S -Rn '[inputs | split("\t") | { (.[1]): (.[0] | tonumber) }] | add // {}' < "$index_temp" > "$json_temp"
+  then
+    rm -f -- "$index_temp" "$json_temp"
+    return 1
+  fi
+  if ! generation_index_json_valid "$json_temp"
+  then
+    rm -f -- "$index_temp" "$json_temp"
+    printf 'Could not write a valid JSON generation index.\n' >&2
+    return 1
+  fi
+  mv -f -- "$index_temp" "$legacy_index" || return
+  mv -f -- "$json_temp" "$index" || return
   remove_obsolete_apt_packages "$root"
 )
 

@@ -540,7 +540,8 @@ GC assigns stable numbers to those generations. When an index already exists,
 unindexed directories are treated as older than indexed generations, so GC can
 remove stale leftovers without displacing recent rollback generations.
 `--dry-run` shows the assigned numbers and planned removals without changing
-the index.
+the index. The JSON index maps generation IDs to numbers. A synchronized TSV
+mirror remains for rollback compatibility with older retained generations.
 APT package lifecycle tracks packages installed by this profile in
 `apt-owned-packages.txt`; packages that were already installed are never
 claimed or removed. After the new generation passes its shell health checks,

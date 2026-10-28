@@ -226,15 +226,64 @@ fn optional_manifest_string_array(
         .transpose()
 }
 
+fn record_generation_number(
+    numbers: &mut HashMap<String, u64>,
+    used_numbers: &mut HashSet<u64>,
+    id: &str,
+    number: u64,
+) -> Result<()> {
+    ensure!(
+        valid_generation_id(id),
+        "invalid generation ID in index: {id}"
+    );
+    ensure!(number > 0, "generation number must be positive");
+    if let Some(existing) = numbers.get(id) {
+        ensure!(
+            *existing == number,
+            "conflicting generation numbers for {id}: {existing} and {number}"
+        );
+        return Ok(());
+    }
+    ensure!(
+        used_numbers.insert(number),
+        "duplicate generation number in index: {number}"
+    );
+    numbers.insert(id.to_owned(), number);
+    Ok(())
+}
+
 fn generation_numbers(root: &Path) -> Result<HashMap<String, u64>> {
+    let mut numbers = HashMap::new();
+    let mut used_numbers = HashSet::new();
+
+    let json_path = root.join("generation-index.json");
+    match fs::read_to_string(&json_path) {
+        Ok(contents) => {
+            let entries: serde_json::Value = serde_json::from_str(&contents)
+                .with_context(|| format!("parse {}", json_path.display()))?;
+            let entries = entries
+                .as_object()
+                .with_context(|| format!("{} must contain a JSON object", json_path.display()))?;
+            for (id, value) in entries {
+                let number = value.as_u64().with_context(|| {
+                    format!(
+                        "invalid generation number for {id} in {}",
+                        json_path.display()
+                    )
+                })?;
+                record_generation_number(&mut numbers, &mut used_numbers, id, number)?;
+            }
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error).with_context(|| format!("read {}", json_path.display())),
+    }
+
     let path = root.join("generation-index.tsv");
     let contents = match fs::read_to_string(&path) {
         Ok(contents) => contents,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(numbers),
         Err(error) => return Err(error).with_context(|| format!("read {}", path.display())),
     };
-    let mut numbers = HashMap::new();
-    let mut used_numbers = HashSet::new();
     for (line_number, line) in contents.lines().enumerate() {
         let fields: Vec<_> = line.split('\t').collect();
         ensure!(
@@ -245,15 +294,7 @@ fn generation_numbers(root: &Path) -> Result<HashMap<String, u64>> {
             line_number + 1
         );
         let number = fields[0].parse::<u64>()?;
-        ensure!(
-            numbers.insert(fields[1].to_owned(), number).is_none(),
-            "duplicate generation ID in generation index: {}",
-            fields[1]
-        );
-        ensure!(
-            used_numbers.insert(number),
-            "duplicate generation number in generation index: {number}"
-        );
+        record_generation_number(&mut numbers, &mut used_numbers, fields[1], number)?;
     }
     Ok(numbers)
 }

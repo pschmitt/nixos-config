@@ -90,9 +90,33 @@ check_host() {
   fi
 }
 
+generation_index_json_valid() {
+  jq -e '
+    type == "object" and
+    all(to_entries[];
+      (.key | test("^[0-9a-f]{64}$")) and
+      (.value | type == "number" and floor == . and . > 0)
+    ) and
+    ([to_entries[].value] | length == (unique | length))
+  ' "$1" >/dev/null
+}
+
 generation_id_for_number() {
-  local root=$1 number=$2 entry_number entry_id extra
-  [[ "$number" =~ ^[1-9][0-9]*$ && -r "$root/generation-index.tsv" ]] || return 1
+  local root=$1 number=$2 index="$1/generation-index.json" legacy_index="$1/generation-index.tsv"
+  local entry_number entry_id extra
+  [[ "$number" =~ ^[1-9][0-9]*$ ]] || return 1
+  if [[ -r "$index" ]]
+  then
+    generation_index_json_valid "$index" || {
+      printf 'Invalid JSON generation index.\n' >&2
+      return 1
+    }
+    entry_id=$(jq -er --argjson number "$number" 'to_entries[] | select(.value == $number) | .key' "$index") && {
+      printf '%s\n' "$entry_id"
+      return 0
+    }
+  fi
+  [[ -r "$legacy_index" ]] || return 1
   while IFS=$'\t' read -r entry_number entry_id extra
   do
     if [[ "$entry_number" == "$number" && "$entry_id" =~ ^[0-9a-f]{64}$ && -z "$extra" ]]
@@ -100,28 +124,94 @@ generation_id_for_number() {
       printf '%s\n' "$entry_id"
       return 0
     fi
-  done < "$root/generation-index.tsv"
+  done < "$legacy_index"
   return 1
 }
 
 ensure_generation_number() {
-  local root=$1 target=$2 action=$3 index="$1/generation-index.tsv" temporary
-  local number=0 entry_number entry_id extra path id found=0
+  local root=$1 target=$2 action=$3 index="$1/generation-index.json"
+  local legacy_index="$1/generation-index.tsv" temporary json_temporary legacy_temporary
+  local number=0 entry_number entry_id extra path id found=0 invalid_index=0
+  local -A numbers=() used_numbers=()
   temporary=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+
   if [[ -s "$index" ]]
   then
-    cp -- "$index" "$temporary" || return
+    generation_index_json_valid "$index" || {
+      printf 'Invalid JSON generation index.\n' >&2
+      rm -f -- "$temporary"
+      return 1
+    }
+    jq -r 'to_entries[] | "\(.value)\t\(.key)"' "$index" > "$temporary" || return
+  fi
+
+  while IFS=$'\t' read -r entry_number entry_id extra
+  do
+    [[ -n "$entry_number$entry_id$extra" ]] || continue
+    if [[ ! "$entry_number" =~ ^[1-9][0-9]*$ ||
+          ! "$entry_id" =~ ^[0-9a-f]{64}$ ||
+          -n "$extra" ||
+          -n "${numbers[$entry_id]:-}" ||
+          -n "${used_numbers[$entry_number]:-}" ]]
+    then
+      printf 'Invalid generation index entry.\n' >&2
+      invalid_index=1
+      break
+    fi
+    numbers[$entry_id]=$entry_number
+    used_numbers[$entry_number]=1
+    if (( entry_number > number ))
+    then
+      number=$entry_number
+    fi
+    [[ "$entry_id" == "$target" ]] && found=1
+  done < "$temporary"
+  if (( invalid_index ))
+  then
+    rm -f -- "$temporary"
+    return 1
+  fi
+
+  if [[ -s "$legacy_index" ]]
+  then
     while IFS=$'\t' read -r entry_number entry_id extra
     do
-      [[ "$entry_number" =~ ^[1-9][0-9]*$ && "$entry_id" =~ ^[0-9a-f]{64}$ && -z "$extra" ]] || {
-        printf 'Invalid generation index entry.\n' >&2
+      [[ -n "$entry_number$entry_id$extra" ]] || continue
+      if [[ ! "$entry_number" =~ ^[1-9][0-9]*$ || ! "$entry_id" =~ ^[0-9a-f]{64}$ || -n "$extra" ]]
+      then
+        printf 'Invalid legacy generation index entry.\n' >&2
         rm -f -- "$temporary"
         return 1
-      }
-      (( entry_number > number )) && number=$entry_number
+      fi
+      if [[ -n "${numbers[$entry_id]:-}" ]]
+      then
+        if [[ "${numbers[$entry_id]}" != "$entry_number" ]]
+        then
+          printf 'Conflicting generation numbers for %s.\n' "$entry_id" >&2
+          rm -f -- "$temporary"
+          return 1
+        fi
+        continue
+      fi
+      if [[ -n "${used_numbers[$entry_number]:-}" ]]
+      then
+        printf 'Duplicate generation number in legacy index: %s\n' "$entry_number" >&2
+        rm -f -- "$temporary"
+        return 1
+      fi
+      printf '%s\t%s\n' "$entry_number" "$entry_id" >> "$temporary" || return
+      numbers[$entry_id]=$entry_number
+      used_numbers[$entry_number]=1
+      if (( entry_number > number ))
+      then
+        number=$entry_number
+      fi
       [[ "$entry_id" == "$target" ]] && found=1
-    done < "$index"
-  else
+    done < "$legacy_index"
+  fi
+
+  if ((${#numbers[@]} == 0))
+  then
     # Existing installations predate the index. Give them deterministic numbers;
     # the generation being activated gets the newest number below.
     for path in "$root"/generations/*
@@ -135,6 +225,8 @@ ensure_generation_number() {
       fi
       ((number += 1))
       printf '%s\t%s\n' "$number" "$id" >> "$temporary" || return
+      numbers[$id]=$number
+      used_numbers[$number]=1
       [[ "$id" == "$target" ]] && found=1
     done
   fi
@@ -142,7 +234,23 @@ ensure_generation_number() {
     ((number += 1))
     printf '%s\t%s\n' "$number" "$target" >> "$temporary" || return
   fi
-  mv -f -- "$temporary" "$index"
+
+  LC_ALL=C sort -t $'\t' -k1,1n "$temporary" -o "$temporary" || return
+  json_temporary=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+  legacy_temporary=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+  if ! jq -S -Rn '[inputs | split("\t") | { (.[1]): (.[0] | tonumber) }] | add // {}' < "$temporary" > "$json_temporary"
+  then
+    rm -f -- "$temporary" "$json_temporary" "$legacy_temporary"
+    return 1
+  fi
+  if ! generation_index_json_valid "$json_temporary" || ! cp -- "$temporary" "$legacy_temporary"
+  then
+    rm -f -- "$temporary" "$json_temporary" "$legacy_temporary"
+    return 1
+  fi
+  mv -f -- "$json_temporary" "$index" || return
+  mv -f -- "$legacy_temporary" "$legacy_index" || return
+  rm -f -- "$temporary"
 }
 
 switch_generation() {
