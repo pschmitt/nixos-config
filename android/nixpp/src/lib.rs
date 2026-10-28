@@ -544,9 +544,12 @@ fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<St
             fs::read_link(&path)?.display()
         ));
     }
+    if metadata.file_type().is_dir() {
+        return Ok(format!("directory:{mode:o}"));
+    }
     ensure!(
         metadata.file_type().is_file(),
-        "generated home file {} is not a regular file or symlink",
+        "generated home path {} is not a regular file, directory, or symlink",
         path.display()
     );
     let mut file = File::open(&path).with_context(|| format!("open {}", path.display()))?;
