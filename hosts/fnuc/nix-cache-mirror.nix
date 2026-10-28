@@ -8,14 +8,14 @@ _: {
   # collect unrooted store paths itself when free space runs low, instead of
   # waiting for the weekly nix-gc (replaced mirror outputs become unrooted).
   nix.settings = {
-    min-free = 75 * 1024 * 1024 * 1024;
-    max-free = 150 * 1024 * 1024 * 1024;
+    min-free = 100 * 1024 * 1024 * 1024;
+    max-free = 200 * 1024 * 1024 * 1024;
   };
 
   services.harmonia.lanMirror = {
     enable = true;
     # Above min-free, so the mirror never relies on emergency GC.
-    minFreeGiB = 100;
+    minFreeGiB = 125;
     # nixbot pins each default-branch attribute as nixbot-<repo>-<attr>
     # (nixos-config-private: services/scripts/nixbot-niks3-pin.sh).
     pins = {
