@@ -22,6 +22,40 @@ let
     proxy_set_header X-Forwarded-Proto https;
     proxy_set_header X-Forwarded-Host $host;
   '';
+  haMeshProxy =
+    {
+      upstream,
+      fallback ? null,
+      readTimeout ? "60s",
+    }:
+    {
+      proxyWebsockets = true;
+      recommendedProxySettings = false;
+      extraConfig = ''
+        proxy_pass http://${upstream};
+        proxy_set_header Host $host;
+        ${haProxyHeaders}
+        proxy_connect_timeout 2s;
+        proxy_read_timeout ${readTimeout};
+        proxy_buffering off;
+        ${lib.optionalString (fallback != null) "error_page 502 503 504 = ${fallback};"}
+      '';
+    };
+  haRelayProxy = readTimeout: {
+    proxyPass = "https://${nabuCasaHostVar}";
+    proxyWebsockets = true;
+    recommendedProxySettings = false;
+    extraConfig = ''
+      resolver 1.1.1.1 9.9.9.9 valid=300s;
+      proxy_set_header Host ${nabuCasaHostVar};
+      ${haProxyHeaders}
+      proxy_ssl_server_name on;
+      proxy_ssl_name ${nabuCasaHostVar};
+      proxy_connect_timeout 3s;
+      proxy_read_timeout ${readTimeout};
+      proxy_buffering off;
+    '';
+  };
   publicListen = [
     {
       addr = "0.0.0.0";
@@ -46,6 +80,8 @@ let
       backend,
       aliases ? [ ],
       extraConfig ? "",
+      serverExtraConfig ? "",
+      extraLocations ? { },
       proxyHost ? "$host",
       websockets ? false,
     }:
@@ -54,19 +90,23 @@ let
       listen = lib.mkForce publicListen;
       useACMEHost = cert;
       forceSSL = true;
-      locations."/" = {
-        proxyPass = backend;
-        proxyWebsockets = websockets;
-        recommendedProxySettings = false;
-        extraConfig = ''
-          proxy_set_header Host ${proxyHost};
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto https;
-          proxy_set_header X-Forwarded-Host $host;
-          ${extraConfig}
-        '';
-      };
+      extraConfig = serverExtraConfig;
+      locations = {
+        "/" = {
+          proxyPass = backend;
+          proxyWebsockets = websockets;
+          recommendedProxySettings = false;
+          extraConfig = ''
+            proxy_set_header Host ${proxyHost};
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_set_header X-Forwarded-Host $host;
+            ${extraConfig}
+          '';
+        };
+      }
+      // extraLocations;
     };
 
   brknHosts = [
@@ -296,34 +336,23 @@ in
         listen = lib.mkForce publicListen;
         useACMEHost = "oci-01-brkn-lol";
         forceSSL = true;
+        # Set this before the location's generated $nix_proxy_target rewrite.
+        extraConfig = ''
+          include ${config.sops.templates."nginx/nabu-casa-hass.conf".path};
+        '';
+        # Keep ordinary HTTP reads bounded, while allowing quiet WebSockets.
         locations = {
-          "/" = {
-            proxyWebsockets = true;
-            recommendedProxySettings = false;
-            extraConfig = ''
-              proxy_pass http://hass_mesh;
-              proxy_set_header Host $host;
-              ${haProxyHeaders}
-              proxy_connect_timeout 2s;
-              proxy_read_timeout 3s;
-              error_page 502 503 504 = @hass_nabucasa;
-            '';
+          "/" = haMeshProxy {
+            upstream = "hass_mesh";
+            fallback = "@hass_nabucasa";
           };
-          "@hass_nabucasa" = {
-            proxyPass = "https://${nabuCasaHostVar}";
-            proxyWebsockets = true;
-            recommendedProxySettings = false;
-            extraConfig = ''
-              include ${config.sops.templates."nginx/nabu-casa-hass.conf".path};
-              resolver 1.1.1.1 9.9.9.9 valid=300s;
-              proxy_set_header Host ${nabuCasaHostVar};
-              ${haProxyHeaders}
-              proxy_ssl_server_name on;
-              proxy_ssl_name ${nabuCasaHostVar};
-              proxy_connect_timeout 3s;
-              proxy_read_timeout 5s;
-            '';
+          "= /api/websocket" = haMeshProxy {
+            upstream = "hass_mesh";
+            fallback = "@hass_nabucasa_websocket";
+            readTimeout = "3600s";
           };
+          "@hass_nabucasa" = haRelayProxy "60s";
+          "@hass_nabucasa_websocket" = haRelayProxy "3600s";
         };
       };
 
@@ -337,11 +366,17 @@ in
         ];
         websockets = true;
         proxyHost = nabuCasaHostVar;
-        extraConfig = ''
+        serverExtraConfig = ''
           include ${config.sops.templates."nginx/nabu-casa-hass.conf".path};
+        '';
+        extraLocations."= /api/websocket" = haRelayProxy "3600s";
+        extraConfig = ''
           resolver 1.1.1.1 9.9.9.9 valid=300s;
           proxy_ssl_server_name on;
           proxy_ssl_name ${nabuCasaHostVar};
+          proxy_connect_timeout 3s;
+          proxy_read_timeout 60s;
+          proxy_buffering off;
         '';
       };
 
@@ -354,16 +389,12 @@ in
         listen = lib.mkForce publicListen;
         useACMEHost = "oci-01-schmi-tt";
         forceSSL = true;
-        locations."/" = {
-          proxyWebsockets = true;
-          recommendedProxySettings = false;
-          extraConfig = ''
-            proxy_pass http://hass_dieppe_mesh;
-            proxy_set_header Host $host;
-            ${haProxyHeaders}
-            proxy_connect_timeout 2s;
-            proxy_read_timeout 3s;
-          '';
+        locations = {
+          "/" = haMeshProxy { upstream = "hass_dieppe_mesh"; };
+          "= /api/websocket" = haMeshProxy {
+            upstream = "hass_dieppe_mesh";
+            readTimeout = "3600s";
+          };
         };
       };
 
