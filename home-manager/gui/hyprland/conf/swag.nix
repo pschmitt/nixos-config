@@ -52,6 +52,13 @@ in
           passes = 1;
           new_optimizations = true;
         };
+        # Wobbly windows while moving/resizing (core since 0.57).
+        wobble = {
+          enabled = true;
+          stiffness = 260;
+          damping = 16;
+          intensity = 0.6;
+        };
       };
 
       group = {
