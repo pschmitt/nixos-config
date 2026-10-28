@@ -824,6 +824,7 @@
         harmonia = ./services/harmonia.nix;
         http = ./services/http.nix;
         nfs-client = ./services/nfs/nfs-client.nix;
+        sshfs = ./modules/sshfs.nix;
       };
 
       # Reusable home-manager modules you might want to export

@@ -16,6 +16,7 @@
     ./nixos-config-symlink.nix
     ./options
     ./sops.nix
+    ./sshfs.nix
     ./stalwart.nix
     ./syncthing
     ./theme.nix
