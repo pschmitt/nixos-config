@@ -1,6 +1,6 @@
 ---
 name: n8n
-description: Use when working with n8n workflows at n8n.brkn.lol — creating, editing, triggering, or inspecting workflows and executions via the MCP server.
+description: Use when working with n8n workflows at n8n.brkn.lol — creating, editing, triggering, or inspecting workflows and executions via the MCP server. Entry point for this instance; load the n8n-* skills (n8n-mcp-tools-expert, n8n-workflow-patterns, ...) for MCP tool usage and node details.
 ---
 
 # n8n
@@ -11,7 +11,10 @@ Use this skill for workflow automation tasks on the n8n instance at `n8n.brkn.lo
 
 The n8n MCP server is pre-configured. In Hermes it is named `n8n`; use its MCP
 tools directly to interact with workflows and executions. Other clients may
-expose the same server as `n8n-mcp`.
+expose the same server as `n8n-mcp`. Before calling its tools, load the
+`n8n-mcp-tools-expert` skill; for Code nodes, expressions, node configuration
+and validation load the matching `n8n-*` skill. This skill only adds what is
+specific to this instance.
 
 ## Workflow
 

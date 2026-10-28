@@ -1,9 +1,10 @@
 ---
 name: rbw
 description: >-
-  Unlock rbw (Bitwarden CLI) via a Home Assistant phone notification.
-  Use when rbw commands fail with "not unlocked" or whenever the vault needs
-  to be unlocked.
+  Use rbw (Bitwarden CLI) safely: unlock it via a Home Assistant phone
+  notification, and pass credentials to commands without printing them. Use
+  when rbw commands fail with "not unlocked", when the vault needs to be
+  unlocked, or whenever another skill names an rbw entry/field to use.
 ---
 
 # rbw
@@ -41,6 +42,36 @@ refuse instead. So `rbw --redact show NAME` or `rbw --redact get --json NAME`
 is safe to run in a transcript, while `rbw get --field username NAME` still
 works. Drop the flag only for the call that really needs the value, and pipe
 that value to its consumer instead of printing it.
+
+## Using a credential from another skill
+
+Other skills only name the entry and field they need (for example
+"entry `Netbox (AI Agent)`, field `API Token`") and point here. To use one:
+
+1. Check the entry exists without exposing anything:
+   `rbw --redact get --json "<entry>"` (lists the field names, masks values).
+2. Capture the value into a shell variable in the same command that uses it.
+   Never let it reach stdout, a file in the repo, a URL or a command line:
+
+   ```bash
+   token="$(rbw get --field "API Token" "Netbox (AI Agent)")"
+   # header from a file descriptor, not argv
+   curl -fsS -H @<(printf 'Authorization: Token %s\n' "$token") "$url"
+   # or hand it to a tool through its environment
+   NETBOX_TOKEN="$token" some-cli ...
+   ```
+
+   Field names: `password` and `username` are built in; anything else is a
+   custom field and is case-sensitive. `rbw code "<entry>"` prints the
+   current TOTP code: capture it the same way.
+3. Bare `rbw get "<entry>"`, `rbw get --json` (without `--redact`) and
+   `rbw get --field ...` outside `$(...)` print the secret into the
+   transcript. Don't run them.
+4. Browser logins never take a value from the shell: use the browser MCP's
+   `browser_fill_secret entry=... field=password|username|totp` when the
+   entry is allowed there, otherwise hand the login to the user (see the
+   [browser-passkey skill](../browser-passkey/SKILL.md), "When a human has to
+   step in").
 
 ## Several accounts
 
@@ -123,7 +154,7 @@ fi
 
 ## Editing entries non-interactively
 
-`rbw edit` (2.17.x) never launches `$EDITOR`/`$VISUAL` when stdin is not a
+`rbw edit` never launches `$EDITOR`/`$VISUAL` when stdin is not a
 TTY; it reads the new entry from stdin instead. Errors such as
 `failed to parse YAML: missing field name` or `EOF while parsing a value` mean
 it got empty stdin. With a TTY, `VISUAL=nvim` just hangs an agent shell.

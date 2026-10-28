@@ -5,7 +5,7 @@
 //   agent-passkey.mjs CDP_HTTP_URL [--timeout SECONDS]
 //
 // CDP_HTTP_URL is the browser's debugging address, e.g. http://127.0.0.1:PORT
-// (`browser-daemon session show ID --json` has the port; forward it with ssh -L
+// (`browser-daemon session list --json` has the port; forward it with ssh -L
 // for a session on another node). Start it in the background BEFORE the sign-in
 // and stop it afterwards. Every navigator.credentials.get() of every page and
 // frame is signed outside the browser by `rbw passkey assert`, with the origin

@@ -5,15 +5,11 @@ description: Read and write Obsidian vault notes at ~/Documents/notes via the fi
 
 # Obsidian Vault
 
-## Hermes Agent
-
-Hermes does not currently have the Obsidian filesystem MCP or the local vault
-mounted. Do not assume the path below exists; ask the user to enable that MCP
-or provide the relevant notes in the Hermes workspace before reading or
-changing notes.
-
 MCP server name: `obsidian`
 Vault root: `/home/pschmitt/Documents/notes`
+
+Hermes Agent has neither this MCP nor the vault: ask the user to provide the
+notes in its workspace instead.
 
 ## Key tools
 
@@ -26,9 +22,12 @@ Vault root: `/home/pschmitt/Documents/notes`
 
 ## Vault structure
 
+Main top-level directories (list the vault root for the current set; some
+notes also sit loose at the top level):
+
 ```
 notes/
-  diary/          # daily notes, named YYYY-MM-DD.md
+  daily/          # daily notes, named YYYY-MM-DD.md
   projects/       # project notes
   homelab/        # self-hosting and infrastructure
   home-assistant/ # HA-related notes
@@ -38,6 +37,8 @@ notes/
   linux/          # Linux tips and references
   scripts/        # script snippets
   shopping/       # purchase research
+  finances/       # money, taxes
+  work/           # work notes
   archive/        # old/inactive notes
   attachments/    # binary attachments
   _assets/        # vault assets
@@ -46,7 +47,7 @@ notes/
 ## Conventions
 
 - Plain markdown, no required frontmatter
-- Diary entries: `diary/YYYY-MM-DD.md`, one file per day
+- Daily notes: `daily/YYYY-MM-DD.md`, one file per day
 - Use `[[wikilink]]` syntax for internal links
 - Headings with `#` to structure content within a note
 - Prefer flat filenames inside topic directories over deep nesting

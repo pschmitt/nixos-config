@@ -46,6 +46,11 @@ Use this skill for bash, sh, and zsh work.
 
 - Avoid useless `echo` pipelines. Prefer redirections and here-strings such as `bar <<< "foo"`.
 
+## Error handling
+
+- Standalone scripts: check each command that can fail (`cmd || return 1`) rather than relying on `set -e` alone.
+- Scripts wrapped in Nix: follow the repo `AGENTS.md` ("Shell scripts in Nix"); `pkgs.writeShellApplication` adds `set -euo pipefail` and build-time shellcheck.
+
 ## Reference pattern
 
 ```bash
@@ -58,12 +63,13 @@ EOF
 }
 
 run_action() {
-  :
+  if [[ -n "${DEBUG:-}" ]]
+  then
+    printf 'Running %s\n' "$*" >&2
+  fi
 }
 
 main() {
-  local debug
-
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
@@ -72,7 +78,7 @@ main() {
         return 0
         ;;
       --debug)
-        debug=1
+        DEBUG=1
         shift
         ;;
       --trace)

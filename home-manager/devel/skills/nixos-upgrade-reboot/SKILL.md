@@ -1,6 +1,6 @@
 ---
 name: nixos-upgrade-reboot
-description: Restart NixOS upgrades on the rofl-* and oci-* fleet, reboot each host as soon as its upgrade is complete and a new kernel is pending, and verify the result without waiting for unrelated hosts.
+description: Restart NixOS upgrades on the rofl-* and oci-* fleet, reboot each host as soon as its upgrade is complete and a new kernel is pending, and verify the result without waiting for unrelated hosts. Use when the user asks to upgrade, update or reboot the rofl/oci servers, or to restart nixos-upgrade.service across the fleet.
 ---
 
 # NixOS Upgrade and Reboot
@@ -11,10 +11,10 @@ new kernel waiting.
 
 ## Scope and inventory
 
-Read the repository `AGENTS.md` first. Derive the target set from the generated
-host-key inventory and local SSH configuration; do not assume that a remembered
-host list is still current. The usual targets are `rofl-10` through `rofl-14`,
-`oci-01`, and `oci-03`.
+Read the repository `AGENTS.md` first. Take the target set from the `rofl-*`
+and `oci-*` entries of the host table in `flake.nix` (the hosts under `hosts/`,
+minus `test-delete-*`) and the local SSH configuration; do not assume that a
+remembered host list is still current.
 
 Use SSH aliases where available and run independent host checks in parallel.
 Use non-interactive SSH with a connection timeout, `BatchMode=yes`, and
@@ -82,20 +82,23 @@ After a successful upgrade with a kernel-generation mismatch:
    configuration. Start with the public repository's
    `services/luks-ssh-unlock/fleet.nix` and host imports, then follow the
    `nixos-config-private` input for private modules or host-specific overrides.
-   Use the evaluated `services.luks-ssh-unlock.instances` configuration on the
-   controller to identify the target instance; do not assume a controller,
-   hostname, or target list from memory.
+   Use the controller's deployed configuration (its
+   `luks-ssh-unlock-<target>.service` unit: `systemctl cat` it over SSH) to
+   identify the target instance; if you need the evaluated
+   `services.luks-ssh-unlock.instances` value, evaluate on rofl-13/rofl-14,
+   never locally. Do not assume a controller, hostname, or target list from
+   memory.
 2. Inspect that instance's journal from the upgrade completion time onward.
    Check for checksum fetch failures or SSH/healthcheck errors. Successful
    healthchecks may be intentionally silent, and a controller-side health check
    before the upgrade does not prove the new checksum was collected.
 3. Read the instance's configured `initrdCheck.dir` (the `INITRD_CHECKSUM_DIR`
-   value) from the evaluated configuration. Confirm the checksum and detached
+   value) from that deployed unit's environment. Confirm the checksum and detached
    signature exist in its per-target directory, and that the successful
    collection is newer than activation. Verify the signature with the target's
    trusted SSH host key as configured by Nix. Treat timestamps as supporting
    evidence alongside a successful fetch and signature verification. Resolve
-   private module values from the private checkout or evaluated configuration
+   private module values from the private checkout or the deployed unit
    rather than copying sensitive data into notes.
 4. If the new checksum has not been collected, or the controller reports a
    missing file, signature/checksum validation failure, or skipped unlock,

@@ -11,14 +11,12 @@ The private Ansible repository is located at:
 ## Environment
 
 - Nix is available and is the expected way to run project tooling.
-- `.envrc` contains `use flake`, so `direnv allow` can load the same
-  environment automatically.
 - Prefer explicit one-shot commands when running validation from an agent:
 
 ```bash
 nix develop --command ansible-lint
 nix develop --command ansible-lint roles/example/tasks/main.yaml
-nix develop --command ansible-galaxy install -r requirements.yaml
+nix develop --command ansible-galaxy install -r requirements.yml
 ```
 
 - Do not trust ambient user-level `ansible-lint`; it may resolve to a broken
@@ -26,22 +24,12 @@ nix develop --command ansible-galaxy install -r requirements.yaml
 
 ## Flake
 
-`flake.nix` defines the default dev shell. It includes:
+`flake.nix` defines the default dev shell (Ansible, ansible-lint, sops and the
+Python packages from `requirements.txt`; read `flake.nix` for the full list).
 
-- `python3`
-- Python packages derived from `requirements.txt`
-- `ansible`
-- `ansible-lint`
-- `net-snmp`
-- `sops`
-- `git`
-- `ipython`
-
-Run this after changing the flake or lock file:
-
-```bash
-nix flake check
-```
+After changing the flake or lock file, run `nix flake check` on rofl-13/rofl-14
+(rsync the checkout to `~/build/ansible-stuff`), not on the local host
+(expensive Nix evaluation and checks).
 
 ## Validation
 
@@ -60,10 +48,10 @@ nix develop --command ansible-lint roles/openwrt_gammu/tasks/sshtunnel.yaml
 If Galaxy dependencies are missing or stale:
 
 ```bash
-nix develop --command ansible-galaxy install -r requirements.yaml
+nix develop --command ansible-galaxy install -r requirements.yml
 ```
 
-The GitHub workflow also passes `requirements.yaml` to the official
+The GitHub workflow also passes `requirements.yml` to the official
 `ansible/ansible-lint` action.
 
 ## Local Style

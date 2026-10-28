@@ -39,11 +39,11 @@ The HA config repo is mounted at `/mnt/ha` (SSHFS). Read `AGENTS.md` there for a
 
 Dashboards in storage mode live at `/mnt/ha/.storage/lovelace.<url-slug>` (underscores, e.g. `lovelace.main_dashboard`).
 
-**Writing the file on disk does NOT update HA's in-memory cache.** After any manual `.storage/` edit you must push the new config via a `lovelace/config/save` WebSocket message — analogous to `python3 build.py --storage --push` for the mi-casa dashboard.
+**Writing the file on disk does NOT update HA's in-memory cache.** After any manual `.storage/` edit, push it live with `just push-dashboard <url-slug>` (run in `/mnt/ha`).
 
-- **Mi-casa** (`lovelace.mi_casa`) is generated — edit `dashboards/casa/build.py` and re-run `python3 build.py --storage --push`, never edit the storage file directly.
-- **Other dashboards** — parse with `json`, mutate, write back, then send the WS push. See the full script in `/mnt/ha/AGENTS.md` § *Lovelace / Dashboard Editing*.
-- Get the token with `read URL TOKEN < <(zsh -lc 'zhj hass::secrets-gu5a')`.
+- **Mi-casa** (`lovelace.mi_casa`) is generated — edit `dashboards/casa/build.py` and run `just build-casa`, never edit the storage file directly.
+- **Other dashboards** — parse with `json`, mutate, write back, then `just push-dashboard <url-slug>`. See `/mnt/ha/AGENTS.md` § *Lovelace / Dashboard Editing*.
+- For raw API or `hass-cli` access use the dedicated AI Agent user: rbw entry `Home Assistant (AI Agent)`, field `Long-Lived Access Token` (see the `rbw` skill for using it without printing it; details in `/mnt/ha/AGENTS.md` § *AI Agent user*). Don't use `zhj hass::secrets-gu5a`, which is the user's personal token.
 
 ## MCP
 

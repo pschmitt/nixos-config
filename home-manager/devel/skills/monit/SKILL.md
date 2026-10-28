@@ -14,11 +14,11 @@ needs a plan.
 
 ### 1. Establish scope and inventory
 
-Read the repository `AGENTS.md` before making changes. The current inventory is
-normally `rofl-10` through `rofl-14`, `oci-01`, `oci-03`, `fnuc`, `turris`, and
-`brkn-ap`; verify it from the repository's generated SSH host inventory and the local
-SSH configuration instead of assuming the list is permanent. Use SSH aliases where
-available.
+Read the repository `AGENTS.md` before making changes. Take the `rofl-*` and
+`oci-*` hosts from the host table in `flake.nix` (the hosts under `hosts/`, minus
+`test-delete-*`), then add `fnuc`, `turris`, and `brkn-ap`; check the local SSH
+configuration for aliases. Don't rely on a remembered host list. Use SSH aliases
+where available.
 
 Check hosts in parallel when possible. Use non-interactive SSH with a connection
 timeout and `sudo -n`; never hang waiting for a password. An access failure is an

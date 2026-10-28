@@ -5,20 +5,13 @@
 NetBox is available at:
 - `https://netbox.brkn.lol`
 
-Retrieve credentials with the runtime-appropriate method:
-
-- **Hermes Agent:** use the configured `bitwarden` MCP server to retrieve
-  `Netbox (AI Agent)`. Prefer this over `rbw`.
-- **Local Codex/shell:** use:
+Credentials: see the `netbox` skill's quick start (rbw entry
+`Netbox (AI Agent)`, field `API Token`). The examples below expect the token
+in `NB_TOKEN`:
 
 ```bash
-rbw get --json "Netbox (AI Agent)"
+NB_TOKEN="$(rbw get --field "API Token" "Netbox (AI Agent)")"
 ```
-
-Notes:
-- The `API Token` field contains the NetBox API token.
-- Handle retrieved credentials as secrets and do not commit them to the
-  repository.
 
 ## Purchase Information
 
@@ -84,22 +77,27 @@ Use the **web UI form** instead. This preserves the original filename.
 
 ### Procedure
 
-1. Get a session cookie and CSRF token by logging in:
+1. Get a session cookie and CSRF token by logging in. The cookie jar lives
+   in a private temp file; the password goes to curl through stdin
+   (`password=<-`), not its command line:
 
 ```bash
-# Credentials: username/password from the selected credential flow
-# (the same `Netbox (AI Agent)` entry that contains the API token)
-curl -sc /tmp/nb_cookies.txt -s "https://netbox.brkn.lol/login/" > /dev/null
-CSRF=$(grep csrftoken /tmp/nb_cookies.txt | awk '{print $NF}')
+jar="$(mktemp)"
+trap 'shred -u "$jar" 2>/dev/null || rm -f "$jar"' EXIT
+curl -fsS -c "$jar" "https://netbox.brkn.lol/login/" > /dev/null
+CSRF=$(awk '/csrftoken/ {print $NF}' "$jar")
 
-curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
-  -X POST "https://netbox.brkn.lol/login/" \
-  -H "Referer: https://netbox.brkn.lol/login/" \
-  -F "csrfmiddlewaretoken=$CSRF" \
-  -F "username=ai-agent" \
-  -F "password=<password from the selected credential flow>" \
-  -F "next=/" -o /dev/null
+rbw get --field password "Netbox (AI Agent)" \
+  | curl -fsS -b "$jar" -c "$jar" \
+    -X POST "https://netbox.brkn.lol/login/" \
+    -H "Referer: https://netbox.brkn.lol/login/" \
+    -F "csrfmiddlewaretoken=$CSRF" \
+    -F "username=$(rbw get --field username "Netbox (AI Agent)")" \
+    -F "password=<-" \
+    -F "next=/" -o /dev/null
 ```
+
+   Run steps 1 and 3 in the same shell so `$jar` still exists.
 
 2. Find the content type ID for the target object type from its NetBox detail
    page. The "add document" button URL contains `?content_type=<id>&object_id=<id>`.
@@ -110,12 +108,12 @@ curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
 
 ```bash
 # Refresh CSRF
-curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt -s \
+curl -fsS -b "$jar" -c "$jar" \
   "https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" > /dev/null
-CSRF=$(grep csrftoken /tmp/nb_cookies.txt | awk '{print $NF}')
+CSRF=$(awk '/csrftoken/ {print $NF}' "$jar")
 
 # Upload — filename in the -F value is what gets stored
-curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt \
+curl -sS -b "$jar" -c "$jar" \
   -X POST "https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" \
   -H "Referer: https://netbox.brkn.lol/plugins/documents/documents/add/?content_type=12&object_id=<DEVICE_ID>&return_url=/dcim/devices/<DEVICE_ID>" \
   -F "csrfmiddlewaretoken=$CSRF" \
@@ -129,10 +127,10 @@ curl -sb /tmp/nb_cookies.txt -sc /tmp/nb_cookies.txt \
 # Expect: 302 -> https://netbox.brkn.lol/dcim/devices/<DEVICE_ID>
 ```
 
-4. Verify via API:
+4. Verify via API (`NB_TOKEN` set as under *Access*):
 
 ```bash
-curl -sf -H "Authorization: Token $NB_TOKEN" \
+curl -fsS -H @<(printf 'Authorization: Token %s\n' "$NB_TOKEN") \
   "https://netbox.brkn.lol/api/plugins/documents/documents/?object_id=<DEVICE_ID>" \
   | jq '.results[] | {id, filename, document_type}'
 ```
@@ -273,12 +271,12 @@ Current prefixes:
 - `LGC` = LG
 - `LNK` = Linksys
 - `LOG` = Logitech
-- `M5S` = M5Stack
 - `LTX` = Lantronix
+- `M5S` = M5Stack
 - `MER` = Meross
-- `MTH` = Minthouz
 - `MIE` = Miele
 - `MOT` = Motorola
+- `MTH` = Minthouz
 - `NBC` = Nabu Casa
 - `NEL` = nello
 - `NET` = Netac
@@ -364,6 +362,5 @@ When creating small-ish device types, such as IoT devices:
 When recording MAC addresses:
 - Add the MAC address object to the correct interface instead of only writing it
   in comments.
-- Set that MAC as the interface's primary MAC.
-- Set the same MAC as the device's primary MAC when it is the main hardware
-  address for the device.
+- Set that MAC as the interface's primary MAC. Devices have no primary MAC
+  field (NetBox 4.5), so the interface is the only place to set it.

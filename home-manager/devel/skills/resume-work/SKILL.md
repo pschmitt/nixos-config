@@ -19,15 +19,17 @@ source of truth, scoped to the current project directory (`$PWD`).
 All three agents key their session storage by working directory, so start
 there:
 
-- **claude**: `~/.claude/projects/<slug>/*.jsonl`
+- **claude**: `~/.config/claude/projects/<slug>/*.jsonl` (the configured
+  `CLAUDE_CONFIG_DIR`; `~/.claude/projects` only holds older sessions)
 - **claude-work**: `~/.config/claude-work/projects/<slug>/*.jsonl`
 - **codex**: `~/.config/codex/sessions/YYYY/MM/DD/*.jsonl` (organized by
   date, not by project — find candidates with
-  `rg -l '"cwd":"<absolute-pwd>"' ~/.config/codex/sessions/**/*.jsonl` or
-  similar, scoped under `~/.config/codex/sessions`, not the whole home dir)
+  `rg -l -g '*.jsonl' -F '"cwd":"<absolute-pwd>"' ~/.config/codex/sessions`,
+  scoped under `~/.config/codex/sessions`, not the whole home dir)
 
-Where `<slug>` is `$PWD` with `/` replaced by `-` (matches the directory
-names already under `~/.claude/projects/`).
+Where `<slug>` is `$PWD` with every `/` and `.` replaced by `-` (e.g.
+`~/devel/nixos-config.git` → `-home-<user>-devel-nixos-config-git`; matches the
+directory names already under `~/.config/claude/projects/`).
 
 **Exclude this session's own transcript** — it's being written to right now
 so it will always sort as newest and is not useful history. For
@@ -54,7 +56,8 @@ Briefly summarize your understanding of where things stand back to the user
 before making changes, then continue from the concrete next step — don't
 just re-verify everything from scratch.
 
-If the user separately points you at a specific handoff note or summary
-(e.g. one written by the `handoff` skill), read that directly instead — it
-was written for exactly this purpose — but don't go looking for one at any
-fixed or "latest" path; it only exists if the user hands you its path.
+If the user separately points you at a specific handoff note or summary,
+read that directly instead — it was written for exactly this purpose — but
+don't go looking for one at any fixed or "latest" path; it only exists if the
+user hands you its path. (The `handoff` skill writes no file: it types its
+briefing straight into the new agent's prompt.)

@@ -46,8 +46,9 @@ nix develop --command ansible-lint
 3. Treat inventory, host vars, group vars, and SOPS-encrypted files carefully.
 4. Validate focused changes with `nix develop --command ansible-lint <path>`
    when practical.
-5. Use `nix flake check` after changing `flake.nix`, `flake.lock`, or dev-shell
-   behavior.
+5. After changing `flake.nix`, `flake.lock`, or dev-shell behavior, run
+   `nix flake check` on rofl-13/rofl-14 (rsync to `~/build/ansible-stuff`), not
+   locally (expensive Nix evaluation and checks).
 
 ## Reference map
 

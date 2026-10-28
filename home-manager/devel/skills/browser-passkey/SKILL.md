@@ -15,6 +15,11 @@ in the page and seeds it directly from the vault. With
 `automaticPresenceSimulation` and `isUserVerified`, Chromium signs the challenge
 without any human interaction.
 
+`$SKILL_DIR` below is this skill's directory; set it before running a script,
+e.g. `SKILL_DIR=~/.config/claude/skills/browser-passkey` (Claude Code),
+`~/.config/claude-work/skills/browser-passkey` (Claude Work) or
+`~/.config/codex/skills/browser-passkey` (Codex).
+
 ## Read this first: what does not work
 
 Verified on the Chromium Playwright MCPs (2026-10):
@@ -76,7 +81,7 @@ page**, so they can click and type in the very session you are driving:
   (`hosts/rofl-10/browserless-public.nix`) and proxies only `/handoff/`,
   `/json/list` and the websocket of one page, never browser-daemon's own API.
   The view is a small phone-friendly page served by browser-daemon (source:
-  `services/headless-browsers/handoff.html` in nixos-config): tap = click, drag
+  `handoff.html` in the browser-daemon repository): tap = click, drag
   = scroll, back/forward/reload, and tapping a text field raises the phone's
   native keyboard (type and key hint mirror the field: email, password, ...;
   the remote page is resized to the phone like a real mobile browser, toggle
@@ -144,49 +149,10 @@ credential, refresh/sync the ordinary Bitwarden client before using it.
    fails, close your browser page. Never leave a privileged authenticated
    session open after finishing work.
 
-Counter inspection and recovery use:
-
-```bash
-rbw passkey counter ENTRY --rp-id auth.example.com
-rbw passkey counter ENTRY --rp-id auth.example.com --set 5
-```
-
-`--set` only advances counters. Choose a value from verified server state,
-not a guessed large number. For Authelia, also inspect the matching server
-credential's `sign_count` and `clone_warning`. Equal vault and server counters are normal after a successful
-assertion; the next assertion must exceed the server counter. Equality alone
-does not prove recovery.
-
-Authelia persists `clone_warning`, and its go-webauthn dependency does not clear
-an existing warning when a later assertion advances the counter. Once flagged,
-the credential can remain rejected even with synchronized, increasing counters.
-`rbw passkey counter --set` cannot clear that server flag. Diagnose from server
-logs and credential state before repeating attempts; the portal's generic
-"Failed to initiate security key sign in process" can mask a clone rejection.
-
-Recovery requires re-registration or a targeted server repair after verifying
-that the flagged credential is the intended vault passkey and that the warning
-came from the known counter mismatch. Before a manual database repair, create a
-restricted SQLite backup using the backup API, preserve `sign_count`, and clear
-only that credential's warning. Sync the ordinary Bitwarden client before
-retrying, then verify site acceptance and the server's counter and warning.
-A completed rbw writeback proves vault synchronization, not server acceptance.
-
-Never inject a passkey on a relying party the ordinary Bitwarden client also
-signs in to (Authelia, auth.brkn.lol) unless that client's counter is known to
-follow: the injector advances the server's `sign_count` past what the client
-sends, and the client is then rejected as a clone (seen 2026-10-15: server and
-vault at 25, client below, warning latched). The repair used there: SQLite
-backup under `/mnt/data/backups/authelia/`, then `clone_warning=0` and
-`sign_count=0` for that one credential, so the client's next assertion passes.
-
-The server rejects competing updates using its revision timestamp; rbw also
-locks the item against concurrent injections on the same machine. Avoid
-simultaneous use of the same passkey across clients, since counters cannot
-serialize assertion delivery across browsers.
-
-The historical `scripts/passkey-serve.sh` now forwards to the native inject
-command with the same arguments. It no longer exports a private key over HTTP.
+Counter inspection, recovery, and the Authelia clone-warning trap (never
+inject a passkey on a relying party your ordinary Bitwarden client also uses)
+are in [`references/counters.md`](references/counters.md). Read it before
+any `--set` or server-side repair, and before injecting on `auth.brkn.lol`.
 
 ## Signing in without a person: agent-passkey
 
@@ -202,7 +168,7 @@ assert` outside the browser (verified: Outlook signed in unattended):
    debugging port: `browser-daemon session list --json` (`port`). For a session
    on another node, forward it first (`ssh -L PORT:127.0.0.1:PORT NODE`).
 2. Start the helper in the background, before the sign-in:
-   `node scripts/agent-passkey.mjs http://127.0.0.1:PORT --timeout 300 &`
+   `node "$SKILL_DIR/scripts/agent-passkey.mjs" http://127.0.0.1:PORT --timeout 300 &`
    (waits for `agent-passkey: ready` on stderr).
 3. Sign in as usual: type the username (secrets with `browser_fill_secret`,
    never in tool arguments), click Next. The passkey step completes by itself.
@@ -212,7 +178,7 @@ The origin passed to rbw comes from the browser's target list, never from page
 script, and rbw refuses an origin outside the passkey's relying party. Run one
 helper per browser: two make parallel assertions and rbw's item lock rejects one
 ("another passkey injection is active"). Autofill (conditional) requests are left
-to the browser. Chromium only. The Authelia warning above applies here too: do
+to the browser. Chromium only. The Authelia clone warning (`references/counters.md`) applies here too: do
 not use this for a relying party your ordinary Bitwarden client also uses.
 
 ## Passkeys in the live view (a human signing in)

@@ -8,7 +8,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
-  - `home-assistant`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
+  - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 
 ## Code and validation
 
