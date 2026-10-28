@@ -18,8 +18,9 @@ services are retired; CI no longer publishes over SSH to the cache hosts.
 ## LAN mirror
 
 `services/harmonia-lan-mirror.nix` reads selected default-branch outputs from
-nixbot's `/nix-outputs` endpoint, fetches their closures using the configured
-substituters and creates local GC roots. LAN clients can then substitute from
+their niks3 pins (the `pins/<name>` objects in the cache bucket, read with the
+host's read-only S3 credentials), fetches their closures using the configured
+substituters and creates local GC roots. It polls every five minutes. LAN clients can then substitute from
 that host's Harmonia. A failed fetch preserves the previous root. The mirror
 also reserves free space before fetching and releases roots of removed targets.
 
