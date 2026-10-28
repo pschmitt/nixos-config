@@ -3,6 +3,12 @@
 set -euo pipefail
 
 toggle_mic_mute() {
+  if command -v obs-control >/dev/null 2>&1
+  then
+    obs-control toggle-mute
+    return
+  fi
+
   if noctalia msg plugin pschmitt/mic-state:status all toggle_mute
   then
     return 0
