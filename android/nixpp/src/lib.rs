@@ -670,42 +670,65 @@ pub fn doctor() -> Result<()> {
         "🔐 Validate trusted cache keys and AWS credentials",
         || Ok(()),
     )?;
-    ui.stage("☁️ Check access to the configured S3 cache", || {
-        let url = safe_cache_url(&target.base, "nix-cache-info")?;
-        let data = curl_read(&url, &auth, 1 << 20)?;
-        let text = std::str::from_utf8(&data).context("nix-cache-info is not UTF-8")?;
-        ensure!(
-            text.lines().any(|line| line.starts_with("StoreDir: ")),
-            "cache returned invalid nix-cache-info"
-        );
-        Ok(())
-    })?;
-    let mut reachable_builders = 0;
-    for builder in &builders {
-        if ui
-            .stage(&format!("🔌 Check SSH and Nix on {builder}"), || {
+    let reachable_builders = std::thread::scope(|scope| -> Result<usize> {
+        let ui = &ui;
+        let target = &target;
+        let auth = &auth;
+        let cache_check = scope.spawn(move || {
+            ui.stage("☁️ Check access to the configured S3 cache", || {
+                let url = safe_cache_url(&target.base, "nix-cache-info")?;
+                let data = curl_read(&url, &auth, 1 << 20)?;
+                let text = std::str::from_utf8(&data).context("nix-cache-info is not UTF-8")?;
                 ensure!(
-                    Command::new("ssh")
-                        .args([
-                            "-o",
-                            "BatchMode=yes",
-                            "-o",
-                            "ConnectTimeout=10",
-                            builder,
-                            "nix --version"
-                        ])
-                        .status()
-                        .context("start SSH check")?
-                        .success(),
-                    "builder SSH or Nix check failed"
+                    text.lines().any(|line| line.starts_with("StoreDir: ")),
+                    "cache returned invalid nix-cache-info"
                 );
                 Ok(())
             })
-            .is_ok()
-        {
-            reachable_builders += 1;
+        });
+        let builder_checks: Vec<_> = builders
+            .iter()
+            .map(|builder| {
+                let ui = ui;
+                scope.spawn(move || {
+                    ui.stage(&format!("🔌 Check SSH and Nix on {builder}"), || {
+                        ensure!(
+                            Command::new("ssh")
+                                .args([
+                                    "-o",
+                                    "BatchMode=yes",
+                                    "-o",
+                                    "ConnectTimeout=10",
+                                    builder,
+                                    "nix --version"
+                                ])
+                                .status()
+                                .context("start SSH check")?
+                                .success(),
+                            "builder SSH or Nix check failed"
+                        );
+                        Ok(())
+                    })
+                })
+            })
+            .collect();
+
+        cache_check
+            .join()
+            .map_err(|_| anyhow::anyhow!("S3 cache check panicked"))??;
+
+        let mut reachable = 0;
+        for check in builder_checks {
+            if check
+                .join()
+                .map_err(|_| anyhow::anyhow!("builder check panicked"))?
+                .is_ok()
+            {
+                reachable += 1;
+            }
         }
-    }
+        Ok(reachable)
+    })?;
     ensure!(
         reachable_builders > 0,
         "no configured Nix builders are reachable"
