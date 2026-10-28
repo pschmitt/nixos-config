@@ -1350,6 +1350,7 @@ fn switch_profile_with_source(
                     && current.id != previous
                 {
                     let diff = Command::new(generation_root.join("current/bin/nixpp"))
+                        .env_remove("TERMUX_GENERATION")
                         .arg("diff")
                         .arg(&previous)
                         .arg(&current.id)
