@@ -169,7 +169,7 @@ native_shell_check() {
     return 1
   fi
   if (( ! $+_comps[git] || ! $+_comps[ipmi] || ! $+_comps[kubectl] ||
-        ! $+_comps[linkding] || ! $+_comps[adb.sh] || ! $+_comps[tmux-slay] || ! $+_comps[xpanes] ||
+        ! $+_comps[linkding] || ! $+_comps[tmux-slay] || ! $+_comps[xpanes] ||
         ! $+_comps[mani] || ! $+_comps[ossh] || ! $+_comps[rbw] ||
         ! $+_comps[revolver] || ! $+_comps[whatsmy] || ! $+_comps[zunit] ))
   then
@@ -187,7 +187,7 @@ native_shell_check() {
     return 1
   fi
   local command
-  for command in adb.sh eget jc ketall kubectl-delete_all kubectl-list_all \
+  for command in eget jc ketall kubectl-delete_all kubectl-list_all \
     kubectl-reveal_secret kubectl-socks5_proxy kubectl-watch linkding myl netbird-cli \
     hwatch nixpp obs-cli rbw slack-react ssh-to-age tmux-slay xpanes
   do
@@ -221,19 +221,6 @@ native_shell_check() {
   native_smoke_run 'Atuin version' atuin --version || return
   native_smoke_run 'hwatch version' hwatch --version || return
   native_smoke_run 'ADB version' adb version || return
-  local adb_help_stderr
-  if adb_help_stderr=$(adb.sh --help 2>&1 >/dev/null)
-  then
-    if [[ -n "$adb_help_stderr" ]]
-    then
-      print -u2 -- "ADB helper help wrote to stderr: $adb_help_stderr"
-      return 1
-    fi
-    print -r -- '  Passed: ADB helper help'
-  else
-    print -u2 -- 'Smoke command failed: ADB helper help'
-    return 1
-  fi
   native_smoke_run 'tmux-slay help' tmux-slay --help || return
   native_smoke_run 'xpanes version' xpanes --version || return
   native_smoke_run 'OBS CLI version' obs-cli --version || return

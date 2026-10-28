@@ -85,7 +85,6 @@ in
         ".config/termux/tasker/tudo"
         ".config/zsh/custom/os/home-manager/system.zsh"
         ".config/atuin/config.toml"
-        ".config/zsh/completions/_adb.sh"
         ".config/zsh/completions/_tmux-slay"
         ".config/tmux/bin/xpanes"
         ".config/zsh/completions/_xpanes"
