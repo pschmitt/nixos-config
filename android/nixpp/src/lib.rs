@@ -3,7 +3,7 @@ use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::env;
 use std::ffi::OsStr;
 use std::fs::{self, File, OpenOptions};
@@ -139,6 +139,12 @@ struct GenerationInfo {
     minimum_api: u64,
     apt_packages: Vec<String>,
     nix_packages: Vec<String>,
+    #[serde(skip_serializing)]
+    home_files: Option<Vec<String>>,
+    #[serde(skip_serializing)]
+    plugins: Option<Vec<String>>,
+    #[serde(skip_serializing)]
+    gitstatus_version: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -201,6 +207,16 @@ fn manifest_string_array(manifest: &serde_json::Value, name: &str) -> Result<Vec
                 .with_context(|| format!("generation manifest {name} contains a non-string value"))
         })
         .collect()
+}
+
+fn optional_manifest_string_array(
+    manifest: &serde_json::Value,
+    name: &str,
+) -> Result<Option<Vec<String>>> {
+    manifest
+        .get(name)
+        .map(|_| manifest_string_array(manifest, name))
+        .transpose()
 }
 
 fn generation_numbers(root: &Path) -> Result<HashMap<String, u64>> {
@@ -288,6 +304,12 @@ fn inspect_generation(root: &Path, id: &str, number: Option<u64>) -> Result<Gene
         minimum_api,
         apt_packages: manifest_string_array(&manifest, "basePackages")?,
         nix_packages: manifest_string_array(&manifest, "homePackages")?,
+        home_files: optional_manifest_string_array(&manifest, "homeFiles")?,
+        plugins: optional_manifest_string_array(&manifest, "plugins")?,
+        gitstatus_version: manifest
+            .get("gitstatusVersion")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned),
     })
 }
 
@@ -469,6 +491,194 @@ pub fn generations() -> Result<()> {
     let status = inspect_generations(&termux_generation_root()?)?;
     print_generations(&status);
     Ok(())
+}
+
+fn generation_label(generation: &GenerationInfo) -> String {
+    let number = generation.number.map_or_else(
+        || "unnumbered".to_owned(),
+        |number| format!("generation {number}"),
+    );
+    format!("{number} · {}", &generation.id[..12])
+}
+
+fn print_set_diff(label: &str, old: &[String], new: &[String]) -> bool {
+    let old: BTreeSet<_> = old.iter().collect();
+    let new: BTreeSet<_> = new.iter().collect();
+    let removed: Vec<_> = old.difference(&new).collect();
+    let added: Vec<_> = new.difference(&old).collect();
+    if removed.is_empty() && added.is_empty() {
+        return false;
+    }
+
+    println!("{label}:");
+    for item in removed {
+        println!("  - {item}");
+    }
+    for item in added {
+        println!("  + {item}");
+    }
+    true
+}
+
+fn safe_home_file_path(path: &str) -> Result<PathBuf> {
+    let path = Path::new(path);
+    ensure!(
+        !path.as_os_str().is_empty()
+            && path
+                .components()
+                .all(|component| matches!(component, Component::Normal(_))),
+        "generation manifest contains an unsafe home file path"
+    );
+    Ok(path.to_path_buf())
+}
+
+fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<String> {
+    let relative_path = safe_home_file_path(relative_path)?;
+    let path = generation_root.join("home").join(relative_path);
+    let metadata = fs::symlink_metadata(&path)
+        .with_context(|| format!("inspect generated home file {}", path.display()))?;
+    let mode = metadata.permissions().mode() & 0o777;
+    if metadata.file_type().is_symlink() {
+        return Ok(format!(
+            "symlink:{mode:o}:{}",
+            fs::read_link(&path)?.display()
+        ));
+    }
+    ensure!(
+        metadata.file_type().is_file(),
+        "generated home file {} is not a regular file or symlink",
+        path.display()
+    );
+    let mut file = File::open(&path).with_context(|| format!("open {}", path.display()))?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0; 64 * 1024];
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .with_context(|| format!("read {}", path.display()))?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("file:{mode:o}:{}", hex(&hasher.finalize())))
+}
+
+fn print_home_file_diff(root: &Path, old: &GenerationInfo, new: &GenerationInfo) -> Result<bool> {
+    let (Some(old_files), Some(new_files)) = (&old.home_files, &new.home_files) else {
+        println!("Generated home files: not recorded in both generation manifests");
+        return Ok(false);
+    };
+
+    let old_set: BTreeSet<_> = old_files.iter().collect();
+    let new_set: BTreeSet<_> = new_files.iter().collect();
+    let removed: Vec<_> = old_set.difference(&new_set).collect();
+    let added: Vec<_> = new_set.difference(&old_set).collect();
+    let mut changed = !removed.is_empty() || !added.is_empty();
+    if changed {
+        println!("Generated home files:");
+        for path in removed {
+            println!("  - {path}");
+        }
+        for path in added {
+            println!("  + {path}");
+        }
+    }
+
+    let old_root = root.join("generations").join(&old.id);
+    let new_root = root.join("generations").join(&new.id);
+    let mut content_changes = Vec::new();
+    for relative_path in old_set.intersection(&new_set) {
+        if home_file_signature(&old_root, relative_path)?
+            != home_file_signature(&new_root, relative_path)?
+        {
+            content_changes.push(*relative_path);
+        }
+    }
+    if !content_changes.is_empty() {
+        if !changed {
+            println!("Generated home files:");
+        }
+        for path in content_changes {
+            println!("  ~ {path}");
+        }
+        changed = true;
+    }
+    Ok(changed)
+}
+
+fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> {
+    ensure!(old_id != new_id, "cannot diff a generation against itself");
+    let numbers = generation_numbers(root)?;
+    let old = inspect_generation(root, old_id, numbers.get(old_id).copied())?;
+    let new = inspect_generation(root, new_id, numbers.get(new_id).copied())?;
+    let ui = Progress::new();
+    println!(
+        "{} {} → {}",
+        ui.paint("1;36", "nixpp ✨ generation diff:"),
+        generation_label(&old),
+        generation_label(&new)
+    );
+
+    let mut changed = false;
+    if old.architecture != new.architecture {
+        println!("Architecture: {} → {}", old.architecture, new.architecture);
+        changed = true;
+    }
+    if old.minimum_api != new.minimum_api {
+        println!(
+            "Minimum Android API: {} → {}",
+            old.minimum_api, new.minimum_api
+        );
+        changed = true;
+    }
+    if old.gitstatus_version != new.gitstatus_version {
+        match (&old.gitstatus_version, &new.gitstatus_version) {
+            (Some(old), Some(new)) => println!("Git status: {old} → {new}"),
+            (old, new) => println!("Git status: {old:?} → {new:?}"),
+        }
+        changed = true;
+    }
+    changed |= print_set_diff(
+        "Termux APT package requirements",
+        &old.apt_packages,
+        &new.apt_packages,
+    );
+    changed |= print_set_diff("Nix output packages", &old.nix_packages, &new.nix_packages);
+    if let Some(old_plugins) = &old.plugins {
+        if let Some(new_plugins) = &new.plugins {
+            changed |= print_set_diff("Shell plugins", old_plugins, new_plugins);
+        }
+    }
+    changed |= print_home_file_diff(root, &old, &new)?;
+    if !changed {
+        println!("No recorded changes.");
+    }
+    Ok(())
+}
+
+pub fn diff(old: Option<&str>, new: Option<&str>) -> Result<()> {
+    let root = termux_generation_root()?;
+    let status = inspect_generations(&root)?;
+    let current = status
+        .current
+        .as_ref()
+        .context("no current generation is installed")?;
+    let new_id = match new {
+        Some(selection) => resolve_generation(&root, selection)?,
+        None => current.id.clone(),
+    };
+    let old_id = match old {
+        Some(selection) => resolve_generation(&root, selection)?,
+        None => status
+            .generations
+            .iter()
+            .filter(|generation| generation.id != new_id)
+            .max_by_key(|generation| generation.number.unwrap_or(0))
+            .map(|generation| generation.id.clone())
+            .context("no previous generation is available to compare")?,
+    };
+    print_generation_diff(&root, &old_id, &new_id)
 }
 
 pub fn gc(keep: usize, dry_run: bool) -> Result<()> {
@@ -903,6 +1113,14 @@ fn switch_profile_with_source(
     } else {
         None
     };
+    let generation_root = termux_generation_root()?;
+    let previous_generation = if use_s3 {
+        inspect_generations(&generation_root)?
+            .current
+            .map(|generation| generation.id)
+    } else {
+        None
+    };
     ensure!(!flake.is_empty(), "--flake is required");
     ensure!(
         flake.len() <= 4096 && !flake.contains(['\0', '\r', '\n']),
@@ -1007,7 +1225,26 @@ fn switch_profile_with_source(
             "could not remove temporary builder output {path}: {error:#}"
         ));
     }
-    result
+    result?;
+    if let Some(previous) = previous_generation {
+        match inspect_generations(&generation_root) {
+            Ok(status) => {
+                if let Some(current) = status.current
+                    && current.id != previous
+                    && let Err(error) =
+                        print_generation_diff(&generation_root, &previous, &current.id)
+                {
+                    ui.warning(&format!(
+                        "upgrade succeeded, but generation diff failed: {error:#}"
+                    ));
+                }
+            }
+            Err(error) => ui.warning(&format!(
+                "upgrade succeeded, but could not inspect the active generation for a diff: {error:#}"
+            )),
+        }
+    }
+    Ok(())
 }
 
 fn remote_build(builder: &str, flake: &str) -> Result<String> {

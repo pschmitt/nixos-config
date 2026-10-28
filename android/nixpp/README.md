@@ -125,6 +125,15 @@ before activating it. It uses `defaults.flake`, `defaults.public_keys`, and
 `defaults.aws_credentials_file` from the config. The bundle must already have
 been published to Niks3; a missing cache entry fails without activating a
 generation. Publish updates through the Termux bootstrap build workflow.
+After activation, `upgrade` shows the changes from the generation that was
+active when the upgrade started.
+
+Run `nixpp diff` to compare the current generation with the latest other
+generation. Pass two generation numbers or IDs to choose both sides, or one
+number or ID to compare it with the current generation, for example
+`nixpp diff 6 7` or `nixpp diff 6`. The diff lists changed package requirements,
+bundle outputs, shell plugins, and generated Home Manager files, including
+content and permission changes.
 
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.

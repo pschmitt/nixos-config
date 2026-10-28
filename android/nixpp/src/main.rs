@@ -48,6 +48,13 @@ enum Command {
     },
     /// Upgrade to the configured default Termux profile.
     Upgrade,
+    /// Compare changes recorded between two installed generations.
+    Diff {
+        /// Older generation number or full SHA-256 ID (defaults to the latest non-current generation).
+        old: Option<String>,
+        /// Newer generation number or full SHA-256 ID (defaults to the current generation).
+        new: Option<String>,
+    },
     /// Show the active generation and installed generation IDs.
     Status {
         /// Show every retained generation.
@@ -103,6 +110,7 @@ fn run(cli: Cli) -> Result<()> {
             public_key,
         } => nixpp::switch_profile(flake.as_deref(), builder.as_deref(), public_key.as_deref()),
         Command::Upgrade => nixpp::upgrade_profile(),
+        Command::Diff { old, new } => nixpp::diff(old.as_deref(), new.as_deref()),
         Command::Status { all, json } => nixpp::status(all, json),
         Command::Generations => nixpp::generations(),
         Command::Rollback { generation } => nixpp::rollback(&generation),
