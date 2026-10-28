@@ -539,9 +539,7 @@ fn safe_home_file_path(path: &str) -> Result<PathBuf> {
     Ok(path.to_path_buf())
 }
 
-fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<String> {
-    let relative_path = safe_home_file_path(relative_path)?;
-    let path = generation_root.join("home").join(relative_path);
+fn path_signature(path: &Path) -> Result<String> {
     let metadata = fs::symlink_metadata(&path)
         .with_context(|| format!("inspect generated home file {}", path.display()))?;
     let mode = metadata.permissions().mode() & 0o777;
@@ -572,6 +570,65 @@ fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<St
         hasher.update(&buffer[..read]);
     }
     Ok(format!("file:{mode:o}:{}", hex(&hasher.finalize())))
+}
+
+fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<String> {
+    let relative_path = safe_home_file_path(relative_path)?;
+    path_signature(&generation_root.join("home").join(relative_path))
+}
+
+fn generation_command_signatures(generation_root: &Path) -> Result<BTreeMap<String, String>> {
+    let bin = generation_root.join("bin");
+    let mut signatures = BTreeMap::new();
+    for entry in fs::read_dir(&bin).with_context(|| format!("read {}", bin.display()))? {
+        let entry = entry.with_context(|| format!("read an entry in {}", bin.display()))?;
+        let file_type = entry
+            .file_type()
+            .with_context(|| format!("inspect {}", entry.path().display()))?;
+        if !file_type.is_file() && !file_type.is_symlink() {
+            continue;
+        }
+        let name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| anyhow::anyhow!("{} contains a non-UTF-8 command name", bin.display()))?;
+        signatures.insert(name, path_signature(&entry.path())?);
+    }
+    Ok(signatures)
+}
+
+fn print_command_diff(
+    ui: &Progress,
+    root: &Path,
+    old: &GenerationInfo,
+    new: &GenerationInfo,
+) -> Result<bool> {
+    let old_root = root.join("generations").join(&old.id);
+    let new_root = root.join("generations").join(&new.id);
+    let old_signatures = generation_command_signatures(&old_root)?;
+    let new_signatures = generation_command_signatures(&new_root)?;
+    let names: BTreeSet<_> = old_signatures
+        .keys()
+        .chain(new_signatures.keys())
+        .cloned()
+        .collect();
+    let mut changes = Vec::new();
+    for name in names {
+        match (old_signatures.get(&name), new_signatures.get(&name)) {
+            (Some(_), None) => changes.push(("31", "-", name)),
+            (None, Some(_)) => changes.push(("32", "+", name)),
+            (Some(old), Some(new)) if old != new => changes.push(("33", "~", name)),
+            _ => {}
+        }
+    }
+    if changes.is_empty() {
+        return Ok(false);
+    }
+    println!("{}:", ui.paint("1", "Native commands"));
+    for (color, marker, name) in changes {
+        println!("  {} {name}", ui.paint(color, marker));
+    }
+    Ok(true)
 }
 
 fn print_home_file_diff(
@@ -683,6 +740,7 @@ fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> 
             changed |= print_set_diff(&ui, "Shell plugins", old_plugins, new_plugins);
         }
     }
+    changed |= print_command_diff(&ui, root, &old, &new)?;
     changed |= print_home_file_diff(&ui, root, &old, &new)?;
     if !changed {
         println!("No recorded changes.");
