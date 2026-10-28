@@ -97,6 +97,9 @@ in
 
       # Highlight URLs in notification toasts and history.
       ./patches/noctalia/0012-notification-link-styling.patch
+
+      # Hit-test links in the text layout for individual URL clicks.
+      ./patches/noctalia/0013-notification-link-hit-testing.patch
     ];
   });
 }
