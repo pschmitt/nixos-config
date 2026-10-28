@@ -16,6 +16,13 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Compare changes recorded between two installed generations.
+    Diff {
+        /// Older generation number or full SHA-256 ID (defaults to the latest non-current generation).
+        old: Option<String>,
+        /// Newer generation number or full SHA-256 ID (defaults to the current generation).
+        new: Option<String>,
+    },
     /// Fetch one reference-free output from a signed Nix binary cache.
     Fetch {
         /// Nix binary cache URL.
@@ -34,6 +41,31 @@ enum Command {
         #[arg(long)]
         netrc_file: Option<PathBuf>,
     },
+    /// Remove old generations and Termux APT packages no retained generation needs.
+    Gc {
+        /// Number of newest generations to retain, plus the active generation.
+        #[arg(long, default_value_t = 3)]
+        keep: usize,
+        /// Show what would be removed without changing generations or packages.
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// List installed generations that can be used for rollback.
+    Generations,
+    /// Roll back to a generation number or full SHA-256 ID.
+    Rollback {
+        /// Generation number shown by `nixpp status` or `nixpp generations`.
+        generation: String,
+    },
+    /// Show the active generation and installed generation IDs.
+    Status {
+        /// Show every retained generation.
+        #[arg(long)]
+        all: bool,
+        /// Print machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
     /// Build a Termux bundle on a Nix host, verify it, and activate it.
     Switch {
         /// Flake installable that produces a Termux bundle.
@@ -48,38 +80,6 @@ enum Command {
     },
     /// Upgrade to the configured default Termux profile.
     Upgrade,
-    /// Compare changes recorded between two installed generations.
-    Diff {
-        /// Older generation number or full SHA-256 ID (defaults to the latest non-current generation).
-        old: Option<String>,
-        /// Newer generation number or full SHA-256 ID (defaults to the current generation).
-        new: Option<String>,
-    },
-    /// Show the active generation and installed generation IDs.
-    Status {
-        /// Show every retained generation.
-        #[arg(long)]
-        all: bool,
-        /// Print machine-readable JSON.
-        #[arg(long)]
-        json: bool,
-    },
-    /// List installed generations that can be used for rollback.
-    Generations,
-    /// Roll back to a generation number or full SHA-256 ID.
-    Rollback {
-        /// Generation number shown by `nixpp status` or `nixpp generations`.
-        generation: String,
-    },
-    /// Remove old generations and Termux APT packages no retained generation needs.
-    Gc {
-        /// Number of newest generations to retain, plus the active generation.
-        #[arg(long, default_value_t = 3)]
-        keep: usize,
-        /// Show what would be removed without changing generations or packages.
-        #[arg(long)]
-        dry_run: bool,
-    },
 }
 
 fn main() {
