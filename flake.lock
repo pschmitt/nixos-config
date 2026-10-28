@@ -9,11 +9,11 @@
       },
       "locked": {
         "host": "git.wiit.one",
-        "lastModified": 1793190870,
+        "lastModified": 1793194433,
         "narHash": "sha256-w6kNGQjNA1KQrzt2wT8Aav9CW5gRkj4UKZxhwGHCPqY=",
         "owner": "kubernetes",
         "repo": "agent-skills",
-        "rev": "5c4b4d4e2c3b3c3cfa7cd053ce9ce3dcc2e1f222",
+        "rev": "a21f4e7abeac150ee46fb23010961466ea03a140",
         "type": "gitlab"
       },
       "original": {
@@ -1744,11 +1744,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793190884,
-        "narHash": "sha256-vpOEsXmqSpiIPbw1knQcvqh9eFMTX0Imc594iqwB/Mw=",
+        "lastModified": 1793194455,
+        "narHash": "sha256-Jw+Hr06C8cdS6hPivA06xDWMMagrciiIrpR1fgXmgoc=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "6382c97fbbe2c772d526be0be81310f503e6a064",
+        "rev": "728a25d7993b7edead907ffccc578d79a4147a25",
         "type": "github"
       },
       "original": {
