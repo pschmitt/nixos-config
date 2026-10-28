@@ -94,6 +94,9 @@ in
 
       # Offer browser buttons for HTTP(S) links in notification history.
       ./patches/noctalia/0011-notification-history-links.patch
+
+      # Highlight URLs in notification toasts and history.
+      ./patches/noctalia/0012-notification-link-styling.patch
     ];
   });
 }
