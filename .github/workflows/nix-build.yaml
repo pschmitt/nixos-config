@@ -242,6 +242,63 @@ jobs:
               --nonfree \
               --copy
 
+  build-termux-bundles:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    name: build Termux ${{ matrix.host }} bundle
+    timeout-minutes: 120
+    runs-on: ubuntu-latest
+    env:
+      NIXPKGS_ALLOW_UNFREE: 1
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [mp4, p11, zf10]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Nix
+        uses: ./.github/actions/nix-setup
+        with:
+          nix-conf: ${{ env.nix-conf }}
+          s3-store: ${{ env.NIKS3_S3_STORE }}
+          s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+          s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
+
+      - name: Check retained remote output
+        id: cache
+        run: |
+          if ./.github/workflows/scripts/ci-build.sh \
+            --pkg 'termux-native-${{ matrix.host }}-bundle' \
+            --system x86_64-linux \
+            --nonfree \
+            --check-cache
+          then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build bundle
+        if: steps.cache.outputs.hit != 'true'
+        run: |
+          ./.github/workflows/scripts/ci-build.sh \
+            --pkg 'termux-native-${{ matrix.host }}-bundle' \
+            --system x86_64-linux \
+            --nonfree
+
+      - name: Push bundle to niks3
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: |
+            ./.github/workflows/scripts/ci-build.sh \
+              --pkg 'termux-native-${{ matrix.host }}-bundle' \
+              --system x86_64-linux \
+              --nonfree \
+              --copy
+
   build-pkgs-oci:
     if: ${{ needs.setup-matrix.outputs.matrix != '' && toJson(fromJson(needs.setup-matrix.outputs.matrix).pkgs.oci) != '[]' }}
     name: build-oci ${{ matrix.pkg.name }} (${{ matrix.system }})
@@ -530,7 +587,15 @@ jobs:
   build-result:
     name: Nix build result
     if: ${{ always() }}
-    needs: [setup-matrix, build-pkgs-free, build-pkgs-nonfree, build-pkgs-oci, build-hosts-aarch64]
+    needs:
+      [
+        setup-matrix,
+        build-pkgs-free,
+        build-pkgs-nonfree,
+        build-pkgs-oci,
+        build-hosts-aarch64,
+        build-termux-bundles,
+      ]
     runs-on: ubuntu-latest
     # Shared across workflows and PRs; queued jobs do not occupy runners.
     concurrency:
