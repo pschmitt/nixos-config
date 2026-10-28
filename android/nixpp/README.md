@@ -64,6 +64,7 @@ public_keys = [
   "gh-actions:BASE64_PUBLIC_KEY",
 ]
 aws_credentials_command = ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
+cache_pins = { p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0", zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0" }
 ```
 
 `--cache`, `--flake`, `--builder`, and `--public-key` override these defaults.
@@ -143,6 +144,14 @@ active when the upgrade started. Run `nixpp upgrade --dry-run` to build and
 fetch the candidate, run the bundle preflight in a temporary home, and show the
 proposed diff without activating or retaining a generation.
 
+`nixpp fetch latest` is a short alias for `nixpp upgrade`: it builds the
+configured flake, fetches its published bundle from S3, verifies it, and
+activates it. `nixpp cache list` reads the configured Niks3 pin objects from
+S3 and shows which configured device bundles are currently pinned and their
+store paths. Use `nixpp cache list --json` for scripts. This reports the
+configured latest pin for each device, not every historical NAR retained by
+S3.
+
 Run `nixpp doctor` to validate the config and trusted keys, retrieve and check
 the rbw credentials, verify authenticated access to the S3 cache, and check
 SSH/Nix availability on the configured builders; it succeeds if one or more
@@ -207,9 +216,9 @@ than putting credentials in command arguments or child process environments:
 ```
 
 The cache path and public key are public configuration. The password must come
-from the existing Bitwarden-backed bootstrap flow. A signed channel index can
-later map stable names such as `bootstrap` and `zinit-cache` to store paths;
-this prototype currently expects the store path explicitly.
+from the existing Bitwarden-backed bootstrap flow. For the configured Termux
+profile, use `nixpp fetch latest`. The explicit store-path form remains
+available for fetching any other known cache output.
 
 ## Verification
 

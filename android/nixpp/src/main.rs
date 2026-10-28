@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
@@ -16,6 +16,11 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Inspect configured outputs pinned in the binary cache.
+    Cache {
+        #[command(subcommand)]
+        command: CacheCommand,
+    },
     /// Compare changes recorded between two installed generations.
     Diff {
         /// Older generation number or full SHA-256 ID (defaults to the latest non-current generation).
@@ -27,15 +32,17 @@ enum Command {
     Doctor,
     /// Fetch one reference-free output from a signed Nix binary cache.
     Fetch {
+        /// Fetch the configured latest profile (the same operation as `upgrade`).
+        target: Option<String>,
         /// Nix binary cache URL.
         #[arg(long)]
         cache: Option<String>,
         /// Full path of the output in the Nix store.
         #[arg(long)]
-        store_path: String,
+        store_path: Option<String>,
         /// New directory to create from this output.
         #[arg(long)]
-        destination: PathBuf,
+        destination: Option<PathBuf>,
         /// Trusted cache key in NAME:BASE64 format.
         #[arg(long, env = "NIXPP_PUBLIC_KEY")]
         public_key: Option<String>,
@@ -98,6 +105,16 @@ enum Command {
     },
 }
 
+#[derive(Debug, Subcommand)]
+enum CacheCommand {
+    /// List configured Niks3 pins and their store paths.
+    List {
+        /// Print machine-readable JSON.
+        #[arg(long)]
+        json: bool,
+    },
+}
+
 fn main() {
     if let Err(error) = run(Cli::parse()) {
         eprintln!("nixpp: {error:#}");
@@ -108,18 +125,41 @@ fn main() {
 fn run(cli: Cli) -> Result<()> {
     match cli.command {
         Command::Fetch {
+            target,
             cache,
             store_path,
             destination,
             public_key,
             netrc_file,
-        } => nixpp::fetch(
-            cache.as_deref(),
-            &store_path,
-            &destination,
-            public_key.as_deref(),
-            netrc_file.as_deref(),
-        ),
+        } => {
+            if target.as_deref() == Some("latest") {
+                anyhow::ensure!(
+                    cache.is_none()
+                        && store_path.is_none()
+                        && destination.is_none()
+                        && public_key.is_none()
+                        && netrc_file.is_none(),
+                    "`fetch latest` uses the configured upgrade settings; do not pass fetch overrides"
+                );
+                nixpp::upgrade_profile(false)
+            } else {
+                anyhow::ensure!(target.is_none(), "unknown fetch target; use `latest`");
+                nixpp::fetch(
+                    cache.as_deref(),
+                    store_path
+                        .as_deref()
+                        .context("--store-path is required unless fetching `latest`")?,
+                    destination
+                        .as_deref()
+                        .context("--destination is required unless fetching `latest`")?,
+                    public_key.as_deref(),
+                    netrc_file.as_deref(),
+                )
+            }
+        }
+        Command::Cache { command } => match command {
+            CacheCommand::List { json } => nixpp::cache_list(json),
+        },
         Command::Switch {
             flake,
             builder,

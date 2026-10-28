@@ -197,6 +197,7 @@ in
             substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
             flake = "github:pschmitt/nixos-config#termux-native-${hostname}-bundle"
             builders = [ "rofl-13", "rofl-14", "rofl-15", "rofl-16" ]
+            cache_pins = { mp4 = "gh-main-packages.x86_64-linux.termux-native-mp4-bundle-0", p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0", zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0" }
             public_keys = [
               "rofl-10:vYRBSypcO/0NnPsDxgSELIcJotU/LmZ1f6vZUKUmty0=",
               "rofl-13:ESRCqy2jcftg690k98KSNqF6LgOqz1X7ZnXXE//WWD0=",

@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::env;
@@ -37,6 +37,15 @@ struct ConfigDefaults {
     public_keys: Vec<String>,
     aws_credentials_file: Option<PathBuf>,
     aws_credentials_command: Option<Vec<String>>,
+    cache_pins: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Serialize)]
+struct CachePin {
+    name: String,
+    pin: String,
+    store_path: Option<String>,
+    status: &'static str,
 }
 
 impl ConfigDefaults {
@@ -1213,6 +1222,150 @@ pub fn fetch(
         fs::remove_file(&path).with_context(|| format!("remove temporary netrc {}", path.display()))
     });
     result.and(cleanup_result)
+}
+
+pub fn cache_list(json: bool) -> Result<()> {
+    let config = load_config()?;
+    ensure!(
+        !config.defaults.cache_pins.is_empty(),
+        "no cache pins configured; set defaults.cache_pins in the nixpp config"
+    );
+    ensure!(
+        !config.defaults.public_keys.is_empty(),
+        "no trusted public keys configured; set defaults.public_keys in the nixpp config"
+    );
+    let cache = config
+        .defaults
+        .substituter
+        .as_deref()
+        .context("no cache configured; set defaults.substituter in the nixpp config")?;
+    let target = parse_cache_target(
+        cache,
+        config.defaults.aws_credentials_file.as_deref(),
+        config.defaults.aws_credentials_command.as_deref(),
+    )?;
+    ensure!(
+        target.s3.is_some(),
+        "nixpp cache list requires an s3:// defaults.substituter"
+    );
+    let auth = CacheAuth {
+        netrc: None,
+        curl_config: Some(make_s3_curl_config(
+            target.s3.as_ref().expect("S3 target was checked"),
+        )?),
+    };
+    let pins = config
+        .defaults
+        .cache_pins
+        .into_iter()
+        .map(|(name, pin)| {
+            ensure!(
+                !name.is_empty()
+                    && name
+                        .chars()
+                        .all(|character| character.is_ascii_alphanumeric()
+                            || "-_".contains(character)),
+                "invalid cache pin label {name:?}"
+            );
+            ensure!(
+                !pin.is_empty()
+                    && pin
+                        .chars()
+                        .all(|character| character.is_ascii_alphanumeric()
+                            || "-_.".contains(character)),
+                "invalid Niks3 pin name for {name:?}"
+            );
+            let url = safe_cache_url(&target.base, &format!("pins/{pin}"))?;
+            let path = curl_read_optional(&url, &auth, 4096)?
+                .map(|value| String::from_utf8(value).context("Niks3 pin is not UTF-8"))
+                .transpose()?
+                .map(|value| value.trim().to_owned());
+            let status = if let Some(path) = path.as_deref() {
+                let hash = store_hash(path)
+                    .with_context(|| format!("Niks3 pin {pin} contains an invalid store path"))?;
+                let narinfo_url = safe_cache_url(&target.base, &format!("{hash}.narinfo"))?;
+                match curl_read_optional(&narinfo_url, &auth, MAX_NARINFO_SIZE)? {
+                    Some(narinfo) => {
+                        let info = parse_nar_info_response(&narinfo)?;
+                        ensure!(
+                            info.store_path == path,
+                            "narinfo StorePath does not match Niks3 pin {pin}"
+                        );
+                        ensure!(
+                            info.references.is_empty(),
+                            "Niks3 pin {pin} points to an output with Nix store references"
+                        );
+                        verify_any_signature(&info, &config.defaults.public_keys)?;
+                        "cached"
+                    }
+                    None => "stale",
+                }
+            } else {
+                "missing"
+            };
+            Ok(CachePin {
+                name,
+                pin,
+                status,
+                store_path: path,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&pins)?);
+    } else {
+        println!("Configured Niks3 pins:");
+        for pin in pins {
+            match pin.store_path {
+                Some(path) => println!("{}\t{}\t{}", pin.name, pin.status, path),
+                None => println!("{}\t{}", pin.name, pin.status),
+            }
+        }
+    }
+    Ok(())
+}
+
+fn curl_read_optional(url: &str, auth: &CacheAuth, max_size: u64) -> Result<Option<Vec<u8>>> {
+    let mut command = Command::new("curl");
+    let mut arguments = curl_args(auth, false);
+    arguments.retain(|argument| argument != "--fail");
+    command
+        .args(arguments)
+        .args([
+            "--max-filesize",
+            &max_size.to_string(),
+            "--output",
+            "-",
+            "--write-out",
+            "\\n%{http_code}",
+            url,
+        ])
+        .env_remove("NIXPP_USERNAME")
+        .env_remove("NIXPP_PASSWORD")
+        .stderr(Stdio::inherit());
+    let output = run_curl(command, auth).context("start curl")?;
+    ensure!(
+        output.status.success(),
+        "curl failed fetching {url}: {}",
+        output.status
+    );
+    let response = output.stdout;
+    let split = response
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .context("curl response did not include an HTTP status")?;
+    let status = std::str::from_utf8(&response[split + 1..])
+        .context("curl returned a non-UTF-8 HTTP status")?;
+    let body = &response[..split];
+    ensure!(
+        body.len() as u64 <= max_size,
+        "Niks3 pin response exceeds its size limit"
+    );
+    match status {
+        "200" => Ok(Some(body.to_vec())),
+        "404" => Ok(None),
+        _ => bail!("unexpected HTTP status {status} fetching {url}"),
+    }
 }
 
 fn load_config() -> Result<NixppConfig> {
