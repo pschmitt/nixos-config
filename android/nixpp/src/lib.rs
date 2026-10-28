@@ -114,11 +114,11 @@ impl Progress {
     }
 
     fn title(&self) {
-        eprintln!("\nnixpp ✨ {}", self.paint("2", "Termux environment"));
+        eprintln!("nixpp: {}", self.paint("2", "Termux environment"));
     }
 
     fn stage(&self, label: &str, action: impl FnOnce() -> Result<()>) -> Result<()> {
-        eprintln!("  {} {label}", self.paint("36", "✦"));
+        eprintln!("{label}");
         let started = Instant::now();
         let result = action();
         self.report_stage_completion(started.elapsed(), result)
@@ -130,35 +130,25 @@ impl Progress {
         duration: Duration,
         result: Result<()>,
     ) -> Result<()> {
-        eprintln!("  {} {label}", self.paint("36", "✦"));
+        eprintln!("{label}");
         self.report_stage_completion(duration, result)
     }
 
     fn report_stage_completion(&self, duration: Duration, result: Result<()>) -> Result<()> {
         match result {
             Ok(()) => {
-                eprintln!(
-                    "  {} {} ({})",
-                    self.paint("1;32", "✓"),
-                    self.paint("32", "Done"),
-                    elapsed(duration)
-                );
+                eprintln!("  {} ({})", self.paint("1;32", "OK"), elapsed(duration));
                 Ok(())
             }
             Err(error) => {
-                eprintln!(
-                    "  {} {} ({})",
-                    self.paint("1;31", "✗"),
-                    self.paint("31", "Failed"),
-                    elapsed(duration)
-                );
+                eprintln!("  {} ({})", self.paint("1;31", "Failed"), elapsed(duration));
                 Err(error)
             }
         }
     }
 
     fn warning(&self, message: &str) {
-        eprintln!("  {} {message}", self.paint("1;33", "!"));
+        eprintln!("{}: {message}", self.paint("1;33", "Warning"));
     }
 }
 
@@ -515,7 +505,7 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
     }
 
     let ui = Progress::new();
-    println!("{}", ui.paint("1;36", "nixpp ✨ Termux generations"));
+    println!("{}", ui.paint("1;36", "nixpp: Termux generations"));
     if let Some(current) = &status.current {
         let number = current.number.map_or_else(
             || "unnumbered".to_owned(),
@@ -524,29 +514,26 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
         let label = format!("{number} · {}", &current.id[..12]);
         println!("Current: {}", ui.paint("1;32", &label));
         if current.pinned {
-            println!("    Pinned: yes");
+            println!("  Pinned: yes");
         }
         println!(
-            "    {} · Android API {}+",
+            "  {} · Android API {}+",
             current.architecture, current.minimum_api
         );
         println!(
-            "    Termux APT: {}",
+            "  Termux APT: {}",
             sorted_package_list(&current.apt_packages)
         );
         println!(
-            "    Nix outputs: {}",
+            "  Nix outputs: {}",
             sorted_package_list(&current.nix_packages)
         );
-        println!("    Path: {}", current.path);
+        println!("  Path: {}", current.path);
     } else {
         println!("Current: {}", ui.paint("1;33", "none"));
-        println!("Run `nixpp switch --flake …` to install a generation.");
+        println!("Run `nixpp switch --flake FLAKE` to install a generation.");
     }
-    println!(
-        "Readable generation manifests: {}",
-        status.generations.len()
-    );
+    println!("Readable generations: {}", status.generations.len());
     if !status.invalid_generations.is_empty() {
         println!(
             "Unusable historical generations: {} (details: `nixpp status --json`)",
@@ -564,7 +551,7 @@ fn sorted_package_list(packages: &[String]) -> String {
 
 fn print_generations(status: &GenerationStatus) {
     let ui = Progress::new();
-    println!("{}", ui.paint("1;36", "nixpp ✨ generations"));
+    println!("{}", ui.paint("1;36", "nixpp: generations"));
     if status.generations.is_empty() {
         println!("No generations are installed.");
         return;
@@ -573,12 +560,6 @@ fn print_generations(status: &GenerationStatus) {
     let mut generations: Vec<_> = status.generations.iter().collect();
     generations.sort_by_key(|generation| generation.number.unwrap_or(u64::MAX));
     for generation in generations {
-        let marker = match (generation.current, generation.pinned) {
-            (true, true) => "◆📌",
-            (true, false) => "◆",
-            (false, true) => "◇📌",
-            (false, false) => "◇",
-        };
         let number = generation.number.map_or_else(
             || "unnumbered".to_owned(),
             |number| format!("generation {number}"),
@@ -589,7 +570,18 @@ fn print_generations(status: &GenerationStatus) {
         } else {
             ui.paint("2", &label)
         };
-        println!("  {marker} {label}");
+        let mut tags = Vec::new();
+        if generation.current {
+            tags.push("current");
+        }
+        if generation.pinned {
+            tags.push("pinned");
+        }
+        if tags.is_empty() {
+            println!("  {label}");
+        } else {
+            println!("  {label} ({})", tags.join(", "));
+        }
     }
     if !status.invalid_generations.is_empty() {
         println!(
@@ -681,10 +673,7 @@ pub fn doctor() -> Result<()> {
     };
     let ui = Progress::new();
     ui.title();
-    ui.stage(
-        "🔐 Validate trusted cache keys and AWS credentials",
-        || Ok(()),
-    )?;
+    ui.stage("Validate trusted cache keys and AWS credentials", || Ok(()))?;
     let (cache_check, builder_checks) = std::thread::scope(|scope| -> Result<_> {
         let target = &target;
         let auth = &auth;
@@ -746,18 +735,14 @@ pub fn doctor() -> Result<()> {
     })?;
 
     let cache_result = ui.report_stage_result(
-        "☁️ Check access to the configured S3 cache",
+        "Check access to the configured S3 cache",
         cache_check.0,
         cache_check.1,
     );
     let mut reachable_builders = 0;
     for (builder, (duration, result)) in builders.iter().zip(builder_checks) {
         if ui
-            .report_stage_result(
-                &format!("🔌 Check SSH and Nix on {builder}"),
-                duration,
-                result,
-            )
+            .report_stage_result(&format!("Check SSH and Nix on {builder}"), duration, result)
             .is_ok()
         {
             reachable_builders += 1;
@@ -768,7 +753,7 @@ pub fn doctor() -> Result<()> {
         reachable_builders > 0,
         "no configured Nix builders are reachable"
     );
-    println!("Configuration and upgrade prerequisites look good.");
+    println!("Configuration and upgrade checks passed.");
     Ok(())
 }
 
@@ -1011,7 +996,7 @@ fn print_generation_diff_infos(
     let ui = Progress::for_stdout();
     println!(
         "{} {} → {}",
-        ui.paint("1;36", "nixpp ✨ generation diff:"),
+        ui.paint("1;36", "nixpp: generation diff"),
         generation_label(&old),
         generation_label(&new)
     );
@@ -1103,7 +1088,7 @@ pub fn gc(keep: usize, dry_run: bool) -> Result<()> {
     let ui = Progress::new();
     ui.title();
     ui.stage(
-        "🧹 Prune generations and unused Termux APT packages",
+        "Prune old generations and unused Termux APT packages",
         || {
             let mut command = Command::new("bash");
             command
@@ -1627,7 +1612,7 @@ fn switch_profile_with_source(
     ui.title();
     let mut selected_builder = String::new();
     let mut store_path = String::new();
-    ui.stage("🧱 Build flake on configured builders", || {
+    ui.stage("Build the configured flake", || {
         let mut failures = Vec::new();
         for candidate in &builders {
             match remote_build(candidate, flake) {
@@ -1648,17 +1633,14 @@ fn switch_profile_with_source(
     let result = (|| {
         let bundle_dir = stage.join("bundle");
         if let Some(cache) = substituter {
-            ui.stage(
-                "☁️ Fetch and verify the bundle from the S3 cache",
-                || {
-                    fetch(Some(cache), &store_path, &bundle_dir, None, None)
-                        .context("fetch built Termux bundle from the configured S3 cache")?;
-                    Ok(())
-                },
-            )?;
+            ui.stage("Fetch and verify the bundle from the S3 cache", || {
+                fetch(Some(cache), &store_path, &bundle_dir, None, None)
+                    .context("fetch built Termux bundle from the configured S3 cache")?;
+                Ok(())
+            })?;
         } else {
             let mut info = None;
-            ui.stage("🔏 Sign and inspect the Nix output", || {
+            ui.stage("Sign and inspect the Nix output", || {
                 let path = remote_output_cache(builder, &store_path)?;
                 remote_temp = Some(path.clone());
                 let store_hash = store_hash(&store_path)?;
@@ -1679,7 +1661,7 @@ fn switch_profile_with_source(
                 Ok(())
             })?;
             let info = info.context("builder returned no Nix metadata")?;
-            ui.stage("📦 Transfer and verify the bundle", || {
+            ui.stage("Transfer and verify the bundle", || {
                 let nar_path = stage.join("output.nar");
                 remote_nar(builder, &store_path, &nar_path, info.nar_size)?;
                 extract_verified_nar(&nar_path, &info, &bundle_dir)
@@ -1697,7 +1679,7 @@ fn switch_profile_with_source(
         if dry_run {
             let preview_home = stage.join("preview-home");
             fs::create_dir_all(&preview_home).context("create preview home")?;
-            ui.stage("🩺 Preflight bundle without activating", || {
+            ui.stage("Preflight the bundle without activating", || {
                 let status = Command::new("bash")
                     .arg(&bootstrap_path)
                     .arg("preflight")
@@ -1732,7 +1714,7 @@ fn switch_profile_with_source(
             println!("Dry run complete; no generation was activated.");
             return Ok(());
         }
-        ui.stage("🚀 Install and health-check the new generation", || {
+        ui.stage("Install and health-check the new generation", || {
             let status = Command::new("bash")
                 .arg(&bootstrap_path)
                 .arg("install")
