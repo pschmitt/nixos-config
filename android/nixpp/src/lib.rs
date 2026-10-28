@@ -578,21 +578,47 @@ fn home_file_signature(generation_root: &Path, relative_path: &str) -> Result<St
 }
 
 fn generation_command_signatures(generation_root: &Path) -> Result<BTreeMap<String, String>> {
-    let bin = generation_root.join("bin");
+    let native = generation_root.join("native");
     let mut signatures = BTreeMap::new();
-    for entry in fs::read_dir(&bin).with_context(|| format!("read {}", bin.display()))? {
-        let entry = entry.with_context(|| format!("read an entry in {}", bin.display()))?;
-        let file_type = entry
+    let packages = match fs::read_dir(&native) {
+        Ok(packages) => packages,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(signatures),
+        Err(error) => return Err(error).with_context(|| format!("read {}", native.display())),
+    };
+    for package in packages {
+        let package = package.with_context(|| format!("read an entry in {}", native.display()))?;
+        if !package
             .file_type()
-            .with_context(|| format!("inspect {}", entry.path().display()))?;
-        if !file_type.is_file() && !file_type.is_symlink() {
+            .with_context(|| format!("inspect {}", package.path().display()))?
+            .is_dir()
+        {
             continue;
         }
-        let name = entry
-            .file_name()
-            .into_string()
-            .map_err(|_| anyhow::anyhow!("{} contains a non-UTF-8 command name", bin.display()))?;
-        signatures.insert(name, path_signature(&entry.path())?);
+        let package_name = package.file_name().into_string().map_err(|_| {
+            anyhow::anyhow!("{} contains a non-UTF-8 package name", native.display())
+        })?;
+        let bin = package.path().join("bin");
+        let commands = match fs::read_dir(&bin) {
+            Ok(commands) => commands,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(error).with_context(|| format!("read {}", bin.display())),
+        };
+        for command in commands {
+            let command = command.with_context(|| format!("read an entry in {}", bin.display()))?;
+            let file_type = command
+                .file_type()
+                .with_context(|| format!("inspect {}", command.path().display()))?;
+            if !file_type.is_file() && !file_type.is_symlink() {
+                continue;
+            }
+            let command_name = command.file_name().into_string().map_err(|_| {
+                anyhow::anyhow!("{} contains a non-UTF-8 command name", bin.display())
+            })?;
+            signatures.insert(
+                format!("{package_name}/bin/{command_name}"),
+                path_signature(&command.path())?,
+            );
+        }
     }
     Ok(signatures)
 }
@@ -624,7 +650,7 @@ fn print_command_diff(
     if changes.is_empty() {
         return Ok(false);
     }
-    println!("{}:", ui.paint("1", "Native commands"));
+    println!("{}:", ui.paint("1", "Nix package commands"));
     for (color, marker, name) in changes {
         println!("  {} {name}", ui.paint(color, marker));
     }
