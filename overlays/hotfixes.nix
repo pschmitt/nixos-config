@@ -15,12 +15,12 @@
     '';
   });
 
-  # Newer Rust rejects Squeekboard's incorrect libc close() declaration.
+  # The nixpkgs patch fixes close()'s argument type, but Rust also requires its
+  # return type to match libc.
   squeekboard = prev.squeekboard.overrideAttrs (old: {
     postPatch = (old.postPatch or "") + ''
       substituteInPlace src/vkeyboard.rs \
-        --replace-fail 'fn close(fd: u32);' 'fn close(fd: i32) -> i32;' \
-        --replace-fail 'close(self.fd as u32);' 'close(self.fd as i32);'
+        --replace-fail 'fn close(fd: i32);' 'fn close(fd: i32) -> i32;'
     '';
   });
 
