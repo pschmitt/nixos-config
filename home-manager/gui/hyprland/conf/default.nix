@@ -39,6 +39,7 @@
       };
 
       binds = {
+        drag_threshold = 10;
         allow_pin_fullscreen = true;
         workspace_back_and_forth = true;
         allow_workspace_cycles = true;
@@ -60,7 +61,7 @@
     # Raw Lua appended to the generated hyprland.lua. Used for things the
     # `settings` renderer cannot express: making ~/.config/hypr require()able
     # and loading the optional dynamic-monitor / local-override modules.
-    extraConfig = ''
+    extraConfig = builtins.readFile ./snap.lua + ''
       -- Allow require() of modules under ~/.config/hypr (e.g. monitors.lua).
       local cfg = os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")
       package.path = cfg .. "/hypr/?.lua;" .. package.path
