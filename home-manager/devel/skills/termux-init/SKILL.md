@@ -9,11 +9,11 @@ Use this skill for first-run Termux setup, recovery after an interrupted
 initializer, nixpp upgrades, and checks of the managed Termux generation and
 yadm configuration.
 
-Before changing a device, read the relevant sections of
-[`android/termux-native/README.md`](../../../../android/termux-native/README.md)
-and [`android/nixpp/README.md`](../../../../android/nixpp/README.md) in the
-`nixos-config` checkout. They are the source of truth for the current bundle,
-bootstrap, and client behavior.
+Before changing a device, read the relevant sections of the
+[`termux-native README`](https://github.com/pschmitt/nixos-config/blob/main/android/termux-native/README.md)
+and [`nixpp README`](https://github.com/pschmitt/nixos-config/blob/main/android/nixpp/README.md).
+They are the source of truth for the current bundle, bootstrap, and client
+behavior.
 
 ## Select and inspect the phone
 
