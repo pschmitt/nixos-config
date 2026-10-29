@@ -11,7 +11,7 @@ account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_dir/.claude.json"
 
 if [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_WORK_EMAIL:-}" ]]; then
   account_label="WORK"
-elif [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_PRIVATE_EMAIL:-}" ]]; then
+elif [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_PERSONAL_EMAIL:-}" ]]; then
   account_label="PERSONAL"
 else
   account_label="${account:-email unavailable}"

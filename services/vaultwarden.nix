@@ -61,7 +61,7 @@ in
       config = {
         DOMAIN = "https://${primaryHost}";
         SIGNUPS_ALLOWED = lib.mkForce false;
-        ORG_CREATION_USERS = config.mainUser.email.private;
+        ORG_CREATION_USERS = config.mainUser.email.personal;
         DATA_FOLDER = dataDir;
         ROCKET_ADDRESS = "127.0.0.1";
         ROCKET_PORT = vaultwardenPort;

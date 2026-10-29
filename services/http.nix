@@ -16,7 +16,7 @@
   security.acme = {
     acceptTerms = true;
     defaults = {
-      email = config.mainUser.email.private;
+      email = config.mainUser.email.personal;
       dnsProvider = "cloudflare";
       dnsResolver = "1.1.1.1:53";
       # FIXME we have to forcefully set webroot to null, otherwise a nixpkgs

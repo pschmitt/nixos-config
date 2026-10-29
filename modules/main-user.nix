@@ -15,10 +15,10 @@
     };
 
     email = {
-      private = lib.mkOption {
+      personal = lib.mkOption {
         type = lib.types.str;
         default = "";
-        description = "Main user's private email address.";
+        description = "Main user's personal email address.";
       };
 
       work = lib.mkOption {

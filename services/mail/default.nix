@@ -40,7 +40,7 @@ in
           port = 465;
           tls_starttls = false;
           from = "${config.networking.hostName}";
-          user = config.mainUser.email.private;
+          user = config.mainUser.email.personal;
           passwordeval = "cat ${config.sops.secrets."mail/gmail".path}";
         };
       };
