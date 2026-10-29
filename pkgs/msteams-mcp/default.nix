@@ -28,6 +28,9 @@ buildNpmPackage {
     # session and browser profile in $XDG_STATE_HOME, token cache in
     # $XDG_CACHE_HOME, instead of ~/.teams-mcp-server
     ./xdg-directories.patch
+    # sign in with the Teams login of a browser-daemon profile (see
+    # TEAMS_MCP_BROWSER_DAEMON_URL) before opening a local browser
+    ./browser-daemon-login.patch
   ];
 
   makeWrapperArgs = [

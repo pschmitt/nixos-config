@@ -1,0 +1,494 @@
+diff --git a/src/auth/browser-daemon.test.ts b/src/auth/browser-daemon.test.ts
+new file mode 100644
+index 0000000..d25a976
+--- /dev/null
++++ b/src/auth/browser-daemon.test.ts
+@@ -0,0 +1,109 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++import { browserDaemonConfig, loginViaBrowserDaemon } from './browser-daemon.js';
++
++const NODE_URL = 'https://browser.fnuc.example';
++const BASE = 'https://browser.rofl.example';
++
++/** An unsigned JWT that expires in an hour. */
++function jwt(): string {
++  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
++  return `${encode({ alg: 'none' })}.${encode({ exp: Math.floor(Date.now() / 1000) + 3600 })}.sig`;
++}
++
++const loggedInStorage = {
++  access: JSON.stringify({ credentialType: 'AccessToken', target: 'substrate.office.com/SubstrateSearch-Internal.ReadWrite', secret: jwt() }),
++  refresh: JSON.stringify({ credentialType: 'RefreshToken', secret: 'refresh', clientId: 'client' }),
++};
++
++interface MeshOptions {
++  activeSession?: string;
++  pageUrl?: string;
++}
++
++/** A fake mesh: records every request and answers like a browser-daemon node. */
++function fakeMesh({ activeSession, pageUrl = 'https://teams.cloud.microsoft/v2/' }: MeshOptions = {}) {
++  const calls: string[] = [];
++  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
++
++  vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
++    const url = new URL(input);
++    const call = `${init?.method ?? 'GET'} ${url.pathname}`;
++    calls.push(call);
++
++    if (call === 'GET /') return new Response('', { headers: { 'set-cookie': 'bd_auth=token; Path=/' } });
++    if (call === 'GET /api/mesh/overview') {
++      return json({
++        local_node: { name: 'rofl' },
++        profiles: [{ name: 'work', node_name: 'fnuc', node_url: NODE_URL, session_id: activeSession ?? null }],
++        targets: activeSession
++          ? [{ id: 'existing-page', type: 'page', url: 'https://teams.cloud.microsoft/', sessionId: activeSession }]
++          : [],
++      });
++    }
++    if (call === 'POST /api/peers/fnuc/sessions') return json({ id: 'new-session' });
++    if (call === 'PUT /api/peers/fnuc/json/new') return json({ id: 'new-page' });
++    if (url.pathname.endsWith('/auth')) {
++      return json({ url: pageUrl, cookies: [], local_storage: loggedInStorage });
++    }
++    return new Response('Target is closing', { status: 200 });
++  }));
++  return calls;
++}
++
++describe('browser-daemon login', () => {
++  beforeEach(() => {
++    vi.stubEnv('TEAMS_MCP_BROWSER_DAEMON_URL', BASE);
++    vi.stubEnv('BROWSER_DAEMON_SECRET_FILE', '/nonexistent');
++  });
++
++  afterEach(() => {
++    vi.unstubAllEnvs();
++    vi.unstubAllGlobals();
++  });
++
++  it('is off without a configured daemon', () => {
++    vi.stubEnv('TEAMS_MCP_BROWSER_DAEMON_URL', '');
++    expect(browserDaemonConfig()).toBeNull();
++  });
++
++  it('defaults to the work profile', () => {
++    expect(browserDaemonConfig()).toEqual({ url: BASE, profile: 'work' });
++  });
++
++  it('starts a session, reads the login and stops the session', async () => {
++    const calls = fakeMesh();
++    const state = await loginViaBrowserDaemon({ url: BASE, profile: 'work' });
++
++    expect(state.origins[0].origin).toBe('https://teams.cloud.microsoft');
++    expect(state.origins[0].localStorage).toHaveLength(2);
++    expect(calls).toContain('POST /api/peers/fnuc/sessions');
++    expect(calls).toContain('POST /api/pages/new-page/auth');
++    expect(calls).toContain('DELETE /api/peers/fnuc/sessions/new-session');
++  });
++
++  it('reuses a running session and leaves it and its Teams tab alone', async () => {
++    const calls = fakeMesh({ activeSession: 'busy' });
++    await loginViaBrowserDaemon({ url: BASE, profile: 'work' });
++
++    expect(calls).toContain('POST /api/pages/existing-page/auth');
++    expect(calls.filter(c => c.startsWith('DELETE') || c.includes('/json/'))).toEqual([]);
++  });
++
++  it('rejects an unknown profile', async () => {
++    fakeMesh();
++    await expect(loginViaBrowserDaemon({ url: BASE, profile: 'other' })).rejects.toThrow('no profile "other"');
++  });
++
++  it('reports a profile that is not signed in', async () => {
++    vi.useFakeTimers();
++    try {
++      fakeMesh({ pageUrl: 'https://login.microsoftonline.com/common/oauth2' });
++      const login = loginViaBrowserDaemon({ url: BASE, profile: 'work' });
++      const assertion = expect(login).rejects.toThrow('not signed in to Teams (the page ended on login.microsoftonline.com)');
++      await vi.advanceTimersByTimeAsync(60_000);
++      await assertion;
++    } finally {
++      vi.useRealTimers();
++    }
++  });
++});
+diff --git a/src/auth/browser-daemon.ts b/src/auth/browser-daemon.ts
+new file mode 100644
+index 0000000..105adcf
+--- /dev/null
++++ b/src/auth/browser-daemon.ts
+@@ -0,0 +1,247 @@
++/**
++ * Signs in with the Teams login of a browser-daemon profile.
++ *
++ * A browser-daemon (https://github.com/pschmitt/browser-daemon) node can keep a
++ * profile that is already signed in to Teams. This asks the mesh for that
++ * profile, reads the Teams page's cookies and local storage through the node's
++ * own API and turns them into a session state, so no browser has to start on
++ * this machine. The login travels only between this process and the node.
++ *
++ * Enabled by TEAMS_MCP_BROWSER_DAEMON_URL (any node of the mesh). Optional:
++ * TEAMS_MCP_BROWSER_DAEMON_PROFILE (default "work"), BROWSER_DAEMON_SECRET_FILE.
++ * Without a cluster secret, the sign-in token the node's dashboard hands out
++ * is used, as the browser-daemon CLI does.
++ */
++
++import * as fs from 'fs';
++import { sessionStateFromExport, type BrowserExport } from './browser-export.js';
++import { extractSubstrateToken } from './token-extractor.js';
++import type { SessionState } from './session-store.js';
++import { TEAMS_HOSTS } from '../constants.js';
++import * as log from '../utils/logger.js';
++
++/** Page that opens Teams (it may redirect to another Teams host). */
++const TEAMS_URL = 'https://teams.microsoft.com/v2/';
++
++/** Where the NixOS module of the browser-daemon puts the cluster secret. */
++const DEFAULT_SECRET_FILE = '/run/secrets/browser-daemon/cluster-secret';
++
++/** Teams stores its tokens within seconds; stay below the 60 s MCP client timeout. */
++const TOKEN_WAIT_MS = 40_000;
++const POLL_INTERVAL_MS = 3_000;
++const REQUEST_TIMEOUT_MS = 30_000;
++
++export interface BrowserDaemonConfig {
++  url: string;
++  profile: string;
++}
++
++/** The configured daemon, or null when this feature is off. */
++export function browserDaemonConfig(): BrowserDaemonConfig | null {
++  const url = process.env.TEAMS_MCP_BROWSER_DAEMON_URL;
++  if (!url) return null;
++  return {
++    url: url.replace(/\/+$/, ''),
++    profile: process.env.TEAMS_MCP_BROWSER_DAEMON_PROFILE || 'work',
++  };
++}
++
++// ─────────────────────────────────────────────────────────────────────────────
++// Mesh API
++// ─────────────────────────────────────────────────────────────────────────────
++
++interface MeshOverview {
++  local_node: { name: string };
++  profiles: Array<{ name: string; node_name: string; node_url: string; session_id?: string | null }>;
++  targets: Array<{ id: string; type: string; url: string; sessionId?: string | null }>;
++}
++
++/** The cluster secret from its file, else the token the dashboard hands out. */
++async function findToken(base: string): Promise<string | undefined> {
++  for (const file of [process.env.BROWSER_DAEMON_SECRET_FILE, DEFAULT_SECRET_FILE]) {
++    if (!file) continue;
++    try {
++      const secret = fs.readFileSync(file, 'utf8').trim();
++      if (secret) return secret;
++    } catch {
++      // Not readable by this user; try the next source
++    }
++  }
++
++  const res = await fetch(`${base}/`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
++  for (const cookie of res.headers.getSetCookie()) {
++    const match = /^bd_auth=([^;]+)/.exec(cookie);
++    if (match) return match[1];
++  }
++  return undefined;
++}
++
++class Mesh {
++  private constructor(private readonly base: string, private readonly token: string | undefined) {}
++
++  static async connect(base: string): Promise<Mesh> {
++    return new Mesh(base, await findToken(base));
++  }
++
++  /** Sends a request to `url`; never includes a response body in an error. */
++  async request(method: string, url: string, body?: unknown): Promise<unknown> {
++    const res = await fetch(url, {
++      method,
++      headers: {
++        ...(this.token ? { 'X-Browser-Cluster-Secret': this.token } : {}),
++        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
++      },
++      body: body === undefined ? undefined : JSON.stringify(body),
++      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
++    });
++    if (!res.ok) {
++      throw new Error(`browser-daemon ${method} ${new URL(url).pathname} answered HTTP ${res.status}`);
++    }
++    const text = await res.text();
++    try {
++      return text ? JSON.parse(text) : null;
++    } catch {
++      return text; // e.g. DevTools answers "Target is closing" as plain text
++    }
++  }
++
++  overview(): Promise<MeshOverview> {
++    return this.request('GET', `${this.base}/api/mesh/overview`) as Promise<MeshOverview>;
++  }
++
++  /** Routes a management path (`/sessions`) to `node`. */
++  api(overview: MeshOverview, node: string, path: string): string {
++    const prefix = node === overview.local_node.name ? '/api' : `/api/peers/${encodeURIComponent(node)}`;
++    return `${this.base}${prefix}${path}`;
++  }
++
++  /** Routes a DevTools path (`/json/new`) to `node`. */
++  devtools(overview: MeshOverview, node: string, path: string): string {
++    const prefix = node === overview.local_node.name ? '' : `/api/peers/${encodeURIComponent(node)}`;
++    return `${this.base}${prefix}${path}`;
++  }
++}
++
++const isTeamsHost = (url: string | undefined): boolean => {
++  try {
++    return url !== undefined && TEAMS_HOSTS.includes(new URL(url).host);
++  } catch {
++    return false;
++  }
++};
++
++// ─────────────────────────────────────────────────────────────────────────────
++// Login
++// ─────────────────────────────────────────────────────────────────────────────
++
++/**
++ * Reads the Teams login of the configured profile.
++ *
++ * Reuses a running session of the profile (and its Teams tab) when there is
++ * one; otherwise starts a session, opens Teams and stops the session again.
++ *
++ * @throws Error if the daemon is unreachable, the profile does not exist, or
++ *   it is not signed in to Teams
++ */
++export async function loginViaBrowserDaemon(config: BrowserDaemonConfig): Promise<SessionState> {
++  const mesh = await Mesh.connect(config.url);
++  const overview = await mesh.overview();
++
++  const profile = overview.profiles.find(p => p.name === config.profile);
++  if (!profile) {
++    throw new Error(`browser-daemon has no profile "${config.profile}"`);
++  }
++  const node = profile.node_name;
++
++  let sessionId = profile.session_id ?? undefined;
++  const startedSession = sessionId === undefined;
++  let pageId: string | undefined;
++  let openedPage = false;
++
++  try {
++    if (sessionId === undefined) {
++      log.info('browser-daemon', `Starting a session of profile "${config.profile}" on ${node}`);
++      const created = await mesh.request('POST', mesh.api(overview, node, '/sessions'), {
++        persistent: true,
++        profile: config.profile,
++        default_tabs: false,
++        record: false,
++        idle_timeout_minutes: 5,
++      }) as { id?: string; session?: { id?: string } };
++      sessionId = created.id ?? created.session?.id;
++      if (!sessionId) throw new Error('browser-daemon did not return a session id');
++    } else {
++      pageId = overview.targets.find(t => t.sessionId === sessionId && t.type === 'page' && isTeamsHost(t.url))?.id;
++    }
++
++    if (!pageId) {
++      const opened = await mesh.request(
++        'PUT',
++        `${mesh.devtools(overview, node, '/json/new')}?url=${encodeURIComponent(TEAMS_URL)}&session_id=${sessionId}`,
++      ) as { id?: string };
++      pageId = opened.id;
++      openedPage = true;
++      if (!pageId) throw new Error('browser-daemon did not return a page id');
++    }
++
++    return await waitForLogin(mesh, profile.node_url, pageId, sessionId);
++  } finally {
++    // Best effort: a failure to clean up must not hide the login or its error
++    try {
++      if (startedSession && sessionId) {
++        await mesh.request('DELETE', mesh.api(overview, node, `/sessions/${sessionId}`));
++      } else if (openedPage && pageId) {
++        await mesh.request('PUT', mesh.devtools(overview, node, `/json/close/${pageId}`));
++      }
++    } catch (error) {
++      log.warn('browser-daemon', `Cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
++    }
++  }
++}
++
++/**
++ * True once the MSAL cache holds a usable refresh token (Teams may store it
++ * after the access tokens). The HTTP refresh derives the messaging credentials
++ * from it, so the export need not hold them.
++ */
++function hasRefreshToken(state: SessionState): boolean {
++  return state.origins.some(origin => origin.localStorage.some(item => {
++    try {
++      const entry = JSON.parse(item.value) as { credentialType?: string; secret?: string; clientId?: string };
++      return entry.credentialType === 'RefreshToken' && !!entry.secret && !!entry.clientId;
++    } catch {
++      return false;
++    }
++  }));
++}
++
++/** Polls the page until Teams has stored everything a session needs. */
++async function waitForLogin(mesh: Mesh, nodeUrl: string, pageId: string, sessionId: string): Promise<SessionState> {
++  const deadline = Date.now() + TOKEN_WAIT_MS;
++  let lastUrl = '';
++
++  for (;;) {
++    try {
++      const login = await mesh.request('POST', `${nodeUrl.replace(/\/+$/, '')}/api/pages/${encodeURIComponent(pageId)}/auth`, {
++        session_id: sessionId,
++        urls: [],
++        storage: true,
++      }) as { url: string; cookies: BrowserExport['cookies']; local_storage?: Record<string, string> };
++
++      lastUrl = login.url;
++      if (isTeamsHost(login.url) && login.local_storage) {
++        const state = sessionStateFromExport({ url: login.url, cookies: login.cookies, storage: login.local_storage });
++        if (extractSubstrateToken(state) && hasRefreshToken(state)) return state;
++      }
++    } catch (error) {
++      // The page may still be navigating; retry until the deadline
++      log.debug('browser-daemon', error instanceof Error ? error.message : String(error));
++    }
++
++    if (Date.now() >= deadline) {
++      const where = isTeamsHost(lastUrl) ? 'Teams did not finish storing its login in time' : `the page ended on ${new URL(lastUrl || TEAMS_URL).host}`;
++      throw new Error(`The browser-daemon profile is not signed in to Teams (${where})`);
++    }
++    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
++  }
++}
+diff --git a/src/auth/token-refresh.ts b/src/auth/token-refresh.ts
+index f30f450..813f25c 100644
+--- a/src/auth/token-refresh.ts
++++ b/src/auth/token-refresh.ts
+@@ -2,7 +2,8 @@
+  * Token refresh orchestrator.
+  * 
+  * Tries HTTP-based refresh first (direct OAuth2 token endpoint call, ~100ms),
+- * then falls back to headless browser refresh (~8s) if HTTP fails.
++ * then a signed-in browser-daemon profile (if configured), then falls back to
++ * headless browser refresh (~8s).
+  * 
+  * HTTP refresh works by extracting the MSAL refresh token from session state
+  * and exchanging it for new access tokens via Azure AD's token endpoint.
+@@ -25,7 +26,8 @@ import {
+   getValidAssignmentsToken,
+   getValidGraphToken,
+ } from './token-extractor.js';
+-import { clearTokenCache } from './session-store.js';
++import { clearTokenCache, writeSessionState } from './session-store.js';
++import { browserDaemonConfig, loginViaBrowserDaemon } from './browser-daemon.js';
+ import { refreshTokensViaHttp, type OnDemandResource } from './token-refresh-http.js';
+ import { createBrowserContext, closeBrowser } from '../browser/context.js';
+ import { ensureAuthenticated } from '../browser/auth.js';
+@@ -91,10 +93,41 @@ async function refreshCoreTokens(): Promise<Result<void>> {
+     ? 'HTTP refresh reported success but no valid Substrate token found, falling back to browser'
+     : `HTTP refresh failed: ${httpResult.error.message}, falling back to browser (session cookies may still be valid)`);
+ 
+-  // ── Strategy 2: Browser refresh (fallback) ──────────────────────────
++  // ── Strategy 2: Teams login of a browser-daemon profile ─────────────
++  if (browserDaemonConfig()) {
++    const daemonResult = await signInViaBrowserDaemon();
++    if (daemonResult.ok) return daemonResult;
++  }
++
++  // ── Strategy 3: Browser refresh (fallback) ──────────────────────────
+   return refreshViaHeadlessBrowser();
+ }
+ 
++/**
++ * Replaces the session with the Teams login of the configured browser-daemon
++ * profile, then mints the tokens Teams had not cached yet.
++ */
++export async function signInViaBrowserDaemon(): Promise<Result<void>> {
++  const config = browserDaemonConfig();
++  if (!config) {
++    return err(createError(ErrorCode.AUTH_REQUIRED, 'No browser-daemon is configured (TEAMS_MCP_BROWSER_DAEMON_URL).'));
++  }
++
++  try {
++    writeSessionState(await loginViaBrowserDaemon(config));
++    clearTokenCache();
++    await refreshTokensViaHttp();
++    if (!extractSubstrateToken()) {
++      return err(createError(ErrorCode.AUTH_EXPIRED, 'The browser-daemon login holds no usable Substrate token.'));
++    }
++    return ok(undefined);
++  } catch (error) {
++    const message = error instanceof Error ? error.message : String(error);
++    log.warn('token-refresh', `Sign-in via browser-daemon failed: ${message}`);
++    return err(createError(ErrorCode.UNKNOWN, `Sign-in via browser-daemon failed: ${message}`));
++  }
++}
++
+ /**
+  * Opens a headless browser with the persistent profile and lets MSAL
+  * silently refresh tokens using its session cookies.
+diff --git a/src/tools/auth-tools.ts b/src/tools/auth-tools.ts
+index 42a24bb..10f495d 100644
+--- a/src/tools/auth-tools.ts
++++ b/src/tools/auth-tools.ts
+@@ -27,6 +27,8 @@ import {
+   extractSkypeSpacesToken,
+ } from '../auth/token-extractor.js';
+ import { refreshTokensViaHttp } from '../auth/token-refresh-http.js';
++import { signInViaBrowserDaemon } from '../auth/token-refresh.js';
++import { browserDaemonConfig } from '../auth/browser-daemon.js';
+ import { createBrowserContext, closeBrowser } from '../browser/context.js';
+ import * as fs from 'fs';
+ import * as log from '../utils/logger.js';
+@@ -121,6 +123,26 @@ async function fillCoreCredentialGaps(): Promise<void> {
+   }
+ }
+ 
++/**
++ * Signs in with a browser-daemon profile when one is configured. Returns null
++ * when there is none or it failed, so the caller falls back to a local browser.
++ */
++async function loginViaDaemon(): Promise<ToolResult | null> {
++  if (!browserDaemonConfig()) return null;
++
++  const result = await signInViaBrowserDaemon();
++  if (!result.ok) {
++    log.warn('login', `browser-daemon sign-in failed, falling back to a local browser: ${result.error.message}`);
++    return null;
++  }
++
++  await fillCoreCredentialGaps();
++  return {
++    success: true,
++    data: { message: 'Login completed from the browser-daemon profile. Session has been saved.' },
++  };
++}
++
+ async function handleLogin(
+   input: z.infer<typeof LoginInputSchema>,
+ ): Promise<ToolResult> {
+@@ -132,7 +154,7 @@ async function handleLogin(
+     // earlier account can survive to be mixed into the new login.
+     clearAllLocalData();
+     clearRegionCache();
+-    return loginInVisibleBrowser();
++    return await loginViaDaemon() ?? loginInVisibleBrowser();
+   }
+ 
+   // Fast path: if tokens are still valid, skip browser entirely
+@@ -151,6 +173,9 @@ async function handleLogin(
+     };
+   }
+ 
++  const daemonLogin = await loginViaDaemon();
++  if (daemonLogin) return daemonLogin;
++
+   // Headless-first strategy:
+   // The persistent browser profile retains Microsoft's long-lived session cookies,
+   // so headless SSO can succeed even without a session-state file.

@@ -388,6 +388,9 @@ in
         };
         msteams = {
           command = lib.getExe pkgs.msteams-mcp;
+          # Sign in with the Teams login of the work profile instead of opening
+          # a local browser (works on hosts without a display, too)
+          env.TEAMS_MCP_BROWSER_DAEMON_URL = browserNode "rofl-14";
         };
         todoist = {
           command = lib.getExe pkgs.todoist-mcp;
