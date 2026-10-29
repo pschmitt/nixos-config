@@ -7,6 +7,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    f64::consts::{FRAC_PI_2, PI},
     io::{BufRead, BufReader, Write},
     os::{fd::AsRawFd, unix::process::CommandExt},
     process::{self, Command, Stdio},
@@ -169,6 +170,12 @@ struct MonitorBorder {
     rect: Rc<std::cell::Cell<Option<Rect>>>,
 }
 
+/// Opacity of the recording dot, fading in and out once per second.
+fn dot_alpha(elapsed: Duration) -> f64 {
+    let phase = elapsed.as_secs_f64() * 2.0 * PI;
+    0.6 + 0.4 * phase.cos()
+}
+
 fn build(
     app: &Application,
     stream_rx: Rc<Receiver<StreamEvent>>,
@@ -185,6 +192,7 @@ fn build(
     let (r, g, b, _) = parse_rgba_color(&config.highlight_color, DEFAULT_HIGHLIGHT_RGBA);
     let width = config.highlight_border_size.max(3.0);
 
+    let blink = Rc::new(std::cell::Cell::new(1.0));
     let mut borders: HashMap<String, MonitorBorder> = HashMap::new();
     let monitors = display.monitors();
     for i in 0..monitors.n_items() {
@@ -196,7 +204,7 @@ fn build(
         };
         borders.insert(
             connector.to_string(),
-            create_border(app, &mon, (r, g, b), width),
+            create_border(app, &mon, (r, g, b), width, blink.clone()),
         );
     }
 
@@ -227,6 +235,12 @@ fn build(
             app.quit();
             return glib::ControlFlow::Break;
         }
+        blink.set(dot_alpha(started_at.elapsed()));
+        for border in borders.values() {
+            if border.rect.get().is_some() {
+                border.area.queue_draw();
+            }
+        }
         if let Some(outline) = outline_rx.try_iter().last() {
             for (connector, border) in &borders {
                 let rect = outline
@@ -248,6 +262,7 @@ fn create_border(
     mon: &gdk::Monitor,
     (r, g, b): (f64, f64, f64),
     width: f64,
+    blink: Rc<std::cell::Cell<f64>>,
 ) -> MonitorBorder {
     let window = Window::new();
     window.set_application(Some(app));
@@ -265,7 +280,7 @@ fn create_border(
     let rect = Rc::new(std::cell::Cell::new(None::<Rect>));
     let area = DrawingArea::new();
     let rect_draw = rect.clone();
-    area.set_draw_func(move |_area, cr, _w, _h| {
+    area.set_draw_func(move |_area, cr, _w, h| {
         let _ = cr.save();
         cr.set_operator(cairo::Operator::Clear);
         let _ = cr.paint();
@@ -284,6 +299,7 @@ fn create_border(
         cr.set_source_rgba(r, g, b, 0.95);
         cr.set_line_width(width);
         let _ = cr.stroke();
+        draw_camera_badge(cr, rect, width, h as f64, (r, g, b), blink.get());
     });
     window.set_child(Some(&area));
     window.connect_map(|w| {
@@ -300,11 +316,80 @@ fn create_border(
     }
 }
 
+const BADGE_WIDTH: f64 = 50.0;
+const BADGE_HEIGHT: f64 = 24.0;
+
+/// Draws a tab with a blinking recording dot and a camera on the outline's
+/// top right corner, outside the target like the border itself. It goes
+/// below the outline when the top edge sits at the top of the output.
+fn draw_camera_badge(
+    cr: &cairo::Context,
+    rect: Rect,
+    border: f64,
+    area_height: f64,
+    (r, g, b): (f64, f64, f64),
+    dot_alpha: f64,
+) {
+    let x = rect.x as f64 + rect.width as f64 + border / 2.0 - BADGE_WIDTH;
+    let above = rect.y as f64 - border / 2.0 - BADGE_HEIGHT;
+    let below = rect.y as f64 + rect.height as f64 + border / 2.0;
+    let y = if above >= 0.0 || below + BADGE_HEIGHT > area_height {
+        above.max(0.0)
+    } else {
+        below
+    };
+
+    let radius = 6.0;
+    cr.new_sub_path();
+    cr.arc(
+        x + BADGE_WIDTH - radius,
+        y + radius,
+        radius,
+        -FRAC_PI_2,
+        0.0,
+    );
+    cr.arc(
+        x + BADGE_WIDTH - radius,
+        y + BADGE_HEIGHT - radius,
+        radius,
+        0.0,
+        FRAC_PI_2,
+    );
+    cr.arc(x + radius, y + BADGE_HEIGHT - radius, radius, FRAC_PI_2, PI);
+    cr.arc(x + radius, y + radius, radius, PI, 3.0 * FRAC_PI_2);
+    cr.close_path();
+    cr.set_source_rgba(r, g, b, 0.95);
+    let _ = cr.fill();
+
+    // White backing keeps the red dot visible on any highlight color.
+    let (dx, dy) = (x + 13.0, y + BADGE_HEIGHT / 2.0);
+    cr.arc(dx, dy, 6.0, 0.0, 2.0 * PI);
+    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+    let _ = cr.fill();
+    cr.arc(dx, dy, 4.5, 0.0, 2.0 * PI);
+    cr.set_source_rgba(0.94, 0.27, 0.27, dot_alpha);
+    let _ = cr.fill();
+
+    // Body, lens and viewfinder bump.
+    let (bx, by, bw, bh) = (x + 23.0, y + 8.0, 20.0, 12.0);
+    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+    cr.rectangle(bx + 6.0, by - 3.0, 8.0, 3.0);
+    let _ = cr.fill();
+    cr.rectangle(bx, by, bw, bh);
+    let _ = cr.fill();
+    cr.arc(bx + bw / 2.0, by + bh / 2.0, 4.0, 0.0, 2.0 * PI);
+    cr.set_source_rgba(r, g, b, 1.0);
+    let _ = cr.fill();
+    cr.arc(bx + bw / 2.0, by + bh / 2.0, 2.0, 0.0, 2.0 * PI);
+    cr.set_source_rgba(1.0, 1.0, 1.0, 1.0);
+    let _ = cr.fill();
+}
+
 /// Converts a global rectangle to monitor-local coordinates when its border
 /// touches the monitor at all. The rectangle itself is not clipped, so a
 /// border spanning two outputs lines up on both.
 fn relative_rect(global: Rect, geom: gdk::Rectangle, width: f64) -> Option<Rect> {
-    let pad = width.ceil() as i32;
+    let pad = width.ceil() as i32 + BADGE_HEIGHT as i32;
     let touches = global.x - pad < geom.x() + geom.width()
         && global.x + global.width + pad > geom.x()
         && global.y - pad < geom.y() + geom.height()

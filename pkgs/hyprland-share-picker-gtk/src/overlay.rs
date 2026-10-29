@@ -13,6 +13,19 @@ use crate::{
     hyprland::{Client, Monitor, Rect, RegionDetails, spawn_picker_bounds_watcher},
 };
 
+/// Matches the picker's CSS border-radius and its Hyprland rounding rule.
+const PICKER_RADIUS: f64 = 16.0;
+
+fn rounded_rect(cr: &cairo::Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
+    use std::f64::consts::{FRAC_PI_2, PI};
+    cr.new_sub_path();
+    cr.arc(x + w - r, y + r, r, -FRAC_PI_2, 0.0);
+    cr.arc(x + w - r, y + h - r, r, 0.0, FRAC_PI_2);
+    cr.arc(x + r, y + h - r, r, FRAC_PI_2, PI);
+    cr.arc(x + r, y + r, r, PI, 3.0 * FRAC_PI_2);
+    cr.close_path();
+}
+
 struct MonitorOverlay {
     window: Window,
     drawing_area: DrawingArea,
@@ -191,11 +204,13 @@ impl OverlayHighlighter {
             if let Some(picker) = s.picker_rect {
                 let _ = cr.save();
                 cr.set_operator(cairo::Operator::Clear);
-                cr.rectangle(
+                rounded_rect(
+                    cr,
                     picker.x as f64,
                     picker.y as f64,
                     picker.width as f64,
                     picker.height as f64,
+                    PICKER_RADIUS,
                 );
                 let _ = cr.fill();
                 let _ = cr.restore();

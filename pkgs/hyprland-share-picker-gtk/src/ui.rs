@@ -5,7 +5,7 @@ use std::{
     io::{Write, stdout},
     os::fd::AsRawFd,
     path::PathBuf,
-    process::{self, Command},
+    process::{self, Command, Stdio},
     rc::Rc,
     sync::mpsc::{Receiver, Sender, channel, sync_channel},
     thread,
@@ -23,13 +23,13 @@ use crate::{
     capture::{
         CaptureCommand, CaptureManager, CaptureTarget, DmabufFrame, FrameMessage, FramePayload,
     },
-    config::{PickerConfig, load_config},
+    config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, load_config, parse_rgba_color},
     css::install_css,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
     hyprland::{
         Client, Monitor, PortalWindowEntry, client_for_entry, parse_region, parse_region_details,
         parse_window_list, query_active_workspace, query_clients, query_monitors,
-        spawn_state_watcher, window_at_point, window_to_region,
+        spawn_state_watcher, window_to_region,
     },
     indicator,
     overlay::OverlayHighlighter,
@@ -1453,11 +1453,16 @@ fn update_overlay_highlight(state: &AppState) {
     if let Some(name) = sel.strip_prefix("screen:") {
         highlighter.highlight_screen(name);
     } else if let Some(id) = sel.strip_prefix("window:") {
-        if let Some(c) = state
-            .clients
-            .iter()
-            .find(|cl| cl.stable_id_string().as_deref() == Some(id))
-        {
+        // Window cards carry XDPH's handle ID, the direct picker a stable
+        // Hyprland ID.
+        let client = match state.window_entries.iter().find(|e| e.id == id) {
+            Some(entry) => client_for_entry(entry, &state.clients),
+            None => state
+                .clients
+                .iter()
+                .find(|cl| cl.stable_id_string().as_deref() == Some(id)),
+        };
+        if let Some(c) = client {
             highlighter.highlight_window(c, &monitors_to_use);
         } else {
             highlighter.clear();
@@ -1520,40 +1525,87 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
     // compositor should not be doing capture work during the drag.
     state.borrow().capture_mgr.set_paused(true);
 
+    let colors = slurp_colors(&state.borrow().config);
     let (tx, rx) = channel::<Option<String>>();
     thread::spawn(move || {
-        let res = Command::new("slurp").args(["-p", "-f", "%x %y"]).output();
+        // Offer every visible window as a predefined box, so slurp outlines
+        // the window under the cursor. Windows on hidden workspaces keep
+        // their geometry and are skipped. Topmost first.
+        let monitors = query_monitors();
+        let mut clients: Vec<_> = query_clients()
+            .into_iter()
+            .filter(|c| c.at.len() == 2 && c.size.len() == 2)
+            .filter(|c| monitors.is_empty() || c.is_visible_on_any_monitor(&monitors))
+            .collect();
+        clients.sort_by_key(|c| c.focus_history_id.unwrap_or(i64::MAX));
+        let boxes: String = clients
+            .iter()
+            .map(|c| {
+                format!(
+                    "{},{} {}x{} {}\n",
+                    c.at[0], c.at[1], c.size[0], c.size[1], c.address
+                )
+            })
+            .collect();
 
-        let coords = if let Ok(out) = res {
-            if out.status.success() {
-                let s = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                let parts: Vec<&str> = s.split_whitespace().collect();
-                if parts.len() == 2 {
-                    if let (Ok(x), Ok(y)) = (parts[0].parse::<i32>(), parts[1].parse::<i32>()) {
-                        Some((x, y))
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            } else {
-                None
+        let child = Command::new("slurp")
+            .args(["-r", "-f", "%l"])
+            .args(&colors)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn();
+        let output = child.and_then(|mut child| {
+            if let Some(mut stdin) = child.stdin.take() {
+                let _ = stdin.write_all(boxes.as_bytes());
             }
-        } else {
-            None
-        };
-
-        let selection = coords.and_then(|(x, y)| {
-            let clients = query_clients();
-            window_at_point(x, y, &clients)
-                .and_then(|c| c.stable_id_string().map(|id| format!("window:{id}")))
+            child.wait_with_output()
         });
+
+        let selection = output
+            .ok()
+            .filter(|out| out.status.success())
+            .and_then(|out| {
+                let address = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                clients
+                    .iter()
+                    .find(|c| c.address == address)
+                    .and_then(|c| c.stable_id_string())
+                    .map(|id| format!("window:{id}"))
+            });
 
         let _ = tx.send(selection);
     });
 
     state.borrow_mut().pick_receiver = Some(rx);
+}
+
+/// slurp colors matching the overlay highlight: dimmed background, outlined
+/// and lightly tinted window under the cursor.
+fn slurp_colors(config: &PickerConfig) -> Vec<String> {
+    let hex = |(r, g, b): (f64, f64, f64), a: f64| {
+        let byte = |v: f64| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+        format!(
+            "#{:02x}{:02x}{:02x}{:02x}",
+            byte(r),
+            byte(g),
+            byte(b),
+            byte(a)
+        )
+    };
+    let (r, g, b, _) = parse_rgba_color(&config.highlight_color, DEFAULT_HIGHLIGHT_RGBA);
+    let (dr, dg, db, _) = parse_rgba_color(&config.dim_color, (0.0, 0.0, 0.0, 1.0));
+    vec![
+        "-b".into(),
+        hex((dr, dg, db), config.dim_factor),
+        "-c".into(),
+        hex((r, g, b), 1.0),
+        "-s".into(),
+        hex((r, g, b), config.highlight_fill_opacity),
+        "-B".into(),
+        "#00000000".into(),
+        "-w".into(),
+        format!("{}", config.highlight_border_size.round().max(1.0) as u32),
+    ]
 }
 
 fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
@@ -1601,6 +1653,15 @@ fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
 }
 
 fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
+    // A picked screen or window is final: hand it to XDPH right away. The
+    // direct window picker yields a stable Hyprland ID, which must become
+    // the portal handle first or XDPH's window capture crashes.
+    if let Some(sel) = selection.as_deref().filter(|s| !s.starts_with("region:")) {
+        let s = state.borrow();
+        let final_sel = resolve_final_selection(sel, &s);
+        emit_selection(&final_sel, s.allow_token, &s.window_entries);
+    }
+
     let window = state.borrow().window.clone();
     if let Some(win) = window {
         // Reusing the hidden native surface can leave GTK's widget mapped
@@ -1613,16 +1674,9 @@ fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
     state.borrow().capture_mgr.set_paused(false);
 
     if let Some(sel) = selection {
-        if sel.starts_with("region:") {
-            set_region_selection(state.clone(), &sel);
-            update_overlay_highlight(&state.borrow());
-        } else {
-            let s = state.borrow();
-            emit_selection(&sel, s.allow_token, &s.window_entries);
-        }
-    } else {
-        update_overlay_highlight(&state.borrow());
+        set_region_selection(state.clone(), &sel);
     }
+    update_overlay_highlight(&state.borrow());
 }
 
 fn set_region_selection(state: Rc<RefCell<AppState>>, sel: &str) {

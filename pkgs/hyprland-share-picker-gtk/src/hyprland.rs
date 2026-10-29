@@ -500,26 +500,6 @@ pub fn query_active_workspace() -> Option<ActiveWorkspace> {
     hyprland_ipc_query("j/activeworkspace")
 }
 
-pub fn window_at_point<'a>(x: i32, y: i32, clients: &'a [Client]) -> Option<&'a Client> {
-    let mut candidates: Vec<&Client> = clients
-        .iter()
-        .filter(|c| {
-            if c.at.len() == 2 && c.size.len() == 2 {
-                let cx = c.at[0];
-                let cy = c.at[1];
-                let cw = c.size[0];
-                let ch = c.size[1];
-                x >= cx && x < cx + cw && y >= cy && y < cy + ch
-            } else {
-                false
-            }
-        })
-        .collect();
-
-    candidates.sort_by_key(|c| c.focus_history_id.unwrap_or(i64::MAX));
-    candidates.first().copied()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

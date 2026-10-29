@@ -103,6 +103,16 @@
         match = xdph;
         pin = true;
       }
+      # The picker draws its own rounded frame; a square compositor border
+      # around it looks off.
+      {
+        match = xdph;
+        border_size = 0;
+      }
+      {
+        match = xdph;
+        rounding = 16;
+      }
       {
         match = zoom;
         suppress_event = "fullscreen";
