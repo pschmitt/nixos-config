@@ -172,6 +172,7 @@ let
     pkgs.runCommand "skills-with-improvement-footer" { } ''
       mkdir -p "$out"
       cp -rL ${source}/. "$out"/
+      chmod -R u+w "$out"
       for skill_dir in "$out"/*; do
         [ -d "$skill_dir" ] || continue
         skill_name="''${skill_dir##*/}"
