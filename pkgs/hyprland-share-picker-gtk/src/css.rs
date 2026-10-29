@@ -53,7 +53,7 @@ window.share-picker {
 }
 .card-badge {
   border-radius: 999px;
-  padding: 1px 8px;
+  padding: 1px 8px 1px 6px;
   font-size: 0.8em;
   font-weight: bold;
   color: white;

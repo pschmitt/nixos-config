@@ -29,6 +29,11 @@
       color = #60a5fa
       # Border and badge while a window or region is actually being shared.
       sharing_color = #ef4444
+      # Blink a ring around a newly marked window: `flash_count` times,
+      # `flash_step` ms per step (bright or normal).
+      flash = true
+      flash_step = 250
+      flash_count = 3
       fill_opacity = 0.16
       border = true
       border_size = 4

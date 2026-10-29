@@ -40,6 +40,10 @@ use crate::{
     overlay::OverlayHighlighter,
 };
 
+/// How long the mark stays after the pointer leaves a card without
+/// entering another.
+const HOVER_LEAVE_DELAY: Duration = Duration::from_millis(150);
+
 pub fn picker_state_path() -> PathBuf {
     let state_home = std::env::var_os("XDG_STATE_HOME")
         .map(PathBuf::from)
@@ -216,7 +220,9 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     let state_loop = state.clone();
     glib::timeout_add_local(Duration::from_millis(100), move || {
         let mut latest_state = None;
+        let mut windows_changed = false;
         while let Ok(snapshot) = hypr_rx.try_recv() {
+            windows_changed |= snapshot.windows_changed;
             latest_state = Some(snapshot);
         }
 
@@ -227,12 +233,16 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
                     s.monitors = snapshot.monitors;
                 }
                 s.last_active_ws = snapshot.active_workspace;
-                if snapshot.windows_changed {
+                if windows_changed {
                     // Let the capture worker re-enumerate toplevels so previews
                     // of newly opened windows can bind.
                     s.capture_mgr.refresh_targets();
                 }
             }
+        }
+        // Rebuilding borrows the state mutably; skip a tick if it is busy.
+        if windows_changed && state_loop.try_borrow_mut().is_ok() {
+            refresh_window_cards(&state_loop);
         }
 
         let pick_result = {
@@ -876,6 +886,54 @@ fn make_window_page(
     flow.set_margin_start(28);
     flow.set_margin_end(28);
 
+    populate_window_cards(&state, &flow, desktop_reg, next_id);
+    state.borrow_mut().window_flow = Some(flow.clone());
+
+    let scroll = ScrolledWindow::new();
+    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
+    scroll.set_child(Some(&flow));
+    watch_scroll_for_culling(&scroll, state.clone());
+    scroll.set_hexpand(true);
+
+    let expanded = GtkBox::new(Orientation::Vertical, 12);
+    expanded.set_size_request(360, -1);
+    expanded.set_margin_end(28);
+    expanded.set_margin_bottom(16);
+    expanded.set_visible(false);
+
+    let heading = Label::new(None);
+    heading.add_css_class("heading");
+    heading.set_wrap(true);
+    heading.set_max_width_chars(32);
+    expanded.append(&heading);
+
+    let preview = Picture::new();
+    preview.add_css_class("region-preview");
+    preview.set_can_shrink(true);
+    preview.set_content_fit(ContentFit::Contain);
+    preview.set_size_request(360, 240);
+    preview.set_vexpand(true);
+    expanded.append(&preview);
+
+    {
+        let mut s = state.borrow_mut();
+        s.selected_window_preview = Some(preview);
+        s.selected_window_heading = Some(heading);
+    }
+
+    let page = GtkBox::new(Orientation::Horizontal, 14);
+    page.append(&scroll);
+    page.append(&expanded);
+    page
+}
+
+/// Fills `flow` with a card per window, sorted and filtered per the config.
+fn populate_window_cards(
+    state: &Rc<RefCell<AppState>>,
+    flow: &FlowBox,
+    desktop_reg: &DesktopRegistry,
+    next_id: &mut usize,
+) {
     let (entries, clients, monitors, only_visible, hide_special) = {
         let s = state.borrow();
         (
@@ -889,20 +947,21 @@ fn make_window_page(
 
     let active_ws = query_active_workspace().map(|w| w.id);
 
-    let mut sorted_entries: Vec<(PortalWindowEntry, Option<Client>)> = entries
-        .into_iter()
-        .map(|e| {
-            let cl = client_for_entry(&e, &clients).cloned();
-            (e, cl)
-        })
-        .filter(|(_, cl)| {
-            // Windows Hyprland does not know stay: they cannot be judged.
-            cl.as_ref().is_none_or(|c| {
-                !(only_visible && !c.is_visible_on_any_monitor(&monitors)
-                    || hide_special && c.workspace.id < 0)
+    let mut sorted_entries: Vec<(PortalWindowEntry, Option<Client>)> =
+        current_window_entries(&entries, &clients)
+            .into_iter()
+            .map(|e| {
+                let cl = client_for_entry(&e, &clients).cloned();
+                (e, cl)
             })
-        })
-        .collect();
+            .filter(|(_, cl)| {
+                // Windows Hyprland does not know stay: they cannot be judged.
+                cl.as_ref().is_none_or(|c| {
+                    !(only_visible && !c.is_visible_on_any_monitor(&monitors)
+                        || hide_special && c.workspace.id < 0)
+                })
+            })
+            .collect();
 
     let is_visible = |c: &Option<Client>| {
         c.as_ref()
@@ -967,13 +1026,13 @@ fn make_window_page(
             create_app_icon(desktop_reg, &entry.class, "", 32)
         };
 
-        let mut badges: Vec<(&str, &str)> = Vec::new();
+        let mut badges: Vec<(&str, &str, &str)> = Vec::new();
         if let Some(ref c) = client {
             if c.workspace.id < 0 {
-                badges.push(("Special", "badge-special"));
+                badges.push(("Special", "badge-special", "focus-windows-symbolic"));
             }
             if !c.is_visible_on_any_monitor(&monitors) {
-                badges.push(("Off screen", "badge-offscreen"));
+                badges.push(("Off screen", "badge-offscreen", "view-conceal-symbolic"));
             }
         }
 
@@ -991,43 +1050,118 @@ fn make_window_page(
         );
         flow.insert(&card, -1);
     }
+}
 
-    let scroll = ScrolledWindow::new();
-    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
-    scroll.set_child(Some(&flow));
-    watch_scroll_for_culling(&scroll, state.clone());
-    scroll.set_hexpand(true);
+/// The windows to list: XDPH's windows that are still open, then windows
+/// opened since XDPH handed over its list. Those have no portal handle and
+/// carry their stable Hyprland ID instead; sharing one goes through
+/// `resolve_final_selection`.
+fn current_window_entries(
+    entries: &[PortalWindowEntry],
+    clients: &[Client],
+) -> Vec<PortalWindowEntry> {
+    // Without a client list nothing can be judged.
+    if clients.is_empty() {
+        return entries.to_vec();
+    }
+    let mut current: Vec<PortalWindowEntry> = entries
+        .iter()
+        .filter(|e| {
+            e.address
+                .as_ref()
+                .is_none_or(|a| clients.iter().any(|c| &c.address == a))
+        })
+        .cloned()
+        .collect();
+    let listed: Vec<&str> = current
+        .iter()
+        .filter_map(|e| client_for_entry(e, clients))
+        .map(|c| c.address.as_str())
+        .collect();
+    current.extend(
+        clients
+            .iter()
+            .filter(|c| c.mapped && !listed.contains(&c.address.as_str()))
+            .filter_map(|c| {
+                Some(PortalWindowEntry {
+                    id: c.stable_id_string()?,
+                    class: c.class.clone(),
+                    title: c.title.clone(),
+                    address: Some(c.address.clone()),
+                })
+            }),
+    );
+    current
+}
 
-    let expanded = GtkBox::new(Orientation::Vertical, 12);
-    expanded.set_size_request(360, -1);
-    expanded.set_margin_end(28);
-    expanded.set_margin_bottom(16);
-    expanded.set_visible(false);
-
-    let heading = Label::new(None);
-    heading.add_css_class("heading");
-    heading.set_wrap(true);
-    heading.set_max_width_chars(32);
-    expanded.append(&heading);
-
-    let preview = Picture::new();
-    preview.add_css_class("region-preview");
-    preview.set_can_shrink(true);
-    preview.set_content_fit(ContentFit::Contain);
-    preview.set_size_request(360, 240);
-    preview.set_vexpand(true);
-    expanded.append(&preview);
-
-    {
+/// Rebuilds the window cards after windows opened or closed, keeping the
+/// selection when its window is still there.
+fn refresh_window_cards(state: &Rc<RefCell<AppState>>) {
+    let (flow, desktop_reg, removed, selection) = {
         let mut s = state.borrow_mut();
-        s.selected_window_preview = Some(preview);
-        s.selected_window_heading = Some(heading);
+        let Some(flow) = s.window_flow.clone() else {
+            return;
+        };
+        let removed: Vec<usize> = s
+            .card_targets
+            .iter()
+            .filter(|(_, sel, _)| sel.starts_with("window:"))
+            .map(|(id, _, _)| *id)
+            .collect();
+        s.card_targets
+            .retain(|(_, sel, _)| !sel.starts_with("window:"));
+        s.card_buttons
+            .retain(|(sel, _)| !sel.starts_with("window:"));
+        if s.hovered_id.is_some_and(|id| removed.contains(&id)) {
+            s.hovered_id = None;
+        }
+        let selection = s.selection.clone().filter(|sel| sel.starts_with("window:"));
+        (flow, s.desktop_reg.clone(), removed, selection)
+    };
+    for id in &removed {
+        let card = {
+            let s = state.borrow();
+            s.capture_mgr.unregister_card(*id);
+            s.pictures.borrow_mut().remove(id);
+            s.card_widgets.get(id).cloned()
+        };
+        if let Some(card) = card {
+            flow.remove(&card);
+        }
+        state.borrow_mut().card_widgets.remove(id);
     }
 
-    let page = GtkBox::new(Orientation::Horizontal, 14);
-    page.append(&scroll);
-    page.append(&expanded);
-    page
+    let mut next_id = state.borrow().next_card_id;
+    populate_window_cards(state, &flow, &desktop_reg, &mut next_id);
+    state.borrow_mut().next_card_id = next_id;
+
+    if let Some(selection) = selection {
+        let card = state
+            .borrow()
+            .card_buttons
+            .iter()
+            .find(|(sel, _)| *sel == selection)
+            .map(|(_, card)| card.clone());
+        match card {
+            Some(card) => card.set_active(true),
+            None => {
+                // The selected window closed.
+                let mut s = state.borrow_mut();
+                s.selection = None;
+                s.selected_window_id = None;
+                if let Some(ref btn) = s.share_button {
+                    btn.set_sensitive(false);
+                }
+                if let Some(panel) = s.selected_window_preview.as_ref().and_then(|p| p.parent()) {
+                    panel.set_visible(false);
+                }
+            }
+        }
+    }
+
+    let s = state.borrow();
+    update_card_fps(&s);
+    update_overlay_highlight(&s);
 }
 
 fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> ScrolledWindow {
@@ -1185,7 +1319,7 @@ fn make_source_card(
     title: &str,
     subtitle: &str,
     icon: Option<Widget>,
-    badges: &[(&str, &str)],
+    badges: &[(&str, &str, &str)],
     target: CaptureTarget,
     tab: &str,
     group_lead: &mut Option<ToggleButton>,
@@ -1223,20 +1357,24 @@ fn make_source_card(
     preview_box.set_vexpand(false);
     preview_box.set_child(Some(&preview));
 
-    // Badges such as "Special" sit on the preview's top left corner.
+    // Badges such as "Special" sit on the preview's top right corner.
     let preview_overlay = gtk4::Overlay::new();
     preview_overlay.set_child(Some(&preview_box));
     if !badges.is_empty() {
         let badge_row = GtkBox::new(Orientation::Horizontal, 6);
-        badge_row.set_halign(gtk4::Align::Start);
+        badge_row.set_halign(gtk4::Align::End);
         badge_row.set_valign(gtk4::Align::Start);
         badge_row.set_margin_top(8);
-        badge_row.set_margin_start(8);
+        badge_row.set_margin_end(8);
         badge_row.set_can_target(false);
-        for (text, class) in badges {
-            let badge = Label::new(Some(text));
+        for (text, class, icon) in badges {
+            let badge = GtkBox::new(Orientation::Horizontal, 4);
             badge.add_css_class("card-badge");
             badge.add_css_class(class);
+            let image = Image::from_icon_name(icon);
+            image.set_pixel_size(12);
+            badge.append(&image);
+            badge.append(&Label::new(Some(text)));
             badge_row.append(&badge);
         }
         preview_overlay.add_overlay(&badge_row);
@@ -1377,7 +1515,8 @@ fn make_source_card(
 
         if is_double {
             let s = state_click.borrow();
-            emit_selection(&sel_click, allow_token, &s.window_entries);
+            let final_sel = resolve_final_selection(&sel_click, &s);
+            emit_selection(&final_sel, allow_token, &s.window_entries);
         }
     });
     card.add_controller(click);
@@ -1416,8 +1555,17 @@ fn make_source_card(
         }
         if let Ok(s) = state_leave.try_borrow() {
             update_card_fps(&s);
-            update_overlay_highlight(&s);
         }
+        // Moving to the next card crosses a gap with nothing hovered. Wait
+        // before falling back, so the dim does not drop out in between.
+        let state_later = state_leave.clone();
+        glib::timeout_add_local_once(HOVER_LEAVE_DELAY, move || {
+            if let Ok(s) = state_later.try_borrow() {
+                if s.hovered_id.is_none() {
+                    update_overlay_highlight(&s);
+                }
+            }
+        });
     });
 
     card.add_controller(motion);

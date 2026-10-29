@@ -699,6 +699,80 @@ fn debug_dump_toplevels(conn: &WayshotConnection) {
     );
 }
 
+/// Turns a single-output screenshot the way the output shows it. For a
+/// rotated output libwayshot hands back the panel's native orientation:
+/// on a 270° panel (gk4) a portrait frame that needs a quarter turn
+/// clockwise, as `--probe-capture` showed. A frame whose orientation
+/// disagrees with the output's logical size gets that turn.
+fn upright(
+    image: image::DynamicImage,
+    output: &libwayshot::output::OutputInfo,
+) -> image::DynamicImage {
+    use libwayshot::reexport::Transform;
+    let logical = output.logical_region.inner.size;
+    if (image.width() >= image.height()) == (logical.width >= logical.height) {
+        return image;
+    }
+    match output.transform {
+        Transform::_90 | Transform::Flipped90 => image.rotate270(),
+        Transform::_270 | Transform::Flipped270 => image.rotate90(),
+        _ => image,
+    }
+}
+
+/// Debug aid (`--probe-capture OUTPUT PREFIX`): captures `name` the way
+/// shm previews do and writes `PREFIX-raw.jpg` (libwayshot's frame) and
+/// `PREFIX-upright.jpg` (after `upright`), printing sizes and timings.
+pub fn probe_output(name: &str, prefix: &str) -> Result<()> {
+    let (connection, _) = connect().context("no Wayland connection")?;
+    let output = connection
+        .get_all_outputs()
+        .iter()
+        .find(|o| o.name == name)
+        .cloned()
+        .with_context(|| format!("no Wayland output named {name:?}"))?;
+    let logical = output.logical_region.inner.size;
+    eprintln!(
+        "output {name}: transform {:?}, logical {}x{}",
+        output.transform, logical.width, logical.height
+    );
+    for _ in 0..3 {
+        let started = Instant::now();
+        let raw = connection.screenshot_single_output(&output, CURSOR_OVERLAY)?;
+        let captured = started.elapsed();
+        let fixed = upright(raw.clone(), &output);
+        let preview_started = Instant::now();
+        let preview = upright(downscale(raw.clone(), 0.35), &output);
+        eprintln!(
+            "preview path {}x{} in {:?}",
+            preview.width(),
+            preview.height(),
+            preview_started.elapsed()
+        );
+        eprintln!(
+            "raw {}x{} in {captured:?}, upright {}x{} after {:?}",
+            raw.width(),
+            raw.height(),
+            fixed.width(),
+            fixed.height(),
+            started.elapsed()
+        );
+        raw.to_rgb8().save(format!("{prefix}-raw.jpg"))?;
+        fixed.to_rgb8().save(format!("{prefix}-upright.jpg"))?;
+    }
+    Ok(())
+}
+
+/// Scales a captured frame down to preview size. `thumbnail_exact` is a box
+/// filter: for the large downscales previews ask for it is dramatically
+/// cheaper than a triangle-filtered resize, whose kernel support grows with
+/// the scale factor.
+fn downscale(image: image::DynamicImage, scale: f32) -> image::DynamicImage {
+    let target_w = ((image.width() as f32 * scale).round() as u32).max(1);
+    let target_h = ((image.height() as f32 * scale).round() as u32).max(1);
+    image.thumbnail_exact(target_w, target_h)
+}
+
 fn capture_shm_target(
     connection: &mut WayshotConnection,
     target: &CaptureTarget,
@@ -712,7 +786,8 @@ fn capture_shm_target(
                 .iter()
                 .find(|o| o.name == *name)
                 .with_context(|| format!("no Wayland output named {name:?}"))?;
-            connection.screenshot_single_output(output, CURSOR_OVERLAY)?
+            let image = connection.screenshot_single_output(output, CURSOR_OVERLAY)?;
+            upright(downscale(image, scale), output)
         }
         CaptureTarget::Region {
             output,
@@ -733,7 +808,10 @@ fn capture_shm_target(
             if *x < 0 || *y < 0 || logical.width == 0 || logical.height == 0 {
                 return Err(anyhow!("region is outside the output"));
             }
+            // Shrink before turning and cropping: both are cheap on the
+            // preview-sized frame and costly on the full output.
             let image = connection.screenshot_single_output(out, CURSOR_OVERLAY)?;
+            let image = upright(downscale(image, scale), out);
             let pixel_x = |value: u32| {
                 ((u64::from(value) * u64::from(image.width())) / u64::from(logical.width))
                     .min(u64::from(image.width())) as u32
@@ -754,17 +832,14 @@ fn capture_shm_target(
         CaptureTarget::Window(_) => {
             let handle =
                 toplevel.context("the shm window path needs a resolved toplevel handle")?;
-            connection.screenshot_toplevel(&handle, CURSOR_OVERLAY)?
+            downscale(
+                connection.screenshot_toplevel(&handle, CURSOR_OVERLAY)?,
+                scale,
+            )
         }
     };
 
-    let target_w = ((image.width() as f32 * scale).round() as u32).max(1);
-    let target_h = ((image.height() as f32 * scale).round() as u32).max(1);
-    // `thumbnail_exact` is a box filter: for the large downscales previews ask
-    // for it is dramatically cheaper than a triangle-filtered resize, whose
-    // kernel support grows with the scale factor.
-    let scaled = image.thumbnail_exact(target_w, target_h);
-    let rgba = scaled.into_rgba8();
+    let rgba = image.into_rgba8();
 
     let width = rgba.width() as i32;
     let height = rgba.height() as i32;

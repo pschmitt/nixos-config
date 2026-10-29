@@ -154,7 +154,7 @@ pub fn run(raw_target: &str) -> ! {
     let native_border = match &target {
         Target::Client(address) => {
             let config = load_config();
-            let props = decoration::props_for(&config, &config.sharing_color);
+            let props = decoration::props_for(&config.sharing_color);
             decoration::decorate(address, &props);
             true
         }

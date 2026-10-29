@@ -29,6 +29,10 @@ struct Args {
     #[arg(long)]
     runtime_check: bool,
 
+    /// Debug: capture OUTPUT like the shm previews and save PREFIX-*.jpg.
+    #[arg(long, num_args = 2, value_names = ["OUTPUT", "PREFIX"], hide = true)]
+    probe_capture: Option<Vec<String>>,
+
     /// Draw a border around a shared region or window until its stream ends.
     #[arg(long, value_name = "TARGET")]
     indicator: Option<String>,
@@ -101,6 +105,14 @@ fn main() {
 
     if args.self_test {
         run_self_test();
+        process::exit(0);
+    }
+
+    if let Some(probe) = args.probe_capture {
+        if let Err(err) = capture::probe_output(&probe[0], &probe[1]) {
+            eprintln!("probe failed: {err:#}");
+            process::exit(1);
+        }
         process::exit(0);
     }
 

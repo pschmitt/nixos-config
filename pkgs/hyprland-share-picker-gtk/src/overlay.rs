@@ -3,9 +3,10 @@ use std::{
     collections::HashMap,
     rc::Rc,
     sync::mpsc::{Receiver, Sender},
+    time::Duration,
 };
 
-use gtk4::{DrawingArea, Window, cairo, gdk, prelude::*};
+use gtk4::{DrawingArea, Window, cairo, gdk, glib, prelude::*};
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
@@ -19,9 +20,10 @@ use crate::{
 /// Matches the picker's CSS border-radius and its Hyprland rounding rule.
 const PICKER_RADIUS: f64 = 16.0;
 
-/// Hyprland's window corner radius, so the cut-out matches the window.
-fn query_window_rounding() -> f64 {
-    hyprland_ipc_raw("j/getoption decoration:rounding")
+/// A numeric Hyprland option, such as the window rounding the cut-out
+/// matches.
+fn query_int_option(name: &str) -> f64 {
+    hyprland_ipc_raw(&format!("j/getoption {name}"))
         .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
         .and_then(|v| v.get("int").and_then(|i| i.as_f64()))
         .unwrap_or(0.0)
@@ -51,6 +53,8 @@ struct OverlayState {
     /// Set while marking a window: Hyprland draws its border, so the
     /// overlay only dims around a cut-out with this corner radius.
     window_radius: Option<f64>,
+    /// Bright ring around a marked window, on during a blink.
+    flash_on: bool,
 }
 
 pub struct OverlayHighlighter {
@@ -62,6 +66,9 @@ pub struct OverlayHighlighter {
     config: PickerConfig,
     window_props: decoration::Props,
     window_rounding: f64,
+    window_border: f64,
+    /// Bumped whenever the marked window changes, ending older blinks.
+    flash_generation: Rc<Cell<u64>>,
     r: f64,
     g: f64,
     b: f64,
@@ -92,8 +99,10 @@ impl OverlayHighlighter {
             bounds_rx,
             overlays: HashMap::new(),
             config: config.clone(),
-            window_props: decoration::props_for(config, &config.highlight_color),
-            window_rounding: query_window_rounding(),
+            window_props: decoration::props_for(&config.highlight_color),
+            window_rounding: query_int_option("decoration:rounding"),
+            window_border: query_int_option("general:border_size"),
+            flash_generation: Rc::new(Cell::new(0)),
             r,
             g,
             b,
@@ -144,6 +153,7 @@ impl OverlayHighlighter {
             picker_rect: None,
             dim_all: false,
             window_radius: None,
+            flash_on: false,
         }));
 
         let area = DrawingArea::new();
@@ -167,6 +177,7 @@ impl OverlayHighlighter {
             let rect = s.active_rect;
             let dim_all = s.dim_all;
             let window_radius = s.window_radius;
+            let flash_on = s.flash_on;
 
             let _ = cr.save();
             cr.set_operator(cairo::Operator::Clear);
@@ -197,6 +208,30 @@ impl OverlayHighlighter {
                 }
                 cr.set_source_rgba(dim_r, dim_g, dim_b, dim_alpha);
                 let _ = cr.fill();
+                let _ = cr.restore();
+            }
+
+            // The blink ring fills the gap between Hyprland's border and the
+            // dimmed area, so it never covers the window or its border.
+            if let (Some(target_rect), Some(radius), true) = (rect, window_radius, flash_on) {
+                let half = border_width / 2.0;
+                let (w, h) = (
+                    target_rect.width as f64 - border_width,
+                    target_rect.height as f64 - border_width,
+                );
+                let _ = cr.save();
+                rounded_rect(
+                    cr,
+                    target_rect.x as f64 + half,
+                    target_rect.y as f64 + half,
+                    w,
+                    h,
+                    (radius - half).max(0.0).min(w / 2.0).min(h / 2.0),
+                );
+                let bright = |v: f64| v + (1.0 - v) * 0.5;
+                cr.set_source_rgba(bright(r), bright(g), bright(b), 1.0);
+                cr.set_line_width(border_width);
+                let _ = cr.stroke();
                 let _ = cr.restore();
             }
 
@@ -333,10 +368,11 @@ impl OverlayHighlighter {
             return;
         }
 
-        decoration::decorate(&client.address, &self.window_props);
+        let newly_marked = decoration::decorate(&client.address, &self.window_props);
 
-        // Keep Hyprland's border, drawn just outside the window, clear too.
-        let pad = self.border_width.round() as i32;
+        // Keep Hyprland's border, drawn just outside the window, clear too,
+        // plus room for the blink ring.
+        let pad = (self.window_border + self.border_width).round() as i32;
         let global_rect = Rect {
             x: client.at[0] - pad,
             y: client.at[1] - pad,
@@ -363,21 +399,74 @@ impl OverlayHighlighter {
             } else {
                 self.picker_bounds.get().is_some()
             };
-            entry.window.set_visible(visible);
+            if visible {
+                entry.window.set_visible(true);
+            }
             entry.drawing_area.queue_draw();
+        }
+
+        if newly_marked {
+            if self.config.flash {
+                self.start_flash();
+            } else {
+                self.stop_flash();
+            }
         }
     }
 
+    /// Blinks the ring around the marked window `flash_count` times, until
+    /// another window gets marked.
+    fn start_flash(&self) {
+        let generation = self.flash_generation.get() + 1;
+        self.flash_generation.set(generation);
+        let current = self.flash_generation.clone();
+        let entries: Vec<_> = self
+            .overlays
+            .values()
+            .map(|e| (e.state.clone(), e.drawing_area.clone()))
+            .collect();
+        let set = move |on: bool| {
+            for (state, area) in &entries {
+                state.borrow_mut().flash_on = on;
+                area.queue_draw();
+            }
+        };
+        set(true);
+        let mut remaining = 2 * self.config.flash_count - 1;
+        glib::timeout_add_local(Duration::from_millis(self.config.flash_step), move || {
+            if current.get() != generation {
+                return glib::ControlFlow::Break;
+            }
+            remaining -= 1;
+            set(remaining % 2 == 1);
+            if remaining == 0 {
+                glib::ControlFlow::Break
+            } else {
+                glib::ControlFlow::Continue
+            }
+        });
+    }
+
+    fn stop_flash(&self) {
+        self.flash_generation.set(self.flash_generation.get() + 1);
+        for entry in self.overlays.values() {
+            entry.state.borrow_mut().flash_on = false;
+        }
+    }
+
+    /// Removes every mark. The overlay surfaces stay mapped, transparent:
+    /// unmapping and mapping them again between two marks makes Hyprland
+    /// fade the whole dim out and in, which reads as a flash. The picker's
+    /// bounds stay tracked for the same reason.
     pub fn clear(&self) {
         decoration::restore();
-        self.set_tracking(false);
-        self.picker_bounds.set(None);
+        self.stop_flash();
         for entry in self.overlays.values() {
             let mut s = entry.state.borrow_mut();
             if s.active_rect.is_some() || s.dim_all {
                 s.active_rect = None;
                 s.dim_all = false;
-                entry.window.set_visible(false);
+                s.window_radius = None;
                 entry.drawing_area.queue_draw();
             }
         }
@@ -391,7 +480,9 @@ impl OverlayHighlighter {
             s.dim_all = dim_all;
             s.window_radius = None;
         }
-        entry.window.set_visible(self.picker_bounds.get().is_some());
+        if self.picker_bounds.get().is_some() {
+            entry.window.set_visible(true);
+        }
         entry.drawing_area.queue_draw();
     }
 
@@ -412,9 +503,9 @@ impl OverlayHighlighter {
         for entry in self.overlays.values() {
             let mut state = entry.state.borrow_mut();
             state.picker_rect = self.relative_rect(bounds, entry.geom);
-            entry
-                .window
-                .set_visible(state.active_rect.is_some() || state.dim_all);
+            if state.active_rect.is_some() || state.dim_all {
+                entry.window.set_visible(true);
+            }
             entry.drawing_area.queue_draw();
         }
     }

@@ -20,6 +20,12 @@ pub struct PickerConfig {
     pub dim_factor: f64,
     /// Leave windows that are not on screen out of the window list.
     pub only_visible: bool,
+    /// Blink the border of a newly marked window.
+    pub flash: bool,
+    /// Length of one blink step (bright or normal), in milliseconds.
+    pub flash_step: u64,
+    /// Number of blinks.
+    pub flash_count: usize,
     /// Leave windows on special workspaces out of the window list.
     pub hide_special: bool,
 }
@@ -40,6 +46,9 @@ impl Default for PickerConfig {
             dim_color: "rgba(0, 0, 0, 1.0)".to_string(),
             dim_factor: 0.5,
             only_visible: false,
+            flash: true,
+            flash_step: 250,
+            flash_count: 3,
             hide_special: false,
         }
     }
@@ -60,7 +69,7 @@ pub fn picker_config_path() -> PathBuf {
 pub fn parse_picker_config(content: &str) -> PickerConfig {
     let mut config = PickerConfig::default();
     let re = Regex::new(
-        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|sharing_color|color|fill_opacity|border_size|border|dim_color|dim_factor|only_visible|hide_special)\s*=\s*(.+?)\s*$"
+        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|sharing_color|color|fill_opacity|border_size|border|dim_color|dim_factor|only_visible|hide_special|flash_step|flash_count|flash)\s*=\s*(.+?)\s*$"
     ).unwrap();
 
     for cap in re.captures_iter(content) {
@@ -139,6 +148,21 @@ pub fn parse_picker_config(content: &str) -> PickerConfig {
                 }
             }
             "only_visible" => config.only_visible = parse_bool(val),
+            "flash" => config.flash = parse_bool(val),
+            "flash_step" => {
+                if let Ok(v) = val.parse::<u64>() {
+                    if (50..=2000).contains(&v) {
+                        config.flash_step = v;
+                    }
+                }
+            }
+            "flash_count" => {
+                if let Ok(v) = val.parse::<usize>() {
+                    if (1..=10).contains(&v) {
+                        config.flash_count = v;
+                    }
+                }
+            }
             "hide_special" => config.hide_special = parse_bool(val),
             "dim_color" => {
                 if !val.is_empty() {
@@ -254,6 +278,24 @@ mod tests {
         assert_eq!(highlight_section.highlight_border_size, 8.0);
         assert_eq!(highlight_section.dim_color, "#101010");
         assert_eq!(highlight_section.dim_factor, 0.7);
+    }
+
+    #[test]
+    fn test_parse_flash_and_windows() {
+        let conf = parse_picker_config(
+            "highlight {\n  sharing_color = #ef4444\n  flash = no\n  flash_step = 300\n  flash_count = 5\n}\nwindows {\n  only_visible = true\n  hide_special = yes\n}",
+        );
+        assert_eq!(conf.sharing_color, "#ef4444");
+        assert!(!conf.flash);
+        assert_eq!(conf.flash_step, 300);
+        assert_eq!(conf.flash_count, 5);
+        assert!(conf.only_visible);
+        assert!(conf.hide_special);
+
+        // Out of range values keep the defaults.
+        let conf = parse_picker_config("flash_step = 5\nflash_count = 99");
+        assert_eq!(conf.flash_step, 250);
+        assert_eq!(conf.flash_count, 3);
     }
 
     #[test]

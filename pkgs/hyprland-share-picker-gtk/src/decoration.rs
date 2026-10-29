@@ -10,7 +10,7 @@
 use std::sync::Mutex;
 
 use crate::{
-    config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, parse_rgba_color},
+    config::{DEFAULT_HIGHLIGHT_RGBA, parse_rgba_color},
     hyprland::hyprland_ipc_raw,
 };
 
@@ -24,30 +24,27 @@ struct Decorated {
 
 pub type Props = Vec<(&'static str, String)>;
 
-/// Property values that outline a window in `color` for the given picker
-/// config.
-pub fn props_for(config: &PickerConfig, color: &str) -> Props {
+/// Property values that color a window's border in `color`. The width is
+/// left alone: Hyprland makes room for the border inside a tiled window,
+/// so changing it would resize the window.
+pub fn props_for(color: &str) -> Props {
     let (r, g, b, _) = parse_rgba_color(color, DEFAULT_HIGHLIGHT_RGBA);
     let byte = |v: f64| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
     let color = format!("rgba({:02x}{:02x}{:02x}ff)", byte(r), byte(g), byte(b));
     vec![
         ("active_border_color", color.clone()),
         ("inactive_border_color", color),
-        (
-            "border_size",
-            (config.highlight_border_size.round().max(1.0) as u32).to_string(),
-        ),
     ]
 }
 
 /// Decorates the window at `address`, restoring any other one first.
-/// Does nothing when that window is already decorated.
-pub fn decorate(address: &str, props: &[(&'static str, String)]) {
+/// Returns false, and does nothing, when that window is already decorated.
+pub fn decorate(address: &str, props: &[(&'static str, String)]) -> bool {
     let Ok(mut current) = DECORATED.lock() else {
-        return;
+        return false;
     };
     if current.as_ref().is_some_and(|d| d.address == address) {
-        return;
+        return false;
     }
     restore_locked(&mut current);
     let restore = props
@@ -61,6 +58,7 @@ pub fn decorate(address: &str, props: &[(&'static str, String)]) {
         address: address.to_string(),
         restore,
     });
+    true
 }
 
 /// Puts the decorated window, if any, back the way it was.
