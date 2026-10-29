@@ -613,8 +613,6 @@ in
     xdg.configFile."claude/keybindings.json".source = ./claude-keybindings.json;
 
     home = {
-      packages = [ msteamsMcp ];
-
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
@@ -635,6 +633,7 @@ in
 
           # cli
           ccusage
+          msteamsMcp
           pkgs.playwright-mcp
           # cursor-cli
           # kilocode-cli
