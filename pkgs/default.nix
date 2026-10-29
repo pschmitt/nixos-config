@@ -27,6 +27,7 @@ let
 in
 {
   # local pkgs
+  agent-tmux-context-hook = pkgs.callPackage ./local/agent-tmux-context-hook { };
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { inherit osd; };
   caffeine = pkgs.callPackage ./local/caffeine { };
   custom-keymaps = pkgs.callPackage ./local/custom-keymaps { };

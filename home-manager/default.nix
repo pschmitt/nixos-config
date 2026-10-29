@@ -23,6 +23,7 @@ in
   imports = [
     # Import home-manager's NixOS module
     inputs.home-manager.nixosModules.home-manager
+    ../modules/codex-managed-hooks.nix
   ];
 
   # The Nix-managed Zsh config is the default shell config on every Home

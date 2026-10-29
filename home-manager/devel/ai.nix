@@ -71,6 +71,8 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
+  agentTmuxContextHook = pkgs.agent-tmux-context-hook;
+
   # agy refuses clipboard image paste whenever an SSH session is detected
   # (`SSH_CLIENT`, `SSH_TTY`, or `SSH_CONNECTION` is non-empty, unless the
   # terminal is iTerm2), aborting with "Image upload is not supported in this
@@ -537,6 +539,19 @@ in
             };
           };
 
+          hooks.BeforeAgent = [
+            {
+              hooks = [
+                {
+                  name = "tmux-context";
+                  type = "command";
+                  command = lib.getExe agentTmuxContextHook;
+                  timeout = 5000;
+                }
+              ];
+            }
+          ];
+
           context = {
             loadMemoryFromIncludeDirectories = true;
             fileName = [
@@ -611,6 +626,7 @@ in
     #   };
 
     xdg.configFile."claude/keybindings.json".source = ./claude-keybindings.json;
+    xdg.configFile."opencode/plugins/tmux-context.js".source = ./scripts/opencode-tmux-context.js;
 
     home = {
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to

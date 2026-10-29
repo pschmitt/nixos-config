@@ -73,8 +73,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Tmux pane and window naming
 
-- Always check whether tmux is reachable with a bounded query such as `tmux list-sessions`, even when `$TMUX` or `$TMUX_PANE` is empty; tool shells may not inherit those variables. If no tmux server is reachable, skip naming.
-- Once you understand what the current conversation is about, identify and rename only this agent's own tmux window so its name reflects this work. Use `$TMUX_PANE` to identify this agent's pane when available. When it is unavailable, use discovered pane metadata and match the conversation's working directory and command where possible. Do not guess from whichever window is active.
+- At the start of each task, check `$TMUX_PANE` first. When it is set, use a bounded pane-specific query such as `tmux display-message -p -t "$TMUX_PANE" '#{session_name}:#{window_index}.#{pane_index} #{window_name}'` to confirm the pane and identify its window. When it is unset, check whether tmux is reachable with a bounded query such as `tmux list-sessions`; tool shells may not inherit tmux variables. If tmux is unavailable, skip naming.
+- As soon as the user's request makes the task clear, rename only this agent's own tmux window to a concise name for the task, before doing other task work. Use `$TMUX_PANE` as the explicit target when available. Otherwise, use discovered pane metadata and match the conversation's working directory and command where possible. Do not guess from whichever window is active.
 - For a request to rename all windows or another broader scope, use the `tmux-window-names` skill and follow its discovery and verification steps.
 - Use the tmux MCP tools `rename-pane` and `rename-window` (always loaded in Claude; a SessionStart hook already sets a placeholder name from the project directory, so replace it with a topic name once known).
 - **Do not target tmux's "active" pane/window** when the requested target can be identified explicitly. Active means whichever window the user currently has focused, which may differ from the one this agent is using.
