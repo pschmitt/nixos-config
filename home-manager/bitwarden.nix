@@ -33,6 +33,10 @@
         inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.rbw-gtk
       else
         inputs.rbw.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    # `rbw mcp` for the coding agents, wherever they get MCP servers
+    # (home-manager/devel/ai.nix). Secrets stay masked; agents use them
+    # through its secret_to_file tool.
+    mcp.enable = config.programs.mcp.enable;
     settings = {
       primaryAccount = "default";
       browser.clients = lib.mkIf guiEnable {

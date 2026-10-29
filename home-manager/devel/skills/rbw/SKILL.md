@@ -28,6 +28,28 @@ actual permanent delete (plain `remove` is a safe soft-delete-to-trash),
 (`~/devel/private/pschmitt/rbw.git`) rather than assuming upstream
 `doy/rbw` documentation applies.
 
+## Prefer the `rbw` MCP server
+
+When the `rbw` MCP tools are available (`mcp__rbw__*`, or `rbw_*` in other
+harnesses), use them instead of shelling out: they cover the whole CRUD
+surface and keep secrets masked by default.
+
+- Find: `search` (term, or `url` for a page's logins), `list` (filters,
+  `older_than`), `get` (masked JSON, or one non-secret `field`), `status`.
+- Change: `create` (any type; `generate` stores a new password without
+  returning it), `update` (`rbw set`: password, fields, notes, URIs, TOTP,
+  `if_revision`), `edit` (JSON merge patch for card/identity/SSH fields or
+  removing fields), `archive`/`unarchive`, `delete` (trash; `permanent` is
+  irreversible), `restore`, `history_restore`, `move`, attachments,
+  `collection_assign`.
+- Use a secret: `secret_to_file` (field, or `totp_code`) writes it to a 0600
+  file; use it as `"$(cat FILE)"` and delete the file. Never `cat` it bare.
+- Anything else (sends, orgs, config): the `rbw` passthrough tool, redacted.
+- Never pass back a masked `••••••••` value; leave unchanged fields out.
+- A locked vault: unlock via Home Assistant below, then retry.
+
+The rest of this file is for shell use when the MCP isn't loaded.
+
 ## Look without seeing secrets: `--redact`
 
 Add the global `--redact` flag (aliases `--mask`, `--no-secrets`; or export
