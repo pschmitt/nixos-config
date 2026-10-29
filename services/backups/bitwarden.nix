@@ -40,7 +40,7 @@
       # (personal API key from https://bitwarden.com/help/article/personal-api-key/).
       account = {
         name = "personal";
-        email = "philipp@schmitt.co";
+        email = config.mainUser.email.private;
       };
       backupPath = "/srv/bw-backup/data";
       environmentFiles = [ config.sops.secrets."rbw-auto/backup".path ];
@@ -66,11 +66,11 @@
       personal = {
         sourceAccount = {
           name = "personal";
-          email = "philipp@schmitt.co";
+          email = config.mainUser.email.private;
         };
         destAccount = {
           name = "vaultwarden";
-          email = "philipp@schmitt.co";
+          email = config.mainUser.email.private;
           baseUrl = config.services.vaultwarden.config.DOMAIN;
         };
         mode = "collections";
@@ -99,11 +99,11 @@
       collections = {
         sourceAccount = {
           name = "personal";
-          email = "philipp@schmitt.co";
+          email = config.mainUser.email.private;
         };
         destAccount = {
           name = "vaultwarden";
-          email = "philipp@schmitt.co";
+          email = config.mainUser.email.private;
           baseUrl = config.services.vaultwarden.config.DOMAIN;
         };
         mode = "collections";

@@ -70,7 +70,7 @@ in
           host = "imap.gmail.com";
           port = 993;
           ssl = true;
-          user = config.mainUser.email;
+          user = config.mainUser.email.private;
           password = {
             _secret = config.sops.secrets."parsedmarc/imap/password".path;
           };

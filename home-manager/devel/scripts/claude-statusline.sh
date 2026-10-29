@@ -8,13 +8,10 @@ fi
 
 config_dir="${CLAUDE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude}"
 account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_dir/.claude.json" 2>/dev/null || true)
-config_root="${XDG_CONFIG_HOME:-$HOME/.config}"
-personal_account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_root/claude/.claude.json" 2>/dev/null || true)
-work_account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_root/claude-work/.claude.json" 2>/dev/null || true)
 
-if [[ -n "$account" && -n "$work_account" && "$account" == "$work_account" ]]; then
+if [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_WORK_EMAIL:-}" ]]; then
   account_label="WORK"
-elif [[ -n "$account" && -n "$personal_account" && "$account" == "$personal_account" ]]; then
+elif [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_PRIVATE_EMAIL:-}" ]]; then
   account_label="PERSONAL"
 else
   account_label="${account:-email unavailable}"

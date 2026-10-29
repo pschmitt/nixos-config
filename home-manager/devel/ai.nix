@@ -48,7 +48,11 @@ let
       pkgs.git
       pkgs.jq
     ];
-    runtimeEnv.CLAUDE_STATUSLINE_JQ = "${./scripts/claude-statusline.jq}";
+    runtimeEnv = {
+      CLAUDE_STATUSLINE_JQ = "${./scripts/claude-statusline.jq}";
+      CLAUDE_STATUSLINE_PRIVATE_EMAIL = config.mainUser.email.private;
+      CLAUDE_STATUSLINE_WORK_EMAIL = config.mainUser.email.work;
+    };
     text = builtins.readFile ./scripts/claude-statusline.sh;
   };
 

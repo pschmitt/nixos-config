@@ -15,7 +15,7 @@ in
     enable = true;
     hostName = "${config.networking.hostName}.lan";
     owner = "Philipp Schmitt";
-    ownerEmail = "philipp@schmitt.co";
+    ownerEmail = config.mainUser.email.private;
     host = "smokeping";
     probeConfig = ''
       + FPing

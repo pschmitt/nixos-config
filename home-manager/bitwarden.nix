@@ -123,7 +123,7 @@
             "google"
             "gmail"
           ];
-          item = "🔖 google.com (${config.mainUser.email})";
+          item = "🔖 google.com (${config.mainUser.email.private})";
         }
         {
           alias = [
@@ -149,7 +149,7 @@
         }
       ];
       accounts = {
-        default.email = config.mainUser.email;
+        default.email = config.mainUser.email.private;
         wiit = {
           email.file = config.sops.secrets."rbw/work/email".path;
           baseUrl.file = config.sops.secrets."rbw/work/base_url".path;

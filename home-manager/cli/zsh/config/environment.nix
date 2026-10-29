@@ -28,7 +28,7 @@ let
     MANPAGER = "less";
     DOMAIN = config.domains.main;
     # The yadm zshenv exported this; plugins use it at load time (aliases).
-    EMAIL = config.mainUser.email or null;
+    EMAIL = config.mainUser.email.private or null;
     REPORTTIME = 10;
     KEYTIMEOUT = 1;
     CARGO_HOME = "${config.xdg.dataHome}/cargo";

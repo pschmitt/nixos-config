@@ -14,10 +14,18 @@
       description = "Main user's full name.";
     };
 
-    email = lib.mkOption {
-      type = lib.types.str;
-      default = "philipp@schmitt.co";
-      description = "Main user email address.";
+    email = {
+      private = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = "Main user's private email address.";
+      };
+
+      work = lib.mkOption {
+        type = lib.types.str;
+        default = "";
+        description = "Main user's work email address.";
+      };
     };
 
     homeDirectory = lib.mkOption {

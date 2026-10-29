@@ -236,7 +236,7 @@ let
       enable = true;
       mail = {
         enable = true;
-        recipient = config.mainUser.email;
+        recipient = config.mainUser.email.private;
         from = "luks-ssh-unlock <${config.networking.hostName}@${config.domains.main}>";
         subject = "LUKS SSH Unlocker: #hostname -> #event_type";
       };
