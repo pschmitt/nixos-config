@@ -361,6 +361,9 @@ in
             SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
+        msteams = {
+          command = lib.getExe pkgs.msteams-mcp;
+        };
         todoist = {
           command = lib.getExe pkgs.todoist-mcp;
           env.TODOIST_API_KEY.file = config.sops.secrets."todoist/api_token".path;

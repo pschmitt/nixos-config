@@ -89,6 +89,7 @@ in
   lumine-capture = pkgs.callPackage ./lumine-capture { };
   lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
+  msteams-mcp = pkgs.callPackage ./msteams-mcp { };
   nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
