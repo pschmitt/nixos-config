@@ -114,13 +114,14 @@
     };
 
     noctalia = {
-      url = "github:noctalia-dev/noctalia";
+      url = "github:noctalia-dev/noctalia/v5.4.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
     noctalia-plugins = {
       url = "github:pschmitt/noctalia-plugins";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.noctalia.follows = "noctalia";
     };
 
     rbw-auto = {
