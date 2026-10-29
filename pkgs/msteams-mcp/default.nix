@@ -25,6 +25,8 @@ buildNpmPackage {
     # teams_import_session: sign in with the export of a signed-in browser
     # (browser-daemon browser_export_auth) instead of opening a login browser
     ./import-session-tool.patch
+    # keep the login in $XDG_STATE_HOME/teams-mcp-server instead of ~/.teams-mcp-server
+    ./xdg-state-dir.patch
   ];
 
   makeWrapperArgs = [
