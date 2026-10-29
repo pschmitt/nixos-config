@@ -7,16 +7,16 @@
 
 buildNpmPackage {
   pname = "msteams-mcp";
-  version = "1.4.0-unstable-2026-08-14";
+  version = "0.30.2-unstable-2026-10-14";
 
   src = fetchFromGitHub {
-    owner = "hickeroar";
+    owner = "m0nkmaster";
     repo = "msteams-mcp";
-    rev = "68d57bf65b595d3cab4478efe86987b3335709c7";
-    hash = "sha256-dL2Qzj7afPCFWQYrEJSWDMY/I46XEK5KWfRVK7GZ1/4=";
+    rev = "cb0a1655a1dae98d7a01cfc3f68312b8b3a5bb3d";
+    hash = "sha256-FdUhWfh6EnXZpzzHsjowaPQc1zAqE/snX0Xog0CvVcA=";
   };
 
-  npmDepsHash = "sha256-4KtuX0+e3br83EbFYPFj9MdxCzfi1CJQ3WZLH18Dfk4=";
+  npmDepsHash = "sha256-3bUI5ZVeQY3A2BzrEKISKiKynVAMQd9M0RsXoHOx4Ho=";
 
   postPatch = ''
     substituteInPlace src/browser/context.ts \
@@ -25,7 +25,7 @@ buildNpmPackage {
 
   meta = {
     description = "Microsoft Teams MCP server using a browser session";
-    homepage = "https://github.com/hickeroar/msteams-mcp";
+    homepage = "https://github.com/m0nkmaster/msteams-mcp";
     license = lib.licenses.mit;
     mainProgram = "msteams-mcp";
   };
