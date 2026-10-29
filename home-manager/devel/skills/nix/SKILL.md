@@ -9,6 +9,13 @@ Use this skill for NixOS and Home Manager configuration tasks.
 
 Before making changes or running deployments, read `AGENTS.md` in the root of the relevant repository for environment setup, deployment workflows, code style, repository layout, and conventions.
 
+When repository guidance sends evaluations or builds to a remote host, keep its
+`~/build` directory tidy. Remove only stale files from your own earlier runs,
+never another agent's files or anything with unclear ownership. Prefer an
+agent- or run-specific directory when the remote is shared, and do not sync
+with deletion into a shared directory. Periodically remove your own obsolete
+build directories once no job is using them.
+
 ## Repositories
 
 ### nixos-config (Public)

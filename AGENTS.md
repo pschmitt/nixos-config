@@ -23,6 +23,13 @@
   `--override-input nixos-config-private path:<remote private checkout>`
   for uncommitted private changes. Lock-file updates run there too; copy
   `flake.lock` back afterwards.
+- Keep remote build directories from accumulating. Before starting a new run,
+  remove only stale build files or directories that you can identify as left
+  by your own earlier runs; never delete another agent's files or anything
+  whose ownership is unclear. Prefer an agent- or run-specific directory when
+  multiple agents use the same remote, and avoid syncing with deletion into a
+  shared directory. Periodically check `~/build` usage and clean up your own
+  obsolete work directories when no job is using them.
 - Background jobs on the remote: start them detached (`nohup ... &`) and poll
   with a pattern that cannot match the polling command itself.
 
