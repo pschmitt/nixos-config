@@ -7,7 +7,7 @@
 
 buildNpmPackage {
   pname = "msteams-mcp";
-  version = "1.4.0-unstable-2026-08-14";
+  version = "0-unstable-2026-08-14";
 
   src = fetchFromGitHub {
     owner = "hickeroar";
