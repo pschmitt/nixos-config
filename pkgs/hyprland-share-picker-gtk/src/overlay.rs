@@ -10,6 +10,7 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{
     config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, parse_rgba_color},
+    decoration,
     hyprland::{Client, Monitor, Rect, RegionDetails, spawn_picker_bounds_watcher},
 };
 
@@ -46,6 +47,7 @@ pub struct OverlayHighlighter {
     bounds_rx: Receiver<Rect>,
     overlays: HashMap<String, MonitorOverlay>,
     config: PickerConfig,
+    window_props: Vec<(&'static str, String)>,
     r: f64,
     g: f64,
     b: f64,
@@ -76,6 +78,7 @@ impl OverlayHighlighter {
             bounds_rx,
             overlays: HashMap::new(),
             config: config.clone(),
+            window_props: decoration::props_for(config, &config.highlight_color),
             r,
             g,
             b,
@@ -243,6 +246,7 @@ impl OverlayHighlighter {
     }
 
     pub fn highlight_screen(&self, monitor_name: &str) {
+        decoration::restore();
         for (connector, entry) in &self.overlays {
             if connector == monitor_name {
                 let rect = Rect {
@@ -259,6 +263,7 @@ impl OverlayHighlighter {
     }
 
     pub fn highlight_region(&self, region: &RegionDetails) {
+        decoration::restore();
         for (connector, entry) in &self.overlays {
             if connector == &region.output {
                 let rect = Rect {
@@ -285,33 +290,20 @@ impl OverlayHighlighter {
             return;
         }
 
-        let global_rect = Rect {
-            x: client.at[0],
-            y: client.at[1],
-            width: client.size[0],
-            height: client.size[1],
-        };
-
+        // Hyprland dims around and outlines the window itself; the overlay
+        // only dims the outputs it is not on.
+        decoration::decorate(&client.address, &self.window_props);
         for (connector, entry) in &self.overlays {
             let is_mon_showing = monitors
                 .iter()
                 .find(|m| &m.name == connector)
                 .map_or(false, |m| client.is_visible_on_monitor(m));
-
-            if is_mon_showing {
-                let target_on_mon = self.relative_rect(global_rect, entry.geom);
-                if target_on_mon.is_some() {
-                    self.show_entry(entry, target_on_mon, false);
-                } else {
-                    self.show_entry(entry, None, true);
-                }
-            } else {
-                self.show_entry(entry, None, true);
-            }
+            self.show_entry(entry, None, !is_mon_showing);
         }
     }
 
     pub fn clear(&self) {
+        decoration::restore();
         self.set_tracking(false);
         self.picker_bounds.set(None);
         for entry in self.overlays.values() {

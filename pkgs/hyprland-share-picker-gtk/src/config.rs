@@ -11,6 +11,8 @@ pub struct PickerConfig {
     pub columns: i32,
     pub highlight_mode: String,
     pub highlight_color: String,
+    /// Border and badge color while a window or region is being shared.
+    pub sharing_color: String,
     pub highlight_fill_opacity: f64,
     pub highlight_border: bool,
     pub highlight_border_size: f64,
@@ -27,6 +29,7 @@ impl Default for PickerConfig {
             columns: 1,
             highlight_mode: "highlight".to_string(),
             highlight_color: "rgba(59, 130, 246, 1.0)".to_string(),
+            sharing_color: "rgba(239, 68, 68, 1.0)".to_string(),
             highlight_fill_opacity: 0.22,
             highlight_border: true,
             highlight_border_size: 3.0,
@@ -51,7 +54,7 @@ pub fn picker_config_path() -> PathBuf {
 pub fn parse_picker_config(content: &str) -> PickerConfig {
     let mut config = PickerConfig::default();
     let re = Regex::new(
-        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|color|fill_opacity|border_size|border|dim_color|dim_factor)\s*=\s*(.+?)\s*$"
+        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|sharing_color|color|fill_opacity|border_size|border|dim_color|dim_factor)\s*=\s*(.+?)\s*$"
     ).unwrap();
 
     for cap in re.captures_iter(content) {
@@ -122,6 +125,11 @@ pub fn parse_picker_config(content: &str) -> PickerConfig {
             "highlight_color" | "color" => {
                 if !val.is_empty() {
                     config.highlight_color = val.to_string();
+                }
+            }
+            "sharing_color" => {
+                if !val.is_empty() {
+                    config.sharing_color = val.to_string();
                 }
             }
             "dim_color" => {

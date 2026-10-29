@@ -27,6 +27,8 @@
       mode = dim
       dim_factor = 0.62
       color = #60a5fa
+      # Border and badge while a window or region is actually being shared.
+      sharing_color = #ef4444
       fill_opacity = 0.16
       border = true
       border_size = 4

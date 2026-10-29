@@ -23,6 +23,7 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use crate::{
     config::{DEFAULT_HIGHLIGHT_RGBA, load_config, parse_rgba_color},
     css::install_css,
+    decoration,
     hyprland::{
         Client, Monitor, PortalWindowEntry, Rect, client_for_entry, parse_region_details,
         query_clients, query_monitors,
@@ -34,7 +35,8 @@ const INDICATOR_APP_ID: &str = "lol.brkn.HyprlandShareIndicator";
 const STREAM_START_TIMEOUT: Duration = Duration::from_secs(20);
 /// How long the picker waits for the indicator to snapshot existing streams.
 const READY_TIMEOUT: Duration = Duration::from_secs(2);
-const WINDOW_POLL: Duration = Duration::from_millis(200);
+/// Only the badge follows this; Hyprland draws the window's border itself.
+const WINDOW_POLL: Duration = Duration::from_millis(50);
 const REGION_POLL: Duration = Duration::from_secs(2);
 const PORTAL_BINARY: &str = "xdg-desktop-portal-hyprland";
 
@@ -147,6 +149,21 @@ pub fn run(raw_target: &str) -> ! {
         process::exit(1);
     }
 
+    // A shared window gets its border from Hyprland, which keeps up with
+    // resizes; the overlay only adds the badge. Regions have no window.
+    let native_border = match &target {
+        Target::Client(address) => {
+            let config = load_config();
+            let props: Vec<_> = decoration::props_for(&config, &config.sharing_color)
+                .into_iter()
+                .filter(|(prop, _)| *prop != "dim_around")
+                .collect();
+            decoration::decorate(address, &props);
+            true
+        }
+        Target::Region(_) => false,
+    };
+
     let outline_rx = spawn_outline_watcher(target);
 
     let app = Application::builder()
@@ -156,9 +173,10 @@ pub fn run(raw_target: &str) -> ! {
     let stream_rx = Rc::new(stream_rx);
     let outline_rx = Rc::new(outline_rx);
     app.connect_activate(move |app| {
-        build(app, stream_rx.clone(), outline_rx.clone());
+        build(app, stream_rx.clone(), outline_rx.clone(), native_border);
     });
     let status = app.run_with_args::<&str>(&[]);
+    decoration::restore();
     eprintln!("hyprland-share-indicator: exiting ({status:?})");
     process::exit(0);
 }
@@ -180,16 +198,19 @@ fn build(
     app: &Application,
     stream_rx: Rc<Receiver<StreamEvent>>,
     outline_rx: Rc<Receiver<Outline>>,
+    native_border: bool,
 ) {
     let Some(display) = gdk::Display::default() else {
+        decoration::restore();
         process::exit(1);
     };
     if !gtk4_layer_shell::is_supported() {
+        decoration::restore();
         process::exit(1);
     }
     install_css();
     let config = load_config();
-    let (r, g, b, _) = parse_rgba_color(&config.highlight_color, DEFAULT_HIGHLIGHT_RGBA);
+    let (r, g, b, _) = parse_rgba_color(&config.sharing_color, DEFAULT_HIGHLIGHT_RGBA);
     let width = config.highlight_border_size.max(3.0);
 
     let blink = Rc::new(std::cell::Cell::new(1.0));
@@ -204,7 +225,7 @@ fn build(
         };
         borders.insert(
             connector.to_string(),
-            create_border(app, &mon, (r, g, b), width, blink.clone()),
+            create_border(app, &mon, (r, g, b), width, native_border, blink.clone()),
         );
     }
 
@@ -262,6 +283,7 @@ fn create_border(
     mon: &gdk::Monitor,
     (r, g, b): (f64, f64, f64),
     width: f64,
+    native_border: bool,
     blink: Rc<std::cell::Cell<f64>>,
 ) -> MonitorBorder {
     let window = Window::new();
@@ -288,17 +310,19 @@ fn create_border(
         let Some(rect) = rect_draw.get() else {
             return;
         };
-        // Stroke just outside the target so region streams never see it.
-        let half = width / 2.0;
-        cr.rectangle(
-            rect.x as f64 - half,
-            rect.y as f64 - half,
-            rect.width as f64 + width,
-            rect.height as f64 + width,
-        );
-        cr.set_source_rgba(r, g, b, 0.95);
-        cr.set_line_width(width);
-        let _ = cr.stroke();
+        if !native_border {
+            // Stroke just outside the target so region streams never see it.
+            let half = width / 2.0;
+            cr.rectangle(
+                rect.x as f64 - half,
+                rect.y as f64 - half,
+                rect.width as f64 + width,
+                rect.height as f64 + width,
+            );
+            cr.set_source_rgba(r, g, b, 0.95);
+            cr.set_line_width(width);
+            let _ = cr.stroke();
+        }
         draw_camera_badge(cr, rect, width, h as f64, (r, g, b), blink.get());
     });
     window.set_child(Some(&area));

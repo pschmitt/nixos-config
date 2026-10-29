@@ -45,6 +45,8 @@ pub struct Client {
     #[serde(default)]
     pub pinned: bool,
     #[serde(default)]
+    pub floating: bool,
+    #[serde(default)]
     pub hidden: bool,
     #[serde(default = "default_mapped")]
     pub mapped: bool,
@@ -451,22 +453,23 @@ pub fn listen_socket2<F: Fn(&str) + Send + 'static>(callback: F) -> Option<threa
         .ok()
 }
 
+/// Sends one request to Hyprland's command socket and returns the answer.
+pub fn hyprland_ipc_raw(req: &str) -> Option<String> {
+    let his = hyprland_instance_signature()?;
+    let uid = rustix::process::getuid().as_raw();
+    let sock_path = format!("/run/user/{uid}/hypr/{his}/.socket.sock");
+    let mut stream = UnixStream::connect(sock_path).ok()?;
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(300)));
+    let _ = stream.set_write_timeout(Some(Duration::from_millis(300)));
+    stream.write_all(req.as_bytes()).ok()?;
+    let mut buf = Vec::new();
+    stream.read_to_end(&mut buf).ok()?;
+    Some(String::from_utf8_lossy(&buf).into_owned())
+}
+
 pub fn hyprland_ipc_query<T: for<'de> Deserialize<'de>>(req: &str) -> Option<T> {
-    if let Some(his) = hyprland_instance_signature() {
-        let uid = rustix::process::getuid().as_raw();
-        let sock_path = format!("/run/user/{uid}/hypr/{his}/.socket.sock");
-        if let Ok(mut stream) = UnixStream::connect(sock_path) {
-            let _ = stream.set_read_timeout(Some(Duration::from_millis(300)));
-            let _ = stream.set_write_timeout(Some(Duration::from_millis(300)));
-            if stream.write_all(req.as_bytes()).is_ok() {
-                let mut buf = Vec::new();
-                if stream.read_to_end(&mut buf).is_ok() {
-                    if let Ok(parsed) = serde_json::from_slice(&buf) {
-                        return Some(parsed);
-                    }
-                }
-            }
-        }
+    if let Some(parsed) = hyprland_ipc_raw(req).and_then(|buf| serde_json::from_str(&buf).ok()) {
+        return Some(parsed);
     }
 
     let cmd_arg = match req {
@@ -494,6 +497,32 @@ pub fn query_clients() -> Vec<Client> {
 
 pub fn query_monitors() -> Vec<Monitor> {
     hyprland_ipc_query("j/monitors").unwrap_or_default()
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct CursorPos {
+    pub x: i32,
+    pub y: i32,
+}
+
+pub fn query_cursor_pos() -> Option<CursorPos> {
+    hyprland_ipc_query("j/cursorpos")
+}
+
+/// Topmost of `clients` under a global point: floating windows sit above
+/// tiled ones, and among those the most recently focused wins.
+pub fn window_at_point(x: i32, y: i32, clients: &[Client]) -> Option<&Client> {
+    clients
+        .iter()
+        .filter(|c| {
+            c.at.len() == 2
+                && c.size.len() == 2
+                && x >= c.at[0]
+                && x < c.at[0] + c.size[0]
+                && y >= c.at[1]
+                && y < c.at[1] + c.size[1]
+        })
+        .min_by_key(|c| (!c.floating, c.focus_history_id.unwrap_or(i64::MAX)))
 }
 
 pub fn query_active_workspace() -> Option<ActiveWorkspace> {
@@ -585,6 +614,7 @@ mod tests {
             initial_title: "test".into(),
             focus_history_id: None,
             pinned: false,
+            floating: false,
             hidden: false,
             mapped: true,
         };
@@ -617,6 +647,7 @@ mod tests {
             initial_title: "firefox".to_string(),
             focus_history_id: None,
             pinned: false,
+            floating: false,
             hidden: false,
             mapped: true,
         };
@@ -678,6 +709,7 @@ mod tests {
             initial_title: "kitty".into(),
             focus_history_id: None,
             pinned: false,
+            floating: false,
             hidden: false,
             mapped: true,
         };
@@ -700,6 +732,7 @@ mod tests {
             initial_title: "slack".into(),
             focus_history_id: None,
             pinned: false,
+            floating: false,
             hidden: false,
             mapped: true,
         };

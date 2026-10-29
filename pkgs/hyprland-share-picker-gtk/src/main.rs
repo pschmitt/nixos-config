@@ -6,6 +6,7 @@ use gtk4::{Application, gio, prelude::*};
 mod capture;
 mod config;
 mod css;
+mod decoration;
 mod desktop;
 mod hyprland;
 mod indicator;

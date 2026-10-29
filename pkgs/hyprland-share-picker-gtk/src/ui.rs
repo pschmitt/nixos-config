@@ -5,9 +5,13 @@ use std::{
     io::{Write, stdout},
     os::fd::AsRawFd,
     path::PathBuf,
-    process::{self, Command, Stdio},
+    process::{self, Command},
     rc::Rc,
-    sync::mpsc::{Receiver, Sender, channel, sync_channel},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+        mpsc::{Receiver, Sender, channel, sync_channel},
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -23,13 +27,14 @@ use crate::{
     capture::{
         CaptureCommand, CaptureManager, CaptureTarget, DmabufFrame, FrameMessage, FramePayload,
     },
-    config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, load_config, parse_rgba_color},
+    config::{PickerConfig, load_config},
     css::install_css,
+    decoration,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
     hyprland::{
         Client, Monitor, PortalWindowEntry, client_for_entry, parse_region, parse_region_details,
-        parse_window_list, query_active_workspace, query_clients, query_monitors,
-        spawn_state_watcher, window_to_region,
+        parse_window_list, query_active_workspace, query_clients, query_cursor_pos, query_monitors,
+        spawn_state_watcher, window_at_point, window_to_region,
     },
     indicator,
     overlay::OverlayHighlighter,
@@ -1525,87 +1530,63 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
     // compositor should not be doing capture work during the drag.
     state.borrow().capture_mgr.set_paused(true);
 
-    let colors = slurp_colors(&state.borrow().config);
+    let props = {
+        let s = state.borrow();
+        decoration::props_for(&s.config, &s.config.highlight_color)
+    };
     let (tx, rx) = channel::<Option<String>>();
     thread::spawn(move || {
-        // Offer every visible window as a predefined box, so slurp outlines
-        // the window under the cursor. Windows on hidden workspaces keep
-        // their geometry and are skipped. Topmost first.
+        // Windows on hidden workspaces keep their geometry; skip them.
         let monitors = query_monitors();
-        let mut clients: Vec<_> = query_clients()
+        let clients: Vec<_> = query_clients()
             .into_iter()
-            .filter(|c| c.at.len() == 2 && c.size.len() == 2)
             .filter(|c| monitors.is_empty() || c.is_visible_on_any_monitor(&monitors))
             .collect();
-        clients.sort_by_key(|c| c.focus_history_id.unwrap_or(i64::MAX));
-        let boxes: String = clients
-            .iter()
-            .map(|c| {
-                format!(
-                    "{},{} {}x{} {}\n",
-                    c.at[0], c.at[1], c.size[0], c.size[1], c.address
-                )
+
+        // slurp only takes the click and draws nothing. Hyprland marks the
+        // window under the cursor, the same way the picker marks a hovered
+        // card, and the click resolves with the same lookup.
+        let done = Arc::new(AtomicBool::new(false));
+        let follower = {
+            let done = done.clone();
+            let clients = clients.clone();
+            thread::spawn(move || {
+                while !done.load(Ordering::Relaxed) {
+                    let hovered =
+                        query_cursor_pos().and_then(|pos| window_at_point(pos.x, pos.y, &clients));
+                    match hovered {
+                        Some(client) => decoration::decorate(&client.address, &props),
+                        None => decoration::restore(),
+                    }
+                    thread::sleep(Duration::from_millis(30));
+                }
             })
-            .collect();
+        };
 
-        let child = Command::new("slurp")
-            .args(["-r", "-f", "%l"])
-            .args(&colors)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .spawn();
-        let output = child.and_then(|mut child| {
-            if let Some(mut stdin) = child.stdin.take() {
-                let _ = stdin.write_all(boxes.as_bytes());
-            }
-            child.wait_with_output()
-        });
+        let transparent = "#00000000";
+        let res = Command::new("slurp")
+            .args(["-p", "-f", "%x %y"])
+            .args(["-b", transparent, "-c", transparent, "-s", transparent])
+            .output();
+        done.store(true, Ordering::Relaxed);
+        let _ = follower.join();
+        decoration::restore();
 
-        let selection = output
-            .ok()
-            .filter(|out| out.status.success())
-            .and_then(|out| {
-                let address = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                clients
-                    .iter()
-                    .find(|c| c.address == address)
+        let selection = res.ok().filter(|out| out.status.success()).and_then(|out| {
+            let text = String::from_utf8_lossy(&out.stdout).into_owned();
+            let mut parts = text.split_whitespace().map(str::parse::<i32>);
+            match (parts.next(), parts.next()) {
+                (Some(Ok(x)), Some(Ok(y))) => window_at_point(x, y, &clients)
                     .and_then(|c| c.stable_id_string())
-                    .map(|id| format!("window:{id}"))
-            });
+                    .map(|id| format!("window:{id}")),
+                _ => None,
+            }
+        });
 
         let _ = tx.send(selection);
     });
 
     state.borrow_mut().pick_receiver = Some(rx);
-}
-
-/// slurp colors matching the overlay highlight: dimmed background, outlined
-/// and lightly tinted window under the cursor.
-fn slurp_colors(config: &PickerConfig) -> Vec<String> {
-    let hex = |(r, g, b): (f64, f64, f64), a: f64| {
-        let byte = |v: f64| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-        format!(
-            "#{:02x}{:02x}{:02x}{:02x}",
-            byte(r),
-            byte(g),
-            byte(b),
-            byte(a)
-        )
-    };
-    let (r, g, b, _) = parse_rgba_color(&config.highlight_color, DEFAULT_HIGHLIGHT_RGBA);
-    let (dr, dg, db, _) = parse_rgba_color(&config.dim_color, (0.0, 0.0, 0.0, 1.0));
-    vec![
-        "-b".into(),
-        hex((dr, dg, db), config.dim_factor),
-        "-c".into(),
-        hex((r, g, b), 1.0),
-        "-s".into(),
-        hex((r, g, b), config.highlight_fill_opacity),
-        "-B".into(),
-        "#00000000".into(),
-        "-w".into(),
-        format!("{}", config.highlight_border_size.round().max(1.0) as u32),
-    ]
 }
 
 fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
@@ -1732,6 +1713,7 @@ fn set_region_selection(state: Rc<RefCell<AppState>>, sel: &str) {
 }
 
 pub fn emit_selection(selection: &str, allow_token: bool, window_entries: &[PortalWindowEntry]) {
+    decoration::restore();
     if let Some(target) = indicator::target_for_selection(selection, window_entries) {
         indicator::spawn(&target);
     }
