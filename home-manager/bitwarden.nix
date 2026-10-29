@@ -26,7 +26,7 @@
 
   # Desktop sessions include the optional native GTK unlock dialog.
   # Other hosts use the CLI package from the rbw flake.
-  programs.rbw.declarative = {
+  programs.rbw = {
     enable = true;
     package =
       if guiEnable && pkgs.stdenv.hostPlatform.isLinux then
