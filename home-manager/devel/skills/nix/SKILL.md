@@ -1,6 +1,6 @@
 ---
 name: nix
-description: Use for NixOS and Home Manager configuration tasks. Directs agents to the nixos-config repositories and their AGENTS.md guidelines.
+description: Use when editing, evaluating, building or deploying NixOS or Home Manager configuration (hosts, modules, profiles, services, packages, flake inputs). Directs agents to the nixos-config repositories and their AGENTS.md guidelines.
 ---
 
 # Nix

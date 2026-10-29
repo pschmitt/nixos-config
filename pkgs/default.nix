@@ -96,6 +96,7 @@ in
   shellyctl = pkgs.callPackage ./shellyctl { };
   slack-mcp-server = pkgs.callPackage ./slack-mcp-server { };
   skills-ref = pkgs.callPackage ./skills-ref { };
+  skills-lint = pkgs.callPackage ./skills-lint { };
   ssh-clipboard = pkgs.callPackage ./ssh-clipboard { };
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
@@ -107,8 +108,6 @@ in
   todoist-mcp = pkgs.callPackage ./todoist-mcp { };
   waypoint = pkgs.callPackage ./waypoint { };
   inherit (zsh-tools)
-    adb-sh
-    adb-completions
     kubectl-ksh
     kubectl-socks5-proxy
     kubectl-watch

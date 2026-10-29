@@ -1,9 +1,10 @@
 ---
 name: rbw
 description: >-
-  Unlock rbw (Bitwarden CLI) via a Home Assistant phone notification.
-  Use when rbw commands fail with "not unlocked" or whenever the vault needs
-  to be unlocked.
+  Use rbw (Bitwarden CLI) safely: unlock it via a Home Assistant phone
+  notification, and pass credentials to commands without printing them. Use
+  when rbw commands fail with "not unlocked", when the vault needs to be
+  unlocked, or whenever another skill names an rbw entry/field to use.
 ---
 
 # rbw
@@ -42,6 +43,36 @@ is safe to run in a transcript, while `rbw get --field username NAME` still
 works. Drop the flag only for the call that really needs the value, and pipe
 that value to its consumer instead of printing it.
 
+## Using a credential from another skill
+
+Other skills only name the entry and field they need (for example
+"entry `Netbox (AI Agent)`, field `API Token`") and point here. To use one:
+
+1. Check the entry exists without exposing anything:
+   `rbw --redact get --json "<entry>"` (lists the field names, masks values).
+2. Capture the value into a shell variable in the same command that uses it.
+   Never let it reach stdout, a file in the repo, a URL or a command line:
+
+   ```bash
+   token="$(rbw get --field "API Token" "Netbox (AI Agent)")"
+   # header from a file descriptor, not argv
+   curl -fsS -H @<(printf 'Authorization: Token %s\n' "$token") "$url"
+   # or hand it to a tool through its environment
+   NETBOX_TOKEN="$token" some-cli ...
+   ```
+
+   Field names: `password` and `username` are built in; anything else is a
+   custom field and is case-sensitive. `rbw code "<entry>"` prints the
+   current TOTP code: capture it the same way.
+3. Bare `rbw get "<entry>"`, `rbw get --json` (without `--redact`) and
+   `rbw get --field ...` outside `$(...)` print the secret into the
+   transcript. Don't run them.
+4. Browser logins never take a value from the shell: use the browser MCP's
+   `browser_fill_secret entry=... field=password|username|totp` when the
+   entry is allowed there, otherwise hand the login to the user (see the
+   [browser-login skill](../browser-login/SKILL.md),
+   [human handoff](../browser-login/references/human-handoff.md)).
+
 ## Several accounts
 
 `get`, `show`, `search` and `list` look in every configured account; from
@@ -62,47 +93,14 @@ credential in a response, URL, committed file, or command output.
 
 The remaining instructions apply to local Codex and shell workflows.
 
-## Check unlock status
+## Unlock via Home Assistant
 
-```bash
-rbw unlocked
-```
-
-Returns 0 if unlocked, non-zero if locked.
-
-## Request unlock via Home Assistant
-
-POST to the HA webhook to send an actionable notification to the phone.
-On **Accept**, HA SSHes to the target host and pipes the master password
-from HA secrets to `rbw unlock --stdin`.
-
-```bash
-curl -fsS -X POST "http://10.5.1.1:8123/api/webhook/rbw_unlock_request" \
-  -H "Content-Type: application/json" \
-  -d "{\"host\": \"${HOST:-fnuc}\", \"agent\": \"Claude\"}"
-```
-
-The `host` field is optional and defaults to `fnuc`. Known short names that
-HA maps to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
-
-The `agent` field is shown in the phone notification (defaults to `Claude`
-if omitted).
-
-## Poll for unlock
-
-After triggering the webhook, poll until unlocked (5-minute timeout). Give
-the tool call running the loop a longer timeout than that (e.g. 330000 ms);
-agent shells often default to 2 minutes and would cut the wait short.
-
-```bash
-for i in $(seq 1 60); do
-  rbw unlocked 2>/dev/null && break
-  sleep 5
-done
-rbw unlocked || { echo "rbw unlock timed out"; exit 1; }
-```
-
-## Full unlock flow (copy-paste ready)
+`rbw unlocked` returns 0 when the vault is unlocked. If it is locked, POST to
+the HA webhook: it sends an actionable notification to the phone, and on
+**Accept** HA SSHes to the host and pipes the master password from HA secrets
+to `rbw unlock --stdin`. Then poll for up to 5 minutes. Give the tool call a
+longer timeout than that (e.g. 330000 ms); agent shells often default to 2
+minutes and would cut the wait short.
 
 ```bash
 if ! rbw unlocked 2>/dev/null; then
@@ -121,57 +119,19 @@ if ! rbw unlocked 2>/dev/null; then
 fi
 ```
 
-## Editing entries non-interactively
+- `host` is optional and defaults to `fnuc`. Known short names that HA maps
+  to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
+- `agent` is shown in the phone notification (default `Claude`).
 
-`rbw edit` (2.17.x) never launches `$EDITOR`/`$VISUAL` when stdin is not a
-TTY; it reads the new entry from stdin instead. Errors such as
-`failed to parse YAML: missing field name` or `EOF while parsing a value` mean
-it got empty stdin. With a TTY, `VISUAL=nvim` just hangs an agent shell.
+## Writing to the vault
 
-To update an entry (for example the notes of a secure note) from a script:
-
-```bash
-rbw get --raw "<item>" \
-  | jq --rawfile n new-notes.txt '.data.type="secure_note" | .notes=$n' \
-  | rbw edit --json "<item>"
-rbw sync
-```
-
-- `rbw get --raw` reports the type as `SecureNote`, but `edit --json` only
-  accepts `login`, `card`, `identity`, `secure_note` and `ssh_key`.
-- Back up the old notes and do a no-op round trip (`cmp` afterwards) before the
-  first real write.
-- `rbw get` appends a trailing newline, so each round trip adds one extra
-  newline to the note; harmless for YAML.
-- Never `pkill -f 'rbw edit'` from an agent shell; the pattern matches the
-  shell's own command line.
-
-## Setting secrets without exposing them (2.18+)
-
-Never put a real secret on the `rbw` command line (`--password VALUE` lands
-in `ps`, shell history and the agent transcript). Use one of these instead;
-`rbw set` syncs afterwards, so consecutive calls are safe:
-
-```bash
-rbw set -y --password-file new-pw "$item"     # or --password-env VAR,
-                                               # or --password-stdin (needs -y)
-rbw set -y -g -l 32 --output-file new-pw "$item"  # generate+store,
-                                               # old pw -> history, nothing printed
-rbw set -y --field-file api-token=token.txt "$item"  # custom field
-                                               # (--field-env NAME=VAR too)
-```
-
-- `--output-file` is written (0600) only after the vault update succeeded.
-- `rbw set --if-revision "$(rbw get --raw "$item" | jq -r .revision_date)"`
-  refuses the update if the entry changed in the meantime.
-- Roll back a rotation: `rbw history -y "$item" --restore` (or
-  `--restore=N`).
-- Find rotation candidates: `rbw list --older-than 1year --fields
-  name,modified`, and `rbw audit [--hibp] [--json]` (weak/reused/breached;
-  never prints passwords).
+To edit an entry or set a password or custom field, read
+[references/writing-entries.md](references/writing-entries.md) first. Never
+put a secret on the `rbw` command line, and never let `rbw edit` open an
+editor in an agent shell.
 
 ## Passkeys in browser automation
 
 For using passkeys stored in `rbw` to authenticate automated browser sessions
-(Playwright MCP), see the [browser-passkey skill](../browser-passkey/SKILL.md).
+(Playwright MCP), see the [browser-login skill](../browser-login/SKILL.md).
 

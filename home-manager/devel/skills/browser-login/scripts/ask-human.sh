@@ -5,27 +5,30 @@
 # notification (phone push, Signal, or both) whose link opens the browser-daemon
 # live view of the agent's own page, where the user can click and type in the
 # very session the agent is driving.
+#
+# Agents call it through the browser MCP's browser_ask_human tool
+# (`browser-daemon mcp --ask-human-cmd`), which passes the page and node in
+# BD_PAGE, BD_NODE, BD_TITLE and BD_AGENT; run by hand, name them with options.
 
 usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS] MESSAGE
 
-  --page ID        open this page directly (the agent's own page id:
-                   (await (await page.context().newCDPSession(page))
-                     .send('Target.getTargetInfo')).targetInfo.targetId)
+  --page ID        open this page directly (BD_PAGE; the browser MCP's
+                   browser_ask_human passes the agent's own page)
   --match REGEX    pick the page whose URL matches REGEX instead; there must be
                    exactly one match (the browser is shared with other agents)
-  --host HOST      browser host: fnuc (default), rofl-13, rofl-14
+  --host HOST      browser node (BD_NODE): fnuc (default), rofl-13, ...
   --url WHICH      which link: auto (default; the mesh link when Home Assistant
                    says the user is home, else the public one), mesh or public
-  --via WAY        push (default), signal or both
+  --via WAY        push (default), signal or both (BD_VIA)
   --phone NAME     notify.mobile_app_NAME target (default: pixel_11_pro)
   --title TITLE    push title (default: "Claude needs you in the browser")
   --harness NAME   harness shown in the Signal heading (default: CLAUDE CODE)
 
 Without --page/--match the link opens a list of the browser's pages to pick
 from. There are two links to the same phone-friendly live view (source:
-services/headless-browsers/handoff.html in nixos-config):
+handoff.html in the browser-daemon repository):
   mesh    https://browser.HOST.${BROWSER_MESH_DOMAIN:-nb.brkn.lol}/handoff/?page=ID
           tailnet/Netbird only, no login
   public  https://browser.HOST.${BROWSER_PUBLIC_DOMAIN:-brkn.lol}/handoff/?page=ID
@@ -72,34 +75,51 @@ live_url() {
   fi
 }
 
-ha_credentials() {
-  local url token
+HA_URL="${HASS_SERVER:-http://10.5.1.1:8123}"
 
-  read -r url token < <(zsh -lc 'zhj hass::secrets-gu5a')
-  if [[ -z "$url" || -z "$token" ]]
+# Prefer the token of the dedicated "AI Agent" HA user (see /mnt/ha/AGENTS.md).
+# This script is often the way out when rbw is locked, so fall back to the
+# sops-backed personal token instead of failing.
+ha_token() {
+  local token
+
+  if rbw unlocked &>/dev/null
   then
-    printf 'Could not read the Home Assistant credentials (zhj hass::secrets-gu5a)\n' >&2
+    token="$(rbw get --field "Long-Lived Access Token" "Home Assistant (AI Agent)" 2>/dev/null)"
+  fi
+  if [[ -z "${token:-}" ]]
+  then
+    read -r _ token < <(zsh -lc 'zhj hass::secrets-gu5a')
+  fi
+  if [[ -z "${token:-}" ]]
+  then
+    printf 'Could not read a Home Assistant token (rbw "Home Assistant (AI Agent)" or zhj hass::secrets-gu5a)\n' >&2
     return 1
   fi
-  printf '%s %s\n' "${url%/}" "$token"
+  printf '%s\n' "$token"
+}
+
+# curl wrapper that passes the bearer token as a header file, off argv.
+ha_curl() {
+  local token
+
+  token="$(ha_token)" || return 1
+  curl -H @<(printf 'Authorization: Bearer %s\n' "$token") "$@"
 }
 
 # Is the user at home (and therefore on the mesh)? Home Assistant knows.
 user_is_home() {
-  local url token state
+  local state
 
-  read -r url token < <(ha_credentials) || return 1
-  state="$(curl -fsS --max-time 10 -H "Authorization: Bearer ${token}" \
-    "${url}/api/states/person.philipp_schmitt" | jq -r '.state')" || return 1
+  state="$(ha_curl -fsS --max-time 10 \
+    "${HA_URL%/}/api/states/person.philipp_schmitt" | jq -r '.state')" || return 1
   [[ "$state" == home ]]
 }
 
 ha_call() {
-  local service="$1" payload="$2" url token
+  local service="$1" payload="$2"
 
-  read -r url token < <(ha_credentials) || return 1
-  curl -fsS -X POST "${url}/api/services/notify/${service}" \
-    -H "Authorization: Bearer ${token}" \
+  ha_curl -fsS -X POST "${HA_URL%/}/api/services/notify/${service}" \
     -H "Content-Type: application/json" \
     -d "$payload" >/dev/null
 }
@@ -134,8 +154,10 @@ send_signal() {
 }
 
 main() {
-  local host=fnuc phone=pixel_11_pro via=push harness="CLAUDE CODE"
-  local title="Claude needs you in the browser" message="" page="" match="" which=auto
+  # Defaults from browser-daemon mcp (browser_ask_human), when it runs this.
+  local host="${BD_NODE:-fnuc}" phone=pixel_11_pro via="${BD_VIA:-push}"
+  local harness="${BD_AGENT:-claude code}" title="${BD_TITLE:-}" message=""
+  local page="${BD_PAGE:-}" match="" which=auto
   local base live
 
   while [[ -n "${1:-}" ]]
@@ -184,6 +206,9 @@ main() {
     esac
   done
 
+  title="${title:-Claude needs you in the browser}"
+  harness="${harness//-/ }"
+  harness="${harness^^}"
   if [[ -z "$message" || ! "$via" =~ ^(push|signal|both)$ || ! "$which" =~ ^(auto|mesh|public)$ ]]
   then
     usage >&2

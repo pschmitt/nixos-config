@@ -1,6 +1,6 @@
 ---
 name: github-notifications
-description: Triage GitHub notifications across pull requests, issues, and related activity; prioritize mentions and review work, check Renovate CI, and optionally merge safe PRs.
+description: Triage GitHub notifications across pull requests, issues, and related activity; prioritize mentions and review work, check Renovate CI, and optionally merge safe PRs. Use when the user asks to go through, triage or clear their GitHub notifications, or to review and merge pending Renovate PRs on GitHub.
 ---
 
 # GitHub notifications

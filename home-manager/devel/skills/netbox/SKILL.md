@@ -10,19 +10,10 @@ Use this skill for NetBox inventory and metadata work.
 ## Quick start
 
 1. Read `references/conventions.md` before making changes.
-2. Retrieve NetBox credentials with the runtime-appropriate method:
-
-   - **Hermes Agent:** use the configured `bitwarden` MCP server to retrieve
-     `Netbox (AI Agent)`. Prefer this over `rbw`.
-   - **Local Codex/shell:** use:
-
-```bash
-rbw get --json "Netbox (AI Agent)"
-```
-
-   If local rbw is locked, invoke the `rbw` skill to unlock it first.
-
-3. Treat retrieved credentials as secrets and never commit them.
+2. Credentials: rbw entry `Netbox (AI Agent)`; fields `API Token` (REST
+   API), `username` and `password` (web UI login). Use them as described in
+   the `rbw` skill ("Using a credential from another skill"), never print
+   them. Hermes uses its `bitwarden` MCP server for the same entry.
 
 ## Workflow
 

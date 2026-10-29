@@ -54,30 +54,43 @@ By default, nixpp reads `~/.config/nixpp/config.toml` (override with
 [defaults]
 substituter = "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30"
 flake = "github:pschmitt/nixos-config#termux-native-zf10-bundle"
-builder = "rofl-13"
+builders = ["rofl-13", "rofl-14", "rofl-15", "rofl-16"]
 public_keys = [
   "rofl-10:BASE64_PUBLIC_KEY",
   "rofl-13:BASE64_PUBLIC_KEY",
+  "rofl-14:BASE64_PUBLIC_KEY",
+  "rofl-15:BASE64_PUBLIC_KEY",
+  "rofl-16:BASE64_PUBLIC_KEY",
+  "gh-actions:BASE64_PUBLIC_KEY",
 ]
-aws_credentials_file = "~/.aws/credentials"
+aws_credentials_command = ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
+cache_pins = { p11 = "gh-main-packages.x86_64-linux.termux-native-p11-bundle-0", zf10 = "gh-main-packages.x86_64-linux.termux-native-zf10-bundle-0" }
 ```
 
 `--cache`, `--flake`, `--builder`, and `--public-key` override these defaults.
+Builders are tried in order; nixpp uses the first one that can build the
+configured flake. `--builder` selects one machine for a single `switch`.
 If neither a `--public-key` nor `NIXPP_PUBLIC_KEY` is set, all configured
-public keys are tried. For S3, nixpp reads the selected `profile` from the
-configured AWS credentials file (or `AWS_SHARED_CREDENTIALS_FILE`). The file
-must be a regular file with mode `0600` or stricter. Credentials are passed to
-curl through a short-lived mode-`0600` config file and removed when the fetch
-completes.
+public keys are tried. For S3, nixpp uses `defaults.aws_credentials_command`
+when configured, otherwise it reads the selected `profile` from
+`defaults.aws_credentials_file`, `AWS_SHARED_CREDENTIALS_FILE`, or
+`~/.aws/credentials`. The command is an argv array, never a shell string. Its
+stdout must be rbw JSON for a Login item: the username is the AWS access key,
+the password is the secret key, and an optional custom field named
+`aws_session_token` supplies a session token. nixpp keeps those values in
+memory and passes curl's SigV4 config through stdin; it creates no plaintext
+credentials or curl-auth file.
 
 The Termux bootstrap links the active generation's config file to
-`~/.config/nixpp/config.toml`, nixpp's default config path. The flake URL points
-to the `pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the
-configured builder to evaluate that flake, so the builder needs its usual
-GitHub access token for the private flake input. The bootstrap uses its
-authenticated HTTPS mirror for the first install, then yadm restores the
-personal SSH identity and provisions the SOPS-protected Niks3 credentials at
-`~/.aws/credentials`. Later nixpp fetches use the configured S3 cache.
+`~/.config/nixpp/config.toml`, nixpp's default config path. Its first-stage
+verifier, checksum, channel manifest, signed package prefix, and managed
+generation all come directly from Niks3. The bootstrap and nixpp read AWS
+credentials from rbw and keep them in memory. The flake URL points to the
+`pschmitt/nixos-config` GitHub repository; `nixpp upgrade` asks the configured
+builders to evaluate that flake, so each builder needs its usual GitHub access
+token for the private flake input. The bootstrap restores the personal SSH
+identity during yadm setup. Later nixpp operations also retrieve Niks3
+credentials from rbw when needed; rbw must be unlocked for `nixpp upgrade`.
 
 ## Build and switch from Termux
 
@@ -119,14 +132,30 @@ for rollback through its `activate.sh`.
 Use `fetch` for a known store path already published to a standard Nix binary
 cache, including a configured private S3 cache.
 
-Run `nixpp upgrade` to build the default flake profile on `defaults.builder`,
+Run `nixpp upgrade` to build the default flake profile on the first available
+machine in `defaults.builders`,
 then fetch and verify that output from the configured S3 `defaults.substituter`
 before activating it. It uses `defaults.flake`, `defaults.public_keys`, and
-`defaults.aws_credentials_file` from the config. The bundle must already have
+the configured AWS credential source. The bundle must already have
 been published to Niks3; a missing cache entry fails without activating a
 generation. Publish updates through the Termux bootstrap build workflow.
 After activation, `upgrade` shows the changes from the generation that was
-active when the upgrade started.
+active when the upgrade started. Run `nixpp upgrade --dry-run` to build and
+fetch the candidate, run the bundle preflight in a temporary home, and show the
+proposed diff without activating or retaining a generation.
+
+`nixpp fetch latest` is a short alias for `nixpp upgrade`: it builds the
+configured flake, fetches its published bundle from S3, verifies it, and
+activates it. `nixpp cache list` reads the configured Niks3 pin objects from
+S3 and shows which configured device bundles are currently pinned and their
+store paths. Use `nixpp cache list --json` for scripts. This reports the
+configured latest pin for each device, not every historical NAR retained by
+S3.
+
+Run `nixpp doctor` to validate the config and trusted keys, retrieve and check
+the rbw credentials, verify authenticated access to the S3 cache, and check
+SSH/Nix availability on the configured builders; it succeeds if one or more
+are reachable.
 
 Run `nixpp diff` to compare the current generation with the latest other
 generation. Pass two generation numbers or IDs to choose both sides, or one
@@ -138,14 +167,21 @@ content and permission changes.
 Use `nixpp status` to inspect the active generation, its Termux APT
 requirements, Nix-built outputs, and count of readable generation manifests.
 `nixpp generations` lists numbered generations and short IDs. The local
-generation index assigns stable sequence numbers as generations are activated;
-legacy generations receive deterministic numbers when the index is first
-created. Malformed historical generations are reported in `nixpp status --json`
-and do not prevent inspecting or using the current generation. Rollback still
-checks the selected generation and its Termux APT requirements. To roll back,
-run `nixpp rollback NUMBER`; the full SHA-256 ID also remains accepted. Add
-`--json` to `nixpp status` for scripting. The Zsh helper `termux-native-status`
-delegates to the same status view.
+generation index at `~/.local/share/termux-native/generation-index.json` maps
+generation IDs to stable sequence numbers. Legacy generations receive
+deterministic numbers when the index is first created. A synchronized TSV
+compatibility mirror supports rollback to older generations whose scripts
+predate the JSON index. Malformed historical generations are reported in
+`nixpp status --json` and do not prevent inspecting or using the current
+generation. Rollback still checks the selected generation and its Termux APT
+requirements. To roll back, run `nixpp rollback NUMBER`; the full SHA-256 ID
+also remains accepted. Add `--json` to `nixpp status` for scripting. The Zsh
+helper `termux-native-status` delegates to the same status view.
+
+Use `nixpp pin GENERATION` to protect a known-good generation from garbage
+collection; remove the protection with `nixpp unpin GENERATION`. Pins are
+stored in `~/.local/share/termux-native/pinned-generations.json` and shown by
+`nixpp generations` and `nixpp status --json`.
 
 Use `nixpp gc --dry-run` to preview cleanup, then `nixpp gc` to prune old
 generations. By default it retains the three newest generations and always
@@ -180,9 +216,9 @@ than putting credentials in command arguments or child process environments:
 ```
 
 The cache path and public key are public configuration. The password must come
-from the existing Bitwarden-backed bootstrap flow. A signed channel index can
-later map stable names such as `bootstrap` and `zinit-cache` to store paths;
-this prototype currently expects the store path explicitly.
+from the existing Bitwarden-backed bootstrap flow. For the configured Termux
+profile, use `nixpp fetch latest`. The explicit store-path form remains
+available for fetching any other known cache output.
 
 ## Verification
 
@@ -193,9 +229,9 @@ and ran the extracted binary on-device.
 
 The full private-cache flow now publishes three reference-free Nix outputs:
 the `nixpp` client, the Termux package prefix, and the Zinit/tool home cache.
-`yadm-init` downloads the first-stage client and channel manifest from the
-authenticated private blob directory, then uses the client to fetch and verify
-the prefix and home outputs from the signed Nix cache. This flow has been run
+`yadm-init` downloads the first-stage client and channel manifest from fixed
+bootstrap object keys in the Niks3 S3 bucket, then uses the client to fetch and
+verify the prefix and home outputs from the signed Nix cache. This flow has been run
 through the Termux app on a Zenfone 10 after clearing Termux app data. The
 client verified cache signatures, NAR hashes and sizes,
 and extracted both outputs; the resulting shell reported the expected Termux
@@ -226,12 +262,11 @@ types). Both remain Termux APT packages.
 ## First-stage bootstrap
 
 `nixpp` cannot fetch itself on an empty Termux install. The curl-piped yadm-init
-entrypoint therefore downloads the small AArch64 client and its checksum from
-the authenticated private blob directory, then uses it for the signed Nix
-outputs. Stable links select the current immutable client and channel manifest;
-the manifest carries the client, prefix, and home store paths. The client
-checksum currently relies on the authenticated HTTPS blob endpoint, while the
-large prefix and home payloads are authenticated by Nix cache signatures. The
+entrypoint uses the stock Termux curl client and unlocked rbw credentials to
+download the small AArch64 client, its checksum, and the channel manifest from
+fixed S3 object keys. The manifest carries the current client, prefix, and
+home store paths. The client checksum is checked before execution; the prefix
+and home payloads are authenticated by Nix cache signatures. The
 latest cold app-driven run took about 11 minutes from entering the curl-piped
 provisioner, after the official Termux app's first-run setup, to the configured
 Zsh prompt. It excludes installing and opening the Termux app and its initial

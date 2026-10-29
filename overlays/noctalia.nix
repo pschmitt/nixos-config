@@ -91,6 +91,27 @@ in
       # Opt-in intrinsic width for floating plugin panels. Used by the custom
       # OSD to fit the actual rendered text and glyph instead of width buckets.
       ./patches/noctalia/0010-plugin-panel-fit-content-width.patch
+
+      # Offer browser buttons for HTTP(S) links in notification history.
+      ./patches/noctalia/0011-notification-history-links.patch
+
+      # Highlight URLs in notification toasts and history.
+      ./patches/noctalia/0012-notification-link-styling.patch
+
+      # Hit-test links in the text layout for individual URL clicks.
+      ./patches/noctalia/0013-notification-link-hit-testing.patch
+
+      # Mark opened notification links as visited for the current session.
+      ./patches/noctalia/0014-notification-visited-links.patch
+
+      # Show a pointer over notification links.
+      ./patches/noctalia/0015-notification-link-cursor.patch
+
+      # Pass a desktop activation token when opening notification links.
+      ./patches/noctalia/0016-notification-link-activation.patch
+
+      # Focus the configured URI handler when it already has a window.
+      ./patches/noctalia/0017-notification-browser-focus.patch
     ];
   });
 }

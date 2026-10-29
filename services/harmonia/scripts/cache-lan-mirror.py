@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """Keep the current main outputs of selected targets in this host's store.
 
-nixbot publishes each attribute's latest default-branch output under
-`<source URL>/<attribute>` (its `outputsPath`). Realising them here (through
-the configured substituters, i.e. the S3 cache first) and rooting them lets
-the local Harmonia serve them to LAN clients.
+niks3 stores each pin as the object `pins/<name>` (holding its store path) in
+the cache bucket; nixbot pins every attribute's latest default-branch output.
+Realising them here (through the configured substituters, i.e. the S3 cache
+first) and rooting them lets the local Harmonia serve them to LAN clients.
 """
 
 import os
 import re
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 from pathlib import Path
+
+import boto3
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 ROOTS = Path(os.environ.get("NIX_LAN_MIRROR_ROOTS", "/nix/var/nix/gcroots/lan-mirror"))
 NIX_STORE = os.environ.get("NIX_STORE_BIN", "nix-store")
@@ -23,17 +25,27 @@ UNITS = {"KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
 STORE_PATH = re.compile(r"/nix/store/[a-z0-9]{32}-[^/\s]+")
 
 
-def output_path(source, target):
-    """The target's current output, or None if nixbot has not published one."""
+def s3_client():
+    session = boto3.Session(profile_name=os.environ.get("NIX_LAN_MIRROR_S3_PROFILE") or None)
+    return session.client(
+        "s3",
+        endpoint_url=os.environ["NIX_LAN_MIRROR_S3_ENDPOINT"],
+        region_name=os.environ.get("NIX_LAN_MIRROR_S3_REGION", "default"),
+        config=Config(s3={"addressing_style": "path"}, connect_timeout=30, read_timeout=30),
+    )
+
+
+def pinned_path(s3, bucket, pin):
+    """The pin's store path, or None if the pin does not exist."""
     try:
-        with urllib.request.urlopen(f"{source}/{target}", timeout=30) as response:
-            path = response.read().decode().strip()
-    except urllib.error.HTTPError as error:
-        if error.code == 404:
+        response = s3.get_object(Bucket=bucket, Key=f"pins/{pin}")
+    except ClientError as error:
+        if error.response["Error"]["Code"] in ("NoSuchKey", "404"):
             return None
         raise
+    path = response["Body"].read().decode().strip()
     if not STORE_PATH.fullmatch(path):
-        raise ValueError(f"Unexpected output for {target}: {path!r}")
+        raise ValueError(f"Unexpected store path in pin {pin}: {path!r}")
     return path
 
 
@@ -55,19 +67,19 @@ def available():
 
 
 def main():
-    source, *targets = sys.argv[1:]
-    source = source.rstrip("/")
+    bucket, prefix, *targets = sys.argv[1:]
+    s3 = s3_client()
     wanted = {}
     failed = []
     for target in targets:
         try:
-            path = output_path(source, target)
-        except (OSError, ValueError) as error:
+            path = pinned_path(s3, bucket, prefix + target)
+        except (BotoCoreError, ClientError, ValueError) as error:
             print(f"Could not look up {target}: {error}", flush=True)
             failed.append(target)
             continue
         if path is None:
-            print("Not published by nixbot:", target, flush=True)
+            print("Not pinned:", prefix + target, flush=True)
             continue
         wanted[target] = path
 
@@ -104,7 +116,7 @@ def main():
         print(f"Mirrored {name}: {path}", flush=True)
 
     # Release outputs of targets that are no longer configured; a target
-    # nixbot has not published (or that failed) keeps its previous output.
+    # that is not pinned (or that failed) keeps its previous output.
     for root in ROOTS.iterdir():
         if not root.name.startswith(".incoming-") and root.name not in targets:
             root.unlink()

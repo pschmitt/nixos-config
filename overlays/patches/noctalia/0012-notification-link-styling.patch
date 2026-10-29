@@ -1,0 +1,94 @@
+diff --git a/src/notification/link_markup.h b/src/notification/link_markup.h
+new file mode 100644
+index 000000000..64cc3ce46
+--- /dev/null
++++ b/src/notification/link_markup.h
+@@ -0,0 +1,39 @@
++#pragma once
++
++#include <regex>
++#include <string>
++#include <string_view>
++
++namespace notification {
++  // Notification text is untrusted: escape it before adding our own markup.
++  inline std::string linkMarkup(std::string_view text) {
++    static const std::regex pattern(R"(https?://[^\s<>"']+)");
++    const std::string source(text);
++    std::string result;
++    auto appendEscaped = [&result](std::string_view part) {
++      for (char c : part) {
++        switch (c) {
++        case '&': result += "&amp;"; break;
++        case '<': result += "&lt;"; break;
++        case '>': result += "&gt;"; break;
++        default: result += c; break;
++        }
++      }
++    };
++    std::size_t cursor = 0;
++    for (std::sregex_iterator it(source.begin(), source.end(), pattern), end; it != end; ++it) {
++      const auto start = static_cast<std::size_t>(it->position());
++      std::size_t length = static_cast<std::size_t>(it->length());
++      while (length > 0 && std::string_view(".,;:!?").find(source[start + length - 1]) != std::string_view::npos) {
++        --length;
++      }
++      appendEscaped(std::string_view(source).substr(cursor, start - cursor));
++      result += "<span foreground=\"#8ab4f8\" underline=\"single\">";
++      appendEscaped(std::string_view(source).substr(start, length));
++      result += "</span>";
++      cursor = start + length;
++    }
++    appendEscaped(std::string_view(source).substr(cursor));
++    return result;
++  }
++}
+diff --git a/src/render/text/cairo_text_renderer.cpp b/src/render/text/cairo_text_renderer.cpp
+index ecc01ff13..e3e367681 100644
+--- a/src/render/text/cairo_text_renderer.cpp
++++ b/src/render/text/cairo_text_renderer.cpp
+@@ -991 +991,3 @@ CairoTextRenderer::CacheEntry* CairoTextRenderer::lookupOrRasterize(
+-  const bool tinted = !containsColorGlyph(layout);
++  // Foreground spans need RGBA: the A8 path discards their colors.
++  const bool tinted = !(useMarkup && text.find("foreground=") != std::string_view::npos)
++      && !containsColorGlyph(layout);
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index c7f888fdd..06c8baafe 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -9,0 +10 @@
++#include "notification/link_markup.h"
+@@ -464 +465,2 @@ namespace {
+-      m_summary->setText(metrics.summaryText);
++      m_summary->setUseMarkup(true);
++      m_summary->setText(notification::linkMarkup(metrics.summaryText));
+@@ -474 +476,2 @@ namespace {
+-        m_body->setText(metrics.bodyText);
++        m_body->setUseMarkup(true);
++        m_body->setText(notification::linkMarkup(metrics.bodyText));
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index a19497c0d..1dae5736b 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -13,0 +14 @@
++#include "notification/link_markup.h"
+@@ -459 +460 @@ namespace {
+-            .text = StringUtils::trimLeadingBlankLines(summary),
++            .text = notification::linkMarkup(StringUtils::trimLeadingBlankLines(summary)),
+@@ -464,0 +466 @@ namespace {
++            .configure = [](Label& label) { label.setUseMarkup(true); },
+@@ -471 +473 @@ namespace {
+-              .text = StringUtils::trimLeadingBlankLines(body),
++              .text = notification::linkMarkup(StringUtils::trimLeadingBlankLines(body)),
+@@ -475,0 +478 @@ namespace {
++              .configure = [](Label& label) { label.setUseMarkup(true); },
+@@ -2609 +2612 @@ InputArea* NotificationToast::buildCard(
+-          .text = displaySummary,
++          .text = notification::linkMarkup(displaySummary),
+@@ -2614,0 +2618 @@ InputArea* NotificationToast::buildCard(
++          .configure = [](Label& label) { label.setUseMarkup(true); },
+@@ -2758 +2762 @@ InputArea* NotificationToast::buildCard(
+-      .text = displayBody,
++      .text = notification::linkMarkup(displayBody),
+@@ -2764,0 +2769 @@ InputArea* NotificationToast::buildCard(
++      .configure = [](Label& label) { label.setUseMarkup(true); },

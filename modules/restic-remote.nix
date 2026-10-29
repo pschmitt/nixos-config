@@ -92,35 +92,25 @@ in
       }) cfg.instances
     );
 
-    fileSystems = lib.mkMerge (
-      lib.mapAttrsToList (name: instance: {
-        "/var/lib/restic-remote/mounts/${name}" = {
-          fsType = "fuse";
-          device = "${pkgs.sshfs-fuse}/bin/sshfs#${instance.user}@${instance.host}:/";
-          options = [
-            "noauto"
-            "_netdev"
-            "allow_other"
-            "reconnect"
-            "follow_symlinks"
-            "x-systemd.automount"
-            "x-systemd.device-timeout=30s"
-            "x-systemd.mount-timeout=30s"
-            "IdentityFile=${instance.identityFile}"
-            "UserKnownHostsFile=/dev/null"
-            "ServerAliveInterval=10"
-            "BatchMode=yes"
-            "PasswordAuthentication=no"
-            # "StrictHostKeyChecking=no"
-          ];
-        };
-      }) cfg.instances
-    );
+    services.sshfs.mounts = lib.mapAttrs (name: instance: {
+      mountPoint = "/var/lib/restic-remote/mounts/${name}";
+      inherit (instance)
+        host
+        user
+        ;
+      deviceTimeout = "30s";
+      mountTimeout = "30s";
+      extraOptions = [
+        "IdentityFile=${instance.identityFile}"
+        "UserKnownHostsFile=/dev/null"
+        "ServerAliveInterval=10"
+        "BatchMode=yes"
+        "PasswordAuthentication=no"
+        # "StrictHostKeyChecking=no"
+      ];
+    }) cfg.instances;
 
-    environment.systemPackages = [
-      pkgs.restic
-      pkgs.sshfs
-    ];
+    environment.systemPackages = [ pkgs.restic ];
 
     services.restic.backups = lib.mapAttrs' (
       name: instance:

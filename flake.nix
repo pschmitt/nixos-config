@@ -682,14 +682,33 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          # Every shared skill follows the Agent Skills spec (frontmatter, name
-          # equals folder name). The skills of the private repo are not covered.
+          # Every skill of this repo and the private one follows the Agent
+          # Skills spec (frontmatter, name equals folder name) and passes
+          # skills-lint (length, links, references, skill names). Both trees
+          # are deployed side by side, so they are linted together. The CKS
+          # skills only resolve names; the n8n and todoist skills are upstream.
           skills =
-            pkgs.runCommand "validate-skills" { nativeBuildInputs = [ self.packages.${system}.skills-ref ]; }
+            let
+              privateSkills = "${inputs.nixos-config-private}/hm/skills";
+              cksSkills = "${
+                inputs.nixos-config-private.inputs.agent-skills.packages.${system}.default
+              }/share/skills/cks-agent-skills";
+            in
+            pkgs.runCommand "validate-skills"
+              {
+                nativeBuildInputs = [
+                  self.packages.${system}.skills-ref
+                  self.packages.${system}.skills-lint
+                ];
+              }
               ''
-                for dir in ${./home-manager/devel/skills}/*/; do
+                for dir in ${./home-manager/devel/skills}/*/ ${privateSkills}/*/; do
                   agentskills validate "$dir"
                 done
+                skills-lint \
+                  --context ${cksSkills} \
+                  --external 'n8n-*' --external todoist-cli \
+                  ${./home-manager/devel/skills} ${privateSkills}
                 touch $out
               '';
 
@@ -824,6 +843,7 @@
         harmonia = ./services/harmonia.nix;
         http = ./services/http.nix;
         nfs-client = ./services/nfs/nfs-client.nix;
+        sshfs = ./modules/sshfs.nix;
       };
 
       # Reusable home-manager modules you might want to export

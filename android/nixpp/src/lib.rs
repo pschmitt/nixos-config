@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail, ensure};
 use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::env;
@@ -10,7 +10,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{self, IsTerminal, Read, Write};
 use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 use std::path::{Component, Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::process::{Command, Output, Stdio};
 use std::time::{Duration, Instant};
 use url::Url;
 
@@ -31,9 +31,31 @@ struct NixppConfig {
 struct ConfigDefaults {
     substituter: Option<String>,
     flake: Option<String>,
+    builders: Vec<String>,
+    /// Backwards compatibility for configs written before builder lists.
     builder: Option<String>,
     public_keys: Vec<String>,
     aws_credentials_file: Option<PathBuf>,
+    aws_credentials_command: Option<Vec<String>>,
+    cache_pins: BTreeMap<String, String>,
+}
+
+#[derive(Debug, Serialize)]
+struct CachePin {
+    name: String,
+    pin: String,
+    store_path: Option<String>,
+    status: &'static str,
+}
+
+impl ConfigDefaults {
+    fn configured_builders(&self) -> Vec<String> {
+        if self.builders.is_empty() {
+            self.builder.iter().cloned().collect()
+        } else {
+            self.builders.clone()
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -46,12 +68,18 @@ struct CacheTarget {
 struct S3Cache {
     region: String,
     profile: String,
-    credentials_file: PathBuf,
+    credentials: AwsCredentialSource,
+}
+
+#[derive(Debug)]
+enum AwsCredentialSource {
+    File(PathBuf),
+    Command(Vec<String>),
 }
 
 struct CacheAuth {
     netrc: Option<PathBuf>,
-    curl_config: Option<TempFile>,
+    curl_config: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -95,36 +123,41 @@ impl Progress {
     }
 
     fn title(&self) {
-        eprintln!("\nnixpp ✨ {}", self.paint("2", "Termux environment"));
+        eprintln!("nixpp: {}", self.paint("2", "Termux environment"));
     }
 
     fn stage(&self, label: &str, action: impl FnOnce() -> Result<()>) -> Result<()> {
-        eprintln!("  {} {label}", self.paint("36", "✦"));
+        eprintln!("{label}");
         let started = Instant::now();
-        match action() {
+        let result = action();
+        self.report_stage_completion(started.elapsed(), result)
+    }
+
+    fn report_stage_result(
+        &self,
+        label: &str,
+        duration: Duration,
+        result: Result<()>,
+    ) -> Result<()> {
+        eprintln!("{label}");
+        self.report_stage_completion(duration, result)
+    }
+
+    fn report_stage_completion(&self, duration: Duration, result: Result<()>) -> Result<()> {
+        match result {
             Ok(()) => {
-                eprintln!(
-                    "  {} {} ({})",
-                    self.paint("1;32", "✓"),
-                    self.paint("32", "Done"),
-                    elapsed(started.elapsed())
-                );
+                eprintln!("  {} ({})", self.paint("1;32", "OK"), elapsed(duration));
                 Ok(())
             }
             Err(error) => {
-                eprintln!(
-                    "  {} {} ({})",
-                    self.paint("1;31", "✗"),
-                    self.paint("31", "Failed"),
-                    elapsed(started.elapsed())
-                );
+                eprintln!("  {} ({})", self.paint("1;31", "Failed"), elapsed(duration));
                 Err(error)
             }
         }
     }
 
     fn warning(&self, message: &str) {
-        eprintln!("  {} {message}", self.paint("1;33", "!"));
+        eprintln!("{}: {message}", self.paint("1;33", "Warning"));
     }
 }
 
@@ -144,6 +177,7 @@ struct GenerationInfo {
     path: String,
     architecture: String,
     minimum_api: u64,
+    pinned: bool,
     apt_packages: Vec<String>,
     nix_packages: Vec<String>,
     #[serde(skip_serializing)]
@@ -159,6 +193,7 @@ struct GenerationEntry {
     id: String,
     number: Option<u64>,
     current: bool,
+    pinned: bool,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -226,15 +261,64 @@ fn optional_manifest_string_array(
         .transpose()
 }
 
+fn record_generation_number(
+    numbers: &mut HashMap<String, u64>,
+    used_numbers: &mut HashSet<u64>,
+    id: &str,
+    number: u64,
+) -> Result<()> {
+    ensure!(
+        valid_generation_id(id),
+        "invalid generation ID in index: {id}"
+    );
+    ensure!(number > 0, "generation number must be positive");
+    if let Some(existing) = numbers.get(id) {
+        ensure!(
+            *existing == number,
+            "conflicting generation numbers for {id}: {existing} and {number}"
+        );
+        return Ok(());
+    }
+    ensure!(
+        used_numbers.insert(number),
+        "duplicate generation number in index: {number}"
+    );
+    numbers.insert(id.to_owned(), number);
+    Ok(())
+}
+
 fn generation_numbers(root: &Path) -> Result<HashMap<String, u64>> {
+    let mut numbers = HashMap::new();
+    let mut used_numbers = HashSet::new();
+
+    let json_path = root.join("generation-index.json");
+    match fs::read_to_string(&json_path) {
+        Ok(contents) => {
+            let entries: serde_json::Value = serde_json::from_str(&contents)
+                .with_context(|| format!("parse {}", json_path.display()))?;
+            let entries = entries
+                .as_object()
+                .with_context(|| format!("{} must contain a JSON object", json_path.display()))?;
+            for (id, value) in entries {
+                let number = value.as_u64().with_context(|| {
+                    format!(
+                        "invalid generation number for {id} in {}",
+                        json_path.display()
+                    )
+                })?;
+                record_generation_number(&mut numbers, &mut used_numbers, id, number)?;
+            }
+        }
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error).with_context(|| format!("read {}", json_path.display())),
+    }
+
     let path = root.join("generation-index.tsv");
     let contents = match fs::read_to_string(&path) {
         Ok(contents) => contents,
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(numbers),
         Err(error) => return Err(error).with_context(|| format!("read {}", path.display())),
     };
-    let mut numbers = HashMap::new();
-    let mut used_numbers = HashSet::new();
     for (line_number, line) in contents.lines().enumerate() {
         let fields: Vec<_> = line.split('\t').collect();
         ensure!(
@@ -245,17 +329,29 @@ fn generation_numbers(root: &Path) -> Result<HashMap<String, u64>> {
             line_number + 1
         );
         let number = fields[0].parse::<u64>()?;
-        ensure!(
-            numbers.insert(fields[1].to_owned(), number).is_none(),
-            "duplicate generation ID in generation index: {}",
-            fields[1]
-        );
-        ensure!(
-            used_numbers.insert(number),
-            "duplicate generation number in generation index: {number}"
-        );
+        record_generation_number(&mut numbers, &mut used_numbers, fields[1], number)?;
     }
     Ok(numbers)
+}
+
+fn generation_pins(root: &Path) -> Result<HashSet<String>> {
+    let path = root.join("pinned-generations.json");
+    let contents = match fs::read(&path) {
+        Ok(contents) => contents,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(HashSet::new()),
+        Err(error) => return Err(error).with_context(|| format!("read {}", path.display())),
+    };
+    let pins: Vec<String> =
+        serde_json::from_slice(&contents).with_context(|| format!("parse {}", path.display()))?;
+    let mut result = HashSet::new();
+    for id in pins {
+        ensure!(
+            valid_generation_id(&id) && result.insert(id.clone()),
+            "{} contains an invalid or duplicate generation ID",
+            path.display()
+        );
+    }
+    Ok(result)
 }
 
 fn resolve_generation(root: &Path, selection: &str) -> Result<String> {
@@ -273,7 +369,12 @@ fn resolve_generation(root: &Path, selection: &str) -> Result<String> {
     Ok(selection.to_owned())
 }
 
-fn inspect_generation(root: &Path, id: &str, number: Option<u64>) -> Result<GenerationInfo> {
+fn inspect_generation(
+    root: &Path,
+    id: &str,
+    number: Option<u64>,
+    pinned: bool,
+) -> Result<GenerationInfo> {
     let path = root.join("generations").join(id);
     let metadata =
         fs::symlink_metadata(&path).with_context(|| format!("inspect generation {id}"))?;
@@ -309,6 +410,7 @@ fn inspect_generation(root: &Path, id: &str, number: Option<u64>) -> Result<Gene
         path: root.join("current").display().to_string(),
         architecture,
         minimum_api,
+        pinned,
         apt_packages: manifest_string_array(&manifest, "basePackages")?,
         nix_packages: manifest_string_array(&manifest, "homePackages")?,
         home_files: optional_manifest_string_array(&manifest, "homeFiles")?,
@@ -322,6 +424,7 @@ fn inspect_generation(root: &Path, id: &str, number: Option<u64>) -> Result<Gene
 
 fn inspect_generations(root: &Path) -> Result<GenerationStatus> {
     let numbers = generation_numbers(root)?;
+    let pinned = generation_pins(root)?;
     let current = match fs::read_link(root.join("current")) {
         Ok(target) => Some(generation_id_from_target(&target)?),
         Err(error) if error.kind() == io::ErrorKind::NotFound => None,
@@ -363,12 +466,13 @@ fn inspect_generations(root: &Path) -> Result<GenerationStatus> {
     let mut generations = Vec::new();
     let mut invalid_generations = Vec::new();
     for id in ids {
-        match inspect_generation(root, &id, numbers.get(&id).copied()) {
+        match inspect_generation(root, &id, numbers.get(&id).copied(), pinned.contains(&id)) {
             Ok(info) if Some(&id) == current.as_ref() => current_info = Some(info),
             Ok(info) => generations.push(GenerationEntry {
                 id,
                 number: info.number,
                 current: false,
+                pinned: info.pinned,
             }),
             Err(error) if Some(&id) == current.as_ref() => {
                 return Err(error).with_context(|| format!("inspect current generation {id}"));
@@ -386,6 +490,7 @@ fn inspect_generations(root: &Path) -> Result<GenerationStatus> {
                 id: info.id.clone(),
                 number: info.number,
                 current: true,
+                pinned: info.pinned,
             },
         );
     }
@@ -409,7 +514,7 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
     }
 
     let ui = Progress::new();
-    println!("{}", ui.paint("1;36", "nixpp ✨ Termux generations"));
+    println!("{}", ui.paint("1;36", "nixpp: Termux generations"));
     if let Some(current) = &status.current {
         let number = current.number.map_or_else(
             || "unnumbered".to_owned(),
@@ -417,27 +522,27 @@ fn print_generation_status(status: &GenerationStatus, json: bool) -> Result<()> 
         );
         let label = format!("{number} · {}", &current.id[..12]);
         println!("Current: {}", ui.paint("1;32", &label));
+        if current.pinned {
+            println!("  Pinned: yes");
+        }
         println!(
-            "    {} · Android API {}+",
+            "  {} · Android API {}+",
             current.architecture, current.minimum_api
         );
         println!(
-            "    Termux APT: {}",
+            "  Termux APT: {}",
             sorted_package_list(&current.apt_packages)
         );
         println!(
-            "    Nix outputs: {}",
+            "  Nix outputs: {}",
             sorted_package_list(&current.nix_packages)
         );
-        println!("    Path: {}", current.path);
+        println!("  Path: {}", current.path);
     } else {
         println!("Current: {}", ui.paint("1;33", "none"));
-        println!("Run `nixpp switch --flake …` to install a generation.");
+        println!("Run `nixpp switch --flake FLAKE` to install a generation.");
     }
-    println!(
-        "Readable generation manifests: {}",
-        status.generations.len()
-    );
+    println!("Readable generations: {}", status.generations.len());
     if !status.invalid_generations.is_empty() {
         println!(
             "Unusable historical generations: {} (details: `nixpp status --json`)",
@@ -455,7 +560,7 @@ fn sorted_package_list(packages: &[String]) -> String {
 
 fn print_generations(status: &GenerationStatus) {
     let ui = Progress::new();
-    println!("{}", ui.paint("1;36", "nixpp ✨ generations"));
+    println!("{}", ui.paint("1;36", "nixpp: generations"));
     if status.generations.is_empty() {
         println!("No generations are installed.");
         return;
@@ -464,7 +569,6 @@ fn print_generations(status: &GenerationStatus) {
     let mut generations: Vec<_> = status.generations.iter().collect();
     generations.sort_by_key(|generation| generation.number.unwrap_or(u64::MAX));
     for generation in generations {
-        let marker = if generation.current { "◆" } else { "◇" };
         let number = generation.number.map_or_else(
             || "unnumbered".to_owned(),
             |number| format!("generation {number}"),
@@ -475,7 +579,18 @@ fn print_generations(status: &GenerationStatus) {
         } else {
             ui.paint("2", &label)
         };
-        println!("  {marker} {label}");
+        let mut tags = Vec::new();
+        if generation.current {
+            tags.push("current");
+        }
+        if generation.pinned {
+            tags.push("pinned");
+        }
+        if tags.is_empty() {
+            println!("  {label}");
+        } else {
+            println!("  {label} ({})", tags.join(", "));
+        }
     }
     if !status.invalid_generations.is_empty() {
         println!(
@@ -497,6 +612,157 @@ pub fn status(all: bool, json: bool) -> Result<()> {
 pub fn generations() -> Result<()> {
     let status = inspect_generations(&termux_generation_root()?)?;
     print_generations(&status);
+    Ok(())
+}
+
+pub fn pin(generation: &str, pinned: bool) -> Result<()> {
+    let root = termux_generation_root()?;
+    let generation = resolve_generation(&root, generation)?;
+    let action = if pinned { "pin" } else { "unpin" };
+    let status = Command::new("bash")
+        .arg(root.join("current/bootstrap.sh"))
+        .arg(action)
+        .arg(generation)
+        .status()
+        .context("start generation pin update")?;
+    ensure!(status.success(), "generation {action} failed: {status}");
+    Ok(())
+}
+
+pub fn doctor() -> Result<()> {
+    let config = load_config()?;
+    let flake = config
+        .defaults
+        .flake
+        .as_deref()
+        .context("defaults.flake is not configured")?;
+    let builders = config.defaults.configured_builders();
+    let cache = config
+        .defaults
+        .substituter
+        .as_deref()
+        .context("defaults.substituter is not configured")?;
+    ensure!(!flake.is_empty(), "defaults.flake is empty");
+    ensure!(!builders.is_empty(), "defaults.builders is not configured");
+    for builder in &builders {
+        ensure!(
+            valid_ssh_target(builder),
+            "defaults.builders contains an invalid SSH target: {builder}"
+        );
+    }
+    ensure!(
+        !config.defaults.public_keys.is_empty(),
+        "defaults.public_keys is empty"
+    );
+    for key in &config.defaults.public_keys {
+        let (_, encoded) = key
+            .split_once(':')
+            .context("public key must use NAME:BASE64 format")?;
+        let bytes = BASE64
+            .decode(encoded)
+            .context("public key is not valid base64")?;
+        let key_array: [u8; 32] = bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("public key must decode to 32 bytes"))?;
+        VerifyingKey::from_bytes(&key_array).context("public key is not valid Ed25519")?;
+    }
+
+    let target = parse_cache_target(
+        cache,
+        config.defaults.aws_credentials_file.as_deref(),
+        config.defaults.aws_credentials_command.as_deref(),
+    )?;
+    let s3 = target
+        .s3
+        .as_ref()
+        .context("defaults.substituter must use s3://")?;
+    let auth = CacheAuth {
+        netrc: None,
+        curl_config: Some(make_s3_curl_config(s3)?),
+    };
+    let ui = Progress::new();
+    ui.title();
+    ui.stage("Validate trusted cache keys and AWS credentials", || Ok(()))?;
+    let (cache_check, builder_checks) = std::thread::scope(|scope| -> Result<_> {
+        let target = &target;
+        let auth = &auth;
+        let cache_check = scope.spawn(move || {
+            let started = Instant::now();
+            let result = (|| {
+                let url = safe_cache_url(&target.base, "nix-cache-info")?;
+                let data = curl_read(&url, &auth, 1 << 20)?;
+                let text = std::str::from_utf8(&data).context("nix-cache-info is not UTF-8")?;
+                ensure!(
+                    text.lines().any(|line| line.starts_with("StoreDir: ")),
+                    "cache returned invalid nix-cache-info"
+                );
+                Ok(())
+            })();
+            (started.elapsed(), result)
+        });
+        let builder_checks: Vec<_> = builders
+            .iter()
+            .map(|builder| {
+                scope.spawn(move || {
+                    let started = Instant::now();
+                    let result = (|| {
+                        let output = Command::new("ssh")
+                            .args([
+                                "-o",
+                                "BatchMode=yes",
+                                "-o",
+                                "ConnectTimeout=10",
+                                builder,
+                                "command -v nix >/dev/null",
+                            ])
+                            .output()
+                            .context("start SSH check")?;
+                        ensure!(
+                            output.status.success(),
+                            "builder SSH or Nix check failed: {}",
+                            String::from_utf8_lossy(&output.stderr).trim()
+                        );
+                        Ok(())
+                    })();
+                    (started.elapsed(), result)
+                })
+            })
+            .collect();
+
+        let cache_check = cache_check
+            .join()
+            .map_err(|_| anyhow::anyhow!("S3 cache check panicked"))?;
+        let builder_checks = builder_checks
+            .into_iter()
+            .map(|check| {
+                check
+                    .join()
+                    .map_err(|_| anyhow::anyhow!("builder check panicked"))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        Ok((cache_check, builder_checks))
+    })?;
+
+    let cache_result = ui.report_stage_result(
+        "Check access to the configured S3 cache",
+        cache_check.0,
+        cache_check.1,
+    );
+    let mut reachable_builders = 0;
+    for (builder, (duration, result)) in builders.iter().zip(builder_checks) {
+        if ui
+            .report_stage_result(&format!("Check SSH and Nix on {builder}"), duration, result)
+            .is_ok()
+        {
+            reachable_builders += 1;
+        }
+    }
+    cache_result?;
+    ensure!(
+        reachable_builders > 0,
+        "no configured Nix builders are reachable"
+    );
+    println!("Configuration and upgrade checks passed.");
     Ok(())
 }
 
@@ -625,12 +891,13 @@ fn generation_command_signatures(generation_root: &Path) -> Result<BTreeMap<Stri
 
 fn print_command_diff(
     ui: &Progress,
-    root: &Path,
+    old_base: &Path,
+    new_base: &Path,
     old: &GenerationInfo,
     new: &GenerationInfo,
 ) -> Result<bool> {
-    let old_root = root.join("generations").join(&old.id);
-    let new_root = root.join("generations").join(&new.id);
+    let old_root = old_base.join("generations").join(&old.id);
+    let new_root = new_base.join("generations").join(&new.id);
     let old_signatures = generation_command_signatures(&old_root)?;
     let new_signatures = generation_command_signatures(&new_root)?;
     let names: BTreeSet<_> = old_signatures
@@ -659,7 +926,8 @@ fn print_command_diff(
 
 fn print_home_file_diff(
     ui: &Progress,
-    root: &Path,
+    old_base: &Path,
+    new_base: &Path,
     old: &GenerationInfo,
     new: &GenerationInfo,
 ) -> Result<bool> {
@@ -686,8 +954,8 @@ fn print_home_file_diff(
         }
     }
 
-    let old_root = root.join("generations").join(&old.id);
-    let new_root = root.join("generations").join(&new.id);
+    let old_root = old_base.join("generations").join(&old.id);
+    let new_root = new_base.join("generations").join(&new.id);
     let mut content_changes = Vec::new();
     for relative_path in old_set.intersection(&new_set) {
         if home_file_signature(&old_root, relative_path)?
@@ -711,12 +979,33 @@ fn print_home_file_diff(
 fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> {
     ensure!(old_id != new_id, "cannot diff a generation against itself");
     let numbers = generation_numbers(root)?;
-    let old = inspect_generation(root, old_id, numbers.get(old_id).copied())?;
-    let new = inspect_generation(root, new_id, numbers.get(new_id).copied())?;
+    let pins = generation_pins(root)?;
+    let old = inspect_generation(
+        root,
+        old_id,
+        numbers.get(old_id).copied(),
+        pins.contains(old_id),
+    )?;
+    let new = inspect_generation(
+        root,
+        new_id,
+        numbers.get(new_id).copied(),
+        pins.contains(new_id),
+    )?;
+    print_generation_diff_infos(root, root, &old, &new)
+}
+
+fn print_generation_diff_infos(
+    old_base: &Path,
+    new_base: &Path,
+    old: &GenerationInfo,
+    new: &GenerationInfo,
+) -> Result<()> {
+    ensure!(old.id != new.id, "cannot diff a generation against itself");
     let ui = Progress::for_stdout();
     println!(
         "{} {} → {}",
-        ui.paint("1;36", "nixpp ✨ generation diff:"),
+        ui.paint("1;36", "nixpp: generation diff"),
         generation_label(&old),
         generation_label(&new)
     );
@@ -766,8 +1055,8 @@ fn print_generation_diff(root: &Path, old_id: &str, new_id: &str) -> Result<()> 
             changed |= print_set_diff(&ui, "Shell plugins", old_plugins, new_plugins);
         }
     }
-    changed |= print_command_diff(&ui, root, &old, &new)?;
-    changed |= print_home_file_diff(&ui, root, &old, &new)?;
+    changed |= print_command_diff(&ui, old_base, new_base, old, new)?;
+    changed |= print_home_file_diff(&ui, old_base, new_base, old, new)?;
     if !changed {
         println!("No recorded changes.");
     }
@@ -808,7 +1097,7 @@ pub fn gc(keep: usize, dry_run: bool) -> Result<()> {
     let ui = Progress::new();
     ui.title();
     ui.stage(
-        "🧹 Prune generations and unused Termux APT packages",
+        "Prune old generations and unused Termux APT packages",
         || {
             let mut command = Command::new("bash");
             command
@@ -870,7 +1159,11 @@ pub fn fetch(
         "no trusted public keys specified; pass --public-key or set defaults.public_keys in the config"
     );
     let store_hash = store_hash(store_path)?;
-    let target = parse_cache_target(cache, config.defaults.aws_credentials_file.as_deref())?;
+    let target = parse_cache_target(
+        cache,
+        config.defaults.aws_credentials_file.as_deref(),
+        config.defaults.aws_credentials_command.as_deref(),
+    )?;
     let has_credentials = env::var_os("NIXPP_USERNAME").is_some()
         || env::var_os("NIXPP_PASSWORD").is_some()
         || netrc_file.is_some()
@@ -931,6 +1224,150 @@ pub fn fetch(
     result.and(cleanup_result)
 }
 
+pub fn cache_list(json: bool) -> Result<()> {
+    let config = load_config()?;
+    ensure!(
+        !config.defaults.cache_pins.is_empty(),
+        "no cache pins configured; set defaults.cache_pins in the nixpp config"
+    );
+    ensure!(
+        !config.defaults.public_keys.is_empty(),
+        "no trusted public keys configured; set defaults.public_keys in the nixpp config"
+    );
+    let cache = config
+        .defaults
+        .substituter
+        .as_deref()
+        .context("no cache configured; set defaults.substituter in the nixpp config")?;
+    let target = parse_cache_target(
+        cache,
+        config.defaults.aws_credentials_file.as_deref(),
+        config.defaults.aws_credentials_command.as_deref(),
+    )?;
+    ensure!(
+        target.s3.is_some(),
+        "nixpp cache list requires an s3:// defaults.substituter"
+    );
+    let auth = CacheAuth {
+        netrc: None,
+        curl_config: Some(make_s3_curl_config(
+            target.s3.as_ref().expect("S3 target was checked"),
+        )?),
+    };
+    let pins = config
+        .defaults
+        .cache_pins
+        .into_iter()
+        .map(|(name, pin)| {
+            ensure!(
+                !name.is_empty()
+                    && name
+                        .chars()
+                        .all(|character| character.is_ascii_alphanumeric()
+                            || "-_".contains(character)),
+                "invalid cache pin label {name:?}"
+            );
+            ensure!(
+                !pin.is_empty()
+                    && pin
+                        .chars()
+                        .all(|character| character.is_ascii_alphanumeric()
+                            || "-_.".contains(character)),
+                "invalid Niks3 pin name for {name:?}"
+            );
+            let url = safe_cache_url(&target.base, &format!("pins/{pin}"))?;
+            let path = curl_read_optional(&url, &auth, 4096)?
+                .map(|value| String::from_utf8(value).context("Niks3 pin is not UTF-8"))
+                .transpose()?
+                .map(|value| value.trim().to_owned());
+            let status = if let Some(path) = path.as_deref() {
+                let hash = store_hash(path)
+                    .with_context(|| format!("Niks3 pin {pin} contains an invalid store path"))?;
+                let narinfo_url = safe_cache_url(&target.base, &format!("{hash}.narinfo"))?;
+                match curl_read_optional(&narinfo_url, &auth, MAX_NARINFO_SIZE)? {
+                    Some(narinfo) => {
+                        let info = parse_nar_info_response(&narinfo)?;
+                        ensure!(
+                            info.store_path == path,
+                            "narinfo StorePath does not match Niks3 pin {pin}"
+                        );
+                        ensure!(
+                            info.references.is_empty(),
+                            "Niks3 pin {pin} points to an output with Nix store references"
+                        );
+                        verify_any_signature(&info, &config.defaults.public_keys)?;
+                        "cached"
+                    }
+                    None => "stale",
+                }
+            } else {
+                "missing"
+            };
+            Ok(CachePin {
+                name,
+                pin,
+                status,
+                store_path: path,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&pins)?);
+    } else {
+        println!("Configured Niks3 pins:");
+        for pin in pins {
+            match pin.store_path {
+                Some(path) => println!("{}\t{}\t{}", pin.name, pin.status, path),
+                None => println!("{}\t{}", pin.name, pin.status),
+            }
+        }
+    }
+    Ok(())
+}
+
+fn curl_read_optional(url: &str, auth: &CacheAuth, max_size: u64) -> Result<Option<Vec<u8>>> {
+    let mut command = Command::new("curl");
+    let mut arguments = curl_args(auth, false);
+    arguments.retain(|argument| argument != "--fail");
+    command
+        .args(arguments)
+        .args([
+            "--max-filesize",
+            &max_size.to_string(),
+            "--output",
+            "-",
+            "--write-out",
+            "\\n%{http_code}",
+            url,
+        ])
+        .env_remove("NIXPP_USERNAME")
+        .env_remove("NIXPP_PASSWORD")
+        .stderr(Stdio::inherit());
+    let output = run_curl(command, auth).context("start curl")?;
+    ensure!(
+        output.status.success(),
+        "curl failed fetching {url}: {}",
+        output.status
+    );
+    let response = output.stdout;
+    let split = response
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .context("curl response did not include an HTTP status")?;
+    let status = std::str::from_utf8(&response[split + 1..])
+        .context("curl returned a non-UTF-8 HTTP status")?;
+    let body = &response[..split];
+    ensure!(
+        body.len() as u64 <= max_size,
+        "Niks3 pin response exceeds its size limit"
+    );
+    match status {
+        "200" => Ok(Some(body.to_vec())),
+        "404" => Ok(None),
+        _ => bail!("unexpected HTTP status {status} fetching {url}"),
+    }
+}
+
 fn load_config() -> Result<NixppConfig> {
     let path = if let Some(path) = env::var_os("NIXPP_CONFIG") {
         PathBuf::from(path)
@@ -949,7 +1386,11 @@ fn load_config() -> Result<NixppConfig> {
     }
 }
 
-fn parse_cache_target(value: &str, configured_credentials: Option<&Path>) -> Result<CacheTarget> {
+fn parse_cache_target(
+    value: &str,
+    configured_credentials: Option<&Path>,
+    credentials_command: Option<&[String]>,
+) -> Result<CacheTarget> {
     if value.starts_with("s3://") {
         let s3_url = Url::parse(value).context("invalid S3 cache URL")?;
         ensure!(
@@ -1029,13 +1470,21 @@ fn parse_cache_target(value: &str, configured_credentials: Option<&Path>) -> Res
                 segments.push(segment);
             }
         }
-        let credentials_file = s3_credentials_path(configured_credentials)?;
+        let credentials = if let Some(command) = credentials_command {
+            ensure!(
+                !command.is_empty() && command.iter().all(|part| !part.is_empty()),
+                "defaults.aws_credentials_command must contain a program and non-empty arguments"
+            );
+            AwsCredentialSource::Command(command.to_vec())
+        } else {
+            AwsCredentialSource::File(s3_credentials_path(configured_credentials)?)
+        };
         Ok(CacheTarget {
             base,
             s3: Some(S3Cache {
                 region: region.to_owned(),
                 profile: profile.to_owned(),
-                credentials_file,
+                credentials,
             }),
         })
     } else {
@@ -1069,41 +1518,73 @@ fn expand_home(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-fn make_s3_curl_config(s3: &S3Cache) -> Result<TempFile> {
-    let (access_key, secret_key, session_token) =
-        load_aws_profile(&s3.credentials_file, &s3.profile)?;
-    let (path, mut file) = create_private_file(&env::temp_dir(), ".nixpp-s3-auth")?;
-    let write_result = (|| {
-        writeln!(
-            file,
-            "aws-sigv4 = \"aws:amz:{}:s3\"",
-            curl_config_escape(&s3.region)
-        )?;
-        writeln!(
-            file,
-            "user = \"{}:{}\"",
-            curl_config_escape(&access_key),
-            curl_config_escape(&secret_key)
-        )?;
-        if let Some(token) = session_token {
-            writeln!(
-                file,
-                "header = \"x-amz-security-token: {}\"",
-                curl_config_escape(&token)
-            )?;
-        }
-        file.sync_all().context("sync S3 curl config")
-    })();
-    if let Err(error) = write_result {
-        drop(file);
-        return match fs::remove_file(&path) {
-            Ok(()) => Err(error),
-            Err(cleanup) => {
-                Err(error.context(format!("also failed to remove S3 auth config: {cleanup}")))
-            }
-        };
+fn make_s3_curl_config(s3: &S3Cache) -> Result<String> {
+    let (access_key, secret_key, session_token) = match &s3.credentials {
+        AwsCredentialSource::File(path) => load_aws_profile(path, &s3.profile)?,
+        AwsCredentialSource::Command(command) => load_aws_credentials_command(command)?,
+    };
+    let mut config = format!(
+        "aws-sigv4 = \"aws:amz:{}:s3\"\nuser = \"{}:{}\"\n",
+        curl_config_escape(&s3.region),
+        curl_config_escape(&access_key),
+        curl_config_escape(&secret_key)
+    );
+    if let Some(token) = session_token {
+        config.push_str(&format!(
+            "header = \"x-amz-security-token: {}\"\n",
+            curl_config_escape(&token)
+        ));
     }
-    Ok(TempFile { file, path })
+    Ok(config)
+}
+
+fn load_aws_credentials_command(command: &[String]) -> Result<(String, String, Option<String>)> {
+    ensure!(!command.is_empty(), "AWS credentials command is empty");
+    let output = Command::new(&command[0])
+        .args(&command[1..])
+        .env_remove("NIXPP_USERNAME")
+        .env_remove("NIXPP_PASSWORD")
+        .output()
+        .with_context(|| format!("start AWS credentials command {}", command[0]))?;
+    ensure!(
+        output.status.success(),
+        "AWS credentials command {} failed: {}",
+        command[0],
+        output.status
+    );
+    let value: serde_json::Value = serde_json::from_slice(&output.stdout)
+        .context("AWS credentials command must output rbw JSON")?;
+    let data = value
+        .get("data")
+        .context("rbw JSON is missing its data object")?;
+    ensure!(
+        data.get("type").and_then(serde_json::Value::as_str) == Some("Login"),
+        "rbw AWS credentials entry must be a Login item"
+    );
+    let access_key = data
+        .get("username")
+        .and_then(serde_json::Value::as_str)
+        .context("rbw AWS credentials entry is missing its username")?
+        .to_owned();
+    let secret_key = data
+        .get("password")
+        .and_then(serde_json::Value::as_str)
+        .context("rbw AWS credentials entry is missing its password")?
+        .to_owned();
+    let session_token = value
+        .get("fields")
+        .and_then(serde_json::Value::as_array)
+        .and_then(|fields| {
+            fields.iter().find_map(|field| {
+                let name = field.get("name")?.as_str()?;
+                if name.eq_ignore_ascii_case("aws_session_token") {
+                    field.get("value")?.as_str().map(str::to_owned)
+                } else {
+                    None
+                }
+            })
+        });
+    validate_aws_credentials(access_key, secret_key, session_token)
 }
 
 fn curl_config_escape(value: &str) -> String {
@@ -1152,6 +1633,14 @@ fn load_aws_profile(path: &Path, profile: &str) -> Result<(String, String, Optio
         .remove("aws_secret_access_key")
         .context("AWS profile is missing aws_secret_access_key")?;
     let session_token = fields.remove("aws_session_token");
+    validate_aws_credentials(access_key, secret_key, session_token)
+}
+
+fn validate_aws_credentials(
+    access_key: String,
+    secret_key: String,
+    session_token: Option<String>,
+) -> Result<(String, String, Option<String>)> {
     ensure!(
         !access_key.is_empty()
             && !secret_key.is_empty()
@@ -1160,7 +1649,7 @@ fn load_aws_profile(path: &Path, profile: &str) -> Result<(String, String, Optio
             && session_token
                 .as_ref()
                 .is_none_or(|token| !token.is_empty() && !token.contains(['\n', '\r'])),
-        "AWS profile credentials are invalid"
+        "AWS credentials are invalid"
     );
     Ok((access_key, secret_key, session_token))
 }
@@ -1188,11 +1677,11 @@ pub fn switch_profile(
     builder: Option<&str>,
     public_key: Option<&str>,
 ) -> Result<()> {
-    switch_profile_with_source(flake, builder, public_key, false)
+    switch_profile_with_source(flake, builder, public_key, false, false)
 }
 
-pub fn upgrade_profile() -> Result<()> {
-    switch_profile_with_source(None, None, None, true)
+pub fn upgrade_profile(dry_run: bool) -> Result<()> {
+    switch_profile_with_source(None, None, None, true, dry_run)
 }
 
 fn switch_profile_with_source(
@@ -1200,14 +1689,15 @@ fn switch_profile_with_source(
     builder: Option<&str>,
     public_key: Option<&str>,
     use_s3: bool,
+    dry_run: bool,
 ) -> Result<()> {
     let config = load_config()?;
     let flake = flake
         .or(config.defaults.flake.as_deref())
         .context("no flake specified; pass --flake or set defaults.flake in the config")?;
-    let builder = builder
-        .or(config.defaults.builder.as_deref())
-        .context("no builder specified; pass --builder or set defaults.builder in the config")?;
+    let builders = builder
+        .map(|builder| vec![builder.to_owned()])
+        .unwrap_or_else(|| config.defaults.configured_builders());
     let public_keys = public_key
         .map(|key| vec![key.to_owned()])
         .unwrap_or_else(|| config.defaults.public_keys.clone());
@@ -1221,7 +1711,11 @@ fn switch_profile_with_source(
             .substituter
             .as_deref()
             .context("no S3 substituter configured; set defaults.substituter in the config")?;
-        let target = parse_cache_target(value, config.defaults.aws_credentials_file.as_deref())?;
+        let target = parse_cache_target(
+            value,
+            config.defaults.aws_credentials_file.as_deref(),
+            config.defaults.aws_credentials_command.as_deref(),
+        )?;
         ensure!(
             target.s3.is_some(),
             "nixpp upgrade requires an s3:// defaults.substituter"
@@ -1244,9 +1738,15 @@ fn switch_profile_with_source(
         "flake installable is invalid or too long"
     );
     ensure!(
-        valid_ssh_target(builder),
-        "builder must be an SSH host or user@host alias without command-line options"
+        !builders.is_empty(),
+        "no builders specified; pass --builder or set defaults.builders in the config"
     );
+    for builder in &builders {
+        ensure!(
+            valid_ssh_target(builder),
+            "builder must be an SSH host or user@host alias without command-line options: {builder}"
+        );
+    }
     ensure!(
         env::var("PREFIX").as_deref() == Ok("/data/data/com.termux/files/usr"),
         "switch must run inside the standard Termux app shell"
@@ -1263,28 +1763,37 @@ fn switch_profile_with_source(
 
     let ui = Progress::new();
     ui.title();
+    let mut selected_builder = String::new();
     let mut store_path = String::new();
-    ui.stage(&format!("🧱 Build flake on {builder}"), || {
-        store_path = remote_build(builder, flake)?;
-        Ok(())
+    ui.stage("Build the configured flake", || {
+        let mut failures = Vec::new();
+        for candidate in &builders {
+            match remote_build(candidate, flake) {
+                Ok(path) => {
+                    selected_builder.clone_from(candidate);
+                    store_path = path;
+                    return Ok(());
+                }
+                Err(error) => failures.push(format!("{candidate}: {error:#}")),
+            }
+        }
+        anyhow::bail!("all configured builders failed: {}", failures.join("; "))
     })?;
+    let builder = selected_builder.as_str();
 
     let mut remote_temp = None;
     let stage = make_staging_directory("nixpp-switch-")?;
     let result = (|| {
         let bundle_dir = stage.join("bundle");
         if let Some(cache) = substituter {
-            ui.stage(
-                "☁️ Fetch and verify the bundle from the S3 cache",
-                || {
-                    fetch(Some(cache), &store_path, &bundle_dir, None, None)
-                        .context("fetch built Termux bundle from the configured S3 cache")?;
-                    Ok(())
-                },
-            )?;
+            ui.stage("Fetch and verify the bundle from the S3 cache", || {
+                fetch(Some(cache), &store_path, &bundle_dir, None, None)
+                    .context("fetch built Termux bundle from the configured S3 cache")?;
+                Ok(())
+            })?;
         } else {
             let mut info = None;
-            ui.stage("🔏 Sign and inspect the Nix output", || {
+            ui.stage("Sign and inspect the Nix output", || {
                 let path = remote_output_cache(builder, &store_path)?;
                 remote_temp = Some(path.clone());
                 let store_hash = store_hash(&store_path)?;
@@ -1305,7 +1814,7 @@ fn switch_profile_with_source(
                 Ok(())
             })?;
             let info = info.context("builder returned no Nix metadata")?;
-            ui.stage("📦 Transfer and verify the bundle", || {
+            ui.stage("Transfer and verify the bundle", || {
                 let nar_path = stage.join("output.nar");
                 remote_nar(builder, &store_path, &nar_path, info.nar_size)?;
                 extract_verified_nar(&nar_path, &info, &bundle_dir)
@@ -1320,7 +1829,45 @@ fn switch_profile_with_source(
             fs::metadata(&bootstrap_path).is_ok_and(|metadata| metadata.file_type().is_file()),
             "Termux bundle is missing a regular bootstrap.sh"
         );
-        ui.stage("🚀 Install and health-check the new generation", || {
+        if dry_run {
+            let preview_home = stage.join("preview-home");
+            fs::create_dir_all(&preview_home).context("create preview home")?;
+            ui.stage("Preflight the bundle without activating", || {
+                let status = Command::new("bash")
+                    .arg(&bootstrap_path)
+                    .arg("preflight")
+                    .arg(&archive_path)
+                    .arg(&digest)
+                    .env("HOME", &preview_home)
+                    .status()
+                    .context("start upgrade preflight")?;
+                ensure!(status.success(), "upgrade preflight failed: {status}");
+                Ok(())
+            })?;
+            let preview_root = preview_home.join(".local/share/termux-native");
+            if let Some(previous) = previous_generation.as_deref() {
+                let installed = generation_root.join("generations").join(previous);
+                ensure!(installed.is_dir(), "active generation directory is missing");
+                let old_numbers = generation_numbers(&generation_root)?;
+                let old_pins = generation_pins(&generation_root)?;
+                let old = inspect_generation(
+                    &generation_root,
+                    previous,
+                    old_numbers.get(previous).copied(),
+                    old_pins.contains(previous),
+                )?;
+                let new = inspect_generation(&preview_root, &digest, None, false)?;
+                print_generation_diff_infos(&generation_root, &preview_root, &old, &new)?;
+            } else {
+                println!(
+                    "Previewed generation {} (no installed generation to compare).",
+                    &digest[..12]
+                );
+            }
+            println!("Dry run complete; no generation was activated.");
+            return Ok(());
+        }
+        ui.stage("Install and health-check the new generation", || {
             let status = Command::new("bash")
                 .arg(&bootstrap_path)
                 .arg("install")
@@ -1350,6 +1897,7 @@ fn switch_profile_with_source(
                     && current.id != previous
                 {
                     let diff = Command::new(generation_root.join("current/bin/nixpp"))
+                        .env_remove("TERMUX_GENERATION")
                         .arg("diff")
                         .arg(&previous)
                         .arg(&current.id)
@@ -1660,10 +2208,25 @@ fn curl_args(auth: &CacheAuth, progress: bool) -> Vec<String> {
     if let Some(path) = auth.netrc.as_deref() {
         arguments.extend(["--netrc-file".to_owned(), path.display().to_string()]);
     }
-    if let Some(config) = auth.curl_config.as_ref() {
-        arguments.extend(["--config".to_owned(), config.path.display().to_string()]);
+    if auth.curl_config.is_some() {
+        arguments.extend(["--config".to_owned(), "-".to_owned()]);
     }
     arguments
+}
+
+fn run_curl(mut command: Command, auth: &CacheAuth) -> io::Result<Output> {
+    if let Some(config) = auth.curl_config.as_deref() {
+        let mut child = command
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()?;
+        if let Some(mut stdin) = child.stdin.take() {
+            stdin.write_all(config.as_bytes())?;
+        }
+        child.wait_with_output()
+    } else {
+        command.output()
+    }
 }
 
 fn curl_read(url: &str, auth: &CacheAuth, max_size: u64) -> Result<Vec<u8>> {
@@ -1680,7 +2243,7 @@ fn curl_read(url: &str, auth: &CacheAuth, max_size: u64) -> Result<Vec<u8>> {
         .env_remove("NIXPP_USERNAME")
         .env_remove("NIXPP_PASSWORD")
         .stderr(Stdio::inherit());
-    let output = command.output().context("start curl")?;
+    let output = run_curl(command, auth).context("start curl")?;
     ensure!(
         output.status.success(),
         "curl failed fetching {url}: {}",
@@ -1944,17 +2507,15 @@ fn curl_download(url: &str, auth: &CacheAuth, destination: &Path, maximum: u64) 
         .env_remove("NIXPP_USERNAME")
         .env_remove("NIXPP_PASSWORD");
     if io::stderr().is_terminal() {
-        let status = command.status().context("start curl")?;
-        ensure!(status.success(), "curl failed fetching NAR: {status}");
-    } else {
-        let output = command.output().context("start curl")?;
-        ensure!(
-            output.status.success(),
-            "curl failed fetching NAR: {}: {}",
-            output.status,
-            String::from_utf8_lossy(&output.stderr).trim()
-        );
+        command.stderr(Stdio::inherit());
     }
+    let output = run_curl(command, auth).context("start curl")?;
+    ensure!(
+        output.status.success(),
+        "curl failed fetching NAR: {}: {}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr).trim()
+    );
     Ok(())
 }
 
@@ -2683,6 +3244,7 @@ mod tests {
         let target = parse_cache_target(
             "s3://nix-cache-brkn-lol?endpoint=s3.openstack.de-west-01.wiit-cloud.io&region=default&scheme=https&profile=niks3&priority=30",
             Some(Path::new("~/.aws/credentials")),
+            None,
         )
         .unwrap();
         assert_eq!(
@@ -2703,7 +3265,10 @@ mod tests {
             "s3://cache.example?endpoint=s3.example&profile=one&profile=two",
             "s3://cache.example?endpoint=s3.example&token=secret",
         ] {
-            assert!(parse_cache_target(url, None).is_err(), "accepted {url}");
+            assert!(
+                parse_cache_target(url, None, None).is_err(),
+                "accepted {url}"
+            );
         }
     }
 
@@ -2739,9 +3304,9 @@ mod tests {
                 [defaults]
                 substituter = "s3://cache.example?endpoint=s3.example&profile=cache"
                 flake = "path:/tmp/nixos-config#termux-native-zf10-bundle"
-                builder = "builder"
+                builders = ["builder", "backup-builder"]
                 public_keys = ["cache:abc", "builder:def"]
-                aws_credentials_file = "~/.aws/credentials"
+                aws_credentials_command = ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
             "#,
         )
         .unwrap();
@@ -2750,7 +3315,22 @@ mod tests {
             Some("s3://cache.example?endpoint=s3.example&profile=cache")
         );
         assert_eq!(config.defaults.public_keys, ["cache:abc", "builder:def"]);
-        assert_eq!(config.defaults.builder.as_deref(), Some("builder"));
+        assert_eq!(config.defaults.builders, ["builder", "backup-builder"]);
+        assert_eq!(
+            config.defaults.configured_builders(),
+            ["builder", "backup-builder"]
+        );
+        let credentials_command: Vec<_> = config
+            .defaults
+            .aws_credentials_command
+            .unwrap()
+            .iter()
+            .map(String::as_str)
+            .collect();
+        assert_eq!(
+            credentials_command,
+            ["rbw", "get", "--raw", "--exact", "nixpp Niks3 cache"]
+        );
     }
 
     #[test]

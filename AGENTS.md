@@ -239,7 +239,7 @@
   infinite recursion. See `home-manager/README.md`.
 
 ## NetBox
-- When working on NetBox inventory or metadata tasks, consult [NETBOX.md](./NETBOX.md) first and follow its conventions.
+- When working on NetBox inventory or metadata tasks, load the `netbox` skill and follow its [conventions](./home-manager/devel/skills/netbox/references/conventions.md).
 
 ## Home Assistant
 - For authenticated Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.

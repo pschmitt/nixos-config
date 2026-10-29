@@ -5,17 +5,19 @@
 Bichon is available at:
 - `https://bichon.brkn.lol`
 
-Retrieve credentials with the runtime-appropriate method:
-
-- **Hermes Agent:** use the configured `bitwarden` MCP server to retrieve the
-  `bichon.brkn.lol` API token. Prefer this over `rbw`.
-- **Local Codex/shell:** use:
+Credentials: rbw entry `bichon.brkn.lol`, field `API Token`. Use it as the
+`rbw` skill describes ("Using a credential from another skill"): capture it
+into a variable and pass it to curl through a header file descriptor, never
+print it. Hermes uses its `bitwarden` MCP server for the same entry.
 
 ```bash
-rbw get --field "API Token" bichon.brkn.lol
+token="$(rbw get --field "API Token" bichon.brkn.lol)"
+curl -fsS -H @<(printf 'Authorization: Bearer %s\n' "$token") \
+  "https://bichon.brkn.lol/api/..."
 ```
 
-If using local rbw and it is locked, invoke the `rbw` skill first.
+Check the auth scheme in the API specification below if `Bearer` is
+rejected.
 
 Notes:
 - Handle retrieved credentials as secrets and do not commit them to the

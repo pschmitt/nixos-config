@@ -2,6 +2,41 @@
 let
   cursorTheme = config.gtk.cursorTheme.name;
   cursorSize = "24";
+
+  # KDE Plasma's "Wobbliness" slider (0 = less ... 4 = more), translated from
+  # the KWin parameter sets (plugins/wobblywindows/wobblywindows.cpp): spring
+  # frequency follows sqrt(stiffness), damping ratio follows
+  # (1 - drag) / sqrt(stiffness), intensity follows the move factor.
+  # Level 0 is the KDE default and matches the stiffness/damping we tuned by
+  # hand (260/16).
+  wobblinessLevel = 0;
+  wobblinessPresets = [
+    {
+      stiffness = 260;
+      damping = 17;
+      intensity = 0.6;
+    }
+    {
+      stiffness = 175;
+      damping = 12.5;
+      intensity = 0.6;
+    }
+    {
+      stiffness = 105;
+      damping = 8.5;
+      intensity = 0.6;
+    }
+    {
+      stiffness = 52;
+      damping = 6.5;
+      intensity = 1.2;
+    }
+    {
+      stiffness = 17;
+      damping = 2.5;
+      intensity = 1.5;
+    }
+  ];
 in
 {
   # Decoration / animations / cursor + GTK glue.
@@ -52,6 +87,13 @@ in
           passes = 1;
           new_optimizations = true;
         };
+        # Wobbly windows while moving/resizing (core since 0.57).
+        wobble = {
+          enabled = true;
+          # KWin tessellates windows into a 20x20 grid.
+          mesh = 20;
+        }
+        // builtins.elemAt wobblinessPresets wobblinessLevel;
       };
 
       group = {

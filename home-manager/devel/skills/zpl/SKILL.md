@@ -5,21 +5,18 @@ description: Edit local zsh plugins at ~/.config/zsh/plugins/local. Use when the
 
 # Local Zsh Plugins (zpl)
 
-## Hermes Agent
-
-The local zsh-plugin tree and yadm checkout are not mounted into Hermes. Work
-only after the user provides a checkout in the Hermes workspace, and do not use
-the `~/.config/zsh/...` paths or reload commands below in Hermes.
-
 Plugin root: `~/.config/zsh/plugins/local`
+
+Hermes Agent has no access to this tree: work there only on a checkout the
+user provides in its workspace, without the paths or reload commands below.
 
 ## Structure
 
 ```
 plugins/local/
-  <topic>.zsh       # one file per topic, ~264 files (bat, cd, docker, http, …)
-  work/             # work-specific plugins (~47 files)
-  99-after/         # alias files that load after everything else (~12 files)
+  <topic>.zsh       # one file per topic (bat, cd, docker, http, …)
+  work/             # work-specific plugins
+  99-after/         # alias files that load after everything else
 ```
 
 Files are sourced automatically by zinit on shell startup — no registration step needed. New `.zsh` files dropped in the root or subdirectories are picked up on the next shell start (or `source`).
@@ -49,7 +46,7 @@ Follow the `shell` skill for baseline shell conventions. ZPL-specific additions:
 - No `true`/`false` booleans — use `1` / unset
 - Vim modeline at the bottom: `# vim: set ft=zsh et ts=2 sw=2 :`
 - Use `zparseopts` for argument parsing — not `getopts`, not manual `while` loops
-- Every function that accepts arguments **must** support `-h`/`--help` and print usage to stderr
+- Every function that accepts arguments **must** support `-h`/`--help`; print usage to stdout for `--help` and to stderr for invalid arguments (as in the `shell` skill)
 
 ## Output functions (echo.zsh)
 
@@ -76,13 +73,14 @@ Aliases exist for convenience: `echo::err`, `echo::warn`, `echo::ok`, `echo::i`,
 
 ## Tabular output
 
-Use `tsvtool` (`~/bin/tsvtool`) to render tables — never implement column
+Use `tsvtool` (on `PATH`) to render tables — never implement column
 alignment by hand. Emit TSV to stdout and pipe through `tsvtool pretty`:
 
 ```zsh
 # basic table
-printf "Name\tStatus\n"
-printf "%s\t%s\n" "$name" "$status"
+{
+  printf "Name\tStatus\n"
+  printf "%s\t%s\n" "$name" "$status"
 } | tsvtool pretty
 
 # useful flags

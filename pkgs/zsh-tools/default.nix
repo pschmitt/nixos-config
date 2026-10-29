@@ -4,8 +4,6 @@
   ...
 }:
 {
-  adb-sh = pkgs.callPackage ./adb-sh.nix { };
-  adb-completions = pkgs.callPackage ./adb-completions.nix { };
   kubectl-ksh = pkgs.callPackage ./kubectl-ksh.nix { };
   kubectl-socks5-proxy = pkgs.callPackage ./kubectl-socks5-proxy.nix { };
   kubectl-watch = pkgs.callPackage ./kubectl-watch.nix { };

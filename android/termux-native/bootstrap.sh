@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run]\n' "$(basename "$0")"
+  printf 'Usage: %s [install] ARCHIVE TRUSTED_SHA256 | restore | gc [--keep COUNT] [--dry-run] | pin|unpin GENERATION_ID\n' "$(basename "$0")"
 }
 
 restore_startup() {
@@ -273,18 +273,78 @@ remove_obsolete_apt_packages() {
   write_owned_packages "$root" "${remaining[@]}"
 }
 
-gc_generations() (
-  local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.tsv"
-  local current_path current_id number id extra generation_dir ordered_index index_temp
-  local plan_root package_owner_file
-  local -A numbers=() used_numbers=() retained=()
-  local -a removal_candidates=()
+generation_index_json_valid() {
+  jq -e '
+    type == "object" and
+    all(to_entries[];
+      (.key | test("^[0-9a-f]{64}$")) and
+      (.value | type == "number" and floor == . and . > 0)
+    ) and
+    ([to_entries[].value] | length == (unique | length))
+  ' "$1" >/dev/null
+}
 
-  if [[ ! -s "$index" ]]
-  then
-    printf 'Generation index is missing; refusing to remove generations.\n' >&2
+generation_pins_valid() {
+  jq -e '
+    type == "array" and
+    all(.[]; type == "string" and test("^[0-9a-f]{64}$")) and
+    length == (unique | length)
+  ' "$1" >/dev/null
+}
+
+set_generation_pin() (
+  local root=$1 id=$2 action=$3 pins="$1/pinned-generations.json" temporary
+  local -a generations=()
+  [[ "$id" =~ ^[0-9a-f]{64}$ && -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || {
+    printf 'Generation is not installed: %s\n' "$id" >&2
     return 1
+  }
+  if [[ -s "$pins" ]]
+  then
+    generation_pins_valid "$pins" || {
+      printf 'Invalid pinned-generations.json; refusing to change pins.\n' >&2
+      return 1
+    }
+    mapfile -t generations < <(jq -r '.[]' "$pins") || return
   fi
+  local -a updated=()
+  local generation found=0
+  for generation in "${generations[@]}"
+  do
+    if [[ "$generation" == "$id" ]]
+    then
+      found=1
+      [[ "$action" == pin ]] && updated+=("$generation")
+    else
+      updated+=("$generation")
+    fi
+  done
+  if [[ "$action" == pin && "$found" == 0 ]]
+  then
+    updated+=("$id")
+  fi
+  temporary=$(mktemp "$root/.pinned-generations.XXXXXXXX") || return
+  printf '%s\n' "${updated[@]}" | jq -Rsc 'split("\n") | map(select(length > 0)) | sort' > "$temporary" || {
+    rm -f -- "$temporary"
+    return 1
+  }
+  chmod 0600 "$temporary" || return
+  mv -f -- "$temporary" "$pins" || return
+  if [[ "$action" == pin ]]
+  then
+    printf 'Pinned generation %s.\n' "$id"
+  else
+    printf 'Unpinned generation %s.\n' "$id"
+  fi
+)
+
+gc_generations() (
+  local root=$1 keep_count=$2 dry_run=$3 index="$1/generation-index.json"
+  local legacy_index="$1/generation-index.tsv"
+  local current_path current_id number max_number index_exists id extra generation_dir ordered_index index_temp json_temp
+  local plan_root package_owner_file
+  local -A numbers=() retention_numbers=() used_numbers=() retained=()
+  local -a removal_candidates=()
 
   current_path=$(readlink -f -- "$root/current") || return
   case "$current_path" in
@@ -305,7 +365,25 @@ gc_generations() (
   fi
 
   ordered_index=$(mktemp "$root/.gc-index.XXXXXXXX") || return
-  trap 'rm -f -- "$ordered_index"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
+  trap 'rm -f -- "$ordered_index" "${index_temp:-}" "${json_temp:-}"; [[ -z "$plan_root" ]] || rm -rf -- "$plan_root"' EXIT
+  number=0
+  max_number=0
+  index_exists=0
+  if [[ -s "$index" ]]
+  then
+    index_exists=1
+    if ! generation_index_json_valid "$index"
+    then
+      printf 'Invalid JSON generation index; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    jq -r 'to_entries[] | "\(.value)\t\(.key)"' "$index" > "$ordered_index" || return
+  fi
+  if [[ -s "$legacy_index" ]]
+  then
+    index_exists=1
+  fi
+
   while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
   do
     [[ -n "$number$id$extra" ]] || continue
@@ -319,8 +397,47 @@ gc_generations() (
       return 1
     fi
     numbers[$id]=$number
+    retention_numbers[$id]=$number
     used_numbers[$number]=1
-  done < "$index"
+    if (( number > max_number ))
+    then
+      max_number=$number
+    fi
+  done < "$ordered_index"
+
+  if [[ -s "$legacy_index" ]]
+  then
+    while IFS=$'\t' read -r number id extra || [[ -n "$number$id$extra" ]]
+    do
+      [[ -n "$number$id$extra" ]] || continue
+      if [[ ! "$number" =~ ^[1-9][0-9]*$ || ! "$id" =~ ^[0-9a-f]{64}$ || -n "$extra" ]]
+      then
+        printf 'Invalid legacy generation index entry; refusing garbage collection.\n' >&2
+        return 1
+      fi
+      if [[ -n "${numbers[$id]:-}" ]]
+      then
+        if [[ "${numbers[$id]}" != "$number" ]]
+        then
+          printf 'Conflicting generation numbers for %s; refusing garbage collection.\n' "$id" >&2
+          return 1
+        fi
+        continue
+      fi
+      if [[ -n "${used_numbers[$number]:-}" ]]
+      then
+        printf 'Duplicate generation number in legacy index; refusing garbage collection.\n' >&2
+        return 1
+      fi
+      numbers[$id]=$number
+      retention_numbers[$id]=$number
+      used_numbers[$number]=1
+      if (( number > max_number ))
+      then
+        max_number=$number
+      fi
+    done < "$legacy_index"
+  fi
 
   for id in "${!numbers[@]}"
   do
@@ -344,21 +461,34 @@ gc_generations() (
     [[ "$id" =~ ^[0-9a-f]{64}$ ]] || continue
     if [[ -z "${numbers[$id]:-}" ]]
     then
-      printf 'Generation is not present in the index; refusing garbage collection: %s\n' "$id" >&2
-      return 1
+      ((max_number += 1))
+      numbers[$id]=$max_number
+      used_numbers[$max_number]=1
+      if (( index_exists ))
+      then
+        # A stray directory predates or was missed by the existing stable index.
+        # Keep it behind indexed generations so GC can remove it when appropriate.
+        retention_numbers[$id]=0
+      else
+        retention_numbers[$id]=$max_number
+      fi
+      if [[ "$dry_run" == 1 ]]
+      then
+        printf 'Would assign generation number %s to unindexed generation %s\n' "$max_number" "$id"
+      else
+        printf 'Assigning generation number %s to unindexed generation %s\n' "$max_number" "$id"
+      fi
     fi
   done
 
-  while IFS=$'\t' read -r number id
+  : > "$ordered_index"
+  for id in "${!numbers[@]}"
   do
-    if [[ -L "$root/generations/$id" ]]
-    then
-      printf 'Generation path is a symlink; refusing garbage collection: %s\n' "$id" >&2
-      return 1
-    fi
-    [[ -d "$root/generations/$id" ]] || continue
-    printf '%s\t%s\n' "$number" "$id"
-  done < "$index" | LC_ALL=C sort -t $'\t' -k1,1nr > "$ordered_index" || return
+    generation_dir="$root/generations/$id"
+    [[ -d "$generation_dir" && ! -L "$generation_dir" ]] || continue
+    printf '%s\t%s\n' "${retention_numbers[$id]}" "$id" >> "$ordered_index" || return
+  done
+  LC_ALL=C sort -t $'\t' -k1,1nr "$ordered_index" -o "$ordered_index" || return
 
   local retained_count=0
   while IFS=$'\t' read -r number id
@@ -371,6 +501,25 @@ gc_generations() (
     fi
   done < "$ordered_index"
   retained[$current_id]=1
+  local pins="$root/pinned-generations.json"
+  if [[ -s "$pins" ]]
+  then
+    if ! generation_pins_valid "$pins"
+    then
+      printf 'Invalid pinned-generations.json; refusing garbage collection.\n' >&2
+      return 1
+    fi
+    while IFS= read -r id
+    do
+      [[ -n "$id" ]] || continue
+      if [[ ! -d "$root/generations/$id" || -L "$root/generations/$id" ]]
+      then
+        printf 'Pinned generation is missing or invalid: %s\n' "$id" >&2
+        return 1
+      fi
+      retained[$id]=1
+    done < <(jq -r '.[]' "$pins")
+  fi
 
   while IFS=$'\t' read -r number id
   do
@@ -428,15 +577,28 @@ gc_generations() (
   fi
 
   index_temp=$(mktemp "$root/.generation-index.XXXXXXXX") || return
+  json_temp=$(mktemp "$root/.generation-index.XXXXXXXX") || return
   while IFS=$'\t' read -r number id
   do
     [[ -d "$root/generations/$id" && ! -L "$root/generations/$id" ]] || continue
-    printf '%s\t%s\n' "$number" "$id"
+    printf '%s\t%s\n' "${numbers[$id]}" "$id"
   done < "$ordered_index" | LC_ALL=C sort -t $'\t' -k1,1n > "$index_temp" || {
-    rm -f -- "$index_temp"
+    rm -f -- "$index_temp" "$json_temp"
     return 1
   }
-  mv -f -- "$index_temp" "$index" || return
+  if ! jq -S -Rn '[inputs | split("\t") | { (.[1]): (.[0] | tonumber) }] | add // {}' < "$index_temp" > "$json_temp"
+  then
+    rm -f -- "$index_temp" "$json_temp"
+    return 1
+  fi
+  if ! generation_index_json_valid "$json_temp"
+  then
+    rm -f -- "$index_temp" "$json_temp"
+    printf 'Could not write a valid JSON generation index.\n' >&2
+    return 1
+  fi
+  mv -f -- "$index_temp" "$legacy_index" || return
+  mv -f -- "$json_temp" "$index" || return
   remove_obsolete_apt_packages "$root"
 )
 
@@ -488,6 +650,24 @@ main() {
       return 2
     fi
     run_generation_gc "$keep_count" "$dry_run"
+    return
+  fi
+
+  if [[ "${1:-}" == pin || "${1:-}" == unpin ]]
+  then
+    local action=$1 generation_id
+    shift
+    if (($# != 1)) || [[ ! "$1" =~ ^[0-9a-f]{64}$ ]]
+    then
+      usage >&2
+      return 2
+    fi
+    generation_id=$1
+    root="$HOME/.local/share/termux-native"
+    mkdir -p "$root/generations" || return
+    acquire_bootstrap_lock "$root/.lock" || return
+    trap cleanup_bootstrap_lock EXIT
+    set_generation_pin "$root" "$generation_id" "$action"
     return
   fi
 

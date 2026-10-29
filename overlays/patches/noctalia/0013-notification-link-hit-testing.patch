@@ -1,0 +1,230 @@
+diff --git a/src/notification/link_markup.h b/src/notification/link_markup.h
+index 64cc3ce46..7eeda991d 100644
+--- a/src/notification/link_markup.h
++++ b/src/notification/link_markup.h
+@@ -7,0 +8,14 @@ namespace notification {
++  inline std::string linkAt(std::string_view text, int index) {
++    if (index < 0) return {};
++    static const std::regex pattern(R"(https?://[^\s<>"']+)");
++    const std::string source(text);
++    for (std::sregex_iterator it(source.begin(), source.end(), pattern), end; it != end; ++it) {
++      const auto start = static_cast<std::size_t>(it->position());
++      std::size_t length = static_cast<std::size_t>(it->length());
++      while (length > 0 && std::string_view(".,;:!?").find(source[start + length - 1]) != std::string_view::npos) --length;
++      if (static_cast<std::size_t>(index) >= start && static_cast<std::size_t>(index) < start + length)
++        return source.substr(start, length);
++    }
++    return {};
++  }
++
+diff --git a/src/render/core/renderer.h b/src/render/core/renderer.h
+index 94234f41d..5bd95f2bf 100644
+--- a/src/render/core/renderer.h
++++ b/src/render/core/renderer.h
+@@ -121,0 +122,3 @@ public:
++  // Return the UTF-8 byte index at a point relative to the text baseline, or -1.
++  virtual int textIndexAt(std::string_view, float, const TextFont&, float, int, TextAlign,
++                          TextEllipsize, bool, float, float) { return -1; }
+diff --git a/src/render/render_context.cpp b/src/render/render_context.cpp
+index 2e1b3045a..47b0deae8 100644
+--- a/src/render/render_context.cpp
++++ b/src/render/render_context.cpp
+@@ -283,0 +284,6 @@ void RenderContext::measureTextCursorStopsWrappedScaled(
++int RenderContext::textIndexAtScaled(float scale, std::string_view text, float fontSize, const TextFont& font,
++                                     float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
++                                     bool markup, float x, float y) {
++  return m_textRenderer.textIndexAt(scale, text, fontSize, font, maxWidth, maxLines, align, ellipsize, markup, x, y);
++}
++
+diff --git a/src/render/render_context.h b/src/render/render_context.h
+index 15aee830f..892682da1 100644
+--- a/src/render/render_context.h
++++ b/src/render/render_context.h
+@@ -78,0 +79,3 @@ private:
++  int textIndexAtScaled(float scale, std::string_view text, float fontSize, const TextFont& font,
++                        float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
++                        bool markup, float x, float y);
+diff --git a/src/render/render_target.cpp b/src/render/render_target.cpp
+index 199f136a1..cea1d157d 100644
+--- a/src/render/render_target.cpp
++++ b/src/render/render_target.cpp
+@@ -57,0 +58,6 @@ void ScaledRenderer::measureTextCharSpans(
++int ScaledRenderer::textIndexAt(std::string_view text, float fontSize, const TextFont& font, float maxWidth,
++                                int maxLines, TextAlign align, TextEllipsize ellipsize, bool markup, float x, float y) {
++  assert(m_context != nullptr);
++  return m_context->textIndexAtScaled(currentScale(), text, fontSize, font, maxWidth, maxLines, align, ellipsize, markup, x, y);
++}
++
+diff --git a/src/render/render_target.h b/src/render/render_target.h
+index ff1c97918..14df69977 100644
+--- a/src/render/render_target.h
++++ b/src/render/render_target.h
+@@ -55,0 +56,2 @@ public:
++  int textIndexAt(std::string_view text, float fontSize, const TextFont& font, float maxWidth,
++                  int maxLines, TextAlign align, TextEllipsize ellipsize, bool markup, float x, float y) override;
+diff --git a/src/render/text/cairo_text_renderer.cpp b/src/render/text/cairo_text_renderer.cpp
+index e3e367681..555c49606 100644
+--- a/src/render/text/cairo_text_renderer.cpp
++++ b/src/render/text/cairo_text_renderer.cpp
+@@ -671,0 +672,30 @@ void CairoTextRenderer::measureCursorStopsWrapped(
++int CairoTextRenderer::textIndexAt(float scale, std::string_view text, float fontSize, const TextFont& font,
++                                   float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
++                                   bool markup, float x, float y) {
++  maybeSyncFontConfig();
++  if (m_pangoContext == nullptr || text.empty()) return -1;
++  PangoLayout* layout = buildLayout(scale, text, fontSize, font, maxWidth * scale, maxLines, align, ellipsize, markup);
++  PangoRectangle logical{};
++  pango_layout_get_extents(layout, nullptr, &logical);
++  // The rasterizer shifts the layout's left edge to the text origin.
++  const int px = static_cast<int>(std::round(x * scale * PANGO_SCALE))
++      + (logical.x / PANGO_SCALE) * PANGO_SCALE;
++  const int py = static_cast<int>(std::round(y * scale * PANGO_SCALE)) + pango_layout_get_baseline(layout);
++  int index = -1;
++  int trailing = 0;
++  if (!pango_layout_xy_to_index(layout, px, py, &index, &trailing)) index = -1;
++  // An ellipsis represents hidden text, not a clickable character.
++  PangoLayoutIter* iter = pango_layout_get_iter(layout);
++  do {
++    PangoLayoutRun* run = pango_layout_iter_get_run_readonly(iter);
++    if (run != nullptr && (run->item->analysis.flags & PANGO_ANALYSIS_FLAG_IS_ELLIPSIS) != 0) {
++      PangoRectangle rect{};
++      pango_layout_iter_get_run_extents(iter, nullptr, &rect);
++      if (px >= rect.x && px < rect.x + rect.width && py >= rect.y && py < rect.y + rect.height) index = -1;
++    }
++  } while (pango_layout_iter_next_run(iter));
++  pango_layout_iter_free(iter);
++  g_object_unref(layout);
++  return index;
++}
++
+diff --git a/src/render/text/cairo_text_renderer.h b/src/render/text/cairo_text_renderer.h
+index 71c236cd6..96d887aca 100644
+--- a/src/render/text/cairo_text_renderer.h
++++ b/src/render/text/cairo_text_renderer.h
+@@ -90,0 +91,4 @@ public:
++  int textIndexAt(float scale, std::string_view text, float fontSize, const TextFont& font,
++                  float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
++                  bool markup, float x, float y);
++
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index 06c8baafe..2bd00898e 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -488,3 +488,2 @@ namespace {
+-      // Only make the text clickable when its destination is unambiguous.
+-      for (Label* label : {m_summary, m_body}) {
+-        label->setHitTestVisible(links.size() == 1);
++      for (const auto& [label, plain] : {std::pair{m_summary, metrics.summaryText}, std::pair{m_body, metrics.bodyText}}) {
++        label->setHitTestVisible(!links.empty());
+@@ -492,5 +491,4 @@ namespace {
+-        label->setOnClick(links.size() == 1
+-            ? std::function<void(const InputArea::PointerData&)>([url = links.front()](const InputArea::PointerData&) {
+-                (void)net::openInBrowser(url);
+-              })
+-            : nullptr);
++        label->setOnClick([label, plain, &renderer](const InputArea::PointerData& data) {
++          const auto url = notification::linkAt(plain, label->textIndexAt(renderer, data.sceneX, data.sceneY));
++          if (!url.empty()) (void)net::openInBrowser(url);
++        });
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index 1dae5736b..f3357a934 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -2444,15 +2443,0 @@ InputArea* NotificationToast::buildCard(
+-  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
+-                        hasDefaultAction =
+-                            hasNotificationAction(entry.actions, "default")](const InputArea::PointerData& data) {
+-    if (data.button == BTN_RIGHT) {
+-      requestClose(id, CloseReason::Dismissed);
+-    } else if (data.button == BTN_LEFT && !link.empty()) {
+-      (void)net::openInBrowser(link);
+-    } else if (data.button == BTN_LEFT && hasDefaultAction && m_notifications != nullptr) {
+-      const std::string activationToken =
+-          m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
+-      if (!m_notifications->invokeAction(id, "default", activationToken, true)) {
+-        kLog.warn("notification toast: failed to invoke default action for #{}", id);
+-      }
+-    }
+-  });
+@@ -2605,0 +2591 @@ InputArea* NotificationToast::buildCard(
++  Label* summaryLabel = nullptr;
+@@ -2611,0 +2598 @@ InputArea* NotificationToast::buildCard(
++          .out = &summaryLabel,
+@@ -2770,0 +2758 @@ InputArea* NotificationToast::buildCard(
++  Label* bodyLabel = body.get();
+@@ -2853,0 +2842,19 @@ InputArea* NotificationToast::buildCard(
++  viewport->setOnClick([this, id = entry.notificationId, sourceSurface, link,
++                        hasDefaultAction = hasNotificationAction(entry.actions, "default"),
++                        summaryLabel, bodyLabel, displaySummary, displayBody, &renderer](const InputArea::PointerData& data) {
++    if (data.button == BTN_RIGHT) {
++      requestClose(id, CloseReason::Dismissed);
++      return;
++    }
++    if (data.button != BTN_LEFT) return;
++    std::string url = notification::linkAt(displaySummary, summaryLabel->textIndexAt(renderer, data.sceneX, data.sceneY));
++    if (url.empty()) url = notification::linkAt(displayBody, bodyLabel->textIndexAt(renderer, data.sceneX, data.sceneY));
++    if (!url.empty()) {
++      (void)net::openInBrowser(url);
++    } else if (!link.empty()) {
++      (void)net::openInBrowser(link);
++    } else if (hasDefaultAction && m_notifications != nullptr) {
++      const std::string token = m_wayland != nullptr ? m_wayland->requestActivationToken(sourceSurface) : std::string{};
++      if (!m_notifications->invokeAction(id, "default", token, true)) kLog.warn("notification toast: failed to invoke default action for #{}", id);
++    }
++  });
+diff --git a/src/ui/controls/label.cpp b/src/ui/controls/label.cpp
+index 4b26ebe92..f3c30b9d5 100644
+--- a/src/ui/controls/label.cpp
++++ b/src/ui/controls/label.cpp
+@@ -489,0 +490,9 @@ void Label::doArrange(Renderer& renderer, const LayoutRect& rect) {
++int Label::textIndexAt(Renderer& renderer, float sceneX, float sceneY) const {
++  float x = 0.0F, y = 0.0F;
++  if (!visible() || !Node::mapFromScene(this, sceneX, sceneY, x, y)
++      || x < 0.0F || y < 0.0F || x >= width() || y >= height()) return -1;
++  return renderer.textIndexAt(m_plainText, m_textNode->fontSize(), m_textNode->font(), m_textNode->maxWidth(),
++      m_textNode->maxLines(), m_textNode->textAlign(), m_textNode->ellipsize(), m_textNode->useMarkup(),
++      x - m_textNode->x(), y - m_textNode->y());
++}
++
+diff --git a/src/ui/controls/label.h b/src/ui/controls/label.h
+index 10adcc191..b9b359c9e 100644
+--- a/src/ui/controls/label.h
++++ b/src/ui/controls/label.h
+@@ -82,0 +83 @@ public:
++  [[nodiscard]] int textIndexAt(Renderer& renderer, float sceneX, float sceneY) const;
+diff --git a/tests/cairo_text_renderer_test.cpp b/tests/cairo_text_renderer_test.cpp
+index 47fcb2b95..ba011248b 100644
+--- a/tests/cairo_text_renderer_test.cpp
++++ b/tests/cairo_text_renderer_test.cpp
+@@ -1,0 +2 @@
++#include "notification/link_markup.h"
+@@ -88,0 +90,25 @@ namespace {
++  int notificationLinksCase(CairoTextRenderer& renderer) {
++    const std::string plain = "α & <Go> https://one.example/long/path then https://two.example/path end";
++    const std::string markup = notification::linkMarkup(plain);
++    bool first = false;
++    bool second = false;
++    bool truncatedSecond = false;
++    for (int y = -20; y < 160; ++y) {
++      for (int x = 0; x < 110; ++x) {
++        const int at = renderer.textIndexAt(1.0F, markup, 16.0F, {}, 110.0F, 20,
++                                           TextAlign::Start, TextEllipsize::End, true, x, y);
++        const auto link = notification::linkAt(plain, at);
++        first |= link == "https://one.example/long/path";
++        second |= link == "https://two.example/path";
++        const int clipped = renderer.textIndexAt(1.0F, markup, 16.0F, {}, 110.0F, 1,
++                                                TextAlign::Start, TextEllipsize::End, true, x, y);
++        truncatedSecond |= notification::linkAt(plain, clipped) == "https://two.example/path";
++      }
++    }
++    if (!first || !second || truncatedSecond || !notification::linkAt(plain, 0).empty()) {
++      std::println(stderr, "notification link hit test failed: first={} second={} hidden={}", first, second, truncatedSecond);
++      return 1;
++    }
++    return 0;
++  }
++
+@@ -98 +124,2 @@ int main() {
+-  return wrappingBoundaryCase(renderer);
++  if (const int rc = wrappingBoundaryCase(renderer); rc != 0) return rc;
++  return notificationLinksCase(renderer);
