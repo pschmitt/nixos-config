@@ -180,10 +180,14 @@ let
   # Codex does not appear to discover skills reliably when the top-level skill
   # directories are symlinks. Materialize a real directory tree for Codex while
   # keeping the shared symlinkJoin for the other AI clients.
+  # A skill folder in several sources is merged like symlinkJoin does it: the
+  # first source wins per file (store copies are read-only, hence the chmod).
   codexSkills = toString (
     pkgs.runCommand "codex-skills" { } ''
       mkdir -p "$out"
-      ${lib.concatMapStringsSep "\n" (path: "cp -rL ${path}/. \"$out\"/") skillSources}
+      ${lib.concatMapStringsSep "\n" (
+        path: "cp -rLn ${path}/. \"$out\"/ && chmod -R u+w \"$out\""
+      ) skillSources}
     ''
   );
 
