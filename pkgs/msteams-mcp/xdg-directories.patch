@@ -1,0 +1,131 @@
+diff --git a/src/auth/session-store.ts b/src/auth/session-store.ts
+index fd728c2..1396193 100644
+--- a/src/auth/session-store.ts
++++ b/src/auth/session-store.ts
+@@ -6,8 +6,9 @@
+  * - Restricted file permissions
+  * - Automatic migration from plaintext
+  * 
+- * Session files are stored in a user-specific config directory (~/.teams-mcp-server/)
+- * to ensure consistency regardless of how the server is invoked (npx, global install, etc.).
++ * The session is stored in a user-specific state directory and the token cache
++ * in a user-specific cache directory (XDG base directories), to ensure
++ * consistency regardless of how the server is invoked (npx, global install, etc.).
+  */
+ 
+ import * as fs from 'fs';
+@@ -18,15 +19,48 @@ import { SESSION_EXPIRY_HOURS, TEAMS_HOSTS } from '../constants.js';
+ import * as log from '../utils/logger.js';
+ 
+ /**
+- * User-specific config directory for teams-mcp-server.
++ * Directory for the login: the session (cookies, MSAL tokens) and the browser
++ * profile. Tokens expire and cannot be moved between machines, so this is
++ * state, not config.
+  * - Windows: %APPDATA%\teams-mcp-server\
+- * - macOS/Linux: ~/.teams-mcp-server/
++ * - macOS/Linux: $XDG_STATE_HOME/teams-mcp-server/ (default ~/.local/state/)
+  */
+-export const CONFIG_DIR = process.platform === 'win32'
++export const STATE_DIR = process.platform === 'win32'
+   ? path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), 'teams-mcp-server')
+-  : path.join(os.homedir(), '.teams-mcp-server');
+-export const SESSION_STATE_PATH = path.join(CONFIG_DIR, 'session-state.json');
+-export const TOKEN_CACHE_PATH = path.join(CONFIG_DIR, 'token-cache.json');
++  : path.join(process.env.XDG_STATE_HOME || path.join(os.homedir(), '.local', 'state'), 'teams-mcp-server');
++
++/**
++ * Directory for data that can be rebuilt from the session (the token cache).
++ * - Windows: %LOCALAPPDATA%\teams-mcp-server\
++ * - macOS/Linux: $XDG_CACHE_HOME/teams-mcp-server/ (default ~/.cache/)
++ */
++export const CACHE_DIR = process.platform === 'win32'
++  ? path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'teams-mcp-server')
++  : path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'teams-mcp-server');
++
++export const SESSION_STATE_PATH = path.join(STATE_DIR, 'session-state.json');
++export const TOKEN_CACHE_PATH = path.join(CACHE_DIR, 'token-cache.json');
++
++/** Directory earlier versions used on macOS/Linux for everything. */
++const LEGACY_DIR = path.join(os.homedir(), '.teams-mcp-server');
++
++/** Moves the legacy directory into the XDG directories once, keeping the login. */
++function migrateLegacyDir(): void {
++  try {
++    if (process.platform === 'win32' || !fs.existsSync(LEGACY_DIR) || fs.existsSync(STATE_DIR)) return;
++    fs.mkdirSync(path.dirname(STATE_DIR), { recursive: true });
++    fs.renameSync(LEGACY_DIR, STATE_DIR);
++
++    const legacyCache = path.join(STATE_DIR, 'token-cache.json');
++    if (fs.existsSync(legacyCache)) {
++      fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
++      fs.renameSync(legacyCache, TOKEN_CACHE_PATH);
++    }
++  } catch {
++    // Leave the legacy directory alone; the next login creates fresh ones
++  }
++}
++migrateLegacyDir();
+ 
+ /** File permission mode: owner read/write only. */
+ const SECURE_FILE_MODE = 0o600;
+@@ -35,7 +69,8 @@ const SECURE_FILE_MODE = 0o600;
+  * Ensures the config directory exists with secure permissions.
+  */
+ export function ensureConfigDir(): void {
+-  fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
++  fs.mkdirSync(STATE_DIR, { recursive: true, mode: 0o700 });
++  fs.mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
+ }
+ 
+ /** Session state as stored by Playwright. */
+@@ -126,7 +161,8 @@ export function clearSessionState(): void {
+  * every account ever signed in), session state and token cache.
+  */
+ export function clearAllLocalData(): void {
+-  fs.rmSync(CONFIG_DIR, { recursive: true, force: true });
++  fs.rmSync(STATE_DIR, { recursive: true, force: true });
++  fs.rmSync(CACHE_DIR, { recursive: true, force: true });
+ }
+ 
+ /**
+diff --git a/src/browser/context.ts b/src/browser/context.ts
+index 3429b04..9f56ffa 100644
+--- a/src/browser/context.ts
++++ b/src/browser/context.ts
+@@ -6,7 +6,7 @@
+  * Playwright's bundled Chromium. This significantly reduces install size.
+  * 
+  * All modes (headless and visible) use a persistent browser profile stored at
+- * ~/.teams-mcp-server/browser-profile/. This means:
++ * $XDG_STATE_HOME/teams-mcp-server/browser-profile/. This means:
+  * - Microsoft session cookies persist across launches (longer-lived than MSAL tokens)
+  * - Headless token refresh can silently re-authenticate using the profile's session
+  * - Visible login retains extensions (e.g. Bitwarden) and form autofill data
+@@ -18,7 +18,7 @@ import * as fs from 'fs';
+ import * as path from 'path';
+ import {
+   ensureConfigDir,
+-  CONFIG_DIR,
++  STATE_DIR,
+   writeSessionState,
+ } from '../auth/session-store.js';
+ import { clearRegionCache } from '../utils/auth-guards.js';
+@@ -38,7 +38,7 @@ export interface BrowserManager {
+  * Both headless and visible modes share this profile, so Microsoft's long-lived
+  * session cookies enable silent headless re-authentication without user interaction.
+  */
+-const BROWSER_PROFILE_DIR = path.join(CONFIG_DIR, 'browser-profile');
++const BROWSER_PROFILE_DIR = path.join(STATE_DIR, 'browser-profile');
+ 
+ /**
+  * Path to the Chromium SingletonLock file.
+@@ -136,7 +136,7 @@ function getBrowserChannel(): 'msedge' | 'chrome' {
+  * Uses the system's installed Chrome or Edge browser rather than downloading
+  * Playwright's bundled Chromium (~180MB savings).
+  *
+- * The persistent profile at ~/.teams-mcp-server/browser-profile/ is shared
++ * The persistent profile at $XDG_STATE_HOME/teams-mcp-server/browser-profile/ is shared
+  * between headless and visible modes. This provides:
+  * - Silent headless re-auth via long-lived Microsoft session cookies
+  * - Extensions (e.g. Bitwarden) and form autofill for visible login
