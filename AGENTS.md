@@ -12,8 +12,8 @@
 - Default to SOPS for anything that even remotely smells like a secret or an identifier — not just passwords/tokens/keys, but also things like TLS/SSH fingerprints, device serials, account IDs, or other values that authorize access or identify a specific person/device. When in doubt, treat it as SOPS-worthy rather than committing it in cleartext to a tracked Nix file (it would otherwise land in the world-readable Nix store). Inject such values at activation/runtime (e.g. `sops.templates` referencing `config.sops.placeholder.*`, or `config.sops.secrets.*.path`) rather than baking them into generated config via `pkgs.formats.*` at eval time.
 
 ## Evaluation and builds
-- **Never run Nix evaluation or builds on the local machine** (fnuc runs the
-  Home Assistant VM). That covers `nix eval`, `nix build`, `nix run
+- **Never run Nix evaluation or builds on the machine where the agent is running**,
+  regardless of host. That covers `nix eval`, `nix build`, `nix run
   nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and
   `nix-instantiate`, not just host evaluations. Plain binaries already on
   PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
@@ -29,10 +29,10 @@
 ## Deployment
 - Prefer committing only verified, working changes.
 - After making changes, deploy to the target systems:
-  - **Before committing** (e.g. to test local or uncommitted changes): run `just deploy TARGET_HOST` (or omit the argument with `just deploy` if currently on the target host to build and switch locally without SSH/rsync).
+  - **Before committing** (e.g. to test uncommitted changes): run `just deploy TARGET_HOST` from a different host; it builds and switches on the target. Do not omit the target, since that builds locally. If the agent is running on the target, use a remote build and deploy the prebuilt closure instead.
   - **If already committed**: deploy by SSH'ing to the target host and restarting `nixos-upgrade.service` (`systemctl restart nixos-upgrade.service`).
 - fnuc has been migrated to full NixOS (see `hosts/fnuc/default.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
-- `just hm` (or `just hm <hostname>`) applies a *standalone* Home Manager `homeConfigurations.<hostname>` profile for a non-NixOS host, rsyncing the repo to `/nix/tmp/hm-builds/` first so uncommitted changes are included and Nix builds efficiently on the same filesystem. There is currently no such host in this flake — `homeConfigurations.fnuc` predates fnuc's NixOS migration and is stale/unused; do not point users at it.
+- The legacy `just hm` recipe expects a standalone `homeConfigurations.<hostname>` output, but this flake currently defines none. Do not use it for fnuc or other hosts.
 - **Deployment gotchas**:
   - `just deploy <host>` can report failure even when the switch actually succeeded if NetworkManager restarts during activation and terminates the SSH session (`Timeout, server <host> not responding`). The remote `nixos-rebuild switch` process continues running to completion. When this happens, re-`ssh` and verify `readlink -f /run/current-system`, check generations (`nix-env -p /nix/var/nix/profiles/system --list-generations | tail -3`), and confirm units are active.
   - Hosts with `services/initrd-luks-ssh-unlock.nix` present a distinct SSH host key while in initrd waiting for LUKS unlock (`/etc/ssh/initrd/ssh_host_{ed25519,rsa}_key`). A changed host key warning during the boot/unlock window is expected.
@@ -71,7 +71,7 @@
   `nix flake lock --update-input nixos-config-private`. Always use the commit
   message `bump my privates` for that lock-file commit.
 - The canonical SOPS configuration is `nixos-config-private/.sops.yaml`.
-  Scripts use it for both public host ciphertext and private-repository secrets;
+  Scripts use it for private-repository secrets;
   do not recreate a public `.sops.yaml`.
 - The default SOPS file is `secrets/nixos-shared.sops.yaml` in the private
   configuration checkout (set from the private flake input as `sops.defaultSopsFile`).

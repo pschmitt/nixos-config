@@ -39,18 +39,6 @@ in
   sops.secrets."paperless-ngx/adminPassword" = config.sops.mkHostSecret {
   };
 
-  # FIXME THIS LOCKS THE FUCKING ROOT USER WHEN APPLIED
-  # boot.supportedFilesystems = [ "bindfs" ];
-  # system.fsPackages = [ pkgs.bindfs ];
-  # fileSystems."${config.services.paperless.consumptionDir}" = {
-  #   device = "/mnt/data/srv/nextcloud/data/nextcloud/pschmitt/files/Documents";
-  #   fsType = "bindfs";
-  #   options = [
-  #     "user=${config.services.paperless.user}"
-  #     "group=${config.services.paperless.user}"
-  #   ];
-  # };
-
   systemd = {
     # Forward new files from the Syncthing documents tree into the consume
     # dir. Unlike a mirror (lsyncd), it remembers what it already forwarded,
