@@ -235,7 +235,9 @@ in
                 "network"
                 "bluetooth"
                 "battery-icon"
-                "duo-status"
+              ]
+              ++ lib.optional config.programs.noctalia-duo-status.enable "duo-status"
+              ++ [
                 "notifications"
               ];
               padding = 12;
