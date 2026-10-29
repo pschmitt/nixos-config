@@ -6,21 +6,11 @@ def green: "\(ansi_esc)[32m";
 def yellow: "\(ansi_esc)[33m";
 def red: "\(ansi_esc)[31m";
 
-def is_work: ($profile == "work");
-
 def badge:
-  if is_work then
-    "\(ansi_esc)[1;30;48;5;141m WORK \(reset)"
-  else
-    "\(ansi_esc)[1;30;48;5;208m PERSONAL \(reset)"
-  end;
+  "\(ansi_esc)[1;30;48;5;141m \($account) \(reset)";
 
 def branch_color:
-  if is_work then
-    "\(ansi_esc)[38;5;141m"
-  else
-    "\(ansi_esc)[38;5;208m"
-  end;
+  "\(ansi_esc)[38;5;141m";
 
 def format_relative(diff):
   if diff <= 0 then "<1m"

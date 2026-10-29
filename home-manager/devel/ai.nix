@@ -54,9 +54,11 @@ let
         branch=$(git branch --show-current 2>/dev/null || true)
       fi
 
-      profile="''${CLAUDE_PROFILE:-personal}"
+      config_dir="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude}"
+      account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_dir/.claude.json" 2>/dev/null || true)
+      account="''${account:-email unavailable}"
 
-      exec jq -r --arg branch "$branch" --arg profile "$profile" -f "${./scripts/claude-statusline.jq}"
+      exec jq -r --arg branch "$branch" --arg account "$account" -f "${./scripts/claude-statusline.jq}"
     '';
   };
 
