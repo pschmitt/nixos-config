@@ -164,12 +164,32 @@ let
     hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
   };
 
+  # Keep the skill-improvement instruction in one file and add it to our
+  # public and private skills while assembling the shared skill tree. CKS
+  # skills carry their own guidance from git.wiit.one.
+  withSkillImprovementFooter =
+    source:
+    pkgs.runCommand "skills-with-improvement-footer" { } ''
+      mkdir -p "$out"
+      cp -rL ${source}/. "$out"/
+      for skill_dir in "$out"/*; do
+        [ -d "$skill_dir" ] || continue
+        skill_name="''${skill_dir##*/}"
+        case "$skill_name" in
+          cks-*) continue ;;
+        esac
+        skill_file="$skill_dir/SKILL.md"
+        [ -f "$skill_file" ] || continue
+        cat ${./skill-footer.md} >> "$skill_file"
+      done
+    '';
+
   skillSources = [
-    ./skills
+    (withSkillImprovementFooter ./skills)
     "${n8nSkillsSrc}/skills"
     "${pkgs.todoist-cli}/share/skills/todoist-cli"
   ]
-  ++ config.dotfiles.aiSkills.extraSources;
+  ++ map withSkillImprovementFooter config.dotfiles.aiSkills.extraSources;
 
   # Merge local skills with the upstream n8n skill set so all AI tools get both.
   # toString coerces the derivation to its store-path string, which the skills
