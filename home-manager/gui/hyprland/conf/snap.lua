@@ -4,8 +4,11 @@ local function snap_target(window, cursor)
   local monitor = hl.get_monitor_at(cursor) or hl.get_monitor_at_cursor()
   if not monitor then return end
 
+  -- monitor.width/height are the panel's native pixels; rotated outputs
+  -- (odd transform) swap them in the logical layout space.
   local scale = monitor.scale or 1
   local width, height = monitor.width / scale, monitor.height / scale
+  if (monitor.transform or 0) % 2 == 1 then width, height = height, width end
   local x, y = (cursor.x - monitor.x) / width, (cursor.y - monitor.y) / height
   local left, right = x < 0.05, x > 0.95
   local top, bottom = y < 0.05, y > 0.95
