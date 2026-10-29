@@ -116,7 +116,9 @@ let
   # flags the Bitwarden client as a clone once the vault counter moves on
   # (skills/browser-login/references/counters.md). browser_ask_human sends the
   # user a live-view link of the agent's page (the browser-login skill's
-  # ask-human.sh).
+  # ask-human.sh). browser_export_auth and browser_fetch hand a page's login
+  # (cookies, storage tokens) to other tools without the agent seeing it, on the
+  # `--allow-export` sites only.
   browserAskHuman = pkgs.writeShellApplication {
     name = "browser-ask-human";
     runtimeInputs = [
@@ -147,6 +149,12 @@ let
       "microsoft.com"
       "--ask-human-cmd"
       (lib.getExe browserAskHuman)
+      "--allow-export"
+      "microsoft.com"
+      "--allow-export"
+      "teams.cloud.microsoft"
+      "--allow-export"
+      "asm.skype.com"
       "--rbw"
       (lib.getExe' pkgs.rbw "rbw")
     ];

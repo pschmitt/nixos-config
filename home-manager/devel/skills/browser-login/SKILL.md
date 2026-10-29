@@ -4,9 +4,11 @@ description: >-
   Sign in to sites in automated browser sessions (the browser-daemon MCP)
   without exposing credentials: fill passwords, usernames and TOTP codes with
   browser_fill_secret, sign passkeys from the vault with browser_passkey, and
-  hand a CAPTCHA, device approval or login to the user with browser_ask_human.
-  Use whenever an automated browser task hits a login form, a
-  passkey/WebAuthn/FIDO2 challenge, a CAPTCHA or a 2FA prompt.
+  hand a CAPTCHA, device approval or login to the user with browser_ask_human,
+  and use a signed-in session's cookies or tokens elsewhere with browser_fetch
+  and browser_export_auth. Use whenever an automated browser task hits a login
+  form, a passkey/WebAuthn/FIDO2 challenge, a CAPTCHA or a 2FA prompt, or a
+  task needs a browser session's login for an API, curl or a CLI.
 ---
 
 # Browser login
@@ -34,6 +36,26 @@ nothing secret ever goes through your tool calls.
 
 If the vault is locked, the MCP or the node's secret agent asks the user to
 unlock it on their phone; for shell work see the `rbw` skill.
+
+## Use a browser login elsewhere
+
+When a page is signed in and you need that login outside the browser (a
+site's API, `curl`, a CLI), never read cookies or tokens with Playwright's
+tools or `browser_shared_command`: their answers are logged. Instead:
+
+- `browser_fetch url=... [method= headers= body=]` makes one request with the
+  page's cookies for that address (and `bearer_storage_key=` for a token from
+  its storage) and returns the answer with the values masked. Prefer this.
+- `browser_export_auth [format=cookies|header|json]` writes the login to a
+  private file in `$XDG_RUNTIME_DIR` that is deleted after `minutes` (default
+  15): `curl -b FILE ...` or `curl -H @FILE ...`. Never `cat`, print or copy
+  the file. The answer lists cookie names and the page's storage keys, so you
+  can pick `storage_keys` (json) or `bearer_storage_key`.
+
+Both work on your own page or on a shared browser's tab (`browser`, `tab`,
+`daemon` from `browser_shared_nodes`, shared with control), on the sites their
+tool description lists. An exported session cookie is the account: if one
+ever shows up in output, it is a leaked credential.
 
 ## Rules
 
