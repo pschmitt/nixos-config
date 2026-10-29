@@ -29,13 +29,17 @@ diff --git a/src/render/render_context.cpp b/src/render/render_context.cpp
 index 2e1b3045a..47b0deae8 100644
 --- a/src/render/render_context.cpp
 +++ b/src/render/render_context.cpp
-@@ -283,0 +284,6 @@ void RenderContext::measureTextCursorStopsWrappedScaled(
+@@ -288,4 +288,10 @@
 +int RenderContext::textIndexAtScaled(float scale, std::string_view text, float fontSize, const TextFont& font,
 +                                     float maxWidth, int maxLines, TextAlign align, TextEllipsize ellipsize,
 +                                     bool markup, float x, float y) {
 +  return m_textRenderer.textIndexAt(scale, text, fontSize, font, maxWidth, maxLines, align, ellipsize, markup, x, y);
 +}
 +
+ void RenderContext::measureTextCharSpansScaled(
+     float scale, std::string_view text, float fontSize, const std::vector<std::size_t>& byteOffsets,
+     std::vector<TextCharSpan>& outSpans, const TextFont& font
+ ) {
 diff --git a/src/render/render_context.h b/src/render/render_context.h
 index 15aee830f..892682da1 100644
 --- a/src/render/render_context.h
