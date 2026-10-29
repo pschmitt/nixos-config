@@ -18,10 +18,20 @@ buildNpmPackage {
 
   npmDepsHash = "sha256-3bUI5ZVeQY3A2BzrEKISKiKynVAMQd9M0RsXoHOx4Ho=";
 
-  postPatch = ''
-    substituteInPlace src/browser/context.ts \
-      --replace-fail '      channel,' '      executablePath: "${lib.getExe chromium}",'
-  '';
+  patches = [
+    # TEAMS_MCP_BROWSER_PATH selects the browser binary instead of the
+    # system Chrome/Edge channel
+    ./browser-executable-path.patch
+    # teams_import_session: sign in with the export of a signed-in browser
+    # (browser-daemon browser_export_auth) instead of opening a login browser
+    ./import-session-tool.patch
+  ];
+
+  makeWrapperArgs = [
+    "--set-default"
+    "TEAMS_MCP_BROWSER_PATH"
+    (lib.getExe chromium)
+  ];
 
   meta = {
     description = "Microsoft Teams MCP server using a browser session";

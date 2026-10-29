@@ -1,0 +1,300 @@
+diff --git a/src/auth/browser-export.test.ts b/src/auth/browser-export.test.ts
+new file mode 100644
+index 0000000..4a98f3b
+--- /dev/null
++++ b/src/auth/browser-export.test.ts
+@@ -0,0 +1,66 @@
++import { afterEach, beforeEach, describe, expect, it } from 'vitest';
++import * as fs from 'fs';
++import * as os from 'os';
++import * as path from 'path';
++import { readBrowserExport, sessionStateFromExport } from './browser-export.js';
++
++describe('browser export import', () => {
++  let runtimeDir: string;
++  let previousRuntimeDir: string | undefined;
++
++  beforeEach(() => {
++    previousRuntimeDir = process.env.XDG_RUNTIME_DIR;
++    runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'msteams-export-'));
++    process.env.XDG_RUNTIME_DIR = runtimeDir;
++  });
++
++  afterEach(() => {
++    if (previousRuntimeDir === undefined) delete process.env.XDG_RUNTIME_DIR;
++    else process.env.XDG_RUNTIME_DIR = previousRuntimeDir;
++    fs.rmSync(runtimeDir, { recursive: true, force: true });
++  });
++
++  function writeExport(content: unknown, mode = 0o600): string {
++    const file = path.join(runtimeDir, 'login.json');
++    fs.writeFileSync(file, typeof content === 'string' ? content : JSON.stringify(content), { mode });
++    fs.chmodSync(file, mode);
++    return file;
++  }
++
++  const exported = {
++    url: 'https://teams.cloud.microsoft/v2/',
++    cookies: [{ name: 'a', value: 'b', domain: 'teams.cloud.microsoft', path: '/', expires: 0, http_only: true, secure: true, same_site: 'none' }],
++    storage: { 'msal.2|x': '{"secret":"s"}' },
++  };
++
++  it('converts an export to a session state', () => {
++    const state = sessionStateFromExport(readBrowserExport(writeExport(exported)));
++    expect(state.origins).toEqual([{
++      origin: 'https://teams.cloud.microsoft',
++      localStorage: [{ name: 'msal.2|x', value: '{"secret":"s"}' }],
++    }]);
++    expect(state.cookies[0]).toMatchObject({ httpOnly: true, sameSite: 'None', expires: -1 });
++  });
++
++  it('rejects files readable by others', () => {
++    expect(() => readBrowserExport(writeExport(exported, 0o644))).toThrow(/not readable by others/);
++  });
++
++  it('rejects files outside the runtime directory', () => {
++    const outside = path.join(os.tmpdir(), `msteams-outside-${process.pid}.json`);
++    fs.writeFileSync(outside, JSON.stringify(exported), { mode: 0o600 });
++    try {
++      expect(() => readBrowserExport(outside)).toThrow(/below/);
++    } finally {
++      fs.rmSync(outside, { force: true });
++    }
++  });
++
++  it('rejects an export without local storage', () => {
++    expect(() => readBrowserExport(writeExport({ ...exported, storage: null }))).toThrow(/no local storage/);
++  });
++
++  it('does not quote file content when it is not JSON', () => {
++    expect(() => readBrowserExport(writeExport('secret-value'))).toThrow('The export is not valid JSON.');
++  });
++});
+diff --git a/src/auth/browser-export.ts b/src/auth/browser-export.ts
+new file mode 100644
+index 0000000..62e7699
+--- /dev/null
++++ b/src/auth/browser-export.ts
+@@ -0,0 +1,100 @@
++/**
++ * Imports a login exported from an already signed-in browser.
++ *
++ * Reads the JSON a browser-daemon `browser_export_auth format=json` call writes
++ * (cookies plus the requested localStorage entries) and turns it into the
++ * session state the browser login would have saved. Exports hold live
++ * credentials, so only a private file owned by the current user inside
++ * $XDG_RUNTIME_DIR is accepted.
++ */
++
++import * as fs from 'fs';
++import * as path from 'path';
++import type { SessionState } from './session-store.js';
++
++/** A cookie as written by the browser export. */
++interface ExportedCookie {
++  name: string;
++  value: string;
++  domain: string;
++  path?: string;
++  expires?: number;
++  http_only?: boolean;
++  secure?: boolean;
++  same_site?: string;
++}
++
++/** The export file: cookies and local storage of one page. */
++export interface BrowserExport {
++  url: string;
++  cookies: ExportedCookie[];
++  storage: Record<string, string> | null;
++}
++
++const SAME_SITE: Record<string, 'Strict' | 'Lax' | 'None'> = {
++  strict: 'Strict',
++  lax: 'Lax',
++  none: 'None',
++};
++
++/**
++ * Reads an export file after checking where it is and who can read it.
++ * Never includes file content in an error message.
++ *
++ * @throws Error if the file is not a private export of the current user
++ */
++export function readBrowserExport(file: string): BrowserExport {
++  const runtimeDir = process.env.XDG_RUNTIME_DIR;
++  if (!runtimeDir) {
++    throw new Error('XDG_RUNTIME_DIR is not set; cannot locate browser exports.');
++  }
++
++  const resolved = fs.realpathSync(file);
++  const allowedDir = fs.realpathSync(runtimeDir) + path.sep;
++  if (!resolved.startsWith(allowedDir)) {
++    throw new Error(`The export must be a file below ${allowedDir}`);
++  }
++
++  const stats = fs.statSync(resolved);
++  if (!stats.isFile()) {
++    throw new Error('The export is not a regular file.');
++  }
++  if (stats.uid !== process.getuid?.() || (stats.mode & 0o077) !== 0) {
++    throw new Error('The export must be owned by the current user and not readable by others.');
++  }
++
++  let data: Partial<BrowserExport>;
++  try {
++    data = JSON.parse(fs.readFileSync(resolved, 'utf8')) as Partial<BrowserExport>;
++  } catch {
++    // JSON.parse errors can quote the text; the file holds credentials
++    throw new Error('The export is not valid JSON.');
++  }
++  if (typeof data.url !== 'string' || !Array.isArray(data.cookies)) {
++    throw new Error('Not a browser export in json format.');
++  }
++  if (!data.storage || Object.keys(data.storage).length === 0) {
++    throw new Error('The export has no local storage; request the MSAL and tmp.auth keys with storage_keys.');
++  }
++  return data as BrowserExport;
++}
++
++/** Builds a session state (Playwright storage state) from an export. */
++export function sessionStateFromExport(data: BrowserExport): SessionState {
++  return {
++    cookies: data.cookies.map(cookie => ({
++      name: cookie.name,
++      value: cookie.value,
++      domain: cookie.domain,
++      path: cookie.path ?? '/',
++      expires: typeof cookie.expires === 'number' && cookie.expires > 0 ? cookie.expires : -1,
++      httpOnly: cookie.http_only ?? false,
++      secure: cookie.secure ?? true,
++      sameSite: SAME_SITE[(cookie.same_site ?? '').toLowerCase()] ?? 'Lax',
++    })),
++    origins: [{
++      origin: new URL(data.url).origin,
++      localStorage: Object.entries(data.storage ?? {}).map(([name, value]) => ({ name, value })),
++    }],
++  };
++}
+diff --git a/src/tools/auth-tools.test.ts b/src/tools/auth-tools.test.ts
+index b063d90..fc41b86 100644
+--- a/src/tools/auth-tools.test.ts
++++ b/src/tools/auth-tools.test.ts
+@@ -4,6 +4,8 @@ vi.mock('../auth/session-store.js', () => ({
+   hasSessionState: vi.fn(() => true),
+   isSessionLikelyExpired: vi.fn(() => false),
+   clearAllLocalData: vi.fn(),
++  clearTokenCache: vi.fn(),
++  writeSessionState: vi.fn(),
+ }));
+ 
+ vi.mock('../auth/token-extractor.js', () => ({
+diff --git a/src/tools/auth-tools.ts b/src/tools/auth-tools.ts
+index 016c571..42a24bb 100644
+--- a/src/tools/auth-tools.ts
++++ b/src/tools/auth-tools.ts
+@@ -13,7 +13,11 @@ import {
+   hasSessionState,
+   isSessionLikelyExpired,
+   clearAllLocalData,
++  clearTokenCache,
++  writeSessionState,
+ } from '../auth/session-store.js';
++import { readBrowserExport, sessionStateFromExport } from '../auth/browser-export.js';
++import { ErrorCode, createError } from '../types/errors.js';
+ import {
+   getSubstrateTokenStatus,
+   getMessageAuthStatus,
+@@ -24,6 +28,7 @@ import {
+ } from '../auth/token-extractor.js';
+ import { refreshTokensViaHttp } from '../auth/token-refresh-http.js';
+ import { createBrowserContext, closeBrowser } from '../browser/context.js';
++import * as fs from 'fs';
+ import * as log from '../utils/logger.js';
+ import { resetAssignmentsAvailability, clearRegionCache } from '../utils/auth-guards.js';
+ import { ensureAuthenticated } from '../browser/auth.js';
+@@ -36,6 +41,10 @@ export const LoginInputSchema = z.object({
+   forceNew: z.boolean().optional().default(false),
+ });
+ 
++export const ImportSessionInputSchema = z.object({
++  file: z.string().min(1),
++});
++
+ // ─────────────────────────────────────────────────────────────────────────────
+ // Tool Definitions
+ // ─────────────────────────────────────────────────────────────────────────────
+@@ -63,6 +72,21 @@ const statusToolDefinition: Tool = {
+   },
+ };
+ 
++const importSessionToolDefinition: Tool = {
++  name: 'teams_import_session',
++  description: 'Sign in with the login of a browser that is already signed in to Teams, without opening a browser of its own. Takes the private file written by browser-daemon browser_export_auth (format json, with the MSAL and tmp.auth local storage keys). The file is deleted after a successful import.',
++  inputSchema: {
++    type: 'object',
++    properties: {
++      file: {
++        type: 'string',
++        description: 'Path of the export file below $XDG_RUNTIME_DIR, as returned by browser_export_auth',
++      },
++    },
++    required: ['file'],
++  },
++};
++
+ // ─────────────────────────────────────────────────────────────────────────────
+ // Handlers
+ // ─────────────────────────────────────────────────────────────────────────────
+@@ -176,6 +200,38 @@ async function loginInVisibleBrowser(): Promise<ToolResult> {
+   };
+ }
+ 
++async function handleImportSession(
++  input: z.infer<typeof ImportSessionInputSchema>,
++): Promise<ToolResult> {
++  try {
++    writeSessionState(sessionStateFromExport(readBrowserExport(input.file)));
++  } catch (error) {
++    return {
++      success: false,
++      error: createError(ErrorCode.INVALID_INPUT, error instanceof Error ? error.message : String(error), {
++        retryable: false,
++      }),
++    };
++  }
++
++  clearTokenCache();
++  resetAssignmentsAvailability();
++  clearRegionCache();
++  fs.rmSync(input.file, { force: true });
++  await fillCoreCredentialGaps();
++
++  const tokenStatus = getSubstrateTokenStatus();
++  return {
++    success: true,
++    data: {
++      message: 'Session imported from the browser export.',
++      directApi: { available: tokenStatus.hasToken },
++      messaging: { available: extractMessageAuth() !== null },
++      favorites: { available: extractCsaToken() !== null },
++    },
++  };
++}
++
+ async function handleStatus(): Promise<ToolResult> {
+   const tokenStatus = getSubstrateTokenStatus();
+   const messageAuthStatus = getMessageAuthStatus();
+@@ -221,5 +277,11 @@ export const statusTool: RegisteredTool<z.ZodObject<Record<string, never>>> = {
+   handler: handleStatus,
+ };
+ 
++export const importSessionTool: RegisteredTool<typeof ImportSessionInputSchema> = {
++  definition: importSessionToolDefinition,
++  schema: ImportSessionInputSchema,
++  handler: handleImportSession,
++};
++
+ /** All auth-related tools. */
+-export const authTools = [loginTool, statusTool];
++export const authTools = [loginTool, importSessionTool, statusTool];

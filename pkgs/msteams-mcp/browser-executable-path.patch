@@ -1,0 +1,26 @@
+diff --git a/src/browser/context.ts b/src/browser/context.ts
+index 63aafeb..3429b04 100644
+--- a/src/browser/context.ts
++++ b/src/browser/context.ts
+@@ -113,6 +113,12 @@ function cleanupStaleSingletonLock(): boolean {
+   return false;
+ }
+ 
++/**
++ * Path of the browser binary to launch instead of the system Chrome/Edge
++ * channel (e.g. a Chromium from the Nix store).
++ */
++const BROWSER_EXECUTABLE = process.env.TEAMS_MCP_BROWSER_PATH || undefined;
++
+ /**
+  * Determines the browser channel to use based on the platform.
+  * - Windows: Use Microsoft Edge (always installed on Windows 10+)
+@@ -157,7 +163,7 @@ export async function createBrowserContext(
+   const launchBrowser = async (): Promise<BrowserManager> => {
+     const context = await chromium.launchPersistentContext(BROWSER_PROFILE_DIR, {
+       headless,
+-      channel,
++      ...(BROWSER_EXECUTABLE ? { executablePath: BROWSER_EXECUTABLE } : { channel }),
+       viewport: { width: 1280, height: 800 },
+       acceptDownloads: false,
+     });
