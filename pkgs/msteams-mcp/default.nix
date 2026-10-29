@@ -22,9 +22,6 @@ buildNpmPackage {
     # TEAMS_MCP_BROWSER_PATH selects the browser binary instead of the
     # system Chrome/Edge channel
     ./browser-executable-path.patch
-    # teams_import_session: sign in with the export of a signed-in browser
-    # (browser-daemon browser_export_auth) instead of opening a login browser
-    ./import-session-tool.patch
     # session and browser profile in $XDG_STATE_HOME, token cache in
     # $XDG_CACHE_HOME, instead of ~/.teams-mcp-server
     ./xdg-directories.patch

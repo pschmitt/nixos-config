@@ -115,10 +115,10 @@ index 0000000..d25a976
 +});
 diff --git a/src/auth/browser-daemon.ts b/src/auth/browser-daemon.ts
 new file mode 100644
-index 0000000..105adcf
+index 0000000..c2dd002
 --- /dev/null
 +++ b/src/auth/browser-daemon.ts
-@@ -0,0 +1,247 @@
+@@ -0,0 +1,280 @@
 +/**
 + * Signs in with the Teams login of a browser-daemon profile.
 + *
@@ -135,7 +135,6 @@ index 0000000..105adcf
 + */
 +
 +import * as fs from 'fs';
-+import { sessionStateFromExport, type BrowserExport } from './browser-export.js';
 +import { extractSubstrateToken } from './token-extractor.js';
 +import type { SessionState } from './session-store.js';
 +import { TEAMS_HOSTS } from '../constants.js';
@@ -151,6 +150,40 @@ index 0000000..105adcf
 +const TOKEN_WAIT_MS = 40_000;
 +const POLL_INTERVAL_MS = 3_000;
 +const REQUEST_TIMEOUT_MS = 30_000;
++
++/** A cookie as the browser-daemon API returns it. */
++interface DaemonCookie {
++  name: string;
++  value: string;
++  domain: string;
++  path?: string;
++  expires?: number;
++  http_only?: boolean;
++  secure?: boolean;
++  same_site?: string;
++}
++
++const SAME_SITE: Record<string, 'Strict' | 'Lax' | 'None'> = { strict: 'Strict', lax: 'Lax', none: 'None' };
++
++/** Turns a page login (cookies and local storage) into a session state. */
++function toSessionState(login: { url: string; cookies: DaemonCookie[]; local_storage: Record<string, string> }): SessionState {
++  return {
++    cookies: login.cookies.map(cookie => ({
++      name: cookie.name,
++      value: cookie.value,
++      domain: cookie.domain,
++      path: cookie.path ?? '/',
++      expires: typeof cookie.expires === 'number' && cookie.expires > 0 ? cookie.expires : -1,
++      httpOnly: cookie.http_only ?? false,
++      secure: cookie.secure ?? true,
++      sameSite: SAME_SITE[(cookie.same_site ?? '').toLowerCase()] ?? 'Lax',
++    })),
++    origins: [{
++      origin: new URL(login.url).origin,
++      localStorage: Object.entries(login.local_storage).map(([name, value]) => ({ name, value })),
++    }],
++  };
++}
 +
 +export interface BrowserDaemonConfig {
 +  url: string;
@@ -262,7 +295,7 @@ index 0000000..105adcf
 + * one; otherwise starts a session, opens Teams and stops the session again.
 + *
 + * @throws Error if the daemon is unreachable, the profile does not exist, or
-+ *   it is not signed in to Teams
++ *   it is not signed in to Teams (the message says which)
 + */
 +export async function loginViaBrowserDaemon(config: BrowserDaemonConfig): Promise<SessionState> {
 +  const mesh = await Mesh.connect(config.url);
@@ -347,11 +380,11 @@ index 0000000..105adcf
 +        session_id: sessionId,
 +        urls: [],
 +        storage: true,
-+      }) as { url: string; cookies: BrowserExport['cookies']; local_storage?: Record<string, string> };
++      }) as { url: string; cookies: DaemonCookie[]; local_storage?: Record<string, string> };
 +
 +      lastUrl = login.url;
 +      if (isTeamsHost(login.url) && login.local_storage) {
-+        const state = sessionStateFromExport({ url: login.url, cookies: login.cookies, storage: login.local_storage });
++        const state = toSessionState({ url: login.url, cookies: login.cookies, local_storage: login.local_storage });
 +        if (extractSubstrateToken(state) && hasRefreshToken(state)) return state;
 +      }
 +    } catch (error) {
@@ -367,7 +400,7 @@ index 0000000..105adcf
 +  }
 +}
 diff --git a/src/auth/token-refresh.ts b/src/auth/token-refresh.ts
-index f30f450..813f25c 100644
+index f30f450..7adb157 100644
 --- a/src/auth/token-refresh.ts
 +++ b/src/auth/token-refresh.ts
 @@ -2,7 +2,8 @@
@@ -390,21 +423,26 @@ index f30f450..813f25c 100644
  import { refreshTokensViaHttp, type OnDemandResource } from './token-refresh-http.js';
  import { createBrowserContext, closeBrowser } from '../browser/context.js';
  import { ensureAuthenticated } from '../browser/auth.js';
-@@ -91,10 +93,41 @@ async function refreshCoreTokens(): Promise<Result<void>> {
+@@ -91,8 +93,49 @@ async function refreshCoreTokens(): Promise<Result<void>> {
      ? 'HTTP refresh reported success but no valid Substrate token found, falling back to browser'
      : `HTTP refresh failed: ${httpResult.error.message}, falling back to browser (session cookies may still be valid)`);
  
 -  // ── Strategy 2: Browser refresh (fallback) ──────────────────────────
+-  return refreshViaHeadlessBrowser();
 +  // ── Strategy 2: Teams login of a browser-daemon profile ─────────────
++  let daemonFailure: Awaited<ReturnType<typeof signInViaBrowserDaemon>> | undefined;
 +  if (browserDaemonConfig()) {
 +    const daemonResult = await signInViaBrowserDaemon();
 +    if (daemonResult.ok) return daemonResult;
++    daemonFailure = daemonResult;
 +  }
 +
 +  // ── Strategy 3: Browser refresh (fallback) ──────────────────────────
-   return refreshViaHeadlessBrowser();
- }
- 
++  const browserResult = await refreshViaHeadlessBrowser();
++  // A local browser rarely exists where a daemon is configured; its error would hide the real one
++  return browserResult.ok || !daemonFailure ? browserResult : daemonFailure;
++}
++
 +/**
 + * Replaces the session with the Teams login of the configured browser-daemon
 + * profile, then mints the tokens Teams had not cached yet.
@@ -420,33 +458,58 @@ index f30f450..813f25c 100644
 +    clearTokenCache();
 +    await refreshTokensViaHttp();
 +    if (!extractSubstrateToken()) {
-+      return err(createError(ErrorCode.AUTH_EXPIRED, 'The browser-daemon login holds no usable Substrate token.'));
++      throw new Error('its login holds no usable Substrate token');
 +    }
 +    return ok(undefined);
 +  } catch (error) {
 +    const message = error instanceof Error ? error.message : String(error);
 +    log.warn('token-refresh', `Sign-in via browser-daemon failed: ${message}`);
-+    return err(createError(ErrorCode.UNKNOWN, `Sign-in via browser-daemon failed: ${message}`));
++    return err(createError(
++      ErrorCode.AUTH_REQUIRED,
++      `ACTION REQUIRED: Signing in from the browser-daemon profile "${config.profile}" failed: ${message}. ` +
++        `If the profile is signed out of Teams, sign in there (browser_use profile=${config.profile}, open Teams, ` +
++        'complete the login) and retry the request. Do NOT call teams_login with forceNew.',
++      { suggestions: [`Sign in to Teams in the browser-daemon profile "${config.profile}", then retry the original request`] },
++    ));
 +  }
-+}
-+
+ }
+ 
  /**
-  * Opens a headless browser with the persistent profile and lets MSAL
-  * silently refresh tokens using its session cookies.
+diff --git a/src/server.ts b/src/server.ts
+index c8d5682..90554f7 100644
+--- a/src/server.ts
++++ b/src/server.ts
+@@ -27,6 +27,7 @@ import {
+   extractCsaToken,
+   getUserProfile,
+ } from './auth/token-extractor.js';
++import { browserDaemonConfig } from './auth/browser-daemon.js';
+ import { refreshTokensViaBrowser } from './auth/token-refresh.js';
+ 
+ // API modules
+@@ -251,6 +252,8 @@ export class TeamsServer {
+ 
+           // Auto-login failed — return a strongly-worded error directing to forceNew
+           log.error('auto-login', 'Automatic re-authentication failed.');
++          // The refresh error already says what to do when a browser-daemon profile is the way in
++          if (browserDaemonConfig()) return this.formatError(refresh.error);
+           return this.formatError(createError(
+             ErrorCode.AUTH_REQUIRED,
+             'ACTION REQUIRED: Teams session has expired and automatic re-authentication failed. You MUST call teams_login with forceNew: true to clear stale state and re-authenticate. Do NOT call teams_login without forceNew — it will return early without fixing the problem.',
 diff --git a/src/tools/auth-tools.ts b/src/tools/auth-tools.ts
-index 42a24bb..10f495d 100644
+index 016c571..83b051f 100644
 --- a/src/tools/auth-tools.ts
 +++ b/src/tools/auth-tools.ts
-@@ -27,6 +27,8 @@ import {
+@@ -23,6 +23,8 @@ import {
    extractSkypeSpacesToken,
  } from '../auth/token-extractor.js';
  import { refreshTokensViaHttp } from '../auth/token-refresh-http.js';
 +import { signInViaBrowserDaemon } from '../auth/token-refresh.js';
 +import { browserDaemonConfig } from '../auth/browser-daemon.js';
  import { createBrowserContext, closeBrowser } from '../browser/context.js';
- import * as fs from 'fs';
  import * as log from '../utils/logger.js';
-@@ -121,6 +123,26 @@ async function fillCoreCredentialGaps(): Promise<void> {
+ import { resetAssignmentsAvailability, clearRegionCache } from '../utils/auth-guards.js';
+@@ -97,6 +99,26 @@ async function fillCoreCredentialGaps(): Promise<void> {
    }
  }
  
@@ -473,7 +536,7 @@ index 42a24bb..10f495d 100644
  async function handleLogin(
    input: z.infer<typeof LoginInputSchema>,
  ): Promise<ToolResult> {
-@@ -132,7 +154,7 @@ async function handleLogin(
+@@ -108,7 +130,7 @@ async function handleLogin(
      // earlier account can survive to be mixed into the new login.
      clearAllLocalData();
      clearRegionCache();
@@ -482,7 +545,7 @@ index 42a24bb..10f495d 100644
    }
  
    // Fast path: if tokens are still valid, skip browser entirely
-@@ -151,6 +173,9 @@ async function handleLogin(
+@@ -127,6 +149,9 @@ async function handleLogin(
      };
    }
  
