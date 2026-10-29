@@ -274,6 +274,16 @@ let
       command = lib.getExe proxy;
     };
 
+  # The Teams MCP and its `msteams` CLI sign in with the Teams login of the
+  # work profile of a browser-daemon node instead of opening a local browser,
+  # so they also work without a display.
+  msteamsMcp = pkgs.msteams-mcp.overrideAttrs (old: {
+    makeWrapperArgs = old.makeWrapperArgs ++ [
+      "--set-default"
+      "TEAMS_MCP_BROWSER_DAEMON_URL"
+      (browserNode "rofl-14")
+    ];
+  });
 in
 {
   options.dotfiles.aiSkills.extraSources = lib.mkOption {
@@ -386,12 +396,7 @@ in
             SLACK_MCP_ADD_MESSAGE_TOOL = "true";
           };
         };
-        msteams = {
-          command = lib.getExe pkgs.msteams-mcp;
-          # Sign in with the Teams login of the work profile instead of opening
-          # a local browser (works on hosts without a display, too)
-          env.TEAMS_MCP_BROWSER_DAEMON_URL = browserNode "rofl-14";
-        };
+        msteams.command = lib.getExe msteamsMcp;
         todoist = {
           command = lib.getExe pkgs.todoist-mcp;
           env.TODOIST_API_KEY.file = config.sops.secrets."todoist/api_token".path;
@@ -608,6 +613,8 @@ in
     xdg.configFile."claude/keybindings.json".source = ./claude-keybindings.json;
 
     home = {
+      packages = [ msteamsMcp ];
+
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
