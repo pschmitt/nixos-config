@@ -8,6 +8,7 @@
     ./keys.nix
     ./layouts.nix
     ./lock.nix
+    ./snap-preview.nix
     ./swag.nix
     ./windowrules.nix
   ];
