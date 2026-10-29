@@ -46,10 +46,11 @@ tools or `browser_shared_command`: their answers are logged. Instead:
 - `browser_fetch url=... [method= headers= body=]` makes one request with the
   page's cookies for that address (and `bearer_storage_key=` for a token from
   its storage) and returns the answer with the values masked. Prefer this.
-- `browser_export_auth [format=cookies|header|json]` writes the login to a
+- `browser_export_auth [format=header|cookies|json]` writes the login to a
   private file in `$XDG_RUNTIME_DIR` that is deleted after `minutes` (default
-  15): `curl -b FILE ...` or `curl -H @FILE ...`. Never `cat`, print or copy
-  the file. The answer lists cookie names and the page's storage keys, so you
+  15). The default `header` file goes to `curl -H @FILE ...`; curl 8.22
+  ignores the cookies of a jar file (`cookies`) it reads. Never `cat`, print
+  or copy the file. The answer lists cookie names and the page's storage keys, so you
   can pick `storage_keys` (json) or `bearer_storage_key`.
 
 Both work on your own page or on a shared browser's tab (`browser`, `tab`,
