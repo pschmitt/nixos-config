@@ -7,13 +7,15 @@ elsewhere go in --context: they resolve names and links, but are not linted.
 
 Checks:
 - SKILL.md stays short: move details into references/<topic>.md
-- relative Markdown links point at existing files
+- relative Markdown links point at existing files inside the skills (only
+  the skill folders are deployed)
 - references/ paths mentioned in the text exist
 - every file under references/ is linked or mentioned in SKILL.md or another
   reference
 - "the `name` skill" names a skill that exists
 - scripts/ files are executable and start with a shebang
 - no trailing whitespace, files end with a newline
+- a skill name exists in one root only (deployment merges the folders)
 """
 
 import argparse
@@ -57,9 +59,13 @@ class Linter:
         self.max_lines = max_lines
         self.errors = []
         self.skills = {}
+        self.skill_dirs = []
         for root in roots + context:
             for skill_md in sorted(root.glob("*/SKILL.md")):
-                self.skills.setdefault(skill_md.parent.name, skill_md.parent)
+                skill_dir = skill_md.parent
+                if skill_dir not in self.skill_dirs:
+                    self.skill_dirs.append(skill_dir)
+                self.skills.setdefault(skill_dir.name, skill_dir)
         self.known = set(self.skills) | set(external)
 
     def error(self, path, line, msg):
@@ -80,7 +86,7 @@ class Linter:
         return path
 
     def skill_of(self, path):
-        for skill_dir in self.skills.values():
+        for skill_dir in self.skill_dirs:
             if skill_dir in path.parents:
                 return skill_dir
         raise ValueError(path)
@@ -110,6 +116,8 @@ class Linter:
                 resolved = self.resolve(path, target)
                 if not resolved.exists():
                     self.error(path, no, f"broken link: {target}")
+                elif not any(d.resolve() == resolved or d.resolve() in resolved.parents for d in self.skill_dirs):
+                    self.error(path, no, f"link leaves the skills, which are deployed alone: {target}")
                 else:
                     linked.add(resolved)
             for name in SKILL_MENTION_RE.findall(line):
@@ -155,7 +163,15 @@ class Linter:
                 if line != line.rstrip():
                     self.error(path, no, "trailing whitespace")
 
+    def check_duplicates(self):
+        first = {}
+        for skill_dir in self.skill_dirs:
+            other = first.setdefault(skill_dir.name, skill_dir)
+            if other != skill_dir and any(r in skill_dir.parents or r in other.parents for r in self.roots):
+                self.error(skill_dir / "SKILL.md", None, f"skill '{skill_dir.name}' also in {other}; deployment would merge both")
+
     def run(self):
+        self.check_duplicates()
         for root in self.roots:
             for skill_md in sorted(root.glob("*/SKILL.md")):
                 self.check_skill(skill_md.parent)

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Termux Init"
+  short_description: "Install or recover the yadm and nixpp Termux setup"
+  default_prompt: "Use $termux-init for native Termux setup or recovery. Follow the repository's yadm-init/nixpp flow and verify both the nixpp generation and yadm bootstrap."
+
+policy:
+  allow_implicit_invocation: true
