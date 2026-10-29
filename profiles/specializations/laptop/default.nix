@@ -16,7 +16,6 @@
     ../../features/network/wifi.nix
     ./a11y.nix
     ./noctalia.nix
-    ./noctalia-duo-status.nix
     ./initrd-network.nix
     ./initrd-wifi.nix
     ./helixnotes.nix

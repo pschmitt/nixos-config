@@ -235,9 +235,6 @@ in
                 "network"
                 "bluetooth"
                 "battery-icon"
-              ]
-              ++ lib.optional config.programs.noctalia-duo-status.enable "duo-status"
-              ++ [
                 "notifications"
               ];
               padding = 12;
@@ -306,7 +303,9 @@ in
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pschmitt/noctalia-plugins.
             "pschmitt/battery-icon"
-            # iPhone Duo-inspired circular battery and Wi-Fi indicator
+            # iPhone Duo-inspired circular battery and Wi-Fi indicator. Kept
+            # installed and defined (widget "duo-status" below) but not placed
+            # in the bar; add it to a bar group to bring it back.
             "pschmitt/duo-status"
             # Lockscreen-only: "🍻 {N}s before Feierabend" while `zhj
             # feierabend countdown-start`'s shutdown timer is armed. Ported
