@@ -1,7 +1,8 @@
-//! Marks the hovered or selected window through Hyprland's own window
-//! properties: everything around it is dimmed and its border recolored.
-//! The compositor draws both, so they follow the window's rounded corners
-//! and animations, which a layer-shell overlay cannot.
+//! Recolors the border of the hovered, selected or shared window through
+//! Hyprland's own window properties. The compositor draws it, so it
+//! follows the window's rounded corners, animations and resizes, which a
+//! layer-shell overlay cannot. The dimming around it stays with the
+//! overlay: Hyprland's `dim_around` misses windows drawn after the target.
 //!
 //! Every property is put back to the value it had before, also on exit:
 //! unlike the overlay, these outlive the picker process.
@@ -21,24 +22,22 @@ struct Decorated {
     restore: Vec<(&'static str, String)>,
 }
 
-/// Property values that mark a window in `color` for the given picker
+pub type Props = Vec<(&'static str, String)>;
+
+/// Property values that outline a window in `color` for the given picker
 /// config.
-pub fn props_for(config: &PickerConfig, color: &str) -> Vec<(&'static str, String)> {
+pub fn props_for(config: &PickerConfig, color: &str) -> Props {
     let (r, g, b, _) = parse_rgba_color(color, DEFAULT_HIGHLIGHT_RGBA);
     let byte = |v: f64| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
     let color = format!("rgba({:02x}{:02x}{:02x}ff)", byte(r), byte(g), byte(b));
-    let mut props = vec![
+    vec![
         ("active_border_color", color.clone()),
         ("inactive_border_color", color),
         (
             "border_size",
             (config.highlight_border_size.round().max(1.0) as u32).to_string(),
         ),
-    ];
-    if config.highlight_mode == "dim" {
-        props.push(("dim_around", "1".into()));
-    }
-    props
+    ]
 }
 
 /// Decorates the window at `address`, restoring any other one first.

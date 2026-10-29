@@ -98,6 +98,8 @@ pub struct AppState {
     pub last_click_time: Instant,
     pub hovered_id: Option<usize>,
     pub pick_receiver: Option<Receiver<Option<String>>>,
+    /// Window under the cursor during the direct window pick.
+    pub pick_hover_rx: Option<Receiver<Option<Client>>>,
     pub capture_mgr: Rc<CaptureManager>,
     pub highlighter: Option<OverlayHighlighter>,
     pub clients: Vec<Client>,
@@ -171,6 +173,7 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         last_click_time: Instant::now(),
         hovered_id: None,
         pick_receiver: None,
+        pick_hover_rx: None,
         capture_mgr: capture_mgr.clone(),
         highlighter,
         clients,
@@ -309,7 +312,7 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     let key_controller = EventControllerKey::new();
     let state_key = state.clone();
     key_controller.connect_key_pressed(move |_ctrl, keyval, _keycode, _mod| {
-        if keyval == gdk::Key::Escape {
+        if keyval == gdk::Key::Escape || keyval == gdk::Key::q {
             if let Some(ref h) = state_key.borrow().highlighter {
                 h.clear();
             }
@@ -873,9 +876,15 @@ fn make_window_page(
     flow.set_margin_start(28);
     flow.set_margin_end(28);
 
-    let (entries, clients) = {
+    let (entries, clients, monitors, only_visible, hide_special) = {
         let s = state.borrow();
-        (s.window_entries.clone(), s.clients.clone())
+        (
+            s.window_entries.clone(),
+            s.clients.clone(),
+            s.monitors.clone(),
+            s.config.only_visible,
+            s.config.hide_special,
+        )
     };
 
     let active_ws = query_active_workspace().map(|w| w.id);
@@ -886,9 +895,24 @@ fn make_window_page(
             let cl = client_for_entry(&e, &clients).cloned();
             (e, cl)
         })
+        .filter(|(_, cl)| {
+            // Windows Hyprland does not know stay: they cannot be judged.
+            cl.as_ref().is_none_or(|c| {
+                !(only_visible && !c.is_visible_on_any_monitor(&monitors)
+                    || hide_special && c.workspace.id < 0)
+            })
+        })
         .collect();
 
+    let is_visible = |c: &Option<Client>| {
+        c.as_ref()
+            .is_some_and(|c| c.is_visible_on_any_monitor(&monitors))
+    };
     sorted_entries.sort_by(|(ea, ca), (eb, cb)| {
+        let (visible_a, visible_b) = (is_visible(ca), is_visible(cb));
+        if visible_a != visible_b {
+            return visible_b.cmp(&visible_a);
+        }
         let ws_a = ca.as_ref().map(|c| c.workspace.id);
         let ws_b = cb.as_ref().map(|c| c.workspace.id);
 
@@ -943,6 +967,16 @@ fn make_window_page(
             create_app_icon(desktop_reg, &entry.class, "", 32)
         };
 
+        let mut badges: Vec<(&str, &str)> = Vec::new();
+        if let Some(ref c) = client {
+            if c.workspace.id < 0 {
+                badges.push(("Special", "badge-special"));
+            }
+            if !c.is_visible_on_any_monitor(&monitors) {
+                badges.push(("Off screen", "badge-offscreen"));
+            }
+        }
+
         let card = make_source_card(
             state.clone(),
             card_id,
@@ -950,6 +984,7 @@ fn make_window_page(
             &title,
             &subtitle,
             Some(icon_widget),
+            &badges,
             target,
             "windows",
             &mut group_lead,
@@ -1040,6 +1075,7 @@ fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Scroll
             &title,
             &subtitle,
             Some(icon_widget),
+            &[],
             target,
             "screens",
             &mut group_lead,
@@ -1149,6 +1185,7 @@ fn make_source_card(
     title: &str,
     subtitle: &str,
     icon: Option<Widget>,
+    badges: &[(&str, &str)],
     target: CaptureTarget,
     tab: &str,
     group_lead: &mut Option<ToggleButton>,
@@ -1185,7 +1222,26 @@ fn make_source_card(
     preview_box.set_hexpand(true);
     preview_box.set_vexpand(false);
     preview_box.set_child(Some(&preview));
-    body.append(&preview_box);
+
+    // Badges such as "Special" sit on the preview's top left corner.
+    let preview_overlay = gtk4::Overlay::new();
+    preview_overlay.set_child(Some(&preview_box));
+    if !badges.is_empty() {
+        let badge_row = GtkBox::new(Orientation::Horizontal, 6);
+        badge_row.set_halign(gtk4::Align::Start);
+        badge_row.set_valign(gtk4::Align::Start);
+        badge_row.set_margin_top(8);
+        badge_row.set_margin_start(8);
+        badge_row.set_can_target(false);
+        for (text, class) in badges {
+            let badge = Label::new(Some(text));
+            badge.add_css_class("card-badge");
+            badge.add_css_class(class);
+            badge_row.append(&badge);
+        }
+        preview_overlay.add_overlay(&badge_row);
+    }
+    body.append(&preview_overlay);
 
     let info_box = GtkBox::new(Orientation::Horizontal, 12);
     info_box.add_css_class("card-info");
@@ -1530,10 +1586,38 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
     // compositor should not be doing capture work during the drag.
     state.borrow().capture_mgr.set_paused(true);
 
-    let props = {
-        let s = state.borrow();
-        decoration::props_for(&s.config, &s.config.highlight_color)
-    };
+    let (hover_tx, hover_rx) = channel::<Option<Client>>();
+    state.borrow_mut().pick_hover_rx = Some(hover_rx);
+    let state_hover = state.clone();
+    glib::timeout_add_local(Duration::from_millis(30), move || {
+        let Ok(mut s) = state_hover.try_borrow_mut() else {
+            return glib::ControlFlow::Continue;
+        };
+        let Some(rx) = s.pick_hover_rx.as_ref() else {
+            return glib::ControlFlow::Break;
+        };
+        let mut latest = None;
+        let mut finished = false;
+        loop {
+            match rx.try_recv() {
+                Ok(client) => latest = Some(client),
+                Err(std::sync::mpsc::TryRecvError::Empty) => break,
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    finished = true;
+                    break;
+                }
+            }
+        }
+        if let (Some(client), Some(h)) = (latest, s.highlighter.as_ref()) {
+            h.highlight_window_standalone(client.as_ref(), &s.monitors);
+        }
+        if finished {
+            s.pick_hover_rx = None;
+            return glib::ControlFlow::Break;
+        }
+        glib::ControlFlow::Continue
+    });
+
     let (tx, rx) = channel::<Option<String>>();
     thread::spawn(move || {
         // Windows on hidden workspaces keep their geometry; skip them.
@@ -1543,20 +1627,22 @@ fn trigger_pick_window(state: Rc<RefCell<AppState>>) {
             .filter(|c| monitors.is_empty() || c.is_visible_on_any_monitor(&monitors))
             .collect();
 
-        // slurp only takes the click and draws nothing. Hyprland marks the
-        // window under the cursor, the same way the picker marks a hovered
-        // card, and the click resolves with the same lookup.
+        // slurp only takes the click and draws nothing. The window under
+        // the cursor is marked the same way as a hovered card, and the
+        // click resolves with the same lookup.
         let done = Arc::new(AtomicBool::new(false));
         let follower = {
             let done = done.clone();
             let clients = clients.clone();
             thread::spawn(move || {
+                let mut last: Option<String> = None;
                 while !done.load(Ordering::Relaxed) {
                     let hovered =
                         query_cursor_pos().and_then(|pos| window_at_point(pos.x, pos.y, &clients));
-                    match hovered {
-                        Some(client) => decoration::decorate(&client.address, &props),
-                        None => decoration::restore(),
+                    let address = hovered.map(|c| c.address.clone());
+                    if address != last {
+                        let _ = hover_tx.send(hovered.cloned());
+                        last = address;
                     }
                     thread::sleep(Duration::from_millis(30));
                 }
@@ -1634,6 +1720,11 @@ fn trigger_pick_region(state: Rc<RefCell<AppState>>) {
 }
 
 fn finish_pick(state: Rc<RefCell<AppState>>, selection: Option<String>) {
+    // Stale hover updates must not dim outputs after the pick.
+    state.borrow_mut().pick_hover_rx = None;
+    if let Some(ref h) = state.borrow().highlighter {
+        h.clear();
+    }
     // A picked screen or window is final: hand it to XDPH right away. The
     // direct window picker yields a stable Hyprland ID, which must become
     // the portal handle first or XDPH's window capture crashes.

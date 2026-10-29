@@ -35,6 +35,14 @@
       # dim_color = rgba(0, 0, 0, 1.0) # or hex like #000000
     }
 
+    # Window list. Windows on screen are listed first. `only_visible` drops
+    # windows that are not on screen, `hide_special` drops windows on
+    # special workspaces (scratchpads), even shown ones.
+    windows {
+      only_visible = false
+      hide_special = false
+    }
+
     # Preview settings. `refresh_rate` is the focused (hovered or selected)
     # source rate; other visible tiles run at 1 fps to save CPU.
     preview {

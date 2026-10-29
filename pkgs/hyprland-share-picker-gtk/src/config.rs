@@ -18,6 +18,10 @@ pub struct PickerConfig {
     pub highlight_border_size: f64,
     pub dim_color: String,
     pub dim_factor: f64,
+    /// Leave windows that are not on screen out of the window list.
+    pub only_visible: bool,
+    /// Leave windows on special workspaces out of the window list.
+    pub hide_special: bool,
 }
 
 impl Default for PickerConfig {
@@ -35,6 +39,8 @@ impl Default for PickerConfig {
             highlight_border_size: 3.0,
             dim_color: "rgba(0, 0, 0, 1.0)".to_string(),
             dim_factor: 0.5,
+            only_visible: false,
+            hide_special: false,
         }
     }
 }
@@ -54,7 +60,7 @@ pub fn picker_config_path() -> PathBuf {
 pub fn parse_picker_config(content: &str) -> PickerConfig {
     let mut config = PickerConfig::default();
     let re = Regex::new(
-        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|sharing_color|color|fill_opacity|border_size|border|dim_color|dim_factor)\s*=\s*(.+?)\s*$"
+        r"(?m)^\s*(scale|jpeg_quality|refresh_rate|columns|mode|sharing_color|color|fill_opacity|border_size|border|dim_color|dim_factor|only_visible|hide_special)\s*=\s*(.+?)\s*$"
     ).unwrap();
 
     for cap in re.captures_iter(content) {
@@ -132,6 +138,8 @@ pub fn parse_picker_config(content: &str) -> PickerConfig {
                     config.sharing_color = val.to_string();
                 }
             }
+            "only_visible" => config.only_visible = parse_bool(val),
+            "hide_special" => config.hide_special = parse_bool(val),
             "dim_color" => {
                 if !val.is_empty() {
                     config.dim_color = val.to_string();
@@ -142,6 +150,10 @@ pub fn parse_picker_config(content: &str) -> PickerConfig {
     }
 
     config
+}
+
+fn parse_bool(val: &str) -> bool {
+    matches!(val.to_lowercase().as_str(), "true" | "yes" | "on" | "1")
 }
 
 pub fn load_config() -> PickerConfig {

@@ -51,6 +51,15 @@ window.share-picker {
   min-width: 32px;
   min-height: 32px;
 }
+.card-badge {
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 0.8em;
+  font-weight: bold;
+  color: white;
+}
+.badge-special { background: rgba(217, 119, 6, 0.92); }
+.badge-offscreen { background: rgba(71, 85, 105, 0.92); }
 window.overlay-highlighter {
   background-color: transparent;
   background: none;

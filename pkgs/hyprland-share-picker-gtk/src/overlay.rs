@@ -11,11 +11,21 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use crate::{
     config::{DEFAULT_HIGHLIGHT_RGBA, PickerConfig, parse_rgba_color},
     decoration,
-    hyprland::{Client, Monitor, Rect, RegionDetails, spawn_picker_bounds_watcher},
+    hyprland::{
+        Client, Monitor, Rect, RegionDetails, hyprland_ipc_raw, spawn_picker_bounds_watcher,
+    },
 };
 
 /// Matches the picker's CSS border-radius and its Hyprland rounding rule.
 const PICKER_RADIUS: f64 = 16.0;
+
+/// Hyprland's window corner radius, so the cut-out matches the window.
+fn query_window_rounding() -> f64 {
+    hyprland_ipc_raw("j/getoption decoration:rounding")
+        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+        .and_then(|v| v.get("int").and_then(|i| i.as_f64()))
+        .unwrap_or(0.0)
+}
 
 fn rounded_rect(cr: &cairo::Context, x: f64, y: f64, w: f64, h: f64, r: f64) {
     use std::f64::consts::{FRAC_PI_2, PI};
@@ -38,6 +48,9 @@ struct OverlayState {
     active_rect: Option<Rect>,
     picker_rect: Option<Rect>,
     dim_all: bool,
+    /// Set while marking a window: Hyprland draws its border, so the
+    /// overlay only dims around a cut-out with this corner radius.
+    window_radius: Option<f64>,
 }
 
 pub struct OverlayHighlighter {
@@ -47,7 +60,8 @@ pub struct OverlayHighlighter {
     bounds_rx: Receiver<Rect>,
     overlays: HashMap<String, MonitorOverlay>,
     config: PickerConfig,
-    window_props: Vec<(&'static str, String)>,
+    window_props: decoration::Props,
+    window_rounding: f64,
     r: f64,
     g: f64,
     b: f64,
@@ -79,6 +93,7 @@ impl OverlayHighlighter {
             overlays: HashMap::new(),
             config: config.clone(),
             window_props: decoration::props_for(config, &config.highlight_color),
+            window_rounding: query_window_rounding(),
             r,
             g,
             b,
@@ -128,6 +143,7 @@ impl OverlayHighlighter {
             active_rect: None,
             picker_rect: None,
             dim_all: false,
+            window_radius: None,
         }));
 
         let area = DrawingArea::new();
@@ -150,6 +166,7 @@ impl OverlayHighlighter {
             let s = state_clone.borrow();
             let rect = s.active_rect;
             let dim_all = s.dim_all;
+            let window_radius = s.window_radius;
 
             let _ = cr.save();
             cr.set_operator(cairo::Operator::Clear);
@@ -164,12 +181,18 @@ impl OverlayHighlighter {
                 let _ = cr.save();
                 cr.rectangle(0.0, 0.0, width as f64, height as f64);
                 if let Some(target_rect) = rect {
-                    cr.rectangle(
+                    let (x, y, w, h) = (
                         target_rect.x as f64,
                         target_rect.y as f64,
                         target_rect.width as f64,
                         target_rect.height as f64,
                     );
+                    match window_radius {
+                        Some(radius) => {
+                            rounded_rect(cr, x, y, w, h, radius.min(w / 2.0).min(h / 2.0))
+                        }
+                        None => cr.rectangle(x, y, w, h),
+                    }
                     cr.set_fill_rule(cairo::FillRule::EvenOdd);
                 }
                 cr.set_source_rgba(dim_r, dim_g, dim_b, dim_alpha);
@@ -177,7 +200,7 @@ impl OverlayHighlighter {
                 let _ = cr.restore();
             }
 
-            if let Some(target_rect) = rect {
+            if let Some(target_rect) = rect.filter(|_| window_radius.is_none()) {
                 let _ = cr.save();
                 cr.rectangle(
                     target_rect.x as f64,
@@ -279,7 +302,27 @@ impl OverlayHighlighter {
         }
     }
 
+    /// Marks a window next to the picker: Hyprland draws its border, the
+    /// overlay dims everything else. `dim_around` cannot do the dimming:
+    /// it misses windows Hyprland draws after the target.
     pub fn highlight_window(&self, client: &Client, monitors: &[Monitor]) {
+        self.mark_window(client, monitors, false);
+    }
+
+    /// Same as `highlight_window` while the picker is hidden, as in the
+    /// direct window pick: nothing to keep clear, so no bounds to wait for.
+    pub fn highlight_window_standalone(&self, client: Option<&Client>, monitors: &[Monitor]) {
+        self.picker_bounds.set(None);
+        for entry in self.overlays.values() {
+            entry.state.borrow_mut().picker_rect = None;
+        }
+        match client {
+            Some(client) => self.mark_window(client, monitors, true),
+            None => self.clear(),
+        }
+    }
+
+    fn mark_window(&self, client: &Client, monitors: &[Monitor], standalone: bool) {
         if client.at.len() != 2 || client.size.len() != 2 {
             self.clear();
             return;
@@ -290,15 +333,38 @@ impl OverlayHighlighter {
             return;
         }
 
-        // Hyprland dims around and outlines the window itself; the overlay
-        // only dims the outputs it is not on.
         decoration::decorate(&client.address, &self.window_props);
+
+        // Keep Hyprland's border, drawn just outside the window, clear too.
+        let pad = self.border_width.round() as i32;
+        let global_rect = Rect {
+            x: client.at[0] - pad,
+            y: client.at[1] - pad,
+            width: client.size[0] + 2 * pad,
+            height: client.size[1] + 2 * pad,
+        };
+        let radius = self.window_rounding + pad as f64;
+
         for (connector, entry) in &self.overlays {
-            let is_mon_showing = monitors
+            let target = monitors
                 .iter()
                 .find(|m| &m.name == connector)
-                .map_or(false, |m| client.is_visible_on_monitor(m));
-            self.show_entry(entry, None, !is_mon_showing);
+                .filter(|m| client.is_visible_on_monitor(m))
+                .and_then(|_| self.relative_rect(global_rect, entry.geom));
+            {
+                let mut s = entry.state.borrow_mut();
+                s.active_rect = target;
+                s.dim_all = target.is_none();
+                s.window_radius = Some(radius);
+            }
+            self.set_tracking(!standalone);
+            let visible = if standalone {
+                self.config.highlight_mode == "dim"
+            } else {
+                self.picker_bounds.get().is_some()
+            };
+            entry.window.set_visible(visible);
+            entry.drawing_area.queue_draw();
         }
     }
 
@@ -323,6 +389,7 @@ impl OverlayHighlighter {
             let mut s = entry.state.borrow_mut();
             s.active_rect = active_rect;
             s.dim_all = dim_all;
+            s.window_radius = None;
         }
         entry.window.set_visible(self.picker_bounds.get().is_some());
         entry.drawing_area.queue_draw();
