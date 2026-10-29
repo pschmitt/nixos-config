@@ -5,25 +5,18 @@
   ...
 }:
 let
-  resticLastBackup = pkgs.writeShellScript "restic-last-backup" ''
-    THRESHOLD=''${1:-86400}
-    NOW=$(${pkgs.coreutils}/bin/date '+%s')
-
-    LAST_BACKUP=$(/run/current-system/sw/bin/restic-main snapshots --json | \
-      ${pkgs.jq}/bin/jq -r '.[-1].time' | \
-      ${pkgs.findutils}/bin/xargs -I {} ${pkgs.coreutils}/bin/date -d '{}' '+%s')
-
-    if [[ $((NOW - LAST_BACKUP)) -gt $THRESHOLD ]]
-    then
-      echo "🚨 Last backup was more than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 1
-    else
-      echo -e "✅ Last backup was less than $THRESHOLD ago"
-      echo -e "📅 $(date -d "@$LAST_BACKUP")"
-      exit 0
-    fi
-  '';
+  resticWrapper = lib.findFirst (
+    pkg: lib.getName pkg == "restic-main"
+  ) (throw "restic-main wrapper missing") config.environment.systemPackages;
+  resticLastBackup = pkgs.writeShellApplication {
+    name = "restic-last-backup";
+    runtimeInputs = [
+      resticWrapper
+      pkgs.jq
+      pkgs.coreutils
+    ];
+    text = builtins.readFile ./scripts/restic-last-backup.sh;
+  };
 in
 {
   imports = [ ../../../services/restic ];
@@ -50,7 +43,7 @@ in
     services.monit.checks = {
       "restic backup status" = {
         type = "program";
-        path = "${resticLastBackup}";
+        path = lib.getExe resticLastBackup;
         group = "storage";
         every = 5;
         conditions = ''

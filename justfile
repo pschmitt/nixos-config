@@ -44,10 +44,6 @@ eval *args:
 eval-hm *args:
   ./scripts/nix.sh eval --home-manager {{args}}
 
-alias hm := home-manager
-home-manager host='':
-  ./just/home-manager.sh "$@"
-
 nix-update *args:
   ./scripts/nix-update.sh {{args}}
 

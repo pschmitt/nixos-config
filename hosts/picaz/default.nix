@@ -16,7 +16,8 @@
     ./nix.nix
     ./packages.nix
     ./ssh.nix
-    ./state.nix
     ./users.nix
   ];
+
+  system.stateVersion = "25.11";
 }

@@ -1,13 +1,13 @@
 {
   imports = [
     ../../profiles/features/network/ha-sshfs.nix
-    ../../profiles/specializations/homelab-server
     ../../profiles/headless-browsers.nix
-
+    ../../profiles/specializations/homelab-server
     ../../services/codex-ha-bridge.nix
     ../../services/go-hass-agent.nix
     ../../services/harmonia.nix
     ../../services/kubeconfig-update.nix
+
     ./agent-limits.nix
     ./authorized-keys.nix
     ./backups.nix

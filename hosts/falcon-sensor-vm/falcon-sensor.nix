@@ -11,7 +11,6 @@
   ];
 
   networking.hostName = "falcon-sensor";
-  system.stateVersion = "25.11";
 
   services.falcon-sensor.customerIdFile = "/run/falcon-secrets/customerId";
   services.falcon-sensor.kernelPackages = lib.mkForce pkgs.linuxPackages_6_12;

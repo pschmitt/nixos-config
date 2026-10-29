@@ -4,4 +4,6 @@
     ./openssh.nix
     ./vm.nix
   ];
+
+  system.stateVersion = "25.11";
 }
