@@ -129,6 +129,13 @@ export function loadConfig(configPath) {
     troll_user: (getString(fileConfig.teams?.troll_user) || process.env.TEAMS_TROLL_USER || '').trim(),
   };
 
+  const opsgenie = {
+    on_call_key: getString(fileConfig.opsgenie?.on_call_key) || process.env.OPSGENIE_ON_CALL_KEY || '',
+    support_key: getString(fileConfig.opsgenie?.support_key) || process.env.OPSGENIE_SUPPORT_KEY || '',
+    base_url: (getString(fileConfig.opsgenie?.base_url) || process.env.OPSGENIE_BASE_URL || 'https://api.eu.opsgenie.com/v2').replace(/\/+$/, ''),
+    web_base_url: (getString(fileConfig.opsgenie?.web_base_url) || process.env.OPSGENIE_WEB_BASE_URL || 'https://germanedgecloudgmbh.app.opsgenie.com').replace(/\/+$/, ''),
+  };
+
   let conversations = fileConfig.conversations;
   if (!conversations || !Array.isArray(conversations) || conversations.length === 0) {
     conversations = [
@@ -147,6 +154,7 @@ export function loadConfig(configPath) {
     },
     gitlab,
     jira,
+    opsgenie,
     teams,
     conversations,
   };

@@ -30,6 +30,7 @@ const HELP_TEXT =
   '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
   '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
   '- `/mrs [all|bots]`: Lists open merge requests (human MRs + top 5 bot MRs; all shows all, bots shows only bots).\n' +
+  '- `/alerts` (or `/opsgenie`) [oncall|support]: Open alerts in the CKS OpsGenie queues.\n' +
   '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
   '- `/meetings`: Summary of meetings for the rest of the current week.\n' +
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
@@ -47,6 +48,8 @@ const KNOWN_COMMANDS = [
   '/rebase',
   '/status',
   '/mrs',
+  '/alerts',
+  '/opsgenie',
   '/sprint',
   '/meetings',
   '/weather',
@@ -170,11 +173,96 @@ function getMrsMode(args = []) {
   return 'default';
 }
 
+function getAlertPriorityBadge(priority) {
+  switch (priority) {
+    case 'P1':
+      return '🚨 **P1**';
+    case 'P2':
+      return '🟠 **P2**';
+    case 'P3':
+      return '🟡 **P3**';
+    case 'P4':
+      return '🔵 **P4**';
+    case 'P5':
+      return '⚪ **P5**';
+    default:
+      return `🔹 **${priority || 'P?'}**`;
+  }
+}
+
+function formatTimeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  if (diffMs < 0) return 'just now';
+  const secs = Math.floor(diffMs / 1000);
+  if (secs < 60) return `${secs}s ago`;
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function formatAlertLine(alert) {
+  const pBadge = getAlertPriorityBadge(alert.priority);
+  const linkRef = alert.tinyId ? `#${alert.tinyId}` : (alert.id ? alert.id.slice(0, 8) : 'alert');
+  const link = `[${linkRef}](${alert.url})`;
+  const countStr = alert.count > 1 ? ` (🔄 ${alert.count}x)` : '';
+  const ackStr = alert.acknowledged ? '👀 acked' : '⚠️ unacked';
+  const snoozeStr = alert.snoozed ? ', 💤 snoozed' : '';
+  const timeStr = alert.createdAt ? `, 🕒 ${formatTimeAgo(alert.createdAt)}` : '';
+  const meta = `_${ackStr}${countStr}${snoozeStr}${timeStr}_`;
+  return `- ${pBadge} ${link}: ${alert.message} — ${meta}`;
+}
+
+function formatAlertsText(data, mode = 'all') {
+  if (!data) return '❌ Failed to fetch OpsGenie alerts.';
+
+  const { onCallAlerts = [], supportAlerts = [], onCallError, supportError } = data;
+  const totalCount = onCallAlerts.length + supportAlerts.length;
+
+  if (totalCount === 0 && !onCallError && !supportError) {
+    return '🎉 **All CKS OpsGenie queues are clear!** (0 open alerts)';
+  }
+
+  const showOnCall = mode === 'all' || mode === 'oncall';
+  const showSupport = mode === 'all' || mode === 'support';
+
+  const sections = [];
+
+  if (showOnCall) {
+    if (onCallError) {
+      sections.push(`📞 **On-Call Queue**:\n\n⚠️ *Failed to fetch on-call alerts: ${onCallError}*`);
+    } else if (onCallAlerts.length === 0) {
+      sections.push(`📞 **On-Call Queue**: 🎉 _No open alerts_`);
+    } else {
+      const lines = onCallAlerts.map(formatAlertLine).join('\n');
+      sections.push(`📞 **On-Call Queue** (${onCallAlerts.length} open):\n\n${lines}`);
+    }
+  }
+
+  if (showSupport) {
+    if (supportError) {
+      sections.push(`💼 **Support Queue**:\n\n⚠️ *Failed to fetch support alerts: ${supportError}*`);
+    } else if (supportAlerts.length === 0) {
+      sections.push(`💼 **Support Queue**: 🎉 _No open alerts_`);
+    } else {
+      const lines = supportAlerts.map(formatAlertLine).join('\n');
+      sections.push(`💼 **Support Queue** (${supportAlerts.length} open):\n\n${lines}`);
+    }
+  }
+
+  const title = `🚨 **CKS OpsGenie Alerts** (${totalCount} open: ${onCallAlerts.length} on-call, ${supportAlerts.length} support):`;
+  return `${title}\n\n${sections.join('\n\n')}`;
+}
+
 export class MergeRequestWatcher {
-  constructor({ config, gitlab, jira, authManager }) {
+  constructor({ config, gitlab, jira, opsgenie, authManager }) {
     this.config = config;
     this.gitlab = gitlab;
     this.jira = jira;
+    this.opsgenie = opsgenie;
     this.authManager = authManager;
     this.pollIntervalMs = (config.gitlab.poll_interval_seconds || 60) * 1000;
     this.historyLimit = config.gitlab.history_limit || 50;
@@ -201,6 +289,7 @@ export class MergeRequestWatcher {
     this.cacheTtlMs = 15 * 60 * 1000; // 15 minutes
     this.precomputeIntervalMs = 10 * 60 * 1000; // 10 minutes
     this.mrsCache = { data: null, timestamp: 0, loading: null };
+    this.alertsCache = { data: null, timestamp: 0, loading: null };
     this.sprintCache = { text: null, timestamp: 0, loading: null };
     this.meetingsCache = { text: null, timestamp: 0, loading: null };
 
@@ -405,6 +494,8 @@ export class MergeRequestWatcher {
       t.includes('Renovate / Bot Updates') ||
       t.includes('No open renovate or bot merge requests found') ||
       t.includes('Bot Interaction Leaderboard') ||
+      t.includes('CKS OpsGenie Alerts') ||
+      t.includes('All CKS OpsGenie queues are clear!') ||
       t.includes('Current Sprint Tasks') ||
       t.includes('No active sprint tasks found') ||
       t.includes('Meetings for the rest of the week') ||
@@ -1168,6 +1259,71 @@ export class MergeRequestWatcher {
     });
   }
 
+  async getOrFetchAlertsData({ force = false } = {}) {
+    if (!this.opsgenie?.isConfigured()) {
+      return {
+        onCallAlerts: [],
+        supportAlerts: [],
+        onCallError: 'OpsGenie not configured',
+        supportError: 'OpsGenie not configured',
+      };
+    }
+    const now = Date.now();
+    if (!force && this.alertsCache.data && now - this.alertsCache.timestamp < this.cacheTtlMs) {
+      return this.alertsCache.data;
+    }
+    if (this.alertsCache.loading) {
+      return await this.alertsCache.loading;
+    }
+
+    this.alertsCache.loading = (async () => {
+      try {
+        const data = await this.opsgenie.getAllOpenAlerts();
+        this.alertsCache.data = data;
+        this.alertsCache.timestamp = Date.now();
+        return data;
+      } catch (err) {
+        if (this.alertsCache.data) {
+          log(`Failed to refresh /alerts cache (${err.message}), serving stale cache`);
+          return this.alertsCache.data;
+        }
+        throw err;
+      } finally {
+        this.alertsCache.loading = null;
+      }
+    })();
+
+    return await this.alertsCache.loading;
+  }
+
+  async getOrFetchAlertsText({ force = false, mode = 'all' } = {}) {
+    const data = await this.getOrFetchAlertsData({ force });
+    return formatAlertsText(data, mode);
+  }
+
+  async executeAlertsCommand(event, args = []) {
+    if (!this.opsgenie?.isConfigured()) {
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(event.conversationId, event, '❌ OpsGenie integration is not configured.');
+      return;
+    }
+
+    const sub = (args[0] || '').toLowerCase().replace(/^-+/, '');
+    let mode = 'all';
+    if (sub === 'oncall' || sub === 'on-call' || sub === 'call') {
+      mode = 'oncall';
+    } else if (sub === 'support' || sub === 'sup') {
+      mode = 'support';
+    }
+
+    await this.executeCachedCommand(event, {
+      name: 'alerts',
+      getCached: () => (this.alertsCache.data ? formatAlertsText(this.alertsCache.data, mode) : null),
+      getOrFetch: (opts) => this.getOrFetchAlertsText({ ...opts, mode }),
+      errorLabel: 'OpsGenie alerts lookup',
+    });
+  }
+
   async getOrFetchSprintText({ force = false } = {}) {
     if (!this.jira?.isConfigured()) {
       return '❌ Jira integration is not configured.';
@@ -1501,6 +1657,8 @@ export class MergeRequestWatcher {
       await this.executeStatusCommand(event, args);
     } else if (command === '/mrs') {
       await this.executeMrsCommand(event, args);
+    } else if (command === '/alerts' || command === '/opsgenie') {
+      await this.executeAlertsCommand(event, args);
     } else if (command === '/sprint') {
       await this.executeSprintCommand(event);
     } else if (command === '/meetings') {
@@ -1692,13 +1850,14 @@ export class MergeRequestWatcher {
   }
 
   async runPrecompute() {
-    log('Precomputing /mrs, /sprint, and /meetings cache in background...');
+    log('Precomputing /mrs, /alerts, /sprint, and /meetings cache in background...');
     await Promise.allSettled([
       this.getOrFetchMrsData({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
+      this.getOrFetchAlertsData({ force: true }).catch((err) => log(`Precompute /alerts failed: ${err.message}`)),
       this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
       this.getOrFetchMeetingsText({ force: true }).catch((err) => log(`Precompute /meetings failed: ${err.message}`)),
     ]);
-    log('Precompute /mrs, /sprint, and /meetings cache completed');
+    log('Precompute /mrs, /alerts, /sprint, and /meetings cache completed');
   }
 
   startPrecompute() {

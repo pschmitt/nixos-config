@@ -19,18 +19,27 @@ let
   mkSecrets = names: lib.genAttrs names (_name: mkSecret { });
 in
 {
-  sops.secrets = mkSecrets [
-    "teams-live/credentials"
-    "teams-live/gitlab-token"
-    "teams-live/gitlab-url"
-    "teams-live/gitlab-group"
-    "teams-live/conversation-notes"
-    "teams-live/conversation-team"
-    "teams-live/jira-url"
-    "teams-live/jira-token"
-    "teams-live/jira-board-id"
-    "teams-live/troll-user"
-  ];
+  sops.secrets =
+    (mkSecrets [
+      "teams-live/credentials"
+      "teams-live/gitlab-token"
+      "teams-live/gitlab-url"
+      "teams-live/gitlab-group"
+      "teams-live/conversation-notes"
+      "teams-live/conversation-team"
+      "teams-live/jira-url"
+      "teams-live/jira-token"
+      "teams-live/jira-board-id"
+      "teams-live/troll-user"
+    ])
+    // {
+      "opsgenie/gksv3-on-call/api-key" = config.sops.mkHostSecret {
+        restartUnits = [ "teams-live.service" ];
+      };
+      "opsgenie/gksv3-support-schedule/api-key" = config.sops.mkHostSecret {
+        restartUnits = [ "teams-live.service" ];
+      };
+    };
 
   sops.templates."teams-live/config.json" = {
     owner = cfg.user;
@@ -60,6 +69,11 @@ in
         url = config.sops.placeholder."teams-live/jira-url";
         token_file = config.sops.secrets."teams-live/jira-token".path;
         board_id = config.sops.placeholder."teams-live/jira-board-id";
+      };
+
+      opsgenie = {
+        on_call_key = config.sops.placeholder."opsgenie/gksv3-on-call/api-key";
+        support_key = config.sops.placeholder."opsgenie/gksv3-support-schedule/api-key";
       };
 
       teams = {

@@ -3,6 +3,7 @@ import { loadConfig } from './config.mjs';
 import { AuthManager } from './auth.mjs';
 import { GitLabClient } from './gitlab.mjs';
 import { JiraClient } from './jira.mjs';
+import { OpsGenieClient } from './opsgenie.mjs';
 import { TrouterClient } from './trouter.mjs';
 import { MergeRequestWatcher } from './watcher.mjs';
 
@@ -75,7 +76,8 @@ async function main() {
   const authManager = new AuthManager(config);
   const gitlab = new GitLabClient(config.gitlab);
   const jira = new JiraClient(config.jira);
-  const watcher = new MergeRequestWatcher({ config, gitlab, jira, authManager });
+  const opsgenie = new OpsGenieClient(config.opsgenie);
+  const watcher = new MergeRequestWatcher({ config, gitlab, jira, opsgenie, authManager });
 
   let trouter = null;
   let stopping = false;
