@@ -1,0 +1,24 @@
+# Rules for agent-secret-scan: gitleaks' default ruleset plus the shapes that
+# leaked in agent transcripts and that the defaults do not know.
+title = "agent tool results"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "url-credential-parameter"
+description = "Credential in a URL or log parameter"
+regex = '''(?i)(?:access_token|refresh_token|auth|token|api[_-]?key|passwd|password|secret)=([^&\s"'<>$({\[][^&\s"'<>]{7,})'''
+secretGroup = 1
+
+[[rules]]
+id = "command-line-credential"
+description = "Credential passed as a command-line option"
+regex = '''(?i)--(?:passwd|password|token|secret)[= ]([^\s"'$<]{6,})'''
+secretGroup = 1
+
+[[rules]]
+id = "signed-connection-url"
+description = "Signed browser-daemon connection URL"
+regex = '''wss?://[^\s"']+\?[^\s"']*(?:sig|signature|auth)=([^&\s"']{16,})'''
+secretGroup = 1
