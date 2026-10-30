@@ -916,7 +916,8 @@ export class MergeRequestWatcher {
       if (inProgress.length > 0) {
         const lines = [`**In Progress** (${inProgress.length}):`];
         for (const t of inProgress) {
-          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
         }
         sections.push(lines.join('\n'));
       }
@@ -924,7 +925,8 @@ export class MergeRequestWatcher {
       if (inReview.length > 0) {
         const lines = [`**In Review** (${inReview.length}):`];
         for (const t of inReview) {
-          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
         }
         sections.push(lines.join('\n'));
       }
@@ -932,7 +934,8 @@ export class MergeRequestWatcher {
       if (todo.length > 0) {
         const lines = [`**To Do** (${todo.length}):`];
         for (const t of todo) {
-          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
         }
         sections.push(lines.join('\n'));
       }

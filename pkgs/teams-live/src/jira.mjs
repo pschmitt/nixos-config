@@ -69,6 +69,7 @@ export class JiraClient {
         summary,
         assignee: assigneeName,
         status: statusName,
+        url: this.baseUrl ? `${this.baseUrl}/browse/${issue.key}` : '',
       };
 
       if (statusName.toLowerCase() === 'in review' || statusName.toLowerCase().includes('review')) {
