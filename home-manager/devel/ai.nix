@@ -69,7 +69,7 @@ let
 
   agentTmuxContextHook = pkgs.agent-tmux-context-hook;
   # PreToolUse/PostToolUse hooks that keep credentials out of tool calls and
-  # results (see "Leaked credentials" in CONTEXT.md); Codex gets them too via
+  # results (see the leaked-credentials skill); Codex gets them too via
   # modules/codex-managed-hooks.nix.
   agentSecretGuard = pkgs.agent-secret-guard;
   agentSecretScan = pkgs.agent-secret-scan;

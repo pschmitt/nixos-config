@@ -48,10 +48,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Progress notifications
 
-- For substantial multi-step work or long-running operations, check the user's presence in Home Assistant when it affects whether they can see chat updates. Use the HA live-context tool or `zsh -lc 'zhj hass-cli state list person'` to inspect the relevant `person.*` state. When the user is away, send concise Signal updates. Prefer the `signal` MCP (`send_message` with `recipient="me"`; `list_recipients` shows the names) and fall back to Home Assistant when it is not available (`zsh -lc 'zhj hass-cli service call notify.signal_me --arguments "message=..."'`).
-- Send Signal messages for meaningful milestones, blockers that need the user's attention, and completion after a long operation. Keep routine progress in chat, avoid duplicate messages, and don't send for quick tasks.
-- Start every Signal update with an uppercase ASCII task/topic and the actual harness name in `[TOPIC | HARNESS]` form on its own first line, for example `**[FNUC UPGRADE | CODEX]**`. This lets the user distinguish updates when agents are working in parallel; use the task topic to distinguish agents on the same harness, and don't invent a harness or agent identity. Both the `signal` MCP and the HA Signal wrapper turn Markdown-ish markers into actual Signal styles: `**bold**`, `*italic*`, `~~strikethrough~~`, `||spoiler||`, `` `monospace` `` and fenced ```` ``` ```` blocks (monospace; Signal has no real code block). Styles nest, code is literal, and a backslash escapes a marker; messages without markers remain plain. Pass `format=false` to the MCP (or `--no-format` to the sender script) to preserve markup literally. Attach files or screenshots with the MCP's `attachments` argument. The MCP can also reply with a quote, react, edit and delete the bot's own messages (`send_message` returns the timestamp those need) and mention people with `@{name}`; it cannot read incoming messages.
-- State what changed or what is blocked and the next step. Keep secrets and sensitive identifiers out of notifications. If Home Assistant is unavailable, continue communicating in chat.
+- For substantial multi-step or long-running work, the user may be away from the chat. Use the `signal-notify` skill to check presence and send Signal updates (milestones, blockers, completion), and load it before sending any Signal message.
 
 ## GPG and commit signing
 
@@ -71,21 +68,14 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - Diffs: `git diff`/`git show` on SOPS files decrypt through textconv; add `--no-textconv`. `ansible --diff` prints rendered credential templates.
   - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
   - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
-  - Claude Code and Codex enforce the Bash cases with a PreToolUse hook (`agent-secret-guard`) and warn about credentials in tool results with a PostToolUse hook (`agent-secret-scan`; it also masks MCP results in Claude Code). If a command is blocked, use the suggested safe form; do not work around the hook.
-- Not a credential, so no row needed: public SSH host-key fingerprints, SSH-derived age recipients (`age1...`), GPG key IDs and fingerprints, and SOPS ciphertext. `just deploy` and `gpg::auto-unlock` already mask them; if you still see one, carry on and do not log it. Everything else that authorizes access or identifies a person or device (tokens, passwords, seeds, signed URLs, webhook IDs, serials, MACs, IEEE addresses) still counts.
-- If a credential (password, token, API key, private key, passkey, session cookie, ...) ends up somewhere it should not be, even briefly and even if you caused it, handle it **as soon as you notice**:
-  1. Tell the user plainly what was exposed and where, naming the credential (entry or key path), never its value.
-  2. Add a row under *Open* in the Obsidian note `homelab/🚨 Leaked credentials.md` (vault `/home/pschmitt/Documents/notes`; use the `obsidian` skill, or edit the file directly when the MCP cannot reach the vault): date, what, where it leaked, how to rotate, status. Never write the value into the note.
-  3. Contain what you can: revoke sessions and tokens you created, shred temporary files. Rotate the credential yourself only when that can be done without the value passing through your context (see `just sops-rotate` and the credential rotation note); otherwise leave it open for the user.
-  4. When something is rotated and verified, move its row to *Resolved*.
+  - Hooks (`agent-secret-guard`, `agent-secret-scan`) enforce the Bash cases and warn about credentials in tool results. If a command is blocked, use the suggested safe form; do not work around the hook.
+- If a credential ends up somewhere it should not be, even briefly and even if you caused it, load the `leaked-credentials` skill immediately and follow it.
 
 ## Browser MCPs
 
-- There is one browser MCP, `browser-daemon`. Without a choice it gives you a fresh throwaway browser on the node with the most room. `browser_status` lists the nodes and the profiles you may open; `browser_use` switches (and closes the current browser): `browser_use profile=work` for work web UIs (Outlook, OpsGenie), the persistent browser-daemon profile that is usually still signed in; `browser_use node=fnuc` for a throwaway browser on a given node (fnuc has the home IP).
-- The `browser-daemon` MCP tells the browser-daemon dashboard which agent and conversation drive a session. When you start using it, label your sessions with what you are doing, a few words like a tmux window name: `browser-agent-topic "netbox invoice lookup"`. Run it again when the task changes.
-- Never read a cookie or token through a browser tool; use `browser_fetch`/`browser_export_auth` (`browser-login` skill).
-- Never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the `browser-daemon` MCP echoes every call into the transcript and its logs. For a vault entry the user allowed for agents, use `browser_fill_secret entry="<rbw entry>" field=password|username|totp target=<ref>` (`submit=true` presses Enter): it reads the value from rbw itself, only types it on a site the entry is saved for, and masks it in later results. Its description lists the allowed entries; for anything else, have the user type it in the live view (`browser_ask_human`; `browser-login` skill). Never run `rbw get` on an entry just to type it: without a password it prints the notes.
-- Look at or manage browser sessions from the shell with `browser-daemon session list|show|new|stop|rename|tabs|open`, and the same for `profile`, `recording` and `node` (`--json` for scripts, `--url` for another node, `browser-daemon tui` for a terminal UI). Only stop sessions you started: others belong to other agents.
+- There is one browser MCP, `browser-daemon`. Without a choice it gives you a fresh throwaway browser on the node with the most room. `browser_status` lists the nodes and profiles; `browser_use profile=work` opens the persistent work profile (Outlook, OpsGenie), `browser_use node=fnuc` a throwaway browser with the home IP.
+- Label your sessions when you start: `browser-agent-topic "netbox invoice lookup"` (a few words, like a tmux window name); run it again when the task changes. Only stop sessions you started; manage them from the shell with `browser-daemon session|profile|recording|node ...`.
+- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Use the `browser-login` skill (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`) for anything involving a login.
 
 ## Shell work
 
@@ -94,12 +84,6 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Tmux pane and window naming
 
-- At the start of each task, check `$TMUX_PANE` first. When it is set, use a bounded pane-specific query such as `tmux display-message -p -t "$TMUX_PANE" '#{session_name}:#{window_index}.#{pane_index} #{window_name}'` to confirm the pane and identify its window. When it is unset, check whether tmux is reachable with a bounded query such as `tmux list-sessions`; tool shells may not inherit tmux variables. If tmux is unavailable, skip naming.
-- As soon as the user's request makes the task clear, rename only this agent's own tmux window to a concise name for the task, before doing other task work. Use `$TMUX_PANE` as the explicit target when available. Otherwise, use discovered pane metadata and match the conversation's working directory and command where possible. Do not guess from whichever window is active.
-- For a request to rename all windows or another broader scope, use the `tmux-window-names` skill and follow its discovery and verification steps.
-- Use the tmux MCP tools `rename-pane` and `rename-window` (always loaded in Claude; a SessionStart hook already sets a placeholder name from the project directory, so replace it with a topic name once known).
-- **Do not target tmux's "active" pane/window** when the requested target can be identified explicitly. Active means whichever window the user currently has focused, which may differ from the one this agent is using.
-- Keep an existing name only when it accurately describes this agent's current work. If the user asks to rename all windows, follow the `tmux-window-names` skill.
-- Keep names short: max 20 characters, no spaces — use `-` as separator.
-- Examples: `nix-ai-context`, `ha-lights`, `netbox-sync`, `ctx-tmux-rename`, `ha-fints-fix-reauth`
-- Do this once per conversation, as soon as the topic is clear — do not repeat.
+- Once per conversation, as soon as the task is clear, rename only this agent's own tmux window to a short topic name (max 20 characters, no spaces, `-` as separator, e.g. `nix-ai-context`, `ha-lights`). Keep an existing name only if it already describes this work.
+- Identify the window via `$TMUX_PANE` (`tmux display-message -p -t "$TMUX_PANE" ...`) and rename with the tmux MCP `rename-window`. Never target the "active" window: that is whatever the user has focused. If `$TMUX_PANE` is unset, check reachability with `tmux list-sessions`; if tmux is unavailable, skip naming.
+- For renaming all windows or another broad scope, use the `tmux-window-names` skill.

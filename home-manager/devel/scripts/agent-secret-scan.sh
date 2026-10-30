@@ -23,7 +23,7 @@ found="$(jq -r '[.[].RuleID] | unique | join(", ")' <<<"$findings" 2>/dev/null |
 [[ -n "$found" ]] || exit 0
 
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
-context="A tool result from ${tool} appears to contain credentials (rules: ${found}). Follow the Leaked credentials rule: tell the user what leaked and where, add a row to the Obsidian note homelab/🚨 Leaked credentials.md without the value, and do not repeat the value."
+context="A tool result from ${tool} appears to contain credentials (rules: ${found}). Load the leaked-credentials skill and follow it: tell the user what leaked and where, add a row to the Obsidian note homelab/🚨 Leaked credentials.md without the value, and do not repeat the value."
 
 # Only Claude Code accepts rewritten MCP output; Codex gets the warning alone.
 if [[ "$tool" == mcp__* && -n "${CLAUDECODE:-}" ]]

@@ -37,6 +37,10 @@ nothing secret ever goes through your tool calls.
 If the vault is locked, the MCP or the node's secret agent asks the user to
 unlock it on their phone; for shell work see the `rbw` skill.
 
+## Rules for the MCP
+
+Never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the `browser-daemon` MCP echoes every call into the transcript and its logs. Never run `rbw get` on an entry just to type it: without a password it prints the notes. For anything not allowed for agents, have the user type it in the live view (`browser_ask_human`).
+
 ## Use a browser login elsewhere
 
 When a page is signed in and you need that login outside the browser (a
