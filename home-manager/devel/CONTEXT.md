@@ -9,6 +9,12 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
+- Watch for toil worth capturing. When you hit the same friction a second
+  time, spend real effort rediscovering a procedure, or get a user correction
+  that generalizes, say so at the end of the task and propose a new skill (or an
+  update to an existing one) using the `self-improvement` skill. Describe what
+  it would cover and ask before creating a new skill; fixing an existing one
+  falls under that skill's own rules.
 - Linkify references whenever a useful target is available. This applies across
   all kinds of work, including GitLab merge requests, GitHub pull requests,
   tickets, documentation, dashboards, and local files. In terminal output, use
