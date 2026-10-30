@@ -4,8 +4,33 @@ import { getCalendarView as mcpGetCalendarView } from 'msteams-mcp/dist/api/cale
 import { requireSkypeSpacesAuth } from 'msteams-mcp/dist/utils/auth-guards.js';
 import { httpRequest } from 'msteams-mcp/dist/utils/http.js';
 import { markdownToTeamsHtml } from 'msteams-mcp/dist/utils/parsers-markdown.js';
+import { refreshTokensViaHttp } from 'msteams-mcp/dist/auth/token-refresh-http.js';
 
 export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, markdownToTeamsHtml };
+
+async function attemptTokenRefreshOnAuthError(res) {
+  if (!res || res.ok) return false;
+  const errText = (res.error?.message || '').toLowerCase();
+  const isAuth =
+    errText.includes('auth') ||
+    errText.includes('unauthorized') ||
+    errText.includes('401') ||
+    res.error?.code === 'AUTH_EXPIRED' ||
+    res.error?.code === 'AUTH_REQUIRED';
+  if (!isAuth) return false;
+
+  console.warn(new Date().toISOString(), `[teams] Auth error detected (${res.error?.message}), attempting token refresh...`);
+  try {
+    const refreshed = await refreshTokensViaHttp();
+    if (refreshed.ok) {
+      console.log(new Date().toISOString(), '[teams] Token refresh succeeded, retrying operation...');
+      return true;
+    }
+  } catch (err) {
+    console.error(new Date().toISOString(), '[teams] Token refresh threw:', err.message);
+  }
+  return false;
+}
 
 export async function getCalendarView(options = {}) {
   const mcpRes = await mcpGetCalendarView(options);
@@ -149,8 +174,13 @@ export async function sendDirectMessage(conversationId, markdown) {
   const options = {
     contentType: 'html',
   };
-  const result = await sendMessage(conversationId, html, options);
-  if (result.ok && result.value) {
+  let result = await sendMessage(conversationId, html, options);
+  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
+    result = await sendMessage(conversationId, html, options);
+  }
+  if (!result.ok) {
+    console.error(new Date().toISOString(), `[teams] sendDirectMessage failed in ${conversationId}:`, result.error?.message || result.error);
+  } else if (result.value) {
     recordBotMessageId(result.value.timestamp);
     recordBotMessageId(result.value.messageId);
   }
@@ -184,8 +214,13 @@ export async function sendReply(conversationId, originalMessage, replyMarkdown) 
     options.replyToMessageId = messageId;
   }
 
-  const result = await sendMessage(conversationId, html, options);
-  if (result.ok && result.value) {
+  let result = await sendMessage(conversationId, html, options);
+  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
+    result = await sendMessage(conversationId, html, options);
+  }
+  if (!result.ok) {
+    console.error(new Date().toISOString(), `[teams] sendReply failed in ${conversationId}:`, result.error?.message || result.error);
+  } else if (result.value) {
     recordBotMessageId(result.value.timestamp);
     recordBotMessageId(result.value.messageId);
   }
@@ -210,5 +245,12 @@ export async function updateReply(conversationId, serverMessageId, originalMessa
     replyMarkdown,
   });
 
-  return await editMessage(conversationId, String(serverMessageId), html, 'html');
+  let result = await editMessage(conversationId, String(serverMessageId), html, 'html');
+  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
+    result = await editMessage(conversationId, String(serverMessageId), html, 'html');
+  }
+  if (!result.ok) {
+    console.error(new Date().toISOString(), `[teams] updateReply failed for ${serverMessageId} in ${conversationId}:`, result.error?.message || result.error);
+  }
+  return result;
 }

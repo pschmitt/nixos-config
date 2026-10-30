@@ -19,6 +19,7 @@ import {
 } from './teams.mjs';
 import { SnakeGame } from './snake.mjs';
 import { formatOnDuty } from './opsgenie.mjs';
+import { getMessageAuthStatus } from 'msteams-mcp/dist/auth/token-extractor.js';
 
 const log = (...args) => console.error(new Date().toISOString(), '[watcher]', ...args);
 
@@ -54,6 +55,8 @@ const HELP_TEXT =
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
   '- `/exec <cmd>`: Executes a command.\n' +
+  '- `/restart`: Restarts the teams-live daemon (admin only).\n' +
+  '- `/reauth`: Proactively refreshes Teams credentials and tokens (admin only).\n' +
   '- `/about`: Bot info, GitHub repository link, and developer support.\n' +
   '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
   '_Target an MR by replying to its message or sending the command immediately after._';
@@ -96,6 +99,8 @@ const KNOWN_COMMANDS = [
   '/kick',
   '/ban',
   '/exec',
+  '/restart',
+  '/reauth',
   '/about',
   '/help',
   '/usage',
@@ -1921,6 +1926,71 @@ export class MergeRequestWatcher {
     this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
+  isAdmin(event) {
+    const rawFrom = String(event.from || event.sender?.displayName || '').trim().toLowerCase();
+    const rawMri = String(event.fromMri || event.sender?.mri || '').trim().toLowerCase();
+    if (rawFrom === 'philipp schmitt' || rawFrom.includes('philipp schmitt')) {
+      return true;
+    }
+    if (this.selfMri && rawMri && rawMri === this.selfMri.toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
+  respondNotPrivileged(event) {
+    const user = event.from || event.sender?.displayName || 'user';
+    return `\`\`\`\n${user} is not in the sudoers file.  This incident will be reported.\n\`\`\``;
+  }
+
+  async executeRestartCommand(event) {
+    if (!this.isAdmin(event)) {
+      log(`Unauthorized /restart attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
+      await sendReply(event.conversationId, event, this.respondNotPrivileged(event));
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    log(`Admin /restart issued by ${event.from || event.fromMri} in ${event.conversationId}`);
+    await sendReply(
+      event.conversationId,
+      event,
+      '🔄 **Restarting teams-live daemon...** Systemd will restore the service momentarily.'
+    );
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+
+    setTimeout(() => {
+      log('Exiting process for systemd restart...');
+      process.exit(0);
+    }, 1000);
+  }
+
+  async executeReauthCommand(event) {
+    if (!this.isAdmin(event)) {
+      log(`Unauthorized /reauth attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
+      await sendReply(event.conversationId, event, this.respondNotPrivileged(event));
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    log(`Admin /reauth issued by ${event.from || event.fromMri} in ${event.conversationId}`);
+    try {
+      await this.authManager.ensureValidAuth();
+      const status = getMessageAuthStatus();
+      const text =
+        '🔑 **Teams authentication refreshed successfully!**\n\n' +
+        `- **Active**: ${status.hasToken ? '✅ Yes' : '❌ No'}\n` +
+        `- **Minutes Remaining**: ~${status.minutesRemaining ?? 'unknown'}m\n` +
+        `- **Expires**: \`${status.expiresAt || 'unknown'}\``;
+      await sendReply(event.conversationId, event, text);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Admin /reauth failed: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Manual reauth failed: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
   async executeBanCommand(event, args) {
     const target = args.join(' ').trim() || event.from || 'User';
     log(`Executing /ban for ${target} in ${event.conversationId}...`);
@@ -2523,6 +2593,10 @@ export class MergeRequestWatcher {
       await this.executeBanCommand(event, args);
     } else if (command === '/exec') {
       await this.executeExecCommand(event, args);
+    } else if (command === '/restart') {
+      await this.executeRestartCommand(event);
+    } else if (command === '/reauth') {
+      await this.executeReauthCommand(event);
     } else if (command === '/about') {
       await this.executeAboutCommand(event);
     } else if (command === '/help' || command === '/usage') {

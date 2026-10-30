@@ -24,11 +24,17 @@ export class AuthManager {
     }
   }
 
-  loadCredentialsFile() {
+  loadCredentialsFile({ force = false } = {}) {
     if (!this.credentialsFile || !fs.existsSync(this.credentialsFile)) {
       return null;
     }
     try {
+      const stat = fs.statSync(this.credentialsFile);
+      if (!force && this.credentialsLoaded && this.lastLoadedCredentialsMtime && stat.mtimeMs <= this.lastLoadedCredentialsMtime) {
+        log(`Credentials file ${this.credentialsFile} unmodified on disk, preserving active session`);
+        return null;
+      }
+      this.lastLoadedCredentialsMtime = stat.mtimeMs;
       const raw = fs.readFileSync(this.credentialsFile, 'utf8').trim();
       if (!raw) return null;
       const data = JSON.parse(raw);
@@ -145,14 +151,14 @@ export class AuthManager {
     throw new Error('No valid Teams session credentials found and automatic refresh failed.');
   }
 
-  startProactiveRefresh(intervalMinutes = 30) {
+  startProactiveRefresh(intervalMinutes = 5) {
     if (this.refreshTimer) clearInterval(this.refreshTimer);
 
     this.refreshTimer = setInterval(async () => {
       try {
         const status = getMessageAuthStatus();
         if (!status.hasToken || (status.minutesRemaining ?? 0) < 60) {
-          log(`Proactive token refresh triggered (minutesRemaining=${status.minutesRemaining ?? 0})`);
+          log(`Proactive token refresh triggered (hasToken=${status.hasToken}, minutesRemaining=${status.minutesRemaining ?? 0})`);
           await this.ensureValidAuth();
         }
       } catch (err) {
