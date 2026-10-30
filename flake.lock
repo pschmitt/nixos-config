@@ -1732,7 +1732,7 @@
         "narHash": "sha256-fWkW5Z/jm2HJEuS5iV0DmK/B/c47G0tqdkYXWhDBLfw=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "a73bac8467b1c67c74846a715791de2489c60b4a",
+        "rev": "fbc5c158df48465a78f13920be238d06635ff9d9",
         "type": "github"
       },
       "original": {
@@ -3158,11 +3158,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793185370,
-        "narHash": "sha256-uyd3OAvtB2TJ9Y1RooCyLr6dlFUZKDmac5QtMbbPq4c=",
+        "lastModified": 1791822904,
+        "narHash": "sha256-gsxPblA9YV+By4SxXWkj2HGGk7MKGxiNj/T9bU4q31U=",
         "owner": "hyprwm",
         "repo": "xdg-desktop-portal-hyprland",
-        "rev": "d1467fea8d1895cb7835829c2fbb271a0d37760a",
+        "rev": "0121b2e3f85c7ebf6280173f1054f7e5606262d1",
         "type": "github"
       },
       "original": {
