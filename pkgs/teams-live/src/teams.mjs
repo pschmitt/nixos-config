@@ -142,6 +142,22 @@ export function buildQuotedReplyHtml({ messageId, from, fromMri, previewText, re
 }
 
 /**
+ * Sends a direct (non-reply) message to a conversation.
+ */
+export async function sendDirectMessage(conversationId, markdown) {
+  const html = markdownToTeamsHtml(markdown) + `<span style="display:none">${BOT_WATERMARK}</span>${BOT_WATERMARK}`;
+  const options = {
+    contentType: 'html',
+  };
+  const result = await sendMessage(conversationId, html, options);
+  if (result.ok && result.value) {
+    recordBotMessageId(result.value.timestamp);
+    recordBotMessageId(result.value.messageId);
+  }
+  return result;
+}
+
+/**
  * Sends a reply to a message in a conversation.
  * Handles both channel threads (@thread.tacv2) and chat/meeting quote-replies.
  */

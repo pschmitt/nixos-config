@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import {
   STATUS_REACTIONS,
   STATUS_BY_REACTION,
@@ -9,6 +10,7 @@ import {
   addReaction,
   removeReaction,
   sendReply,
+  sendDirectMessage,
   updateReply,
   getThreadMessages,
   getCalendarView,
@@ -212,6 +214,66 @@ export class MergeRequestWatcher {
     } catch (err) {
       log(`Error saving state to ${this.stateFile}: ${err.message}`);
     }
+  }
+
+  getAdminConversationId() {
+    const notesConv = this.config.conversations.find(
+      (c) => c.id === '48:notes' || (c.name && c.name.toLowerCase().includes('notes'))
+    );
+    return notesConv ? notesConv.id : '48:notes';
+  }
+
+  async sendStartupAnnouncement() {
+    const adminConv = this.getAdminConversationId();
+    if (!adminConv) return;
+
+    const hostname = os.hostname();
+    const pid = process.pid;
+    const version = process.version;
+    const platform = `${process.platform} ${process.arch}`;
+    const startTime = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+    const convNames = this.config.conversations.map((c) => c.name || c.id).join(', ');
+    const memRss = Math.round(process.memoryUsage().rss / 1024 / 1024);
+
+    const msg =
+      '🚀 **teams-live started**\n\n' +
+      `- **Host**: \`${hostname}\`\n` +
+      `- **PID**: \`${pid}\`\n` +
+      `- **Runtime**: Node.js \`${version}\` (${platform})\n` +
+      `- **Memory**: ${memRss} MB\n` +
+      `- **Started**: ${startTime}\n` +
+      `- **Watched Conversations**: ${this.watchedConversations.size} (${convNames})\n` +
+      `- **GitLab**: Polling every ${this.pollIntervalMs / 1000}s\n` +
+      `- **Jira**: ${this.jira?.isConfigured() ? 'Active (CKS)' : 'Not configured'}\n` +
+      `- **Precompute Cache**: Active (every ${this.precomputeIntervalMs / 60000}m)`;
+
+    log(`Sending startup announcement to ${adminConv}...`);
+    await sendDirectMessage(adminConv, msg);
+  }
+
+  async sendShutdownAnnouncement(signal = 'SIGTERM') {
+    const adminConv = this.getAdminConversationId();
+    if (!adminConv) return;
+
+    const hostname = os.hostname();
+    const pid = process.pid;
+    const uptimeSec = Math.floor(process.uptime());
+    const hours = Math.floor(uptimeSec / 3600);
+    const minutes = Math.floor((uptimeSec % 3600) / 60);
+    const seconds = uptimeSec % 60;
+    const uptimeStr = `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${seconds}s`;
+    const shutdownTime = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+
+    const msg =
+      '🛑 **teams-live shutting down**\n\n' +
+      `- **Host**: \`${hostname}\`\n` +
+      `- **PID**: \`${pid}\`\n` +
+      `- **Signal**: \`${signal}\`\n` +
+      `- **Uptime**: ${uptimeStr}\n` +
+      `- **Time**: ${shutdownTime}`;
+
+    log(`Sending shutdown announcement (${signal}) to ${adminConv}...`);
+    await sendDirectMessage(adminConv, msg);
   }
 
   setSelfMri(mri) {

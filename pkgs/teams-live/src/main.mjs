@@ -80,18 +80,23 @@ async function main() {
   let trouter = null;
   let stopping = false;
 
-  const cleanup = () => {
+  const cleanup = async (signal = 'SIGTERM') => {
     if (stopping) return;
     stopping = true;
-    log('Shutting down teams-live...');
+    log(`Shutting down teams-live (signal: ${signal})...`);
+    try {
+      await watcher.sendShutdownAnnouncement(signal);
+    } catch (err) {
+      log(`Failed to send shutdown announcement: ${err.message}`);
+    }
     watcher.stop();
     authManager.stop();
     if (trouter) trouter.close();
     process.exit(0);
   };
 
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
+  process.on('SIGINT', () => cleanup('SIGINT'));
+  process.on('SIGTERM', () => cleanup('SIGTERM'));
 
   // Initial auth check / self-heal
   let currentAuth = await authManager.ensureValidAuth();
@@ -107,6 +112,11 @@ async function main() {
 
   // Start polling GitLab
   watcher.startPolling();
+
+  // Startup announcement (self-chat only)
+  watcher.sendStartupAnnouncement().catch((err) => {
+    log(`Startup announcement failed: ${err.message}`);
+  });
 
   trouter = new TrouterClient({
     verbose: VERBOSE,
