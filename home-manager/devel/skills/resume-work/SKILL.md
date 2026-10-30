@@ -16,8 +16,11 @@ source of truth, scoped to the current project directory (`$PWD`).
 
 ## 1. Find the most recent prior session for this project
 
-All three agents key their session storage by working directory, so start
-there:
+The agents key their session storage by working directory, so start there.
+The project is not always `$PWD`: work on another repo (for example rbw or
+browser-daemon) is often started from `nixos-config.git`. If the user names a
+project, an agent or a config dir (`~/.config/claude-work`), search that one
+instead of `$PWD`:
 
 - **claude**: `~/.config/claude/projects/<slug>/*.jsonl` (the configured
   `CLAUDE_CONFIG_DIR`; `~/.claude/projects` only holds older sessions)
@@ -26,6 +29,17 @@ there:
   date, not by project — find candidates with
   `rg -l -g '*.jsonl' -F '"cwd":"<absolute-pwd>"' ~/.config/codex/sessions`,
   scoped under `~/.config/codex/sessions`, not the whole home dir)
+
+- **agy** (Antigravity): `~/.gemini/antigravity-cli/conversation_summaries.db`
+  has one row per conversation (`conversation_id`, `title`, `preview`,
+  `workspace_uris`, `last_modified_time`). Pick candidates with
+  `sqlite3 ~/.gemini/antigravity-cli/conversation_summaries.db "select
+  conversation_id, last_modified_time, title from conversation_summaries where
+  workspace_uris like '%<project>%' order by last_modified_time desc limit 5"`.
+  Ignore the 2-step "Greeting" rows, they are usage probes. The transcript is
+  `conversations/<id>.db`, table `steps`; payloads are protobuf, so read the
+  tail as text with `sqlite3 <db> "select hex(step_payload) from steps order by
+  idx desc limit 20" | xxd -r -p | tr -c '[:print:]\n' ' '`.
 
 Where `<slug>` is `$PWD` with every `/` and `.` replaced by `-` (e.g.
 `~/devel/nixos-config.git` → `-home-<user>-devel-nixos-config-git`; matches the
@@ -36,7 +50,7 @@ so it will always sort as newest and is not useful history. For
 claude/claude-work its filename is `${CLAUDE_CODE_SESSION_ID}.jsonl` if that
 env var is set; skip it explicitly.
 
-Sort the remaining candidates across all three locations by mtime and take
+Sort the remaining candidates across all locations by mtime and take
 the most recent one.
 
 ## 2. Reconstruct the prior state

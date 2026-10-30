@@ -62,6 +62,10 @@ dozens of credentials. Claude Code blocks such commands. Instead:
   expands the resolved config, including `!secret` values). Read `ha core logs`
   through `grep` on a pattern, and `ha apps info` through `jq` on named fields.
 
+## Repairs and stale warnings
+
+For "I see a repair/warning for X", read `references/repairs.md` (how to list repairs, reload an integration, known recurring cases).
+
 ## MCP
 
 When an MCP client is available, prefer the configured `home-assistant` MCP server for live entity state, tool-driven inspection, and control. The `zhj hass-cli` and raw API fallbacks are for local Codex/shell workflows only.

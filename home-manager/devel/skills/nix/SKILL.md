@@ -16,6 +16,28 @@ agent- or run-specific directory when the remote is shared, and do not sync
 with deletion into a shared directory. Periodically remove your own obsolete
 build directories once no job is using them.
 
+## Remote evaluation and CI helpers
+
+Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Two scripts in this
+skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops:
+
+- `scripts/remote-sync.sh [--host rofl-14] [--name NAME] [--private DIR] SRC [-- COMMAND]` rsyncs
+  SRC to `~/build/NAME` on rofl-13 without `.git` (removing a stale remote one), optionally syncs
+  the private checkout too, and runs COMMAND there. `@PRIVATE@` in COMMAND becomes the remote
+  private path:
+
+  ```
+  remote-sync.sh --private ~/devel/private/pschmitt/nixos-config-private.git \
+    ~/devel/private/pschmitt/nixos-config.git \
+    -- "nix eval --override-input nixos-config-private path:@PRIVATE@ '.#nixosConfigurations.rofl-10.config.system.build.toplevel.drvPath'"
+  ```
+
+  Other projects (cargo builds, flakes of rbw or browser-daemon) use the same script with their
+  own `--name`. Clean up your own `~/build/<name>` directories afterwards.
+- `scripts/ci-wait.sh [COMMIT]` waits until every GitHub Actions run of the commit (default HEAD)
+  has finished. Exit 0 means all green, 1 a failure (named on stderr), 3 a timeout. Start it once
+  after a push, in the background, instead of polling `gh run list` by hand.
+
 ## Repositories
 
 ### nixos-config (Public)

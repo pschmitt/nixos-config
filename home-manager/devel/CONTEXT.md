@@ -46,6 +46,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## Version control workflow
 
 - Do not open pull requests unless explicitly requested. Default to working directly on `main` (or the repository's default branch) without creating feature branches or PRs.
+- Once a change is done and verified, commit it, push it to the default branch and deploy it to the affected hosts without asking. Leave unrelated modified or untracked files out of the commit.
+- After pushing to `nixos-config-private`, immediately update the public repo's `flake.lock` (`nix flake lock --update-input nixos-config-private`, run on rofl-13, copy `flake.lock` back) and commit it as `bump my privates`, then push.
 
 ## Progress notifications
 

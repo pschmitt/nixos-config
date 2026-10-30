@@ -30,6 +30,16 @@ Run it again when the task changes.
 
 `browser-daemon session list|show|new|stop|rename|tabs|open`, and the same for `profile`, `recording` and `node`. Add `--json` for scripts, `--url` for another node; `browser-daemon tui` opens a terminal UI. Only stop sessions you started: others belong to other agents.
 
+## Links to give the user
+
+A session URL from guesswork never works. The live view of a page is
+`https://browser.<node>.nb.brkn.lol/handoff/?page=<page-id>` (mesh only, no login), where
+`<page-id>` is the page's `id` from `https://browser.<node>.nb.brkn.lol/json/list` and `<node>` is
+the session's node (`browser-daemon session show <id>`). Away from home use `brkn.lol` instead of
+`nb.brkn.lol`. `browser_ask_human` builds the link for you; see
+`../browser-login/references/human-handoff.md`. Verify with `curl -fsS .../json/list` before you
+send a link.
+
 ## Logins and secrets
 
 Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`. Load the `browser-login` skill for anything involving a login.
