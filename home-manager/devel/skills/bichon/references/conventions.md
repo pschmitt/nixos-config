@@ -8,7 +8,7 @@ Bichon is available at:
 Credentials: rbw entry `bichon.brkn.lol`, field `API Token`. Use it as the
 `rbw` skill describes ("Using a credential from another skill"): capture it
 into a variable and pass it to curl through a header file descriptor, never
-print it. Hermes uses its `bitwarden` MCP server for the same entry.
+print it.
 
 ```bash
 token="$(rbw get --field "API Token" bichon.brkn.lol)"

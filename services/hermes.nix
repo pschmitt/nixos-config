@@ -81,14 +81,6 @@ let
     ]
   );
 
-  bitwardenMcp = pkgs.buildNpmPackage {
-    pname = "bitwarden-mcp-server";
-    version = "2026.7.0";
-    src = inputs.bitwarden-mcp;
-    nodejs = pkgs.nodejs_22;
-    npmDepsHash = "sha256-rCK8vaZdsyOLgWRub54exa8TTgB7NeXjDnhlz5DBTOY=";
-  };
-
   browserHosts = [
     "fnuc"
     "rofl-13"
@@ -137,7 +129,6 @@ let
     }) browserHosts
   );
 
-  bitwardenCliDataPath = "${config.services.hermes-agent.stateDir}/.bitwarden-cli/data.json";
   hermesNixosApply = pkgs.writeShellApplication {
     name = "hermes-nixos-apply";
     runtimeInputs = [ pkgs.coreutils ];
@@ -215,12 +206,6 @@ in
         mode = "0400";
       };
       "hermes/matrix/recovery-key" = config.sops.mkHostSecret {
-        mode = "0400";
-      };
-      "hermes/bitwarden/session" = config.sops.mkHostSecret {
-        mode = "0400";
-      };
-      "hermes/bitwarden/data-json" = config.sops.mkHostSecret {
         mode = "0400";
       };
       "hermes/github/pschmitt/token" = config.sops.mkHostSecret {
@@ -308,7 +293,6 @@ in
           MATRIX_E2EE_MODE=required
           MATRIX_DEVICE_ID=HERMESROFL10
           MATRIX_RECOVERY_KEY=${config.sops.placeholder."hermes/matrix/recovery-key"}
-          HERMES_BW_SESSION=${config.sops.placeholder."hermes/bitwarden/session"}
           GH_BRKN_LOL_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
           GH_PSCHMITT_TOKEN=${config.sops.placeholder."hermes/github/pschmitt/token"}
           GH_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
@@ -329,11 +313,6 @@ in
           "hermes-dashboard.service"
           "signal-cli-daemon.service"
         ];
-      };
-      "hermes/bitwarden/data.json" = {
-        content = config.sops.placeholder."hermes/bitwarden/data-json";
-        mode = "0400";
-        restartUnits = [ "hermes-agent.service" ];
       };
       "todoist-cli/config.json" = {
         path = "${config.services.hermes-agent.stateDir}/.config/todoist-cli/config.json";
@@ -435,19 +414,6 @@ in
               IMMICH_BASE_URL = "http://127.0.0.1:${toString config.services.immich.port}";
               IMMICH_API_KEY = "\${IMMICH_API_KEY}";
               IMMICH_TOOL_MODE = "gateway";
-            };
-            connect_timeout = 30;
-            timeout = 90;
-          };
-          bitwarden = {
-            command = "${bitwardenMcp}/bin/mcp-server-bitwarden";
-            env = {
-              BW_SESSION = "\${HERMES_BW_SESSION}";
-              BW_CLI_PATH = "${pkgs.bitwarden-cli}/bin/bw";
-              BITWARDENCLI_APPDATA_DIR = builtins.dirOf bitwardenCliDataPath;
-              # Allow Bitwarden's attachment tools to operate within the Hermes
-              # workspace while retaining systemd's filesystem sandbox.
-              BW_ALLOWED_DIRECTORIES = config.services.hermes-agent.workingDirectory;
             };
             connect_timeout = 30;
             timeout = 90;
@@ -679,19 +645,12 @@ in
         ];
         serviceConfig = {
           EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
-          # The Bitwarden CLI needs its account profile alongside BW_SESSION.
-          # Keep the SOPS-rendered source root-only and give the Hermes user a
-          # private, writable runtime copy for vault mutations and syncs.
           ExecStartPre = [
             "${pkgs.coreutils}/bin/install -d -m 0700 ${gpgHome}"
             "${pkgs.coreutils}/bin/install -d -m 0700 ${ghConfigRoot}/gh-brkn-lol ${ghConfigRoot}/pschmitt"
             "${pkgs.gnupg}/bin/gpg --batch --yes --homedir ${gpgHome} --pinentry-mode loopback --passphrase-file ${
               config.sops.secrets."gpg/hermes/passphrase".path
             } --import ${config.sops.secrets."gpg/hermes/privateKey".path}"
-            "+${pkgs.coreutils}/bin/install -d -m 0700 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${builtins.dirOf bitwardenCliDataPath}"
-            "+${pkgs.coreutils}/bin/install -D -m 0600 -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} ${
-              config.sops.templates."hermes/bitwarden/data.json".path
-            } ${bitwardenCliDataPath}"
           ];
           # Keep the optional SSHFS mount writable when it is present without
           # resolving its automount while this service's namespace is created.

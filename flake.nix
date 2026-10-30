@@ -219,11 +219,6 @@
       };
     };
 
-    bitwarden-mcp = {
-      url = "github:bitwarden/mcp-server/v2026.7.0";
-      flake = false;
-    };
-
     nixos-config-private = {
       url = "github:pschmitt/nixos-config-private";
       inputs = {

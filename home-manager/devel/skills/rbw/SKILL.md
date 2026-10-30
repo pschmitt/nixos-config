@@ -109,16 +109,6 @@ found` even though `get` worked: pass `-a ACCOUNT` (for example `-a wiit`
 for the work vault) there. `collection assign|unassign` and `move` still
 need `-a`.
 
-## Hermes Agent
-
-When running in Hermes, prefer the configured `bitwarden` MCP server instead
-of `rbw`. Hermes already receives its Bitwarden session through its protected
-service configuration, so do not invoke the HA phone-unlock webhook or ask for
-the master password. Retrieve only the required vault field and never expose a
-credential in a response, URL, committed file, or command output.
-
-The remaining instructions apply to local Codex and shell workflows.
-
 ## Unlock via Home Assistant
 
 `rbw unlocked` returns 0 when the vault is unlocked. If it is locked, POST to

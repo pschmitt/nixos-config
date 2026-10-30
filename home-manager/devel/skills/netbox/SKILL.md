@@ -13,7 +13,7 @@ Use this skill for NetBox inventory and metadata work.
 2. Credentials: rbw entry `Netbox (AI Agent)`; fields `API Token` (REST
    API), `username` and `password` (web UI login). Use them as described in
    the `rbw` skill ("Using a credential from another skill"), never print
-   them. Hermes uses its `bitwarden` MCP server for the same entry.
+   them.
 
 ## Workflow
 
