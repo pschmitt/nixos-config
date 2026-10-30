@@ -1,6 +1,6 @@
 ---
 name: github-notifications
-description: Triage GitHub notifications across pull requests, issues, and related activity; prioritize mentions and review work, check Renovate CI, and optionally merge safe PRs. Use when the user asks to go through, triage or clear their GitHub notifications, or to review and merge pending Renovate PRs on GitHub.
+description: Triage GitHub notifications across pull requests, issues, and related activity; prioritize mentions and review work and report on Renovate PRs. Use when the user asks to go through, triage or clear their GitHub notifications. To review or merge Renovate/Dependabot PRs, use merge-prs.
 ---
 
 # GitHub notifications
@@ -9,10 +9,10 @@ Use the GitHub CLI (`gh`) to inspect the authenticated user's notifications and 
 
 ## Modes and authorization
 
-- Default mode is read-only triage: fetch notifications, inspect PRs, review diffs and CI, and report. Do not merge, approve, comment, request changes, or mark notifications read (the one exception is in the next bullets: merged PRs, which are marked done).
-- An explicit request such as “yolo merge the safe ones” authorizes merging qualifying PRs during that run. It does not authorize unrelated comments, approvals, branch deletion, or changes to non-PR issues.
+- Default mode is read-only triage: fetch notifications, inspect PRs, review diffs and CI, and report. Do not merge, approve, comment, request changes, or mark notifications read.
+- Merging is out of scope here: if the user asks to merge PRs (for example “yolo merge the safe ones”), switch to the `merge-prs` skill.
 - Treat “review these PRs” as a request for analysis and a recommendation unless the user separately asks to submit a GitHub review.
-- Mark notifications read only when explicitly requested, except for merged PRs: whenever a run is authorized to merge, mark the notification threads of PRs that are merged afterwards as done (see “Review and notification state”). Preserve unread state for everything else.
+- Mark notifications read only when explicitly requested. Preserve unread state for everything else.
 - If a mutation is requested but the target, merge method, or scope is ambiguous, stop that mutation and report the ambiguity.
 
 ## Triage workflow
@@ -25,33 +25,13 @@ Use the GitHub CLI (`gh`) to inspect the authenticated user's notifications and 
 6. For issues, inspect title, state, author, assignees, labels, milestone, body, recent comments/events, linked or closing PRs, and the notification reason. Summarize what changed since the previous notification and what response or decision appears to be needed. Use `gh issue view <url> --comments` or the corresponding API when the CLI does not expose enough timeline context.
 7. For unsupported or less common subjects such as Discussions, releases, commits, or security alerts, fetch enough metadata to explain why the notification exists and whether it needs action. Do not silently drop a notification; group low-signal items with counts and links when appropriate.
 
-## Renovate handling
+## Renovate and Dependabot PRs
 
-Identify Renovate PRs by the author (`renovate[bot]`/Renovate), bot metadata, or repository conventions—not by title alone. For each one:
-
-- Check all required checks and the latest commit status. Pending, failing, cancelled, or unknown required checks are blockers. Explain skipped or neutral checks when they affect confidence.
-- Check `mergeStateStatus`, `mergeable`, draft state, review requirements, and whether the branch is behind the base branch. Do not merge conflicts, stale/behind branches, or state `UNKNOWN` as safe.
-- Inspect the diff and dependency metadata/lockfile changes. Confirm the update is scoped to dependency maintenance and look for major-version or breaking-change notes, changed runtime behavior, changed build inputs, or security-sensitive workflow/container/toolchain changes.
-- Use CI as the primary build/test evidence. Run a local build only when CI is absent, inconclusive, or the user requests it; do not claim a local verification that was not performed.
-- If the update is straightforward, CI is green, mergeability is clean, required approvals are present or not required by branch protection, and no substantive concern appears in the diff, it may be recommended for merging. It may be merged only in an explicitly authorized merge mode.
-
-## Yolo-merge safety gates
-
-When explicit merge authorization is present, merge only PRs that satisfy every applicable gate:
-
-- open, non-draft PR from the expected author/source;
-- required CI successful on the current head commit;
-- clean and mergeable, not behind when branch protection requires updating;
-- required approvals present, with no apparent unresolved blocking review concern;
-- small, dependency-only, well-scoped change with no unexplained source behavior changes;
-- no major/breaking/pre-release update or other risk visible in the PR description, release notes, labels, or diff;
-- no workflow, access-control, secret, deployment, or other security-sensitive change unless the user explicitly includes that class of update.
-
-If any gate is uncertain, leave the PR unmerged and state the exact blocker. Never bypass branch protection, failing checks, required reviews, merge conflicts, or repository policy. Prefer the repository's normal squash method (`gh pr merge <url> --squash`) and do not delete branches unless explicitly requested or clearly part of the repository's established merge command. If a merge command fails, do not retry with a different strategy silently.
+Report bot PRs (identified by author, not title) with their CI and merge state, but do not review or merge them here. When the user wants them reviewed, fixed or merged, load the `merge-prs` skill; it owns the review, fix and merge rules and the notification cleanup for merged PRs.
 
 ## Review and notification state
 
-Inspect review requests, submitted reviews, conversations, and the PR timeline when deciding whether something needs the user's attention. For issue mentions, identify the relevant comment or event and summarize the requested follow-up rather than merely repeating the issue body. Treat unresolved or unclear reviewer concerns as blockers for auto-merge. Do not submit an approval, comment, label change, assignment, or issue state change merely to clear a notification. If asked to mark notifications read, do so only after processing and record which threads were changed. In a merge-authorized run, also mark as done (removed from the inbox, not merely read) the threads of every PR that is `MERGED` or `CLOSED` — those merged in this run and PRs already merged or closed by the time they are inspected — using `gh api -X DELETE notifications/threads/<thread-id>` (`PATCH` would only mark them read and leave them in the inbox); verify the PR state first and never mark open PRs, issues, review requests, or mentions that still need a response.
+Inspect review requests, submitted reviews, conversations, and the PR timeline when deciding whether something needs the user's attention. For issue mentions, identify the relevant comment or event and summarize the requested follow-up rather than merely repeating the issue body. Do not submit an approval, comment, label change, assignment, or issue state change merely to clear a notification. If asked to mark notifications read, do so only after processing and record which threads were changed. Threads of PRs that are already `MERGED` or `CLOSED` may be marked done when the user asks to clear notifications, using `gh api -X DELETE notifications/threads/<thread-id>` (`PATCH` only marks read); verify the PR state first and never mark open PRs, issues, review requests, or mentions that still need a response.
 
 ## Final report
 
