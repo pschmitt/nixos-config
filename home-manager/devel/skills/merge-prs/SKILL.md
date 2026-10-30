@@ -24,7 +24,7 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 
 - Identify bot PRs by author (`renovate[bot]`, `dependabot[bot]`) and confirm the actual files; never go by title alone. Inspect head and base, reviews, merge state, draft state and current checks.
 - Review what the dependency does and whether the bump is compatible. Look for major-version or pre-release changes, release notes, changed runtime behavior, lockfile drift, generated assets, workflow/security changes, and related PRs that supersede or conflict with it. Dependabot security-advisory PRs get priority.
-- Distinguish package updates from workflow-only updates. Review workflow changes for what they execute and publish. If the GitHub token lacks the `workflow` scope, leave such PRs open and report that exact blocker; do not switch credentials or try another push path.
+- Workflow-only updates are reviewed for what they execute and publish, but are not held for being workflow changes. If the GitHub token lacks the `workflow` scope, leave such PRs open and report that exact blocker; do not switch credentials or try another push path.
 - CI is evidence, not the whole review. Use relevant passing tests/builds plus the diff and upstream context. If checks are absent, queued or inconclusive, say so and run a targeted remote build or test only when it materially improves confidence. Distinguish checks for the changed dependency from unrelated jobs in a broad matrix.
 - For Android projects, inspect the Gradle/catalog/lockfile diff and the relevant Android, emulator, ABI and Termux jobs. Call out manual or skipped screenshot, Play Store, signing and release jobs explicitly; skipped is not passing.
 
@@ -48,7 +48,9 @@ Merge a PR when all of these hold:
 - required CI successful on the current head commit, including after any fix you pushed;
 - clean and mergeable, not stale or behind when branch protection requires updating;
 - required approvals present, with no unresolved blocking review concern;
-- no unexplained source behavior change, and no workflow, permission, secret, deployment or access-control change unless the user explicitly includes that class of update.
+- no unexplained source behavior change, and no change that widens permissions, secrets, deployment or access control beyond the bump itself.
+
+GitHub Actions and other workflow dependency bumps from Renovate/Dependabot (action versions, digest pins, reusable-workflow refs, container image tags in workflows) are ordinary dependency updates: they are in scope by default and need no extra authorization. Review what they execute and publish (new or changed `permissions:`, new secrets, new triggers, a changed action owner, a version jump that changes behavior) and merge them like any other bump when that review is clean. Hold only a workflow PR that does something beyond a version/pin bump, and say exactly why. When a workflow PR has no checks, review the diff and merge if it is a plain version or pin bump; absent checks alone are not a blocker for these, though you should say so in the report.
 
 Major, breaking or pre-release bumps are not auto-skipped when the user asked to merge: review them closely, fix what breaks, and merge only when you are confident; otherwise report why they were held.
 
