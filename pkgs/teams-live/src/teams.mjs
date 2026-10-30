@@ -37,6 +37,7 @@ export const STATUS_REACTIONS = {
 };
 
 export const COMMAND_REACTIONS = {
+  pending: '1f440_eyes', // 👀
   success: '2705_whiteheavycheckmark', // ✅
   failure: '274c_crossmark', // ❌
   warning: '26a0_warning', // ⚠️

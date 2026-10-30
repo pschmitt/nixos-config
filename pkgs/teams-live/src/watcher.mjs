@@ -482,6 +482,13 @@ export class MergeRequestWatcher {
     return { command, args, fullText: trimmed };
   }
 
+  async setCommandReaction(conversationId, messageId, reactionKey) {
+    if (reactionKey !== COMMAND_REACTIONS.pending) {
+      await removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending).catch(() => {});
+    }
+    return await addReaction(conversationId, messageId, reactionKey);
+  }
+
   async findTargetMrsForCommand(event, args) {
     // 1. Direct MR links in the command arguments (e.g. "/approve https://..."):
     const directText = args.join(' ');
@@ -518,7 +525,7 @@ export class MergeRequestWatcher {
     log(`Executing /approve command from ${event.from || event.fromMri} in ${event.conversationId}...`);
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -536,7 +543,7 @@ export class MergeRequestWatcher {
 
         // Precondition 1: Rebase check
         if (mrState.details?.needsRebase) {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
           const reason = mrState.details.hasConflicts ? 'merge conflicts' : 'needs to be rebased';
           await sendReply(
             event.conversationId,
@@ -549,7 +556,7 @@ export class MergeRequestWatcher {
         // Precondition 2: CI check
         const pipe = mrState.pipeline;
         if (!pipe) {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
@@ -559,7 +566,7 @@ export class MergeRequestWatcher {
         }
 
         if (pipe.status === 'running' || pipe.status === 'pending') {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
           await sendReply(
             event.conversationId,
             event,
@@ -569,7 +576,7 @@ export class MergeRequestWatcher {
         }
 
         if (pipe.status !== 'success') {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
@@ -580,7 +587,7 @@ export class MergeRequestWatcher {
 
         // Precondition 3: Already approved?
         if (mrState.status === 'approved') {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
           await sendReply(
             event.conversationId,
             event,
@@ -591,7 +598,7 @@ export class MergeRequestWatcher {
 
         // Precondition 4: Already merged or closed?
         if (mrState.status === 'merged' || mrState.status === 'closed') {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
@@ -605,7 +612,7 @@ export class MergeRequestWatcher {
         await this.gitlab.approveMr(mr.project, mr.iid);
         log(`Approved ${mr.project}!${mr.iid} successfully`);
 
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(
           event.conversationId,
           event,
@@ -616,7 +623,7 @@ export class MergeRequestWatcher {
         this.checkAllWatched().catch((err) => log(`Post-approval check failed: ${err.message}`));
       } catch (err) {
         log(`Error approving ${mr.project}!${mr.iid}: ${err.message}`);
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(
           event.conversationId,
           event,
@@ -630,7 +637,7 @@ export class MergeRequestWatcher {
     log(`Executing /rebase command from ${event.from || event.fromMri} in ${event.conversationId}...`);
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -647,7 +654,7 @@ export class MergeRequestWatcher {
         const mrState = await this.gitlab.getMrStatus(mr.project, mr.iid);
 
         if (mrState.status === 'merged' || mrState.status === 'closed') {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
@@ -657,7 +664,7 @@ export class MergeRequestWatcher {
         }
 
         if (mrState.details?.hasConflicts) {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
@@ -667,7 +674,7 @@ export class MergeRequestWatcher {
         }
 
         if (!mrState.details?.needsRebase) {
-          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
           await sendReply(
             event.conversationId,
             event,
@@ -680,7 +687,7 @@ export class MergeRequestWatcher {
         await this.gitlab.rebaseMr(mr.project, mr.iid);
         log(`Rebase triggered for ${mr.project}!${mr.iid}`);
 
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
         await sendReply(
           event.conversationId,
           event,
@@ -690,7 +697,7 @@ export class MergeRequestWatcher {
         this.checkAllWatched().catch((err) => log(`Post-rebase check failed: ${err.message}`));
       } catch (err) {
         log(`Error rebasing ${mr.project}!${mr.iid}: ${err.message}`);
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(
           event.conversationId,
           event,
@@ -703,7 +710,7 @@ export class MergeRequestWatcher {
   async executeStatusCommand(event, args) {
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -724,10 +731,10 @@ export class MergeRequestWatcher {
           : '✅ Up to date';
         const statusText = `Status: **${mrState.status}**\n\nPipeline: ${pipeText}\n\nBranch: ${rebaseText}`;
 
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(event.conversationId, event, `📊 [${mrRef}](${mrUrl})\n\n${statusText}`);
       } catch (err) {
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(event.conversationId, event, `❌ Status check failed for [${mrRef}](${mrUrl}): ${err.message}`);
       }
     }
@@ -744,11 +751,11 @@ export class MergeRequestWatcher {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const weatherText = (await res.text()).trim();
-      await addReaction(event.conversationId, event.messageId, 'like');
+      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `🌤️ ${weatherText}`);
     } catch (err) {
       log(`Weather lookup failed: ${err.message}`);
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(event.conversationId, event, `❌ Weather lookup failed for "${location}": ${err.message}`);
     }
   }
@@ -762,11 +769,11 @@ export class MergeRequestWatcher {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      await addReaction(event.conversationId, event.messageId, 'like');
+      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `💡 **Random Fact**:\n\n${data.text}`);
     } catch (err) {
       log(`Random fact failed: ${err.message}`);
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(event.conversationId, event, `❌ Failed to fetch a random fact: ${err.message}`);
     }
   }
@@ -776,7 +783,7 @@ export class MergeRequestWatcher {
     try {
       const mrs = await this.gitlab.getGroupMrs();
       if (mrs.length === 0) {
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(
           event.conversationId,
           event,
@@ -797,7 +804,7 @@ export class MergeRequestWatcher {
         lines.push(`- [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
       }
 
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
         event.conversationId,
         event,
@@ -805,7 +812,7 @@ export class MergeRequestWatcher {
       );
     } catch (err) {
       log(`Group MRs lookup failed: ${err.message}`);
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -817,7 +824,7 @@ export class MergeRequestWatcher {
   async executeSprintCommand(event) {
     log(`Executing /sprint in ${event.conversationId}...`);
     if (!this.jira?.isConfigured()) {
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -829,7 +836,7 @@ export class MergeRequestWatcher {
     try {
       const { total, inProgress, inReview, todo } = await this.jira.getActiveSprintTasks();
       if (total === 0) {
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(
           event.conversationId,
           event,
@@ -863,7 +870,7 @@ export class MergeRequestWatcher {
         sections.push(lines.join('\n'));
       }
 
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
         event.conversationId,
         event,
@@ -871,7 +878,7 @@ export class MergeRequestWatcher {
       );
     } catch (err) {
       log(`Sprint tasks lookup failed: ${err.message}`);
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -905,7 +912,7 @@ export class MergeRequestWatcher {
       );
 
       if (meetings.length === 0) {
-        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(
           event.conversationId,
           event,
@@ -951,7 +958,7 @@ export class MergeRequestWatcher {
         sections.push(lines.join('\n'));
       }
 
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
         event.conversationId,
         event,
@@ -959,7 +966,7 @@ export class MergeRequestWatcher {
       );
     } catch (err) {
       log(`Meetings lookup failed: ${err.message}`);
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
@@ -980,12 +987,12 @@ export class MergeRequestWatcher {
       const emojis = ['🤡', '🥑', '👾', '🚀', '🍄', '🦖', '🦥', '🌯', '🎪', '🍕', '🧨', '👻', '🦄', '🍹', '🎲', '🧶'];
       const shuffled = [...emojis].sort(() => 0.5 - Math.random());
       const selected = shuffled.slice(0, 3).join(' ');
-      await addReaction(event.conversationId, event.messageId, 'like');
+      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `${selected}: command not found`);
       return;
     }
 
-    await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
     if (!cmd) {
       await sendReply(event.conversationId, event, '`$ `\n\n```\n[exec] No command specified\n```');
     } else {
@@ -1000,7 +1007,7 @@ export class MergeRequestWatcher {
   async executeBanCommand(event, args) {
     const target = args.join(' ').trim() || event.from || 'User';
     log(`Executing /ban for ${target} in ${event.conversationId}...`);
-    await addReaction(event.conversationId, event.messageId, 'like');
+    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(
       event.conversationId,
       event,
@@ -1011,7 +1018,7 @@ export class MergeRequestWatcher {
   async executeKickCommand(event, args = []) {
     const target = args.join(' ').trim() || event.from || 'User';
     log(`Executing /kick for ${target} in ${event.conversationId}...`);
-    await addReaction(event.conversationId, event.messageId, 'like');
+    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(
       event.conversationId,
       event,
@@ -1022,13 +1029,13 @@ export class MergeRequestWatcher {
   async executeMarcoCommand(event) {
     const sender = event.from || 'friend';
     log(`Executing /marco from ${sender} in ${event.conversationId}...`);
-    await addReaction(event.conversationId, event.messageId, 'like');
+    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(event.conversationId, event, `🏊 **POLO!**`);
   }
 
   async executeHelpCommand(event) {
     log(`Executing /help in ${event.conversationId}...`);
-    await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
     await sendReply(
       event.conversationId,
       event,
@@ -1056,6 +1063,9 @@ export class MergeRequestWatcher {
 
     const { command, args } = parsed;
     log(`Handling slash command ${command} from ${event.from || event.fromMri} in ${event.conversationId}`);
+
+    // React immediately with eyes emoji to acknowledge command receipt
+    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending);
 
     if (command === '/approve') {
       await this.executeApproveCommand(event, args);
@@ -1096,7 +1106,7 @@ export class MergeRequestWatcher {
         }
       }
 
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
       if (bestMatch && minDistance <= 3) {
         await sendReply(
           event.conversationId,
