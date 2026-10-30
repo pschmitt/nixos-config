@@ -25,7 +25,8 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 - Identify bot PRs by author (`renovate[bot]`, `dependabot[bot]`) and confirm the actual files; never go by title alone. Inspect head and base, reviews, merge state, draft state and current checks.
 - Review what the dependency does and whether the bump is compatible. Look for major-version or pre-release changes, release notes, changed runtime behavior, lockfile drift, generated assets, workflow/security changes, and related PRs that supersede or conflict with it. Dependabot security-advisory PRs get priority.
 - Workflow-only updates are reviewed for what they execute and publish, but are not held for being workflow changes. If the GitHub token lacks the `workflow` scope, leave such PRs open and report that exact blocker; do not switch credentials or try another push path.
-- CI is evidence, not the whole review. Use relevant passing tests/builds plus the diff and upstream context. If checks are absent, queued or inconclusive, say so and run a targeted remote build or test only when it materially improves confidence. Distinguish checks for the changed dependency from unrelated jobs in a broad matrix.
+- CI is evidence, not the whole review. Use relevant passing tests/builds plus the diff and upstream context. Queued or inconclusive checks: wait or re-check before deciding.
+- **No CI:** a repository without checks (for example Android apps like keywatch) is not a reason to skip its bot PRs. Verify the bump yourself: run the project's normal build and tests on `rofl-13` in `~/build/<project>` (for Android, the Gradle build and unit tests; for Nix, an evaluation or build), and merge when they pass. Group several bumps from the same repo into one verification run where practical (apply them on a scratch branch or test each head). If a bump breaks the build, fix it (see Fixing). Only when no meaningful local verification is possible, merge minor, patch and digest bumps on a read-through of the diff and release notes and say plainly in the report that the merge was not CI-verified; hold major bumps in that case and say why. Never leave a PR unmerged solely because CI is absent. Distinguish checks for the changed dependency from unrelated jobs in a broad matrix.
 - For Android projects, inspect the Gradle/catalog/lockfile diff and the relevant Android, emulator, ABI and Termux jobs. Call out manual or skipped screenshot, Play Store, signing and release jobs explicitly; skipped is not passing.
 
 ## Fixing
@@ -45,7 +46,7 @@ Merge a PR when all of these hold:
 
 - the repository is in scope for merging (personal account, or explicit consent given for it);
 - open, non-draft, from the expected author;
-- required CI successful on the current head commit, including after any fix you pushed;
+- no failing, pending or cancelled required check on the current head commit (including after any fix you pushed), and if the repository has no CI for the change, you verified the bump yourself (see "No CI" below);
 - clean and mergeable, not stale or behind when branch protection requires updating;
 - required approvals present, with no unresolved blocking review concern;
 - no unexplained source behavior change, and no change that widens permissions, secrets, deployment or access control beyond the bump itself.
