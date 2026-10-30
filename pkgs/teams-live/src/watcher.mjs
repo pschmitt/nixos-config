@@ -153,8 +153,8 @@ export class MergeRequestWatcher {
     this.precomputeTimer = null;
     this.selfMri = null;
 
-    this.cacheTtlMs = 5 * 60 * 1000; // 5 minutes
-    this.precomputeIntervalMs = 3 * 60 * 1000; // 3 minutes
+    this.cacheTtlMs = 15 * 60 * 1000; // 15 minutes
+    this.precomputeIntervalMs = 10 * 60 * 1000; // 10 minutes
     this.mrsCache = { text: null, timestamp: 0, loading: null };
     this.sprintCache = { text: null, timestamp: 0, loading: null };
     this.meetingsCache = { text: null, timestamp: 0, loading: null };
@@ -1533,22 +1533,40 @@ export class MergeRequestWatcher {
     }
   }
 
+  scheduleNextPrecompute() {
+    if (this.precomputeTimer) {
+      clearTimeout(this.precomputeTimer);
+      this.precomputeTimer = null;
+    }
+    // Base 10 minutes with +/- 2 minutes jitter (8 to 12 minutes)
+    const jitterMs = Math.floor((Math.random() * 4 - 2) * 60 * 1000);
+    const delay = Math.max(60 * 1000, this.precomputeIntervalMs + jitterMs);
+    log(`Scheduling next precompute in ${(delay / 1000 / 60).toFixed(1)}m (jitter: ${(jitterMs / 1000).toFixed(0)}s)`);
+    this.precomputeTimer = setTimeout(async () => {
+      await this.runPrecompute();
+      this.scheduleNextPrecompute();
+    }, delay);
+    if (this.precomputeTimer.unref) this.precomputeTimer.unref();
+  }
+
+  async runPrecompute() {
+    log('Precomputing /mrs, /sprint, and /meetings cache in background...');
+    await Promise.allSettled([
+      this.getOrFetchMrsText({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
+      this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
+      this.getOrFetchMeetingsText({ force: true }).catch((err) => log(`Precompute /meetings failed: ${err.message}`)),
+    ]);
+    log('Precompute /mrs, /sprint, and /meetings cache completed');
+  }
+
   startPrecompute() {
-    const runPrecompute = async () => {
-      log('Precomputing /mrs, /sprint, and /meetings cache in background...');
-      await Promise.allSettled([
-        this.getOrFetchMrsText({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
-        this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
-        this.getOrFetchMeetingsText({ force: true }).catch((err) => log(`Precompute /meetings failed: ${err.message}`)),
-      ]);
-      log('Precompute /mrs, /sprint, and /meetings cache completed');
-    };
-
-    const initialTimer = setTimeout(runPrecompute, 5_000);
-    if (initialTimer.unref) initialTimer.unref();
-
-    if (this.precomputeTimer) clearInterval(this.precomputeTimer);
-    this.precomputeTimer = setInterval(runPrecompute, this.precomputeIntervalMs);
+    // Initial run after brief delay with jitter (5 to 15 seconds)
+    const initialDelay = 5_000 + Math.floor(Math.random() * 10_000);
+    if (this.precomputeTimer) clearTimeout(this.precomputeTimer);
+    this.precomputeTimer = setTimeout(async () => {
+      await this.runPrecompute();
+      this.scheduleNextPrecompute();
+    }, initialDelay);
     if (this.precomputeTimer.unref) this.precomputeTimer.unref();
   }
 
@@ -1568,7 +1586,7 @@ export class MergeRequestWatcher {
       this.pollTimer = null;
     }
     if (this.precomputeTimer) {
-      clearInterval(this.precomputeTimer);
+      clearTimeout(this.precomputeTimer);
       this.precomputeTimer = null;
     }
   }
