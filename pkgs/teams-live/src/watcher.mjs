@@ -29,7 +29,7 @@ const HELP_TEXT =
   '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
   '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
   '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
-  '- `/mrs`: Lists open, non-draft merge requests in the group.\n' +
+  '- `/mrs [all|bots]`: Lists open merge requests (human MRs + top 5 bot MRs; all shows all, bots shows only bots).\n' +
   '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
   '- `/meetings`: Summary of meetings for the rest of the current week.\n' +
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
@@ -125,6 +125,49 @@ function isBotMr(mr) {
   );
 }
 
+function isReadyToMerge(mr) {
+  if (mr.draft || mr.work_in_progress) return false;
+  if (mr.detailed_merge_status === 'mergeable') return true;
+  if (
+    mr.merge_status === 'can_be_merged' &&
+    mr.detailed_merge_status !== 'not_approved' &&
+    mr.detailed_merge_status !== 'ci_must_pass' &&
+    mr.detailed_merge_status !== 'ci_still_running' &&
+    mr.detailed_merge_status !== 'need_rebase' &&
+    mr.detailed_merge_status !== 'conflict'
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function sortMrs(list) {
+  return [...list].sort((a, b) => {
+    const aReady = isReadyToMerge(a) ? 1 : 0;
+    const bReady = isReadyToMerge(b) ? 1 : 0;
+    if (aReady !== bReady) return bReady - aReady;
+    const aTime = new Date(a.updated_at || 0).getTime();
+    const bTime = new Date(b.updated_at || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
+function getMrsMode(args = []) {
+  const sub = (args[0] || '').toLowerCase().replace(/^-+/, '');
+  if (sub === 'all' || sub === 'a') return 'all';
+  if (
+    sub === 'renovate' ||
+    sub === 'renovates' ||
+    sub === 'bots' ||
+    sub === 'bot' ||
+    sub === 'r' ||
+    sub === 'b'
+  ) {
+    return 'bots';
+  }
+  return 'default';
+}
+
 export class MergeRequestWatcher {
   constructor({ config, gitlab, jira, authManager }) {
     this.config = config;
@@ -155,7 +198,7 @@ export class MergeRequestWatcher {
 
     this.cacheTtlMs = 15 * 60 * 1000; // 15 minutes
     this.precomputeIntervalMs = 10 * 60 * 1000; // 10 minutes
-    this.mrsCache = { text: null, timestamp: 0, loading: null };
+    this.mrsCache = { data: null, timestamp: 0, loading: null };
     this.sprintCache = { text: null, timestamp: 0, loading: null };
     this.meetingsCache = { text: null, timestamp: 0, loading: null };
 
@@ -323,6 +366,8 @@ export class MergeRequestWatcher {
       t.includes('📊') ||
       t.includes('Open Merge Requests') ||
       t.includes('No open merge requests found') ||
+      t.includes('Renovate / Bot Updates') ||
+      t.includes('No open renovate or bot merge requests found') ||
       t.includes('Current Sprint Tasks') ||
       t.includes('No active sprint tasks found') ||
       t.includes('Meetings for the rest of the week') ||
@@ -952,10 +997,10 @@ export class MergeRequestWatcher {
     }
   }
 
-  async getOrFetchMrsText({ force = false } = {}) {
+  async getOrFetchMrsData({ force = false } = {}) {
     const now = Date.now();
-    if (!force && this.mrsCache.text && now - this.mrsCache.timestamp < this.cacheTtlMs) {
-      return this.mrsCache.text;
+    if (!force && this.mrsCache.data && now - this.mrsCache.timestamp < this.cacheTtlMs) {
+      return this.mrsCache.data;
     }
     if (this.mrsCache.loading) {
       return await this.mrsCache.loading;
@@ -964,49 +1009,13 @@ export class MergeRequestWatcher {
     this.mrsCache.loading = (async () => {
       try {
         const mrs = await this.gitlab.getGroupMrs();
-        let text;
-        if (mrs.length === 0) {
-          text = '📋 No open merge requests found.';
-        } else {
-          const groupPrefix = this.config.gitlab?.group
-            ? new RegExp(`^${this.config.gitlab.group}/?`)
-            : null;
-
-          const formatMrLine = (mr) => {
-            const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
-            const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
-            const author = mr.author?.username || mr.author?.name || 'unknown';
-            const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
-            return `- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`;
-          };
-
-          const humanMrs = [];
-          const botMrs = [];
-          for (const mr of mrs) {
-            if (isBotMr(mr)) {
-              botMrs.push(mr);
-            } else {
-              humanMrs.push(mr);
-            }
-          }
-
-          const sections = [];
-          if (humanMrs.length > 0) {
-            sections.push(`👤 **Human Merge Requests** (${humanMrs.length}):\n\n${humanMrs.map(formatMrLine).join('\n')}`);
-          }
-          if (botMrs.length > 0) {
-            sections.push(`🤖 **Renovate / Bot Updates** (${botMrs.length}):\n\n${botMrs.map(formatMrLine).join('\n')}`);
-          }
-
-          text = `📋 **Open Merge Requests** (${mrs.length} total: ${humanMrs.length} human, ${botMrs.length} bot):\n\n${sections.join('\n\n')}`;
-        }
-        this.mrsCache.text = text;
+        this.mrsCache.data = mrs;
         this.mrsCache.timestamp = Date.now();
-        return text;
+        return mrs;
       } catch (err) {
-        if (this.mrsCache.text) {
+        if (this.mrsCache.data) {
           log(`Failed to refresh /mrs cache (${err.message}), serving stale cache`);
-          return this.mrsCache.text;
+          return this.mrsCache.data;
         }
         throw err;
       } finally {
@@ -1017,11 +1026,65 @@ export class MergeRequestWatcher {
     return await this.mrsCache.loading;
   }
 
-  async executeCachedCommand(event, { name, getOrFetch, errorLabel }) {
+  formatMrsText(mrs, mode = 'default') {
+    if (!mrs || mrs.length === 0) {
+      return '📋 No open merge requests found.';
+    }
+
+    const groupPrefix = this.config.gitlab?.group
+      ? new RegExp(`^${this.config.gitlab.group}/?`)
+      : null;
+
+    const formatMrLine = (mr) => {
+      const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
+      const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
+      const author = mr.author?.username || mr.author?.name || 'unknown';
+      const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
+      return `- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`;
+    };
+
+    const humanMrs = sortMrs(mrs.filter((mr) => !isBotMr(mr)));
+    const botMrs = sortMrs(mrs.filter(isBotMr));
+
+    if (mode === 'bots') {
+      if (botMrs.length === 0) {
+        return '🤖 No open renovate or bot merge requests found.';
+      }
+      return `🤖 **Renovate / Bot Updates** (${botMrs.length}):\n\n${botMrs.map(formatMrLine).join('\n')}`;
+    }
+
+    const sections = [];
+    if (humanMrs.length > 0) {
+      sections.push(`👤 **Human Merge Requests** (${humanMrs.length}):\n\n${humanMrs.map(formatMrLine).join('\n')}`);
+    }
+
+    if (botMrs.length > 0) {
+      if (mode === 'all' || botMrs.length <= 5) {
+        sections.push(`🤖 **Renovate / Bot Updates** (${botMrs.length}):\n\n${botMrs.map(formatMrLine).join('\n')}`);
+      } else {
+        const displayed = botMrs.slice(0, 5);
+        const remaining = botMrs.length - 5;
+        sections.push(
+          `🤖 **Renovate / Bot Updates** (${botMrs.length}, showing top 5 ready/recent):\n\n` +
+          `${displayed.map(formatMrLine).join('\n')}\n\n` +
+          `_...and ${remaining} more bot MRs (use \`/mrs all\` to view all, or \`/mrs bots\` for only bot MRs)_`
+        );
+      }
+    }
+
+    return `📋 **Open Merge Requests** (${mrs.length} total: ${humanMrs.length} human, ${botMrs.length} bot):\n\n${sections.join('\n\n')}`;
+  }
+
+  async getOrFetchMrsText({ force = false, mode = 'default' } = {}) {
+    const data = await this.getOrFetchMrsData({ force });
+    return this.formatMrsText(data, mode);
+  }
+
+  async executeCachedCommand(event, { name, getOrFetch, getCached, errorLabel }) {
     log(`Executing /${name} in ${event.conversationId}...`);
     try {
       const cacheObj = this[`${name}Cache`];
-      const cached = cacheObj?.text;
+      const cached = typeof getCached === 'function' ? getCached() : cacheObj?.text;
       if (cached) {
         // 1. Output the cached message immediately
         const replyRes = await sendReply(event.conversationId, event, cached);
@@ -1058,10 +1121,12 @@ export class MergeRequestWatcher {
     }
   }
 
-  async executeMrsCommand(event) {
+  async executeMrsCommand(event, args = []) {
+    const mode = getMrsMode(args);
     await this.executeCachedCommand(event, {
       name: 'mrs',
-      getOrFetch: (opts) => this.getOrFetchMrsText(opts),
+      getCached: () => (this.mrsCache.data ? this.formatMrsText(this.mrsCache.data, mode) : null),
+      getOrFetch: (opts) => this.getOrFetchMrsText({ ...opts, mode }),
       errorLabel: 'Group MRs lookup',
     });
   }
@@ -1360,7 +1425,7 @@ export class MergeRequestWatcher {
     } else if (command === '/status') {
       await this.executeStatusCommand(event, args);
     } else if (command === '/mrs') {
-      await this.executeMrsCommand(event);
+      await this.executeMrsCommand(event, args);
     } else if (command === '/sprint') {
       await this.executeSprintCommand(event);
     } else if (command === '/meetings') {
@@ -1552,7 +1617,7 @@ export class MergeRequestWatcher {
   async runPrecompute() {
     log('Precomputing /mrs, /sprint, and /meetings cache in background...');
     await Promise.allSettled([
-      this.getOrFetchMrsText({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
+      this.getOrFetchMrsData({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
       this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
       this.getOrFetchMeetingsText({ force: true }).catch((err) => log(`Precompute /meetings failed: ${err.message}`)),
     ]);
