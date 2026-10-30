@@ -2463,6 +2463,7 @@
         "stricknani": "stricknani",
         "systems": "systems_5",
         "tdc": "tdc",
+        "teams-live": "teams-live",
         "termux-tools": "termux-tools",
         "tmux-slay": "tmux-slay",
         "tmux-xpanes": "tmux-xpanes",
@@ -2804,6 +2805,29 @@
       "original": {
         "owner": "pschmitt",
         "repo": "tdc",
+        "type": "github"
+      }
+    },
+    "teams-live": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793395700,
+        "narHash": "sha256-OWFCKY2lAe59FcnnJD4cj6Lv3Ful2nb0nZxqnPlP36g=",
+        "owner": "pschmitt",
+        "repo": "teams-live",
+        "rev": "4ca47fc3b6a2713e6ffc2b99e9ea9de2d587619b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "teams-live",
         "type": "github"
       }
     },

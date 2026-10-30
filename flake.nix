@@ -101,6 +101,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    teams-live = {
+      url = "github:pschmitt/teams-live";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
+
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";

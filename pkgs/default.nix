@@ -106,7 +106,7 @@ in
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
-  teams-live = pkgs.callPackage ./teams-live { inherit msteams-mcp; };
+  teams-live = inputs.teams-live.packages.${pkgs.stdenv.hostPlatform.system}.default;
   termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
