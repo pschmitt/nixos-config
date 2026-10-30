@@ -36,7 +36,7 @@ const HELP_TEXT =
   '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
   '- `/mrs [all|bots]`: Lists open merge requests (human MRs + top 5 bot MRs; all shows all, bots shows only bots).\n' +
   '- `/alerts` (or `/opsgenie`) [oncall|support]: Open alerts in the CKS OpsGenie queues.\n' +
-  '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
+  '- `/sprint` (or `/jira`): Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
   '- `/meetings` (or `/cal`, `/calendar`): Summary of meetings for the rest of the current week.\n' +
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
   '- `/random`: Outputs a random fact.\n' +
@@ -64,6 +64,7 @@ const KNOWN_COMMANDS = [
   '/alerts',
   '/opsgenie',
   '/sprint',
+  '/jira',
   '/meetings',
   '/cal',
   '/calendar',
@@ -1997,7 +1998,7 @@ export class MergeRequestWatcher {
       await this.executeMrsCommand(event, args);
     } else if (command === '/alerts' || command === '/opsgenie') {
       await this.executeAlertsCommand(event, args);
-    } else if (command === '/sprint') {
+    } else if (command === '/sprint' || command === '/jira') {
       await this.executeSprintCommand(event);
     } else if (command === '/meetings' || command === '/cal' || command === '/calendar') {
       await this.executeMeetingsCommand(event);
