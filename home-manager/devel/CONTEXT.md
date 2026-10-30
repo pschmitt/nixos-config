@@ -8,6 +8,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
+  - `signal-notify` before sending any Signal message, `leaked-credentials` the moment a credential is exposed, `browser-login` for any login in a browser session, `tmux-window-names` for renaming several tmux windows
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 - Watch for toil worth capturing. When you hit the same friction a second
   time, spend real effort rediscovering a procedure, or get a user correction
@@ -48,7 +49,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Progress notifications
 
-- For substantial multi-step or long-running work, the user may be away from the chat. Use the `signal-notify` skill to check presence and send Signal updates (milestones, blockers, completion), and load it before sending any Signal message.
+- For substantial multi-step or long-running work, the user may be away from the chat. Load the `signal-notify` skill before sending any Signal message; it covers the presence check, when to send and the format.
 
 ## GPG and commit signing
 
@@ -69,13 +70,13 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
   - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
   - Hooks (`agent-secret-guard`, `agent-secret-scan`) enforce the Bash cases and warn about credentials in tool results. If a command is blocked, use the suggested safe form; do not work around the hook.
-- If a credential ends up somewhere it should not be, even briefly and even if you caused it, load the `leaked-credentials` skill immediately and follow it.
+- If a credential ends up somewhere it should not be, even briefly and even if you caused it, load the `leaked-credentials` skill now and follow it; do not wait for the end of the task.
 
 ## Browser MCPs
 
 - There is one browser MCP, `browser-daemon`. Without a choice it gives you a fresh throwaway browser on the node with the most room. `browser_status` lists the nodes and profiles; `browser_use profile=work` opens the persistent work profile (Outlook, OpsGenie), `browser_use node=fnuc` a throwaway browser with the home IP.
 - Label your sessions when you start: `browser-agent-topic "netbox invoice lookup"` (a few words, like a tmux window name); run it again when the task changes. Only stop sessions you started; manage them from the shell with `browser-daemon session|profile|recording|node ...`.
-- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Use the `browser-login` skill (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`) for anything involving a login.
+- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Load the `browser-login` skill for any login (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`) for anything involving a login.
 
 ## Shell work
 
