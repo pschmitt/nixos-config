@@ -43,6 +43,27 @@ export class JiraClient {
   }
 
   /**
+   * Retrieves single issue details.
+   */
+  async getIssue(issueKey) {
+    const key = String(issueKey || '').trim().toUpperCase();
+    if (!key) throw new Error('Issue key is required');
+    const endpoint = `rest/api/2/issue/${encodeURIComponent(key)}?fields=summary,status,assignee,priority,issuetype`;
+    const res = await this.request(endpoint);
+    const fields = res.fields || {};
+    return {
+      key: res.key,
+      summary: fields.summary || '(No summary)',
+      status: fields.status?.name || 'Unknown',
+      statusCategory: fields.status?.statusCategory?.key || '',
+      assignee: fields.assignee?.displayName || 'Unassigned',
+      priority: fields.priority?.name || 'None',
+      issueType: fields.issuetype?.name || 'Task',
+      url: this.baseUrl ? `${this.baseUrl}/browse/${res.key}` : '',
+    };
+  }
+
+  /**
    * Retrieves open tasks in active sprint(s) that are To Do, In Progress, or In Review.
    * Does NOT leak Jira URL, board name, or board ID.
    */

@@ -34,10 +34,18 @@ const HELP_TEXT =
   '- `/approve [link|all]`: Approves target MR (or `/approve all` for all eligible human MRs with green/no pipeline).\n' +
   '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
   '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
+  '- `/retry [link]`: Retries failed jobs on the latest GitLab pipeline for the target MR.\n' +
+  '- `/ci` (or `/pipeline`) [link]: Detailed CI pipeline status, stages, and failed jobs.\n' +
   '- `/mrs [all|bots]`: Lists open merge requests (human MRs + top 5 bot MRs; all shows all, bots shows only bots).\n' +
   '- `/alerts` (or `/opsgenie`) [oncall|support]: Open alerts in the CKS OpsGenie queues.\n' +
+  '- `/oncall` (or `/whoisoncall`): Lists currently active on-call engineers (Platform & Support).\n' +
   '- `/sprint` (or `/jira`): Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
+  '- `/issue` (or `/ticket`) [KEY]: Fetches details and status for a Jira issue.\n' +
+  '- `/standup` (or `/today`): Summarizes your assigned Jira tasks and open GitLab MRs.\n' +
   '- `/meetings` (or `/cal`, `/calendar`): Summary of meetings for the rest of the current week.\n' +
+  '- `/poll "Question" "Opt1" "Opt2"`: Creates an interactive reaction poll.\n' +
+  '- `/flip`: Flips a coin (Heads or Tails).\n' +
+  '- `/roll [expr]`: Rolls dice (e.g. `/roll`, `/roll d20`, `/roll 2d6`).\n' +
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
   '- `/random`: Outputs a random fact.\n' +
   '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
@@ -60,14 +68,26 @@ const KNOWN_COMMANDS = [
   '/approve',
   '/rebase',
   '/status',
+  '/retry',
+  '/ci',
+  '/pipeline',
   '/mrs',
   '/alerts',
   '/opsgenie',
+  '/oncall',
+  '/whoisoncall',
   '/sprint',
   '/jira',
+  '/issue',
+  '/ticket',
+  '/standup',
+  '/today',
   '/meetings',
   '/cal',
   '/calendar',
+  '/poll',
+  '/flip',
+  '/roll',
   '/weather',
   '/random',
   '/marco',
@@ -250,6 +270,56 @@ function formatTimeAgo(dateStr) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function formatDuration(seconds) {
+  if (!seconds || seconds <= 0) return '0s';
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  if (m === 0) return `${s}s`;
+  return `${m}m ${s}s`;
+}
+
+function parsePollArgs(args) {
+  const fullText = args.join(' ').trim();
+  if (!fullText) return null;
+
+  // 1. Quoted options: e.g. "Question" "Option 1" "Option 2"
+  const quoted = [...fullText.matchAll(/"([^"]+)"|'([^']+)'/g)].map((m) => m[1] || m[2]);
+  if (quoted.length >= 2) {
+    return {
+      question: quoted[0],
+      options: quoted.slice(1),
+    };
+  }
+
+  // 2. Pipe-separated: Question | Opt1 | Opt2
+  if (fullText.includes('|')) {
+    const parts = fullText.split('|').map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      return {
+        question: parts[0],
+        options: parts.slice(1),
+      };
+    }
+  }
+
+  // 3. Question with quoted question and trailing options
+  if (quoted.length === 1) {
+    const question = quoted[0];
+    const rest = fullText.replace(/"[^"]+"|'[^']+'/g, '').trim();
+    const options = rest.split(/[,/]/).map((s) => s.trim()).filter(Boolean);
+    if (options.length >= 2) {
+      return { question, options };
+    }
+    return { question, options: ['Yes', 'No'] };
+  }
+
+  // 4. Standalone question: default to Yes / No
+  return {
+    question: fullText,
+    options: ['Yes', 'No'],
+  };
 }
 
 function formatAlertLine(alert) {
@@ -1976,6 +2046,425 @@ export class MergeRequestWatcher {
     this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
+  async executeOnCallCommand(event) {
+    if (!this.opsgenie?.isConfigured()) {
+      await sendReply(event.conversationId, event, '❌ OpsGenie integration is not configured.');
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    try {
+      let onCallDuty = this.alertsCache.data?.onCallDuty;
+      let supportDuty = this.alertsCache.data?.supportDuty;
+      const now = Date.now();
+
+      if (!onCallDuty || !supportDuty || now - this.alertsCache.timestamp > this.cacheTtlMs) {
+        const [onCallRes, supportRes] = await Promise.all([
+          this.opsgenie.fetchOnDuty(this.opsgenie.onCallKey, this.opsgenie.onCallScheduleId).catch(() => []),
+          this.opsgenie.fetchOnDuty(this.opsgenie.supportKey, this.opsgenie.supportScheduleId).catch(() => []),
+        ]);
+        onCallDuty = onCallRes;
+        supportDuty = supportRes;
+      }
+
+      const onCallPerson = formatOnDuty(onCallDuty);
+      const supportPerson = formatOnDuty(supportDuty);
+
+      const text =
+        '📞 **On-Call Responders**\n\n' +
+        `- 🚨 **CKS Platform**: **${onCallPerson}**\n` +
+        `- 💼 **Support Queue**: **${supportPerson}**`;
+
+      await sendReply(event.conversationId, event, text);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Failed to execute /oncall: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Failed to fetch on-call responders: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
+  async findTargetIssueKey(event, args) {
+    const argStr = args.join(' ').trim();
+    const argMatch = argStr.match(/\b([a-zA-Z][a-zA-Z0-9]+-\d+)\b/);
+    if (argMatch) return argMatch[1].toUpperCase();
+
+    const html = event.rawHtml || event.content || '';
+    const quoteMatch = html.match(/\b([a-zA-Z][a-zA-Z0-9]+-\d+)\b/);
+    if (quoteMatch) return quoteMatch[1].toUpperCase();
+
+    try {
+      const thread = await getThreadMessages(event.conversationId, { limit: 10 });
+      for (const msg of thread) {
+        if (msg.messageId === event.messageId) continue;
+        const text = msg.content || msg.text || '';
+        const m = text.match(/\b([a-zA-Z][a-zA-Z0-9]+-\d+)\b/);
+        if (m) return m[1].toUpperCase();
+      }
+    } catch (err) {
+      log(`Failed to search thread for Jira issue: ${err.message}`);
+    }
+
+    return null;
+  }
+
+  async executeIssueCommand(event, args) {
+    if (!this.jira?.isConfigured()) {
+      await sendReply(event.conversationId, event, '❌ Jira integration is not configured.');
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    const key = await this.findTargetIssueKey(event, args);
+    if (!key) {
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No Jira issue key found. Usage: `/issue <KEY>` (or reply to a message containing a ticket key like `CKS-1234`).'
+      );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
+      return;
+    }
+
+    try {
+      const issue = await this.jira.getIssue(key);
+      const typeIcons = {
+        bug: '🐛',
+        story: '📖',
+        task: '📋',
+        subtask: '📄',
+        spike: '⚡',
+        epic: '🏔️',
+        improvement: '💡',
+      };
+      const tLower = (issue.issueType || '').toLowerCase();
+      const typeIcon = typeIcons[tLower] || '📋';
+
+      const sCategory = (issue.statusCategory || '').toLowerCase();
+      const sName = (issue.status || '').toLowerCase();
+      let statusIcon = '⚪';
+      if (sCategory === 'done' || sName === 'done' || sName === 'closed' || sName === 'resolved') {
+        statusIcon = '🟢';
+      } else if (sName.includes('review')) {
+        statusIcon = '🟣';
+      } else if (sCategory === 'indeterminate' || sName.includes('progress') || sName.includes('active')) {
+        statusIcon = '🟡';
+      }
+
+      const pLower = (issue.priority || '').toLowerCase();
+      let priorityIcon = '🟡';
+      if (pLower.includes('high') || pLower.includes('blocker') || pLower.includes('critical')) {
+        priorityIcon = '🔴';
+      } else if (pLower.includes('low') || pLower.includes('trivial')) {
+        priorityIcon = '🟢';
+      }
+
+      const text =
+        `🎫 **[${issue.key}](${issue.url}): ${escapeHtml(issue.summary)}**\n\n` +
+        `- **Type**: ${typeIcon} ${issue.issueType}\n` +
+        `- **Status**: ${statusIcon} ${issue.status}\n` +
+        `- **Priority**: ${priorityIcon} ${issue.priority}\n` +
+        `- **Assignee**: 👤 ${issue.assignee}`;
+
+      await sendReply(event.conversationId, event, text);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Failed to fetch Jira issue ${key}: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Failed to fetch Jira issue **${key}**: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
+  async executeRetryCommand(event, args) {
+    const mrs = await this.findTargetMrsForCommand(event, args);
+    if (!mrs || mrs.length === 0) {
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No merge request found. Please provide an MR link, shorthand (e.g. `workload-clusters!596`), or reply to an MR message.'
+      );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    const mrRef = mrs[0];
+    const project = mrRef.project;
+    const iid = mrRef.iid;
+    const mrUrl = mrRef.url || this.gitlab.mrLink(project, iid);
+
+    try {
+      const pipeline = await this.gitlab.getLatestPipeline(project, iid);
+      if (!pipeline) {
+        await sendReply(event.conversationId, event, `❌ No pipeline found for [${project}!${iid}](${mrUrl}).`);
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+        return;
+      }
+
+      if (pipeline.status !== 'failed' && pipeline.status !== 'canceled') {
+        await sendReply(
+          event.conversationId,
+          event,
+          `ℹ️ Latest pipeline [#${pipeline.id}](${pipeline.web_url}) for [${project}!${iid}](${mrUrl}) is in state **${pipeline.status}** (nothing to retry).`
+        );
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
+        return;
+      }
+
+      await this.gitlab.retryPipeline(project, pipeline.id);
+      await sendReply(
+        event.conversationId,
+        event,
+        `🔁 **Retried failed jobs** on pipeline [#${pipeline.id}](${pipeline.web_url}) for [${project}!${iid}](${mrUrl}) (status: **${pipeline.status}** ➔ **running**).`
+      );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Failed to retry pipeline for ${project}!${iid}: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Failed to retry pipeline: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
+  async executeCiCommand(event, args) {
+    const mrs = await this.findTargetMrsForCommand(event, args);
+    if (!mrs || mrs.length === 0) {
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No merge request found. Please provide an MR link, shorthand (e.g. `workload-clusters!596`), or reply to an MR message.'
+      );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    const mrRef = mrs[0];
+    const project = mrRef.project;
+    const iid = mrRef.iid;
+    const mrUrl = mrRef.url || this.gitlab.mrLink(project, iid);
+
+    try {
+      const pipeline = await this.gitlab.getLatestPipeline(project, iid);
+      if (!pipeline) {
+        await sendReply(event.conversationId, event, `❌ No pipeline found for [${project}!${iid}](${mrUrl}).`);
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+        return;
+      }
+
+      const jobs = await this.gitlab.getPipelineJobs(project, pipeline.id).catch(() => []);
+      const statusIcons = {
+        success: '✅',
+        passed: '✅',
+        failed: '❌',
+        running: '⏳',
+        pending: '⏳',
+        canceled: '⏹️',
+        skipped: '⏭️',
+        manual: '⚙️',
+      };
+      const statusIcon = statusIcons[pipeline.status] || '⚠️';
+
+      const durationStr = pipeline.duration ? ` (${formatDuration(pipeline.duration)})` : '';
+      const lines = [
+        `🏗️ **Pipeline [#${pipeline.id}](${pipeline.web_url})**: ${statusIcon} **${pipeline.status}**${durationStr}`,
+        `• **Target**: [${project}!${iid}](${mrUrl}) (ref: \`${pipeline.ref}\`)`,
+      ];
+
+      const failedJobs = jobs.filter((j) => j.status === 'failed');
+      const runningJobs = jobs.filter((j) => j.status === 'running' || j.status === 'pending');
+
+      if (failedJobs.length > 0) {
+        lines.push(`\n**Failed Jobs** (${failedJobs.length}):`);
+        for (const job of failedJobs.slice(0, 10)) {
+          const jobDur = job.duration ? ` — ${formatDuration(job.duration)}` : '';
+          lines.push(`- ❌ [${job.name}](${job.web_url}) (\`stage: ${job.stage}\`${jobDur})`);
+        }
+        if (failedJobs.length > 10) {
+          lines.push(`- _...and ${failedJobs.length - 10} more_`);
+        }
+      } else if (runningJobs.length > 0) {
+        lines.push(`\n**Active Jobs** (${runningJobs.length}):`);
+        for (const job of runningJobs.slice(0, 8)) {
+          lines.push(`- ⏳ [${job.name}](${job.web_url}) (\`stage: ${job.stage}\`)`);
+        }
+      } else if (pipeline.status === 'success' || pipeline.status === 'passed') {
+        lines.push(`\n✅ All ${jobs.length} jobs completed successfully.`);
+      }
+
+      await sendReply(event.conversationId, event, lines.join('\n'));
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Failed to fetch CI status for ${project}!${iid}: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Failed to fetch CI pipeline: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
+  async executeStandupCommand(event) {
+    const rawSender = event.from || event.sender?.displayName || 'User';
+    log(`Executing /standup for ${rawSender} in ${event.conversationId}...`);
+
+    const nameTokens = rawSender
+      .toLowerCase()
+      .split(/[\s,.-]+/)
+      .filter((t) => t.length > 2);
+
+    const matchesSender = (name) => {
+      if (!name) return false;
+      const lower = name.toLowerCase();
+      if (lower.includes(rawSender.toLowerCase()) || rawSender.toLowerCase().includes(lower)) return true;
+      return nameTokens.some((token) => lower.includes(token));
+    };
+
+    try {
+      const [sprintData, groupMrs] = await Promise.all([
+        this.jira?.isConfigured() ? this.jira.getActiveSprintTasks().catch(() => null) : null,
+        this.gitlab?.group ? this.gitlab.getGroupMrs().catch(() => []) : [],
+      ]);
+
+      const myTasks = [];
+      if (sprintData) {
+        for (const list of [sprintData.inProgress, sprintData.inReview, sprintData.todo]) {
+          for (const item of list) {
+            if (matchesSender(item.assignee)) {
+              myTasks.push(item);
+            }
+          }
+        }
+      }
+
+      const myAuthoredMrs = [];
+      const myReviewMrs = [];
+      for (const mr of groupMrs) {
+        const authorMatch = matchesSender(mr.author?.name) || matchesSender(mr.author?.username);
+        if (authorMatch) {
+          myAuthoredMrs.push(mr);
+        } else if (Array.isArray(mr.reviewers) && mr.reviewers.some((r) => matchesSender(r.name) || matchesSender(r.username))) {
+          myReviewMrs.push(mr);
+        }
+      }
+
+      const sections = [`🌅 **Standup Summary for ${rawSender}**`];
+
+      if (myTasks.length > 0) {
+        const lines = [`\n📋 **Active Jira Tasks** (${myTasks.length}):`];
+        for (const t of myTasks) {
+          const sLower = t.status.toLowerCase();
+          const sIcon = sLower.includes('review') ? '🟣' : sLower.includes('progress') ? '🟡' : '⚪';
+          lines.push(`- ${sIcon} **${t.status}**: [${t.key}](${t.url}) - ${escapeHtml(t.summary)}`);
+        }
+        sections.push(lines.join('\n'));
+      } else {
+        sections.push('\n📋 **Jira Tasks**: _None assigned in active sprint_');
+      }
+
+      if (myAuthoredMrs.length > 0 || myReviewMrs.length > 0) {
+        const lines = [`\n🦊 **GitLab Merge Requests**:`];
+        for (const mr of myAuthoredMrs) {
+          const ref = mr.references?.full || mr.title;
+          lines.push(`- ✏️ **Author**: [${ref}](${mr.web_url}) - ${escapeHtml(mr.title)}`);
+        }
+        for (const mr of myReviewMrs) {
+          const ref = mr.references?.full || mr.title;
+          lines.push(`- 🔍 **Reviewer**: [${ref}](${mr.web_url}) - ${escapeHtml(mr.title)}`);
+        }
+        sections.push(lines.join('\n'));
+      } else {
+        sections.push('\n🦊 **GitLab MRs**: _No open MRs as author or reviewer_');
+      }
+
+      await sendReply(event.conversationId, event, sections.join('\n'));
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    } catch (err) {
+      log(`Failed to execute /standup: ${err.message}`);
+      await sendReply(event.conversationId, event, `❌ Failed to generate standup summary: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+    }
+  }
+
+  async executeFlipCommand(event) {
+    const outcome = Math.random() < 0.5 ? 'Heads' : 'Tails';
+    await sendReply(event.conversationId, event, `🪙 **${outcome}!**`);
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
+  }
+
+  async executeRollCommand(event, args) {
+    const arg = (args[0] || '').trim().toLowerCase();
+    let count = 1;
+    let sides = 6;
+
+    if (arg) {
+      const match = arg.match(/^(\d+)?d?(\d+)$/);
+      if (match) {
+        if (match[1]) count = Math.min(Math.max(parseInt(match[1], 10), 1), 20);
+        sides = Math.min(Math.max(parseInt(match[2], 10), 2), 1000);
+      } else {
+        await sendReply(event.conversationId, event, '🎲 Usage: `/roll` (1d6), `/roll d20`, `/roll 2d6`, or `/roll 100`');
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
+        return;
+      }
+    }
+
+    const rolls = [];
+    let sum = 0;
+    for (let i = 0; i < count; i++) {
+      const val = Math.floor(Math.random() * sides) + 1;
+      rolls.push(val);
+      sum += val;
+    }
+
+    let text;
+    if (count === 1) {
+      text = `🎲 **Rolled ${sides === 6 ? 'a die' : `d${sides}`}**: **${rolls[0]}**`;
+    } else {
+      text = `🎲 **Rolled ${count}d${sides}**: [${rolls.join(', ')}] = **${sum}**`;
+    }
+
+    await sendReply(event.conversationId, event, text);
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
+  }
+
+  async executePollCommand(event, args) {
+    const parsed = parsePollArgs(args);
+    if (!parsed) {
+      await sendReply(
+        event.conversationId,
+        event,
+        '📊 Usage: `/poll "Question" "Option 1" "Option 2"` (or `/poll Should we deploy?`)'
+      );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
+      return;
+    }
+
+    const { question, options } = parsed;
+    const isYesNo = options.length === 2 && options[0].toLowerCase() === 'yes' && options[1].toLowerCase() === 'no';
+
+    const EMOJIS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'];
+    const lines = [`📊 **Poll: ${escapeHtml(question)}**\n`];
+
+    if (isYesNo) {
+      lines.push('👍 **Yes**');
+      lines.push('👎 **No**');
+    } else {
+      for (let i = 0; i < Math.min(options.length, EMOJIS.length); i++) {
+        lines.push(`${EMOJIS[i]} ${escapeHtml(options[i])}`);
+      }
+    }
+
+    lines.push('\n_Vote by reacting to this message!_');
+    const sent = await sendReply(event.conversationId, event, lines.join('\n'));
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
+
+    const botMsgId = sent.ok ? (sent.value?.messageId || sent.value?.timestamp) : null;
+    if (botMsgId) {
+      (async () => {
+        try {
+          if (isYesNo) {
+            await addReaction(event.conversationId, botMsgId, 'like');
+          }
+        } catch {}
+      })();
+    }
+  }
+
   async handleSlashCommand(event) {
     const parsed = this.parseSlashCommand(event.content);
     if (!parsed) return;
@@ -1994,14 +2483,30 @@ export class MergeRequestWatcher {
       await this.executeRebaseCommand(event, args);
     } else if (command === '/status') {
       await this.executeStatusCommand(event, args);
+    } else if (command === '/retry') {
+      await this.executeRetryCommand(event, args);
+    } else if (command === '/ci' || command === '/pipeline') {
+      await this.executeCiCommand(event, args);
     } else if (command === '/mrs') {
       await this.executeMrsCommand(event, args);
     } else if (command === '/alerts' || command === '/opsgenie') {
       await this.executeAlertsCommand(event, args);
+    } else if (command === '/oncall' || command === '/whoisoncall') {
+      await this.executeOnCallCommand(event);
     } else if (command === '/sprint' || command === '/jira') {
       await this.executeSprintCommand(event);
+    } else if (command === '/issue' || command === '/ticket') {
+      await this.executeIssueCommand(event, args);
+    } else if (command === '/standup' || command === '/today') {
+      await this.executeStandupCommand(event);
     } else if (command === '/meetings' || command === '/cal' || command === '/calendar') {
       await this.executeMeetingsCommand(event);
+    } else if (command === '/poll') {
+      await this.executePollCommand(event, args);
+    } else if (command === '/flip') {
+      await this.executeFlipCommand(event);
+    } else if (command === '/roll') {
+      await this.executeRollCommand(event, args);
     } else if (command === '/weather') {
       await this.executeWeatherCommand(event, args);
     } else if (command === '/random') {

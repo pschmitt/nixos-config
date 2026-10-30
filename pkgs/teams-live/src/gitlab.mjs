@@ -146,6 +146,25 @@ export class GitLabClient {
     return await this.request(`projects/${encodeURIComponent(project)}/merge_requests/${iid}/pipelines?per_page=1`);
   }
 
+  async getLatestPipeline(project, iid) {
+    const pipelines = await this.getPipelines(project, iid);
+    if (Array.isArray(pipelines) && pipelines.length > 0) {
+      return pipelines[0];
+    }
+    return null;
+  }
+
+  async getPipelineJobs(project, pipelineId) {
+    return await this.request(`projects/${encodeURIComponent(project)}/pipelines/${pipelineId}/jobs?per_page=100`);
+  }
+
+  async retryPipeline(project, pipelineId) {
+    return await this.request(
+      `projects/${encodeURIComponent(project)}/pipelines/${pipelineId}/retry`,
+      { method: 'POST' }
+    );
+  }
+
   /**
    * Retrieves combined MR status, rebase/conflict status, and latest pipeline state.
    */

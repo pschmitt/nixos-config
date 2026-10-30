@@ -14,11 +14,19 @@ Real-time Microsoft Teams bot and watcher daemon integrated with GitLab, Jira, a
 - **Slash Commands**:
   - `/mrs [all|bots]`: Group merge request overview with human MR priority.
   - `/alerts` (or `/opsgenie`) `[oncall|support]`: Live OpsGenie alerts and on-duty responders.
+  - `/oncall` (or `/whoisoncall`): Active on-call engineers across Platform and Support.
   - `/sprint` (or `/jira`): Active Jira sprint tickets and assignees.
+  - `/issue` (or `/ticket`) `[KEY]`: Jira issue details, type, status, and assignee.
+  - `/standup` (or `/today`): Summarizes your assigned Jira sprint tasks and open GitLab MRs.
   - `/meetings` (or `/cal`, `/calendar`): Remaining weekly agenda with direct meeting links.
   - `/approve [link|all]`: Approves target GitLab MR (or `/approve all` for all eligible human MRs with green/no pipeline in the group).
   - `/rebase [link]`: Triggers conflict-free GitLab MR rebase.
+  - `/retry [link]`: Retries failed jobs on the latest GitLab pipeline for the target MR.
+  - `/ci` (or `/pipeline`) `[link]`: Detailed CI pipeline status, stages, and failed jobs.
   - `/status [link]`: Service runtime stats or target MR check.
+  - `/poll "Question" "Opt1" "Opt2"`: Creates an interactive reaction poll.
+  - `/flip`: Flips a coin (Heads or Tails).
+  - `/roll [expr]`: Rolls dice (e.g. `/roll`, `/roll d20`, `/roll 2d6`).
   - `/leaderboard`: Tracks and ranks chat interactions and command usage.
   - `/weather [city]`: Current weather observations via wttr.in.
   - `/random`: Random trivia facts.
