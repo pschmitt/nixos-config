@@ -60,6 +60,11 @@ function decodeBody(request) {
 
 function stripHtml(html) {
   return String(html ?? '')
+    .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
+    .replace(/<div[^>]*itemtype="http:\/\/schema\.skype\.com\/Reply"[\s\S]*?<\/div>/gi, '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/g, ' ')
     .replace(/&lt;/g, '<')
@@ -68,6 +73,14 @@ function stripHtml(html) {
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&amp;/g, '&')
     .trim();
+}
+
+function extractLinks(html) {
+  if (!html) return [];
+  const withoutQuotes = String(html)
+    .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
+    .replace(/<div[^>]*itemtype="http:\/\/schema\.skype\.com\/Reply"[\s\S]*?<\/div>/gi, '');
+  return [...withoutQuotes.matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
 }
 
 function toEvent(url, body, { verbose = false, all = false } = {}) {
@@ -87,9 +100,7 @@ function toEvent(url, body, { verbose = false, all = false } = {}) {
       clientMessageId: r.clientmessageid,
       content: isContentType(r.messagetype) ? stripHtml(r.content) : undefined,
       rawHtml: isContentType(r.messagetype) ? r.content : undefined,
-      links: isContentType(r.messagetype)
-        ? [...String(r.content ?? '').matchAll(/href="([^"]+)"/g)].map((m) => m[1])
-        : undefined,
+      links: isContentType(r.messagetype) ? extractLinks(r.content) : undefined,
       raw: verbose ? body : undefined,
     };
   }

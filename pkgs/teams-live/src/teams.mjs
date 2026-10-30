@@ -8,10 +8,18 @@ export const botSentMessageIds = new Set();
 
 export function recordBotMessageId(id) {
   if (id) {
-    botSentMessageIds.add(String(id));
-    const d = new Date(id).getTime();
-    if (!isNaN(d)) {
-      botSentMessageIds.add(String(d));
+    const s = String(id);
+    botSentMessageIds.add(s);
+    if (/^\d{12,14}$/.test(s)) {
+      const num = Number(s);
+      try {
+        botSentMessageIds.add(new Date(num).toISOString());
+      } catch {}
+    } else {
+      const parsed = Date.parse(s);
+      if (!isNaN(parsed)) {
+        botSentMessageIds.add(String(parsed));
+      }
     }
     if (botSentMessageIds.size > 2000) {
       const iter = botSentMessageIds.values();

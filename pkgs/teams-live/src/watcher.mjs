@@ -124,17 +124,23 @@ export class MergeRequestWatcher {
       t.startsWith(HEADSUP_PREFIX) ||
       t.includes(CI_PREFIX) ||
       t.includes(REBASE_PREFIX) ||
-      t.includes('Approved [!') ||
-      t.includes('Cannot approve [!') ||
+      t.includes('Approved ') ||
+      t.includes('Cannot approve ') ||
       t.includes('already approved') ||
       t.includes('teams-live slash commands') ||
       t.includes('POLO!') ||
       t.includes('was kicked from the conversation') ||
       t.includes('Random Fact') ||
-      t.includes('📊 [!') ||
+      t.includes('📊 ') ||
       t.includes('Rebase initiated') ||
       t.includes('Cannot automatically rebase') ||
+      t.includes('Rebase required') ||
+      t.includes('is now up to date') ||
       t.includes('Unknown command') ||
+      t.includes('No merge request found') ||
+      t.includes('Status check failed') ||
+      t.includes('Weather lookup failed') ||
+      t.includes('🌤️ ') ||
       t.includes('itemtype="http://schema.skype.com/Reply"')
     ) {
       return true;
