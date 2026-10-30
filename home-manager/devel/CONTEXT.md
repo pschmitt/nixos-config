@@ -8,7 +8,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
-  - `signal-notify` before sending any Signal message, `leaked-credentials` the moment a credential is exposed, `browser-login` for any login in a browser session, `tmux-window-names` for renaming several tmux windows
+  - `signal-notify` before sending any Signal message, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `tmux-window-names` for renaming several tmux windows
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 - Watch for toil worth capturing. When you hit the same friction a second
   time, spend real effort rediscovering a procedure, or get a user correction
@@ -74,9 +74,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Browser MCPs
 
-- There is one browser MCP, `browser-daemon`. Without a choice it gives you a fresh throwaway browser on the node with the most room. `browser_status` lists the nodes and profiles; `browser_use profile=work` opens the persistent work profile (Outlook, OpsGenie), `browser_use node=fnuc` a throwaway browser with the home IP.
-- Label your sessions when you start: `browser-agent-topic "netbox invoice lookup"` (a few words, like a tmux window name); run it again when the task changes. Only stop sessions you started; manage them from the shell with `browser-daemon session|profile|recording|node ...`.
-- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Load the `browser-login` skill for any login (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`) for anything involving a login.
+- Load the `browser-daemon` skill before the first `browser_*` call (node and profile choice, session labelling, session management).
+- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Load the `browser-login` skill for any login (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`).
 
 ## Shell work
 
