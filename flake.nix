@@ -820,6 +820,7 @@
           # nixbot.toml selects default.outputs as the build job set. Keep
           # effect derivations outside it; nixbot discovers all onPush effects.
           onPush.publish.outputs.effects = inputs.nixos-config-private.lib.ciEffects { flake = self; };
+          onEvent = inputs.nixos-config-private.lib.ciEventEffects { };
         };
 
       # Devshell for bootstrapping
