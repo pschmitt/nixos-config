@@ -69,7 +69,7 @@ in
     };
 
     configFile = mkOption {
-      type = types.nullOr types.path;
+      type = types.nullOr (types.either types.path types.str);
       default = null;
       description = "Path to an explicit JSON/YAML configuration file. Overrides settings if provided.";
     };

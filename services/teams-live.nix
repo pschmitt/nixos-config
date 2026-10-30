@@ -20,18 +20,40 @@ in
       mode = "0400";
       restartUnits = [ "teams-live.service" ];
     };
+
+    "teams-live/gitlab-url" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/conversation-notes" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/conversation-k-team" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
   };
 
-  services.teams-live = {
-    enable = true;
-    credentialsFile = config.sops.secrets."teams-live/credentials".path;
-    gitlabTokenFile = config.sops.secrets."teams-live/gitlab-token".path;
-
-    settings = {
+  sops.templates."teams-live/config.json" = {
+    owner = cfg.user;
+    inherit (cfg) group;
+    mode = "0400";
+    content = builtins.toJSON {
       gitlab = {
-        host = "git.wiit.one";
+        host = config.sops.placeholder."teams-live/gitlab-url";
+        token_file = config.sops.secrets."teams-live/gitlab-token".path;
         poll_interval_seconds = 60;
         history_limit = 50;
+        history_max_age_minutes = 10;
         max_watch_duration_seconds = 7200;
         notify_ci = true;
         notify_ci_on_failure = true;
@@ -41,24 +63,28 @@ in
       };
 
       teams = {
+        credentials_file = config.sops.secrets."teams-live/credentials".path;
         reconnect_interval_seconds = 5;
         token_refresh_interval_minutes = 60;
       };
 
       conversations = [
-        # Chat with self (Notes)
         {
-          id = "48:notes";
+          id = config.sops.placeholder."teams-live/conversation-notes";
           name = "Notes (Self)";
           gitlab = true;
         }
-        # K-Team group chat
         {
-          id = "19:meeting_MDgyMjE4NzctNjkzNi00ZDBkLThiNjEtOTU2ZTBkZTNlM2Vl@thread.v2";
+          id = config.sops.placeholder."teams-live/conversation-k-team";
           name = "K-Team";
           gitlab = true;
         }
       ];
     };
+  };
+
+  services.teams-live = {
+    enable = true;
+    configFile = config.sops.templates."teams-live/config.json".path;
   };
 }

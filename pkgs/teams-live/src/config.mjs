@@ -58,7 +58,9 @@ export function loadConfig(configPath) {
   }
 
   const gitlab = {
-    host: getString(fileConfig.gitlab?.host) || process.env.GITLAB_HOST || 'git.wiit.one',
+    host: (getString(fileConfig.gitlab?.host) || process.env.GITLAB_HOST || 'git.wiit.one')
+      .replace(/^https?:\/\//, '')
+      .replace(/\/+$/, ''),
     token_file: getNullableString(fileConfig.gitlab?.token_file) || process.env.GITLAB_TOKEN_FILE || null,
     token: null,
     poll_interval_seconds: Number(fileConfig.gitlab?.poll_interval_seconds ?? process.env.TEAMS_GITLAB_INTERVAL ?? 60),
@@ -70,6 +72,9 @@ export function loadConfig(configPath) {
     notify_rebase: fileConfig.gitlab?.notify_rebase ?? true,
     max_watch_duration_seconds: Number(
       fileConfig.gitlab?.max_watch_duration_seconds ?? process.env.TEAMS_MAX_WATCH_DURATION ?? 7200
+    ),
+    history_max_age_minutes: Number(
+      fileConfig.gitlab?.history_max_age_minutes ?? process.env.TEAMS_GITLAB_HISTORY_MAX_AGE_MINUTES ?? 10
     ),
   };
 

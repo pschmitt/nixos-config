@@ -46,7 +46,11 @@ export class GitLabClient {
   findMrLinks(text) {
     const results = [];
     if (!text) return results;
-    for (const match of text.matchAll(this.mrUrlRegex)) {
+    // Strip quote blocks and reply elements so we don't extract MRs that were merely quoted in a reply
+    const textWithoutQuotes = text
+      .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
+      .replace(/<div[^>]*itemtype="http:\/\/schema\.skype\.com\/Reply"[\s\S]*?<\/div>/gi, '');
+    for (const match of textWithoutQuotes.matchAll(this.mrUrlRegex)) {
       results.push({
         project: match[1],
         iid: match[2],

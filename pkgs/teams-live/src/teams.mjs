@@ -9,6 +9,10 @@ export const botSentMessageIds = new Set();
 export function recordBotMessageId(id) {
   if (id) {
     botSentMessageIds.add(String(id));
+    const d = new Date(id).getTime();
+    if (!isNaN(d)) {
+      botSentMessageIds.add(String(d));
+    }
     if (botSentMessageIds.size > 2000) {
       const iter = botSentMessageIds.values();
       botSentMessageIds.delete(iter.next().value);

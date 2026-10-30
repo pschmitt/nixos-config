@@ -25,6 +25,7 @@ export class MergeRequestWatcher {
     this.authManager = authManager;
     this.pollIntervalMs = (config.gitlab.poll_interval_seconds || 60) * 1000;
     this.historyLimit = config.gitlab.history_limit || 50;
+    this.historyMaxAgeMinutes = config.gitlab?.history_max_age_minutes ?? 10;
     this.maxWatchDurationMs = (config.gitlab?.max_watch_duration_seconds ?? 7200) * 1000;
 
     this.watchedConversations = new Set(config.conversations.map((c) => c.id));
@@ -55,6 +56,11 @@ export class MergeRequestWatcher {
         const data = JSON.parse(raw);
         if (Array.isArray(data.completedMessages)) {
           this.completedMessages = new Set(data.completedMessages);
+        }
+        if (Array.isArray(data.botMessageIds)) {
+          for (const id of data.botMessageIds) {
+            recordBotMessageId(id);
+          }
         }
         if (data.entries && typeof data.entries === 'object') {
           this.savedEntries = new Map(Object.entries(data.entries));
@@ -89,9 +95,12 @@ export class MergeRequestWatcher {
       }
       const completedArray = Array.from(this.completedMessages);
       const cappedCompleted = completedArray.length > 1000 ? completedArray.slice(-1000) : completedArray;
+      const botArray = Array.from(botSentMessageIds);
+      const cappedBot = botArray.length > 2000 ? botArray.slice(-2000) : botArray;
 
       const data = {
         completedMessages: cappedCompleted,
+        botMessageIds: cappedBot,
         entries: entriesObj,
       };
       const tmpPath = `${this.stateFile}.tmp`;
@@ -110,26 +119,27 @@ export class MergeRequestWatcher {
     if (messageId && botSentMessageIds.has(String(messageId))) return true;
     if (clientMessageId && botSentMessageIds.has(String(clientMessageId))) return true;
 
-    if (this.selfMri && fromMri === this.selfMri) {
-      const t = text || '';
-      if (
-        t.startsWith(HEADSUP_PREFIX) ||
-        t.includes(CI_PREFIX) ||
-        t.includes(REBASE_PREFIX) ||
-        t.includes('Approved [!') ||
-        t.includes('Cannot approve [!') ||
-        t.includes('already approved') ||
-        t.includes('teams-live slash commands') ||
-        t.includes('POLO!') ||
-        t.includes('was kicked from the conversation') ||
-        t.includes('Random Fact') ||
-        t.includes('📊 [!') ||
-        t.includes('Rebase initiated') ||
-        t.includes('Cannot automatically rebase')
-      ) {
-        return true;
-      }
+    const t = text || '';
+    if (
+      t.startsWith(HEADSUP_PREFIX) ||
+      t.includes(CI_PREFIX) ||
+      t.includes(REBASE_PREFIX) ||
+      t.includes('Approved [!') ||
+      t.includes('Cannot approve [!') ||
+      t.includes('already approved') ||
+      t.includes('teams-live slash commands') ||
+      t.includes('POLO!') ||
+      t.includes('was kicked from the conversation') ||
+      t.includes('Random Fact') ||
+      t.includes('📊 [!') ||
+      t.includes('Rebase initiated') ||
+      t.includes('Cannot automatically rebase') ||
+      t.includes('Unknown command') ||
+      t.includes('itemtype="http://schema.skype.com/Reply"')
+    ) {
+      return true;
     }
+
     return false;
   }
 
@@ -792,9 +802,16 @@ export class MergeRequestWatcher {
     const self = auth.userMri;
     this.setSelfMri(self);
 
+    const cutoffTime = Date.now() - this.historyMaxAgeMinutes * 60 * 1000;
+
     for (const conversationId of this.watchedConversations) {
-      log(`Scanning recent history of ${conversationId} (limit ${this.historyLimit})...`);
-      const result = await getThreadMessages(conversationId, { limit: this.historyLimit });
+      log(
+        `Scanning recent history of ${conversationId} (limit ${this.historyLimit}, max age ${this.historyMaxAgeMinutes}m)...`
+      );
+      const result = await getThreadMessages(conversationId, {
+        limit: this.historyLimit,
+        startTime: cutoffTime,
+      });
       if (!result.ok) {
         log(`History scan of ${conversationId} failed: ${result.error?.message}`);
         continue;
@@ -803,6 +820,10 @@ export class MergeRequestWatcher {
       for (const msg of result.value.messages) {
         if (this.completedMessages.has(String(msg.id))) continue;
         if (botSentMessageIds.has(String(msg.id))) continue;
+
+        const msgTime = msg.composeTime ? new Date(msg.composeTime).getTime() : Number(msg.id) || 0;
+        if (msgTime && msgTime < cutoffTime) continue;
+
         const senderMri = msg.sender?.mri?.split('/contacts/').pop();
         if (this.isOwnMessage(senderMri, msg.content, msg.id)) continue;
 
