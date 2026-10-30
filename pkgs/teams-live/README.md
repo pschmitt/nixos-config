@@ -1,5 +1,7 @@
 # teams-live
 
+![teams-live cover](cover.png)
+
 Real-time Microsoft Teams bot and watcher daemon integrated with GitLab, Jira, and OpsGenie.
 
 ## Features

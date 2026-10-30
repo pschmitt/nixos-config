@@ -46,7 +46,7 @@ const HELP_TEXT =
   '_Target an MR by replying to its message or sending the command immediately after._';
 
 const ABOUT_TEXT =
-  'ℹ️ **teams-live** — Microsoft Teams integration daemon for GitLab, Jira, and OpsGenie.\n\n' +
+  '🧢 **teams-live** — Microsoft Teams integration daemon for GitLab, Jira, and OpsGenie.\n\n' +
   '- 📂 **Source Code**: [github.com/pschmitt/nixos-config/tree/main/pkgs/teams-live](https://github.com/pschmitt/nixos-config/tree/main/pkgs/teams-live)\n' +
   '- 💖 **Support Development**: [github.com/sponsors/pschmitt](https://github.com/sponsors/pschmitt)\n\n' +
   '_Maintained by @Philipp Schmitt._';
