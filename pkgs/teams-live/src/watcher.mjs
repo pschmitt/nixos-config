@@ -55,7 +55,7 @@ const HELP_TEXT =
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
   '- `/exec <cmd>`: Executes a command.\n' +
-  '- `/admin [cmd]`: Administrative controls (restart, reauth) [admin only].\n' +
+  '- `/sudo [cmd]`: Administrative controls (restart, reauth, status) [admin only].\n' +
   '- `/about`: Bot info, GitHub repository link, and developer support.\n' +
   '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
   '_Target an MR by replying to its message or sending the command immediately after._';
@@ -98,6 +98,7 @@ const KNOWN_COMMANDS = [
   '/kick',
   '/ban',
   '/exec',
+  '/sudo',
   '/admin',
   '/restart',
   '/reauth',
@@ -1945,7 +1946,7 @@ export class MergeRequestWatcher {
 
   async executeAdminCommand(event, args = []) {
     if (!this.isAdmin(event)) {
-      log(`Unauthorized /admin attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
+      log(`Unauthorized /sudo attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
       await sendReply(event.conversationId, event, this.respondNotPrivileged(event));
       this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
@@ -1960,10 +1961,11 @@ export class MergeRequestWatcher {
       await this.executeAdminStatusCommand(event);
     } else {
       const text =
-        '🔧 **teams-live admin commands**:\n\n' +
-        '- `/admin restart`: Restarts the teams-live daemon.\n' +
-        '- `/admin reauth` (or `/admin refresh`): Forces token refresh and shows status.\n' +
-        '- `/admin status`: Shows service runtime metrics, memory, and token auth health.';
+        '🔧 **teams-live sudo commands**:\n\n' +
+        '- `/sudo restart`: Restarts the teams-live daemon.\n' +
+        '- `/sudo reauth` (or `/sudo refresh`): Forces token refresh and shows status.\n' +
+        '- `/sudo status`: Shows service runtime metrics, memory, and token auth health.\n\n' +
+        '_Alias: `/admin`_';
       await sendReply(event.conversationId, event, text);
       this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
     }
@@ -1988,7 +1990,7 @@ export class MergeRequestWatcher {
     const meetingsAge = this.meetingsCache.text ? `${Math.round((Date.now() - this.meetingsCache.timestamp) / 1000)}s ago` : 'empty';
 
     const text =
-      '🔧 **teams-live admin status**:\n\n' +
+      '🔧 **teams-live status (sudo)**:\n\n' +
       `- **Uptime**: ${uptimeStr} (PID ${process.pid})\n` +
       `- **Memory**: ${memRss} MB RSS (${heapUsed} MB Heap)\n` +
       `- **Trouter**: Connected 🟢\n` +
@@ -2653,7 +2655,7 @@ export class MergeRequestWatcher {
       await this.executeBanCommand(event, args);
     } else if (command === '/exec') {
       await this.executeExecCommand(event, args);
-    } else if (command === '/admin') {
+    } else if (command === '/sudo' || command === '/admin') {
       await this.executeAdminCommand(event, args);
     } else if (command === '/restart') {
       await this.executeRestartCommand(event);

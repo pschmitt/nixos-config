@@ -30,7 +30,7 @@ Real-time Microsoft Teams bot and watcher daemon integrated with GitLab, Jira, a
   - `/leaderboard`: Tracks and ranks chat interactions and command usage.
   - `/weather [city]`: Current weather observations via wttr.in.
   - `/random`: Random trivia facts.
-  - `/admin [restart|reauth|status]`: Administrative controls (admin only).
+  - `/sudo [restart|reauth|status]`: Administrative controls (admin only; alias: `/admin`).
   - `/about`: Source repository and project information.
 
 ## Source & Development
