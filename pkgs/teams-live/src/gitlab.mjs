@@ -53,20 +53,52 @@ export class GitLabClient {
     return await res.json();
   }
 
-  findMrLinks(text) {
+  findMrLinks(text, { allowQuotes = false } = {}) {
     const results = [];
     if (!text) return results;
-    // Strip quote blocks and reply elements so we don't extract MRs that were merely quoted in a reply
-    const textWithoutQuotes = text
-      .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
-      .replace(/<div[^>]*itemtype="http:\/\/schema\.skype\.com\/Reply"[\s\S]*?<\/div>/gi, '');
-    for (const match of textWithoutQuotes.matchAll(this.mrUrlRegex)) {
-      results.push({
-        project: match[1],
-        iid: match[2],
-        url: match[0],
-      });
+
+    const textToSearch = allowQuotes
+      ? text
+      : text
+          .replace(/<blockquote[\s\S]*?<\/blockquote>/gi, '')
+          .replace(/<div[^>]*itemtype="http:\/\/schema\.skype\.com\/Reply"[\s\S]*?<\/div>/gi, '');
+
+    const seen = new Set();
+
+    // 1. Full URLs (e.g. https://git.wiit.one/kubernetes/workload-clusters/-/merge_requests/596)
+    for (const match of textToSearch.matchAll(this.mrUrlRegex)) {
+      const project = match[1];
+      const iid = match[2];
+      const key = `${project}!${iid}`.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push({
+          project,
+          iid,
+          url: match[0],
+        });
+      }
     }
+
+    // 2. Shorthand references (e.g. workload-clusters!596, kubernetes/workload-clusters!596)
+    const shorthandRegex = /(?:^|[^\w/.-])([a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*)!(\d+)(?=[^\w]|$)/g;
+    for (const match of textToSearch.matchAll(shorthandRegex)) {
+      let project = match[1];
+      const iid = match[2];
+      if (!project.includes('/') && this.group) {
+        project = `${this.group}/${project}`;
+      }
+      const key = `${project}!${iid}`.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        results.push({
+          project,
+          iid,
+          url: this.mrLink(project, iid),
+        });
+      }
+    }
+
     return results;
   }
 
@@ -122,12 +154,18 @@ export class GitLabClient {
     const state = mr.state; // 'opened' | 'merged' | 'closed'
 
     let approved = false;
+    let approvedBy = [];
     let status = state;
 
     if (state !== 'merged' && state !== 'closed') {
       try {
         const approvals = await this.getApprovals(project, iid);
         approved = !!approvals.approved;
+        if (Array.isArray(approvals.approved_by)) {
+          approvedBy = approvals.approved_by
+            .map((a) => a.user?.name || a.user?.username)
+            .filter(Boolean);
+        }
         status = approved ? 'approved' : 'pending';
       } catch {
         status = 'pending';
@@ -164,6 +202,7 @@ export class GitLabClient {
       target_branch: mr.target_branch,
       state,
       approved,
+      approvedBy,
       status, // 'pending' | 'approved' | 'merged' | 'closed'
       detailedMergeStatus,
       hasConflicts,

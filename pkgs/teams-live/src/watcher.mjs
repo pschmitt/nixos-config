@@ -416,6 +416,7 @@ export class MergeRequestWatcher {
             ciMessageServerId: m.ciMessageServerId,
             lastReportedPipelineId: m.lastReportedPipelineId,
             lastReportedPipelineStatus: m.lastReportedPipelineStatus,
+            lastReportedApprovalStatus: m.lastReportedApprovalStatus,
             rebaseMessageServerId: m.rebaseMessageServerId,
             lastReportedNeedsRebase: m.lastReportedNeedsRebase,
           })),
@@ -613,6 +614,7 @@ export class MergeRequestWatcher {
           ciMessageServerId: savedMr?.ciMessageServerId ?? null,
           lastReportedPipelineId: savedMr?.lastReportedPipelineId ?? null,
           lastReportedPipelineStatus: savedMr?.lastReportedPipelineStatus ?? null,
+          lastReportedApprovalStatus: savedMr?.lastReportedApprovalStatus ?? (initialStatus === 'approved'),
           rebaseMessageServerId: savedMr?.rebaseMessageServerId ?? null,
           lastReportedNeedsRebase: savedMr?.lastReportedNeedsRebase ?? null,
         });
@@ -665,24 +667,29 @@ export class MergeRequestWatcher {
     if (!this.config.gitlab.notify?.ci?.enable) return;
 
     let icon = 'ℹ️';
-    let statusText = pipeline.status;
+    let statusText = pipeline?.status || 'unknown';
     let shouldNotify = false;
 
-    if (pipeline.status === 'success') {
+    if (pipeline?.status === 'success') {
       icon = '✅';
       statusText = 'passed';
       shouldNotify = this.config.gitlab.notify?.ci?.on_success;
-    } else if (pipeline.status === 'failed') {
+    } else if (pipeline?.status === 'failed') {
       icon = '❌';
       statusText = 'failed';
       shouldNotify = this.config.gitlab.notify?.ci?.on_failure;
-    } else if (pipeline.status === 'running') {
+    } else if (pipeline?.status === 'running') {
       icon = '⏳';
       statusText = 'running';
       shouldNotify = true;
-    } else if (pipeline.status === 'canceled') {
+    } else if (pipeline?.status === 'canceled') {
       icon = '⚠️';
       statusText = 'canceled';
+      shouldNotify = true;
+    }
+
+    const isApproved = Boolean(mrDetails?.approved || mrDetails?.status === 'approved');
+    if (isApproved) {
       shouldNotify = true;
     }
 
@@ -690,17 +697,32 @@ export class MergeRequestWatcher {
 
     const mrRef = `!${mr.iid} (${mr.project})`;
     const mrUrl = mrDetails?.web_url || this.gitlab.mrLink(mr.project, mr.iid);
-    const pipeUrl = pipeline.web_url;
-    const msg = `${icon} ${CI_PREFIX}**${statusText}** for [${mrRef}](${mrUrl})\n\n[Pipeline #${pipeline.id}](${pipeUrl})`;
+    const pipeText = pipeline ? `\n\n[Pipeline #${pipeline.id}](${pipeline.web_url})` : '';
+    const approvers = mrDetails?.approvedBy?.length > 0 ? ` (by ${mrDetails.approvedBy.join(', ')})` : '';
 
-    if (mr.ciMessageServerId) {
-      log(`updating CI status comment (${pipeline.status}) for ${mr.project}!${mr.iid} (msg ${mr.ciMessageServerId})`);
-      const updateResult = await updateReply(entry.conversationId, mr.ciMessageServerId, entry, msg);
-      if (updateResult.ok) return;
-      log(`updating CI comment failed (${updateResult.error?.message}), falling back to new reply`);
+    let msg = '';
+    if (isApproved) {
+      if (pipeline) {
+        msg = `👍 **Approved**${approvers} • ${icon} ${CI_PREFIX}**${statusText}** for [${mrRef}](${mrUrl})${pipeText}`;
+      } else {
+        msg = `👍 **Approved**${approvers} for [${mrRef}](${mrUrl})`;
+      }
+    } else {
+      if (pipeline) {
+        msg = `${icon} ${CI_PREFIX}**${statusText}** for [${mrRef}](${mrUrl})${pipeText}`;
+      } else {
+        return;
+      }
     }
 
-    log(`posting new CI status comment (${pipeline.status}) for ${mr.project}!${mr.iid}`);
+    if (mr.ciMessageServerId) {
+      log(`updating status comment (CI: ${pipeline?.status}, approved: ${isApproved}) for ${mr.project}!${mr.iid} (msg ${mr.ciMessageServerId})`);
+      const updateResult = await updateReply(entry.conversationId, mr.ciMessageServerId, entry, msg);
+      if (updateResult.ok) return;
+      log(`updating status comment failed (${updateResult.error?.message}), falling back to new reply`);
+    }
+
+    log(`posting new status comment (CI: ${pipeline?.status}, approved: ${isApproved}) for ${mr.project}!${mr.iid}`);
     const result = await sendReply(entry.conversationId, entry, msg);
     if (result.ok && result.value?.timestamp) {
       mr.ciMessageServerId = String(result.value.timestamp);
@@ -819,16 +841,22 @@ export class MergeRequestWatcher {
           await this.sendHeadsup(entry, mr);
         }
 
-        // CI Pipeline status check (with in-place update)
-        if (mrState.pipeline) {
-          const pipe = mrState.pipeline;
-          if (mr.lastReportedPipelineId !== pipe.id || mr.lastReportedPipelineStatus !== pipe.status) {
-            if (!entry.isHistory || mr.lastReportedPipelineStatus !== null) {
-              await this.handleCiStatusComment(entry, mr, pipe, mrState);
-            }
+        // CI Pipeline & Approval status check (with in-place update)
+        const pipe = mrState.pipeline;
+        const pipelineChanged =
+          pipe && (mr.lastReportedPipelineId !== pipe.id || mr.lastReportedPipelineStatus !== pipe.status);
+        const isApproved = Boolean(mrState.approved || mrState.status === 'approved');
+        const approvalChanged = mr.lastReportedApprovalStatus !== isApproved;
+
+        if (pipelineChanged || approvalChanged) {
+          if (!entry.isHistory || mr.lastReportedPipelineStatus !== null || mr.lastReportedApprovalStatus !== null) {
+            await this.handleCiStatusComment(entry, mr, pipe, mrState);
+          }
+          if (pipe) {
             mr.lastReportedPipelineId = pipe.id;
             mr.lastReportedPipelineStatus = pipe.status;
           }
+          mr.lastReportedApprovalStatus = isApproved;
         }
 
         // Rebase status check (with in-place update)
@@ -929,7 +957,7 @@ export class MergeRequestWatcher {
     if (directLinks.length > 0) return directLinks;
 
     // 2. Direct MR links in the command message itself (or HTML quote block):
-    const htmlLinks = deduplicateMrs(this.gitlab.findMrLinks(event.rawHtml || ''));
+    const htmlLinks = deduplicateMrs(this.gitlab.findMrLinks(event.rawHtml || '', { allowQuotes: true }));
     if (htmlLinks.length > 0) return htmlLinks;
 
     // 3. Fallback: Search conversation history for the most recent message from another user with an MR link
@@ -943,8 +971,9 @@ export class MergeRequestWatcher {
           const senderMri = msg.sender?.mri?.split('/contacts/').pop();
           if (this.isOwnMessage(senderMri, msg.content, msg.id, msg.clientMessageId, msg.content)) continue;
 
-          const msgText = [msg.content, ...(msg.links ?? []).map((l) => l.url)].filter(Boolean).join(' ');
-          const links = deduplicateMrs(this.gitlab.findMrLinks(msgText));
+          const extractedUrls = (msg.links ?? []).map((l) => (typeof l === 'string' ? l : l?.url)).filter(Boolean);
+          const msgText = [msg.content, ...extractedUrls].filter(Boolean).join(' ');
+          const links = deduplicateMrs(this.gitlab.findMrLinks(msgText, { allowQuotes: true }));
           if (links.length > 0) {
             log(`Found target MR in preceding message ${msg.id}: ${links.map((l) => `${l.project}!${l.iid}`).join(', ')}`);
             return links;
@@ -1997,7 +2026,8 @@ export class MergeRequestWatcher {
 
     if (this.isOwnMessage(event.fromMri, event.content, event.messageId, event.clientMessageId, event.rawHtml)) return;
 
-    const fullText = [event.content, ...(event.links ?? [])].filter(Boolean).join(' ');
+    const extractedUrls = (event.links ?? []).map((l) => (typeof l === 'string' ? l : l?.url)).filter(Boolean);
+    const fullText = [event.content, event.rawHtml, ...extractedUrls].filter(Boolean).join(' ');
     this.watch(event.conversationId, event.messageId, fullText, {
       from: event.from,
       fromMri: event.fromMri,
@@ -2082,7 +2112,8 @@ export class MergeRequestWatcher {
         if (ownReactions.includes('merged')) continue;
 
         const currentStatus = ownReactions.find(Boolean) ?? null;
-        const text = [msg.content, ...(msg.links ?? []).map((l) => l.url)].filter(Boolean).join(' ');
+        const extractedUrls = (msg.links ?? []).map((l) => (typeof l === 'string' ? l : l?.url)).filter(Boolean);
+        const text = [msg.content, ...extractedUrls].filter(Boolean).join(' ');
 
         this.watch(conversationId, msg.id, text, {
           from: msg.sender?.displayName || '',
