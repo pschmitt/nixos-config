@@ -7,6 +7,7 @@ import {
   COMMAND_REACTIONS,
   BOT_WATERMARK,
   botSentMessageIds,
+  recordBotMessageId,
   addReaction,
   removeReaction,
   sendReply,
