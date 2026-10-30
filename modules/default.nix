@@ -19,6 +19,7 @@
     ./sshfs.nix
     ./stalwart.nix
     ./syncthing
+    ./teams-live.nix
     ./theme.nix
   ];
 }

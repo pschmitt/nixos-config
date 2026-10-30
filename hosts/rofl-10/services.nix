@@ -46,6 +46,7 @@ in
     ../../services/searxng.nix
     ../../services/stricknani.nix
     ../../services/taskwarrior
+    ../../services/teams-live.nix
     ../../services/trek.nix
     ../../services/turris-ssh-tunnel.nix
     ../../services/vaultwarden.nix

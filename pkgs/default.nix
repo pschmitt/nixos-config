@@ -23,6 +23,7 @@ let
   osd = pkgs.callPackage ./local/osd { };
   screencast-state = pkgs.callPackage ./local/screencast-state { };
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
+  msteams-mcp = pkgs.callPackage ./msteams-mcp { };
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
 in
 {
@@ -92,7 +93,7 @@ in
   lumine-capture = pkgs.callPackage ./lumine-capture { };
   lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
-  msteams-mcp = pkgs.callPackage ./msteams-mcp { };
+  inherit msteams-mcp;
   nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
@@ -105,6 +106,7 @@ in
   still = pkgs.callPackage ./still { };
   stui = pkgs.callPackage ./stui { };
   syncthingtui = pkgs.callPackage ./syncthingtui { };
+  teams-live = pkgs.callPackage ./teams-live { inherit msteams-mcp; };
   termux-apt-prefix-builder = pkgs.callPackage ./termux/apt-prefix-builder { };
   tewi = pkgs.callPackage ./tewi { };
   timewarrior-jirapush = pkgs.callPackage ./timewarrior-jirapush { };
