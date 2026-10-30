@@ -180,23 +180,23 @@ export class MergeRequestWatcher {
       t.includes(CI_PREFIX) ||
       t.includes(REBASE_PREFIX) ||
       t.includes('Approved ') ||
-      t.includes('Cannot approve ') ||
+      t.includes('Cannot approve') ||
       t.includes('already approved') ||
       t.includes('teams-live slash commands') ||
+      t.includes('teams-live status') ||
       t.includes('POLO!') ||
       t.includes('was kicked from the conversation') ||
       t.includes('was banned from the conversation') ||
       t.includes('Random Fact') ||
-      t.includes('📊 ') ||
-      t.includes('📋 **Open Merge Requests**') ||
+      t.includes('📊') ||
+      t.includes('Open Merge Requests') ||
       t.includes('No open merge requests found') ||
-      t.includes('🏃 **Current Sprint Tasks**') ||
+      t.includes('Current Sprint Tasks') ||
       t.includes('No active sprint tasks found') ||
-      t.includes('📅 **Meetings for the rest of the week') ||
+      t.includes('Meetings for the rest of the week') ||
       t.includes('No upcoming meetings scheduled') ||
-      t.includes(': command not found') ||
-      t.includes('[exec] Process finished') ||
-      t.includes('[exec] No command specified') ||
+      t.includes('command not found') ||
+      t.includes('[exec]') ||
       t.includes('dId yOu MeAn') ||
       t.includes('Rebase initiated') ||
       t.includes('Cannot automatically rebase') ||
@@ -206,7 +206,7 @@ export class MergeRequestWatcher {
       t.includes('No merge request found') ||
       t.includes('Status check failed') ||
       t.includes('Weather lookup failed') ||
-      t.includes('🌤️ ') ||
+      t.includes('🌤️') ||
       t.includes('itemtype="http://schema.skype.com/Reply"')
     ) {
       return true;
@@ -708,6 +708,40 @@ export class MergeRequestWatcher {
   }
 
   async executeStatusCommand(event, args) {
+    const hasDirectLinks = args.some((a) => this.gitlab.findMrLinks(a).length > 0);
+    const hasQuoteLinks = this.gitlab.findMrLinks(event.rawHtml || '').length > 0;
+
+    if (!hasDirectLinks && !hasQuoteLinks && args.length === 0) {
+      log(`Executing bot runtime /status in ${event.conversationId}...`);
+      const uptimeSec = Math.floor(process.uptime());
+      const hours = Math.floor(uptimeSec / 3600);
+      const minutes = Math.floor((uptimeSec % 3600) / 60);
+      const seconds = uptimeSec % 60;
+      const uptimeStr = `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${seconds}s`;
+      const memRss = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      const startTime = new Date(Date.now() - uptimeSec * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+
+      const convCount = this.watchedConversations.size;
+      const watchedMrsCount = this.watched.size;
+      const completedCount = this.completedMessages.size;
+
+      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await sendReply(
+        event.conversationId,
+        event,
+        '🤖 **teams-live status**:\n\n' +
+        `- **Uptime**: ${uptimeStr} (started ${startTime})\n` +
+        `- **Runtime**: Node.js ${process.version} (PID ${process.pid})\n` +
+        `- **Memory (RSS)**: ${memRss} MB\n` +
+        `- **Trouter**: Connected 🟢\n` +
+        `- **Watched Conversations**: ${convCount}\n` +
+        `- **Active MR Watchers**: ${watchedMrsCount}\n` +
+        `- **Completed Message Cache**: ${completedCount}\n\n` +
+        '_Tip: To check an MR status, use `/status [link]` or quote an MR message._'
+      );
+      return;
+    }
+
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
@@ -1168,12 +1202,20 @@ export class MergeRequestWatcher {
       log(
         `Scanning recent history of ${conversationId} (limit ${this.historyLimit}, max age ${this.historyMaxAgeMinutes}m)...`
       );
-      const result = await getThreadMessages(conversationId, {
+      let result = await getThreadMessages(conversationId, {
         limit: this.historyLimit,
         startTime: cutoffTime,
       });
       if (!result.ok) {
-        log(`History scan of ${conversationId} failed: ${result.error?.message}`);
+        log(`History scan of ${conversationId} failed (${result.error?.message}), retrying in 2s...`);
+        await new Promise((r) => setTimeout(r, 2000));
+        result = await getThreadMessages(conversationId, {
+          limit: this.historyLimit,
+          startTime: cutoffTime,
+        });
+      }
+      if (!result.ok) {
+        log(`History scan retry of ${conversationId} failed: ${result.error?.message}`);
         continue;
       }
 

@@ -1,9 +1,77 @@
 import { sendMessage, getThreadMessages, editMessage } from 'msteams-mcp/dist/api/chatsvc-messaging.js';
 import { addReaction, removeReaction } from 'msteams-mcp/dist/api/chatsvc-reactions.js';
-import { getCalendarView } from 'msteams-mcp/dist/api/calendar-api.js';
+import { getCalendarView as mcpGetCalendarView } from 'msteams-mcp/dist/api/calendar-api.js';
+import { requireSkypeSpacesAuth } from 'msteams-mcp/dist/utils/auth-guards.js';
+import { httpRequest } from 'msteams-mcp/dist/utils/http-client.js';
 import { markdownToTeamsHtml } from 'msteams-mcp/dist/utils/parsers-markdown.js';
 
-export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, getCalendarView, markdownToTeamsHtml };
+export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, markdownToTeamsHtml };
+
+export async function getCalendarView(options = {}) {
+  const mcpRes = await mcpGetCalendarView(options);
+  if (mcpRes.ok) return mcpRes;
+
+  // Fallback: direct MiddleTier call for EMEA
+  const authRes = requireSkypeSpacesAuth();
+  if (!authRes.ok) return mcpRes;
+
+  const { skypeToken, spacesToken } = authRes.value;
+  const now = new Date();
+  const defaultEnd = new Date(now);
+  defaultEnd.setDate(defaultEnd.getDate() + 7);
+  const startDate = options.startDate || now.toISOString();
+  const endDate = options.endDate || defaultEnd.toISOString();
+  const limit = options.limit ?? 50;
+
+  const params = new URLSearchParams({
+    startDate,
+    endDate,
+    $top: limit.toString(),
+    $count: 'true',
+    $skip: '0',
+    $orderby: 'startTime asc',
+    $filter: 'isAppointment eq false and isAllDayEvent eq false and isCancelled eq false',
+  });
+
+  const url = `https://teams.microsoft.com/api/mt/emea/v2.1/me/calendars/calendarView?${params.toString()}`;
+  const response = await httpRequest(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authentication: `skypetoken=${skypeToken}`,
+      Authorization: `Bearer ${spacesToken}`,
+      'x-ms-client-version': '49/25113001312',
+    },
+  });
+
+  if (!response.ok) return mcpRes;
+
+  const rawMeetings = response.value?.data?.value || [];
+  const meetings = rawMeetings.map((raw) => {
+    const rawResponse = raw.myResponseType;
+    let myResponse = 'None';
+    if (rawResponse === 'Accepted' || rawResponse === 'Organizer') myResponse = 'Accepted';
+    else if (rawResponse === 'Tentative' || rawResponse === 'TentativelyAccepted') myResponse = 'Tentative';
+    else if (rawResponse === 'Declined') myResponse = 'Declined';
+
+    return {
+      id: raw.objectId,
+      subject: raw.subject || '(No subject)',
+      startTime: raw.startTime,
+      endTime: raw.endTime,
+      organizer: {
+        name: raw.organizerName || 'Unknown',
+        email: raw.organizerAddress || '',
+      },
+      location: raw.location,
+      isOnlineMeeting: raw.isOnlineMeeting === true,
+      joinUrl: raw.skypeTeamsMeetingUrl,
+      myResponse,
+    };
+  });
+
+  return { ok: true, value: { count: meetings.length, meetings } };
+}
 
 export const botSentMessageIds = new Set();
 

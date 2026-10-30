@@ -36,6 +36,21 @@ export class AuthManager {
       // If full session state (cookies and origins from msteams-mcp session-state)
       if (data.cookies && data.origins) {
         log(`Loaded full session state from ${this.credentialsFile}`);
+        // Ensure DISCOVER-REGION-GTM exists in localStorage so msteams-mcp calendar-api can extract region
+        const origin = data.origins.find((o) => o.origin?.includes('teams.'));
+        if (origin && !origin.localStorage?.some((item) => item.name?.includes('DISCOVER-REGION-GTM'))) {
+          origin.localStorage = origin.localStorage || [];
+          origin.localStorage.push({
+            name: 'DISCOVER-REGION-GTM',
+            value: JSON.stringify({
+              item: {
+                middleTier: 'https://teams.microsoft.com/api/mt/emea',
+                chatServiceAfd: 'https://teams.microsoft.com/api/chatsvc/emea',
+                chatSvcAggAfd: 'https://teams.microsoft.com/api/csa/emea',
+              },
+            }),
+          });
+        }
         writeSessionState(data);
         return extractMessageAuth(data);
       }
