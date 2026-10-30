@@ -177,6 +177,92 @@ pub fn parse_window_list(raw: &str) -> Vec<PortalWindowEntry> {
         .collect()
 }
 
+/// A workspace XDPH can share. `id` is XDPH's own tracker ID, not Hyprland's
+/// workspace ID; `name` is what Hyprland calls the workspace.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PortalWorkspaceEntry {
+    pub id: u64,
+    pub name: String,
+    pub outputs: Vec<String>,
+}
+
+impl PortalWorkspaceEntry {
+    pub fn label(&self) -> String {
+        format!("Workspace {}", self.name)
+    }
+
+    pub fn outputs_label(&self) -> String {
+        match self.outputs.as_slice() {
+            [] => "Not shown on a monitor".into(),
+            [one] => format!("On monitor {one}"),
+            many => format!("On monitors {}", many.join(", ")),
+        }
+    }
+}
+
+/// Takes a `LEN:` prefixed string off the front of `raw`.
+fn take_length_prefixed<'a>(raw: &mut &'a str) -> Option<&'a str> {
+    let (len, rest) = raw.split_once(':')?;
+    let len: usize = len.parse().ok()?;
+    let value = rest.get(..len)?;
+    *raw = &rest[len..];
+    Some(value)
+}
+
+/// Parses `XDPH_WORKSPACE_SHARING_LIST_V3`:
+/// `ID[HN>]LEN:NAME[HM>]COUNT:(LEN:OUTPUT)*[HE>]` per workspace.
+pub fn parse_workspace_list_v3(raw: &str) -> Vec<PortalWorkspaceEntry> {
+    let mut rest = raw;
+    let mut entries = Vec::new();
+
+    while !rest.is_empty() {
+        let Some((id, tail)) = rest.split_once("[HN>]") else {
+            break;
+        };
+        let Some(id) = id.parse::<u64>().ok().filter(|id| *id != 0) else {
+            break;
+        };
+        rest = tail;
+
+        let Some(name) = take_length_prefixed(&mut rest) else {
+            break;
+        };
+        let Some(tail) = rest.strip_prefix("[HM>]") else {
+            break;
+        };
+        rest = tail;
+
+        let Some((count, tail)) = rest.split_once(':') else {
+            break;
+        };
+        let Ok(count) = count.parse::<usize>() else {
+            break;
+        };
+        rest = tail;
+
+        let mut outputs = Vec::new();
+        for _ in 0..count {
+            let Some(output) = take_length_prefixed(&mut rest) else {
+                return entries;
+            };
+            outputs.push(output.to_string());
+        }
+
+        let Some(tail) = rest.strip_prefix("[HE>]") else {
+            break;
+        };
+        rest = tail;
+
+        entries.push(PortalWorkspaceEntry {
+            id,
+            name: name.to_string(),
+            outputs,
+        });
+    }
+
+    entries
+}
+
 pub fn client_for_entry<'a>(
     entry: &PortalWindowEntry,
     clients: &'a [Client],
@@ -582,6 +668,29 @@ mod tests {
                 },
             ]
         );
+    }
+
+    #[test]
+    fn test_parse_workspace_list_v3() {
+        let entries = parse_workspace_list_v3(
+            "42[HN>]1:1[HM>]1:4:DP-3[HE>]43[HN>]3:dev[HM>]0:[HE>]44[HN>]3:dev[HM>]2:4:DP-18:HDMI-A-1[HE>]",
+        );
+        assert_eq!(entries.len(), 3);
+        assert_eq!(entries[0].id, 42);
+        assert_eq!(entries[0].name, "1");
+        assert_eq!(entries[0].outputs, vec!["DP-3"]);
+        assert!(entries[1].outputs.is_empty());
+        assert_eq!(entries[1].outputs_label(), "Not shown on a monitor");
+        assert_eq!(entries[2].outputs, vec!["DP-1", "HDMI-A-1"]);
+        assert_eq!(entries[2].outputs_label(), "On monitors DP-1, HDMI-A-1");
+
+        // A name that looks like the delimiters must not derail parsing.
+        let tricky = parse_workspace_list_v3("9[HN>]9:a[HE>]:;\n[HM>]0:[HE>]");
+        assert_eq!(tricky.len(), 1);
+        assert_eq!(tricky[0].name, "a[HE>]:;\n");
+
+        assert!(parse_workspace_list_v3("0[HN>]1:1[HM>]0:[HE>]").is_empty());
+        assert!(parse_workspace_list_v3("garbage").is_empty());
     }
 
     #[test]

@@ -53,6 +53,11 @@ fn run_self_test() {
     assert_eq!(entries[0].title, "A tab");
     assert_eq!(entries[1].address.as_deref(), Some("0xabc"));
 
+    let workspaces = hyprland::parse_workspace_list_v3("42[HN>]1:1[HM>]1:4:DP-3[HE>]");
+    assert_eq!(workspaces.len(), 1);
+    assert_eq!(workspaces[0].id, 42);
+    assert_eq!(workspaces[0].outputs, vec!["DP-3"]);
+
     let conf = config::parse_picker_config(
         "columns = 3\npreview {\n  scale = 0.5\n  jpeg_quality = 90\n  refresh_rate = 8\n}",
     );
@@ -141,8 +146,16 @@ fn main() {
         .window_list
         .or_else(|| std::env::var("XDPH_WINDOW_SHARING_LIST").ok());
 
+    // XDPH 1.5.0 and later lists shareable workspaces too.
+    let workspace_list = std::env::var("XDPH_WORKSPACE_SHARING_LIST_V3").ok();
+
     app.connect_activate(move |app| {
-        ui::build_ui(app, allow_token, window_list.clone());
+        ui::build_ui(
+            app,
+            allow_token,
+            window_list.clone(),
+            workspace_list.clone(),
+        );
     });
 
     app.run_with_args::<&str>(&[]);

@@ -32,9 +32,10 @@ use crate::{
     decoration,
     desktop::{DesktopRegistry, create_app_icon, create_themed_icon},
     hyprland::{
-        Client, Monitor, PortalWindowEntry, client_for_entry, parse_region, parse_region_details,
-        parse_window_list, query_active_workspace, query_clients, query_cursor_pos, query_monitors,
-        spawn_state_watcher, window_at_point, window_to_region,
+        Client, Monitor, PortalWindowEntry, PortalWorkspaceEntry, client_for_entry, parse_region,
+        parse_region_details, parse_window_list, parse_workspace_list_v3, query_active_workspace,
+        query_clients, query_cursor_pos, query_monitors, spawn_state_watcher, window_at_point,
+        window_to_region,
     },
     indicator,
     overlay::OverlayHighlighter,
@@ -61,7 +62,7 @@ pub fn picker_state_path() -> PathBuf {
 pub fn read_last_tab() -> String {
     if let Ok(content) = fs::read_to_string(picker_state_path()) {
         let t = content.trim();
-        if t == "windows" || t == "screens" || t == "regions" {
+        if matches!(t, "windows" | "screens" | "workspaces" | "regions") {
             return t.to_string();
         }
     }
@@ -109,6 +110,7 @@ pub struct AppState {
     pub clients: Vec<Client>,
     pub monitors: Vec<Monitor>,
     pub window_entries: Vec<PortalWindowEntry>,
+    pub workspace_entries: Vec<PortalWorkspaceEntry>,
     pub has_window_list_raw: bool,
     pub next_card_id: usize,
     pub desktop_reg: Rc<DesktopRegistry>,
@@ -136,7 +138,12 @@ pub struct AppState {
     pub stack: Option<Stack>,
 }
 
-pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<String>) {
+pub fn build_ui(
+    app: &Application,
+    allow_token: bool,
+    window_list_raw: Option<String>,
+    workspace_list_raw: Option<String>,
+) {
     install_css();
     let config = load_config();
     let highlighter = OverlayHighlighter::new(&config);
@@ -163,10 +170,19 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
             .collect()
     };
 
+    let workspace_entries = workspace_list_raw
+        .as_deref()
+        .map(parse_workspace_list_v3)
+        .unwrap_or_default();
+
     let pictures: Rc<RefCell<HashMap<usize, Picture>>> = Rc::new(RefCell::new(HashMap::new()));
     let pictures_loop = pictures.clone();
 
-    let initial_tab = read_last_tab();
+    let mut initial_tab = read_last_tab();
+    // Without XDPH's workspace list the tab has nothing to offer.
+    if initial_tab == "workspaces" && workspace_entries.is_empty() {
+        initial_tab = "windows".to_string();
+    }
     let state = Rc::new(RefCell::new(AppState {
         config: config.clone(),
         allow_token,
@@ -183,6 +199,7 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
         clients,
         monitors: monitors.clone(),
         window_entries,
+        workspace_entries,
         has_window_list_raw,
         next_card_id: 0,
         desktop_reg,
@@ -416,11 +433,15 @@ pub fn build_ui(app: &Application, allow_token: bool, window_list_raw: Option<St
     let desktop_reg = state.borrow().desktop_reg.clone();
     let window_page = make_window_page(state.clone(), &desktop_reg, &mut next_card_id);
     let screen_page = make_screen_page(state.clone(), &mut next_card_id);
+    let workspace_page = make_workspace_page(state.clone(), &mut next_card_id);
     let region_page = make_region_page(state.clone(), &mut next_card_id);
     state.borrow_mut().next_card_id = next_card_id;
 
     stack.add_titled(&window_page, Some("windows"), "Window");
     stack.add_titled(&screen_page, Some("screens"), "Screen");
+    if let Some(ref page) = workspace_page {
+        stack.add_titled(page, Some("workspaces"), "Workspace");
+    }
     stack.add_titled(&region_page, Some("regions"), "Region");
     stack.set_visible_child_name(&initial_tab);
 
@@ -677,6 +698,11 @@ fn make_tab_switcher(stack: &Stack) -> GtkBox {
     let tabs = [
         ("windows", "Window", "view-grid-symbolic"),
         ("screens", "Screen", "video-display-symbolic"),
+        (
+            "workspaces",
+            "Workspace",
+            "preferences-desktop-apps-symbolic",
+        ),
         ("regions", "Region", "selection-rectangular-symbolic"),
     ];
 
@@ -685,6 +711,9 @@ fn make_tab_switcher(stack: &Stack) -> GtkBox {
         .unwrap_or_else(|| "windows".into());
 
     for (name, label, icon) in tabs {
+        if stack.child_by_name(name).is_none() {
+            continue;
+        }
         let btn = ToggleButton::new();
         if let Some(ref lead) = group_lead {
             btn.set_group(Some(lead));
@@ -755,6 +784,7 @@ fn make_pick_button(state: Rc<RefCell<AppState>>) -> Button {
             "windows" => trigger_pick_window(state_click.clone()),
             "screens" => trigger_pick_screen(state_click.clone()),
             "regions" => trigger_pick_region(state_click.clone()),
+            // Workspaces are chosen from the cards only.
             _ => {}
         }
     });
@@ -1224,6 +1254,86 @@ fn make_screen_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> Scroll
     scroll
 }
 
+/// The Hyprland monitor currently showing a workspace of this name, if any.
+fn monitor_showing_workspace<'a>(
+    entry: &PortalWorkspaceEntry,
+    monitors: &'a [Monitor],
+) -> Option<&'a Monitor> {
+    monitors.iter().find(|mon| {
+        mon.active_workspace
+            .as_ref()
+            .is_some_and(|ws| ws.name == entry.name)
+            && (entry.outputs.is_empty() || entry.outputs.contains(&mon.name))
+    })
+}
+
+fn make_workspace_page(
+    state: Rc<RefCell<AppState>>,
+    next_id: &mut usize,
+) -> Option<ScrolledWindow> {
+    let entries = state.borrow().workspace_entries.clone();
+    if entries.is_empty() {
+        return None;
+    }
+
+    let flow = FlowBox::new();
+    flow.set_selection_mode(SelectionMode::None);
+    let cols = state.borrow().config.columns;
+    flow.set_max_children_per_line(cols as u32);
+    flow.set_min_children_per_line(cols as u32);
+    flow.set_homogeneous(true);
+    flow.set_valign(gtk4::Align::Start);
+    flow.set_column_spacing(14);
+    flow.set_row_spacing(14);
+    flow.set_margin_top(4);
+    flow.set_margin_bottom(16);
+    flow.set_margin_start(28);
+    flow.set_margin_end(28);
+
+    let monitors = state.borrow().monitors.clone();
+    let mut group_lead: Option<ToggleButton> = None;
+
+    for entry in entries {
+        let card_id = *next_id;
+        *next_id += 1;
+
+        // XDPH only ever sees its own tracker ID.
+        let selection = format!("workspace-id:{}", entry.id);
+
+        // A workspace has no capture source of its own. One that is on
+        // screen previews as its monitor; the rest show just the icon.
+        let (target, badges) = match monitor_showing_workspace(&entry, &monitors) {
+            Some(mon) => (CaptureTarget::Output(mon.name.clone()), Vec::new()),
+            None => (
+                CaptureTarget::Output(String::new()),
+                vec![("Hidden", "badge-offscreen", "view-conceal-symbolic")],
+            ),
+        };
+
+        let icon_widget = create_themed_icon("preferences-desktop-apps-symbolic", 32);
+
+        let card = make_source_card(
+            state.clone(),
+            card_id,
+            &selection,
+            &entry.label(),
+            &entry.outputs_label(),
+            Some(icon_widget),
+            &badges,
+            target,
+            "workspaces",
+            &mut group_lead,
+        );
+        flow.insert(&card, -1);
+    }
+
+    let scroll = ScrolledWindow::new();
+    scroll.set_policy(PolicyType::Never, PolicyType::Automatic);
+    scroll.set_child(Some(&flow));
+    watch_scroll_for_culling(&scroll, state.clone());
+    Some(scroll)
+}
+
 fn make_region_page(state: Rc<RefCell<AppState>>, next_id: &mut usize) -> GtkBox {
     let box_main = GtkBox::new(Orientation::Vertical, 14);
     box_main.set_halign(gtk4::Align::Center);
@@ -1675,6 +1785,16 @@ fn update_overlay_highlight(state: &AppState) {
             highlighter.highlight_window(c, &monitors_to_use);
         } else {
             highlighter.clear();
+        }
+    } else if let Some(id) = sel.strip_prefix("workspace-id:") {
+        let monitor = id
+            .parse::<u64>()
+            .ok()
+            .and_then(|id| state.workspace_entries.iter().find(|e| e.id == id))
+            .and_then(|entry| monitor_showing_workspace(entry, &monitors_to_use));
+        match monitor {
+            Some(mon) => highlighter.highlight_screen(&mon.name),
+            None => highlighter.clear(),
         }
     } else if sel.starts_with("region:") {
         if let Some(details) = parse_region_details(&sel, &monitors_to_use) {
