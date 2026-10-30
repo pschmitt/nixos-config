@@ -15,23 +15,21 @@ let
 
   jsonFormat = pkgs.formats.json { };
 
-  effectiveSettings = lib.recursiveUpdate cfg.settings {
-    browser_daemon = {
-      url = lib.mkDefault cfg.browserDaemonUrl;
-      profile = lib.mkDefault cfg.browserDaemonProfile;
-      secret_file = lib.mkDefault (
-        if cfg.browserDaemonSecretFile != null then cfg.browserDaemonSecretFile else null
-      );
+  overrides = lib.filterAttrs (_: v: v != { }) {
+    browser_daemon = lib.filterAttrs (_: v: v != null && v != "") {
+      url = cfg.browserDaemonUrl;
+      profile = cfg.browserDaemonProfile;
+      secret_file = cfg.browserDaemonSecretFile;
     };
-    gitlab = {
-      token_file = lib.mkDefault (if cfg.gitlabTokenFile != null then cfg.gitlabTokenFile else null);
+    gitlab = lib.filterAttrs (_: v: v != null) {
+      token_file = cfg.gitlabTokenFile;
     };
-    teams = {
-      credentials_file = lib.mkDefault (
-        if cfg.credentialsFile != null then cfg.credentialsFile else null
-      );
+    teams = lib.filterAttrs (_: v: v != null) {
+      credentials_file = cfg.credentialsFile;
     };
   };
+
+  effectiveSettings = lib.recursiveUpdate cfg.settings overrides;
 
   defaultConfigFile = jsonFormat.generate "teams-live-config.json" effectiveSettings;
   configFile = if cfg.configFile != null then cfg.configFile else defaultConfigFile;
@@ -77,7 +75,7 @@ in
     };
 
     credentialsFile = mkOption {
-      type = types.nullOr types.path;
+      type = types.nullOr types.str;
       default = null;
       description = "Path to a Teams session state or credentials JSON file (SOPS secret).";
     };

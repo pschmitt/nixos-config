@@ -39,10 +39,13 @@ export function loadConfig(configPath) {
     fileConfig = parseConfigFile(process.env.TEAMS_LIVE_CONFIG);
   }
 
+  const getString = (val) => (typeof val === 'string' ? val : '');
+  const getNullableString = (val) => (typeof val === 'string' ? val : null);
+
   const browserDaemon = {
-    url: fileConfig.browser_daemon?.url || process.env.TEAMS_MCP_BROWSER_DAEMON_URL || '',
-    profile: fileConfig.browser_daemon?.profile || process.env.TEAMS_MCP_BROWSER_DAEMON_PROFILE || 'work',
-    secret_file: fileConfig.browser_daemon?.secret_file || process.env.BROWSER_DAEMON_SECRET_FILE || null,
+    url: getString(fileConfig.browser_daemon?.url) || process.env.TEAMS_MCP_BROWSER_DAEMON_URL || '',
+    profile: getString(fileConfig.browser_daemon?.profile) || process.env.TEAMS_MCP_BROWSER_DAEMON_PROFILE || 'work',
+    secret_file: getNullableString(fileConfig.browser_daemon?.secret_file) || process.env.BROWSER_DAEMON_SECRET_FILE || null,
   };
 
   let browserDaemonSecret = null;
@@ -55,8 +58,8 @@ export function loadConfig(configPath) {
   }
 
   const gitlab = {
-    host: fileConfig.gitlab?.host || process.env.GITLAB_HOST || 'git.wiit.one',
-    token_file: fileConfig.gitlab?.token_file || process.env.GITLAB_TOKEN_FILE || null,
+    host: getString(fileConfig.gitlab?.host) || process.env.GITLAB_HOST || 'git.wiit.one',
+    token_file: getNullableString(fileConfig.gitlab?.token_file) || process.env.GITLAB_TOKEN_FILE || null,
     token: null,
     poll_interval_seconds: Number(fileConfig.gitlab?.poll_interval_seconds ?? process.env.TEAMS_GITLAB_INTERVAL ?? 60),
     history_limit: Number(fileConfig.gitlab?.history_limit ?? process.env.TEAMS_GITLAB_HISTORY ?? 50),
@@ -80,7 +83,7 @@ export function loadConfig(configPath) {
   const teams = {
     reconnect_interval_seconds: Number(fileConfig.teams?.reconnect_interval_seconds ?? 5),
     token_refresh_interval_minutes: Number(fileConfig.teams?.token_refresh_interval_minutes ?? 60),
-    credentials_file: fileConfig.teams?.credentials_file || process.env.TEAMS_CREDENTIALS_FILE || null,
+    credentials_file: getNullableString(fileConfig.teams?.credentials_file) || process.env.TEAMS_CREDENTIALS_FILE || null,
   };
 
   let conversations = fileConfig.conversations;
