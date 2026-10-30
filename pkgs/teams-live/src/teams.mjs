@@ -8,6 +8,14 @@ export const STATUS_REACTIONS = {
   pending: '1f440_eyes', // 👀 needs approval
   approved: 'like', // 👍 approved, not merged
   merged: '2705_whiteheavycheckmark', // ✅
+  failed: '274c_crossmark', // ❌ CI failed
+};
+
+export const COMMAND_REACTIONS = {
+  success: '2705_whiteheavycheckmark', // ✅
+  failure: '274c_crossmark', // ❌
+  warning: '26a0_warning', // ⚠️
+  running: '23f3_hourglass', // ⏳
 };
 
 export const STATUS_BY_REACTION = new Map(

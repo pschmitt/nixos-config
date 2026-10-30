@@ -68,6 +68,9 @@ export function loadConfig(configPath) {
     notify_ci_on_success: fileConfig.gitlab?.notify_ci_on_success ?? true,
     notify_approval_lost: fileConfig.gitlab?.notify_approval_lost ?? true,
     notify_rebase: fileConfig.gitlab?.notify_rebase ?? true,
+    max_watch_duration_seconds: Number(
+      fileConfig.gitlab?.max_watch_duration_seconds ?? process.env.TEAMS_MAX_WATCH_DURATION ?? 7200
+    ),
   };
 
   if (gitlab.token_file && fs.existsSync(gitlab.token_file)) {

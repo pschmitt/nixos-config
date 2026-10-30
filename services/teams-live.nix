@@ -32,6 +32,7 @@ in
         host = "git.wiit.one";
         poll_interval_seconds = 60;
         history_limit = 50;
+        max_watch_duration_seconds = 7200;
         notify_ci = true;
         notify_ci_on_failure = true;
         notify_ci_on_success = true;
@@ -45,18 +46,18 @@ in
       };
 
       conversations = [
-        # Testing phase: watch chat with self (Notes)
+        # Chat with self (Notes)
         {
           id = "48:notes";
           name = "Notes (Self)";
           gitlab = true;
         }
-        # K-Team group chat: enable later when ready
-        # {
-        #   id = "19:meeting_MDgyMjE4NzctNjkzNi00ZDBkLThiNjEtOTU2ZTBkZTNlM2Vl@thread.v2";
-        #   name = "K-Team";
-        #   gitlab = true;
-        # }
+        # K-Team group chat
+        {
+          id = "19:meeting_MDgyMjE4NzctNjkzNi00ZDBkLThiNjEtOTU2ZTBkZTNlM2Vl@thread.v2";
+          name = "K-Team";
+          gitlab = true;
+        }
       ];
     };
   };

@@ -1,6 +1,7 @@
 import {
   STATUS_REACTIONS,
   STATUS_BY_REACTION,
+  COMMAND_REACTIONS,
   addReaction,
   removeReaction,
   sendReply,
@@ -21,6 +22,7 @@ export class MergeRequestWatcher {
     this.authManager = authManager;
     this.pollIntervalMs = (config.gitlab.poll_interval_seconds || 60) * 1000;
     this.historyLimit = config.gitlab.history_limit || 50;
+    this.maxWatchDurationMs = (config.gitlab?.max_watch_duration_seconds ?? 7200) * 1000;
 
     this.watchedConversations = new Set(config.conversations.map((c) => c.id));
     this.conversationMeta = new Map(config.conversations.map((c) => [c.id, c]));
@@ -37,14 +39,22 @@ export class MergeRequestWatcher {
   isOwnMessage(fromMri, text) {
     if (this.selfMri && fromMri === this.selfMri) {
       const t = text || '';
-      if (t.startsWith(HEADSUP_PREFIX) || t.includes(CI_PREFIX) || t.includes(REBASE_PREFIX)) {
+      if (
+        t.startsWith(HEADSUP_PREFIX) ||
+        t.includes(CI_PREFIX) ||
+        t.includes(REBASE_PREFIX) ||
+        t.includes('Approved [!') ||
+        t.includes('Cannot approve [!') ||
+        t.includes('already approved') ||
+        t.includes('teams-live slash commands')
+      ) {
         return true;
       }
     }
     return false;
   }
 
-  watch(conversationId, messageId, text, { from = '', fromMri = '', initialStatus = null } = {}) {
+  watch(conversationId, messageId, text, { from = '', fromMri = '', initialStatus = null, isHistory = false } = {}) {
     const mrLinks = this.gitlab.findMrLinks(text);
     if (mrLinks.length === 0) return;
 
@@ -75,6 +85,8 @@ export class MergeRequestWatcher {
       content: text,
       mrs: [...mrsMap.values()],
       status: initialStatus,
+      isHistory,
+      createdAt: Date.now(),
     });
 
     log(`watching MRs in ${conversationId}/${messageId}: ${[...mrsMap.keys()].join(', ')}`);
@@ -203,6 +215,12 @@ export class MergeRequestWatcher {
     const entry = this.watched.get(key);
     if (!entry) return;
 
+    if (Date.now() - (entry.createdAt || 0) > this.maxWatchDurationMs) {
+      log(`Watch duration for ${key} exceeded ${this.maxWatchDurationMs / 1000}s, unwatching`);
+      this.watched.delete(key);
+      return;
+    }
+
     try {
       const statuses = [];
       for (const mr of entry.mrs) {
@@ -218,26 +236,40 @@ export class MergeRequestWatcher {
         if (mrState.pipeline) {
           const pipe = mrState.pipeline;
           if (mr.lastReportedPipelineId !== pipe.id || mr.lastReportedPipelineStatus !== pipe.status) {
-            await this.handleCiStatusComment(entry, mr, pipe, mrState);
+            if (!entry.isHistory || mr.lastReportedPipelineStatus !== null) {
+              await this.handleCiStatusComment(entry, mr, pipe, mrState);
+            }
             mr.lastReportedPipelineId = pipe.id;
             mr.lastReportedPipelineStatus = pipe.status;
           }
         }
 
         // Rebase status check (with in-place update)
-        await this.handleRebaseComment(entry, mr, mrState);
+        if (!entry.isHistory || mr.lastReportedNeedsRebase !== null) {
+          await this.handleRebaseComment(entry, mr, mrState);
+        } else if (mrState.details) {
+          mr.lastReportedNeedsRebase = mrState.details.needsRebase;
+        }
 
         mr.status = mrState.status;
       }
 
+      entry.isHistory = false;
+
       // Overall status:
       let overallStatus = null;
-      if (statuses.includes('pending')) {
-        overallStatus = 'pending';
+      const anyCiFailed = entry.mrs.some(
+        (m) => m.lastReportedPipelineStatus === 'failed' && m.status !== 'merged' && m.status !== 'closed'
+      );
+
+      if (statuses.every((s) => s === 'merged')) {
+        overallStatus = 'merged';
+      } else if (anyCiFailed) {
+        overallStatus = 'failed';
       } else if (statuses.includes('approved')) {
         overallStatus = 'approved';
-      } else if (statuses.every((s) => s === 'merged')) {
-        overallStatus = 'merged';
+      } else if (statuses.includes('pending')) {
+        overallStatus = 'pending';
       }
 
       if (overallStatus !== entry.status) {
@@ -260,9 +292,245 @@ export class MergeRequestWatcher {
     }
   }
 
-  handleIncomingEvent(event) {
+  isSlashCommand(text) {
+    if (!text) return false;
+    const trimmed = text.trim();
+    return trimmed.startsWith('/') && !trimmed.startsWith('//');
+  }
+
+  parseSlashCommand(text) {
+    if (!text) return null;
+    const trimmed = text.trim();
+    if (!trimmed.startsWith('/')) return null;
+
+    const parts = trimmed.split(/\s+/);
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    return { command, args, fullText: trimmed };
+  }
+
+  async findTargetMrsForCommand(event, args) {
+    // 1. Direct MR links in the command arguments (e.g. "/approve https://..."):
+    const directText = args.join(' ');
+    const directLinks = this.gitlab.findMrLinks(directText);
+    if (directLinks.length > 0) return directLinks;
+
+    // 2. Direct MR links in the command message itself (or HTML quote block):
+    const htmlLinks = this.gitlab.findMrLinks(event.rawHtml || '');
+    if (htmlLinks.length > 0) return htmlLinks;
+
+    // 3. Fallback: Search conversation history for the most recent message with an MR link
+    try {
+      const thread = await getThreadMessages(event.conversationId, { limit: 15 });
+      if (thread.ok && Array.isArray(thread.value?.messages)) {
+        const msgs = [...thread.value.messages].sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+        for (const msg of msgs) {
+          if (String(msg.id) === String(event.messageId)) continue;
+          const msgText = [msg.content, ...(msg.links ?? []).map((l) => l.url)].filter(Boolean).join(' ');
+          const links = this.gitlab.findMrLinks(msgText);
+          if (links.length > 0) {
+            log(`Found target MR in preceding message ${msg.id}: ${links.map((l) => `${l.project}!${l.iid}`).join(', ')}`);
+            return links;
+          }
+        }
+      }
+    } catch (err) {
+      log(`Error looking up recent messages for slash command: ${err.message}`);
+    }
+
+    return [];
+  }
+
+  async executeApproveCommand(event, args) {
+    log(`Executing /approve command from ${event.from || event.fromMri} in ${event.conversationId}...`);
+    const mrs = await this.findTargetMrsForCommand(event, args);
+    if (mrs.length === 0) {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No merge request found to approve. Quote a message containing an MR or send `/approve` immediately following it.'
+      );
+      return;
+    }
+
+    for (const mr of mrs) {
+      const mrRef = `!${mr.iid} (${mr.project})`;
+      const mrUrl = this.gitlab.mrLink(mr.project, mr.iid);
+
+      try {
+        const mrState = await this.gitlab.getMrStatus(mr.project, mr.iid);
+
+        // Precondition 1: Rebase check
+        if (mrState.details?.needsRebase) {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
+          const reason = mrState.details.hasConflicts ? 'merge conflicts' : 'needs to be rebased';
+          await sendReply(
+            event.conversationId,
+            event,
+            `⚠️ Cannot approve [${mrRef}](${mrUrl}): branch has ${reason} (\`${mrState.details.detailedMergeStatus}\`).`
+          );
+          continue;
+        }
+
+        // Precondition 2: CI check
+        const pipe = mrState.pipeline;
+        if (!pipe) {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await sendReply(
+            event.conversationId,
+            event,
+            `❌ Cannot approve [${mrRef}](${mrUrl}): no CI pipeline found.`
+          );
+          continue;
+        }
+
+        if (pipe.status === 'running' || pipe.status === 'pending') {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
+          await sendReply(
+            event.conversationId,
+            event,
+            `⏳ Cannot approve [${mrRef}](${mrUrl}): CI pipeline [#${pipe.id}](${pipe.web_url}) is still ${pipe.status}.`
+          );
+          continue;
+        }
+
+        if (pipe.status !== 'success') {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await sendReply(
+            event.conversationId,
+            event,
+            `❌ Cannot approve [${mrRef}](${mrUrl}): CI pipeline [#${pipe.id}](${pipe.web_url}) is ${pipe.status}.`
+          );
+          continue;
+        }
+
+        // Precondition 3: Already approved?
+        if (mrState.status === 'approved') {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+          await sendReply(
+            event.conversationId,
+            event,
+            `ℹ️ [${mrRef}](${mrUrl}) is already approved.`
+          );
+          continue;
+        }
+
+        // Precondition 4: Already merged or closed?
+        if (mrState.status === 'merged' || mrState.status === 'closed') {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await sendReply(
+            event.conversationId,
+            event,
+            `ℹ️ [${mrRef}](${mrUrl}) is already ${mrState.status}.`
+          );
+          continue;
+        }
+
+        // Action: Approve MR via GitLab API
+        log(`Approving ${mr.project}!${mr.iid} via GitLab API...`);
+        await this.gitlab.approveMr(mr.project, mr.iid);
+        log(`Approved ${mr.project}!${mr.iid} successfully`);
+
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await sendReply(
+          event.conversationId,
+          event,
+          `✅ Approved [${mrRef}](${mrUrl})`
+        );
+
+        // Trigger immediate status check of watched entries so reactions update
+        this.checkAllWatched().catch((err) => log(`Post-approval check failed: ${err.message}`));
+      } catch (err) {
+        log(`Error approving ${mr.project}!${mr.iid}: ${err.message}`);
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await sendReply(
+          event.conversationId,
+          event,
+          `❌ Approval failed for [${mrRef}](${mrUrl}): ${err.message}`
+        );
+      }
+    }
+  }
+
+  async executeStatusCommand(event, args) {
+    const mrs = await this.findTargetMrsForCommand(event, args);
+    if (mrs.length === 0) {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No merge request found. Quote an MR message or send `/status` immediately following it.'
+      );
+      return;
+    }
+
+    for (const mr of mrs) {
+      const mrRef = `!${mr.iid} (${mr.project})`;
+      const mrUrl = this.gitlab.mrLink(mr.project, mr.iid);
+      try {
+        const mrState = await this.gitlab.getMrStatus(mr.project, mr.iid);
+        const pipe = mrState.pipeline;
+        const pipeText = pipe ? `[#${pipe.id} (${pipe.status})](${pipe.web_url})` : 'none';
+        const rebaseText = mrState.details?.needsRebase
+          ? `⚠️ Needs rebase (${mrState.details.hasConflicts ? 'conflicts' : 'behind'})`
+          : '✅ Up to date';
+        const statusText = `Status: **${mrState.status}**\n\nPipeline: ${pipeText}\n\nBranch: ${rebaseText}`;
+
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await sendReply(event.conversationId, event, `📊 [${mrRef}](${mrUrl})\n\n${statusText}`);
+      } catch (err) {
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await sendReply(event.conversationId, event, `❌ Status check failed for [${mrRef}](${mrUrl}): ${err.message}`);
+      }
+    }
+  }
+
+  async handleSlashCommand(event) {
+    const parsed = this.parseSlashCommand(event.content);
+    if (!parsed) return;
+
+    const { command, args } = parsed;
+    log(`Handling slash command ${command} from ${event.from || event.fromMri} in ${event.conversationId}`);
+
+    if (command === '/approve') {
+      await this.executeApproveCommand(event, args);
+    } else if (command === '/status') {
+      await this.executeStatusCommand(event, args);
+    } else if (command === '/help') {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await sendReply(
+        event.conversationId,
+        event,
+        '🤖 **teams-live slash commands**:\n\n' +
+        '- `/approve`: Approves the target MR if CI is green and no rebase is needed.\n' +
+        '- `/status`: Checks CI, approvals, and rebase state for the target MR.\n\n' +
+        '_Target an MR by replying to its message or sending the command immediately after._'
+      );
+    } else {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
+      await sendReply(
+        event.conversationId,
+        event,
+        `Unknown command \`${command}\`. Available commands: \`/approve\`, \`/status\`, \`/help\`.`
+      );
+    }
+  }
+
+  async handleIncomingEvent(event) {
     if (event.kind !== 'NewMessage') return;
     if (!this.watchedConversations.has(event.conversationId)) return;
+
+    // Check for slash commands first (even from self)
+    if (this.isSlashCommand(event.content)) {
+      try {
+        await this.handleSlashCommand(event);
+      } catch (err) {
+        log(`Error executing slash command: ${err.message}`);
+      }
+      return;
+    }
+
     if (this.isOwnMessage(event.fromMri, event.content)) return;
 
     const fullText = [event.content, ...(event.links ?? [])].filter(Boolean).join(' ');
@@ -303,6 +571,7 @@ export class MergeRequestWatcher {
           from: msg.sender?.displayName || '',
           fromMri: senderMri || '',
           initialStatus: currentStatus,
+          isHistory: true,
         });
       }
     }

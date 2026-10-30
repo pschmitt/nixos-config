@@ -7,7 +7,7 @@ export class GitLabClient {
     this.mrUrlRegex = new RegExp(`https?:\\/\\/${escapedHost}\\/([\\w.\\/-]+?)\\/-\\/merge_requests\\/(\\d+)`, 'g');
   }
 
-  async request(path) {
+  async request(path, { method = 'GET', body = null } = {}) {
     const url = `${this.baseUrl}/${path.replace(/^\/+/, '')}`;
     const headers = {
       'User-Agent': 'teams-live/1.0',
@@ -15,11 +15,30 @@ export class GitLabClient {
     if (this.token) {
       headers['PRIVATE-TOKEN'] = this.token;
     }
+    if (body) {
+      headers['Content-Type'] = 'application/json';
+    }
 
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(15_000) });
+    const options = {
+      method,
+      headers,
+      signal: AbortSignal.timeout(15_000),
+    };
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+
+    const res = await fetch(url, options);
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      throw new Error(`GitLab API error (${res.status}) on ${path}: ${errText.slice(0, 200)}`);
+      let msg = errText;
+      try {
+        const parsed = JSON.parse(errText);
+        msg = parsed.message || parsed.error || errText;
+      } catch {
+        // use raw text
+      }
+      throw new Error(`GitLab error (${res.status}): ${typeof msg === 'string' ? msg : JSON.stringify(msg)}`);
     }
     return await res.json();
   }
@@ -43,6 +62,14 @@ export class GitLabClient {
 
   async getMr(project, iid) {
     return await this.request(`projects/${encodeURIComponent(project)}/merge_requests/${iid}`);
+  }
+
+  async approveMr(project, iid, { sha = null } = {}) {
+    const body = sha ? { sha } : {};
+    return await this.request(
+      `projects/${encodeURIComponent(project)}/merge_requests/${iid}/approve`,
+      { method: 'POST', body }
+    );
   }
 
   async getApprovals(project, iid) {
