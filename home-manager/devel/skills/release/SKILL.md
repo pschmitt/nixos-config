@@ -14,7 +14,7 @@ order of steps and the traps that cost rounds before.
    release (not the other way round).
 2. Land open dependency PRs: `gh pr list`, merge those with green checks (Renovate rebases the
    conflicting ones; wait), skip failing or major ones and say so. Let CI finish on the resulting
-   `main` (`nix` skill: `scripts/ci-wait.sh`).
+   `main` (`ci-watch` skill).
 3. Pick the version from the existing tags: `git tag --sort=-v:refname | head -3`. Do not skip a
    number (rbw once went to 2.27.2 without a 2.27.1). A change to the rbw agent protocol needs at
    least a minor bump. Any extension source change needs a new version.

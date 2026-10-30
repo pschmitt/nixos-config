@@ -35,7 +35,7 @@
 
 ## Deployment
 - Prefer committing only verified, working changes.
-- After pushing, start one CI watch or notification for the pushed commit and continue with independent work while it runs. Check the result when it reports completion; do not repeatedly query pipeline status. If no monitor is available, make one check after a reasonable interval and report if CI is still pending.
+- After pushing, load the `ci-watch` skill: start one background watch for the pushed commit and continue with independent work; never poll CI status yourself.
 - After making changes, deploy to the target systems:
   - **Before committing** (e.g. to test uncommitted changes): run `just deploy TARGET_HOST` from a different host; it builds and switches on the target. Do not omit the target, since that builds locally. If the agent is running on the target, use a remote build and deploy the prebuilt closure instead.
   - **If already committed**: deploy by SSH'ing to the target host and restarting `nixos-upgrade.service` (`systemctl restart nixos-upgrade.service`).

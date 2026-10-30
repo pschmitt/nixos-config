@@ -1,6 +1,6 @@
 ---
 name: nix
-description: Use when editing, evaluating, building or deploying NixOS or Home Manager configuration (hosts, modules, profiles, services, packages, flake inputs), when a build or evaluation must run on a remote build host, or when waiting for CI of a pushed commit. Directs agents to the nixos-config repositories and their AGENTS.md guidelines, and ships remote-sync and ci-wait helper scripts.
+description: Use when editing, evaluating, building or deploying NixOS or Home Manager configuration (hosts, modules, profiles, services, packages, flake inputs), when a build or evaluation must run on a remote build host, or Directs agents to the nixos-config repositories and their AGENTS.md guidelines, and ships the remote-sync helper script.
 ---
 
 # Nix
@@ -34,9 +34,7 @@ skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops
 
   Other projects (cargo builds, flakes of rbw or browser-daemon) use the same script with their
   own `--name`. Clean up your own `~/build/<name>` directories afterwards.
-- `scripts/ci-wait.sh [COMMIT]` waits until every GitHub Actions run of the commit (default HEAD)
-  has finished. Exit 0 means all green, 1 a failure (named on stderr), 3 a timeout. Start it once
-  after a push, in the background, instead of polling `gh run list` by hand.
+- After pushing, load the `ci-watch` skill to wait for CI without polling.
 
 ## Repositories
 
