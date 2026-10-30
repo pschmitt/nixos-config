@@ -18,7 +18,7 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 
 - Use `gh` and GitHub's API as the source of truth. Notifications are an entry point, not a complete inventory. Also enumerate open Renovate/Dependabot PRs in the requested account or repository set, including PRs without unread notifications. For example, use `gh search prs --owner <owner> --state open --limit 1000 --json repository,number,title,author,url` and filter bot authors after fetching results; partition the search if it reaches GitHub's result cap.
 - Capture repository, PR number, title, author, notification reason and unread state; group duplicate threads by PR. Reconcile the inventory against the reviewed, merged, blocked, excluded and already-closed PRs before reporting.
-- If the scope is a user's projects, identify the relevant repositories from GitHub metadata and recent notification history. Do not unarchive archived repositories to make their PRs actionable.
+- If the scope is a user's projects, identify the relevant repositories from GitHub metadata and recent notification history. Skip archived repositories entirely (check `isArchived`; `gh search prs` can return their PRs): do not review or merge their PRs, never unarchive a repository to make a PR actionable, and mention them at most as a short "skipped, archived" line in the report.
 
 ## Review
 
