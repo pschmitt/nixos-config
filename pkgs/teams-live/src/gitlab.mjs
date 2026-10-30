@@ -161,6 +161,7 @@ export class GitLabClient {
       iid,
       title: mr.title,
       web_url: mr.web_url,
+      target_branch: mr.target_branch,
       state,
       approved,
       status, // 'pending' | 'approved' | 'merged' | 'closed'

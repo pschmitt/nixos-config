@@ -62,6 +62,7 @@ in
           };
           rebase = true;
           approval_lost = true;
+          merged = true;
         };
       };
 

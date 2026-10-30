@@ -41,8 +41,15 @@ const HELP_TEXT =
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
   '- `/exec <cmd>`: Executes a command.\n' +
+  '- `/about`: Bot info, GitHub repository link, and developer support.\n' +
   '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
   '_Target an MR by replying to its message or sending the command immediately after._';
+
+const ABOUT_TEXT =
+  'ℹ️ **teams-live** — Microsoft Teams integration daemon for GitLab, Jira, and OpsGenie.\n\n' +
+  '- 📂 **Source Code**: [github.com/pschmitt/nixos-config/tree/main/pkgs/teams-live](https://github.com/pschmitt/nixos-config/tree/main/pkgs/teams-live)\n' +
+  '- 💖 **Support Development**: [github.com/sponsors/pschmitt](https://github.com/sponsors/pschmitt)\n\n' +
+  '_Maintained by @Philipp Schmitt._';
 
 const KNOWN_COMMANDS = [
   '/approve',
@@ -60,6 +67,7 @@ const KNOWN_COMMANDS = [
   '/kick',
   '/ban',
   '/exec',
+  '/about',
   '/help',
   '/usage',
 ];
@@ -725,6 +733,46 @@ export class MergeRequestWatcher {
     }
   }
 
+  async handleMergedComment(entry, mr, mrDetails) {
+    const notifyMerged = this.config.gitlab.notify?.merged ?? true;
+    if (!notifyMerged) return;
+
+    const mrRef = `!${mr.iid} (${mr.project})`;
+    const mrUrl = mrDetails?.web_url || this.gitlab.mrLink(mr.project, mr.iid);
+    const targetBranch = mrDetails?.target_branch ? ` into \`${mrDetails.target_branch}\`` : '';
+
+    let pipeText = '';
+    const pipe = mrDetails?.pipeline;
+    if (pipe) {
+      pipeText = `\n\n[Pipeline #${pipe.id}](${pipe.web_url})`;
+    } else if (mr.lastReportedPipelineId) {
+      pipeText = `\n\nPipeline #${mr.lastReportedPipelineId}`;
+    }
+
+    const msg = `🎉 **Merged** [${mrRef}](${mrUrl})${targetBranch}${pipeText}`;
+
+    if (mr.ciMessageServerId) {
+      log(`updating CI status comment to merged for ${mr.project}!${mr.iid} (msg ${mr.ciMessageServerId})`);
+      const updateResult = await updateReply(entry.conversationId, mr.ciMessageServerId, entry, msg);
+      if (updateResult.ok) return;
+      log(`updating CI comment to merged failed (${updateResult.error?.message}), falling back to other comment or reply`);
+    }
+
+    if (mr.rebaseMessageServerId) {
+      log(`updating rebase comment to merged for ${mr.project}!${mr.iid} (msg ${mr.rebaseMessageServerId})`);
+      const updateResult = await updateReply(entry.conversationId, mr.rebaseMessageServerId, entry, msg);
+      if (updateResult.ok) return;
+      log(`updating rebase comment to merged failed (${updateResult.error?.message}), falling back to new reply`);
+    }
+
+    log(`posting merged comment for ${mr.project}!${mr.iid}`);
+    const result = await sendReply(entry.conversationId, entry, msg);
+    if (result.ok && result.value?.timestamp) {
+      mr.ciMessageServerId = String(result.value.timestamp);
+      this.saveState();
+    }
+  }
+
   async checkWatchedKey(key) {
     const entry = this.watched.get(key);
     if (!entry) return;
@@ -765,6 +813,13 @@ export class MergeRequestWatcher {
           await this.handleRebaseComment(entry, mr, mrState);
         } else if (mrState.details) {
           mr.lastReportedNeedsRebase = mrState.details.needsRebase;
+        }
+
+        // Merged status check (with in-place update)
+        if (mrState.status === 'merged' && mr.status !== 'merged') {
+          if (!entry.isHistory || mr.status !== null) {
+            await this.handleMergedComment(entry, mr, mrState);
+          }
         }
 
         mr.status = mrState.status;
@@ -832,7 +887,11 @@ export class MergeRequestWatcher {
   async setCommandReaction(conversationId, messageId, reactionKey) {
     try {
       if (reactionKey !== COMMAND_REACTIONS.pending) {
-        await removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending).catch(() => {});
+        await Promise.allSettled([
+          removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending),
+          addReaction(conversationId, messageId, reactionKey),
+        ]);
+        return;
       }
       return await addReaction(conversationId, messageId, reactionKey);
     } catch (err) {
@@ -876,12 +935,12 @@ export class MergeRequestWatcher {
     log(`Executing /approve command from ${event.from || event.fromMri} in ${event.conversationId}...`);
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
         '❌ No merge request found to approve. Quote a message containing an MR or send `/approve` immediately following it.'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
     }
 
@@ -894,67 +953,67 @@ export class MergeRequestWatcher {
 
         // Precondition 1: Rebase check
         if (mrState.details?.needsRebase) {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
           const reason = mrState.details.hasConflicts ? 'merge conflicts' : 'needs to be rebased';
           await sendReply(
             event.conversationId,
             event,
             `⚠️ Cannot approve [${mrRef}](${mrUrl}): branch has ${reason} (\`${mrState.details.detailedMergeStatus}\`).`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
           continue;
         }
 
         // Precondition 2: CI check
         const pipe = mrState.pipeline;
         if (!pipe) {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
             `❌ Cannot approve [${mrRef}](${mrUrl}): no CI pipeline found.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
           continue;
         }
 
         if (pipe.status === 'running' || pipe.status === 'pending') {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
           await sendReply(
             event.conversationId,
             event,
             `⏳ Cannot approve [${mrRef}](${mrUrl}): CI pipeline [#${pipe.id}](${pipe.web_url}) is still ${pipe.status}.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running).catch(() => {});
           continue;
         }
 
         if (pipe.status !== 'success') {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
             `❌ Cannot approve [${mrRef}](${mrUrl}): CI pipeline [#${pipe.id}](${pipe.web_url}) is ${pipe.status}.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
           continue;
         }
 
         // Precondition 3: Already approved?
         if (mrState.status === 'approved') {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
           await sendReply(
             event.conversationId,
             event,
             `ℹ️ [${mrRef}](${mrUrl}) is already approved.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
           continue;
         }
 
         // Precondition 4: Already merged or closed?
         if (mrState.status === 'merged' || mrState.status === 'closed') {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
             `ℹ️ [${mrRef}](${mrUrl}) is already ${mrState.status}.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
           continue;
         }
 
@@ -963,23 +1022,23 @@ export class MergeRequestWatcher {
         await this.gitlab.approveMr(mr.project, mr.iid);
         log(`Approved ${mr.project}!${mr.iid} successfully`);
 
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(
           event.conversationId,
           event,
           `✅ Approved [${mrRef}](${mrUrl})`
         );
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
 
         // Trigger immediate status check of watched entries so reactions update
         this.checkAllWatched().catch((err) => log(`Post-approval check failed: ${err.message}`));
       } catch (err) {
         log(`Error approving ${mr.project}!${mr.iid}: ${err.message}`);
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(
           event.conversationId,
           event,
           `❌ Approval failed for [${mrRef}](${mrUrl}): ${err.message}`
         );
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       }
     }
   }
@@ -988,12 +1047,12 @@ export class MergeRequestWatcher {
     log(`Executing /rebase command from ${event.from || event.fromMri} in ${event.conversationId}...`);
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
         '❌ No merge request found to rebase. Quote an MR message or send `/rebase` immediately following it.'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
     }
 
@@ -1005,32 +1064,32 @@ export class MergeRequestWatcher {
         const mrState = await this.gitlab.getMrStatus(mr.project, mr.iid);
 
         if (mrState.status === 'merged' || mrState.status === 'closed') {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
             `ℹ️ [${mrRef}](${mrUrl}) is already ${mrState.status}.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
           continue;
         }
 
         if (mrState.details?.hasConflicts) {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
           await sendReply(
             event.conversationId,
             event,
             `❌ Cannot automatically rebase [${mrRef}](${mrUrl}): branch has merge conflicts that must be resolved manually.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
           continue;
         }
 
         if (!mrState.details?.needsRebase) {
-          await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
           await sendReply(
             event.conversationId,
             event,
             `ℹ️ [${mrRef}](${mrUrl}) is already up to date with target branch.`
           );
+          this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
           continue;
         }
 
@@ -1038,22 +1097,22 @@ export class MergeRequestWatcher {
         await this.gitlab.rebaseMr(mr.project, mr.iid);
         log(`Rebase triggered for ${mr.project}!${mr.iid}`);
 
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
         await sendReply(
           event.conversationId,
           event,
           `⏳ Rebase initiated for [${mrRef}](${mrUrl}). The watcher will update once complete.`
         );
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running).catch(() => {});
 
         this.checkAllWatched().catch((err) => log(`Post-rebase check failed: ${err.message}`));
       } catch (err) {
         log(`Error rebasing ${mr.project}!${mr.iid}: ${err.message}`);
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(
           event.conversationId,
           event,
           `❌ Rebase failed for [${mrRef}](${mrUrl}): ${err.message}`
         );
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       }
     }
   }
@@ -1079,7 +1138,6 @@ export class MergeRequestWatcher {
       const sprintAge = this.sprintCache.text ? `${Math.round((Date.now() - this.sprintCache.timestamp) / 1000)}s ago` : 'empty';
       const meetingsAge = this.meetingsCache.text ? `${Math.round((Date.now() - this.meetingsCache.timestamp) / 1000)}s ago` : 'empty';
 
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
         event.conversationId,
         event,
@@ -1094,17 +1152,18 @@ export class MergeRequestWatcher {
         `- **Completed Message Cache**: ${completedCount}\n\n` +
         '_Tip: To check an MR status, use `/status [link]` or quote an MR message._'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
       return;
     }
 
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
         '❌ No merge request found. Quote an MR message or send `/status` immediately following it.'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
     }
 
@@ -1120,11 +1179,11 @@ export class MergeRequestWatcher {
           : '✅ Up to date';
         const statusText = `Status: **${mrState.status}**\n\nPipeline: ${pipeText}\n\nBranch: ${rebaseText}`;
 
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
         await sendReply(event.conversationId, event, `📊 [${mrRef}](${mrUrl})\n\n${statusText}`);
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
       } catch (err) {
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
         await sendReply(event.conversationId, event, `❌ Status check failed for [${mrRef}](${mrUrl}): ${err.message}`);
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       }
     }
   }
@@ -1140,12 +1199,12 @@ export class MergeRequestWatcher {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const weatherText = (await res.text()).trim();
-      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `🌤️ ${weatherText}`);
+      this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
     } catch (err) {
       log(`Weather lookup failed: ${err.message}`);
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(event.conversationId, event, `❌ Weather lookup failed for "${location}": ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
     }
   }
 
@@ -1158,12 +1217,12 @@ export class MergeRequestWatcher {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `💡 **Random Fact**:\n\n${data.text}`);
+      this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
     } catch (err) {
       log(`Random fact failed: ${err.message}`);
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(event.conversationId, event, `❌ Failed to fetch a random fact: ${err.message}`);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
     }
   }
 
@@ -1258,7 +1317,7 @@ export class MergeRequestWatcher {
       if (cached) {
         // 1. Output the cached message immediately
         const replyRes = await sendReply(event.conversationId, event, cached);
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
 
         // 2. Start a fresh background fetch and update the message if it differs
         (async () => {
@@ -1278,16 +1337,16 @@ export class MergeRequestWatcher {
 
       // No cache yet: fetch synchronously
       const freshText = await getOrFetch({ force: true });
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(event.conversationId, event, freshText);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
     } catch (err) {
       log(`${errorLabel} failed: ${err.message}`);
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
         `❌ Failed to fetch ${errorLabel.toLowerCase()}: ${err.message}`
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
     }
   }
 
@@ -1345,8 +1404,8 @@ export class MergeRequestWatcher {
 
   async executeAlertsCommand(event, args = []) {
     if (!this.opsgenie?.isConfigured()) {
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(event.conversationId, event, '❌ OpsGenie integration is not configured.');
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
     }
 
@@ -1436,12 +1495,12 @@ export class MergeRequestWatcher {
 
   async executeSprintCommand(event) {
     if (!this.jira?.isConfigured()) {
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
         '❌ Jira integration is not configured.'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
       return;
     }
 
@@ -1591,12 +1650,11 @@ export class MergeRequestWatcher {
       const emojis = ['🤡', '🥑', '👾', '🚀', '🍄', '🦖', '🦥', '🌯', '🎪', '🍕', '🧨', '👻', '🦄', '🍹', '🎲', '🧶'];
       const shuffled = [...emojis].sort(() => 0.5 - Math.random());
       const selected = shuffled.slice(0, 3).join(' ');
-      await this.setCommandReaction(event.conversationId, event.messageId, 'like');
       await sendReply(event.conversationId, event, `${selected}: command not found`);
+      this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
       return;
     }
 
-    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
     if (!cmd) {
       await sendReply(event.conversationId, event, '`$ `\n\n```\n[exec] No command specified\n```');
     } else {
@@ -1606,40 +1664,40 @@ export class MergeRequestWatcher {
         `\`$ ${escapeHtml(cmd)}\`\n\n\`\`\`\n[exec] Process finished with exit code 0\n\`\`\``
       );
     }
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
   async executeBanCommand(event, args) {
     const target = args.join(' ').trim() || event.from || 'User';
     log(`Executing /ban for ${target} in ${event.conversationId}...`);
-    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(
       event.conversationId,
       event,
       `🔨 *${target} was banned from the conversation.*`
     );
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
   }
 
   async executeKickCommand(event, args = []) {
     const target = args.join(' ').trim() || event.from || 'User';
     log(`Executing /kick for ${target} in ${event.conversationId}...`);
-    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(
       event.conversationId,
       event,
       `👢 *${target} was kicked from the conversation.*`
     );
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
   }
 
   async executeMarcoCommand(event) {
     const sender = event.from || 'friend';
     log(`Executing /marco from ${sender} in ${event.conversationId}...`);
-    await this.setCommandReaction(event.conversationId, event.messageId, 'like');
     await sendReply(event.conversationId, event, `🏊 **POLO!**`);
+    this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
   }
 
   async executeLeaderboardCommand(event) {
     log(`Executing /leaderboard in ${event.conversationId}...`);
-    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
 
     if (!this.userInteractions || this.userInteractions.size === 0) {
       await sendReply(
@@ -1647,6 +1705,7 @@ export class MergeRequestWatcher {
         event,
         '🏆 **Bot Interaction Leaderboard**:\n\n_No interactions recorded yet._'
       );
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
       return;
     }
 
@@ -1671,12 +1730,19 @@ export class MergeRequestWatcher {
 
     const text = `🏆 **Bot Interaction Leaderboard**:\n\n${lines.join('\n')}`;
     await sendReply(event.conversationId, event, text);
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+  }
+
+  async executeAboutCommand(event) {
+    log(`Executing /about in ${event.conversationId}...`);
+    await sendReply(event.conversationId, event, ABOUT_TEXT);
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
   async executeHelpCommand(event) {
     log(`Executing /help in ${event.conversationId}...`);
-    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
     await sendReply(event.conversationId, event, HELP_TEXT);
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
   async handleSlashCommand(event) {
@@ -1688,8 +1754,8 @@ export class MergeRequestWatcher {
 
     this.recordUserInteraction(event, command);
 
-    // React immediately with eyes emoji to acknowledge command receipt
-    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending);
+    // React in background with eyes emoji to acknowledge command receipt without blocking execution
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending).catch(() => {});
 
     if (command === '/approve') {
       await this.executeApproveCommand(event, args);
@@ -1719,6 +1785,8 @@ export class MergeRequestWatcher {
       await this.executeBanCommand(event, args);
     } else if (command === '/exec') {
       await this.executeExecCommand(event, args);
+    } else if (command === '/about') {
+      await this.executeAboutCommand(event);
     } else if (command === '/help' || command === '/usage') {
       await this.executeHelpCommand(event);
     } else {
@@ -1734,7 +1802,6 @@ export class MergeRequestWatcher {
         }
       }
 
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
       if (bestMatch && minDistance <= 3) {
         await sendReply(
           event.conversationId,
@@ -1748,6 +1815,7 @@ export class MergeRequestWatcher {
           `Unknown command \`${command}\`. Use \`/help\` to see available commands.`
         );
       }
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
     }
   }
 
