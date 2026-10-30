@@ -35,7 +35,7 @@ in
       restartUnits = [ "teams-live.service" ];
     };
 
-    "teams-live/conversation-k-team" = config.sops.mkHostSecret {
+    "teams-live/conversation-team" = config.sops.mkHostSecret {
       inherit (cfg) group;
       owner = cfg.user;
       mode = "0400";
@@ -55,11 +55,15 @@ in
         history_limit = 50;
         history_max_age_minutes = 10;
         max_watch_duration_seconds = 7200;
-        notify_ci = true;
-        notify_ci_on_failure = true;
-        notify_ci_on_success = true;
-        notify_rebase = true;
-        notify_approval_lost = true;
+        notify = {
+          ci = {
+            enable = true;
+            on_failure = true;
+            on_success = true;
+          };
+          rebase = true;
+          approval_lost = true;
+        };
       };
 
       teams = {
@@ -75,8 +79,8 @@ in
           gitlab = true;
         }
         {
-          id = config.sops.placeholder."teams-live/conversation-k-team";
-          name = "K-Team";
+          id = config.sops.placeholder."teams-live/conversation-team";
+          name = "Team";
           gitlab = true;
         }
       ];

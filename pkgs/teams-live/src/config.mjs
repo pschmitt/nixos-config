@@ -57,6 +57,21 @@ export function loadConfig(configPath) {
     }
   }
 
+  const rawNotify = fileConfig.gitlab?.notify ?? {};
+  const notifyCi = typeof rawNotify.ci === 'object' ? rawNotify.ci : {};
+
+  const notify = {
+    ci: {
+      enable:
+        notifyCi.enable ??
+        (typeof rawNotify.ci === 'boolean' ? rawNotify.ci : (fileConfig.gitlab?.notify_ci ?? true)),
+      on_failure: notifyCi.on_failure ?? fileConfig.gitlab?.notify_ci_on_failure ?? true,
+      on_success: notifyCi.on_success ?? fileConfig.gitlab?.notify_ci_on_success ?? true,
+    },
+    rebase: rawNotify.rebase ?? fileConfig.gitlab?.notify_rebase ?? true,
+    approval_lost: rawNotify.approval_lost ?? fileConfig.gitlab?.notify_approval_lost ?? true,
+  };
+
   const gitlab = {
     host: (getString(fileConfig.gitlab?.host) || process.env.GITLAB_HOST || 'git.wiit.one')
       .replace(/^https?:\/\//, '')
@@ -65,11 +80,12 @@ export function loadConfig(configPath) {
     token: null,
     poll_interval_seconds: Number(fileConfig.gitlab?.poll_interval_seconds ?? process.env.TEAMS_GITLAB_INTERVAL ?? 60),
     history_limit: Number(fileConfig.gitlab?.history_limit ?? process.env.TEAMS_GITLAB_HISTORY ?? 50),
-    notify_ci: fileConfig.gitlab?.notify_ci ?? true,
-    notify_ci_on_failure: fileConfig.gitlab?.notify_ci_on_failure ?? true,
-    notify_ci_on_success: fileConfig.gitlab?.notify_ci_on_success ?? true,
-    notify_approval_lost: fileConfig.gitlab?.notify_approval_lost ?? true,
-    notify_rebase: fileConfig.gitlab?.notify_rebase ?? true,
+    notify,
+    notify_ci: notify.ci.enable,
+    notify_ci_on_failure: notify.ci.on_failure,
+    notify_ci_on_success: notify.ci.on_success,
+    notify_approval_lost: notify.approval_lost,
+    notify_rebase: notify.rebase,
     max_watch_duration_seconds: Number(
       fileConfig.gitlab?.max_watch_duration_seconds ?? process.env.TEAMS_MAX_WATCH_DURATION ?? 7200
     ),

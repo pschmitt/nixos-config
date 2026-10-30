@@ -201,7 +201,7 @@ export class MergeRequestWatcher {
   }
 
   async sendHeadsup(entry, mr) {
-    if (!this.config.gitlab.notify_approval_lost) return;
+    if (!this.config.gitlab.notify?.approval_lost) return;
     const mrUrl = this.gitlab.mrLink(mr.project, mr.iid);
     const msg = `${HEADSUP_PREFIX}${mrUrl} needs a new approval`;
     log(`posting heads-up for ${mr.project}!${mr.iid} to ${entry.conversationId}`);
@@ -212,7 +212,7 @@ export class MergeRequestWatcher {
   }
 
   async handleCiStatusComment(entry, mr, pipeline, mrDetails) {
-    if (!this.config.gitlab.notify_ci) return;
+    if (!this.config.gitlab.notify?.ci?.enable) return;
 
     let icon = 'ℹ️';
     let statusText = pipeline.status;
@@ -221,11 +221,11 @@ export class MergeRequestWatcher {
     if (pipeline.status === 'success') {
       icon = '✅';
       statusText = 'passed';
-      shouldNotify = this.config.gitlab.notify_ci_on_success;
+      shouldNotify = this.config.gitlab.notify?.ci?.on_success;
     } else if (pipeline.status === 'failed') {
       icon = '❌';
       statusText = 'failed';
-      shouldNotify = this.config.gitlab.notify_ci_on_failure;
+      shouldNotify = this.config.gitlab.notify?.ci?.on_failure;
     } else if (pipeline.status === 'running') {
       icon = '⏳';
       statusText = 'running';
@@ -261,7 +261,7 @@ export class MergeRequestWatcher {
   }
 
   async handleRebaseComment(entry, mr, mrDetails) {
-    if (!this.config.gitlab.notify_rebase) return;
+    if (!this.config.gitlab.notify?.rebase) return;
 
     const mrRef = `!${mr.iid} (${mr.project})`;
     const mrUrl = mrDetails?.web_url || this.gitlab.mrLink(mr.project, mr.iid);
