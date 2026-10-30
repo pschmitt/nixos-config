@@ -1,5 +1,5 @@
-# homelab-server — shared infra baseline for the fnuc/lrz home server (same
-# physical box; lrz is its in-progress NixOS-install replacement for fnuc).
+# homelab-server — shared infra baseline for the fnuc and lrz home servers
+# (two different machines: an Intel NUC and a ThinkCentre).
 # Only what's genuinely identical between the two host configs lives here;
 # host-specific values (network interfaces, VM staging vs. production,
 # backup/migration state) stay in hosts/fnuc/ and hosts/lrz/.

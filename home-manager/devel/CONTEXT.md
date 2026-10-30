@@ -9,6 +9,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `signal-notify` before sending any Signal message, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `tmux-window-names` for renaming several tmux windows
+  - `brkn-infra` to learn which host does what (build, test and deploy targets, Android devices) before you name or pick a host, `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 - Watch for toil worth capturing. When you hit the same friction a second
   time, spend real effort rediscovering a procedure, or get a user correction

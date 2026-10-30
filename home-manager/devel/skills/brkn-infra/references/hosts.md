@@ -8,13 +8,13 @@ NetBox's. Re-check a row against the source before you rely on it for something 
 
 | Host | Purpose | Notes |
 |---|---|---|
-| fnuc | Home server (homelab-server profile). Runs the Home Assistant VM, a binary cache (harmonia) with a LAN mirror, the agent hosts' warmup jobs and go-hass-agent. Where the agent normally runs. | Intel NUC (NetBox: NUC10i7FNH, status `inventory`). Keep load low: HA is mission critical. Deploy: `just deploy` without a target when on it; see `nix` skill for prebuilt closures. |
-| lrz | Second home server (homelab-server profile) with its own HA VM definition and a LAN cache, set up as fnuc's NixOS-install replacement. | NetBox: ThinkCentre M75q-1, status `inventory`. The profile comment calls it the same box as fnuc; NetBox lists different hardware. Treat that as unresolved. |
-| rofl-10 | Main service VM: auth (Authelia), NetBox, Nextcloud, Immich, Paperless-ngx, Vaultwarden, n8n, Forgejo, Matrix, Glance, nixbot, the public browser handoff, teams-live and many more. | Cloud VM (`cloud` group). Biggest blast radius; check `hosts/rofl-10/services.nix`. |
-| rofl-11 | Media and NFS: Audiobookshelf, NFS server, Tor. | Cloud VM. |
-| rofl-12 | NFS client and Tor. | Cloud VM. |
-| rofl-13, rofl-14 | Build nodes (rofl-build-node profile): nixbot workers, harmonia store serving, Forgejo runner, ESPHome builds, headless browsers. Preferred hosts for agent builds and Nix evaluation. | Cloud VMs. Do not leave long jobs running; they are shared. Build dirs under `~/build/<project>`. |
-| rofl-15, rofl-16 | More build nodes with the same profile. | Not in the Ansible inventory. |
+| fnuc | Home server (homelab-server profile). Runs the Home Assistant VM, a binary cache (harmonia) with a LAN mirror, the agent hosts' warmup jobs and go-hass-agent. Where the agent normally runs. | Intel NUC10i7FNH (NetBox status `inventory`; its NetBox OS field still says Fedora, but it is NixOS now). Keep load low: HA is mission critical. Deploy: `just deploy` without a target when on it; see `nix` skill for prebuilt closures. |
+| lrz | Second home server (homelab-server profile) with its own HA VM definition and a LAN cache; the NixOS-first sibling of fnuc, not the same machine. | Lenovo ThinkCentre M75q-1 (NetBox status `inventory`). Currently offline: skip it for deploys. |
+| rofl-10 | Main service VM: auth (Authelia), NetBox, Nextcloud, Immich, Paperless-ngx, Vaultwarden, n8n, Forgejo, Matrix, Glance, nixbot, the public browser handoff, teams-live and many more. | VM on the WIIT OpenStack (`cloud` group). Biggest blast radius; check `hosts/rofl-10/services.nix`. |
+| rofl-11 | Media and NFS: Audiobookshelf, NFS server, Tor. | VM on the WIIT OpenStack. |
+| rofl-12 | NFS client and Tor. | VM on the WIIT OpenStack. |
+| rofl-13, rofl-14 | Build nodes (rofl-build-node profile): nixbot workers, harmonia store serving, Forgejo runner, ESPHome builds, headless browsers. Preferred hosts for agent builds and Nix evaluation. | VMs on the WIIT OpenStack. Do not leave long jobs running; they are shared. Build dirs under `~/build/<project>`. |
+| rofl-15, rofl-16 | More build nodes with the same profile. | Not in the Ansible inventory or NetBox. |
 | oci-01 | Public mail and web: Stalwart mail, Roundcube, healthchecks, mail autoconfig, public nginx. | Oracle Cloud. |
 | oci-03 | Monitoring: M/Monit, monarch, parsedmarc. | Oracle Cloud. |
 | test-delete-oci, test-delete-os | Throwaway test VMs for provisioning. | Safe to rebuild or remove. |
@@ -29,8 +29,8 @@ Ansible runs against the same fleet (`cloud` and `nixos` groups). Playbooks of n
 | Host | Purpose | Notes |
 |---|---|---|
 | ge2 | Main desktop (workstation profile): Nvidia GPU, Stream Deck, OBS capture, lan-mouse, the work sensor VM. | NetBox: Dell Precision 5680. Often powered off; check before a deploy. |
-| gk4 | Handheld laptop and the designated interactive test machine for desktop UI, Hyprland and browser-extension work. | NetBox: GPD Pocket 4. Often powered off. |
-| x13 | Older ThinkPad (workstation profile). | NetBox: ThinkPad X13 AMD Gen1, status `failed`. Check it is alive before use. |
+| gk4 | Handheld laptop and the designated interactive test machine for desktop UI, Hyprland and browser-extension work. | NetBox: GPD Win Mini 2024 (device type `Pocket 4`). Often powered off. |
+| x13 | Older ThinkPad (workstation profile). | NetBox: ThinkPad X13 AMD Gen1, status `failed`. Offline: skip it. |
 
 ## Small boards and network gear
 
