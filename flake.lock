@@ -96,23 +96,6 @@
         "type": "github"
       }
     },
-    "bitwarden-mcp": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1783443116,
-        "narHash": "sha256-IYXRpqcJBPE9iZFZeTqZGhJUgUjgO8Di93IapXmDmFo=",
-        "owner": "bitwarden",
-        "repo": "mcp-server",
-        "rev": "a53665aa0230c477957414cfa6a93a0e143b9b44",
-        "type": "github"
-      },
-      "original": {
-        "owner": "bitwarden",
-        "ref": "v2026.7.0",
-        "repo": "mcp-server",
-        "type": "github"
-      }
-    },
     "browser-daemon": {
       "inputs": {
         "crane": "crane",
@@ -1745,11 +1728,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793357901,
-        "narHash": "sha256-VEdXYeyG7OqBdZijPJw7JazoheBEwcsHtfyzGqvsG+s=",
+        "lastModified": 1793364371,
+        "narHash": "sha256-fWkW5Z/jm2HJEuS5iV0DmK/B/c47G0tqdkYXWhDBLfw=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "97ff46a1f33b4263c1d3fb0a4040875ff19d7c44",
+        "rev": "a73bac8467b1c67c74846a715791de2489c60b4a",
         "type": "github"
       },
       "original": {
@@ -2413,7 +2396,6 @@
     "root": {
       "inputs": {
         "anika-blue": "anika-blue",
-        "bitwarden-mcp": "bitwarden-mcp",
         "browser-daemon": "browser-daemon",
         "bruvtab": "bruvtab",
         "bunq-sh": "bunq-sh",
