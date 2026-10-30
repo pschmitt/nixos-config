@@ -1133,7 +1133,7 @@ export class MergeRequestWatcher {
         endOfWeek.setDate(endOfWeek.getDate() + diffToSunday);
         endOfWeek.setHours(23, 59, 59, 999);
 
-        const res = await getCalendarView({
+        let res = await getCalendarView({
           startDate: nowDate.toISOString(),
           endDate: endOfWeek.toISOString(),
           limit: 50,
@@ -1143,13 +1143,33 @@ export class MergeRequestWatcher {
           throw new Error(res.error?.message || 'Calendar view request failed');
         }
 
-        const meetings = (res.value?.meetings || []).filter(
+        let meetings = (res.value?.meetings || []).filter(
           (m) => m.myResponse !== 'Declined'
         );
 
+        let isNextWeek = false;
+        if (meetings.length === 0) {
+          // No more meetings for the rest of this week -> fetch next week's meetings
+          const nextWeekStart = new Date(endOfWeek.getTime() + 1); // Next Monday 00:00:00.000
+          const nextWeekEnd = new Date(nextWeekStart);
+          nextWeekEnd.setDate(nextWeekEnd.getDate() + 6);
+          nextWeekEnd.setHours(23, 59, 59, 999);
+
+          const nextRes = await getCalendarView({
+            startDate: nextWeekStart.toISOString(),
+            endDate: nextWeekEnd.toISOString(),
+            limit: 50,
+          });
+
+          if (nextRes.ok) {
+            meetings = (nextRes.value?.meetings || []).filter((m) => m.myResponse !== 'Declined');
+            isNextWeek = true;
+          }
+        }
+
         let text;
         if (meetings.length === 0) {
-          text = '📅 No upcoming meetings scheduled for the rest of this week.';
+          text = '📅 No upcoming meetings scheduled for this week or next week.';
         } else {
           meetings.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
@@ -1183,12 +1203,18 @@ export class MergeRequestWatcher {
                 timeZone: 'Europe/Berlin',
               });
               const organizer = m.organizer?.name ? ` _(${m.organizer.name})_` : '';
-              lines.push(`- ${startStr} - ${endStr}: **${m.subject}**${organizer}`);
+              const link = m.joinUrl || (m.threadId ? `https://teams.microsoft.com/l/chat/${encodeURIComponent(m.threadId)}/0` : null);
+              const subjectRef = link ? `[${m.subject}](${link})` : `**${m.subject}**`;
+              lines.push(`- ${startStr} - ${endStr}: ${subjectRef}${organizer}`);
             }
             sections.push(lines.join('\n'));
           }
 
-          text = `📅 **Meetings for the rest of the week**:\n\n${sections.join('\n\n')}`;
+          const header = isNextWeek
+            ? '📅 **Meetings for next week** (none remaining this week)'
+            : '📅 **Meetings for the rest of the week**';
+
+          text = `${header} (${meetings.length}):\n\n${sections.join('\n\n')}`;
         }
 
         this.meetingsCache.text = text;
