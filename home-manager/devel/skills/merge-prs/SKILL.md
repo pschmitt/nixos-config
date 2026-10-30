@@ -11,7 +11,8 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 
 - **Bulk:** no link given ("clear the renovate PRs", "merge the dependency updates"). Build the inventory described below and work through every PR in scope.
 - **Focused:** the user gives a PR, repository or issue link. Review only that target, in more depth: read the full diff, upstream release notes and the discussion, and report a clear recommendation. A focused request on a non-bot PR is a review unless the user asks for a merge.
-- **Merge intent:** merge qualifying bot PRs by default; the request to review or merge them is the authorization. For human-authored PRs, or when the user only asked to "look at" or "review", stop at a recommendation and do not merge or submit a GitHub review.
+- **Merge intent:** in repositories owned by the user's personal account (`pschmitt/*`), merge qualifying bot PRs by default; the request to review or merge them is the authorization. For human-authored PRs, or when the user only asked to "look at" or "review", stop at a recommendation and do not merge or submit a GitHub review.
+- **Organization and third-party repositories:** never merge in repositories under an organization or any owner other than the user's personal account (for example zinit, wiit, pykeepass) without the user's explicit consent for that repository, organization or PR. A generic "merge the renovate PRs" does not cover them. Listing, reviewing, fixing-in-a-branch proposals and recommendations are fine; report them as "ready to merge, awaiting your OK" and ask. Consent given for one organization or run does not carry over to another.
 
 ## Inventory (bulk mode)
 
@@ -42,6 +43,7 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 
 Merge a PR when all of these hold:
 
+- the repository is in scope for merging (personal account, or explicit consent given for it);
 - open, non-draft, from the expected author;
 - required CI successful on the current head commit, including after any fix you pushed;
 - clean and mergeable, not stale or behind when branch protection requires updating;
