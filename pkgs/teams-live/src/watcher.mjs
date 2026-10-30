@@ -17,12 +17,16 @@ import {
   getCalendarView,
   escapeHtml,
 } from './teams.mjs';
+import { SnakeGame } from './snake.mjs';
 import { formatOnDuty } from './opsgenie.mjs';
 
 const log = (...args) => console.error(new Date().toISOString(), '[watcher]', ...args);
 
 const HEADSUP_PREFIX = 'headsup: ';
 const CI_PREFIX = 'CI pipeline ';
+// Teams rejects more than 3 edits per 5 seconds, so stay just below that rate.
+const SNAKE_FRAMES = 40;
+const SNAKE_FRAME_DELAY_MS = 1800;
 const REBASE_PREFIX = '**Rebase';
 
 const HELP_TEXT =
@@ -37,6 +41,7 @@ const HELP_TEXT =
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
   '- `/random`: Outputs a random fact.\n' +
   '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
+  '- `/snake`: Plays a round of snake by editing one message.\n' +
   '- `/leaderboard`: Shows top users by bot interactions and command usage.\n' +
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
@@ -63,6 +68,7 @@ const KNOWN_COMMANDS = [
   '/weather',
   '/random',
   '/marco',
+  '/snake',
   '/leaderboard',
   '/kick',
   '/ban',
@@ -348,6 +354,7 @@ export class MergeRequestWatcher {
     }
 
     this.watched = new Map();
+    this.snakeRunning = false;
     this.pollTimer = null;
     this.precomputeTimer = null;
     this.selfMri = null;
@@ -1870,6 +1877,53 @@ export class MergeRequestWatcher {
     this.setCommandReaction(event.conversationId, event.messageId, 'like').catch(() => {});
   }
 
+  async executeSnakeCommand(event) {
+    const { conversationId } = event;
+    log(`Executing /snake in ${conversationId}...`);
+
+    // One game at a time across all conversations: the edit rate limit is per account
+    if (this.snakeRunning) {
+      await sendReply(conversationId, event, '🐍 A snake game is already running, try again in a minute.');
+      this.setCommandReaction(conversationId, event.messageId, COMMAND_REACTIONS.warning).catch(() => {});
+      return;
+    }
+
+    this.snakeRunning = true;
+    const game = new SnakeGame();
+    const sent = await sendReply(conversationId, event, game.render());
+    const serverMessageId = sent.ok ? sent.value?.timestamp : null;
+    if (!serverMessageId) {
+      this.snakeRunning = false;
+      log(`/snake: sending the first frame failed: ${sent.error?.message}`);
+      this.setCommandReaction(conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    // Animate in the background so the event loop keeps handling other messages
+    this.playSnake(game, event, serverMessageId)
+      .catch((err) => log(`/snake: ${err.message}`))
+      .finally(() => {
+        this.snakeRunning = false;
+      });
+  }
+
+  async playSnake(game, event, serverMessageId) {
+    const { conversationId } = event;
+    let failures = 0;
+    for (let i = 0; i < SNAKE_FRAMES && !game.dead && failures < 3; i++) {
+      await new Promise((resolve) => setTimeout(resolve, SNAKE_FRAME_DELAY_MS));
+      game.step();
+      const res = await updateReply(conversationId, serverMessageId, event, game.render(game.dead ? 'GAME OVER' : ''));
+      if (!res.ok) {
+        failures++;
+        log(`/snake: edit failed: ${res.error?.message}`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+    }
+    await updateReply(conversationId, serverMessageId, event, game.render(game.dead ? 'GAME OVER' : 'fin'));
+    this.setCommandReaction(conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+  }
+
   async executeLeaderboardCommand(event) {
     log(`Executing /leaderboard in ${event.conversationId}...`);
 
@@ -1951,6 +2005,8 @@ export class MergeRequestWatcher {
       await this.executeRandomCommand(event);
     } else if (command === '/marco') {
       await this.executeMarcoCommand(event);
+    } else if (command === '/snake') {
+      await this.executeSnakeCommand(event);
     } else if (command === '/leaderboard') {
       await this.executeLeaderboardCommand(event);
     } else if (command === '/kick') {
