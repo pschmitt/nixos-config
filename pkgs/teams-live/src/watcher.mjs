@@ -55,8 +55,7 @@ const HELP_TEXT =
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
   '- `/exec <cmd>`: Executes a command.\n' +
-  '- `/restart`: Restarts the teams-live daemon (admin only).\n' +
-  '- `/reauth`: Proactively refreshes Teams credentials and tokens (admin only).\n' +
+  '- `/admin [cmd]`: Administrative controls (restart, reauth) [admin only].\n' +
   '- `/about`: Bot info, GitHub repository link, and developer support.\n' +
   '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
   '_Target an MR by replying to its message or sending the command immediately after._';
@@ -99,6 +98,7 @@ const KNOWN_COMMANDS = [
   '/kick',
   '/ban',
   '/exec',
+  '/admin',
   '/restart',
   '/reauth',
   '/about',
@@ -1943,6 +1943,32 @@ export class MergeRequestWatcher {
     return `\`\`\`\n${user} is not in the sudoers file.  This incident will be reported.\n\`\`\``;
   }
 
+  async executeAdminCommand(event, args = []) {
+    if (!this.isAdmin(event)) {
+      log(`Unauthorized /admin attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
+      await sendReply(event.conversationId, event, this.respondNotPrivileged(event));
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure).catch(() => {});
+      return;
+    }
+
+    const sub = (args[0] || '').toLowerCase().trim();
+    if (sub === 'restart') {
+      await this.executeRestartCommand(event);
+    } else if (sub === 'reauth' || sub === 'refresh') {
+      await this.executeReauthCommand(event);
+    } else if (sub === 'status') {
+      await this.executeStatusCommand(event, []);
+    } else {
+      const text =
+        '🔧 **teams-live admin commands**:\n\n' +
+        '- `/admin restart`: Restarts the teams-live daemon.\n' +
+        '- `/admin reauth` (or `/admin refresh`): Forces token refresh and shows status.\n' +
+        '- `/admin status`: Shows service runtime metrics and memory.';
+      await sendReply(event.conversationId, event, text);
+      this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
+    }
+  }
+
   async executeRestartCommand(event) {
     if (!this.isAdmin(event)) {
       log(`Unauthorized /restart attempt from ${event.from || event.fromMri} in ${event.conversationId}`);
@@ -2593,6 +2619,8 @@ export class MergeRequestWatcher {
       await this.executeBanCommand(event, args);
     } else if (command === '/exec') {
       await this.executeExecCommand(event, args);
+    } else if (command === '/admin') {
+      await this.executeAdminCommand(event, args);
     } else if (command === '/restart') {
       await this.executeRestartCommand(event);
     } else if (command === '/reauth') {
