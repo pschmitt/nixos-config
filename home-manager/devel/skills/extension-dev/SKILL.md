@@ -27,6 +27,9 @@ Read the repo's `AGENTS.md` and `docs/browser.md` (rbw) before building.
    Chromium loads the unpacked directory with developer mode on. `browser/install.py` registers the
    native host for such a manual install. The user usually wants the latest build on gk4 and ge2
    without asking: after a release, bump the flake lock and `just deploy gk4` / `just deploy ge2`.
+   For a throwaway debug build, `scp` the unsigned package to `/tmp/<PROJECT_NAME>/` on the host
+   (for example `/tmp/rbw/`, replacing what is there) and load it from there; no release needed.
+   Always do this for the user's test machines when they ask to test a change.
 3. Check what the browser actually runs, per host, before saying it is deployed:
 
    ```
