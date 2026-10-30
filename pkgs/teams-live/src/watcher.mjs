@@ -4,6 +4,7 @@ import {
   STATUS_REACTIONS,
   STATUS_BY_REACTION,
   COMMAND_REACTIONS,
+  BOT_WATERMARK,
   botSentMessageIds,
   addReaction,
   removeReaction,
@@ -61,6 +62,29 @@ function toMockingCase(str) {
     .split('')
     .map((c, i) => (i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()))
     .join('');
+}
+
+function getMrStatusEmoji(detailedStatus) {
+  switch (detailedStatus) {
+    case 'mergeable':
+      return '✅';
+    case 'not_approved':
+      return '👀';
+    case 'need_rebase':
+      return '⚠️';
+    case 'ci_still_running':
+      return '⏳';
+    case 'ci_must_pass':
+      return '❌';
+    case 'conflict':
+      return '💥';
+    case 'checking':
+      return '🔄';
+    case 'draft_status':
+      return '📝';
+    default:
+      return '🔹';
+  }
 }
 
 export class MergeRequestWatcher {
@@ -170,11 +194,14 @@ export class MergeRequestWatcher {
     this.selfMri = mri;
   }
 
-  isOwnMessage(fromMri, text, messageId = null, clientMessageId = null) {
+  isOwnMessage(fromMri, text, messageId = null, clientMessageId = null, rawHtml = null) {
     if (messageId && botSentMessageIds.has(String(messageId))) return true;
     if (clientMessageId && botSentMessageIds.has(String(clientMessageId))) return true;
 
     const t = text || '';
+    if (t.includes(BOT_WATERMARK)) return true;
+    if (rawHtml && rawHtml.includes(BOT_WATERMARK)) return true;
+
     if (
       t.startsWith(HEADSUP_PREFIX) ||
       t.includes(CI_PREFIX) ||
@@ -483,10 +510,15 @@ export class MergeRequestWatcher {
   }
 
   async setCommandReaction(conversationId, messageId, reactionKey) {
-    if (reactionKey !== COMMAND_REACTIONS.pending) {
-      await removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending).catch(() => {});
+    if (conversationId === '48:notes') return;
+    try {
+      if (reactionKey !== COMMAND_REACTIONS.pending) {
+        await removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending).catch(() => {});
+      }
+      return await addReaction(conversationId, messageId, reactionKey);
+    } catch (err) {
+      log(`Failed to set reaction ${reactionKey} on ${messageId} in ${conversationId}: ${err.message}`);
     }
-    return await addReaction(conversationId, messageId, reactionKey);
   }
 
   async findTargetMrsForCommand(event, args) {
@@ -835,7 +867,8 @@ export class MergeRequestWatcher {
         const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
         const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
         const author = mr.author?.username || mr.author?.name || 'unknown';
-        lines.push(`- [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
+        const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
+        lines.push(`- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
       }
 
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
@@ -1098,8 +1131,8 @@ export class MergeRequestWatcher {
     const { command, args } = parsed;
     log(`Handling slash command ${command} from ${event.from || event.fromMri} in ${event.conversationId}`);
 
-    // React immediately with eyes emoji to acknowledge command receipt
-    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending);
+    // React immediately with eyes emoji to acknowledge command receipt (non-blocking)
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending).catch(() => {});
 
     if (command === '/approve') {
       await this.executeApproveCommand(event, args);
@@ -1182,7 +1215,7 @@ export class MergeRequestWatcher {
       return;
     }
 
-    if (this.isOwnMessage(event.fromMri, event.content, event.messageId, event.clientMessageId)) return;
+    if (this.isOwnMessage(event.fromMri, event.content, event.messageId, event.clientMessageId, event.rawHtml)) return;
 
     const fullText = [event.content, ...(event.links ?? [])].filter(Boolean).join(' ');
     this.watch(event.conversationId, event.messageId, fullText, {
@@ -1197,6 +1230,7 @@ export class MergeRequestWatcher {
     this.setSelfMri(self);
 
     const cutoffTime = Date.now() - this.historyMaxAgeMinutes * 60 * 1000;
+    const processedHistoryCommands = new Set();
 
     for (const conversationId of this.watchedConversations) {
       log(
@@ -1227,10 +1261,20 @@ export class MergeRequestWatcher {
         if (msgTime && msgTime < cutoffTime) continue;
 
         const senderMri = msg.sender?.mri?.split('/contacts/').pop();
-        if (this.isOwnMessage(senderMri, msg.content, msg.id)) continue;
+        if (this.isOwnMessage(senderMri, msg.content, msg.id, msg.clientMessageId, msg.content)) continue;
 
         // Check if message is an unhandled slash command from recent history
         if (this.isSlashCommand(msg.content)) {
+          const parsed = this.parseSlashCommand(msg.content);
+          if (parsed) {
+            const dedupKey = `${conversationId}:${parsed.command}:${parsed.args.join(' ')}`.toLowerCase();
+            if (processedHistoryCommands.has(dedupKey)) {
+              log(`Skipping duplicate slash command from history: "${msg.content}" in ${conversationId}`);
+              continue;
+            }
+            processedHistoryCommands.add(dedupKey);
+          }
+
           const hasOwnReaction = (msg.reactions ?? []).some((r) => r.user?.mri === self);
           if (!hasOwnReaction) {
             log(

@@ -1,8 +1,9 @@
 export class JiraClient {
-  constructor({ url = '', token = '', boardId = '' } = {}) {
+  constructor({ url = '', token = '', boardId = '', project = 'CKS' } = {}) {
     this.baseUrl = (url || '').replace(/\/+$/, '');
     this.token = token || '';
     this.boardId = String(boardId || '').trim();
+    this.project = String(project || 'CKS').trim();
   }
 
   isConfigured() {
@@ -46,7 +47,7 @@ export class JiraClient {
    * Does NOT leak Jira URL, board name, or board ID.
    */
   async getActiveSprintTasks() {
-    const jql = 'sprint in openSprints() AND statusCategory != Done ORDER BY status ASC, updated DESC';
+    const jql = `project = ${this.project} AND sprint in openSprints() AND statusCategory != Done ORDER BY status ASC, updated DESC`;
     const endpoint = `rest/api/2/search?jql=${encodeURIComponent(jql)}&maxResults=100&fields=summary,status,assignee`;
     const res = await this.request(endpoint);
     const issues = res.issues || [];

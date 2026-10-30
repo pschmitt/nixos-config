@@ -2,7 +2,7 @@ import { sendMessage, getThreadMessages, editMessage } from 'msteams-mcp/dist/ap
 import { addReaction, removeReaction } from 'msteams-mcp/dist/api/chatsvc-reactions.js';
 import { getCalendarView as mcpGetCalendarView } from 'msteams-mcp/dist/api/calendar-api.js';
 import { requireSkypeSpacesAuth } from 'msteams-mcp/dist/utils/auth-guards.js';
-import { httpRequest } from 'msteams-mcp/dist/utils/http-client.js';
+import { httpRequest } from 'msteams-mcp/dist/utils/http.js';
 import { markdownToTeamsHtml } from 'msteams-mcp/dist/utils/parsers-markdown.js';
 
 export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, markdownToTeamsHtml };
@@ -74,6 +74,7 @@ export async function getCalendarView(options = {}) {
 }
 
 export const botSentMessageIds = new Set();
+export const BOT_WATERMARK = '\u200B\u200C\u200B';
 
 export function recordBotMessageId(id) {
   if (id) {
@@ -137,7 +138,7 @@ export function buildQuotedReplyHtml({ messageId, from, fromMri, previewText, re
     `<p itemprop="preview">${escapeHtml(previewText || '')}</p>` +
     '</blockquote>';
 
-  return quote + markdownToTeamsHtml(replyMarkdown);
+  return quote + markdownToTeamsHtml(replyMarkdown) + `<span style="display:none">${BOT_WATERMARK}</span>${BOT_WATERMARK}`;
 }
 
 /**
