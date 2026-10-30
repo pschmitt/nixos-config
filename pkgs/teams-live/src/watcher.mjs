@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   STATUS_REACTIONS,
   STATUS_BY_REACTION,
@@ -30,6 +32,73 @@ export class MergeRequestWatcher {
     this.watched = new Map();
     this.pollTimer = null;
     this.selfMri = null;
+
+    const stateDir = process.env.XDG_STATE_HOME || path.join(process.cwd(), 'state');
+    if (!fs.existsSync(stateDir)) {
+      try {
+        fs.mkdirSync(stateDir, { recursive: true });
+      } catch {
+        // ignore
+      }
+    }
+    this.stateFile = path.join(stateDir, 'watcher-state.json');
+    this.completedMessages = new Set();
+    this.savedEntries = new Map();
+    this.loadState();
+  }
+
+  loadState() {
+    try {
+      if (fs.existsSync(this.stateFile)) {
+        const raw = fs.readFileSync(this.stateFile, 'utf8');
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.completedMessages)) {
+          this.completedMessages = new Set(data.completedMessages);
+        }
+        if (data.entries && typeof data.entries === 'object') {
+          this.savedEntries = new Map(Object.entries(data.entries));
+        }
+        log(
+          `Loaded state from ${this.stateFile}: ${this.completedMessages.size} completed messages, ${this.savedEntries.size} saved active entries`
+        );
+      }
+    } catch (err) {
+      log(`Error loading state from ${this.stateFile}: ${err.message}`);
+    }
+  }
+
+  saveState() {
+    try {
+      const entriesObj = {};
+      for (const [k, v] of this.watched.entries()) {
+        entriesObj[k] = {
+          status: v.status,
+          createdAt: v.createdAt,
+          mrs: v.mrs.map((m) => ({
+            project: m.project,
+            iid: m.iid,
+            status: m.status,
+            ciMessageServerId: m.ciMessageServerId,
+            lastReportedPipelineId: m.lastReportedPipelineId,
+            lastReportedPipelineStatus: m.lastReportedPipelineStatus,
+            rebaseMessageServerId: m.rebaseMessageServerId,
+            lastReportedNeedsRebase: m.lastReportedNeedsRebase,
+          })),
+        };
+      }
+      const completedArray = Array.from(this.completedMessages);
+      const cappedCompleted = completedArray.length > 1000 ? completedArray.slice(-1000) : completedArray;
+
+      const data = {
+        completedMessages: cappedCompleted,
+        entries: entriesObj,
+      };
+      const tmpPath = `${this.stateFile}.tmp`;
+      fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+      fs.renameSync(tmpPath, this.stateFile);
+    } catch (err) {
+      log(`Error saving state to ${this.stateFile}: ${err.message}`);
+    }
   }
 
   setSelfMri(mri) {
@@ -46,7 +115,10 @@ export class MergeRequestWatcher {
         t.includes('Approved [!') ||
         t.includes('Cannot approve [!') ||
         t.includes('already approved') ||
-        t.includes('teams-live slash commands')
+        t.includes('teams-live slash commands') ||
+        t.includes('POLO!') ||
+        t.includes('was kicked from the conversation') ||
+        t.includes('Random Fact')
       ) {
         return true;
       }
@@ -58,25 +130,28 @@ export class MergeRequestWatcher {
     const mrLinks = this.gitlab.findMrLinks(text);
     if (mrLinks.length === 0) return;
 
+    const key = `${conversationId}/${messageId}`;
+    const saved = this.savedEntries.get(key);
+
     const mrsMap = new Map();
     const initialMrStatus = initialStatus === 'approved' ? 'approved' : null;
     for (const mr of mrLinks) {
-      const key = `${mr.project}!${mr.iid}`;
-      if (!mrsMap.has(key)) {
-        mrsMap.set(key, {
+      const mrKey = `${mr.project}!${mr.iid}`;
+      if (!mrsMap.has(mrKey)) {
+        const savedMr = saved?.mrs?.find((m) => m.project === mr.project && String(m.iid) === String(mr.iid));
+        mrsMap.set(mrKey, {
           project: mr.project,
           iid: mr.iid,
-          status: initialMrStatus,
-          ciMessageServerId: null,
-          lastReportedPipelineId: null,
-          lastReportedPipelineStatus: null,
-          rebaseMessageServerId: null,
-          lastReportedNeedsRebase: null,
+          status: savedMr?.status ?? initialMrStatus,
+          ciMessageServerId: savedMr?.ciMessageServerId ?? null,
+          lastReportedPipelineId: savedMr?.lastReportedPipelineId ?? null,
+          lastReportedPipelineStatus: savedMr?.lastReportedPipelineStatus ?? null,
+          rebaseMessageServerId: savedMr?.rebaseMessageServerId ?? null,
+          lastReportedNeedsRebase: savedMr?.lastReportedNeedsRebase ?? null,
         });
       }
     }
 
-    const key = `${conversationId}/${messageId}`;
     this.watched.set(key, {
       conversationId,
       messageId,
@@ -84,9 +159,9 @@ export class MergeRequestWatcher {
       fromMri,
       content: text,
       mrs: [...mrsMap.values()],
-      status: initialStatus,
+      status: saved?.status ?? initialStatus,
       isHistory,
-      createdAt: Date.now(),
+      createdAt: saved?.createdAt ?? Date.now(),
     });
 
     log(`watching MRs in ${conversationId}/${messageId}: ${[...mrsMap.keys()].join(', ')}`);
@@ -162,6 +237,7 @@ export class MergeRequestWatcher {
     const result = await sendReply(entry.conversationId, entry, msg);
     if (result.ok && result.value?.timestamp) {
       mr.ciMessageServerId = String(result.value.timestamp);
+      this.saveState();
     } else if (!result.ok) {
       log(`CI status reply failed: ${result.error?.message}`);
     }
@@ -193,10 +269,12 @@ export class MergeRequestWatcher {
       const result = await sendReply(entry.conversationId, entry, msg);
       if (result.ok && result.value?.timestamp) {
         mr.rebaseMessageServerId = String(result.value.timestamp);
+        this.saveState();
       } else if (!result.ok) {
         log(`rebase reply failed: ${result.error?.message}`);
       }
       mr.lastReportedNeedsRebase = true;
+      this.saveState();
     } else if (mr.lastReportedNeedsRebase === true) {
       // Was previously reported needing rebase, now up to date! Update the comment in-place.
       const msg = `✅ **Rebased** [${mrRef}](${mrUrl}) is now up to date and conflict-free.`;
@@ -217,7 +295,9 @@ export class MergeRequestWatcher {
 
     if (Date.now() - (entry.createdAt || 0) > this.maxWatchDurationMs) {
       log(`Watch duration for ${key} exceeded ${this.maxWatchDurationMs / 1000}s, unwatching`);
+      this.completedMessages.add(String(entry.messageId));
       this.watched.delete(key);
+      this.saveState();
       return;
     }
 
@@ -279,7 +359,11 @@ export class MergeRequestWatcher {
 
       if (statuses.every((s) => s === 'merged' || s === 'closed')) {
         log(`All MRs merged/closed for ${key}, unwatching`);
+        this.completedMessages.add(String(entry.messageId));
         this.watched.delete(key);
+        this.saveState();
+      } else {
+        this.saveState();
       }
     } catch (err) {
       log(`Error checking MRs for ${key}: ${err.message}`);
@@ -486,6 +570,80 @@ export class MergeRequestWatcher {
     }
   }
 
+  async executeWeatherCommand(event, args) {
+    const location = args.join(' ').trim() || 'Berlin';
+    log(`Executing /weather for "${location}" in ${event.conversationId}...`);
+    try {
+      const url = `https://wttr.in/${encodeURIComponent(location)}?format=%l:+%c+%t+(feels+like+%f),+humidity:+%h,+wind:+%w`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'curl/8.0' },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const weatherText = (await res.text()).trim();
+      await addReaction(event.conversationId, event.messageId, 'like');
+      await sendReply(event.conversationId, event, `🌤️ ${weatherText}`);
+    } catch (err) {
+      log(`Weather lookup failed: ${err.message}`);
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(event.conversationId, event, `❌ Weather lookup failed for "${location}": ${err.message}`);
+    }
+  }
+
+  async executeRandomCommand(event) {
+    log(`Executing /random fact in ${event.conversationId}...`);
+    try {
+      const res = await fetch('https://uselessfacts.jsph.pl/api/v2/facts/random', {
+        headers: { 'User-Agent': 'teams-live/1.0', Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      await addReaction(event.conversationId, event.messageId, 'like');
+      await sendReply(event.conversationId, event, `💡 **Random Fact**:\n\n${data.text}`);
+    } catch (err) {
+      log(`Random fact failed: ${err.message}`);
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(event.conversationId, event, `❌ Failed to fetch a random fact: ${err.message}`);
+    }
+  }
+
+  async executeMarcoCommand(event) {
+    const sender = event.from || 'friend';
+    log(`Executing /marco from ${sender} in ${event.conversationId}...`);
+    await addReaction(event.conversationId, event.messageId, 'like');
+    await sendReply(event.conversationId, event, `🏊 **POLO!**`);
+  }
+
+  async executeKickCommand(event) {
+    const sender = event.from || 'User';
+    log(`Executing /kick for ${sender} in ${event.conversationId}...`);
+    await addReaction(event.conversationId, event.messageId, 'like');
+    await sendReply(
+      event.conversationId,
+      event,
+      `👢 *${sender} was kicked from the conversation.*`
+    );
+  }
+
+  async executeHelpCommand(event) {
+    log(`Executing /help in ${event.conversationId}...`);
+    await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+    await sendReply(
+      event.conversationId,
+      event,
+      '🤖 **teams-live slash commands**:\n\n' +
+      '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
+      '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
+      '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
+      '- `/random`: Outputs a random fact from uselessfacts.jsph.pl.\n' +
+      '- `/marco`: Answers with "POLO!".\n' +
+      '- `/kick`: Mentions the sender and pretends they were kicked.\n' +
+      '- `/help`: Lists supported slash commands.\n\n' +
+      '_Target an MR by replying to its message or sending the command immediately after._'
+    );
+  }
+
   async handleSlashCommand(event) {
     const parsed = this.parseSlashCommand(event.content);
     if (!parsed) return;
@@ -497,22 +655,22 @@ export class MergeRequestWatcher {
       await this.executeApproveCommand(event, args);
     } else if (command === '/status') {
       await this.executeStatusCommand(event, args);
+    } else if (command === '/weather') {
+      await this.executeWeatherCommand(event, args);
+    } else if (command === '/random') {
+      await this.executeRandomCommand(event);
+    } else if (command === '/marco') {
+      await this.executeMarcoCommand(event);
+    } else if (command === '/kick') {
+      await this.executeKickCommand(event);
     } else if (command === '/help') {
-      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(
-        event.conversationId,
-        event,
-        '🤖 **teams-live slash commands**:\n\n' +
-        '- `/approve`: Approves the target MR if CI is green and no rebase is needed.\n' +
-        '- `/status`: Checks CI, approvals, and rebase state for the target MR.\n\n' +
-        '_Target an MR by replying to its message or sending the command immediately after._'
-      );
+      await this.executeHelpCommand(event);
     } else {
       await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
       await sendReply(
         event.conversationId,
         event,
-        `Unknown command \`${command}\`. Available commands: \`/approve\`, \`/status\`, \`/help\`.`
+        `Unknown command \`${command}\`. Use \`/help\` to see available commands.`
       );
     }
   }
@@ -554,6 +712,7 @@ export class MergeRequestWatcher {
       }
 
       for (const msg of result.value.messages) {
+        if (this.completedMessages.has(String(msg.id))) continue;
         const senderMri = msg.sender?.mri?.split('/contacts/').pop();
         if (this.isOwnMessage(senderMri, msg.content)) continue;
 
