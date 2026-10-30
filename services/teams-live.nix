@@ -1,82 +1,36 @@
 {
   config,
+  lib,
   ...
 }:
 let
   cfg = config.services.teams-live;
+  mkSecret =
+    extra:
+    config.sops.mkHostSecret (
+      {
+        inherit (cfg) group;
+        owner = cfg.user;
+        mode = "0400";
+        restartUnits = [ "teams-live.service" ];
+      }
+      // extra
+    );
+  mkSecrets = names: lib.genAttrs names (_name: mkSecret { });
 in
 {
-  sops.secrets = {
-    "teams-live/gitlab-token" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/credentials" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/gitlab-url" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/conversation-notes" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/conversation-team" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/gitlab-group" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/jira-url" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/jira-token" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/jira-board-id" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-
-    "teams-live/troll-user" = config.sops.mkHostSecret {
-      inherit (cfg) group;
-      owner = cfg.user;
-      mode = "0400";
-      restartUnits = [ "teams-live.service" ];
-    };
-  };
+  sops.secrets = mkSecrets [
+    "teams-live/credentials"
+    "teams-live/gitlab-token"
+    "teams-live/gitlab-url"
+    "teams-live/gitlab-group"
+    "teams-live/conversation-notes"
+    "teams-live/conversation-team"
+    "teams-live/jira-url"
+    "teams-live/jira-token"
+    "teams-live/jira-board-id"
+    "teams-live/troll-user"
+  ];
 
   sops.templates."teams-live/config.json" = {
     owner = cfg.user;
