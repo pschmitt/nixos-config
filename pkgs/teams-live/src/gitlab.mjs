@@ -72,6 +72,13 @@ export class GitLabClient {
     );
   }
 
+  async rebaseMr(project, iid, { skipCi = false } = {}) {
+    return await this.request(
+      `projects/${encodeURIComponent(project)}/merge_requests/${iid}/rebase`,
+      { method: 'PUT', body: { skip_ci: skipCi } }
+    );
+  }
+
   async getApprovals(project, iid) {
     return await this.request(`projects/${encodeURIComponent(project)}/merge_requests/${iid}/approvals`);
   }

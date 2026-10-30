@@ -4,6 +4,18 @@ import { markdownToTeamsHtml } from 'msteams-mcp/dist/utils/parsers-markdown.js'
 
 export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, markdownToTeamsHtml };
 
+export const botSentMessageIds = new Set();
+
+export function recordBotMessageId(id) {
+  if (id) {
+    botSentMessageIds.add(String(id));
+    if (botSentMessageIds.size > 2000) {
+      const iter = botSentMessageIds.values();
+      botSentMessageIds.delete(iter.next().value);
+    }
+  }
+}
+
 export const STATUS_REACTIONS = {
   pending: '1f440_eyes', // 👀 needs approval
   approved: 'like', // 👍 approved, not merged
@@ -73,13 +85,19 @@ export async function sendReply(conversationId, originalMessage, replyMarkdown) 
     options.replyToMessageId = messageId;
   }
 
-  return await sendMessage(conversationId, html, options);
+  const result = await sendMessage(conversationId, html, options);
+  if (result.ok && result.value) {
+    recordBotMessageId(result.value.timestamp);
+    recordBotMessageId(result.value.messageId);
+  }
+  return result;
 }
 
 /**
  * Updates an existing reply message in-place.
  */
 export async function updateReply(conversationId, serverMessageId, originalMessage, replyMarkdown) {
+  recordBotMessageId(serverMessageId);
   const messageId = originalMessage.messageId || originalMessage.id;
   const from = originalMessage.from || originalMessage.sender?.displayName || '';
   const fromMri = originalMessage.fromMri || originalMessage.sender?.mri || '';

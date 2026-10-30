@@ -4,6 +4,7 @@ import {
   STATUS_REACTIONS,
   STATUS_BY_REACTION,
   COMMAND_REACTIONS,
+  botSentMessageIds,
   addReaction,
   removeReaction,
   sendReply,
@@ -105,7 +106,10 @@ export class MergeRequestWatcher {
     this.selfMri = mri;
   }
 
-  isOwnMessage(fromMri, text) {
+  isOwnMessage(fromMri, text, messageId = null, clientMessageId = null) {
+    if (messageId && botSentMessageIds.has(String(messageId))) return true;
+    if (clientMessageId && botSentMessageIds.has(String(clientMessageId))) return true;
+
     if (this.selfMri && fromMri === this.selfMri) {
       const t = text || '';
       if (
@@ -118,7 +122,10 @@ export class MergeRequestWatcher {
         t.includes('teams-live slash commands') ||
         t.includes('POLO!') ||
         t.includes('was kicked from the conversation') ||
-        t.includes('Random Fact')
+        t.includes('Random Fact') ||
+        t.includes('📊 [!') ||
+        t.includes('Rebase initiated') ||
+        t.includes('Cannot automatically rebase')
       ) {
         return true;
       }
@@ -537,6 +544,80 @@ export class MergeRequestWatcher {
     }
   }
 
+  async executeRebaseCommand(event, args) {
+    log(`Executing /rebase command from ${event.from || event.fromMri} in ${event.conversationId}...`);
+    const mrs = await this.findTargetMrsForCommand(event, args);
+    if (mrs.length === 0) {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ No merge request found to rebase. Quote an MR message or send `/rebase` immediately following it.'
+      );
+      return;
+    }
+
+    for (const mr of mrs) {
+      const mrRef = `!${mr.iid} (${mr.project})`;
+      const mrUrl = this.gitlab.mrLink(mr.project, mr.iid);
+
+      try {
+        const mrState = await this.gitlab.getMrStatus(mr.project, mr.iid);
+
+        if (mrState.status === 'merged' || mrState.status === 'closed') {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await sendReply(
+            event.conversationId,
+            event,
+            `ℹ️ [${mrRef}](${mrUrl}) is already ${mrState.status}.`
+          );
+          continue;
+        }
+
+        if (mrState.details?.hasConflicts) {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+          await sendReply(
+            event.conversationId,
+            event,
+            `❌ Cannot automatically rebase [${mrRef}](${mrUrl}): branch has merge conflicts that must be resolved manually.`
+          );
+          continue;
+        }
+
+        if (!mrState.details?.needsRebase) {
+          await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+          await sendReply(
+            event.conversationId,
+            event,
+            `ℹ️ [${mrRef}](${mrUrl}) is already up to date with target branch.`
+          );
+          continue;
+        }
+
+        log(`Triggering GitLab rebase for ${mr.project}!${mr.iid}...`);
+        await this.gitlab.rebaseMr(mr.project, mr.iid);
+        log(`Rebase triggered for ${mr.project}!${mr.iid}`);
+
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.running);
+        await sendReply(
+          event.conversationId,
+          event,
+          `⏳ Rebase initiated for [${mrRef}](${mrUrl}). The watcher will update once complete.`
+        );
+
+        this.checkAllWatched().catch((err) => log(`Post-rebase check failed: ${err.message}`));
+      } catch (err) {
+        log(`Error rebasing ${mr.project}!${mr.iid}: ${err.message}`);
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+        await sendReply(
+          event.conversationId,
+          event,
+          `❌ Rebase failed for [${mrRef}](${mrUrl}): ${err.message}`
+        );
+      }
+    }
+  }
+
   async executeStatusCommand(event, args) {
     const mrs = await this.findTargetMrsForCommand(event, args);
     if (mrs.length === 0) {
@@ -634,6 +715,7 @@ export class MergeRequestWatcher {
       event,
       '🤖 **teams-live slash commands**:\n\n' +
       '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
+      '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
       '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
       '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
       '- `/random`: Outputs a random fact from uselessfacts.jsph.pl.\n' +
@@ -653,6 +735,8 @@ export class MergeRequestWatcher {
 
     if (command === '/approve') {
       await this.executeApproveCommand(event, args);
+    } else if (command === '/rebase') {
+      await this.executeRebaseCommand(event, args);
     } else if (command === '/status') {
       await this.executeStatusCommand(event, args);
     } else if (command === '/weather') {
@@ -679,6 +763,11 @@ export class MergeRequestWatcher {
     if (event.kind !== 'NewMessage') return;
     if (!this.watchedConversations.has(event.conversationId)) return;
 
+    // Ignore bot's own messages immediately to prevent self-trigger loops
+    if (botSentMessageIds.has(String(event.messageId)) || botSentMessageIds.has(String(event.clientMessageId))) {
+      return;
+    }
+
     // Check for slash commands first (even from self)
     if (this.isSlashCommand(event.content)) {
       try {
@@ -689,7 +778,7 @@ export class MergeRequestWatcher {
       return;
     }
 
-    if (this.isOwnMessage(event.fromMri, event.content)) return;
+    if (this.isOwnMessage(event.fromMri, event.content, event.messageId, event.clientMessageId)) return;
 
     const fullText = [event.content, ...(event.links ?? [])].filter(Boolean).join(' ');
     this.watch(event.conversationId, event.messageId, fullText, {
@@ -713,8 +802,9 @@ export class MergeRequestWatcher {
 
       for (const msg of result.value.messages) {
         if (this.completedMessages.has(String(msg.id))) continue;
+        if (botSentMessageIds.has(String(msg.id))) continue;
         const senderMri = msg.sender?.mri?.split('/contacts/').pop();
-        if (this.isOwnMessage(senderMri, msg.content)) continue;
+        if (this.isOwnMessage(senderMri, msg.content, msg.id)) continue;
 
         const ownReactions = (msg.reactions ?? [])
           .filter((r) => r.user?.mri === self)
