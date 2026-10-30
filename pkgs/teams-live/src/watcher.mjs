@@ -107,6 +107,24 @@ function getMrStatusEmoji(detailedStatus) {
   }
 }
 
+function isBotMr(mr) {
+  const username = (mr.author?.username || '').toLowerCase();
+  const name = (mr.author?.name || '').toLowerCase();
+  const title = (mr.title || '').toLowerCase();
+  return (
+    Boolean(mr.author?.bot) ||
+    username.includes('renovate') ||
+    username.includes('bot') ||
+    name.includes('renovate') ||
+    name.includes('bot') ||
+    title.startsWith('chore(deps') ||
+    title.startsWith('update dependency') ||
+    title.startsWith('update module') ||
+    title.startsWith('pin dependency') ||
+    title.startsWith('lock file maintenance')
+  );
+}
+
 export class MergeRequestWatcher {
   constructor({ config, gitlab, jira, authManager }) {
     this.config = config;
@@ -954,15 +972,33 @@ export class MergeRequestWatcher {
             ? new RegExp(`^${this.config.gitlab.group}/?`)
             : null;
 
-          const lines = [];
-          for (const mr of mrs) {
+          const formatMrLine = (mr) => {
             const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
             const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
             const author = mr.author?.username || mr.author?.name || 'unknown';
             const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
-            lines.push(`- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
+            return `- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`;
+          };
+
+          const humanMrs = [];
+          const botMrs = [];
+          for (const mr of mrs) {
+            if (isBotMr(mr)) {
+              botMrs.push(mr);
+            } else {
+              humanMrs.push(mr);
+            }
           }
-          text = `📋 **Open Merge Requests** (${mrs.length}):\n\n${lines.join('\n')}`;
+
+          const sections = [];
+          if (humanMrs.length > 0) {
+            sections.push(`👤 **Human Merge Requests** (${humanMrs.length}):\n\n${humanMrs.map(formatMrLine).join('\n')}`);
+          }
+          if (botMrs.length > 0) {
+            sections.push(`🤖 **Renovate / Bot Updates** (${botMrs.length}):\n\n${botMrs.map(formatMrLine).join('\n')}`);
+          }
+
+          text = `📋 **Open Merge Requests** (${mrs.length} total: ${humanMrs.length} human, ${botMrs.length} bot):\n\n${sections.join('\n\n')}`;
         }
         this.mrsCache.text = text;
         this.mrsCache.timestamp = Date.now();
