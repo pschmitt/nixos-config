@@ -10,6 +10,8 @@ import {
   sendReply,
   updateReply,
   getThreadMessages,
+  getCalendarView,
+  escapeHtml,
 } from './teams.mjs';
 
 const log = (...args) => console.error(new Date().toISOString(), '[watcher]', ...args);
@@ -18,10 +20,54 @@ const HEADSUP_PREFIX = 'headsup: ';
 const CI_PREFIX = 'CI pipeline ';
 const REBASE_PREFIX = '**Rebase';
 
+const KNOWN_COMMANDS = [
+  '/approve',
+  '/rebase',
+  '/status',
+  '/mrs',
+  '/sprint',
+  '/meetings',
+  '/weather',
+  '/random',
+  '/marco',
+  '/kick',
+  '/ban',
+  '/exec',
+  '/help',
+  '/usage',
+];
+
+function levenshteinDistance(a, b) {
+  const m = a.length;
+  const n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+  return dp[m][n];
+}
+
+function toMockingCase(str) {
+  return str
+    .split('')
+    .map((c, i) => (i % 2 === 0 ? c.toLowerCase() : c.toUpperCase()))
+    .join('');
+}
+
 export class MergeRequestWatcher {
-  constructor({ config, gitlab, authManager }) {
+  constructor({ config, gitlab, jira, authManager }) {
     this.config = config;
     this.gitlab = gitlab;
+    this.jira = jira;
     this.authManager = authManager;
     this.pollIntervalMs = (config.gitlab.poll_interval_seconds || 60) * 1000;
     this.historyLimit = config.gitlab.history_limit || 50;
@@ -130,8 +176,19 @@ export class MergeRequestWatcher {
       t.includes('teams-live slash commands') ||
       t.includes('POLO!') ||
       t.includes('was kicked from the conversation') ||
+      t.includes('was banned from the conversation') ||
       t.includes('Random Fact') ||
       t.includes('📊 ') ||
+      t.includes('📋 **Open Merge Requests**') ||
+      t.includes('No open merge requests found') ||
+      t.includes('🏃 **Current Sprint Tasks**') ||
+      t.includes('No active sprint tasks found') ||
+      t.includes('📅 **Meetings for the rest of the week') ||
+      t.includes('No upcoming meetings scheduled') ||
+      t.includes(': command not found') ||
+      t.includes('[exec] Process finished') ||
+      t.includes('[exec] No command specified') ||
+      t.includes('dId yOu MeAn') ||
       t.includes('Rebase initiated') ||
       t.includes('Cannot automatically rebase') ||
       t.includes('Rebase required') ||
@@ -705,22 +762,259 @@ export class MergeRequestWatcher {
     }
   }
 
+  async executeMrsCommand(event) {
+    log(`Executing /mrs in ${event.conversationId}...`);
+    try {
+      const mrs = await this.gitlab.getGroupMrs();
+      if (mrs.length === 0) {
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await sendReply(
+          event.conversationId,
+          event,
+          '📋 No open merge requests found.'
+        );
+        return;
+      }
+
+      const groupPrefix = this.config.gitlab?.group
+        ? new RegExp(`^${this.config.gitlab.group}/?`)
+        : null;
+
+      const lines = [];
+      for (const mr of mrs) {
+        const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
+        const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
+        const author = mr.author?.username || mr.author?.name || 'unknown';
+        lines.push(`- [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
+      }
+
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await sendReply(
+        event.conversationId,
+        event,
+        `📋 **Open Merge Requests** (${mrs.length}):\n\n${lines.join('\n')}`
+      );
+    } catch (err) {
+      log(`Group MRs lookup failed: ${err.message}`);
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        `❌ Failed to fetch group merge requests: ${err.message}`
+      );
+    }
+  }
+
+  async executeSprintCommand(event) {
+    log(`Executing /sprint in ${event.conversationId}...`);
+    if (!this.jira?.isConfigured()) {
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        '❌ Jira integration is not configured.'
+      );
+      return;
+    }
+
+    try {
+      const { total, inProgress, inReview, todo } = await this.jira.getActiveSprintTasks();
+      if (total === 0) {
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await sendReply(
+          event.conversationId,
+          event,
+          '🏃 No active sprint tasks found.'
+        );
+        return;
+      }
+
+      const sections = [];
+      if (inProgress.length > 0) {
+        const lines = [`**In Progress** (${inProgress.length}):`];
+        for (const t of inProgress) {
+          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+        }
+        sections.push(lines.join('\n'));
+      }
+
+      if (inReview.length > 0) {
+        const lines = [`**In Review** (${inReview.length}):`];
+        for (const t of inReview) {
+          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+        }
+        sections.push(lines.join('\n'));
+      }
+
+      if (todo.length > 0) {
+        const lines = [`**To Do** (${todo.length}):`];
+        for (const t of todo) {
+          lines.push(`- **${t.key}**: ${t.summary} (@${t.assignee})`);
+        }
+        sections.push(lines.join('\n'));
+      }
+
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await sendReply(
+        event.conversationId,
+        event,
+        `🏃 **Current Sprint Tasks** (${total} active):\n\n${sections.join('\n\n')}`
+      );
+    } catch (err) {
+      log(`Sprint tasks lookup failed: ${err.message}`);
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        `❌ Failed to fetch sprint tasks: ${err.message}`
+      );
+    }
+  }
+
+  async executeMeetingsCommand(event) {
+    log(`Executing /meetings in ${event.conversationId}...`);
+    try {
+      const now = new Date();
+      const endOfWeek = new Date(now);
+      const day = endOfWeek.getDay();
+      const diffToSunday = (7 - day) % 7;
+      endOfWeek.setDate(endOfWeek.getDate() + diffToSunday);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const res = await getCalendarView({
+        startDate: now.toISOString(),
+        endDate: endOfWeek.toISOString(),
+        limit: 50,
+      });
+
+      if (!res.ok) {
+        throw new Error(res.error?.message || 'Calendar view request failed');
+      }
+
+      const meetings = (res.value?.meetings || []).filter(
+        (m) => m.myResponse !== 'Declined'
+      );
+
+      if (meetings.length === 0) {
+        await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+        await sendReply(
+          event.conversationId,
+          event,
+          '📅 No upcoming meetings scheduled for the rest of this week.'
+        );
+        return;
+      }
+
+      meetings.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+      const byDate = new Map();
+      for (const m of meetings) {
+        const start = new Date(m.startTime);
+        const dateKey = start.toLocaleDateString('en-GB', {
+          weekday: 'long',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'Europe/Berlin',
+        });
+        if (!byDate.has(dateKey)) {
+          byDate.set(dateKey, []);
+        }
+        byDate.get(dateKey).push(m);
+      }
+
+      const sections = [];
+      for (const [dateStr, dayMeetings] of byDate.entries()) {
+        const lines = [`**${dateStr}**:`];
+        for (const m of dayMeetings) {
+          const startStr = new Date(m.startTime).toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Berlin',
+          });
+          const endStr = new Date(m.endTime).toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Berlin',
+          });
+          const organizer = m.organizer?.name ? ` _(${m.organizer.name})_` : '';
+          lines.push(`- ${startStr} - ${endStr}: **${m.subject}**${organizer}`);
+        }
+        sections.push(lines.join('\n'));
+      }
+
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+      await sendReply(
+        event.conversationId,
+        event,
+        `📅 **Meetings for the rest of the week**:\n\n${sections.join('\n\n')}`
+      );
+    } catch (err) {
+      log(`Meetings lookup failed: ${err.message}`);
+      await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
+      await sendReply(
+        event.conversationId,
+        event,
+        `❌ Failed to fetch calendar meetings: ${err.message}`
+      );
+    }
+  }
+
+  async executeExecCommand(event, args) {
+    const cmd = args.join(' ').trim();
+    const trollUser = this.config.teams?.troll_user;
+    const senderMri = event.fromMri || '';
+    const isTroll = trollUser && (senderMri === trollUser || senderMri.endsWith(trollUser.split(':').pop()));
+
+    log(`Executing /exec from ${event.from || senderMri} (troll=${Boolean(isTroll)}) in ${event.conversationId}: ${cmd}`);
+
+    if (isTroll) {
+      const emojis = ['🤡', '🥑', '👾', '🚀', '🍄', '🦖', '🦥', '🌯', '🎪', '🍕', '🧨', '👻', '🦄', '🍹', '🎲', '🧶'];
+      const shuffled = [...emojis].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3).join(' ');
+      await addReaction(event.conversationId, event.messageId, 'like');
+      await sendReply(event.conversationId, event, `${selected}: command not found`);
+      return;
+    }
+
+    await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+    if (!cmd) {
+      await sendReply(event.conversationId, event, '`$ `\n\n```\n[exec] No command specified\n```');
+    } else {
+      await sendReply(
+        event.conversationId,
+        event,
+        `\`$ ${escapeHtml(cmd)}\`\n\n\`\`\`\n[exec] Process finished with exit code 0\n\`\`\``
+      );
+    }
+  }
+
+  async executeBanCommand(event, args) {
+    const target = args.join(' ').trim() || event.from || 'User';
+    log(`Executing /ban for ${target} in ${event.conversationId}...`);
+    await addReaction(event.conversationId, event.messageId, 'like');
+    await sendReply(
+      event.conversationId,
+      event,
+      `🔨 *${target} was banned from the conversation.*`
+    );
+  }
+
+  async executeKickCommand(event, args = []) {
+    const target = args.join(' ').trim() || event.from || 'User';
+    log(`Executing /kick for ${target} in ${event.conversationId}...`);
+    await addReaction(event.conversationId, event.messageId, 'like');
+    await sendReply(
+      event.conversationId,
+      event,
+      `👢 *${target} was kicked from the conversation.*`
+    );
+  }
+
   async executeMarcoCommand(event) {
     const sender = event.from || 'friend';
     log(`Executing /marco from ${sender} in ${event.conversationId}...`);
     await addReaction(event.conversationId, event.messageId, 'like');
     await sendReply(event.conversationId, event, `🏊 **POLO!**`);
-  }
-
-  async executeKickCommand(event) {
-    const sender = event.from || 'User';
-    log(`Executing /kick for ${sender} in ${event.conversationId}...`);
-    await addReaction(event.conversationId, event.messageId, 'like');
-    await sendReply(
-      event.conversationId,
-      event,
-      `👢 *${sender} was kicked from the conversation.*`
-    );
   }
 
   async executeHelpCommand(event) {
@@ -733,11 +1027,16 @@ export class MergeRequestWatcher {
       '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
       '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
       '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
+      '- `/mrs`: Lists open, non-draft merge requests in the group.\n' +
+      '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
+      '- `/meetings`: Summary of meetings for the rest of the current week.\n' +
       '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
-      '- `/random`: Outputs a random fact from uselessfacts.jsph.pl.\n' +
-      '- `/marco`: Answers with "POLO!".\n' +
-      '- `/kick`: Mentions the sender and pretends they were kicked.\n' +
-      '- `/help`: Lists supported slash commands.\n\n' +
+      '- `/random`: Outputs a random fact.\n' +
+      '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
+      '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
+      '- `/ban <nick>`: Bans a user from the channel.\n' +
+      '- `/exec <cmd>`: Executes a command.\n' +
+      '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
       '_Target an MR by replying to its message or sending the command immediately after._'
     );
   }
@@ -755,6 +1054,12 @@ export class MergeRequestWatcher {
       await this.executeRebaseCommand(event, args);
     } else if (command === '/status') {
       await this.executeStatusCommand(event, args);
+    } else if (command === '/mrs') {
+      await this.executeMrsCommand(event);
+    } else if (command === '/sprint') {
+      await this.executeSprintCommand(event);
+    } else if (command === '/meetings') {
+      await this.executeMeetingsCommand(event);
     } else if (command === '/weather') {
       await this.executeWeatherCommand(event, args);
     } else if (command === '/random') {
@@ -762,16 +1067,40 @@ export class MergeRequestWatcher {
     } else if (command === '/marco') {
       await this.executeMarcoCommand(event);
     } else if (command === '/kick') {
-      await this.executeKickCommand(event);
-    } else if (command === '/help') {
+      await this.executeKickCommand(event, args);
+    } else if (command === '/ban') {
+      await this.executeBanCommand(event, args);
+    } else if (command === '/exec') {
+      await this.executeExecCommand(event, args);
+    } else if (command === '/help' || command === '/usage') {
       await this.executeHelpCommand(event);
     } else {
+      let bestMatch = null;
+      let minDistance = Infinity;
+
+      for (const known of KNOWN_COMMANDS) {
+        if (known === '/usage') continue;
+        const dist = levenshteinDistance(command, known);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestMatch = known;
+        }
+      }
+
       await addReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.warning);
-      await sendReply(
-        event.conversationId,
-        event,
-        `Unknown command \`${command}\`. Use \`/help\` to see available commands.`
-      );
+      if (bestMatch && minDistance <= 3) {
+        await sendReply(
+          event.conversationId,
+          event,
+          `🤔 ${toMockingCase('did you mean')} ${bestMatch}?`
+        );
+      } else {
+        await sendReply(
+          event.conversationId,
+          event,
+          `Unknown command \`${command}\`. Use \`/help\` to see available commands.`
+        );
+      }
     }
   }
 

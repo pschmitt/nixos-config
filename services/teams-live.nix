@@ -41,6 +41,41 @@ in
       mode = "0400";
       restartUnits = [ "teams-live.service" ];
     };
+
+    "teams-live/gitlab-group" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/jira-url" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/jira-token" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/jira-board-id" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
+
+    "teams-live/troll-user" = config.sops.mkHostSecret {
+      inherit (cfg) group;
+      owner = cfg.user;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    };
   };
 
   sops.templates."teams-live/config.json" = {
@@ -51,6 +86,7 @@ in
       gitlab = {
         host = config.sops.placeholder."teams-live/gitlab-url";
         token_file = config.sops.secrets."teams-live/gitlab-token".path;
+        group = config.sops.placeholder."teams-live/gitlab-group";
         poll_interval_seconds = 60;
         history_limit = 50;
         history_max_age_minutes = 10;
@@ -66,10 +102,17 @@ in
         };
       };
 
+      jira = {
+        url = config.sops.placeholder."teams-live/jira-url";
+        token_file = config.sops.secrets."teams-live/jira-token".path;
+        board_id = config.sops.placeholder."teams-live/jira-board-id";
+      };
+
       teams = {
         credentials_file = config.sops.secrets."teams-live/credentials".path;
         reconnect_interval_seconds = 5;
         token_refresh_interval_minutes = 60;
+        troll_user = config.sops.placeholder."teams-live/troll-user";
       };
 
       conversations = [

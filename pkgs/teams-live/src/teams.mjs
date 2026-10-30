@@ -1,8 +1,9 @@
 import { sendMessage, getThreadMessages, editMessage } from 'msteams-mcp/dist/api/chatsvc-messaging.js';
 import { addReaction, removeReaction } from 'msteams-mcp/dist/api/chatsvc-reactions.js';
+import { getCalendarView } from 'msteams-mcp/dist/api/calendar-api.js';
 import { markdownToTeamsHtml } from 'msteams-mcp/dist/utils/parsers-markdown.js';
 
-export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, markdownToTeamsHtml };
+export { sendMessage, getThreadMessages, editMessage, addReaction, removeReaction, getCalendarView, markdownToTeamsHtml };
 
 export const botSentMessageIds = new Set();
 

@@ -1,7 +1,8 @@
 export class GitLabClient {
-  constructor({ host = 'git.wiit.one', token = null } = {}) {
+  constructor({ host = 'git.wiit.one', token = null, group = '' } = {}) {
     this.host = host;
     this.token = token;
+    this.group = group;
     this.baseUrl = `https://${host}/api/v4`;
     const escapedHost = host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     this.mrUrlRegex = new RegExp(`https?:\\/\\/${escapedHost}\\/([\\w.\\/-]+?)\\/-\\/merge_requests\\/(\\d+)`, 'g');
@@ -85,6 +86,19 @@ export class GitLabClient {
 
   async getApprovals(project, iid) {
     return await this.request(`projects/${encodeURIComponent(project)}/merge_requests/${iid}/approvals`);
+  }
+
+  async getGroupMrs(group = null) {
+    const targetGroup = group || this.group;
+    if (!targetGroup) {
+      throw new Error('No GitLab group configured');
+    }
+    const endpoint = `groups/${encodeURIComponent(targetGroup)}/merge_requests?state=opened&wip=no&per_page=50&order_by=updated_at&sort=desc`;
+    const mrs = await this.request(endpoint);
+    if (!Array.isArray(mrs)) return [];
+    return mrs.filter(
+      (m) => !m.draft && !m.work_in_progress && !m.title.startsWith('Draft:') && !m.title.startsWith('WIP:')
+    );
   }
 
   async getPipelines(project, iid) {

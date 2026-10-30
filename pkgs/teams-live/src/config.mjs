@@ -76,6 +76,7 @@ export function loadConfig(configPath) {
     host: (getString(fileConfig.gitlab?.host) || process.env.GITLAB_HOST || 'git.wiit.one')
       .replace(/^https?:\/\//, '')
       .replace(/\/+$/, ''),
+    group: (getString(fileConfig.gitlab?.group) || process.env.GITLAB_GROUP || '').trim(),
     token_file: getNullableString(fileConfig.gitlab?.token_file) || process.env.GITLAB_TOKEN_FILE || null,
     token: null,
     poll_interval_seconds: Number(fileConfig.gitlab?.poll_interval_seconds ?? process.env.TEAMS_GITLAB_INTERVAL ?? 60),
@@ -104,10 +105,28 @@ export function loadConfig(configPath) {
     gitlab.token = process.env.GITLAB_TOKEN.trim();
   }
 
+  const jira = {
+    url: (getString(fileConfig.jira?.url) || process.env.JIRA_URL || '').replace(/\/+$/, ''),
+    token_file: getNullableString(fileConfig.jira?.token_file) || process.env.JIRA_TOKEN_FILE || null,
+    token: null,
+    board_id: (getString(fileConfig.jira?.board_id) || process.env.JIRA_BOARD_ID || '').trim(),
+  };
+
+  if (jira.token_file && fs.existsSync(jira.token_file)) {
+    try {
+      jira.token = fs.readFileSync(jira.token_file, 'utf8').trim();
+    } catch (e) {
+      console.warn(`Could not read Jira token file ${jira.token_file}: ${e.message}`);
+    }
+  } else if (process.env.JIRA_TOKEN) {
+    jira.token = process.env.JIRA_TOKEN.trim();
+  }
+
   const teams = {
     reconnect_interval_seconds: Number(fileConfig.teams?.reconnect_interval_seconds ?? 5),
     token_refresh_interval_minutes: Number(fileConfig.teams?.token_refresh_interval_minutes ?? 60),
     credentials_file: getNullableString(fileConfig.teams?.credentials_file) || process.env.TEAMS_CREDENTIALS_FILE || null,
+    troll_user: (getString(fileConfig.teams?.troll_user) || process.env.TEAMS_TROLL_USER || '').trim(),
   };
 
   let conversations = fileConfig.conversations;
@@ -127,6 +146,7 @@ export function loadConfig(configPath) {
       cluster_secret: browserDaemonSecret,
     },
     gitlab,
+    jira,
     teams,
     conversations,
   };

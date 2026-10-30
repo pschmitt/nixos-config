@@ -2,6 +2,7 @@
 import { loadConfig } from './config.mjs';
 import { AuthManager } from './auth.mjs';
 import { GitLabClient } from './gitlab.mjs';
+import { JiraClient } from './jira.mjs';
 import { TrouterClient } from './trouter.mjs';
 import { MergeRequestWatcher } from './watcher.mjs';
 
@@ -73,7 +74,8 @@ async function main() {
 
   const authManager = new AuthManager(config);
   const gitlab = new GitLabClient(config.gitlab);
-  const watcher = new MergeRequestWatcher({ config, gitlab, authManager });
+  const jira = new JiraClient(config.jira);
+  const watcher = new MergeRequestWatcher({ config, gitlab, jira, authManager });
 
   let trouter = null;
   let stopping = false;
