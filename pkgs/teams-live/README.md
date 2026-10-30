@@ -15,7 +15,7 @@ Real-time Microsoft Teams bot and watcher daemon integrated with GitLab, Jira, a
   - `/mrs [all|bots]`: Group merge request overview with human MR priority.
   - `/alerts` (or `/opsgenie`) `[oncall|support]`: Live OpsGenie alerts and on-duty responders.
   - `/sprint`: Active Jira sprint tickets and assignees.
-  - `/meetings`: Remaining weekly agenda with direct meeting links.
+  - `/meetings` (or `/cal`, `/calendar`): Remaining weekly agenda with direct meeting links.
   - `/approve [link|all]`: Approves target GitLab MR (or `/approve all` for all eligible human MRs with green/no pipeline in the group).
   - `/rebase [link]`: Triggers conflict-free GitLab MR rebase.
   - `/status [link]`: Service runtime stats or target MR check.
