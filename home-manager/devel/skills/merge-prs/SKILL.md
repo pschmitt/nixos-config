@@ -5,7 +5,7 @@ description: Review and merge GitHub pull requests, by default Renovate and Depe
 
 # Review and merge pull requests
 
-Use this skill when the user asks to review or merge pull requests. Unless told otherwise, the target is Renovate and Dependabot PRs, and the goal is to get them merged, not only reviewed: if a bump needs a fix to pass, make the fix. Honor explicit exclusions such as a named repository.
+Use this skill when the user asks to review or merge pull requests. For inbox triage and notification state, work together with `github-notifications`. Unless told otherwise, the target is Renovate and Dependabot PRs, and the goal is to get them merged, not only reviewed: if a bump needs a fix to pass, make the fix. Honor explicit exclusions such as a named repository.
 
 ## Modes
 
@@ -57,6 +57,6 @@ Major, breaking or pre-release bumps are not auto-skipped when the user asked to
 
 ## Notifications and reporting
 
-- After verifying a PR is merged or closed, mark its notification threads done with `gh api -X DELETE notifications/threads/<thread-id>` (`PATCH` only marks read). Clear all threads for that PR, including duplicates. Leave open or blocked PR threads unread; do not clear unrelated mentions, issues, releases or excluded repositories.
+- Load the `github-notifications` skill for notification handling (fetching, deduplicating, what may be cleared). After verifying a PR is merged or closed, mark its notification threads done with `gh api -X DELETE notifications/threads/<thread-id>` (`PATCH` only marks read). Clear all threads for that PR, including duplicates. Leave open or blocked PR threads unread; do not clear unrelated mentions, issues, releases or excluded repositories.
 - If the user asks for periodic Signal updates, load `signal-notify` and send a concise update about once per hour plus a short completion summary.
 - End with a summary with links: scope, merged PRs, fixes pushed, notification threads cleared, and each blocked or held PR with its exact blocker. Never imply that a pending or blocked PR was merged.
