@@ -136,6 +136,7 @@ export class MergeRequestWatcher {
     this.precomputeIntervalMs = 3 * 60 * 1000; // 3 minutes
     this.mrsCache = { text: null, timestamp: 0, loading: null };
     this.sprintCache = { text: null, timestamp: 0, loading: null };
+    this.meetingsCache = { text: null, timestamp: 0, loading: null };
 
     const stateDir = process.env.XDG_STATE_HOME || path.join(process.cwd(), 'state');
     if (!fs.existsSync(stateDir)) {
@@ -780,6 +781,7 @@ export class MergeRequestWatcher {
       const completedCount = this.completedMessages.size;
       const mrsAge = this.mrsCache.text ? `${Math.round((Date.now() - this.mrsCache.timestamp) / 1000)}s ago` : 'empty';
       const sprintAge = this.sprintCache.text ? `${Math.round((Date.now() - this.sprintCache.timestamp) / 1000)}s ago` : 'empty';
+      const meetingsAge = this.meetingsCache.text ? `${Math.round((Date.now() - this.meetingsCache.timestamp) / 1000)}s ago` : 'empty';
 
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
@@ -792,7 +794,7 @@ export class MergeRequestWatcher {
         `- **Trouter**: Connected 🟢\n` +
         `- **Watched Conversations**: ${convCount}\n` +
         `- **Active MR Watchers**: ${watchedMrsCount}\n` +
-        `- **Precompute Cache**: /mrs (${mrsAge}), /sprint (${sprintAge})\n` +
+        `- **Precompute Cache**: /mrs (${mrsAge}), /sprint (${sprintAge}), /meetings (${meetingsAge})\n` +
         `- **Completed Message Cache**: ${completedCount}\n\n` +
         '_Tip: To check an MR status, use `/status [link]` or quote an MR message._'
       );
@@ -916,21 +918,53 @@ export class MergeRequestWatcher {
     return await this.mrsCache.loading;
   }
 
-  async executeMrsCommand(event) {
-    log(`Executing /mrs in ${event.conversationId}...`);
+  async executeCachedCommand(event, { name, getOrFetch, errorLabel }) {
+    log(`Executing /${name} in ${event.conversationId}...`);
     try {
-      const text = await this.getOrFetchMrsText();
+      const cacheObj = this[`${name}Cache`];
+      const cached = cacheObj?.text;
+      if (cached) {
+        // 1. Output the cached message immediately
+        const replyRes = await sendReply(event.conversationId, event, cached);
+        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+
+        // 2. Start a fresh background fetch and update the message if it differs
+        (async () => {
+          try {
+            const freshText = await getOrFetch({ force: true });
+            if (freshText && freshText !== cached && replyRes?.ok && replyRes.value) {
+              const serverMsgId = replyRes.value.timestamp || replyRes.value.messageId;
+              log(`Updating /${name} reply (msg ${serverMsgId}) in ${event.conversationId} with fresh data`);
+              await updateReply(event.conversationId, serverMsgId, event, freshText);
+            }
+          } catch (err) {
+            log(`Background refresh for /${name} failed: ${err.message}`);
+          }
+        })();
+        return;
+      }
+
+      // No cache yet: fetch synchronously
+      const freshText = await getOrFetch({ force: true });
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(event.conversationId, event, text);
+      await sendReply(event.conversationId, event, freshText);
     } catch (err) {
-      log(`Group MRs lookup failed: ${err.message}`);
+      log(`${errorLabel} failed: ${err.message}`);
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
         event.conversationId,
         event,
-        `❌ Failed to fetch group merge requests: ${err.message}`
+        `❌ Failed to fetch ${errorLabel.toLowerCase()}: ${err.message}`
       );
     }
+  }
+
+  async executeMrsCommand(event) {
+    await this.executeCachedCommand(event, {
+      name: 'mrs',
+      getOrFetch: (opts) => this.getOrFetchMrsText(opts),
+      errorLabel: 'Group MRs lookup',
+    });
   }
 
   async getOrFetchSprintText({ force = false } = {}) {
@@ -1002,7 +1036,6 @@ export class MergeRequestWatcher {
   }
 
   async executeSprintCommand(event) {
-    log(`Executing /sprint in ${event.conversationId}...`);
     if (!this.jira?.isConfigured()) {
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
       await sendReply(
@@ -1013,107 +1046,112 @@ export class MergeRequestWatcher {
       return;
     }
 
-    try {
-      const text = await this.getOrFetchSprintText();
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(event.conversationId, event, text);
-    } catch (err) {
-      log(`Sprint tasks lookup failed: ${err.message}`);
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
-      await sendReply(
-        event.conversationId,
-        event,
-        `❌ Failed to fetch sprint tasks: ${err.message}`
-      );
+    await this.executeCachedCommand(event, {
+      name: 'sprint',
+      getOrFetch: (opts) => this.getOrFetchSprintText(opts),
+      errorLabel: 'Sprint tasks lookup',
+    });
+  }
+
+  async getOrFetchMeetingsText({ force = false } = {}) {
+    const now = Date.now();
+    if (!force && this.meetingsCache.text && now - this.meetingsCache.timestamp < this.cacheTtlMs) {
+      return this.meetingsCache.text;
     }
+    if (this.meetingsCache.loading) {
+      return await this.meetingsCache.loading;
+    }
+
+    this.meetingsCache.loading = (async () => {
+      try {
+        const nowDate = new Date();
+        const endOfWeek = new Date(nowDate);
+        const day = endOfWeek.getDay();
+        const diffToSunday = (7 - day) % 7;
+        endOfWeek.setDate(endOfWeek.getDate() + diffToSunday);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const res = await getCalendarView({
+          startDate: nowDate.toISOString(),
+          endDate: endOfWeek.toISOString(),
+          limit: 50,
+        });
+
+        if (!res.ok) {
+          throw new Error(res.error?.message || 'Calendar view request failed');
+        }
+
+        const meetings = (res.value?.meetings || []).filter(
+          (m) => m.myResponse !== 'Declined'
+        );
+
+        let text;
+        if (meetings.length === 0) {
+          text = '📅 No upcoming meetings scheduled for the rest of this week.';
+        } else {
+          meetings.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+          const byDate = new Map();
+          for (const m of meetings) {
+            const start = new Date(m.startTime);
+            const dateKey = start.toLocaleDateString('en-GB', {
+              weekday: 'long',
+              month: 'short',
+              day: 'numeric',
+              timeZone: 'Europe/Berlin',
+            });
+            if (!byDate.has(dateKey)) {
+              byDate.set(dateKey, []);
+            }
+            byDate.get(dateKey).push(m);
+          }
+
+          const sections = [];
+          for (const [dateStr, dayMeetings] of byDate.entries()) {
+            const lines = [`**${dateStr}**:`];
+            for (const m of dayMeetings) {
+              const startStr = new Date(m.startTime).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Europe/Berlin',
+              });
+              const endStr = new Date(m.endTime).toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'Europe/Berlin',
+              });
+              const organizer = m.organizer?.name ? ` _(${m.organizer.name})_` : '';
+              lines.push(`- ${startStr} - ${endStr}: **${m.subject}**${organizer}`);
+            }
+            sections.push(lines.join('\n'));
+          }
+
+          text = `📅 **Meetings for the rest of the week**:\n\n${sections.join('\n\n')}`;
+        }
+
+        this.meetingsCache.text = text;
+        this.meetingsCache.timestamp = Date.now();
+        return text;
+      } catch (err) {
+        if (this.meetingsCache.text) {
+          log(`Failed to refresh /meetings cache (${err.message}), serving stale cache`);
+          return this.meetingsCache.text;
+        }
+        throw err;
+      } finally {
+        this.meetingsCache.loading = null;
+      }
+    })();
+
+    return await this.meetingsCache.loading;
   }
 
   async executeMeetingsCommand(event) {
-    log(`Executing /meetings in ${event.conversationId}...`);
-    try {
-      const now = new Date();
-      const endOfWeek = new Date(now);
-      const day = endOfWeek.getDay();
-      const diffToSunday = (7 - day) % 7;
-      endOfWeek.setDate(endOfWeek.getDate() + diffToSunday);
-      endOfWeek.setHours(23, 59, 59, 999);
-
-      const res = await getCalendarView({
-        startDate: now.toISOString(),
-        endDate: endOfWeek.toISOString(),
-        limit: 50,
-      });
-
-      if (!res.ok) {
-        throw new Error(res.error?.message || 'Calendar view request failed');
-      }
-
-      const meetings = (res.value?.meetings || []).filter(
-        (m) => m.myResponse !== 'Declined'
-      );
-
-      if (meetings.length === 0) {
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-        await sendReply(
-          event.conversationId,
-          event,
-          '📅 No upcoming meetings scheduled for the rest of this week.'
-        );
-        return;
-      }
-
-      meetings.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-      const byDate = new Map();
-      for (const m of meetings) {
-        const start = new Date(m.startTime);
-        const dateKey = start.toLocaleDateString('en-GB', {
-          weekday: 'long',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'Europe/Berlin',
-        });
-        if (!byDate.has(dateKey)) {
-          byDate.set(dateKey, []);
-        }
-        byDate.get(dateKey).push(m);
-      }
-
-      const sections = [];
-      for (const [dateStr, dayMeetings] of byDate.entries()) {
-        const lines = [`**${dateStr}**:`];
-        for (const m of dayMeetings) {
-          const startStr = new Date(m.startTime).toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/Berlin',
-          });
-          const endStr = new Date(m.endTime).toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/Berlin',
-          });
-          const organizer = m.organizer?.name ? ` _(${m.organizer.name})_` : '';
-          lines.push(`- ${startStr} - ${endStr}: **${m.subject}**${organizer}`);
-        }
-        sections.push(lines.join('\n'));
-      }
-
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(
-        event.conversationId,
-        event,
-        `📅 **Meetings for the rest of the week**:\n\n${sections.join('\n\n')}`
-      );
-    } catch (err) {
-      log(`Meetings lookup failed: ${err.message}`);
-      await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
-      await sendReply(
-        event.conversationId,
-        event,
-        `❌ Failed to fetch calendar meetings: ${err.message}`
-      );
-    }
+    await this.executeCachedCommand(event, {
+      name: 'meetings',
+      getOrFetch: (opts) => this.getOrFetchMeetingsText(opts),
+      errorLabel: 'Calendar meetings lookup',
+    });
   }
 
   async executeExecCommand(event, args) {
@@ -1372,12 +1410,13 @@ export class MergeRequestWatcher {
 
   startPrecompute() {
     const runPrecompute = async () => {
-      log('Precomputing /mrs and /sprint cache in background...');
+      log('Precomputing /mrs, /sprint, and /meetings cache in background...');
       await Promise.allSettled([
         this.getOrFetchMrsText({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
         this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
+        this.getOrFetchMeetingsText({ force: true }).catch((err) => log(`Precompute /meetings failed: ${err.message}`)),
       ]);
-      log('Precompute /mrs and /sprint cache completed');
+      log('Precompute /mrs, /sprint, and /meetings cache completed');
     };
 
     const initialTimer = setTimeout(runPrecompute, 5_000);
