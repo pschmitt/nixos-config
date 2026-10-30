@@ -35,6 +35,7 @@ const HELP_TEXT =
   '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
   '- `/random`: Outputs a random fact.\n' +
   '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
+  '- `/leaderboard`: Shows top users by bot interactions and command usage.\n' +
   '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
   '- `/ban <nick>`: Bans a user from the channel.\n' +
   '- `/exec <cmd>`: Executes a command.\n' +
@@ -51,6 +52,7 @@ const KNOWN_COMMANDS = [
   '/weather',
   '/random',
   '/marco',
+  '/leaderboard',
   '/kick',
   '/ban',
   '/exec',
@@ -213,6 +215,7 @@ export class MergeRequestWatcher {
     this.stateFile = path.join(stateDir, 'watcher-state.json');
     this.completedMessages = new Set();
     this.savedEntries = new Map();
+    this.userInteractions = new Map();
     this.loadState();
   }
 
@@ -232,8 +235,11 @@ export class MergeRequestWatcher {
         if (data.entries && typeof data.entries === 'object') {
           this.savedEntries = new Map(Object.entries(data.entries));
         }
+        if (data.userInteractions && typeof data.userInteractions === 'object') {
+          this.userInteractions = new Map(Object.entries(data.userInteractions));
+        }
         log(
-          `Loaded state from ${this.stateFile}: ${this.completedMessages.size} completed messages, ${this.savedEntries.size} saved active entries`
+          `Loaded state from ${this.stateFile}: ${this.completedMessages.size} completed messages, ${this.savedEntries.size} saved active entries, ${this.userInteractions.size} tracked users`
         );
       }
     } catch (err) {
@@ -265,10 +271,16 @@ export class MergeRequestWatcher {
       const botArray = Array.from(botSentMessageIds);
       const cappedBot = botArray.length > 2000 ? botArray.slice(-2000) : botArray;
 
+      const interactionsObj = {};
+      for (const [k, v] of this.userInteractions.entries()) {
+        interactionsObj[k] = v;
+      }
+
       const data = {
         completedMessages: cappedCompleted,
         botMessageIds: cappedBot,
         entries: entriesObj,
+        userInteractions: interactionsObj,
       };
       const tmpPath = `${this.stateFile}.tmp`;
       fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
@@ -276,6 +288,30 @@ export class MergeRequestWatcher {
     } catch (err) {
       log(`Error saving state to ${this.stateFile}: ${err.message}`);
     }
+  }
+
+  recordUserInteraction(event, command) {
+    const key = event.fromMri || event.from || 'unknown';
+    const name = event.from || event.fromMri || 'Anonymous';
+    let userStats = this.userInteractions.get(key);
+    if (!userStats) {
+      userStats = {
+        name,
+        mri: event.fromMri || '',
+        count: 0,
+        commands: {},
+        lastSeen: Date.now(),
+      };
+      this.userInteractions.set(key, userStats);
+    }
+    if (event.from && userStats.name !== event.from) {
+      userStats.name = event.from;
+    }
+    userStats.count = (userStats.count || 0) + 1;
+    userStats.commands = userStats.commands || {};
+    userStats.commands[command] = (userStats.commands[command] || 0) + 1;
+    userStats.lastSeen = Date.now();
+    this.saveState();
   }
 
   getAdminConversationId() {
@@ -368,6 +404,7 @@ export class MergeRequestWatcher {
       t.includes('No open merge requests found') ||
       t.includes('Renovate / Bot Updates') ||
       t.includes('No open renovate or bot merge requests found') ||
+      t.includes('Bot Interaction Leaderboard') ||
       t.includes('Current Sprint Tasks') ||
       t.includes('No active sprint tasks found') ||
       t.includes('Meetings for the rest of the week') ||
@@ -1402,6 +1439,42 @@ export class MergeRequestWatcher {
     await sendReply(event.conversationId, event, `🏊 **POLO!**`);
   }
 
+  async executeLeaderboardCommand(event) {
+    log(`Executing /leaderboard in ${event.conversationId}...`);
+    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
+
+    if (!this.userInteractions || this.userInteractions.size === 0) {
+      await sendReply(
+        event.conversationId,
+        event,
+        '🏆 **Bot Interaction Leaderboard**:\n\n_No interactions recorded yet._'
+      );
+      return;
+    }
+
+    const sortedUsers = [...this.userInteractions.values()].sort((a, b) => (b.count || 0) - (a.count || 0));
+
+    const medals = ['🥇', '🥈', '🥉'];
+    const lines = [];
+
+    for (let i = 0; i < sortedUsers.length; i++) {
+      const u = sortedUsers[i];
+      const rankBadge = i < medals.length ? medals[i] : `\`#${i + 1}\``;
+
+      const topCmds = Object.entries(u.commands || {})
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([cmd, cnt]) => `${cmd} (${cnt})`)
+        .join(', ');
+
+      const cmdBreakdown = topCmds ? ` _(top: ${topCmds})_` : '';
+      lines.push(`${rankBadge} **${u.name}**: ${u.count} interaction${u.count === 1 ? '' : 's'}${cmdBreakdown}`);
+    }
+
+    const text = `🏆 **Bot Interaction Leaderboard**:\n\n${lines.join('\n')}`;
+    await sendReply(event.conversationId, event, text);
+  }
+
   async executeHelpCommand(event) {
     log(`Executing /help in ${event.conversationId}...`);
     await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
@@ -1414,6 +1487,8 @@ export class MergeRequestWatcher {
 
     const { command, args } = parsed;
     log(`Handling slash command ${command} from ${event.from || event.fromMri} in ${event.conversationId}`);
+
+    this.recordUserInteraction(event, command);
 
     // React immediately with eyes emoji to acknowledge command receipt
     await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending);
@@ -1436,6 +1511,8 @@ export class MergeRequestWatcher {
       await this.executeRandomCommand(event);
     } else if (command === '/marco') {
       await this.executeMarcoCommand(event);
+    } else if (command === '/leaderboard') {
+      await this.executeLeaderboardCommand(event);
     } else if (command === '/kick') {
       await this.executeKickCommand(event, args);
     } else if (command === '/ban') {
