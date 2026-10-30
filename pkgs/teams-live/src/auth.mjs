@@ -10,6 +10,7 @@ export class AuthManager {
   constructor(config) {
     this.config = config;
     this.credentialsFile = config.teams?.credentials_file || null;
+    this.credentialsLoaded = false;
     this.refreshTimer = null;
 
     if (config.browser_daemon?.url) {
@@ -55,8 +56,12 @@ export class AuthManager {
   }
 
   async ensureValidAuth({ forceDaemon = false } = {}) {
-    // 1. If credentials file is provided, check or load it
-    const fileAuth = this.loadCredentialsFile();
+    // 1. Initial seed from credentials file if session not yet loaded
+    let fileAuth = null;
+    if (!this.credentialsLoaded) {
+      fileAuth = this.loadCredentialsFile();
+      this.credentialsLoaded = true;
+    }
 
     const status = getMessageAuthStatus();
     log(`Current messaging auth status: hasToken=${status.hasToken}, minutesRemaining=${status.minutesRemaining ?? 'unknown'}`);
@@ -67,8 +72,8 @@ export class AuthManager {
       if (fileAuth) return fileAuth;
     }
 
-    // 2. Try HTTP refresh if we have a session state
-    if (!forceDaemon && status.hasToken) {
+    // 2. Try HTTP refresh (uses the refresh token stored in session state)
+    if (!forceDaemon) {
       log('Attempting HTTP token refresh...');
       try {
         const httpResult = await refreshTokensViaHttp();
@@ -80,6 +85,11 @@ export class AuthManager {
           }
         } else {
           log(`HTTP token refresh failed: ${httpResult.error?.message || 'unknown error'}`);
+          // If refresh failed and we hadn't re-seeded recently, re-read credentials file once
+          if (!fileAuth && this.credentialsFile) {
+            log('Re-reading credentials file in case secret was updated...');
+            this.loadCredentialsFile();
+          }
         }
       } catch (err) {
         log(`HTTP token refresh threw: ${err.message}`);
