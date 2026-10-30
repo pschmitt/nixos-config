@@ -46,6 +46,11 @@ let
     peer: ''"${config.sops.placeholder.${peer.fingerprintSecret}}" = "${peer.name}"''
   ) cfg.peers;
 
+  hotEdgePeer = lib.findFirst (
+    peer: peer.position == "left" || peer.position == "right"
+  ) null cfg.peers;
+  hotEdge = if cfg.hotEdge.edge != null then cfg.hotEdge.edge else hotEdgePeer.position;
+
   peerNames = lib.concatMapStringsSep " " (peer: lib.escapeShellArg peer.name) cfg.peers;
 in
 {
@@ -127,6 +132,30 @@ in
       # regardless of what the peer's session is doing.
       default = null;
       description = "Key combination (release_bind) that forces input capture back to this host. Null uses lan-mouse's default.";
+    };
+
+    hotEdge = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = hotEdgePeer != null;
+        defaultText = lib.literalExpression "true if a peer sits to the left or right";
+        description = ''
+          Show a small button when the pointer hits the middle of the screen
+          edge facing a peer while lan-mouse is not running; clicking it runs
+          `lan-mouse::start`.
+        '';
+      };
+
+      edge = lib.mkOption {
+        type = lib.types.nullOr (
+          lib.types.enum [
+            "left"
+            "right"
+          ]
+        );
+        default = null;
+        description = "Screen edge for the hot zone. Null uses the position of the first left/right peer.";
+      };
     };
 
     peers = lib.mkOption {
@@ -238,49 +267,79 @@ in
       '';
     };
 
-    systemd.user.services.lan-mouse = {
-      Unit = {
-        Description = "lan-mouse - software KVM switch for sharing a mouse/keyboard on the LAN";
-        After = [
-          "graphical-session.target"
-          "sops-nix.service"
-        ];
-        Wants = [ "sops-nix.service" ];
-        PartOf = [ "graphical-session.target" ];
+    systemd.user.services = {
+      lan-mouse = {
+        Unit = {
+          Description = "lan-mouse - software KVM switch for sharing a mouse/keyboard on the LAN";
+          After = [
+            "graphical-session.target"
+            "sops-nix.service"
+          ];
+          Wants = [ "sops-nix.service" ];
+          PartOf = [ "graphical-session.target" ];
+        };
+
+        Service = {
+          Environment = lib.optional (cfg.inputKeymapFile != null) "LAN_MOUSE_KEYMAP=${cfg.inputKeymapFile}";
+          ExecStart = lib.concatStringsSep " " (
+            [ "${cfg.package}/bin/lan-mouse" ]
+            ++ lib.optionals (cfg.captureBackend != null) [
+              "--capture-backend"
+              cfg.captureBackend
+            ]
+            ++ [ "daemon" ]
+          );
+          Restart = "on-failure";
+          RestartSec = 1;
+        };
+
+        Install.WantedBy = lib.optionals cfg.autoStart [ "graphical-session.target" ];
       };
 
-      Service = {
-        Environment = lib.optional (cfg.inputKeymapFile != null) "LAN_MOUSE_KEYMAP=${cfg.inputKeymapFile}";
-        ExecStart = lib.concatStringsSep " " (
-          [ "${cfg.package}/bin/lan-mouse" ]
-          ++ lib.optionals (cfg.captureBackend != null) [
-            "--capture-backend"
-            cfg.captureBackend
-          ]
-          ++ [ "daemon" ]
-        );
-        Restart = "on-failure";
-        RestartSec = 1;
+      lan-mouse-hot-edge = lib.mkIf cfg.hotEdge.enable {
+        Unit = {
+          Description = "Offer to start lan-mouse when the pointer hits the ${hotEdge} screen edge";
+          PartOf = [ "graphical-session.target" ];
+          After = [ "graphical-session.target" ];
+        };
+
+        Service = {
+          Environment = [
+            "LAN_MOUSE_HOT_EDGE=${hotEdge}"
+            # lan-mouse::start is a zsh function: local daemon plus peers over ssh.
+            "PATH=${
+              lib.makeBinPath [
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.zsh
+                pkgs.systemd
+                pkgs.openssh
+              ]
+            }"
+          ];
+          ExecStart = "${pkgs.quickshell}/bin/quickshell -p ${./lan-mouse-hot-edge.qml}";
+          Restart = "on-failure";
+        };
+
+        Install.WantedBy = [ "graphical-session.target" ];
       };
 
-      Install.WantedBy = lib.optionals cfg.autoStart [ "graphical-session.target" ];
-    };
+      lan-mouse-state-notify = lib.mkIf cfg.notifyOnSwitch {
+        Unit = {
+          Description = "Lan Mouse notifications from local input state";
+          After = [ "lan-mouse.service" ];
+          PartOf = [ "lan-mouse.service" ];
+        };
 
-    systemd.user.services.lan-mouse-state-notify = lib.mkIf cfg.notifyOnSwitch {
-      Unit = {
-        Description = "Lan Mouse notifications from local input state";
-        After = [ "lan-mouse.service" ];
-        PartOf = [ "lan-mouse.service" ];
+        Service = {
+          ExecStart = "${lib.getExe pkgs.python3} ${stateNotifyScript} ${notificationHelper}/bin/lan-mouse-notify";
+          ExecStopPost = "${notificationHelper}/bin/lan-mouse-notify dismiss";
+          Restart = "always";
+          RestartSec = 1;
+        };
+
+        Install.WantedBy = [ "lan-mouse.service" ];
       };
-
-      Service = {
-        ExecStart = "${lib.getExe pkgs.python3} ${stateNotifyScript} ${notificationHelper}/bin/lan-mouse-notify";
-        ExecStopPost = "${notificationHelper}/bin/lan-mouse-notify dismiss";
-        Restart = "always";
-        RestartSec = 1;
-      };
-
-      Install.WantedBy = [ "lan-mouse.service" ];
     };
   };
 }
