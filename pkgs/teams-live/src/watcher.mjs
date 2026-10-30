@@ -510,7 +510,6 @@ export class MergeRequestWatcher {
   }
 
   async setCommandReaction(conversationId, messageId, reactionKey) {
-    if (conversationId === '48:notes') return;
     try {
       if (reactionKey !== COMMAND_REACTIONS.pending) {
         await removeReaction(conversationId, messageId, COMMAND_REACTIONS.pending).catch(() => {});
@@ -1134,8 +1133,8 @@ export class MergeRequestWatcher {
     const { command, args } = parsed;
     log(`Handling slash command ${command} from ${event.from || event.fromMri} in ${event.conversationId}`);
 
-    // React immediately with eyes emoji to acknowledge command receipt (non-blocking)
-    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending).catch(() => {});
+    // React immediately with eyes emoji to acknowledge command receipt
+    await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.pending);
 
     if (command === '/approve') {
       await this.executeApproveCommand(event, args);

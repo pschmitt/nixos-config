@@ -8,7 +8,7 @@ export class GitLabClient {
     this.mrUrlRegex = new RegExp(`https?:\\/\\/${escapedHost}\\/([\\w.\\/-]+?)\\/-\\/merge_requests\\/(\\d+)`, 'g');
   }
 
-  async request(path, { method = 'GET', body = null } = {}) {
+  async request(path, { method = 'GET', body = null, timeoutMs = 30_000 } = {}) {
     const url = `${this.baseUrl}/${path.replace(/^\/+/, '')}`;
     const headers = {
       'User-Agent': 'teams-live/1.0',
@@ -20,21 +20,21 @@ export class GitLabClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    const options = {
-      method,
-      headers,
-      signal: AbortSignal.timeout(15_000),
-    };
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
+    const makeFetch = () =>
+      fetch(url, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
 
     let res;
     try {
-      res = await fetch(url, options);
+      res = await makeFetch();
     } catch (err) {
       try {
-        res = await fetch(url, options);
+        await new Promise((r) => setTimeout(r, 1000));
+        res = await makeFetch();
       } catch (retryErr) {
         throw new Error(`GitLab request failed (${retryErr.cause?.message || retryErr.message})`);
       }
