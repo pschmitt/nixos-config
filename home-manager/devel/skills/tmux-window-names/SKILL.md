@@ -1,11 +1,19 @@
 ---
 name: tmux-window-names
-description: Inspect tmux windows and give them concise, useful names based on the work running in each pane. Use when asked to name, rename, or clean up tmux window names.
+description: Inspect tmux windows and give them concise, useful names based on the work running in each pane. Use when asked to name, rename, or clean up tmux window names, and to name this agent's own window at the start of a conversation and whenever its topic changes.
 ---
 
 # Tmux Window Names
 
 Name tmux windows from the work they contain, using the tmux MCP server when it is available and the `tmux` CLI otherwise.
+
+## Name your own window
+
+As soon as the task is clear, and again whenever the conversation changes topic meaningfully (a new task, project or host, not a follow-up on the same work), rename only this agent's own tmux window to a short topic name (max 20 characters, no spaces, `-` as separator, e.g. `nix-ai-context`, `ha-lights`). Keep the existing name only if it still describes the current work.
+
+Identify the window via `$TMUX_PANE` (`tmux display-message -p -t "$TMUX_PANE" ...`) and rename with the tmux MCP `rename-window`. Never target the "active" window: that is whatever the user has focused. If `$TMUX_PANE` is unset, check reachability with `tmux list-sessions`; if tmux is unavailable, skip naming.
+
+For renaming all windows or another broad scope, continue below.
 
 ## Inspect the target windows
 

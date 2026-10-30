@@ -13,6 +13,7 @@ The prevention rules in `CONTEXT.md` come first. This skill is what to do once a
 2. Add a row under *Open* in the Obsidian note `homelab/🚨 Leaked credentials.md` (vault `/home/pschmitt/Documents/notes`; use the `obsidian` skill, or edit the file directly when the MCP cannot reach the vault): date, what, where it leaked, how to rotate, status. Never write the value into the note.
 3. Contain what you can: revoke sessions and tokens you created, shred temporary files. Rotate the credential yourself only when that can be done without the value passing through your context (see `just sops-rotate` and the credential rotation note); otherwise leave it open for the user.
 4. When something is rotated and verified, move its row to *Resolved*.
+5. Prevent a repeat. Ask what command, tool or habit caused the leak and which instruction should have stopped it. Then propose a fix at the source: a new or sharper rule in the matching skill's `SKILL.md`, in `CONTEXT.md` (the *Leaked credentials* prevention list) or in the repository's `AGENTS.md`, or a pattern for the `agent-secret-guard` / `agent-secret-scan` hooks. Name the file and the exact wording, and ask the user before editing, unless the fix is a clear correction to an existing skill (then follow the self-improvement skill). Describe the cause and the safe form only, never the value. Skip this step when an existing rule already covers the case and was simply ignored; say so instead.
 
 ## What counts
 
