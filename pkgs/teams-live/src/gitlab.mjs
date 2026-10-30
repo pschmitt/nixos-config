@@ -1,10 +1,10 @@
 export class GitLabClient {
   constructor({ host = 'git.wiit.one', token = null, group = '' } = {}) {
-    this.host = host;
+    this.host = (host || 'git.wiit.one').replace(/^https?:\/\//, '').replace(/\/+$/, '');
     this.token = token;
     this.group = group;
-    this.baseUrl = `https://${host}/api/v4`;
-    const escapedHost = host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    this.baseUrl = `https://${this.host}/api/v4`;
+    const escapedHost = this.host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     this.mrUrlRegex = new RegExp(`https?:\\/\\/${escapedHost}\\/([\\w.\\/-]+?)\\/-\\/merge_requests\\/(\\d+)`, 'g');
   }
 
@@ -29,7 +29,16 @@ export class GitLabClient {
       options.body = JSON.stringify(body);
     }
 
-    const res = await fetch(url, options);
+    let res;
+    try {
+      res = await fetch(url, options);
+    } catch (err) {
+      try {
+        res = await fetch(url, options);
+      } catch (retryErr) {
+        throw new Error(`GitLab request failed (${retryErr.cause?.message || retryErr.message})`);
+      }
+    }
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
       let msg = errText;
