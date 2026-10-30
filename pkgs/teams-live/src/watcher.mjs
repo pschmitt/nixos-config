@@ -17,6 +17,7 @@ import {
   getCalendarView,
   escapeHtml,
 } from './teams.mjs';
+import { formatOnDuty } from './opsgenie.mjs';
 
 const log = (...args) => console.error(new Date().toISOString(), '[watcher]', ...args);
 
@@ -232,43 +233,69 @@ function formatAlertLine(alert) {
 function formatAlertsText(data, mode = 'all') {
   if (!data) return '❌ Failed to fetch OpsGenie alerts.';
 
-  const { onCallAlerts = [], supportAlerts = [], onCallError, supportError } = data;
+  const {
+    onCallAlerts = [],
+    supportAlerts = [],
+    onCallDuty = [],
+    supportDuty = [],
+    onCallError,
+    supportError,
+  } = data;
   const sortedOnCall = sortAlerts(onCallAlerts);
   const sortedSupport = sortAlerts(supportAlerts);
   const totalCount = sortedOnCall.length + sortedSupport.length;
 
-  if (totalCount === 0 && !onCallError && !supportError) {
-    return '🎉 **All CKS OpsGenie queues are clear!** (0 open alerts)';
-  }
+  const onCallPerson = formatOnDuty(onCallDuty);
+  const supportPerson = formatOnDuty(supportDuty);
 
   const showOnCall = mode === 'all' || mode === 'oncall';
   const showSupport = mode === 'all' || mode === 'support';
 
+  if (totalCount === 0 && !onCallError && !supportError) {
+    if (mode === 'oncall') {
+      return `🎉 **CKS OpsGenie On-Call queue is clear!** (0 open alerts)\n\n👤 **On-Duty**: **${onCallPerson}**`;
+    }
+    if (mode === 'support') {
+      return `🎉 **CKS OpsGenie Support queue is clear!** (0 open alerts)\n\n👤 **On-Duty**: **${supportPerson}**`;
+    }
+    return `🎉 **All CKS OpsGenie queues are clear!** (0 open alerts)\n\n👤 **On-Duty**: 📞 On-Call: **${onCallPerson}** · 💼 Support: **${supportPerson}**`;
+  }
+
   const sections = [];
 
   if (showOnCall) {
+    const dutyTag = ` (👤 **${onCallPerson}**)`;
     if (onCallError) {
-      sections.push(`📞 **On-Call Queue**:\n\n⚠️ *Failed to fetch on-call alerts: ${onCallError}*`);
+      sections.push(`📞 **On-Call Queue**${dutyTag}:\n\n⚠️ *Failed to fetch on-call alerts: ${onCallError}*`);
     } else if (sortedOnCall.length === 0) {
-      sections.push(`📞 **On-Call Queue**: 🎉 _No open alerts_`);
+      sections.push(`📞 **On-Call Queue**${dutyTag}: 🎉 _No open alerts_`);
     } else {
       const lines = sortedOnCall.map(formatAlertLine).join('\n');
-      sections.push(`📞 **On-Call Queue** (${sortedOnCall.length} open):\n\n${lines}`);
+      sections.push(`📞 **On-Call Queue**${dutyTag} (${sortedOnCall.length} open):\n\n${lines}`);
     }
   }
 
   if (showSupport) {
+    const dutyTag = ` (👤 **${supportPerson}**)`;
     if (supportError) {
-      sections.push(`💼 **Support Queue**:\n\n⚠️ *Failed to fetch support alerts: ${supportError}*`);
+      sections.push(`💼 **Support Queue**${dutyTag}:\n\n⚠️ *Failed to fetch support alerts: ${supportError}*`);
     } else if (sortedSupport.length === 0) {
-      sections.push(`💼 **Support Queue**: 🎉 _No open alerts_`);
+      sections.push(`💼 **Support Queue**${dutyTag}: 🎉 _No open alerts_`);
     } else {
       const lines = sortedSupport.map(formatAlertLine).join('\n');
-      sections.push(`💼 **Support Queue** (${sortedSupport.length} open):\n\n${lines}`);
+      sections.push(`💼 **Support Queue**${dutyTag} (${sortedSupport.length} open):\n\n${lines}`);
     }
   }
 
-  const title = `🚨 **CKS OpsGenie Alerts** (${totalCount} open: ${sortedOnCall.length} on-call, ${sortedSupport.length} support):`;
+  let title;
+  if (mode === 'oncall') {
+    title = `🚨 **CKS OpsGenie Alerts** (${sortedOnCall.length} on-call)\n👤 **On-Duty**: 📞 On-Call: **${onCallPerson}**`;
+  } else if (mode === 'support') {
+    title = `🚨 **CKS OpsGenie Alerts** (${sortedSupport.length} support)\n👤 **On-Duty**: 💼 Support: **${supportPerson}**`;
+  } else {
+    title = `🚨 **CKS OpsGenie Alerts** (${totalCount} open: ${sortedOnCall.length} on-call, ${sortedSupport.length} support)\n👤 **On-Duty**: 📞 On-Call: **${onCallPerson}** · 💼 Support: **${supportPerson}**`;
+  }
+
   return `${title}\n\n${sections.join('\n\n')}`;
 }
 

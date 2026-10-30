@@ -74,6 +74,8 @@ in
       opsgenie = {
         on_call_key = config.sops.placeholder."opsgenie/gksv3-on-call/api-key";
         support_key = config.sops.placeholder."opsgenie/gksv3-support-schedule/api-key";
+        on_call_schedule_id = "8aa71a67-9ddd-4571-af97-06d1ddb3c7cb";
+        support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
       };
 
       teams = {

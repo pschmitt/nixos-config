@@ -132,6 +132,14 @@ export function loadConfig(configPath) {
   const opsgenie = {
     on_call_key: getString(fileConfig.opsgenie?.on_call_key) || process.env.OPSGENIE_ON_CALL_KEY || '',
     support_key: getString(fileConfig.opsgenie?.support_key) || process.env.OPSGENIE_SUPPORT_KEY || '',
+    on_call_schedule_id:
+      getString(fileConfig.opsgenie?.on_call_schedule_id) ||
+      process.env.OPSGENIE_ON_CALL_SCHEDULE_ID ||
+      '8aa71a67-9ddd-4571-af97-06d1ddb3c7cb',
+    support_schedule_id:
+      getString(fileConfig.opsgenie?.support_schedule_id) ||
+      process.env.OPSGENIE_SUPPORT_SCHEDULE_ID ||
+      '5a044893-0255-4246-8606-8e76949a861d',
     base_url: (getString(fileConfig.opsgenie?.base_url) || process.env.OPSGENIE_BASE_URL || 'https://api.eu.opsgenie.com/v2').replace(/\/+$/, ''),
     web_base_url: (getString(fileConfig.opsgenie?.web_base_url) || process.env.OPSGENIE_WEB_BASE_URL || 'https://germanedgecloudgmbh.app.opsgenie.com').replace(/\/+$/, ''),
   };
