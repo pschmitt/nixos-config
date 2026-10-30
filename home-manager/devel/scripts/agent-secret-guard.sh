@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook (Bash): refuse commands that routinely dump credentials into the
+# PreToolUse hook (Bash; Claude Code and Codex): refuse commands that routinely dump credentials into the
 # transcript. Every pattern below caused a row in the leaked-credentials note.
 # Exit 2 + stderr blocks the call and tells the agent what to do instead.
 

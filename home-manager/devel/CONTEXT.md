@@ -9,6 +9,11 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
+- Linkify references whenever a useful target is available. This applies across
+  all kinds of work, including GitLab merge requests, GitHub pull requests,
+  tickets, documentation, dashboards, and local files. In terminal output, use
+  OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
+  bare URLs or IDs; in Markdown-capable output, use Markdown links.
 
 ## Code and validation
 
@@ -60,7 +65,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - Diffs: `git diff`/`git show` on SOPS files decrypt through textconv; add `--no-textconv`. `ansible --diff` prints rendered credential templates.
   - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
   - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
-  - Claude Code enforces the Bash cases with a PreToolUse hook (`claude-secret-guard`) and masks MCP results with a PostToolUse hook (`claude-secret-scan`). Codex has neither: follow this list yourself. If a command is blocked, use the suggested safe form; do not work around the hook.
+  - Claude Code and Codex enforce the Bash cases with a PreToolUse hook (`agent-secret-guard`) and warn about credentials in tool results with a PostToolUse hook (`agent-secret-scan`; it also masks MCP results in Claude Code). If a command is blocked, use the suggested safe form; do not work around the hook.
 - Not a credential, so no row needed: public SSH host-key fingerprints, SSH-derived age recipients (`age1...`), GPG key IDs and fingerprints, and SOPS ciphertext. `just deploy` and `gpg::auto-unlock` already mask them; if you still see one, carry on and do not log it. Everything else that authorizes access or identifies a person or device (tokens, passwords, seeds, signed URLs, webhook IDs, serials, MACs, IEEE addresses) still counts.
 - If a credential (password, token, API key, private key, passkey, session cookie, ...) ends up somewhere it should not be, even briefly and even if you caused it, handle it **as soon as you notice**:
   1. Tell the user plainly what was exposed and where, naming the credential (entry or key path), never its value.

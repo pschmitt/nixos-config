@@ -67,23 +67,12 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
-  # PreToolUse hook (Bash): refuses commands that dump credentials into the
-  # transcript (see "Leaked credentials" in CONTEXT.md).
-  claudeSecretGuard = pkgs.writeShellApplication {
-    name = "claude-secret-guard";
-    runtimeInputs = [ pkgs.jq ];
-    text = builtins.readFile ./scripts/claude-secret-guard.sh;
-  };
-
-  # PostToolUse hook: masks credentials in MCP results and warns the agent about
-  # credentials in any tool result.
-  claudeSecretScan = pkgs.writeShellApplication {
-    name = "claude-secret-scan";
-    runtimeInputs = [ pkgs.jq ];
-    text = builtins.readFile ./scripts/claude-secret-scan.sh;
-  };
-
   agentTmuxContextHook = pkgs.agent-tmux-context-hook;
+  # PreToolUse/PostToolUse hooks that keep credentials out of tool calls and
+  # results (see "Leaked credentials" in CONTEXT.md); Codex gets them too via
+  # modules/codex-managed-hooks.nix.
+  agentSecretGuard = pkgs.agent-secret-guard;
+  agentSecretScan = pkgs.agent-secret-scan;
 
   # agy refuses clipboard image paste whenever an SSH session is detected
   # (`SSH_CLIENT`, `SSH_TTY`, or `SSH_CONNECTION` is non-empty, unless the
@@ -464,7 +453,7 @@ in
                 hooks = [
                   {
                     type = "command";
-                    command = lib.getExe claudeSecretGuard;
+                    command = lib.getExe agentSecretGuard;
                   }
                 ];
               }
@@ -475,7 +464,7 @@ in
                 hooks = [
                   {
                     type = "command";
-                    command = lib.getExe claudeSecretScan;
+                    command = lib.getExe agentSecretScan;
                   }
                 ];
               }

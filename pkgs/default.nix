@@ -27,6 +27,8 @@ let
 in
 {
   # local pkgs
+  agent-secret-guard = pkgs.callPackage ./local/agent-secret-guard { };
+  agent-secret-scan = pkgs.callPackage ./local/agent-secret-scan { };
   agent-tmux-context-hook = pkgs.callPackage ./local/agent-tmux-context-hook { };
   bluez-headset-callback = pkgs.callPackage ./local/bluez-headset-callback { inherit osd; };
   caffeine = pkgs.callPackage ./local/caffeine { };

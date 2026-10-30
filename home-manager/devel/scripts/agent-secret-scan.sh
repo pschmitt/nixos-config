@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# PostToolUse hook: safety net for credentials that got into a tool result despite
-# claude-secret-guard. MCP results are masked before the model sees them; for every
+# PostToolUse hook (Claude Code and Codex): safety net for credentials that got into a tool result despite
+# agent-secret-guard. MCP results are masked before the model sees them; for every
 # tool the agent is told to run the leaked-credentials procedure.
 
 input="$(cat)"
@@ -31,7 +31,8 @@ found="$(jq -r "$mask"' classes | join(", ")' <<<"$response" 2>/dev/null || true
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
 context="A tool result from ${tool} appears to contain credentials (${found}). Follow the Leaked credentials rule: tell the user what leaked and where, add a row to the Obsidian note homelab/🚨 Leaked credentials.md without the value, and do not repeat the value."
 
-if [[ "$tool" == mcp__* ]]
+# Only Claude Code accepts rewritten MCP output; Codex gets the warning alone.
+if [[ "$tool" == mcp__* && -n "${CLAUDECODE:-}" ]]
 then
   updated="$(jq -c "$mask"' walk(if type == "string" then masked else . end)' <<<"$response")"
   jq -n --arg context "$context" --argjson updated "$updated" \
