@@ -1957,16 +1957,50 @@ export class MergeRequestWatcher {
     } else if (sub === 'reauth' || sub === 'refresh') {
       await this.executeReauthCommand(event);
     } else if (sub === 'status') {
-      await this.executeStatusCommand(event, []);
+      await this.executeAdminStatusCommand(event);
     } else {
       const text =
         '🔧 **teams-live admin commands**:\n\n' +
         '- `/admin restart`: Restarts the teams-live daemon.\n' +
         '- `/admin reauth` (or `/admin refresh`): Forces token refresh and shows status.\n' +
-        '- `/admin status`: Shows service runtime metrics and memory.';
+        '- `/admin status`: Shows service runtime metrics, memory, and token auth health.';
       await sendReply(event.conversationId, event, text);
       this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
     }
+  }
+
+  async executeAdminStatusCommand(event) {
+    log(`Executing admin /status in ${event.conversationId}...`);
+    const uptimeSec = Math.floor(process.uptime());
+    const hours = Math.floor(uptimeSec / 3600);
+    const minutes = Math.floor((uptimeSec % 3600) / 60);
+    const seconds = uptimeSec % 60;
+    const uptimeStr = `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${seconds}s`;
+    const memRss = Math.round(process.memoryUsage().rss / 1024 / 1024);
+    const heapUsed = Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
+    const authStatus = getMessageAuthStatus();
+
+    const convCount = this.watchedConversations.size;
+    const watchedMrsCount = this.watched.size;
+    const completedCount = this.completedMessages.size;
+    const mrsAge = this.mrsCache.text ? `${Math.round((Date.now() - this.mrsCache.timestamp) / 1000)}s ago` : 'empty';
+    const sprintAge = this.sprintCache.text ? `${Math.round((Date.now() - this.sprintCache.timestamp) / 1000)}s ago` : 'empty';
+    const meetingsAge = this.meetingsCache.text ? `${Math.round((Date.now() - this.meetingsCache.timestamp) / 1000)}s ago` : 'empty';
+
+    const text =
+      '🔧 **teams-live admin status**:\n\n' +
+      `- **Uptime**: ${uptimeStr} (PID ${process.pid})\n` +
+      `- **Memory**: ${memRss} MB RSS (${heapUsed} MB Heap)\n` +
+      `- **Trouter**: Connected 🟢\n` +
+      `- **Auth Token Active**: ${authStatus.hasToken ? '✅ Yes' : '❌ No'}\n` +
+      `- **Auth Expires In**: ~${authStatus.minutesRemaining ?? 'unknown'}m\n` +
+      `- **Watched Channels**: ${convCount}\n` +
+      `- **Active MR Watchers**: ${watchedMrsCount}\n` +
+      `- **Precompute Cache**: /mrs (${mrsAge}), /sprint (${sprintAge}), /meetings (${meetingsAge})\n` +
+      `- **Completed Messages**: ${completedCount}`;
+
+    await sendReply(event.conversationId, event, text);
+    this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success).catch(() => {});
   }
 
   async executeRestartCommand(event) {

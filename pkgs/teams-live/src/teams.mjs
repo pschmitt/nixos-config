@@ -32,6 +32,39 @@ async function attemptTokenRefreshOnAuthError(res) {
   return false;
 }
 
+function isRetryableNetworkError(res) {
+  if (!res || res.ok) return false;
+  const msg = (res.error?.message || String(res.error || '')).toLowerCase();
+  return (
+    msg.includes('fetch failed') ||
+    msg.includes('network') ||
+    msg.includes('econnreset') ||
+    msg.includes('etimedout') ||
+    msg.includes('timeout') ||
+    msg.includes('socket hang up')
+  );
+}
+
+async function retrySendWithRecovery(sendFn) {
+  let result = await sendFn();
+  if (result.ok) return result;
+
+  // 1. If auth error, refresh tokens and retry
+  if (await attemptTokenRefreshOnAuthError(result)) {
+    result = await sendFn();
+    if (result.ok) return result;
+  }
+
+  // 2. If transient network error / fetch failed, wait 1s and retry once
+  if (isRetryableNetworkError(result)) {
+    console.warn(new Date().toISOString(), `[teams] Transient network error (${result.error?.message}), retrying in 1s...`);
+    await new Promise((r) => setTimeout(r, 1000));
+    result = await sendFn();
+  }
+
+  return result;
+}
+
 export async function getCalendarView(options = {}) {
   const mcpRes = await mcpGetCalendarView(options);
   if (mcpRes.ok) return mcpRes;
@@ -174,10 +207,7 @@ export async function sendDirectMessage(conversationId, markdown) {
   const options = {
     contentType: 'html',
   };
-  let result = await sendMessage(conversationId, html, options);
-  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
-    result = await sendMessage(conversationId, html, options);
-  }
+  const result = await retrySendWithRecovery(() => sendMessage(conversationId, html, options));
   if (!result.ok) {
     console.error(new Date().toISOString(), `[teams] sendDirectMessage failed in ${conversationId}:`, result.error?.message || result.error);
   } else if (result.value) {
@@ -214,10 +244,7 @@ export async function sendReply(conversationId, originalMessage, replyMarkdown) 
     options.replyToMessageId = messageId;
   }
 
-  let result = await sendMessage(conversationId, html, options);
-  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
-    result = await sendMessage(conversationId, html, options);
-  }
+  const result = await retrySendWithRecovery(() => sendMessage(conversationId, html, options));
   if (!result.ok) {
     console.error(new Date().toISOString(), `[teams] sendReply failed in ${conversationId}:`, result.error?.message || result.error);
   } else if (result.value) {
@@ -245,10 +272,7 @@ export async function updateReply(conversationId, serverMessageId, originalMessa
     replyMarkdown,
   });
 
-  let result = await editMessage(conversationId, String(serverMessageId), html, 'html');
-  if (!result.ok && (await attemptTokenRefreshOnAuthError(result))) {
-    result = await editMessage(conversationId, String(serverMessageId), html, 'html');
-  }
+  const result = await retrySendWithRecovery(() => editMessage(conversationId, String(serverMessageId), html, 'html'));
   if (!result.ok) {
     console.error(new Date().toISOString(), `[teams] updateReply failed for ${serverMessageId} in ${conversationId}:`, result.error?.message || result.error);
   }
