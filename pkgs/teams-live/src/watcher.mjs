@@ -173,6 +173,20 @@ function getMrsMode(args = []) {
   return 'default';
 }
 
+const ALERT_PRIORITY_ORDER = { P1: 1, P2: 2, P3: 3, P4: 4, P5: 5 };
+
+function sortAlerts(alerts) {
+  return [...alerts].sort((a, b) => {
+    const aPrio = ALERT_PRIORITY_ORDER[a.priority] || 99;
+    const bPrio = ALERT_PRIORITY_ORDER[b.priority] || 99;
+    if (aPrio !== bPrio) return aPrio - bPrio;
+
+    const aTime = new Date(a.createdAt || a.lastOccurredAt || 0).getTime();
+    const bTime = new Date(b.createdAt || b.lastOccurredAt || 0).getTime();
+    return bTime - aTime;
+  });
+}
+
 function getAlertPriorityBadge(priority) {
   switch (priority) {
     case 'P1':
@@ -208,19 +222,20 @@ function formatAlertLine(alert) {
   const pBadge = getAlertPriorityBadge(alert.priority);
   const linkRef = alert.tinyId ? `#${alert.tinyId}` : (alert.id ? alert.id.slice(0, 8) : 'alert');
   const link = `[${linkRef}](${alert.url})`;
+  const ackBadge = alert.acknowledged ? ' `✔️ ACK\'ED`' : '';
+  const snoozeBadge = alert.snoozed ? ' _(💤 snoozed)_' : '';
   const countStr = alert.count > 1 ? ` (🔄 ${alert.count}x)` : '';
-  const ackStr = alert.acknowledged ? '👀 acked' : '⚠️ unacked';
-  const snoozeStr = alert.snoozed ? ', 💤 snoozed' : '';
-  const timeStr = alert.createdAt ? `, 🕒 ${formatTimeAgo(alert.createdAt)}` : '';
-  const meta = `_${ackStr}${countStr}${snoozeStr}${timeStr}_`;
-  return `- ${pBadge} ${link}: ${alert.message} — ${meta}`;
+  const timeStr = alert.createdAt ? ` — _${formatTimeAgo(alert.createdAt)}_` : '';
+  return `- ${pBadge} ${link}: ${alert.message}${ackBadge}${snoozeBadge}${countStr}${timeStr}`;
 }
 
 function formatAlertsText(data, mode = 'all') {
   if (!data) return '❌ Failed to fetch OpsGenie alerts.';
 
   const { onCallAlerts = [], supportAlerts = [], onCallError, supportError } = data;
-  const totalCount = onCallAlerts.length + supportAlerts.length;
+  const sortedOnCall = sortAlerts(onCallAlerts);
+  const sortedSupport = sortAlerts(supportAlerts);
+  const totalCount = sortedOnCall.length + sortedSupport.length;
 
   if (totalCount === 0 && !onCallError && !supportError) {
     return '🎉 **All CKS OpsGenie queues are clear!** (0 open alerts)';
@@ -234,26 +249,26 @@ function formatAlertsText(data, mode = 'all') {
   if (showOnCall) {
     if (onCallError) {
       sections.push(`📞 **On-Call Queue**:\n\n⚠️ *Failed to fetch on-call alerts: ${onCallError}*`);
-    } else if (onCallAlerts.length === 0) {
+    } else if (sortedOnCall.length === 0) {
       sections.push(`📞 **On-Call Queue**: 🎉 _No open alerts_`);
     } else {
-      const lines = onCallAlerts.map(formatAlertLine).join('\n');
-      sections.push(`📞 **On-Call Queue** (${onCallAlerts.length} open):\n\n${lines}`);
+      const lines = sortedOnCall.map(formatAlertLine).join('\n');
+      sections.push(`📞 **On-Call Queue** (${sortedOnCall.length} open):\n\n${lines}`);
     }
   }
 
   if (showSupport) {
     if (supportError) {
       sections.push(`💼 **Support Queue**:\n\n⚠️ *Failed to fetch support alerts: ${supportError}*`);
-    } else if (supportAlerts.length === 0) {
+    } else if (sortedSupport.length === 0) {
       sections.push(`💼 **Support Queue**: 🎉 _No open alerts_`);
     } else {
-      const lines = supportAlerts.map(formatAlertLine).join('\n');
-      sections.push(`💼 **Support Queue** (${supportAlerts.length} open):\n\n${lines}`);
+      const lines = sortedSupport.map(formatAlertLine).join('\n');
+      sections.push(`💼 **Support Queue** (${sortedSupport.length} open):\n\n${lines}`);
     }
   }
 
-  const title = `🚨 **CKS OpsGenie Alerts** (${totalCount} open: ${onCallAlerts.length} on-call, ${supportAlerts.length} support):`;
+  const title = `🚨 **CKS OpsGenie Alerts** (${totalCount} open: ${sortedOnCall.length} on-call, ${sortedSupport.length} support):`;
   return `${title}\n\n${sections.join('\n\n')}`;
 }
 
