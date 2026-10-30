@@ -65,6 +65,10 @@ is safe to run in a transcript, while `rbw get --field username NAME` still
 works. Drop the flag only for the call that really needs the value, and pipe
 that value to its consumer instead of printing it.
 
+`rbw search NAME --json` and `rbw get --raw` without `--redact` have printed whole
+vault entries (passwords, PATs, passkey private keys, TOTP seeds) into
+transcripts. Claude Code blocks them; always add `--redact` for lookups.
+
 ## Using a credential from another skill
 
 Other skills only name the entry and field they need (for example

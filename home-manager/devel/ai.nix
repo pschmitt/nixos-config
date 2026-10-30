@@ -67,6 +67,22 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
+  # PreToolUse hook (Bash): refuses commands that dump credentials into the
+  # transcript (see "Leaked credentials" in CONTEXT.md).
+  claudeSecretGuard = pkgs.writeShellApplication {
+    name = "claude-secret-guard";
+    runtimeInputs = [ pkgs.jq ];
+    text = builtins.readFile ./scripts/claude-secret-guard.sh;
+  };
+
+  # PostToolUse hook: masks credentials in MCP results and warns the agent about
+  # credentials in any tool result.
+  claudeSecretScan = pkgs.writeShellApplication {
+    name = "claude-secret-scan";
+    runtimeInputs = [ pkgs.jq ];
+    text = builtins.readFile ./scripts/claude-secret-scan.sh;
+  };
+
   agentTmuxContextHook = pkgs.agent-tmux-context-hook;
 
   # agy refuses clipboard image paste whenever an SSH session is detected
@@ -431,16 +447,40 @@ in
             type = "command";
             command = lib.getExe claudeStatusline;
           };
-          hooks.SessionStart = [
-            {
-              hooks = [
-                {
-                  type = "command";
-                  command = lib.getExe claudeTmuxRename;
-                }
-              ];
-            }
-          ];
+          hooks = {
+            SessionStart = [
+              {
+                hooks = [
+                  {
+                    type = "command";
+                    command = lib.getExe claudeTmuxRename;
+                  }
+                ];
+              }
+            ];
+            PreToolUse = [
+              {
+                matcher = "Bash";
+                hooks = [
+                  {
+                    type = "command";
+                    command = lib.getExe claudeSecretGuard;
+                  }
+                ];
+              }
+            ];
+            PostToolUse = [
+              {
+                matcher = "*";
+                hooks = [
+                  {
+                    type = "command";
+                    command = lib.getExe claudeSecretScan;
+                  }
+                ];
+              }
+            ];
+          };
         };
         # Keep the tmux tools loaded up front: deferred (ToolSearch) tools were
         # skipped for the window rename. Overrides the shared server for Claude only.

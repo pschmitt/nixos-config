@@ -94,7 +94,10 @@ main() {
     sep="&"
   fi
 
-  exec playwright-mcp --cdp-endpoint="${endpoint}${sep}${query}" --output-dir="$output_dir"
+  # The endpoint carries a signed token. Pass it through the environment, not
+  # --cdp-endpoint: process listings (ps, pgrep -a) would print it.
+  export PLAYWRIGHT_MCP_CDP_ENDPOINT="${endpoint}${sep}${query}"
+  exec playwright-mcp --output-dir="$output_dir"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]

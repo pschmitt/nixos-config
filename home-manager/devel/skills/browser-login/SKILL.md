@@ -69,6 +69,11 @@ ever shows up in output, it is a leaked credential.
   route) or ask them to solve it with `browser_ask_human`.
 - A password field that shows its value, a "your password is ..." line, or a
   page that copies a secret elsewhere puts it into snapshots: stop and say so.
+- Take no `browser_snapshot` or screenshot while a login form is open and you
+  are about to click: a mistimed click on the show-password toggle, a
+  prefilled field or a revealed API key lands in the transcript. Fill with
+  `browser_fill_secret`, submit, and snapshot only after the page changed.
+  Login, MFA and OAuth callback URLs carry tokens too: do not print them.
 - If a secret or a passkey key ever ends up in a tool call, a log or your
   output, say so at once and follow the leaked-credentials rules (the passkey
   must be deleted on the site and registered again).

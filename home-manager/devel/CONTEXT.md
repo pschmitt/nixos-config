@@ -52,6 +52,16 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## Leaked credentials
 
 - Keep secret values out of everything you can see or log: tool-call arguments, tool output, files the tools echo back (e.g. code passed to a browser tool is repeated in its output), transcripts and chat. Pass them by file, stdin, environment or a one-shot local channel instead, and mask them when diffing or listing.
+- Prevention comes first. These commands caused most past leaks; use the safe form:
+  - Home Assistant: never read `.storage/core.config_entries`, `.storage/auth` or `secrets.yaml`, and never `rg`/`grep` `/mnt/ha` without `-l` or a `--glob '!...'` that excludes them. Use `zsh -lc 'zhj hass::config-entries [--domain X]'` (key names only) and `zhj hass::check-config` instead of `ha core check`. Filter `ha core logs`/`ha apps info` with `jq` or `grep -v` on named fields.
+  - Processes: no `ps aux`, `ps -ef`, `pgrep -a`, or `/proc/*/cmdline` (signed browser URLs, `--passwd` arguments). Use `pgrep -l NAME`, `pgrep -c NAME` or `ps -o pid,etime,comm -p PID`.
+  - Environment: no bare `env`, `printenv`, `export` or `set` (they print `SOPS_AGE_KEY`); name the variable you need.
+  - Vault: no `rbw ... --json/--raw` without a `jq` field selection; prefer the redacted `rbw` MCP. Never `source` an env file to test it.
+  - Diffs: `git diff`/`git show` on SOPS files decrypt through textconv; add `--no-textconv`. `ansible --diff` prints rendered credential templates.
+  - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
+  - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
+  - Claude Code enforces the Bash cases with a PreToolUse hook (`claude-secret-guard`) and masks MCP results with a PostToolUse hook (`claude-secret-scan`). Codex has neither: follow this list yourself. If a command is blocked, use the suggested safe form; do not work around the hook.
+- Not a credential, so no row needed: public SSH host-key fingerprints, SSH-derived age recipients (`age1...`), GPG key IDs and fingerprints, and SOPS ciphertext. `just deploy` and `gpg::auto-unlock` already mask them; if you still see one, carry on and do not log it. Everything else that authorizes access or identifies a person or device (tokens, passwords, seeds, signed URLs, webhook IDs, serials, MACs, IEEE addresses) still counts.
 - If a credential (password, token, API key, private key, passkey, session cookie, ...) ends up somewhere it should not be, even briefly and even if you caused it, handle it **as soon as you notice**:
   1. Tell the user plainly what was exposed and where, naming the credential (entry or key path), never its value.
   2. Add a row under *Open* in the Obsidian note `homelab/🚨 Leaked credentials.md` (vault `/home/pschmitt/Documents/notes`; use the `obsidian` skill, or edit the file directly when the MCP cannot reach the vault): date, what, where it leaked, how to rotate, status. Never write the value into the note.

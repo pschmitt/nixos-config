@@ -45,6 +45,23 @@ Dashboards in storage mode live at `/mnt/ha/.storage/lovelace.<url-slug>` (under
 - **Other dashboards** — parse with `json`, mutate, write back, then `just push-dashboard <url-slug>`. See `/mnt/ha/AGENTS.md` § *Lovelace / Dashboard Editing*.
 - For raw API or `hass-cli` access use the dedicated AI Agent user: rbw entry `Home Assistant (AI Agent)`, field `Long-Lived Access Token` (see the `rbw` skill for using it without printing it; details in `/mnt/ha/AGENTS.md` § *AI Agent user*). Don't use `zhj hass::secrets-gu5a`, which is the user's personal token.
 
+## Never print credential stores
+
+`.storage/core.config_entries`, `.storage/auth` and `secrets.yaml` hold
+passwords, OAuth and API tokens; a single `rg`/`grep -A` over them has leaked
+dozens of credentials. Claude Code blocks such commands. Instead:
+
+- Inspect config entries with `zsh -lc 'zhj hass::config-entries [--domain X]'`:
+  it lists domain, title, entry id and the key names of data/options, without
+  values.
+- Search `/mnt/ha` with `rg -l` (file names) and `--glob '!.storage/**' --glob
+  '!secrets.yaml'`; read the file you found, never the store.
+- To change a value in a store, edit it in place with `jq`/`sed -i`, print
+  nothing, and reload the domain.
+- Validate with `zsh -lc 'zhj hass::check-config'`, not `ha core check` (which
+  expands the resolved config, including `!secret` values). Read `ha core logs`
+  through `grep` on a pattern, and `ha apps info` through `jq` on named fields.
+
 ## MCP
 
 When an MCP client is available, prefer the configured `home-assistant` MCP server for live entity state, tool-driven inspection, and control. The `zhj hass-cli` and raw API fallbacks are for local Codex/shell workflows only.
