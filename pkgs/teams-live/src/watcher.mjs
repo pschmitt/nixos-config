@@ -21,6 +21,23 @@ const HEADSUP_PREFIX = 'headsup: ';
 const CI_PREFIX = 'CI pipeline ';
 const REBASE_PREFIX = '**Rebase';
 
+const HELP_TEXT =
+  '🤖 **teams-live slash commands**:\n\n' +
+  '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
+  '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
+  '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
+  '- `/mrs`: Lists open, non-draft merge requests in the group.\n' +
+  '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
+  '- `/meetings`: Summary of meetings for the rest of the current week.\n' +
+  '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
+  '- `/random`: Outputs a random fact.\n' +
+  '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
+  '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
+  '- `/ban <nick>`: Bans a user from the channel.\n' +
+  '- `/exec <cmd>`: Executes a command.\n' +
+  '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
+  '_Target an MR by replying to its message or sending the command immediately after._';
+
 const KNOWN_COMMANDS = [
   '/approve',
   '/rebase',
@@ -112,7 +129,13 @@ export class MergeRequestWatcher {
 
     this.watched = new Map();
     this.pollTimer = null;
+    this.precomputeTimer = null;
     this.selfMri = null;
+
+    this.cacheTtlMs = 5 * 60 * 1000; // 5 minutes
+    this.precomputeIntervalMs = 3 * 60 * 1000; // 3 minutes
+    this.mrsCache = { text: null, timestamp: 0, loading: null };
+    this.sprintCache = { text: null, timestamp: 0, loading: null };
 
     const stateDir = process.env.XDG_STATE_HOME || path.join(process.cwd(), 'state');
     if (!fs.existsSync(stateDir)) {
@@ -755,6 +778,8 @@ export class MergeRequestWatcher {
       const convCount = this.watchedConversations.size;
       const watchedMrsCount = this.watched.size;
       const completedCount = this.completedMessages.size;
+      const mrsAge = this.mrsCache.text ? `${Math.round((Date.now() - this.mrsCache.timestamp) / 1000)}s ago` : 'empty';
+      const sprintAge = this.sprintCache.text ? `${Math.round((Date.now() - this.sprintCache.timestamp) / 1000)}s ago` : 'empty';
 
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
       await sendReply(
@@ -767,6 +792,7 @@ export class MergeRequestWatcher {
         `- **Trouter**: Connected 🟢\n` +
         `- **Watched Conversations**: ${convCount}\n` +
         `- **Active MR Watchers**: ${watchedMrsCount}\n` +
+        `- **Precompute Cache**: /mrs (${mrsAge}), /sprint (${sprintAge})\n` +
         `- **Completed Message Cache**: ${completedCount}\n\n` +
         '_Tip: To check an MR status, use `/status [link]` or quote an MR message._'
       );
@@ -843,39 +869,59 @@ export class MergeRequestWatcher {
     }
   }
 
+  async getOrFetchMrsText({ force = false } = {}) {
+    const now = Date.now();
+    if (!force && this.mrsCache.text && now - this.mrsCache.timestamp < this.cacheTtlMs) {
+      return this.mrsCache.text;
+    }
+    if (this.mrsCache.loading) {
+      return await this.mrsCache.loading;
+    }
+
+    this.mrsCache.loading = (async () => {
+      try {
+        const mrs = await this.gitlab.getGroupMrs();
+        let text;
+        if (mrs.length === 0) {
+          text = '📋 No open merge requests found.';
+        } else {
+          const groupPrefix = this.config.gitlab?.group
+            ? new RegExp(`^${this.config.gitlab.group}/?`)
+            : null;
+
+          const lines = [];
+          for (const mr of mrs) {
+            const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
+            const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
+            const author = mr.author?.username || mr.author?.name || 'unknown';
+            const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
+            lines.push(`- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
+          }
+          text = `📋 **Open Merge Requests** (${mrs.length}):\n\n${lines.join('\n')}`;
+        }
+        this.mrsCache.text = text;
+        this.mrsCache.timestamp = Date.now();
+        return text;
+      } catch (err) {
+        if (this.mrsCache.text) {
+          log(`Failed to refresh /mrs cache (${err.message}), serving stale cache`);
+          return this.mrsCache.text;
+        }
+        throw err;
+      } finally {
+        this.mrsCache.loading = null;
+      }
+    })();
+
+    return await this.mrsCache.loading;
+  }
+
   async executeMrsCommand(event) {
     log(`Executing /mrs in ${event.conversationId}...`);
     try {
-      const mrs = await this.gitlab.getGroupMrs();
-      if (mrs.length === 0) {
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-        await sendReply(
-          event.conversationId,
-          event,
-          '📋 No open merge requests found.'
-        );
-        return;
-      }
-
-      const groupPrefix = this.config.gitlab?.group
-        ? new RegExp(`^${this.config.gitlab.group}/?`)
-        : null;
-
-      const lines = [];
-      for (const mr of mrs) {
-        const fullRef = mr.references?.full || mr.references?.relative || `!${mr.iid}`;
-        const displayRef = groupPrefix ? fullRef.replace(groupPrefix, '') : fullRef;
-        const author = mr.author?.username || mr.author?.name || 'unknown';
-        const statusEmoji = getMrStatusEmoji(mr.detailed_merge_status);
-        lines.push(`- ${statusEmoji} [${displayRef}](${mr.web_url}): ${mr.title} (@${author})`);
-      }
-
+      const text = await this.getOrFetchMrsText();
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(
-        event.conversationId,
-        event,
-        `📋 **Open Merge Requests** (${mrs.length}):\n\n${lines.join('\n')}`
-      );
+      await sendReply(event.conversationId, event, text);
     } catch (err) {
       log(`Group MRs lookup failed: ${err.message}`);
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
@@ -885,6 +931,74 @@ export class MergeRequestWatcher {
         `❌ Failed to fetch group merge requests: ${err.message}`
       );
     }
+  }
+
+  async getOrFetchSprintText({ force = false } = {}) {
+    if (!this.jira?.isConfigured()) {
+      return '❌ Jira integration is not configured.';
+    }
+    const now = Date.now();
+    if (!force && this.sprintCache.text && now - this.sprintCache.timestamp < this.cacheTtlMs) {
+      return this.sprintCache.text;
+    }
+    if (this.sprintCache.loading) {
+      return await this.sprintCache.loading;
+    }
+
+    this.sprintCache.loading = (async () => {
+      try {
+        const { total, inProgress, inReview, todo } = await this.jira.getActiveSprintTasks();
+        if (total === 0) {
+          const text = '🏃 No active sprint tasks found.';
+          this.sprintCache.text = text;
+          this.sprintCache.timestamp = Date.now();
+          return text;
+        }
+
+        const sections = [];
+        if (inProgress.length > 0) {
+          const lines = [`**In Progress** (${inProgress.length}):`];
+          for (const t of inProgress) {
+            const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+            lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
+          }
+          sections.push(lines.join('\n'));
+        }
+
+        if (inReview.length > 0) {
+          const lines = [`**In Review** (${inReview.length}):`];
+          for (const t of inReview) {
+            const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+            lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
+          }
+          sections.push(lines.join('\n'));
+        }
+
+        if (todo.length > 0) {
+          const lines = [`**To Do** (${todo.length}):`];
+          for (const t of todo) {
+            const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
+            lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
+          }
+          sections.push(lines.join('\n'));
+        }
+
+        const text = `🏃 **Current Sprint Tasks** (${total} active):\n\n${sections.join('\n\n')}`;
+        this.sprintCache.text = text;
+        this.sprintCache.timestamp = Date.now();
+        return text;
+      } catch (err) {
+        if (this.sprintCache.text) {
+          log(`Failed to refresh /sprint cache (${err.message}), serving stale cache`);
+          return this.sprintCache.text;
+        }
+        throw err;
+      } finally {
+        this.sprintCache.loading = null;
+      }
+    })();
+
+    return await this.sprintCache.loading;
   }
 
   async executeSprintCommand(event) {
@@ -900,51 +1014,9 @@ export class MergeRequestWatcher {
     }
 
     try {
-      const { total, inProgress, inReview, todo } = await this.jira.getActiveSprintTasks();
-      if (total === 0) {
-        await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-        await sendReply(
-          event.conversationId,
-          event,
-          '🏃 No active sprint tasks found.'
-        );
-        return;
-      }
-
-      const sections = [];
-      if (inProgress.length > 0) {
-        const lines = [`**In Progress** (${inProgress.length}):`];
-        for (const t of inProgress) {
-          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
-          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
-        }
-        sections.push(lines.join('\n'));
-      }
-
-      if (inReview.length > 0) {
-        const lines = [`**In Review** (${inReview.length}):`];
-        for (const t of inReview) {
-          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
-          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
-        }
-        sections.push(lines.join('\n'));
-      }
-
-      if (todo.length > 0) {
-        const lines = [`**To Do** (${todo.length}):`];
-        for (const t of todo) {
-          const keyRef = t.url ? `[${t.key}](${t.url})` : `**${t.key}**`;
-          lines.push(`- ${keyRef}: ${t.summary} (@${t.assignee})`);
-        }
-        sections.push(lines.join('\n'));
-      }
-
+      const text = await this.getOrFetchSprintText();
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-      await sendReply(
-        event.conversationId,
-        event,
-        `🏃 **Current Sprint Tasks** (${total} active):\n\n${sections.join('\n\n')}`
-      );
+      await sendReply(event.conversationId, event, text);
     } catch (err) {
       log(`Sprint tasks lookup failed: ${err.message}`);
       await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.failure);
@@ -1105,25 +1177,7 @@ export class MergeRequestWatcher {
   async executeHelpCommand(event) {
     log(`Executing /help in ${event.conversationId}...`);
     await this.setCommandReaction(event.conversationId, event.messageId, COMMAND_REACTIONS.success);
-    await sendReply(
-      event.conversationId,
-      event,
-      '🤖 **teams-live slash commands**:\n\n' +
-      '- `/approve [link]`: Approves the target MR (requires passing CI & no rebase needed).\n' +
-      '- `/rebase [link]`: Triggers a GitLab rebase for the target MR (if conflict-free).\n' +
-      '- `/status [link]`: Checks CI, approvals, and rebase state for the target MR.\n' +
-      '- `/mrs`: Lists open, non-draft merge requests in the group.\n' +
-      '- `/sprint`: Summary of active sprint tasks (To Do, In Progress, In Review).\n' +
-      '- `/meetings`: Summary of meetings for the rest of the current week.\n' +
-      '- `/weather [location]`: Shows current weather for location (default: Berlin).\n' +
-      '- `/random`: Outputs a random fact.\n' +
-      '- `/marco`: Diagnostic round-trip latency and echo probe.\n' +
-      '- `/kick <nick> [reason]`: Ejects a user from the channel.\n' +
-      '- `/ban <nick>`: Bans a user from the channel.\n' +
-      '- `/exec <cmd>`: Executes a command.\n' +
-      '- `/help` (or `/usage`): Lists supported slash commands.\n\n' +
-      '_Target an MR by replying to its message or sending the command immediately after._'
-    );
+    await sendReply(event.conversationId, event, HELP_TEXT);
   }
 
   async handleSlashCommand(event) {
@@ -1316,6 +1370,24 @@ export class MergeRequestWatcher {
     }
   }
 
+  startPrecompute() {
+    const runPrecompute = async () => {
+      log('Precomputing /mrs and /sprint cache in background...');
+      await Promise.allSettled([
+        this.getOrFetchMrsText({ force: true }).catch((err) => log(`Precompute /mrs failed: ${err.message}`)),
+        this.getOrFetchSprintText({ force: true }).catch((err) => log(`Precompute /sprint failed: ${err.message}`)),
+      ]);
+      log('Precompute /mrs and /sprint cache completed');
+    };
+
+    const initialTimer = setTimeout(runPrecompute, 5_000);
+    if (initialTimer.unref) initialTimer.unref();
+
+    if (this.precomputeTimer) clearInterval(this.precomputeTimer);
+    this.precomputeTimer = setInterval(runPrecompute, this.precomputeIntervalMs);
+    if (this.precomputeTimer.unref) this.precomputeTimer.unref();
+  }
+
   startPolling() {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.pollTimer = setInterval(() => {
@@ -1323,12 +1395,17 @@ export class MergeRequestWatcher {
     }, this.pollIntervalMs);
 
     if (this.pollTimer.unref) this.pollTimer.unref();
+    this.startPrecompute();
   }
 
   stop() {
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
+    }
+    if (this.precomputeTimer) {
+      clearInterval(this.precomputeTimer);
+      this.precomputeTimer = null;
     }
   }
 }
