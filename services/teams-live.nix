@@ -43,7 +43,7 @@ in
         group = config.sops.placeholder."teams-live/gitlab-group";
         poll_interval_seconds = 60;
         history_limit = 50;
-        history_max_age_minutes = 10;
+        history_max_age_minutes = 15;
         max_watch_duration_seconds = 7200;
         notify = {
           ci = {

@@ -88,10 +88,18 @@ function toEvent(url, body, { verbose = false, all = false } = {}) {
   if (service === 'messaging' && body?.type === 'EventMessage') {
     const r = body.resource ?? {};
     if (!all && !(MESSAGE_KINDS.has(body.resourceType) && isContentType(r.messagetype))) return null;
+
+    let convId = r.conversationLink?.split('/conversations/').pop() ?? r.to;
+    if (convId) {
+      try {
+        convId = decodeURIComponent(convId);
+      } catch {}
+    }
+
     return {
       kind: body.resourceType,
       time: r.composetime ?? r.originalarrivaltime ?? body.time,
-      conversationId: r.conversationLink?.split('/conversations/').pop() ?? r.to,
+      conversationId: convId,
       threadTopic: r.threadtopic,
       from: r.imdisplayname,
       fromMri: r.from?.split('/contacts/').pop(),

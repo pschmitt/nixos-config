@@ -74,8 +74,17 @@ export class MergeRequestWatcher {
     this.historyMaxAgeMinutes = config.gitlab?.history_max_age_minutes ?? 10;
     this.maxWatchDurationMs = (config.gitlab?.max_watch_duration_seconds ?? 7200) * 1000;
 
-    this.watchedConversations = new Set(config.conversations.map((c) => c.id));
-    this.conversationMeta = new Map(config.conversations.map((c) => [c.id, c]));
+    this.watchedConversations = new Set();
+    this.conversationMeta = new Map();
+    for (const c of config.conversations) {
+      this.watchedConversations.add(c.id);
+      this.conversationMeta.set(c.id, c);
+      try {
+        const decoded = decodeURIComponent(c.id);
+        this.watchedConversations.add(decoded);
+        this.conversationMeta.set(decoded, c);
+      } catch {}
+    }
 
     this.watched = new Map();
     this.pollTimer = null;
@@ -1106,7 +1115,13 @@ export class MergeRequestWatcher {
 
   async handleIncomingEvent(event) {
     if (event.kind !== 'NewMessage') return;
-    if (!this.watchedConversations.has(event.conversationId)) return;
+    const convId = event.conversationId;
+    let decodedConvId = convId;
+    try {
+      decodedConvId = decodeURIComponent(convId);
+    } catch {}
+
+    if (!this.watchedConversations.has(convId) && !this.watchedConversations.has(decodedConvId)) return;
 
     // Ignore bot's own messages immediately to prevent self-trigger loops
     if (botSentMessageIds.has(String(event.messageId)) || botSentMessageIds.has(String(event.clientMessageId))) {
@@ -1161,6 +1176,27 @@ export class MergeRequestWatcher {
 
         const senderMri = msg.sender?.mri?.split('/contacts/').pop();
         if (this.isOwnMessage(senderMri, msg.content, msg.id)) continue;
+
+        // Check if message is an unhandled slash command from recent history
+        if (this.isSlashCommand(msg.content)) {
+          const hasOwnReaction = (msg.reactions ?? []).some((r) => r.user?.mri === self);
+          if (!hasOwnReaction) {
+            log(
+              `Processing missed slash command from history: "${msg.content}" from ${msg.sender?.displayName || senderMri} in ${conversationId}`
+            );
+            this.handleSlashCommand({
+              kind: 'NewMessage',
+              conversationId,
+              messageId: msg.id,
+              clientMessageId: msg.clientMessageId,
+              content: msg.content,
+              from: msg.sender?.displayName,
+              fromMri: senderMri,
+              links: (msg.links ?? []).map((l) => l.url),
+            }).catch((err) => log(`Error executing missed slash command from history: ${err.message}`));
+          }
+          continue;
+        }
 
         const ownReactions = (msg.reactions ?? [])
           .filter((r) => r.user?.mri === self)
