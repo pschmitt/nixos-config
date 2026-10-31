@@ -33,6 +33,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 - Concord MCP is available in every repository. Before editing, call `start_work` with the task and the files or modules you expect to touch; it claims them and reports overlaps with other agents, so resolve overlaps first.
 - Use `inspect_work` to see who else is here, `update_work` for progress and messages to other agents, `transfer_work` for handoffs, and `finish_work` with the outcome, changed files and tests before finishing.
+- Inter-agent messaging is machine-wide: prompt any active agent listed under "Who's here" or "Live prompting" via `update_work(operation="prompt", to_agent_id="<agent_id>", content="...")`, even if they were started in a different directory or project.
+- For multi-repository or paired workflows (e.g. `nixos-config` and `nixos-config-private`, worktrees, submodules): check the repository's `AGENTS.md` for a designated common `workspace_id`. When specified, pass `workspace_id` to all workflow tools (or set `CONCORD_REPO_ROOT`) so tasks, claims, and overlap checks remain unified.
 - Concord needs no files in the repository: do not run `concord setup` yourself.
 
 ## Host awareness

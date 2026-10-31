@@ -101,6 +101,12 @@
   Removing or renaming an export is a breaking change for the pinned private
   input: land the private side and `bump my privates` first.
 
+## Concord workspace
+- This repository is the designated primary Concord workspace for all public and private NixOS configuration work:
+  - Workspace ID: `ws_L2hvbWUvcHNjaG1pdHQvZGV2ZWwvcHJpdmF0ZS9wc2NobWl0dC9uaXhvcy1jb25maWcuZ2l0`
+  - Repo root: `/home/pschmitt/devel/private/pschmitt/nixos-config.git`
+- When working on private configuration, secrets, or tofu changes from the private checkout, coordinate under this workspace id so tasks, active claims, and file overlap warnings remain visible across both checkouts.
+
 ## Repository layout
 - `hosts/`: Per-host NixOS configurations (`hosts/<hostname>/default.nix`).
 - `modules/`: Shared NixOS modules and custom option definitions.
