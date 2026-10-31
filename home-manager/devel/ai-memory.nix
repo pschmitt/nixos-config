@@ -72,10 +72,7 @@ in
     };
   };
 
-  # CODEX_HOME is ~/.config/codex (see programs.codex).
-  xdg.configFile."codex/hooks.json".text = builtins.toJSON {
-    hooks = mkEventHooks "codex" commonEvents;
-  };
+  # Codex hooks are managed in modules/codex-managed-hooks.nix (requirements.toml).
 
   programs = {
     antigravity-cli.hooks.ai-memory = {
