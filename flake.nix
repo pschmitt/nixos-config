@@ -717,6 +717,13 @@
               cksSkills = "${
                 inputs.nixos-config-private.inputs.agent-skills.packages.${system}.default
               }/share/skills/cks-agent-skills";
+              mergedSkills = pkgs.symlinkJoin {
+                name = "resulting-skills-tree";
+                paths = [
+                  ./home-manager/devel/skills
+                  privateSkills
+                ];
+              };
             in
             pkgs.runCommand "validate-skills"
               {
@@ -726,7 +733,7 @@
                 ];
               }
               ''
-                for dir in ${./home-manager/devel/skills}/*/ ${privateSkills}/*/; do
+                for dir in ${mergedSkills}/*/; do
                   agentskills validate "$dir"
                 done
                 external=()

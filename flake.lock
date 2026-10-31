@@ -1734,7 +1734,6 @@
         "hrworks": "hrworks",
         "niks3": "niks3",
         "nixbot": "nixbot",
-        "nixos-config-public": "nixos-config-public",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -1744,32 +1743,16 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793486492,
-        "narHash": "sha256-czr27kDkhWxNsGfGk4jM0a/3A2LBbF24ejSr2xhjO1Q=",
+        "lastModified": 1793487078,
+        "narHash": "sha256-dnhn9K2Tg+3FbrRHYXPIxBS9+m1/TQxDcLlXf1hpOKo=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "d92477772ff45887f2d7c686ce2f9dd11a381380",
+        "rev": "9f487e11d915c91fe7456a4deda1207bf7bc51b9",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "type": "github"
-      }
-    },
-    "nixos-config-public": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1793485932,
-        "narHash": "sha256-8dyl2g2YUwom1NN/ixZ+PrCHVgaD33dpkt/+zfFL6RI=",
-        "owner": "pschmitt",
-        "repo": "nixos-config",
-        "rev": "92009e8410f6e7a0fe672a6607fc833a1ed8cfe2",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "nixos-config",
         "type": "github"
       }
     },
