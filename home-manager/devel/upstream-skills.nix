@@ -7,6 +7,13 @@
   todoist-cli,
 }:
 let
+  frontendDesign = fetchFromGitHub {
+    owner = "anthropics";
+    repo = "claude-plugins-official";
+    rev = "a7ba5b93db0c7c8d17f3f1d25853adca79598a1a";
+    hash = "sha256-C8uTRCtKEvL7dz+dDbfs/DwU/uxH5YzYFDn0oo3BKnA=";
+  };
+
   # https://github.com/czlonkowski/n8n-skills
   n8nSkills = fetchFromGitHub {
     owner = "czlonkowski";
@@ -16,6 +23,7 @@ let
   };
 in
 [
+  "${frontendDesign}/plugins/frontend-design/skills"
   "${n8nSkills}/skills"
   "${todoist-cli}/share/skills/todoist-cli"
   "${terminal-browser}/lib/terminal-browser/skills/default"
