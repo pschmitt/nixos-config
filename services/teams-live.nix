@@ -10,7 +10,7 @@ let
     name = "teams-live-health";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.gnugrep
+      pkgs.jq
       pkgs.systemd
     ];
     text = builtins.readFile ./scripts/teams-live-health.sh;

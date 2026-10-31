@@ -6,20 +6,34 @@ if ! systemctl is-active --quiet teams-live.service; then
   exit 1
 fi
 
-if journalctl -u teams-live.service --since "5 minutes ago" --no-pager | grep -q "Fatal error in teams-live"; then
-  echo "teams-live encountered a fatal error in the last 5m" >&2
+HEALTH_FILE="/var/lib/teams-live/state/health.json"
+
+if [ ! -f "$HEALTH_FILE" ]; then
+  echo "teams-live health.json does not exist yet" >&2
   exit 2
 fi
 
-logs="$(journalctl -u teams-live.service --since "10 minutes ago" --no-pager)"
-if echo "$logs" | grep -q "ACTION REQUIRED"; then
-  last_fail="$(echo "$logs" | grep -n "ACTION REQUIRED" | tail -1 | cut -d: -f1)"
-  last_success="$(echo "$logs" | grep -n "Sign-in via browser-daemon succeeded" | tail -1 | cut -d: -f1)"
-  if [ -n "$last_fail" ] && { [ -z "$last_success" ] || [ "$last_fail" -gt "$last_success" ]; }; then
-    echo "teams-live has an unresolved browser-daemon auth failure" >&2
-    exit 3
-  fi
+now="$(date +%s)"
+mtime="$(stat -c %Y "$HEALTH_FILE")"
+age=$(( now - mtime ))
+
+if [ "$age" -gt 90 ]; then
+  echo "teams-live health.json is stale (${age}s old, limit: 90s)" >&2
+  exit 3
 fi
 
-echo "teams-live is healthy"
+status="$(jq -r '.status // "unknown"' "$HEALTH_FILE")"
+if [ "$status" = "unhealthy" ]; then
+  errors="$(jq -r '(.errors // []) | join(", ")' "$HEALTH_FILE")"
+  echo "teams-live is unhealthy: ${errors:-unknown error}" >&2
+  exit 4
+fi
+
+if [ "$status" = "degraded" ]; then
+  errors="$(jq -r '(.errors // []) | join(", ")' "$HEALTH_FILE")"
+  echo "teams-live is degraded: ${errors:-unknown issue}"
+  exit 0
+fi
+
+echo "teams-live is healthy (${status})"
 exit 0
