@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000..d25a976
 --- /dev/null
 +++ b/src/auth/browser-daemon.test.ts
-@@ -0,0 +1,109 @@
+@@ -0,0 +1,128 @@
 +import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 +import { browserDaemonConfig, loginViaBrowserDaemon } from './browser-daemon.js';
 +
@@ -23,11 +23,12 @@ index 0000000..d25a976
 +
 +interface MeshOptions {
 +  activeSession?: string;
++  sessionInUse?: boolean;
 +  pageUrl?: string;
 +}
 +
 +/** A fake mesh: records every request and answers like a browser-daemon node. */
-+function fakeMesh({ activeSession, pageUrl = 'https://teams.cloud.microsoft/v2/' }: MeshOptions = {}) {
++function fakeMesh({ activeSession, sessionInUse = false, pageUrl = 'https://teams.cloud.microsoft/v2/' }: MeshOptions = {}) {
 +  const calls: string[] = [];
 +  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
 +
@@ -48,6 +49,15 @@ index 0000000..d25a976
 +    }
 +    if (call === 'POST /api/peers/fnuc/sessions') return json({ id: 'new-session' });
 +    if (call === 'PUT /api/peers/fnuc/json/new') return json({ id: 'new-page' });
++    if (url.pathname.endsWith('/idle-timeout')) return json({ ok: true });
++    if (call.startsWith('GET /api/peers/fnuc/sessions/')) {
++      return json({
++        client_count: sessionInUse ? 1 : 0,
++        clients: sessionInUse ? [{ agent_name: 'codex' }] : [],
++        viewer_count: 0,
++      });
++    }
++    if (call === 'GET /api/peers/fnuc/json/list') return json([]);
 +    if (url.pathname.endsWith('/auth')) {
 +      return json({ url: pageUrl, cookies: [], local_storage: loggedInStorage });
 +    }
@@ -87,12 +97,21 @@ index 0000000..d25a976
 +    expect(calls).toContain('DELETE /api/peers/fnuc/sessions/new-session');
 +  });
 +
-+  it('reuses a running session and leaves it and its Teams tab alone', async () => {
-+    const calls = fakeMesh({ activeSession: 'busy' });
++  it('reuses an active session in use and leaves it alone with idle timeout', async () => {
++    const calls = fakeMesh({ activeSession: 'busy', sessionInUse: true });
 +    await loginViaBrowserDaemon({ url: BASE, profile: 'work' });
 +
 +    expect(calls).toContain('POST /api/pages/existing-page/auth');
-+    expect(calls.filter(c => c.startsWith('DELETE') || c.includes('/json/'))).toEqual([]);
++    expect(calls).toContain('POST /api/peers/fnuc/sessions/busy/idle-timeout');
++    expect(calls.filter(c => c.startsWith('DELETE') || c.includes('/json/close'))).toEqual([]);
++  });
++
++  it('closes an existing session if it is unused', async () => {
++    const calls = fakeMesh({ activeSession: 'idle', sessionInUse: false });
++    await loginViaBrowserDaemon({ url: BASE, profile: 'work' });
++
++    expect(calls).toContain('POST /api/pages/existing-page/auth');
++    expect(calls).toContain('DELETE /api/peers/fnuc/sessions/idle');
 +  });
 +
 +  it('rejects an unknown profile', async () => {
@@ -118,7 +137,7 @@ new file mode 100644
 index 0000000..c2dd002
 --- /dev/null
 +++ b/src/auth/browser-daemon.ts
-@@ -0,0 +1,280 @@
+@@ -0,0 +1,315 @@
 +/**
 + * Signs in with the Teams login of a browser-daemon profile.
 + *
@@ -325,6 +344,11 @@ index 0000000..c2dd002
 +      sessionId = created.id ?? created.session?.id;
 +      if (!sessionId) throw new Error('browser-daemon did not return a session id');
 +    } else {
++      try {
++        await mesh.request('POST', mesh.api(overview, node, `/sessions/${sessionId}/idle-timeout?minutes=5`));
++      } catch {
++        // ignore
++      }
 +      pageId = overview.targets.find(t => t.sessionId === sessionId && t.type === 'page' && isTeamsHost(t.url))?.id;
 +    }
 +
@@ -342,10 +366,40 @@ index 0000000..c2dd002
 +  } finally {
 +    // Best effort: a failure to clean up must not hide the login or its error
 +    try {
-+      if (startedSession && sessionId) {
-+        await mesh.request('DELETE', mesh.api(overview, node, `/sessions/${sessionId}`));
-+      } else if (openedPage && pageId) {
++      if (openedPage && pageId) {
 +        await mesh.request('PUT', mesh.devtools(overview, node, `/json/close/${pageId}`));
++      }
++      if (sessionId) {
++        let inUse = false;
++        try {
++          const s = await mesh.request('GET', mesh.api(overview, node, `/sessions/${sessionId}`)) as {
++            client_count?: number;
++            clients?: unknown[];
++            viewer_count?: number;
++          };
++          if ((s.client_count ?? 0) > 0 || (s.clients && s.clients.length > 0) || (s.viewer_count ?? 0) > 0) {
++            inUse = true;
++          }
++          const tabs = await mesh.request('GET', mesh.devtools(overview, node, '/json/list')) as Array<{
++            sessionId?: string;
++            owner?: unknown;
++          }>;
++          if (Array.isArray(tabs) && tabs.some(t => t.sessionId === sessionId && !!t.owner)) {
++            inUse = true;
++          }
++        } catch {
++          inUse = !startedSession;
++        }
++
++        if (!inUse) {
++          await mesh.request('DELETE', mesh.api(overview, node, `/sessions/${sessionId}`));
++        } else {
++          try {
++            await mesh.request('POST', mesh.api(overview, node, `/sessions/${sessionId}/idle-timeout?minutes=5`));
++          } catch {
++            // ignore
++          }
++        }
 +      }
 +    } catch (error) {
 +      log.warn('browser-daemon', `Cleanup failed: ${error instanceof Error ? error.message : String(error)}`);
