@@ -111,6 +111,7 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
+        browser-daemon.follows = "browser-daemon";
         teams-auth-source.follows = "teams-auth-source";
       };
     };

@@ -23,7 +23,11 @@ let
   osd = pkgs.callPackage ./local/osd { };
   screencast-state = pkgs.callPackage ./local/screencast-state { };
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
-  msteams-mcp = pkgs.callPackage ./msteams-mcp { inherit (inputs) teams-auth-source; };
+  msteams-mcp = pkgs.callPackage ./msteams-mcp {
+    inherit (inputs) teams-auth-source;
+    browser-daemon-client =
+      inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.browser-daemon-client;
+  };
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
   # Hoisted so og-local can depend on it.
   og-local-model = pkgs.callPackage ./og-local-model { };

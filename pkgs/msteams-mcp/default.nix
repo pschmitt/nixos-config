@@ -4,6 +4,7 @@
   chromium,
   fetchFromGitHub,
   python3,
+  browser-daemon-client,
   teams-auth-source,
 }:
 
@@ -35,7 +36,9 @@ buildNpmPackage {
   postInstall = ''
     cp ${teams-auth-source}/custom_components/msteams/browser_auth.mjs "$out/lib/node_modules/msteams-mcp/dist/auth/browser-daemon.js"
     substituteInPlace "$out/lib/node_modules/msteams-mcp/dist/auth/browser-daemon.js" \
-      --replace-fail '@TEAMS_AUTH_PYTHON@' '${lib.getExe (python3.withPackages (ps: [ ps.aiohttp ]))}' \
+      --replace-fail '@TEAMS_AUTH_PYTHON@' '${
+        lib.getExe (python3.withPackages (_: [ browser-daemon-client ]))
+      }' \
       --replace-fail '@TEAMS_AUTH_PATH@' '${teams-auth-source}/custom_components/msteams/browser_auth.py'
   '';
 
