@@ -64,6 +64,9 @@ in
       # ~147% for the JPEG screencast.
       displayMode = "per-session";
       video.enable = true;
+      # POST /api/run: Playwright scripts and steps for clients without
+      # Playwright (Home Assistant integrations); cluster secret only.
+      run.enable = true;
     };
 
     nginx.virtualHosts.${builtins.head hosts} = {
