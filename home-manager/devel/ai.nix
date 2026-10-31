@@ -228,6 +228,7 @@ let
     (withSkillImprovementFooter ./skills)
     "${n8nSkillsSrc}/skills"
     "${pkgs.todoist-cli}/share/skills/todoist-cli"
+    "${pkgs.llm-agents.terminal-browser}/lib/terminal-browser/skills/default"
   ]
   ++ map withSkillImprovementFooter config.dotfiles.aiSkills.extraSources;
 
@@ -733,6 +734,7 @@ in
           # cli
           ccusage
           msteamsMcp
+          terminal-browser
           pkgs.playwright-mcp
           # cursor-cli
           # kilocode-cli
