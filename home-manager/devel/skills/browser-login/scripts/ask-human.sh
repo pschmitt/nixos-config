@@ -139,6 +139,7 @@ send_push() {
         importance: "high",
         priority: "high",
         ttl: 0,
+        timeout: 3600,
         actions: [{action: "URI", title: "Open browser", uri: $live}]
       }
     }')"

@@ -20,6 +20,8 @@ page and node in `BD_PAGE` and `BD_NODE`):
 - **Channel:** a push to the user's phone (`notify.mobile_app_pixel_11_pro`),
   or Signal (`BD_VIA=signal|both`) with the `[BROWSER HANDOFF | <AGENT>]`
   heading CONTEXT.md asks for.
+- **Push expiry:** Home Assistant dismisses the phone notification after one
+  hour (`timeout: 3600`, in seconds). Signal messages do not have this timeout.
 - **Link:** Home Assistant says whether the user is home. Home:
   `https://browser.<node>.nb.brkn.lol/handoff/?page=<id>` (mesh only, no
   login). Away: `https://browser.<node>.brkn.lol/handoff/?page=<id>`
