@@ -24,6 +24,22 @@
         "type": "gitlab"
       }
     },
+    "ai-memory": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793377228,
+        "narHash": "sha256-GgfsEOlbOPOantU1YXTZK+WsxvhHVgu9VNo3wO29yyc=",
+        "owner": "akitaonrails",
+        "repo": "ai-memory",
+        "rev": "ac699b5696ccb37eaa901893fd16bb2b8ba59d90",
+        "type": "github"
+      },
+      "original": {
+        "owner": "akitaonrails",
+        "repo": "ai-memory",
+        "type": "github"
+      }
+    },
     "anika-blue": {
       "inputs": {
         "flake-parts": [
@@ -1728,11 +1744,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793432382,
-        "narHash": "sha256-KCRPFkeIn74mMmB41OVbTMgRHwRYAnuhwroElcuQjKA=",
+        "lastModified": 1793438625,
+        "narHash": "sha256-YtDDKWKbocpUVLahgoTNS3QYkKqNTCq6m/aI1c6PT5U=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "c7e457a0741bb846468c711241c0f1ee60231146",
+        "rev": "fde6f60bd4fa9788f050c9a5355b4ecd40588c08",
         "type": "github"
       },
       "original": {
@@ -2395,6 +2411,7 @@
     },
     "root": {
       "inputs": {
+        "ai-memory": "ai-memory",
         "anika-blue": "anika-blue",
         "browser-daemon": "browser-daemon",
         "bruvtab": "bruvtab",

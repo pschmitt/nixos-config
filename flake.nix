@@ -187,6 +187,13 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Only its NixOS module is used (services/ai-memory.nix); the package
+    # comes from llm-agents.
+    ai-memory = {
+      url = "github:akitaonrails/ai-memory";
+      flake = false;
+    };
+
     manydots = {
       url = "github:knu/zsh-manydots-magic/4372de0718714046f0c7ef87b43fc0a598896af6";
       flake = false;
