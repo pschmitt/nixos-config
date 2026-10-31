@@ -724,6 +724,20 @@ in
         ".gemini/antigravity-cli/settings.json".force = true;
       };
 
+      # terminal-browser rewrites its own settings.json (`config set`), so merge
+      # the declared keys in instead of symlinking a read-only file. "animation"
+      # stops the image flicker when it renders through tmux.
+      activation.terminalBrowserSettings = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        config_file="${config.xdg.configHome}/terminal-browser/settings.json"
+        ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$config_file")"
+        [[ -s "$config_file" ]] || echo '{}' > "$config_file"
+        tmp_file="$(${pkgs.coreutils}/bin/mktemp "$config_file.XXXXXX")"
+        ${pkgs.jq}/bin/jq --argjson settings ${
+          lib.escapeShellArg (builtins.toJSON { "render.presenter" = "animation"; })
+        } '. + $settings' "$config_file" > "$tmp_file" \
+          && mv "$tmp_file" "$config_file" || rm -f "$tmp_file"
+      '';
+
       packages =
         with pkgs.llm-agents;
         [
