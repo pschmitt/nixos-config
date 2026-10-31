@@ -5,11 +5,17 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## General rules
 
 - Read `AGENTS.md` and follow it as the primary repository instruction source.
+- When creating or editing a repository's `AGENTS.md`, assume it may be
+  published or shared. Do not include private infrastructure identifiers such
+  as internal hostnames, FQDNs, IP addresses,
+  device names, or topology details. Refer to the private `brkn-infra` skill
+  for host-specific information; use system roles or placeholders in shared
+  instructions.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `signal-notify` before sending any Signal message, `secret-hygiene` before commands that may print credentials, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `gpg-signing` before signed commits or tags, `tmux-window-names` for naming tmux windows
-  - `brkn-infra` to learn which host does what (build, test and deploy targets, Android devices) before you name or pick a host, `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
+  - the private `brkn-infra` skill for infrastructure host roles, build/test/deploy targets, and Android devices; `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 - Watch for toil worth capturing (the same friction twice, a rediscovered procedure, a generalizing user correction). Say so at the end of the task and propose a skill or skill update with the `self-improvement` skill; ask before creating a new skill.
 - Linkify references whenever a useful target is available. This applies across
@@ -26,8 +32,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Host awareness
 
-- Always be aware of which host you are currently running on (`hostname` or `$HOST`). In this environment, agents frequently run directly on `fnuc` (or workstations like `gk4`, `ge2`, `x13`).
-- **Never SSH into the current host**: do not run `ssh fnuc ...` (or `localhost`, `fnuc.lan`, etc.) when already running on `fnuc`. Execute commands locally instead of establishing a redundant SSH connection to yourself.
+- Always be aware of which host you are currently running on (`hostname` or `$HOST`).
+- **Never SSH into the current host**: when already on a target host, execute commands locally instead of establishing a redundant SSH connection to yourself.
 - Before executing commands aimed at a specific host (such as checking systemd units, containers, logs, or local files), check whether you are already on that host and run them directly.
 
 ## Code and validation
@@ -46,8 +52,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Deployment and operations
 
-- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. When possible, build on a `rofl-*` host instead; `rofl-13` and `rofl-14` are preferred.
-- Remote build directories on `rofl-13` and `rofl-14` should use `~/build/<PROJECT_NAME>`.
+- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. When possible, use a remote build host; see the private `brkn-infra` skill for host selection.
+- Remote build directories should use `~/build/<PROJECT_NAME>`.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
 
@@ -55,7 +61,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 - Do not open pull requests unless explicitly requested. Default to working directly on `main` (or the repository's default branch) without creating feature branches or PRs.
 - Once a change is done and verified, commit it, push it to the default branch and deploy it to the affected hosts without asking. Leave unrelated modified or untracked files out of the commit.
-- After pushing to `nixos-config-private`, immediately update the public repo's `flake.lock` (`nix flake lock --update-input nixos-config-private`, run on rofl-13, copy `flake.lock` back) and commit it as `bump my privates`, then push.
+- After pushing to `nixos-config-private`, immediately update the public repo's `flake.lock` (`nix flake lock --update-input nixos-config-private`, run on a remote build host; see the private `brkn-infra` skill), copy `flake.lock` back, and commit it as `bump my privates`.
 
 ## Progress notifications
 

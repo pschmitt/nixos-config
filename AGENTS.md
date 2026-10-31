@@ -3,7 +3,7 @@
 ## Environment preparation
 - Before invoking the `nix` CLI inside this repository, run `source /etc/profile.d/nix.sh` **only when working in the cloud environment**. Do not source it when running from the Codex CLI or GitHub Copilot context.
 - After sourcing (cloud only), verify the installation with `nix --version` if needed.
-- When suggesting commands that use a flake selector, always single-quote the selector. Example: use `'.#fnuc'`, not `.#fnuc`.
+- When suggesting commands that use a flake selector, always single-quote the selector. Example: use `'.#<host>'`, not `.#<host>`.
 - To decrypt SOPS files in this repo from Codex/CLI contexts that do not have `~/.config/sops/age/keys.txt`, export an age key derived from the main SSH key first:
   `export SOPS_AGE_KEY="$(ssh-to-age --private-key -i ~/.ssh/id_ed25519)"`
 - Prefer updating SOPS values with `sops set`. Example:
@@ -17,7 +17,8 @@
   nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and
   `nix-instantiate`, not just host evaluations. Plain binaries already on
   PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
-- Evaluate on `rofl-13`/`rofl-14` instead: rsync the working tree(s) to
+- Evaluate on a remote build host instead (see the private `brkn-infra`
+  skill): rsync the working tree(s) to
   `~/build/<project>` (exclude `.git/`, and remove any stale `.git` there so
   the path flake sees untracked files), then run `nix` over SSH with
   `--override-input nixos-config-private path:<remote private checkout>`
@@ -39,7 +40,8 @@
 - After making changes, deploy to the target systems:
   - **Before committing** (e.g. to test uncommitted changes): run `just deploy TARGET_HOST` from a different host; it builds and switches on the target. Do not omit the target, since that builds locally. If the agent is running on the target, use a remote build and deploy the prebuilt closure instead.
   - **If already committed**: deploy by SSH'ing to the target host and restarting `nixos-upgrade.service` (`systemctl restart nixos-upgrade.service`).
-- fnuc has been migrated to full NixOS (see `hosts/fnuc/default.nix`); deploy it like any other NixOS host with `just deploy` (see above), which also switches its embedded `home-manager.users.pschmitt` module. It is no longer a standalone Home Manager host.
+- NixOS hosts with embedded Home Manager configuration are deployed through
+  their NixOS host configuration with `just deploy TARGET_HOST`.
 - **Deployment gotchas**:
   - `just deploy <host>` can report failure even when the switch actually succeeded if NetworkManager restarts during activation and terminates the SSH session (`Timeout, server <host> not responding`). The remote `nixos-rebuild switch` process continues running to completion. When this happens, re-`ssh` and verify `readlink -f /run/current-system`, check generations (`nix-env -p /nix/var/nix/profiles/system --list-generations | tail -3`), and confirm units are active.
   - Hosts with `services/initrd-luks-ssh-unlock.nix` present a distinct SSH host key while in initrd waiting for LUKS unlock (`/etc/ssh/initrd/ssh_host_{ed25519,rsa}_key`). A changed host key warning during the boot/unlock window is expected.
@@ -114,14 +116,14 @@
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
-- `statix` checks should pass. After Nix code changes, run `statix check` (the binary on PATH, or `nix develop` on rofl-13/rofl-14; see "Evaluation and builds").
-- Also run `deadnix` (on rofl-13/rofl-14 when it is not on PATH) to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
+- `statix` checks should pass. After Nix code changes, run `statix check` (the binary on PATH, or `nix develop` on a remote build host; see "Evaluation and builds").
+- Also run `deadnix` on a remote build host when it is not on PATH to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 - Don't use `with lib;`. Qualify explicitly (`lib.mkOption`, `lib.types.str`, `lib.mkIf`) — that is the repo-wide style. For many uses in one scope, prefer `inherit (lib) mkOption mkIf types;` over `with`. This applies to package `meta` blocks too (`meta = { license = lib.licenses.mit; ... }`, and `maintainers = with lib.maintainers; [ pschmitt ];`).
 - The git-hooks.nix pre-commit hook calls a `pre-commit` from the dev shell.
   If a commit fails because that binary is missing, run `just dev-hooks`: it
-  evaluates the dev shell on rofl-13, reinstalls the hook and pins the shell
+  evaluates the dev shell on a remote build host, reinstalls the hook and pins the shell
   with a GC root. Never bypass the hook with `--no-verify` instead.
 - New files must be staged with `git add` (e.g. `git add -N <file>`) before they are visible to flake evaluation.
 - Build structured configuration with `pkgs.formats.{yaml,toml,json,ini}` and an attrset, not hand-concatenated strings. Example: `(pkgs.formats.yaml { }).generate "x.yaml" { ... }`.
