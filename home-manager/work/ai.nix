@@ -6,6 +6,7 @@
 let
   claudeWorkSettings = (pkgs.formats.json { }).generate "claude-work-settings.json" {
     statusLine = config.programs.claude-code.settings.statusLine;
+    inherit (config.programs.claude-code.settings) env teammateDefaultModel;
   };
 
   claudeWork = pkgs.writeShellApplication {
@@ -16,6 +17,8 @@ let
 
       export CLAUDE_CONFIG_DIR="''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work"
       export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+      export CLAUDE_CODE_SUBAGENT_MODEL="sonnet"
+      export CLAUDE_CODE_SUBAGENT_MODEL_FORCE="1"
 
       exec ${config.programs.claude-code.finalPackage}/bin/claude \
         --settings "${claudeWorkSettings}" \

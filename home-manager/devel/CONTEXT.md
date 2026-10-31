@@ -22,6 +22,12 @@ Use this file as lightweight shared context for AI tooling in this repository.
   tickets, documentation, dashboards, and local files. In terminal output, use
   OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
   bare URLs or IDs; in Markdown-capable output, use Markdown links.
+- Subagents: when delegating tasks to subagents, spawning background agents, or
+  creating agent teams, always use lightweight/cost-effective models rather than
+  expensive primary models:
+  - In Claude Code / Claude Work: always use Sonnet (`sonnet`). Never use Opus for subagents.
+  - In Codex: always use Luna (`gpt-6-luna` / `luna`).
+  - In Antigravity (`agy`): always use Gemini Flash (`flash` / `flash_lite` / `gemini-flash`). Never use Pro for subagents.
 
 ## Concord
 

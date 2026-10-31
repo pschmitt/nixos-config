@@ -475,6 +475,11 @@ in
         settings = {
           skipDangerousModePermissionPrompt = true;
           theme = "dark";
+          env = {
+            CLAUDE_CODE_SUBAGENT_MODEL = "sonnet";
+            CLAUDE_CODE_SUBAGENT_MODEL_FORCE = "1";
+          };
+          teammateDefaultModel = "sonnet";
           statusLine = {
             type = "command";
             command = lib.getExe claudeStatusline;
@@ -588,6 +593,7 @@ in
       antigravity-cli = {
         enable = true;
         package = antigravityCli;
+        context.CONTEXT = ./CONTEXT.md;
         skills = allSkills;
         enableMcpIntegration = true;
         settings = {
