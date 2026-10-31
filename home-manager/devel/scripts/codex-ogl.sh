@@ -23,16 +23,17 @@ ogl_home="$CODEX_HOME"
 ogl_config="$ogl_home/config.toml"
 merged="$(mktemp "$ogl_home/config.toml.XXXXXX")"
 
-# ogl's config is top-level keys followed by tables; ours is the same. Keep
-# ogl's keys first (it selects its profile), then ours without a profile of
-# its own, then ogl's tables.
+# ogl writes the legacy form (`profile = "ogl"` plus a [profiles.ogl] table),
+# which current Codex rejects. Keep only its [model_providers.ogl] table, merge
+# it into our real config, and select it with a profile file instead:
+# `--profile ogl` reads ogl.config.toml from CODEX_HOME.
 {
-  awk '/^\[/ { exit } { print }' "$ogl_config"
   grep -Ev '^profile[[:space:]]*=' "$real_home/config.toml"
   echo
-  awk 'found || /^\[/ { found = 1; print }' "$ogl_config"
+  awk '/^\[/ { want = ($0 == "[model_providers.ogl]") } want { print }' "$ogl_config"
 } > "$merged"
 mv "$merged" "$ogl_config"
+printf 'model_provider = "ogl"\n' > "$ogl_home/ogl.config.toml"
 
 # Share everything else (skills, sessions, history, databases, ...) with the
 # real home. auth.json is linked too so token refreshes land in the real one.
@@ -46,4 +47,4 @@ do
   ln -sfn "$entry" "$ogl_home/$name"
 done
 
-exec codex "$@"
+exec codex --profile ogl "$@"
