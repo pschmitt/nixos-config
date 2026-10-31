@@ -151,9 +151,9 @@ let
   # browser_fill_secret types the rbw entries named with `--allow-secret` (`*`:
   # every entry) into login forms on their own sites without the agent seeing
   # the value. browser_passkey has the nodes' secret agent sign passkey
-  # sign-ins on the `--allow-passkey` sites: not auth.brkn.lol, whose Authelia
-  # flags the Bitwarden client as a clone once the vault counter moves on
-  # (skills/browser-login/references/counters.md). browser_ask_human sends the
+  # sign-ins on the `--allow-passkey` sites (`*`: every site; mind
+  # auth.brkn.lol, whose Authelia flags the Bitwarden client as a clone once the
+  # vault counter moves on, skills/browser-login/references/counters.md). browser_ask_human sends the
   # user a live-view link of the agent's page (the browser-login skill's
   # ask-human.sh). browser_export_auth and browser_fetch hand a page's login
   # (cookies, storage tokens) to other tools without the agent seeing it; every
@@ -185,7 +185,7 @@ let
       "--allow-secret"
       "*"
       "--allow-passkey"
-      "microsoft.com"
+      "*"
       "--ask-human-cmd"
       (lib.getExe browserAskHuman)
       "--allow-export"
