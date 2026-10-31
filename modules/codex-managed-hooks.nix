@@ -73,6 +73,7 @@ in
     [[hooks.PostToolUse.hooks]]
     type = "command"
     command = "${lib.getExe agentSecretScan}"
+    statusMessage = "Scanning tool output for credentials"
 
     [[hooks.PostToolUse.hooks]]
     type = "command"
