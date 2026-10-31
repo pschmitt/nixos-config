@@ -11,6 +11,7 @@ in
 {
 
   imports = [
+    ./ai-memory.nix
     ./ai.nix
     ./android.nix
     ./cloud.nix
