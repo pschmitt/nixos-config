@@ -7,6 +7,13 @@
   todoist-cli,
 }:
 let
+  rewriteSkills = fetchFromGitHub {
+    owner = "rewrite-rs";
+    repo = "skills";
+    rev = "ae0fd62485d071437ae5e6c4036c986b0dd122a0";
+    hash = "sha256-yiARqb8bXkCXAtcJ6umS06Mx0EL8a5q5VZSQiLjMb3w=";
+  };
+
   frontendDesign = fetchFromGitHub {
     owner = "anthropics";
     repo = "claude-plugins-official";
@@ -23,6 +30,10 @@ let
   };
 in
 [
+  "${rewriteSkills}/skills/rust"
+  "${rewriteSkills}/skills/porting"
+  "${rewriteSkills}/skills/workflow"
+  "${rewriteSkills}/skills/misc"
   "${frontendDesign}/plugins/frontend-design/skills"
   "${n8nSkills}/skills"
   "${todoist-cli}/share/skills/todoist-cli"
