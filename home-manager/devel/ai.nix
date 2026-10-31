@@ -67,6 +67,28 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
+  # Claude Code and Codex through og-local, which replaces PII and secrets in
+  # the prompts with placeholders before they leave the machine (see the
+  # secret-hygiene skill). Opt-in: plain `claude` and `codex` are unchanged.
+  claudeOgl = pkgs.writeShellApplication {
+    name = "claude-ogl";
+    runtimeInputs = [ pkgs.og-local ];
+    text = ''
+      exec ogl claude "$@"
+    '';
+  };
+
+  codexOgl = pkgs.writeShellApplication {
+    name = "codex-ogl";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.gnugrep
+      pkgs.og-local
+    ];
+    text = builtins.readFile ./scripts/codex-ogl.sh;
+  };
+
   agentTmuxContextHook = pkgs.agent-tmux-context-hook;
   # PreToolUse/PostToolUse hooks that keep credentials out of tool calls and
   # results (see the leaked-credentials skill); Codex gets them too via
@@ -697,8 +719,10 @@ in
         # Agents label their browser sessions with it (see CONTEXT.md).
         ++ [
           browserAgentTopic
+          claudeOgl
           claudeStatusline
           claudeTmuxRename
+          codexOgl
         ];
     };
   };
