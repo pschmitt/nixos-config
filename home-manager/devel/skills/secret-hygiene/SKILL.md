@@ -19,6 +19,16 @@ Use the safe form:
 - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
 - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
 
+## Filtering what reaches the provider (`claude-ogl`, `codex-ogl`)
+
+Hooks cannot stop a secret that is already in a prompt. `claude-ogl` and `codex-ogl` run the agent behind og-local, a local proxy with an ML detector that swaps PII and secrets for placeholders before the request leaves the machine and restores them in the reply. Plain `claude` and `codex` are unaffected.
+
+- Coverage (tested with made-up values): it catches bare passwords, YAML passwords, webhook IDs, signed URLs, GitHub tokens and personal data. It **misses** AWS keys, JWTs, private-key blocks and age keys, so the hooks and the command rules above still matter for those.
+- Secretgate (regex layer, `pkgs.secretgate`) catches exactly those formats but is **off by default**: chained behind og-local, any turn that calls a tool hangs (audit mode too, HTTP/1.1 does not help). Each tool alone works. Enable with `OGL_SECRETGATE_MODE=redact|audit|block` only to test a fix.
+- Cost: og-local runs the detector on the CPU, so even a one-word reply takes about 35-50 s and a few minutes of CPU. Do not run it in bulk (for example `claude mcp list` starts every MCP server at once and spiked fnuc's load).
+- `codex-ogl` rebuilds Codex's home from the real one, because `ogl codex` otherwise starts Codex with a bare config; it uses `--profile ogl` because current Codex rejects ogl's legacy `profile` key.
+- HTTP MCP proxies trust `SSL_CERT_FILE`, so they keep working behind a TLS-intercepting proxy.
+
 ## Hooks
 
 `agent-secret-guard` enforces the Bash cases and `agent-secret-scan` warns about credentials in tool results. If a command is blocked, use the suggested safe form; do not work around the hook.
