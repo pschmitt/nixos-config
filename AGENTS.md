@@ -8,7 +8,7 @@
   `export SOPS_AGE_KEY="$(ssh-to-age --private-key -i ~/.ssh/id_ed25519)"`
 - Prefer updating SOPS values with `sops set`. Example:
   `sops set ~/git/svc/sops/example.yaml '["app2"]["key"]' '"app2keystringvalue"'`
-- After any SOPS change, always verify the diff by decrypting the previous version and the new version, then diffing the plaintexts.
+- After any SOPS change, always verify it by comparing the previous and the new version by key name and short value hash (`sops decrypt --extract '["a"]["b"]' FILE | sha256sum | cut -c1-8`). Never print or diff the decrypted plaintext: that leaks the values into the transcript.
 - Default to SOPS for anything that even remotely smells like a secret or an identifier — not just passwords/tokens/keys, but also things like TLS/SSH fingerprints, device serials, account IDs, or other values that authorize access or identify a specific person/device. When in doubt, treat it as SOPS-worthy rather than committing it in cleartext to a tracked Nix file (it would otherwise land in the world-readable Nix store). Inject such values at activation/runtime (e.g. `sops.templates` referencing `config.sops.placeholder.*`, or `config.sops.secrets.*.path`) rather than baking them into generated config via `pkgs.formats.*` at eval time.
 
 ## Evaluation and builds
