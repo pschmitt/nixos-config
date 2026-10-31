@@ -36,7 +36,7 @@ def format_usd(amt):
   "\(badge) \(bold)\($in.model.display_name // $in.model.id // "Claude")\(reset)",
 
   (
-    if ($branch // "") != "" then
+    if ($branch // "") != "" and $branch != $default_branch then
       "\(branch_color) \($branch)\(reset)"
     else empty end
   ),
