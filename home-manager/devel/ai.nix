@@ -497,21 +497,29 @@ in
             "gpt-5.4" = "gpt-5.5";
           };
 
-          tui.keymap = {
-            global.open_external_editor = "ctrl-e";
-            editor = {
-              delete_backward = "backspace";
-              delete_backward_word = [
-                "ctrl-backspace"
-                "ctrl-h"
-              ];
-              move_line_start = [ "home" ];
-              move_line_end = [ "end" ];
-            };
-          };
+          tui = {
+            status_line = [
+              "model-with-reasoning"
+              "project-name"
+              "thread-name"
+            ];
 
-          tui.model_availability_nux = {
-            "gpt-5.5" = 4;
+            keymap = {
+              global.open_external_editor = "ctrl-e";
+              editor = {
+                delete_backward = "backspace";
+                delete_backward_word = [
+                  "ctrl-backspace"
+                  "ctrl-h"
+                ];
+                move_line_start = [ "home" ];
+                move_line_end = [ "end" ];
+              };
+            };
+
+            model_availability_nux = {
+              "gpt-5.5" = 4;
+            };
           };
 
           projects = {
