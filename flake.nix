@@ -101,11 +101,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    teams-auth-source = {
+      url = "github:pschmitt/homeassistant-msteams";
+      flake = false;
+    };
+
     teams-live = {
       url = "github:pschmitt/teams-live";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
+        teams-auth-source.follows = "teams-auth-source";
       };
     };
 

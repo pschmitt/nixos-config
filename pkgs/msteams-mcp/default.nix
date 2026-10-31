@@ -3,6 +3,8 @@
   buildNpmPackage,
   chromium,
   fetchFromGitHub,
+  python3,
+  teams-auth-source,
 }:
 
 buildNpmPackage {
@@ -29,6 +31,13 @@ buildNpmPackage {
     # TEAMS_MCP_BROWSER_DAEMON_URL) before opening a local browser
     ./browser-daemon-login.patch
   ];
+
+  postInstall = ''
+    cp ${teams-auth-source}/custom_components/msteams/browser_auth.mjs "$out/lib/node_modules/msteams-mcp/dist/auth/browser-daemon.js"
+    substituteInPlace "$out/lib/node_modules/msteams-mcp/dist/auth/browser-daemon.js" \
+      --replace-fail '@TEAMS_AUTH_PYTHON@' '${lib.getExe (python3.withPackages (ps: [ ps.aiohttp ]))}' \
+      --replace-fail '@TEAMS_AUTH_PATH@' '${teams-auth-source}/custom_components/msteams/browser_auth.py'
+  '';
 
   makeWrapperArgs = [
     "--set-default"

@@ -2480,6 +2480,7 @@
         "stricknani": "stricknani",
         "systems": "systems_5",
         "tdc": "tdc",
+        "teams-auth-source": "teams-auth-source",
         "teams-live": "teams-live",
         "termux-tools": "termux-tools",
         "tmux-slay": "tmux-slay",
@@ -2825,6 +2826,22 @@
         "type": "github"
       }
     },
+    "teams-auth-source": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793452687,
+        "narHash": "sha256-cQkSzLsqtz04oK8l+fFwI8ov6wjVtKfmEPJmnW+qmBA=",
+        "owner": "pschmitt",
+        "repo": "homeassistant-msteams",
+        "rev": "5084c81819b110ab9cda35a70272f4a0a975472a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "homeassistant-msteams",
+        "type": "github"
+      }
+    },
     "teams-live": {
       "inputs": {
         "flake-utils": [
@@ -2832,14 +2849,17 @@
         ],
         "nixpkgs": [
           "nixpkgs"
+        ],
+        "teams-auth-source": [
+          "teams-auth-source"
         ]
       },
       "locked": {
-        "lastModified": 1793448774,
-        "narHash": "sha256-0o7FDE8k7QCi3v0mA5Z50JRoAjzk3EEomKcbfGCapQA=",
+        "lastModified": 1793452778,
+        "narHash": "sha256-gVzaPrGNPUQRDTcOTDEwyNAp4GINJLBYpBHxnCrmB+o=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "2303bc83741691e406d963aef40ec909e3436f0f",
+        "rev": "1a0af806211a3f576979952bc876a3bf5c7a3a4e",
         "type": "github"
       },
       "original": {
