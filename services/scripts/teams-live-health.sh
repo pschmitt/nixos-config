@@ -23,7 +23,18 @@ if [ "$age" -gt 90 ]; then
 fi
 
 status="$(jq -r '.status // "unknown"' "$HEALTH_FILE")"
+if [ "$status" = "starting" ]; then
+  uptime="$(jq -r '.uptime_seconds // 0' "$HEALTH_FILE")"
+  echo "teams-live is starting up (${uptime}s)"
+  exit 0
+fi
+
 if [ "$status" = "unhealthy" ]; then
+  uptime="$(jq -r '.uptime_seconds // 0' "$HEALTH_FILE")"
+  if [ "$uptime" -lt 45 ]; then
+    echo "teams-live is in startup grace period (${uptime}s)"
+    exit 0
+  fi
   errors="$(jq -r '(.errors // []) | join(", ")' "$HEALTH_FILE")"
   echo "teams-live is unhealthy: ${errors:-unknown error}" >&2
   exit 4
