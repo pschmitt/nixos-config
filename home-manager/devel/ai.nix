@@ -419,6 +419,7 @@ in
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
           args = [ "${config.xdg.userDirs.documents}/notes" ];
         };
+        concord.command = lib.getExe' pkgs.concord-mcp "concord-mcp";
         tmux = {
           command = lib.getExe pkgs.tmux-mcp-compat;
           args = [ "${pkgs.tmux-mcp}/bin/tmux-mcp-rs" ];
@@ -471,6 +472,10 @@ in
         configDir = "${config.xdg.configHome}/claude";
         skills = allSkills;
         enableMcpIntegration = true;
+        plugins = {
+          codex = pkgs.codex-plugin-cc;
+          concord-relay = "${pkgs.concord-mcp}/lib/concord-mcp/plugin/concord-relay";
+        };
         settings = {
           skipDangerousModePermissionPrompt = true;
           theme = "dark";
@@ -704,6 +709,9 @@ in
     xdg.configFile."opencode/plugins/tmux-context.js".source = ./scripts/opencode-tmux-context.js;
 
     home = {
+      # Concord reports usage telemetry (IP and country) unless told not to.
+      sessionVariables.CONCORD_TELEMETRY_DISABLED = "1";
+
       # ctrl+backspace and ctrl+delete bound to chat:clearInput both failed to
       # register in practice, so that binding was dropped; only the ctrl+e
       # external-editor rebind remains in claude-keybindings.json.
@@ -743,6 +751,7 @@ in
           claudeStatusline
           claudeTmuxRename
           codexOgl
+          pkgs.concord-mcp
         ];
     };
   };
