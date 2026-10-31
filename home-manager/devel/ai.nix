@@ -195,12 +195,9 @@ let
     ];
   };
 
-  # External n8n skill set — https://github.com/czlonkowski/n8n-skills
-  n8nSkillsSrc = pkgs.fetchFromGitHub {
-    owner = "czlonkowski";
-    repo = "n8n-skills";
-    rev = "27e9d0ab92cccfc46db4f147497b173f214b69c5";
-    hash = "sha256-D8wEZblUGWfXKIxw3TYXhZZ0P4C1lf71cSAVgjOpmes=";
+  upstreamSkills = import ./upstream-skills.nix {
+    inherit (pkgs) fetchFromGitHub todoist-cli;
+    inherit (pkgs.llm-agents) terminal-browser;
   };
 
   # Keep the skill-improvement instruction in one file and add it to our
@@ -226,10 +223,8 @@ let
 
   skillSources = [
     (withSkillImprovementFooter ./skills)
-    "${n8nSkillsSrc}/skills"
-    "${pkgs.todoist-cli}/share/skills/todoist-cli"
-    "${pkgs.llm-agents.terminal-browser}/lib/terminal-browser/skills/default"
   ]
+  ++ upstreamSkills
   ++ map withSkillImprovementFooter config.dotfiles.aiSkills.extraSources;
 
   # Merge local skills with the upstream n8n skill set so all AI tools get both.

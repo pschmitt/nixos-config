@@ -703,10 +703,16 @@
           # Skills spec (frontmatter, name equals folder name) and passes
           # skills-lint (length, links, references, skill names). Both trees
           # are deployed side by side, so they are linted together. The CKS
-          # skills only resolve names; the n8n and todoist skills are upstream.
+          # skills only resolve names, and so do the upstream ones (the names
+          # come from home-manager/devel/upstream-skills.nix).
           skills =
             let
               privateSkills = "${inputs.nixos-config-private}/hm/skills";
+              upstreamSkills = import ./home-manager/devel/upstream-skills.nix {
+                inherit (pkgs) fetchFromGitHub;
+                inherit (self.packages.${system}) todoist-cli;
+                inherit (inputs.llm-agents.packages.${system}) terminal-browser;
+              };
               cksSkills = "${
                 inputs.nixos-config-private.inputs.agent-skills.packages.${system}.default
               }/share/skills/cks-agent-skills";
@@ -722,9 +728,13 @@
                 for dir in ${./home-manager/devel/skills}/*/ ${privateSkills}/*/; do
                   agentskills validate "$dir"
                 done
+                external=()
+                for dir in ${nixpkgs.lib.concatMapStringsSep " " (path: "${path}/*/") upstreamSkills}; do
+                  external+=(--external "$(basename "$dir")")
+                done
                 skills-lint \
                   --context ${cksSkills} \
-                  --external 'n8n-*' --external todoist-cli \
+                  "''${external[@]}" \
                   ${./home-manager/devel/skills} ${privateSkills}
                 touch $out
               '';
