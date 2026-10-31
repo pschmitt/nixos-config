@@ -1,10 +1,20 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   cfg = config.services.teams-live;
+  healthCheck = pkgs.writeShellApplication {
+    name = "teams-live-health";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.systemd
+    ];
+    text = builtins.readFile ./scripts/teams-live-health.sh;
+  };
   mkSecret =
     extra:
     config.sops.mkHostSecret (
@@ -116,5 +126,19 @@ in
   services.teams-live = {
     enable = true;
     configFile = config.sops.templates."teams-live/config.json".path;
+  };
+
+  services.monit.checks.teams-live = {
+    type = "program";
+    path = lib.getExe healthCheck;
+    group = [
+      "services"
+      "teams"
+    ];
+    restartUnit = "teams-live.service";
+    conditions = ''
+      if status > 0 for 2 cycles then restart
+      if 3 restarts within 10 cycles then alert
+    '';
   };
 }
