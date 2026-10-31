@@ -1744,11 +1744,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793472287,
-        "narHash": "sha256-MWPnxDvQ48nY3IzDYjvTgpo6VLLppiTx0ShI+ZKFtfA=",
+        "lastModified": 1793486492,
+        "narHash": "sha256-czr27kDkhWxNsGfGk4jM0a/3A2LBbF24ejSr2xhjO1Q=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "ab01e2acd04d15687cbb94b7a403f58a194691ea",
+        "rev": "d92477772ff45887f2d7c686ce2f9dd11a381380",
         "type": "github"
       },
       "original": {
@@ -1760,11 +1760,11 @@
     "nixos-config-public": {
       "flake": false,
       "locked": {
-        "lastModified": 1793228314,
-        "narHash": "sha256-CwHYhgxNaULkrrxBk87prxkEjpAp1dWYnDh+IKCIwkE=",
+        "lastModified": 1793485932,
+        "narHash": "sha256-8dyl2g2YUwom1NN/ixZ+PrCHVgaD33dpkt/+zfFL6RI=",
         "owner": "pschmitt",
         "repo": "nixos-config",
-        "rev": "79a0d69860c6a6a16335d5ac8e67ca9dd4b919b5",
+        "rev": "92009e8410f6e7a0fe672a6607fc833a1ed8cfe2",
         "type": "github"
       },
       "original": {
