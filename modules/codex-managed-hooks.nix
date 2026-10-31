@@ -36,10 +36,12 @@ in
     [[hooks.SessionStart.hooks]]
     type = "command"
     command = "${aiMemoryHook "session-start"}"
+    statusMessage = "ai-memory: session start"
 
     [[hooks.SessionStart.hooks]]
     type = "command"
     command = "${concord} inbox register --from-hook --provider codex"
+    statusMessage = "Concord: inbox register"
 
     [[hooks.UserPromptSubmit]]
     [[hooks.UserPromptSubmit.hooks]]
@@ -50,6 +52,7 @@ in
     [[hooks.UserPromptSubmit.hooks]]
     type = "command"
     command = "${aiMemoryHook "user-prompt-submit"}"
+    statusMessage = "ai-memory: user prompt submit"
 
     [[hooks.PreToolUse]]
     matcher = "^Bash$"
@@ -63,6 +66,7 @@ in
     [[hooks.PreToolUse.hooks]]
     type = "command"
     command = "${aiMemoryHook "pre-tool-use"}"
+    statusMessage = "ai-memory: pre tool use"
 
     [[hooks.PostToolUse]]
     matcher = ".*"
@@ -73,28 +77,34 @@ in
     [[hooks.PostToolUse.hooks]]
     type = "command"
     command = "${aiMemoryHook "post-tool-use"}"
+    statusMessage = "ai-memory: post tool use"
 
     [[hooks.PostToolUse.hooks]]
     type = "command"
     command = "${concord} inbox drain --from-hook --provider codex --format post-tool-use"
+    statusMessage = "Concord: inbox drain (post-tool)"
 
     [[hooks.PreCompact]]
     [[hooks.PreCompact.hooks]]
     type = "command"
     command = "${aiMemoryHook "pre-compact"}"
+    statusMessage = "ai-memory: pre compact"
 
     [[hooks.Stop]]
     [[hooks.Stop.hooks]]
     type = "command"
     command = "${aiMemoryHook "stop"}"
+    statusMessage = "ai-memory: stop"
 
     [[hooks.Stop.hooks]]
     type = "command"
     command = "${concord} inbox drain --from-hook --provider codex --format stop"
+    statusMessage = "Concord: inbox drain"
 
     [[hooks.SessionEnd]]
     [[hooks.SessionEnd.hooks]]
     type = "command"
     command = "${aiMemoryHook "session-end"}"
+    statusMessage = "ai-memory: session end"
   '';
 }
