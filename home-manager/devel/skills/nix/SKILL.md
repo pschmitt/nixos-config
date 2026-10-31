@@ -1,6 +1,6 @@
 ---
 name: nix
-description: Use when editing, evaluating, building or deploying NixOS or Home Manager configuration (hosts, modules, profiles, services, packages, flake inputs), when a build or evaluation must run on a remote build host,. Directs agents to the nixos-config repositories and their AGENTS.md guidelines, and ships the remote-sync helper script.
+description: Use when editing, evaluating, building or deploying NixOS or Home Manager configuration (hosts, modules, profiles, services, packages, flake inputs), when a build or evaluation must run on a remote build host. Directs agents to the nixos-config repositories and their AGENTS.md guidelines, and ships the remote-sync helper script.
 ---
 
 # Nix
