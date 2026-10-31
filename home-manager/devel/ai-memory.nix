@@ -69,26 +69,6 @@ in
       "${lib.removePrefix "${config.home.homeDirectory}/" dataDir}/auth-token".source =
         config.lib.file.mkOutOfStoreSymlink
           config.sops.secrets."ai-memory/auth-token".path;
-
-      ".gemini/config/hooks.json".text = builtins.toJSON {
-        ai-memory = {
-          PreToolUse = [
-            {
-              matcher = "";
-              hooks = [ (agyCommand "pre-tool-use") ];
-            }
-          ];
-          PostToolUse = [
-            {
-              matcher = "";
-              hooks = [ (agyCommand "post-tool-use") ];
-            }
-          ];
-          SessionStart = [ (agyCommand "session-start") ];
-          PreInvocation = [ (agyCommand "pre-invocation") ];
-          Stop = [ (agyCommand "stop") ];
-        };
-      };
     };
   };
 
@@ -98,6 +78,24 @@ in
   };
 
   programs = {
+    antigravity-cli.hooks.ai-memory = {
+      PreToolUse = [
+        {
+          matcher = "";
+          hooks = [ (agyCommand "pre-tool-use") ];
+        }
+      ];
+      PostToolUse = [
+        {
+          matcher = "";
+          hooks = [ (agyCommand "post-tool-use") ];
+        }
+      ];
+      SessionStart = [ (agyCommand "session-start") ];
+      PreInvocation = [ (agyCommand "pre-invocation") ];
+      Stop = [ (agyCommand "stop") ];
+    };
+
     mcp.servers.ai-memory = {
       command = exe;
       args = bridgeArgs ++ [ "--no-session-id" ];

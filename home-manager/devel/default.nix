@@ -12,10 +12,12 @@ in
 
   imports = [
     ./ai-memory.nix
+    ../../modules/home-manager/antigravity-hooks.nix
     ./ai.nix
     ./android.nix
     ./cloud.nix
     ./codexbar.nix
+    ./concord.nix
     ./git.nix
     ../../modules/home-manager/glab.nix
     ./golang.nix

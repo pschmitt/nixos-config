@@ -18,6 +18,12 @@ Use this file as lightweight shared context for AI tooling in this repository.
   OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
   bare URLs or IDs; in Markdown-capable output, use Markdown links.
 
+## Concord
+
+- Concord MCP is available in every repository. Before editing, call `start_work` with the task and the files or modules you expect to touch; it claims them and reports overlaps with other agents, so resolve overlaps first.
+- Use `inspect_work` to see who else is here, `update_work` for progress and messages to other agents, `transfer_work` for handoffs, and `finish_work` with the outcome, changed files and tests before finishing.
+- Concord needs no files in the repository: do not run `concord setup` yourself.
+
 ## Host awareness
 
 - Always be aware of which host you are currently running on (`hostname` or `$HOST`). In this environment, agents frequently run directly on `fnuc` (or workstations like `gk4`, `ge2`, `x13`).
