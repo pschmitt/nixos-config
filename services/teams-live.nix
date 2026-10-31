@@ -39,6 +39,12 @@ in
       "opsgenie/gksv3-support-schedule/api-key" = config.sops.mkHostSecret {
         restartUnits = [ "teams-live.service" ];
       };
+      "browser-daemon/cluster-secret" = {
+        owner = cfg.user;
+        inherit (cfg) group;
+        mode = "0400";
+        restartUnits = [ "teams-live.service" ];
+      };
     };
 
   sops.templates."teams-live/config.json" = {
@@ -77,6 +83,12 @@ in
         support_key = config.sops.placeholder."opsgenie/gksv3-support-schedule/api-key";
         on_call_schedule_id = "8aa71a67-9ddd-4571-af97-06d1ddb3c7cb";
         support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
+      };
+
+      browser_daemon = {
+        url = "https://browser.fnuc.nb.brkn.lol";
+        profile = "work";
+        secret_file = config.sops.secrets."browser-daemon/cluster-secret".path;
       };
 
       teams = {
