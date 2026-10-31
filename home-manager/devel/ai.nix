@@ -255,7 +255,9 @@ let
     ''
   );
 
-  # Remote (streamable-HTTP) MCP server reached through mcp-proxy. The bearer
+  # Remote (streamable-HTTP) MCP server reached through mcp-proxy. It trusts
+  # SSL_CERT_FILE when set (claude-ogl/codex-ogl route traffic through
+  # Secretgate's TLS interception and point it at that CA). The bearer
   # token is injected via `env.API_ACCESS_TOKEN.file`: home-manager's MCP module
   # generates a wrapper that reads the sops secret at startup (see
   # lib.hm.mcp.wrapEnvFilesCommand), so no hand-rolled token-reading script is
@@ -265,15 +267,19 @@ let
       url,
       tokenFile,
     }:
+    let
+      proxy = pkgs.writeShellApplication {
+        name = "mcp-http-proxy-${builtins.substring 0 8 (builtins.hashString "sha256" url)}";
+        text = ''
+          exec ${mcpProxy}/bin/mcp-proxy \
+            --transport streamablehttp \
+            --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}" \
+            ${lib.escapeShellArg url}
+        '';
+      };
+    in
     {
-      command = "${mcpProxy}/bin/mcp-proxy";
-      args = [
-        "--transport"
-        "streamablehttp"
-        "--verify-ssl"
-        "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-        url
-      ];
+      command = lib.getExe proxy;
       env.API_ACCESS_TOKEN.file = tokenFile;
     };
 
@@ -304,7 +310,7 @@ let
             ${lib.escapeShellArg tokenUrl} | jq --exit-status --raw-output .access_token)
           API_ACCESS_TOKEN="$access_token" exec ${mcpProxy}/bin/mcp-proxy \
             --transport streamablehttp \
-            --verify-ssl ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
+            --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}" \
             ${lib.escapeShellArg url}
         '';
       };
