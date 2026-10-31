@@ -6,11 +6,10 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 - Read `AGENTS.md` and follow it as the primary repository instruction source.
 - When creating or editing a repository's `AGENTS.md`, assume it may be
-  published or shared. Do not include private infrastructure identifiers such
-  as internal hostnames, FQDNs, IP addresses,
-  device names, or topology details. Refer to the private `brkn-infra` skill
-  for host-specific information; use system roles or placeholders in shared
-  instructions.
+  published or shared. Do not include credentials or private infrastructure
+  identifiers such as internal hostnames, FQDNs, IP addresses, device names,
+  or topology details. Refer to the private `brkn-infra` skill for host-specific
+  information; use system roles or placeholders in shared instructions.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
