@@ -25,6 +25,8 @@ let
   ComicCodeNF = pkgs.callPackage ./fonts/ComicCodeNF { inherit font-resizer; };
   msteams-mcp = pkgs.callPackage ./msteams-mcp { };
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
+  # Hoisted so og-local can depend on it.
+  og-local-model = pkgs.callPackage ./og-local-model { };
 in
 {
   # local pkgs
@@ -146,6 +148,8 @@ in
   MonoLisa-Custom = pkgs.callPackage ./fonts/MonoLisa-Custom { };
   MonoLisa-CustomNF = pkgs.callPackage ./fonts/MonoLisa-CustomNF { };
 
+  inherit og-local-model;
+  og-local = pkgs.callPackage ./og-local { inherit og-local-model; };
   tmux-mcp = pkgs.callPackage ./tmux-mcp { };
   tmux-mcp-compat = pkgs.callPackage ./tmux-mcp-compat { };
 
