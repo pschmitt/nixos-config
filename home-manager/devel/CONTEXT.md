@@ -18,6 +18,12 @@ Use this file as lightweight shared context for AI tooling in this repository.
   OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
   bare URLs or IDs; in Markdown-capable output, use Markdown links.
 
+## Host awareness
+
+- Always be aware of which host you are currently running on (`hostname` or `$HOST`). In this environment, agents frequently run directly on `fnuc` (or workstations like `gk4`, `ge2`, `x13`).
+- **Never SSH into the current host**: do not run `ssh fnuc ...` (or `localhost`, `fnuc.lan`, etc.) when already running on `fnuc`. Execute commands locally instead of establishing a redundant SSH connection to yourself.
+- Before executing commands aimed at a specific host (such as checking systemd units, containers, logs, or local files), check whether you are already on that host and run them directly.
+
 ## Code and validation
 
 - Keep changes minimal and targeted.
