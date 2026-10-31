@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run Codex through og-local while keeping the managed Codex config.
+# Run Codex behind og-local and Secretgate (see ogl-secretgate) while keeping
+# the managed Codex config.
 #
 # `ogl codex` points CODEX_HOME at a bare directory of its own (a config.toml
 # with just the proxy provider, plus a copy of auth.json), so hooks, skills,
@@ -14,7 +15,7 @@ then
   CODEX_OGL_REAL_HOME="${CODEX_HOME:-$HOME/.codex}"
   OGL_CODEX_BIN="$(readlink -f "$0")"
   export CODEX_OGL_REAL_HOME OGL_CODEX_BIN
-  exec ogl codex "$@"
+  exec ogl-secretgate codex "$@"
 fi
 
 real_home="$CODEX_OGL_REAL_HOME"

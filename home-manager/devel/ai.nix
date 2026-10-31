@@ -67,14 +67,27 @@ let
     text = builtins.readFile ./scripts/claude-tmux-rename.sh;
   };
 
-  # Claude Code and Codex through og-local, which replaces PII and secrets in
-  # the prompts with placeholders before they leave the machine (see the
-  # secret-hygiene skill). Opt-in: plain `claude` and `codex` are unchanged.
+  # Claude Code and Codex behind two secret filters before anything reaches
+  # the provider: og-local (ML detector, placeholders for PII and shapeless
+  # secrets) and Secretgate (regexes for key and token formats). Opt-in: plain
+  # `claude` and `codex` are unchanged. See the secret-hygiene skill.
+  oglSecretgate = pkgs.writeShellApplication {
+    name = "ogl-secretgate";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.iproute2
+      pkgs.og-local
+      pkgs.secretgate
+    ];
+    text = builtins.readFile ./scripts/ogl-secretgate.sh;
+  };
+
   claudeOgl = pkgs.writeShellApplication {
     name = "claude-ogl";
-    runtimeInputs = [ pkgs.og-local ];
+    runtimeInputs = [ oglSecretgate ];
     text = ''
-      exec ogl claude "$@"
+      exec ogl-secretgate claude "$@"
     '';
   };
 
@@ -85,6 +98,7 @@ let
       pkgs.gawk
       pkgs.gnugrep
       pkgs.og-local
+      oglSecretgate
     ];
     text = builtins.readFile ./scripts/codex-ogl.sh;
   };

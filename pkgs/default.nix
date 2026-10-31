@@ -150,6 +150,7 @@ in
 
   inherit og-local-model;
   og-local = pkgs.callPackage ./og-local { inherit og-local-model; };
+  secretgate = pkgs.python3Packages.callPackage ./secretgate { };
   tmux-mcp = pkgs.callPackage ./tmux-mcp { };
   tmux-mcp-compat = pkgs.callPackage ./tmux-mcp-compat { };
 
