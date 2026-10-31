@@ -126,11 +126,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793481177,
-        "narHash": "sha256-z++NdEi2ZuM5SclI57FK1miIM3Gl9MM7U0HWST4MbtE=",
+        "lastModified": 1793483291,
+        "narHash": "sha256-/bkIM0Ty01QdcLyCxGYQD15gR1NLAuvVWbRi7P8fTn0=",
         "owner": "pschmitt",
         "repo": "browser-daemon",
-        "rev": "1be6fa3dc2c93583457787376c461be9785dbff9",
+        "rev": "0b383e7970ca91a528e6060302939e14c6831cc1",
         "type": "github"
       },
       "original": {
@@ -2829,11 +2829,11 @@
     "teams-auth-source": {
       "flake": false,
       "locked": {
-        "lastModified": 1793453264,
-        "narHash": "sha256-E86Gu3MbAUOaqfJUU9ETeboWW4CiWPq1V/ZBy0ncBsM=",
+        "lastModified": 1793483216,
+        "narHash": "sha256-eON9iGc7nRvDgt5awVNmFl9dlY6q7vtO1LyoLndJoks=",
         "owner": "pschmitt",
         "repo": "homeassistant-msteams",
-        "rev": "f63186902303567d6db87d6440e9e3a424d49e59",
+        "rev": "0365fe6f34b5d15f5af6c587ec60fb74f1b0e086",
         "type": "github"
       },
       "original": {
@@ -2844,6 +2844,9 @@
     },
     "teams-live": {
       "inputs": {
+        "browser-daemon": [
+          "browser-daemon"
+        ],
         "flake-utils": [
           "flake-utils"
         ],
@@ -2855,11 +2858,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793453310,
-        "narHash": "sha256-bSxN7ME9lnR6NuQ2ef0BkXu+cHSagWAVwwYiH6OBRUg=",
+        "lastModified": 1793483295,
+        "narHash": "sha256-jVji67en1loi+coph7+Qu5j0wG9eGSK0eRqITYQGj4U=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "c218c873953648a2bafa4bedd09b8a96f30eba5d",
+        "rev": "ec8d75d78b308fef55ecb6d68dcc5998aacadcb3",
         "type": "github"
       },
       "original": {
