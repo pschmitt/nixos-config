@@ -1,0 +1,124 @@
+diff -ru orig/src/cli/commands/copilot-spool.ts src/src/cli/commands/copilot-spool.ts
+--- a/src/cli/commands/copilot-spool.ts	2026-10-31 10:45:31.228047046 +0100
++++ b/src/cli/commands/copilot-spool.ts	2026-10-31 10:46:29.554555205 +0100
+@@ -4,7 +4,7 @@
+ 
+ import { z } from 'zod';
+ 
+-import { userHome } from '../../config/paths.js';
++import { userConcordDir } from '../../config/user-config.js';
+ import type { DeliverableMessage } from '../../domain/pull-inbox.js';
+ 
+ /**
+@@ -37,7 +37,7 @@
+  * repository: an operator-chosen id such as `alpha` may run in several.
+  */
+ export function fileSpool(repoRoot: string, env: NodeJS.ProcessEnv = process.env): MessageSpool {
+-  const dir = join(userHome(env), '.concord', 'copilot-spool');
++  const dir = join(userConcordDir(env), 'copilot-spool');
+   const pathFor = (agentId: string): string =>
+     join(
+       dir,
+diff -ru orig/src/cli/commands/setup.ts src/src/cli/commands/setup.ts
+--- a/src/cli/commands/setup.ts	2026-10-31 10:45:31.228232913 +0100
++++ b/src/cli/commands/setup.ts	2026-10-31 10:46:29.554671889 +0100
+@@ -374,7 +374,7 @@
+               ? '\nGlobal mode on: agents use Concord in repositories without concord setup, ' +
+                   (result.state.kind === 'cloud'
+                     ? 'through Concord Cloud while this machine is linked.\n'
+-                    : 'recorded in ~/.concord/global.db.\n')
++                    : 'recorded in ~/.local/share/concord/global.db.\n')
+               : '\nGlobal mode off.\n',
+           );
+           for (const warning of result.globalMode.warnings) {
+diff -ru orig/src/cloud/settings.ts src/src/cloud/settings.ts
+--- a/src/cloud/settings.ts	2026-10-31 10:45:31.228504777 +0100
++++ b/src/cloud/settings.ts	2026-10-31 10:46:29.554481600 +0100
+@@ -11,7 +11,8 @@
+ 
+ import { z } from 'zod';
+ 
+-import { concordDir, userHome } from '../config/paths.js';
++import { concordDir } from '../config/paths.js';
++import { userConcordDir } from '../config/user-config.js';
+ 
+ /**
+  * Where Concord Cloud mode is configured, all of it per user and machine:
+@@ -49,7 +50,7 @@
+ export type CloudCredentials = z.infer<typeof credentialsSchema>;
+ 
+ export function credentialsPath(env: NodeJS.ProcessEnv): string {
+-  return join(userHome(env), '.concord', 'credentials.json');
++  return join(userConcordDir(env), 'credentials.json');
+ }
+ 
+ /**
+@@ -60,7 +61,7 @@
+ const machineSchema = z.object({ machineKey: z.string().min(1) });
+ 
+ export function machinePath(env: NodeJS.ProcessEnv): string {
+-  return join(userHome(env), '.concord', 'machine.json');
++  return join(userConcordDir(env), 'machine.json');
+ }
+ 
+ export function readMachineKey(env: NodeJS.ProcessEnv): string | undefined {
+diff -ru orig/src/config/user-config.ts src/src/config/user-config.ts
+--- a/src/config/user-config.ts	2026-10-31 10:45:31.228576787 +0100
++++ b/src/config/user-config.ts	2026-10-31 10:46:29.554187594 +0100
+@@ -3,7 +3,7 @@
+ 
+ import { z } from 'zod';
+ 
+-import { CONCORD_DIR, userHome } from './paths.js';
++import { userHome } from './paths.js';
+ 
+ /**
+  * The machine-wide store: every repository that was never set up, plus
+@@ -39,9 +39,16 @@
+   readonly cloudLink?: boolean;
+ }
+ 
+-/** `~/.concord/`, home to the machine-wide store and the user's settings. */
++/**
++ * `$XDG_DATA_HOME/concord` (by default `~/.local/share/concord`), home to the
++ * machine-wide store and the user's settings.
++ */
+ export function userConcordDir(env: NodeJS.ProcessEnv): string {
+-  return join(userHome(env), CONCORD_DIR);
++  const data = env['XDG_DATA_HOME']?.trim();
++  return join(
++    data !== undefined && data !== '' ? data : join(userHome(env), '.local', 'share'),
++    'concord',
++  );
+ }
+ 
+ export function globalDatabasePath(env: NodeJS.ProcessEnv): string {
+diff -ru orig/src/install/adapters/index.ts src/src/install/adapters/index.ts
+--- a/src/install/adapters/index.ts	2026-10-31 10:45:31.229052266 +0100
++++ b/src/install/adapters/index.ts	2026-10-31 10:46:29.554363140 +0100
+@@ -8,6 +8,7 @@
+   type MonitorKind,
+ } from '../../domain/harness-config.js';
+ import { userHome } from '../../config/paths.js';
++import { userConcordDir } from '../../config/user-config.js';
+ import { spawnCommandSync } from '../spawn-command.js';
+ import {
+   devinMcpInstalled,
+@@ -878,7 +879,7 @@
+       ? entry
+       : { ...entry, status: 'error' as const, detail: `Installation failed: ${failure}` };
+   });
+-  const statePath = join(userHome(env), '.concord', 'adapters.json');
++  const statePath = join(userConcordDir(env), 'adapters.json');
+   try {
+     mkdirSync(dirname(statePath), { recursive: true });
+     writeFileSync(statePath, `${JSON.stringify({ version: 1, adapters: report }, null, 2)}\n`, {
+@@ -928,7 +929,7 @@
+   }
+   uninstallDevinMcpConfig(env);
+   removeDevinUserHooks(env);
+-  const statePath = join(userHome(env), '.concord', 'adapters.json');
++  const statePath = join(userConcordDir(env), 'adapters.json');
+   if (existsSync(statePath)) rmSync(statePath);
+   return statusGlobalAdapters(env);
+ }

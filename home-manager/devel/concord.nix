@@ -11,7 +11,7 @@ let
   # Mirrors what `concord setup --global` writes, minus the imperative parts:
   # user-level MCP (see ai.nix), lifecycle hooks that deliver messages from
   # other agents, and global mode itself (no per-repo files, state in
-  # ~/.concord/global.db).
+  # $XDG_DATA_HOME/concord/global.db).
   mcpFor = kind: {
     command = concordMcp;
     env.CONCORD_AGENT_KIND = kind;
@@ -25,7 +25,8 @@ let
   };
 in
 {
-  home.file.".concord/config.json".text = builtins.toJSON {
+  # The patched package keeps its user-level state in $XDG_DATA_HOME/concord.
+  xdg.dataFile."concord/config.json".text = builtins.toJSON {
     globalMode = true;
     globalRegistrations = [ ];
   };

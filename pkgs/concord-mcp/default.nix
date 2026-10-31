@@ -21,6 +21,10 @@ stdenv.mkDerivation (finalAttrs: {
     hash = "sha256-ocI6BbYxJinZOiY4MSjZmWnT4o2bLVWBqJxZ5AkFP3k=";
   };
 
+  # Concord keeps its user-level state in a hardcoded ~/.concord; move it to
+  # $XDG_DATA_HOME/concord.
+  patches = [ ./xdg-state-dir.patch ];
+
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_10;
