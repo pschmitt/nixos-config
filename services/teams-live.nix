@@ -1,10 +1,20 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 let
   cfg = config.services.teams-live;
+  healthCheck = pkgs.writeShellApplication {
+    name = "teams-live-health";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.systemd
+    ];
+    text = builtins.readFile ./scripts/teams-live-health.sh;
+  };
   mkSecret =
     extra:
     config.sops.mkHostSecret (
@@ -37,6 +47,12 @@ in
         restartUnits = [ "teams-live.service" ];
       };
       "opsgenie/gksv3-support-schedule/api-key" = config.sops.mkHostSecret {
+        restartUnits = [ "teams-live.service" ];
+      };
+      "browser-daemon/cluster-secret" = {
+        owner = cfg.user;
+        inherit (cfg) group;
+        mode = "0400";
         restartUnits = [ "teams-live.service" ];
       };
     };
@@ -79,6 +95,12 @@ in
         support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
       };
 
+      browser_daemon = {
+        url = "https://browser.fnuc.nb.brkn.lol";
+        profile = "work";
+        secret_file = config.sops.secrets."browser-daemon/cluster-secret".path;
+      };
+
       teams = {
         credentials_file = config.sops.secrets."teams-live/credentials".path;
         reconnect_interval_seconds = 5;
@@ -104,5 +126,19 @@ in
   services.teams-live = {
     enable = true;
     configFile = config.sops.templates."teams-live/config.json".path;
+  };
+
+  services.monit.checks.teams-live = {
+    type = "program";
+    path = lib.getExe healthCheck;
+    group = [
+      "services"
+      "teams"
+    ];
+    restartUnit = "teams-live.service";
+    conditions = ''
+      if status > 0 for 2 cycles then restart
+      if 3 restarts within 10 cycles then alert
+    '';
   };
 }

@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   ...
@@ -68,38 +67,6 @@ in
       tools = [ "*" ];
     };
 
-    # Codex skips these silently until they are trusted once with /hooks.
-    codex.settings.hooks = {
-      SessionStart = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "${concord} inbox register --from-hook --provider codex";
-            }
-          ];
-        }
-      ];
-      PostToolUse = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "${concord} inbox drain --from-hook --provider codex --format post-tool-use";
-            }
-          ];
-        }
-      ];
-      Stop = [
-        {
-          hooks = [
-            {
-              type = "command";
-              command = "${concord} inbox drain --from-hook --provider codex --format stop";
-            }
-          ];
-        }
-      ];
-    };
+    # Codex hooks are managed in modules/codex-managed-hooks.nix.
   };
 }
