@@ -325,6 +325,19 @@ let
       (browserNode "rofl-14")
     ];
   });
+
+  # Outlook MCP signs in with the Outlook session of a browser-daemon profile,
+  # matching the Teams MCP without starting a local browser or exposing tokens.
+  msoutlookMcp = pkgs.msoutlook-mcp.overrideAttrs (old: {
+    makeWrapperArgs = old.makeWrapperArgs ++ [
+      "--set-default"
+      "MSOUTLOOK_BROWSER_DAEMON_URL"
+      (browserNode "rofl-14")
+      "--set-default"
+      "MSOUTLOOK_BROWSER_DAEMON_PROFILE"
+      "work"
+    ];
+  });
 in
 {
   options.dotfiles.aiSkills.extraSources = lib.mkOption {
@@ -439,6 +452,7 @@ in
           };
         };
         msteams.command = lib.getExe msteamsMcp;
+        outlook.command = lib.getExe msoutlookMcp;
         todoist = {
           command = lib.getExe pkgs.todoist-mcp;
           env.TODOIST_API_KEY.file = config.sops.secrets."todoist/api_token".path;

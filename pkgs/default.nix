@@ -28,6 +28,7 @@ let
     browser-daemon-client =
       inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.browser-daemon-client;
   };
+  msoutlook-mcp = pkgs.callPackage ./msoutlook-mcp { };
   oci-consistent-device-naming = pkgs.callPackage ./oci/oci-consistent-device-naming { };
   # Hoisted so og-local can depend on it.
   og-local-model = pkgs.callPackage ./og-local-model { };
@@ -100,6 +101,7 @@ in
   lnxlink = pkgs.python3Packages.callPackage ./lnxlink { };
   mmonit = pkgs.callPackage ./mmonit { };
   inherit msteams-mcp;
+  inherit msoutlook-mcp;
   nixpp-termux = pkgs.callPackage ./termux/nixpp { inherit inputs; };
   native-client = pkgs.callPackage ./native-client { };
   opsgenie-cli = pkgs.callPackage ./opsgenie-cli { };
