@@ -21,6 +21,13 @@ let
   ++ map (m: "browser.rofl-10.${m}") config.domains.mesh;
   # The SOCKS5 proxy every node offers the mesh (see socksProxy below).
   socksPort = 1080;
+  # The HTTP proxy the extensions of paired browsers route their traffic through.
+  httpProxyPort = 3128;
+  # Closed to everything but the mesh interfaces.
+  privatePorts = [
+    socksPort
+    httpProxyPort
+  ];
 in
 {
   sops.secrets."browser-daemon/cluster-secret" = {
@@ -35,7 +42,7 @@ in
     ++ lib.optional config.services.browser-daemon.secretAgent.enable "browser-daemon-secret-agent.service";
   };
 
-  # The proxy listens on 0.0.0.0 and relies on the mesh interfaces being in
+  # The proxies listen on 0.0.0.0 and rely on the mesh interfaces being in
   # networking.firewall.trustedInterfaces (profiles/features/network/): their
   # packets are accepted before extraInputRules is reached, which therefore only
   # sees new connections from other interfaces. Make the deny explicit rather
@@ -44,15 +51,15 @@ in
   # before the final refuse of the nixos-fw chain.
   networking.firewall = lib.mkMerge [
     (lib.mkIf (config.networking.firewall.backend == "nftables") {
-      extraInputRules = ''
-        tcp dport ${toString socksPort} drop
-      '';
+      extraInputRules = lib.concatMapStrings (port: ''
+        tcp dport ${toString port} drop
+      '') privatePorts;
     })
     (lib.mkIf (config.networking.firewall.backend != "nftables") {
-      extraCommands = ''
-        iptables -A nixos-fw -p tcp --dport ${toString socksPort} -j DROP
-        ip6tables -A nixos-fw -p tcp --dport ${toString socksPort} -j DROP
-      '';
+      extraCommands = lib.concatMapStrings (port: ''
+        iptables -A nixos-fw -p tcp --dport ${toString port} -j DROP
+        ip6tables -A nixos-fw -p tcp --dport ${toString port} -j DROP
+      '') privatePorts;
     })
   ];
 
@@ -98,6 +105,18 @@ in
       socksProxy = {
         listen = "0.0.0.0:${toString socksPort}";
         allow = [ "100.64.0.0/10" ];
+      };
+      # The extension of a paired browser routes its traffic through any of the
+      # node's proxies (and the peers' `node:<name>`). Private like the SOCKS5
+      # proxy: mesh interfaces only, with a login derived from the cluster
+      # secret that the extension is handed over its connection. Loopback is
+      # allowed for a browser on the node itself.
+      httpProxy = {
+        listen = "0.0.0.0:${toString httpProxyPort}";
+        allow = [
+          "100.64.0.0/10"
+          "127.0.0.0/8"
+        ];
       };
     };
 
