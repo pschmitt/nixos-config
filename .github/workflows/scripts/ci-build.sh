@@ -18,7 +18,6 @@ Package options:
 
 General options:
   --copy                Push the target(s) to niks3 (\$NIKS3_SERVER_URL) instead of building
-  --check-cache         Retain an existing remote output; return 1 on a cache miss
   -h, --help            Show this help
 EOF
 }
@@ -82,42 +81,16 @@ require_native_system() {
   fi
 }
 
-resolve_output_paths() {
-  local ref="$1"
-  local impure="${2:-}"
-  local -a cmd=(nix eval --json)
-  if [[ -n "$impure" ]]
-  then
-    cmd+=(--impure)
-  fi
-  # shellcheck disable=SC2016 # This interpolation belongs to Nix.
-  "${cmd[@]}" "$ref" --apply 'drv: builtins.map (name: drv.${name}.outPath) drv.outputs'
-}
-
-cached_output_paths() {
-  local ref="$1"
-  local impure="${2:-}"
-  local paths_json paths_text
-  local -a paths
-  [[ -n "${NIKS3_S3_STORE:-}" ]] || return 1
-  paths_json="$(resolve_output_paths "$ref" "$impure")" || return 1
-  paths_text="$(jq -er '.[]' <<< "$paths_json")" || return 1
-  readarray -t paths <<< "$paths_text"
-  nix path-info --store "$NIKS3_S3_STORE" "${paths[@]}" >/dev/null 2>&1 || return 1
-  printf '%s\n' "$paths_json"
-}
-
 # The niks3 client of the server's release (nixos-config-private's niks3
 # input); the upstream cache supplies it.
 NIKS3_CLI="github:Mic92/niks3/a79dc58832332ebd953974e71160ab69e2371d62#niks3"
 
 # Push a target's outputs to niks3 with a GitHub OIDC token. main pins them
 # (gh-main-<target>-<output index>); pull requests push unpinned, so niks3's
-# GC collects them. Outputs already in the cache are only pinned.
+# GC collects them.
 publish_ref() {
   local ref="$1"
   local paths_json="$2"
-  local cached="${3:-}"
   local cli helper path pin index
   local -a auth
 
@@ -126,11 +99,6 @@ publish_ref() {
     printf 'No GitHub OIDC token available (fork PR?); not publishing %s\n' "$ref" >&2
     return 0
   fi
-  if [[ "$NIX_CACHE_SCOPE" != main && -n "$cached" ]]
-  then
-    return 0
-  fi
-
   cli="$(nix build --no-link --print-out-paths "$NIKS3_CLI")"
   helper="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/niks3-oidc-token.py"
   auth=(--server-url "$NIKS3_SERVER_URL" --auth-token-script "python3 $helper")
@@ -141,9 +109,6 @@ publish_ref() {
     if [[ "$NIX_CACHE_SCOPE" != main ]]
     then
       "$cli/bin/niks3" push "${auth[@]}" "$path"
-    elif [[ -n "$cached" ]]
-    then
-      "$cli/bin/niks3" pins create "${auth[@]}" "$pin" "$path"
     else
       "$cli/bin/niks3" push "${auth[@]}" --pin "$pin" "$path"
     fi
@@ -161,13 +126,6 @@ build_ref() {
     cmd+=(--impure)
   fi
 
-  local cached
-  if cached_output_paths "$ref" "$impure" >/dev/null 2>&1
-  then
-    printf 'Already cached: %s\n' "$ref"
-    return 0
-  fi
-
   cmd+=("$ref")
   "${cmd[@]}"
 }
@@ -177,7 +135,7 @@ copy_refs() {
   shift
   local -a refs=("$@")
   local -a paths_query=(nix path-info)
-  local ref paths paths_json cached
+  local ref paths paths_json
 
   if [[ ${#refs[@]} -eq 0 || -z "${NIKS3_SERVER_URL:-}" || -z "${NIX_CACHE_SCOPE:-}" ]]
   then
@@ -192,11 +150,6 @@ copy_refs() {
 
   for ref in "${refs[@]}"
   do
-    if cached="$(cached_output_paths "$ref" "$impure" 2>/dev/null)"
-    then
-      publish_ref "$ref" "$cached" 1
-      continue
-    fi
     paths="$("${paths_query[@]}" "$ref")"
     paths_json="$(jq -Rsc 'split("\n") | map(select(length > 0))' <<< "$paths")"
     publish_ref "$ref" "$paths_json"
@@ -257,7 +210,6 @@ copy_droid() {
 
 main() {
   local copy
-  local check_cache
   local nonfree
   local oci
   local pkg=""
@@ -266,7 +218,6 @@ main() {
   local system=""
 
   copy=
-  check_cache=
   nonfree=
   oci=
 
@@ -288,10 +239,6 @@ main() {
       --system)
         system="${2:-}"
         shift 2
-        ;;
-      --check-cache)
-        check_cache=1
-        shift
         ;;
       --copy)
         copy=1
@@ -330,29 +277,6 @@ main() {
     echo "Missing --pkg, --host or --droid" >&2
     usage >&2
     return 2
-  fi
-
-  if [[ -n "$check_cache" ]]
-  then
-    local ref impure cached
-    impure="$nonfree"
-    if [[ -n "$copy" ]]
-    then
-      printf 'Choose either --copy or --check-cache\n' >&2
-      return 2
-    fi
-    if [[ -n "$pkg" ]]
-    then
-      [[ -n "$system" ]] || return 2
-      ref="$(package_ref "$pkg" "$system")"
-    elif [[ -n "$host" ]]
-    then
-      ref="$(host_ref "$host")"
-    else
-      ref="$(droid_ref "$droid")"
-      impure=1
-    fi
-    cached_output_paths "$ref" "$impure" >/dev/null 2>&1
   fi
 
   if [[ -n "$pkg" ]]

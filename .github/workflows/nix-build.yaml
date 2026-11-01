@@ -140,17 +140,6 @@ jobs:
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
-
       - name: Build package
         run: |-
           ./.github/workflows/scripts/ci-build.sh \
@@ -195,19 +184,7 @@ jobs:
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --nonfree --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
-
       - name: Fetch proprietary garbage
-        if: steps.cache.outputs.hit != 'true'
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -219,7 +196,6 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Trick flake by git adding all files (ignoring .gitignore)
-        if: steps.cache.outputs.hit != 'true'
         run: |-
           git add --intent-to-add --force .
 
@@ -265,22 +241,7 @@ jobs:
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh \
-            --pkg 'termux-native-${{ matrix.host }}-bundle' \
-            --system x86_64-linux \
-            --nonfree \
-            --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Build bundle
-        if: steps.cache.outputs.hit != 'true'
         run: |
           ./.github/workflows/scripts/ci-build.sh \
             --pkg 'termux-native-${{ matrix.host }}-bundle' \
@@ -324,26 +285,13 @@ jobs:
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh --pkg '${{ matrix.pkg.name }}' --system '${{ matrix.system }}' --oci --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
-
       - name: Netbird Connect
-        if: steps.cache.outputs.hit != 'true'
         id: netbird
         uses: Alemiz112/netbird-connect@master
         with:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
-        if: steps.cache.outputs.hit != 'true'
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
@@ -458,18 +406,7 @@ jobs:
           s3-access-key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
           s3-secret-key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
 
-      - name: Check retained remote output
-        id: cache
-        run: |
-          if ./.github/workflows/scripts/ci-build.sh --host '${{ matrix.host }}' --check-cache
-          then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Fetch proprietary garbage
-        if: steps.cache.outputs.hit != 'true'
         uses: nick-fields/retry@v4
         env:
           BLOBS_BASIC_AUTH: ${{ secrets.BLOBS_BASIC_AUTH }}
@@ -481,7 +418,6 @@ jobs:
             ./scripts/fetch-proprietary-garbage.sh
 
       - name: Add proprietary garbage to Nix store
-        if: steps.cache.outputs.hit != 'true'
         run: |
           find . -name sha256sum.txt | while read -r checksum_file
           do
@@ -498,7 +434,6 @@ jobs:
 
 
       - name: Netbird Connect
-        if: steps.cache.outputs.hit != 'true'
         id: netbird
         uses: Alemiz112/netbird-connect@master
         with:
@@ -506,7 +441,6 @@ jobs:
           setup-key: ${{ secrets.NB_SETUP_KEY }}
 
       - name: Wait for Netbird routes
-        if: steps.cache.outputs.hit != 'true'
         env:
           NB_INTERFACE: wt0
           YUM_DOMAIN: yum.eu-frankfurt-1.oci.oraclecloud.com
