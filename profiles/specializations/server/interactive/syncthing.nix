@@ -5,6 +5,17 @@
 
   home-manager.users.${config.mainUser.username}.imports = [ ./syncthing-home.nix ];
 
+  # Syncthing runs as a Home Manager user service, which cannot open the host
+  # firewall itself: open the default sync and local discovery ports here
+  # (what services.syncthing.openDefaultPorts does for the system service).
+  networking.firewall = {
+    allowedTCPPorts = [ 22000 ];
+    allowedUDPPorts = [
+      22000
+      21027
+    ];
+  };
+
   # Home Manager's syncthing service runs as mainUser and expects to own
   # these folders (declared in ./syncthing-home.nix). Enforce that
   # ownership recursively at system activation so a root-owned tree left

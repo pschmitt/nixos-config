@@ -2,7 +2,9 @@
 {
   networking = {
     hostName = "lrz";
-    firewall.enable = false;
+    # Default-deny firewall (enabled by profiles/specializations/server) on the
+    # nftables backend.
+    nftables.enable = true;
 
     # Wake-on-LAN over the wired NIC, so the box can be woken remotely from
     # ATX standby (the Shelly plug that powers it is left on; power-on is a

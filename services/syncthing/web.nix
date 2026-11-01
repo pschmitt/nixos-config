@@ -46,8 +46,8 @@ in
         ip6tables -w -I nixos-fw 1 ${directUiDrop}
       '';
 
-  # lrz deliberately disables the NixOS firewall. Install only this narrow
-  # INPUT rule there, leaving its other host networking behavior untouched.
+  # Hosts that disable the NixOS firewall: install only this narrow INPUT rule,
+  # leaving their other host networking behavior untouched.
   systemd.services.syncthing-firewall = lib.mkIf (!config.networking.firewall.enable) {
     description = "Block direct access to the Syncthing GUI";
     wantedBy = [ "multi-user.target" ];
