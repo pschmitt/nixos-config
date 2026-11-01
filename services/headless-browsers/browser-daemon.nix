@@ -112,10 +112,16 @@ in
       # secret that the extension is handed over its connection. Loopback is
       # allowed for a browser on the node itself.
       httpProxy = {
-        listen = "0.0.0.0:${toString httpProxyPort}";
+        # Dual-stack: the mesh names resolve to IPv6 first.
+        listen = "[::]:${toString httpProxyPort}";
+        # A browser is paired with a public name (browser.<domain>), where the
+        # port is closed: it reaches the proxy over the mesh.
+        advertise = "browser.${config.networking.hostName}.${config.domains.netbird}";
         allow = [
           "100.64.0.0/10"
+          "fd00::/8"
           "127.0.0.0/8"
+          "::1"
         ];
       };
     };
