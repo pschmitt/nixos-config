@@ -96,6 +96,16 @@
       };
     };
 
+    # Isolated Rust candidate; the production stricknani input stays pinned separately.
+    stricknani-rust = {
+      url = "github:pschmitt/stricknani/56cdb0e53b04fd304056b69b5b7595cbb7e16b5e";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
+    };
+
     monarch = {
       url = "github:pschmitt/monarch";
       inputs.nixpkgs.follows = "nixpkgs";

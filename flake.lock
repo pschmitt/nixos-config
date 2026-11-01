@@ -1826,11 +1826,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793519832,
-        "narHash": "sha256-v+IZkuC4fC+bqJoCRpcRsegJtT5iUoRO30NdJm+xbWw=",
+        "lastModified": 1793527691,
+        "narHash": "sha256-xsC46p0QpmO2cxXbtF/UCW3c//nGofVwN/8Wt6YKhcs=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "27e1da87c3d1f69a0237edbd506820adfdcf7c70",
+        "rev": "448d904b25960109d86a5f489958794c11e7f4f9",
         "type": "github"
       },
       "original": {
@@ -2574,6 +2574,7 @@
         "sops-nix": "sops-nix",
         "srvos": "srvos",
         "stricknani": "stricknani",
+        "stricknani-rust": "stricknani-rust",
         "systems": "systems_6",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
@@ -2821,6 +2822,33 @@
       "original": {
         "owner": "pschmitt",
         "repo": "stricknani",
+        "type": "github"
+      }
+    },
+    "stricknani-rust": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "pre-commit-hooks": [
+          "pre-commit-hooks"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793526722,
+        "narHash": "sha256-Vtjli/8EkYsTh7b/qRk28n2L1swieqx1UeVGtD1Je3E=",
+        "owner": "pschmitt",
+        "repo": "stricknani",
+        "rev": "56cdb0e53b04fd304056b69b5b7595cbb7e16b5e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "repo": "stricknani",
+        "rev": "56cdb0e53b04fd304056b69b5b7595cbb7e16b5e",
         "type": "github"
       }
     },
