@@ -13,6 +13,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Prefer repository skills when a task matches one:
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
+  - `ci-workflows` for GitHub Actions using shared `pschmitt/ci-workflows` components
   - `signal-notify` before sending any Signal message, `secret-hygiene` before commands that may print credentials, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `gpg-signing` before signed commits or tags, `tmux-window-names` for naming tmux windows
   - the private `brkn-infra` skill for infrastructure host roles, build/test/deploy targets, and Android devices; `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
   - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
