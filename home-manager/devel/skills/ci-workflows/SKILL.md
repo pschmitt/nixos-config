@@ -22,7 +22,7 @@ Callers commonly use `uses: pschmitt/ci-workflows/.github/workflows/<name>.yaml@
 
 The Android workflows and actions were migrated from [`pschmitt/android-app-ci`](https://github.com/pschmitt/android-app-ci). Existing callers can continue using that repository during migration. For repos whose Just imports use `.just/android-app-ci`, preserve that local path as a compatibility alias when updating the submodule URL to `pschmitt/ci-workflows`; do not rename it as incidental cleanup. Read the current [`Android caller guide`](https://github.com/pschmitt/ci-workflows/blob/main/docs/android-ci.md) and provenance notice before changing Android callers. Review the migration for behavior changes, especially publish gates and workflow inputs.
 
-The shared repository does not currently document or provide a PyPI publishing workflow. Do not assume that a PyPI publish action can be placed inside a nested reusable workflow; inspect current GitHub Actions constraints and keep publishing in the caller unless a supported interface is verified.
+The shared repository does not currently document or provide a PyPI publishing workflow. PyPA's current [`gh-action-pypi-publish` guidance](https://github.com/pypa/gh-action-pypi-publish#non-goals) says Trusted Publishing is unsupported inside reusable workflows, and invoking the action from a composite action is unsupported and untested. Keep that publish action in a dedicated top-level caller job with scoped `id-token: write` permission, separate from build and test jobs. Recheck upstream guidance before implementation because support can change.
 
 ## Scope and references
 
