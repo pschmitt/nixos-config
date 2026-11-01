@@ -324,7 +324,7 @@ in
         Install.WantedBy = [ "graphical-session.target" ];
       };
 
-      lan-mouse-state-notify = lib.mkIf cfg.notifyOnSwitch {
+      lan-mouse-state-notify = {
         Unit = {
           Description = "Lan Mouse notifications from local input state";
           After = [ "lan-mouse.service" ];
@@ -332,7 +332,7 @@ in
         };
 
         Service = {
-          ExecStart = "${lib.getExe pkgs.python3} ${stateNotifyScript} ${notificationHelper}/bin/lan-mouse-notify";
+          ExecStart = "${lib.getExe pkgs.python3} ${stateNotifyScript} ${notificationHelper}/bin/lan-mouse-notify ${pkgs.libnotify}/bin/notify-send ${lib.boolToString cfg.notifyOnSwitch}";
           ExecStopPost = "${notificationHelper}/bin/lan-mouse-notify dismiss";
           Restart = "always";
           RestartSec = 1;
