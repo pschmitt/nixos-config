@@ -27,6 +27,7 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 - `--follow` switches to the newest remote head of the branch when you push again, so one watch covers a series of pushes.
 - The forge comes from the `origin` URL (GitHub for github.com, GitLab otherwise, e.g. git.wiit.one); override with `--forge github|gitlab`.
 - Pass a commit, `--repo OWNER/REPO`, `--timeout SECONDS` (default 1800) or `--grace SECONDS` (wait for runs to appear, default 120) when needed.
+- When passing a commit explicitly, use the full SHA from `git rev-parse HEAD`, not a shortened hash; the watcher passes it to `gh run list --commit`, where an abbreviation may appear to have no runs.
 
 ## Exit codes
 
