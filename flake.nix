@@ -149,15 +149,6 @@
       inputs.noctalia.follows = "noctalia";
     };
 
-    rbw-auto = {
-      # url = "path:/home/pschmitt/devel/private/pschmitt/rbw-auto.git";
-      url = "github:pschmitt/rbw-auto";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        rbw.follows = "rbw";
-      };
-    };
-
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs = {

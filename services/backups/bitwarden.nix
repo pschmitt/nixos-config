@@ -6,7 +6,7 @@
 
 {
   imports = [
-    inputs.rbw-auto.nixosModules.default
+    inputs.rbw.nixosModules.auto
   ];
 
   sops.secrets = {
