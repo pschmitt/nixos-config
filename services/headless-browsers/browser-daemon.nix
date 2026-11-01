@@ -19,6 +19,8 @@ let
   ]
   ++ map (h: "browser.${h}.${config.domains.main}") meshNodes
   ++ map (m: "browser.rofl-10.${m}") config.domains.mesh;
+  # The SOCKS5 proxy every node offers the mesh (see socksProxy below).
+  socksPort = 1080;
 in
 {
   sops.secrets."browser-daemon/cluster-secret" = {
@@ -32,6 +34,27 @@ in
     ]
     ++ lib.optional config.services.browser-daemon.secretAgent.enable "browser-daemon-secret-agent.service";
   };
+
+  # The proxy listens on 0.0.0.0 and relies on the mesh interfaces being in
+  # networking.firewall.trustedInterfaces (profiles/features/network/): their
+  # packets are accepted before extraInputRules is reached, which therefore only
+  # sees new connections from other interfaces. Make the deny explicit rather
+  # than relying on the port never ending up in allowedTCPPorts. Hosts with the
+  # iptables backend (fnuc) ignore extraInputRules: their extraCommands run
+  # before the final refuse of the nixos-fw chain.
+  networking.firewall = lib.mkMerge [
+    (lib.mkIf (config.networking.firewall.backend == "nftables") {
+      extraInputRules = ''
+        tcp dport ${toString socksPort} drop
+      '';
+    })
+    (lib.mkIf (config.networking.firewall.backend != "nftables") {
+      extraCommands = ''
+        iptables -A nixos-fw -p tcp --dport ${toString socksPort} -j DROP
+        ip6tables -A nixos-fw -p tcp --dport ${toString socksPort} -j DROP
+      '';
+    })
+  ];
 
   services = {
     browser-daemon = {
@@ -67,6 +90,15 @@ in
       # POST /api/run: Playwright scripts and steps for clients without
       # Playwright (Home Assistant integrations); cluster secret only.
       run.enable = true;
+      # Every node offers its network to the others as a SOCKS5 proxy (`node:<name>`
+      # in their proxy lists). Private to the mesh four ways: only the NetBird and
+      # Tailscale interfaces are trusted by the firewall (so the port is closed
+      # elsewhere, with an explicit drop below), only CG-NAT addresses are
+      # answered, and the login is derived from the cluster secret.
+      socksProxy = {
+        listen = "0.0.0.0:${toString socksPort}";
+        allow = [ "100.64.0.0/10" ];
+      };
     };
 
     nginx.virtualHosts.${builtins.head hosts} = {
