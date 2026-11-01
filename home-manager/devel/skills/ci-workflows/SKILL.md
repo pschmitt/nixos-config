@@ -18,7 +18,9 @@ Before editing, inspect all relevant `.github/workflows/*.yml` and `.yaml` files
 
 ## Version and migration details
 
-Callers commonly use `uses: pschmitt/ci-workflows/.github/workflows/<name>.yaml@main` and composite actions under `.github/actions/`. `@main` follows mutable shared code: inspect the exact current implementation and consider the consuming repository's compatibility needs before changing a reference or updating a caller. Follow the caller's existing pinning convention unless the task calls for a deliberate change.
+Use `@main` for every GitHub workflow or action reference into `pschmitt/ci-workflows`, for example `pschmitt/ci-workflows/.github/workflows/<name>.yaml@main` and `pschmitt/ci-workflows/.github/actions/<name>@main`. Raw helper URLs should use the `main` branch too, such as `https://raw.githubusercontent.com/pschmitt/ci-workflows/main/scripts/<name>`. This avoids Renovate PRs for shared component updates. Do not apply this rule to Nix flake inputs or Git submodule pins; follow their separate pinning policies.
+
+`@main` and raw `main` URLs follow mutable shared code. Inspect the exact current implementation and consider the consuming repository's compatibility needs before changing or adopting a shared component update. Do not replace these shared refs with tags or commit SHAs unless the user explicitly asks for that policy change.
 
 The Android workflows and actions were migrated from [`pschmitt/android-app-ci`](https://github.com/pschmitt/android-app-ci). Existing callers can continue using that repository during migration. For repos whose Just imports use `.just/android-app-ci`, preserve that local path as a compatibility alias when updating the submodule URL to `pschmitt/ci-workflows`; do not rename it as incidental cleanup. Read the current [`Android caller guide`](https://github.com/pschmitt/ci-workflows/blob/main/docs/android-ci.md) and provenance notice before changing Android callers. Review the migration for behavior changes, especially publish gates and workflow inputs.
 
