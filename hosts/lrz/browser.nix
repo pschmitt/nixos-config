@@ -1,8 +1,5 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 let
-  meshHosts = config.domains.meshHosts "browser";
-  primaryHost = builtins.head meshHosts;
-  serverAliases = builtins.tail meshHosts;
   waitForDisplay = pkgs.writeShellApplication {
     name = "lrz-browser-vnc";
     runtimeInputs = [
@@ -105,28 +102,6 @@ in
     };
   };
 
-  services.nginx.virtualHosts."${primaryHost}" = {
-    inherit serverAliases;
-    enableACME = true;
-    forceSSL = true;
-    authelia = {
-      enable = true;
-      haIngressBypass = false;
-    };
-
-    locations."= /" = {
-      authelia = false;
-      return = "302 /vnc.html?autoconnect=true&resize=remote";
-    };
-
-    locations."/" = {
-      proxyPass = "http://127.0.0.1:6081";
-      proxyWebsockets = true;
-      recommendedProxySettings = true;
-      extraConfig = ''
-        proxy_read_timeout 3600s;
-        proxy_send_timeout 3600s;
-      '';
-    };
-  };
+  # The vhost of browser.lrz.<mesh domain> is browser-daemon's now (its dashboard
+  # is the way in); the staging Chromium and its noVNC stay on loopback.
 }

@@ -12,6 +12,7 @@ let
     "rofl-14"
     "rofl-15"
     "rofl-16"
+    "lrz"
   ];
 in
 {
