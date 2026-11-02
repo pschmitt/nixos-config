@@ -18,6 +18,7 @@ Use the safe form:
 - Diffs: `git diff`/`git show` on SOPS files decrypt through textconv; add `--no-textconv`. `ansible --diff` prints rendered credential templates.
 - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
 - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.
+- Agent history: never search or dump conversation-history files such as `~/.config/codex/history.jsonl` as part of source or configuration searches. They contain raw prompts and may include credentials and private identifiers. If a specific conversation is needed, inspect only that entry and redact sensitive fields before returning any output.
 
 ## Filtering what reaches the provider (`claude-ogl`, `codex-ogl`)
 
