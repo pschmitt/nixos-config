@@ -248,6 +248,10 @@ let
       ${lib.concatMapStringsSep "\n" (
         path: "cp -rLn ${path}/. \"$out\"/ && chmod -R u+w \"$out\""
       ) skillSources}
+      # Upstream skill collections include root-level README indexes. Codex
+      # treats files in the skills root as skill candidates and warns when
+      # those indexes lack the SKILL.md frontmatter.
+      rm -f "$out/README.md"
     ''
   );
 
