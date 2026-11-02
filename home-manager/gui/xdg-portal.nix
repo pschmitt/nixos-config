@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   ...
 }:
@@ -20,7 +21,9 @@
         "gtk"
       ];
       "org.freedesktop.impl.portal.FileChooser" = [ "gtk" ];
-      "org.freedesktop.impl.portal.Secret" = [ "gnome-keyring" ];
+      "org.freedesktop.impl.portal.Secret" = [
+        (if config.host.oo7 then "oo7-portal" else "gnome-keyring")
+      ];
     };
   };
 }

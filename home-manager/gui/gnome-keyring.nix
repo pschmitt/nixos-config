@@ -6,6 +6,7 @@
 }:
 let
   useSops = config.services.gnome-keyring.autoUnlockSops;
+  useOo7 = config.host.oo7;
 
   gnome-keyring-unlock = pkgs.stdenvNoCC.mkDerivation {
     pname = "gnome-keyring-unlock";
@@ -44,7 +45,7 @@ in
   options.services.gnome-keyring.autoUnlockSops = lib.mkEnableOption "SOPS-backed GNOME keyring auto-unlock";
 
   config = {
-    home.packages = [ gnome-keyring-unlock ];
+    home.packages = lib.optional (!useOo7) gnome-keyring-unlock;
 
     # The keyring password lives in this host's sops file when enabled;
     # other gui hosts still use the zhj/rbw path below until migrated.
@@ -52,23 +53,41 @@ in
       "gnome-keyring/password".sopsFile = config.host.sopsFile;
     };
 
-    systemd.user.services.gnome-keyring-auto-unlock = {
-      Unit.Description = "Auto-unlock GNOME keyring";
+    # oo7-daemon unlocks the login keyring itself on every (re)start from this
+    # credential, so a daemon restart never leaves the keyring locked and
+    # the auto-unlock service+timer below are not needed.
+    xdg.configFile."systemd/user/oo7-daemon.service.d/sops-credential.conf" =
+      lib.mkIf (useOo7 && useSops)
+        {
+          text = ''
+            [Unit]
+            After=sops-nix.service
+            Wants=sops-nix.service
 
-      Service = {
-        Type = "oneshot";
-        ExecStart =
-          if useSops then
-            "${lib.getExe autoUnlock} ${lib.escapeShellArg config.sops.secrets."gnome-keyring/password".path}"
-          else
-            "${lib.getExe pkgs.zhj} gnome-keyring::auto-unlock --verbose --no-callback";
+            [Service]
+            LoadCredential=oo7.keyring-encryption-password:${config.sops.secrets."gnome-keyring/password".path}
+          '';
+        };
+
+    systemd.user = lib.mkIf (!useOo7) {
+      services.gnome-keyring-auto-unlock = {
+        Unit.Description = "Auto-unlock GNOME keyring";
+
+        Service = {
+          Type = "oneshot";
+          ExecStart =
+            if useSops then
+              "${lib.getExe autoUnlock} ${lib.escapeShellArg config.sops.secrets."gnome-keyring/password".path}"
+            else
+              "${lib.getExe pkgs.zhj} gnome-keyring::auto-unlock --verbose --no-callback";
+        };
       };
-    };
 
-    systemd.user.timers.gnome-keyring-auto-unlock = {
-      Unit.Description = "Auto-unlock GNOME keyring every 5 minutes";
-      Timer.OnCalendar = "*:0/5"; # every 5 min
-      Install.WantedBy = [ "timers.target" ];
+      timers.gnome-keyring-auto-unlock = {
+        Unit.Description = "Auto-unlock GNOME keyring every 5 minutes";
+        Timer.OnCalendar = "*:0/5"; # every 5 min
+        Install.WantedBy = [ "timers.target" ];
+      };
     };
   };
 }

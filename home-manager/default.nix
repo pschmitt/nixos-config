@@ -71,6 +71,7 @@ in
         nvidiaPrimeOffload = config.hardware.nvidia.prime.offload.enable;
         iioSensor = config.hardware.sensor.iio.enable;
         touchscreen = config.hardware.touchscreen.enable;
+        oo7 = config.services.oo7.enable;
         provisionSshKeys = true;
         uid =
           let

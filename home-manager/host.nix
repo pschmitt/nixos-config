@@ -34,6 +34,12 @@
       description = "Whether an IIO sensor (accelerometer) is present.";
     };
 
+    oo7 = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Whether oo7 (services.oo7) is the Secret Service provider instead of gnome-keyring.";
+    };
+
     touchscreen = lib.mkOption {
       type = lib.types.bool;
       default = false;
