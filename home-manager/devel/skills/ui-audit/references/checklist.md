@@ -19,6 +19,7 @@ What to look for, how it shows in the script output, and the usual fix.
 - Destructive actions not in the danger style (for example a blue "Remove"), or a danger button more prominent than the primary next to it.
 - `NO hover feedback` on most buttons, or a low `hoverRules` count.
 - `focusMissing` not empty: keyboard focus is invisible there.
+- Icons next to labels: compare the svg size with the label's font size and the effective stroke (`stroke-width × size / viewBox`). An icon box equal to the font size with a 1.8 stroke on a 24-unit grid renders about 1.2px thin and looks small next to bold labels; aim for about 1.25× the font size and about 2px effective stroke. In two-line tiles, check the icon centre against the title line, not only the block.
 - Fix: one Button component with variant and size props, shared icon slot, 44px or more, one radius token, all states (hover, active, focus-visible, disabled); delete the per-feature button CSS.
 
 ## Wrapping and deformed controls
