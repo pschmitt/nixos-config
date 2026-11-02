@@ -13,7 +13,7 @@ Use this skill when a first-party skill contains a factual error, has gone stale
 - Private skills live in `nixos-config-private/hm/skills/<skill>/` in the `pschmitt/nixos-config-private` repository.
 - CKS skills live in the `kubernetes/agent-skills` repository on `git.wiit.one`. They already carry their own improvement instructions; follow those instructions and do not add the shared footer to them.
 
-Check the skill's source before editing. Installed or generated copies may be assembled by Nix and are not the source of truth. Shared guidance for first-party skills is maintained once in `nixos-config/home-manager/devel/skill-footer.md`; Nix adds it when it builds the combined skill tree.
+Check the skill's source before editing. Installed or generated copies may be assembled by Nix and are not the source of truth. The files under `~/.config/claude-work/skills/` (and the other agents' skill directories) are read-only symlinks into `/nix/store` (`readlink -f` shows `...-skills-with-improvement-footer/...`): editing them fails, sometimes with a misleading error, and a shell write must not be used to get around it. Edit the source Markdown in the owning repository checkout instead, and make sure that checkout is in sync with `origin` first (an untracked `private/` copy inside `nixos-config` is not the source; `nixos-config-private` is). A change only reaches the installed copy after commit, push and the usual deploy. Shared guidance for first-party skills is maintained once in `nixos-config/home-manager/devel/skill-footer.md`; Nix adds it when it builds the combined skill tree.
 
 ## Make a useful change
 
