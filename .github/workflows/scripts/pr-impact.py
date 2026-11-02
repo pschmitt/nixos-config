@@ -6,6 +6,7 @@ import hashlib
 import html
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -150,24 +151,68 @@ def changes(before, after):
     return tuple(lines)
 
 
-def summarize_changes(groups, limit=15):
+def summarize_changes(groups, limit=15, all_targets=None):
     """Show frequent distinct changes without repeating identical host diffs."""
     affected = defaultdict(set)
     for delta, hosts in groups.items():
         for line in set(delta):
             affected[line].update(hosts)
 
-    def item(line):
-        clean = line.replace("\n", " ").replace("\r", " ")
+    # Some packages encode their version as an ISO date in the name. Pair
+    # unambiguous removals and additions affecting exactly the same hosts.
+    dated = defaultdict(lambda: {"+": [], "-": []})
+    for line, hosts in affected.items():
+        match = re.fullmatch(
+            r"([+-]) (.+)-(\d{4}-\d{2}-\d{2})( \[[^]]+\])? \(unversioned\)",
+            line,
+        )
+        if match:
+            action, name, date, package_scope = match.groups()
+            dated[(name, package_scope or "", frozenset(hosts))][action].append(
+                (line, date)
+            )
+    for (name, package_scope, hosts), versions in dated.items():
+        if len(versions["+"]) == len(versions["-"]) == 1:
+            old_line, old_date = versions["-"][0]
+            new_line, new_date = versions["+"][0]
+            del affected[old_line]
+            del affected[new_line]
+            affected[f"~ {name}{package_scope}: {old_date} → {new_date}"].update(hosts)
+
+    def escape(value):
+        clean = value.replace("\n", " ").replace("\r", " ")
         if len(clean) > 240:
             clean = clean[:239] + "…"
+        return html.escape(clean).replace("|", "&#124;")
+
+    def scope(line):
         hosts = affected[line]
-        scope = (
-            f"<code>{html.escape(next(iter(hosts)))}</code>"
-            if len(hosts) == 1
-            else f"{len(hosts)} configurations"
-        )
-        return f"- <code>{html.escape(clean)}</code> ({scope})"
+        if len(hosts) == 1:
+            return f"<code>{escape(next(iter(hosts)))}</code>"
+        if all_targets and hosts == all_targets:
+            return "**ALL**"
+        return f"x{len(hosts)}"
+
+    def table_item(line):
+        if line.startswith("~ ") and ": " in line:
+            name, value = line[2:].split(": ", 1)
+        elif line.startswith("Container ") and ": " in line:
+            name, value = line.split(": ", 1)
+        else:
+            match = re.match(r"^([+-]) (\S+(?: \[[^]]+\])?) (.+)$", line)
+            if not match:
+                return escape(line), ""
+            action, name, version = match.groups()
+            return (
+                f"<code>{escape(name)}</code>",
+                f"{action} <code>{escape(version)}</code>",
+            )
+        if " → " in value:
+            before, after = value.split(" → ", 1)
+            change = f"<code>{escape(before)}</code> → <code>{escape(after)}</code>"
+        else:
+            change = f"<code>{escape(value)}</code>"
+        return f"<code>{escape(name)}</code>", change
 
     kernels = sorted(
         (line for line in affected if line.startswith("Kernel: ")),
@@ -179,19 +224,35 @@ def summarize_changes(groups, limit=15):
     )
     lines = ["### TL;DR", ""]
     if kernels:
-        lines += ["**Kernel changes**", "", *(item(line) for line in kernels[:limit])]
+        lines += ["> [!WARNING]", "> 🐧 **Kernel changes**", ">"]
+        for index, line in enumerate(kernels[:limit]):
+            before, after = line.removeprefix("Kernel: ").split(" → ", 1)
+            ending = "<br>" if index < min(len(kernels), limit) - 1 else ""
+            lines.append(
+                f"> <code>{escape(before)}</code> → <code>{escape(after)}</code> "
+                f"({scope(line)}){ending}"
+            )
         if len(kernels) > limit:
             lines.append(
-                f"- {len(kernels) - limit} more kernel changes in the full report."
+                f"> - {len(kernels) - limit} more kernel changes in the full report."
             )
         lines.append("")
     if other:
-        lines += ["**Other changes**", "", *(item(line) for line in other[:limit])]
-        if len(other) > limit:
-            lines.append(
-                f"- {len(other) - limit} more distinct changes in the full report."
-            )
+        lines += [
+            "**Other changes**",
+            "",
+            "| Name | Change | Hosts |",
+            "| --- | --- | --- |",
+        ]
+        for line in other[:limit]:
+            name, change = table_item(line)
+            lines.append(f"| {name} | {change} | {scope(line)} |")
         lines.append("")
+        if len(other) > limit:
+            lines += [
+                f"*{len(other) - limit} more distinct changes in the full report.*",
+                "",
+            ]
     if not affected:
         lines += ["No detected changes in successfully evaluated configurations.", ""]
     return lines
@@ -235,7 +296,9 @@ def render(
         ),
         "",
     ]
-    summary = summarize_changes(groups)
+    summary = summarize_changes(
+        groups, all_targets=set(targets) if not unreachable else None
+    )
     lines += summary
     if unreachable:
         lines += [
@@ -296,6 +359,8 @@ def render(
     if not targets:
         lines += ["No matching configurations selected.", ""]
     lines += [
+        "---",
+        "",
         "*Covers package names/versions (including Home Manager), kernel versions, and OCI image references from public modules. "
         "Changes to service settings, package contents at the same version, and transitive dependencies are not shown.*",
         "",

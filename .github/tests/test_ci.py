@@ -192,23 +192,106 @@ class ReportTests(unittest.TestCase):
             "",
         )
         summary = result.split("<details>")[0]
-        self.assertIn("**Kernel changes**", summary)
-        self.assertIn("Kernel: 6 → 7</code> (2 configurations)", summary)
-        self.assertIn("~ foo: 1 → 2</code> (2 configurations)", summary)
-        self.assertIn("+ bar 1</code> (<code>nixos:b</code>)", summary)
+        self.assertIn("> [!WARNING]", summary)
+        self.assertIn("🐧 **Kernel changes**", summary)
+        self.assertIn("<code>6</code> → <code>7</code> (x2)", summary)
+        self.assertIn(
+            "| <code>foo</code> | <code>1</code> → <code>2</code> | x2 |", summary
+        )
+        self.assertIn(
+            "| <code>bar</code> | + <code>1</code> | <code>nixos:b</code> |", summary
+        )
         self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
         self.assertIn("### Details by configuration", result)
         self.assertIn("- Kernel: 6\n+ Kernel: 7", result)
         self.assertNotIn("—", result)
-        self.assertIn("*Covers package names/versions", result)
+        self.assertNotIn("<del>", result)
+        self.assertIn("---\n\n*Covers package names/versions", result)
         self.assertIn("transitive dependencies are not shown.*", result)
 
     def test_impact_summary_bounds_output_and_escapes_markup(self):
         groups = {(f"~ pkg{number}<x>: 1 → 2",): ["nixos:a"] for number in range(20)}
         summary = "\n".join(impact.summarize_changes(groups))
         self.assertIn("&lt;x&gt;", summary)
-        self.assertIn("5 more distinct changes", summary)
-        self.assertEqual(summary.count("<code>"), 30)
+        self.assertIn("*5 more distinct changes in the full report.*", summary)
+        self.assertEqual(summary.count("<code>"), 60)
+
+    def test_summary_escapes_table_delimiters_and_only_warns_on_kernels(self):
+        summary = "\n".join(
+            impact.summarize_changes({("~ foo|bar: 1 → 2",): ["nixos:a|b"]})
+        )
+        self.assertIn("foo&#124;bar", summary)
+        self.assertIn("nixos:a&#124;b", summary)
+        self.assertNotIn("[!WARNING]", summary)
+
+    def test_summary_marks_all_only_when_every_configuration_is_affected(self):
+        shared = {("~ pkg: 1 → 2",): ["nixos:a", "nixos:b"]}
+        self.assertIn(
+            "**ALL**",
+            "\n".join(
+                impact.summarize_changes(shared, all_targets={"nixos:a", "nixos:b"})
+            ),
+        )
+        self.assertNotIn(
+            "**ALL**",
+            "\n".join(
+                impact.summarize_changes(
+                    shared, all_targets={"nixos:a", "nixos:b", "nixos:c"}
+                )
+            ),
+        )
+        self.assertIn(
+            "x2",
+            "\n".join(
+                impact.summarize_changes(
+                    shared, all_targets={"nixos:a", "nixos:b", "nixos:c"}
+                )
+            ),
+        )
+        self.assertIn(
+            "nixos:a",
+            "\n".join(
+                impact.summarize_changes(
+                    {("~ pkg: 1 → 2",): ["nixos:a"]}, all_targets={"nixos:a"}
+                )
+            ),
+        )
+
+    def test_summary_does_not_call_skipped_hosts_all(self):
+        before = {"packages": [], "kernel": None, "containers": {}}
+        after = {
+            "packages": [{"name": "foo", "scope": "system", "version": "1"}],
+            "kernel": None,
+            "containers": {},
+        }
+        targets = ["nixos:a", "nixos:b"]
+        results = {target: (before, after) for target in targets}
+        report = impact.render(
+            "base", "head", targets, results, {}, 80, "", unreachable=["nixos:c"]
+        )
+        self.assertIn("x2", report)
+        self.assertNotIn("**ALL**", report)
+
+    def test_summary_pairs_unambiguous_dated_packages(self):
+        old = "- rust-nightly-2026-10-01 [home] (unversioned)"
+        new = "+ rust-nightly-2026-11-01 [home] (unversioned)"
+        report = "\n".join(
+            impact.summarize_changes({(old, new): ["nixos:a", "nixos:b"]})
+        )
+        self.assertIn(
+            "| <code>rust-nightly [home]</code> | <code>2026-10-01</code> → <code>2026-11-01</code> | x2 |",
+            report,
+        )
+        self.assertNotIn("(unversioned)", report)
+
+    def test_summary_keeps_ambiguous_dated_packages_separate(self):
+        old = "- rust-nightly-2026-10-01 [home] (unversioned)"
+        new = "+ rust-nightly-2026-11-01 [home] (unversioned)"
+        extra = "+ rust-nightly-2026-12-01 [home] (unversioned)"
+        report = "\n".join(impact.summarize_changes({(old, new, extra): ["nixos:a"]}))
+        self.assertIn("rust-nightly-2026-10-01 [home]", report)
+        self.assertIn("rust-nightly-2026-11-01 [home]", report)
+        self.assertIn("rust-nightly-2026-12-01 [home]", report)
 
     def test_oversized_impact_report_keeps_summary(self):
         before = {
@@ -234,7 +317,7 @@ class ReportTests(unittest.TestCase):
             "https://example.org/run",
         )
         self.assertIn("### TL;DR", report)
-        self.assertIn("Kernel: 6 → 7", report)
+        self.assertIn("<code>6</code> → <code>7</code>", report)
         self.assertIn("Report exceeds the comment limit", report)
         self.assertLess(len(report.encode()), 58000)
 
