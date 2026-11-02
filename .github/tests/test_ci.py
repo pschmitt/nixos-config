@@ -193,17 +193,21 @@ class ReportTests(unittest.TestCase):
         )
         summary = result.split("<details>")[0]
         self.assertIn("**Kernel changes**", summary)
-        self.assertIn("Kernel: 6 → 7</code> — 2 configurations", summary)
-        self.assertIn("~ foo: 1 → 2</code> — 2 configurations", summary)
-        self.assertIn("+ bar 1</code> — 1 configuration", summary)
+        self.assertIn("Kernel: 6 → 7</code> (2 configurations)", summary)
+        self.assertIn("~ foo: 1 → 2</code> (2 configurations)", summary)
+        self.assertIn("+ bar 1</code> (<code>nixos:b</code>)", summary)
         self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
+        self.assertIn("### Details by configuration", result)
+        self.assertNotIn("—", result)
+        self.assertIn("*Covers package names/versions", result)
+        self.assertIn("transitive dependencies are not shown.*", result)
 
     def test_impact_summary_bounds_output_and_escapes_markup(self):
         groups = {(f"~ pkg{number}<x>: 1 → 2",): ["nixos:a"] for number in range(20)}
         summary = "\n".join(impact.summarize_changes(groups))
         self.assertIn("&lt;x&gt;", summary)
         self.assertIn("5 more distinct changes", summary)
-        self.assertEqual(summary.count("<code>"), 15)
+        self.assertEqual(summary.count("<code>"), 30)
 
     def test_oversized_impact_report_keeps_summary(self):
         before = {

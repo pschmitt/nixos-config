@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from collections import Counter, defaultdict
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -152,25 +152,30 @@ def changes(before, after):
 
 def summarize_changes(groups, limit=15):
     """Show frequent distinct changes without repeating identical host diffs."""
-    counts = Counter()
+    affected = defaultdict(set)
     for delta, hosts in groups.items():
         for line in set(delta):
-            counts[line] += len(hosts)
+            affected[line].update(hosts)
 
     def item(line):
         clean = line.replace("\n", " ").replace("\r", " ")
         if len(clean) > 240:
             clean = clean[:239] + "…"
-        count = counts[line]
-        return f"- <code>{html.escape(clean)}</code> — {count} configuration{'s' if count != 1 else ''}"
+        hosts = affected[line]
+        scope = (
+            f"<code>{html.escape(next(iter(hosts)))}</code>"
+            if len(hosts) == 1
+            else f"{len(hosts)} configurations"
+        )
+        return f"- <code>{html.escape(clean)}</code> ({scope})"
 
     kernels = sorted(
-        (line for line in counts if line.startswith("Kernel: ")),
-        key=lambda line: (-counts[line], line),
+        (line for line in affected if line.startswith("Kernel: ")),
+        key=lambda line: (-len(affected[line]), line),
     )
     other = sorted(
-        (line for line in counts if not line.startswith("Kernel: ")),
-        key=lambda line: (-counts[line], line),
+        (line for line in affected if not line.startswith("Kernel: ")),
+        key=lambda line: (-len(affected[line]), line),
     )
     lines = ["### TL;DR", ""]
     if kernels:
@@ -187,7 +192,7 @@ def summarize_changes(groups, limit=15):
                 f"- {len(other) - limit} more distinct changes in the full report."
             )
         lines.append("")
-    if not counts:
+    if not affected:
         lines += ["No detected changes in successfully evaluated configurations.", ""]
     return lines
 
@@ -237,13 +242,15 @@ def render(
             f"Skipped (inputs unreachable from CI): {html.escape(', '.join(unreachable))}.",
             "",
         ]
+    if groups:
+        lines += ["### Details by configuration", ""]
     for delta, hosts in sorted(groups.items(), key=lambda item: item[1]):
         names = html.escape(", ".join(hosts))
         collapsed = len(delta) > 12 or len(groups) > 3
         if collapsed:
             lines += [
                 "<details>",
-                f"<summary>{names} — {len(delta)} change(s)</summary>",
+                f"<summary>{names} ({len(delta)} {'change' if len(delta) == 1 else 'changes'})</summary>",
                 "",
             ]
         else:
@@ -285,8 +292,8 @@ def render(
     if not targets:
         lines += ["No matching configurations selected.", ""]
     lines += [
-        "Covers package names/versions (including Home Manager), kernel versions, and OCI image references from public modules.",
-        "Changes to service settings, package contents at the same version, and transitive dependencies are not shown.",
+        "*Covers package names/versions (including Home Manager), kernel versions, and OCI image references from public modules. "
+        "Changes to service settings, package contents at the same version, and transitive dependencies are not shown.*",
         "",
     ]
     if run_url:
