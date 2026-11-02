@@ -43,6 +43,19 @@ What to look for, how it shows in the script output, and the usual fix.
 - Header spacing: measure the chevron's icon box against its 44px hit area and the gap to the logo. A centred icon in a 44px box leaves dead space before and after it; align the icon to the edge of the hit area instead. Compare logo size with the title block next to it.
 - The header title repeating the app name on every page, where the current section or item would orient the user better.
 
+## Feedback and ergonomics
+
+Run [feedback.js](feedback.js) on a throwaway record, then walk create, save and delete for each entity by hand.
+
+- Every write must give feedback inside the viewport within about 500 ms. A status message rendered at the top of a long form while Save is at the bottom is invisible (`OFFSCREEN` in the output); the only visible change is then a greyed button.
+- Errors (`error500`, `offline`) must be at least as visible as success, and keep the user's input.
+- Focus after a save must not jump to the top of the document (`focus` = "Skip to content").
+- `slowDoubleClick`: the button shows a busy state and `writes` is 1.
+- Outcomes consistent across entities: where create, save and delete land, and whether each says so ("created", "saved", "deleted").
+- Confirmations: one in-app dialog component that names the item, with focus on the safe choice; no mix with `window.confirm()`. `confirm()` inside `beforeunload` is blocked by browsers (console: "Blocked confirm(...) during beforeunload").
+- Dirty state visible where the user is working (sticky action bar), Ctrl/Cmd+S on edit forms.
+- Focused and active navigation items must look different.
+
 ## Forms
 
 - Input heights, radii and font sizes from `inputs`; one token each.
