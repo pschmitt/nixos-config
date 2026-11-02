@@ -15,15 +15,15 @@ let
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "netbird-cli";
-    rev = "dd7d56742f3f515538a2bc952a23a2f7d43febaa";
-    hash = "sha256-nbAY05jBJNbAOgeEiVBlaiShmtSzOAyL1RfCSLmll8E=";
+    rev = "d0685d37cef3986533ce1ee0897155ec834798df";
+    hash = "sha256-AjYkxZW41NxPUe7wdG1bH+a6YFKFYxr5LKHdxa6bmOU=";
   };
 in
 stdenvNoCC.mkDerivation {
   inherit src;
 
   pname = "netbird-cli";
-  version = "0-unstable-2025-10-05";
+  version = "0-unstable-2026-11-01";
   nativeBuildInputs = [ makeWrapper ];
   dontUnpack = true;
   dontBuild = true;

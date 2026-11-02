@@ -7,6 +7,7 @@
 {
   home.packages = lib.optionals guiEnable [
     pkgs.thunderbird
+    pkgs.wpsoffice
   ];
 
 }
