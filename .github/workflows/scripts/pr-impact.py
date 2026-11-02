@@ -222,10 +222,20 @@ def summarize_changes(groups, limit=15, all_targets=None):
         (line for line in affected if line.startswith("Kernel: ")),
         key=lambda line: (-len(affected[line]), line),
     )
-    other = sorted(
-        (line for line in affected if not line.startswith("Kernel: ")),
-        key=lambda line: (-len(affected[line]), line),
-    )
+
+    def name_key(line):
+        return (
+            html.unescape(
+                table_item(line)[0].removeprefix("<code>").removesuffix("</code>")
+            ).casefold(),
+            line,
+        )
+
+    other = [line for line in affected if not line.startswith("Kernel: ")]
+    prominent = sorted(other, key=lambda line: (-len(affected[line]), name_key(line)))[
+        :limit
+    ]
+    prominent.sort(key=name_key)
     lines = ["### TL;DR", ""]
     if kernels:
         lines += ["> [!WARNING]", "> 🐧 **Kernel changes:**"]
@@ -244,12 +254,18 @@ def summarize_changes(groups, limit=15, all_targets=None):
         lines += [
             "**Other changes**",
             "",
-            "| Name | Old | New | Hosts |",
-            "| --- | --- | --- | --- |",
+            "| Name | Change |",
+            "| --- | --- |",
         ]
-        for line in other[:limit]:
+        for line in prominent:
             name, before, after = table_item(line)
-            lines.append(f"| {name} | {before} | {after} | {scope(line)} |")
+            if before and after:
+                change = f"{before} → {after}"
+            elif before:
+                change = f"- {before}"
+            else:
+                change = f"+ {after}" if after else ""
+            lines.append(f"| {name} | {change} |")
         lines.append("")
         if len(other) > limit:
             lines += [

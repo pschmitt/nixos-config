@@ -195,12 +195,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn("> [!WARNING]", summary)
         self.assertIn("🐧 **Kernel changes:**", summary)
         self.assertIn("<code>6</code> → <code>7</code> (x2)", summary)
-        self.assertIn(
-            "| <code>foo</code> | <code>1</code> | <code>2</code> | x2 |", summary
-        )
-        self.assertIn(
-            "| <code>bar</code> |  | <code>1</code> | <code>nixos:b</code> |", summary
-        )
+        self.assertIn("| <code>foo</code> | <code>1</code> → <code>2</code> |", summary)
+        self.assertIn("| <code>bar</code> | + <code>1</code> |", summary)
         self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
         self.assertIn("### Details by configuration", result)
         self.assertIn("- Kernel: 6\n+ Kernel: 7", result)
@@ -214,7 +210,7 @@ class ReportTests(unittest.TestCase):
         summary = "\n".join(impact.summarize_changes(groups))
         self.assertIn("&lt;x&gt;", summary)
         self.assertIn("*5 more distinct changes in the full report.*", summary)
-        self.assertEqual(summary.count("<code>"), 60)
+        self.assertEqual(summary.count("<code>"), 45)
 
     def test_kernel_alert_uses_compact_consecutive_lines(self):
         groups = {
@@ -231,11 +227,10 @@ class ReportTests(unittest.TestCase):
             impact.summarize_changes({("~ foo|bar: 1 → 2",): ["nixos:a|b"]})
         )
         self.assertIn("foo&#124;bar", summary)
-        self.assertIn("nixos:a&#124;b", summary)
         self.assertNotIn("[!WARNING]", summary)
 
     def test_summary_marks_all_only_when_every_configuration_is_affected(self):
-        shared = {("~ pkg: 1 → 2",): ["nixos:a", "nixos:b"]}
+        shared = {("Kernel: 1 → 2",): ["nixos:a", "nixos:b"]}
         self.assertIn(
             "**ALL**",
             "\n".join(
@@ -262,7 +257,7 @@ class ReportTests(unittest.TestCase):
             "nixos:a",
             "\n".join(
                 impact.summarize_changes(
-                    {("~ pkg: 1 → 2",): ["nixos:a"]}, all_targets={"nixos:a"}
+                    {("Kernel: 1 → 2",): ["nixos:a"]}, all_targets={"nixos:a"}
                 )
             ),
         )
@@ -270,8 +265,8 @@ class ReportTests(unittest.TestCase):
     def test_summary_does_not_call_skipped_hosts_all(self):
         before = {"packages": [], "kernel": None, "containers": {}}
         after = {
-            "packages": [{"name": "foo", "scope": "system", "version": "1"}],
-            "kernel": None,
+            "packages": [],
+            "kernel": {"version": "1", "modDirVersion": "1"},
             "containers": {},
         }
         targets = ["nixos:a", "nixos:b"]
@@ -289,7 +284,7 @@ class ReportTests(unittest.TestCase):
             impact.summarize_changes({(old, new): ["nixos:a", "nixos:b"]})
         )
         self.assertIn(
-            "| <code>rust-nightly [home]</code> | <code>2026-10-01</code> | <code>2026-11-01</code> | x2 |",
+            "| <code>rust-nightly [home]</code> | <code>2026-10-01</code> → <code>2026-11-01</code> |",
             report,
         )
         self.assertNotIn("(unversioned)", report)
@@ -309,13 +304,37 @@ class ReportTests(unittest.TestCase):
         }
         report = "\n".join(impact.summarize_changes(groups))
         self.assertIn(
-            "| <code>old-package</code> | <code>1</code> |  | <code>nixos:a</code> |",
+            "| <code>old-package</code> | - <code>1</code> |",
             report,
         )
         self.assertIn(
-            "| <code>new-package</code> |  | <code>2</code> | <code>nixos:a</code> |",
+            "| <code>new-package</code> | + <code>2</code> |",
             report,
         )
+
+    def test_other_changes_are_sorted_by_name(self):
+        groups = {
+            ("~ zebra: 1 → 2", "~ Alpha: 1 → 2"): ["nixos:a", "nixos:b"],
+            ("~ beta: 1 → 2",): ["nixos:c"],
+        }
+        report = "\n".join(impact.summarize_changes(groups))
+        self.assertLess(
+            report.index("<code>Alpha</code>"), report.index("<code>beta</code>")
+        )
+        self.assertLess(
+            report.index("<code>beta</code>"), report.index("<code>zebra</code>")
+        )
+        self.assertNotIn("| Hosts |", report)
+
+    def test_summary_retains_widespread_changes_when_limited(self):
+        groups = {(f"~ app{number:02}: 1 → 2",): ["nixos:a"] for number in range(20)}
+        groups[("~ xfsprogs: 1 → 2",)] = ["nixos:a", "nixos:b"]
+        report = "\n".join(impact.summarize_changes(groups))
+        self.assertIn("<code>xfsprogs</code>", report)
+        self.assertLess(
+            report.index("<code>app00</code>"), report.index("<code>xfsprogs</code>")
+        )
+        self.assertIn("*6 more distinct changes in the full report.*", report)
 
     def test_oversized_impact_report_keeps_summary(self):
         before = {
