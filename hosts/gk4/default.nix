@@ -19,9 +19,6 @@
 
   home-manager.users.${config.mainUser.username}.services.gnome-keyring.autoUnlockSops = true;
 
-  # Pilot: oo7 instead of gnome-keyring as the Secret Service provider.
-  services.oo7.enable = true;
-
   # Pinned per host: bumping it changes stateful service defaults.
   # https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion
   system.stateVersion = "25.11";

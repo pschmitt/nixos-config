@@ -29,6 +29,18 @@ let
   # sops-backed replacement for the zhj `gnome-keyring::auto-unlock` (which
   # pulled the password from rbw). Reads the password from a sops secret and
   # unlocks the login keyring; no-ops if already unlocked or no secret present.
+  # oo7 deletes each legacy ~/.local/share/keyrings/*.keyring after migrating
+  # it to keyrings/v1/; keep a copy of the originals first.
+  oo7BackupLegacy = pkgs.writeShellScript "oo7-backup-legacy-keyrings" ''
+    src="''${XDG_DATA_HOME:-$HOME/.local/share}/keyrings"
+    dst="''${src}-backup-pre-oo7"
+    for f in "$src"/*.keyring; do
+      [[ -e "$f" ]] || continue
+      ${pkgs.coreutils}/bin/mkdir -p -m 700 "$dst"
+      ${pkgs.coreutils}/bin/cp -an "$f" "$dst/"
+    done
+  '';
+
   autoUnlock = pkgs.writeShellApplication {
     name = "gnome-keyring-auto-unlock";
     runtimeInputs = [
@@ -68,6 +80,13 @@ in
             LoadCredential=oo7.keyring-encryption-password:${config.sops.secrets."gnome-keyring/password".path}
           '';
         };
+
+    xdg.configFile."systemd/user/oo7-daemon.service.d/backup-legacy.conf" = lib.mkIf useOo7 {
+      text = ''
+        [Service]
+        ExecStartPre=-${oo7BackupLegacy}
+      '';
+    };
 
     systemd.user = lib.mkIf (!useOo7) {
       services.gnome-keyring-auto-unlock = {
