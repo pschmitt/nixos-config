@@ -165,6 +165,90 @@ class DerivationCacheTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
+    def test_impact_summary_highlights_kernels_and_counts_hosts(self):
+        old = {
+            "packages": [{"name": "foo", "scope": "system", "version": "1"}],
+            "kernel": {"version": "6", "modDirVersion": "6"},
+            "containers": {},
+        }
+        new = {
+            "packages": [{"name": "foo", "scope": "system", "version": "2"}],
+            "kernel": {"version": "7", "modDirVersion": "7"},
+            "containers": {},
+        }
+        other = {
+            **new,
+            "packages": new["packages"]
+            + [{"name": "bar", "scope": "system", "version": "1"}],
+        }
+        targets = ["nixos:a", "nixos:b", "nixos:c"]
+        result = impact.render(
+            "base",
+            "head",
+            targets,
+            {"nixos:a": (old, new), "nixos:b": (old, other), "nixos:c": (old, old)},
+            {},
+            80,
+            "",
+        )
+        summary = result.split("<details>")[0]
+        self.assertIn("**Kernel changes**", summary)
+        self.assertIn("Kernel: 6 → 7</code> — 2 configurations", summary)
+        self.assertIn("~ foo: 1 → 2</code> — 2 configurations", summary)
+        self.assertIn("+ bar 1</code> — 1 configuration", summary)
+        self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
+
+    def test_impact_summary_bounds_output_and_escapes_markup(self):
+        groups = {(f"~ pkg{number}<x>: 1 → 2",): ["nixos:a"] for number in range(20)}
+        summary = "\n".join(impact.summarize_changes(groups))
+        self.assertIn("&lt;x&gt;", summary)
+        self.assertIn("5 more distinct changes", summary)
+        self.assertEqual(summary.count("<code>"), 15)
+
+    def test_oversized_impact_report_keeps_summary(self):
+        before = {
+            "packages": [],
+            "kernel": {"version": "6", "modDirVersion": "6"},
+            "containers": {},
+        }
+        after = {
+            "packages": [
+                {"scope": "system", "name": f"pkg-{i}-" + "x" * 800, "version": "1"}
+                for i in range(100)
+            ],
+            "kernel": {"version": "7", "modDirVersion": "7"},
+            "containers": {},
+        }
+        report = impact.render(
+            "base",
+            "head",
+            ["nixos:a"],
+            {"nixos:a": (before, after)},
+            {},
+            100,
+            "https://example.org/run",
+        )
+        self.assertIn("### TL;DR", report)
+        self.assertIn("Kernel: 6 → 7", report)
+        self.assertIn("Report exceeds the comment limit", report)
+        self.assertLess(len(report.encode()), 58000)
+
+    def test_impact_summary_without_changes_does_not_hide_failures(self):
+        snapshot = {"packages": [], "kernel": None, "containers": {}}
+        report = impact.render(
+            "base",
+            "head",
+            ["nixos:a", "nixos:b"],
+            {"nixos:a": (snapshot, snapshot)},
+            {"nixos:b": ["head"]},
+            80,
+            "",
+        )
+        self.assertIn(
+            "No detected changes in successfully evaluated configurations", report
+        )
+        self.assertIn("`nixos:b`: head evaluation failed", report)
+
     def test_shared_change_takes_precedence_over_host_only(self):
         targets = {"nixos:fnuc": "fnuc", "nixos:rofl-10": "rofl-10"}
         self.assertEqual(

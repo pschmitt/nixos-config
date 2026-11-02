@@ -9,7 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -150,6 +150,48 @@ def changes(before, after):
     return tuple(lines)
 
 
+def summarize_changes(groups, limit=15):
+    """Show frequent distinct changes without repeating identical host diffs."""
+    counts = Counter()
+    for delta, hosts in groups.items():
+        for line in set(delta):
+            counts[line] += len(hosts)
+
+    def item(line):
+        clean = line.replace("\n", " ").replace("\r", " ")
+        if len(clean) > 240:
+            clean = clean[:239] + "…"
+        count = counts[line]
+        return f"- <code>{html.escape(clean)}</code> — {count} configuration{'s' if count != 1 else ''}"
+
+    kernels = sorted(
+        (line for line in counts if line.startswith("Kernel: ")),
+        key=lambda line: (-counts[line], line),
+    )
+    other = sorted(
+        (line for line in counts if not line.startswith("Kernel: ")),
+        key=lambda line: (-counts[line], line),
+    )
+    lines = ["### TL;DR", ""]
+    if kernels:
+        lines += ["**Kernel changes**", "", *(item(line) for line in kernels[:limit])]
+        if len(kernels) > limit:
+            lines.append(
+                f"- {len(kernels) - limit} more kernel changes in the full report."
+            )
+        lines.append("")
+    if other:
+        lines += ["**Other changes**", "", *(item(line) for line in other[:limit])]
+        if len(other) > limit:
+            lines.append(
+                f"- {len(other) - limit} more distinct changes in the full report."
+            )
+        lines.append("")
+    if not counts:
+        lines += ["No detected changes in successfully evaluated configurations.", ""]
+    return lines
+
+
 def render(
     base,
     head,
@@ -188,6 +230,8 @@ def render(
         ),
         "",
     ]
+    summary = summarize_changes(groups)
+    lines += summary
     if unreachable:
         lines += [
             f"Skipped (inputs unreachable from CI): {html.escape(', '.join(unreachable))}.",
@@ -250,7 +294,7 @@ def render(
     text = "\n".join(lines)
     # GitHub comments have a size limit independent of per-group line limits.
     if limit_comment and len(text.encode()) > 58000:
-        text = "\n".join(lines[:6]) + "\n\nReport exceeds the comment limit. "
+        text = "\n".join(lines[:7] + summary) + "\nReport exceeds the comment limit. "
         text += f"[Read the full report in the workflow artifacts]({run_url}).\n"
     return text
 
