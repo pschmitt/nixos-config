@@ -6,12 +6,28 @@
   inputs,
   ...
 }:
+let
+  rbwRequestUnlock = pkgs.writeShellApplication {
+    name = "rbw-request-unlock";
+    runtimeInputs = [
+      config.programs.rbw.package
+      pkgs.python3
+    ];
+    text = ''
+      export RBW_UNLOCK_WEBHOOK_URL_FILE="''${RBW_UNLOCK_WEBHOOK_URL_FILE:-${
+        config.sops.secrets."rbw/unlock/webhook_url".path
+      }}"
+      exec python3 ${./scripts/rbw-request-unlock.py} "$@"
+    '';
+  };
+in
 {
   imports = [ inputs.rbw.homeManagerModules.default ];
 
   sops.secrets = {
     "rbw/private/email" = { };
     "rbw/private/base_url" = { };
+    "rbw/unlock/webhook_url" = { };
     "rbw/work/email" = { };
     "rbw/work/base_url" = { };
   };
@@ -22,6 +38,7 @@
     # https://github.com/NixOS/nixpkgs/pull/339384
     # bitwarden-desktop
     master.bitwarden-cli
+    rbwRequestUnlock
   ];
 
   # Desktop sessions include the optional native GTK unlock dialog.

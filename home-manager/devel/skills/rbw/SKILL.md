@@ -111,33 +111,25 @@ need `-a`.
 
 ## Unlock via Home Assistant
 
-`rbw unlocked` returns 0 when the vault is unlocked. If it is locked, POST to
-the HA webhook: it sends an actionable notification to the phone, and on
-**Accept** HA SSHes to the host and pipes the master password from HA secrets
-to `rbw unlock --stdin`. Then poll for up to 5 minutes. Give the tool call a
-longer timeout than that (e.g. 330000 ms); agent shells often default to 2
-minutes and would cut the wait short.
+Configured systems provide `rbw-request-unlock`. It reads the endpoint from a
+protected runtime file provisioned by the private configuration, so it works
+while the vault itself is locked. Never put that endpoint in instructions,
+command arguments or tool output, and never print the runtime file.
 
 ```bash
-if ! rbw unlocked 2>/dev/null; then
-  echo "Requesting rbw unlock on ${HOST:-fnuc} via Home Assistant..."
-  curl -fsS -X POST "http://10.5.1.1:8123/api/webhook/rbw_unlock_request" \
-    -H "Content-Type: application/json" \
-    -d "{\"host\": \"${HOST:-fnuc}\", \"agent\": \"Claude\"}" || {
-    echo "Failed to reach HA webhook" >&2; exit 1
-  }
-  echo "Waiting for Accept tap on phone (up to 5 minutes)..."
-  for i in $(seq 1 60); do
-    rbw unlocked 2>/dev/null && { echo "rbw unlocked"; break; }
-    sleep 5
-  done
-  rbw unlocked || { echo "rbw unlock timed out"; exit 1; }
-fi
+rbw-request-unlock --agent Codex --timeout 300
 ```
 
-- `host` is optional and defaults to `fnuc`. Known short names that HA maps
-  to SSH targets (`<name>.lan`): `fnuc`, `ge2`, `x13`, `gk4`.
-- `agent` is shown in the phone notification (default `Claude`).
+The helper first checks `rbw unlocked`. If necessary it sends the existing
+Home Assistant phone-approval request, then waits for the vault to unlock.
+Phone approval remains required; it never handles or displays the master
+password. Its network and polling waits are bounded. Run it in a background
+execution cell and yield within 60 seconds while waiting for approval.
+
+If the helper or its runtime file is missing, repair the private configuration
+and refresh the system profile. Do not reuse a cached webhook URL or fall back
+to interactive pinentry in an agent terminal. The private infrastructure skill
+records the supported request hosts.
 
 ## Writing to the vault
 
