@@ -13,7 +13,6 @@
     ./host.nix
     ./nfs.nix
     ./nix-cache.nix
-    ./proprietary-sources.nix
     ./rclone-bisync.nix
     ./service-identities.nix
     ./services.nix
