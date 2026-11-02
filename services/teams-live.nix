@@ -77,7 +77,7 @@ in
             on_success = true;
           };
           rebase = true;
-          approval_lost = true;
+          approval_lost = false;
           merged = true;
         };
       };
