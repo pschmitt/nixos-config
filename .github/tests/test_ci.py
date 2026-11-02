@@ -198,6 +198,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn("+ bar 1</code> (<code>nixos:b</code>)", summary)
         self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
         self.assertIn("### Details by configuration", result)
+        self.assertIn("- Kernel: 6\n+ Kernel: 7", result)
         self.assertNotIn("—", result)
         self.assertIn("*Covers package names/versions", result)
         self.assertIn("transitive dependencies are not shown.*", result)

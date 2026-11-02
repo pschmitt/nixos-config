@@ -255,10 +255,14 @@ def render(
             ]
         else:
             lines += [f"### {names}", ""]
-        safe_delta = [
-            line.replace("\n", " ").replace("\r", " ").replace("```", "ˋˋˋ")
-            for line in delta[:max_lines]
-        ]
+        safe_delta = []
+        for line in delta[:max_lines]:
+            line = line.replace("\n", " ").replace("\r", " ").replace("```", "ˋˋˋ")
+            if line.startswith("Kernel: ") and " → " in line:
+                before, after = line.removeprefix("Kernel: ").split(" → ", 1)
+                safe_delta.extend((f"- Kernel: {before}", f"+ Kernel: {after}"))
+            else:
+                safe_delta.append(line)
         lines += ["```diff", *safe_delta, "```"]
         if len(delta) > max_lines:
             lines.append(
