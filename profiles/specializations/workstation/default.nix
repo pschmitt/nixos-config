@@ -37,6 +37,7 @@ in
     ../laptop/nrf.nix
     ../laptop/waydroid.nix
     ../../features/work/vpn/openvpn.nix
+    ../../features/work/nix-cache.nix
 
     ../../../services/restic
     ../../../services/autoupgrade.nix
