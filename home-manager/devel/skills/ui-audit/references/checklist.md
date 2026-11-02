@@ -36,6 +36,13 @@ What to look for, how it shows in the script output, and the usual fix.
 - Long forms with the only Save at the bottom: sticky action bar.
 - Two action areas on one page (toolbar above the title and buttons beside it).
 
+## Navigation and app header
+
+- Test every back control by behaviour, not by looks: open a detail or edit page as a deep link in a new tab and press it (it must never leave the app or land on `about:blank`); reach a page through a side path (sidebar, a link from another entity) and press it; check top-level pages. A `history.back()` back button fails these; a back control should go up to the parent route and be hidden where there is none.
+- Two back controls at once (header chevron and an in-page "Back to ..." link), possibly with different targets.
+- Header spacing: measure the chevron's icon box against its 44px hit area and the gap to the logo. A centred icon in a 44px box leaves dead space before and after it; align the icon to the edge of the hit area instead. Compare logo size with the title block next to it.
+- The header title repeating the app name on every page, where the current section or item would orient the user better.
+
 ## Forms
 
 - Input heights, radii and font sizes from `inputs`; one token each.

@@ -21,8 +21,9 @@ Look at the real app with real data and measure it. A screenshot shows that some
    - per page: H1 position and size, heading sizes, input height/radius/font size, container radii, content widths, and every button with class, position and size. Buttons much taller than 44-48px have wrapped labels.
 3. **Motion and states** ([references/motion.js](references/motion.js)), same way, at desktop width: layout-shift entries with the elements that moved, which buttons change on hover (full computed-style diff) and whether focus is visible.
 4. **Look at the outliers.** Take viewport screenshots of whatever the numbers flag: wrapped buttons, odd positions, long titles, the bottom of long forms, the phone layout.
-5. **Compare sibling pages** (for example projects vs yarns): back links, eyebrows, where Edit, Delete and Favourite sit, read vs edit mode for photos, Cancel on forms, card padding.
-6. **Report** grouped by cause, most impactful first, each with measured values and a concrete fix, then a suggested fix order. See [the checklist](references/checklist.md) for what to look for and the usual fixes.
+5. **Navigation:** test the back controls and the header as described in the checklist (deep link in a new tab, side paths, top-level pages; spacing of chevron, logo and title). Navigation only, no clicks on actions.
+6. **Compare sibling pages** (for example projects vs yarns): back links, eyebrows, where Edit, Delete and Favourite sit, read vs edit mode for photos, Cancel on forms, card padding.
+7. **Report** grouped by cause, most impactful first, each with measured values and a concrete fix, then a suggested fix order. See [the checklist](references/checklist.md) for what to look for and the usual fixes.
 
 ## Pitfalls
 
