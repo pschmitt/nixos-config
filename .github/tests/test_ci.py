@@ -196,10 +196,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn("🐧 **Kernel changes:**", summary)
         self.assertIn("<code>6</code> → <code>7</code> (x2)", summary)
         self.assertIn(
-            "| <code>foo</code> | <code>1</code> → <code>2</code> | x2 |", summary
+            "| <code>foo</code> | <code>1</code> | <code>2</code> | x2 |", summary
         )
         self.assertIn(
-            "| <code>bar</code> | + <code>1</code> | <code>nixos:b</code> |", summary
+            "| <code>bar</code> |  | <code>1</code> | <code>nixos:b</code> |", summary
         )
         self.assertIn("2 changed · 1 unchanged · 0 failed", summary)
         self.assertIn("### Details by configuration", result)
@@ -289,7 +289,7 @@ class ReportTests(unittest.TestCase):
             impact.summarize_changes({(old, new): ["nixos:a", "nixos:b"]})
         )
         self.assertIn(
-            "| <code>rust-nightly [home]</code> | <code>2026-10-01</code> → <code>2026-11-01</code> | x2 |",
+            "| <code>rust-nightly [home]</code> | <code>2026-10-01</code> | <code>2026-11-01</code> | x2 |",
             report,
         )
         self.assertNotIn("(unversioned)", report)
@@ -302,6 +302,20 @@ class ReportTests(unittest.TestCase):
         self.assertIn("rust-nightly-2026-10-01 [home]", report)
         self.assertIn("rust-nightly-2026-11-01 [home]", report)
         self.assertIn("rust-nightly-2026-12-01 [home]", report)
+
+    def test_table_separates_added_and_removed_versions(self):
+        groups = {
+            ("- old-package 1", "+ new-package 2"): ["nixos:a"],
+        }
+        report = "\n".join(impact.summarize_changes(groups))
+        self.assertIn(
+            "| <code>old-package</code> | <code>1</code> |  | <code>nixos:a</code> |",
+            report,
+        )
+        self.assertIn(
+            "| <code>new-package</code> |  | <code>2</code> | <code>nixos:a</code> |",
+            report,
+        )
 
     def test_oversized_impact_report_keeps_summary(self):
         before = {

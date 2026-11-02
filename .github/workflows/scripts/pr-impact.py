@@ -201,18 +201,22 @@ def summarize_changes(groups, limit=15, all_targets=None):
         else:
             match = re.match(r"^([+-]) (\S+(?: \[[^]]+\])?) (.+)$", line)
             if not match:
-                return escape(line), ""
+                return escape(line), "", ""
             action, name, version = match.groups()
+            value = f"<code>{escape(version)}</code>"
             return (
                 f"<code>{escape(name)}</code>",
-                f"{action} <code>{escape(version)}</code>",
+                value if action == "-" else "",
+                value if action == "+" else "",
             )
         if " → " in value:
             before, after = value.split(" → ", 1)
-            change = f"<code>{escape(before)}</code> → <code>{escape(after)}</code>"
-        else:
-            change = f"<code>{escape(value)}</code>"
-        return f"<code>{escape(name)}</code>", change
+            return (
+                f"<code>{escape(name)}</code>",
+                f"<code>{escape(before)}</code>",
+                f"<code>{escape(after)}</code>",
+            )
+        return f"<code>{escape(name)}</code>", "", f"<code>{escape(value)}</code>"
 
     kernels = sorted(
         (line for line in affected if line.startswith("Kernel: ")),
@@ -240,12 +244,12 @@ def summarize_changes(groups, limit=15, all_targets=None):
         lines += [
             "**Other changes**",
             "",
-            "| Name | Change | Hosts |",
-            "| --- | --- | --- |",
+            "| Name | Old | New | Hosts |",
+            "| --- | --- | --- | --- |",
         ]
         for line in other[:limit]:
-            name, change = table_item(line)
-            lines.append(f"| {name} | {change} | {scope(line)} |")
+            name, before, after = table_item(line)
+            lines.append(f"| {name} | {before} | {after} | {scope(line)} |")
         lines.append("")
         if len(other) > limit:
             lines += [
