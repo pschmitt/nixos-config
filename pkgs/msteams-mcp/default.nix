@@ -31,6 +31,8 @@ buildNpmPackage {
     # sign in with the Teams login of a browser-daemon profile (see
     # TEAMS_MCP_BROWSER_DAEMON_URL) before opening a local browser
     ./browser-daemon-login.patch
+    # stamp formatVariant: TEAMS, empty cards/links/files property arrays, and contenttype: Text
+    ./teams-message-properties.patch
   ];
 
   postInstall = ''

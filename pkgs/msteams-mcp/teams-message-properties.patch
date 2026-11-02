@@ -1,0 +1,82 @@
+diff --git a/src/api/chatsvc-messaging.ts b/src/api/chatsvc-messaging.ts
+index a434bd5..cd7a6e1 100644
+--- a/src/api/chatsvc-messaging.ts
++++ b/src/api/chatsvc-messaging.ts
+@@ -125,6 +125,10 @@ export interface SendMessageOptions {
+    * combined with mentions or a thread reply.
+    */
+   scheduleAt?: string;
++  /**
++   * Additional message properties (e.g., formatVariant, cards, links, files).
++   */
++  properties?: Record<string, unknown>;
+ }
+ 
+ /** Result of getting a 1:1 conversation. */
+@@ -185,7 +189,7 @@ export async function sendMessage(
+   }
+   const { auth, region, baseUrl } = authResult.value;
+ 
+-  const { replyToMessageId, contentType = 'markdown', subject, scheduleAt } = options;
++  const { replyToMessageId, contentType = 'markdown', subject, scheduleAt, properties: extraProperties } = options;
+   const displayName = getUserDisplayName() || 'User';
+ 
+   const clientMessageId = generateClientMessageId();
+@@ -234,22 +238,24 @@ export async function sendMessage(
+   const body: Record<string, unknown> = {
+     content: resolved.content,
+     messagetype: resolved.messagetype,
+-    contenttype: 'text',
++    contenttype: 'Text',
+     imdisplayname: displayName,
+     clientmessageid: clientMessageId,
+   };
+ 
+   // Message properties: mentions and/or a channel thread subject.
+-  const properties: Record<string, unknown> = {};
+-  if (resolved.mentions.length > 0) {
+-    properties.mentions = buildMentionsProperty(resolved.mentions);
+-  }
++  const properties: Record<string, unknown> = {
++    formatVariant: 'TEAMS',
++    mentions: resolved.mentions.length > 0 ? buildMentionsProperty(resolved.mentions) : '[]',
++    cards: '[]',
++    links: '[]',
++    files: '[]',
++    ...(extraProperties || {}),
++  };
+   if (subject && subject.trim()) {
+     properties.subject = subject.trim();
+   }
+-  if (Object.keys(properties).length > 0) {
+-    body.properties = properties;
+-  }
++  body.properties = properties;
+ 
+   const url = CHATSVC_API.messages(region, conversationId, replyToMessageId, baseUrl);
+   const requestInit = {
+@@ -633,16 +639,17 @@ export async function editMessage(
+     conversationid: conversationId,
+     content: resolved.content,
+     messagetype: resolved.messagetype,
+-    contenttype: 'text',
++    contenttype: 'Text',
+     imdisplayname: displayName,
++    properties: {
++      formatVariant: 'TEAMS',
++      mentions: resolved.mentions.length > 0 ? buildMentionsProperty(resolved.mentions) : '[]',
++      cards: '[]',
++      links: '[]',
++      files: '[]',
++    },
+   };
+ 
+-  if (resolved.mentions.length > 0) {
+-    body.properties = {
+-      mentions: buildMentionsProperty(resolved.mentions),
+-    };
+-  }
+-
+   const url = CHATSVC_API.editMessage(region, conversationId, messageId, baseUrl);
+ 
+   const response = await httpRequest<unknown>(
