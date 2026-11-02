@@ -44,6 +44,19 @@ What to look for, how it shows in the script output, and the usual fix.
 - Header spacing: measure the chevron's icon box against its 44px hit area and the gap to the logo. A centred icon in a 44px box leaves dead space before and after it; align the icon to the edge of the hit area instead. Compare logo size with the title block next to it.
 - The header title repeating the app name on every page, where the current section or item would orient the user better.
 
+## Simplicity and vertical space
+
+Run [density.js](density.js) at phone width on lists, detail pages and forms.
+
+- `firstContentY`: lists should show their first item within about 200px of the top of the content area, with at least 5 items in the first screen; on detail pages the main content (for example the pattern text) must be above the fold (`firstContentAboveFold`).
+- `above`: the itemised list of what precedes the content. Typical waste: an eyebrow label that says nothing ("Your workspace", the app name), a 2-3 line subtitle under every H1, a heading that repeats the H1 ("Your projects"), "Page 1" on a single page, labels above a search field whose placeholder already says it.
+- `controlsAboveFold` and `wordsAboveFold`: aim for about 4 controls and 20 words of chrome before the content. A search bar with label, input, filter selects, checkbox and a Search button is the usual offender: use one live search field plus one filter button with a count badge, and show active filters as chips.
+- Card height on a phone: a card that fills the screen with a placeholder image shows one item per screen; use rows or a compact 2-column grid.
+- Actions: one primary action visible, the rest in an overflow menu; per-card buttons (favourite on every card) multiply the control count.
+- Forms: collapse rarely used sections with a one-line summary; drop helper sentences that explain the obvious.
+- Fixed chrome (header plus bottom bar, the `chrome` line) above about 15% of the viewport on a phone is a lot; 56px bars, and on reading pages hide the header when scrolling down.
+- Grammar in counts ("1 categories") shows missing plural handling.
+
 ## Feedback and ergonomics
 
 Run [feedback.js](feedback.js) on a throwaway record, then walk create, save and delete for each entity by hand.

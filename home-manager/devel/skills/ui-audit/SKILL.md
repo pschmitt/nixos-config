@@ -1,6 +1,6 @@
 ---
 name: ui-audit
-description: Review the usability, layout and visual consistency of a running web app with measurements instead of impressions - button and input variants, page-header and container drift, layout shift, hover and focus states, wrapping labels, mobile layout, navigation, and save/error feedback. Use when asked to review, audit or critique a web UI or a redesign, or when the user says buttons shift around, are placed oddly, are styled inconsistently, or that saving gives no visible feedback.
+description: Review the usability, layout and visual consistency of a running web app with measurements instead of impressions - button and input variants, page-header and container drift, layout shift, hover and focus states, wrapping labels, mobile layout and vertical space, busy pages, navigation, and save/error feedback. Use when asked to review, audit, critique or simplify a web UI or a redesign, or when the user says pages are busy or cluttered, buttons shift around, are placed oddly, are styled inconsistently, or that saving gives no visible feedback.
 ---
 
 # UI audit
@@ -21,11 +21,12 @@ Look at the real app with real data and measure it. A screenshot shows that some
    - `sigs`: every distinct button style (background, colour, border, radius, height, font size and weight, padding) with the buttons that use it. Many signatures for one role = a fragmented button system.
    - per page: H1 position and size, heading sizes, input height/radius/font size, container radii, content widths, and every button with class, position and size. Buttons much taller than 44-48px have wrapped labels.
 3. **Motion and states** ([references/motion.js](references/motion.js)), same way, at desktop width: layout-shift entries with the elements that moved, which buttons change on hover (full computed-style diff) and whether focus is visible.
-4. **Look at the outliers.** Take viewport screenshots of whatever the numbers flag: wrapped buttons, odd positions, long titles, the bottom of long forms, the phone layout.
-5. **Navigation:** test the back controls and the header as described in the checklist (deep link in a new tab, side paths, top-level pages; spacing of chevron, logo and title). Navigation only, no clicks on actions.
-6. **Feedback** ([references/feedback.js](references/feedback.js)) on a test record: success, simulated server error, offline, and slow save with a double click. It reports whether messages are inside the viewport, where focus lands and how many writes went out. Then walk create, save and delete for each entity and note where each lands and what it says.
-7. **Compare sibling pages** (for example projects vs yarns): back links, eyebrows, where Edit, Delete and Favourite sit, read vs edit mode for photos, Cancel on forms, card padding, confirmation dialogs.
-8. **Report** grouped by cause, most impactful first, each with measured values and a concrete fix, then a suggested fix order. See [the checklist](references/checklist.md) for what to look for and the usual fixes.
+4. **Density** ([references/density.js](references/density.js)), same way: per route at phone and desktop width, where the first content item starts, how many controls and words come before it, the fixed chrome share, and an itemised list of everything above the content. This is the measure for "busy" pages and wasted vertical space.
+5. **Look at the outliers.** Take viewport screenshots of whatever the numbers flag: wrapped buttons, odd positions, long titles, the bottom of long forms, the phone layout.
+6. **Navigation:** test the back controls and the header as described in the checklist (deep link in a new tab, side paths, top-level pages; spacing of chevron, logo and title). Navigation only, no clicks on actions.
+7. **Feedback** ([references/feedback.js](references/feedback.js)) on a test record: success, simulated server error, offline, and slow save with a double click. It reports whether messages are inside the viewport, where focus lands and how many writes went out. Then walk create, save and delete for each entity and note where each lands and what it says.
+8. **Compare sibling pages** (for example projects vs yarns): back links, eyebrows, where Edit, Delete and Favourite sit, read vs edit mode for photos, Cancel on forms, card padding, confirmation dialogs.
+9. **Report** grouped by cause, most impactful first, each with measured values and a concrete fix, then a suggested fix order. See [the checklist](references/checklist.md) for what to look for and the usual fixes.
 
 ## Pitfalls
 
