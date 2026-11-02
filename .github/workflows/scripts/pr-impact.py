@@ -224,13 +224,12 @@ def summarize_changes(groups, limit=15, all_targets=None):
     )
     lines = ["### TL;DR", ""]
     if kernels:
-        lines += ["> [!WARNING]", "> 🐧 **Kernel changes**", ">"]
-        for index, line in enumerate(kernels[:limit]):
+        lines += ["> [!WARNING]", "> 🐧 **Kernel changes:**"]
+        for line in kernels[:limit]:
             before, after = line.removeprefix("Kernel: ").split(" → ", 1)
-            ending = "<br>" if index < min(len(kernels), limit) - 1 else ""
             lines.append(
                 f"> <code>{escape(before)}</code> → <code>{escape(after)}</code> "
-                f"({scope(line)}){ending}"
+                f"({scope(line)})"
             )
         if len(kernels) > limit:
             lines.append(

@@ -193,7 +193,7 @@ class ReportTests(unittest.TestCase):
         )
         summary = result.split("<details>")[0]
         self.assertIn("> [!WARNING]", summary)
-        self.assertIn("🐧 **Kernel changes**", summary)
+        self.assertIn("🐧 **Kernel changes:**", summary)
         self.assertIn("<code>6</code> → <code>7</code> (x2)", summary)
         self.assertIn(
             "| <code>foo</code> | <code>1</code> → <code>2</code> | x2 |", summary
@@ -215,6 +215,16 @@ class ReportTests(unittest.TestCase):
         self.assertIn("&lt;x&gt;", summary)
         self.assertIn("*5 more distinct changes in the full report.*", summary)
         self.assertEqual(summary.count("<code>"), 60)
+
+    def test_kernel_alert_uses_compact_consecutive_lines(self):
+        groups = {
+            ("Kernel: 6 → 7",): ["nixos:a"],
+            ("Kernel: 8 → 9",): ["nixos:b"],
+        }
+        report = "\n".join(impact.summarize_changes(groups))
+        self.assertIn("> 🐧 **Kernel changes:**\n> <code>6</code>", report)
+        self.assertIn("(<code>nixos:a</code>)\n> <code>8</code>", report)
+        self.assertNotIn("<br>", report)
 
     def test_summary_escapes_table_delimiters_and_only_warns_on_kernels(self):
         summary = "\n".join(
