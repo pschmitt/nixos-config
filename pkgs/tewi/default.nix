@@ -39,6 +39,7 @@ in
 python3.pkgs.buildPythonApplication rec {
   pname = "tewi";
   version = "3.1.0";
+  passthru.updatePolicy.autoMerge = "all";
   pyproject = true;
 
   src = fetchFromGitHub {

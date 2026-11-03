@@ -24,6 +24,7 @@ in
 stdenvNoCC.mkDerivation {
   pname = "tesmart-cli";
   version = "0-unstable-2026-11-01";
+  passthru.updatePolicy.autoMerge = "all";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;

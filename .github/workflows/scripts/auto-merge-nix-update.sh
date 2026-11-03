@@ -51,6 +51,7 @@ check_and_merge() {
       [
         check_buckets("Nix build"; "setup-matrix"),
         check_buckets("Lint"; "nix"),
+        check_buckets("NixOS systemPackages diff"; "pr-systempackages-diff"),
         check_buckets(""; "nixbot/nix-build"),
         package_buckets("aarch64-linux")
       ] as $required

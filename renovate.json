@@ -22,6 +22,30 @@
       "separateMinorPatch": true
     },
     {
+      "description": "Automerge opted-in package updates after required CI checks pass",
+      "matchFileNames": [
+        "pkgs/tewi/default.nix",
+        "pkgs/native-client/default.nix",
+        "pkgs/todoist-cli/default.nix",
+        "pkgs/zsh-tools/tesmart-cli.nix",
+        "pkgs/zsh-tools/kubectl-ksh.nix"
+      ],
+      "automergeType": "pr",
+      "automerge": true
+    },
+    {
+      "description": "Automerge n8n and podsync image updates after required CI checks pass",
+      "matchFileNames": [
+        "services/n8n.nix",
+        "services/podsync.nix"
+      ],
+      "matchDatasources": [
+        "docker"
+      ],
+      "automergeType": "pr",
+      "automerge": true
+    },
+    {
       "description": "Deliberately old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages); never bump them.",
       "matchDepNames": [
         "nixpkgs-kubectl-123",

@@ -48,16 +48,22 @@ def main():
             f"pkgs/local/{package}/",
             f"pkgs/fonts/{package}/",
         ]
+        package_files = {
+            "tesmart-cli": "pkgs/zsh-tools/tesmart-cli.nix",
+            "kubectl-ksh": "pkgs/zsh-tools/kubectl-ksh.nix",
+        }
+        default_files = [root + "default.nix" for root in allowed]
+        if package in package_files:
+            default_files.append(package_files[package])
         if not paths or not all(
-            any(p.startswith(root) for root in allowed) for p in paths
+            any(p.startswith(root) for root in allowed)
+            or p == package_files.get(package)
+            for p in paths
         ):
             continue
-        # Recheck the patch policy and versions at the current head. Labels can
+        # Recheck the opt-in policy and versions at the current head. Labels can
         # survive later updates to the same branch; they are only an opt-in.
-        default_file = next(
-            (root + "default.nix" for root in allowed if root + "default.nix" in paths),
-            None,
-        )
+        default_file = next((path for path in default_files if path in paths), None)
         if default_file is None:
             continue
         repo = subprocess.check_output(
@@ -68,23 +74,53 @@ def main():
         for ref in (details["baseRefOid"], details["headRefOid"]):
             content = gh("api", f"repos/{repo}/contents/{default_file}?ref={ref}")
             sources.append(base64.b64decode(content["content"]).decode())
-        versions = [
-            re.search(
-                r'\bversion\s*=\s*"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)"',
-                source,
-            )
+        version_values = [
+            re.findall(r'\bversion\s*=\s*"([^"]+)"', source) for source in sources
+        ]
+        if not all(version_values):
+            continue
+        policies = [
+            re.search(r'updatePolicy\.autoMerge\s*=\s*"(patch|all)"', source)
             for source in sources
         ]
-        if not all(versions):
+        if not all(policies) or policies[0].group(1) != policies[1].group(1):
             continue
-        before, after = [tuple(map(int, version.groups())) for version in versions]
-        if before[:2] != after[:2] or after[2] <= before[2]:
-            continue
-        if not all(
-            re.search(r'updatePolicy\.autoMerge\s*=\s*"patch"', source)
-            for source in sources
-        ):
-            continue
+        policy = policies[0].group(1)
+        before, after = [versions[-1] for versions in version_values]
+        if policy == "patch":
+            old = re.fullmatch(
+                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', before
+            )
+            new = re.fullmatch(
+                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', after
+            )
+            if not old or not new:
+                continue
+            old_version = tuple(map(int, old.groups()))
+            new_version = tuple(map(int, new.groups()))
+            if old_version[:2] != new_version[:2] or new_version[2] <= old_version[2]:
+                continue
+        else:
+            old_semver = re.fullmatch(
+                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', before
+            )
+            new_semver = re.fullmatch(
+                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', after
+            )
+            old_date = re.fullmatch(r'0-unstable-(\d{4})-(\d{2})-(\d{2})', before)
+            new_date = re.fullmatch(r'0-unstable-(\d{4})-(\d{2})-(\d{2})', after)
+            if old_semver and new_semver:
+                if tuple(map(int, new_semver.groups())) <= tuple(
+                    map(int, old_semver.groups())
+                ):
+                    continue
+            elif old_date and new_date:
+                if tuple(map(int, new_date.groups())) <= tuple(
+                    map(int, old_date.groups())
+                ):
+                    continue
+            else:
+                continue
         subprocess.run(
             [
                 "bash",
