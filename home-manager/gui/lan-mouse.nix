@@ -140,8 +140,9 @@ in
         default = hotEdgePeer != null;
         defaultText = lib.literalExpression "true if a peer sits to the left or right";
         description = ''
-          Show a small button when the pointer hits the middle of the screen
-          edge facing a peer while lan-mouse is not running; clicking it runs
+          Show a button when the pointer hits the screen edge facing a peer
+          and lan-mouse cannot take it there, because lan-mouse is not
+          running locally or the peer does not answer; clicking it runs
           `lan-mouse::start`.
         '';
       };
@@ -298,7 +299,7 @@ in
 
       lan-mouse-hot-edge = lib.mkIf cfg.hotEdge.enable {
         Unit = {
-          Description = "Offer to start lan-mouse when the pointer hits the ${hotEdge} screen edge";
+          Description = "Offer to start lan-mouse when the pointer hits the ${hotEdge} screen edge and lan-mouse is down here or on the peer";
           PartOf = [ "graphical-session.target" ];
           After = [ "graphical-session.target" ];
         };
@@ -314,6 +315,8 @@ in
                 pkgs.zsh
                 pkgs.systemd
                 pkgs.openssh
+                # `lan-mouse cli input-state` tells a sleeping peer apart.
+                cfg.package
               ]
             }"
           ];
