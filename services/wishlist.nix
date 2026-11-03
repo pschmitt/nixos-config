@@ -4,7 +4,7 @@
   ...
 }:
 let
-  # renovate: datasource=docker depName=ghcr.io/cmintey/wishlist
+  # renovate: datasource=docker depName=ghcr.io/cmintey/wishlist depType=automerge
   wishlistVersion = "v0.69.0";
   primaryHost = "wish.${config.domains.main}";
   # hostnames = [

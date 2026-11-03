@@ -3,7 +3,7 @@
   ...
 }:
 let
-  # renovate: datasource=docker depName=traefik/whoami
+  # renovate: datasource=docker depName=traefik/whoami depType=automerge
   whoamiVersion = "v1.12.0";
   listenPort = 19462;
   hostName = "whoami.${config.domains.main}";

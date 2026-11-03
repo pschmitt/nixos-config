@@ -7,7 +7,7 @@ let
   backend = config.virtualisation.oci-containers.backend;
   # renovate: datasource=docker depName=sissbruecker/linkding
   linkdingVersion = "1.47.0";
-  # renovate: datasource=docker depName=proog/linkding-media-archiver
+  # renovate: datasource=docker depName=proog/linkding-media-archiver depType=automerge
   mediaArchiverVersion = "v0.7.0";
   linkdingPort = 54653;
   linkdingContainerPort = 9090;

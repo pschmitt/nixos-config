@@ -1,6 +1,6 @@
 { config, ... }:
 let
-  # renovate: datasource=docker depName=bellamy/wallos versioning=semver-coerced
+  # renovate: datasource=docker depName=bellamy/wallos versioning=semver-coerced depType=automerge
   wallosVersion = "5.10.4";
   wallosHost = "subs.${config.domains.main}";
   wallosPort = 8282;
