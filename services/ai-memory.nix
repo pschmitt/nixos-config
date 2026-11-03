@@ -54,7 +54,7 @@ in
       startProgram = "${config.systemd.package}/bin/systemctl start ai-memory.service";
       stopProgram = "${config.systemd.package}/bin/systemctl stop ai-memory.service";
       conditions = ''
-        if failed port ${toString config.services.ai-memory.port} protocol http request "/" for 3 cycles then restart
+        if failed port ${toString config.services.ai-memory.port} protocol http request "/healthz" for 3 cycles then restart
         if 3 restarts within 5 cycles then alert
       '';
     };
