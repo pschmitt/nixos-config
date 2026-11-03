@@ -16,6 +16,10 @@ Options:
   -t, --timeout MS        Notification fallback timeout
   --inactive              Use the inactive appearance
   --progress VALUE        Progress from 0 to 1
+  -p, --position POS      Noctalia OSD position for this OSD only: top_left,
+                          top_center, top_right, bottom_left, bottom_center,
+                          bottom_right, center_left, center_right
+                          (aliases: left, right, top, bottom)
   -h, --help              Show this help
 
 Native types: volume, mic-volume, brightness. Values are percentages;
@@ -74,13 +78,13 @@ main() {
     native_osd "$@"
     return $?
   fi
-  local icon="" severity=info details="" app_name=osd category="" timeout="" progress="" inactive=""
+  local icon="" severity=info details="" app_name=osd category="" timeout="" progress="" inactive="" position=""
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
       -h|--help) usage; return 0 ;;
       --inactive) inactive=1; shift ;;
-      -i|--icon|-s|--severity|-d|--details|-a|--app-name|-c|--category|-t|--timeout|--progress)
+      -i|--icon|-s|--severity|-d|--details|-a|--app-name|-c|--category|-t|--timeout|--progress|-p|--position)
         if [[ -z "${2:-}" ]]
         then
           printf 'Missing value for %s\n' "$1" >&2
@@ -94,6 +98,7 @@ main() {
           -c|--category) category="$2" ;;
           -t|--timeout) timeout="$2" ;;
           --progress) progress="$2" ;;
+          -p|--position) position="$2" ;;
         esac
         shift 2
         ;;
@@ -118,13 +123,23 @@ main() {
     printf 'Expected progress from 0 to 1\n' >&2
     return 2
   fi
+  case "$position" in
+    "") ;;
+    left) position=center_left ;;
+    right) position=center_right ;;
+    top) position=top_center ;;
+    bottom) position=bottom_center ;;
+    top_left|top_center|top_right|bottom_left|bottom_center|bottom_right|center_left|center_right) ;;
+    *) printf 'Invalid position: %s\n' "$position" >&2; return 2 ;;
+  esac
   local message="$*" payload
   [[ -n "$details" ]] && message+=" — $details"
   if use_noctalia
   then
     payload=$(jq -nc --arg icon "$icon" --arg value "$message" \
       --argjson progress "${progress:-null}" --arg inactive "$inactive" \
-      '{icon:$icon, value:$value} + (if $progress == null then {} else {progress:$progress} end) + (if $inactive == "" then {} else {inactive:true} end)')
+      --arg position "$position" \
+      '{icon:$icon, value:$value} + (if $progress == null then {} else {progress:$progress} end) + (if $inactive == "" then {} else {inactive:true} end) + (if $position == "" then {} else {position:$position} end)')
     noctalia msg osd-show "$payload" &>/dev/null && return 0
   fi
   local -a args=(--app-name "$app_name")

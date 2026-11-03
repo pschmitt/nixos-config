@@ -112,6 +112,13 @@ in
 
       # Focus the configured URI handler when it already has a window.
       ./patches/noctalia/0017-notification-browser-focus.patch
+
+      # osd-show always used the configured osd.position, so an ad-hoc OSD
+      # could not appear anywhere else without a persistent config-set. Accept
+      # an optional "position" field (top_left ... center_right) in the JSON
+      # payload that overrides the configured position for that OSD only; the
+      # next OSD without one goes back to the config. Used by `osd --position`.
+      ./patches/noctalia/0018-osd-show-position.patch
     ];
   });
 }
