@@ -139,31 +139,6 @@
         "type": "github"
       }
     },
-    "browser-daemon_2": {
-      "inputs": {
-        "crane": "crane_3",
-        "flake-utils": "flake-utils_3",
-        "nixpkgs": [
-          "nixos-config-private",
-          "hrworks",
-          "nixpkgs"
-        ],
-        "rbw": "rbw"
-      },
-      "locked": {
-        "lastModified": 1793494951,
-        "narHash": "sha256-3wGARhBWcL5tCM/lsD8lL0juxj4CmXCTgWqnDvHFBxA=",
-        "owner": "pschmitt",
-        "repo": "browser-daemon",
-        "rev": "736d1ddbcc8ab787397b04d55ffe758790c5ce1d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "browser-daemon",
-        "type": "github"
-      }
-    },
     "bruvtab": {
       "inputs": {
         "nixpkgs": [
@@ -336,21 +311,6 @@
       }
     },
     "crane_3": {
-      "locked": {
-        "lastModified": 1792350552,
-        "narHash": "sha256-292lvpvxTGKryKxh3/3tcIVi85CwYGdl4oOi113Sob8=",
-        "owner": "ipetkov",
-        "repo": "crane",
-        "rev": "e675a36b7377bebe41d548388a2501cbb16d380d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ipetkov",
-        "repo": "crane",
-        "type": "github"
-      }
-    },
-    "crane_4": {
       "locked": {
         "lastModified": 1793585954,
         "narHash": "sha256-tXvzytP+yKObBT9UpMoqA8AINfq62ZzeOcGFiCJ8ouo=",
@@ -637,24 +597,6 @@
         "systems": "systems_4"
       },
       "locked": {
-        "lastModified": 1791914995,
-        "narHash": "sha256-Zf/xfQEAasnwnmEfHqW/4hjDE/s44yn2hD4RuVIZRjA=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "b7a79d3fea1e214f6d668d521cecec0c01e26544",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "flake-utils_4": {
-      "inputs": {
-        "systems": "systems_5"
-      },
-      "locked": {
         "lastModified": 1731533236,
         "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
@@ -848,33 +790,11 @@
         "type": "github"
       }
     },
-    "home-manager_2": {
-      "inputs": {
-        "nixpkgs": [
-          "nixos-config-private",
-          "hrworks",
-          "browser-daemon",
-          "rbw",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793033486,
-        "narHash": "sha256-fXVURa0+CSCgaxLt8tmPNJq2U+fGYOwbk5j2YUe7kSc=",
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "rev": "7db163b2aee7e410e396b48aed02f646d742b9b8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-community",
-        "repo": "home-manager",
-        "type": "github"
-      }
-    },
     "hrworks": {
       "inputs": {
-        "browser-daemon": "browser-daemon_2",
+        "browser-daemon": [
+          "browser-daemon"
+        ],
         "nixpkgs": [
           "nixos-config-private",
           "nixpkgs"
@@ -1590,7 +1510,7 @@
     },
     "myl-discovery_3": {
       "inputs": {
-        "flake-utils": "flake-utils_4",
+        "flake-utils": "flake-utils_3",
         "nixpkgs": [
           "sendmyl",
           "nixpkgs"
@@ -2430,37 +2350,7 @@
     },
     "rbw": {
       "inputs": {
-        "crane": [
-          "nixos-config-private",
-          "hrworks",
-          "browser-daemon",
-          "crane"
-        ],
-        "home-manager": "home-manager_2",
-        "nixpkgs": [
-          "nixos-config-private",
-          "hrworks",
-          "browser-daemon",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793487443,
-        "narHash": "sha256-zl/IEGc0G3xyB23u6h3IaEs9m6SZV6DMbJQ3gBRuOAA=",
-        "owner": "pschmitt",
-        "repo": "rbw",
-        "rev": "006b98b1507829568c658a8de25bb2ee16248b5a",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "rbw",
-        "type": "github"
-      }
-    },
-    "rbw_2": {
-      "inputs": {
-        "crane": "crane_4",
+        "crane": "crane_3",
         "home-manager": [
           "home-manager"
         ],
@@ -2469,11 +2359,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793608169,
-        "narHash": "sha256-WqqV1a84Rz+dU9NhodQOxTNRKEgwWT/gWM3EXWvxeSM=",
+        "lastModified": 1793702830,
+        "narHash": "sha256-ZsfYHkyM5PiCShUM5hRrF0UZme7eDMMoCi/6V68xURI=",
         "owner": "pschmitt",
         "repo": "rbw",
-        "rev": "b534b30fd3d0af77560b9c9f4dfc55b1157f7462",
+        "rev": "50b5463c691bf43c816306d4f2fcb1385e319fe1",
         "type": "github"
       },
       "original": {
@@ -2542,7 +2432,7 @@
         "pre-commit-hooks": "pre-commit-hooks_2",
         "printlabel": "printlabel",
         "pschmitt-dev": "pschmitt-dev",
-        "rbw": "rbw_2",
+        "rbw": "rbw",
         "ruamel-fmt": "ruamel-fmt",
         "sendmyl": "sendmyl",
         "shelly-ble-rpc": "shelly-ble-rpc",
@@ -2551,7 +2441,7 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "stricknani-rust": "stricknani-rust",
-        "systems": "systems_6",
+        "systems": "systems_5",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
         "teams-live": "teams-live",
@@ -2889,21 +2779,6 @@
       }
     },
     "systems_5": {
-      "locked": {
-        "lastModified": 1681028828,
-        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
-        "owner": "nix-systems",
-        "repo": "default",
-        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-systems",
-        "repo": "default",
-        "type": "github"
-      }
-    },
-    "systems_6": {
       "locked": {
         "lastModified": 1791244623,
         "narHash": "sha256-uuanbkFk8a313Zfrxdcz8Us/yQtaxNnKJtX8v0ZPpd8=",

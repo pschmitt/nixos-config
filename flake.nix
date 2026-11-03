@@ -247,6 +247,9 @@
       inputs = {
         nixpkgs.follows = "nixpkgs";
         pre-commit-hooks.follows = "pre-commit-hooks";
+        # hrworks (its CLI uses browser-daemon-client) would otherwise lock a
+        # second browser-daemon, and with it a second rbw, crane and flake-utils.
+        hrworks.inputs.browser-daemon.follows = "browser-daemon";
       };
     };
 
