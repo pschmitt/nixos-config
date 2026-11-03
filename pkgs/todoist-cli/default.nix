@@ -77,8 +77,6 @@ buildNpmPackage (finalAttrs: {
     installSkill "$TMPDIR/skill/todoist-cli"
   '';
 
-  passthru.updatePolicy.autoMerge = "all";
-
   meta = {
     description = "Command-line interface for Todoist";
     homepage = "https://github.com/Doist/todoist-cli";

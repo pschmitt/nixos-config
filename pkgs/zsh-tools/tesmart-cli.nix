@@ -50,6 +50,7 @@ stdenvNoCC.mkDerivation {
     description = "CLI for TESmart KVM switches";
     homepage = "https://github.com/pschmitt/tesmart.sh";
     license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "tesmart";
   };
 }

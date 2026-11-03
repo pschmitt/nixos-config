@@ -11,6 +11,17 @@ def gh(*args):
     return json.loads(subprocess.check_output(["gh", *args], text=True))
 
 
+def ordered_version(version):
+    numeric = re.fullmatch(r"\d+(?:\.\d+){0,2}", version)
+    date = re.fullmatch(r"(?:0-)?unstable-(\d{4})-(\d{2})-(\d{2})", version)
+    if numeric:
+        parts = tuple(map(int, numeric.group().split(".")))
+        return "numeric", parts + (0,) * (3 - len(parts))
+    if date:
+        return "date", tuple(map(int, date.groups()))
+    return None
+
+
 def main():
     prs = gh(
         "pr",
@@ -47,10 +58,15 @@ def main():
             f"pkgs/{package}/",
             f"pkgs/local/{package}/",
             f"pkgs/fonts/{package}/",
+            f"pkgs/oci/{package}/",
+            f"pkgs/termux/{package}/",
         ]
         package_files = {
             "tesmart-cli": "pkgs/zsh-tools/tesmart-cli.nix",
             "kubectl-ksh": "pkgs/zsh-tools/kubectl-ksh.nix",
+            "kubectl-socks5-proxy": "pkgs/zsh-tools/kubectl-socks5-proxy.nix",
+            "kubectl-watch": "pkgs/zsh-tools/kubectl-watch.nix",
+            "netbird-cli": "pkgs/zsh-tools/netbird-cli.nix",
         }
         default_files = [root + "default.nix" for root in allowed]
         if package in package_files:
@@ -77,16 +93,30 @@ def main():
         version_values = [
             re.findall(r'\bversion\s*=\s*"([^"]+)"', source) for source in sources
         ]
-        if not all(version_values):
+        if not all(version_values) or len(version_values[0]) != len(version_values[1]):
             continue
+        changed_versions = [
+            (before, after)
+            for before, after in zip(*version_values)
+            if before != after
+        ]
+        if len(changed_versions) != 1:
+            continue
+        before, after = changed_versions[0]
+        self_maintained = all(
+            re.search(r"\bmaintainers\s*=.*?\bpschmitt\b", source, re.DOTALL)
+            for source in sources
+        )
         policies = [
             re.search(r'updatePolicy\.autoMerge\s*=\s*"(patch|all)"', source)
             for source in sources
         ]
-        if not all(policies) or policies[0].group(1) != policies[1].group(1):
+        if self_maintained:
+            policy = "all"
+        elif all(policies) and policies[0].group(1) == policies[1].group(1):
+            policy = policies[0].group(1)
+        else:
             continue
-        policy = policies[0].group(1)
-        before, after = [versions[-1] for versions in version_values]
         if policy == "patch":
             old = re.fullmatch(
                 r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', before
@@ -101,25 +131,14 @@ def main():
             if old_version[:2] != new_version[:2] or new_version[2] <= old_version[2]:
                 continue
         else:
-            old_semver = re.fullmatch(
-                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', before
-            )
-            new_semver = re.fullmatch(
-                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', after
-            )
-            old_date = re.fullmatch(r'0-unstable-(\d{4})-(\d{2})-(\d{2})', before)
-            new_date = re.fullmatch(r'0-unstable-(\d{4})-(\d{2})-(\d{2})', after)
-            if old_semver and new_semver:
-                if tuple(map(int, new_semver.groups())) <= tuple(
-                    map(int, old_semver.groups())
-                ):
-                    continue
-            elif old_date and new_date:
-                if tuple(map(int, new_date.groups())) <= tuple(
-                    map(int, old_date.groups())
-                ):
-                    continue
-            else:
+            old_version = ordered_version(before)
+            new_version = ordered_version(after)
+            if (
+                old_version is None
+                or new_version is None
+                or old_version[0] != new_version[0]
+                or new_version[1] <= old_version[1]
+            ):
                 continue
         subprocess.run(
             [

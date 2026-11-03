@@ -135,9 +135,15 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           merge_policy="$(nix eval --raw --impure ".#packages.x86_64-linux.${pkg}.passthru.updatePolicy.autoMerge" 2>/dev/null || true)"
+          self_maintained="$(nix eval --json --impure ".#packages.x86_64-linux.${pkg}.meta.maintainers" \
+            --apply 'maintainers: builtins.any (maintainer: (maintainer.github or "") == "pschmitt") maintainers' \
+            2>/dev/null || true)"
           auto_merge=
 
-          if [[ "$merge_policy" == "all" && -n "$old_version" && -n "$new_version" && "$old_version" != "$new_version" ]]
+          if [[ "$self_maintained" == "true" && -n "$old_version" && -n "$new_version" && "$old_version" != "$new_version" ]]
+          then
+            auto_merge=true
+          elif [[ "$merge_policy" == "all" && -n "$old_version" && -n "$new_version" && "$old_version" != "$new_version" ]]
           then
             auto_merge=true
           elif [[ "$merge_policy" == "patch" && "$old_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]

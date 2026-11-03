@@ -45,6 +45,7 @@ stdenvNoCC.mkDerivation {
     description = "Watch resources using kubectl";
     homepage = "https://github.com/pschmitt/kubectl-watch";
     license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "kubectl-watch";
   };
 }

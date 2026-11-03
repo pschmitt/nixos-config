@@ -51,5 +51,6 @@ stdenvNoCC.mkDerivation {
     description = "kubectl command line helpers from k.sh";
     homepage = "https://github.com/pschmitt/k.sh";
     license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
   };
 }

@@ -45,6 +45,7 @@ stdenvNoCC.mkDerivation {
     description = "SOCKS5 proxy kubectl plugin";
     homepage = "https://github.com/pschmitt/kubectl-plugin-socks5-proxy";
     license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "kubectl-socks5_proxy";
   };
 }

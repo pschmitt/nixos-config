@@ -10,7 +10,6 @@
 stdenv.mkDerivation rec {
   pname = "native-client";
   version = "1.1.9";
-  passthru.updatePolicy.autoMerge = "all";
 
   src = fetchFromGitHub {
     owner = "andy-portmen";

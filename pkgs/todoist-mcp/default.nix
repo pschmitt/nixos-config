@@ -42,8 +42,6 @@ buildNpmPackage rec {
     export NODE_OPTIONS=--jitless
   '';
 
-  passthru.updatePolicy.autoMerge = "patch";
-
   meta = {
     description = "Model Context Protocol (MCP) server for Todoist";
     homepage = "https://github.com/Doist/todoist-mcp";

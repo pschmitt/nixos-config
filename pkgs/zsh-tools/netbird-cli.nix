@@ -47,6 +47,7 @@ stdenvNoCC.mkDerivation {
     description = "NetBird management API command-line client";
     homepage = "https://github.com/pschmitt/netbird-cli";
     license = lib.licenses.mit;
+    maintainers = [ lib.maintainers.pschmitt ];
     mainProgram = "netbird-cli";
   };
 }
