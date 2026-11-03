@@ -177,7 +177,8 @@ ShellRoot {
         }
     }
 
-    // A single glowing icon that slides out from behind the edge.
+    // A single glowing tab docked to the edge: its flat side is the screen
+    // border, as if it pushed through from the peer's display next door.
     PanelWindow {
         id: offerWindow
 
@@ -198,14 +199,15 @@ ShellRoot {
         screen: root.edgeScreen
         visible: root.edgeScreen !== null && reveal > 0.001
         anchors { left: root.onLeft; right: !root.onLeft }
-        implicitWidth: 96
-        implicitHeight: 96
+        implicitWidth: 72
+        implicitHeight: 170
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "lan-mouse-hot-edge-offer"
-        // Only the icon takes input; the glow around it is see-through.
-        mask: Region { item: card }
+        // Only the tab takes input, minus the outermost pixels so lan-mouse's
+        // own 1px capture strip on the edge keeps working underneath.
+        mask: Region { item: hitArea }
 
         Item {
             id: stage
@@ -223,26 +225,65 @@ ShellRoot {
                 }
             }
 
-            // Breathing halo.
-            Repeater {
-                model: 3
-                Rectangle {
-                    required property int index
-                    anchors.centerIn: card
-                    width: card.width + 7 + index * 7
-                    height: width
-                    radius: card.radius + 3.5 + index * 3.5
-                    color: "transparent"
-                    border.width: 3.5
-                    border.color: index % 2 === 0 ? root.cPrimary : root.cTertiary
-                    opacity: (0.24 - index * 0.06) * halo.breath
-                    scale: card.scale
+            readonly property real edgeX: root.onLeft ? 0 : width
+
+            // Light leaking through a seam in the edge.
+            Rectangle {
+                width: 26
+                height: 150 * Math.max(0, offerWindow.reveal)
+                anchors.verticalCenter: parent.verticalCenter
+                x: root.onLeft ? 0 : parent.width - width
+                opacity: 0.35 * halo.breath
+                gradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop { position: 0; color: root.onLeft ? root.cPrimary : "transparent" }
+                    GradientStop { position: 1; color: root.onLeft ? "transparent" : root.cPrimary }
+                }
+            }
+            Rectangle {
+                width: 2
+                height: 150 * Math.max(0, offerWindow.reveal)
+                anchors.verticalCenter: parent.verticalCenter
+                x: root.onLeft ? 0 : parent.width - width
+                gradient: Gradient {
+                    GradientStop { position: 0; color: "transparent" }
+                    GradientStop { position: 0.3; color: root.cTertiary }
+                    GradientStop { position: 0.5; color: "#ffffff" }
+                    GradientStop { position: 0.7; color: root.cPrimary }
+                    GradientStop { position: 1; color: "transparent" }
                 }
             }
 
-            // Sparkles drifting up past the icon.
+            // Ripples spreading out of the edge, cut in half by it.
             Repeater {
-                model: 7
+                model: 3
+                Rectangle {
+                    id: wave
+                    required property int index
+                    property real cycle: 0
+                    readonly property real t: (cycle + index / 3) % 1
+                    width: 40 + t * 90
+                    height: width
+                    radius: width / 2
+                    x: stage.edgeX - width / 2
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: "transparent"
+                    border.width: 2
+                    border.color: index % 2 === 0 ? root.cPrimary : root.cTertiary
+                    opacity: (1 - t) * 0.45 * Math.min(1, halo.breath)
+                    NumberAnimation on cycle {
+                        loops: Animation.Infinite
+                        running: offerWindow.animating
+                        from: 0
+                        to: 1
+                        duration: offerWindow.busy ? 900 : 2400
+                    }
+                }
+            }
+
+            // Sparkles streaming in from the other display.
+            Repeater {
+                model: 8
                 Rectangle {
                     id: spark
                     required property int index
@@ -252,30 +293,33 @@ ShellRoot {
                     height: width
                     radius: width / 2
                     color: [root.cPrimary, root.cTertiary, root.cSecondary, "#ffffff"][index % 4]
-                    x: card.x - 8 + (card.width + 16) * ((seed * 1.37 + t * 0.3) % 1) - width / 2
-                    y: card.y - 12 + (card.height + 24) * (1 - t)
-                    opacity: Math.sin(t * Math.PI) * 0.9
-                    scale: 0.6 + Math.sin(t * Math.PI) * 0.8
+                    readonly property real reach: 30 + spark.seed * 34
+                    x: (root.onLeft ? t * reach : stage.width - t * reach) - width / 2
+                    y: stage.height / 2 + (spark.seed - 0.5) * 70 + Math.sin(t * Math.PI * 2 + index) * 4 - height / 2
+                    opacity: Math.sin(t * Math.PI) * 0.95
+                    scale: 1.3 - t * 0.7
                     NumberAnimation on t {
                         loops: Animation.Infinite
                         running: offerWindow.animating
                         from: 0
                         to: 1
-                        duration: 1600 + spark.seed * 2000
+                        duration: 1100 + spark.seed * 1400
                     }
                 }
             }
 
             Item {
                 id: card
-                width: 44
-                height: 44
-                readonly property real radius: 14
+                width: 40
+                height: 50
+                readonly property real radius: 15
                 anchors.verticalCenter: parent.verticalCenter
+                // Slides out of the edge; never leaves it.
                 x: root.onLeft
-                    ? 12 - (1 - offerWindow.reveal) * 70
-                    : parent.width - width - 12 + (1 - offerWindow.reveal) * 70
-                scale: area.pressed ? 0.88 : (area.containsMouse ? 1.08 : 1)
+                    ? -(1 - offerWindow.reveal) * width
+                    : parent.width - width * offerWindow.reveal
+                transformOrigin: root.onLeft ? Item.Left : Item.Right
+                scale: area.pressed ? 0.9 : (area.containsMouse ? 1.1 : 1)
                 Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
 
                 property real spin: 0
@@ -303,9 +347,25 @@ ShellRoot {
                         const ctx = getContext("2d")
                         const w = width, h = height, r = card.radius, b = 1.5
                         ctx.reset()
+                        // Drawn for the right edge, mirrored for the left.
+                        if (root.onLeft) {
+                            ctx.translate(w, 0)
+                            ctx.scale(-1, 1)
+                        }
+                        // Rounded on the inside, flat (and open) on the edge.
+                        function tab(close) {
+                            ctx.beginPath()
+                            ctx.moveTo(w + 1, b)
+                            ctx.lineTo(r, b)
+                            ctx.arcTo(b, b, b, r, r - b)
+                            ctx.lineTo(b, h - r)
+                            ctx.arcTo(b, h - b, r, h - b, r - b)
+                            ctx.lineTo(w + 1, h - b)
+                            if (close)
+                                ctx.closePath()
+                        }
 
-                        ctx.beginPath()
-                        ctx.roundedRect(b, b, w - 2 * b, h - 2 * b, r - b, r - b)
+                        tab(true)
                         const body = ctx.createLinearGradient(0, 0, w, h)
                         body.addColorStop(0, area.containsMouse ? "#f43a3b4d" : "#f02c2d3a")
                         body.addColorStop(1, area.containsMouse ? "#f8242533" : "#f41a1b23")
@@ -328,8 +388,7 @@ ShellRoot {
                         ctx.fillRect(0, 0, w, h)
                         ctx.restore()
 
-                        ctx.beginPath()
-                        ctx.roundedRect(b, b, w - 2 * b, h - 2 * b, r - b, r - b)
+                        tab(false)
                         const rim = ctx.createConicalGradient(w / 2, h / 2, card.spin)
                         rim.addColorStop(0.00, root.cPrimary)
                         rim.addColorStop(0.25, root.cTertiary)
@@ -344,6 +403,13 @@ ShellRoot {
                         target: card
                         function onSpinChanged() { frame.requestPaint() }
                     }
+                }
+
+                Item {
+                    id: hitArea
+                    anchors.fill: parent
+                    anchors.leftMargin: root.onLeft ? 3 : 0
+                    anchors.rightMargin: root.onLeft ? 0 : 3
                 }
 
                 // Click ripple.
