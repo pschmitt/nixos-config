@@ -22,3 +22,10 @@ id = "signed-connection-url"
 description = "Signed browser-daemon connection URL"
 regex = '''wss?://[^\s"']+\?[^\s"']*(?:sig|signature|auth)=([^&\s"']{16,})'''
 secretGroup = 1
+
+# The Things Stack pagination cursor: an opaque position in a listing that grants
+# nothing without a login. Only the header line itself is exempt.
+[[allowlists]]
+description = "TTS x-continuation-token response header"
+regexTarget = "line"
+regexes = ['''(?i)^x-continuation-token: ''']
