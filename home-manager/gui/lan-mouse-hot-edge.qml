@@ -222,15 +222,16 @@ ShellRoot {
         screen: root.edgeScreen
         visible: root.edgeScreen !== null && reveal > 0.001
         anchors { left: root.onLeft; right: !root.onLeft }
-        implicitWidth: 72
-        implicitHeight: 170
+        // Just large enough for the tab, the seam and the sparkles.
+        implicitWidth: 68
+        implicitHeight: 100
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
         WlrLayershell.namespace: "lan-mouse-hot-edge-offer"
-        // Only the tab takes input, minus the outermost pixels so lan-mouse's
-        // own 1px capture strip on the edge keeps working underneath.
-        mask: Region { item: hitArea }
+        // The whole overlay is clickable, minus the outermost pixels so
+        // lan-mouse's own 1px capture strip on the edge keeps working.
+        mask: Region { item: area }
 
         Item {
             id: stage
@@ -348,13 +349,6 @@ ShellRoot {
                     }
                 }
 
-                Item {
-                    id: hitArea
-                    anchors.fill: parent
-                    anchors.leftMargin: root.onLeft ? 3 : 0
-                    anchors.rightMargin: root.onLeft ? 0 : 3
-                }
-
                 // Moons orbiting the glyph.
                 Item {
                     id: orbit
@@ -437,22 +431,24 @@ ShellRoot {
                     scale: visible ? 1 : 0.2
                     Behavior on scale { NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 3 } }
                 }
+            }
 
-                MouseArea {
-                    id: area
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onContainsMouseChanged: frame.requestPaint()
-                    onEntered: hideTimer.stop()
-                    onExited: if (!offerWindow.busy) hideTimer.restart()
-                    onClicked: {
-                        if (starter.running)
-                            return
-                        root.phase = "starting"
-                        hideTimer.stop()
-                        starter.running = true
-                    }
+            MouseArea {
+                id: area
+                anchors.fill: parent
+                anchors.leftMargin: root.onLeft ? 3 : 0
+                anchors.rightMargin: root.onLeft ? 0 : 3
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onContainsMouseChanged: frame.requestPaint()
+                onEntered: hideTimer.stop()
+                onExited: if (!offerWindow.busy) hideTimer.restart()
+                onClicked: {
+                    if (starter.running)
+                        return
+                    root.phase = "starting"
+                    hideTimer.stop()
+                    starter.running = true
                 }
             }
         }
