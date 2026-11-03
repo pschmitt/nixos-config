@@ -6,11 +6,12 @@ import Quickshell.Wayland
 // Hot edge: offers to start lan-mouse (locally and on the peers) when the
 // pointer is pushed against the left or right edge (LAN_MOUSE_HOT_EDGE) of the
 // outermost screen on that side and lan-mouse can't take it there, because
-//  - the local daemon is not running: an invisible strip on the edge notices
-//    the pointer, or
+//  - the local daemon is not running, or
 //  - the local daemon runs but the peer does not answer: lan-mouse reports a
 //    handoff that stays pending (it connects lazily, so "connected" alone says
 //    nothing until a crossing was attempted) and releases the pointer again.
+// In both cases an invisible strip then takes over the middle of the edge, and
+// the offer appears once the pointer has rested against it for a while.
 ShellRoot {
     id: root
 
@@ -23,6 +24,9 @@ ShellRoot {
 
     property bool lanMouseActive: true
     property bool offerVisible: false
+    // Set after a failed handoff; cleared by a successful one, by starting
+    // lan-mouse from here, or after a while so lan-mouse gets to retry.
+    property bool peerDown: false
     // "local": lan-mouse is not running here; "peer": the peer did not answer.
     property string reason: "local"
     // "idle" | "starting" | "done" | "failed"
@@ -63,13 +67,13 @@ ShellRoot {
         if (state.outgoing) {
             // A handoff went through: the peer is fine.
             pendingTimer.stop()
+            root.peerDown = false
             if (root.reason === "peer" && root.phase === "idle")
                 root.dismiss()
             return
         }
-        if (state.pending && !pendingTimer.running && !root.offerVisible) {
+        if (state.pending && !root.peerDown && !pendingTimer.running)
             pendingTimer.restart()
-        }
     }
 
     Process {
@@ -106,8 +110,10 @@ ShellRoot {
                     return
                 }
                 const connected = (state.peers || []).some(p => p.active && p.connected)
-                if (!state.outgoing && !connected)
-                    root.offer("peer", 4500)
+                if (!state.outgoing && !connected) {
+                    root.peerDown = true
+                    peerDownTimer.restart()
+                }
             }
         }
     }
@@ -125,6 +131,8 @@ ShellRoot {
         command: ["zsh", "-fc", "fpath=(/etc/profiles/per-user/$USER/share/zsh/site-functions $fpath); autoload -Uz lan-mouse::start lan-mouse::_control; lan-mouse::start"]
         onExited: (code, status) => {
             root.phase = code === 0 ? "done" : "failed"
+            if (code === 0)
+                root.peerDown = false
             hideTimer.interval = code === 0 ? 1400 : 3500
             hideTimer.restart()
             suppressTimer.restart()
@@ -150,17 +158,31 @@ ShellRoot {
         }
     }
 
+    Timer {
+        id: peerDownTimer
+        interval: 60000
+        onTriggered: root.peerDown = false
+    }
+
+    // The pointer has to rest against the edge this long before the offer.
+    Timer {
+        id: dwellTimer
+        interval: 2000
+        onTriggered: root.offer(root.lanMouseActive ? "peer" : "local", 2500)
+    }
+
     // Right after starting, the first crossing may still race the connection.
     Timer {
         id: suppressTimer
         interval: 4000
     }
 
-    // Invisible strip on the middle of the edge. Only while lan-mouse is not
-    // running, so it never competes with lan-mouse's own capture surfaces.
+    // Invisible strip on the middle of the edge. Only while lan-mouse can't
+    // take the pointer anyway, so it never competes with a working handoff.
     PanelWindow {
         screen: root.edgeScreen
-        visible: root.edgeScreen !== null && !root.lanMouseActive
+        visible: root.edgeScreen !== null && (!root.lanMouseActive || root.peerDown)
+        onVisibleChanged: if (!visible) dwellTimer.stop()
         anchors { left: root.onLeft; right: !root.onLeft }
         implicitWidth: 2
         // Middle quarter of the edge; unanchored vertically means centered.
@@ -173,7 +195,8 @@ ShellRoot {
         MouseArea {
             anchors.fill: parent
             hoverEnabled: true
-            onEntered: root.offer("local", 1800)
+            onEntered: dwellTimer.restart()
+            onExited: dwellTimer.stop()
         }
     }
 
@@ -212,72 +235,17 @@ ShellRoot {
         Item {
             id: stage
             anchors.fill: parent
-            opacity: Math.min(1, Math.max(0, offerWindow.reveal))
 
-            QtObject {
-                id: halo
-                property real breath: 1
-                SequentialAnimation on breath {
-                    loops: Animation.Infinite
-                    running: offerWindow.animating
-                    NumberAnimation { to: offerWindow.busy ? 2.2 : 1.6; duration: 900; easing.type: Easing.InOutSine }
-                    NumberAnimation { to: 0.6; duration: 900; easing.type: Easing.InOutSine }
-                }
-            }
-
-            readonly property real edgeX: root.onLeft ? 0 : width
-
-            // Light leaking through a seam in the edge.
-            Rectangle {
-                width: 26
-                height: 150 * Math.max(0, offerWindow.reveal)
-                anchors.verticalCenter: parent.verticalCenter
-                x: root.onLeft ? 0 : parent.width - width
-                opacity: 0.35 * halo.breath
-                gradient: Gradient {
-                    orientation: Gradient.Horizontal
-                    GradientStop { position: 0; color: root.onLeft ? root.cPrimary : "transparent" }
-                    GradientStop { position: 1; color: root.onLeft ? "transparent" : root.cPrimary }
-                }
-            }
+            // A seam of light in the edge the tab pushes through.
             Rectangle {
                 width: 2
-                height: 150 * Math.max(0, offerWindow.reveal)
+                height: 90 * Math.max(0, offerWindow.reveal)
                 anchors.verticalCenter: parent.verticalCenter
                 x: root.onLeft ? 0 : parent.width - width
                 gradient: Gradient {
-                    GradientStop { position: 0; color: "transparent" }
-                    GradientStop { position: 0.3; color: root.cTertiary }
-                    GradientStop { position: 0.5; color: "#ffffff" }
-                    GradientStop { position: 0.7; color: root.cPrimary }
-                    GradientStop { position: 1; color: "transparent" }
-                }
-            }
-
-            // Ripples spreading out of the edge, cut in half by it.
-            Repeater {
-                model: 3
-                Rectangle {
-                    id: wave
-                    required property int index
-                    property real cycle: 0
-                    readonly property real t: (cycle + index / 3) % 1
-                    width: 40 + t * 90
-                    height: width
-                    radius: width / 2
-                    x: stage.edgeX - width / 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: "transparent"
-                    border.width: 2
-                    border.color: index % 2 === 0 ? root.cPrimary : root.cTertiary
-                    opacity: (1 - t) * 0.45 * Math.min(1, halo.breath)
-                    NumberAnimation on cycle {
-                        loops: Animation.Infinite
-                        running: offerWindow.animating
-                        from: 0
-                        to: 1
-                        duration: offerWindow.busy ? 900 : 2400
-                    }
+                    GradientStop { position: 0; color: root.cPrimary }
+                    GradientStop { position: 0.5; color: root.cTertiary }
+                    GradientStop { position: 1; color: root.cPrimary }
                 }
             }
 
@@ -296,8 +264,7 @@ ShellRoot {
                     readonly property real reach: 30 + spark.seed * 34
                     x: (root.onLeft ? t * reach : stage.width - t * reach) - width / 2
                     y: stage.height / 2 + (spark.seed - 0.5) * 70 + Math.sin(t * Math.PI * 2 + index) * 4 - height / 2
-                    opacity: Math.sin(t * Math.PI) * 0.95
-                    scale: 1.3 - t * 0.7
+                    scale: Math.sin(t * Math.PI) * 1.3
                     NumberAnimation on t {
                         loops: Animation.Infinite
                         running: offerWindow.animating
@@ -323,7 +290,6 @@ ShellRoot {
                 Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
 
                 property real spin: 0
-                property real shimmer: -0.5
                 NumberAnimation on spin {
                     loops: Animation.Infinite
                     running: offerWindow.animating
@@ -331,14 +297,7 @@ ShellRoot {
                     to: Math.PI * 2
                     duration: offerWindow.busy ? 800 : 3200
                 }
-                SequentialAnimation on shimmer {
-                    loops: Animation.Infinite
-                    running: offerWindow.animating
-                    NumberAnimation { from: -0.5; to: 1.5; duration: 900; easing.type: Easing.InOutQuad }
-                    PauseAnimation { duration: 1600 }
-                }
-
-                // Glass body, shimmer sweep and a rotating rainbow rim.
+                // Solid body with a rotating rainbow rim.
                 Canvas {
                     id: frame
                     anchors.fill: parent
@@ -367,26 +326,10 @@ ShellRoot {
 
                         tab(true)
                         const body = ctx.createLinearGradient(0, 0, w, h)
-                        body.addColorStop(0, area.containsMouse ? "#f43a3b4d" : "#f02c2d3a")
-                        body.addColorStop(1, area.containsMouse ? "#f8242533" : "#f41a1b23")
+                        body.addColorStop(0, area.containsMouse ? "#3a3b4d" : "#2c2d3a")
+                        body.addColorStop(1, area.containsMouse ? "#242533" : "#1a1b23")
                         ctx.fillStyle = body
                         ctx.fill()
-
-                        ctx.save()
-                        ctx.clip()
-                        const sheen = ctx.createLinearGradient(0, 0, 0, h * 0.5)
-                        sheen.addColorStop(0, "#2cffffff")
-                        sheen.addColorStop(1, "#00ffffff")
-                        ctx.fillStyle = sheen
-                        ctx.fillRect(0, 0, w, h * 0.5)
-                        const sx = card.shimmer * w
-                        const sweep = ctx.createLinearGradient(sx - 14, 0, sx + 14, h)
-                        sweep.addColorStop(0, "#00ffffff")
-                        sweep.addColorStop(0.5, "#40ffffff")
-                        sweep.addColorStop(1, "#00ffffff")
-                        ctx.fillStyle = sweep
-                        ctx.fillRect(0, 0, w, h)
-                        ctx.restore()
 
                         tab(false)
                         const rim = ctx.createConicalGradient(w / 2, h / 2, card.spin)
@@ -410,24 +353,6 @@ ShellRoot {
                     anchors.fill: parent
                     anchors.leftMargin: root.onLeft ? 3 : 0
                     anchors.rightMargin: root.onLeft ? 0 : 3
-                }
-
-                // Click ripple.
-                Rectangle {
-                    id: ripple
-                    anchors.centerIn: parent
-                    width: 0
-                    height: width
-                    radius: width / 2
-                    color: "transparent"
-                    border.color: root.cPrimary
-                    border.width: 2
-                    opacity: 0
-                    ParallelAnimation {
-                        id: rippleAnim
-                        NumberAnimation { target: ripple; property: "width"; from: 10; to: 90; duration: 600; easing.type: Easing.OutCubic }
-                        NumberAnimation { target: ripple; property: "opacity"; from: 0.8; to: 0; duration: 600; easing.type: Easing.OutCubic }
-                    }
                 }
 
                 // Moons orbiting the glyph.
@@ -475,8 +400,7 @@ ShellRoot {
                         width: 5; height: 7
                         topLeftRadius: 5
                         color: root.cPrimary
-                        opacity: area.pressed || offerWindow.busy ? 1 : 0
-                        Behavior on opacity { NumberAnimation { duration: 90 } }
+                        visible: area.pressed || offerWindow.busy
                     }
 
                     Rectangle {
@@ -486,14 +410,12 @@ ShellRoot {
                         radius: 0.75
                         color: root.cTertiary
                         property real roll: 0
-                        y: 3 + roll * 3.5
-                        opacity: 1 - roll
-                        NumberAnimation on roll {
+                        y: 3 + roll * 3
+                        SequentialAnimation on roll {
                             loops: Animation.Infinite
                             running: offerWindow.animating
-                            from: 0
-                            to: 1
-                            duration: offerWindow.busy ? 350 : 1100
+                            NumberAnimation { to: 1; duration: offerWindow.busy ? 180 : 550; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 0; duration: offerWindow.busy ? 180 : 550; easing.type: Easing.InOutSine }
                         }
                     }
 
@@ -527,7 +449,6 @@ ShellRoot {
                     onClicked: {
                         if (starter.running)
                             return
-                        rippleAnim.restart()
                         root.phase = "starting"
                         hideTimer.stop()
                         starter.running = true
