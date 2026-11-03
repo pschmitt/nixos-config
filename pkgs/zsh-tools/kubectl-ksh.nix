@@ -15,13 +15,13 @@ let
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "k.sh";
-    rev = "a3a85afb4115e8d3d2a4a22082cda3a3e9ac7bbf";
-    hash = "sha256-ZwUcP3rNCRgbq+tCd5d3AZWbqEgZaFkBrTLgKkh8PAw=";
+    rev = "2b1bc0658549f2025d0074fbad2446d86e79f06e";
+    hash = "sha256-pUxI36Jcf0CkMlcqNJnlqMVIhy3QQjwJ8JhsxtxFf7k=";
   };
 in
 stdenvNoCC.mkDerivation {
   pname = "kubectl-ksh";
-  version = "0-unstable-2023-12-08";
+  version = "0-unstable-2026-11-01";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
