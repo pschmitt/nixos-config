@@ -87,8 +87,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    # Production Stricknani: Rust server + new web UI (module and package).
+    # TODO(cutover): pinned to the same SHA as stricknani-rust for now. At
+    # cutover replace it with the v1.0.0 tag (github:pschmitt/stricknani/v1.0.0)
+    # or the merged main SHA, then `nix flake lock --update-input stricknani`.
     stricknani = {
-      url = "github:pschmitt/stricknani";
+      url = "github:pschmitt/stricknani/55953229d4bf99d850e47549c75648a40c348074";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
@@ -96,7 +100,19 @@
       };
     };
 
-    # Isolated Rust candidate; the production stricknani input stays pinned separately.
+    # Final Python release, used only by services/stricknani-python.nix (rollback).
+    stricknani-python = {
+      url = "github:pschmitt/stricknani/v0.1.0";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+        pre-commit-hooks.follows = "pre-commit-hooks";
+      };
+    };
+
+    # Preview candidate (rust.anika.blue). Kept separate from `stricknani` on
+    # purpose: the preview keeps advancing for rehearsals while production stays
+    # frozen on a reviewed revision.
     stricknani-rust = {
       url = "github:pschmitt/stricknani/55953229d4bf99d850e47549c75648a40c348074";
       inputs = {
