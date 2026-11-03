@@ -92,7 +92,7 @@
     # cutover replace it with the v1.0.0 tag (github:pschmitt/stricknani/v1.0.0)
     # or the merged main SHA, then `nix flake lock --update-input stricknani`.
     stricknani = {
-      url = "github:pschmitt/stricknani/e46f205585cad12f6d24738719d10cfb535617c1";
+      url = "github:pschmitt/stricknani/3d204c776fd9472832643d11219a419ac2b8331e";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
