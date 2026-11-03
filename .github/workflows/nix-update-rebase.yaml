@@ -1,0 +1,41 @@
+name: nix-update-rebase
+
+# Keep the open nix-update PRs rebased on main between the daily runs.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  rebase:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rebase open nix-update pull requests
+        env:
+          # Not GITHUB_TOKEN: its pushes do not trigger CI on the PR.
+          GH_TOKEN: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t prs < <(
+            gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+              --jq '.[] | select(.head.ref | test("^(chore/)?nix-update/")) | select(.head.repo.full_name == "'"${GITHUB_REPOSITORY}"'") | .number'
+          )
+
+          for pr in "${prs[@]}"
+          do
+            echo "Rebasing #${pr}" >&2
+            # Fails on conflicts or when already up to date: not fatal, the
+            # daily nix-update run recreates the branch anyway.
+            gh api --silent -X PUT "repos/${GITHUB_REPOSITORY}/pulls/${pr}/update-branch" \
+              -f update_method=rebase || echo "Could not rebase #${pr}" >&2
+          done
