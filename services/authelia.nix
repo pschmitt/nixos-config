@@ -161,6 +161,8 @@ in
         "authelia/oidc-nextcloud-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-wallos-secret-hash" = secretsAttrs autheliaUser;
         "authelia/oidc-trek-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-stricknani-secret-hash" = secretsAttrs autheliaUser;
+        "authelia/oidc-stricknani-preview-secret-hash" = secretsAttrs autheliaUser;
       };
       templates = {
         "authelia/duo.yml" = {
@@ -362,6 +364,46 @@ in
                     access_token_signed_response_alg: 'none'
                     userinfo_signed_response_alg: 'none'
                     token_endpoint_auth_method: 'client_secret_post' # gitleaks:allow (not a secret)
+                  - client_id: 'stricknani-preview'
+                    client_name: 'Stricknani Preview'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-stricknani-preview-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    consent_mode: 'explicit'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://rust.anika.blue/api/v2/auth/oidc/callback/authelia'
+                    scopes:
+                      - 'openid'
+                      - 'email'
+                      - 'profile'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    id_token_signed_response_alg: 'RS256'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
+                  - client_id: 'stricknani'
+                    client_name: 'Stricknani'
+                    client_secret: '${config.sops.placeholder."authelia/oidc-stricknani-secret-hash"}'
+                    public: false
+                    authorization_policy: 'two_factor'
+                    consent_mode: 'explicit'
+                    require_pkce: true
+                    pkce_challenge_method: 'S256'
+                    redirect_uris:
+                      - 'https://wolle.anika.blue/api/v2/auth/oidc/callback/authelia'
+                    scopes:
+                      - 'openid'
+                      - 'email'
+                      - 'profile'
+                    response_types:
+                      - 'code'
+                    grant_types:
+                      - 'authorization_code'
+                    id_token_signed_response_alg: 'RS256'
+                    token_endpoint_auth_method: 'client_secret_basic' # gitleaks:allow (not a secret)
           '';
           owner = autheliaUser;
           group = autheliaGroup;

@@ -52,6 +52,11 @@ in
         owner = user;
         group = user;
       };
+      # Authelia OIDC client secret (provisioned only; OIDC is not enabled yet).
+      "stricknani/oidc/clientSecret" = config.sops.mkHostSecret {
+        owner = user;
+        group = user;
+      };
     };
 
     templates."${envFileName}" = {
