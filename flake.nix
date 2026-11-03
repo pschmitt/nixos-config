@@ -88,11 +88,9 @@
     };
 
     # Production Stricknani: Rust server + new web UI (module and package).
-    # TODO(cutover): pinned to the same SHA as stricknani-rust for now. At
-    # cutover replace it with the v1.0.0 tag (github:pschmitt/stricknani/v1.0.0)
-    # or the merged main SHA, then `nix flake lock --update-input stricknani`.
+    # Pinned to a release tag; bump it to the next tag after a release.
     stricknani = {
-      url = "github:pschmitt/stricknani/e46f205585cad12f6d24738719d10cfb535617c1";
+      url = "github:pschmitt/stricknani/v1.0.0";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
@@ -114,7 +112,7 @@
     # purpose: the preview keeps advancing for rehearsals while production stays
     # frozen on a reviewed revision.
     stricknani-rust = {
-      url = "github:pschmitt/stricknani/e46f205585cad12f6d24738719d10cfb535617c1";
+      url = "github:pschmitt/stricknani/e70bf46c29be8999de4253c062d4128ceb406945";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
