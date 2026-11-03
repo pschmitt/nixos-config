@@ -122,7 +122,7 @@ hl.bind("SUPER + mouse:272", function()
   preview_timer:set_enabled(false)
   drag_window = nil
   publish_preview("{}")
-end, { release = true, transparent = true, ignore_mods = true })
+end, { release = true, transparent = true, ignore_mods = true, non_consuming = true })
 
 hl.on("config.unload", function()
   preview_timer:set_enabled(false)
