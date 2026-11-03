@@ -190,8 +190,11 @@ let
       (lib.getExe browserAskHuman)
       "--allow-export"
       "*"
+      # The profile's rbw, which an upgrade updates: this server lives as
+      # long as the agent session, and a store path would keep it on the
+      # rbw it started with (an old rbw used to stop the newer agent).
       "--rbw"
-      (lib.getExe' pkgs.rbw "rbw")
+      "${config.home.profileDirectory}/bin/rbw"
     ];
   };
 
