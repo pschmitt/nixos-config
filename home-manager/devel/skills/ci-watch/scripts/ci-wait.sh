@@ -2,7 +2,8 @@
 
 # Wait for every GitHub Actions run (or GitLab pipeline) of one commit to finish.
 # Exit codes: 0 all runs succeeded, 1 a run failed, 2 usage, 3 timeout,
-# 4 no runs were ever registered for the commit.
+# 4 no runs were ever registered for the commit, 5 runs were cancelled and none
+# failed (a newer commit replaced them, or someone cancelled them).
 
 usage() {
   cat <<EOF
@@ -62,6 +63,16 @@ fetch_runs() {
     })'
 }
 
+# Drop a cancelled run when the same workflow has another run on this commit: it
+# was replaced, so only the other run counts.
+drop_replaced() {
+  jq '
+    def cancelled: .conclusion == "cancelled" or .conclusion == "canceled";
+    group_by(.name)
+    | map(if any(.[]; cancelled | not) then map(select(cancelled | not)) else . end)
+    | add // []'
+}
+
 main() {
   local timeout=1800 grace=120 follow=0 repo="" sha="" forge=""
 
@@ -102,7 +113,7 @@ main() {
   sha="${sha:-$(git rev-parse HEAD)}" || return 2
   forge="${forge:-$(detect_forge)}"
 
-  local start now runs total pending failed head
+  local start now runs total pending failed cancelled head
   start="$(date +%s)"
 
   while true
@@ -119,14 +130,16 @@ main() {
     fi
 
     runs="$(fetch_runs "$sha")" || return 1
+    runs="$(drop_replaced <<< "$runs")" || return 1
     total="$(jq 'length' <<< "$runs")"
     pending="$(jq '[.[] | select(.status != "completed")] | length' <<< "$runs")"
-    failed="$(jq '[.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped")] | length' <<< "$runs")"
+    failed="$(jq '[.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "cancelled", "canceled") | not))] | length' <<< "$runs")"
+    cancelled="$(jq '[.[] | select(.conclusion == "cancelled" or .conclusion == "canceled")] | length' <<< "$runs")"
 
     if [[ "$failed" -gt 0 ]]
     then
       printf 'FAILED %s of %s runs of %s\n' "$failed" "$total" "${sha:0:9}" >&2
-      jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped") | "  \(.name): \(.conclusion) (run \(.databaseId))"' <<< "$runs" >&2
+      jq -r '.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "cancelled", "canceled") | not)) | "  \(.name): \(.conclusion) (run \(.databaseId))"' <<< "$runs" >&2
       if [[ "$forge" == github ]]
       then
         printf 'Inspect with: gh run view RUN_ID --log-failed | tail -n 40\n' >&2
@@ -134,6 +147,25 @@ main() {
         printf 'Inspect with: glab ci trace PIPELINE_JOB | tail -n 40 (glab ci view PIPELINE_ID lists jobs)\n' >&2
       fi
       return 1
+    fi
+    if [[ "$cancelled" -gt 0 ]]
+    then
+      head=""
+      [[ -z "$repo" ]] && head="$(remote_head)"
+      if [[ -n "$head" && "$head" != "$sha" ]]
+      then
+        if [[ "$follow" -eq 1 ]]
+        then
+          continue
+        fi
+        printf 'SUPERSEDED %s of %s runs of %s cancelled, none failed; branch head is now %s\n' "$cancelled" "$total" "${sha:0:9}" "${head:0:9}" >&2
+        return 5
+      fi
+      if [[ "$pending" -eq 0 ]]
+      then
+        printf 'CANCELLED %s of %s runs of %s, none failed, no newer commit on the branch\n' "$cancelled" "$total" "${sha:0:9}" >&2
+        return 5
+      fi
     fi
     if [[ "$total" -gt 0 && "$pending" -eq 0 ]]
     then

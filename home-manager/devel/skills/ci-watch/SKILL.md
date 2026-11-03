@@ -29,6 +29,8 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 - Pass a commit, `--repo OWNER/REPO`, `--timeout SECONDS` (default 1800) or `--grace SECONDS` (wait for runs to appear, default 120) when needed.
 - When passing a commit explicitly, use the full SHA from `git rev-parse HEAD`, not a shortened hash; the watcher passes it to `gh run list --commit`, where an abbreviation may appear to have no runs.
 
+Do not pipe the watcher (`| tail`, `| cut`): the task then reports the pipe's exit code, so a failed run looks like exit 0. Redirect to a file if you must keep the output.
+
 ## Exit codes
 
 | Code | Meaning | What to do |
@@ -37,5 +39,6 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 | 1 | a run or pipeline failed (name and id on stderr, with the inspect command) | read a bounded log tail, fix, push, and start a new watch |
 | 3 | timeout | report CI as still pending; do not restart blindly |
 | 4 | no runs registered | the push has no workflow or pipeline; say so and move on |
+| 5 | runs cancelled, none failed (`SUPERSEDED`: a newer commit is on the branch; `CANCELLED`: no newer commit) | do not read logs or call it a failure; say which, and that CI has not confirmed the commit. For `SUPERSEDED`, a green newer head covers it |
 
 CI logs can contain secrets: read only a bounded tail of a failed run, and follow `leaked-credentials` if one shows up.
