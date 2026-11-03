@@ -7,6 +7,26 @@ description: Handle a credential that ended up where it should not be (tool outp
 
 The prevention rules in `CONTEXT.md` come first. This skill is what to do once a credential has leaked anyway, even briefly and even if you caused it. Act **as soon as you notice**.
 
+## Triage scanner alerts first
+
+A scanner match is a reason to investigate, not proof of a leaked credential.
+Inspect only the identified source and the minimum context needed to classify
+it, without repeating candidate values. Public documentation examples, inert
+test fixtures and validation strings are not account credentials. If that is
+the match, report the false positive and continue: do not open an incident,
+rotate anything or access incident notes.
+
+Delegated agents report the alert and its classification to their coordinator.
+They must not read or write incident notes, even when a hook directs them to
+this skill. The coordinator handles any confirmed exposure. Repository and
+user restrictions on incident-note access still apply.
+
+The steps below apply only after an actual exposure is confirmed. Never read
+the whole incident note to add a row, choose a section or verify a write. Use
+an append or a targeted edit limited to the known section or the agent's own
+entry. If the tool cannot do that without reading unrelated entries, stop the
+note operation and report the limitation; do not fetch the note body.
+
 ## Steps
 
 1. Tell the user plainly what was exposed and where, naming the credential (entry or key path), never its value.
