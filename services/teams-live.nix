@@ -49,6 +49,9 @@ in
       "opsgenie/gksv3-support-schedule/api-key" = config.sops.mkHostSecret {
         restartUnits = [ "teams-live.service" ];
       };
+      "opsgenie/edge-stack/api-key" = config.sops.mkHostSecret {
+        restartUnits = [ "teams-live.service" ];
+      };
       "browser-daemon/cluster-secret" = {
         owner = cfg.user;
         inherit (cfg) group;
@@ -91,6 +94,7 @@ in
       opsgenie = {
         on_call_key = config.sops.placeholder."opsgenie/gksv3-on-call/api-key";
         support_key = config.sops.placeholder."opsgenie/gksv3-support-schedule/api-key";
+        edge_key = config.sops.placeholder."opsgenie/edge-stack/api-key";
         on_call_schedule_id = "8aa71a67-9ddd-4571-af97-06d1ddb3c7cb";
         support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
       };
