@@ -167,7 +167,7 @@ ShellRoot {
     // The pointer has to rest against the edge this long before the offer.
     Timer {
         id: dwellTimer
-        interval: 2000
+        interval: 1000
         onTriggered: root.offer(root.lanMouseActive ? "peer" : "local", 2500)
     }
 
@@ -185,8 +185,8 @@ ShellRoot {
         onVisibleChanged: if (!visible) dwellTimer.stop()
         anchors { left: root.onLeft; right: !root.onLeft }
         implicitWidth: 2
-        // Middle quarter of the edge; unanchored vertically means centered.
-        implicitHeight: Math.round(root.edgeScreen.height * 0.25)
+        // Middle half of the edge; unanchored vertically means centered.
+        implicitHeight: Math.round(root.edgeScreen.height * 0.5)
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -237,19 +237,6 @@ ShellRoot {
             id: stage
             anchors.fill: parent
 
-            // A seam of light in the edge the tab pushes through.
-            Rectangle {
-                width: 2
-                height: 90 * Math.max(0, offerWindow.reveal)
-                anchors.verticalCenter: parent.verticalCenter
-                x: root.onLeft ? 0 : parent.width - width
-                gradient: Gradient {
-                    GradientStop { position: 0; color: root.cPrimary }
-                    GradientStop { position: 0.5; color: root.cTertiary }
-                    GradientStop { position: 1; color: root.cPrimary }
-                }
-            }
-
             // Sparkles streaming in from the other display.
             Repeater {
                 model: 8
@@ -278,9 +265,10 @@ ShellRoot {
 
             Item {
                 id: card
-                width: 40
-                height: 50
-                readonly property real radius: 15
+                width: 50
+                height: 88
+                // The round part of the drop; its flanks curve into the edge.
+                readonly property real radius: 24
                 anchors.verticalCenter: parent.verticalCenter
                 // Slides out of the edge; never leaves it.
                 x: root.onLeft
@@ -313,14 +301,15 @@ ShellRoot {
                             ctx.scale(-1, 1)
                         }
                         // Rounded on the inside, flat (and open) on the edge.
+                        // A drop bulging out of the edge: a circle whose
+                        // flanks flare into the screen border like a meniscus.
+                        const cx = r + b, cy = h / 2, R = r
                         function tab(close) {
                             ctx.beginPath()
-                            ctx.moveTo(w + 1, b)
-                            ctx.lineTo(r, b)
-                            ctx.arcTo(b, b, b, r, r - b)
-                            ctx.lineTo(b, h - r)
-                            ctx.arcTo(b, h - b, r, h - b, r - b)
-                            ctx.lineTo(w + 1, h - b)
+                            ctx.moveTo(w + 1, 0)
+                            ctx.bezierCurveTo(w, (cy - R) * 0.75, w - 12, cy - R, cx, cy - R)
+                            ctx.arc(cx, cy, R, -Math.PI / 2, Math.PI / 2, true)
+                            ctx.bezierCurveTo(w - 12, cy + R, w, h - (cy - R) * 0.75, w + 1, h)
                             if (close)
                                 ctx.closePath()
                         }
@@ -333,7 +322,7 @@ ShellRoot {
                         ctx.fill()
 
                         tab(false)
-                        const rim = ctx.createConicalGradient(w / 2, h / 2, card.spin)
+                        const rim = ctx.createConicalGradient(cx, cy, card.spin)
                         rim.addColorStop(0.00, root.cPrimary)
                         rim.addColorStop(0.25, root.cTertiary)
                         rim.addColorStop(0.50, "#7f8fff")
@@ -353,8 +342,8 @@ ShellRoot {
                 Item {
                     id: orbit
                     anchors.centerIn: parent
-                    width: 30
-                    height: 30
+                    width: 36
+                    height: 36
                     RotationAnimation on rotation {
                         loops: Animation.Infinite
                         running: offerWindow.animating
@@ -371,8 +360,8 @@ ShellRoot {
                             height: width
                             radius: width / 2
                             color: [root.cPrimary, root.cTertiary, "#ffffff"][index]
-                            x: orbit.width / 2 + Math.cos(a) * 14 - width / 2
-                            y: orbit.height / 2 + Math.sin(a) * 14 - height / 2
+                            x: orbit.width / 2 + Math.cos(a) * 17 - width / 2
+                            y: orbit.height / 2 + Math.sin(a) * 17 - height / 2
                         }
                     }
                 }
@@ -380,9 +369,9 @@ ShellRoot {
                 // Mouse glyph: body, left button, rolling wheel.
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 13
-                    height: 19
-                    radius: 6.5
+                    width: 15
+                    height: 22
+                    radius: 7.5
                     color: "transparent"
                     border.color: offerWindow.glyphColor
                     border.width: 1.5
