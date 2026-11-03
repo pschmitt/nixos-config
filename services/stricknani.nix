@@ -31,7 +31,7 @@
 #   NOT switch back blindly: follow the "After Rust accepts writes" runbook.
 { inputs, pkgs, ... }:
 let
-  stage = "rust";
+  stage = "python-maintenance";
 
   stages = {
     rust = {
