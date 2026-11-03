@@ -17,13 +17,13 @@ let
   src = fetchFromGitHub {
     owner = "pschmitt";
     repo = "tesmart.sh";
-    rev = "2f9d2e303691c48bf398e7825373cb8555cf7f67";
-    hash = "sha256-UGtdelbVp9JaZKVZOyatGSxuJr9BJkfnj6ryoFbq1K8=";
+    rev = "33330dad595c9e17733df6fad5bf0045d14a452a";
+    hash = "sha256-9tQX/wUWLF6nu7mJeGm6qrnc6bvwAbSmapBA2aVo55A=";
   };
 in
 stdenvNoCC.mkDerivation {
   pname = "tesmart-cli";
-  version = "0-unstable-2023-04-14";
+  version = "0-unstable-2026-11-01";
   inherit src;
   nativeBuildInputs = [ makeWrapper ];
   dontBuild = true;
