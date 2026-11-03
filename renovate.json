@@ -22,16 +22,15 @@
       "separateMinorPatch": true
     },
     {
-      "description": "Automerge n8n and podsync image updates after required CI checks pass",
-      "matchFileNames": [
-        "services/n8n.nix",
-        "services/podsync.nix"
-      ],
-      "matchDatasources": [
-        "docker"
-      ],
+      "description": "Automerge dependencies annotated with depType=automerge after required CI checks pass",
       "automergeType": "pr",
-      "automerge": true
+      "automerge": true,
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepTypes": [
+        "automerge"
+      ]
     },
     {
       "description": "Deliberately old nixpkgs revisions pinned for legacy tool versions (overlays.old-packages); never bump them.",
@@ -48,7 +47,7 @@
         "\\.nix$"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)(?: versioning=(?<versioning>\\S+))?(?: depType=(?<depType>automerge))?\\n\\s*\\w+\\s*=\\s*\"(?<currentValue>[^\"]+)\";"
       ]
     },
     {
@@ -57,7 +56,7 @@
         "\\.nix$"
       ],
       "matchStrings": [
-        "image = \"(?<depName>[^:@\"\\s]+):(?<currentValue>[^@\"\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+        "(?:# renovate: depType=(?<depType>automerge)\\n\\s*)?image = \"(?<depName>[^:@\"\\s]+):(?<currentValue>[^@\"\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
       ],
       "datasourceTemplate": "docker"
     }

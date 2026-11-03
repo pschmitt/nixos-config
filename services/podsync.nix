@@ -89,6 +89,7 @@ in
 
   virtualisation.oci-containers.containers.podsync = {
     autoStart = true;
+    # renovate: depType=automerge
     image = "ghcr.io/mxpv/podsync:nightly@sha256:608e2e85b033a2d4d18f1d7f8e1e5bba5c36e8b2413bc6ee095b0a51f52df940";
     pull = "always";
     ports = [

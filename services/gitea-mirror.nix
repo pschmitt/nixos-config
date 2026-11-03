@@ -5,7 +5,7 @@
   ...
 }:
 let
-  # renovate: datasource=docker depName=ghcr.io/raylabshq/gitea-mirror
+  # renovate: datasource=docker depName=ghcr.io/raylabshq/gitea-mirror depType=automerge
   giteaMirrorVersion = "v3.51.0";
   dataDir = "/srv/gitea-mirror";
   listenPort = 54439;
