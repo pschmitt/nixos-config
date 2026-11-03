@@ -96,9 +96,7 @@ def main():
         if not all(version_values) or len(version_values[0]) != len(version_values[1]):
             continue
         changed_versions = [
-            (before, after)
-            for before, after in zip(*version_values)
-            if before != after
+            (before, after) for before, after in zip(*version_values) if before != after
         ]
         if len(changed_versions) != 1:
             continue
@@ -119,10 +117,10 @@ def main():
             continue
         if policy == "patch":
             old = re.fullmatch(
-                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', before
+                r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", before
             )
             new = re.fullmatch(
-                r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', after
+                r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", after
             )
             if not old or not new:
                 continue
