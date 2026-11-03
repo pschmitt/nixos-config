@@ -1746,11 +1746,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1793732800,
-        "narHash": "sha256-pxiOJmt2qNeoK0+B7LHaMfAubHsaGL95yNT8A9yv8gY=",
+        "lastModified": 1793743340,
+        "narHash": "sha256-Ra0k7xkvieMsdrfK66qnK+IsCu8bI1aBxicL1C8lnpw=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "ca4f7e0b5b5158077d99fdc2946befc56feadab0",
+        "rev": "7639a10357371027c8f6dc1967a23c52562989da",
         "type": "github"
       },
       "original": {
@@ -2441,7 +2441,6 @@
         "srvos": "srvos",
         "stricknani": "stricknani",
         "stricknani-python": "stricknani-python",
-        "stricknani-rust": "stricknani-rust",
         "systems": "systems_5",
         "tdc": "tdc",
         "teams-auth-source": "teams-auth-source",
@@ -2679,16 +2678,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1793741971,
-        "narHash": "sha256-Raj+ocvB1AIXymGbL4YFT45jdoP/X4zyTAMKgLNImsY=",
+        "lastModified": 1793742493,
+        "narHash": "sha256-veIAjm7LfxiAeE42eiFqChmL5bKyyX/mgCx3XE1CpaI=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "c398b70ea7414a2e2221d622ec6c03d72d6084e5",
+        "rev": "e70bf46c29be8999de4253c062d4128ceb406945",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
-        "ref": "v1.0.0",
         "repo": "stricknani",
         "type": "github"
       }
@@ -2717,33 +2715,6 @@
         "owner": "pschmitt",
         "ref": "v0.1.0",
         "repo": "stricknani",
-        "type": "github"
-      }
-    },
-    "stricknani-rust": {
-      "inputs": {
-        "flake-utils": [
-          "flake-utils"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "pre-commit-hooks": [
-          "pre-commit-hooks"
-        ]
-      },
-      "locked": {
-        "lastModified": 1793742493,
-        "narHash": "sha256-veIAjm7LfxiAeE42eiFqChmL5bKyyX/mgCx3XE1CpaI=",
-        "owner": "pschmitt",
-        "repo": "stricknani",
-        "rev": "e70bf46c29be8999de4253c062d4128ceb406945",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pschmitt",
-        "repo": "stricknani",
-        "rev": "e70bf46c29be8999de4253c062d4128ceb406945",
         "type": "github"
       }
     },

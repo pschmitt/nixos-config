@@ -87,10 +87,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Production Stricknani: Rust server + new web UI (module and package).
-    # Pinned to a release tag; bump it to the next tag after a release.
+    # Production Stricknani (wolle.anika.blue): follows the main branch.
     stricknani = {
-      url = "github:pschmitt/stricknani/v1.0.0";
+      url = "github:pschmitt/stricknani";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
@@ -101,18 +100,6 @@
     # Final Python release, used only by services/stricknani-python.nix (rollback).
     stricknani-python = {
       url = "github:pschmitt/stricknani/v0.1.0";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-        pre-commit-hooks.follows = "pre-commit-hooks";
-      };
-    };
-
-    # Preview candidate (rust.anika.blue). Kept separate from `stricknani` on
-    # purpose: the preview keeps advancing for rehearsals while production stays
-    # frozen on a reviewed revision.
-    stricknani-rust = {
-      url = "github:pschmitt/stricknani/e70bf46c29be8999de4253c062d4128ceb406945";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
