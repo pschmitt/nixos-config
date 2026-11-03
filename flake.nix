@@ -112,7 +112,7 @@
     # purpose: the preview keeps advancing for rehearsals while production stays
     # frozen on a reviewed revision.
     stricknani-rust = {
-      url = "github:pschmitt/stricknani/e70bf46c29be8999de4253c062d4128ceb406945";
+      url = "github:pschmitt/stricknani/c398b70ea7414a2e2221d622ec6c03d72d6084e5";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";
