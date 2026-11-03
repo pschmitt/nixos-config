@@ -26,6 +26,50 @@ The Android workflows and actions were migrated from [`pschmitt/android-app-ci`]
 
 The shared repository does not currently document or provide a PyPI publishing workflow. PyPA's current [`gh-action-pypi-publish` guidance](https://github.com/pypa/gh-action-pypi-publish#non-goals) says Trusted Publishing is unsupported inside reusable workflows, and invoking the action from a composite action is unsupported and untested. Keep that publish action in a dedicated top-level caller job with scoped `id-token: write` permission, separate from build and test jobs. Recheck upstream guidance before implementation because support can change.
 
+## Nix builds: nixbot for x86_64, GitHub for aarch64
+
+For a repository with a flake, x86_64-linux packages and checks build on the
+self-hosted nixbot; aarch64-linux builds natively on GitHub's arm runners
+through `nix-aarch64.yaml`, which pushes to the niks3 cache with a GitHub OIDC
+token. Do not build aarch64 on nixbot (it would emulate) or x86_64 Nix outputs
+in GitHub Actions, except checks that need `/dev/kvm` (NixOS VM tests), which
+only the GitHub runners have. Copy rbw, browser-daemon or monarch.
+
+To onboard a repository:
+
+1. Flake: expose `hydraJobs.x86_64-linux.{packages,checks}` and remove KVM
+   checks there, e.g.
+   `checks = builtins.removeAttrs (self.checks.${system} or { }) [ "nixos" ];`.
+2. Repository root: `nixbot.toml` containing `attribute = "hydraJobs"`.
+3. Caller job, in a workflow triggered on pushes to main and pull requests:
+   ```yaml
+   nix-aarch64:
+     permissions:
+       contents: read
+       id-token: write
+     uses: pschmitt/ci-workflows/.github/workflows/nix-aarch64.yaml@main
+     with:
+       exclude-checks: '["nixos"]'
+       pin-prefix: gh-<repo>-main
+     secrets:
+       s3_store: ${{ secrets.NIKS3_S3_STORE }}
+       s3_access_key: ${{ secrets.NIKS3_S3_ACCESS_KEY }}
+       s3_secret_key: ${{ secrets.NIKS3_S3_SECRET_KEY }}
+   ```
+4. GitHub settings, per repository: variable `NIKS3_SERVER_URL`, and secrets
+   `NIKS3_S3_STORE` (the substituter URL from the private `nix-cache` profile)
+   and `NIKS3_S3_ACCESS_KEY`/`NIKS3_S3_SECRET_KEY` (the read-only key,
+   `niks3/client-*` in the private shared SOPS file). Pipe values from `sops -d`
+   straight into `gh secret set` under `set -o pipefail` and refuse empty
+   values; a failed decrypt otherwise stores an empty secret.
+5. Private NixOS config: add the repository to `githubRepos` in
+   `services/niks3.nix` with `pins = "gh-<repo>-main-*"` (add `subject` when
+   `gh api repos/OWNER/REPO/actions/oidc/customization/sub` reports
+   `use_immutable_subject: true`), and to `repoAllowlist` in
+   `services/nixbot.nix`. Deploy the niks3 and nixbot hosts (see the private
+   `brkn-infra` skill) after `bump my privates`.
+6. README: put the nixbot badge first in the badge row.
+
 ## Scope and references
 
 Repositories using shared components are not interchangeable. Check the target repository's own instructions, workflows, package layout, and release process; examples in `ci-workflows` are starting points, not a mandate to make every repository identical.
