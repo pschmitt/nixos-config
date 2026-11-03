@@ -28,7 +28,7 @@ In this order. Drop a section only if it has nothing to say.
 2. **Pitch** (optional, rbw style): 2-4 sentences on the problem and how this project differs,
    placed between the header and Features. Skip it when the tagline is enough.
 3. **`## Features`**: a bullet list, each bullet starts with a **bold noun phrase** and then one
-   sentence. Link to the doc for the feature when there is one (`See [docs/mcp.md](docs/mcp.md)`).
+   sentence. Link to the doc for the feature when there is one (for example "See `docs/mcp.md`").
 4. **`## Install`**: the shortest working path first (`cargo install`, or flake input plus
    `enable = true`). Everything else (release verification, Nix details, other platforms) is a
    one-line link to `docs/install.md` or `docs/nix.md`.
