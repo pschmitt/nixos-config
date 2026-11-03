@@ -1,113 +1,70 @@
-{
-  config,
-  inputs,
-  pkgs,
-  ...
-}:
+# Stricknani production (wool/stricken/wolle on rofl-10): stage selector.
+#
+# ONE constant below picks what runs. Everything else is derived from it:
+#
+#   stage                  backend  edge maintenance  use
+#   ---------------------  -------  ----------------  ----------------------------
+#   "rust"                 Rust     off               cutover end state (default)
+#   "rust-maintenance"     Rust     on                window step: Rust on imported data
+#   "python-maintenance"   Python   on                window step: close the edge first
+#   "python"               Python   off               pre-cutover production / rollback
+#
+# Cutover window (details: docs/rust-migration-plan.md and
+# docs/production-cutover-checklist.md in the stricknani repo):
+#   0. monit unmonitor stricknani          (on rofl-10)
+#   1. stage = "python-maintenance"; deploy   -> edge answers 503, Python still up
+#      wait for in-flight requests to drain
+#   2. systemctl stop stricknani; take the matched DB+media snapshot; run
+#      `stricknani-server import-snapshot ... --destination /var/lib/stricknani-rust`
+#      (root; stricknani-server is in PATH in every stage); chown -R stricknani:stricknani
+#   3. stage = "rust-maintenance"; deploy     -> Rust serves the imported data, edge still 503
+#      verify (health, login, OIDC, media, two-owner check; use
+#      stricknani.maintenance.bypassAddresses for an operator address if needed)
+#   4. stage = "rust"; deploy                 -> barrier lifted
+#      final public checks; monit monitor stricknani
+#
+# Rollback (only before the Rust service has accepted writes; /var/lib/stricknani
+# is never modified by the Rust service):
+#   keep/raise the barrier: stage = "python-maintenance"; deploy; verify Python
+#   health + login; then stage = "python"; deploy. The Python input is pinned to
+#   tag v0.1.0 (`stricknani-python` in flake.nix). After Rust accepted writes do
+#   NOT switch back blindly: follow the "After Rust accepts writes" runbook.
+{ inputs, pkgs, ... }:
 let
-  user = "stricknani";
-  domain = "anika.blue";
-  mainHost = "wool.${domain}";
-  serverAliases = [
-    "stricken.${domain}"
-    "wolle.${domain}"
-  ];
-  dataDir = "/var/lib/stricknani";
-  port = 7674;
-  envFileName = "stricknani.env";
-  stricknaniPkg = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
-  aiUserEmail = "ai@${domain}";
-  ensureAiUserScript = pkgs.writeShellScript "stricknani-ensure-ai-user" ''
-    set -euo pipefail
-    cd "${dataDir}"
-    export DATABASE_URL="${config.services.stricknani.databaseUrl}"
-    "${stricknaniPkg}/bin/stricknani-cli" user create \
-      --email "${aiUserEmail}" \
-      --password "$(cat "${config.sops.secrets."stricknani/aiUser/password".path}")" \
-      --no-admin
-  '';
+  stage = "rust";
+
+  stages = {
+    rust = {
+      module = ./stricknani-rust.nix;
+      maintenance = false;
+    };
+    rust-maintenance = {
+      module = ./stricknani-rust.nix;
+      maintenance = true;
+    };
+    python-maintenance = {
+      module = ./stricknani-python.nix;
+      maintenance = true;
+    };
+    python = {
+      module = ./stricknani-python.nix;
+      maintenance = false;
+    };
+  };
+  selected = stages.${stage};
 in
 {
   imports = [
-    inputs.stricknani.nixosModules.default
+    selected.module
+    ./stricknani-maintenance.nix
   ];
 
-  sops = {
-    secrets = {
-      "stricknani/secrets/secretKey" = config.sops.mkHostSecret {
-      };
-      "stricknani/secrets/csrfSecretKey" = config.sops.mkHostSecret {
-      };
-      "stricknani/initialAdmin/password" = config.sops.mkHostSecret {
-      };
-      "stricknani/initialAdmin/username" = config.sops.mkHostSecret {
-      };
-      "stricknani/openaiApiKey" = config.sops.mkHostSecret {
-      };
-      "stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
-      };
-      "stricknani/sentry/dsnFrontend" = config.sops.mkHostSecret {
-      };
-      "stricknani/aiUser/password" = config.sops.mkHostSecret {
-        owner = user;
-        group = user;
-      };
-      # Authelia OIDC client secret (provisioned only; OIDC is not enabled yet).
-      "stricknani/oidc/clientSecret" = config.sops.mkHostSecret {
-        owner = user;
-        group = user;
-      };
-    };
+  stricknani.maintenance.enable = selected.maintenance;
 
-    templates."${envFileName}" = {
-      content = ''
-        SECRET_KEY="${config.sops.placeholder."stricknani/secrets/secretKey"}"
-        CSRF_SECRET_KEY="${config.sops.placeholder."stricknani/secrets/csrfSecretKey"}"
-        INITIAL_ADMIN_EMAIL="${config.sops.placeholder."stricknani/initialAdmin/username"}"
-        INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
-        OPENAI_API_KEY="${config.sops.placeholder."stricknani/openaiApiKey"}"
-        SENTRY_DSN_BACKEND="${config.sops.placeholder."stricknani/sentry/dsnBackend"}"
-        SENTRY_DSN_FRONTEND="${config.sops.placeholder."stricknani/sentry/dsnFrontend"}"
-      '';
-      owner = user;
-      group = user;
-      mode = "0400";
-    };
-  };
-
-  services.stricknani = {
-    enable = true;
-    package = stricknaniPkg;
-    inherit dataDir;
-    inherit port;
-    bindHost = "127.0.0.1";
-    hostName = mainHost;
-    inherit serverAliases;
-    secretKeyFile = config.sops.templates."${envFileName}".path;
-    nginx.enable = true;
-    extraConfig = {
-      COOKIE_SAMESITE = "strict";
-      FEATURE_SIGNUP_ENABLED = "false";
-      FEATURE_WAYBACK_ENABLED = "true";
-      FEATURE_AI_IMPORT_ENABLED = "true";
-    };
-  };
-
-  # Dedicated non-admin account for AI-assisted testing (Android app end-to-end
-  # verification etc.) so an agent never touches the real users' project/yarn
-  # data. `stricknani-cli user create` upserts (creates or resets the
-  # password), so this is idempotent and safe to run on every activation.
-  systemd.services.stricknani-ensure-ai-user = {
-    description = "Ensure the dedicated Stricknani AI-testing user exists";
-    after = [ "stricknani.service" ];
-    wants = [ "stricknani.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      User = user;
-      Group = user;
-      ExecStart = ensureAiUserScript;
-    };
-  };
+  # The Rust server binary (importer, account CLI) is available in every stage,
+  # including "python-maintenance", so the snapshot import can run before the
+  # service is switched over.
+  environment.systemPackages = [
+    inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani-rust
+  ];
 }

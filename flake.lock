@@ -2440,6 +2440,7 @@
         "sops-nix": "sops-nix",
         "srvos": "srvos",
         "stricknani": "stricknani",
+        "stricknani-python": "stricknani-python",
         "stricknani-rust": "stricknani-rust",
         "systems": "systems_5",
         "tdc": "tdc",
@@ -2678,15 +2679,43 @@
         ]
       },
       "locked": {
-        "lastModified": 1793537648,
-        "narHash": "sha256-wIBgUoBWtcG2U3Tz4kZcF+uNbKicErVpijeY7W167R8=",
+        "lastModified": 1793728929,
+        "narHash": "sha256-39pAWP+tSmQSHcHJzu190y70shgZg+pFMInoLNPpDXs=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "8f4e6254757d87932493bbebc45b90b6d0732d57",
+        "rev": "55953229d4bf99d850e47549c75648a40c348074",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
+        "repo": "stricknani",
+        "rev": "55953229d4bf99d850e47549c75648a40c348074",
+        "type": "github"
+      }
+    },
+    "stricknani-python": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "pre-commit-hooks": [
+          "pre-commit-hooks"
+        ]
+      },
+      "locked": {
+        "lastModified": 1793706817,
+        "narHash": "sha256-YDhE29ghLUHlYkb056w56DU7gV4hrZ5MvXeXr1qsO4k=",
+        "owner": "pschmitt",
+        "repo": "stricknani",
+        "rev": "bd99b5badb44c63a774acf6255e9e5bcf5ff96d0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pschmitt",
+        "ref": "v0.1.0",
         "repo": "stricknani",
         "type": "github"
       }
