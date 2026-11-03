@@ -8,7 +8,6 @@
 {
   config,
   lib,
-  pkgs,
   ...
 }:
 let
