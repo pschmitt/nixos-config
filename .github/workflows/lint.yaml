@@ -39,14 +39,7 @@ jobs:
 
   # Required by auto-merge-nix-update.sh.
   nix:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: DeterminateSystems/nix-installer-action@main
-      - name: statix, deadnix, nixfmt
-        run: |
-          nix shell --inputs-from . nixpkgs#statix nixpkgs#deadnix nixpkgs#nixfmt \
-            --command .github/workflows/scripts/lint.sh nix
+    uses: pschmitt/ci-workflows/.github/workflows/nix-lint.yaml@main
 
   scripts:
     runs-on: ubuntu-latest

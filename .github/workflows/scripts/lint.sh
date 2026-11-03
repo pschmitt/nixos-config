@@ -3,19 +3,13 @@
 set -euo pipefail
 
 usage() {
-  printf 'Usage: %s nix|scripts\n' "$(basename "$0")"
+  printf 'Usage: %s scripts\n' "$(basename "$0")"
 }
 
 # Every tracked file of a type, so new files are linted without updating a
 # list. Opt out per line or file with the linter's own directives.
 tracked() {
   git ls-files -z "$@"
-}
-
-lint_nix() {
-  statix check
-  tracked '*.nix' | xargs -0 deadnix --fail
-  tracked '*.nix' | xargs -0 nixfmt --check
 }
 
 lint_scripts() {
@@ -27,9 +21,6 @@ lint_scripts() {
 
 main() {
   case "${1:-}" in
-    nix)
-      lint_nix
-      ;;
     scripts)
       lint_scripts
       ;;

@@ -50,7 +50,7 @@ check_and_merge() {
       # workflow); GitHub Actions builds the aarch64-linux packages.
       [
         check_buckets("Nix build"; "setup-matrix"),
-        check_buckets("Lint"; "nix"),
+        check_buckets("Lint"; "nix / lint"),
         check_buckets("NixOS systemPackages diff"; "pr-systempackages-diff"),
         check_buckets(""; "nixbot/nix-build"),
         package_buckets("aarch64-linux")
