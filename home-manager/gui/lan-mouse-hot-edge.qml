@@ -278,6 +278,15 @@ ShellRoot {
                     : parent.width - width * offerWindow.reveal
                 transformOrigin: root.onLeft ? Item.Left : Item.Right
                 scale: area.pressed ? 0.9 : (area.containsMouse ? 1.1 : 1)
+
+                // Click: squash against the edge, then spring back out.
+                property real pop: 0
+                transform: Scale {
+                    origin.x: root.onLeft ? 0 : card.width
+                    origin.y: card.height / 2
+                    xScale: 1 - card.pop * 0.3
+                    yScale: 1 + card.pop * 0.18
+                }
                 Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutBack } }
 
                 property real spin: 0
@@ -371,6 +380,7 @@ ShellRoot {
 
                 // Mouse glyph: body, left button, rolling wheel.
                 Rectangle {
+                    id: glyph
                     anchors.centerIn: parent
                     anchors.horizontalCenterOffset: card.bulgeOffset
                     width: 18
@@ -427,6 +437,40 @@ ShellRoot {
                 }
             }
 
+            // Sparks bursting out of the drop on click; some fly on into
+            // the other display.
+            Repeater {
+                model: 12
+                Rectangle {
+                    required property int index
+                    readonly property real a: index * Math.PI * 2 / 12
+                    readonly property real dist: 10 + burst.progress * (34 + (index % 3) * 8)
+                    width: 4 - (index % 2)
+                    height: width
+                    radius: width / 2
+                    color: [root.cPrimary, root.cTertiary, root.cSecondary, "#ffffff"][index % 4]
+                    visible: burst.progress > 0 && burst.progress < 1
+                    x: card.x + card.width / 2 + card.bulgeOffset + Math.cos(a) * dist - width / 2
+                    y: card.y + card.height / 2 + Math.sin(a) * dist - height / 2
+                    scale: 1.6 * (1 - burst.progress)
+                }
+            }
+
+            QtObject {
+                id: burst
+                property real progress: 0
+            }
+
+            ParallelAnimation {
+                id: clickAnim
+                SequentialAnimation {
+                    NumberAnimation { target: card; property: "pop"; to: 1; duration: 110; easing.type: Easing.OutQuad }
+                    NumberAnimation { target: card; property: "pop"; to: 0; duration: 700; easing.type: Easing.OutElastic; easing.amplitude: 1.2; easing.period: 0.35 }
+                }
+                NumberAnimation { target: burst; property: "progress"; from: 0; to: 1; duration: 650; easing.type: Easing.OutCubic }
+                NumberAnimation { target: glyph; property: "rotation"; from: 0; to: root.onLeft ? -360 : 360; duration: 700; easing.type: Easing.OutBack }
+            }
+
             MouseArea {
                 id: area
                 anchors.fill: parent
@@ -440,6 +484,7 @@ ShellRoot {
                 onClicked: {
                     if (starter.running)
                         return
+                    clickAnim.restart()
                     root.phase = "starting"
                     hideTimer.stop()
                     starter.running = true
