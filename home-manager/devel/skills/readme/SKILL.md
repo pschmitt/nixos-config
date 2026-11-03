@@ -9,6 +9,14 @@ Derived from the READMEs of `rbw` and `browser-daemon`. They are the reference: 
 doubt, open one and copy its shape. A README is the front door. It says what the project is,
 how to install it, how to try it and where the rest lives. It is not the manual.
 
+## Rule one: short and on point
+
+A README is kept short and on point. Anything longer than a pitch, a list or a quick start
+lives in `docs/<topic>.md`, and the main README links to it (a bullet link and a row in the
+Documentation table). When you add content, first ask whether it fits in a sentence or two. If
+not, it is a doc: create the file, link it from the README, and leave only a summary line behind.
+Never grow the README to hold a manual.
+
 ## Layout
 
 In this order. Drop a section only if it has nothing to say.
