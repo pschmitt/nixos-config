@@ -98,7 +98,7 @@
 
     # Isolated Rust candidate; the production stricknani input stays pinned separately.
     stricknani-rust = {
-      url = "github:pschmitt/stricknani/099713e0a4ace9810410e73a3828a3cd9df52e73";
+      url = "github:pschmitt/stricknani/81fe4207609b553401d7a187361cdc7d083bf52f";
       inputs = {
         nixpkgs.follows = "nixpkgs";
         flake-utils.follows = "flake-utils";

@@ -2814,17 +2814,17 @@
         ]
       },
       "locked": {
-        "lastModified": 1793658521,
-        "narHash": "sha256-4loB+akU8vWkHso6GT4H1aODy0efNZeNshA4EshVlcg=",
+        "lastModified": 1793665800,
+        "narHash": "sha256-GpfhD5Mg9Mt3CJB0Ld3CHJd+mO/+QmcX5VnZUkxDZ1E=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "099713e0a4ace9810410e73a3828a3cd9df52e73",
+        "rev": "81fe4207609b553401d7a187361cdc7d083bf52f",
         "type": "github"
       },
       "original": {
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "099713e0a4ace9810410e73a3828a3cd9df52e73",
+        "rev": "81fe4207609b553401d7a187361cdc7d083bf52f",
         "type": "github"
       }
     },
