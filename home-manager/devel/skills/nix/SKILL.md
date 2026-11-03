@@ -18,6 +18,11 @@ build directories once no job is using them.
 
 ## Remote evaluation and CI helpers
 
+Before copying a remotely updated `flake.lock` back, compare the local lock
+against the version originally synced. If another agent changed it meanwhile,
+resync the current lock and repeat the input update remotely. Review the final
+diff to ensure unrelated inputs were preserved before committing.
+
 Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Two scripts in this
 skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops:
 
