@@ -223,8 +223,8 @@ ShellRoot {
         visible: root.edgeScreen !== null && reveal > 0.001
         anchors { left: root.onLeft; right: !root.onLeft }
         // Just large enough for the tab, the seam and the sparkles.
-        implicitWidth: 68
-        implicitHeight: 100
+        implicitWidth: 80
+        implicitHeight: 112
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
@@ -265,10 +265,12 @@ ShellRoot {
 
             Item {
                 id: card
-                width: 50
-                height: 88
-                // The round part of the drop; its flanks curve into the edge.
-                readonly property real radius: 24
+                width: 56
+                height: 68
+                // A round bulge sitting on the edge.
+                readonly property real radius: height / 2
+                // Centre of the bulge, relative to the card's centre.
+                readonly property real bulgeOffset: (radius - width / 2) * (root.onLeft ? -1 : 1)
                 anchors.verticalCenter: parent.verticalCenter
                 // Slides out of the edge; never leaves it.
                 x: root.onLeft
@@ -301,15 +303,15 @@ ShellRoot {
                             ctx.scale(-1, 1)
                         }
                         // Rounded on the inside, flat (and open) on the edge.
-                        // A drop bulging out of the edge: a circle whose
-                        // flanks flare into the screen border like a meniscus.
-                        const cx = r + b, cy = h / 2, R = r
+                        // A half-round drop: round on the inside, flat (and
+                        // open) where it meets the screen edge.
+                        const cx = r, cy = h / 2, R = r - b
                         function tab(close) {
                             ctx.beginPath()
-                            ctx.moveTo(w + 1, 0)
-                            ctx.bezierCurveTo(w, (cy - R) * 0.75, w - 12, cy - R, cx, cy - R)
+                            ctx.moveTo(w + 1, b)
+                            ctx.lineTo(cx, b)
                             ctx.arc(cx, cy, R, -Math.PI / 2, Math.PI / 2, true)
-                            ctx.bezierCurveTo(w - 12, cy + R, w, h - (cy - R) * 0.75, w + 1, h)
+                            ctx.lineTo(w + 1, h - b)
                             if (close)
                                 ctx.closePath()
                         }
@@ -342,8 +344,9 @@ ShellRoot {
                 Item {
                     id: orbit
                     anchors.centerIn: parent
-                    width: 36
-                    height: 36
+                    anchors.horizontalCenterOffset: card.bulgeOffset
+                    width: 46
+                    height: 46
                     RotationAnimation on rotation {
                         loops: Animation.Infinite
                         running: offerWindow.animating
@@ -360,8 +363,8 @@ ShellRoot {
                             height: width
                             radius: width / 2
                             color: [root.cPrimary, root.cTertiary, "#ffffff"][index]
-                            x: orbit.width / 2 + Math.cos(a) * 17 - width / 2
-                            y: orbit.height / 2 + Math.sin(a) * 17 - height / 2
+                            x: orbit.width / 2 + Math.cos(a) * 19 - width / 2
+                            y: orbit.height / 2 + Math.sin(a) * 19 - height / 2
                         }
                     }
                 }
@@ -369,9 +372,10 @@ ShellRoot {
                 // Mouse glyph: body, left button, rolling wheel.
                 Rectangle {
                     anchors.centerIn: parent
-                    width: 15
-                    height: 22
-                    radius: 7.5
+                    anchors.horizontalCenterOffset: card.bulgeOffset
+                    width: 18
+                    height: 27
+                    radius: 9
                     color: "transparent"
                     border.color: offerWindow.glyphColor
                     border.width: 1.5
@@ -412,6 +416,7 @@ ShellRoot {
 
                 Text {
                     anchors.centerIn: parent
+                    anchors.horizontalCenterOffset: card.bulgeOffset
                     visible: root.phase === "done"
                     text: "✓"
                     color: root.cPrimary
