@@ -1,6 +1,7 @@
 {
   lib,
   fetchFromGitHub,
+  nix-update-script,
   pkg-config,
   rustPlatform,
   wayland,
@@ -19,6 +20,16 @@ rustPlatform.buildRustPackage (finalAttrs: {
   };
 
   cargoHash = "sha256-LFyW5do7IZCrBU7KJmO2Mqb+5+BcUAEjVBfoheDCYn0=";
+
+  # Upstream also pushes non-release tags (sa-issues-claim/N) that nix-update
+  # would otherwise pick as the latest version
+  passthru.updateScript = nix-update-script {
+    extraArgs = [
+      "--flake"
+      "--version-regex"
+      "^v(\\d+\\.\\d+\\.\\d+)$"
+    ];
+  };
 
   patches = [
     # Treat an empty Wayland clipboard as empty instead of logging a capture
