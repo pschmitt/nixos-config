@@ -54,8 +54,6 @@ in
       };
       "stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
       };
-      "stricknani/sentry/dsnFrontend" = config.sops.mkHostSecret {
-      };
       "stricknani/aiUser/password" = config.sops.mkHostSecret {
         owner = user;
         group = user;
@@ -75,7 +73,6 @@ in
         INITIAL_ADMIN_PASSWORD="${config.sops.placeholder."stricknani/initialAdmin/password"}"
         OPENAI_API_KEY="${config.sops.placeholder."stricknani/openaiApiKey"}"
         SENTRY_DSN_BACKEND="${config.sops.placeholder."stricknani/sentry/dsnBackend"}"
-        SENTRY_DSN_FRONTEND="${config.sops.placeholder."stricknani/sentry/dsnFrontend"}"
       '';
       owner = user;
       group = user;
