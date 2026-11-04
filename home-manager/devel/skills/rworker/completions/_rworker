@@ -62,6 +62,20 @@ _rworker() {
     _normal
     return
   fi
+  # cp: NAME:PATH on one side, local files on the other.
+  if [[ "$action" == cp ]]
+  then
+    if [[ "$PREFIX" == *:* ]]
+    then
+      _message 'path on the worker'
+    else
+      local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
+      local -a targets
+      targets=(${state}/*.json(N:t:r))
+      _alternative 'workers:worker:compadd -S : -a targets' 'files:file:_files'
+    fi
+    return
+  fi
   if [[ "$action" == sync ]] && (( CURRENT == 4 ))
   then
     _files -/
@@ -75,7 +89,10 @@ _rworker() {
     line="${line#flag $action }"
     spec_flag="${line%% *}"
     desc="${line#* }"
-    if [[ "$spec_flag" == *=* ]]
+    if [[ "$spec_flag" == *=path ]]
+    then
+      flags+=("${spec_flag%%=*}[${desc}]:path:_files")
+    elif [[ "$spec_flag" == *=* ]]
     then
       flag="${spec_flag%%=*}"
       values=$(printf '%s\n' "${_rworker_spec_cache[@]}" | sed -n "s/^values ${spec_flag#*=} //p")

@@ -44,6 +44,10 @@ rworker down "$w"
   moves the expiry; `down NAME` deletes the worker and its NetBird peer.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
   `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
+- `cp NAME:REMOTE LOCAL` / `cp LOCAL NAME:REMOTE` copies files or
+  directories (rsync, like scp); `exec [up options] [--sync SRC[:DEST]]
+  [--fetch REMOTE[:LOCAL]] -- CMD` is a one-shot worker: create, copy, run,
+  fetch, delete (also on failure; `--keep-on-failure` to debug).
 - `builder NAME` prints a Nix `--builders` line for the worker.
 
 MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,

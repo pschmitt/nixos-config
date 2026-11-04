@@ -25,6 +25,14 @@ _rworker() {
   elif [[ $COMP_CWORD -eq 2 && "$cur" != -* ]] && grep -q -E "^worker( .*)? ${action}( |\$)" <<< "$spec"
   then
     words=$(_rworker_workers)
+  elif [[ "$action" == cp ]]
+  then
+    if [[ "$cur" != *:* ]]
+    then
+      mapfile -t COMPREPLY < <(compgen -W "$(_rworker_workers | sed 's/$/:/')" -- "$cur"; compgen -f -- "$cur")
+      compopt -o nospace 2>/dev/null
+    fi
+    return
   elif [[ "$action" == sync && $COMP_CWORD -eq 3 ]]
   then
     mapfile -t COMPREPLY < <(compgen -d -- "$cur")
@@ -39,7 +47,11 @@ _rworker() {
     while read -r line
     do
       flag="${line%% *}"
-      if [[ "$flag" == "${prev}="* ]]
+      if [[ "$flag" == "${prev}=path" ]]
+      then
+        mapfile -t COMPREPLY < <(compgen -f -- "$cur")
+        return
+      elif [[ "$flag" == "${prev}="* ]]
       then
         words=$(sed -n "s/^values ${flag#*=} //p" <<< "$spec")
         mapfile -t COMPREPLY < <(compgen -W "$words" -- "$cur")

@@ -23,6 +23,8 @@ Actions:
                        create a worker and wait until it is ready
   ls [-o json] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
+  exec [UP_OPTIONS] [--sync SRC[:DEST]] [--fetch REMOTE[:LOCAL]] [--keep] -- CMD
+                       one-shot: create a worker, run CMD, delete the worker
   down NAME            delete a worker
   prune [NAME...] [--all] [-y] [-n]
                        delete several ad-hoc workers (default: your own)
@@ -34,6 +36,8 @@ Actions:
                        create a worker and log in (same as up --ssh)
   sync [USER@]NAME SRC [DEST]
                        rsync SRC to the worker (default ~/SRC basename)
+  cp [USER@]NAME:REMOTE LOCAL | cp LOCAL [USER@]NAME:REMOTE
+                       copy files or directories from/to a worker
   builder NAME         print a Nix builders line for the worker
 
 Workers this host did not create (nixbot's pool, other hosts' ad-hoc
@@ -57,18 +61,28 @@ spec() {
   cat <<'SPEC'
 action up create a worker and wait until it is ready
 action ls list all workers (ad-hoc and pool)
+action exec create a worker, run a command on it, delete it
 action down delete an ad-hoc worker
 action prune delete several ad-hoc workers (default: your own)
 action extend move the expiry of an ad-hoc worker
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
 action builder print a Nix builders line for a worker
+action cp copy files from or to a worker (NAME:PATH)
 action help show the help of an action
 flag up --ttl=duration lifetime, e.g. 90m or 2h
 flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag exec --ttl=duration lifetime of the worker
+flag exec --flavor=flavor OpenStack flavor
+flag exec --disk=size volume size in GiB
+flag exec --scratch scratch host, may live up to 7 days
+flag exec --sync=path copy a directory to the worker first (SRC[:DEST])
+flag exec --fetch=path copy a path back afterwards (REMOTE[:LOCAL])
+flag exec --keep keep the worker afterwards
+flag exec --keep-on-failure keep the worker if the command fails
 flag ssh --create create a worker first (same as up --ssh; up's options follow)
 flag ls -o=format output format
 flag ls --watch redraw in place, marking changes
@@ -80,6 +94,7 @@ flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
 values flavor s1.large s1.xlarge s1.2xlarge
 values size 100 150 250 500
+values path
 values format json
 values interval 2 5 10 30
 worker down extend ssh sync builder prune
@@ -125,6 +140,30 @@ with status, flavor, NetBird IP, owner, time to expiry and age.
                  marking rows: + new, ~ changed (status, IP, owner, expiry,
                  flavor), - gone. q quits, any other key refreshes now.
   -n SECONDS     refresh interval for --watch
+EOF
+      ;;
+    exec)
+      cat <<EOF
+Usage: $me exec [UP_OPTIONS] [--sync SRC[:DEST]]... [--fetch REMOTE[:LOCAL]]...
+          [--keep|--keep-on-failure] [--] CMD...
+
+One-shot build: create an ad-hoc worker, optionally copy directories to it,
+run CMD there as agent (live output; its exit code becomes ours), copy
+results back and delete the worker again - also on errors and Ctrl-C.
+Status messages go to stderr, the command's output to stdout.
+
+  --ttl, --flavor, --disk, --scratch   as for up
+  --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
+                         defaults to SRC's basename); repeatable
+  --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
+                         afterwards, even if CMD failed; repeatable
+  --keep                 do not delete the worker
+  --keep-on-failure      keep it only when CMD fails (for debugging)
+  --json                 print {name, exit_code, stdout, stderr} instead
+
+Examples:
+  $me exec --sync .:src -- 'cd src && nix develop -c cargo build --release'
+  $me exec --flavor s1.2xlarge --sync .:app --fetch app/out:./out -- 'cd app && ./build.sh'
 EOF
       ;;
     down)
@@ -185,6 +224,21 @@ Usage: $me sync [USER@]NAME SRC [DEST]
 rsync the directory SRC to the worker (DEST defaults to SRC's basename in
 the user's home). Mirrors with --delete and skips target/, .direnv/ and
 result.
+EOF
+      ;;
+    cp)
+      cat <<EOF
+Usage: $me cp [USER@]NAME:REMOTE LOCAL
+       $me cp LOCAL [USER@]NAME:REMOTE
+
+Copy a file or directory from a worker to this host, or the other way
+round, like scp but with rsync (directories without -r, resumable, pinned
+host key). REMOTE is relative to the user's home on the worker.
+
+Examples:
+  $me cp adhoc-1234abcd:rbw/target/release/rbw ./rbw
+  $me cp adhoc-1234abcd:build/logs/ ./logs/
+  $me cp ./patch.diff pschmitt@adhoc-1234abcd:/tmp/
 EOF
       ;;
     builder)
@@ -701,6 +755,148 @@ cmd_prune() {
   fi
 }
 
+cmd_exec() {
+  local keep="" keep_failed="" up_args=() syncs=() fetches=() cmd=()
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --ttl|--flavor|--disk)
+        if [[ -z "${2:-}" ]]
+        then
+          printf '%s needs a value\n' "$1" >&2
+          return 2
+        fi
+        up_args+=("$1" "$2")
+        shift
+        ;;
+      --scratch)
+        up_args+=("$1")
+        ;;
+      --sync|--fetch)
+        if [[ -z "${2:-}" ]]
+        then
+          printf '%s needs a path\n' "$1" >&2
+          return 2
+        fi
+        if [[ "$1" == --sync ]]
+        then
+          syncs+=("$2")
+        else
+          fetches+=("$2")
+        fi
+        shift
+        ;;
+      --keep)
+        keep=1
+        ;;
+      --keep-on-failure)
+        keep_failed=1
+        ;;
+      --)
+        shift
+        cmd=("$@")
+        break
+        ;;
+      -*)
+        printf 'Unknown option: %s\n' "$1" >&2
+        return 2
+        ;;
+      *)
+        cmd=("$@")
+        break
+        ;;
+    esac
+    shift
+  done
+  if (( ${#cmd[@]} == 0 ))
+  then
+    printf 'Missing command (see %s exec --help)\n' "$(basename "$0")" >&2
+    return 2
+  fi
+
+  local json="$JSON" info name ip
+  info=$(JSON=1 cmd_up "${up_args[@]}") || return 1
+  name=$(jq -er .name <<< "$info") || return 1
+  ip=$(jq -er .ip <<< "$info") || return 1
+  printf '%s %s is ready\n' "$(paint 32 '✔')" "$name" >&2
+
+  local rc=0 opts out_file err_file
+  mapfile -t opts < <(ssh_opts)
+  # Delete the worker however we leave (also Ctrl-C), unless asked not to.
+  EXEC_WORKER="$name"
+  EXEC_KEEP="$keep"
+  trap 'exec_cleanup' EXIT
+  trap 'exit 130' INT TERM
+
+  local item src dest
+  for item in "${syncs[@]}"
+  do
+    src="${item%%:*}"
+    dest=""
+    if [[ "$item" == *:* ]]
+    then
+      dest="${item#*:}"
+    fi
+    JSON=1 cmd_sync "$name" "$src" ${dest:+"$dest"} > /dev/null || return 1
+    printf '%s synced %s\n' "$(paint 32 '✔')" "$item" >&2
+  done
+
+  # shellcheck disable=SC2029 # the command is the caller's, run as given
+  if [[ -n "$json" ]]
+  then
+    out_file=$(mktemp)
+    err_file=$(mktemp)
+    ssh "${opts[@]}" "agent@${ip}" "${cmd[@]}" > "$out_file" 2> "$err_file" || rc=$?
+  else
+    ssh "${opts[@]}" "agent@${ip}" "${cmd[@]}" || rc=$?
+  fi
+
+  local remote_path local_path
+  for item in "${fetches[@]}"
+  do
+    remote_path="${item%%:*}"
+    local_path="$(basename "$remote_path")"
+    if [[ "$item" == *:* ]]
+    then
+      local_path="${item#*:}"
+    fi
+    if rsync -a -e "ssh ${opts[*]}" "agent@${ip}:${remote_path}" "$local_path"
+    then
+      printf '%s fetched %s to %s\n' "$(paint 32 '✔')" "$remote_path" "$local_path" >&2
+    else
+      printf 'Could not fetch %s\n' "$remote_path" >&2
+    fi
+  done
+
+  if (( rc != 0 )) && [[ -n "$keep_failed" ]]
+  then
+    EXEC_KEEP=1
+    printf 'Command failed (%d); keeping %s: %s ssh %s\n' "$rc" "$name" \
+      "$(basename "$0")" "$name" >&2
+  fi
+  if [[ -n "$json" ]]
+  then
+    jq -n --arg n "$name" --argjson rc "$rc" --rawfile o "$out_file" \
+      --rawfile e "$err_file" --argjson kept "${EXEC_KEEP:-0}" \
+      '{name: $n, exit_code: $rc, stdout: $o, stderr: $e, kept: ($kept == 1)}'
+    rm -f "$out_file" "$err_file"
+  fi
+  return "$rc"
+}
+
+# EXIT trap of cmd_exec: delete its worker unless it is to be kept.
+exec_cleanup() {
+  local rc=$?
+  if [[ -n "${EXEC_WORKER:-}" && -z "${EXEC_KEEP:-}" ]]
+  then
+    remote down "$EXEC_WORKER" > /dev/null 2>&1 || true
+    forget "$EXEC_WORKER"
+    printf '%s deleted %s\n' "$(paint 32 '✔')" "$EXEC_WORKER" >&2
+  fi
+  EXEC_WORKER=""
+  return "$rc"
+}
+
 cmd_extend() {
   local out name
   out=$(remote extend "$@") || return 1
@@ -793,6 +989,49 @@ cmd_sync() {
   fi
 }
 
+cmd_cp() {
+  local src="${1:-}" dst="${2:-}" remote local_path direction target ip user opts
+  if [[ -z "$src" || -z "$dst" || -n "${3:-}" ]]
+  then
+    action_help cp >&2
+    return 2
+  fi
+  # Exactly one side is NAME:PATH (a local path with ":" needs a ./ prefix).
+  if [[ "$src" == *:* && "$src" != ./* && "$src" != /* ]]
+  then
+    direction=down
+    remote="$src"
+    local_path="$dst"
+  elif [[ "$dst" == *:* && "$dst" != ./* && "$dst" != /* ]]
+  then
+    direction=up
+    remote="$dst"
+    local_path="$src"
+  else
+    printf 'One side must be [USER@]NAME:PATH\n' >&2
+    return 2
+  fi
+  target="${remote%%:*}"
+  split_target "$target"
+  ip=$(worker_field "$TARGET_NAME" ip) || return 1
+  user=$(target_user) || return 1
+  mapfile -t opts < <(ssh_opts)
+  local spec="${user}@${ip}:${remote#*:}"
+  if [[ "$direction" == down ]]
+  then
+    rsync -a --partial -e "ssh ${opts[*]}" "$spec" "$local_path" || return 1
+  else
+    rsync -a --partial -e "ssh ${opts[*]}" "$local_path" "$spec" || return 1
+  fi
+  if [[ -n "$JSON" ]]
+  then
+    jq -nc --arg n "$TARGET_NAME" --arg s "$src" --arg d "$dst" --arg dir "$direction" \
+      '{name: $n, src: $s, dest: $d, direction: $dir}'
+  else
+    ok "copied $src to $dst"
+  fi
+}
+
 cmd_builder() {
   local name="${1:-}" ip key
   if [[ -z "$name" ]]
@@ -839,13 +1078,22 @@ main() {
   if [[ "$action" != ssh ]]
   then
     local -a rest=()
+    local in_cmd=""
     for arg in "$@"
     do
-      if [[ "$arg" == --json || "$arg" == -j ]]
+      if [[ -n "$in_cmd" ]]
+      then
+        rest+=("$arg")
+      elif [[ "$arg" == --json || "$arg" == -j ]]
       then
         JSON=1
       else
         rest+=("$arg")
+        # exec: everything from -- on belongs to the command.
+        if [[ "$arg" == -- ]]
+        then
+          in_cmd=1
+        fi
       fi
     done
     set -- "${rest[@]}"
@@ -854,7 +1102,12 @@ main() {
   # worker name is given.
   for arg in "$@"
   do
-    if [[ "$action" == ssh && "$arg" != -* ]]
+    # ssh and exec: arguments after the worker or command are not ours.
+    if [[ "$arg" == -- ]]
+    then
+      break
+    fi
+    if [[ ( "$action" == ssh || "$action" == exec ) && "$arg" != -* ]]
     then
       break
     fi
@@ -877,6 +1130,9 @@ main() {
     prune)
       cmd_prune "$@"
       ;;
+    exec)
+      cmd_exec "$@"
+      ;;
     extend)
       cmd_extend "$@"
       ;;
@@ -894,6 +1150,9 @@ main() {
       ;;
     builder)
       cmd_builder "$@"
+      ;;
+    cp)
+      cmd_cp "$@"
       ;;
     *)
       printf 'Unknown action: %s\n' "$action" >&2
