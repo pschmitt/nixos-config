@@ -1,5 +1,6 @@
-# Join NetBird with the one-off setup key the autoscaler puts into the
-# OpenStack user-data ({"netbird_setup_key": "..."}). The key is ephemeral,
+# Join NetBird with the one-off setup key the autoscaler (or rofl-worker)
+# puts into the OpenStack user-data ({"netbird_setup_key": "...",
+# "agent_authorized_keys": ["ssh-ed25519 ..."]}; the keys are optional). The key is ephemeral,
 # single use and short-lived, so the copy left in the metadata service is
 # worthless once the worker has registered.
 {
@@ -36,6 +37,7 @@ in
     wants = [ "network-online.target" ];
     requires = [ "netbird-${client}.service" ];
     path = [
+      pkgs.coreutils
       pkgs.curl
       pkgs.jq
     ];
@@ -51,8 +53,18 @@ in
         curl -fsS --retry 30 --retry-delay 2 --retry-connrefused "$metadata/$1"
       }
       name=$(fetch meta_data.json | jq -er '.name')
+      user_data=$RUNTIME_DIRECTORY/user-data
+      fetch user_data > "$user_data"
+
+      # Optional SSH keys for the agent user (ad-hoc workers).
+      install -d -m 0755 /run/nixbot-worker/authorized_keys
+      jq -r '.agent_authorized_keys // [] | .[]' "$user_data" \
+        > /run/nixbot-worker/authorized_keys/agent
+      chmod 0644 /run/nixbot-worker/authorized_keys/agent
+
       key=$RUNTIME_DIRECTORY/setup-key
-      fetch user_data | jq -er '.netbird_setup_key' > "$key"
+      jq -er '.netbird_setup_key' "$user_data" > "$key"
+      rm -f "$user_data"
       ${lib.getExe wrapper} up --setup-key-file "$key" --hostname "$name"
       rm -f "$key"
     '';

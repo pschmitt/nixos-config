@@ -1,6 +1,6 @@
 # The remote builder role: nixbot's host logs in as nix-remote-builder over
 # NetBird and builds through this host's nix daemon.
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   boot.kernelParams = [
     "console=tty0"
@@ -16,18 +16,39 @@
 
   users = {
     mutableUsers = false;
-    # Nobody logs in interactively: no root or wheel access at all, only
-    # nix-remote-builder.
+    # No passwords anywhere; logins by SSH key only. nix-remote-builder
+    # serves nixbot; agent is for ad-hoc workers (rofl-worker) and only
+    # usable when the user-data hands it an SSH key (netbird.nix); the main
+    # user (with sudo) is there for debugging.
     allowNoPasswordLogin = true;
     groups.nix-remote-builder = { };
-    users.nix-remote-builder = {
-      isSystemUser = true;
-      group = "nix-remote-builder";
-      shell = pkgs.bash;
-      # Same key as profiles/base/users/nix-remote-builder.nix.
-      openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
-      ];
+    users = {
+      ${config.mainUser.username} = {
+        isNormalUser = true;
+        extraGroups = [ "wheel" ];
+        shell = pkgs.bash;
+        openssh.authorizedKeys.keys = config.mainUser.authorizedKeys;
+      };
+      agent = {
+        isNormalUser = true;
+        home = "/home/agent";
+        shell = pkgs.bash;
+        packages = [
+          pkgs.git
+          pkgs.jq
+          pkgs.rsync
+          pkgs.tmux
+        ];
+      };
+      nix-remote-builder = {
+        isSystemUser = true;
+        group = "nix-remote-builder";
+        shell = pkgs.bash;
+        # Same key as profiles/base/users/nix-remote-builder.nix.
+        openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
+        ];
+      };
     };
   };
 
@@ -45,8 +66,14 @@
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
       PermitRootLogin = "no";
-      AllowUsers = [ "nix-remote-builder" ];
+      AllowUsers = [
+        "nix-remote-builder"
+        "agent"
+        config.mainUser.username
+      ];
     };
+    # Keys handed over in the user-data, written at boot (netbird.nix).
+    authorizedKeysFiles = [ "/run/nixbot-worker/authorized_keys/%u" ];
   };
 
   nix.settings = {
@@ -54,7 +81,12 @@
       "nix-command"
       "flakes"
     ];
-    trusted-users = [ "nix-remote-builder" ];
+    # agent: ad-hoc workers belong to one user and are thrown away, so it
+    # may use the worker as a remote builder (rofl-worker builder).
+    trusted-users = [
+      "nix-remote-builder"
+      "agent"
+    ];
     system-features = [
       "nixos-test"
       "benchmark"
@@ -98,6 +130,18 @@
       printf 'NIXBOT-WORKER-HOSTKEY %s\n' "$(cut -d' ' -f1,2 "$key")"
     '';
   };
+
+  # Homes (ad-hoc work trees, caches) live on the encrypted partition too.
+  fileSystems."/home" = {
+    device = "/nix/.rw-store/home";
+    fsType = "none";
+    options = [ "bind" ];
+    depends = [ "/nix/.rw-store" ];
+  };
+  systemd.tmpfiles.rules = [ "d /nix/.rw-store/home 0755 root root -" ];
+
+  # The main user's sudo; there are no passwords to ask for.
+  security.sudo.wheelNeedsPassword = false;
 
   documentation.enable = false;
   environment.defaultPackages = [ ];
