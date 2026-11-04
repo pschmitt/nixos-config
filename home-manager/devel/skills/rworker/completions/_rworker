@@ -48,6 +48,25 @@ _rworker() {
     return
   fi
 
+  # ssh -l USER NAME: the user, then the worker.
+  if [[ "$action" == ssh && "${words[3]}" == -l ]]
+  then
+    if (( CURRENT == 4 ))
+    then
+      local -a users
+      users=(${=${${(M)_rworker_spec_cache:#values user *}#values user }})
+      _describe -t users 'user' users
+      return
+    elif (( CURRENT == 5 ))
+    then
+      _rworker_workers
+      return
+    elif (( CURRENT > 5 ))
+    then
+      _normal
+      return
+    fi
+  fi
   if (( ${takes_worker[(Ie)$action]} )) && (( CURRENT == 3 )) && [[ "$PREFIX" != -* ]]
   then
     _rworker_workers

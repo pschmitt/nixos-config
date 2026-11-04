@@ -87,6 +87,7 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
 flag exec --topic=topic what the worker is for (none unless given)
 flag ls -o=format output format (wide adds PID, flavor, IP and cwd)
@@ -100,6 +101,7 @@ flag exec --fetch=path copy a path back afterwards (REMOTE[:LOCAL])
 flag exec --keep keep the worker afterwards
 flag exec --keep-on-failure keep the worker if the command fails
 flag ssh --create create a worker first (same as up --ssh; up's options follow)
+flag ssh -l=user log in as this user (like ssh -l)
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
@@ -114,6 +116,7 @@ values size 100 150 250 500
 values path
 values format json wide
 values topic
+values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
 worker down extend ssh sync builder prune inspect
 global --json force JSON output
@@ -129,7 +132,7 @@ action_help() {
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
-          [--topic TEXT]
+          [--topic TEXT] [-l USER]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
@@ -142,6 +145,7 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
   --ssh            log in (as agent) as soon as it is ready
+  -l USER          with --ssh: log in as USER (pschmitt, nix-remote-builder)
   --topic TEXT     what it is for (shown by ls and inspect; none unless
                    given)
 
@@ -232,8 +236,8 @@ EOF
       ;;
     ssh)
       cat <<EOF
-Usage: $me ssh [USER@]NAME [SSH_ARGS...]
-       $me ssh --create [UP_OPTIONS]
+Usage: $me ssh [-l USER | USER@]NAME [SSH_ARGS...]
+       $me ssh --create [-l USER] [UP_OPTIONS]
 
 SSH to a worker over NetBird with its pinned host key. Everything after the
 name goes to ssh, so options and a command both work.
@@ -243,12 +247,14 @@ others (RWORKER_USER overrides). Workers this host does not know yet are
 looked up on the control host.
 
 --create makes a new worker and logs in, like \`up --ssh\`; up's options
-(--ttl, --flavor, --disk, --scratch) follow it.
+(--ttl, --flavor, --disk, --scratch, --topic) follow it. -l USER picks the
+login user, as with ssh (agent by default on a new worker).
 
 Examples:
   $me ssh --create --ttl 4h
   $me ssh adhoc-1234abcd
   $me ssh pschmitt@adhoc-1234abcd sudo journalctl -b
+  $me ssh --create -l pschmitt
   $me ssh adhoc-1234abcd -L 8080:localhost:8080
   $me ssh adhoc-1234abcd 'cd src && nix develop -c cargo build'
 EOF
@@ -570,13 +576,22 @@ render_progress() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" topic=""
+  local login="" login_user="" topic=""
   local -a args=() meta=()
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
       --ssh)
         login=1
+        ;;
+      -l)
+        login_user="${2:-}"
+        if [[ -z "$login_user" ]]
+        then
+          printf -- '-l needs a user\n' >&2
+          return 2
+        fi
+        shift
         ;;
       --topic)
         topic="${2:-}"
@@ -633,19 +648,19 @@ Builder|$(paint 32 "nix build --max-jobs 0 --builders \"\$($me builder $name)\" 
 EOF
   if [[ -n "$login" ]]
   then
-    connect "$name"
+    connect "$name" "${login_user:-agent}"
   fi
 }
 
 # Log in right after `up`: NetBird may still be setting up the route to the
 # fresh peer, so retry the connection for a little while.
 connect() {
-  local name="$1" ip opts i
+  local name="$1" user="${2:-agent}" ip opts i
   ip=$(worker_field "$name" ip) || return 1
   mapfile -t opts < <(ssh_opts "$name")
   for i in $(seq 1 10)
   do
-    if ssh "${opts[@]}" -o ConnectTimeout=5 "agent@${ip}" true 2>/dev/null
+    if ssh "${opts[@]}" -o ConnectTimeout=5 "${user}@${ip}" true 2>/dev/null
     then
       break
     fi
@@ -653,7 +668,7 @@ connect() {
     sleep 3
   done
   # shellcheck disable=SC2029 # no remote command, just the login
-  ssh "${opts[@]}" "agent@${ip}"
+  ssh "${opts[@]}" "${user}@${ip}"
 }
 
 # kubectl-style table from `ls` JSON (aligned, uncolored); empty when there
@@ -1338,7 +1353,18 @@ target_user() {
 }
 
 cmd_ssh() {
-  local name ip user opts
+  local name ip user opts login_user=""
+  # -l USER (like ssh's), before the name.
+  if [[ "${1:-}" == -l ]]
+  then
+    login_user="${2:-}"
+    if [[ -z "$login_user" ]]
+    then
+      printf -- '-l needs a user\n' >&2
+      return 2
+    fi
+    shift 2
+  fi
   if [[ -z "${1:-}" ]]
   then
     usage >&2
@@ -1347,6 +1373,10 @@ cmd_ssh() {
   split_target "$1" || return 2
   shift
   name="$TARGET_NAME"
+  if [[ -n "$login_user" ]]
+  then
+    TARGET_USER="$login_user"
+  fi
   ip=$(worker_field "$name" ip) || return 1
   user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts "$name")
