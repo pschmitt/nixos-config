@@ -29,7 +29,7 @@ let
   oidcHost = "wolle.${domain}";
   dataDir = "/var/lib/stricknani-rust";
   port = 7674;
-  package = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani-rust;
+  package = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
 in
 {
   imports = [

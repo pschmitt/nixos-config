@@ -65,6 +65,6 @@ in
   # including "python-maintenance", so the snapshot import can run before the
   # service is switched over.
   environment.systemPackages = [
-    inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani-rust
+    inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani
   ];
 }
