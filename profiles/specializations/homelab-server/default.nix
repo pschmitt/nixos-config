@@ -24,6 +24,9 @@
   ];
 
   services = {
+    # Homelab servers are pets (hardware.cattle below): a non-ephemeral
+    # NetBird peer, since ephemeral peers vanish when offline.
+    netbird.setupKeyName = "homelab";
     fwupd.enable = true;
     kvm-usb-passthrough.enable = true;
     kmscon.config."dpms-timeout" = 0;
