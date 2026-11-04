@@ -39,6 +39,8 @@ vda                      volume (deleted with the server)
                            work/   overlayfs work directory
                            builds/ Nix build directory (build-dir)
                            home/   bind-mounted to /home
+                           tmp/    bind-mounted to /tmp
+                           var-tmp/ bind-mounted to /var/tmp
 ```
 
 | Mount | What | Where it lives |
@@ -48,6 +50,11 @@ vda                      volume (deleted with the server)
 | `/nix/.rw-store` | `workerdata` (ext4 inside LUKS2) | `vda2` |
 | `/nix/store` | overlay of `.ro-store` and `.rw-store/store` | RAM + `vda2` |
 | `/home` | bind mount of `/nix/.rw-store/home` | `vda2` |
+| `/tmp`, `/var/tmp` | bind mounts of `/nix/.rw-store/tmp`, `var-tmp` | `vda2` |
+
+Only `/` itself (16 GiB, half the RAM) is a tmpfs: work trees, caches
+(`~/.cargo`, Gradle) and temporary files of compilers and linkers all land
+on the volume.
 
 Every boot runs, in the initrd: `nixbot-worker-luks-key` (key to
 `/run/nixbot-worker/luks.key`), `systemd-repart --factory-reset=yes`

@@ -1,6 +1,11 @@
 # The remote builder role: nixbot's host logs in as nix-remote-builder over
 # NetBird and builds through this host's nix daemon.
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   boot.kernelParams = [
     "console=tty0"
@@ -136,17 +141,30 @@
     '';
   };
 
-  # Homes (ad-hoc work trees, caches) live on the encrypted partition too.
-  fileSystems."/home" = {
-    device = "/nix/.rw-store/home";
-    fsType = "none";
-    options = [ "bind" ];
-    depends = [ "/nix/.rw-store" ];
-    # Mounted in the initrd, so activation creates the homes on it rather
-    # than on the tmpfs root underneath.
-    neededForBoot = true;
-  };
-  systemd.tmpfiles.rules = [ "d /nix/.rw-store/home 0755 root root -" ];
+  # Homes (ad-hoc work trees, caches) and temporary files live on the
+  # encrypted partition too: the root is a 16 GiB tmpfs in RAM, which big
+  # compiles (rustc and linker temp files in /tmp) filled up.
+  fileSystems =
+    lib.mapAttrs
+      (_path: dir: {
+        device = "/nix/.rw-store/${dir}";
+        fsType = "none";
+        options = [ "bind" ];
+        depends = [ "/nix/.rw-store" ];
+        # Mounted in the initrd, so activation creates the homes on it rather
+        # than on the tmpfs root underneath.
+        neededForBoot = true;
+      })
+      {
+        "/home" = "home";
+        "/tmp" = "tmp";
+        "/var/tmp" = "var-tmp";
+      };
+  systemd.tmpfiles.rules = [
+    "d /nix/.rw-store/home 0755 root root -"
+    "d /nix/.rw-store/tmp 1777 root root -"
+    "d /nix/.rw-store/var-tmp 1777 root root -"
+  ];
 
   # The main user's sudo; there are no passwords to ask for.
   security.sudo.wheelNeedsPassword = false;
