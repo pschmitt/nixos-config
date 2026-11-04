@@ -15,6 +15,7 @@ Use the safe form:
 - Processes: no `ps aux`, `ps -ef`, `pgrep -a`, or `/proc/*/cmdline` (signed browser URLs, `--passwd` arguments). Use `pgrep -l NAME`, `pgrep -c NAME` or `ps -o pid,etime,comm -p PID`.
 - Environment: no bare `env`, `printenv`, `export` or `set` (they print `SOPS_AGE_KEY`); name the variable you need.
 - Vault: no `rbw ... --json/--raw` without a `jq` field selection; prefer the redacted `rbw` MCP. Never `source` an env file to test it.
+- Copying a secret into another store (`gh secret set`, `glab variable set`): pipe it, never pass it as an argument, and guard the pipe. Without `pipefail` a failed `sops -d` still runs the setter, which stores an empty secret. Use a subshell with `set -euo pipefail`, read the value into a variable, refuse it when empty, then `printf %s "$value" | gh secret set NAME -R OWNER/REPO`. The SOPS age key comes from `ssh-to-age --private-key -i ~/.ssh/id_ed25519` in that subshell's environment.
 - Diffs: `git diff`/`git show` on SOPS files decrypt through textconv; add `--no-textconv`. `ansible --diff` prints rendered credential templates.
 - CLIs: `openstack ... --long` (use `-c` columns), `set -x`/`bash -x` around anything that handles secrets, and `browser_snapshot` while a login form is open (fill with `browser_fill_secret`, then screenshot nothing).
 - Logs: `journalctl -u nginx`, access logs and debug logs hold URL tokens; filter with `grep -v 'token='` or `cut -d'?' -f1`, and never print a whole log.

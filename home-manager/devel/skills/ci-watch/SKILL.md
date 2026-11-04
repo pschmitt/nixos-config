@@ -37,7 +37,7 @@ Do not pipe the watcher (`| tail`, `| cut`): the task then reports the pipe's ex
 | --- | --- | --- |
 | 0 | all runs succeeded | report it in one line |
 | 1 | a run or pipeline failed (name and id on stderr, with the inspect command) | read a bounded log tail, fix, push, and start a new watch |
-| 3 | timeout | report CI as still pending; do not restart blindly |
+| 3 | timeout | report CI as still pending; do not restart blindly. If the runs are still `queued`, check one other repository's recent runs: when those are queued too, the account's runners are backlogged, so restart once with a longer `--timeout` |
 | 4 | no runs registered | the push has no workflow or pipeline; say so and move on |
 | 5 | runs cancelled, none failed (`SUPERSEDED`: a newer commit is on the branch; `CANCELLED`: no newer commit) | do not read logs or call it a failure; say which, and that CI has not confirmed the commit. For `SUPERSEDED`, a green newer head covers it |
 
