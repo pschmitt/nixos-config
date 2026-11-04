@@ -61,8 +61,8 @@ only in the kernel's device-mapper table. Check it on a worker with
 
 ## Joining nixbot
 
-- `nixbot-worker-netbird-up` reads the instance name and a one-off NetBird
-  setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
+- `nixbot-worker-netbird-up` reads the instance name (and sets it as the
+  hostname) and a one-off NetBird setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
   OpenStack metadata service and registers with NetBird.
 - SSH listens on the NetBird interface only. Three accounts can log in, all
   with keys only (there are no passwords), and nobody on the console. The

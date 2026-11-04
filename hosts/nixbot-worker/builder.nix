@@ -9,7 +9,8 @@
   ];
 
   networking = {
-    # The autoscaler names each worker; the hostname comes from DHCP.
+    # Each worker is named by its creator; netbird.nix sets that OpenStack
+    # name as the (transient) hostname at boot.
     hostName = "";
     useNetworkd = true;
   };

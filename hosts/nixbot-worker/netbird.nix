@@ -37,6 +37,7 @@ in
     wants = [ "network-online.target" ];
     requires = [ "netbird-${client}.service" ];
     path = [
+      config.systemd.package
       pkgs.coreutils
       pkgs.curl
       pkgs.jq
@@ -54,6 +55,9 @@ in
       }
       fetch meta_data.json > "$RUNTIME_DIRECTORY/meta_data.json"
       name=$(jq -er '.name' "$RUNTIME_DIRECTORY/meta_data.json")
+      # The OpenStack name (adhoc-..., nixbot-worker-...) as hostname, for
+      # prompts, logs and NetBird.
+      hostnamectl hostname "$name"
 
       # The worker's metadata as of this boot, for anyone on the worker
       # (no setup key ID; the key itself is only in the user-data).
