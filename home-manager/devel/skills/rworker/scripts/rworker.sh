@@ -11,6 +11,13 @@ KNOWN_HOSTS="${STATE_DIR}/known_hosts"
 JSON=""
 # Set by ls -o wide: the creator columns.
 WIDE=""
+# Colors, decided once: paint mostly runs inside $(...), where stdout is a
+# pipe even when the user's terminal is not.
+COLOR=""
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]
+then
+  COLOR=1
+fi
 
 usage() {
   cat <<EOF
@@ -329,7 +336,7 @@ paint_help() {
 paint() {
   local code="$1"
   shift
-  if [[ -t 1 && -z "${NO_COLOR:-}" ]]
+  if [[ -n "$COLOR" ]]
   then
     printf '\e[%sm%s\e[0m' "$code" "$*"
   else
@@ -496,6 +503,75 @@ creator_meta() {
   fi
 }
 
+# The control host's stderr while `up` waits: "rworker-progress STAGE"
+# lines become a spinner with the stage and elapsed time, redrawn in place
+# on a terminal and gone once the worker is ready or failed; anything else
+# is printed above it. Without a terminal only the other lines pass.
+render_progress() {
+  local frames='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏' i=0 stage="REQUESTING" line rc tty="" color frame
+  local start=$SECONDS
+  if [[ -t 2 ]]
+  then
+    tty=1
+  fi
+  # paint() follows stdout; this draws on stderr.
+  local esc=""
+  if [[ -n "$tty" && -z "${NO_COLOR:-}" ]]
+  then
+    esc=1
+  fi
+  while true
+  do
+    if IFS= read -r -t 0.1 line
+    then
+      if [[ "$line" == "rworker-progress "* ]]
+      then
+        stage="${line#rworker-progress }"
+      else
+        if [[ -n "$tty" ]]
+        then
+          printf '\r\e[K' >&2
+        fi
+        printf '%s\n' "$line" >&2
+      fi
+    else
+      rc=$?
+      # > 128: timed out (redraw); otherwise end of input.
+      if (( rc <= 128 ))
+      then
+        break
+      fi
+    fi
+    if [[ -n "$tty" ]]
+    then
+      case "$stage" in
+        ACTIVE*)
+          color=32
+          ;;
+        ERROR*)
+          color=31
+          ;;
+        *)
+          color=33
+          ;;
+      esac
+      frame="${frames:i % ${#frames}:1}"
+      i=$(( i + 1 ))
+      if [[ -n "$esc" ]]
+      then
+        printf '\r\e[K\e[36m%s\e[0m \e[%sm%s\e[0m \e[2m(%ds)\e[0m' \
+          "$frame" "$color" "$stage" $(( SECONDS - start )) >&2
+      else
+        printf '\r\e[K%s %s (%ds)' "$frame" "$stage" $(( SECONDS - start )) >&2
+      fi
+    fi
+  done
+  if [[ -n "$tty" ]]
+  then
+    printf '\r\e[K' >&2
+  fi
+}
+
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
   local login="" topic=""
@@ -526,8 +602,14 @@ cmd_up() {
   mkdir -p "$STATE_DIR" || return 1
   local started
   started=$(date +%s)
-  info=$(remote up --ssh-key "$(cat "$key_file")" \
-    --owner "${USER}@$(hostname)" "${meta[@]}" "$@") || return 1
+  # stdout (the JSON) is captured through fd 3; stderr goes to the spinner.
+  info=$(
+    {
+      remote up --ssh-key "$(cat "$key_file")" \
+        --owner "${USER}@$(hostname)" "${meta[@]}" "$@" 2>&1 1>&3 3>&- \
+        | render_progress
+    } 3>&1
+  ) || return 1
   name=$(jq -er .name <<< "$info") || return 1
   ip=$(jq -er .ip <<< "$info") || return 1
   jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
@@ -540,14 +622,19 @@ cmd_up() {
   fi
   local me
   me=$(basename "$0")
-  ok "$(paint 36 "$name") is ready ($(( $(date +%s) - started ))s)"
-  printf '  %-8s %s\n' \
-    IP "$ip (NetBird)" \
-    User agent \
-    Flavor "$(jq -r '.flavor // "-"' <<< "$info")" \
-    Expires "$(fmt_expiry "$(jq -r .expires_at <<< "$info")")" \
-    SSH "$me ssh $name" \
-    Builder "nix build --max-jobs 0 --builders \"\$($me builder $name)\" .#pkg"
+  ok "$(paint 36 "$name") is ready $(paint 2 "($(( $(date +%s) - started ))s)")"
+  local label value
+  while IFS='|' read -r label value
+  do
+    printf '  %s %s\n' "$(paint 1 "$(printf '%-8s' "$label")")" "$value"
+  done <<EOF
+IP|$(paint 36 "$ip") $(paint 2 "(NetBird)")
+User|agent
+Flavor|$(jq -r '.flavor // "-"' <<< "$info")
+Expires|$(paint 33 "$(fmt_expiry "$(jq -r .expires_at <<< "$info")")")
+SSH|$(paint 32 "$me ssh $name")
+Builder|$(paint 32 "nix build --max-jobs 0 --builders \"\$($me builder $name)\" .#pkg")
+EOF
   if [[ -n "$login" ]]
   then
     connect "$name"
