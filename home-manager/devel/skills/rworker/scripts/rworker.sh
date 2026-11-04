@@ -97,7 +97,7 @@ flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
 flag prune --all every ad-hoc worker, whoever owns it
-flag down --force delete someone else's worker
+flag down --force delete someone else's worker or a pool worker
 flag extend --force extend someone else's worker
 flag prune --yes do not ask
 flag prune --dry-run only show what would be deleted
@@ -153,6 +153,8 @@ Usage: $me ls [-o json|wide] [-w|--watch [-n SECONDS]]
 List all workers: ad-hoc ones (KIND adhoc) and nixbot's pool (KIND pool),
 with status, owner, creating agent, topic, time to expiry and age.
 EXPIRES "grace 42m": expired but in use, deleted after 1h without use.
+Pool workers have no TTL; EXPIRES shows what the autoscaler last saw:
+busy, idle 12m (drained after 20m idle with nothing pending) or draining.
 
   -o json        print the raw JSON instead of the table
   -o wide        add the agent's PID, flavor, NetBird IP and cwd
@@ -190,10 +192,13 @@ EOF
       cat <<EOF
 Usage: $me down NAME [--force]
 
-Delete an ad-hoc worker with its volume and NetBird peer. Nothing on it
-survives; copy results off first. Pool workers belong to the autoscaler.
+Delete a worker with its volume and NetBird peer. Nothing on it survives;
+copy results off first.
 
 Workers of another owner (\$USER@host, see ls) are refused unless --force.
+So are nixbot's pool workers (KIND pool): builds running on one fail; the
+autoscaler replaces it from the current image when there is demand (handy
+for a pool worker on an outdated image).
 EOF
       ;;
     prune)
@@ -542,7 +547,10 @@ table_plain() {
       | if . == "Z" then null else (try fromdateiso8601 catch null) end;
     def opt(v): if (v // "") == "" then "-" else v end;
     def expiry:
-      if (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
+      if .kind == "pool" and .pool_state then
+        (if .pool_state == "idle" and .last_busy
+         then "idle \(dur($now - .last_busy))" else .pool_state end)
+      elif (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
       elif (.expires_at // 0) > 0 then dur(.expires_at - $now)
       else "-" end;
     (["NAME", "KIND", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
@@ -573,7 +581,8 @@ colorize() {
     -e "2,\$s/ (BUILD|REBUILD|RESIZE|DELETING) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
     -e "2,\$s/ (expired) / ${red}\1${reset} /" \
-    -e "2,\$s/ (grace [0-9]+[mhd]) / ${yellow}\1${reset} /" \
+    -e "2,\$s/ (grace [0-9]+[mhd]|draining) / ${yellow}\1${reset} /" \
+    -e "2,\$s/ (busy) / ${green}\1${reset} /" \
     -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
     -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/"
 }
@@ -594,7 +603,7 @@ render_table() {
 
 # What counts as a change in --watch (not the ticking EXPIRES/AGE).
 signatures() {
-  jq -r '.[] | "\(.name)\t\(.kind)|\(.status)|\(.ip)|\(.owner)|\(.expires_at)|\(.grace_until)|\(.flavor)|\(.topic)"'
+  jq -r '.[] | "\(.name)\t\(.kind)|\(.status)|\(.ip)|\(.owner)|\(.expires_at)|\(.grace_until)|\(.flavor)|\(.topic)|\(.pool_state)"'
 }
 
 # `ls --watch`: redraw in place, like `kw` (kubectl-watch) and unlike
@@ -858,7 +867,8 @@ cmd_inspect() {
     (.cwd // "-"), (.flavor // "-"), (.ip // "-"), (.connected | tostring),
     (.created_at // "-"), (.expires_at // 0), (.grace_until // 0),
     (.last_active // 0), (.max_lifetime_end // 0), (.host_key // "-"),
-    (.availability_zone // "-")' <<< "$info")
+    (.availability_zone // "-"), (.pool_state // ""),
+    (.last_busy // 0)' <<< "$info")
   label Name "$(paint 36 "${f[0]}")"
   label Kind "${f[1]}"
   label Status "${f[2]}"
@@ -878,7 +888,13 @@ cmd_inspect() {
   then
     label Grace "until $(fmt_time "${f[14]}"); last in use $(fmt_time "${f[15]}")"
   fi
-  label "Max lifetime" "$(fmt_time "${f[16]}")"
+  if [[ -n "${f[19]}" ]]
+  then
+    # Pool workers have no TTL: the autoscaler drains them when idle.
+    label "Pool state" "${f[19]} (last busy $(fmt_time "${f[20]}"))"
+  else
+    label "Max lifetime" "$(fmt_time "${f[16]}")"
+  fi
   printf '%s\n' "$(paint 1 Metadata:)"
   jq -r '.metadata // {} | to_entries[] | select(.key != "host_key")
     | "  \(.key)=\(.value)"' <<< "$info"

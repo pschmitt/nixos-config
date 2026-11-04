@@ -47,7 +47,9 @@ rworker down "$w"
   agent's PID, flavor, IP and cwd); `inspect NAME [--boot]` shows
   everything about one worker; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
-  moves the expiry; `down NAME` deletes the worker and its NetBird peer.
+  moves the expiry; `down NAME` deletes the worker and its NetBird peer
+  (a pool worker only with `--force`: builds running on it fail
+  and the autoscaler replaces it from the current image).
 - On the worker, `rworker-metadata [--json]` shows what it is: name,
   owner, creator, current expiry and lifetime, CPUs, memory, disk.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
