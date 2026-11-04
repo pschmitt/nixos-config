@@ -30,6 +30,8 @@ Actions:
   ssh [USER@]NAME [SSH_ARGS...]
                        ssh to the worker (pinned host key); options such as
                        -L/-A and a command go straight to ssh
+  ssh --create [UP_OPTIONS]
+                       create a worker and log in (same as up --ssh)
   sync [USER@]NAME SRC [DEST]
                        rsync SRC to the worker (default ~/SRC basename)
   builder NAME         print a Nix builders line for the worker
@@ -67,6 +69,7 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag ssh --create create a worker first (same as up --ssh; up's options follow)
 flag ls -o=format output format
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
@@ -155,6 +158,7 @@ EOF
     ssh)
       cat <<EOF
 Usage: $me ssh [USER@]NAME [SSH_ARGS...]
+       $me ssh --create [UP_OPTIONS]
 
 SSH to a worker over NetBird with its pinned host key. Everything after the
 name goes to ssh, so options and a command both work.
@@ -163,7 +167,11 @@ Default user: agent on ad-hoc workers this host created, yourself on all
 others (RWORKER_USER overrides). Workers this host does not know yet are
 looked up on the control host.
 
+--create makes a new worker and logs in, like \`up --ssh\`; up's options
+(--ttl, --flavor, --disk, --scratch) follow it.
+
 Examples:
+  $me ssh --create --ttl 4h
   $me ssh adhoc-1234abcd
   $me ssh pschmitt@adhoc-1234abcd sudo journalctl -b
   $me ssh adhoc-1234abcd -L 8080:localhost:8080
@@ -873,7 +881,13 @@ main() {
       cmd_extend "$@"
       ;;
     ssh)
-      cmd_ssh "$@"
+      if [[ "${1:-}" == --create ]]
+      then
+        shift
+        cmd_up "$@" --ssh
+      else
+        cmd_ssh "$@"
+      fi
       ;;
     sync)
       cmd_sync "$@"

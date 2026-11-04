@@ -22,7 +22,7 @@ _rworker() {
   if [[ $COMP_CWORD -eq 1 ]] || [[ "$action" == help && $COMP_CWORD -eq 2 ]]
   then
     words=$(sed -n 's/^action \([^ ]*\) .*/\1/p' <<< "$spec")
-  elif [[ $COMP_CWORD -eq 2 ]] && grep -q -E "^worker( .*)? ${action}( |\$)" <<< "$spec"
+  elif [[ $COMP_CWORD -eq 2 && "$cur" != -* ]] && grep -q -E "^worker( .*)? ${action}( |\$)" <<< "$spec"
   then
     words=$(_rworker_workers)
   elif [[ "$action" == sync && $COMP_CWORD -eq 3 ]]
@@ -30,6 +30,11 @@ _rworker() {
     mapfile -t COMPREPLY < <(compgen -d -- "$cur")
     return
   else
+    # ssh --create takes up's flags.
+    if [[ "$action" == ssh && "${COMP_WORDS[2]:-}" == --create ]]
+    then
+      action=up
+    fi
     # value of the previous flag?
     while read -r line
     do

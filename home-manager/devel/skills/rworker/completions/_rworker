@@ -48,12 +48,16 @@ _rworker() {
     return
   fi
 
-  if (( ${takes_worker[(Ie)$action]} )) && (( CURRENT == 3 ))
+  if (( ${takes_worker[(Ie)$action]} )) && (( CURRENT == 3 )) && [[ "$PREFIX" != -* ]]
   then
     _rworker_workers
     return
   fi
-  if [[ "$action" == ssh ]] && (( CURRENT > 3 ))
+  # ssh --create takes up's flags.
+  if [[ "$action" == ssh && "${words[3]}" == --create ]] && (( CURRENT > 3 ))
+  then
+    action=up
+  elif [[ "$action" == ssh ]] && (( CURRENT > 3 ))
   then
     _normal
     return
