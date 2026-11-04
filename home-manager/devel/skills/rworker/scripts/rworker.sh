@@ -795,6 +795,19 @@ table_plain() {
 }
 
 # kubecolor-like colors for a table_plain table (header on line 1).
+# Brand colors for the agent glyphs (truecolor): Claude orange, OpenAI
+# light gray, NixOS blue for nixbot; a sed filter.
+paint_agents() {
+  # UTF-8 bytes of U+EC82 (claude), U+EC81 (openai), U+F313 (nixos): no
+  # dependence on the locale.
+  local claude=$'\xee\xb2\x82' openai=$'\xee\xb2\x81' nixos=$'\xef\x8c\x93'
+  local reset=$'\e[0m'
+  sed \
+    -e "s/${claude}/"$'\e[38;2;217;119;87m'"&${reset}/g" \
+    -e "s/${openai}/"$'\e[38;2;200;200;200m'"&${reset}/g" \
+    -e "s/${nixos}/"$'\e[38;2;126;186;228m'"&${reset}/g"
+}
+
 colorize() {
   local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
   local cyan=$'\e[36m' reset=$'\e[0m'
@@ -807,7 +820,8 @@ colorize() {
     -e "2,\$s/ (grace [0-9]+[mhd]|draining) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (busy) / ${green}\1${reset} /" \
     -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
-    -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/"
+    -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/" \
+    | paint_agents
 }
 
 render_table() {
@@ -1098,7 +1112,12 @@ cmd_inspect() {
   label Status "${f[2]}"
   label Owner "${f[3]}"
   printf '%s\n' "$(paint 1 Creator:)"
-  label "  Agent" "${f[4]}$([[ "${f[5]}" != - ]] && printf ' (PID %s)' "${f[5]}")"
+  local agent="${f[4]}"
+  if [[ -n "$COLOR" ]]
+  then
+    agent=$(paint_agents <<< "$agent")
+  fi
+  label "  Agent" "${agent}$([[ "${f[5]}" != - ]] && printf ' (PID %s)' "${f[5]}")"
   label "  Session" "${f[6]}"
   label "  Topic" "${f[7]}"
   label "  Cwd" "${f[8]}"
