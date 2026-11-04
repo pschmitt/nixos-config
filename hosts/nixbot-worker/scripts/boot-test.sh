@@ -6,6 +6,8 @@ image="$1"
 ovmf_code="$2"
 ovmf_vars="$3"
 out="$4"
+# Answers the OpenStack metadata service (169.254.169.254) inside QEMU.
+metadata_responder="$5"
 
 mkdir -p "$out"
 work=$(mktemp -d)
@@ -14,6 +16,15 @@ vars="${work}/vars.fd"
 
 cp --no-preserve=mode "$image" "$disk"
 cp --no-preserve=mode "$ovmf_vars" "$vars"
+
+# QEMU's guestfwd cannot use 169.254.169.254: point the worker at the fake
+# metadata service on 10.0.2.100 (this copy of the disk only).
+esp_offset=$(( $(sfdisk --json "$disk" | jq -er '.partitiontable.partitions[0].start') * 512 ))
+entry=::/loader/entries/nixbot-worker.conf
+mtype -i "${disk}@@${esp_offset}" "$entry" \
+  | sed 's|^options |options nixbot-worker.metadata=http://10.0.2.100/openstack/latest |' \
+  > "${work}/entry.conf"
+mcopy -o -i "${disk}@@${esp_offset}" "${work}/entry.conf" "$entry"
 # Room for the data partition repart adds at boot.
 truncate -s 6G "$disk"
 
@@ -38,7 +49,7 @@ boot() {
     -drive "if=pflash,format=raw,readonly=on,file=${ovmf_code}" \
     -drive "if=pflash,format=raw,file=${vars}" \
     -drive "file=${disk},format=raw,if=virtio,cache=writethrough" \
-    -nic user,model=virtio \
+    -nic "user,model=virtio,guestfwd=tcp:10.0.2.100:80-cmd:${metadata_responder}" \
     -display none -monitor none -serial "file:${log}" &
   pid=$!
 
@@ -56,6 +67,27 @@ boot() {
     fi
     sleep 2
   done
+  # nixbot-worker-netbird-up got its name and wrote the metadata (joining
+  # NetBird itself cannot work without internet).
+  local named=""
+  for _ in $(seq 1 60)
+  do
+    if grep -a -q 'nixbot-worker: named test-worker' "$log"
+    then
+      named=1
+      break
+    fi
+    sleep 2
+  done
+  if [[ -z "$named" ]]
+  then
+    echo "boot ${n}: worker did not take its name from the metadata service" >&2
+    sed -e 's/\x1b\[[0-9;?]*[a-zA-Z]//g' "$log" | tr -d '\r' \
+      | grep -a -i -E 'netbird-up|hostname|metadata|fail' >&2 || true
+    kill "$pid" 2>/dev/null || true
+    return 1
+  fi
+
   kill "$pid"
   wait "$pid" || true
 

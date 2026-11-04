@@ -59,8 +59,9 @@ in
     };
   };
 
-  # Boots the image twice and checks the encrypted data partition from the
-  # outside (flake check nixbot-worker-boot).
+  # Boots the image twice (with a fake metadata service) and checks the
+  # encrypted data partition, the host key and the name from the outside
+  # (flake check nixbot-worker-boot).
   system.build.bootTest =
     pkgs.runCommand "nixbot-worker-boot-test"
       {
@@ -70,7 +71,9 @@ in
             runtimeInputs = [
               pkgs.coreutils
               pkgs.gnugrep
+              pkgs.gnused
               pkgs.jq
+              pkgs.mtools
               pkgs.qemu_kvm
               pkgs.util-linux
             ];
@@ -81,6 +84,12 @@ in
       }
       ''
         boot-test ${config.image.repart.image}/${config.image.filePath} \
-          ${pkgs.OVMF.fd}/FV/OVMF_CODE.fd ${pkgs.OVMF.fd}/FV/OVMF_VARS.fd "$out"
+          ${pkgs.OVMF.fd}/FV/OVMF_CODE.fd ${pkgs.OVMF.fd}/FV/OVMF_VARS.fd "$out" \
+          ${lib.getExe (
+            pkgs.writeShellApplication {
+              name = "metadata-responder";
+              text = builtins.readFile ./scripts/metadata-responder.sh;
+            }
+          )}
       '';
 }
