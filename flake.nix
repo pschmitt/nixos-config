@@ -43,10 +43,7 @@
 
     anika-blue = {
       url = "github:pschmitt/anika-blue";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-parts.follows = "flake-parts";
-      };
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     bunq-sh = {
