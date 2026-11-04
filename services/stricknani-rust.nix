@@ -9,8 +9,7 @@
 #   hidden from the service and left untouched for rollback.
 # - No SOPS env file: secrets (the Authelia OIDC client secret and the Sentry
 #   DSN) are passed as file paths.
-# - AI, OCR, external imports and Wayback stay disabled until reviewed
-#   separately (cutover runbook).
+# - Link imports and AI (via Hermes) are on; OCR and Wayback stay disabled.
 {
   config,
   inputs,
@@ -41,6 +40,12 @@ in
   };
   # One Sentry project (stricknani) for server, web and Android; the apps report
   # through the server's tunnel, and users can opt out in their account settings.
+  # Same value as Hermes's API server key (services/hermes.nix).
+  sops.secrets."stricknani/hermesApiKey" = config.sops.mkHostSecret {
+    key = "hermes/apiServer/key";
+    owner = "stricknani";
+    group = "stricknani";
+  };
   sops.secrets."stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
     owner = "stricknani";
     group = "stricknani";
@@ -58,6 +63,17 @@ in
     inherit serverAliases;
     nginx.enable = true;
     sentry.dsnFile = config.sops.secrets."stricknani/sentry/dsnBackend".path;
+    # Link imports for projects and yarns; the AI fills gaps through Hermes's
+    # loopback OpenAI-compatible API server (tool-less for that platform).
+    imports.enable = true;
+    ai = {
+      enable = true;
+      provider = "custom";
+      baseUrl = "http://127.0.0.1:8642/v1";
+      model = "hermes-agent";
+      apiKeyFile = config.sops.secrets."stricknani/hermesApiKey".path;
+      timeoutSeconds = 90;
+    };
 
     oidc = {
       enable = true;
@@ -70,9 +86,7 @@ in
 
     extraConfig = {
       RUST_SIGNUP_ENABLED = "false";
-      RUST_AI_ENABLED = "false";
       RUST_OCR_ENABLED = "false";
-      RUST_EXTERNAL_IMPORTS_ENABLED = "false";
       RUST_WAYBACK_ENABLED = "false";
     };
   };

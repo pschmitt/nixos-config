@@ -11,6 +11,7 @@ let
   matrixUser = "@pschmitt:matrix.${config.domains.main}";
   dashboardPort = 9119;
   signalCliPort = 8712;
+  hermesApiPort = 8642;
   signalCliDataDir = "${config.services.hermes-agent.stateDir}/.signal-cli";
   gpgHome = "${config.services.hermes-agent.stateDir}/.gnupg";
   ghConfigRoot = "${config.services.hermes-agent.stateDir}/.config/gh";
@@ -271,6 +272,12 @@ in
         group = config.services.hermes-agent.group;
         mode = "0400";
       };
+      # OpenAI-compatible API server (loopback only), used by Stricknani's link imports.
+      "hermes/apiServer/key" = config.sops.mkHostSecret {
+        owner = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        mode = "0400";
+      };
       "age/hermes-sops/keys.txt" = {
         sopsFile = rofl10SecretsFile;
         owner = config.services.hermes-agent.user;
@@ -298,6 +305,10 @@ in
           GH_TOKEN=${config.sops.placeholder."hermes/github/gh-brkn-lol/token"}
           IMMICH_API_KEY=${config.sops.placeholder."immich/immich-face-to-album/apiKey"}
           SIGNAL_HTTP_URL=http://127.0.0.1:${toString signalCliPort}
+          API_SERVER_ENABLED=true
+          API_SERVER_HOST=127.0.0.1
+          API_SERVER_PORT=${toString hermesApiPort}
+          API_SERVER_KEY=${config.sops.placeholder."hermes/apiServer/key"}
           SIGNAL_ACCOUNT=${config.sops.placeholder."hermes/signal/account"}
           SIGNAL_ALLOWED_USERS=${config.sops.placeholder."hermes/signal/allowed-users"}
           # Group chats: restricted to the one allowed group (see
@@ -383,6 +394,10 @@ in
       ]);
       settings = {
         plugins.enabled = [ "homeassistant" ];
+        # The API server is only for Stricknani's link imports: no built-in tools,
+        # no MCP servers and no plugin toolsets there (imported pages are untrusted).
+        platform_toolsets.api_server = [ "no_mcp" ];
+        known_plugin_toolsets.api_server = [ "homeassistant" ];
         model = {
           provider = "openai-codex";
           default = "gpt-6-luna";
