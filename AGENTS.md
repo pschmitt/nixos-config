@@ -119,6 +119,7 @@
 - `pkgs/`: Custom package definitions.
 - `overlays/`: Nixpkgs overlays.
 - `profiles/hardware/`: Hardware-specific configuration snippets.
+- `docs/`: Human documentation, linked from `README.md`.
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.

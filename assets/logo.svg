@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t">
+  <title id="t">A pyramid with a floating gold capstone holding an eye whose iris is a Nix snowflake, in front of a black hole</title>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="40" x2="0" y2="470" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f3dca6"/><stop offset=".55" stop-color="#d0a457"/><stop offset="1" stop-color="#94682a"/>
+    </linearGradient>
+    <linearGradient id="stone" x1="0" y1="266" x2="0" y2="470" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c79a50"/><stop offset="1" stop-color="#5e4119"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="256" cy="176" r="190" gradientUnits="userSpaceOnUse">
+      <stop offset=".7" stop-color="#ff8a3a" stop-opacity=".6"/><stop offset=".8" stop-color="#ff5a18" stop-opacity=".22"/><stop offset="1" stop-color="#ff2a08" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="iris" cx="256" cy="176" r="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#14224a"/><stop offset="1" stop-color="#060814"/>
+    </radialGradient>
+    <clipPath id="seal"><circle cx="256" cy="256" r="231"/></clipPath>
+    <clipPath id="base"><path d="M256 50 L0 415.7 V512 H512 V415.7 Z"/></clipPath>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <path id="lambda" d="M-14 -32 L84 -32 L96.7 -54 L37 -54 L62 -97 L37 -97 L12 -54 L-27 -54 Z"/>
+  </defs>
+
+  <circle cx="256" cy="256" r="250" fill="#07060c"/>
+  <circle cx="256" cy="256" r="244" fill="none" stroke="url(#gold)" stroke-width="4"/>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="url(#gold)" stroke-width="1.5"/>
+
+  <g clip-path="url(#seal)">
+    <circle cx="256" cy="176" r="190" fill="url(#halo)"/>
+    <g stroke="url(#gold)" stroke-width="2.5" stroke-linecap="round" opacity=".8"><path d="M403.4 188.9L439.3 192.0"/><path d="M399.0 214.3L462.7 231.4"/><path d="M390.1 238.5L422.8 253.8"/><path d="M377.2 260.9L431.3 298.7"/><path d="M360.7 280.7L386.1 306.1"/><path d="M340.9 297.2L378.7 351.3"/><path d="M318.5 310.1L333.8 342.8"/><path d="M294.3 319.0L311.4 382.7"/><path d="M268.9 323.4L272.0 359.3"/><path d="M243.1 323.4L237.3 389.2"/><path d="M217.7 319.0L208.4 353.7"/><path d="M193.5 310.1L165.6 369.9"/><path d="M171.1 297.2L150.5 326.7"/><path d="M151.3 280.7L104.7 327.3"/><path d="M134.8 260.9L105.3 281.5"/><path d="M121.9 238.5L62.1 266.4"/><path d="M113.0 214.3L78.3 223.6"/><path d="M108.6 188.9L42.8 194.7"/><path d="M108.6 163.1L72.7 160.0"/><path d="M113.0 137.7L49.3 120.6"/><path d="M121.9 113.5L89.2 98.2"/><path d="M134.8 91.1L80.7 53.3"/><path d="M151.3 71.3L125.9 45.9"/><path d="M171.1 54.8L133.3 0.7"/><path d="M193.5 41.9L178.2 9.2"/><path d="M217.7 33.0L200.6 -30.7"/><path d="M243.1 28.6L240.0 -7.3"/><path d="M268.9 28.6L274.7 -37.2"/><path d="M294.3 33.0L303.6 -1.7"/><path d="M318.5 41.9L346.4 -17.9"/><path d="M340.9 54.8L361.5 25.3"/><path d="M360.7 71.3L407.3 24.7"/><path d="M377.2 91.1L406.7 70.5"/><path d="M390.1 113.5L449.9 85.6"/><path d="M399.0 137.7L433.7 128.4"/><path d="M403.4 163.1L469.2 157.3"/></g>
+    <circle cx="256" cy="176" r="136" fill="#000"/>
+    <circle cx="256" cy="176" r="137" fill="none" stroke="#ffe6c4" stroke-width="1.5"/>
+
+    <g clip-path="url(#base)">
+      <rect y="266" width="512" height="246" fill="url(#stone)"/>
+      <g stroke="#07060c" stroke-width="3" fill="none"><path d="M58 304H454"/><path d="M30 344H482"/><path d="M2 384H510"/><path d="M-26 424H538"/><path d="M170 266V304"/><path d="M256 266V304"/><path d="M342 266V304"/><path d="M130 304V344"/><path d="M213 304V344"/><path d="M299 304V344"/><path d="M382 304V344"/><path d="M90 344V384"/><path d="M170 344V384"/><path d="M256 344V384"/><path d="M342 344V384"/><path d="M422 344V384"/><path d="M130 384V424"/><path d="M213 384V424"/><path d="M299 384V424"/><path d="M382 384V424"/></g>
+    </g>
+  </g>
+
+  <path d="M256 44 L392 250 H120 Z" fill="url(#gold)" stroke="#07060c" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M176 182 Q256 112 336 182 Q256 252 176 182 Z" fill="#f6efdd" stroke="#07060c" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="256" cy="182" r="41" fill="url(#iris)" stroke="#07060c" stroke-width="3"/>
+  <g transform="translate(256 182) scale(.36)" filter="url(#glow)">
+    <g fill="#a8dcff"><use href="#lambda"/><use href="#lambda" transform="rotate(120)"/><use href="#lambda" transform="rotate(240)"/></g>
+    <g fill="#6f9be8"><use href="#lambda" transform="rotate(60)"/><use href="#lambda" transform="rotate(180)"/><use href="#lambda" transform="rotate(300)"/></g>
+  </g>
+</svg>
