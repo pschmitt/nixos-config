@@ -2,6 +2,8 @@
 {
   programs.kitty = {
     enable = true;
+    package = pkgs.master.kitty;
+
     themeFile = "Nord";
     font = {
       name = "ComicCode Nerd Font";

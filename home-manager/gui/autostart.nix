@@ -5,6 +5,7 @@
   ...
 }:
 let
+  kitty = config.programs.kitty.package;
   tmuxSessionName = "main";
 
   # Attach to (or create) the main tmux session. Replaces the zhj
@@ -42,7 +43,7 @@ in
         # FIXME We *should* be able to use terminal=true here, but kitty won't
         # show if that's the case. The tmux::attach func gets called though...
         terminal = false;
-        exec = "${pkgs.kitty}/bin/kitty --class kitty-tmux -e ${tmuxAttach}";
+        exec = "${kitty}/bin/kitty --class kitty-tmux -e ${tmuxAttach}";
         icon = pkgs.fetchurl {
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
@@ -58,7 +59,7 @@ in
         name = "tmux@local+fnuc";
         comment = "Start kitty with local and fnuc tmux tabs";
         terminal = false;
-        exec = "${pkgs.kitty}/bin/kitty --class kitty-tmux --session ${kittyTmuxSession}";
+        exec = "${kitty}/bin/kitty --class kitty-tmux --session ${kittyTmuxSession}";
         icon = pkgs.fetchurl {
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
@@ -74,7 +75,7 @@ in
         name = "tmux@fnuc";
         comment = "Start kitty with remote tmux on fnuc";
         terminal = false;
-        exec = "${pkgs.kitty}/bin/kitty --class kitty-tmux -e ${remoteTmuxFnuc}";
+        exec = "${kitty}/bin/kitty --class kitty-tmux -e ${remoteTmuxFnuc}";
         icon = pkgs.fetchurl {
           url = "https://raw.githubusercontent.com/tmux/tmux/master/logo/tmux-logomark.svg";
           sha256 = "0n73x1nhds5k4825x91409knjvkc7ps7cjrhknjg8g1w37r5djdx";
@@ -94,7 +95,7 @@ in
         name = "kitty (scratchpad)";
         noDisplay = true;
         terminal = false;
-        exec = "${pkgs.kitty}/bin/kitty --class kitty-scratchpad";
+        exec = "${kitty}/bin/kitty --class kitty-scratchpad";
         icon = "kitty";
         settings.StartupWMClass = "kitty-scratchpad";
       };

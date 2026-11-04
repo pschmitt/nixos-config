@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   ...
 }:
@@ -9,7 +10,7 @@ let
 in
 {
   home.packages = with pkgs; [
-    kitty
+    config.programs.kitty.package
     fuzzel
     swaylock
   ];
