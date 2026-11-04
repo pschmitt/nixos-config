@@ -19,7 +19,7 @@ Usage: $(basename "$0") ACTION [ARGS] [-j|--json]
 but ssh takes it (scripts and the MCP server use it).
 
 Actions:
-  up [--ttl 2h] [--flavor s1.xlarge] [--disk 150]
+  up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--ssh]
                        create a worker and wait until it is ready
   ls [-o json] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
@@ -66,6 +66,7 @@ flag up --ttl=duration lifetime, e.g. 90m or 2h
 flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
+flag up --ssh log in as soon as it is ready
 flag ls -o=format output format
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
@@ -91,7 +92,7 @@ action_help() {
   case "$1" in
     up)
       cat <<EOF
-Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch]
+Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
@@ -103,6 +104,7 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
                    s1.2xlarge (32/64)
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
+  --ssh            log in (as agent) as soon as it is ready
 
 Example:
   w=\$($me up --ttl 3h --flavor s1.2xlarge | jq -r .name)
@@ -290,6 +292,18 @@ forget() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
+  local login="" arg
+  local -a args=()
+  for arg in "$@"
+  do
+    if [[ "$arg" == --ssh ]]
+    then
+      login=1
+    else
+      args+=("$arg")
+    fi
+  done
+  set -- "${args[@]}"
   if [[ ! -r "$key_file" ]]
   then
     printf 'Public key %s not readable (set RWORKER_KEY)\n' "$key_file" >&2
@@ -320,6 +334,29 @@ cmd_up() {
     Expires "$(fmt_expiry "$(jq -r .expires_at <<< "$info")")" \
     SSH "$me ssh $name" \
     Builder "nix build --max-jobs 0 --builders \"\$($me builder $name)\" .#pkg"
+  if [[ -n "$login" ]]
+  then
+    connect "$name"
+  fi
+}
+
+# Log in right after `up`: NetBird may still be setting up the route to the
+# fresh peer, so retry the connection for a little while.
+connect() {
+  local name="$1" ip opts i
+  ip=$(worker_field "$name" ip) || return 1
+  mapfile -t opts < <(ssh_opts)
+  for i in $(seq 1 10)
+  do
+    if ssh "${opts[@]}" -o ConnectTimeout=5 "agent@${ip}" true 2>/dev/null
+    then
+      break
+    fi
+    printf 'Waiting for %s to accept SSH (%d)...\n' "$name" "$i" >&2
+    sleep 3
+  done
+  # shellcheck disable=SC2029 # no remote command, just the login
+  ssh "${opts[@]}" "agent@${ip}"
 }
 
 # kubectl-style table from `ls` JSON (aligned, uncolored); empty when there
