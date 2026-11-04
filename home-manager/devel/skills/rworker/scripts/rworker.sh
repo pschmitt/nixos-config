@@ -689,8 +689,9 @@ watch_ls() {
       frame+="No workers found."$'\n'
     fi
 
-    # Home, draw, clear the rest: no flicker.
-    printf '\e[H%s\e[J' "$frame"
+    # Home, draw, clear the rest: no flicker. \e[K ends every line, or a
+    # line shorter than the one drawn there before keeps its tail.
+    printf '\e[H%s\e[J' "${frame//$'\n'/$'\e[K\n'}"
 
     prev_sig=()
     prev_row=()
