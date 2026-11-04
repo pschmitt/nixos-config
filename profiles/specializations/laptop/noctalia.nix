@@ -7,7 +7,12 @@
   ...
 }:
 let
-  noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system};
+  noctaliaPlugins = inputs.noctalia-plugins.packages.${pkgs.stdenv.hostPlatform.system} // {
+    # Use our package set so the controller inherits the Squeekboard hotfix.
+    noctalia-touch-keyboard =
+      pkgs.callPackage "${inputs.noctalia-plugins}/pkgs/noctalia-touch-keyboard"
+        { };
+  };
 
   # Noctalia's built-in "sticker" widget (used for the lockscreen avatar
   # below) has no rounding/mask setting of its own -- just image_path and
@@ -16,6 +21,10 @@ let
   avatarCircularPath = "${config.mainUser.homeDirectory}/.local/share/noctalia-avatar-circular.png";
 in
 {
+  home-manager.sharedModules = [
+    { home.packages = [ noctaliaPlugins.noctalia-touch-keyboard ]; }
+  ];
+
   home-manager.users.${config.mainUser.username} = hmArgs: {
     # Home Assistant layout and entity IDs live in the private config input.
     # The plugin keeps its editable panel changes in a separate state overlay.
@@ -234,6 +243,7 @@ in
               members = [
                 "network"
                 "bluetooth"
+                "touch-keyboard"
                 "battery-icon"
                 "notifications"
               ];
@@ -302,6 +312,7 @@ in
             "pschmitt/screencast"
             # Renders the charge percentage inside the battery icon itself
             # (Android status-bar style) — see pschmitt/noctalia-plugins.
+            "pschmitt/touch-keyboard"
             "pschmitt/battery-icon"
             # iPhone Duo-inspired circular battery and Wi-Fi indicator. Kept
             # installed and defined (widget "duo-status" below) but not placed
@@ -354,6 +365,12 @@ in
               name = "pschmitt-ha-ai-usage";
               kind = "path";
               location = "${noctaliaPlugins.noctalia-ha-ai-usage}/share/noctalia-plugins";
+              enabled = true;
+            }
+            {
+              name = "pschmitt-touch-keyboard";
+              kind = "path";
+              location = "${noctaliaPlugins.noctalia-touch-keyboard}/share/noctalia-plugins";
               enabled = true;
             }
             {
@@ -825,6 +842,7 @@ in
           lan-mouse.type = "pschmitt/lan-mouse:bar";
           ha.type = "pschmitt/ha:bar";
           ha-ai-usage.type = "pschmitt/ha-ai-usage:bar";
+          touch-keyboard.type = "pschmitt/touch-keyboard:bar";
           battery-icon.type = "pschmitt/battery-icon:bar";
           duo-status.type = "pschmitt/duo-status:bar";
           syncthing.type = "pschmitt/syncthing:bar";
