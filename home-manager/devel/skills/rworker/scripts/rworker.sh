@@ -821,8 +821,8 @@ colorize() {
     -e "2,\$s/ (expired) / ${red}\1${reset} /" \
     -e "2,\$s/ (grace [0-9]+[mhd]|draining) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (busy) / ${green}\1${reset} /" \
-    -e "2,\$s/ (([0-9]|[12][0-9])m) ( +[0-9]+[mhd])/ ${urgent}\1${reset}\3/" \
-    -e "2,\$s/ ([3-5][0-9]m) ( +[0-9]+[mhd])/ ${warn}\1${reset}\2/" \
+    -e "2,\$s/ (([0-9]|[12][0-9])m)( +[0-9]+[mhd])/ ${urgent}\1${reset}\3/" \
+    -e "2,\$s/ ([3-5][0-9]m)( +[0-9]+[mhd])/ ${warn}\1${reset}\2/" \
     -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/" \
     | paint_agents
 }

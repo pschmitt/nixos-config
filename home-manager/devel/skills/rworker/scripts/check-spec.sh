@@ -73,6 +73,26 @@ main() {
     fi
   done < <(sed -n 's/^global \([^ ]*\) .*/\1/p' <<< "$spec")
 
+  # Colors must not move anything: the painted table, stripped of its
+  # escape codes, is the plain one (a dropped space once shifted AGE).
+  local plain painted
+  plain=$'NAME  KIND  STATUS  EXPIRES  AGE\n'
+  plain+=$'a  adhoc  ACTIVE  5m       1h9m\n'
+  plain+=$'b  adhoc  ACTIVE  25m      2h\n'
+  plain+=$'c  adhoc  ACTIVE  50m      1h9m\n'
+  plain+=$'d  adhoc  BUILD   1h7m     52m\n'
+  plain+=$'e  adhoc  ERROR   expired  3h\n'
+  plain+=$'f  pool   ACTIVE  busy     1d2h\n'
+  plain+=$'g  adhoc  ACTIVE  grace 4m  1h'
+  painted=$(bash -c 'source "$1"; colorize' _ "$script" <<< "$plain" \
+    | sed -E 's/\x1b\[[0-9;]*m//g')
+  if [[ "$painted" != "$plain" ]]
+  then
+    printf 'colorize changes the table text:\n' >&2
+    diff <(printf '%s\n' "$plain") <(printf '%s\n' "$painted") >&2
+    failed=1
+  fi
+
   if [[ -n "$failed" ]]
   then
     return 1
