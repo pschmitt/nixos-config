@@ -59,7 +59,7 @@ forget() {
   ip=$(worker_field "$name" ip 2>/dev/null) || return 0
   if [[ -f "$KNOWN_HOSTS" ]]
   then
-    ssh-keygen -R "$ip" -f "$KNOWN_HOSTS" >/dev/null 2>&1
+    ssh-keygen -R "$ip" -f "$KNOWN_HOSTS" >/dev/null 2>&1 || true
   fi
   rm -f "$(state_file "$name")"
 }

@@ -169,6 +169,18 @@ let
     ];
     text = builtins.readFile ./skills/browser-login/scripts/ask-human.sh;
   };
+  # Ad-hoc build workers on OpenStack (skills/rofl-worker): talks to the
+  # nixbot host over SSH, pins each worker's host key locally.
+  roflWorker = pkgs.writeShellApplication {
+    name = "rofl-worker";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      pkgs.openssh
+      pkgs.rsync
+    ];
+    text = builtins.readFile ./skills/rofl-worker/scripts/rofl-worker.sh;
+  };
   browserMcps.browser-daemon = {
     command = lib.getExe' pkgs.browser-daemon "browser-daemon";
     env.XDG_RUNTIME_DIR = "/run/user/${toString config.host.uid}";
@@ -785,6 +797,7 @@ in
         # Agents label their browser sessions with it (see CONTEXT.md).
         ++ [
           browserAgentTopic
+          roflWorker
           claudeOgl
           claudeStatusline
           claudeTmuxRename

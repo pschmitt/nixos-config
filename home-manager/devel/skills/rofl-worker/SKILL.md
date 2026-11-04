@@ -18,15 +18,15 @@ key is pinned on creation, never trusted on first use.
 
 ## Commands
 
-All through `scripts/rofl-worker.sh` (it calls `rofl-worker` on the nixbot
-host over SSH and keeps per-worker state in `~/.local/state/rofl-worker`):
+All through `rofl-worker` (on PATH via Home Manager; the same code is
+`scripts/rofl-worker.sh`). It calls `rofl-worker` on the nixbot host over
+SSH and keeps per-worker state in `~/.local/state/rofl-worker`:
 
 ```bash
-rw=~/.config/claude/skills/rofl-worker/scripts/rofl-worker.sh
-w=$($rw up --ttl 3h | jq -r .name)     # blocks ~2-4 min until ready
-$rw sync "$w" ~/devel/private/pschmitt/rbw.git rbw
-$rw ssh "$w" 'cd rbw && nix develop -c cargo build --release'
-$rw down "$w"
+w=$(rofl-worker up --ttl 3h | jq -r .name)     # blocks ~2-4 min until ready
+rofl-worker sync "$w" ~/devel/private/pschmitt/rbw.git rbw
+rofl-worker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
+rofl-worker down "$w"
 ```
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints JSON
@@ -46,7 +46,7 @@ $rw down "$w"
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
   give it `--disk 250` (Gradle caches are large) and a TTL that covers the
   first, uncached build.
-- **Nix builds:** `nix build --max-jobs 0 --builders "$($rw builder "$w")"
+- **Nix builds:** `nix build --max-jobs 0 --builders "$(rofl-worker builder "$w")"
   .#pkg` builds on the worker and copies the result back. The worker
   substitutes from cache.nixos.org and nixbot's store itself.
 - Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b
