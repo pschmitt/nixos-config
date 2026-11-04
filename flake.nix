@@ -766,6 +766,10 @@
             };
           };
         }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          # Boots the nixbot worker image and checks its encrypted disk.
+          nixbot-worker-boot = self.nixosConfigurations.nixbot-worker.config.system.build.bootTest;
+        }
       );
 
       # Jobs for nixbot (self-hosted CI on rofl-14, see nixbot.toml): every
@@ -840,15 +844,19 @@
             );
             packages = lib.genAttrs ciSystems (system: lib.filterAttrs (buildable system) (ciPackages system));
             checks = lib.genAttrs ciSystems (system: self.checks.${system});
-            images = lib.genAttrs [
-              "iso"
-              "iso-graphical"
-              "iso-legacy"
-              "iso-multios"
-              "iso-private"
-              "iso-private-legacy"
-              "iso-private-multios"
-            ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage);
+            images =
+              lib.genAttrs [
+                "iso"
+                "iso-graphical"
+                "iso-legacy"
+                "iso-multios"
+                "iso-private"
+                "iso-private-legacy"
+                "iso-private-multios"
+              ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
+              // {
+                nixbot-worker = self.nixosConfigurations.nixbot-worker.config.image.repart.image;
+              };
           };
           # nixbot.toml selects default.outputs as the build job set. Keep
           # effect derivations outside it; nixbot discovers all onPush effects.
@@ -1018,6 +1026,20 @@
                 hardware.type = "installation-media";
                 system.stateVersion = "26.11";
               }
+            ];
+          };
+
+          # Disposable nixbot build worker (OpenStack image). Not a mkHost
+          # host: no sops, no private modules, no profiles/base.
+          nixbot-worker = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = {
+              inherit inputs outputs;
+            };
+            modules = [
+              ./modules
+              ./hosts/nixbot-worker
+              { hardware.type = "server"; }
             ];
           };
 
