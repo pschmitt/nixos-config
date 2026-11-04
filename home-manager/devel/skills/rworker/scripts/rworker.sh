@@ -411,17 +411,27 @@ forget() {
 # above us (claude, codex, agy, opencode, ...), its PID and session, the
 # topic (--topic, else this tmux window's name) and the working directory.
 creator_meta() {
-  local topic="$1" pid="$PPID" comm agent="" agent_pid="" session
-  while [[ -n "$pid" && "$pid" -gt 1 ]]
+  local topic="$1" pid="$PPID" comm argv0 cand agent="" agent_pid="" session
+  while [[ -n "$pid" && "$pid" -gt 1 && -z "$agent" ]]
   do
     comm=$(cat "/proc/${pid}/comm" 2>/dev/null) || break
-    case "$comm" in
-      claude|codex|agy|antigravity|opencode|gemini|copilot|aider|cursor-agent|crush|goose)
-        agent="$comm"
-        agent_pid="$pid"
-        break
-        ;;
-    esac
+    argv0=$(tr '\0' '\n' < "/proc/${pid}/cmdline" 2>/dev/null | head -n 1)
+    # Nix wraps binaries: comm is then ".claude-wrapped".
+    comm="${comm#.}"
+    for cand in "${comm%-wrapped}" "${argv0##*/}"
+    do
+      case "$cand" in
+        claude|codex|agy|antigravity|opencode|gemini|copilot|aider|cursor-agent|crush|goose)
+          agent="$cand"
+          agent_pid="$pid"
+          break
+          ;;
+      esac
+    done
+    if [[ -n "$agent" ]]
+    then
+      break
+    fi
     pid=$(awk '/^PPid:/ { print $2 }' "/proc/${pid}/status" 2>/dev/null)
   done
   session="${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-}}}"
