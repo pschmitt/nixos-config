@@ -6,6 +6,22 @@
 
 CONTROL_HOST="${RWORKER_HOST:-rofl-10}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
+# Nerd Font glyphs for the agent that created a worker (Codicons; the
+# Nerd Fonts 3.4+ patched fonts have them). RWORKER_ICONS=0 turns them off.
+ICONS=1
+if [[ "${RWORKER_ICONS:-1}" == 0 ]]
+then
+  ICONS=""
+fi
+# jq: agent_label(a) is "<glyph> a" (just a without icons or agent).
+# shellcheck disable=SC2016 # jq code, not shell
+JQ_AGENT='def agent_label($a):
+  if ($a // "") == "" then "-"
+  elif $icons then
+    ({claude: "", codex: "", shell: "", nixbot: "",
+      copilot: "", gemini: "", agy: "",
+      antigravity: ""}[$a] // "") + " " + $a
+  else $a end;'
 # Last `ls` answer of the control host, for the completions.
 LS_CACHE="${STATE_DIR}/.ls.json"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
@@ -59,7 +75,8 @@ workers) are looked up on the control host on first use; you log in as
 yourself there, as agent on your own ad-hoc workers.
 
 Environment: RWORKER_HOST (default rofl-10), RWORKER_KEY (public key file,
-default ~/.ssh/id_ed25519.pub), RWORKER_USER (SSH user override).
+default ~/.ssh/id_ed25519.pub), RWORKER_USER (SSH user override),
+RWORKER_ICONS=0 (no Nerd Font glyphs for the agent), NO_COLOR.
 EOF
 }
 
@@ -410,7 +427,8 @@ cmd_workers() {
     return 0
   fi
   jq -r --argjson now "$(date +%s)" --arg me "${USER}@$(hostname)" \
-    --arg action "$action" '
+    --arg action "$action" \
+    --argjson icons "$( [[ -n "$ICONS" ]] && echo true || echo false )" "$JQ_AGENT"'
     def dur(s):
       if s < 3600 then "\(s / 60 | floor)m"
       elif s < 86400 then "\(s / 3600 | floor)h\(s % 3600 / 60 | floor)m"
@@ -418,7 +436,7 @@ cmd_workers() {
     .[]
     | select(($action != "extend" and $action != "prune") or .kind == "adhoc")
     | [ .kind,
-        .agent,
+        (if .agent then agent_label(.agent) else null end),
         .topic,
         (if .kind == "pool" then .pool_state
          elif (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
@@ -741,7 +759,8 @@ connect() {
 # are no workers.
 table_plain() {
   local rows
-  rows=$(jq -r --argjson now "$(date +%s)" --argjson wide "${WIDE:-false}" '
+  rows=$(jq -r --argjson now "$(date +%s)" --argjson wide "${WIDE:-false}" \
+    --argjson icons "$( [[ -n "$ICONS" ]] && echo true || echo false )" "$JQ_AGENT"'
     def dur(s):
       if s < 0 then "expired"
       elif s < 3600 then "\(s / 60 | floor)m"
@@ -761,8 +780,8 @@ table_plain() {
       + (if $wide then ["FLAVOR", "IP", "CWD"] else [] end)),
     (sort_by(.kind, .name)[] | [
       .name, .kind, .status, opt(.owner),
-      (if $wide and .agent_pid then "\(.agent) (\(.agent_pid))"
-       else opt(.agent) end),
+      (if $wide and .agent_pid then "\(agent_label(.agent)) (\(.agent_pid))"
+       else agent_label(.agent) end),
       opt(.topic), expiry,
       (created as $c | if $c then dur($now - $c) else "-" end)
     ] + (if $wide then [
@@ -1065,8 +1084,9 @@ cmd_inspect() {
   fi
 
   local -a f
-  mapfile -t f < <(jq -r '
-    .name, .kind, .status, (.owner // "-"), (.agent // "-"),
+  mapfile -t f < <(jq -r \
+    --argjson icons "$( [[ -n "$ICONS" ]] && echo true || echo false )" "$JQ_AGENT"'
+    .name, .kind, .status, (.owner // "-"), agent_label(.agent),
     (.agent_pid // "-"), (.agent_session // "-"), (.topic // "-"),
     (.cwd // "-"), (.flavor // "-"), (.ip // "-"), (.connected | tostring),
     (.created_at // "-"), (.expires_at // 0), (.grace_until // 0),
