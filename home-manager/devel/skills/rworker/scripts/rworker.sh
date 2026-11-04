@@ -89,6 +89,8 @@ flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
 flag prune --all every ad-hoc worker, whoever owns it
+flag down --force delete someone else's worker
+flag extend --force extend someone else's worker
 flag prune --yes do not ask
 flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
@@ -168,10 +170,12 @@ EOF
       ;;
     down)
       cat <<EOF
-Usage: $me down NAME
+Usage: $me down NAME [--force]
 
 Delete an ad-hoc worker with its volume and NetBird peer. Nothing on it
 survives; copy results off first. Pool workers belong to the autoscaler.
+
+Workers of another owner (\$USER@host, see ls) are refused unless --force.
 EOF
       ;;
     prune)
@@ -188,10 +192,11 @@ EOF
       ;;
     extend)
       cat <<EOF
-Usage: $me extend NAME --ttl DURATION
+Usage: $me extend NAME --ttl DURATION [--force]
 
 Set the expiry of an ad-hoc worker to now + DURATION (e.g. 2h), capped at
-its maximum lifetime (24 h, or 7 days for --scratch workers).
+its maximum lifetime (24 h, or 7 days for --scratch workers). Workers of
+another owner are refused unless --force.
 EOF
       ;;
     ssh)
@@ -327,6 +332,11 @@ adopt() {
 
 worker_field() {
   local name="$1" field="$2" file
+  if [[ -z "$name" ]]
+  then
+    printf 'Missing worker name\n' >&2
+    return 2
+  fi
   file=$(state_file "$name")
   if [[ ! -f "$file" ]]
   then
@@ -335,9 +345,19 @@ worker_field() {
   jq -er --arg f "$field" '.[$f]' "$file"
 }
 
+# SSH options for a worker. Host keys are pinned per worker *name*
+# (HostKeyAlias): NetBird reuses IPs, and a stale entry must fail loudly
+# rather than reach whichever worker holds that IP now.
 ssh_opts() {
+  local name="$1" key
+  key=$(worker_field "$name" host_key) || return 1
+  if ! grep -q -F -x "$name $key" "$KNOWN_HOSTS" 2>/dev/null
+  then
+    printf '%s %s\n' "$name" "$key" >> "$KNOWN_HOSTS"
+  fi
   printf '%s\n' \
     -o "UserKnownHostsFile=${KNOWN_HOSTS}" \
+    -o "HostKeyAlias=${name}" \
     -o StrictHostKeyChecking=yes \
     -o BatchMode=yes
 }
@@ -407,7 +427,7 @@ cmd_up() {
 connect() {
   local name="$1" ip opts i
   ip=$(worker_field "$name" ip) || return 1
-  mapfile -t opts < <(ssh_opts)
+  mapfile -t opts < <(ssh_opts "$name")
   for i in $(seq 1 10)
   do
     if ssh "${opts[@]}" -o ConnectTimeout=5 "agent@${ip}" true 2>/dev/null
@@ -735,7 +755,7 @@ cmd_prune() {
   local name owner failed="" results=()
   while IFS=$'\t' read -r name owner
   do
-    if remote down "$name" > /dev/null
+    if remote down "$name" --owner "${USER}@$(hostname)" --force > /dev/null
     then
       forget "$name"
       results+=("$(jq -nc --arg n "$name" --arg o "$owner" '{name: $n, owner: $o, deleted: true}')")
@@ -821,7 +841,7 @@ cmd_exec() {
   printf '%s %s is ready\n' "$(paint 32 '✔')" "$name" >&2
 
   local rc=0 opts out_file err_file
-  mapfile -t opts < <(ssh_opts)
+  mapfile -t opts < <(ssh_opts "$name")
   # Delete the worker however we leave (also Ctrl-C), unless asked not to.
   EXEC_WORKER="$name"
   EXEC_KEEP="$keep"
@@ -889,7 +909,7 @@ exec_cleanup() {
   local rc=$?
   if [[ -n "${EXEC_WORKER:-}" && -z "${EXEC_KEEP:-}" ]]
   then
-    remote down "$EXEC_WORKER" > /dev/null 2>&1 || true
+    remote down "$EXEC_WORKER" --owner "${USER}@$(hostname)" > /dev/null 2>&1 || true
     forget "$EXEC_WORKER"
     printf '%s deleted %s\n' "$(paint 32 '✔')" "$EXEC_WORKER" >&2
   fi
@@ -899,7 +919,7 @@ exec_cleanup() {
 
 cmd_extend() {
   local out name
-  out=$(remote extend "$@") || return 1
+  out=$(remote extend "$@" --owner "${USER}@$(hostname)") || return 1
   if [[ -n "$JSON" ]]
   then
     printf '%s\n' "$out"
@@ -915,8 +935,15 @@ cmd_down() {
     usage >&2
     return 2
   fi
-  remote down "$1" > /dev/null || return 1
-  forget "$1"
+  local name="$1" extra=()
+  shift
+  if [[ "${1:-}" == --force ]]
+  then
+    extra=(--force)
+  fi
+  remote down "$name" --owner "${USER}@$(hostname)" "${extra[@]}" > /dev/null || return 1
+  forget "$name"
+  set -- "$name"
   if [[ -n "$JSON" ]]
   then
     jq -nc --arg n "$1" '{name: $n, deleted: true}'
@@ -929,6 +956,11 @@ cmd_down() {
 split_target() {
   TARGET_USER=""
   TARGET_NAME="$1"
+  if [[ -z "$1" || "$1" == *@ && -z "${1#*@}" ]]
+  then
+    printf 'Missing worker name\n' >&2
+    return 2
+  fi
   if [[ "$1" == *@* ]]
   then
     TARGET_USER="${1%%@*}"
@@ -955,12 +987,12 @@ cmd_ssh() {
     usage >&2
     return 2
   fi
-  split_target "$1"
+  split_target "$1" || return 2
   shift
   name="$TARGET_NAME"
   ip=$(worker_field "$name" ip) || return 1
   user=$(target_user) || return 1
-  mapfile -t opts < <(ssh_opts)
+  mapfile -t opts < <(ssh_opts "$name")
   # shellcheck disable=SC2029 # the command is the caller's, run as given
   ssh "${opts[@]}" "${user}@${ip}" "$@"
 }
@@ -972,11 +1004,11 @@ cmd_sync() {
     usage >&2
     return 2
   fi
-  split_target "$1"
+  split_target "$1" || return 2
   name="$TARGET_NAME"
   ip=$(worker_field "$name" ip) || return 1
   user=$(target_user) || return 1
-  mapfile -t opts < <(ssh_opts)
+  mapfile -t opts < <(ssh_opts "$name")
   dest="${dest:-$(basename "$(realpath "$src")")}"
   rsync -a --delete --exclude target/ --exclude .direnv/ --exclude result \
     -e "ssh ${opts[*]}" "${src%/}/" "${user}@${ip}:${dest}/" || return 1
@@ -1012,10 +1044,10 @@ cmd_cp() {
     return 2
   fi
   target="${remote%%:*}"
-  split_target "$target"
+  split_target "$target" || return 2
   ip=$(worker_field "$TARGET_NAME" ip) || return 1
   user=$(target_user) || return 1
-  mapfile -t opts < <(ssh_opts)
+  mapfile -t opts < <(ssh_opts "$TARGET_NAME")
   local spec="${user}@${ip}:${remote#*:}"
   if [[ "$direction" == down ]]
   then
