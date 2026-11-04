@@ -811,6 +811,8 @@ paint_agents() {
 colorize() {
   local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
   local cyan=$'\e[36m' reset=$'\e[0m'
+  # EXPIRES under an hour: bold orange, under 30 minutes: bold red.
+  local warn=$'\e[1;38;5;208m' urgent=$'\e[1;31m'
   sed -E \
     -e "1s/.*/${bold}&${reset}/" \
     -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
@@ -819,7 +821,8 @@ colorize() {
     -e "2,\$s/ (expired) / ${red}\1${reset} /" \
     -e "2,\$s/ (grace [0-9]+[mhd]|draining) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (busy) / ${green}\1${reset} /" \
-    -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
+    -e "2,\$s/ (([0-9]|[12][0-9])m) ( +[0-9]+[mhd])/ ${urgent}\1${reset}\3/" \
+    -e "2,\$s/ ([3-5][0-9]m) ( +[0-9]+[mhd])/ ${warn}\1${reset}\2/" \
     -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/" \
     | paint_agents
 }
@@ -1126,7 +1129,21 @@ cmd_inspect() {
   label IP "${f[10]} (NetBird connected: ${f[11]})"
   label "Host key" "${f[17]}"
   label Created "${f[12]}"
-  label Expires "$(fmt_time "${f[13]}")"
+  local expires left
+  expires=$(fmt_time "${f[13]}")
+  left=$(( ${f[13]%.*} - $(date +%s) ))
+  if [[ "${f[13]}" == 0 ]]
+  then
+    :
+  elif (( left < 1800 ))
+  then
+    # Expired or under 30 minutes: bold red; under an hour: bold orange.
+    expires=$(paint '1;31' "$expires")
+  elif (( left < 3600 ))
+  then
+    expires=$(paint '1;38;5;208' "$expires")
+  fi
+  label Expires "$expires"
   if [[ "${f[14]}" != 0 ]]
   then
     label Grace "until $(fmt_time "${f[14]}"); last in use $(fmt_time "${f[15]}")"
