@@ -90,9 +90,9 @@ in
     };
 
     extraConfig = {
-      RUST_SIGNUP_ENABLED = "false";
-      RUST_OCR_ENABLED = "false";
-      RUST_WAYBACK_ENABLED = "false";
+      SIGNUP_ENABLED = "false";
+      OCR_ENABLED = "false";
+      WAYBACK_ENABLED = "false";
     };
   };
 
