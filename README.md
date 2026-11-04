@@ -80,3 +80,7 @@ Continue with [Deployment](docs/deploy.md) to roll out a change, or with
 | [android/nixpp/README.md](android/nixpp/README.md) | Termux client for reference-free Nix outputs |
 | [android/termux-native/README.md](android/termux-native/README.md) | Native Termux environments built with Nix |
 | [AGENTS.md](AGENTS.md) | Code style, service conventions and rules for AI agents |
+
+## License
+
+[GPL-3.0-only](LICENSE).
