@@ -21,7 +21,6 @@
     ./networking.nix
     ./nix-cache-mirror.nix
     ./prompt.nix
-    ./rescue-ssh.nix
     ./resource-control.nix
     ./services.nix
     ./zsh.nix

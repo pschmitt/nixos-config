@@ -4,6 +4,8 @@
   ...
 }:
 {
+  imports = [ ../../services/rescue-ssh.nix ];
+
   # OpenSSH server
   services.openssh = {
     enable = true;
