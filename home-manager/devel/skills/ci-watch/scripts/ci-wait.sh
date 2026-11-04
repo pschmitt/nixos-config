@@ -3,7 +3,8 @@
 # Wait for every GitHub Actions run (or GitLab pipeline) of one commit to finish.
 # Exit codes: 0 all runs succeeded, 1 a run failed, 2 usage, 3 timeout,
 # 4 no runs were ever registered for the commit, 5 runs were cancelled and none
-# failed (a newer commit replaced them, or someone cancelled them).
+# failed (a newer commit replaced them, or someone cancelled them), 6 the forge
+# could not be queried.
 
 usage() {
   cat <<EOF
@@ -19,9 +20,10 @@ Options:
                      the old one
   --timeout SECONDS  Give up after this long (default: 1800)
   --grace SECONDS    Wait this long for runs to be registered before exiting
-                     with 4 (default: 120)
+                     with 4, or for a failing forge API to recover before
+                     exiting with 6 (default: 120)
   --forge NAME       github or gitlab (default: github for a github.com
-                     origin, gitlab otherwise)
+                     origin, gitlab otherwise; required outside a checkout)
   --repo OWNER/REPO  Repository (default: the current one)
   -h, --help         Show this help
 EOF
@@ -34,7 +36,14 @@ remote_head() {
 }
 
 detect_forge() {
-  case "$(git remote get-url origin 2>/dev/null)" in
+  local url
+  if ! url="$(git remote get-url origin 2>/dev/null)"
+  then
+    printf 'Cannot detect the forge without an origin remote: pass --forge\n' >&2
+    return 1
+  fi
+
+  case "$url" in
     *github.com*) echo github ;;
     *) echo gitlab ;;
   esac
@@ -111,10 +120,11 @@ main() {
   done
 
   sha="${sha:-$(git rev-parse HEAD)}" || return 2
-  forge="${forge:-$(detect_forge)}"
+  forge="${forge:-$(detect_forge)}" || return 2
 
-  local start now runs total pending failed cancelled head
+  local start last_ok now runs total pending failed cancelled head
   start="$(date +%s)"
+  last_ok="$start"
 
   while true
   do
@@ -129,8 +139,20 @@ main() {
       fi
     fi
 
-    runs="$(fetch_runs "$sha")" || return 1
-    runs="$(drop_replaced <<< "$runs")" || return 1
+    # An API error says nothing about the runs: never read it as "no runs".
+    if ! runs="$(fetch_runs "$sha" | drop_replaced)" || [[ -z "$runs" ]]
+    then
+      now="$(date +%s)"
+      if (( now - last_ok > grace ))
+      then
+        printf 'Cannot query %s for %s: API errors for %ss, CI state unknown\n' "$forge" "${sha:0:9}" "$grace" >&2
+        return 6
+      fi
+      sleep 20
+      continue
+    fi
+    last_ok="$(date +%s)"
+
     total="$(jq 'length' <<< "$runs")"
     pending="$(jq '[.[] | select(.status != "completed")] | length' <<< "$runs")"
     failed="$(jq '[.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "cancelled", "canceled") | not))] | length' <<< "$runs")"
@@ -190,6 +212,7 @@ main() {
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+  set -o pipefail
   main "$@"
 fi
 

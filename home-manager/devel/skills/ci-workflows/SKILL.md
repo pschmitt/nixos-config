@@ -40,7 +40,12 @@ To onboard a repository:
 1. Flake: expose `hydraJobs.x86_64-linux.{packages,checks}` and remove KVM
    checks there, e.g.
    `checks = builtins.removeAttrs (self.checks.${system} or { }) [ "nixos" ];`.
-2. Repository root: `nixbot.toml` containing `attribute = "hydraJobs"`.
+2. Repository root: `nixbot.toml` containing `attribute = "hydraJobs"`, and a
+   committed `flake.lock`: nixbot evaluates in pure mode and cannot create one.
+   To build an existing output without changing the flake, use a dotted path
+   such as `attribute = "packages.x86_64-linux"`, or
+   `"devShells.x86_64-linux"` for a flake without packages. The default
+   attribute is `checks`.
 3. Caller job, in a workflow triggered on pushes to main and pull requests:
    ```yaml
    nix-aarch64:
@@ -68,7 +73,13 @@ To onboard a repository:
    `use_immutable_subject: true`), and to `repoAllowlist` in
    `services/nixbot.nix`. Deploy the niks3 and nixbot hosts (see the private
    `brkn-infra` skill) after `bump my privates`.
-6. README: put the nixbot badge first in the badge row.
+6. Enable the project. The allowlist only registers it, disabled, and nothing
+   builds until then. `POST /api/repos/github/OWNER/REPO/enable` on nixbot needs
+   an admin login and an `Origin` header; it also registers the webhook. Use
+   `browser_fetch` from a signed-in session (`browser-login` skill) and fill the
+   TOTP code, since GitHub's default sign-in prompts the user's phone. Evaluations
+   run one at a time, so expect a queue after enabling many repositories.
+7. README: put the nixbot badge first in the badge row.
 
 ## Scope and references
 

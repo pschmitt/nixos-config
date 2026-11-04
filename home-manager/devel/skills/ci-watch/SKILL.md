@@ -25,7 +25,7 @@ Start **one** watch per pushed commit, in the background, then carry on with ind
 
 - With Claude Code, run it with `run_in_background` (or via Monitor); you are re-invoked when it exits and need not poll its output. In other harnesses use their equivalent background or notification mechanism. If there is none, make one check after a reasonable interval and report that CI is still pending.
 - `--follow` switches to the newest remote head of the branch when you push again, so one watch covers a series of pushes.
-- The forge comes from the `origin` URL (GitHub for github.com, GitLab otherwise, e.g. git.wiit.one); override with `--forge github|gitlab`.
+- The forge comes from the `origin` URL (GitHub for github.com, GitLab otherwise, e.g. git.wiit.one); override with `--forge github|gitlab`. Run it inside a checkout of the repository: `--repo` does not set the forge, so outside a checkout pass `--forge` too.
 - Pass a commit, `--repo OWNER/REPO`, `--timeout SECONDS` (default 1800) or `--grace SECONDS` (wait for runs to appear, default 120) when needed.
 - When passing a commit explicitly, use the full SHA from `git rev-parse HEAD`, not a shortened hash; the watcher passes it to `gh run list --commit`, where an abbreviation may appear to have no runs.
 
@@ -40,5 +40,6 @@ Do not pipe the watcher (`| tail`, `| cut`): the task then reports the pipe's ex
 | 3 | timeout | report CI as still pending; do not restart blindly. If the runs are still `queued`, check one other repository's recent runs: when those are queued too, the account's runners are backlogged, so restart once with a longer `--timeout` |
 | 4 | no runs registered | the push has no workflow or pipeline; say so and move on |
 | 5 | runs cancelled, none failed (`SUPERSEDED`: a newer commit is on the branch; `CANCELLED`: no newer commit) | do not read logs or call it a failure; say which, and that CI has not confirmed the commit. For `SUPERSEDED`, a green newer head covers it |
+| 6 | the forge could not be queried (the API error is on stderr) | report CI as unknown, not as failed or absent. Check the forge and `--forge`, then start one new watch |
 
 CI logs can contain secrets: read only a bounded tail of a failed run, and follow `leaked-credentials` if one shows up.

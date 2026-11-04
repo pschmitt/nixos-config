@@ -82,6 +82,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## Leaked credentials
 
 - Keep secret values out of tool-call arguments, tool output, transcripts and chat; pass them by file, stdin or environment and mask them when diffing or listing.
+- Filter private Nix modules to the needed option (`rg -A`) instead of printing whole files.
 - Load the `secret-hygiene` skill before running commands that may print credentials (Home Assistant config, `ps`/`env`, `rbw`, SOPS diffs, `openstack`, `journalctl`, browser snapshots). The `agent-secret-guard` and `agent-secret-scan` hooks enforce the Bash cases; if a command is blocked, use the suggested safe form and do not work around the hook.
 - If a credential ends up somewhere it should not be, even briefly and even if you caused it, load the `leaked-credentials` skill now and follow it; do not wait for the end of the task. Once contained, propose an update to the relevant skill, `CONTEXT.md`, `AGENTS.md` or hook so the same leak does not happen again.
 
