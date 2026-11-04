@@ -5,6 +5,9 @@ There is **one** shared home config tree, used as a NixOS submodule. It is
 `config.mainUser` / `config.domains` / the `hostname` specialArg — never
 `osConfig`.
 
+Termux bundles are separate: `pkgs/termux/native/mkTermuxBundle.nix` builds a
+standalone profile from `modules/home-manager/termux.nix`, without `home.nix`.
+
 ## Entrypoints
 
 - `default.nix`
@@ -20,8 +23,8 @@ There is **one** shared home config tree, used as a NixOS submodule. It is
   `bluetooth.nix` (gated on the `guiEnable` / `bluetoothEnable` specialArgs).
 
 - `base.nix`
-  Shared base profile. Also imports the option modules that provide the facts:
-  `../modules/main-user.nix`, `../modules/domains.nix`, and `./host.nix`.
+  Shared base profile. Also imports the option modules that provide the facts,
+  such as `../modules/main-user.nix`, `../modules/domains.nix` and `./host.nix`.
 
 - `host.nix`
   Declares `config.host.*` — the host facts the home config needs (sopsFile,
@@ -31,6 +34,15 @@ There is **one** shared home config tree, used as a NixOS submodule. It is
 
 The bridge in `default.nix` derives every fact from the NixOS `config`.
 `nixos-rebuild` activates the home config with the system (`just deploy`).
+
+## Directories
+
+- `cli/`: shells, editors and terminal tools
+- `devel/`: development tooling, AI agents and their skills
+- `gui/`: desktop applications, imported only with `guiEnable`
+- `services/`: user services
+- `work/`: work-specific configuration
+- `scripts/`: scripts wrapped into the profile
 
 ## Conventions for new modules
 

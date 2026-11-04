@@ -2,8 +2,7 @@
   config,
   lib,
   # Import-gating facts come via specialArgs (set by the NixOS bridge in
-  # ./default.nix; defaulted here for standalone hosts) to avoid a
-  # config-in-imports infinite recursion.
+  # ./default.nix) to avoid a config-in-imports infinite recursion.
   guiEnable ? false,
   bluetoothEnable ? false,
   ...

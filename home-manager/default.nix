@@ -57,7 +57,7 @@ in
       ++ lib.optional config.dotfiles.zsh.nixShell.enable ./cli/zsh/config;
 
       # Bridge: feed system facts from the NixOS config into the (osConfig-free)
-      # home config. Standalone hosts set these explicitly instead.
+      # home config.
       inherit (config) mainUser domains;
       dotfiles = {
         promptColor = config.dotfiles.promptColor;

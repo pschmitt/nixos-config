@@ -365,7 +365,7 @@ in
         assertion = domainName != null;
         message = ''
           Unable to determine the main domain for AI MCP configuration.
-          Define `domains.main` in the standalone Home Manager host module or run this config under NixOS-backed Home Manager.
+          Define `domains.main` in the NixOS host configuration.
         '';
       }
     ];

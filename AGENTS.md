@@ -239,7 +239,7 @@
   option and setting it from the relevant host config instead of inspecting the
   host identity inside the shared module.
 - Put host-specific overrides in a host-local module imported by
-  `hosts/<host>/default.nix` (or the standalone Home Manager entrypoint).
+  `hosts/<host>/default.nix`.
   Shared modules should expose reusable options/defaults, not embed per-host
   exceptions.
 

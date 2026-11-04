@@ -1,6 +1,5 @@
-# host.* — system facts the home config needs, kept osConfig-free so the same
-# modules work both as a NixOS submodule (facts fed by the bridge in
-# ./default.nix) and standalone (facts set explicitly by the host module).
+# host.* — system facts the home config needs, kept osConfig-free. The bridge
+# in ./default.nix feeds them from the NixOS config.
 { inputs, lib, ... }:
 {
   options.host = {
@@ -57,8 +56,8 @@
       default = false;
       description = ''
         Whether to manage ~/.ssh/authorized_keys from mainUser.authorizedKeys.
-        NixOS hosts already get this via users.users.<name>.openssh.authorizedKeys;
-        enable this only on standalone (non-NixOS) home-manager hosts.
+        NixOS hosts already get this via users.users.<name>.openssh.authorizedKeys,
+        so the bridge leaves it disabled.
       '';
     };
 

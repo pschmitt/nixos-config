@@ -14,7 +14,7 @@ private checkout.
 1. Add the host to `hostConfigs` in [`flake.nix`](../flake.nix).
 2. Create its configuration. The flag selects a template from
    [`templates/nix`](../templates/nix) (`--openstack` is the default,
-   `--openstack-legacy` and `--laptop` are the others):
+   `--openstack-legacy`, `--oci` and `--laptop` are the others):
 
    ```sh
    just init-host --laptop NEW_HOST

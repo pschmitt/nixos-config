@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 usage() {
-  echo "Usage: $(basename "$0") [--force] [--openstack|--oci|--laptop] NEW_HOSTNAME"
+  echo "Usage: $(basename "$0") [--force] [--openstack|--openstack-legacy|--oci|--laptop] NEW_HOSTNAME"
 }
 
 main() {
@@ -37,9 +37,10 @@ main() {
         TEMPLATE_TYPE="laptop"
         shift
         ;;
-      --raw)
-        TEMPLATE_TYPE="raw"
-        shift
+      -*)
+        echo "Error: Unknown option '$1'." >&2
+        usage >&2
+        return 2
         ;;
       *)
         break
@@ -54,6 +55,12 @@ main() {
     echo "Error: No hostname provided." >&2
     usage >&2
     return 2
+  fi
+
+  if [[ ! -d "./templates/nix/${TEMPLATE_TYPE}" ]]
+  then
+    echo "Error: No template '${TEMPLATE_TYPE}' under ./templates/nix." >&2
+    return 1
   fi
 
   if [[ ! -x "${private_root}/secrets/sops-init.sh" || ! -x "${private_root}/secrets/ssh-gen-known-hosts.sh" ]]
@@ -76,14 +83,14 @@ main() {
     fi
   fi
 
-  cp -va "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
+  cp -vaL "./templates/nix/${TEMPLATE_TYPE}" "$DEST"
   printf '%s' "$NEW_HOSTNAME" > "${DEST}/HOSTNAME"
   NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/sops-init.sh" "$NEW_HOSTNAME"
   NIXOS_CONFIG_DIR="$PWD" "$private_root/secrets/ssh-gen-known-hosts.sh"
 
   # tofu config
   case "$TEMPLATE_TYPE" in
-    raw|laptop)
+    laptop)
       echo "Template '$TEMPLATE_TYPE' does not support tofu configuration."
       return 0
       ;;
@@ -101,8 +108,8 @@ main() {
   tofu fmt "$TOFU_CONF"
 
   echo "Config created for $NEW_HOSTNAME"
-  echo "To deploy, run:"
-  echo "PRIVATE_CONFIG_DIR=${private_root} just tofu init && PRIVATE_CONFIG_DIR=${private_root} just tofu apply -target=module.nix-${NEW_HOSTNAME}"
+  echo "To deploy, run this from ${private_root}:"
+  echo "just tofu init && just tofu apply -target=module.nix-${NEW_HOSTNAME}"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
@@ -111,3 +118,5 @@ then
 
   main "$@"
 fi
+
+# vim: set ft=sh et ts=2 sw=2 :

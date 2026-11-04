@@ -38,8 +38,7 @@ in
     };
   };
 
-  # Only relevant on hosts provisioned via nixos-anywhere (root-owned keys);
-  # skipped on standalone hosts where it would just fail-harmlessly.
+  # Only relevant on hosts provisioned via nixos-anywhere (root-owned keys).
   systemd.user.services.sops-nix.Service.ExecStartPre = lib.mkIf config.host.provisionSshKeys (
     lib.mkBefore [ "-${fixSshOwnership}" ]
   );
