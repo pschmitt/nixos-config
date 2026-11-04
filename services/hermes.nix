@@ -103,6 +103,8 @@ let
     text = ''
       host="$1"
       output_dir="$2"
+      # Shown on the browser-daemon dashboard: who drives the session and for what.
+      conversation="''${3:-}"
       token="$(
         curl -fsS --max-time 15 -D - -o /dev/null "https://$host/" \
           | grep -i '^set-cookie: bd_auth=' \
@@ -110,8 +112,11 @@ let
           | sed -E 's/^[^=]*=([^;]*).*/\1/' \
           | tr -d '\r'
       )"
+      query="agent=hermes&machine=${config.networking.hostName}"
+      query+="''${token:+&auth=$token}"
+      query+="''${conversation:+&conversation=$conversation}"
       exec playwright-mcp \
-        --cdp-endpoint="wss://$host/chromium''${token:+?auth=$token}" \
+        --cdp-endpoint="wss://$host/chromium?$query" \
         --output-dir="$output_dir"
     '';
   };
@@ -129,7 +134,7 @@ let
       mapfile -t hosts < <(printf '%s\n' "$@" | shuf)
       for host in "''${hosts[@]}"; do
         if curl -fsS --max-time 5 -o /dev/null "https://$host/"; then
-          exec ${lib.getExe browserMcpWrapper} "$host" "$output_dir"
+          exec ${lib.getExe browserMcpWrapper} "$host" "$output_dir" stricknani-importer
         fi
       done
       echo "no browser-daemon host reachable" >&2
