@@ -811,8 +811,8 @@ paint_agents() {
 colorize() {
   local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
   local cyan=$'\e[36m' reset=$'\e[0m'
-  # EXPIRES under an hour: bold orange, under 30 minutes: bold red.
-  local warn=$'\e[1;38;5;208m' urgent=$'\e[1;31m'
+  # EXPIRES under an hour: orange, under 30 minutes: bold red.
+  local warn=$'\e[38;5;208m' urgent=$'\e[1;31m'
   sed -E \
     -e "1s/.*/${bold}&${reset}/" \
     -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
@@ -1137,11 +1137,11 @@ cmd_inspect() {
     :
   elif (( left < 1800 ))
   then
-    # Expired or under 30 minutes: bold red; under an hour: bold orange.
+    # Expired or under 30 minutes: bold red; under an hour: orange.
     expires=$(paint '1;31' "$expires")
   elif (( left < 3600 ))
   then
-    expires=$(paint '1;38;5;208' "$expires")
+    expires=$(paint '38;5;208' "$expires")
   fi
   label Expires "$expires"
   if [[ "${f[14]}" != 0 ]]
