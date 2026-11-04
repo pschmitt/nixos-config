@@ -302,7 +302,7 @@ colorize() {
   sed -E \
     -e "1s/.*/${bold}&${reset}/" \
     -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
-    -e "2,\$s/ (BUILD|REBUILD|RESIZE) / ${yellow}\1${reset} /" \
+    -e "2,\$s/ (BUILD|REBUILD|RESIZE|DELETING) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
     -e "2,\$s/ (expired) / ${red}\1${reset} /" \
     -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
