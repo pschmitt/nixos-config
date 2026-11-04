@@ -7,9 +7,8 @@
 #   `stricknani-server import-snapshot` from a frozen snapshot of the Python
 #   data during the cutover window). The Python data in /var/lib/stricknani is
 #   hidden from the service and left untouched for rollback.
-# - No SOPS env file: the Rust server has no SECRET_KEY/CSRF/initial-admin/
-#   Sentry settings. The only secret is the Authelia OIDC client secret, passed
-#   as a file path.
+# - No SOPS env file: secrets (the Authelia OIDC client secret and the Sentry
+#   DSN) are passed as file paths.
 # - AI, OCR, external imports and Wayback stay disabled until reviewed
 #   separately (cutover runbook).
 {
@@ -40,6 +39,12 @@ in
     owner = "stricknani";
     group = "stricknani";
   };
+  # One Sentry project (stricknani) for server, web and Android; the apps report
+  # through the server's tunnel, and users can opt out in their account settings.
+  sops.secrets."stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
+    owner = "stricknani";
+    group = "stricknani";
+  };
 
   services.stricknani = {
     enable = true;
@@ -52,6 +57,7 @@ in
     hostName = mainHost;
     inherit serverAliases;
     nginx.enable = true;
+    sentry.dsnFile = config.sops.secrets."stricknani/sentry/dsnBackend".path;
 
     oidc = {
       enable = true;
