@@ -6,6 +6,8 @@
 
 CONTROL_HOST="${RWORKER_HOST:-rofl-10}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
+# Last `ls` answer of the control host, for the completions.
+LS_CACHE="${STATE_DIR}/.ls.json"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
 # Set by -j/--json: JSON instead of the human-readable output.
 JSON=""
@@ -373,6 +375,63 @@ remote() {
   ssh -o BatchMode=yes "$CONTROL_HOST" rworker "$(printf '%q ' "$@")"
 }
 
+# `remote ls`, keeping the answer in $LS_CACHE for the completions.
+remote_ls() {
+  local out
+  out=$(remote ls) || return 1
+  mkdir -p "$STATE_DIR" 2>/dev/null \
+    && printf '%s\n' "$out" > "${LS_CACHE}.tmp" 2>/dev/null \
+    && mv -f "${LS_CACHE}.tmp" "$LS_CACHE" 2>/dev/null
+  printf '%s\n' "$out"
+}
+
+# Hidden action for the completions: "NAME<TAB>DESCRIPTION" per worker
+# (only ad-hoc ones for ACTION extend or prune), from the ls cache. Never
+# waits on the network: a cache older than 30 s is refreshed in the
+# background for the next TAB; without one, only the known names.
+cmd_workers() {
+  local action="${1:-}" age=999 file
+  if [[ -r "$LS_CACHE" ]]
+  then
+    age=$(( $(date +%s) - $(stat -c %Y "$LS_CACHE") ))
+  fi
+  if (( age > 30 ))
+  then
+    ( remote_ls > /dev/null 2>&1 & ) 2>/dev/null
+  fi
+  if [[ ! -r "$LS_CACHE" ]]
+  then
+    for file in "$STATE_DIR"/*.json
+    do
+      [[ -e "$file" ]] || continue
+      file="${file##*/}"
+      printf '%s\t\n' "${file%.json}"
+    done
+    return 0
+  fi
+  jq -r --argjson now "$(date +%s)" --arg me "${USER}@$(hostname)" \
+    --arg action "$action" '
+    def dur(s):
+      if s < 3600 then "\(s / 60 | floor)m"
+      elif s < 86400 then "\(s / 3600 | floor)h\(s % 3600 / 60 | floor)m"
+      else "\(s / 86400 | floor)d\(s % 86400 / 3600 | floor)h" end;
+    .[]
+    | select(($action != "extend" and $action != "prune") or .kind == "adhoc")
+    | [ .kind,
+        .agent,
+        .topic,
+        (if .kind == "pool" then .pool_state
+         elif (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
+         elif (.expires_at // 0) > $now then "expires \(dur(.expires_at - $now))"
+         elif (.expires_at // 0) > 0 then "expired"
+         else null end),
+        (if .status != "ACTIVE" then .status else null end),
+        (if (.owner // "") != "" and .owner != $me then .owner else null end)
+      ] as $parts
+    | "\(.name)\t\([$parts[] | select(. != null and . != "")] | join(" · "))"
+    ' "$LS_CACHE"
+}
+
 state_file() {
   printf '%s/%s.json\n' "$STATE_DIR" "$1"
 }
@@ -381,7 +440,7 @@ state_file() {
 # from the control host, pin its host key and remember it.
 adopt() {
   local name="$1" info me user
-  info=$(remote ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
+  info=$(remote_ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
     || return 1
   if [[ -z "$info" ]]
   then
@@ -443,6 +502,12 @@ ssh_opts() {
 
 forget() {
   local name="$1" ip
+  # Out of the completions' cache right away, not at its next refresh.
+  if [[ -w "$LS_CACHE" ]]
+  then
+    jq -c --arg n "$name" 'map(select(.name != $n))' "$LS_CACHE" \
+      > "${LS_CACHE}.tmp" 2>/dev/null && mv -f "${LS_CACHE}.tmp" "$LS_CACHE"
+  fi
   ip=$(worker_field "$name" ip 2>/dev/null) || return 0
   if [[ -f "$KNOWN_HOSTS" ]]
   then
@@ -773,7 +838,7 @@ watch_ls() {
   local first=1 json="" error="" key
   while true
   do
-    if out=$(remote ls 2>&1)
+    if out=$(remote_ls 2>&1)
     then
       json="$out"
       error=""
@@ -918,7 +983,7 @@ cmd_ls() {
     return
   fi
   local out
-  out=$(remote ls) || return 1
+  out=$(remote_ls) || return 1
   if [[ -n "$json" || -n "$JSON" ]]
   then
     printf '%s\n' "$out"
@@ -976,7 +1041,7 @@ cmd_inspect() {
     printf 'Missing worker name\n' >&2
     return 2
   fi
-  info=$(remote ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
+  info=$(remote_ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
     || return 1
   if [[ -z "$info" ]]
   then
@@ -1070,7 +1135,7 @@ cmd_prune() {
   done
 
   me="${USER}@$(hostname)"
-  info=$(remote ls) || return 1
+  info=$(remote_ls) || return 1
   targets=$(jq -r --arg me "$me" --argjson all "${all:-false}" \
     --args '[.[] | select(.kind == "adhoc")]
       | if ($ARGS.positional | length) > 0
@@ -1477,6 +1542,10 @@ main() {
   case "$action" in
     __spec)
       spec
+      return 0
+      ;;
+    __workers)
+      cmd_workers "${2:-}"
       return 0
       ;;
     -h|--help|help)

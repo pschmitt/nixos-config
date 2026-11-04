@@ -1,15 +1,9 @@
 # bash completion for rworker (skills/rworker). Actions, flags and values come
-# from `rworker __spec`, worker names from the local state directory, so the
-# completion follows the client and never touches the network.
+# from `rworker __spec`, worker names from `rworker __workers` (the cached
+# last ls, refreshed in the background), so TAB never waits on the network.
 
 _rworker_workers() {
-  local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker" file
-  for file in "$state"/*.json
-  do
-    [[ -e "$file" ]] || continue
-    file="${file##*/}"
-    printf '%s\n' "${file%.json}"
-  done
+  rworker __workers "${COMP_WORDS[1]:-}" 2>/dev/null | cut -f1
 }
 
 _rworker() {

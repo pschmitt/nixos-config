@@ -1,16 +1,23 @@
 #compdef rworker
 # zsh completion for rworker (skills/rworker). Actions, flags and values come
-# from `rworker __spec`, worker names from the local state directory, so the
-# completion follows the client and never touches the network.
+# from `rworker __spec`; workers, with kind, agent, topic and expiry, from
+# `rworker __workers` (the cached last ls, refreshed in the background), so
+# TAB never waits on the network.
 
 _rworker_spec() {
   (( ${+_rworker_spec_cache} )) || _rworker_spec_cache=("${(@f)$(rworker __spec 2>/dev/null)}")
 }
 
 _rworker_workers() {
-  local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
+  local line name desc
   local -a workers
-  workers=(${state}/*.json(N:t:r))
+  for line in "${(@f)$(rworker __workers "${_rworker_action:-}" 2>/dev/null)}"
+  do
+    [[ -n "$line" ]] || continue
+    name="${line%%$'\t'*}"
+    desc="${line#*$'\t'}"
+    workers+=("${name}:${desc//:/\\:}")
+  done
   if [[ "$PREFIX" == *@* ]]
   then
     compset -P '*@'
@@ -42,6 +49,8 @@ _rworker() {
   fi
 
   action="${words[2]}"
+  # For _rworker_workers (extend and prune list only ad-hoc workers).
+  local _rworker_action="$action"
   if [[ "$action" == help ]]
   then
     (( CURRENT == 3 )) && _describe -t actions 'action' actions
@@ -88,9 +97,8 @@ _rworker() {
     then
       _message 'path on the worker'
     else
-      local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
       local -a targets
-      targets=(${state}/*.json(N:t:r))
+      targets=(${${(@f)$(rworker __workers 2>/dev/null)}%%$'\t'*})
       _alternative 'workers:worker:compadd -S : -a targets' 'files:file:_files'
     fi
     return
