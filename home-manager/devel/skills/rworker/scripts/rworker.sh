@@ -28,7 +28,8 @@ Usage: $(basename "$0") ACTION [ARGS] [-j|--json]
 but ssh takes it (scripts and the MCP server use it).
 
 Actions:
-  up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--ssh]
+  up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
+     [--ssh [-l USER]]
                        create a worker and wait until it is ready
   ls [-o json|wide] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
@@ -40,10 +41,10 @@ Actions:
   prune [NAME...] [--all] [-y] [-n]
                        delete several ad-hoc workers (default: your own)
   extend NAME --ttl D  move the expiry to now + D (max 24h)
-  ssh [USER@]NAME [SSH_ARGS...]
+  ssh [-l USER | USER@]NAME [SSH_ARGS...]
                        ssh to the worker (pinned host key); options such as
                        -L/-A and a command go straight to ssh
-  ssh --create [UP_OPTIONS]
+  ssh --create [-l USER] [UP_OPTIONS]
                        create a worker and log in (same as up --ssh)
   sync [USER@]NAME SRC [DEST]
                        rsync SRC to the worker (default ~/SRC basename)
@@ -1488,7 +1489,8 @@ main() {
       return 0
       ;;
     "")
-      usage >&2
+      # The overview, colored like --help when stderr is a terminal.
+      usage | paint_help overview >&2
       return 2
       ;;
   esac
