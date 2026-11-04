@@ -1,9 +1,9 @@
 ---
-name: rofl-worker
-description: Create a short-lived, encrypted build VM (ad-hoc worker) on the WIIT OpenStack for heavy compiles - Rust, Android/Gradle, large Nix builds - instead of loading the local machine or the shared build nodes, and delete it afterwards. Use when a build or test is too heavy or too long for this host, or when the user asks for a worker, a build VM or "a rofl worker".
+name: rworker
+description: Create a short-lived, encrypted build VM (ad-hoc worker) on the WIIT OpenStack for heavy compiles - Rust, Android/Gradle, large Nix builds - instead of loading the local machine or the shared build nodes, and delete it afterwards. Use when a build or test is too heavy or too long for this host, or when the user asks for a worker, a build VM, "rworker" or "a rofl worker".
 ---
 
-# rofl-worker
+# rworker
 
 Ad-hoc workers are disposable VMs (16 vCPU / 32 GiB / 150 GiB by default)
 booted from the nixbot worker image. Everything except the boot partition
@@ -18,25 +18,30 @@ key is pinned on creation, never trusted on first use.
 
 ## Commands
 
-All through `rofl-worker` (on PATH via Home Manager; the same code is
-`scripts/rofl-worker.sh`). It calls `rofl-worker` on the nixbot host over
-SSH and keeps per-worker state in `~/.local/state/rofl-worker`:
+All through `rworker` (on PATH via Home Manager; the same code is
+`scripts/rworker.sh`). It calls `rworker` on the control host (rofl-10)
+over SSH and keeps per-worker state in `~/.local/state/rworker`:
 
 ```bash
-w=$(rofl-worker up --ttl 3h | jq -r .name)     # blocks ~2-4 min until ready
-rofl-worker sync "$w" ~/devel/private/pschmitt/rbw.git rbw
-rofl-worker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
-rofl-worker down "$w"
+w=$(rworker up --ttl 3h | jq -r .name)     # blocks ~2-4 min until ready
+rworker sync "$w" ~/devel/private/pschmitt/rbw.git rbw
+rworker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
+rworker down "$w"
 ```
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints JSON
   (`name`, `ip`, `host_key`, `expires_at`). Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
-- `ls` lists all ad-hoc workers with owner and expiry; `extend NAME --ttl 2h`
+- `ls` lists all ad-hoc workers with owner and expiry (`ls --all` adds
+  nixbot's pool workers, `kind: pool`); `extend NAME --ttl 2h`
   moves the expiry; `down NAME` deletes the worker and its NetBird peer.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
   `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
 - `builder NAME` prints a Nix `--builders` line for the worker.
+
+MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,
+`extend`, `down`, `exec`, `start`/`logs` for long jobs in tmux, `sync`,
+`builder`). Prefer it when it is loaded; the CLI is the fallback.
 
 ## Patterns
 
@@ -46,7 +51,7 @@ rofl-worker down "$w"
 - **Android/Gradle:** `nix develop` needs the project's Android SDK shell;
   give it `--disk 250` (Gradle caches are large) and a TTL that covers the
   first, uncached build.
-- **Nix builds:** `nix build --max-jobs 0 --builders "$(rofl-worker builder "$w")"
+- **Nix builds:** `nix build --max-jobs 0 --builders "$(rworker builder "$w")"
   .#pkg` builds on the worker and copies the result back. The worker
   substitutes from cache.nixos.org and nixbot's store itself.
 - Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b

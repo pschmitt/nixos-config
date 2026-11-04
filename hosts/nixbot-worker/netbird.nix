@@ -1,4 +1,4 @@
-# Join NetBird with the one-off setup key the autoscaler (or rofl-worker)
+# Join NetBird with the one-off setup key the autoscaler (or rworker)
 # puts into the OpenStack user-data ({"netbird_setup_key": "...",
 # "agent_authorized_keys": ["ssh-ed25519 ..."]}; the keys are optional). The key is ephemeral,
 # single use and short-lived, so the copy left in the metadata service is

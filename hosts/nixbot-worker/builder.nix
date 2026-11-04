@@ -17,7 +17,7 @@
   users = {
     mutableUsers = false;
     # No passwords anywhere; logins by SSH key only. nix-remote-builder
-    # serves nixbot; agent is for ad-hoc workers (rofl-worker) and only
+    # serves nixbot; agent is for ad-hoc workers (rworker) and only
     # usable when the user-data hands it an SSH key (netbird.nix); the main
     # user (with sudo) is there for debugging.
     allowNoPasswordLogin = true;
@@ -82,7 +82,7 @@
       "flakes"
     ];
     # agent: ad-hoc workers belong to one user and are thrown away, so it
-    # may use the worker as a remote builder (rofl-worker builder).
+    # may use the worker as a remote builder (rworker builder).
     trusted-users = [
       "nix-remote-builder"
       "agent"

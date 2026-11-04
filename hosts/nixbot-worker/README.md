@@ -3,7 +3,7 @@
 A disposable, encrypted build VM on OpenStack. The nixbot host creates them
 from one image for two uses: as Nix remote builders for nixbot (autoscaled by
 build demand) and as ad-hoc workers that agents create for heavy compiles
-(the `rofl-worker` skill). Workers hold no secrets and keep nothing across reboots.
+(the `rworker` skill). Workers hold no secrets and keep nothing across reboots.
 
 ## Boot
 
@@ -17,6 +17,47 @@ build demand) and as ad-hoc workers that agents create for heavy compiles
   `/run` once the system is up; it never touches a disk.
 - The encrypted partition is the writable layer of `/nix/store` and holds
   the build directory. A reboot makes it unreadable; the next boot replaces it.
+
+## Disk layout
+
+One OpenStack volume per worker (250 GiB for the pool, 150 GiB by default
+for ad-hoc workers), booted with `hw_firmware_type=uefi`, `q35` and
+`virtio` disks:
+
+```
+vda                      volume (deleted with the server)
+├─vda1   2 GiB   vfat    ESP, the only unencrypted part, from the image:
+│                          EFI/BOOT/BOOTX64.EFI            systemd-boot
+│                          EFI/nixbot-worker/kernel
+│                          EFI/nixbot-worker/initrd        incl. the system
+│                                                          as squashfs
+│                          loader/entries/nixbot-worker.conf
+└─vda2   rest    LUKS2   created by systemd-repart on every boot,
+                         random 64-byte key in RAM only
+  └─workerdata   ext4    /nix/.rw-store
+                           store/  upper layer of /nix/store
+                           work/   overlayfs work directory
+                           builds/ Nix build directory (build-dir)
+                           home/   bind-mounted to /home
+```
+
+| Mount | What | Where it lives |
+| --- | --- | --- |
+| `/` | tmpfs | RAM |
+| `/nix/.ro-store` | squashfs of the system closure (from the initrd) | RAM |
+| `/nix/.rw-store` | `workerdata` (ext4 inside LUKS2) | `vda2` |
+| `/nix/store` | overlay of `.ro-store` and `.rw-store/store` | RAM + `vda2` |
+| `/home` | bind mount of `/nix/.rw-store/home` | `vda2` |
+
+Every boot runs, in the initrd: `nixbot-worker-luks-key` (key to
+`/run/nixbot-worker/luks.key`), `systemd-repart --factory-reset=yes`
+(drops the old `worker-data` partition, creates and encrypts a new one,
+formats it), `nixbot-worker-open-data` (`systemd-cryptsetup attach` after
+repart; not a crypttab entry, which would bind to the old partition's
+device) and the mounts above. Once the system is up,
+`nixbot-worker-forget-luks-key` removes the key file; the volume key stays
+only in the kernel's device-mapper table. Check it on a worker with
+`lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS` and `findmnt /nix/.rw-store`.
 
 ## Joining nixbot
 
@@ -33,7 +74,7 @@ build demand) and as ad-hoc workers that agents create for heavy compiles
     `/run/nixbot-worker/authorized_keys/agent`. Without user-data keys
     nobody can log in as `agent`. Its home is on the encrypted partition;
     it is a trusted Nix user so it can serve as a remote builder.
-- Users of ad-hoc workers: see the `rofl-worker` skill.
+- Users of ad-hoc workers: see the `rworker` skill.
 - The SSH host key is printed to the serial console as
   `NIXBOT-WORKER-HOSTKEY <type> <key>`, so the autoscaler can read it through
   the OpenStack API instead of trusting it on first use.

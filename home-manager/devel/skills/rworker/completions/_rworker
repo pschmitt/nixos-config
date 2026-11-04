@@ -1,0 +1,81 @@
+#compdef rworker
+# zsh completion for rworker (skills/rworker). Worker names come from the
+# local state directory, so completing does not touch the network.
+
+_rworker_workers() {
+  local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
+  local -a workers
+  workers=(${state}/*.json(N:t:r))
+  _describe -t workers 'worker' workers
+}
+
+_rworker_flavors() {
+  local -a flavors
+  flavors=(
+    's1.large:8 vCPU, 16 GiB'
+    's1.xlarge:16 vCPU, 32 GiB (default)'
+    's1.2xlarge:32 vCPU, 64 GiB'
+  )
+  _describe -t flavors 'flavor' flavors
+}
+
+_rworker() {
+  local -a actions
+  actions=(
+    'up:create a worker and wait until it is ready'
+    'ls:list ad-hoc workers (--all adds the pool)'
+    'down:delete a worker'
+    'extend:move the expiry'
+    'ssh:ssh to a worker as agent'
+    'sync:rsync a directory to a worker'
+    'builder:print a Nix builders line'
+  )
+
+  if (( CURRENT == 2 ))
+  then
+    _describe -t actions 'action' actions
+    return
+  fi
+
+  case "${words[2]}" in
+    up)
+      _arguments \
+        '--ttl[lifetime, e.g. 90m or 2h]:duration:(30m 1h 2h 4h 8h 24h)' \
+        '--flavor[OpenStack flavor]:flavor:_rworker_flavors' \
+        '--disk[volume size in GiB]:size:(100 150 250 500)' \
+        '--scratch[scratch host, may live up to 7 days]'
+      ;;
+    ls)
+      _arguments '(-a --all)'{-a,--all}"[include nixbot's pool workers]"
+      ;;
+    down|builder)
+      (( CURRENT == 3 )) && _rworker_workers
+      ;;
+    extend)
+      if (( CURRENT == 3 ))
+      then
+        _rworker_workers
+      else
+        _arguments '--ttl[new lifetime from now]:duration:(30m 1h 2h 4h 8h 24h)'
+      fi
+      ;;
+    ssh)
+      if (( CURRENT == 3 ))
+      then
+        _rworker_workers
+      else
+        _normal
+      fi
+      ;;
+    sync)
+      case $CURRENT in
+        3) _rworker_workers ;;
+        4) _files -/ ;;
+      esac
+      ;;
+  esac
+}
+
+_rworker "$@"
+
+# vim: set ft=zsh et ts=2 sw=2 :
