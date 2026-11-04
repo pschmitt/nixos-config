@@ -122,13 +122,14 @@ action_help() {
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
+          [--topic TEXT]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
 
   --ttl DURATION   lifetime, e.g. 90m, 3h, 1h30m (default 2h). A worker that
-                   is still busy when it expires is extended by 30 min at a
-                   time, up to its maximum lifetime.
+                   is still in use when it expires stays until it has been
+                   idle for 1h, up to its maximum lifetime.
   --flavor FLAVOR  s1.large (8 vCPU/16 GiB), s1.xlarge (16/32, default),
                    s1.2xlarge (32/64)
   --disk GIB       volume size (default 150)
@@ -296,6 +297,35 @@ EOF
 }
 
 # Colors for human-readable output (none when piped or NO_COLOR is set).
+# Colors for --help on a terminal (plain when piped, or with NO_COLOR):
+# bold Usage and section headers, cyan flags with yellow arguments, and in
+# the overview (MODE overview) green action names.
+paint_help() {
+  local mode="${1:-}"
+  if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]
+  then
+    cat
+    return
+  fi
+  local b=$'\e[1m' c=$'\e[36m' y=$'\e[33m' g=$'\e[32m' r=$'\e[0m'
+  local -a rules=(
+    # Flags and placeholders inside the Usage lines (before Usage: is
+    # painted, which these addresses match on).
+    -e "/^(Usage:|       )/s/(^|[ [|])(--?[a-z][-a-z0-9]*)/\1${c}\2${r}/g"
+    -e "/^(Usage:|       )/s/(^|[ [|=])([A-Z][A-Z_]+([.][.][.])?)([] |:]|$)/\1${y}\2${r}\4/g"
+    -e "s/^(Usage:)/${b}\1${r}/"
+    -e "s/^([A-Z][A-Za-z ,()-]*:)$/${b}\1${r}/"
+    # Flags at the start of an option line, and their argument in capitals.
+    -e "s/^(  +)(-[-a-zA-Z0-9]+(, -[-a-zA-Z0-9]+)*) ([A-Z][A-Z_.:]*)/\1${c}\2${r} ${y}\4${r}/"
+    -e "s/^(  +)(-[-a-zA-Z0-9]+(, -[-a-zA-Z0-9]+)*)( |$)/\1${c}\2${r}\4/"
+  )
+  if [[ "$mode" == overview ]]
+  then
+    rules+=(-e "s/^(  )([a-z][a-z-]+)( |$)/\1${g}\2${r}\3/")
+  fi
+  sed -E "${rules[@]}"
+}
+
 paint() {
   local code="$1"
   shift
@@ -1338,9 +1368,9 @@ main() {
     -h|--help|help)
       if [[ -n "${2:-}" ]]
       then
-        action_help "$2"
+        action_help "$2" | paint_help
       else
-        usage
+        usage | paint_help overview
       fi
       return 0
       ;;
@@ -1389,7 +1419,7 @@ main() {
     fi
     if [[ "$arg" == -h || "$arg" == --help ]]
     then
-      action_help "$action"
+      action_help "$action" | paint_help
       return 0
     fi
   done
