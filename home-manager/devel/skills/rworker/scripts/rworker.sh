@@ -7,15 +7,20 @@
 CONTROL_HOST="${RWORKER_HOST:-rofl-10}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
+# Set by --json: JSON instead of the human-readable output.
+JSON=""
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") ACTION [ARGS]
+Usage: $(basename "$0") ACTION [ARGS] [--json]
        $(basename "$0") ACTION --help   (or: help ACTION)
+
+--json prints JSON instead of the human-readable output; every action but
+ssh takes it (scripts and the MCP server use it).
 
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150]
-                       create a worker, wait until it is ready, print JSON
+                       create a worker and wait until it is ready
   ls [-o json] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
   down NAME            delete a worker
@@ -45,6 +50,7 @@ EOF
 #   flag ACTION FLAG[=VALUES] DESCRIPTION   (VALUES names a values line)
 #   values NAME WORD...
 #   worker ACTION...                        (first argument is a worker)
+#   global FLAG DESCRIPTION                 (every action except ssh)
 spec() {
   cat <<'SPEC'
 action up create a worker and wait until it is ready
@@ -73,6 +79,7 @@ values size 100 150 250 500
 values format json
 values interval 2 5 10 30
 worker down extend ssh sync builder prune
+global --json force JSON output
 SPEC
 }
 
@@ -183,6 +190,35 @@ EOF
   esac
 }
 
+# Colors for human-readable output (none when piped or NO_COLOR is set).
+paint() {
+  local code="$1"
+  shift
+  if [[ -t 1 && -z "${NO_COLOR:-}" ]]
+  then
+    printf '\e[%sm%s\e[0m' "$code" "$*"
+  else
+    printf '%s' "$*"
+  fi
+}
+
+ok() {
+  printf '%s %s\n' "$(paint 32 '✔')" "$*"
+}
+
+# "in 1h 59m (14:13)" for an epoch timestamp.
+fmt_expiry() {
+  local at="$1" left
+  left=$(( at - $(date +%s) ))
+  if (( left <= 0 ))
+  then
+    printf 'expired (%s)' "$(date -d "@$at" +%H:%M)"
+  else
+    printf 'in %dh %dm (%s)' $(( left / 3600 )) $(( left % 3600 / 60 )) \
+      "$(date -d "@$at" +%H:%M)"
+  fi
+}
+
 remote() {
   # shellcheck disable=SC2029 # arguments are meant to expand locally
   ssh -o BatchMode=yes "$CONTROL_HOST" rworker "$(printf '%q ' "$@")"
@@ -259,6 +295,8 @@ cmd_up() {
     return 2
   fi
   mkdir -p "$STATE_DIR" || return 1
+  local started
+  started=$(date +%s)
   info=$(remote up --ssh-key "$(cat "$key_file")" \
     --owner "${USER}@$(hostname)" "$@") || return 1
   name=$(jq -er .name <<< "$info") || return 1
@@ -266,7 +304,21 @@ cmd_up() {
   jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
     || return 1
   printf '%s %s\n' "$ip" "$(jq -er .host_key <<< "$info")" >> "$KNOWN_HOSTS"
-  printf '%s\n' "$info"
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$info"
+    return 0
+  fi
+  local me
+  me=$(basename "$0")
+  ok "$(paint 36 "$name") is ready ($(( $(date +%s) - started ))s)"
+  printf '  %-8s %s\n' \
+    IP "$ip (NetBird)" \
+    User agent \
+    Flavor "$(jq -r '.flavor // "-"' <<< "$info")" \
+    Expires "$(fmt_expiry "$(jq -r .expires_at <<< "$info")")" \
+    SSH "$me ssh $name" \
+    Builder "nix build --max-jobs 0 --builders \"\$($me builder $name)\" .#pkg"
 }
 
 # kubectl-style table from `ls` JSON (aligned, uncolored); empty when there
@@ -495,7 +547,7 @@ cmd_ls() {
   fi
   local out
   out=$(remote ls) || return 1
-  if [[ -n "$json" ]]
+  if [[ -n "$json" || -n "$JSON" ]]
   then
     printf '%s\n' "$out"
     return 0
@@ -541,11 +593,25 @@ cmd_prune() {
 
   if [[ -z "$targets" ]]
   then
-    printf 'Nothing to prune.\n'
+    if [[ -n "$JSON" ]]
+    then
+      printf '[]\n'
+    else
+      printf 'Nothing to prune.\n'
+    fi
     return 0
   fi
-  printf 'Ad-hoc workers to delete:\n'
-  column -t -s $'\t' <<< "$targets" | sed 's/^/  /'
+  if [[ -n "$JSON" && -n "$dry" ]]
+  then
+    jq -R -s -c 'split("\n") | map(select(length > 0) | split("\t")
+      | {name: .[0], owner: .[1], deleted: false})' <<< "$targets"
+    return 0
+  fi
+  if [[ -z "$JSON" ]]
+  then
+    printf 'Ad-hoc workers to delete:\n'
+    column -t -s $'\t' <<< "$targets" | sed 's/^/  /'
+  fi
   if [[ -n "$dry" ]]
   then
     return 0
@@ -566,20 +632,39 @@ cmd_prune() {
     fi
   fi
 
-  local name failed=""
-  while IFS=$'\t' read -r name _
+  local name owner failed="" results=()
+  while IFS=$'\t' read -r name owner
   do
-    if remote down "$name"
+    if remote down "$name" > /dev/null
     then
       forget "$name"
+      results+=("$(jq -nc --arg n "$name" --arg o "$owner" '{name: $n, owner: $o, deleted: true}')")
+      [[ -n "$JSON" ]] || ok "deleted $(paint 36 "$name")"
     else
       failed=1
+      results+=("$(jq -nc --arg n "$name" --arg o "$owner" '{name: $n, owner: $o, deleted: false}')")
     fi
   done <<< "$targets"
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "${results[@]}" | jq -s -c .
+  fi
   if [[ -n "$failed" ]]
   then
     return 1
   fi
+}
+
+cmd_extend() {
+  local out name
+  out=$(remote extend "$@") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  name=$(jq -r .name <<< "$out") || return 1
+  ok "$(paint 36 "$name") now expires $(fmt_expiry "$(jq -r .expires_at <<< "$out")"), at most until $(date -d "@$(jq -r .max_lifetime_end <<< "$out")" '+%a %H:%M')"
 }
 
 cmd_down() {
@@ -588,8 +673,14 @@ cmd_down() {
     usage >&2
     return 2
   fi
-  remote down "$1" || return 1
+  remote down "$1" > /dev/null || return 1
   forget "$1"
+  if [[ -n "$JSON" ]]
+  then
+    jq -nc --arg n "$1" '{name: $n, deleted: true}'
+  else
+    ok "deleted $(paint 36 "$1")"
+  fi
 }
 
 # "[user@]name" -> sets TARGET_NAME and TARGET_USER (empty: per worker).
@@ -646,7 +737,14 @@ cmd_sync() {
   mapfile -t opts < <(ssh_opts)
   dest="${dest:-$(basename "$(realpath "$src")")}"
   rsync -a --delete --exclude target/ --exclude .direnv/ --exclude result \
-    -e "ssh ${opts[*]}" "${src%/}/" "${user}@${ip}:${dest}/"
+    -e "ssh ${opts[*]}" "${src%/}/" "${user}@${ip}:${dest}/" || return 1
+  if [[ -n "$JSON" ]]
+  then
+    jq -nc --arg n "$name" --arg s "$src" --arg d "$dest" --arg u "$user" \
+      '{name: $n, src: $s, dest: $d, user: $u}'
+  else
+    ok "synced $src to $(paint 36 "$name"):$dest"
+  fi
 }
 
 cmd_builder() {
@@ -658,8 +756,15 @@ cmd_builder() {
   fi
   ip=$(worker_field "$name" ip) || return 1
   key=$(worker_field "$name" host_key | base64 -w0) || return 1
-  printf 'ssh-ng://agent@%s x86_64-linux - 16 1 nixos-test,benchmark,big-parallel,kvm - %s\n' \
-    "$ip" "$key"
+  local line
+  line=$(printf 'ssh-ng://agent@%s x86_64-linux - 16 1 nixos-test,benchmark,big-parallel,kvm - %s' \
+    "$ip" "$key")
+  if [[ -n "$JSON" ]]
+  then
+    jq -nc --arg n "$name" --arg b "$line" '{name: $n, builder: $b}'
+  else
+    printf '%s\n' "$line"
+  fi
 }
 
 main() {
@@ -684,6 +789,21 @@ main() {
       ;;
   esac
   shift
+  # --json anywhere (but not for ssh, whose arguments are ssh's).
+  if [[ "$action" != ssh ]]
+  then
+    local -a rest=()
+    for arg in "$@"
+    do
+      if [[ "$arg" == --json ]]
+      then
+        JSON=1
+      else
+        rest+=("$arg")
+      fi
+    done
+    set -- "${rest[@]}"
+  fi
   # `ACTION --help`, except for ssh, whose arguments belong to ssh once a
   # worker name is given.
   for arg in "$@"
@@ -712,7 +832,7 @@ main() {
       cmd_prune "$@"
       ;;
     extend)
-      remote extend "$@"
+      cmd_extend "$@"
       ;;
     ssh)
       cmd_ssh "$@"

@@ -23,14 +23,15 @@ All through `rworker` (on PATH via Home Manager; the same code is
 over SSH and keeps per-worker state in `~/.local/state/rworker`:
 
 ```bash
-w=$(rworker up --ttl 3h | jq -r .name)     # blocks ~2-4 min until ready
+w=$(rworker up --ttl 3h --json | jq -r .name)   # ~1-4 min until ready
 rworker sync "$w" ~/devel/private/pschmitt/rbw.git rbw
 rworker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
 rworker down "$w"
 ```
 
-- `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints JSON
-  (`name`, `ip`, `host_key`, `expires_at`). Ask for a bigger flavor only for
+- `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
+  with `--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
+  `host_key`, `expires_at`, `flavor`). Use `--json` in scripts. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc
   workers: the named ones, else all of yours; `--all` every ad-hoc worker.

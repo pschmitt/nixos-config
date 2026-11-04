@@ -80,6 +80,12 @@ _rworker() {
       flags+=("${spec_flag}[${desc}]")
     fi
   done
+  for line in "${_rworker_spec_cache[@]}"
+  do
+    [[ "$line" == "global "* ]] || continue
+    line="${line#global }"
+    flags+=("${line%% *}[${line#* }]")
+  done
   flags+=('(-h --help)'{-h,--help}'[show help]')
   _arguments "${flags[@]}"
 }

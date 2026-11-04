@@ -59,7 +59,7 @@ def up(
     Returns name, ip, host_key, user and expires_at. Always call down() when
     the task is done.
     """
-    argv = ["up", "--ttl", ttl]
+    argv = ["up", "--json", "--ttl", ttl]
     if flavor:
         argv += ["--flavor", flavor]
     if disk_gib:
@@ -72,32 +72,32 @@ def up(
 @mcp.tool()
 def ls() -> list:
     """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool)."""
-    return json.loads(run("ls", "-o", "json", timeout=120))
+    return json.loads(run("ls", "--json", timeout=120))
 
 
 @mcp.tool()
 def extend(name: str, ttl: str) -> dict:
     """Move a worker's expiry to now + ttl (capped at its maximum lifetime)."""
-    return json.loads(run("extend", name, "--ttl", ttl, timeout=120))
+    return json.loads(run("extend", name, "--ttl", ttl, "--json", timeout=120))
 
 
 @mcp.tool()
-def down(name: str) -> str:
+def down(name: str) -> dict:
     """Delete a worker (server, volume, NetBird peer). Nothing survives."""
-    return run("down", name, timeout=300).strip()
+    return json.loads(run("down", name, "--json", timeout=300))
 
 
 @mcp.tool()
 def prune(names: list[str] | None = None, all: bool = False,
-          dry_run: bool = False) -> str:
+          dry_run: bool = False) -> list:
     """Delete several ad-hoc workers: the named ones, or else all of this
     user's; all=True deletes every ad-hoc worker, whoever owns it. Pool
     workers are never pruned. dry_run=True only lists them."""
-    argv = ["prune", *(names or [])]
+    argv = ["prune", "--json", *(names or [])]
     if all:
         argv.append("--all")
     argv.append("--dry-run" if dry_run else "--yes")
-    return run(*argv, timeout=900).strip()
+    return json.loads(run(*argv, timeout=900))
 
 
 @mcp.tool()
@@ -155,20 +155,19 @@ def logs(name: str, session: str = "job", lines: int = 200) -> str:
 
 
 @mcp.tool()
-def sync(name: str, src: str, dest: str | None = None) -> str:
+def sync(name: str, src: str, dest: str | None = None) -> dict:
     """rsync a local directory to the worker (mirrors with --delete; skips
     target/, .direnv/ and result). dest defaults to the directory's name in
     the agent's home."""
-    argv = ["sync", name, src] + ([dest] if dest else [])
-    run(*argv, timeout=1800)
-    return f"synced {src} to {name}:{dest or '(basename)'}"
+    argv = ["sync", "--json", name, src] + ([dest] if dest else [])
+    return json.loads(run(*argv, timeout=1800))
 
 
 @mcp.tool()
 def builder(name: str) -> str:
     """A Nix --builders line for the worker: nix build --max-jobs 0
     --builders "<line>" .#pkg builds there and copies the result back."""
-    return run("builder", name, timeout=60).strip()
+    return json.loads(run("builder", name, "--json", timeout=60))["builder"]
 
 
 if __name__ == "__main__":

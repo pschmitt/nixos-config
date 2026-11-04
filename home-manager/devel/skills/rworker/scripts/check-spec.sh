@@ -63,6 +63,16 @@ main() {
     fi
   done < <(sed -n 's/^flag \([^ ]*\) \([^ ]*\) .*/\1 \2/p' <<< "$spec")
 
+  # Every global flag shows up in the main usage.
+  while read -r flag
+  do
+    if ! bash "$script" --help | grep -q -- "$flag"
+    then
+      printf 'global flag %s is missing from the usage\n' "$flag" >&2
+      failed=1
+    fi
+  done < <(sed -n 's/^global \([^ ]*\) .*/\1/p' <<< "$spec")
+
   if [[ -n "$failed" ]]
   then
     return 1

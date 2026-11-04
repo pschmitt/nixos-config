@@ -42,6 +42,10 @@ _rworker() {
       fi
     done < <(sed -n "s/^flag ${action} //p" <<< "$spec")
     words="$(sed -n "s/^flag ${action} \([^ =]*\).*/\1/p" <<< "$spec") --help"
+    if [[ "$action" != ssh ]]
+    then
+      words+=" $(sed -n 's/^global \([^ ]*\) .*/\1/p' <<< "$spec")"
+    fi
   fi
   mapfile -t COMPREPLY < <(compgen -W "$words" -- "$cur")
 }
