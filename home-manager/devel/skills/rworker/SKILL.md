@@ -30,7 +30,7 @@ rworker down "$w"
 ```
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
-  with `--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
+  with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc

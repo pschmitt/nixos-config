@@ -7,16 +7,16 @@
 CONTROL_HOST="${RWORKER_HOST:-rofl-10}"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
-# Set by --json: JSON instead of the human-readable output.
+# Set by -j/--json: JSON instead of the human-readable output.
 JSON=""
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") ACTION [ARGS] [--json]
+Usage: $(basename "$0") ACTION [ARGS] [-j|--json]
        $(basename "$0") ACTION --help   (or: help ACTION)
 
---json prints JSON instead of the human-readable output; every action but
-ssh takes it (scripts and the MCP server use it).
+-j, --json prints JSON instead of the human-readable output; every action
+but ssh takes it (scripts and the MCP server use it).
 
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150]
@@ -80,6 +80,7 @@ values format json
 values interval 2 5 10 30
 worker down extend ssh sync builder prune
 global --json force JSON output
+global -j short for --json
 SPEC
 }
 
@@ -795,7 +796,7 @@ main() {
     local -a rest=()
     for arg in "$@"
     do
-      if [[ "$arg" == --json ]]
+      if [[ "$arg" == --json || "$arg" == -j ]]
       then
         JSON=1
       else
