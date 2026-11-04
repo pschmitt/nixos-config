@@ -396,9 +396,9 @@ in
         plugins.enabled = [ "homeassistant" ];
         # The API server is only for Stricknani's link imports: no built-in tools,
         # no MCP servers and no plugin toolsets there (imported pages are untrusted).
-        # Its only tools: a read-only fresh browser (import-browser below) so imports
+        # Its only tools: a read-only fresh browser (stricknani-importer below) so imports
         # can read pages the plain fetch can't (bot protection, JS rendering).
-        platform_toolsets.api_server = [ "import-browser" ];
+        platform_toolsets.api_server = [ "stricknani-importer" ];
         known_plugin_toolsets.api_server = [ "homeassistant" ];
         model = {
           provider = "openai-codex";
@@ -471,7 +471,7 @@ in
         // {
           # Fresh throwaway Chromium (no saved profiles) for Stricknani link imports,
           # limited to reading: no clicks, typing, uploads or JavaScript evaluation.
-          import-browser = browserMcps."browser-daemon-rofl-16" // {
+          stricknani-importer = browserMcps."browser-daemon-rofl-16" // {
             tools.include = [
               "browser_navigate"
               "browser_navigate_back"
