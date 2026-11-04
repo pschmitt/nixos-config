@@ -37,7 +37,7 @@ order of steps and the traps that cost rounds before.
 ## After: roll it out
 
 1. In `nixos-config`: `nix flake lock --update-input <rbw|browser-daemon|bruvtab|monarch>` on
-   rofl-13 (`nix` skill), copy `flake.lock` back, commit, push, deploy to the affected hosts. The
+   an `rworker` (`rworker` and `nix` skills), copy `flake.lock` back, commit, push, deploy to the affected hosts. The
    standing rule is commit, push and deploy without asking. rbw's `AGENTS.md` says the same.
 2. browser-daemon has its own `rbw` input. After each rbw release, pin it to the same commit as
    described in rbw's `AGENTS.md` ("Deploy").

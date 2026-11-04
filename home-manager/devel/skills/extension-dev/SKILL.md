@@ -21,7 +21,7 @@ Read the repo's `AGENTS.md` and `docs/browser.md` (rbw) before building.
 
 1. Edit the extension. Any source change needs a new version, because AMO signs each version only
    once. Use the `release` skill for the version, tag and signing.
-2. Build and test on rofl-13, not locally (`nix` skill, `scripts/remote-sync.sh`). Unsigned
+2. Build and test on an `rworker`, not locally (`rworker` skill; `nix` skill for Nix commands). Unsigned
    builds: `python3 browser/build.py` in rbw creates `browser/dist/` and unsigned ZIPs. For a quick
    look, Firefox loads `browser/dist/firefox/manifest.json` from `about:debugging#/runtime/this-firefox`;
    Chromium loads the unpacked directory with developer mode on. `browser/install.py` registers the

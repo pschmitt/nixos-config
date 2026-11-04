@@ -38,7 +38,7 @@ Use this skill when the user asks to review or merge pull requests. For inbox tr
 
 ## Builds and parallel work
 
-- Avoid expensive builds on the local machine. Follow repository `AGENTS.md`; for this user's Android and NixOS projects, prefer `rofl-13` and its documented per-project build directory for builds and Nix evaluation. Do not duplicate a CI build that is already running unless a targeted result would change the decision, and never start expensive local builds when the user has prohibited them.
+- Avoid expensive builds on the local machine. Follow repository `AGENTS.md`; for this user's Android and NixOS projects, prefer an `rworker` (see the `rworker` skill) for builds and Nix evaluation. Do not duplicate a CI build that is already running unless a targeted result would change the decision, and never start expensive local builds when the user has prohibited them.
 - Parallelize independent repository reviews only when the user asks for agents or parallel work. Keep agents on disjoint PRs/repositories, share the same merge and build constraints, and reconcile their final PR states before notification cleanup.
 
 ## Merge decisions

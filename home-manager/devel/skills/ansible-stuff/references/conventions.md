@@ -27,9 +27,8 @@ nix develop --command ansible-galaxy install -r requirements.yml
 `flake.nix` defines the default dev shell (Ansible, ansible-lint, sops and the
 Python packages from `requirements.txt`; read `flake.nix` for the full list).
 
-After changing the flake or lock file, run `nix flake check` on rofl-13/rofl-14
-(rsync the checkout to `~/build/ansible-stuff`), not on the local host
-(expensive Nix evaluation and checks).
+After changing the flake or lock file, run `nix flake check` on an `rworker` (`rworker` skill),
+not on the local host (expensive Nix evaluation and checks).
 
 ## Validation
 

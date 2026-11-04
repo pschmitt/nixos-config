@@ -23,7 +23,9 @@ against the version originally synced. If another agent changed it meanwhile,
 resync the current lock and repeat the input update remotely. Review the final
 diff to ensure unrelated inputs were preserved before committing.
 
-Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Two scripts in this
+Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Prefer an ad-hoc
+`rworker` (see the `rworker` skill: `rworker exec --sync SRC -- CMD`, or `sync` + `ssh`), which
+needs no `~/build` cleanup; the scripts below target the shared build nodes. Two scripts in this
 skill's `scripts/` directory replace the hand-typed rsync/ssh and `gh run` loops:
 
 - `scripts/remote-sync.sh [--host rofl-14] [--name NAME] [--private DIR] SRC [-- COMMAND]` rsyncs

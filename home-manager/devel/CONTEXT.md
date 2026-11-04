@@ -60,8 +60,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Deployment and operations
 
-- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. When possible, use a remote build host; see the private `brkn-infra` skill for host selection.
-- Remote build directories should use `~/build/<PROJECT_NAME>`.
+- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. Prefer an ad-hoc `rworker` (see the `rworker` skill); use a shared build host only for quick one-offs (see the private `brkn-infra` skill).
+- Shared build host directories should use `~/build/<PROJECT_NAME>`.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
 

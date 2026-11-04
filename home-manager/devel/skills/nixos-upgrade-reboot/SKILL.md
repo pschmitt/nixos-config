@@ -85,7 +85,7 @@ After a successful upgrade with a kernel-generation mismatch:
    Use the controller's deployed configuration (its
    `luks-ssh-unlock-<target>.service` unit: `systemctl cat` it over SSH) to
    identify the target instance; if you need the evaluated
-   `services.luks-ssh-unlock.instances` value, evaluate on rofl-13/rofl-14,
+   `services.luks-ssh-unlock.instances` value, evaluate on an `rworker`,
    never locally. Do not assume a controller, hostname, or target list from
    memory.
 2. Inspect that instance's journal from the upgrade completion time onward.

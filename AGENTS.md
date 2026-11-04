@@ -17,14 +17,15 @@
   nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and
   `nix-instantiate`, not just host evaluations. Plain binaries already on
   PATH (`statix`, `nixfmt`, `git`, `sops`) are fine.
-- Evaluate on a remote build host instead (see the private `brkn-infra`
-  skill): rsync the working tree(s) to
-  `~/build/<project>` (exclude `.git/`, and remove any stale `.git` there so
+- Evaluate on an ad-hoc `rworker` instead (see the `rworker` skill); use a
+  shared remote build host (see the private `brkn-infra` skill) only for quick
+  one-offs. Either way: rsync the working tree(s) to
+  `~/build/<project>` (`rworker sync` does this; exclude `.git/`, and remove any stale `.git` there so
   the path flake sees untracked files), then run `nix` over SSH with
   `--override-input nixos-config-private path:<remote private checkout>`
   for uncommitted private changes. Lock-file updates run there too; copy
   `flake.lock` back afterwards.
-- Keep remote build directories from accumulating. Before starting a new run,
+- On a shared build host, keep remote build directories from accumulating. Before starting a new run,
   remove only stale build files or directories that you can identify as left
   by your own earlier runs; never delete another agent's files or anything
   whose ownership is unclear. Prefer an agent- or run-specific directory when
@@ -123,8 +124,8 @@
 
 ## Code Style
 - Nix code changes should be formatted correctly with `nixfmt`.
-- `statix` checks should pass. After Nix code changes, run `statix check` (the binary on PATH, or `nix develop` on a remote build host; see "Evaluation and builds").
-- Also run `deadnix` on a remote build host when it is not on PATH to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
+- `statix` checks should pass. After Nix code changes, run `statix check` (the binary on PATH, or `nix develop` on an `rworker`; see "Evaluation and builds").
+- Also run `deadnix` on an `rworker` when it is not on PATH to catch unused arguments or bindings. Drop genuinely unused args; `_`-prefix intentionally-unused lambda args (`_name: fs: ...`). This includes overlay arguments (`final: _prev:`) and derivation arguments (`_finalAttrs:`) when they are unused; do not retain unused conventional arguments just to match an idiom.
 - Tofu code changes should be formatted with `tofu fmt`.
 - **Never** write code with trailing whitespace.
 - Don't use `with lib;`. Qualify explicitly (`lib.mkOption`, `lib.types.str`, `lib.mkIf`) — that is the repo-wide style. For many uses in one scope, prefer `inherit (lib) mkOption mkIf types;` over `with`. This applies to package `meta` blocks too (`meta = { license = lib.licenses.mit; ... }`, and `maintainers = with lib.maintainers; [ pschmitt ];`).
