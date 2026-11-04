@@ -35,8 +35,8 @@ rworker down "$w"
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts; `--ssh`
   logs you in right away (interactive use); `ssh --create [up options]` is
-  the same. Pass `--topic "what it is for"` (default: the tmux window
-  name); the agent (claude, codex, agy, opencode, ...), its PID, session
+  the same. Pass `--topic "what it is for"` (there is none otherwise);
+  the agent (claude, codex, agy, opencode, ...), its PID, session
   and the cwd are recorded on their own. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc

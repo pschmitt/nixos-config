@@ -87,8 +87,8 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
-flag up --topic=topic what the worker is for (default: the tmux window name)
-flag exec --topic=topic what the worker is for (default: the tmux window name)
+flag up --topic=topic what the worker is for (none unless given)
+flag exec --topic=topic what the worker is for (none unless given)
 flag ls -o=format output format (wide adds PID, flavor, IP and cwd)
 flag inspect --boot also show the worker's own boot metadata (over SSH)
 flag exec --ttl=duration lifetime of the worker
@@ -142,8 +142,8 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
   --ssh            log in (as agent) as soon as it is ready
-  --topic TEXT     what it is for (shown by ls -o wide; default: the name of
-                   the tmux window rworker runs in)
+  --topic TEXT     what it is for (shown by ls and inspect; none unless
+                   given)
 
 The worker also records its creator: owner (\$USER@host), the agent
 process (claude, codex, agy, opencode, ... and its PID), the agent session
@@ -446,7 +446,7 @@ forget() {
 
 # --meta arguments describing who creates a worker: the agent process
 # above us (claude, codex, agy, opencode, ...), its PID and session, the
-# topic (--topic, else this tmux window's name) and the working directory.
+# topic (only with --topic) and the working directory.
 creator_meta() {
   local topic="$1" pid="$PPID" comm argv0 cand agent="" agent_pid="" session
   while [[ -n "$pid" && "$pid" -gt 1 && -z "$agent" ]]
@@ -483,10 +483,6 @@ creator_meta() {
     else
       agent=shell
     fi
-  fi
-  if [[ -z "$topic" && -n "${TMUX_PANE:-}" ]]
-  then
-    topic=$(tmux display-message -p -t "$TMUX_PANE" '#W' 2>/dev/null || true)
   fi
   printf '%s\n' --meta "agent=${agent}" --meta "cwd=${PWD}"
   if [[ -n "$agent_pid" ]]
