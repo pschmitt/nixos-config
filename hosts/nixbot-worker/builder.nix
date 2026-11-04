@@ -16,10 +16,10 @@
 
   users = {
     mutableUsers = false;
-    # No passwords anywhere; logins by SSH key only. nix-remote-builder
-    # serves nixbot; agent is for ad-hoc workers (rworker) and only
-    # usable when the user-data hands it an SSH key (netbird.nix); the main
-    # user (with sudo) is there for debugging.
+    # No passwords anywhere; logins by SSH key only, and the main user's keys
+    # work for every account. nix-remote-builder serves nixbot; agent is for
+    # ad-hoc workers (rworker) and also takes the creator's key from the
+    # user-data (netbird.nix); the main user (with sudo) is for debugging.
     allowNoPasswordLogin = true;
     groups.nix-remote-builder = { };
     users = {
@@ -33,6 +33,8 @@
         isNormalUser = true;
         home = "/home/agent";
         shell = pkgs.bash;
+        # Plus the creator's keys from the user-data (netbird.nix).
+        openssh.authorizedKeys.keys = config.mainUser.authorizedKeys;
         packages = [
           pkgs.git
           pkgs.jq
@@ -44,8 +46,8 @@
         isSystemUser = true;
         group = "nix-remote-builder";
         shell = pkgs.bash;
-        # Same key as profiles/base/users/nix-remote-builder.nix.
-        openssh.authorizedKeys.keys = [
+        # Same keys as profiles/base/users/nix-remote-builder.nix.
+        openssh.authorizedKeys.keys = config.mainUser.authorizedKeys ++ [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIICyWHQNmz85w1IPJIzmK6DFg2T0XOOazVjeymiaCb98 nix-remote-builder@nixos-config"
         ];
       };
@@ -73,7 +75,9 @@
       ];
     };
     # Keys handed over in the user-data, written at boot (netbird.nix).
-    authorizedKeysFiles = [ "/run/nixbot-worker/authorized_keys/%u" ];
+    # sshd reads them as the target user, so every path component must be
+    # traversable by it (not /run/nixbot-worker, which holds the LUKS key).
+    authorizedKeysFiles = [ "/run/ssh-authorized-keys/%u" ];
   };
 
   nix.settings = {
@@ -137,6 +141,9 @@
     fsType = "none";
     options = [ "bind" ];
     depends = [ "/nix/.rw-store" ];
+    # Mounted in the initrd, so activation creates the homes on it rather
+    # than on the tmpfs root underneath.
+    neededForBoot = true;
   };
   systemd.tmpfiles.rules = [ "d /nix/.rw-store/home 0755 root root -" ];
 

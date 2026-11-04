@@ -11,21 +11,158 @@ KNOWN_HOSTS="${STATE_DIR}/known_hosts"
 usage() {
   cat <<EOF
 Usage: $(basename "$0") ACTION [ARGS]
+       $(basename "$0") ACTION --help   (or: help ACTION)
 
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150]
                        create a worker, wait until it is ready, print JSON
-  ls [-a|--all] [-o json]
-                       list ad-hoc workers (--all adds nixbot's pool)
+  ls [-o json] [--watch [-n SECONDS]]
+                       list all workers (ad-hoc and nixbot's pool)
   down NAME            delete a worker
   extend NAME --ttl D  move the expiry to now + D (max 24h)
-  ssh NAME [CMD...]    ssh to the worker as agent (pinned host key)
-  sync NAME SRC [DEST] rsync SRC to the worker (default ~/SRC basename)
+  ssh [USER@]NAME [SSH_ARGS...]
+                       ssh to the worker (pinned host key); options such as
+                       -L/-A and a command go straight to ssh
+  sync [USER@]NAME SRC [DEST]
+                       rsync SRC to the worker (default ~/SRC basename)
   builder NAME         print a Nix builders line for the worker
 
-Environment: RWORKER_HOST (default rofl-10), RWORKER_KEY
-(public key file, default ~/.ssh/id_ed25519.pub).
+Workers this host did not create (nixbot's pool, other hosts' ad-hoc
+workers) are looked up on the control host on first use; you log in as
+yourself there, as agent on your own ad-hoc workers.
+
+Environment: RWORKER_HOST (default rofl-10), RWORKER_KEY (public key file,
+default ~/.ssh/id_ed25519.pub), RWORKER_USER (SSH user override).
 EOF
+}
+
+# Machine-readable command spec: the shell completions read it, and the
+# rworker-completions flake check compares it with the dispatch below and
+# with action_help. Keep all three in sync when adding an action or flag.
+#   action NAME DESCRIPTION
+#   flag ACTION FLAG[=VALUES] DESCRIPTION   (VALUES names a values line)
+#   values NAME WORD...
+#   worker ACTION...                        (first argument is a worker)
+spec() {
+  cat <<'SPEC'
+action up create a worker and wait until it is ready
+action ls list all workers (ad-hoc and pool)
+action down delete an ad-hoc worker
+action extend move the expiry of an ad-hoc worker
+action ssh ssh to a worker (pinned host key)
+action sync rsync a directory to a worker
+action builder print a Nix builders line for a worker
+action help show the help of an action
+flag up --ttl=duration lifetime, e.g. 90m or 2h
+flag up --flavor=flavor OpenStack flavor
+flag up --disk=size volume size in GiB
+flag up --scratch scratch host, may live up to 7 days
+flag ls -o=format output format
+flag ls --watch redraw in place, marking changes
+flag ls -n=interval refresh interval in seconds (with --watch)
+flag extend --ttl=duration new lifetime from now
+values duration 30m 1h 2h 4h 8h 24h
+values flavor s1.large s1.xlarge s1.2xlarge
+values size 100 150 250 500
+values format json
+values interval 2 5 10 30
+worker down extend ssh sync builder
+SPEC
+}
+
+# Help for one action, answered locally (never forwarded to the control host).
+action_help() {
+  local me
+  me=$(basename "$0")
+  case "$1" in
+    up)
+      cat <<EOF
+Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch]
+
+Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
+print it as JSON (name, ip, host_key, user, expires_at, builder).
+
+  --ttl DURATION   lifetime, e.g. 90m, 3h, 1h30m (default 2h). A worker that
+                   is still busy when it expires is extended by 30 min at a
+                   time, up to its maximum lifetime.
+  --flavor FLAVOR  s1.large (8 vCPU/16 GiB), s1.xlarge (16/32, default),
+                   s1.2xlarge (32/64)
+  --disk GIB       volume size (default 150)
+  --scratch        scratch host: maximum lifetime 7 days instead of 24 h
+
+Example:
+  w=\$($me up --ttl 3h --flavor s1.2xlarge | jq -r .name)
+EOF
+      ;;
+    ls)
+      cat <<EOF
+Usage: $me ls [-o json] [-w|--watch [-n SECONDS]]
+
+List all workers: ad-hoc ones (KIND adhoc) and nixbot's pool (KIND pool),
+with status, flavor, NetBird IP, owner, time to expiry and age.
+
+  -o json        print the raw JSON instead of the table
+  -w, --watch    redraw the table in place every -n seconds (default 5),
+                 marking rows: + new, ~ changed (status, IP, owner, expiry,
+                 flavor), - gone. q quits, any other key refreshes now.
+  -n SECONDS     refresh interval for --watch
+EOF
+      ;;
+    down)
+      cat <<EOF
+Usage: $me down NAME
+
+Delete an ad-hoc worker with its volume and NetBird peer. Nothing on it
+survives; copy results off first. Pool workers belong to the autoscaler.
+EOF
+      ;;
+    extend)
+      cat <<EOF
+Usage: $me extend NAME --ttl DURATION
+
+Set the expiry of an ad-hoc worker to now + DURATION (e.g. 2h), capped at
+its maximum lifetime (24 h, or 7 days for --scratch workers).
+EOF
+      ;;
+    ssh)
+      cat <<EOF
+Usage: $me ssh [USER@]NAME [SSH_ARGS...]
+
+SSH to a worker over NetBird with its pinned host key. Everything after the
+name goes to ssh, so options and a command both work.
+
+Default user: agent on ad-hoc workers this host created, yourself on all
+others (RWORKER_USER overrides). Workers this host does not know yet are
+looked up on the control host.
+
+Examples:
+  $me ssh adhoc-1234abcd
+  $me ssh pschmitt@adhoc-1234abcd sudo journalctl -b
+  $me ssh adhoc-1234abcd -L 8080:localhost:8080
+  $me ssh adhoc-1234abcd 'cd src && nix develop -c cargo build'
+EOF
+      ;;
+    sync)
+      cat <<EOF
+Usage: $me sync [USER@]NAME SRC [DEST]
+
+rsync the directory SRC to the worker (DEST defaults to SRC's basename in
+the user's home). Mirrors with --delete and skips target/, .direnv/ and
+result.
+EOF
+      ;;
+    builder)
+      cat <<EOF
+Usage: $me builder NAME
+
+Print a Nix builders line for the worker, e.g.:
+  nix build --max-jobs 0 --builders "\$($me builder NAME)" .#pkg
+EOF
+      ;;
+    *)
+      usage
+      ;;
+  esac
 }
 
 remote() {
@@ -37,13 +174,44 @@ state_file() {
   printf '%s/%s.json\n' "$STATE_DIR" "$1"
 }
 
+# Fetch a worker this host did not create (another host's, or nixbot's pool)
+# from the control host, pin its host key and remember it.
+adopt() {
+  local name="$1" info me user
+  info=$(remote ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
+    || return 1
+  if [[ -z "$info" ]]
+  then
+    printf 'No worker named %s\n' "$name" >&2
+    return 1
+  fi
+  if [[ "$(jq -r '.ip // empty' <<< "$info")" == "" \
+    || "$(jq -r '.host_key // empty' <<< "$info")" == "" ]]
+  then
+    printf '%s has no IP or host key yet (still booting?)\n' "$name" >&2
+    return 1
+  fi
+  # agent's keys are the creator's; everyone else logs in as themselves.
+  me="${USER}@$(hostname)"
+  user="$USER"
+  if [[ "$(jq -r .kind <<< "$info")" == adhoc \
+    && "$(jq -r .owner <<< "$info")" == "$me" ]]
+  then
+    user=agent
+  fi
+  mkdir -p "$STATE_DIR" || return 1
+  jq -c --arg u "$user" '{name, ip, host_key, user: $u, kind}' <<< "$info" \
+    > "$(state_file "$name")" || return 1
+  printf '%s %s\n' "$(jq -r .ip <<< "$info")" "$(jq -r .host_key <<< "$info")" \
+    >> "$KNOWN_HOSTS"
+}
+
 worker_field() {
   local name="$1" field="$2" file
   file=$(state_file "$name")
   if [[ ! -f "$file" ]]
   then
-    printf 'Unknown worker %s (not created from this host?)\n' "$name" >&2
-    return 1
+    adopt "$name" || return 1
   fi
   jq -er --arg f "$field" '.[$f]' "$file"
 }
@@ -77,13 +245,15 @@ cmd_up() {
     --owner "${USER}@$(hostname)" "$@") || return 1
   name=$(jq -er .name <<< "$info") || return 1
   ip=$(jq -er .ip <<< "$info") || return 1
-  printf '%s\n' "$info" > "$(state_file "$name")"
+  jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
+    || return 1
   printf '%s %s\n' "$ip" "$(jq -er .host_key <<< "$info")" >> "$KNOWN_HOSTS"
   printf '%s\n' "$info"
 }
 
-# kubectl-style table from `ls` JSON, colored like kubecolor on a terminal.
-render_table() {
+# kubectl-style table from `ls` JSON (aligned, uncolored); empty when there
+# are no workers.
+table_plain() {
   local rows
   rows=$(jq -r --argjson now "$(date +%s)" '
     def dur(s):
@@ -94,46 +264,180 @@ render_table() {
     def created: .created_at // "" | sub("\\.[0-9]+"; "") | sub("(?<z>Z?)$"; "Z")
       | if . == "Z" then null else (try fromdateiso8601 catch null) end;
     ["NAME", "KIND", "STATUS", "FLAVOR", "IP", "OWNER", "EXPIRES", "AGE"],
-    (.[] | [
+    (sort_by(.kind, .name)[] | [
       .name, .kind, .status, (.flavor // "-"), (.ip // "<none>"),
       (if (.owner // "") == "" then "-" else .owner end),
       (if (.expires_at // 0) > 0 then dur(.expires_at - $now) else "-" end),
       (created as $c | if $c then dur($now - $c) else "-" end)
     ]) | @tsv') || return 1
-
   if [[ $(wc -l <<< "$rows") -le 1 ]]
   then
-    printf 'No workers found.\n'
     return 0
   fi
+  column -t -s $'\t' <<< "$rows"
+}
 
-  rows=$(column -t -s $'\t' <<< "$rows") || return 1
-  if [[ -t 1 && -z "${NO_COLOR:-}" ]]
+# kubecolor-like colors for a table_plain table (header on line 1).
+colorize() {
+  local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
+  local cyan=$'\e[36m' reset=$'\e[0m'
+  sed -E \
+    -e "1s/.*/${bold}&${reset}/" \
+    -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
+    -e "2,\$s/ (BUILD|REBUILD|RESIZE) / ${yellow}\1${reset} /" \
+    -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
+    -e "2,\$s/ (expired) / ${red}\1${reset} /" \
+    -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
+    -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/"
+}
+
+render_table() {
+  local rows
+  rows=$(table_plain) || return 1
+  if [[ -z "$rows" ]]
   then
-    local bold=$'\e[1m' green=$'\e[32m' yellow=$'\e[33m' red=$'\e[31m'
-    local cyan=$'\e[36m' reset=$'\e[0m'
-    sed -E \
-      -e "1s/.*/${bold}&${reset}/" \
-      -e "2,\$s/ (ACTIVE) / ${green}\1${reset} /" \
-      -e "2,\$s/ (BUILD|REBUILD|RESIZE) / ${yellow}\1${reset} /" \
-      -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
-      -e "2,\$s/ (expired) / ${red}\1${reset} /" \
-      -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
-      -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/" \
-      <<< "$rows"
+    printf 'No workers found.\n'
+  elif [[ -t 1 && -z "${NO_COLOR:-}" ]]
+  then
+    colorize <<< "$rows"
   else
     printf '%s\n' "$rows"
   fi
 }
 
+# What counts as a change in --watch (not the ticking EXPIRES/AGE).
+signatures() {
+  jq -r '.[] | "\(.name)\t\(.kind)|\(.status)|\(.ip)|\(.owner)|\(.expires_at)|\(.flavor)"'
+}
+
+# `ls --watch`: redraw in place, like `kw` (kubectl-watch) and unlike
+# `kubectl get --watch`, and mark what changed since the previous refresh:
+# + new, ~ changed, - gone (shown once more).
+watch_ls() {
+  local interval="$1" color=""
+  if [[ -t 1 && -z "${NO_COLOR:-}" ]]
+  then
+    color=1
+  fi
+  local green="" yellow="" red="" dim="" reset=""
+  if [[ -n "$color" ]]
+  then
+    green=$'\e[32m'
+    yellow=$'\e[33m'
+    red=$'\e[31m'
+    dim=$'\e[2m'
+    reset=$'\e[0m'
+  fi
+
+  tput smcup 2>/dev/null || true
+  tput civis 2>/dev/null || true
+  trap 'tput cnorm 2>/dev/null; tput rmcup 2>/dev/null' EXIT
+  trap 'exit 0' INT TERM
+
+  declare -A prev_sig=() prev_row=()
+  local first=1 json="" error="" key
+  while true
+  do
+    if out=$(remote ls 2>&1)
+    then
+      json="$out"
+      error=""
+    else
+      error="${out##*$'\n'}"
+    fi
+
+    local plain frame="" i=0 name marker line
+    local -a plain_lines=() shown=()
+    declare -A cur_sig=() cur_row=()
+    while IFS=$'\t' read -r name sig
+    do
+      cur_sig[$name]="$sig"
+    done < <(signatures <<< "${json:-[]}")
+    plain=$(table_plain <<< "${json:-[]}")
+    if [[ -n "$plain" ]]
+    then
+      mapfile -t plain_lines <<< "$plain"
+      if [[ -n "$color" ]]
+      then
+        mapfile -t shown < <(colorize <<< "$plain")
+      else
+        shown=("${plain_lines[@]}")
+      fi
+    fi
+
+    frame+="$(printf 'Every %ss: rworker ls    %s    %d workers    (q quits, any key refreshes)' \
+      "$interval" "$(date +%T)" "${#cur_sig[@]}")"$'\n'
+    if [[ -n "$error" ]]
+    then
+      frame+="${red}update failed, showing the last state: ${error}${reset}"$'\n'
+    fi
+    frame+=$'\n'
+    for i in "${!plain_lines[@]}"
+    do
+      line="${plain_lines[$i]}"
+      name="${line%% *}"
+      marker="  "
+      if (( i > 0 ))
+      then
+        cur_row[$name]="$line"
+        if [[ -z "$first" && -z "${prev_sig[$name]+x}" ]]
+        then
+          marker="${green}+${reset} "
+        elif [[ -z "$first" && "${prev_sig[$name]}" != "${cur_sig[$name]}" ]]
+        then
+          marker="${yellow}~${reset} "
+        fi
+      fi
+      frame+="${marker}${shown[$i]}"$'\n'
+    done
+    for name in "${!prev_row[@]}"
+    do
+      if [[ -z "${cur_sig[$name]+x}" ]]
+      then
+        frame+="${red}-${reset} ${dim}${prev_row[$name]}${reset}"$'\n'
+      fi
+    done
+    if (( ${#plain_lines[@]} == 0 ))
+    then
+      frame+="No workers found."$'\n'
+    fi
+
+    # Home, draw, clear the rest: no flicker.
+    printf '\e[H%s\e[J' "$frame"
+
+    prev_sig=()
+    prev_row=()
+    for name in "${!cur_sig[@]}"
+    do
+      prev_sig[$name]="${cur_sig[$name]}"
+    done
+    for name in "${!cur_row[@]}"
+    do
+      prev_row[$name]="${cur_row[$name]}"
+    done
+    unset cur_sig cur_row
+    first=""
+
+    key=""
+    if [[ -t 0 ]]
+    then
+      read -r -s -n 1 -t "$interval" key || true
+    else
+      # No keyboard (e.g. piped or in a script): just wait.
+      sleep "$interval"
+    fi
+    if [[ "$key" == q || "$key" == Q ]]
+    then
+      return 0
+    fi
+  done
+}
+
 cmd_ls() {
-  local json="" args=()
+  local json="" watch="" interval=5
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
-      -a|--all)
-        args+=(--all)
-        ;;
       -o)
         shift
         if [[ "${1:-}" != json ]]
@@ -146,6 +450,18 @@ cmd_ls() {
       --json|-ojson)
         json=1
         ;;
+      -w|--watch)
+        watch=1
+        ;;
+      -n|--interval)
+        shift
+        if [[ ! "${1:-}" =~ ^[0-9]+$ ]] || (( ${1:-0} < 1 ))
+        then
+          printf 'Interval must be a whole number of seconds\n' >&2
+          return 2
+        fi
+        interval="$1"
+        ;;
       *)
         printf 'Unknown option: %s\n' "$1" >&2
         return 2
@@ -154,8 +470,13 @@ cmd_ls() {
     shift
   done
 
+  if [[ -n "$watch" ]]
+  then
+    watch_ls "$interval"
+    return
+  fi
   local out
-  out=$(remote ls "${args[@]}") || return 1
+  out=$(remote ls) || return 1
   if [[ -n "$json" ]]
   then
     printf '%s\n' "$out"
@@ -174,32 +495,61 @@ cmd_down() {
   forget "$1"
 }
 
+# "[user@]name" -> sets TARGET_NAME and TARGET_USER (empty: per worker).
+split_target() {
+  TARGET_USER=""
+  TARGET_NAME="$1"
+  if [[ "$1" == *@* ]]
+  then
+    TARGET_USER="${1%%@*}"
+    TARGET_NAME="${1#*@}"
+  fi
+}
+
+target_user() {
+  if [[ -n "$TARGET_USER" ]]
+  then
+    printf '%s\n' "$TARGET_USER"
+  elif [[ -n "${RWORKER_USER:-}" ]]
+  then
+    printf '%s\n' "$RWORKER_USER"
+  else
+    worker_field "$TARGET_NAME" user
+  fi
+}
+
 cmd_ssh() {
-  local name="${1:-}" ip opts
-  if [[ -z "$name" ]]
+  local name ip user opts
+  if [[ -z "${1:-}" ]]
   then
     usage >&2
     return 2
   fi
+  split_target "$1"
   shift
+  name="$TARGET_NAME"
   ip=$(worker_field "$name" ip) || return 1
+  user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts)
   # shellcheck disable=SC2029 # the command is the caller's, run as given
-  ssh "${opts[@]}" "agent@${ip}" "$@"
+  ssh "${opts[@]}" "${user}@${ip}" "$@"
 }
 
 cmd_sync() {
-  local name="${1:-}" src="${2:-}" dest="${3:-}" ip opts
-  if [[ -z "$name" || -z "$src" ]]
+  local src="${2:-}" dest="${3:-}" name ip user opts
+  if [[ -z "${1:-}" || -z "$src" ]]
   then
     usage >&2
     return 2
   fi
+  split_target "$1"
+  name="$TARGET_NAME"
   ip=$(worker_field "$name" ip) || return 1
+  user=$(target_user) || return 1
   mapfile -t opts < <(ssh_opts)
   dest="${dest:-$(basename "$(realpath "$src")")}"
   rsync -a --delete --exclude target/ --exclude .direnv/ --exclude result \
-    -e "ssh ${opts[*]}" "${src%/}/" "agent@${ip}:${dest}/"
+    -e "ssh ${opts[*]}" "${src%/}/" "${user}@${ip}:${dest}/"
 }
 
 cmd_builder() {
@@ -216,10 +566,19 @@ cmd_builder() {
 }
 
 main() {
-  local action="${1:-}"
+  local action="${1:-}" arg
   case "$action" in
-    -h|--help)
-      usage
+    __spec)
+      spec
+      return 0
+      ;;
+    -h|--help|help)
+      if [[ -n "${2:-}" ]]
+      then
+        action_help "$2"
+      else
+        usage
+      fi
       return 0
       ;;
     "")
@@ -228,6 +587,20 @@ main() {
       ;;
   esac
   shift
+  # `ACTION --help`, except for ssh, whose arguments belong to ssh once a
+  # worker name is given.
+  for arg in "$@"
+  do
+    if [[ "$action" == ssh && "$arg" != -* ]]
+    then
+      break
+    fi
+    if [[ "$arg" == -h || "$arg" == --help ]]
+    then
+      action_help "$action"
+      return 0
+    fi
+  done
   case "$action" in
     up)
       cmd_up "$@"

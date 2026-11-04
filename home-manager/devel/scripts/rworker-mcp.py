@@ -70,12 +70,9 @@ def up(
 
 
 @mcp.tool()
-def ls(all: bool = False) -> list:
-    """List ad-hoc workers (all=True adds nixbot's pool workers)."""
-    argv = ["ls", "-o", "json"]
-    if all:
-        argv.append("--all")
-    return json.loads(run(*argv, timeout=120))
+def ls() -> list:
+    """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool)."""
+    return json.loads(run("ls", "-o", "json", timeout=120))
 
 
 @mcp.tool()

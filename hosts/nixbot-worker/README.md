@@ -65,19 +65,29 @@ only in the kernel's device-mapper table. Check it on a worker with
   setup key (`{"netbird_setup_key": "..."}` in the user-data) from the
   OpenStack metadata service and registers with NetBird.
 - SSH listens on the NetBird interface only. Three accounts can log in, all
-  with keys only (there are no passwords), and nobody on the console:
-  - the main user (`mainUser`, with passwordless sudo) with
-    `mainUser.authorizedKeys`, for debugging;
-  - `nix-remote-builder` (nixbot's pool, the shared builder key);
-  - `agent` (ad-hoc workers): its keys come from `agent_authorized_keys`
-    in the user-data and are written to
-    `/run/nixbot-worker/authorized_keys/agent`. Without user-data keys
-    nobody can log in as `agent`. Its home is on the encrypted partition;
+  with keys only (there are no passwords), and nobody on the console. The
+  main user's keys (`mainUser.authorizedKeys`) work for all three:
+  - the main user (with passwordless sudo), for debugging;
+  - `nix-remote-builder` (nixbot's pool, plus the shared builder key);
+  - `agent` (ad-hoc workers): additionally the creator's keys from
+    `agent_authorized_keys` in the user-data, written to
+    `/run/ssh-authorized-keys/agent`. Its home is on the encrypted partition;
     it is a trusted Nix user so it can serve as a remote builder.
 - Users of ad-hoc workers: see the `rworker` skill.
 - The SSH host key is printed to the serial console as
   `NIXBOT-WORKER-HOSTKEY <type> <key>`, so the autoscaler can read it through
   the OpenStack API instead of trusting it on first use.
+
+## Metadata on the worker
+
+`/run/rworker/metadata.json` (world-readable) holds what the worker knew at
+boot: its name, UUID and availability zone, the boot time, its NixOS system
+path, and the server metadata from its creation (`nixbot-worker` kind,
+`owner`, `created_at`, `expires_at`, `max_lifetime`; ad-hoc workers only
+for the latter ones). It is written once (`"source": "initial"`); a later
+`rworker extend` only changes OpenStack. For current values ask the
+metadata service:
+`curl -s http://169.254.169.254/openstack/latest/meta_data.json | jq .meta`.
 
 ## Test
 

@@ -1,35 +1,39 @@
 #compdef rworker
-# zsh completion for rworker (skills/rworker). Worker names come from the
-# local state directory, so completing does not touch the network.
+# zsh completion for rworker (skills/rworker). Actions, flags and values come
+# from `rworker __spec`, worker names from the local state directory, so the
+# completion follows the client and never touches the network.
+
+_rworker_spec() {
+  (( ${+_rworker_spec_cache} )) || _rworker_spec_cache=("${(@f)$(rworker __spec 2>/dev/null)}")
+}
 
 _rworker_workers() {
   local state="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
   local -a workers
   workers=(${state}/*.json(N:t:r))
+  if [[ "$PREFIX" == *@* ]]
+  then
+    compset -P '*@'
+  fi
   _describe -t workers 'worker' workers
 }
 
-_rworker_flavors() {
-  local -a flavors
-  flavors=(
-    's1.large:8 vCPU, 16 GiB'
-    's1.xlarge:16 vCPU, 32 GiB (default)'
-    's1.2xlarge:32 vCPU, 64 GiB'
-  )
-  _describe -t flavors 'flavor' flavors
-}
-
 _rworker() {
-  local -a actions
-  actions=(
-    'up:create a worker and wait until it is ready'
-    'ls:list ad-hoc workers (--all adds the pool)'
-    'down:delete a worker'
-    'extend:move the expiry'
-    'ssh:ssh to a worker as agent'
-    'sync:rsync a directory to a worker'
-    'builder:print a Nix builders line'
-  )
+  _rworker_spec
+  local line action
+  local -a actions flags takes_worker
+  for line in "${_rworker_spec_cache[@]}"
+  do
+    case "${line%% *}" in
+      action)
+        line="${line#action }"
+        actions+=("${line%% *}:${line#* }")
+        ;;
+      worker)
+        takes_worker=(${=line#worker })
+        ;;
+    esac
+  done
 
   if (( CURRENT == 2 ))
   then
@@ -37,43 +41,47 @@ _rworker() {
     return
   fi
 
-  case "${words[2]}" in
-    up)
-      _arguments \
-        '--ttl[lifetime, e.g. 90m or 2h]:duration:(30m 1h 2h 4h 8h 24h)' \
-        '--flavor[OpenStack flavor]:flavor:_rworker_flavors' \
-        '--disk[volume size in GiB]:size:(100 150 250 500)' \
-        '--scratch[scratch host, may live up to 7 days]'
-      ;;
-    ls)
-      _arguments '(-a --all)'{-a,--all}"[include nixbot's pool workers]"
-      ;;
-    down|builder)
-      (( CURRENT == 3 )) && _rworker_workers
-      ;;
-    extend)
-      if (( CURRENT == 3 ))
-      then
-        _rworker_workers
-      else
-        _arguments '--ttl[new lifetime from now]:duration:(30m 1h 2h 4h 8h 24h)'
-      fi
-      ;;
-    ssh)
-      if (( CURRENT == 3 ))
-      then
-        _rworker_workers
-      else
-        _normal
-      fi
-      ;;
-    sync)
-      case $CURRENT in
-        3) _rworker_workers ;;
-        4) _files -/ ;;
-      esac
-      ;;
-  esac
+  action="${words[2]}"
+  if [[ "$action" == help ]]
+  then
+    (( CURRENT == 3 )) && _describe -t actions 'action' actions
+    return
+  fi
+
+  if (( ${takes_worker[(Ie)$action]} )) && (( CURRENT == 3 ))
+  then
+    _rworker_workers
+    return
+  fi
+  if [[ "$action" == ssh ]] && (( CURRENT > 3 ))
+  then
+    _normal
+    return
+  fi
+  if [[ "$action" == sync ]] && (( CURRENT == 4 ))
+  then
+    _files -/
+    return
+  fi
+
+  local flag spec_flag values desc
+  for line in "${_rworker_spec_cache[@]}"
+  do
+    [[ "$line" == "flag $action "* ]] || continue
+    line="${line#flag $action }"
+    spec_flag="${line%% *}"
+    desc="${line#* }"
+    if [[ "$spec_flag" == *=* ]]
+    then
+      flag="${spec_flag%%=*}"
+      values=$(printf '%s\n' "${_rworker_spec_cache[@]}" | sed -n "s/^values ${spec_flag#*=} //p")
+      flags+=("${flag}[${desc}]:${spec_flag#*=}:(${values})")
+    else
+      flags+=("${spec_flag}[${desc}]")
+    fi
+  done
+  flags+=('(-h --help)'{-h,--help}'[show help]')
+  _arguments "${flags[@]}"
 }
 
 _rworker "$@"

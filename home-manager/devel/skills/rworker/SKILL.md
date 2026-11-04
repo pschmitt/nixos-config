@@ -32,8 +32,9 @@ rworker down "$w"
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints JSON
   (`name`, `ip`, `host_key`, `expires_at`). Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
-- `ls` lists all ad-hoc workers with owner and expiry (`ls --all` adds
-  nixbot's pool workers, `kind: pool`); `extend NAME --ttl 2h`
+- `ls` lists all workers (ad-hoc and nixbot's pool, `KIND` tells them
+  apart) with owner and expiry; `ls --watch` redraws it in place and marks
+  new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
   moves the expiry; `down NAME` deletes the worker and its NetBird peer.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
   `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
@@ -57,6 +58,13 @@ MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,
 - Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b
   '...'`) so a dropped SSH session does not kill them; check back with
   `ssh "$w" tmux capture-pane -pt b`.
+
+## Changing rworker
+
+The client's `spec()` (`rworker __spec`) drives the zsh and bash
+completions. When adding an action or flag, update `spec()`, the dispatch in
+`main()` and `action_help()` together; the flake check `rworker-completions`
+(`scripts/check-spec.sh`) fails otherwise.
 
 ## Rules
 

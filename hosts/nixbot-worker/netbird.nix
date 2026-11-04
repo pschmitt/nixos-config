@@ -52,15 +52,29 @@ in
       fetch() {
         curl -fsS --retry 30 --retry-delay 2 --retry-connrefused "$metadata/$1"
       }
-      name=$(fetch meta_data.json | jq -er '.name')
+      fetch meta_data.json > "$RUNTIME_DIRECTORY/meta_data.json"
+      name=$(jq -er '.name' "$RUNTIME_DIRECTORY/meta_data.json")
+
+      # The worker's metadata as of this boot, for anyone on the worker
+      # (no setup key ID; the key itself is only in the user-data).
+      install -d -m 0755 /run/rworker
+      jq --arg system "$(readlink -f /run/current-system)" \
+        --arg booted "$(date -u +%FT%TZ)" '{
+          source: "initial",
+          name, uuid, availability_zone,
+          booted: $booted,
+          system: $system,
+          meta: ((.meta // {}) | del(.setup_key_id))
+        }' "$RUNTIME_DIRECTORY/meta_data.json" > /run/rworker/metadata.json
+      chmod 0644 /run/rworker/metadata.json
       user_data=$RUNTIME_DIRECTORY/user-data
       fetch user_data > "$user_data"
 
       # Optional SSH keys for the agent user (ad-hoc workers).
-      install -d -m 0755 /run/nixbot-worker/authorized_keys
+      install -d -m 0755 /run/ssh-authorized-keys
       jq -r '.agent_authorized_keys // [] | .[]' "$user_data" \
-        > /run/nixbot-worker/authorized_keys/agent
-      chmod 0644 /run/nixbot-worker/authorized_keys/agent
+        > /run/ssh-authorized-keys/agent
+      chmod 0644 /run/ssh-authorized-keys/agent
 
       key=$RUNTIME_DIRECTORY/setup-key
       jq -er '.netbird_setup_key' "$user_data" > "$key"
