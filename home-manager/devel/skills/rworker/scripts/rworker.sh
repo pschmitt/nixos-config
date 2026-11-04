@@ -1588,9 +1588,15 @@ cmd_builder() {
   fi
   ip=$(worker_field "$name" ip) || return 1
   key=$(worker_field "$name" host_key | base64 -w0) || return 1
+  # The Nix daemon opens builder connections as root, without the user's SSH
+  # agent or config, so the line names the private half of the key that `up`
+  # handed to the worker ("-" would make root try its own default key).
+  local identity="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}"
+  identity="${identity%.pub}"
+  [[ -r "$identity" ]] || identity="-"
   local line
-  line=$(printf 'ssh-ng://agent@%s x86_64-linux - 16 1 nixos-test,benchmark,big-parallel,kvm - %s' \
-    "$ip" "$key")
+  line=$(printf 'ssh-ng://agent@%s x86_64-linux %s 16 1 nixos-test,benchmark,big-parallel,kvm - %s' \
+    "$ip" "$identity" "$key")
   if [[ -n "$JSON" ]]
   then
     jq -nc --arg n "$name" --arg b "$line" '{name: $n, builder: $b}'
