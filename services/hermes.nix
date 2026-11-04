@@ -149,6 +149,8 @@ let
   # keys: others (bitwarden, github) may have been added by hand.
   retiredMcpServers = [
     "stricknani-importer"
+    # The single GitHub server, split into github-gh-brkn-lol and github-pschmitt.
+    "github"
     "playwright-browserless-fnuc"
     "playwright-browserless-rofl-13"
     "playwright-browserless-rofl-14"
