@@ -9,6 +9,8 @@ STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/rworker"
 KNOWN_HOSTS="${STATE_DIR}/known_hosts"
 # Set by -j/--json: JSON instead of the human-readable output.
 JSON=""
+# Set by ls -o wide: the creator columns.
+WIDE=""
 
 usage() {
   cat <<EOF
@@ -21,10 +23,12 @@ but ssh takes it (scripts and the MCP server use it).
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--ssh]
                        create a worker and wait until it is ready
-  ls [-o json] [--watch [-n SECONDS]]
+  ls [-o json|wide] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
   exec [UP_OPTIONS] [--sync SRC[:DEST]] [--fetch REMOTE[:LOCAL]] [--keep] -- CMD
                        one-shot: create a worker, run CMD, delete the worker
+  inspect NAME [--boot]
+                       show everything known about a worker
   down NAME            delete a worker
   prune [NAME...] [--all] [-y] [-n]
                        delete several ad-hoc workers (default: your own)
@@ -69,12 +73,17 @@ action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
 action builder print a Nix builders line for a worker
 action cp copy files from or to a worker (NAME:PATH)
+action inspect show everything known about a worker
 action help show the help of an action
 flag up --ttl=duration lifetime, e.g. 90m or 2h
 flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag up --topic=topic what the worker is for (default: the tmux window name)
+flag exec --topic=topic what the worker is for (default: the tmux window name)
+flag ls -o=format output format (wide adds PID, flavor, IP and cwd)
+flag inspect --boot also show the worker's own boot metadata (over SSH)
 flag exec --ttl=duration lifetime of the worker
 flag exec --flavor=flavor OpenStack flavor
 flag exec --disk=size volume size in GiB
@@ -84,7 +93,6 @@ flag exec --fetch=path copy a path back afterwards (REMOTE[:LOCAL])
 flag exec --keep keep the worker afterwards
 flag exec --keep-on-failure keep the worker if the command fails
 flag ssh --create create a worker first (same as up --ssh; up's options follow)
-flag ls -o=format output format
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
@@ -97,9 +105,10 @@ values duration 30m 1h 2h 4h 8h 24h
 values flavor s1.large s1.xlarge s1.2xlarge
 values size 100 150 250 500
 values path
-values format json
+values format json wide
+values topic
 values interval 2 5 10 30
-worker down extend ssh sync builder prune
+worker down extend ssh sync builder prune inspect
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -125,6 +134,13 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
   --ssh            log in (as agent) as soon as it is ready
+  --topic TEXT     what it is for (shown by ls -o wide; default: the name of
+                   the tmux window rworker runs in)
+
+The worker also records its creator: owner (\$USER@host), the agent
+process (claude, codex, agy, opencode, ... and its PID), the agent session
+id and the working directory. ls -o wide shows them; on the worker they are
+in /run/rworker/metadata.json.
 
 Example:
   w=\$($me up --ttl 3h --flavor s1.2xlarge | jq -r .name)
@@ -132,12 +148,14 @@ EOF
       ;;
     ls)
       cat <<EOF
-Usage: $me ls [-o json] [-w|--watch [-n SECONDS]]
+Usage: $me ls [-o json|wide] [-w|--watch [-n SECONDS]]
 
 List all workers: ad-hoc ones (KIND adhoc) and nixbot's pool (KIND pool),
-with status, flavor, NetBird IP, owner, time to expiry and age.
+with status, owner, creating agent, topic, time to expiry and age.
+EXPIRES "grace 42m": expired but in use, deleted after 1h without use.
 
   -o json        print the raw JSON instead of the table
+  -o wide        add the agent's PID, flavor, NetBird IP and cwd
   -w, --watch    redraw the table in place every -n seconds (default 5),
                  marking rows: + new, ~ changed (status, IP, owner, expiry,
                  flavor), - gone. q quits, any other key refreshes now.
@@ -154,7 +172,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --scratch   as for up
+  --ttl, --flavor, --disk, --scratch, --topic   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -220,6 +238,18 @@ Examples:
   $me ssh pschmitt@adhoc-1234abcd sudo journalctl -b
   $me ssh adhoc-1234abcd -L 8080:localhost:8080
   $me ssh adhoc-1234abcd 'cd src && nix develop -c cargo build'
+EOF
+      ;;
+    inspect)
+      cat <<EOF
+Usage: $me inspect NAME [--boot]
+
+Show everything the control host knows about a worker: kind, status,
+owner, who created it (agent, PID, session, topic, cwd), flavor, IP, host
+key, created/expiry/grace/maximum lifetime and all server metadata.
+
+  --boot   also show what the worker recorded at boot
+           (/run/rworker/metadata.json, read over SSH)
 EOF
       ;;
     sync)
@@ -372,20 +402,77 @@ forget() {
   rm -f "$(state_file "$name")"
 }
 
+# --meta arguments describing who creates a worker: the agent process
+# above us (claude, codex, agy, opencode, ...), its PID and session, the
+# topic (--topic, else this tmux window's name) and the working directory.
+creator_meta() {
+  local topic="$1" pid="$PPID" comm agent="" agent_pid="" session
+  while [[ -n "$pid" && "$pid" -gt 1 ]]
+  do
+    comm=$(cat "/proc/${pid}/comm" 2>/dev/null) || break
+    case "$comm" in
+      claude|codex|agy|antigravity|opencode|gemini|copilot|aider|cursor-agent|crush|goose)
+        agent="$comm"
+        agent_pid="$pid"
+        break
+        ;;
+    esac
+    pid=$(awk '/^PPid:/ { print $2 }' "/proc/${pid}/status" 2>/dev/null)
+  done
+  session="${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-${CODEX_SESSION_ID:-}}}"
+  if [[ -z "$agent" ]]
+  then
+    if [[ -n "${CLAUDE_CODE_SESSION_ID:-}" ]]
+    then
+      agent=claude
+    elif [[ -n "${CODEX_THREAD_ID:-}${CODEX_SESSION_ID:-}" ]]
+    then
+      agent=codex
+    else
+      agent=shell
+    fi
+  fi
+  if [[ -z "$topic" && -n "${TMUX_PANE:-}" ]]
+  then
+    topic=$(tmux display-message -p -t "$TMUX_PANE" '#W' 2>/dev/null || true)
+  fi
+  printf '%s\n' --meta "agent=${agent}" --meta "cwd=${PWD}"
+  if [[ -n "$agent_pid" ]]
+  then
+    printf '%s\n' --meta "agent_pid=${agent_pid}"
+  fi
+  if [[ -n "$session" ]]
+  then
+    printf '%s\n' --meta "agent_session=${session}"
+  fi
+  if [[ -n "$topic" ]]
+  then
+    printf '%s\n' --meta "topic=${topic}"
+  fi
+}
+
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" arg
-  local -a args=()
-  for arg in "$@"
+  local login="" topic=""
+  local -a args=() meta=()
+  while [[ -n "${1:-}" ]]
   do
-    if [[ "$arg" == --ssh ]]
-    then
-      login=1
-    else
-      args+=("$arg")
-    fi
+    case "$1" in
+      --ssh)
+        login=1
+        ;;
+      --topic)
+        topic="${2:-}"
+        shift
+        ;;
+      *)
+        args+=("$1")
+        ;;
+    esac
+    shift
   done
   set -- "${args[@]}"
+  mapfile -t meta < <(creator_meta "$topic")
   if [[ ! -r "$key_file" ]]
   then
     printf 'Public key %s not readable (set RWORKER_KEY)\n' "$key_file" >&2
@@ -395,7 +482,7 @@ cmd_up() {
   local started
   started=$(date +%s)
   info=$(remote up --ssh-key "$(cat "$key_file")" \
-    --owner "${USER}@$(hostname)" "$@") || return 1
+    --owner "${USER}@$(hostname)" "${meta[@]}" "$@") || return 1
   name=$(jq -er .name <<< "$info") || return 1
   ip=$(jq -er .ip <<< "$info") || return 1
   jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
@@ -445,7 +532,7 @@ connect() {
 # are no workers.
 table_plain() {
   local rows
-  rows=$(jq -r --argjson now "$(date +%s)" '
+  rows=$(jq -r --argjson now "$(date +%s)" --argjson wide "${WIDE:-false}" '
     def dur(s):
       if s < 0 then "expired"
       elif s < 3600 then "\(s / 60 | floor)m"
@@ -453,13 +540,22 @@ table_plain() {
       else "\(s / 86400 | floor)d\(s % 86400 / 3600 | floor)h" end;
     def created: .created_at // "" | sub("\\.[0-9]+"; "") | sub("(?<z>Z?)$"; "Z")
       | if . == "Z" then null else (try fromdateiso8601 catch null) end;
-    ["NAME", "KIND", "STATUS", "FLAVOR", "IP", "OWNER", "EXPIRES", "AGE"],
+    def opt(v): if (v // "") == "" then "-" else v end;
+    def expiry:
+      if (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
+      elif (.expires_at // 0) > 0 then dur(.expires_at - $now)
+      else "-" end;
+    (["NAME", "KIND", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
+      + (if $wide then ["FLAVOR", "IP", "CWD"] else [] end)),
     (sort_by(.kind, .name)[] | [
-      .name, .kind, .status, (.flavor // "-"), (.ip // "<none>"),
-      (if (.owner // "") == "" then "-" else .owner end),
-      (if (.expires_at // 0) > 0 then dur(.expires_at - $now) else "-" end),
+      .name, .kind, .status, opt(.owner),
+      (if $wide and .agent_pid then "\(.agent) (\(.agent_pid))"
+       else opt(.agent) end),
+      opt(.topic), expiry,
       (created as $c | if $c then dur($now - $c) else "-" end)
-    ]) | @tsv') || return 1
+    ] + (if $wide then [
+      (.flavor // "-"), (.ip // "<none>"), opt(.cwd)
+    ] else [] end)) | @tsv') || return 1
   if [[ $(wc -l <<< "$rows") -le 1 ]]
   then
     return 0
@@ -477,6 +573,7 @@ colorize() {
     -e "2,\$s/ (BUILD|REBUILD|RESIZE|DELETING) / ${yellow}\1${reset} /" \
     -e "2,\$s/ (ERROR|SHUTOFF|DELETED) / ${red}\1${reset} /" \
     -e "2,\$s/ (expired) / ${red}\1${reset} /" \
+    -e "2,\$s/ (grace [0-9]+[mhd]) / ${yellow}\1${reset} /" \
     -e "2,\$s/ ([0-9]+m) ( +[0-9]+[mhd])/ ${yellow}\1${reset}\2/" \
     -e "2,\$s/^([^ ]+)/${cyan}\1${reset}/"
 }
@@ -497,7 +594,7 @@ render_table() {
 
 # What counts as a change in --watch (not the ticking EXPIRES/AGE).
 signatures() {
-  jq -r '.[] | "\(.name)\t\(.kind)|\(.status)|\(.ip)|\(.owner)|\(.expires_at)|\(.flavor)"'
+  jq -r '.[] | "\(.name)\t\(.kind)|\(.status)|\(.ip)|\(.owner)|\(.expires_at)|\(.grace_until)|\(.flavor)|\(.topic)"'
 }
 
 # `ls --watch`: redraw in place, like `kw` (kubectl-watch) and unlike
@@ -630,12 +727,18 @@ cmd_ls() {
     case "$1" in
       -o)
         shift
-        if [[ "${1:-}" != json ]]
-        then
-          printf 'Only -o json is supported\n' >&2
-          return 2
-        fi
-        json=1
+        case "${1:-}" in
+          json)
+            json=1
+            ;;
+          wide)
+            WIDE=1
+            ;;
+          *)
+            printf 'Output format must be json or wide\n' >&2
+            return 2
+            ;;
+        esac
         ;;
       --json|-ojson)
         json=1
@@ -673,6 +776,116 @@ cmd_ls() {
     return 0
   fi
   render_table <<< "$out"
+}
+
+# "2026-11-04 14:13 (in 1h 59m)" for an epoch timestamp, "-" for 0.
+fmt_time() {
+  local at="$1" delta
+  if [[ -z "$at" || "$at" == 0 || "$at" == null ]]
+  then
+    printf -- '-'
+    return 0
+  fi
+  delta=$(( at - $(date +%s) ))
+  if (( delta >= 0 ))
+  then
+    printf '%s (in %dh %dm)' "$(date -d "@$at" '+%F %H:%M')" \
+      $(( delta / 3600 )) $(( delta % 3600 / 60 ))
+  else
+    delta=$(( -delta ))
+    printf '%s (%dh %dm ago)' "$(date -d "@$at" '+%F %H:%M')" \
+      $(( delta / 3600 )) $(( delta % 3600 / 60 ))
+  fi
+}
+
+# One "Label:  value" line of inspect.
+label() {
+  printf '%s %s\n' "$(paint 1 "$(printf '%-14s' "$1:")")" "$2"
+}
+
+cmd_inspect() {
+  local name="" boot="" info ip boot_meta="null"
+  local -a opts=()
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --boot)
+        boot=1
+        ;;
+      -*)
+        printf 'Unknown option: %s\n' "$1" >&2
+        return 2
+        ;;
+      *)
+        name="$1"
+        ;;
+    esac
+    shift
+  done
+  if [[ -z "$name" ]]
+  then
+    printf 'Missing worker name\n' >&2
+    return 2
+  fi
+  info=$(remote ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
+    || return 1
+  if [[ -z "$info" ]]
+  then
+    printf 'No worker named %s\n' "$name" >&2
+    return 1
+  fi
+  if [[ -n "$boot" ]]
+  then
+    ip=$(worker_field "$name" ip) || return 1
+    mapfile -t opts < <(ssh_opts "$name")
+    boot_meta=$(ssh "${opts[@]}" -o ConnectTimeout=10 \
+      "$(worker_field "$name" user)@${ip}" cat /run/rworker/metadata.json) \
+      || return 1
+  fi
+  info=$(jq -c --argjson b "$boot_meta" \
+    'if $b then . + {boot_metadata: $b} else . end' <<< "$info") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    jq . <<< "$info"
+    return 0
+  fi
+
+  local -a f
+  mapfile -t f < <(jq -r '
+    .name, .kind, .status, (.owner // "-"), (.agent // "-"),
+    (.agent_pid // "-"), (.agent_session // "-"), (.topic // "-"),
+    (.cwd // "-"), (.flavor // "-"), (.ip // "-"), (.connected | tostring),
+    (.created_at // "-"), (.expires_at // 0), (.grace_until // 0),
+    (.last_active // 0), (.max_lifetime_end // 0), (.host_key // "-"),
+    (.availability_zone // "-")' <<< "$info")
+  label Name "$(paint 36 "${f[0]}")"
+  label Kind "${f[1]}"
+  label Status "${f[2]}"
+  label Owner "${f[3]}"
+  printf '%s\n' "$(paint 1 Creator:)"
+  label "  Agent" "${f[4]}$([[ "${f[5]}" != - ]] && printf ' (PID %s)' "${f[5]}")"
+  label "  Session" "${f[6]}"
+  label "  Topic" "${f[7]}"
+  label "  Cwd" "${f[8]}"
+  label Flavor "${f[9]}"
+  label Zone "${f[18]}"
+  label IP "${f[10]} (NetBird connected: ${f[11]})"
+  label "Host key" "${f[17]}"
+  label Created "${f[12]}"
+  label Expires "$(fmt_time "${f[13]}")"
+  if [[ "${f[14]}" != 0 ]]
+  then
+    label Grace "until $(fmt_time "${f[14]}"); last in use $(fmt_time "${f[15]}")"
+  fi
+  label "Max lifetime" "$(fmt_time "${f[16]}")"
+  printf '%s\n' "$(paint 1 Metadata:)"
+  jq -r '.metadata // {} | to_entries[] | select(.key != "host_key")
+    | "  \(.key)=\(.value)"' <<< "$info"
+  if [[ -n "$boot" ]]
+  then
+    printf '%s\n' "$(paint 1 'Boot metadata (/run/rworker/metadata.json):')"
+    jq . <<< "$boot_meta" | sed 's/^/  /'
+  fi
 }
 
 cmd_prune() {
@@ -791,6 +1004,10 @@ cmd_exec() {
         ;;
       --scratch)
         up_args+=("$1")
+        ;;
+      --topic)
+        up_args+=("$1" "${2:-}")
+        shift
         ;;
       --sync|--fetch)
         if [[ -z "${2:-}" ]]
@@ -1182,6 +1399,9 @@ main() {
       ;;
     builder)
       cmd_builder "$@"
+      ;;
+    inspect)
+      cmd_inspect "$@"
       ;;
     cp)
       cmd_cp "$@"

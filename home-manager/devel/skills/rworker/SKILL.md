@@ -9,7 +9,9 @@ Ad-hoc workers are disposable VMs (16 vCPU / 32 GiB / 150 GiB by default)
 booted from the nixbot worker image. Everything except the boot partition
 is encrypted with a key that exists only in the worker's RAM; a reboot or
 `down` destroys the data. A worker expires on its own after its TTL
-(default 2 h, at most 24 h), so a forgotten one does not run forever. At
+(default 2 h, at most 24 h), so a forgotten one does not run forever; one
+still in use at expiry (SSH sessions, builds, load) is kept until it has
+been idle for 1 h, never past its maximum lifetime. At
 most 10 exist at a time, sharing a quota with nixbot's own build pool.
 
 Workers are reached over NetBird from servers and laptops. You log in as
@@ -33,15 +35,21 @@ rworker down "$w"
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts; `--ssh`
   logs you in right away (interactive use); `ssh --create [up options]` is
-  the same. Ask for a bigger flavor only for
+  the same. Pass `--topic "what it is for"` (default: the tmux window
+  name); the agent (claude, codex, agy, opencode, ...), its PID, session
+  and the cwd are recorded on their own. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc
   workers: the named ones, else all of yours; `--all` every ad-hoc worker.
   It asks first; pass `--yes` in scripts. Pool workers are never pruned.
 - `ls` lists all workers (ad-hoc and nixbot's pool, `KIND` tells them
-  apart) with owner and expiry; `ls --watch` redraws it in place and marks
+  apart) with owner, creating agent, topic and expiry (`-o wide` adds the
+  agent's PID, flavor, IP and cwd); `inspect NAME [--boot]` shows
+  everything about one worker; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
   moves the expiry; `down NAME` deletes the worker and its NetBird peer.
+- On the worker, `rworker-metadata [--json]` shows what it is: name,
+  owner, creator, current expiry and lifetime, CPUs, memory, disk.
 - `ssh NAME [CMD]` and `sync NAME SRC [DEST]` use the pinned host key.
   `sync` mirrors with `--delete` and skips `target/`, `.direnv/`, `result`.
 - `cp NAME:REMOTE LOCAL` / `cp LOCAL NAME:REMOTE` copies files or

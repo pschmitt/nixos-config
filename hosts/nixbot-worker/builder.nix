@@ -154,10 +154,22 @@
   documentation.enable = false;
   environment = {
     defaultPackages = [ ];
-    # Small tools every login wants (/run/rworker/metadata.json is JSON).
+    # Small tools every login wants (/run/rworker/metadata.json is JSON),
+    # and rworker-metadata, which shows what this worker is.
     systemPackages = [
       pkgs.curl
       pkgs.jq
+      (pkgs.writeShellApplication {
+        name = "rworker-metadata";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.gawk
+          pkgs.iproute2
+          pkgs.jq
+        ];
+        text = builtins.readFile ./scripts/rworker-metadata.sh;
+      })
     ];
   };
 }

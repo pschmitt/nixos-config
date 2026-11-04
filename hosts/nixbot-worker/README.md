@@ -83,11 +83,15 @@ only in the kernel's device-mapper table. Check it on a worker with
 `/run/rworker/metadata.json` (world-readable) holds what the worker knew at
 boot: its name, UUID and availability zone, the boot time, its NixOS system
 path, and the server metadata from its creation (`nixbot-worker` kind,
-`owner`, `created_at`, `expires_at`, `max_lifetime`; ad-hoc workers only
+`owner`, `created_at`, `expires_at`, `max_lifetime` and the creator:
+`agent`, `agent_pid`, `agent_session`, `topic`, `cwd`; ad-hoc workers only
 for the latter ones). It is written once (`"source": "initial"`); a later
-`rworker extend` only changes OpenStack. For current values ask the
-metadata service:
-`curl -s http://169.254.169.254/openstack/latest/meta_data.json | jq .meta`.
+`rworker extend` only changes OpenStack.
+
+`rworker-metadata` pretty-prints it, with the current server metadata from
+the metadata service (expiry, `last_active` set by the reaper) and the
+machine's CPUs, memory, free disk, load and NetBird IP; `--json` prints
+JSON, `--initial` skips the metadata service.
 
 ## Test
 

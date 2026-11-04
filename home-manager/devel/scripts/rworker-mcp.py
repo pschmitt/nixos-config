@@ -49,12 +49,15 @@ def up(
     flavor: str | None = None,
     disk_gib: int | None = None,
     scratch: bool = False,
+    topic: str | None = None,
 ) -> dict:
     """Create an ad-hoc build worker and wait until it is ready (2-4 min).
 
-    ttl: lifetime such as "90m" or "3h" (default 2h). Busy workers are
-    extended automatically up to their maximum lifetime (24 h, or 7 days with
-    scratch=True). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
+    ttl: lifetime such as "90m" or "3h" (default 2h). A worker still in use
+    when it expires stays until it has been idle for 1 h, up to its maximum
+    lifetime (24 h, or 7 days with scratch=True). topic: a few words on what
+    it is for (shown by ls/inspect; the creating agent, its PID, session and
+    cwd are recorded automatically). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
     s1.2xlarge (32). disk_gib: volume size (default 150).
     Returns name, ip, host_key, user and expires_at. Always call down() when
     the task is done.
@@ -66,6 +69,8 @@ def up(
         argv += ["--disk", str(disk_gib)]
     if scratch:
         argv.append("--scratch")
+    if topic:
+        argv += ["--topic", topic]
     return json.loads(run(*argv, timeout=1200))
 
 
@@ -73,6 +78,17 @@ def up(
 def ls() -> list:
     """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool)."""
     return json.loads(run("ls", "--json", timeout=120))
+
+
+@mcp.tool()
+def inspect(name: str, boot: bool = False) -> dict:
+    """Everything known about one worker: owner, creator (agent, PID,
+    session, topic, cwd), expiry, grace period, max lifetime and server
+    metadata. boot=True adds the worker's own /run/rworker/metadata.json."""
+    argv = ["inspect", name, "--json"]
+    if boot:
+        argv.append("--boot")
+    return json.loads(run(*argv, timeout=120))
 
 
 @mcp.tool()
