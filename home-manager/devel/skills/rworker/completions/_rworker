@@ -108,7 +108,25 @@ _rworker() {
     flags+=("${line%% *}[${line#* }]")
   done
   flags+=('(-h --help)'{-h,--help}'[show help]')
-  _arguments "${flags[@]}"
+  # _arguments must only see what follows the action (and its worker):
+  # left in, they are positional arguments it has no spec for, and it
+  # completes nothing (`rworker extend NAME --tt<TAB>`).
+  local skip=2
+  if (( ${takes_worker[(Ie)$action]} )) && [[ "$action" != prune ]]
+  then
+    skip=3
+  elif [[ "$action" == up && "${words[2]}" == ssh ]]
+  then
+    # ssh --create: skip the --create too.
+    skip=3
+  fi
+  words=("${words[1]}" "${(@)words[skip+1,-1]}")
+  (( CURRENT -= skip - 1 ))
+  if [[ "$action" == prune ]]
+  then
+    flags+=('*:worker:_rworker_workers')
+  fi
+  _arguments -s "${flags[@]}"
 }
 
 _rworker "$@"
