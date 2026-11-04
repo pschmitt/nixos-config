@@ -88,6 +88,19 @@ def down(name: str) -> str:
 
 
 @mcp.tool()
+def prune(names: list[str] | None = None, all: bool = False,
+          dry_run: bool = False) -> str:
+    """Delete several ad-hoc workers: the named ones, or else all of this
+    user's; all=True deletes every ad-hoc worker, whoever owns it. Pool
+    workers are never pruned. dry_run=True only lists them."""
+    argv = ["prune", *(names or [])]
+    if all:
+        argv.append("--all")
+    argv.append("--dry-run" if dry_run else "--yes")
+    return run(*argv, timeout=900).strip()
+
+
+@mcp.tool()
 def exec(name: str, command: str, workdir: str | None = None,
          timeout_seconds: int = 600) -> dict:
     """Run a shell command on the worker as user agent and wait for it.

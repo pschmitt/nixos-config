@@ -32,6 +32,9 @@ rworker down "$w"
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints JSON
   (`name`, `ip`, `host_key`, `expires_at`). Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
+- `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc
+  workers: the named ones, else all of yours; `--all` every ad-hoc worker.
+  It asks first; pass `--yes` in scripts. Pool workers are never pruned.
 - `ls` lists all workers (ad-hoc and nixbot's pool, `KIND` tells them
   apart) with owner and expiry; `ls --watch` redraws it in place and marks
   new (`+`), changed (`~`) and gone (`-`) workers; `extend NAME --ttl 2h`
@@ -41,7 +44,8 @@ rworker down "$w"
 - `builder NAME` prints a Nix `--builders` line for the worker.
 
 MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,
-`extend`, `down`, `exec`, `start`/`logs` for long jobs in tmux, `sync`,
+`extend`, `down`, `prune`, `exec`, `start`/`logs` for long jobs in tmux,
+`sync`,
 `builder`). Prefer it when it is loaded; the CLI is the fallback.
 
 ## Patterns

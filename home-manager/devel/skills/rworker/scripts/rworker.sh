@@ -19,6 +19,8 @@ Actions:
   ls [-o json] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
   down NAME            delete a worker
+  prune [NAME...] [--all] [-y] [-n]
+                       delete several ad-hoc workers (default: your own)
   extend NAME --ttl D  move the expiry to now + D (max 24h)
   ssh [USER@]NAME [SSH_ARGS...]
                        ssh to the worker (pinned host key); options such as
@@ -48,6 +50,7 @@ spec() {
 action up create a worker and wait until it is ready
 action ls list all workers (ad-hoc and pool)
 action down delete an ad-hoc worker
+action prune delete several ad-hoc workers (default: your own)
 action extend move the expiry of an ad-hoc worker
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
@@ -61,12 +64,15 @@ flag ls -o=format output format
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
 flag extend --ttl=duration new lifetime from now
+flag prune --all every ad-hoc worker, whoever owns it
+flag prune --yes do not ask
+flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
 values flavor s1.large s1.xlarge s1.2xlarge
 values size 100 150 250 500
 values format json
 values interval 2 5 10 30
-worker down extend ssh sync builder
+worker down extend ssh sync builder prune
 SPEC
 }
 
@@ -114,6 +120,18 @@ Usage: $me down NAME
 
 Delete an ad-hoc worker with its volume and NetBird peer. Nothing on it
 survives; copy results off first. Pool workers belong to the autoscaler.
+EOF
+      ;;
+    prune)
+      cat <<EOF
+Usage: $me prune [NAME...] [--all] [-y|--yes] [-n|--dry-run]
+
+Delete several ad-hoc workers at once: the named ones, or else all of yours
+(owner \$USER@\$(hostname)); --all deletes every ad-hoc worker, whoever owns
+it. nixbot's pool workers are never pruned.
+
+Lists the workers and asks first; --yes skips the question (required
+without a terminal). --dry-run only lists them.
 EOF
       ;;
     extend)
@@ -485,6 +503,85 @@ cmd_ls() {
   render_table <<< "$out"
 }
 
+cmd_prune() {
+  local all="" yes="" dry="" names=() me info targets
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --all)
+        all=1
+        ;;
+      -y|--yes)
+        yes=1
+        ;;
+      -n|--dry-run)
+        dry=1
+        ;;
+      -*)
+        printf 'Unknown option: %s\n' "$1" >&2
+        return 2
+        ;;
+      *)
+        names+=("$1")
+        ;;
+    esac
+    shift
+  done
+
+  me="${USER}@$(hostname)"
+  info=$(remote ls) || return 1
+  targets=$(jq -r --arg me "$me" --argjson all "${all:-false}" \
+    --args '[.[] | select(.kind == "adhoc")]
+      | if ($ARGS.positional | length) > 0
+        then map(select(.name as $n | $ARGS.positional | index($n)))
+        elif $all then .
+        else map(select(.owner == $me)) end
+      | .[] | "\(.name)\t\(.owner // "-")"' "${names[@]}" <<< "$info") \
+    || return 1
+
+  if [[ -z "$targets" ]]
+  then
+    printf 'Nothing to prune.\n'
+    return 0
+  fi
+  printf 'Ad-hoc workers to delete:\n'
+  column -t -s $'\t' <<< "$targets" | sed 's/^/  /'
+  if [[ -n "$dry" ]]
+  then
+    return 0
+  fi
+  if [[ -z "$yes" ]]
+  then
+    if [[ ! -t 0 ]]
+    then
+      printf 'Not a terminal: pass --yes to delete\n' >&2
+      return 2
+    fi
+    local answer
+    read -r -p 'Delete them? [y/N] ' answer
+    if [[ "$answer" != [yY]* ]]
+    then
+      printf 'Aborted.\n'
+      return 1
+    fi
+  fi
+
+  local name failed=""
+  while IFS=$'\t' read -r name _
+  do
+    if remote down "$name"
+    then
+      forget "$name"
+    else
+      failed=1
+    fi
+  done <<< "$targets"
+  if [[ -n "$failed" ]]
+  then
+    return 1
+  fi
+}
+
 cmd_down() {
   if [[ -z "${1:-}" ]]
   then
@@ -610,6 +707,9 @@ main() {
       ;;
     down)
       cmd_down "$@"
+      ;;
+    prune)
+      cmd_prune "$@"
       ;;
     extend)
       remote extend "$@"
