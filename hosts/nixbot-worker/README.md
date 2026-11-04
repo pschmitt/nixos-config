@@ -3,7 +3,8 @@
 A disposable, encrypted build VM on OpenStack. The nixbot host creates them
 from one image for two uses: as Nix remote builders for nixbot (autoscaled by
 build demand) and as ad-hoc workers that agents create for heavy compiles
-(the `rworker` skill). Workers hold no secrets and keep nothing across reboots.
+(the `rworker` skill). Workers hold no secrets and keep nothing across reboots,
+except what an agent opts into with `rworker up --nix-cache` (see below).
 
 ## Boot
 
@@ -105,3 +106,33 @@ JSON, `--initial` skips the metadata service.
 `checks.x86_64-linux.nixbot-worker-boot` boots the image twice in QEMU (UEFI)
 and checks from the outside that each boot creates a new LUKS2 volume and a
 new host key.
+
+## Private S3 cache (opt-in)
+
+Ad-hoc workers can substitute from the private S3 Nix cache. Nothing is
+configured by default; the worker image only provides the hooks:
+
+- `/run/rworker-nix` (tmpfs, `agent`, 0700) is created at boot (tmpfiles).
+- `nix.conf` ends with `!include /run/rworker-nix/nix.conf`, ignored while the
+  file does not exist.
+- `nix-daemon` runs with `AWS_SHARED_CREDENTIALS_FILE` pointing at
+  `/run/rworker-nix/aws-credentials`, because the daemon does the substituting.
+- `rworker-nix-config.path` watches `nix.conf` and runs
+  `rworker-nix-config.service`, which restarts `nix-daemon` (it reads its
+  configuration only at start, and `agent` has no sudo).
+
+`rworker nix-cache NAME` (or `up`/`exec --nix-cache`) runs on the client: it
+pushes the client's `s3://` substituters, the trusted public keys and the one
+AWS profile those URLs name over SSH, credentials first and `nix.conf` last
+(replacing `nix.conf` triggers the restart). The secret travels on stdin
+only: not through the OpenStack user-data (the metadata service stays
+readable on the worker), not through the control host, and never in argv.
+The client then checks that the worker reaches the bucket and that the daemon
+restarted.
+
+The key must be read-only: the `agent` user can read it. The cache's
+read-only identity is a separate project whose S3 tenant only the bucket
+policy lets read (see the private repository's niks3 notes). Nothing on a
+worker needs write access: nixbot pushes finished builds through the niks3
+API.
+

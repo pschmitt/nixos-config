@@ -117,6 +117,34 @@
     ];
   };
 
+  # Opt-in S3 cache for ad-hoc workers (`rworker up --nix-cache`, `rworker
+  # nix-cache NAME`). The client pushes its s3:// substituters, their public
+  # keys and the read-only AWS profile into /run/rworker-nix over SSH. The
+  # include below is ignored while the file is missing, so a worker without
+  # the flag is unchanged and never holds the credentials.
+  nix.extraOptions = "!include /run/rworker-nix/nix.conf";
+  systemd = {
+    services = {
+      # The daemon does the substituting, so it needs the credentials.
+      nix-daemon.environment.AWS_SHARED_CREDENTIALS_FILE = "/run/rworker-nix/aws-credentials";
+      # nix-daemon reads its configuration only at start. agent has no sudo,
+      # so a path unit (root) restarts the daemon when the client replaces
+      # nix.conf. The client pushes the credentials first, nix.conf last.
+      rworker-nix-config = {
+        description = "Restart nix-daemon for the cache settings pushed by rworker";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = "${config.systemd.package}/bin/systemctl restart nix-daemon.service";
+        };
+      };
+    };
+    paths.rworker-nix-config = {
+      description = "Cache settings pushed by rworker";
+      wantedBy = [ "multi-user.target" ];
+      pathConfig.PathChanged = "/run/rworker-nix/nix.conf";
+    };
+  };
+
   # Print the SSH host key to the serial console. The autoscaler fetches it
   # through the OpenStack API (console log), so it never has to trust a key
   # on first use.
@@ -164,6 +192,7 @@
     "d /nix/.rw-store/home 0755 root root -"
     "d /nix/.rw-store/tmp 1777 root root -"
     "d /nix/.rw-store/var-tmp 1777 root root -"
+    "d /run/rworker-nix 0700 agent users -"
   ];
 
   # The main user's sudo; there are no passwords to ask for.

@@ -59,6 +59,15 @@ rworker down "$w"
   [--fetch REMOTE[:LOCAL]] -- CMD` is a one-shot worker: create, copy, run,
   fetch, delete (also on failure; `--keep-on-failure` to debug).
 - `builder NAME` prints a Nix `--builders` line for the worker.
+- `nix-cache NAME [--dry-run]` (also `up --nix-cache`, `exec --nix-cache`,
+  MCP `nix_cache`) lets the worker substitute from the private S3 Nix
+  cache, which a worker cannot read by default. Your host pushes its
+  `s3://` substituters, the trusted public keys and the one AWS profile
+  those URLs name over SSH into `/run/rworker-nix` (tmpfs, agent-owned,
+  0700); nothing else of `nix.conf` is copied. The worker's nix-daemon
+  restarts on its own. Opt-in because it puts a credential on the worker:
+  only a read-only key belongs there. Re-run it after the key is rotated.
+  Workers created before the feature get nothing and the command says so.
 
 MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,
 `extend`, `down`, `prune`, `exec`, `start`/`logs` for long jobs in tmux,
@@ -75,7 +84,10 @@ MCP: the `rworker` MCP server offers the same as tools (`up`, `ls`,
   first, uncached build.
 - **Nix builds:** `nix build --max-jobs 0 --builders "$(rworker builder "$w")"
   .#pkg` builds on the worker and copies the result back. The worker
-  substitutes from cache.nixos.org and nixbot's store itself.
+  substitutes from cache.nixos.org and nixbot's store itself, and from the
+  private S3 cache when it was created with `--nix-cache`. Add
+  `--option builders-use-substitutes true` so inputs are fetched on the
+  worker instead of being copied up from here.
 - Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b
   '...'`) so a dropped SSH session does not kill them; check back with
   `ssh "$w" tmux capture-pane -pt b`.
@@ -93,6 +105,7 @@ completions. When adding an action or flag, update `spec()`, the dispatch in
   not leave it for the TTL. Extend instead of creating a second one.
 - Nothing on a worker survives. Copy results off before `down`.
 - Workers carry no secrets. Do not copy credentials onto them; if a build
-  needs a token, prefer running that step locally.
+  needs a token, prefer running that step locally. The one exception is the
+  opt-in read-only S3 cache key (`--nix-cache`), pushed by `rworker` itself.
 - Prefer a worker over the shared build nodes for anything that takes more
   than a few minutes of full CPU.

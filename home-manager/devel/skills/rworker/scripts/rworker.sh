@@ -47,7 +47,7 @@ but ssh takes it (scripts and the MCP server use it).
 
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
-     [--ssh [-l USER]]
+     [--nix-cache] [--ssh [-l USER]]
                        create a worker and wait until it is ready
   ls [-o json|wide] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
@@ -69,6 +69,8 @@ Actions:
   cp [USER@]NAME:REMOTE LOCAL | cp LOCAL [USER@]NAME:REMOTE
                        copy files or directories from/to a worker
   builder NAME         print a Nix builders line for the worker
+  nix-cache NAME [--dry-run]
+                       let the worker substitute from this host's S3 cache
 
 Workers this host did not create (nixbot's pool, other hosts' ad-hoc
 workers) are looked up on the control host on first use; you log in as
@@ -99,6 +101,7 @@ action extend move the expiry of an ad-hoc worker
 action ssh ssh to a worker (pinned host key)
 action sync rsync a directory to a worker
 action builder print a Nix builders line for a worker
+action nix-cache let a worker substitute from this host's S3 cache
 action cp copy files from or to a worker (NAME:PATH)
 action inspect show everything known about a worker
 action help show the help of an action
@@ -107,6 +110,9 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
+flag up --nix-cache push this host's S3 cache settings to the worker
+flag exec --nix-cache push this host's S3 cache settings to the worker
+flag nix-cache --dry-run only show what would be pushed
 flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
 flag exec --topic=topic what the worker is for (none unless given)
@@ -138,7 +144,7 @@ values format json wide
 values topic
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend ssh sync builder prune inspect
+worker down extend ssh sync builder prune inspect nix-cache
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -152,7 +158,7 @@ action_help() {
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
-          [--topic TEXT] [-l USER]
+          [--nix-cache] [--topic TEXT] [-l USER]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
@@ -164,6 +170,8 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
                    s1.2xlarge (32/64)
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
+  --nix-cache      let the worker substitute from this host's S3 cache
+                   (see: $me help nix-cache); off by default
   --ssh            log in (as agent) as soon as it is ready
   -l USER          with --ssh: log in as USER (pschmitt, nix-remote-builder)
   --topic TEXT     what it is for (shown by ls and inspect; none unless
@@ -206,7 +214,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --scratch, --topic   as for up
+  --ttl, --flavor, --disk, --scratch, --topic, --nix-cache   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -321,6 +329,37 @@ Usage: $me builder NAME
 
 Print a Nix builders line for the worker, e.g.:
   nix build --max-jobs 0 --builders "\$($me builder NAME)" .#pkg
+EOF
+      ;;
+    nix-cache)
+      cat <<EOF
+Usage: $me nix-cache NAME [--dry-run]
+       $me up --nix-cache ...      (does this right after creating the worker)
+
+Let an ad-hoc worker substitute from the private S3 Nix cache, using this
+host's own settings. Workers carry no secrets by default; this is the opt-in.
+
+Pushed over SSH (pinned host key), never through the OpenStack metadata
+service and never via the control host:
+  - this host's s3:// substituters and the trusted public keys, read with
+    \`nix config show\`. Nothing else of nix.conf is copied (it can hold
+    access-tokens and netrc paths), and neither are non-S3 substituters.
+  - the AWS profile each s3:// URL names (profile=...) from
+    \$AWS_SHARED_CREDENTIALS_FILE or ~/.aws/credentials; no other profile.
+They land in /run/rworker-nix on the worker (tmpfs, agent-owned, 0700), so
+they vanish with the worker. The worker's nix-daemon includes nix.conf from
+there and restarts when it changes. Run it again after rotating the key.
+
+Push a read-only key only: anyone with a shell on the worker (the agent user)
+can read what you push. For builds through --builders, also set
+builders-use-substitutes on this host, or this host fetches the inputs itself
+and copies them over instead of letting the worker substitute.
+
+  --dry-run   show the substituters, keys and profile names; push nothing
+              (credentials are never printed)
+
+A worker whose image predates this feature (no /run/rworker-nix) gets nothing;
+the command says so and fails.
 EOF
       ;;
     *)
@@ -666,13 +705,16 @@ render_progress() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" login_user="" topic=""
+  local login="" login_user="" topic="" nix_cache="" cache_info
   local -a args=() meta=()
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
       --ssh)
         login=1
+        ;;
+      --nix-cache)
+        nix_cache=1
         ;;
       -l)
         login_user="${2:-}"
@@ -716,6 +758,24 @@ cmd_up() {
   jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
     || return 1
   printf '%s %s\n' "$ip" "$(jq -er .host_key <<< "$info")" >> "$KNOWN_HOSTS"
+  if [[ -n "$nix_cache" ]]
+  then
+    # The cache is an optimisation: a failed push leaves a usable worker.
+    if ! cache_info=$(push_nix_cache "$name")
+    then
+      cache_info='{"ok": false}'
+    fi
+    if [[ $(jq -r .daemon <<< "$cache_info") == image-too-old ]]
+    then
+      printf '%s image predates --nix-cache: nothing pushed to %s\n' \
+        "$(paint 33 '!')" "$name" >&2
+    elif [[ $(jq -r .ok <<< "$cache_info") != true ]]
+    then
+      printf 'Could not set up the S3 cache on %s; retry: %s nix-cache %s\n' \
+        "$name" "$(basename "$0")" "$name" >&2
+    fi
+    info=$(jq -c --argjson c "$cache_info" '. + {nix_cache: $c}' <<< "$info")
+  fi
   if [[ -n "$JSON" ]]
   then
     printf '%s\n' "$info"
@@ -1285,7 +1345,7 @@ cmd_exec() {
         up_args+=("$1" "$2")
         shift
         ;;
-      --scratch)
+      --scratch|--nix-cache)
         up_args+=("$1")
         ;;
       --topic)
@@ -1579,6 +1639,194 @@ cmd_cp() {
   fi
 }
 
+# The s3:// substituters, the AWS profiles they name and the trusted public
+# keys of this host's Nix, as JSON. Only these leave the host: nix.conf can
+# hold access-tokens and netrc paths, and non-S3 caches (a LAN mirror) are
+# not reachable from OpenStack anyway.
+nix_cache_settings() {
+  local cfg
+  if ! cfg=$(nix config show --json 2>/dev/null)
+  then
+    printf 'Could not read the Nix configuration (nix config show)\n' >&2
+    return 1
+  fi
+  jq -c '
+    def vals($k): (.[$k].value // []);
+    ((vals("substituters") + vals("extra-substituters"))
+      | map(select(startswith("s3://"))) | unique) as $subs
+    | {substituters: $subs,
+       profiles: ($subs | map(capture("[?&]profile=(?<p>[^&]+)").p // "default")
+                  | unique),
+       keys: ((vals("trusted-public-keys") + vals("extra-trusted-public-keys"))
+              | unique)}' <<< "$cfg"
+}
+
+# One profile section ("[name]" and its lines) of an AWS credentials file.
+aws_profile_section() {
+  awk -v want="[$2]" '
+    $0 == want { found = 1; print; next }
+    /^\[/      { found = 0 }
+    found      { print }' "$1"
+}
+
+# Let a worker substitute from this host's S3 cache. Prints one JSON object
+# on stdout, progress on stderr. See `help nix-cache`.
+push_nix_cache() {
+  local name="$1" dry="${2:-}" settings creds_file profile section creds="" conf
+  local ip opts i url before after state="timeout" verified=false
+  settings=$(nix_cache_settings) || return 1
+  if [[ $(jq '.substituters | length' <<< "$settings") == 0 ]]
+  then
+    printf 'This host'"'"'s Nix has no s3:// substituter; nothing to push\n' >&2
+    return 1
+  fi
+  creds_file="${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}"
+  while read -r profile
+  do
+    section=$(aws_profile_section "$creds_file" "$profile" 2>/dev/null)
+    if [[ -z "$section" ]]
+    then
+      printf 'No [%s] profile in %s (named by an s3:// substituter)\n' \
+        "$profile" "$creds_file" >&2
+      return 1
+    fi
+    creds+="${section}"$'\n'
+  done < <(jq -r '.profiles[]' <<< "$settings")
+  conf=$(jq -r --arg from "$(hostname)" --arg at "$(date -u +%FT%TZ)" '
+    "# Pushed by rworker nix-cache from \($from) at \($at).",
+    "extra-substituters = \(.substituters | join(" "))",
+    "extra-trusted-public-keys = \(.keys | join(" "))"' <<< "$settings")
+  if [[ -n "$dry" ]]
+  then
+    jq -c --arg n "$name" '. + {name: $n, dry_run: true}' <<< "$settings"
+    return 0
+  fi
+
+  ip=$(worker_field "$name" ip) || return 1
+  mapfile -t opts < <(ssh_opts "$name")
+  # NetBird may still be setting up the route to a fresh worker.
+  for i in $(seq 1 10)
+  do
+    if ssh "${opts[@]}" -o ConnectTimeout=5 "agent@${ip}" true 2>/dev/null
+    then
+      break
+    fi
+    sleep 3
+  done
+  # An image without this feature has no /run/rworker-nix (agent cannot
+  # create it); say so instead of failing on a shell error.
+  if ! ssh "${opts[@]}" "agent@${ip}" 'test -d /run/rworker-nix' 2>/dev/null
+  then
+    jq -c --arg n "$name" \
+      '{ok: false, name: $n, daemon: "image-too-old", reachable: false,
+        substituters, profiles}' <<< "$settings"
+    return 0
+  fi
+  before=$(ssh "${opts[@]}" "agent@${ip}" \
+    'systemctl show -p ExecMainStartTimestampMonotonic --value rworker-nix-config.service' \
+    2>/dev/null)
+  # Credentials first, nix.conf last: replacing nix.conf is what restarts the
+  # daemon (path unit on the worker). The secret travels on stdin only.
+  # shellcheck disable=SC2016 # runs on the worker
+  printf '%s' "$creds" | ssh "${opts[@]}" "agent@${ip}" \
+    'umask 077; cat > /run/rworker-nix/aws-credentials.new && mv /run/rworker-nix/aws-credentials.new /run/rworker-nix/aws-credentials' \
+    || return 1
+  # shellcheck disable=SC2016
+  printf '%s\n' "$conf" | ssh "${opts[@]}" "agent@${ip}" \
+    'umask 077; cat > /run/rworker-nix/nix.conf.new && mv /run/rworker-nix/nix.conf.new /run/rworker-nix/nix.conf' \
+    || return 1
+
+  # Does the worker reach the bucket with what it was given?
+  url=$(jq -r '.substituters[0]' <<< "$settings")
+  # shellcheck disable=SC2029 # the URL is quoted here, on purpose
+  if ssh "${opts[@]}" "agent@${ip}" \
+    "AWS_SHARED_CREDENTIALS_FILE=/run/rworker-nix/aws-credentials timeout 60 nix store info --store $(printf '%q' "$url")" \
+    > /dev/null 2> "${STATE_DIR}/.nix-cache.err"
+  then
+    verified=true
+  else
+    printf 'The worker cannot reach the S3 cache: %s\n' \
+      "$(tail -n 3 "${STATE_DIR}/.nix-cache.err")" >&2
+  fi
+  rm -f "${STATE_DIR}/.nix-cache.err"
+
+  # Did its nix-daemon pick the settings up (restarted by the path unit)?
+  if [[ $(ssh "${opts[@]}" "agent@${ip}" \
+      'systemctl show -p LoadState --value rworker-nix-config.service' 2>/dev/null) \
+    != loaded ]]
+  then
+    state="image-too-old"
+  else
+    for i in $(seq 1 20)
+    do
+      after=$(ssh "${opts[@]}" "agent@${ip}" \
+        'systemctl show -p ExecMainStartTimestampMonotonic --value rworker-nix-config.service; systemctl is-active nix-daemon.socket' \
+        2>/dev/null | paste -sd' ')
+      if [[ "${after%% *}" != "$before" && "$after" == *" active" ]]
+      then
+        state="restarted"
+        break
+      fi
+      sleep 1
+    done
+  fi
+  jq -c --arg n "$name" --arg s "$state" --argjson v "$verified" \
+    '{ok: ($v and $s == "restarted"), name: $n, daemon: $s,
+      reachable: $v, substituters, profiles}' <<< "$settings"
+}
+
+cmd_nix_cache() {
+  local name="" dry="" out
+  while [[ -n "${1:-}" ]]
+  do
+    case "$1" in
+      --dry-run|-n)
+        dry=1
+        ;;
+      -*)
+        printf 'Unknown option: %s\n' "$1" >&2
+        return 2
+        ;;
+      *)
+        name="$1"
+        ;;
+    esac
+    shift
+  done
+  if [[ -z "$name" ]]
+  then
+    usage >&2
+    return 2
+  fi
+  out=$(push_nix_cache "$name" "$dry") || return 1
+  if [[ -n "$JSON" ]]
+  then
+    printf '%s\n' "$out"
+    return 0
+  fi
+  if [[ -n "$dry" ]]
+  then
+    printf 'Would push to %s:\n' "$(paint 36 "$name")"
+    jq -r '"  substituter \(.substituters[])", "  profile     \(.profiles[])",
+           "  trusted keys \(.keys | length)"' <<< "$out"
+    return 0
+  fi
+  case "$(jq -r .daemon <<< "$out")" in
+    restarted)
+      ok "$(paint 36 "$name") substitutes from the S3 cache"
+      ;;
+    image-too-old)
+      printf '%s %s runs an image from before --nix-cache existed: nothing was pushed (create a new worker)\n' \
+        "$(paint 33 '!')" "$name" >&2
+      return 1
+      ;;
+    *)
+      printf '%s pushed to %s, but its nix-daemon did not restart in time\n' \
+        "$(paint 33 '!')" "$name" >&2
+      ;;
+  esac
+}
+
 cmd_builder() {
   local name="${1:-}" ip key
   if [[ -z "$name" ]]
@@ -1708,6 +1956,9 @@ main() {
       ;;
     builder)
       cmd_builder "$@"
+      ;;
+    nix-cache)
+      cmd_nix_cache "$@"
       ;;
     inspect)
       cmd_inspect "$@"
