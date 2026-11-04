@@ -151,5 +151,12 @@
   security.sudo.wheelNeedsPassword = false;
 
   documentation.enable = false;
-  environment.defaultPackages = [ ];
+  environment = {
+    defaultPackages = [ ];
+    # Small tools every login wants (/run/rworker/metadata.json is JSON).
+    systemPackages = [
+      pkgs.curl
+      pkgs.jq
+    ];
+  };
 }

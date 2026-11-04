@@ -34,21 +34,23 @@ in
     inputs.stricknani.nixosModules.default
   ];
 
-  sops.secrets."stricknani/oidc/clientSecret" = config.sops.mkHostSecret {
-    owner = "stricknani";
-    group = "stricknani";
-  };
-  # One Sentry project (stricknani) for server, web and Android; the apps report
-  # through the server's tunnel, and users can opt out in their account settings.
-  # Same value as Hermes's API server key (services/hermes.nix).
-  sops.secrets."stricknani/hermesApiKey" = config.sops.mkHostSecret {
-    key = "hermes/apiServer/key";
-    owner = "stricknani";
-    group = "stricknani";
-  };
-  sops.secrets."stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
-    owner = "stricknani";
-    group = "stricknani";
+  sops.secrets = {
+    "stricknani/oidc/clientSecret" = config.sops.mkHostSecret {
+      owner = "stricknani";
+      group = "stricknani";
+    };
+    # One Sentry project (stricknani) for server, web and Android; the apps report
+    # through the server's tunnel, and users can opt out in their account settings.
+    # Same value as Hermes's API server key (services/hermes.nix).
+    "stricknani/hermesApiKey" = config.sops.mkHostSecret {
+      key = "hermes/apiServer/key";
+      owner = "stricknani";
+      group = "stricknani";
+    };
+    "stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
+      owner = "stricknani";
+      group = "stricknani";
+    };
   };
 
   services.stricknani = {
