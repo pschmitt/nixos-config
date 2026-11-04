@@ -75,7 +75,7 @@ in
       model = "hermes-agent";
       apiKeyFile = config.sops.secrets."stricknani/hermesApiKey".path;
       timeoutSeconds = 90;
-      # Let Hermes open the pattern page in its stricknani-importer browser.
+      # Let Hermes open the pattern page in its browser-daemon browser.
       browse = true;
       browseTimeoutSeconds = 180;
     };

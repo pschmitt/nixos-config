@@ -82,80 +82,98 @@ let
     ]
   );
 
-  browserHosts = [
-    "fnuc"
-    "rofl-13"
-    "rofl-14"
-    "rofl-15"
-    "rofl-16"
-  ];
-  # browser-daemon wants a token on every route: its dashboard page hands one
-  # out as a cookie to anyone Authelia lets through, which is how the MCP gets it.
-  browserMcpWrapper = pkgs.writeShellApplication {
-    name = "browser-mcp-wrapper";
+  # Browsers: the same browser-daemon MCP as Philipp's Claude and Codex sessions
+  # (home-manager/devel/ai.nix). One MCP covers every node and profile
+  # (`browser_use`); a throwaway browser on the node with the most room is the
+  # default. It starts the Playwright MCP through browser-mcp, which tells the
+  # node which agent connects (AI_AGENT=hermes below) and from which machine.
+  # Authentication: browser-daemon takes the cluster secret when this user can
+  # read one (it cannot) and otherwise the bd_auth token the node's dashboard
+  # hands out on the mesh, so nothing is configured here.
+  # Not passed: --allow-secret, --allow-passkey, --ask-human-cmd and --rbw
+  # (they need an rbw vault and the user's secret agent, which this service
+  # user does not have).
+  browserNode = host: "https://browser.${host}.${config.domains.netbird}";
+  browserMcp = pkgs.writeShellApplication {
+    name = "browser-mcp";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.curl
-      pkgs.gnugrep
-      pkgs.gnused
+      pkgs.jq
       pkgs.playwright-mcp
     ];
-    text = ''
-      host="$1"
-      output_dir="$2"
-      # Shown on the browser-daemon dashboard: who drives the session and for what.
-      conversation="''${3:-}"
-      token="$(
-        curl -fsS --max-time 15 -D - -o /dev/null "https://$host/" \
-          | grep -i '^set-cookie: bd_auth=' \
-          | head -n1 \
-          | sed -E 's/^[^=]*=([^;]*).*/\1/' \
-          | tr -d '\r'
-      )"
-      query="agent=hermes&machine=${config.networking.hostName}"
-      query+="''${token:+&auth=$token}"
-      query+="''${conversation:+&conversation=$conversation}"
-      exec playwright-mcp \
-        --cdp-endpoint="wss://$host/chromium?$query" \
-        --output-dir="$output_dir"
-    '';
+    text = builtins.readFile ../home-manager/devel/scripts/browser-mcp.sh;
   };
-  # Stricknani's import browser: any reachable rofl-* browser-daemon, tried in
-  # random order, so imports spread across the build hosts and survive one being down.
-  importerBrowserWrapper = pkgs.writeShellApplication {
-    name = "stricknani-importer-browser";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.curl
-    ];
-    text = ''
-      output_dir="$1"
-      shift
-      mapfile -t hosts < <(printf '%s\n' "$@" | shuf)
-      for host in "''${hosts[@]}"; do
-        if curl -fsS --max-time 5 -o /dev/null "https://$host/"; then
-          exec ${lib.getExe browserMcpWrapper} "$host" "$output_dir" stricknani-importer
-        fi
-      done
-      echo "no browser-daemon host reachable" >&2
-      exit 1
-    '';
+  browserDaemonMcp =
+    {
+      outputDir,
+      extraArgs ? [ ],
+    }:
+    {
+      command = lib.getExe' pkgs.browser-daemon "browser-daemon";
+      args = [
+        "mcp"
+        "--url"
+        (browserNode "rofl-14")
+        "--playwright-cmd"
+        (lib.getExe browserMcp)
+        "--output-dir"
+        "${config.services.hermes-agent.stateDir}/playwright-mcp/${outputDir}"
+      ]
+      ++ extraArgs;
+      env.AI_AGENT = "hermes";
+      connect_timeout = 30;
+      timeout = 90;
+    };
+  browserMcps = {
+    # The main Hermes (Signal, Matrix, ...): every tool, and the saved profiles
+    # and logins the user allows agents here.
+    browser-daemon = browserDaemonMcp {
+      outputDir = "browser";
+      extraArgs = [
+        "--allow-profile"
+        "*"
+        "--allow-export"
+        "*"
+      ];
+    };
+    # Only for Stricknani's link imports (platform_toolsets.api_server): the same
+    # tools, but throwaway browsers only. No --allow-profile and no
+    # --allow-export, so an untrusted pattern page can never reach a logged-in
+    # profile (Outlook, Google). Stricknani's prompt asks for a rofl-* node first.
+    browser-daemon-import = browserDaemonMcp { outputDir = "browser-import"; };
   };
 
-  browserMcps = lib.listToAttrs (
-    map (host: {
-      name = "browser-daemon-${host}";
-      value = {
-        command = lib.getExe browserMcpWrapper;
-        args = [
-          "browser.${host}.${config.domains.netbird}"
-          "${config.services.hermes-agent.stateDir}/playwright-mcp/browser-daemon-${host}"
-        ];
-        connect_timeout = 30;
-        timeout = 90;
-      };
-    }) browserHosts
-  );
+  # The hermes-agent module deep-merges `settings` into the mutable
+  # config.yaml and never deletes a key, so MCP servers dropped from Nix stay on
+  # disk. List them here and they are removed before every start. Only these
+  # keys: others (bitwarden, github) may have been added by hand.
+  retiredMcpServers = [
+    "stricknani-importer"
+    "playwright-browserless-fnuc"
+    "playwright-browserless-rofl-13"
+    "playwright-browserless-rofl-14"
+    "browser-daemon-fnuc"
+    "browser-daemon-rofl-13"
+    "browser-daemon-rofl-14"
+    "browser-daemon-rofl-15"
+    "browser-daemon-rofl-16"
+  ];
+  hermesPruneRetiredMcp = pkgs.writeShellApplication {
+    name = "hermes-prune-retired-mcp";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.yq-go
+    ];
+    text = ''
+      config="${config.services.hermes-agent.stateDir}/.hermes/config.yaml"
+      [[ -f "$config" ]] || exit 0
+      for name in ${lib.escapeShellArgs retiredMcpServers}
+      do
+        NAME="$name" yq -i 'del(.mcp_servers[strenv(NAME)])' "$config"
+      done
+      chmod 0660 "$config"
+    '';
+  };
 
   hermesNixosApply = pkgs.writeShellApplication {
     name = "hermes-nixos-apply";
@@ -422,11 +440,13 @@ in
       settings = {
         plugins.enabled = [ "homeassistant" ];
         # The API server is only for Stricknani's link imports: no built-in tools,
-        # no MCP servers and no plugin toolsets there (imported pages are untrusted).
-        # Its only tools: a read-only fresh browser (stricknani-importer below) so imports
-        # can read pages the plain fetch can't (bot protection, JS rendering).
-        # Everywhere else Hermes keeps all of its tools.
-        platform_toolsets.api_server = [ "stricknani-importer" ];
+        # no other MCP servers and no plugin toolsets there (imported pages are
+        # untrusted). Its only tools: the throwaway-browser-only browser-daemon
+        # MCP, so imports can read pages the plain fetch can't (bot protection,
+        # JS rendering, lazy images) and list their diagrams and PDFs.
+        # Everywhere else Hermes keeps all of its tools, including the full
+        # browser-daemon MCP.
+        platform_toolsets.api_server = [ "browser-daemon-import" ];
         known_plugin_toolsets.api_server = [ "homeassistant" ];
         model = {
           provider = "openai-codex";
@@ -495,29 +515,7 @@ in
             timeout = 90;
           };
         }
-        // browserMcps
-        // {
-          # Fresh throwaway Chromium (no saved profiles) on any rofl-* host for Stricknani link imports,
-          # limited to reading: no clicks, typing, uploads or JavaScript evaluation.
-          stricknani-importer = {
-            command = lib.getExe importerBrowserWrapper;
-            args = [
-              "${config.services.hermes-agent.stateDir}/playwright-mcp/stricknani-importer"
-            ]
-            ++ map (host: "browser.${host}.${config.domains.netbird}") (
-              lib.filter (lib.hasPrefix "rofl-") browserHosts
-            );
-            connect_timeout = 45;
-            timeout = 90;
-            tools.include = [
-              "browser_navigate"
-              "browser_navigate_back"
-              "browser_wait_for"
-              "browser_snapshot"
-              "browser_close"
-            ];
-          };
-        };
+        // browserMcps;
         skills.external_dirs = [ "${hermesSkills}" ];
       };
     };
@@ -713,6 +711,7 @@ in
         serviceConfig = {
           EnvironmentFile = [ config.sops.templates."hermes/mcp.env".path ];
           ExecStartPre = [
+            (lib.getExe hermesPruneRetiredMcp)
             "${pkgs.coreutils}/bin/install -d -m 0700 ${gpgHome}"
             "${pkgs.coreutils}/bin/install -d -m 0700 ${ghConfigRoot}/gh-brkn-lol ${ghConfigRoot}/pschmitt"
             "${pkgs.gnupg}/bin/gpg --batch --yes --homedir ${gpgHome} --pinentry-mode loopback --passphrase-file ${
