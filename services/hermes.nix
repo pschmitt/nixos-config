@@ -115,6 +115,28 @@ let
         --output-dir="$output_dir"
     '';
   };
+  # Stricknani's import browser: any reachable rofl-* browser-daemon, tried in
+  # random order, so imports spread across the build hosts and survive one being down.
+  importerBrowserWrapper = pkgs.writeShellApplication {
+    name = "stricknani-importer-browser";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+    ];
+    text = ''
+      output_dir="$1"
+      shift
+      mapfile -t hosts < <(printf '%s\n' "$@" | shuf)
+      for host in "''${hosts[@]}"; do
+        if curl -fsS --max-time 5 -o /dev/null "https://$host/"; then
+          exec ${lib.getExe browserMcpWrapper} "$host" "$output_dir"
+        fi
+      done
+      echo "no browser-daemon host reachable" >&2
+      exit 1
+    '';
+  };
+
   browserMcps = lib.listToAttrs (
     map (host: {
       name = "browser-daemon-${host}";
@@ -398,6 +420,7 @@ in
         # no MCP servers and no plugin toolsets there (imported pages are untrusted).
         # Its only tools: a read-only fresh browser (stricknani-importer below) so imports
         # can read pages the plain fetch can't (bot protection, JS rendering).
+        # Everywhere else Hermes keeps all of its tools.
         platform_toolsets.api_server = [ "stricknani-importer" ];
         known_plugin_toolsets.api_server = [ "homeassistant" ];
         model = {
@@ -469,9 +492,18 @@ in
         }
         // browserMcps
         // {
-          # Fresh throwaway Chromium (no saved profiles) for Stricknani link imports,
+          # Fresh throwaway Chromium (no saved profiles) on any rofl-* host for Stricknani link imports,
           # limited to reading: no clicks, typing, uploads or JavaScript evaluation.
-          stricknani-importer = browserMcps."browser-daemon-rofl-16" // {
+          stricknani-importer = {
+            command = lib.getExe importerBrowserWrapper;
+            args = [
+              "${config.services.hermes-agent.stateDir}/playwright-mcp/stricknani-importer"
+            ]
+            ++ map (host: "browser.${host}.${config.domains.netbird}") (
+              lib.filter (lib.hasPrefix "rofl-") browserHosts
+            );
+            connect_timeout = 45;
+            timeout = 90;
             tools.include = [
               "browser_navigate"
               "browser_navigate_back"
