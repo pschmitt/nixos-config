@@ -388,8 +388,14 @@ fmt_expiry() {
 }
 
 remote() {
+  # One shared SSH connection to the control host (kept 10 min): repeated
+  # calls (ls --watch, the completions' cache refresh) skip the handshake.
+  mkdir -p "$STATE_DIR" 2>/dev/null
   # shellcheck disable=SC2029 # arguments are meant to expand locally
-  ssh -o BatchMode=yes "$CONTROL_HOST" rworker "$(printf '%q ' "$@")"
+  ssh -o BatchMode=yes \
+    -o ControlMaster=auto -o ControlPersist=10m \
+    -o "ControlPath=${STATE_DIR}/control-%C" \
+    "$CONTROL_HOST" rworker "$(printf '%q ' "$@")"
 }
 
 # `remote ls`, keeping the answer in $LS_CACHE for the completions.
