@@ -1,0 +1,84 @@
+diff --git a/src/notification/link_open.h b/src/notification/link_open.h
+new file mode 100644
+index 000000000..0d67febaa
+--- /dev/null
++++ b/src/notification/link_open.h
+@@ -0,0 +1,32 @@
++#pragma once
++
++#include "core/process/process.h"
++#include "net/url_open.h"
++
++#include <gio/gio.h>
++#include <string>
++#include <vector>
++
++namespace notification {
++  inline bool isTeamsLink(const std::string& url) {
++    GUri* uri = g_uri_parse(url.c_str(), G_URI_FLAGS_NONE, nullptr);
++    if (uri == nullptr) return false;
++    const char* scheme = g_uri_get_scheme(uri);
++    const char* host = g_uri_get_host(uri);
++    const bool result = scheme != nullptr && host != nullptr
++        && g_ascii_strcasecmp(scheme, "https") == 0
++        && (g_ascii_strcasecmp(host, "teams.microsoft.com") == 0
++            || g_ascii_strcasecmp(host, "teams.cloud.microsoft") == 0
++            || g_ascii_strcasecmp(host, "teams.live.com") == 0
++            || g_ascii_strcasecmp(host, "teams.microsoft.us") == 0);
++    g_uri_unref(uri);
++    return result;
++  }
++
++  inline bool openLink(const std::string& url, const std::string& token, bool forceChromium = false) {
++    if (forceChromium || isTeamsLink(url)) {
++      return process::runAsync(std::vector<std::string>{"chromium", url}, token);
++    }
++    return net::openInBrowser(url, token);
++  }
++}
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index f08045331..c81450e39 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -12 +12 @@
+-#include "core/process/process.h"
++#include "notification/link_open.h"
+@@ -101,2 +101 @@ namespace {
+-      if (chromium ? process::runAsync(std::vector<std::string>{"chromium", url}, token)
+-                   : net::openInBrowser(url, token)) {
++      if (notification::openLink(url, token, chromium)) {
+@@ -105 +104 @@ namespace {
+-        if (focusLink) focusLink(url, chromium);
++        if (focusLink) focusLink(url, chromium || notification::isTeamsLink(url));
+@@ -520 +519 @@ namespace {
+-          if (!url.empty() && net::openInBrowser(url, activationToken())) {
++          if (!url.empty() && notification::openLink(url, activationToken())) {
+@@ -523 +522 @@ namespace {
+-            focusLink(url, false);
++            focusLink(url, notification::isTeamsLink(url));
+diff --git a/src/shell/notification/notification_toast.cpp b/src/shell/notification/notification_toast.cpp
+index 93acf355b..5c34aadb9 100644
+--- a/src/shell/notification/notification_toast.cpp
++++ b/src/shell/notification/notification_toast.cpp
+@@ -15,0 +16 @@
++#include "notification/link_open.h"
+@@ -2861 +2862 @@ InputArea* NotificationToast::buildCard(
+-      if (net::openInBrowser(url, token)) {
++      if (notification::openLink(url, token)) {
+@@ -2865 +2866 @@ InputArea* NotificationToast::buildCard(
+-        notification::focusLinkHandler(m_platform, url);
++        notification::focusLinkHandler(m_platform, url, notification::isTeamsLink(url));
+diff --git a/tests/notification_history_dismiss_test.cpp b/tests/notification_history_dismiss_test.cpp
+index 4e131163d..a6d855c2e 100644
+--- a/tests/notification_history_dismiss_test.cpp
++++ b/tests/notification_history_dismiss_test.cpp
+@@ -1,0 +2 @@
++#include "notification/link_open.h"
+@@ -32,0 +34,7 @@ int main() {
++  TEST_CHECK(notification::isTeamsLink("https://teams.microsoft.com/l/meetup-join/test"));
++  TEST_CHECK(notification::isTeamsLink("https://teams.cloud.microsoft/meet/test"));
++  TEST_CHECK(notification::isTeamsLink("https://TEAMS.CLOUD.MICROSOFT/meet/test"));
++  TEST_CHECK(!notification::isTeamsLink("https://teams.microsoft.com.example.com/"));
++  TEST_CHECK(!notification::isTeamsLink("https://teams.microsoft.com@evil.example/"));
++  TEST_CHECK(!notification::isTeamsLink("http://teams.microsoft.com/"));
++  TEST_CHECK(!notification::isTeamsLink("https://example.com/"));

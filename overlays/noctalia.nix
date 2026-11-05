@@ -116,6 +116,9 @@ in
       # Normalize Chromium urgency and offer a Chromium link action in history.
       ./patches/noctalia/0019-chromium-notifications.patch
 
+      # Open Teams notification links in Chromium, including direct text clicks.
+      ./patches/noctalia/0020-teams-links-chromium.patch
+
       # osd-show always used the configured osd.position, so an ad-hoc OSD
       # could not appear anywhere else without a persistent config-set. Accept
       # an optional "position" field (top_left ... center_right) in the JSON
