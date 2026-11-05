@@ -79,14 +79,23 @@ tmux_nested() {
   in_tmux || return 1
   # The client process runs inside another tmux when it has $TMUX set itself.
   # TERM is no hint: kitty may be configured with a screen-like TERM.
-  local pid
-  pid="$(tmux_client_format '#{client_pid}')"
-  [[ "$pid" =~ ^[0-9]+$ && -r "/proc/$pid/environ" ]] || return 1
-  tr '\0' '\n' < "/proc/$pid/environ" | grep -q '^TMUX='
+  [[ -n "$(tmux_client_var TMUX)" ]]
 }
 
-# Which image protocol the (most recently active) tmux client speaks:
-# "sixel" or "kitty"; empty outside tmux. $IMG_PIXELATION (k|s) overrides.
+# Value of a variable in the environment of the tmux client that uses this
+# pane. Variables sent by the ssh client (SetEnv, accepted by sshd with
+# AcceptEnv) are per connection, so they identify the device, e.g.
+# TERMUX_CLIENT=1 on the phone.
+tmux_client_var() {
+  local name="$1" pid
+  pid="$(tmux_client_format '#{client_pid}')"
+  [[ "$pid" =~ ^[0-9]+$ && -r "/proc/$pid/environ" ]] || return 0
+  tr '\0' '\n' < "/proc/$pid/environ" | sed -n "s/^${name}=//p" | head -n1
+}
+
+# Which image protocol the tmux client that uses this pane speaks: "sixel" or
+# "kitty"; empty outside tmux. Order: $IMG_PIXELATION (k|s), then
+# $TERMUX_CLIENT of the client (sixel), then what the client reports.
 image_protocol() {
   case "${IMG_PIXELATION:-}" in
     k|kitty) echo kitty; return ;;
@@ -94,6 +103,12 @@ image_protocol() {
   esac
 
   in_tmux || return 0
+
+  if [[ -n "$(tmux_client_var TERMUX_CLIENT)" ]]
+  then
+    echo sixel
+    return
+  fi
 
   local info
   info="$(tmux_client_format '#{client_termtype}|#{client_termfeatures}')"

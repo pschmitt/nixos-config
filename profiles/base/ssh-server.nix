@@ -18,7 +18,7 @@
     };
     sftpServerExecutable = "internal-sftp";
     extraConfig = ''
-      AcceptEnv TERM_SSH_CLIENT
+      AcceptEnv TERM_SSH_CLIENT TERMUX_CLIENT
     '';
   };
 
