@@ -1,4 +1,4 @@
-{ config, ... }:
+{ config, pkgs, ... }:
 {
   home-manager.users.${config.mainUser.username} = {
     imports = [
@@ -10,6 +10,9 @@
       ../../services/terminal-browser-headless.nix
       ./immich-mcp.nix
     ];
+
+    # kitten icat for fzf-preview images (the outer terminal is a remote kitty)
+    home.packages = [ pkgs.kitty ];
 
     services.codex-remote-control.enable = true;
     services.terminal-browser-headless.enable = true;

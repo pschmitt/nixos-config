@@ -13,6 +13,22 @@
         }
       fi
 
+      # Delete all Kitty-graphics images (timg -pk, kitten icat, ...) that are
+      # left on screen. Pure escape sequence, so no kitty binary is needed.
+      # Inside tmux the sequence is wrapped in a DCS passthrough.
+      kitty::clear-images() {
+        local esc=$'\e'
+        local seq="''${esc}_Ga=d,d=A,q=2''${esc}\\"
+        {
+          if [[ -n "$TMUX" ]]
+          then
+            printf '\ePtmux;%s\e\\' "''${seq//$esc/$esc$esc}"
+          else
+            printf '%s' "$seq"
+          fi
+        } > /dev/tty
+      }
+
       __osc7-pwd() {
         emulate -L zsh
         setopt extendedglob

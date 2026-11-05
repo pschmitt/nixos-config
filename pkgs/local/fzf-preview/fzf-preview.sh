@@ -23,6 +23,35 @@ is_ghostty() {
   [[ -n "$GHOSTTY_BIN_DIR" ]]
 }
 
+is_ssh() {
+  [[ -n "$SSH_CONNECTION" ]]
+}
+
+# True when tmux itself runs inside another tmux/screen (e.g. ssh from a pane),
+# which needs a second passthrough layer for graphics escapes.
+tmux_nested() {
+  in_tmux || return 1
+  case "$(tmux display-message -p '#{client_termname}' 2>/dev/null)" in
+    screen*|tmux*) return 0 ;;
+  esac
+  return 1
+}
+
+# fzf strips graphics escapes from preview output, but the placeholder text
+# is useless without them. Move the image transmission (tmux passthrough DCS
+# or plain APC) to the terminal directly and keep only the placeholders on
+# stdout. With a nested tmux, wrap each passthrough in one more layer.
+graphics_to_tty() {
+  NESTED="$1" perl -0777 -pe '
+    BEGIN { open(TTY, ">", "/dev/tty") or die "tty: $!"; select((select(TTY), $| = 1)[0]); }
+    s/(\ePtmux;(?:[^\e]|\e\e)*\e\\|\e_G[^\e]*\e\\)/
+      my $g = $1;
+      $g = "\ePtmux;" . ($g =~ s#\e#\e\e#gr) . "\e\\" if $ENV{NESTED} && $g =~ m#^\ePtmux#;
+      print TTY $g;
+      ""/gex
+  '
+}
+
 is_termux() {
   has termux-info
 }
@@ -79,24 +108,44 @@ preview::image() {
   local dimensions
   dimensions="$(meta::get-preview-window-dimensions)"
 
-  if is_kitty || { is_ghostty && has kitten; }
+  # Over SSH KITTY_WINDOW_ID is unset, but kitten icat (unicode placeholders)
+  # works as long as the outer terminal speaks the Kitty graphics protocol.
+  if is_kitty || { has kitten && { is_ghostty || is_ssh; }; }
   then
+    local -a window_size=()
+    if in_tmux
+    then
+      # tmux does not report the window size in pixels, which kitten icat
+      # needs: hand it over explicitly (falling back to a 10x20 px cell).
+      local tmux_size
+      tmux_size="$(tmux display-message -p \
+        '#{client_width},#{client_height},#{client_cell_width},#{client_cell_height}')"
+      local cols rows cw ch
+      IFS=, read -r cols rows cw ch <<< "$tmux_size"
+      cw="${cw:-10}"
+      ch="${ch:-20}"
+      [[ "$cw" -gt 0 ]] || cw=10
+      [[ "$ch" -gt 0 ]] || ch=20
+      if [[ -n "$cols" && -n "$rows" ]]
+      then
+        window_size=(--use-window-size "${cols},${rows},$((cols * cw)),$((rows * ch))")
+      fi
+    fi
+
+    # Shared memory only works when the terminal runs on this machine.
+    local transfer_mode=memory
+    is_ssh && transfer_mode=stream
+
     kitten icat \
+      "${window_size[@]}" \
       --clear \
-      --transfer-mode=memory \
+      --transfer-mode="$transfer_mode" \
       --stdin=no \
       --unicode-placeholder \
       --align=center \
       --place="${dimensions}@0x0" \
-      -- "$file" | sed '$d' | sed $'$s/$/\e[m/'
-    return "$?"
-  fi
-
-  # timg with the Kitty graphics protocol also works in tmux
-  if has timg
-  then
-    timg -pk --center -g "$dimensions" -- "$file"
-    return "$?"
+      -- "$file" | graphics_to_tty "$(tmux_nested && echo 1)" | sed '$d' | sed $'$s/$/\e[m/'
+    return "${PIPESTATUS[0]}"
   fi
 
   # chafa is kinda meh in tmux
