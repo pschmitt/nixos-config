@@ -638,6 +638,8 @@ in
             "${config.home.homeDirectory}/devel/private/pschmitt/rbw.git".trust_level = "trusted";
             "${config.home.homeDirectory}".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config-private.git".trust_level =
+              "trusted";
           };
 
           sandbox_mode = "danger-full-access";
