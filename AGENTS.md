@@ -12,6 +12,9 @@
 - Default to SOPS for anything that even remotely smells like a secret or an identifier — not just passwords/tokens/keys, but also things like TLS/SSH fingerprints, device serials, account IDs, or other values that authorize access or identify a specific person/device. When in doubt, treat it as SOPS-worthy rather than committing it in cleartext to a tracked Nix file (it would otherwise land in the world-readable Nix store). Inject such values at activation/runtime (e.g. `sops.templates` referencing `config.sops.placeholder.*`, or `config.sops.secrets.*.path`) rather than baking them into generated config via `pkgs.formats.*` at eval time.
 
 ## Evaluation and builds
+- Keep large scratch trees and archives in a project-specific directory under
+  `~/build` or on the remote worker, not `/tmp` (which may be memory-backed).
+  Remove your own temporary artifacts when finished.
 - **Never run Nix evaluation or builds on the machine where the agent is running**,
   regardless of host. That covers `nix eval`, `nix build`, `nix run
   nixpkgs#<tool>` (e.g. deadnix), `nix flake check`, `nix flake lock` and

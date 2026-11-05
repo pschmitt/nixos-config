@@ -1,50 +1,114 @@
 # Nix organization audit — November 2026
 
-## Scope and baseline
+## Scope and outcome
 
-The repository documents clear ownership boundaries in [Architecture](architecture.md): reusable implementation belongs in modules, optional capabilities in `profiles/features/`, role composition in `profiles/specializations/`, and deliberately universal policy in `profiles/base/`. The same document warns that import relocation can reorder merged lists and generated units. The recent cleanup already removed the broken Home Manager export, consolidated initrd Wi-Fi, moved Tor/Wireshark/NRF/Waydroid into feature paths, and updated the architecture docs. Treat these as completed baseline, not audit targets.
+This audit covers the public and private NixOS configuration, 39 active owned
+GitHub root flakes, and maintained local fork checkouts. It is a source and
+organization audit; it does not claim every application works on every platform.
+[Architecture](architecture.md) defines the ownership rules for future changes.
 
-The prior behavior comparison is the gate: 27 of 28 host derivations matched; the remaining ARM evaluation hit the known existing GHC error. The private SOPS generated-file `readFile` IFD was fixed and verified byte-for-byte. Restic import relocation was withdrawn after it changed list ordering and derivations. Preserve this evidence and ordering constraint in every follow-up.
+## Completed cleanup
 
-## Findings by confidence
+| Finding | Resolution |
+| --- | --- |
+| Optional applications implemented inside the laptop role | Moved Tor, Wireshark, NRF tools and Waydroid into feature directories, keeping their consumers and import positions |
+| Initrd Wi-Fi options separated from their implementation | Consolidated them into `modules/initrd-wifi.nix` |
+| Broken Home Manager export | Removed the export whose implementation file did not exist |
+| Capabilities implemented inside the universal baseline | Moved Android USB access, AppImage and container implementations into `profiles/features/`; base still selects the same policy |
+| Headless-browser import-only wrapper | Consumers import the browser-daemon service directly |
+| Unused NixOS placeholder and legacy package entrypoint | Removed `modules/nixos/default.nix` and `nixpkgs.nix`; package composition requires explicit `pkgs` and `inputs` |
+| Misleading standalone development-shell entrypoint | `shell.nix` explicitly receives the flake's package set and checks |
+| Duplicate MultiOS configuration outputs | Publishing uses the canonical ISO configurations; artifact names remain unchanged |
+| Evaluation-time build in the private SOPS template | Assign the generated INI file directly to the template's `file`, without `builtins.readFile` |
+| Inconsistent owned Home Manager output names | Public modules and jcalapi use `homeManagerModules`; the jcalapi pin and consumer migrate together |
+| Legacy package output names | Replaced `defaultPackage` in the six affected application flakes with `packages.<system>.default` |
+| Broken or stale Python shell wiring | Development shells inherit application dependencies and import the checkout |
+| Large modules embedded in flakes | Extracted Jellysync's Home Manager module and poor-tools' NixOS module into their `nix/` directories |
 
-### Concrete cleanup candidates
+No compatibility exports were added. Named package outputs used by consumers
+remain alongside the default package. Third-party flake interfaces retain their
+upstream names.
 
-1. **`modules/nixos/default.nix` is a no-op placeholder.** It contains only an example comment and is not referenced by the flake or repository imports. Confirm with a complete path/reference search before removing or repurposing it. The public `nixosModules` export set is explicit; do not infer that a file is an export merely from its directory name. Check the private input consumers before changing any actual export.
-2. **`profiles/headless-browsers.nix` is an import-only wrapper.** It only imports the browser-daemon service module; current consumers are the build-node role and selected hosts. The architecture guidance discourages wrappers that add no policy or meaningful boundary. Decide whether this is a deliberate named capability used by several consumers; if not, move the import to those consumers in a separate mechanical change. First preserve each consumer’s import location/order and compare derivations.
-3. **The development-shell interface was misleading.** `shell.nix` advertised standalone `nix-shell`, but required `checks` supplied only by the flake. The cleanup makes its arguments explicit and describes it as the flake development-shell definition. The separate `nixpkgs.nix` helper exists and uses lock-pinned `fetchTarball`; inventory its legacy consumers before removing this evaluation-time fetch path.
+The six package-output migrations are
+[tdc](https://github.com/pschmitt/tdc),
+[docker-compose-bulk](https://github.com/pschmitt/docker-compose-bulk),
+[myl](https://github.com/pschmitt/myl),
+[myl-discovery](https://github.com/pschmitt/myl-discovery),
+[sendmyl](https://github.com/pschmitt/sendmyl), and
+[vodafone-station-cli](https://github.com/pschmitt/vodafone-station-cli).
+Module extractions are in
+[jellysync](https://github.com/pschmitt/jellysync/tree/main/nix) and
+[poor-tools](https://github.com/pschmitt/poor-tools/tree/main/nix).
 
-### Likely ownership drift; validate before moving
+## Capability ownership and preserved policy
 
-4. **`profiles/base/default.nix` imports Android USB access and AppImage support.** These are optional capabilities, while the repository says base is intentionally universal and optional capabilities belong in features. However, Android access currently has a stated headless-host ACL rationale and AppImage is platform-gated. Inventory all base consumers and actual users first; move only after confirming which hosts need these features. Keep any host-specific exception in its host or role.
-5. **Base imports both Docker and Podman and selects Docker as the OCI backend.** This is a broad baseline with material runtime, firewall, daemon, and package effects. Many services rely on `virtualisation.oci-containers`, and some rely on the backend choice. Do not split Docker/Podman just to satisfy folder shape. Inventory OCI service consumers and host-specific runtime needs; consider a reusable container-runtime feature/role only if it has a stable consumer set and can preserve backend and ordering exactly.
-6. **`profiles/specializations/workstation/default.nix` imports `../laptop`.** This is intentional today: the file describes interactive laptop/desktop hosts and the workstation role adds GUI/work features on top. The naming may obscure that dependency, but the import does not prove a layering bug. Consider renaming or factoring only after checking all role consumers and options supplied by the laptop role; keep it below shared features in the established ordering.
+The baseline is shared by full server roles, the workstation role and the
+full-base single-board configuration. Minimal installation and worker images
+have separate compositions. Moving implementation does not narrow that existing
+consumer set.
 
-### Own flake and package interface review
+| Capability implementation | Current selection and effects |
+| --- | --- |
+| `profiles/features/development/android-usb.nix` | All full-baseline consumers: ADB group membership and USB rule, including headless USB hosts |
+| `profiles/features/desktop/appimage.nix` | All full-baseline consumers: AppImage support is enabled only on x86_64; binfmt policy is preserved |
+| `profiles/features/containers/docker.nix` | All full-baseline consumers: daemon, pruning, storage, firewall and monitoring policy; Docker remains the OCI-container backend |
+| `profiles/features/containers/podman.nix` | All full-baseline consumers: Podman, pruning, compose tooling and bridge DNS firewall rules |
+| `profiles/features/containers/default.nix` | Composes the two engines in their original order; this is a policy bundle, not an alias for one import |
+| `services/headless-browsers/browser-daemon.nix` | Selected directly by the existing build-server role and host entrypoints |
 
-Completed follow-up: repaired these development-shell references and standardized
-the two projects on `packages.<system>.default` plus their named package outputs:
+Hardware-specific storage overrides remain in hardware profiles. Replacing the
+OCI backend or removing either engine needs a separate runtime migration, not
+another directory move.
 
-- [myl-discovery](https://github.com/pschmitt/myl-discovery/blob/main/flake.nix) referenced `self.packages.${system}.default` in its shell hook, but exported only the named package and legacy `defaultPackage`.
-- [sendmyl](https://github.com/pschmitt/sendmyl/blob/main/flake.nix) referenced `self.packages.${system}.myl-discovery` in shell inputs and `.myl` in its shell hook; neither was exported there. Its shell now inherits the actual application dependencies.
+The workstation role deliberately includes the laptop role: its existing
+consumers need laptop hardware and power-management policy. A future desktop-only
+consumer should compose the required features rather than inherit unwanted
+laptop behavior. No extra role layer was added without a consumer.
 
-Both shells inherit their package dependencies and import the checkout. Remote
-validation passed for all declared output platforms; both Linux packages build
-and their CLI help works. Other platforms were evaluated, not built.
+## Validation and decisions
 
-7. **Root flake inventory:** the broader read-only inventory covers 39 active non-fork GitHub root flakes plus maintained local forks. Their package-level patterns are separate audit items from host profile ownership. `flake.nix` records several of these inputs, including [jellysync](../flake.nix), [myl-discovery](../flake.nix), [poor-tools](../flake.nix), [sendmyl](../flake.nix), [tdc](../flake.nix), and [vodafone-station-cli](../flake.nix). The `docker-compose-bulk` project also belongs in the package interface audit.
-8. **Legacy package outputs:** `tdc`, `docker-compose-bulk`, `myl`, and `vodafone-station-cli` still expose `defaultPackage` instead of canonical `packages.<system>.default`. `myl-discovery` and `sendmyl` are completed; update the remaining projects in separate changes, without compatibility aliases, after checking their consumers. For `tdc`, `version = "latest"` is metadata only: `src = ./.` fixes the source to the flake revision, so do not characterize it as unreproducible.
-9. **Embedded modules:** `jellysync` has a roughly 480-line Home Manager module embedded in its 583-line flake; `poor-tools` embeds a NixOS module. Extract these into focused files while preserving output names and `self`/default-package semantics. Treat each as a behavior-preserving project refactor with direct output comparisons.
-10. **ISO outputs:** `iso` and `iso-multios` use identical module lists, as do `iso-private` and `iso-private-multios` ([definitions](../flake.nix)). This is redundant composition and the naming/comment relationship needs investigation. It does not establish a boot defect: upstream may support the `findiso` parameter without a distinct NixOS module list. Verify boot behavior before proposing output changes.
+- Compare clean baseline and candidate system derivations on a remote worker,
+  including images. For removed ISO aliases, compare their old derivations with
+  the canonical replacement.
+- Preserve merged-list order. A proposed Restic prerequisite relocation changed
+  package and backup-path ordering and was withdrawn; the original composition
+  boundary remains intentional.
+- Compare package recipes and dependency derivations separately from source and
+  output path changes. The owned-flake refactors leave dependency pins unchanged.
+- Compare extracted module option defaults, disabled/enabled configurations,
+  generated configuration, units, timers and package overrides.
+- Verify the private generated template's bytes and permissions; verify that ISO
+  publication definitions retain their targets and behavior.
+- Run formatting, statix, deadnix, relevant remote evaluations/builds and CI.
+  Keep large scratch artifacts out of memory-backed `/tmp`.
 
-## Prioritized next steps
+The mechanical pass produced identical system derivations for 27 of the original
+28 configurations; the remaining ARMv6 configuration fails identically before
+and after. After removing two aliases, the final tree evaluates 25 of 26
+configurations. Full derivation diffs show only the intended input metadata,
+agent-documentation and jcalapi source changes: builders, platforms, arguments,
+output names and dependency names are unchanged. The existing ARMv6 failure
+remains the sole system evaluation failure.
 
-1. **Continue canonical outputs in the remaining flakes**, then **close low-risk dead-code questions:** reference-search `modules/nixos/default.nix`; inspect all consumers of `profiles/headless-browsers.nix`; inventory consumers of the legacy `nixpkgs.nix` helper. Document the decision before deleting or changing paths.
-2. **Build a capability/consumer matrix:** for Android USB, AppImage, Docker, Podman, and OCI service modules, list importing hosts/roles, required options, and effects (packages, units, firewall, backend). Mark deliberate universal policy separately from optional host capability. Do not move anything based on filenames alone.
-3. **Choose one mechanical change at a time:** start with confirmed no-op/wrapper cleanup, then optional baseline capabilities if the matrix supports it. Keep behavior changes out of these commits. Preserve import order where it affects merged lists; do not replace list ordering with override priorities.
-4. **Verification gate for each change:** format changed Nix files with `nixfmt`; run `statix check` and `deadnix` as applicable. On an rworker, compare a clean baseline and changed tree for every affected host and installation image, inspect differing derivations with `nix-diff`, and compare relevant rendered service settings and secret source mappings. Never evaluate or build locally. Require equal derivations for a mechanical relocation; explain any intentional difference before proceeding. Recheck the ARM host separately once the existing GHC failure is resolved.
-5. **Review exports and consumers before deleting modules:** public module exports are an interface to the private flake. Keep export names stable until private consumers migrate, and never add private identifiers or secrets to this public repository.
+The extracted module comparisons pass for option defaults, disabled/enabled
+states, generated Jellysync configuration and a custom package override. Package
+recipe/dependency comparisons pass for the nine changed application flakes.
+Linux builds pass for the six package-output migrations and jcalapi. Shell
+imports and CLI smoke checks passed for the applicable migrations except the
+Vodafone failure below. Module-only extractions were evaluated without
+rebuilding unchanged application recipes. Application Nix lint is green;
+Vodafone's separate container workflow has the unrelated failure below.
 
-## Limits
+## Existing issues outside the organization changes
 
-The completed changes above were validated remotely. The remaining findings are source-level review, not a claim that every owned flake builds on every platform. The inventory covers active GitHub root flakes and maintained local checkouts; archived repositories, undiscovered nested flakes and other forges may need a separate pass. User changes were preserved. Behavior changes and fleet-wide deployment are separate from mechanical organization work.
+| Issue | Evidence and suggested follow-up |
+| --- | --- |
+| ARMv6 system evaluation cannot bootstrap GHC | Baseline and candidate fail identically. Review the unsupported Haskell package or toolchain separately; do not silently drop software from a refactor |
+| `myl` x86_64 Darwin evaluation fails | Its pinned Nixpkgs no longer supports that platform. Choose a supported Darwin toolchain or explicitly revise the platform contract |
+| Vodafone CLI import fails | Baseline and candidate packages both lack `aiovodafone.models` in the pinned `aiovodafone` dependency. Align the application imports and dependency version, then test against a mock device |
+| Vodafone container CI | The unchanged ARMv7 Alpine/Python image fails building `orjson` because its Rust target/toolchain is unavailable. Resolve container packaging separately; Nix lint passes |
+| `tdc` package version is `latest` | This is misleading metadata, not an unpinned source: `src = ./.` remains revision-bound. Derive the version from project metadata in a separate packaging correction |
+
+Archived repositories, undiscovered nested flakes and other forges are outside
+the inventory above. Application/API changes and runtime migrations are not
+part of this behavior-preserving organization pass.

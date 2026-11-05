@@ -902,10 +902,8 @@
                 "iso"
                 "iso-graphical"
                 "iso-legacy"
-                "iso-multios"
                 "iso-private"
                 "iso-private-legacy"
-                "iso-private-multios"
               ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
               // {
                 nixbot-worker = self.nixosConfigurations.nixbot-worker.config.image.repart.image;
@@ -947,7 +945,7 @@
 
       # Reusable home-manager modules you might want to export
       # These are usually stuff you would upstream into home-manager
-      homeModules = import ./modules/home-manager;
+      homeManagerModules = import ./modules/home-manager;
 
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
@@ -1052,8 +1050,6 @@
         // {
           # installation media
           iso = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
-          # MultiOS loopback boot needs the initrd to honor findiso=.
-          iso-multios = mkIso (minimalIsoModules ++ [ ./hosts/iso ]);
           iso-graphical = mkIso [
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-gnome.nix"
             "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-graphical-calamares.nix"
@@ -1061,7 +1057,6 @@
             ./hosts/iso
           ];
           iso-private = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
-          iso-private-multios = mkIso (minimalIsoModules ++ privateIsoModules [ ]);
           iso-private-netboot = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
             specialArgs = {

@@ -1,7 +1,7 @@
 {
   imports = [
     ../../profiles/features/network/ha-sshfs.nix
-    ../../profiles/headless-browsers.nix
+    ../../services/headless-browsers/browser-daemon.nix
     ../../profiles/specializations/homelab-server
     ../../services/codex-ha-bridge.nix
     ../../services/go-hass-agent.nix

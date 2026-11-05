@@ -1,7 +1,7 @@
 {
   imports = [
     ../../profiles/features/network/fnuc-nix-cache.nix
-    ../../profiles/headless-browsers.nix
+    ../../services/headless-browsers/browser-daemon.nix
     ../../profiles/specializations/homelab-server
 
     ./backups.nix

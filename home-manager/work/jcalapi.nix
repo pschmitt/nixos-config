@@ -5,7 +5,7 @@
 }:
 {
   imports = [
-    inputs.jcalapi.homeModules.default
+    inputs.jcalapi.homeManagerModules.default
   ];
 
   sops.secrets = {

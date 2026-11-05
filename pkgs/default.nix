@@ -1,9 +1,8 @@
-# Custom packages, that can be defined similarly to ones from nixpkgs
-# You can build them using 'nix build .#example' or (legacy) 'nix-build -A example'
+# Custom packages shared by the flake outputs and overlays.
 
 {
-  pkgs ? (import ../nixpkgs.nix) { },
-  inputs ? null,
+  pkgs,
+  inputs,
 }:
 
 let

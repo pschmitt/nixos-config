@@ -2,7 +2,7 @@
 {
   imports = [
     ../../features/network/roflnet.nix
-    ../../headless-browsers.nix
+    ../../../services/headless-browsers/browser-daemon.nix
     ../server
 
     ../../../services/esphome.nix

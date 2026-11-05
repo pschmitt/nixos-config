@@ -4,14 +4,16 @@
   ...
 }:
 {
+  # Preserve the shared role baseline: feature implementation lives separately.
+  # Keep these positions stable; import order affects merged lists.
   imports = [
-    ./android.nix
-    ./appimage.nix
+    ../features/development/android-usb.nix
+    ../features/desktop/appimage.nix
     ./atd.nix
     ./boot.nix
     ./btrfs.nix
     ./bootloader.nix
-    ./containers.nix
+    ../features/containers
     ./dict.nix
     ./dotfiles.nix
     ./locales.nix

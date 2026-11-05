@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 let
   domain = config.domains.main;
-  # The hosts running browser-daemon (profiles/headless-browsers.nix).
+  # The hosts running browser-daemon (services/headless-browsers/browser-daemon.nix).
   browserHosts = [
     "fnuc"
     "rofl-13"

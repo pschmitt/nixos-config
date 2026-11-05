@@ -1,7 +1,7 @@
 # Architecture
 
 See the [organization audit plan](nix-organization-plan.md) for completed cleanup,
-remaining findings and validation gates.
+ownership decisions and validation gates.
 
 ## Repository layout
 
@@ -10,7 +10,7 @@ remaining findings and validation gates.
 | `flake.nix` | Inputs, the host list and all flake outputs |
 | `hosts/<host>/` | One directory per host, with `default.nix` as its entrypoint |
 | `profiles/base/` | Common role baseline; minimal images can bypass it |
-| `profiles/features/` | Optional capabilities: `desktop`, `development`, `diagnostics`, `network`, `work` |
+| `profiles/features/` | Optional capabilities: `containers`, `desktop`, `development`, `diagnostics`, `network`, `work` |
 | `profiles/specializations/` | Machine classes and roles: `server`, `laptop`, `workstation`, `rpi` and others |
 | `profiles/hardware/` | Hardware-specific snippets |
 | `modules/` | Shared NixOS modules and option definitions |
@@ -52,7 +52,9 @@ do not all follow them yet.
 
 Here, `specializations` means roles, not NixOS `specialisation` boot variants.
 Roles compose features and set policy; reusable service implementation should
-not live inside a laptop or server role. Promote host-local collections only
+not live inside a laptop or server role. Base can select reusable features when
+they are deliberate policy for every full-baseline consumer; implementation
+still belongs in the feature directory. Promote host-local collections only
 when they represent a deliberate reusable capability.
 
 Keep prerequisite imports with their consumer. For example, a backup profile

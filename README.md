@@ -49,7 +49,7 @@ cd nixos-config
 ```
 
 To reuse parts without the private input, copy the modules you need. The flake
-exports `nixosModules`, `homeModules`, `overlays` and `packages`.
+exports `nixosModules`, `homeManagerModules`, `overlays` and `packages`.
 
 ## Quick start
 
