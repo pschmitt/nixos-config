@@ -1,5 +1,8 @@
 # Architecture
 
+See the [organization audit plan](nix-organization-plan.md) for completed cleanup,
+remaining findings and validation gates.
+
 ## Repository layout
 
 | Path | Contents |
@@ -7,7 +10,7 @@
 | `flake.nix` | Inputs, the host list and all flake outputs |
 | `hosts/<host>/` | One directory per host, with `default.nix` as its entrypoint |
 | `profiles/base/` | Common role baseline; minimal images can bypass it |
-| `profiles/features/` | Optional capabilities: `desktop`, `diagnostics`, `network`, `work` |
+| `profiles/features/` | Optional capabilities: `desktop`, `development`, `diagnostics`, `network`, `work` |
 | `profiles/specializations/` | Machine classes and roles: `server`, `laptop`, `workstation`, `rpi` and others |
 | `profiles/hardware/` | Hardware-specific snippets |
 | `modules/` | Shared NixOS modules and option definitions |

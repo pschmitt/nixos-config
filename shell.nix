@@ -1,8 +1,7 @@
-# Shell for bootstrapping flake-enabled nix and home-manager
-# You can enter it through 'nix develop' or (legacy) 'nix-shell'
+# Development shells exposed by the flake.
 
 {
-  pkgs ? (import ./nixpkgs.nix) { },
+  pkgs,
   checks,
 }:
 {
