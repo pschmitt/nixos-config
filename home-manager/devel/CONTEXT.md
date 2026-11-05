@@ -16,7 +16,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `ci-workflows` for GitHub Actions using shared `pschmitt/ci-workflows` components
   - `signal-notify` before sending any Signal message, `secret-hygiene` before commands that may print credentials, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `gpg-signing` before signed commits or tags, `tmux-window-names` for naming tmux windows
   - the private `brkn-infra` skill for infrastructure host roles, build/test/deploy targets, and Android devices; `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
-  - `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
+  - `timg` to display images in the terminal, plus `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
 - Watch for toil worth capturing (the same friction twice, a rediscovered procedure, a generalizing user correction). Say so at the end of the task and propose a skill or skill update with the `self-improvement` skill; ask before creating a new skill.
 - Linkify references whenever a useful target is available. This applies across
   all kinds of work, including GitLab merge requests, GitHub pull requests,
