@@ -10,13 +10,13 @@
 
 stdenvNoCC.mkDerivation (_finalAttrs: {
   pname = "quickshell-overview";
-  version = "unstable-2026-10-25";
+  version = "unstable-2026-11-03";
 
   src = fetchFromGitHub {
     owner = "Shanu-Kumawat";
     repo = "quickshell-overview";
-    rev = "ebba5f80d7e7c8b57a2e965b420aca3b58873df9";
-    hash = "sha256-q/g5rfKn03xqPlpbPGx2NFuSBlqLsDUeaJGSzl2K97k=";
+    rev = "0f59ce38a3e528df66e46203d9e19a6a924761fc";
+    hash = "sha256-mpcXFZ2sgV6ficNUND5/up2CTY5wfRBZtmMqL2hxEhs=";
   };
 
   dontConfigure = true;
