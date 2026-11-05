@@ -7,6 +7,7 @@
   eza,
   file,
   perl,
+  timg,
   tree,
   writeShellApplication,
 }:
@@ -18,6 +19,7 @@ writeShellApplication {
     eza
     file
     perl
+    timg
     tree
   ];
   # The script probes optional tools and unset terminal variables.

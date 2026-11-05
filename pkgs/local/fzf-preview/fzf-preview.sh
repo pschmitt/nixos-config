@@ -37,6 +37,24 @@ tmux_nested() {
   return 1
 }
 
+# Which image protocol the (most recently active) tmux client speaks:
+# "sixel" or "kitty"; empty outside tmux. $IMG_PIXELATION (k|s) overrides.
+image_protocol() {
+  case "${IMG_PIXELATION:-}" in
+    k|kitty) echo kitty; return ;;
+    s|sixel) echo sixel; return ;;
+  esac
+
+  in_tmux || return 0
+
+  local info
+  info="$(tmux display-message -p '#{client_termtype}|#{client_termfeatures}' 2>/dev/null)"
+  case "$info" in
+    kitty*) echo kitty ;;
+    *sixel*) echo sixel ;;
+  esac
+}
+
 # fzf strips graphics escapes from preview output, but the placeholder text
 # is useless without them. Move the image transmission (tmux passthrough DCS
 # or plain APC) to the terminal directly and keep only the placeholders on
@@ -107,6 +125,32 @@ preview::image() {
 
   local dimensions
   dimensions="$(meta::get-preview-window-dimensions)"
+
+  local protocol
+  protocol="$(image_protocol)"
+
+  if [[ "$protocol" == sixel ]]
+  then
+    if has timg
+    then
+      # timg cannot query the cell size without a tty and assumes about
+      # 7.7x18 px. Scale the grid so the sixel fills the preview window.
+      local sixel_dims="$dimensions" cw ch
+      cw="$(tmux display-message -p '#{client_cell_width}' 2>/dev/null)"
+      ch="$(tmux display-message -p '#{client_cell_height}' 2>/dev/null)"
+      if [[ "$cw" =~ ^[0-9]+$ && "$ch" =~ ^[0-9]+$ && "$cw" -gt 0 && "$ch" -gt 0 ]]
+      then
+        sixel_dims="$(( ${dimensions%x*} * cw * 10 / 77 ))x$(( ${dimensions#*x} * ch / 18 ))"
+      fi
+      timg -ps -g "$sixel_dims" -- "$file"
+      return "$?"
+    fi
+    if has chafa
+    then
+      chafa --format sixels --size "$dimensions" "$file"
+      return "$?"
+    fi
+  fi
 
   # Over SSH KITTY_WINDOW_ID is unset, but kitten icat (unicode placeholders)
   # works as long as the outer terminal speaks the Kitty graphics protocol.
