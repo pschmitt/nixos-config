@@ -746,6 +746,11 @@ cmd_up() {
   done
   set -- "${args[@]}"
   mapfile -t meta < <(creator_meta "$topic")
+  if [[ -z "$topic" ]]
+  then
+    printf '%s no --topic given: ls/inspect will show "-" for this worker; pass --topic "what it is for"\n' \
+      "$(paint 33 '!')" >&2
+  fi
   if [[ ! -r "$key_file" ]]
   then
     printf 'Public key %s not readable (set RWORKER_KEY)\n' "$key_file" >&2

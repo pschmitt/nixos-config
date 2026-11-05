@@ -25,7 +25,7 @@ All through `rworker` (on PATH via Home Manager; the same code is
 over SSH and keeps per-worker state in `~/.local/state/rworker`:
 
 ```bash
-w=$(rworker up --ttl 3h --json | jq -r .name)   # ~1-4 min until ready
+w=$(rworker up --ttl 3h --topic "rbw release build" --json | jq -r .name)  # ~1-4 min
 rworker sync "$w" ~/devel/private/pschmitt/rbw.git rbw
 rworker ssh "$w" 'cd rbw && nix develop -c cargo build --release'
 rworker down "$w"
@@ -35,7 +35,9 @@ rworker down "$w"
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts; `--ssh`
   logs you in right away (interactive use); `ssh --create [up options]` is
-  the same. Pass `--topic "what it is for"` (there is none otherwise);
+  the same. **Always** pass `--topic "what it is for"` (also with `exec` and
+  `ssh --create`; MCP `up(topic=...)`): without it `ls` shows `-` and nobody
+  can tell whose worker it is or whether it is safe to delete;
   the agent (claude, codex, agy, opencode, ...), its PID, session
   and the cwd are recorded on their own. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.

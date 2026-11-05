@@ -56,7 +56,7 @@ def up(
 
     ttl: lifetime such as "90m" or "3h" (default 2h). A worker still in use
     when it expires stays until it has been idle for 1 h, up to its maximum
-    lifetime (24 h, or 7 days with scratch=True). topic: a few words on what
+    lifetime (24 h, or 7 days with scratch=True). topic: ALWAYS set it - a few words on what
     it is for (shown by ls/inspect; the creating agent, its PID, session and
     cwd are recorded automatically). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
     s1.2xlarge (32). disk_gib: volume size (default 150). nix_cache (default
