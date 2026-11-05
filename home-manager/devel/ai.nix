@@ -632,14 +632,21 @@ in
 
           projects = {
             "/etc/nixos".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/ansible-stuff.git".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/browser-daemon.git".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/bruvtab.git".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/ci-workflows.git".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/home-assistant-apps.git".trust_level =
+              "trusted";
             "/mnt/ha".trust_level = "trusted";
             "/mnt/turris".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/rbw.git".trust_level = "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/monarch.git".trust_level = "trusted";
             "${config.home.homeDirectory}".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config.git".trust_level = "trusted";
             "${config.home.homeDirectory}/devel/private/pschmitt/nixos-config-private.git".trust_level =
               "trusted";
+            "${config.home.homeDirectory}/devel/private/pschmitt/stricknani.git".trust_level = "trusted";
           };
 
           sandbox_mode = "danger-full-access";
