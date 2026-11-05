@@ -92,6 +92,13 @@ preview::image() {
     return "$?"
   fi
 
+  # timg with the Kitty graphics protocol also works in tmux
+  if has timg
+  then
+    timg -pk --center -g "$dimensions" -- "$file"
+    return "$?"
+  fi
+
   # chafa is kinda meh in tmux
   # https://github.com/hpjansson/chafa/issues/218
   if has chafa && ! in_tmux

@@ -1,11 +1,12 @@
 # Nix port of the yadm ~/bin/fzf-preview (fzf --preview helper: files with
-# bat, images with kitty/chafa, directories with eza/tree).
+# bat, images with kitty/timg/chafa, directories with eza/tree).
 {
   lib,
   bat,
   chafa,
   eza,
   file,
+  timg,
   tree,
   writeShellApplication,
 }:
@@ -16,6 +17,7 @@ writeShellApplication {
     chafa
     eza
     file
+    timg
     tree
   ];
   # The script probes optional tools and unset terminal variables.
