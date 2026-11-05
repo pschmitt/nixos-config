@@ -70,6 +70,7 @@ in
     timew-status
     timew-total
     ;
+  iris-viewer = pkgs.callPackage ./iris-viewer { };
   walker-menu = pkgs.callPackage ./local/walker-menu {
     inherit emoji-fzf soundboard;
   };
