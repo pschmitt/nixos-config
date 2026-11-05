@@ -47,7 +47,7 @@ but ssh takes it (scripts and the MCP server use it).
 
 Actions:
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
-     [--nix-cache] [--ssh [-l USER]]
+     [--no-nix-cache] [--ssh [-l USER]]
                        create a worker and wait until it is ready
   ls [-o json|wide] [--watch [-n SECONDS]]
                        list all workers (ad-hoc and nixbot's pool)
@@ -110,8 +110,10 @@ flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
 flag up --scratch scratch host, may live up to 7 days
 flag up --ssh log in as soon as it is ready
-flag up --nix-cache push this host's S3 cache settings to the worker
-flag exec --nix-cache push this host's S3 cache settings to the worker
+flag up --nix-cache push this host's S3 cache settings (default when it has any)
+flag up --no-nix-cache keep the S3 cache credentials off the worker
+flag exec --nix-cache push this host's S3 cache settings (default when it has any)
+flag exec --no-nix-cache keep the S3 cache credentials off the worker
 flag nix-cache --dry-run only show what would be pushed
 flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
@@ -158,7 +160,7 @@ action_help() {
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
-          [--nix-cache] [--topic TEXT] [-l USER]
+          [--nix-cache|--no-nix-cache] [--topic TEXT] [-l USER]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
 print it as JSON (name, ip, host_key, user, expires_at, builder).
@@ -170,8 +172,11 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
                    s1.2xlarge (32/64)
   --disk GIB       volume size (default 150)
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
-  --nix-cache      let the worker substitute from this host's S3 cache
-                   (see: $me help nix-cache); off by default
+  --nix-cache      push the S3 cache settings (the default when this host's
+                   Nix has an s3:// cache; fails loudly when it has none)
+  --no-nix-cache   do not give the worker this host's S3 cache settings and
+                   read-only key (see: $me help nix-cache). Without it they
+                   are pushed whenever this host's Nix has an s3:// cache.
   --ssh            log in (as agent) as soon as it is ready
   -l USER          with --ssh: log in as USER (pschmitt, nix-remote-builder)
   --topic TEXT     what it is for (shown by ls and inspect; none unless
@@ -214,7 +219,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --scratch, --topic, --nix-cache   as for up
+  --ttl, --flavor, --disk, --scratch, --topic, --nix-cache, --no-nix-cache   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -334,10 +339,11 @@ EOF
     nix-cache)
       cat <<EOF
 Usage: $me nix-cache NAME [--dry-run]
-       $me up --nix-cache ...      (does this right after creating the worker)
+       $me up [--no-nix-cache] ... (does this right after creating the worker)
 
 Let an ad-hoc worker substitute from the private S3 Nix cache, using this
-host's own settings. Workers carry no secrets by default; this is the opt-in.
+host's own settings. up and exec do it by default when this host's Nix has
+an s3:// substituter; --no-nix-cache keeps the worker free of the key.
 
 Pushed over SSH (pinned host key), never through the OpenStack metadata
 service and never via the control host:
@@ -705,7 +711,7 @@ render_progress() {
 
 cmd_up() {
   local key_file="${RWORKER_KEY:-$HOME/.ssh/id_ed25519.pub}" info name ip
-  local login="" login_user="" topic="" nix_cache="" cache_info
+  local login="" login_user="" topic="" nix_cache=auto cache_info settings
   local -a args=() meta=()
   while [[ -n "${1:-}" ]]
   do
@@ -715,6 +721,9 @@ cmd_up() {
         ;;
       --nix-cache)
         nix_cache=1
+        ;;
+      --no-nix-cache)
+        nix_cache=""
         ;;
       -l)
         login_user="${2:-}"
@@ -758,6 +767,16 @@ cmd_up() {
   jq -c '. + {user: "agent", kind: "adhoc"}' <<< "$info" > "$(state_file "$name")" \
     || return 1
   printf '%s %s\n' "$ip" "$(jq -er .host_key <<< "$info")" >> "$KNOWN_HOSTS"
+  if [[ "$nix_cache" == auto ]]
+  then
+    # Default: push when this host's Nix has an s3:// substituter.
+    nix_cache=""
+    if settings=$(nix_cache_settings 2>/dev/null) \
+      && [[ $(jq '.substituters | length' <<< "$settings") -gt 0 ]]
+    then
+      nix_cache=1
+    fi
+  fi
   if [[ -n "$nix_cache" ]]
   then
     # The cache is an optimisation: a failed push leaves a usable worker.
@@ -1345,7 +1364,7 @@ cmd_exec() {
         up_args+=("$1" "$2")
         shift
         ;;
-      --scratch|--nix-cache)
+      --scratch|--nix-cache|--no-nix-cache)
         up_args+=("$1")
         ;;
       --topic)

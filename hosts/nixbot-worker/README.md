@@ -4,7 +4,8 @@ A disposable, encrypted build VM on OpenStack. The nixbot host creates them
 from one image for two uses: as Nix remote builders for nixbot (autoscaled by
 build demand) and as ad-hoc workers that agents create for heavy compiles
 (the `rworker` skill). Workers hold no secrets and keep nothing across reboots,
-except what an agent opts into with `rworker up --nix-cache` (see below).
+except the read-only S3 cache key `rworker` pushes unless told not to
+(`--no-nix-cache`, see below).
 
 ## Boot
 
@@ -107,10 +108,10 @@ JSON, `--initial` skips the metadata service.
 and checks from the outside that each boot creates a new LUKS2 volume and a
 new host key.
 
-## Private S3 cache (opt-in)
+## Private S3 cache
 
-Ad-hoc workers can substitute from the private S3 Nix cache. Nothing is
-configured by default; the worker image only provides the hooks:
+Ad-hoc workers can substitute from the private S3 Nix cache. The image
+only provides the hooks, so a worker nobody pushed to holds nothing:
 
 - `/run/rworker-nix` (tmpfs, `agent`, 0700) is created at boot (tmpfiles).
 - `nix.conf` ends with `!include /run/rworker-nix/nix.conf`, ignored while the
@@ -121,7 +122,9 @@ configured by default; the worker image only provides the hooks:
   `rworker-nix-config.service`, which restarts `nix-daemon` (it reads its
   configuration only at start, and `agent` has no sudo).
 
-`rworker nix-cache NAME` (or `up`/`exec --nix-cache`) runs on the client: it
+`rworker nix-cache NAME` runs on the client, and `up`/`exec` do the same by
+default when the client has an `s3://` substituter (`--no-nix-cache` skips
+it): it
 pushes the client's `s3://` substituters, the trusted public keys and the one
 AWS profile those URLs name over SSH, credentials first and `nix.conf` last
 (replacing `nix.conf` triggers the restart). The secret travels on stdin

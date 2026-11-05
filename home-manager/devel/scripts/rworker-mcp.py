@@ -50,7 +50,7 @@ def up(
     disk_gib: int | None = None,
     scratch: bool = False,
     topic: str | None = None,
-    nix_cache: bool = False,
+    nix_cache: bool = True,
 ) -> dict:
     """Create an ad-hoc build worker and wait until it is ready (2-4 min).
 
@@ -59,10 +59,11 @@ def up(
     lifetime (24 h, or 7 days with scratch=True). topic: a few words on what
     it is for (shown by ls/inspect; the creating agent, its PID, session and
     cwd are recorded automatically). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
-    s1.2xlarge (32). disk_gib: volume size (default 150). nix_cache=True lets
-    the worker substitute from the private S3 Nix cache with this host's
-    read-only credentials (pushed over SSH; workers hold no secrets otherwise);
-    the result then has a nix_cache object, ok=false if it did not work.
+    s1.2xlarge (32). disk_gib: volume size (default 150). nix_cache (default
+    True) lets the worker substitute from the private S3 Nix cache with this
+    host's read-only credentials (pushed over SSH, only if this host has an
+    s3:// substituter); pass False to keep the key off the worker. The result
+    then has a nix_cache object, ok=false if it did not work.
     Returns name, ip, host_key, user and expires_at. Always call down() when
     the task is done.
     """
@@ -75,8 +76,8 @@ def up(
         argv.append("--scratch")
     if topic:
         argv += ["--topic", topic]
-    if nix_cache:
-        argv.append("--nix-cache")
+    if not nix_cache:
+        argv.append("--no-nix-cache")
     return json.loads(run(*argv, timeout=1200))
 
 
