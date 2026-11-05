@@ -16,6 +16,15 @@ agent- or run-specific directory when the remote is shared, and do not sync
 with deletion into a shared directory. Periodically remove your own obsolete
 build directories once no job is using them.
 
+## Coordinating deployments
+
+Before deploying to a host (`just deploy <host>`, or restarting
+`nixos-upgrade.service` on it), check Concord for other agents deploying to the
+same target: `inspect_work`, then `start_work` with `modules: ["deploy:<host>"]`.
+If someone holds that module, wait for their `finish_work` or prompt them with
+`update_work`; do not deploy over them. Release the claim with `finish_work` as
+soon as the switch is verified. See "Deployment" in `AGENTS.md` for the full rule.
+
 ## Remote evaluation and CI helpers
 
 Before copying a remotely updated `flake.lock` back, compare the local lock

@@ -43,6 +43,23 @@
   - **If already committed**: deploy by SSH'ing to the target host and restarting `nixos-upgrade.service` (`systemctl restart nixos-upgrade.service`).
 - NixOS hosts with embedded Home Manager configuration are deployed through
   their NixOS host configuration with `just deploy TARGET_HOST`.
+- **Coordinate deployments through Concord.** Concord claims cover files and
+  modules, so two agents deploying to the same host do not clash unless they
+  claim the target explicitly:
+  - Before `just deploy <host>` or restarting `nixos-upgrade.service` on a
+    host, call `inspect_work`, then `start_work` with `modules:
+    ["deploy:<host>"]` (use the workspace id below). If another agent holds
+    that module, do not deploy: wait for its `finish_work`, or ask it with
+    `update_work(operation="prompt", ...)`.
+  - Release the claim with `finish_work` as soon as the switch is verified
+    (`readlink -f /run/current-system`, units active), not at the end of the
+    whole task.
+  - Deploy from an explicit commit SHA, and check first for another agent's
+    in-progress rebase or unpushed state in the shared worktree.
+  - If `just deploy` reports an SSH timeout, keep the claim until you have
+    verified whether the switch actually succeeded (see the gotchas below).
+  - Shared service hosts (those running many unrelated services) are the
+    likeliest collision points: never skip the claim there.
 - **Deployment gotchas**:
   - `just deploy <host>` can report failure even when the switch actually succeeded if NetworkManager restarts during activation and terminates the SSH session (`Timeout, server <host> not responding`). The remote `nixos-rebuild switch` process continues running to completion. When this happens, re-`ssh` and verify `readlink -f /run/current-system`, check generations (`nix-env -p /nix/var/nix/profiles/system --list-generations | tail -3`), and confirm units are active.
   - Hosts with `services/initrd-luks-ssh-unlock.nix` present a distinct SSH host key while in initrd waiting for LUKS unlock (`/etc/ssh/initrd/ssh_host_{ed25519,rsa}_key`). A changed host key warning during the boot/unlock window is expected.
