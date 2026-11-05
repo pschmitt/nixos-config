@@ -8,7 +8,7 @@
     ../../services/harmonia.nix
     ../../services/kubeconfig-update.nix
 
-    ./agent-limits.nix
+    # ./agent-limits.nix
     ./authorized-keys.nix
     ./backups.nix
     ./browser-daemon.nix
