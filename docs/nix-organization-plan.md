@@ -22,21 +22,24 @@ The prior behavior comparison is the gate: 27 of 28 host derivations matched; th
 
 ### Own flake and package interface review
 
-Fix these concrete development-shell references before stylistic output cleanup:
+Completed follow-up: repaired these development-shell references and standardized
+the two projects on `packages.<system>.default` plus their named package outputs:
 
-- [myl-discovery](https://github.com/pschmitt/myl-discovery/blob/main/flake.nix) references `self.packages.${system}.default` in its shell hook, but exports only the named package and legacy `defaultPackage`.
-- [sendmyl](https://github.com/pschmitt/sendmyl/blob/main/flake.nix) references `self.packages.${system}.myl-discovery` in shell inputs and `.myl` in its shell hook; neither is exported there. Select the intended dependency from its input and the actual application package, then evaluate and enter the shell remotely.
+- [myl-discovery](https://github.com/pschmitt/myl-discovery/blob/main/flake.nix) referenced `self.packages.${system}.default` in its shell hook, but exported only the named package and legacy `defaultPackage`.
+- [sendmyl](https://github.com/pschmitt/sendmyl/blob/main/flake.nix) referenced `self.packages.${system}.myl-discovery` in shell inputs and `.myl` in its shell hook; neither was exported there. Its shell now inherits the actual application dependencies.
 
-These are source-level defects; dependency/toolchain failures may also need resolving before the shells can be tested.
+Both shells inherit their package dependencies and import the checkout. Remote
+validation passed for all declared output platforms; both Linux packages build
+and their CLI help works. Other platforms were evaluated, not built.
 
 7. **Root flake inventory:** the broader read-only inventory covers 39 active non-fork GitHub root flakes plus maintained local forks. Their package-level patterns are separate audit items from host profile ownership. `flake.nix` records several of these inputs, including [jellysync](../flake.nix), [myl-discovery](../flake.nix), [poor-tools](../flake.nix), [sendmyl](../flake.nix), [tdc](../flake.nix), and [vodafone-station-cli](../flake.nix). The `docker-compose-bulk` project also belongs in the package interface audit.
-8. **Legacy package outputs:** `tdc`, `docker-compose-bulk`, `myl`, `sendmyl`, `vodafone-station-cli`, and `myl-discovery` expose `defaultPackage` instead of canonical `packages.<system>.default`. Update each output in its own project change, without compatibility aliases, after checking its consumers. For `tdc`, `version = "latest"` is metadata only: `src = ./.` fixes the source to the flake revision, so do not characterize it as unreproducible.
+8. **Legacy package outputs:** `tdc`, `docker-compose-bulk`, `myl`, and `vodafone-station-cli` still expose `defaultPackage` instead of canonical `packages.<system>.default`. `myl-discovery` and `sendmyl` are completed; update the remaining projects in separate changes, without compatibility aliases, after checking their consumers. For `tdc`, `version = "latest"` is metadata only: `src = ./.` fixes the source to the flake revision, so do not characterize it as unreproducible.
 9. **Embedded modules:** `jellysync` has a roughly 480-line Home Manager module embedded in its 583-line flake; `poor-tools` embeds a NixOS module. Extract these into focused files while preserving output names and `self`/default-package semantics. Treat each as a behavior-preserving project refactor with direct output comparisons.
 10. **ISO outputs:** `iso` and `iso-multios` use identical module lists, as do `iso-private` and `iso-private-multios` ([definitions](../flake.nix)). This is redundant composition and the naming/comment relationship needs investigation. It does not establish a boot defect: upstream may support the `findiso` parameter without a distinct NixOS module list. Verify boot behavior before proposing output changes.
 
 ## Prioritized next steps
 
-1. **Fix broken own-flake development shells first**, then **close low-risk dead-code questions:** reference-search `modules/nixos/default.nix`; inspect all consumers of `profiles/headless-browsers.nix`; inventory consumers of the legacy `nixpkgs.nix` helper. Document the decision before deleting or changing paths.
+1. **Continue canonical outputs in the remaining flakes**, then **close low-risk dead-code questions:** reference-search `modules/nixos/default.nix`; inspect all consumers of `profiles/headless-browsers.nix`; inventory consumers of the legacy `nixpkgs.nix` helper. Document the decision before deleting or changing paths.
 2. **Build a capability/consumer matrix:** for Android USB, AppImage, Docker, Podman, and OCI service modules, list importing hosts/roles, required options, and effects (packages, units, firewall, backend). Mark deliberate universal policy separately from optional host capability. Do not move anything based on filenames alone.
 3. **Choose one mechanical change at a time:** start with confirmed no-op/wrapper cleanup, then optional baseline capabilities if the matrix supports it. Keep behavior changes out of these commits. Preserve import order where it affects merged lists; do not replace list ordering with override priorities.
 4. **Verification gate for each change:** format changed Nix files with `nixfmt`; run `statix check` and `deadnix` as applicable. On an rworker, compare a clean baseline and changed tree for every affected host and installation image, inspect differing derivations with `nix-diff`, and compare relevant rendered service settings and secret source mappings. Never evaluate or build locally. Require equal derivations for a mechanical relocation; explain any intentional difference before proceeding. Recheck the ARM host separately once the existing GHC failure is resolved.
