@@ -3,7 +3,6 @@
   home-manager.users.${config.mainUser.username} = {
     imports = [
       ../../modules/home-manager/claude-remote-control.nix
-      ../../modules/home-manager/codex-remote-control.nix
 
       ../../services/claude-work-warmup.nix
       ../../services/agy-warmup.nix
@@ -14,7 +13,6 @@
     # kitten icat for fzf-preview images (the outer terminal is a remote kitty)
     home.packages = [ pkgs.kitty ];
 
-    services.codex-remote-control.enable = true;
     services.terminal-browser-headless.enable = true;
   };
 }

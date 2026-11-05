@@ -2,11 +2,9 @@
 # grown until user.slice hit its MemoryHigh (resource-control.nix), which
 # throttles every user process into reclaim and swap: load ~48, all 15G of
 # swap used, TBs re-read from disk, while systemd-oomd never picked a victim.
-# Interactive codex runs in its own transient scope and both remote-control
-# servers get the same caps, so only the runaway session stalls or dies.
-# Claude's remote-control server also grows over time, so it gets restarted
-# every night. Keep Codex out of that recycle to avoid disconnecting remote
-# sessions; its per-unit memory limits still bound its resource use.
+# Interactive codex runs in its own transient scope and Claude's remote-control
+# server gets the same caps, so only the runaway session stalls or dies.
+# Claude's remote-control server also gets restarted every night.
 {
   config,
   lib,
@@ -55,12 +53,6 @@ in
 
     systemd.user.services = {
       claude-remote-control.Service = limits;
-
-      codex-remote-control.Service = limits // {
-        # remote-control resolves the standalone link to this wrapper; its
-        # server must stay in the service cgroup, not in a scope of its own.
-        Environment = [ "CODEX_NO_SCOPE=1" ];
-      };
 
       # RuntimeMaxSec= would do for claude, but codex' unit is a oneshot
       # (RemainAfterExit) where it has no effect. A fixed nightly slot also
