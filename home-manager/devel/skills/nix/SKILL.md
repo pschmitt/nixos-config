@@ -32,6 +32,19 @@ against the version originally synced. If another agent changed it meanwhile,
 resync the current lock and repeat the input update remotely. Review the final
 diff to ensure unrelated inputs were preserved before committing.
 
+Match the formatter used by each repository's CI, especially across older flakes.
+The `nixfmt` attribute used to select the classic formatter; a current binary on
+PATH may produce a different style. If CI uses the caller's locked inputs, run
+its formatting command on the worker (for example,
+`nix shell --inputs-from . 'nixpkgs#nixfmt' --command nixfmt flake.nix`) rather
+than updating dependency pins or weakening the check to accommodate formatting.
+
+Before a partial commit, check for unrelated files marked with `git add -N`.
+Pre-commit's stash/restore can fail when those files already exist during patch
+restoration. Commit the complete related set, or remove only your own unrelated
+intent-to-add entries from the index while keeping their files on disk, then
+stage them again for their commit. Do not bypass the hook.
+
 Never evaluate or build on the machine the agent runs on (see `AGENTS.md`). Prefer an ad-hoc
 `rworker` (see the `rworker` skill: `rworker exec --sync SRC -- CMD`, or `sync` + `ssh`), which
 needs no `~/build` cleanup; the scripts below target the shared build nodes. Two scripts in this
