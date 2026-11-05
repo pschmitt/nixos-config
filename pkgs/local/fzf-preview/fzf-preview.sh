@@ -27,50 +27,30 @@ is_ssh() {
   [[ -n "$SSH_CONNECTION" ]]
 }
 
-# Evaluate a tmux format for the most recently active client attached to the
-# session of this pane. Plain `tmux display-message` would pick the most
-# recently active client of the whole server, which may be another device.
+# Evaluate a tmux format for the client that will show this pane: of the
+# clients attached to the session of this pane, a kitty client wins (it can
+# render placeholders), else the most recently active one. Plain
+# `tmux display-message` would pick the most recently active client of the
+# whole server, which may be another device (e.g. a phone).
 tmux_client_format() {
-  local format="$1" session out
+  local format="$1" session client
   session="$(tmux display-message -p ${TMUX_PANE:+-t "$TMUX_PANE"} '#{session_name}' 2>/dev/null)"
-  out="$(tmux list-clients ${session:+-t "$session"} \
-    -F "#{client_activity} ${format}" 2>/dev/null | sort -rn | head -n1)"
-  if [[ -n "$out" ]]
-  then
-    echo "${out#* }"
-    return 0
-  fi
-  tmux display-message -p "$format" 2>/dev/null
-}
-
-# Erase the fzf preview area through the terminal. tmux frees a sixel image
-# once the cells under it are erased; without this they pile up with every
-# preview and slow the session down.
-erase_preview_area() {
-  local top="${FZF_PREVIEW_TOP:-}" left="${FZF_PREVIEW_LEFT:-}"
-  local cols="${FZF_PREVIEW_COLUMNS:-}" lines="${FZF_PREVIEW_LINES:-}"
-  [[ "$top" =~ ^[0-9]+$ && "$left" =~ ^[0-9]+$ \
-    && "$cols" =~ ^[0-9]+$ && "$lines" =~ ^[0-9]+$ ]] || return 0
-
-  local row
-  {
-    printf '\e7'
-    for ((row = 0; row < lines; row++))
-    do
-      printf '\e[%d;%dH\e[%dX' "$((top + row + 1))" "$((left + 1))" "$cols"
-    done
-    printf '\e8'
-  } > /dev/tty 2>/dev/null
+  client="$(tmux list-clients ${session:+-t "$session"} \
+    -F '#{?#{m:kitty*,#{client_termtype}},1,0} #{client_activity} #{client_name}' 2>/dev/null \
+    | sort -k1,1nr -k2,2nr | head -n1 | cut -d' ' -f3-)"
+  tmux display-message -p ${client:+-c "$client"} "$format" 2>/dev/null
 }
 
 # True when tmux itself runs inside another tmux/screen (e.g. ssh from a pane),
 # which needs a second passthrough layer for graphics escapes.
 tmux_nested() {
   in_tmux || return 1
-  case "$(tmux_client_format '#{client_termname}')" in
-    screen*|tmux*) return 0 ;;
-  esac
-  return 1
+  # The client process runs inside another tmux when it has $TMUX set itself.
+  # TERM is no hint: kitty may be configured with a screen-like TERM.
+  local pid
+  pid="$(tmux_client_format '#{client_pid}')"
+  [[ "$pid" =~ ^[0-9]+$ && -r "/proc/$pid/environ" ]] || return 1
+  tr '\0' '\n' < "/proc/$pid/environ" | grep -q '^TMUX='
 }
 
 # Which image protocol the (most recently active) tmux client speaks:
@@ -100,9 +80,11 @@ graphics_to_tty() {
     BEGIN { open(TTY, ">", "/dev/tty") or die "tty: $!"; select((select(TTY), $| = 1)[0]); }
     s/(\ePtmux;(?:[^\e]|\e\e)*\e\\|\e_G[^\e]*\e\\)/
       my $g = $1;
+      # drop the plain APC (kitten --clear): tmux would take it for a title
+      if ($g =~ m#^\e_G#) { ""; } else {
       $g = "\ePtmux;" . ($g =~ s#\e#\e\e#gr) . "\e\\" if $ENV{NESTED} && $g =~ m#^\ePtmux#;
       print TTY $g;
-      ""/gex
+      ""; }/gex
   '
 }
 
