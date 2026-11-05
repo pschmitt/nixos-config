@@ -27,11 +27,47 @@ is_ssh() {
   [[ -n "$SSH_CONNECTION" ]]
 }
 
+# Evaluate a tmux format for the most recently active client attached to the
+# session of this pane. Plain `tmux display-message` would pick the most
+# recently active client of the whole server, which may be another device.
+tmux_client_format() {
+  local format="$1" session out
+  session="$(tmux display-message -p ${TMUX_PANE:+-t "$TMUX_PANE"} '#{session_name}' 2>/dev/null)"
+  out="$(tmux list-clients ${session:+-t "$session"} \
+    -F "#{client_activity} ${format}" 2>/dev/null | sort -rn | head -n1)"
+  if [[ -n "$out" ]]
+  then
+    echo "${out#* }"
+    return 0
+  fi
+  tmux display-message -p "$format" 2>/dev/null
+}
+
+# Erase the fzf preview area through the terminal. tmux frees a sixel image
+# once the cells under it are erased; without this they pile up with every
+# preview and slow the session down.
+erase_preview_area() {
+  local top="${FZF_PREVIEW_TOP:-}" left="${FZF_PREVIEW_LEFT:-}"
+  local cols="${FZF_PREVIEW_COLUMNS:-}" lines="${FZF_PREVIEW_LINES:-}"
+  [[ "$top" =~ ^[0-9]+$ && "$left" =~ ^[0-9]+$ \
+    && "$cols" =~ ^[0-9]+$ && "$lines" =~ ^[0-9]+$ ]] || return 0
+
+  local row
+  {
+    printf '\e7'
+    for ((row = 0; row < lines; row++))
+    do
+      printf '\e[%d;%dH\e[%dX' "$((top + row + 1))" "$((left + 1))" "$cols"
+    done
+    printf '\e8'
+  } > /dev/tty 2>/dev/null
+}
+
 # True when tmux itself runs inside another tmux/screen (e.g. ssh from a pane),
 # which needs a second passthrough layer for graphics escapes.
 tmux_nested() {
   in_tmux || return 1
-  case "$(tmux display-message -p '#{client_termname}' 2>/dev/null)" in
+  case "$(tmux_client_format '#{client_termname}')" in
     screen*|tmux*) return 0 ;;
   esac
   return 1
@@ -48,7 +84,7 @@ image_protocol() {
   in_tmux || return 0
 
   local info
-  info="$(tmux display-message -p '#{client_termtype}|#{client_termfeatures}' 2>/dev/null)"
+  info="$(tmux_client_format '#{client_termtype}|#{client_termfeatures}')"
   case "$info" in
     kitty*) echo kitty ;;
     *sixel*) echo sixel ;;
@@ -131,13 +167,14 @@ preview::image() {
 
   if [[ "$protocol" == sixel ]]
   then
+    erase_preview_area
     if has timg
     then
       # timg cannot query the cell size without a tty and assumes about
       # 7.7x18 px. Scale the grid so the sixel fills the preview window.
       local sixel_dims="$dimensions" cw ch
-      cw="$(tmux display-message -p '#{client_cell_width}' 2>/dev/null)"
-      ch="$(tmux display-message -p '#{client_cell_height}' 2>/dev/null)"
+      cw="$(tmux_client_format '#{client_cell_width}')"
+      ch="$(tmux_client_format '#{client_cell_height}')"
       if [[ "$cw" =~ ^[0-9]+$ && "$ch" =~ ^[0-9]+$ && "$cw" -gt 0 && "$ch" -gt 0 ]]
       then
         sixel_dims="$(( ${dimensions%x*} * cw * 10 / 77 ))x$(( ${dimensions#*x} * ch / 18 ))"
@@ -162,7 +199,7 @@ preview::image() {
       # tmux does not report the window size in pixels, which kitten icat
       # needs: hand it over explicitly (falling back to a 10x20 px cell).
       local tmux_size
-      tmux_size="$(tmux display-message -p \
+      tmux_size="$(tmux_client_format \
         '#{client_width},#{client_height},#{client_cell_width},#{client_cell_height}')"
       local cols rows cw ch
       IFS=, read -r cols rows cw ch <<< "$tmux_size"

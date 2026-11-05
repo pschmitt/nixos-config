@@ -42,7 +42,7 @@ in
         --height 100%
         --info=inline
         --layout default
-        --preview-window "right,66%,border-none,<80(up,66%,border-none)"
+        --preview-window "right,66%,border-none,<80(up,80%,border-none)"
         --preview "fzf-preview {}"
         --color "preview-bg:#223344"
         --bind "alt-a:select-all,alt-d:deselect-all,ctrl-/:toggle-preview"
