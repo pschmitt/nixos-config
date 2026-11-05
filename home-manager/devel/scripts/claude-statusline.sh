@@ -17,9 +17,9 @@ account=$(jq -r '.oauthAccount.emailAddress // empty' "$config_dir/.claude.json"
 if [[ "${CLAUDE_STATUSLINE_CLIPROXY:-}" == "1" ]]; then
   account_label="CLIPROXY"
 elif [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_WORK_EMAIL:-}" ]]; then
-  account_label="WORK"
+  account_label="WRK"
 elif [[ -n "$account" && "$account" == "${CLAUDE_STATUSLINE_PERSONAL_EMAIL:-}" ]]; then
-  account_label="PERSONAL"
+  account_label="PRS"
 else
   account_label="${account:-email unavailable}"
 fi
