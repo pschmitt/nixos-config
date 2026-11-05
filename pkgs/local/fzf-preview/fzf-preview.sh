@@ -27,18 +27,50 @@ is_ssh() {
   [[ -n "$SSH_CONNECTION" ]]
 }
 
-# Evaluate a tmux format for the client that will show this pane: of the
-# clients attached to the session of this pane, a kitty client wins (it can
-# render placeholders), else the most recently active one. Plain
-# `tmux display-message` would pick the most recently active client of the
-# whole server, which may be another device (e.g. a phone).
+# Evaluate a tmux format for the client that is using this pane, e.g. the
+# phone or the laptop when both are attached to the same session.
+#
+# `client_activity` is no good: replies of the terminal to queries from
+# programs in any pane count as activity. tmux sizes a window to the client
+# that last typed into it (window-size=latest), so pick the client of the
+# session whose size matches the window of this pane (the status line adds a
+# row), and fall back to the most recently active one.
 tmux_client_format() {
-  local format="$1" session client
-  session="$(tmux display-message -p ${TMUX_PANE:+-t "$TMUX_PANE"} '#{session_name}' 2>/dev/null)"
+  local format="$1" session win_w win_h client
+  read -r session win_w win_h < <(
+    tmux display-message -p ${TMUX_PANE:+-t "$TMUX_PANE"} \
+      '#{session_name} #{window_width} #{window_height}' 2>/dev/null
+  )
   client="$(tmux list-clients ${session:+-t "$session"} \
-    -F '#{?#{m:kitty*,#{client_termtype}},1,0} #{client_activity} #{client_name}' 2>/dev/null \
-    | sort -k1,1nr -k2,2nr | head -n1 | cut -d' ' -f3-)"
+    -F '#{client_activity} #{client_width} #{client_height} #{client_name}' 2>/dev/null \
+    | awk -v w="${win_w:-0}" -v h="${win_h:-0}" '
+        { fit = ($2 == w && $3 >= h && $3 <= h + 2) ? 1 : 0
+          if (fit > bfit || (fit == bfit && $1 > bact)) {
+            bfit = fit; bact = $1; name = $4
+            for (i = 5; i <= NF; i++) name = name " " $i
+          } }
+        END { print name }')"
   tmux display-message -p ${client:+-c "$client"} "$format" 2>/dev/null
+}
+
+# Erase the fzf preview area through the terminal. tmux frees a sixel image
+# once the cells under it are erased; without this they pile up with every
+# preview and slow the session down.
+erase_preview_area() {
+  local top="${FZF_PREVIEW_TOP:-}" left="${FZF_PREVIEW_LEFT:-}"
+  local cols="${FZF_PREVIEW_COLUMNS:-}" lines="${FZF_PREVIEW_LINES:-}"
+  [[ "$top" =~ ^[0-9]+$ && "$left" =~ ^[0-9]+$ \
+    && "$cols" =~ ^[0-9]+$ && "$lines" =~ ^[0-9]+$ ]] || return 0
+
+  local row
+  {
+    printf '\e7'
+    for ((row = 0; row < lines; row++))
+    do
+      printf '\e[%d;%dH\e[%dX' "$((top + row + 1))" "$((left + 1))" "$cols"
+    done
+    printf '\e8'
+  } > /dev/tty 2>/dev/null
 }
 
 # True when tmux itself runs inside another tmux/screen (e.g. ssh from a pane),
