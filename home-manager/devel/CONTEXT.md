@@ -11,6 +11,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   or topology details. Refer to the private `brkn-infra` skill for host-specific
   information; use system roles or placeholders in shared instructions.
 - Prefer repository skills when a task matches one:
+  - `rworker` before any heavy compilation, build, test suite, or Nix evaluation
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `ci-workflows` for GitHub Actions using shared `pschmitt/ci-workflows` components
@@ -24,9 +25,13 @@ Use this file as lightweight shared context for AI tooling in this repository.
   OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
   bare URLs or IDs; in Markdown-capable output, use Markdown links.
 - Subagents: when delegating tasks to subagents, spawning background agents, or
-  creating agent teams, always use lightweight/cost-effective models rather than
-  expensive primary models:
+  creating agent teams, always use the current harness's native subagent tool
+  (e.g. the `Agent` tool in Claude Code / `claude-work` / `claude-auto`, native
+  subagents in Codex, `invoke_subagent` in Antigravity) rather than shelling
+  out to `codex exec` or `claude` in `Bash`, and always use lightweight/cost-effective
+  models rather than expensive primary models:
   - In Claude Code / Claude Work: always use Sonnet (`sonnet`). Never use Opus for subagents.
+  - In `claude-auto` (Claude Code via `cli-proxy-api`): subagents launched with the `Agent` tool automatically use `subscription-subagent` (`gpt-6-luna` / `claude-sonnet-5-5` / `gemini-3.8-flash-high`).
   - In Codex: always use Luna (`gpt-6-luna` / `luna`).
   - In Antigravity (`agy`): always use Gemini Flash (`flash` / `flash_lite` / `gemini-flash`). Never use Pro for subagents.
 
@@ -60,7 +65,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 
 ## Deployment and operations
 
-- Almost always avoid running expensive build commands (for example `cargo build` or Nix host configuration evaluations) on the local host where the agent is running. Prefer an ad-hoc `rworker` (see the `rworker` skill); use a shared build host only for quick one-offs (see the private `brkn-infra` skill).
+- **Never run heavy compilation, builds, or Nix evaluations on the local host** where the agent is running (including in Codex and any delegated subagents/workers). This covers `cargo build`, `cargo check`, `cargo test`, `cargo clippy`, `nix build`, `nix eval`, `nix flake check`, Android/Gradle builds, container builds, and large test suites. Always offload them to an ad-hoc `rworker` VM (load the `rworker` skill and use the `rworker` MCP or `rworker exec --sync`); use a shared build host only for quick one-offs (see the private `brkn-infra` skill).
 - Shared build host directories should use `~/build/<PROJECT_NAME>`.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
