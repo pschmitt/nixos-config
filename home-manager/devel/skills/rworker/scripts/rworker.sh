@@ -780,7 +780,10 @@ cmd_up() {
   if [[ -n "$nix_cache" ]]
   then
     # The cache is an optimisation: a failed push leaves a usable worker.
-    if ! cache_info=$(push_nix_cache "$name")
+    # Whatever goes wrong, keep the worker and warn: keep a JSON result the
+    # push printed (image-too-old), else make one.
+    cache_info=$(push_nix_cache "$name") || true
+    if ! jq -e 'type == "object"' <<< "$cache_info" > /dev/null 2>&1
     then
       cache_info='{"ok": false}'
     fi
@@ -790,8 +793,8 @@ cmd_up() {
         "$(paint 33 '!')" "$name" >&2
     elif [[ $(jq -r .ok <<< "$cache_info") != true ]]
     then
-      printf 'Could not set up the S3 cache on %s; retry: %s nix-cache %s\n' \
-        "$name" "$(basename "$0")" "$name" >&2
+      printf '%s could not set up the S3 cache on %s (the worker is fine); retry: %s nix-cache %s\n' \
+        "$(paint 33 '!')" "$name" "$(basename "$0")" "$name" >&2
     fi
     info=$(jq -c --argjson c "$cache_info" '. + {nix_cache: $c}' <<< "$info")
   fi
