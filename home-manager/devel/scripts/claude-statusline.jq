@@ -7,8 +7,9 @@ def yellow: "\(ansi_esc)[33m";
 def red: "\(ansi_esc)[31m";
 
 def badge:
-  (if $account == "PERSONAL" then 208 else 141 end) as $bg |
-  "\(ansi_esc)[1;30;48;5;\($bg)m \($account) \(reset)";
+  (if $account == "PERSONAL" then 208 elif $account == "CLIPROXY" then 25 elif $account == "email unavailable" then 88 else 141 end) as $bg |
+  (if $account == "email unavailable" then 97 else 30 end) as $fg |
+  "\(ansi_esc)[1;\($fg);48;5;\($bg)m \($account) \(reset)";
 
 def branch_color:
   "\(ansi_esc)[38;5;141m";
