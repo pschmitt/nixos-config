@@ -8,6 +8,7 @@
     ./falcon-sensor-vm.nix
     ./hardware.nix
     ./hermes.nix
+    ./initrd-wifi.nix
     ./ktunnel.nix
     ./main-user.nix
     ./monit-checks.nix

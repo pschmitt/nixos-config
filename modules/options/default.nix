@@ -1,7 +1,5 @@
 {
   imports = [
-    ./initrd/wifi.nix
-
     ./services/authelia.nix
     ./services/crowdstrike.nix
     ./services/harmonia.nix

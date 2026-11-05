@@ -17,7 +17,6 @@
     ./a11y.nix
     ./noctalia.nix
     ./initrd-network.nix
-    ./initrd-wifi.nix
     ./helixnotes.nix
     ./managarr.nix
     ./noisetorch.nix

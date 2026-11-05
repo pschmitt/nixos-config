@@ -32,10 +32,10 @@ in
 
     # Extra features currently run by all three laptops.
     ../../features/network/snek
-    ../laptop/tor.nix
-    ../laptop/wireshark.nix
-    ../laptop/nrf.nix
-    ../laptop/waydroid.nix
+    ../../features/network/tor.nix
+    ../../features/network/wireshark.nix
+    ../../features/development/nrf.nix
+    ../../features/desktop/waydroid.nix
     ../../features/work/vpn/openvpn.nix
     ../../features/work/nix-cache.nix
 

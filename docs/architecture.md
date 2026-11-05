@@ -57,6 +57,14 @@ should import its backup service rather than depending on a workstation parent
 to do so. Multiple consumers may legitimately import the same module path;
 clear ownership matters more than eliminating every repeated import.
 
+Import order affects the order of merged lists. Moving a prerequisite into
+a child module can reorder packages, backup paths and generated units even
+when the same files remain reachable. Preserve existing ordering during
+mechanical moves; do not add override priorities merely to hide unexpected
+differences. Keep a composition-level import when relocating it would change
+the evaluated configuration, and document that dependency until a deliberate
+behavior change is appropriate.
+
 Prefer options beside their guarded implementation. Consolidate the existing
 `modules/options/` split incrementally, retaining shared declarations where
 NixOS and Home Manager both need them. Importing reusable definitions should
