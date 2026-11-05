@@ -62,7 +62,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Do not start unbounded filesystem traversals. Prefer `rg --files` or a targeted `rg` search over `find`, `bfs`, or similar recursive discovery commands.
 - If `find`, `bfs`, or another potentially expensive recursive command is necessary, scope it to the smallest relevant directory, exclude known large/generated paths, and wrap it with `timeout 5m`.
 - Never recursively search broad paths such as `/`, a home directory, or `/nix/store`. If a scoped search times out, refine its scope rather than rerunning it unchanged.
-- Keep large files out of `/tmp`, including the agent scratchpad under it: on some hosts `/tmp` is a RAM-backed tmpfs, and repository clones, exports, APKs, snapshots or test copies left there fill RAM and swap. Put big artifacts in a project directory under `~` or on a build host or `rworker`, and delete your temporary files when you are done.
+- Keep large files out of `/tmp`, including the agent scratchpad under it: `/tmp` can be (and often is) a RAM-backed tmpfs, where repository clones, exports, APKs, snapshots or test copies left there fill RAM and swap. Put big artifacts in a project directory under `~` or on a build host or `rworker`, and delete your temporary files when you are done.
 
 ## Deployment and operations
 
