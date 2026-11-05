@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended"
   ],
+  "rebaseWhen": "behind-base-branch",
   "nix": {
     "enabled": true,
     "fileMatch": [
@@ -30,6 +31,16 @@
       ],
       "matchDepTypes": [
         "automerge"
+      ]
+    },
+    {
+      "description": "Automerge selected container image updates after required CI checks pass",
+      "automergeType": "pr",
+      "automerge": true,
+      "matchPackageNames": [
+        "freikin/dawarich",
+        "ghcr.io/dgtlmoon/changedetection.io",
+        "ghcr.io/pschmitt/github-backup"
       ]
     },
     {

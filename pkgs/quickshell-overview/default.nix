@@ -108,6 +108,8 @@ stdenvNoCC.mkDerivation (_finalAttrs: {
     ];
   };
 
+  passthru.updatePolicy.autoMerge = "all";
+
   meta = {
     description = "Quickshell overview module for Hyprland";
     homepage = "https://github.com/Shanu-Kumawat/quickshell-overview";
