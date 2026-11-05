@@ -1,0 +1,82 @@
+diff --git a/src/notification/link_focus.h b/src/notification/link_focus.h
+index 8c28b1a2a..767b6de5f 100644
+--- a/src/notification/link_focus.h
++++ b/src/notification/link_focus.h
+@@ -14 +14 @@ namespace notification {
+-  inline void focusLinkHandler(CompositorPlatform* platform, std::string_view url) {
++  inline void focusLinkHandler(CompositorPlatform* platform, std::string_view url, bool chromium = false) {
+@@ -19,5 +19,8 @@ namespace notification {
+-    GAppInfo* app = g_app_info_get_default_for_uri_scheme(scheme.c_str());
+-    if (app == nullptr) return;
+-    const char* appId = g_app_info_get_id(app);
+-    std::string id = appId != nullptr ? StringUtils::toLower(appId) : std::string{};
+-    g_object_unref(app);
++    std::string id = "chromium-browser.desktop";
++    if (!chromium) {
++      GAppInfo* app = g_app_info_get_default_for_uri_scheme(scheme.c_str());
++      if (app == nullptr) return;
++      const char* appId = g_app_info_get_id(app);
++      id = appId != nullptr ? StringUtils::toLower(appId) : std::string{};
++      g_object_unref(app);
++    }
+diff --git a/src/notification/notification_manager.cpp b/src/notification/notification_manager.cpp
+index 29d241cea..079c68545 100644
+--- a/src/notification/notification_manager.cpp
++++ b/src/notification/notification_manager.cpp
+@@ -270 +270,4 @@ uint32_t NotificationManager::addOrReplace(NotificationRequest request) {
+-  const Urgency urgency = request.urgency;
++  const Urgency urgency = request.origin == NotificationOrigin::External
++          && request.urgency == Urgency::Critical
++          && (appName == "Chromium" || appName == "Google Chrome")
++      ? Urgency::Normal : request.urgency;
+diff --git a/src/shell/control_center/tabs/notifications_tab.cpp b/src/shell/control_center/tabs/notifications_tab.cpp
+index b0ec17a2c..f08045331 100644
+--- a/src/shell/control_center/tabs/notifications_tab.cpp
++++ b/src/shell/control_center/tabs/notifications_tab.cpp
+@@ -11,0 +12 @@
++#include "core/process/process.h"
+@@ -90 +91 @@ namespace {
+-                                         std::function<void(const std::string&)> focusLink = {}) {
++                                         std::function<void(const std::string&, bool)> focusLink = {}, bool chromium = false) {
+@@ -92 +93 @@ namespace {
+-        .text = "Open link " + std::to_string(index + 1),
++        .text = (chromium ? "Chromium " : "Open link ") + std::to_string(index + 1),
+@@ -98,2 +99,4 @@ namespace {
+-    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken), focusLink = std::move(focusLink)] {
+-      if (net::openInBrowser(url, activationToken ? activationToken() : std::string{})) {
++    button->setOnClick([url, refresh = std::move(refresh), activationToken = std::move(activationToken), focusLink = std::move(focusLink), chromium] {
++      const auto token = activationToken ? activationToken() : std::string{};
++      if (chromium ? process::runAsync(std::vector<std::string>{"chromium", url}, token)
++                   : net::openInBrowser(url, token)) {
+@@ -102 +105 @@ namespace {
+-        if (focusLink) focusLink(url);
++        if (focusLink) focusLink(url, chromium);
+@@ -136,0 +140 @@ namespace {
++      buttons.push_back(makeLinkButton(links[i], i, scale, {}, {}, {}, true));
+@@ -448 +452 @@ namespace {
+-        const std::function<void(const std::string&)>& focusLink
++        const std::function<void(const std::string&, bool)>& focusLink
+@@ -519 +523 @@ namespace {
+-            focusLink(url);
++            focusLink(url, false);
+@@ -544,0 +549 @@ namespace {
++          buttons.push_back(makeLinkButton(links[i], i, m_scale, refreshLinks, activationToken, focusLink, true));
+@@ -724 +729 @@ public:
+-        [this](const std::string& url) { notification::focusLinkHandler(m_owner.m_platform, url); }
++        [this](const std::string& url, bool chromium) { notification::focusLinkHandler(m_owner.m_platform, url, chromium); }
+diff --git a/tests/notification_history_dismiss_test.cpp b/tests/notification_history_dismiss_test.cpp
+index 84a9b47d2..4e131163d 100644
+--- a/tests/notification_history_dismiss_test.cpp
++++ b/tests/notification_history_dismiss_test.cpp
+@@ -32,0 +33,11 @@ int main() {
++  {
++    NotificationManager urgencyManager;
++    const auto chromium = urgencyManager.addOrReplace({.appName = "Chromium", .summary = "chromium", .urgency = Urgency::Critical});
++    const auto chrome = urgencyManager.addOrReplace({.appName = "Google Chrome", .summary = "chrome", .urgency = Urgency::Critical});
++    const auto other = urgencyManager.addOrReplace({.appName = "other", .summary = "other", .urgency = Urgency::Critical});
++    const auto internal = urgencyManager.addOrReplace({.appName = "Chromium", .summary = "internal", .urgency = Urgency::Critical, .origin = NotificationOrigin::Internal, .persistInHistory = true});
++    TEST_CHECK(findEntry(urgencyManager, chromium)->notification.urgency == Urgency::Normal);
++    TEST_CHECK(findEntry(urgencyManager, chrome)->notification.urgency == Urgency::Normal);
++    TEST_CHECK(findEntry(urgencyManager, other)->notification.urgency == Urgency::Critical);
++    TEST_CHECK(findEntry(urgencyManager, internal)->notification.urgency == Urgency::Critical);
++  }

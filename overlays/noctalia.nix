@@ -113,6 +113,9 @@ in
       # Focus the configured URI handler when it already has a window.
       ./patches/noctalia/0017-notification-browser-focus.patch
 
+      # Normalize Chromium urgency and offer a Chromium link action in history.
+      ./patches/noctalia/0019-chromium-notifications.patch
+
       # osd-show always used the configured osd.position, so an ad-hoc OSD
       # could not appear anywhere else without a persistent config-set. Accept
       # an optional "position" field (top_left ... center_right) in the JSON
