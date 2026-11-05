@@ -224,6 +224,18 @@
   should instead be a NixOS-side option in `modules/`.
 
 ## Host composition
+- Follow the ownership boundaries in [Architecture](docs/architecture.md).
+  Reusable option-driven implementation belongs in `modules/`; profiles
+  select capabilities and defaults; hosts select roles and supply local values.
+- Keep dependency imports with the capability that needs them, rather than
+  relying on a parent or sibling to import prerequisites. Repeated imports
+  are not by themselves proof of duplicated runtime configuration.
+- Keep `profiles/base/` intentionally universal. Put optional applications
+  and runtimes in `profiles/features/`, selected by roles. Preserve existing
+  consumers when moving files; separate moves from behavior changes.
+- Prefer options beside their guarded implementation. Split declarations
+  when multiple module systems need them. Avoid wrappers that merely rename
+  one import without adding policy or a useful composition boundary.
 - `profiles/base/` is the common baseline. Optional capabilities live under
   `profiles/features/` (for example `network/`, `desktop/`, and `work/`), while
   machine classes and reusable host roles live under
