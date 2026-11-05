@@ -47,6 +47,7 @@ in
         --color "preview-bg:#223344"
         --bind "alt-a:select-all,alt-d:deselect-all,ctrl-/:toggle-preview"
         --bind "alt-k:change-preview-window(up|right)"
+        --bind "alt-0:transform:fzf-preview --next-mode"
       '
     ''
   );

@@ -308,6 +308,31 @@ preview::directory() {
     "$1"
 }
 
+# Print the fzf action that switches to the next image mode: auto -> kitty ->
+# sixel -> auto. Meant for `--bind 'alt-0:transform:fzf-preview --next-mode'`.
+# The current mode is kept per fzf process in a small state file.
+preview::next-mode() {
+  local fzf_pid state current next
+  # $PPID is the shell fzf started for the transform action
+  fzf_pid="$(awk '{ print $4 }' "/proc/$PPID/stat" 2>/dev/null)"
+  state="${XDG_RUNTIME_DIR:-/tmp}/fzf-preview-mode.${fzf_pid:-$PPID}"
+  current="$(cat "$state" 2>/dev/null)"
+
+  case "$current" in
+    kitty) next=sixel ;;
+    sixel) next=auto ;;
+    *) next=kitty ;;
+  esac
+  echo "$next" > "$state"
+
+  if [[ "$next" == auto ]]
+  then
+    echo "change-preview(env -u IMG_PIXELATION fzf-preview {})+change-prompt(> )"
+  else
+    echo "change-preview(IMG_PIXELATION=$next fzf-preview {})+change-prompt($next> )"
+  fi
+}
+
 preview::text-file() {
   local file="$1" line_number="$2"
   file="${file/#\~\//$HOME/}" # expand ~
@@ -346,6 +371,10 @@ preview::text-file() {
 
 main() {
   case "$1" in
+    --next-mode)
+      preview::next-mode
+      return 0
+      ;;
     -h|--help)
       # Check if there's an actual file named -h or --help
       if [[ ! -e "$1" ]]
