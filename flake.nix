@@ -700,6 +700,40 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          privateSkills = "${inputs.nixos-config-private}/hm/skills";
+          upstreamSkills = import ./home-manager/devel/upstream-skills.nix {
+            inherit (pkgs) fetchFromGitHub;
+            inherit (self.packages.${system}) todoist-cli;
+            inherit (inputs.llm-agents.packages.${system}) terminal-browser;
+          };
+          cksSkills = "${
+            inputs.nixos-config-private.inputs.agent-skills.packages.${system}.default
+          }/share/skills/cks-agent-skills";
+          # The `skills` check below, for the pre-commit hook: lints this
+          # repo's skills in the working tree. The private skills (the
+          # checkout in PRIVATE_CONFIG_DIR, else the pinned input) and the
+          # CKS and upstream ones only resolve names and links.
+          skillsLintHook = pkgs.writeShellApplication {
+            name = "skills-lint-hook";
+            runtimeInputs = [
+              self.packages.${system}.skills-ref
+              self.packages.${system}.skills-lint
+            ];
+            text = ''
+              for dir in home-manager/devel/skills/*/; do
+                agentskills validate "$dir"
+              done
+              external=()
+              for dir in ${nixpkgs.lib.concatMapStringsSep " " (path: "${path}/*/") upstreamSkills}; do
+                external+=(--external "$(basename "$dir")")
+              done
+              skills-lint \
+                --context ${cksSkills} \
+                --context "''${PRIVATE_CONFIG_DIR:-${inputs.nixos-config-private}}/hm/skills" \
+                "''${external[@]}" \
+                home-manager/devel/skills
+            '';
+          };
         in
         {
           # Every skill of this repo and the private one follows the Agent
@@ -710,15 +744,6 @@
           # come from home-manager/devel/upstream-skills.nix).
           skills =
             let
-              privateSkills = "${inputs.nixos-config-private}/hm/skills";
-              upstreamSkills = import ./home-manager/devel/upstream-skills.nix {
-                inherit (pkgs) fetchFromGitHub;
-                inherit (self.packages.${system}) todoist-cli;
-                inherit (inputs.llm-agents.packages.${system}) terminal-browser;
-              };
-              cksSkills = "${
-                inputs.nixos-config-private.inputs.agent-skills.packages.${system}.default
-              }/share/skills/cks-agent-skills";
               mergedSkills = pkgs.symlinkJoin {
                 name = "resulting-skills-tree";
                 paths = [
@@ -762,6 +787,15 @@
                 language = "system";
                 pass_filenames = false;
                 entry = "${pkgs.gitleaks}/bin/gitleaks git --staged --redact --no-banner --config .gitleaks.toml";
+              };
+              # Same lint as the `skills` check (Agent Skills spec + skills-lint)
+              skills-lint = {
+                enable = true;
+                name = "skills-lint";
+                language = "system";
+                pass_filenames = false;
+                files = "^home-manager/devel/skills/";
+                entry = "${skillsLintHook}/bin/skills-lint-hook";
               };
             };
           };
