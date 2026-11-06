@@ -58,6 +58,13 @@ in
         mode = "0400";
         restartUnits = [ "teams-live.service" ];
       };
+      "home-assistant/token" = {
+        inherit (cfg) group;
+        owner = cfg.user;
+        sopsFile = config.sops.defaultSopsFile;
+        mode = "0400";
+        restartUnits = [ "teams-live.service" ];
+      };
     };
 
   sops.templates."teams-live/config.json" = {
@@ -97,6 +104,11 @@ in
         edge_key = config.sops.placeholder."opsgenie/edge-stack/api-key";
         on_call_schedule_id = "8aa71a67-9ddd-4571-af97-06d1ddb3c7cb";
         support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
+      };
+
+      home_assistant = {
+        url = "https://ha.brkn.lol";
+        token_file = config.sops.secrets."home-assistant/token".path;
       };
 
       browser_daemon = {
