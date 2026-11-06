@@ -172,9 +172,8 @@ See [maintenance](references/maintenance.md) when changing the client.
 - Always `down` the worker when the task is done, even after a failure; do
   not leave it for the TTL. Extend instead of creating a second one.
 - Nothing on a worker survives. Copy results off before `down`.
-- Avoid credentials on workers when possible. When necessary, follow
-  **Secrets and private inputs** above; the automatic read-only S3 cache key
-  is handled separately by `rworker`. Using the host's own S3 cache
-  credentials on a worker is the one deliberate exception (see **Patterns**).
+- Credentials the task needs may go to a worker (see **Secrets and private
+  inputs**), as a file and never in the transcript. The automatic S3 cache
+  key is handled separately by `rworker`.
 - Prefer a worker over the shared build nodes for anything that takes more
   than a few minutes of full CPU.
