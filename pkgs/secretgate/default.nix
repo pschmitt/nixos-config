@@ -17,7 +17,6 @@
 
 buildPythonApplication rec {
   pname = "secretgate";
-  # renovate: datasource=pypi depName=secretgate
   version = "0.8.1";
   pyproject = true;
 
