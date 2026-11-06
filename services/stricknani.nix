@@ -1,70 +1,98 @@
-# Stricknani production (wool/stricken/wolle on rofl-10): stage selector.
+# Stricknani production (wool/stricken/wolle on rofl-10): the Rust server and
+# web UI via the upstream NixOS module (nix/module.nix of the `stricknani`
+# flake input). Data lives in /var/lib/stricknani (stricknani.sqlite3 +
+# media/), the module's defaults.
 #
-# ONE constant below picks what runs. Everything else is derived from it:
-#
-#   stage                  backend  edge maintenance  use
-#   ---------------------  -------  ----------------  ----------------------------
-#   "rust"                 Rust     off               cutover end state (default)
-#   "rust-maintenance"     Rust     on                window step: Rust on imported data
-#   "python-maintenance"   Python   on                window step: close the edge first
-#   "python"               Python   off               pre-cutover production / rollback
-#
-# Cutover window (details: docs/rust-migration-plan.md and
-# docs/production-cutover-checklist.md in the stricknani repo):
-#   0. monit unmonitor stricknani          (on rofl-10)
-#   1. stage = "python-maintenance"; deploy   -> edge answers 503, Python still up
-#      wait for in-flight requests to drain
-#   2. systemctl stop stricknani; take the matched DB+media snapshot; run
-#      `stricknani-server import-snapshot ... --destination /var/lib/stricknani-rust`
-#      (root; stricknani-server is in PATH in every stage); chown -R stricknani:stricknani
-#   3. stage = "rust-maintenance"; deploy     -> Rust serves the imported data, edge still 503
-#      verify (health, login, OIDC, media, two-owner check; use
-#      stricknani.maintenance.bypassAddresses for an operator address if needed)
-#   4. stage = "rust"; deploy                 -> barrier lifted
-#      final public checks; monit monitor stricknani
-#
-# Rollback (only before the Rust service has accepted writes; /var/lib/stricknani
-# is never modified by the Rust service):
-#   keep/raise the barrier: stage = "python-maintenance"; deploy; verify Python
-#   health + login; then stage = "python"; deploy. The Python input is pinned to
-#   tag v0.1.0 (`stricknani-python` in flake.nix). After Rust accepted writes do
-#   NOT switch back blindly: follow the "After Rust accepts writes" runbook.
-{ inputs, pkgs, ... }:
+# - No SOPS env file: secrets (the Authelia OIDC client secret and the Sentry
+#   DSN) are passed as file paths.
+# - Link imports and AI (via Hermes) are on; OCR and Wayback stay disabled.
+# - stricknani.maintenance.enable = true answers every request with a 503
+#   maintenance page (./stricknani-maintenance.nix), e.g. for a data restore.
+{
+  config,
+  inputs,
+  pkgs,
+  ...
+}:
 let
-  stage = "rust";
-
-  stages = {
-    rust = {
-      module = ./stricknani-rust.nix;
-      maintenance = false;
-    };
-    rust-maintenance = {
-      module = ./stricknani-rust.nix;
-      maintenance = true;
-    };
-    python-maintenance = {
-      module = ./stricknani-python.nix;
-      maintenance = true;
-    };
-    python = {
-      module = ./stricknani-python.nix;
-      maintenance = false;
-    };
-  };
-  selected = stages.${stage};
+  domain = "anika.blue";
+  mainHost = "wool.${domain}";
+  serverAliases = [
+    "stricken.${domain}"
+    "wolle.${domain}"
+  ];
+  # Callback host must be listed in TRUSTED_HOSTS (hostName + serverAliases).
+  oidcHost = "wolle.${domain}";
+  port = 7674;
+  package = inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani;
 in
 {
   imports = [
-    selected.module
+    inputs.stricknani.nixosModules.default
     ./stricknani-maintenance.nix
   ];
 
-  stricknani.maintenance.enable = selected.maintenance;
+  stricknani.maintenance.enable = false;
 
-  # The Rust server binary (importer, account CLI) is available in every stage,
-  # including "python-maintenance", so the snapshot import can run before the
-  # service is switched over.
-  environment.systemPackages = [
-    inputs.stricknani.packages.${pkgs.stdenv.hostPlatform.system}.stricknani
-  ];
+  # The server binary (account CLI, snapshot importer) for operators.
+  environment.systemPackages = [ package ];
+
+  sops.secrets = {
+    "stricknani/oidc/clientSecret" = config.sops.mkHostSecret {
+      owner = "stricknani";
+      group = "stricknani";
+    };
+    # Same value as Hermes's API server key (services/hermes.nix).
+    "stricknani/hermesApiKey" = config.sops.mkHostSecret {
+      key = "hermes/apiServer/key";
+      owner = "stricknani";
+      group = "stricknani";
+    };
+    # One Sentry project (stricknani) for server, web and Android; the apps report
+    # through the server's tunnel, and users can opt out in their account settings.
+    "stricknani/sentry/dsnBackend" = config.sops.mkHostSecret {
+      owner = "stricknani";
+      group = "stricknani";
+    };
+  };
+
+  services.stricknani = {
+    enable = true;
+    backend = "rust";
+    inherit package port;
+    bindHost = "127.0.0.1";
+    hostName = mainHost;
+    inherit serverAliases;
+    nginx.enable = true;
+    sentry.dsnFile = config.sops.secrets."stricknani/sentry/dsnBackend".path;
+    # Link imports for projects and yarns; the AI fills gaps through Hermes's
+    # loopback OpenAI-compatible API server (tool-less for that platform).
+    imports.enable = true;
+    ai = {
+      enable = true;
+      provider = "custom";
+      baseUrl = "http://127.0.0.1:8642/v1";
+      model = "hermes-agent";
+      apiKeyFile = config.sops.secrets."stricknani/hermesApiKey".path;
+      timeoutSeconds = 90;
+      # Let Hermes open the pattern page in its browser-daemon browser.
+      browse = true;
+      browseTimeoutSeconds = 180;
+    };
+
+    oidc = {
+      enable = true;
+      issuer = "https://auth.${config.domains.main}";
+      clientId = "stricknani";
+      clientSecretFile = config.sops.secrets."stricknani/oidc/clientSecret".path;
+      callbackUri = "https://${oidcHost}/api/v2/auth/oidc/callback/authelia";
+      nativeRedirectUris = [ "stricknani://oidc-callback" ];
+    };
+
+    extraConfig = {
+      SIGNUP_ENABLED = "false";
+      OCR_ENABLED = "false";
+      WAYBACK_ENABLED = "false";
+    };
+  };
 }

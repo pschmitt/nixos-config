@@ -94,16 +94,6 @@
       };
     };
 
-    # Final Python release, used only by services/stricknani-python.nix (rollback).
-    stricknani-python = {
-      url = "github:pschmitt/stricknani/v0.1.0";
-      inputs = {
-        nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
-        pre-commit-hooks.follows = "pre-commit-hooks";
-      };
-    };
-
     monarch = {
       url = "github:pschmitt/monarch";
       inputs.nixpkgs.follows = "nixpkgs";
