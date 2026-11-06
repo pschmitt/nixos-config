@@ -2861,11 +2861,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793959941,
-        "narHash": "sha256-PUu/o3/0+tEMMTLYlapPzIa57le667unz1V5NSAGQ5Y=",
+        "lastModified": 1793962779,
+        "narHash": "sha256-OPajaEmRzviGuQ1RolwhbiR7LFw3Y1FGVGLtpZ1mI1w=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "906271ddcdaccf4afe4fe0b8d7efe1464a30f598",
+        "rev": "a7ca09ed9c159d5618500b2c4b02f67a71b5bafa",
         "type": "github"
       },
       "original": {
