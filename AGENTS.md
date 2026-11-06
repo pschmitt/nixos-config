@@ -39,12 +39,12 @@
   with a pattern that cannot match the polling command itself.
 
 ## Deployment
-- Prefer committing only verified, working changes.
+- Verify changes before committing when practical. For small, low-risk fixes, deployment is the verification as described below.
 - **Quick and simple fixes go straight to the target.** For a small, low-risk
   change (a service option, a package bump, a one-line fix), do not first
   evaluate or build it on an `rworker` or a shared build host: commit, push
-  and deploy to the affected hosts directly (`just deploy TARGET_HOST`, or
-  `nixos-upgrade.service` once pushed), and let the deploy be the check. The
+  and deploy to the affected hosts by restarting `nixos-upgrade.service` after
+  pushing, and let the deploy be the check. The
   user's time and internet bandwidth count; a separate pre-verification round
   trip is wasted effort here. This holds especially when the target is not far
   behind `main`, so the deploy builds little. Build on the target, not on the
@@ -56,8 +56,8 @@
 - After making changes, deploy to the target systems:
   - **Before committing** (e.g. to test uncommitted changes): run `just deploy TARGET_HOST` from a different host; it builds and switches on the target. Do not omit the target, since that builds locally. If the agent is running on the target, use a remote build and deploy the prebuilt closure instead.
   - **If already committed**: deploy by SSH'ing to the target host and restarting `nixos-upgrade.service` (`systemctl restart nixos-upgrade.service`).
-- NixOS hosts with embedded Home Manager configuration are deployed through
-  their NixOS host configuration with `just deploy TARGET_HOST`.
+- Deploy embedded Home Manager through its NixOS host configuration using the
+  same committed or uncommitted workflow above.
 - **Coordinate deployments through Concord.** Concord claims cover files and
   modules, so two agents deploying to the same host do not clash unless they
   claim the target explicitly:
