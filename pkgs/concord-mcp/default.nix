@@ -12,7 +12,7 @@
 stdenv.mkDerivation (finalAttrs: {
   pname = "concord-mcp";
   # renovate: datasource=github-releases depName=Get-Concord-AI/concord-mcp
-  version = "0.19.0";
+  version = "0.20.0";
 
   src = fetchFromGitHub {
     owner = "Get-Concord-AI";
