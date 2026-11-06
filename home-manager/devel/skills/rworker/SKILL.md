@@ -60,6 +60,14 @@ rworker down "$w"
   directories (rsync, like scp); `exec [up options] [--sync SRC[:DEST]]
   [--fetch REMOTE[:LOCAL]] -- CMD` is a one-shot worker: create, copy, run,
   fetch, delete (also on failure; `--keep-on-failure` to debug).
+  The command runs from `/home/agent`, and `--sync SRC:DEST` puts the
+  *contents* of SRC in `~/DEST`. `exec` and `ssh` join their arguments with
+  spaces before the remote shell parses them, so
+  `-- bash -lc 'cd x && make'` runs `bash -lc cd` and then `make` in the home
+  directory, with no error. Pass the whole command as one string:
+  `-- 'cd x && make'` (or `-- "$CMD"`), and quote nested shells inside it.
+  Print each step's result (`; echo STEP_DONE`) and keep stderr: with
+  `set -e` and `>/dev/null`, a failure leaves no output at all.
 - `builder NAME` prints a Nix `--builders` line for the worker.
 - `nix-cache NAME [--dry-run]` (MCP `nix_cache`) lets the worker substitute
   from the private S3 Nix cache. `up` and `exec` do it by default when your
