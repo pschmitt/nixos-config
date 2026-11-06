@@ -17,6 +17,9 @@
     (_final: prev: {
       efivar = prev.runCommand "efivar-stub" { } "mkdir $out";
       efibootmgr = prev.runCommand "efibootmgr-stub" { } "mkdir $out";
+      # libpcap pulls in rdma-core. Its optional manpage generator needs
+      # Pandoc/GHC, which cannot bootstrap on ARMv6; keep the runtime library.
+      rdma-core = prev.rdma-core.override { withManPages = false; };
     })
     # nixpkgs removed the linux_rpi* kernels, but sd-image-raspberrypi.nix still
     # sets boot.kernelPackages to linux_rpi1. Point it at the downstream kernel
