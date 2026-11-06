@@ -10,16 +10,16 @@
 
 buildNpmPackage {
   pname = "msteams-mcp";
-  version = "0.30.2-unstable-2026-10-13";
+  version = "0.30.3-unstable-2026-11-06";
 
   src = fetchFromGitHub {
     owner = "m0nkmaster";
     repo = "msteams-mcp";
-    rev = "cb0a1655a1dae98d7a01cfc3f68312b8b3a5bb3d";
-    hash = "sha256-FdUhWfh6EnXZpzzHsjowaPQc1zAqE/snX0Xog0CvVcA=";
+    rev = "b87053a13eae91318b6c13671988c43b3bcd8548";
+    hash = "sha256-7NoEJ2q1HmU9pEQxw43YayuWLypL7ATFCNtQBwBbBzk=";
   };
 
-  npmDepsHash = "sha256-3bUI5ZVeQY3A2BzrEKISKiKynVAMQd9M0RsXoHOx4Ho=";
+  npmDepsHash = "sha256-Z50P+Rln1TwTBWJQ+BBuGLf+wlpH68wumueghse9SWg=";
 
   patches = [
     # TEAMS_MCP_BROWSER_PATH selects the browser binary instead of the
