@@ -11,13 +11,13 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "concord-mcp";
-  version = "0.19.0";
+  version = "0.20.0";
 
   src = fetchFromGitHub {
     owner = "Get-Concord-AI";
     repo = "concord-mcp";
     rev = "v${finalAttrs.version}";
-    hash = "sha256-ocI6BbYxJinZOiY4MSjZmWnT4o2bLVWBqJxZ5AkFP3k=";
+    hash = "sha256-xGge5VUxx9MqBlF9WJHZIumtkEalmj+5kE8jxaMGDtM=";
   };
 
   # Concord keeps its user-level state in a hardcoded ~/.concord; move it to
@@ -28,7 +28,7 @@ stdenv.mkDerivation (finalAttrs: {
     inherit (finalAttrs) pname version src;
     pnpm = pnpm_10;
     fetcherVersion = 3;
-    hash = "sha256-11CS5x7DwB9gZokhlKNGmgTnFJIxz1+Ajgp//j0Y1x8=";
+    hash = "sha256-Tn6wk72/rDG09gf1aZaH8NjKXAcr+BLkeBosZq2iuc8=";
   };
 
   nativeBuildInputs = [
