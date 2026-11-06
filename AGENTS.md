@@ -150,7 +150,9 @@
 - `profiles/specializations/`: Machine classes and reusable host roles.
 - `services/`: Service modules, including reusable Home Manager user services.
 - `pkgs/`: Custom package definitions.
-- `overlays/`: Nixpkgs overlays.
+- `overlays/`: Nixpkgs overlays. Follow [overlay rules](overlays/AGENTS.md)
+  for placement, composition and the mandatory hotfix review on Nixpkgs bumps
+  and at least monthly.
 - `profiles/hardware/`: Hardware-specific configuration snippets.
 - `docs/`: Human documentation, linked from `README.md`.
 
