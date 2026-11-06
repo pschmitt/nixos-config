@@ -97,6 +97,51 @@ after its client restarts.
   '...'`) so a dropped SSH session does not kill them; check back with
   `ssh "$w" tmux capture-pane -pt b`.
 
+## Secrets and private inputs
+
+Prefer not to send credentials: for a private flake input, transfer a checkout
+at the exact revision pinned in `flake.lock` and use `--override-input NAME
+path:<worker-checkout>`. Verify the revision first; a dirty checkout changes
+what is evaluated. Export without `.git` or credentials, and remember that Nix
+may copy the source into the worker's world-readable store: never include
+plaintext secrets. `rworker sync` does **not** exclude `.git` by itself.
+
+When authentication on the worker is actually required, use a dedicated,
+short-lived, least-privilege credential. The worker is disposable, not a
+secret vault: the worker user and administrators can access its secrets, and
+processes or tools may copy or log them. Use only a worker you trust, avoid
+shell tracing and commands that print credentials, and never put secrets in
+MCP arguments, command-line arguments, Git, Nix expressions, or the Nix store.
+Do not forward SSH agents or copy private keys or an entire credentials file.
+
+Transfer a single locally prepared, mode-0600 secret file with the pinned-host-key
+`rworker cp`, into a private tmpfs directory. For example, if `secret_file`
+is the path to a file containing only the needed credential or configuration:
+
+```bash
+secret_dir=$(rworker ssh "$w" 'umask 077; mktemp -d /dev/shm/rworker-secret.XXXXXXXX')
+rworker cp "$secret_file" "$w:$secret_dir/credential"
+rworker ssh "$w" "chmod 600 '$secret_dir/credential'"
+# Run the worker command using the file path, never its contents.
+rworker ssh "$w" "rm -f '$secret_dir/credential'; rmdir '$secret_dir'"
+```
+
+Check each step; if transfer or the job fails, still remove the directory and
+tear down the worker. `cp` preserves the source file's mode and can leave a
+partial file on failure, so restrict the source before copying and clean up
+failures too. Remove any local temporary secret file, revoke temporary tokens
+when finished, and always `down` the worker. Do not assume deletion erases
+copies made by the workload.
+
+For a GitHub private flake fetch, the file may instead be a minimal Nix user
+configuration containing only the scoped `access-tokens` entry, prepared locally
+without printing the token. Run the worker's Nix command with
+`NIX_USER_CONF_FILES=<worker-file-path>` in its environment; this replaces the
+usual user configuration for that command. This authenticates the Nix client
+fetch, not arbitrary build sandboxes or daemon-side private cache access. Do
+not put the token itself in `NIX_CONFIG` or a command argument. The separate
+`nix-cache` mechanism above handles its own read-only S3 credentials.
+
 ## Changing rworker
 
 The client's `spec()` (`rworker __spec`) drives the zsh and bash
@@ -109,9 +154,8 @@ completions. When adding an action or flag, update `spec()`, the dispatch in
 - Always `down` the worker when the task is done, even after a failure; do
   not leave it for the TTL. Extend instead of creating a second one.
 - Nothing on a worker survives. Copy results off before `down`.
-- Workers carry no secrets. Do not copy credentials onto them; if a build
-  needs a token, prefer running that step locally. The one exception is the
-  read-only S3 cache key, pushed by `rworker` itself unless you pass
-  `--no-nix-cache`.
+- Avoid credentials on workers when possible. When necessary, follow
+  **Secrets and private inputs** above; the automatic read-only S3 cache key
+  is handled separately by `rworker`.
 - Prefer a worker over the shared build nodes for anything that takes more
   than a few minutes of full CPU.

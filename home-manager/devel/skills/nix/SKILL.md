@@ -27,6 +27,10 @@ soon as the switch is verified. See "Deployment" in `AGENTS.md` for the full rul
 
 ## Remote evaluation and CI helpers
 
+For private flake inputs or credentials on a worker, see **Secrets and private
+inputs** in the `rworker` skill; prefer a checkout at the pinned revision over
+transferring a credential.
+
 Before copying a remotely updated `flake.lock` back, compare the local lock
 against the version originally synced. If another agent changed it meanwhile,
 resync the current lock and repeat the input update remotely. Review the final
