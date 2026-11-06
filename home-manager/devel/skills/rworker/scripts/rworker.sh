@@ -374,13 +374,14 @@ EOF
   esac
 }
 
-# Colors for human-readable output (none when piped or NO_COLOR is set).
-# Colors for --help on a terminal (plain when piped, or with NO_COLOR):
+# Colors for human-readable non-help output (none when piped or NO_COLOR is set).
+# Colors for help and usage output, including errors and redirected output,
+# unless NO_COLOR is set:
 # bold Usage and section headers, cyan flags with yellow arguments, and in
 # the overview (MODE overview) green action names.
 paint_help() {
   local mode="${1:-}"
-  if [[ ! -t 1 || -n "${NO_COLOR:-}" ]]
+  if [[ -n "${NO_COLOR:-}" ]]
   then
     cat
     return
@@ -402,6 +403,18 @@ paint_help() {
     rules+=(-e "s/^(  )([a-z][a-z-]+)( |$)/\1${g}\2${r}\3/")
   fi
   sed -E "${rules[@]}"
+}
+
+# Print the help for the command that rejected its arguments. Help is
+# colored even when it is redirected to stderr or piped, unless NO_COLOR is set.
+show_help() {
+  local action="${1:-}"
+  if [[ -n "$action" ]]
+  then
+    action_help "$action" | paint_help
+  else
+    usage | paint_help overview
+  fi
 }
 
 paint() {
@@ -730,6 +743,7 @@ cmd_up() {
         if [[ -z "$login_user" ]]
         then
           printf -- '-l needs a user\n' >&2
+          show_help up >&2
           return 2
         fi
         shift
@@ -1079,6 +1093,7 @@ cmd_ls() {
             ;;
           *)
             printf 'Output format must be json or wide\n' >&2
+            show_help ls >&2
             return 2
             ;;
         esac
@@ -1094,12 +1109,14 @@ cmd_ls() {
         if [[ ! "${1:-}" =~ ^[0-9]+$ ]] || (( ${1:-0} < 1 ))
         then
           printf 'Interval must be a whole number of seconds\n' >&2
+          show_help ls >&2
           return 2
         fi
         interval="$1"
         ;;
       *)
         printf 'Unknown option: %s\n' "$1" >&2
+        show_help ls >&2
         return 2
         ;;
     esac
@@ -1157,6 +1174,7 @@ cmd_inspect() {
         ;;
       -*)
         printf 'Unknown option: %s\n' "$1" >&2
+        show_help inspect >&2
         return 2
         ;;
       *)
@@ -1168,6 +1186,7 @@ cmd_inspect() {
   if [[ -z "$name" ]]
   then
     printf 'Missing worker name\n' >&2
+    show_help inspect >&2
     return 2
   fi
   info=$(remote_ls | jq -c --arg n "$name" '.[] | select(.name == $n)') \
@@ -1274,6 +1293,7 @@ cmd_prune() {
         ;;
       -*)
         printf 'Unknown option: %s\n' "$1" >&2
+        show_help prune >&2
         return 2
         ;;
       *)
@@ -1406,6 +1426,7 @@ cmd_exec() {
         ;;
       -*)
         printf 'Unknown option: %s\n' "$1" >&2
+        show_help exec >&2
         return 2
         ;;
       *)
@@ -1417,7 +1438,8 @@ cmd_exec() {
   done
   if (( ${#cmd[@]} == 0 ))
   then
-    printf 'Missing command (see %s exec --help)\n' "$(basename "$0")" >&2
+    printf 'Missing command\n' >&2
+    show_help exec >&2
     return 2
   fi
 
@@ -1519,7 +1541,7 @@ cmd_extend() {
 cmd_down() {
   if [[ -z "${1:-}" ]]
   then
-    usage >&2
+    show_help down >&2
     return 2
   fi
   local name="$1" extra=()
@@ -1576,13 +1598,14 @@ cmd_ssh() {
     if [[ -z "$login_user" ]]
     then
       printf -- '-l needs a user\n' >&2
+      show_help ssh >&2
       return 2
     fi
     shift 2
   fi
   if [[ -z "${1:-}" ]]
   then
-    usage >&2
+    show_help ssh >&2
     return 2
   fi
   split_target "$1" || return 2
@@ -1603,7 +1626,7 @@ cmd_sync() {
   local src="${2:-}" dest="${3:-}" name ip user opts
   if [[ -z "${1:-}" || -z "$src" ]]
   then
-    usage >&2
+    show_help sync >&2
     return 2
   fi
   split_target "$1" || return 2
@@ -1627,7 +1650,7 @@ cmd_cp() {
   local src="${1:-}" dst="${2:-}" remote local_path direction target ip user opts
   if [[ -z "$src" || -z "$dst" || -n "${3:-}" ]]
   then
-    action_help cp >&2
+    show_help cp >&2
     return 2
   fi
   # Exactly one side is NAME:PATH (a local path with ":" needs a ./ prefix).
@@ -1643,6 +1666,7 @@ cmd_cp() {
     local_path="$src"
   else
     printf 'One side must be [USER@]NAME:PATH\n' >&2
+    show_help cp >&2
     return 2
   fi
   target="${remote%%:*}"
@@ -1812,6 +1836,7 @@ cmd_nix_cache() {
         ;;
       -*)
         printf 'Unknown option: %s\n' "$1" >&2
+        show_help nix-cache >&2
         return 2
         ;;
       *)
@@ -1822,7 +1847,7 @@ cmd_nix_cache() {
   done
   if [[ -z "$name" ]]
   then
-    usage >&2
+    show_help nix-cache >&2
     return 2
   fi
   out=$(push_nix_cache "$name" "$dry") || return 1
@@ -1858,7 +1883,7 @@ cmd_builder() {
   local name="${1:-}" ip key
   if [[ -z "$name" ]]
   then
-    usage >&2
+    show_help builder >&2
     return 2
   fi
   ip=$(worker_field "$name" ip) || return 1
@@ -1995,7 +2020,7 @@ main() {
       ;;
     *)
       printf 'Unknown action: %s\n' "$action" >&2
-      usage >&2
+      show_help >&2
       return 2
       ;;
   esac
