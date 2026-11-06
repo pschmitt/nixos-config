@@ -68,8 +68,9 @@ rworker down "$w"
   `s3://` substituters, the trusted public keys and the one AWS profile
   those URLs name over SSH into `/run/rworker-nix` (tmpfs, agent-owned,
   0700); nothing else of `nix.conf` is copied. The worker's nix-daemon
-  restarts on its own. It puts a credential on the worker: only a read-only
-  key belongs there, and anyone with a shell there can read it. Re-run it
+  restarts on its own. It puts a credential on the worker, which anyone with
+  a shell there can read; the worker is private and temporary, so the host's
+  own profile is acceptable. Re-run it
   after the key is rotated.
   Workers created before the feature get nothing and the command says so.
 
@@ -97,15 +98,18 @@ after its client restarts.
   and slow: copying a large result back to the agent's host wastes their
   bandwidth and time. Fetch only small artifacts home. For a closure that
   other hosts will deploy, have it go from the worker to the S3 cache and let
-  the targets substitute (opt-in, below), or build on the target itself.
-- **Pushing to the S3 cache is opt-in.** A worker only gets a write credential
-  for the cache when the user approves it for that task. Use a short-lived,
-  write-scoped credential plus a signing key, passed as a mode-0600 file (see
-  **Secrets and private inputs**), never in arguments or the Nix store, and
-  revoke it at the end. The default read-only cache key does not allow
-  pushing. Without that approval, copy the closure back and push it from the
-  agent's host, or skip the push and build on the target. If a push needs a
-  large upload over the home link, ask first.
+  the targets substitute, or build on the target itself.
+- **Pushing to the S3 cache is fine, with the local credentials.** Workers
+  are private and temporary, so the user allows using the S3 credentials of
+  the agent's own host on a worker, without asking each time: the same AWS
+  profile the host's `s3://` substituter names, as `nix-cache` already
+  transfers it, or as a mode-0600 file (see **Secrets and private inputs**).
+  Never copy the whole credentials file, never put the key in arguments or
+  the Nix store, and `down` the worker when done. Use the host's existing
+  cache signing key the same way. This covers the cache only: it does not
+  loosen the rules for other credentials. If the local profile cannot write
+  to the bucket, copy the closure back and push from the agent's host, or
+  build on the target; ask before a large upload over the home link.
 - Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b
   '...'`) so a dropped SSH session does not kill them; check back with
   `ssh "$w" tmux capture-pane -pt b`.
@@ -169,7 +173,7 @@ completions. When adding an action or flag, update `spec()`, the dispatch in
 - Nothing on a worker survives. Copy results off before `down`.
 - Avoid credentials on workers when possible. When necessary, follow
   **Secrets and private inputs** above; the automatic read-only S3 cache key
-  is handled separately by `rworker`. A cache write key is the one deliberate
-  exception, and only with the user's approval (see **Patterns**).
+  is handled separately by `rworker`. Using the host's own S3 cache
+  credentials on a worker is the one deliberate exception (see **Patterns**).
 - Prefer a worker over the shared build nodes for anything that takes more
   than a few minutes of full CPU.
