@@ -11,7 +11,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   or topology details. Refer to the private `brkn-infra` skill for host-specific
   information; use system roles or placeholders in shared instructions.
 - Prefer repository skills when a task matches one:
-  - `rworker` before any heavy compilation, build, test suite, or Nix evaluation
+  - `rworker` before any heavy compilation, build, test suite, or Nix evaluation; `scratch-space` before creating large temp files
   - `shell` for bash, `sh`, and zsh
   - `nix` for NixOS and Home Manager work
   - `ci-workflows` for GitHub Actions using shared `pschmitt/ci-workflows` components
@@ -62,12 +62,11 @@ Use this file as lightweight shared context for AI tooling in this repository.
 - Do not start unbounded filesystem traversals. Prefer `rg --files` or a targeted `rg` search over `find`, `bfs`, or similar recursive discovery commands.
 - If `find`, `bfs`, or another potentially expensive recursive command is necessary, scope it to the smallest relevant directory, exclude known large/generated paths, and wrap it with `timeout 5m`.
 - Never recursively search broad paths such as `/`, a home directory, or `/nix/store`. If a scoped search times out, refine its scope rather than rerunning it unchanged.
-- Keep large files out of `/tmp`, including the agent scratchpad under it: `/tmp` can be (and often is) a RAM-backed tmpfs, where repository clones, exports, APKs, snapshots or test copies left there fill RAM and swap. Put big artifacts (clones, exports, APKs, snapshots, test copies) under `${XDG_CACHE_HOME:-~/.cache}/agents/<PROJECT_NAME>/`, never in `/tmp` or `$XDG_RUNTIME_DIR` (also RAM-backed), or on a build host or `rworker`, and delete your temporary files when you are done. Use `${XDG_STATE_HOME:-~/.local/state}/agents/<PROJECT_NAME>/` for logs or state that must outlive a cache cleanup.
+- Keep large files out of `/tmp` and `$XDG_RUNTIME_DIR` (often RAM-backed): put them under `${XDG_CACHE_HOME:-~/.cache}/agents/<PROJECT_NAME>/` and delete them when done. Load the `scratch-space` skill before creating any sizeable temp file.
 
 ## Deployment and operations
 
 - **Never run heavy compilation, builds, or Nix evaluations on the local host** where the agent is running (including in Codex and any delegated subagents/workers). This covers `cargo build`, `cargo check`, `cargo test`, `cargo clippy`, `nix build`, `nix eval`, `nix flake check`, Android/Gradle builds, container builds, and large test suites. Always offload them to an ad-hoc `rworker` VM (load the `rworker` skill and use the `rworker` MCP or `rworker exec --sync`); use a shared build host only for quick one-offs (see the private `brkn-infra` skill).
-- Shared build host directories should use `~/build/<PROJECT_NAME>`.
 - To deploy host changes, use `just deploy TARGET_HOST`.
 - For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
 
