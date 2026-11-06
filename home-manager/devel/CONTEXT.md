@@ -5,102 +5,58 @@ Use this file as lightweight shared context for AI tooling in this repository.
 ## General rules
 
 - Read `AGENTS.md` and follow it as the primary repository instruction source.
-- When creating or editing a repository's `AGENTS.md`, assume it may be
-  published or shared. Do not include credentials or private infrastructure
-  identifiers such as internal hostnames, FQDNs, IP addresses, device names,
-  or topology details. Refer to the private `brkn-infra` skill for host-specific
-  information; use system roles or placeholders in shared instructions.
-- Prefer repository skills when a task matches one:
+- Treat `AGENTS.md` as publishable: no credentials and no private infrastructure identifiers (hostnames, FQDNs, IPs, device names, topology). Use roles or placeholders; host details live in the private `brkn-infra` skill.
+- Load the matching skill before the work it covers:
   - `rworker` before any heavy compilation, build, test suite, or Nix evaluation; `scratch-space` before creating large temp files
-  - `shell` for bash, `sh`, and zsh
-  - `nix` for NixOS and Home Manager work
-  - `ci-workflows` for GitHub Actions using shared `pschmitt/ci-workflows` components
-  - `signal-notify` before sending any Signal message, `secret-hygiene` before commands that may print credentials, `leaked-credentials` the moment a credential is exposed, `browser-daemon` before browser work, `browser-login` for any login in a browser session, `gpg-signing` before signed commits or tags, `tmux-window-names` for naming tmux windows
-  - the private `brkn-infra` skill for infrastructure host roles, build/test/deploy targets, and Android devices; `release` for releasing rbw, browser-daemon, bruvtab or monarch, `extension-dev` for browser extension work, `skill-suggestions` to review past sessions and propose skills
-  - `timg` to display images in the terminal, plus `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl`, and other repo-local skills when applicable
+  - `shell` for bash, `sh`, zsh; `nix` for NixOS and Home Manager; `ci-workflows` for GitHub Actions using `pschmitt/ci-workflows`
+  - `signal-notify` before any Signal message (the user may be away during long work)
+  - `secret-hygiene` before commands that may print credentials; `leaked-credentials` the moment a credential is exposed
+  - `browser-daemon` before the first `browser_*` call; `browser-login` for any login, passkey or CAPTCHA in a browser session
+  - `gpg-signing` before signed commits or tags (never retry with interactive pinentry or disable signing)
+  - `tmux-window-names`: as soon as the task is clear and whenever the topic changes, rename only this agent's own window (`$TMUX_PANE`)
+  - `brkn-infra` for host roles, build/test/deploy targets and Android devices; `release`, `extension-dev`, `skill-suggestions`
+  - `timg`, `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl` and other repo-local skills when applicable
 - Watch for toil worth capturing (the same friction twice, a rediscovered procedure, a generalizing user correction). Say so at the end of the task and propose a skill or skill update with the `self-improvement` skill; ask before creating a new skill.
-- Linkify references whenever a useful target is available. This applies across
-  all kinds of work, including GitLab merge requests, GitHub pull requests,
-  tickets, documentation, dashboards, and local files. In terminal output, use
-  OSC 8 hyperlinks (`ESC ] 8 ;; URL ESC \ label ESC ] 8 ;; ESC \`) instead of
-  bare URLs or IDs; in Markdown-capable output, use Markdown links.
-- Subagents: when delegating tasks to subagents, spawning background agents, or
-  creating agent teams, always use the current harness's native subagent tool
-  (e.g. the `Agent` tool in Claude Code / `claude-work` / `claude-auto`, native
-  subagents in Codex, `invoke_subagent` in Antigravity) rather than shelling
-  out to `codex exec` or `claude` in `Bash`, and always use lightweight/cost-effective
-  models rather than expensive primary models:
-  - In Claude Code / Claude Work: always use Sonnet (`sonnet`). Never use Opus for subagents.
-  - In `claude-auto` (Claude Code via `cli-proxy-api`): subagents launched with the `Agent` tool automatically use `subscription-subagent` (`gpt-6-luna` / `claude-sonnet-5-5` / `gemini-3.8-flash-high`).
-  - In Codex: always use Luna (`gpt-6-luna` / `luna`).
-  - In Antigravity (`agy`): always use Gemini Flash (`flash` / `flash_lite` / `gemini-flash`). Never use Pro for subagents.
+- Linkify references (MRs, PRs, tickets, docs, dashboards, local files): OSC 8 hyperlinks in terminal output, Markdown links where Markdown renders.
+- Subagents: use the harness's native subagent tool (never shell out to `codex exec` or `claude`) and a cheap model: Sonnet in Claude Code / Claude Work (never Opus), Luna in Codex, Gemini Flash in Antigravity (never Pro). `claude-auto` picks `subscription-subagent` automatically.
 
 ## Concord
 
-- Concord MCP is available in every repository. Before editing, call `start_work` with the task and the files or modules you expect to touch; it claims them and reports overlaps with other agents, so resolve overlaps first.
-- Use `inspect_work` to see who else is here, `update_work` for progress and messages to other agents, `transfer_work` for handoffs, and `finish_work` with the outcome, changed files and tests before finishing.
-- Inter-agent messaging is machine-wide: prompt any active agent listed under "Who's here" or "Live prompting" via `update_work(operation="prompt", to_agent_id="<agent_id>", content="...")`, even if they were started in a different directory or project.
-- For multi-repository or paired workflows (e.g. `nixos-config` and `nixos-config-private`, worktrees, submodules): check the repository's `AGENTS.md` for a designated common `workspace_id`. When specified, pass `workspace_id` to all workflow tools (or set `CONCORD_REPO_ROOT`) so tasks, claims, and overlap checks remain unified.
-- Concord needs no files in the repository: do not run `concord setup` yourself.
+- Concord MCP is available in every repository. Before editing, call `start_work` with the task and the files or modules you expect to touch; resolve reported overlaps first. Use `inspect_work`, `update_work` (progress, and `operation="prompt"` to message any active agent machine-wide), `transfer_work`, and `finish_work` with outcome, changed files and tests.
+- For paired or multi-repository workflows, use the `workspace_id` designated in the repository's `AGENTS.md` (or set `CONCORD_REPO_ROOT`).
+- Do not run `concord setup` yourself.
 
 ## Host awareness
 
-- Always be aware of which host you are currently running on (`hostname` or `$HOST`).
-- **Never SSH into the current host**: when already on a target host, execute commands locally instead of establishing a redundant SSH connection to yourself.
-- Before executing commands aimed at a specific host (such as checking systemd units, containers, logs, or local files), check whether you are already on that host and run them directly.
+- Always know which host you are on (`hostname` or `$HOST`). **Never SSH into the current host**; run commands locally instead.
 
 ## Code and validation
 
-- Keep changes minimal and targeted.
-- Preserve existing user changes; do not revert unrelated edits.
-- Format and lint with the repo-standard tools for the language or domain you touch.
-- For Nix changes, use `nixfmt` and run `statix check` from within `nix develop`.
+- Keep changes minimal and targeted. Preserve existing user changes; do not revert unrelated edits.
+- Format and lint with the repo-standard tools. For Nix: `nixfmt` and `statix check` from within `nix develop`.
 - Never introduce trailing whitespace.
 
 ## Command safety
 
-- Do not start unbounded filesystem traversals. Prefer `rg --files` or a targeted `rg` search over `find`, `bfs`, or similar recursive discovery commands.
-- If `find`, `bfs`, or another potentially expensive recursive command is necessary, scope it to the smallest relevant directory, exclude known large/generated paths, and wrap it with `timeout 5m`.
-- Never recursively search broad paths such as `/`, a home directory, or `/nix/store`. If a scoped search times out, refine its scope rather than rerunning it unchanged.
-- Keep large files out of `/tmp` and `$XDG_RUNTIME_DIR` (often RAM-backed): put them under `${XDG_CACHE_HOME:-~/.cache}/agents/<PROJECT_NAME>/` and delete them when done. Load the `scratch-space` skill before creating any sizeable temp file.
+- No unbounded filesystem traversals: prefer `rg --files` or a targeted `rg` over `find`/`bfs`. If you must use them, scope to the smallest directory, exclude large/generated paths and wrap in `timeout 5m`.
+- Never search recursively from `/`, a home directory or `/nix/store`. If a scoped search times out, narrow it instead of rerunning it.
+- Keep large files out of `/tmp` and `$XDG_RUNTIME_DIR` (often RAM-backed): put them under `${XDG_CACHE_HOME:-~/.cache}/agents/<PROJECT_NAME>/` and delete them when done.
+
+## Secrets
+
+- Keep secret values out of tool-call arguments, output, transcripts and chat: pass them by file, stdin or environment, and mask them when diffing or listing. Filter private Nix modules to the needed option (`rg -A`) instead of printing whole files.
+- The `agent-secret-guard` and `agent-secret-scan` hooks enforce the Bash cases; if a command is blocked, use the suggested safe form and do not work around the hook.
+- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`; use `browser-login`.
+- After a leak is contained, propose an update to the relevant skill, `CONTEXT.md`, `AGENTS.md` or hook so it cannot recur.
 
 ## Deployment and operations
 
-- **Never run heavy compilation, builds, or Nix evaluations on the local host** where the agent is running (including in Codex and any delegated subagents/workers). This covers `cargo build`, `cargo check`, `cargo test`, `cargo clippy`, `nix build`, `nix eval`, `nix flake check`, Android/Gradle builds, container builds, and large test suites. Always offload them to an ad-hoc `rworker` VM (load the `rworker` skill and use the `rworker` MCP or `rworker exec --sync`); use a shared build host only for quick one-offs (see the private `brkn-infra` skill).
+- **Never run heavy compilation, builds, or Nix evaluations on the local host** (including in Codex and delegated subagents): `cargo build/check/test/clippy`, `nix build/eval/flake check`, Android/Gradle, container builds, large test suites. Offload to an ad-hoc `rworker` VM; use a shared build host only for quick one-offs.
 - To deploy host changes, use `just deploy TARGET_HOST`.
-- For Home Assistant CLI access from this repo, prefer `zsh -lc 'zhj hass-cli ...'`.
+- For Home Assistant CLI access, prefer `zsh -lc 'zhj hass-cli ...'`.
 
 ## Version control workflow
 
-- Do not open pull requests unless explicitly requested. Default to working directly on `main` (or the repository's default branch) without creating feature branches or PRs.
+- Do not open pull requests unless explicitly requested. Work directly on `main` (or the default branch) without feature branches.
 - Once a change is done and verified, commit it, push it to the default branch and deploy it to the affected hosts without asking. Leave unrelated modified or untracked files out of the commit.
-- After pushing to `nixos-config-private`, immediately update the public repo's `flake.lock` (`nix flake lock --update-input nixos-config-private`, run on a remote build host; see the private `brkn-infra` skill), copy `flake.lock` back, and commit it as `bump my privates`.
-
-## Progress notifications
-
-- For substantial multi-step or long-running work, the user may be away from the chat. Load the `signal-notify` skill before sending any Signal message; it covers the presence check, when to send and the format.
-
-## GPG and commit signing
-
-- Before creating any GPG-signed commit or tag (including amend, cherry-pick, and rebase), load the `gpg-signing` skill and unlock the key first. Never retry with interactive pinentry or disable signing; a curses pinentry prompt can corrupt the agent's terminal UI.
-
-## Leaked credentials
-
-- Keep secret values out of tool-call arguments, tool output, transcripts and chat; pass them by file, stdin or environment and mask them when diffing or listing.
-- Filter private Nix modules to the needed option (`rg -A`) instead of printing whole files.
-- Load the `secret-hygiene` skill before running commands that may print credentials (Home Assistant config, `ps`/`env`, `rbw`, SOPS diffs, `openstack`, `journalctl`, browser snapshots). The `agent-secret-guard` and `agent-secret-scan` hooks enforce the Bash cases; if a command is blocked, use the suggested safe form and do not work around the hook.
-- If a credential ends up somewhere it should not be, even briefly and even if you caused it, load the `leaked-credentials` skill now and follow it; do not wait for the end of the task. Once contained, propose an update to the relevant skill, `CONTEXT.md`, `AGENTS.md` or hook so the same leak does not happen again.
-
-## Browser MCPs
-
-- Load the `browser-daemon` skill before the first `browser_*` call (node and profile choice, session labelling, session management).
-- Never read a cookie or token through a browser tool, and never type a password, token or TOTP code with `browser_type`, `browser_fill_form` or `browser_run_code_unsafe`: the MCP echoes every call into the transcript and logs. Load the `browser-login` skill for any login (`browser_fill_secret`, `browser_fetch`, `browser_ask_human`).
-
-## Shell work
-
-- Do not duplicate shell style rules here.
-- For shell scripts, shell snippets, and zsh plugin work, use the `shell` skill as the source of truth.
-
-## Tmux pane and window naming
-
-- As soon as the task is clear, and again whenever the conversation changes topic meaningfully, load the `tmux-window-names` skill and rename only this agent's own window (identified via `$TMUX_PANE`, never the active window).
+- After pushing to `nixos-config-private`, update the public repo's `flake.lock` (`nix flake lock --update-input nixos-config-private`, on a remote build host), copy it back, and commit it as `bump my privates`.
