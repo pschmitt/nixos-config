@@ -50,8 +50,12 @@ Nixpkgs revision are not evidence for pruning top-level hotfixes.
 The corrective restoration matches all 25 compared package derivations from
 the pre-reorganization overlay set under the actual top-level input.
 
-The Termux check exposed evaluation-time reads of generated Home Manager files
-and the Neovim plugin tree. These are being corrected and verified separately
-with import-from-derivation disabled. Fresh-store checking also exposed a
-browser-daemon Cargo-lock packaging issue; neither should be masked by warming
-the store or removing checks.
+The Termux bundles for all three configured profiles now evaluate with
+import-from-derivation disabled. Generated Home Manager sources are passed to
+the build directly, and the Neovim plugin-tree check runs during the build.
+The exported home-file derivations were built before and after the change;
+the resulting trees have identical contents.
+The browser-daemon normalized Cargo lock is passed as text to Crane; its package
+derivation is unchanged by that packaging fix. Full strict flake checking still
+encounters an independent evaluation-time Cargo.lock read from LumineCapture's
+fetched source; it is not a green full-flake validation result.

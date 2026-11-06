@@ -36,11 +36,6 @@ let
     else
       throw "Termux Neovim init.lua does not contain the expected LazyVim dev path.";
   nvimLazyPath = "${nvimDevPath}/lazy.nvim";
-  nvimPluginsPath =
-    if builtins.pathExists nvimLazyPath then
-      nvimDevPath
-    else
-      throw "Termux Neovim plugin bundle does not contain lazy.nvim.";
   termuxNvimPlugins = {
     "vimwiki" = pkgs.vimPlugins.vimwiki.src;
     "b64.nvim" = pkgs.vimPlugins.b64-nvim.src;
@@ -156,10 +151,18 @@ let
     in
     {
       inherit path;
-      source = builtins.path {
-        path = toString homeManagerProfile.config.home.file.${sourcePath}.source;
-        name = builtins.baseNameOf path;
-      };
+      # Store source paths normally; generated files must remain build inputs.
+      source =
+        let
+          fileSource = homeManagerProfile.config.home.file.${sourcePath}.source;
+        in
+        if builtins.isPath fileSource then
+          builtins.path {
+            path = fileSource;
+            name = builtins.baseNameOf path;
+          }
+        else
+          fileSource;
     }
   ) termuxHomeFiles;
   homeFiles = pkgs.runCommand "termux-native-home-files" { } ''
@@ -303,7 +306,9 @@ let
         mkdir -p "$out/home/.local/share"
         chmod u+w "$out/home/.local/share"
         mkdir -p "$out/home/.local/share/nvim/lazy-dev"
-        cp -RL ${nvimPluginsPath}/. "$out/home/.local/share/nvim/lazy-dev/"
+        # Validate the generated plugin tree during the build, not evaluation.
+        test -d ${lib.escapeShellArg nvimLazyPath}
+        cp -RL ${nvimDevPath}/. "$out/home/.local/share/nvim/lazy-dev/"
         ${lib.concatMapStringsSep "\n" (name: ''
           mkdir -p "$out/home/.local/share/nvim/lazy-dev/${name}"
           cp -RL ${termuxNvimPlugins.${name}}/. "$out/home/.local/share/nvim/lazy-dev/${name}/"
