@@ -1463,11 +1463,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793748877,
-        "narHash": "sha256-ir/1bDYkweBrZRZ9T8rdV3hj89he7KykkQacnyRpMfg=",
+        "lastModified": 1793953413,
+        "narHash": "sha256-Io/8WSWHiyD6z/9ypurhcxXes/nTpsKvXOsyPDkcu4M=",
         "owner": "pschmitt",
         "repo": "myl",
-        "rev": "b7de2e397f1ab52d31e12e26fd0516895a9bf2fa",
+        "rev": "a0f16923bd3468ac1ecaba0e8983ef612dc11abf",
         "type": "github"
       },
       "original": {
@@ -2816,11 +2816,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793748914,
-        "narHash": "sha256-zD5IqROI84TbBJOzWGcq+eJwrP61iHMP0xU18mm24Do=",
+        "lastModified": 1793954010,
+        "narHash": "sha256-cm5k0cqnFLCu9dqff15qCRkYiRkU73mqql+pyJB8bXg=",
         "owner": "pschmitt",
         "repo": "tdc",
-        "rev": "7db7e3a3ca0671d74f21dd91e9fbd9e197bf4030",
+        "rev": "1f8c18f15acf0292d034425bfe1d5a252493d3e2",
         "type": "github"
       },
       "original": {
@@ -3127,11 +3127,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793748921,
-        "narHash": "sha256-x4gdEUFiJ/wTQUVM1WeCK/nFRk3WlK0hWH5dVM+XPvQ=",
+        "lastModified": 1793954397,
+        "narHash": "sha256-Xx0nk4FrBURNyZ0Y5JB/hIQV1MEPaNa2OWwsda0RE5A=",
         "owner": "pschmitt",
         "repo": "vodafone-station-cli",
-        "rev": "bea97440118f67b605f237aadedff765b1b68547",
+        "rev": "da8166c188b051a0d9dff49f29f8afa55eab4440",
         "type": "github"
       },
       "original": {
