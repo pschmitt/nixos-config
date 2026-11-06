@@ -22,7 +22,15 @@ stdenv.mkDerivation (finalAttrs: {
 
   # Concord keeps its user-level state in a hardcoded ~/.concord; move it to
   # $XDG_DATA_HOME/concord.
-  patches = [ ./xdg-state-dir.patch ];
+  #
+  # `concord release <task> --reason ...` is an operator override for tasks
+  # whose owning agent session is gone: the owner check blocks every agent,
+  # `force` only works for a registered agent with the same human owner, and
+  # claims never expire. Not an MCP tool, so agents cannot call it as one.
+  patches = [
+    ./xdg-state-dir.patch
+    ./operator-release.patch
+  ];
 
   pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs) pname version src;

@@ -1,0 +1,222 @@
+diff --git a/src/cli/commands/release.ts b/src/cli/commands/release.ts
+new file mode 100644
+index 0000000..7f96097
+--- /dev/null
++++ b/src/cli/commands/release.ts
+@@ -0,0 +1,52 @@
++import type { Command } from '@commander-js/extra-typings';
++import { userInfo } from 'node:os';
++
++import { handleOperatorRelease } from '../../tools/task-lifecycle.js';
++import { openContext } from '../context.js';
++
++export interface ReleaseOptions {
++  close: boolean;
++  reason: string;
++}
++
++/**
++ * Release or close a task whose owner session is gone, bypassing the owner
++ * check. For the person at the terminal: agents cannot reach this through MCP.
++ */
++export function runRelease(
++  cwd: string,
++  taskId: string,
++  options: ReleaseOptions,
++  operator: string = userInfo().username,
++): string {
++  const context = openContext(cwd);
++  const result = handleOperatorRelease(context.repos, {
++    task_id: taskId,
++    operator,
++    close: options.close,
++    reason: options.reason,
++  });
++  const { task, ownershipEvent } = result;
++  return (
++    `${options.close ? 'Closed' : 'Released'} ${task.taskId}: ` +
++    `${ownershipEvent.fromStatus} -> ${task.status} ` +
++    `(v${String(ownershipEvent.fromVersion)} -> v${String(task.version)}), ` +
++    `recorded as operator:${operator}.`
++  );
++}
++
++export function registerReleaseCommand(program: Command): void {
++  program
++    .command('release')
++    .argument('<taskId>', 'the task to release')
++    .requiredOption('-r, --reason <text>', 'why the owner cannot do it (recorded in the audit trail)')
++    .option('--close', 'close the task instead of leaving it unowned')
++    .description('Release or close a task whose owner session is gone (operator override)')
++    .action((taskId, options) => {
++      const message = runRelease(process.cwd(), taskId, {
++        close: options.close === true,
++        reason: options.reason,
++      });
++      process.stdout.write(`${message}\n`);
++    });
++}
+diff --git a/src/cli/index.ts b/src/cli/index.ts
+index 33f870f..efa838f 100644
+--- a/src/cli/index.ts
++++ b/src/cli/index.ts
+@@ -16,6 +16,7 @@ import { registerHandoffCommand } from './commands/handoff.js';
+ import { registerHookCommand } from './commands/hook.js';
+ import { registerInboxCommand } from './commands/inbox.js';
+ import { registerMessagesCommand } from './commands/messages.js';
++import { registerReleaseCommand } from './commands/release.js';
+ import { registerReviewPacketCommand } from './commands/review-packet.js';
+ import { registerSetupCommand } from './commands/setup.js';
+ import { registerStatus } from './commands/status.js';
+@@ -88,6 +89,7 @@ registerWatchCommand(program);
+ registerHookCommand(program, telemetry);
+ registerInboxCommand(program, telemetry);
+ registerHandoffCommand(program);
++registerReleaseCommand(program);
+ registerReviewPacketCommand(program);
+ registerExportCommand(program);
+ registerDoctorCommand(program);
+diff --git a/src/tools/task-lifecycle.ts b/src/tools/task-lifecycle.ts
+index f2afa1a..571eb18 100644
+--- a/src/tools/task-lifecycle.ts
++++ b/src/tools/task-lifecycle.ts
+@@ -269,3 +269,42 @@ export function handleReopenTask(repos: Repositories, input: ReopenTaskInput): T
+     reason: input.reason,
+   });
+ }
++
++export interface OperatorReleaseInput {
++  task_id: string;
++  /** Local user running the CLI; recorded as the actor `operator:<name>`. */
++  operator: string;
++  /** Close the task (keeps the former owner) instead of leaving it unowned. */
++  close: boolean;
++  reason: string;
++}
++
++/**
++ * Operator override for a task whose owning session is gone. It skips the
++ * owner check on purpose and is reachable only from the local `concord
++ * release` command, never from an MCP tool. The audit trail records the actor
++ * as `operator:<name>` together with the mandatory reason.
++ */
++export function handleOperatorRelease(
++  repos: Repositories,
++  input: OperatorReleaseInput,
++): TaskLifecycleResult {
++  const task = repos.tasks.get(input.task_id);
++  if (task === undefined) {
++    throw new Error(`Task ${input.task_id} is not claimed.`);
++  }
++  if (task.status === 'closed' || task.status === 'complete') {
++    throw new Error(`Task ${task.taskId} is already ${task.status}.`);
++  }
++  return applyTransition(repos, {
++    task,
++    transition: input.close ? 'operator_close' : 'operator_release',
++    tool: input.close ? 'close_task' : 'release_task',
++    actorAgentId: `operator:${input.operator}`,
++    status: input.close ? 'closed' : 'proposed',
++    agentId: input.close ? task.agentId : null,
++    assignedAgentId: null,
++    leaseExpiresAt: null,
++    reason: input.reason,
++  });
++}
+diff --git a/test/cli/cli-commands.test.ts b/test/cli/cli-commands.test.ts
+index 143cb04..ca9869d 100644
+--- a/test/cli/cli-commands.test.ts
++++ b/test/cli/cli-commands.test.ts
+@@ -16,6 +16,7 @@ import { createRepositories } from '../../src/db/index.js';
+ import { runDoctor, runDoctorCommand } from '../../src/cli/commands/doctor.js';
+ import { runExportMarkdown } from '../../src/cli/commands/export.js';
+ import { runHandoffPacket } from '../../src/cli/commands/handoff.js';
++import { runRelease } from '../../src/cli/commands/release.js';
+ import { runReviewPacket } from '../../src/cli/commands/review-packet.js';
+ import { buildAdoption } from '../../src/domain/adoption.js';
+ import { openRepositories } from '../../src/db/index.js';
+@@ -174,3 +175,16 @@ describe('CLI read/export commands', () => {
+     expect(fixed.healthy).toBe(true);
+   });
+ });
++
++describe('runRelease', () => {
++  it('closes a task for a dead owner and reports the audited transition', () => {
++    const dir = mkdtempSync(join(tmpdir(), 'concord-cli-release-'));
++    mkdirSync(join(dir, '.git'));
++    const repos = openRepositories(join(dir, '.concord', 'concord.db'));
++    handleClaimWork(repos, { task_id: 'TASK-9', title: 'Stale deploy', agent: 'codex' });
++
++    const message = runRelease(dir, 'TASK-9', { close: true, reason: 'owner gone' }, 'alex');
++
++    expect(message).toBe('Closed TASK-9: active -> closed (v1 -> v2), recorded as operator:alex.');
++  });
++});
+diff --git a/test/tools/task-lifecycle.test.ts b/test/tools/task-lifecycle.test.ts
+index 1e19b60..56df30a 100644
+--- a/test/tools/task-lifecycle.test.ts
++++ b/test/tools/task-lifecycle.test.ts
+@@ -8,6 +8,7 @@ import {
+   handleAcceptTask,
+   handleAssignTask,
+   handleCloseTask,
++  handleOperatorRelease,
+   handleReassignTask,
+   handleReleaseTask,
+   handleReopenTask,
+@@ -245,4 +246,55 @@ describe('versioned task lifecycle', () => {
+     });
+     expect(completed.task.status).toBe('complete');
+   });
++
++  it('lets an operator release a task whose owner is gone, with an audit entry', () => {
++    // codex:target does not own TASK-1 and shares no human owner with it.
++    expect(() =>
++      handleReleaseTask(repos, { task_id: 'TASK-1', agent_id: 'codex:target', expected_version: 1 }),
++    ).toThrow(/cannot change lifecycle/);
++
++    const released = handleOperatorRelease(repos, {
++      task_id: 'TASK-1',
++      operator: 'pschmitt',
++      close: false,
++      reason: 'owner session is gone',
++    });
++    expect(released.task.status).toBe('proposed');
++    expect(released.task.agentId).toBeNull();
++    expect(released.task.version).toBe(2);
++    expect(released.ownershipEvent).toMatchObject({
++      transition: 'operator_release',
++      actorAgentId: 'operator:pschmitt',
++      fromAgentId: 'codex:owner',
++      reason: 'owner session is gone',
++    });
++  });
++
++  it('lets an operator close a task and refuses a task that is already finished', () => {
++    const closed = handleOperatorRelease(repos, {
++      task_id: 'TASK-1',
++      operator: 'pschmitt',
++      close: true,
++      reason: 'stale',
++    });
++    expect(closed.task.status).toBe('closed');
++    expect(closed.task.agentId).toBe('codex:owner');
++    expect(closed.ownershipEvent.transition).toBe('operator_close');
++    expect(() =>
++      handleOperatorRelease(repos, {
++        task_id: 'TASK-1',
++        operator: 'pschmitt',
++        close: true,
++        reason: 'again',
++      }),
++    ).toThrow(/already closed/);
++    expect(() =>
++      handleOperatorRelease(repos, {
++        task_id: 'NOPE',
++        operator: 'pschmitt',
++        close: true,
++        reason: 'x',
++      }),
++    ).toThrow(/not claimed/);
++  });
+ });
