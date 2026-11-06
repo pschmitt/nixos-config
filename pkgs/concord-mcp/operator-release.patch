@@ -1,57 +1,130 @@
 diff --git a/src/cli/commands/release.ts b/src/cli/commands/release.ts
 new file mode 100644
-index 0000000..7f96097
+index 0000000..1188b03
 --- /dev/null
 +++ b/src/cli/commands/release.ts
-@@ -0,0 +1,52 @@
+@@ -0,0 +1,125 @@
 +import type { Command } from '@commander-js/extra-typings';
-+import { userInfo } from 'node:os';
++import { uptime, userInfo } from 'node:os';
++import { z } from 'zod';
 +
-+import { handleOperatorRelease } from '../../tools/task-lifecycle.js';
++import { createRepositories, type Repositories } from '../../db/index.js';
++import {
++  findClaimsStaleSince,
++  handleOperatorRelease,
++  type TaskLifecycleResult,
++} from '../../tools/task-lifecycle.js';
 +import { openContext } from '../context.js';
 +
 +export interface ReleaseOptions {
 +  close: boolean;
-+  reason: string;
++  reason?: string | undefined;
++  /** Release every claim in every workspace that nothing touched since boot. */
++  staleSinceBoot?: boolean | undefined;
++  dryRun?: boolean | undefined;
++}
++
++const projectRows = z.array(z.object({ project: z.string() }));
++
++/** When this machine booted, in ms since the epoch. */
++export function bootTimeMs(now: number = Date.now()): number {
++  return now - Math.round(uptime() * 1000);
++}
++
++function describe(result: TaskLifecycleResult, verb: string): string {
++  const { task, ownershipEvent } = result;
++  return (
++    `${verb} ${task.taskId}: ${ownershipEvent.fromStatus} -> ${task.status} ` +
++    `(v${String(ownershipEvent.fromVersion)} -> v${String(task.version)})`
++  );
++}
++
++/** Workspaces (projects) that have tasks in this database. */
++function projectsOf(repos: Repositories): string[] {
++  const raw: unknown = repos.db.prepare('SELECT DISTINCT project FROM tasks').all();
++  return projectRows.parse(raw).map((row) => row.project);
++}
++
++function runStaleSinceBoot(repos: Repositories, options: ReleaseOptions, bootMs: number): string {
++  const verb = options.close ? 'Closed' : 'Released';
++  const action = options.close ? 'close' : 'release';
++  const bootIso = new Date(bootMs).toISOString();
++  const reason = options.reason ?? `host rebooted at ${bootIso}`;
++  const lines: string[] = [];
++  for (const project of projectsOf(repos)) {
++    const scoped = createRepositories(repos.db, project);
++    for (const task of findClaimsStaleSince(scoped, bootMs)) {
++      if (options.dryRun === true) {
++        lines.push(`Would ${action} ${task.taskId} (${task.title})`);
++        continue;
++      }
++      const result = handleOperatorRelease(scoped, {
++        task_id: task.taskId,
++        operator: 'boot-cleanup',
++        close: options.close,
++        reason,
++      });
++      lines.push(`${describe(result, verb)}, recorded as operator:boot-cleanup.`);
++    }
++  }
++  if (lines.length === 0) {
++    return `No claims stale since boot (${bootIso}).`;
++  }
++  const count = `${String(lines.length)} claim(s) stale since boot (${bootIso})`;
++  return [...lines, options.dryRun === true ? `${count} would be released.` : `${count}.`].join(
++    '\n',
++  );
 +}
 +
 +/**
-+ * Release or close a task whose owner session is gone, bypassing the owner
++ * Release or close tasks whose owner session is gone, bypassing the owner
 + * check. For the person at the terminal: agents cannot reach this through MCP.
++ * With `staleSinceBoot`, it clears every claim in every workspace of this
++ * machine that nothing touched since the last boot (a reboot kills all agents).
 + */
 +export function runRelease(
 +  cwd: string,
-+  taskId: string,
++  taskId: string | undefined,
 +  options: ReleaseOptions,
 +  operator: string = userInfo().username,
++  bootMs: number = bootTimeMs(),
 +): string {
-+  const context = openContext(cwd);
-+  const result = handleOperatorRelease(context.repos, {
++  if (options.staleSinceBoot === true) {
++    if (taskId !== undefined) {
++      throw new Error('Pass either a task id or --stale-since-boot, not both.');
++    }
++    return runStaleSinceBoot(openContext(cwd).repos, options, bootMs);
++  }
++  if (taskId === undefined || options.reason === undefined) {
++    throw new Error('A task id and --reason are required (or use --stale-since-boot).');
++  }
++  const result = handleOperatorRelease(openContext(cwd).repos, {
 +    task_id: taskId,
 +    operator,
 +    close: options.close,
 +    reason: options.reason,
 +  });
-+  const { task, ownershipEvent } = result;
-+  return (
-+    `${options.close ? 'Closed' : 'Released'} ${task.taskId}: ` +
-+    `${ownershipEvent.fromStatus} -> ${task.status} ` +
-+    `(v${String(ownershipEvent.fromVersion)} -> v${String(task.version)}), ` +
-+    `recorded as operator:${operator}.`
-+  );
++  return `${describe(result, options.close ? 'Closed' : 'Released')}, recorded as operator:${operator}.`;
 +}
 +
 +export function registerReleaseCommand(program: Command): void {
 +  program
 +    .command('release')
-+    .argument('<taskId>', 'the task to release')
-+    .requiredOption('-r, --reason <text>', 'why the owner cannot do it (recorded in the audit trail)')
++    .argument('[taskId]', 'the task to release')
++    .option('-r, --reason <text>', 'why the owner cannot do it (recorded in the audit trail)')
 +    .option('--close', 'close the task instead of leaving it unowned')
++    .option(
++      '--stale-since-boot',
++      'release every claim in every workspace that nothing touched since the last boot',
++    )
++    .option('--dry-run', 'with --stale-since-boot: list the claims without changing them')
 +    .description('Release or close a task whose owner session is gone (operator override)')
 +    .action((taskId, options) => {
 +      const message = runRelease(process.cwd(), taskId, {
 +        close: options.close === true,
 +        reason: options.reason,
++        staleSinceBoot: options.staleSinceBoot,
++        dryRun: options.dryRun,
 +      });
 +      process.stdout.write(`${message}\n`);
 +    });
@@ -77,10 +150,10 @@ index 33f870f..efa838f 100644
  registerExportCommand(program);
  registerDoctorCommand(program);
 diff --git a/src/tools/task-lifecycle.ts b/src/tools/task-lifecycle.ts
-index f2afa1a..571eb18 100644
+index f2afa1a..12b2c4d 100644
 --- a/src/tools/task-lifecycle.ts
 +++ b/src/tools/task-lifecycle.ts
-@@ -269,3 +269,42 @@ export function handleReopenTask(repos: Repositories, input: ReopenTaskInput): T
+@@ -269,3 +269,71 @@ export function handleReopenTask(repos: Repositories, input: ReopenTaskInput): T
      reason: input.reason,
    });
  }
@@ -123,8 +196,37 @@ index f2afa1a..571eb18 100644
 +    reason: input.reason,
 +  });
 +}
++
++const CLAIM_STATUSES = [
++  'assigned',
++  'active',
++  'blocked',
++  'handoff_offered',
++] as const satisfies readonly TaskStatus[];
++
++/**
++ * Claims that nothing has touched since `cutoffMs` (for example the last
++ * boot): the task has no later activity, and neither its owner nor its
++ * assignee was seen again. An agent that is missing, or has an unreadable
++ * timestamp, counts as gone.
++ */
++export function findClaimsStaleSince(repos: Repositories, cutoffMs: number): TaskRecord[] {
++  const before = (iso: string): boolean => {
++    const time = Date.parse(iso);
++    return Number.isNaN(time) || time < cutoffMs;
++  };
++  return repos.tasks.listByStatuses(CLAIM_STATUSES).filter(
++    (task) =>
++      before(task.updatedAt) &&
++      [task.agentId, task.assignedAgentId].every((agentId) => {
++        if (agentId === null) return true;
++        const agent = repos.agents.get(agentId);
++        return agent === undefined || before(agent.lastSeen);
++      }),
++  );
++}
 diff --git a/test/cli/cli-commands.test.ts b/test/cli/cli-commands.test.ts
-index 143cb04..ca9869d 100644
+index 143cb04..5020dad 100644
 --- a/test/cli/cli-commands.test.ts
 +++ b/test/cli/cli-commands.test.ts
 @@ -16,6 +16,7 @@ import { createRepositories } from '../../src/db/index.js';
@@ -135,7 +237,7 @@ index 143cb04..ca9869d 100644
  import { runReviewPacket } from '../../src/cli/commands/review-packet.js';
  import { buildAdoption } from '../../src/domain/adoption.js';
  import { openRepositories } from '../../src/db/index.js';
-@@ -174,3 +175,16 @@ describe('CLI read/export commands', () => {
+@@ -174,3 +175,60 @@ describe('CLI read/export commands', () => {
      expect(fixed.healthy).toBe(true);
    });
  });
@@ -151,20 +253,65 @@ index 143cb04..ca9869d 100644
 +
 +    expect(message).toBe('Closed TASK-9: active -> closed (v1 -> v2), recorded as operator:alex.');
 +  });
++
++  it('releases every claim in every workspace that nothing touched since boot', () => {
++    const dir = mkdtempSync(join(tmpdir(), 'concord-cli-boot-'));
++    mkdirSync(join(dir, '.git'));
++    const repos = openRepositories(join(dir, '.concord', 'concord.db'));
++    handleClaimWork(repos, { task_id: 'A-1', title: 'First', agent: 'codex' });
++    // A second workspace in the same database, as in global mode.
++    handleClaimWork(createRepositories(repos.db, 'ws_other'), {
++      task_id: 'B-1',
++      title: 'Second',
++      agent: 'codex',
++    });
++    const future = Date.now() + 60_000;
++    const options = { close: false, staleSinceBoot: true } as const;
++
++    const dry = runRelease(dir, undefined, { ...options, dryRun: true }, 'alex', future);
++    expect(dry).toContain('Would release A-1');
++    expect(dry).toContain('Would release B-1');
++    expect(repos.tasks.get('A-1')?.status).toBe('active');
++
++    const done = runRelease(dir, undefined, options, 'alex', future);
++    expect(done).toContain(
++      'Released A-1: active -> proposed (v1 -> v2), recorded as operator:boot-cleanup.',
++    );
++    expect(done).toContain('Released B-1');
++    expect(repos.tasks.get('A-1')?.status).toBe('proposed');
++    expect(createRepositories(repos.db, 'ws_other').tasks.get('B-1')?.status).toBe('proposed');
++
++    expect(runRelease(dir, undefined, options, 'alex', future)).toMatch(
++      /^No claims stale since boot/,
++    );
++    expect(runRelease(dir, undefined, options, 'alex', Date.now() - 60_000)).toMatch(
++      /^No claims stale since boot/,
++    );
++  });
++
++  it('rejects a task id together with --stale-since-boot, and a missing reason', () => {
++    const dir = mkdtempSync(join(tmpdir(), 'concord-cli-args-'));
++    mkdirSync(join(dir, '.git'));
++    expect(() => runRelease(dir, 'A-1', { close: false, staleSinceBoot: true }, 'alex')).toThrow(
++      /not both/,
++    );
++    expect(() => runRelease(dir, 'A-1', { close: false }, 'alex')).toThrow(/--reason/);
++  });
 +});
 diff --git a/test/tools/task-lifecycle.test.ts b/test/tools/task-lifecycle.test.ts
-index 1e19b60..56df30a 100644
+index 1e19b60..d37b476 100644
 --- a/test/tools/task-lifecycle.test.ts
 +++ b/test/tools/task-lifecycle.test.ts
-@@ -8,6 +8,7 @@ import {
+@@ -8,6 +8,8 @@ import {
    handleAcceptTask,
    handleAssignTask,
    handleCloseTask,
++  findClaimsStaleSince,
 +  handleOperatorRelease,
    handleReassignTask,
    handleReleaseTask,
    handleReopenTask,
-@@ -245,4 +246,55 @@ describe('versioned task lifecycle', () => {
+@@ -245,4 +247,77 @@ describe('versioned task lifecycle', () => {
      });
      expect(completed.task.status).toBe('complete');
    });
@@ -172,7 +319,11 @@ index 1e19b60..56df30a 100644
 +  it('lets an operator release a task whose owner is gone, with an audit entry', () => {
 +    // codex:target does not own TASK-1 and shares no human owner with it.
 +    expect(() =>
-+      handleReleaseTask(repos, { task_id: 'TASK-1', agent_id: 'codex:target', expected_version: 1 }),
++      handleReleaseTask(repos, {
++        task_id: 'TASK-1',
++        agent_id: 'codex:target',
++        expected_version: 1,
++      }),
 +    ).toThrow(/cannot change lifecycle/);
 +
 +    const released = handleOperatorRelease(repos, {
@@ -218,5 +369,23 @@ index 1e19b60..56df30a 100644
 +        reason: 'x',
 +      }),
 +    ).toThrow(/not claimed/);
++  });
++
++  it('finds claims that neither the task nor its owner touched since a cutoff', () => {
++    const now = Date.now();
++    // Everything was last touched just now: a cutoff in the future makes it stale.
++    expect(findClaimsStaleSince(repos, now + 60_000).map((task) => task.taskId)).toEqual([
++      'TASK-1',
++    ]);
++    // A cutoff in the past means the owner was seen after it: still alive.
++    expect(findClaimsStaleSince(repos, now - 60_000)).toEqual([]);
++    // Closed tasks are not claims.
++    handleOperatorRelease(repos, {
++      task_id: 'TASK-1',
++      operator: 'pschmitt',
++      close: true,
++      reason: 'done',
++    });
++    expect(findClaimsStaleSince(repos, now + 60_000)).toEqual([]);
 +  });
  });

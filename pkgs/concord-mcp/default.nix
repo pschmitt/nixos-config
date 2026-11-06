@@ -26,7 +26,9 @@ stdenv.mkDerivation (finalAttrs: {
   # `concord release <task> --reason ...` is an operator override for tasks
   # whose owning agent session is gone: the owner check blocks every agent,
   # `force` only works for a registered agent with the same human owner, and
-  # claims never expire. Not an MCP tool, so agents cannot call it as one.
+  # claims never expire. `concord release --stale-since-boot` does it for every
+  # claim nothing touched since the last boot (see home-manager/devel/concord.nix).
+  # Not an MCP tool, so agents cannot call it as one.
   patches = [
     ./xdg-state-dir.patch
     ./operator-release.patch

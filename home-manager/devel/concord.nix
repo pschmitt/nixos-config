@@ -40,6 +40,22 @@ in
     };
   };
 
+  # A reboot kills every agent session, but their claims stay `active` in
+  # Concord and keep blocking other agents; nobody is left to release them.
+  # Once per boot, release the claims of every workspace that nothing touched
+  # since boot (the released tasks stay visible as `proposed`). An agent seen
+  # after the boot, or a task updated since, is left alone, so it does not
+  # matter that this runs at the first login rather than at boot.
+  systemd.user.services.concord-boot-cleanup = {
+    Unit.Description = "Release Concord claims left behind by agents killed in the last reboot";
+    Service = {
+      Type = "oneshot";
+      WorkingDirectory = "%h";
+      ExecStart = "${concord} release --stale-since-boot";
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
+
   programs = {
     # Per-agent identity: stops the MCP process from inheriting a parent
     # terminal's session variables (e.g. CLAUDE_CODE_SESSION_ID).
