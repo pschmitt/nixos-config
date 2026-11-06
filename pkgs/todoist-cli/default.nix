@@ -5,6 +5,7 @@
   fetchFromGitHub,
   installAgentSkills,
   installShellFiles,
+  jq,
   nodejs,
 }:
 
@@ -23,9 +24,17 @@ buildNpmPackage (finalAttrs: {
 
   doCheck = false;
 
+  # 5.10.1 added a `prepare` script that installs git hooks (lefthook). It
+  # needs git and a checkout, neither of which exists in the build.
+  postPatch = ''
+    jq 'del(.scripts.prepare)' package.json > package.json.new
+    mv package.json.new package.json
+  '';
+
   nativeBuildInputs = [
     installAgentSkills
     installShellFiles
+    jq
   ];
 
   # The source tree may carry its own SKILL.md; the skill below is generated
