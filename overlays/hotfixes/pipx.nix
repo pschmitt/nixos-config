@@ -1,4 +1,4 @@
-finalPy: prevPy: {
+_finalPy: prevPy: {
   # Python 3.13 expectations and test collection workarounds from the prior
   # baseline; retain pending checks against top-level Nixpkgs 1d060086d60cb76a40cf37109f979d88a5bd6396.
   pipx = prevPy.pipx.overridePythonAttrs (old: {
