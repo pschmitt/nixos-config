@@ -1,0 +1,34 @@
+diff --git a/pytr/api.py b/pytr/api.py
+--- a/pytr/api.py
++++ b/pytr/api.py
+@@ -30,2 +30,3 @@
+ import re
++import shutil
+ import ssl
+@@ -218,6 +219,25 @@
+         try:
+             with sync_playwright() as p:
+-                browser = p.chromium.launch(
++                browser_executable = next(
++                    (
++                        executable
++                        for executable in (
++                            shutil.which("chromium"),
++                            shutil.which("google-chrome-stable"),
++                            shutil.which("google-chrome"),
++                            shutil.which("chrome"),
++                        )
++                        if executable
++                    ),
++                    None,
++                )
++                if browser_executable is None:
++                    raise RuntimeError(
++                        "No Chromium-compatible browser found on PATH. "
++                        "Install pkgs.chromium instead of running playwright install."
++                    )
++                browser = p.chromium.launch(
++                    executable_path=browser_executable,
+                     headless=True,
+                     args=["--no-sandbox", "--disable-setuid-sandbox"],
+                 )

@@ -6,6 +6,10 @@ runtime config, migration, and rotation procedures.
 See the [organization audit plan](nix-organization-plan.md) for completed cleanup,
 ownership decisions and validation gates.
 
+See the [overlay rules](../overlays/AGENTS.md) for package ownership and hotfix
+lifecycle, and the [overlay review](overlay-review.md) for removal evidence and
+remaining workarounds.
+
 ## Repository layout
 
 | Path | Contents |

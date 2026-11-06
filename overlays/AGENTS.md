@@ -11,6 +11,10 @@ needs current evidence that it is still necessary.
 - Put temporary upstream or Nixpkgs fixes in `hotfixes/<package>.nix`, with a
   short, explicit import list in `hotfixes/default.nix`. Do not auto-import every
   file in the directory or retain compatibility aliases for moved files.
+- Keep the export shape explicit: package attribute overrides and Python
+  extensions have separate composition points in the hotfix registry. An
+  ordered patch bundle may instead be imported by its owning package overlay
+  when this preserves patch order; note that exception in the registry.
 - Put deliberate, lasting package customizations in `<package>.nix`. A temporary
   version pin, missing dependency, build repair or test workaround is a hotfix,
   even if it has been around for a long time.

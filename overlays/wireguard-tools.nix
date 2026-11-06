@@ -2,7 +2,7 @@
 
 {
   wireguard-tools = prev.wireguard-tools.overrideAttrs (oldAttrs: {
-    postInstall = oldAttrs.postInstall or "" + ''
+    postInstall = (oldAttrs.postInstall or "") + ''
       # Add wg-json script to the output
       cp $src/contrib/json/wg-json $out/bin/
       chmod +x $out/bin/wg-json
