@@ -48,10 +48,14 @@ buildPythonApplication rec {
     huggingface-hub
     numpy
     onnxruntime
+    opencv4
     pillow
     requests
     tqdm
   ];
+
+  # nixpkgs' opencv4 provides cv2 under a different dist name
+  pythonRemoveDeps = [ "opencv-python-headless" ];
 
   postPatch = ''
     sed -i 's/__version__ = ".*"/__version__ = "${version}"/' src/withoutbg/__version__.py
