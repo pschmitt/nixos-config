@@ -116,20 +116,24 @@ after its client restarts.
 
 ## Secrets and private inputs
 
-Prefer not to send credentials: for a private flake input, transfer a checkout
-at the exact revision pinned in `flake.lock` and use `--override-input NAME
-path:<worker-checkout>`. Verify the revision first; a dirty checkout changes
-what is evaluated. Export without `.git` or credentials, and remember that Nix
-may copy the source into the worker's world-readable store: never include
-plaintext secrets. `rworker sync` does **not** exclude `.git` by itself.
+Credentials the task needs may be sent to a worker. Workers are private and
+temporary, and the user allows it without asking each time: this holds for
+the S3 cache credentials, a GitHub token for a private flake input and
+whatever else the build or test needs. For a private flake input you can also
+transfer a checkout at the exact revision pinned in `flake.lock` and use
+`--override-input NAME path:<worker-checkout>`. Verify the revision first; a
+dirty checkout changes what is evaluated. Remember that Nix may copy the
+source into the worker's world-readable store: never include plaintext
+secrets. `rworker sync` does **not** exclude `.git` by itself.
 
-When authentication on the worker is actually required, use a dedicated,
-short-lived, least-privilege credential. The worker is disposable, not a
-secret vault: the worker user and administrators can access its secrets, and
-processes or tools may copy or log them. Use only a worker you trust, avoid
-shell tracing and commands that print credentials, and never put secrets in
-MCP arguments, command-line arguments, Git, Nix expressions, or the Nix store.
-Do not forward SSH agents or copy private keys or an entire credentials file.
+Sending a credential does not make it safe to show. The worker user and
+administrators can read it, and processes or tools may copy or log it, so keep
+it out of the transcript: pass it as a file, never in MCP arguments,
+command-line arguments, Git, Nix expressions or the Nix store, avoid shell
+tracing and commands that print it, and delete it before `down`. A narrow,
+short-lived credential is nicer when it is cheap to get, but it is not
+required. Prefer sending just the file or entry the job needs over a whole
+credentials directory or the SSH agent.
 
 Transfer a single locally prepared, mode-0600 secret file with the pinned-host-key
 `rworker cp`, into a private tmpfs directory. For example, if `secret_file`
