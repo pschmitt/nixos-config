@@ -29,6 +29,9 @@
     netbird.setupKeyName = "homelab";
     fwupd.enable = true;
     kvm-usb-passthrough.enable = true;
+
+    # Placement label for browser-daemon (fnuc and lrz).
+    browser-daemon.nodeGroups = [ "homelab" ];
     kmscon.config."dpms-timeout" = 0;
 
     nfsExports = {
