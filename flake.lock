@@ -3127,11 +3127,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1793954397,
-        "narHash": "sha256-Xx0nk4FrBURNyZ0Y5JB/hIQV1MEPaNa2OWwsda0RE5A=",
+        "lastModified": 1793955519,
+        "narHash": "sha256-wQhdnIkk8ZFe3XI54tqI9N1B1pTL5hHivYf/iRfximA=",
         "owner": "pschmitt",
         "repo": "vodafone-station-cli",
-        "rev": "da8166c188b051a0d9dff49f29f8afa55eab4440",
+        "rev": "0313c527f4d8d42a853c9fc4117d64f829c16e8e",
         "type": "github"
       },
       "original": {
