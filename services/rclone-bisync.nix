@@ -6,7 +6,16 @@
 }:
 
 let
-  rcloneConfig = config.sops.secrets."rclone/config".path;
+  rcloneConfigSeed = config.sops.secrets."rclone/config".path;
+  rcloneConfig = "/var/lib/rclone/rclone.conf";
+  rcloneConfigInit = pkgs.writeShellApplication {
+    name = "rclone-config-init";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ./scripts/rclone-config-init.sh;
+  };
   rcloneBisyncDocuments = pkgs.writeShellApplication {
     name = "rclone-bisync-documents";
     runtimeInputs = [
@@ -56,9 +65,13 @@ in
         serviceConfig = {
           Type = "oneshot";
           StateDirectory = "rclone";
+          StateDirectoryMode = "0700";
           CacheDirectory = "rclone";
           TimeoutStartSec = "3h";
           User = "root";
+          ExecStartPre = [
+            "${lib.getExe rcloneConfigInit} ${lib.escapeShellArg rcloneConfig} ${lib.escapeShellArg rcloneConfigSeed}"
+          ];
         };
 
         script = bisyncCmd rcloneBisyncDocuments [ ];
@@ -72,9 +85,13 @@ in
         serviceConfig = {
           Type = "oneshot";
           StateDirectory = "rclone";
+          StateDirectoryMode = "0700";
           CacheDirectory = "rclone";
           TimeoutStartSec = "30min";
           User = "root";
+          ExecStartPre = [
+            "${lib.getExe rcloneConfigInit} ${lib.escapeShellArg rcloneConfig} ${lib.escapeShellArg rcloneConfigSeed}"
+          ];
         };
 
         script = bisyncCmd rcloneBisyncIncoming [ ];
@@ -88,9 +105,13 @@ in
         serviceConfig = {
           Type = "oneshot";
           StateDirectory = "rclone";
+          StateDirectoryMode = "0700";
           CacheDirectory = "rclone";
           TimeoutStartSec = "30min";
           User = "root";
+          ExecStartPre = [
+            "${lib.getExe rcloneConfigInit} ${lib.escapeShellArg rcloneConfig} ${lib.escapeShellArg rcloneConfigSeed}"
+          ];
         };
 
         script = bisyncCmd rcloneBisyncIncoming [ "--resync" ];
@@ -104,9 +125,13 @@ in
         serviceConfig = {
           Type = "oneshot";
           StateDirectory = "rclone";
+          StateDirectoryMode = "0700";
           CacheDirectory = "rclone";
           TimeoutStartSec = "3h";
           User = "root";
+          ExecStartPre = [
+            "${lib.getExe rcloneConfigInit} ${lib.escapeShellArg rcloneConfig} ${lib.escapeShellArg rcloneConfigSeed}"
+          ];
         };
 
         script = bisyncCmd rcloneBisyncDocuments [ "--resync" ];

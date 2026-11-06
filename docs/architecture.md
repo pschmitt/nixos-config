@@ -1,5 +1,8 @@
 # Architecture
 
+See [Rclone bisync runtime configuration](rclone-bisync.md) for its persistent
+runtime config, migration, and rotation procedures.
+
 See the [organization audit plan](nix-organization-plan.md) for completed cleanup,
 ownership decisions and validation gates.
 
