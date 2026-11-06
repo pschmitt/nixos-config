@@ -463,6 +463,10 @@ in
           clientIdFile = config.sops.secrets."trek/mcp/client-id".path;
           clientSecretFile = config.sops.secrets."trek/mcp/client-secret".path;
         };
+        # Hosted Sentry MCP (sentry.io). It signs in with OAuth, which the
+        # clients handle themselves (Claude Code: /mcp -> sentry -> Authenticate),
+        # so it is a plain remote server rather than an mcp-proxy with a token.
+        sentry.url = "https://mcp.sentry.dev/mcp";
         obsidian = {
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
           args = [ "${config.xdg.userDirs.documents}/notes" ];
