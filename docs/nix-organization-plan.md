@@ -99,7 +99,10 @@ Vodafone failure below. Module-only extractions were evaluated without
 rebuilding unchanged application recipes. Application Nix lint is green;
 Vodafone's separate container workflow has the unrelated failure below.
 
-## Existing issues outside the organization changes
+## Issues identified outside the organization changes
+
+These were the original findings. The follow-up section below records repairs
+and their validation separately.
 
 | Issue | Evidence and suggested follow-up |
 | --- | --- |
@@ -109,6 +112,55 @@ Vodafone's separate container workflow has the unrelated failure below.
 | Vodafone container CI | The unchanged ARMv7 Alpine/Python image fails building `orjson` because its Rust target/toolchain is unavailable. Resolve container packaging separately; Nix lint passes |
 | `tdc` package version is `latest` | This is misleading metadata, not an unpinned source: `src = ./.` remains revision-bound. Derive the version from project metadata in a separate packaging correction |
 
-Archived repositories, undiscovered nested flakes and other forges are outside
-the inventory above. Application/API changes and runtime migrations are not
-part of this behavior-preserving organization pass.
+## Follow-up packaging and coverage
+
+The follow-up separates packaging repairs from the behavior-preserving moves:
+
+- The ARMv6 failure comes from `tcpdump` → `libpcap` → `rdma-core` →
+  Pandoc's GHC bootstrap. Disabling only `rdma-core`'s optional manpages in
+  that host's overlay makes all 26 system configurations evaluate. The
+  runtime library and packet-capture functionality remain enabled. This is
+  evaluation coverage, not an ARMv6 image build or boot test.
+- `myl` tracks `nixpkgs-26.05-darwin`, the final Nixpkgs release supporting
+  Intel macOS. All four default system package evaluations and the Linux
+  build pass. This preserves the declared platform contract; Darwin binaries
+  were not built on the Linux worker.
+- `tdc` reads its package version from `pyproject.toml`. Its Linux build and
+  command-help smoke test pass.
+- Vodafone's Nix package uses `aiovodafone` 3.3.0, whose dependency minimums
+  work with both the maintained 26.05 package set and this repository's
+  Nixpkgs override. The newer Python lock remains valid for pip/uv consumers;
+  it requires dependencies not yet packaged by Nixpkgs. Import, dependency
+  version and mock-device checks pass without relaxing requirements. Its
+  Alpine build installs the Rust toolchain needed by `orjson`
+  when no ARMv7 wheel is available; an ARMv7 container build and CLI help smoke
+  test pass under emulation. No live router was contacted.
+
+Expanded discovery found one active nested flake,
+[`stricknani/android`](https://github.com/pschmitt/stricknani/tree/main/android).
+It exports Linux development shells and checks rather than application
+packages. Both development-shell derivations evaluate; its documented Android
+command-line-tools workaround remains intentional. This audit does not claim a
+fresh Android application build.
+
+A recursive tree inventory of 208 archived owned GitHub repositories found
+two flakes, both at the root:
+[`nix-snapd`](https://github.com/pschmitt/nix-snapd) and
+[`rbw-auto`](https://github.com/pschmitt/rbw-auto). They remain archived and
+were not modernized or built. The active nested-flake discovery used GitHub
+code search, so unindexed files remain a coverage limitation.
+
+Bounded checks of the configured additional forges found one owned fork with a
+root flake and eight personal-namespace projects (two active, six archived),
+one containing a root flake. The fork's recursive tree response was truncated,
+so nested coverage there is incomplete. Private project identifiers and source
+contents are deliberately omitted from this public report. Other accounts and
+unconfigured forges remain outside the inventory.
+
+The independent private flake's development shells evaluate on all four
+default systems. It uses canonical package, application and shell outputs,
+with pinned inputs and no evaluation-time fetches. One unused output argument
+remains a minor lint cleanup; no private application was built or run.
+
+Application/API changes and runtime migrations are separate work from the
+original organization pass.
