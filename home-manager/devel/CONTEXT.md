@@ -14,7 +14,8 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `browser-daemon` before the first `browser_*` call; `browser-login` for any login, passkey or CAPTCHA in a browser session
   - `gpg-signing` before signed commits or tags (never retry with interactive pinentry or disable signing)
   - `tmux-window-names`: as soon as the task is clear and whenever the topic changes, rename only this agent's own window (`$TMUX_PANE`)
-  - `brkn-infra` for host roles, build/test/deploy targets and Android devices; `release`, `extension-dev`, `skill-suggestions`
+  - `deploy` whenever asked to deploy: bump the flake input in nixos-config, push, roll out to the hosts, as fast as possible (never a release); `release` only to cut a version or tag
+  - `brkn-infra` for host roles, build/test/deploy targets and Android devices; `extension-dev`, `skill-suggestions`
   - `timg`, `ha`, `netbox`, `jira`, `confluence`, `obsidian`, `n8n`, `zpl` and other repo-local skills when applicable
 - Watch for toil worth capturing (the same friction twice, a rediscovered procedure, a generalizing user correction). Say so at the end of the task and propose a skill or skill update with the `self-improvement` skill; ask before creating a new skill.
 - Linkify references (MRs, PRs, tickets, docs, dashboards, local files): OSC 8 hyperlinks in terminal output, Markdown links where Markdown renders.

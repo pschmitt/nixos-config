@@ -1,6 +1,6 @@
 ---
 name: release
-description: Use when releasing one of our own projects (rbw, browser-daemon, bruvtab, monarch) or when told to "do a release", cut a version, tag, publish an extension, or roll a new version out to the nixos-config hosts. Covers the order of steps, what to check first and how to consume the release.
+description: Use when releasing one of our own projects (rbw, browser-daemon, bruvtab, monarch) or when told to "do a release", cut a version, tag or publish an extension. Covers the order of steps, what to check first and how to consume the release. Not for "deploy": that means bumping the flake input and rolling out to the hosts, without a release (see the `deploy` skill).
 ---
 
 # Release
@@ -36,9 +36,9 @@ order of steps and the traps that cost rounds before.
 
 ## After: roll it out
 
-1. In `nixos-config`: `nix flake lock --update-input <rbw|browser-daemon|bruvtab|monarch>` on
-   an `rworker` (`rworker` and `nix` skills), copy `flake.lock` back, commit, push, deploy to the affected hosts. The
-   standing rule is commit, push and deploy without asking. rbw's `AGENTS.md` says the same.
+1. Follow the `deploy` skill for the rollout (bump the input in `nixos-config` on an `rworker`,
+   commit, push, deploy to the affected hosts). The standing rule is to do this without asking;
+   rbw's `AGENTS.md` says the same.
 2. browser-daemon has its own `rbw` input. After each rbw release, pin it to the same commit as
    described in rbw's `AGENTS.md` ("Deploy").
 3. Browser extensions: continue with the `extension-dev` skill to confirm gk4 and ge2 run the new
