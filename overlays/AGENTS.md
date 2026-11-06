@@ -68,6 +68,11 @@ obsolete fix into a permanent overlay merely to shorten the hotfix list.
 
 ## Validation
 
+Resolve the consumer's actual Nixpkgs input before testing: follow
+`nodes[lock.root].inputs.nixpkgs` in `flake.lock`, including any follows links,
+or use the flake's evaluated input. A node merely named `nixpkgs` can belong to
+a nested input. Record the resolved revision and test that package set.
+
 Separate mechanical moves from package upgrades and removals. Compare affected
 derivations before and after a reorganization, preserving overlay ordering and
 all consumers. For a removal, build the unmodified package on the remote worker,

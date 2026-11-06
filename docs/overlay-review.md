@@ -1,88 +1,57 @@
 # Overlay review
 
-Review date: 2026-11-06. Nixpkgs revision:
-`b1b875982b17dabde9b4a37f3e229e74913e6db3`.
+Review date: 2026-11-06. The top-level Nixpkgs input resolves through
+`flake.lock` → `nodes[root].inputs.nixpkgs` → `nixpkgs_6`, at revision
+`1d060086d60cb76a40cf37109f979d88a5bd6396`.
 
-The maintenance policy lives in [overlays/AGENTS.md](../overlays/AGENTS.md).
-Review temporary fixes on each relevant input update and at least monthly;
-the next calendar review is due by 2026-12-06. This is a maintenance rule,
-not a claim that a scheduled job performs the review automatically.
+## Correction to the initial audit
 
-## Removed workarounds
+The initial removal audit mistakenly used the lock node named `nixpkgs`
+(`b1b875982b17dabde9b4a37f3e229e74913e6db3`), which belongs to a nested input.
+Its successful package builds did not justify removing this configuration's
+workarounds. Those removal conclusions are withdrawn. All ten workarounds and
+the prior hass-cli development source/patches have been restored in the new
+per-package layout. No fleet activation was performed for that removal commit.
 
-Unmodified Nixpkgs packages for the following overrides were successfully
-realized on an x86_64 Linux worker. Nix used valid binary substitutes where
-available; these are not claims that every upstream test suite was rerun.
-The builds retained the checks configured by Nixpkgs.
+Restored fixes cover Audacity, Squeekboard, pipx, python-aodhclient, diff-cover,
+websockify, torchcodec, rxvt-unicode, shadowsocks-libev and Perl DBD::CSV.
+Hass-cli's upstream 1.0.0 release remains an upgrade candidate; the top-level
+input does not already provide the package that the initial audit tested.
 
-| Package | Removed local workaround |
-| --- | --- |
-| Audacity | Disable QML unity compilation |
-| Squeekboard | Rewrite the Rust `close` return type |
-| pipx | Extra test exclusions and forced Python 3.13 package selection |
-| python-aodhclient | Disable Python distribution metadata checks |
-| diff-cover | Exclude six HTML snapshot tests |
-| websockify | Exclude two JWT tests |
-| torchcodec | Exclude the audio comparison test |
-| rxvt-unicode | Force GNU C++17 |
-| shadowsocks-libev | Suppress discarded-qualifier errors |
-| Perl DBD::CSV | Disable the entire test suite |
+## Organization and review policy
 
-Both the Python 3.13 pipx package and the canonical top-level pipx package were
-checked. These removals restore Nixpkgs' package selection and checks rather
-than introducing replacement workarounds.
+Temporary fixes live in `overlays/hotfixes/<package>.nix`, composed explicitly
+by `overlays/hotfixes/default.nix`. Noctalia's four temporary image, keyboard and
+capture fixes are a patch bundle inserted at their original positions by its
+own overlay. Plugin API, caffeine, OSD and notification features remain in
+`overlays/noctalia.nix`. All 19 Noctalia patches still apply to the pinned source;
+the split preserves their names, order and contents.
 
-## Retained fixes
+Deliberate package integrations remain in `overlays/<package>.nix`: rbw's
+upstream overlay, Lan Mouse keymap/input handling, pytr's system-browser
+selection, go-task's executable/completion rename, WireGuard's `wg-json`, and
+the chosen zsh-completions source. The pytr patch is a separate patch file
+instead of a large embedded Python replacement script.
 
-| Package | Current evidence and removal condition |
-| --- | --- |
-| home-assistant-cli | Nixpkgs already supplies 1.0.0. Remove the development source pin, fixture rewrite and `test_defaults` exclusion. Retain only the Python 3.14 event-loop correction until upstream uses the supported asyncio API. |
-| Playwright Python | The unmodified source fetch still fails with a hash mismatch. Retain the corrected source hash until the pinned expression matches the fetched source. |
-| pytest-playwright | `doCheck = false` still accompanies a `preCheck` reference that pulls browser binaries into the derivation. Retain the narrow hook override until Nixpkgs removes that unnecessary dependency. |
-| playwright-mcp | Unmodified WebKit fails auto-patchelf because `libmanette-0.2.so.0` is missing. Retain the master package substitution until the main input contains the dependency fix. |
-| obs-replay-source | The unmodified build fails on deprecated `obs_properties_add_button` with OBS 32.2.2. Retain the API correction until the plugin or Nixpkgs includes it. |
-| pysaml2 | The Python 3.13 build reproduces 42 failing XML sandbox tests without the patch (734 pass); the patched build passes all 776 enabled tests. Retain the XMLResource correction until upstream's xmlschema 4 support reaches the pin. |
-| xmlschema | A real zope.interface provider descriptor on an inherited validator reproduces `AttributeError: __provides__`. The regression and 1,522 package tests pass with the patch. Retain the descriptor guard until upstream includes it. |
-| Matrix Synapse | The packaged SAML extra omits `pytz`. Retain the dependency correction until the package supplies the complete extra. |
-| Noctalia | Four image, keyboard and capture corrections form a patch bundle consumed at explicit positions by its package overlay. The complete 19-patch series still applies to the pinned source. Remove individual corrections when upstream implements them. |
+The maintenance rules live in [overlays/AGENTS.md](../overlays/AGENTS.md).
+Review fixes on every relevant input update and at least monthly (next review
+by 2026-12-06). Resolve the actual input graph before testing removals. Prefer
+removal only after a failing reproducer or build passes without the workaround
+under the package set used by its consumers. A passing evaluation alone is
+insufficient, and a warm store must not conceal evaluation-time builds.
 
-## Package customization boundaries
+## Validation scope
 
-- `rbw.nix` selects the project's own flake overlay.
-- `lan-mouse.nix` owns the chosen keymap and input-state integration.
-- `pytr.nix` deliberately selects an installed Chromium-compatible browser from
-  PATH; the upstream source still expects a Playwright-managed browser. This
-  integration is preserved, not counted as an obsolete fix removed.
-- `go-task.nix` owns the executable and completion rename to avoid a Taskwarrior
-  collision. Its disabled install check is tied to the rename, not an upstream
-  package failure.
-- `wireguard-tools.nix` adds `wg-json`. Parenthesizing the fallback preserves any
-  future upstream install hook; the current pin has no such hook.
-- `zsh-completions.nix` deliberately tracks the configured upstream source input.
-- Noctalia's temporary corrections live in `hotfixes/noctalia.nix`; its deliberate
-  plugin API, caffeine, OSD and notification feature additions remain in `noctalia.nix`.
-  The extraction preserves all patch paths and their exact order.
+The initial reorganization's 26 NixOS evaluations and 14 retained-derivation
+comparisons used the actual flake inputs and remain valid evidence for those
+mechanical moves. The standalone build and test results against the nested
+Nixpkgs revision are not evidence for pruning top-level hotfixes.
 
-## Validation boundaries
+The corrective restoration matches all 25 compared package derivations from
+the pre-reorganization overlay set under the actual top-level input.
 
-All 26 NixOS configurations, including installation images, evaluate to system
-derivations. Fourteen retained package/integration derivations match the baseline
-exactly, including both Playwright package sets and Noctalia. Noctalia's 19 patch
-names, order and content hashes also match independently.
-
-The candidate hass-cli, OBS replay plugin, pytr, Playwright, pytest-playwright,
-pysaml2 and xmlschema outputs were built on x86_64 Linux. Hass-cli reports 1.0.0
-and pytr's help command succeeds without contacting external services. The
-patched pysaml2 tests also pass on Python 3.14. These checks do not claim ARM
-builds or GUI interaction tests.
-
-The broad `nix flake check --no-build` fails identically on baseline and candidate
-while evaluating the Termux bundle: an invalid `hm_.configzsh.zprofile.drv` path.
-This pre-existing failure is separate from the successful NixOS evaluations;
-the full Termux bundle is not validated by this review.
-
-Package checks and evaluations run on a disposable worker, never on the local
-agent host. Runtime smoke checks must not contact a bank, change Home Assistant
-state, or mutate other live services. Package build success alone does not
-prove a downstream integration fix obsolete: the xmlschema regression above
-is an example of why a focused reproducer is necessary.
+The Termux check exposed evaluation-time reads of generated Home Manager files
+and the Neovim plugin tree. These are being corrected and verified separately
+with import-from-derivation disabled. Fresh-store checking also exposed a
+browser-daemon Cargo-lock packaging issue; neither should be masked by warming
+the store or removing checks.
