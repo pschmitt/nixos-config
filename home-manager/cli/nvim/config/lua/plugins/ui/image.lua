@@ -3,6 +3,9 @@ return {
     "HakonHarnes/img-clip.nvim",
     event = "VeryLazy",
     optional = false,
+    keys = {
+      { "<M-v>", "<cmd>PasteImage<cr>", mode = { "n", "i" }, desc = "Paste image" },
+    },
     opts = {
       -- recommended settings
       default = {
