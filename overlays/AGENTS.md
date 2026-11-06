@@ -74,3 +74,8 @@ all consumers. For a removal, build the unmodified package on the remote worker,
 run relevant checks and safe smoke tests, and verify dependent configurations.
 Do not perform live service mutations as a smoke test. Follow the root rules for
 formatting, linting, broader configuration comparisons and deployment.
+
+Evaluating a `drvPath` is not a build. When testing a derivation file directly,
+use `nix-store --realise /nix/store/...drv` or an explicit output selector with
+`nix build '/nix/store/...drv^*'`; a bare `.drv` path can succeed without building
+its outputs. Verify the resulting output paths before reporting build success.
