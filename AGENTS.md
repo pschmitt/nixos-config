@@ -40,6 +40,18 @@
 
 ## Deployment
 - Prefer committing only verified, working changes.
+- **Quick and simple fixes go straight to the target.** For a small, low-risk
+  change (a service option, a package bump, a one-line fix), do not first
+  evaluate or build it on an `rworker` or a shared build host: commit, push
+  and deploy to the affected hosts directly (`just deploy TARGET_HOST`, or
+  `nixos-upgrade.service` once pushed), and let the deploy be the check. The
+  user's time and internet bandwidth count; a separate pre-verification round
+  trip is wasted effort here. This holds especially when the target is not far
+  behind `main`, so the deploy builds little. Build on the target, not on the
+  host the agent runs on (the local-evaluation ban above stays).
+  Use an `rworker` for large or risky changes (many hosts, refactors, flake
+  input bumps, anything whose closure is big or whose failure would be hard
+  to undo). When unsure which side of the line a change is on, ask, briefly.
 - After pushing, load the `ci-watch` skill: start one background watch for the pushed commit and continue with independent work; never poll CI status yourself.
 - After making changes, deploy to the target systems:
   - **Before committing** (e.g. to test uncommitted changes): run `just deploy TARGET_HOST` from a different host; it builds and switches on the target. Do not omit the target, since that builds locally. If the agent is running on the target, use a remote build and deploy the prebuilt closure instead.
