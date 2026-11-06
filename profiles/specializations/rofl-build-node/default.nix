@@ -16,6 +16,10 @@
     serverType = "openstack";
   };
 
+  # Placement label for browser-daemon: cloud-hosted nodes (profiles can be
+  # placed on, or moved to, "cloud" nodes).
+  services.browser-daemon.nodeGroups = [ "cloud" ];
+
   nix.gc = {
     dates = lib.mkForce "daily";
     options = lib.mkForce "--delete-older-than 3d";
