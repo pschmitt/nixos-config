@@ -54,7 +54,9 @@ gotchas). This skill is the order of steps.
    the unit:
    - on the current host: run locally, `sudo -n systemctl restart nixos-upgrade.service`
      (never SSH to yourself; without `sudo -n` it fails with "interactive authentication");
-   - on another host: `ssh <host> systemctl restart nixos-upgrade.service`.
+   - on another host: `ssh <host> sudo -n systemctl restart --no-block nixos-upgrade.service`
+     (a non-root login needs `sudo -n` there too, and `--no-block` keeps the SSH call from
+     waiting for the whole upgrade).
 
    Deploy from the pushed commit. To try something live before committing, use
    `just deploy <host>` from another host (`AGENTS.md`); commit and push once it works.
@@ -77,4 +79,6 @@ project's own CI is a `release` concern.)
   and may pick up other agents' pending changes; look at `git log` since its generation if that
   matters.
 - Do not run evaluation or the lock update on the machine you are on.
+- A host that serves builds to others must not restart mid-rollout: its upgrade can freeze the other
+  hosts' upgrades in a copy. If they stall, restart their upgrades once it is back.
 - A deploy that touches an agent skill or `CONTEXT.md` only takes effect in new sessions.
