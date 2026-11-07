@@ -7,6 +7,7 @@
   lib,
   modulesPath,
   pkgs,
+  browserWorker ? false,
   ...
 }:
 let
@@ -81,6 +82,7 @@ in
           })
         ];
         requiredSystemFeatures = [ "nixos-test" ];
+        NIXBOT_TEST_MEMORY_MIB = if browserWorker then "8192" else "3072";
       }
       ''
         boot-test ${config.image.repart.image}/${config.image.filePath} \

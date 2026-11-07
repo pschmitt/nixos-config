@@ -1084,7 +1084,10 @@
 
           browser-worker = nixpkgs.lib.nixosSystem {
             system = "x86_64-linux";
-            specialArgs = { inherit inputs outputs; };
+            specialArgs = {
+              inherit inputs outputs;
+              browserWorker = true;
+            };
             modules = [
               ./modules
               ./hosts/browser-worker

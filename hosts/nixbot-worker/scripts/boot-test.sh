@@ -45,7 +45,7 @@ boot() {
   local n=$1 log="${out}/serial-$1.log" pid
   : > "$log"
   qemu-system-x86_64 \
-    -machine "q35,accel=${accel}" -m 3072 -smp 2 \
+    -machine "q35,accel=${accel}" -m "${NIXBOT_TEST_MEMORY_MIB:-3072}" -smp 2 \
     -drive "if=pflash,format=raw,readonly=on,file=${ovmf_code}" \
     -drive "if=pflash,format=raw,file=${vars}" \
     -drive "file=${disk},format=raw,if=virtio,cache=writethrough" \
