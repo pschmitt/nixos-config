@@ -46,6 +46,7 @@ Usage: $(basename "$0") ACTION [ARGS] [-j|--json]
 but ssh takes it (scripts and the MCP server use it).
 
 Actions:
+  profiles             list available worker profiles
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
      [--no-nix-cache] [--ssh [-l USER]]
                        create a worker and wait until it is ready
@@ -93,6 +94,7 @@ EOF
 spec() {
   cat <<'SPEC'
 action up create a worker and wait until it is ready
+action profiles list available worker profiles
 action ls list all workers (ad-hoc and pool)
 action exec create a worker, run a command on it, delete it
 action down delete an ad-hoc worker
@@ -161,6 +163,9 @@ action_help() {
   local me
   me=$(basename "$0")
   case "$1" in
+    profiles)
+      printf 'Usage: %s profiles [--json]\n\nList profiles and their resources.\n' "$me"
+      ;;
     up)
       cat <<EOF
 Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--profile PROFILE] [--scratch] [--ssh]
@@ -1984,6 +1989,21 @@ main() {
   case "$action" in
     up)
       cmd_up "$@"
+      ;;
+    profiles)
+      if [[ $# -ne 0 ]]
+      then
+        action_help profiles >&2
+        return 2
+      fi
+      local profiles
+      profiles=$(remote profiles) || return 1
+      if [[ -n "$JSON" ]]
+      then
+        printf '%s\n' "$profiles"
+      else
+        jq -r '(["PROFILE", "DEFAULT", "FLAVOR", "DISK (GiB)", "IMAGE TAGS"], (.[] | [.name, (if .default then "yes" else "" end), .flavor, (.disk | tostring), (.image_tags | join(", "))])) | @tsv' <<< "$profiles" | column -t -s $'\t'
+      fi
       ;;
     ls)
       cmd_ls "$@"

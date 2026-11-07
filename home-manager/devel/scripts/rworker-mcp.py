@@ -87,6 +87,12 @@ def up(
 
 
 @mcp.tool()
+def profiles() -> list:
+    """List worker profiles with their effective flavor, disk and image tags."""
+    return json.loads(run("profiles", "--json", timeout=120))
+
+
+@mcp.tool()
 def ls() -> list:
     """List all workers: ad-hoc ones (kind adhoc) and nixbot's pool (pool)."""
     return json.loads(run("ls", "--json", timeout=120))

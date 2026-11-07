@@ -45,6 +45,8 @@ rworker down "$w"
   the agent (claude, codex, agy, opencode, ...), its PID, session
   and the cwd are recorded on their own. Ask for a bigger flavor only for
   genuinely parallel builds; it fails fast when the quota is used up.
+- `profiles [--json]` lists the configured profiles with effective flavor,
+  disk size and image tags; use `up --profile NAME` to select one.
 - `prune [NAME...] [--all] [--yes] [--dry-run]` deletes several ad-hoc
   workers: the named ones, else all of yours; `--all` every ad-hoc worker.
   It asks first; pass `--yes` in scripts. Pool workers are never pruned.
@@ -86,7 +88,8 @@ rworker down "$w"
   after the key is rotated.
   Workers created before the feature get nothing and the command says so.
 
-MCP: the `rworker` MCP server offers the same as tools (`up` accepts `profile`
+MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
+available configurations; `up` accepts `profile`
 and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`logs` for
 long jobs in tmux, `sync`, `nix_cache`, `builder`). Prefer it when it is
 loaded; the CLI is the fallback. A running MCP server only gains new tools

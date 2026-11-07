@@ -30,6 +30,9 @@ class ProfileTest(unittest.TestCase):
         self.assertIn("--profile", args)
         self.assertEqual(args[args.index("--profile") + 1], "large-builder")
         self.assertEqual(args[args.index("--disk") + 1], "500")
+        with patch.object(module, "run", return_value='[{"name":"standard"}]') as run:
+            self.assertEqual(module.profiles(), [{"name": "standard"}])
+            run.assert_called_once_with("profiles", "--json", timeout=120)
 
 
 if __name__ == "__main__":
