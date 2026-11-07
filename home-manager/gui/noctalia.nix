@@ -75,11 +75,6 @@ in
         Service = {
           Type = "oneshot";
           ExecStart = pkgs.writeShellScript "clear-noctalia-startup-state" ''
-            state_file="${config.xdg.stateHome}/noctalia/state.toml"
-            if [[ -f "$state_file" ]]; then
-              ${pkgs.yq}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
-            fi
-
             rm -f -- \
               "${config.xdg.stateHome}/feierabend-countdown" \
               "${config.xdg.stateHome}/feierabend-event"
@@ -119,6 +114,31 @@ in
         ExecStart =
           let
             noctaliaLauncher = pkgs.writeShellScript "noctalia-launcher" ''
+              set -eo pipefail
+
+              state_dir="${config.xdg.stateHome}/noctalia"
+              boot_marker="$state_dir/caffeine-boot-id"
+              state_file="$state_dir/state.toml"
+              boot_id="$(< /proc/sys/kernel/random/boot_id)"
+              marker_boot_id=""
+              if [[ -f "$boot_marker" ]]
+              then
+                marker_boot_id="$(< "$boot_marker")"
+              fi
+
+              # Noctalia stores caffeine in persistent app state so it survives
+              # process restarts. Drop that value once per OS boot, immediately
+              # before the first Noctalia start. Systemd may restart Noctalia
+              # many times within a boot; the marker keeps those restarts safe.
+              if [[ "$marker_boot_id" != "$boot_id" ]]
+              then
+                if [[ -f "$state_file" ]]; then
+                  ${pkgs.yq}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
+                fi
+                ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
+                printf '%s\n' "$boot_id" > "$boot_marker"
+              fi
+
               if [ -z "''${XDG_SESSION_ID:-}" ]; then
                 XDG_SESSION_ID="$(${pkgs.systemd}/bin/loginctl list-sessions --no-legend 2>/dev/null | ${pkgs.gawk}/bin/awk -v u="$USER" '$3 == u && $4 ~ /^seat/ {print $1; exit}')"
                 if [ -n "$XDG_SESSION_ID" ]; then
