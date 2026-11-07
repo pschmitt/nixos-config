@@ -2,6 +2,7 @@
 {
   config,
   inputs,
+  lib,
   pkgs,
   ...
 }:
@@ -15,6 +16,7 @@ in
   environment.systemPackages = [
     daemon
     pkgs.chromium
+    pkgs.firefox
     pkgs.xorg-server
     pkgs.xdotool
     pkgs.curl
@@ -54,7 +56,9 @@ in
         test -n "$ip"
         exec ${daemon}/bin/browser-daemon run \
           --bind 0.0.0.0:3001 --public-url http://127.0.0.1:3001 \
-          --allowed-host "$ip:3001" --max-sessions 1 --display-mode per-session \
+            --node-name "$(</proc/sys/kernel/hostname)" \
+          --allowed-host "$ip:3001" --ephemeral-node --max-sessions 1 --display-mode per-session \
+          --firefox ${lib.getExe pkgs.firefox} \
           --profile-dir /home/agent/browser-daemon/profiles \
           --recordings-dir /home/agent/browser-daemon/recordings \
           --cluster-secret-file /run/browser-worker/secret
