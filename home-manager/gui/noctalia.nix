@@ -133,7 +133,7 @@ in
               if [[ "$marker_boot_id" != "$boot_id" ]]
               then
                 if [[ -f "$state_file" ]]; then
-                  ${pkgs.yq}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
+                  ${pkgs.yq-go}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
                 fi
                 ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
                 printf '%s\n' "$boot_id" > "$boot_marker"
