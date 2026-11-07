@@ -19,7 +19,7 @@ JQ_AGENT='def agent_label($a):
   if ($a // "") == "" then "-"
   elif $icons then
     ({claude: "", codex: "", shell: "", nixbot: "",
-      copilot: "", gemini: "", agy: "",
+      copilot: "", gemini: "", agy: "", "browser-daemon": "󰖟",
       antigravity: ""}[$a] // "") + " " + $a
   else $a end;'
 # Last `ls` answer of the control host, for the completions.
@@ -622,7 +622,7 @@ creator_meta() {
     for cand in "${comm%-wrapped}" "${argv0##*/}"
     do
       case "$cand" in
-        claude|codex|agy|antigravity|opencode|gemini|copilot|aider|cursor-agent|crush|goose)
+        claude|codex|agy|antigravity|opencode|gemini|copilot|aider|cursor-agent|crush|goose|browser-daemon)
           agent="$cand"
           agent_pid="$pid"
           break
