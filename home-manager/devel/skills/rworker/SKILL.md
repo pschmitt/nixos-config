@@ -32,6 +32,10 @@ rworker down "$w"
 ```
 
 - `up [--ttl 90m|2h] [--flavor s1.2xlarge] [--disk 250]` prints a summary;
+  `--profile browser-daemon` selects the browser-ready image; the default `standard`
+  profile stays the build-worker image. `exec` and `ssh --create` accept it too.
+  `--profile large-builder` uses the build image with `s1.2xlarge` and a
+  500 GiB disk; `--flavor` and `--disk` can override either default.
   with `-j`/`--json` (any action but `ssh` takes it) the JSON (`name`, `ip`,
   `host_key`, `expires_at`, `flavor`). Use `--json` in scripts; `--ssh`
   logs you in right away (interactive use); `ssh --create [up options]` is
@@ -143,22 +147,17 @@ short-lived credential is nicer when it is cheap to get, but it is not
 required. Prefer sending just the file or entry the job needs over a whole
 credentials directory or the SSH agent.
 
-Transfer a single locally prepared, mode-0600 secret file with the pinned-host-key
-`rworker cp`, into a private tmpfs directory. For example, if `secret_file`
-is the path to a file containing only the needed credential or configuration:
+The worker may remove an agent user's `/dev/shm` files when its last SSH login
+ends. If the next command needs the file, keep one SSH session open through
+the transfer and consumption, or send it on stdin to the consuming command in
+the same SSH session. For a locally prepared mode-0600 `secret_file`:
 
 ```bash
-secret_dir=$(rworker ssh "$w" 'umask 077; mktemp -d /dev/shm/rworker-secret.XXXXXXXX')
-rworker cp "$secret_file" "$w:$secret_dir/credential"
-rworker ssh "$w" "chmod 600 '$secret_dir/credential'"
-# Run the worker command using the file path, never its contents.
-rworker ssh "$w" "rm -f '$secret_dir/credential'; rmdir '$secret_dir'"
+rworker ssh "$w" 'umask 077; d=$(mktemp -d /dev/shm/rworker-secret.XXXXXXXX); trap '\''rm -rf "$d"'\'' EXIT; cat > "$d/credential"; your-command "$d/credential"' < "$secret_file"
 ```
 
 Check each step; if transfer or the job fails, still remove the directory and
-tear down the worker. `cp` preserves the source file's mode and can leave a
-partial file on failure, so restrict the source before copying and clean up
-failures too. Remove any local temporary secret file, revoke temporary tokens
+tear down the worker. Remove any local temporary secret file, revoke temporary tokens
 when finished, and always `down` the worker. Do not assume deletion erases
 copies made by the workload.
 

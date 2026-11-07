@@ -897,6 +897,7 @@
               ] (host: self.nixosConfigurations.${host}.config.system.build.isoImage)
               // {
                 nixbot-worker = self.nixosConfigurations.nixbot-worker.config.image.repart.image;
+                browser-worker = self.nixosConfigurations.browser-worker.config.image.repart.image;
               };
           };
           # nixbot.toml selects default.outputs as the build job set. Keep
@@ -1077,6 +1078,16 @@
             modules = [
               ./modules
               ./hosts/nixbot-worker
+              { hardware.type = "server"; }
+            ];
+          };
+
+          browser-worker = nixpkgs.lib.nixosSystem {
+            system = "x86_64-linux";
+            specialArgs = { inherit inputs outputs; };
+            modules = [
+              ./modules
+              ./hosts/browser-worker
               { hardware.type = "server"; }
             ];
           };

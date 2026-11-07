@@ -117,7 +117,9 @@ flag exec --no-nix-cache keep the S3 cache credentials off the worker
 flag nix-cache --dry-run only show what would be pushed
 flag up -l=user log in as this user (with --ssh; default agent)
 flag up --topic=topic what the worker is for (none unless given)
+flag up --profile=profile worker profile (standard, browser-daemon or large-builder)
 flag exec --topic=topic what the worker is for (none unless given)
+flag exec --profile=profile worker profile (standard, browser-daemon or large-builder)
 flag ls -o=format output format (wide adds PID, flavor, IP and cwd)
 flag inspect --boot also show the worker's own boot metadata (over SSH)
 flag exec --ttl=duration lifetime of the worker
@@ -129,6 +131,7 @@ flag exec --fetch=path copy a path back afterwards (REMOTE[:LOCAL])
 flag exec --keep keep the worker afterwards
 flag exec --keep-on-failure keep the worker if the command fails
 flag ssh --create create a worker first (same as up --ssh; up's options follow)
+flag ssh --profile=profile worker image profile when creating
 flag ssh -l=user log in as this user (like ssh -l)
 flag ls --watch redraw in place, marking changes
 flag ls -n=interval refresh interval in seconds (with --watch)
@@ -140,6 +143,7 @@ flag prune --yes do not ask
 flag prune --dry-run only show what would be deleted
 values duration 30m 1h 2h 4h 8h 24h
 values flavor s1.large s1.xlarge s1.2xlarge
+values profile standard browser-daemon large-builder
 values size 100 150 250 500
 values path
 values format json wide
@@ -159,7 +163,7 @@ action_help() {
   case "$1" in
     up)
       cat <<EOF
-Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--scratch] [--ssh]
+Usage: $me up [--ttl DURATION] [--flavor FLAVOR] [--disk GIB] [--profile PROFILE] [--scratch] [--ssh]
           [--nix-cache|--no-nix-cache] [--topic TEXT] [-l USER]
 
 Create an ad-hoc worker, wait until it is reachable (usually 1-4 min) and
@@ -171,6 +175,7 @@ print it as JSON (name, ip, host_key, user, expires_at, builder).
   --flavor FLAVOR  s1.large (8 vCPU/16 GiB), s1.xlarge (16/32, default),
                    s1.2xlarge (32/64)
   --disk GIB       volume size (default 150)
+  --profile NAME   standard (default), browser-daemon or large-builder
   --scratch        scratch host: maximum lifetime 7 days instead of 24 h
   --nix-cache      push the S3 cache settings (the default when this host's
                    Nix has an s3:// cache; fails loudly when it has none)
@@ -219,7 +224,7 @@ run CMD there as agent (live output; its exit code becomes ours), copy
 results back and delete the worker again - also on errors and Ctrl-C.
 Status messages go to stderr, the command's output to stdout.
 
-  --ttl, --flavor, --disk, --scratch, --topic, --nix-cache, --no-nix-cache   as for up
+  --ttl, --flavor, --disk, --profile, --scratch, --topic, --nix-cache, --no-nix-cache   as for up
   --sync SRC[:DEST]      rsync SRC to the worker before running (DEST
                          defaults to SRC's basename); repeatable
   --fetch REMOTE[:LOCAL] rsync REMOTE (relative to agent's home) back
@@ -280,7 +285,7 @@ others (RWORKER_USER overrides). Workers this host does not know yet are
 looked up on the control host.
 
 --create makes a new worker and logs in, like \`up --ssh\`; up's options
-(--ttl, --flavor, --disk, --scratch, --topic) follow it. -l USER picks the
+(--ttl, --flavor, --disk, --profile, --scratch, --topic) follow it. -l USER picks the
 login user, as with ssh (agent by default on a new worker).
 
 Examples:
@@ -832,6 +837,7 @@ cmd_up() {
   done <<EOF
 IP|$(paint 36 "$ip") $(paint 2 "(NetBird)")
 User|agent
+Profile|$(jq -r '.profile // "standard"' <<< "$info")
 Flavor|$(jq -r '.flavor // "-"' <<< "$info")
 Expires|$(paint 33 "$(fmt_expiry "$(jq -r .expires_at <<< "$info")")")
 SSH|$(paint 32 "$me ssh $name")
@@ -883,10 +889,10 @@ table_plain() {
       elif (.grace_until // 0) > $now then "grace \(dur(.grace_until - $now))"
       elif (.expires_at // 0) > 0 then dur(.expires_at - $now)
       else "-" end;
-    (["NAME", "KIND", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
+    (["NAME", "KIND", "PROFILE", "STATUS", "OWNER", "AGENT", "TOPIC", "EXPIRES", "AGE"]
       + (if $wide then ["FLAVOR", "IP", "CWD"] else [] end)),
     (sort_by(.kind, .name)[] | [
-      .name, .kind, .status, opt(.owner),
+      .name, .kind, (.profile // "standard"), .status, opt(.owner),
       (if $wide and .agent_pid then "\(agent_label(.agent)) (\(.agent_pid))"
        else agent_label(.agent) end),
       opt(.topic), expiry,
@@ -1383,7 +1389,7 @@ cmd_exec() {
   while [[ -n "${1:-}" ]]
   do
     case "$1" in
-      --ttl|--flavor|--disk)
+      --ttl|--flavor|--disk|--profile)
         if [[ -z "${2:-}" ]]
         then
           printf '%s needs a value\n' "$1" >&2
