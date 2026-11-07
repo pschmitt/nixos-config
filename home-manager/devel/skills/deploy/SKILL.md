@@ -31,8 +31,9 @@ gotchas). This skill is the order of steps.
    lock can only pick up pushed commits. Check `git status` and `git log @{u}..` in the project.
    No tag is needed for a deploy. Say so if the project has unpushed or uncommitted work you are
    not deploying.
-2. **Bump on an `rworker`** (never locally; `rworker` and `nix` skills):
-   `nix flake lock --update-input <name>` in a synced copy of `nixos-config`. For a change in
+2. **Bump the lock locally**: `nix flake lock --update-input <name>` in `nixos-config`. No
+   `rworker` needed; a lock update puts no real load on the machine. (Builds and full
+   evaluations still go to a worker.) For a change in
    `nixos-config-private`, push the private repo first, then bump `nixos-config-private`.
    browser-daemon has its own `rbw` input: after an rbw deploy, pin it to the same commit (rbw's
    `AGENTS.md`, "Deploy").
@@ -78,7 +79,7 @@ project's own CI is a `release` concern.)
 - `nixos-upgrade` deploys everything on `main`, not only your bump. A host far behind builds a lot
   and may pick up other agents' pending changes; look at `git log` since its generation if that
   matters.
-- Do not run evaluation or the lock update on the machine you are on.
+- Do not run builds or full evaluations on the machine you are on. A lock update is fine.
 - A host that serves builds to others must not restart mid-rollout: its upgrade can freeze the other
   hosts' upgrades in a copy. If they stall, restart their upgrades once it is back.
 - A deploy that touches an agent skill or `CONTEXT.md` only takes effect in new sessions.
