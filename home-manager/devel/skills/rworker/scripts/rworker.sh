@@ -19,7 +19,7 @@ JQ_AGENT='def agent_label($a):
   if ($a // "") == "" then "-"
   elif $icons then
     ({claude: "", codex: "", shell: "", nixbot: "",
-      copilot: "", gemini: "", agy: "", "browser-daemon": "󰖟",
+      copilot: "", gemini: "", agy: "", "browser-daemon": "󰊠",
       antigravity: ""}[$a] // "") + " " + $a
   else $a end;'
 # Last `ls` answer of the control host, for the completions.
