@@ -45,7 +45,7 @@ in
 
   virtualisation.oci-containers.containers.github-backup = {
     autoStart = true;
-    image = "ghcr.io/pschmitt/github-backup:latest@sha256:c38f10568ac6b5114822538931da7093de2b47f33e0d245508c514f10700d724";
+    image = "ghcr.io/pschmitt/github-backup:latest@sha256:00f4de60c3db00d7dbc19c9c19759c6016104702c9359843f81775f434722427";
     pull = "always";
     environmentFiles = [
       config.sops.secrets."github-backup/env".path
