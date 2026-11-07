@@ -1998,11 +1998,19 @@ main() {
       fi
       local profiles
       profiles=$(remote profiles) || return 1
+      profiles=$(jq 'sort_by([(.default | not), .name])' <<< "$profiles") || return 1
       if [[ -n "$JSON" ]]
       then
         printf '%s\n' "$profiles"
       else
-        jq -r '(["PROFILE", "DEFAULT", "FLAVOR", "DISK (GiB)", "IMAGE TAGS"], (.[] | [.name, (if .default then "yes" else "" end), .flavor, (.disk | tostring), (.image_tags | join(", "))])) | @tsv' <<< "$profiles" | column -t -s $'\t'
+        local rows
+        rows=$(jq -r '(["PROFILE", "FLAVOR", "DISK (GiB)", "IMAGE TAGS"], (.[] | [(.name + (if .default then "*" else "" end)), .flavor, (.disk | tostring), (.image_tags | join(", "))])) | @tsv' <<< "$profiles" | column -t -s $'\t') || return 1
+        if [[ -n "$COLOR" ]]
+        then
+          colorize <<< "$rows"
+        else
+          printf '%s\n' "$rows"
+        fi
       fi
       ;;
     ls)
