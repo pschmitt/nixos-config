@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   ...
@@ -17,6 +18,8 @@ let
 in
 {
   services.browser-daemon = {
+    # Preview of the phone-first web UI (browser-daemon branch ui-redesign).
+    package = inputs.browser-daemon-preview.packages.${pkgs.stdenv.hostPlatform.system}.default;
     # fnuc also runs the Home Assistant VM: keep the browser load modest.
     maxSessions = lib.mkForce 5;
     # The live view's H.264 encoded on the Intel GPU: an animated page cost ~13%

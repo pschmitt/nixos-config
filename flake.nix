@@ -74,6 +74,10 @@
       };
     };
 
+    # The phone-first web UI (branch ui-redesign), tried on fnuc only. It keeps its
+    # own lock (no follows), so a worker can build the same package ahead of time.
+    browser-daemon-preview.url = "github:pschmitt/browser-daemon/ui-redesign";
+
     declaroid = {
       url = "github:pschmitt/declaroid";
       inputs.nixpkgs.follows = "nixpkgs";
