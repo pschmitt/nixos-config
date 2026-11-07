@@ -1074,6 +1074,7 @@
             system = "x86_64-linux";
             specialArgs = {
               inherit inputs outputs;
+              browserWorker = false;
             };
             modules = [
               ./modules
