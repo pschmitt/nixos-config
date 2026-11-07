@@ -132,8 +132,16 @@ in
               # many times within a boot; the marker keeps those restarts safe.
               if [[ "$marker_boot_id" != "$boot_id" ]]
               then
-                if [[ -f "$state_file" ]]; then
-                  ${pkgs.yq-go}/bin/yq --input-format toml --output-format toml --in-place 'del(.caffeine.enabled)' "$state_file"
+                if [[ -f "$state_file" ]]
+                then
+                  state_tmp="$(mktemp "$state_dir/.state.toml.XXXXXX")"
+                  if ${pkgs.yq-go}/bin/yq --input-format toml --output-format toml 'del(.caffeine.enabled)' "$state_file" > "$state_tmp"
+                  then
+                    mv -- "$state_tmp" "$state_file"
+                  else
+                    rm -f -- "$state_tmp"
+                    exit 1
+                  fi
                 fi
                 ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
                 printf '%s\n' "$boot_id" > "$boot_marker"
