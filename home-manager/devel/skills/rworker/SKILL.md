@@ -86,8 +86,8 @@ rworker down "$w"
   after the key is rotated.
   Workers created before the feature get nothing and the command says so.
 
-MCP: the `rworker` MCP server offers the same as tools (`up` (`nix_cache`
-is on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`logs` for
+MCP: the `rworker` MCP server offers the same as tools (`up` accepts `profile`
+and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`logs` for
 long jobs in tmux, `sync`, `nix_cache`, `builder`). Prefer it when it is
 loaded; the CLI is the fallback. A running MCP server only gains new tools
 after its client restarts.

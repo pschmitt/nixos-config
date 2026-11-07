@@ -51,6 +51,7 @@ def up(
     scratch: bool = False,
     topic: str | None = None,
     nix_cache: bool = True,
+    profile: str | None = None,
 ) -> dict:
     """Create an ad-hoc build worker and wait until it is ready (2-4 min).
 
@@ -59,7 +60,9 @@ def up(
     lifetime (24 h, or 7 days with scratch=True). topic: ALWAYS set it - a few words on what
     it is for (shown by ls/inspect; the creating agent, its PID, session and
     cwd are recorded automatically). flavor: s1.large (8 vCPU), s1.xlarge (16, default),
-    s1.2xlarge (32). disk_gib: volume size (default 150). nix_cache (default
+    s1.2xlarge (32). profile selects a configured worker profile: standard,
+    browser-daemon, or large-builder. Profile defaults can be overridden with
+    flavor and disk_gib. disk_gib: volume size (default 150). nix_cache (default
     True) lets the worker substitute from the private S3 Nix cache with this
     host's read-only credentials (pushed over SSH, only if this host has an
     s3:// substituter); pass False to keep the key off the worker. The result
@@ -70,6 +73,8 @@ def up(
     argv = ["up", "--json", "--ttl", ttl]
     if flavor:
         argv += ["--flavor", flavor]
+    if profile:
+        argv += ["--profile", profile]
     if disk_gib:
         argv += ["--disk", str(disk_gib)]
     if scratch:
