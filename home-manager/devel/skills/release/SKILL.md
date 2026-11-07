@@ -1,6 +1,6 @@
 ---
 name: release
-description: Use when releasing one of our own projects (rbw, browser-daemon, bruvtab, monarch) or when told to "do a release", cut a version, tag or publish an extension. Covers the order of steps, what to check first and how to consume the release. Not for "deploy": that means bumping the flake input and rolling out to the hosts, without a release (see the `deploy` skill).
+description: Use when releasing one of our own projects (rbw, browser-daemon, bruvtab, monarch) or when told to "do a release", cut a version, tag or publish an extension. Covers the order of steps, what to check first and how to consume the release. Not for "deploy" (that means bumping the flake input and rolling out to the hosts, without a release, see the `deploy` skill).
 ---
 
 # Release
