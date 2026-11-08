@@ -29,9 +29,9 @@
 // on it covers every way of toggling. Changes during the first moments after
 // the window opens are the initial state, not a toggle, and are ignored.
 //
-// Volume Scroll settings: SETTINGS below is a snapshot of the extension's
-// settings (pip-volume-scroll.settings.json, injected at build time by
-// pip-volume-scroll.nix). The step logic and the bar overlay are ported from
+// Volume Scroll settings are read from its Firefox sync storage on each step;
+// the injected snapshot is a fallback when the extension is unavailable.
+// The step logic and the bar overlay are ported from
 // https://github.com/FredrikWilhelmsen/Volume-Scroll (handlers/Default.tsx and
 // components/overlays/BarOverlay.tsx). Only the "bar" overlay style is
 // implemented, and volume boost is not (PiP's slider tops out at 100%).
@@ -48,7 +48,18 @@
 // handling in player.xhtml/player.js (checked against Firefox 158).
 (() => {
   const PIP_URL = "chrome://global/content/pictureinpicture/player.xhtml";
-  const SETTINGS = @VOLUME_SCROLL_SETTINGS@;
+  const DEFAULT_SETTINGS = @VOLUME_SCROLL_SETTINGS@;
+  let SETTINGS = DEFAULT_SETTINGS;
+  let settingsRead = null;
+
+  Services.io.getProtocolHandler("resource")
+    .QueryInterface(Ci.nsIResProtocolHandler)
+    .setSubstitution("pip-volume", Services.io.newURI("@PIP_VOLUME_BRIDGE@"));
+  ChromeUtils.registerWindowActor("PipVolumeBridge", {
+    allFrames: true,
+    messageManagerGroups: ["pip-player"],
+    child: { esModuleURI: "resource://pip-volume/pip-volume-bridge.sys.mjs" },
+  });
 
   // Volume Scroll accumulates wheel deltas until a full "notch" (50) is reached
   const SCROLL_THRESHOLD = 50;
@@ -75,6 +86,30 @@
   let stateIcon = null;
   let pressX = 0;
   let pressY = 0;
+
+  const refreshSettings = async () => {
+    if (!settingsRead) {
+      settingsRead = (async () => {
+        try {
+          const { extensionStorageSync } = ChromeUtils.importESModule(
+            "resource://gre/modules/ExtensionStorageSync.sys.mjs"
+          );
+          const result = await extensionStorageSync.get(
+            { id: "volumeScroll@zeph.no" }, "extensionData"
+          );
+          const settings = { ...DEFAULT_SETTINGS, ...result.extensionData?.globalSettings };
+          if (JSON.stringify(settings) !== JSON.stringify(SETTINGS)) {
+            SETTINGS = settings;
+            overlay?.destroy();
+            overlay = null;
+          }
+        } catch (error) {
+          Cu.reportError(error);
+        }
+      })().finally(() => { settingsRead = null; });
+    }
+    return settingsRead;
+  };
 
   // Port of Volume Scroll's updateVolume(): returns the new volume in percent.
   const nextVolume = (previous, direction) => {
@@ -234,6 +269,10 @@
 
     let animation = null;
     return {
+      destroy() {
+        animation?.cancel();
+        root.remove();
+      },
       show(volume) {
         fill.style[isHorizontal ? "width" : "height"] = volume + "%";
         if (number) {
@@ -358,7 +397,7 @@
     }).observe(controls, { attributes: true, attributeFilter: ["class"] });
   };
 
-  const onWheel = (win, event) => {
+  const onWheel = async (win, event) => {
     const slider = win.document.getElementById("audio-scrubber");
     const delta = event.deltaY || event.deltaX;
     if (!slider || !delta) {
@@ -381,6 +420,8 @@
     const direction = scrollAccumulator > 0 ? -1 : 1;
     scrollAccumulator = 0;
 
+    await refreshSettings();
+
     // A muted video keeps the slider's max at 0
     slider.max = 1;
     if (target === null) {
@@ -394,7 +435,21 @@
     }
 
     const browser = win.document.getElementById("browser");
-    const actor = browser.browsingContext.currentWindowGlobal.getActor("PictureInPicture");
+    const windowGlobal = browser.browsingContext.currentWindowGlobal;
+    try {
+      const relayed = await Promise.race([
+        windowGlobal.getActor("PipVolumeBridge").sendQuery("scroll", { direction }),
+        new Promise(resolve => win.setTimeout(() => resolve(false), 500)),
+      ]);
+      if (relayed) {
+        win.clearTimeout(idleTimer);
+        idleTimer = win.setTimeout(() => { target = null; }, IDLE_MS);
+        return;
+      }
+    } catch (error) {
+      Cu.reportError(error);
+    }
+    const actor = windowGlobal.getActor("PictureInPicture");
     if (target === 0) {
       actor.sendAsyncMessage("PictureInPicture:Mute");
     } else if (win.document.getElementById("controls").classList.contains("muted")) {
