@@ -71,6 +71,9 @@ in
     owner = cfg.user;
     inherit (cfg) group;
     mode = "0400";
+    # The unit only references the rendered path, so a config change alone
+    # would not restart it.
+    restartUnits = [ "teams-live.service" ];
     content = builtins.toJSON {
       gitlab = {
         host = config.sops.placeholder."teams-live/gitlab-url";
