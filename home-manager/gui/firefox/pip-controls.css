@@ -14,9 +14,9 @@
   align-items: center !important;
 }
 
-/* Keep the native compact layout on narrow windows. At larger sizes, place
-   transport, volume, and time together on the left, like the YouTube player. */
-@media (min-width: 480px) {
+/* Place transport, volume, and time together on the left. Keep Firefox's
+   smallest-window layout below 300px. */
+@media (min-width: 300px) {
   .controls-bottom-lower {
     display: flex !important;
     gap: 4px !important;
@@ -38,6 +38,47 @@
   #playbackRate { order: 6; }
   #closed-caption { order: 7; }
   #fullscreen { order: 8; }
+
+  /* The negative margin closes the flex gap so the pointer can move from the
+     speaker to the slider without collapsing it. */
+  #audio {
+    margin-right: -4px !important;
+  }
+
+  #audio-scrubber:not([hidden]) {
+    display: block !important;
+    box-sizing: border-box !important;
+    flex: 0 0 auto !important;
+    width: 0 !important;
+    height: var(--player-control-item-height) !important;
+    padding: 0 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: width 160ms ease, opacity 160ms ease, visibility 160ms !important;
+  }
+
+  #audio:hover + #audio-scrubber:not([hidden]),
+  #audio:focus-visible + #audio-scrubber:not([hidden]),
+  #audio-scrubber:not([hidden]):is(:hover, :focus-visible) {
+    width: 64px !important;
+    padding: 6px 4px !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
+  #controls-bottom #audio:is(:hover, :focus-visible),
+  #controls-bottom #audio:has(+ #audio-scrubber:is(:hover, :focus-visible)) {
+    border-radius: 50% 0 0 50% !important;
+    background-color: rgba(255, 255, 255, .22) !important;
+  }
+
+  #audio-scrubber:not([hidden]):is(:hover, :focus-visible),
+  #audio:is(:hover, :focus-visible) + #audio-scrubber:not([hidden]) {
+    border-radius: 0 16px 16px 0 !important;
+    background-color: rgba(255, 255, 255, .22) !important;
+  }
 }
 
 #controls-bottom .control-button {
@@ -109,6 +150,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   #controls-bottom .control-button {
+    transition: none !important;
+  }
+  #audio-scrubber:not([hidden]) {
     transition: none !important;
   }
 }
