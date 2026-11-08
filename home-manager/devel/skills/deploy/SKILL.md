@@ -61,7 +61,11 @@ gotchas). This skill is the order of steps.
 
    Deploy from the pushed commit. To try something live before committing, use
    `just deploy <host>` from another host (`AGENTS.md`); commit and push once it works.
-7. **Verify** each host: `readlink -f /run/current-system` changed, the unit is `inactive` with
+7. **Wait, then verify.** `nixos-upgrade` is a oneshot unit: it stays `activating` for the whole
+   upgrade, and `systemctl is-active` already fails then, so a `until ! systemctl is-active ...`
+   loop returns at once. Wait in the background with
+   `while [ "$(systemctl show -P ActiveState nixos-upgrade)" = activating ]; do sleep 10; done`.
+   Then verify each host: `readlink -f /run/current-system` changed, the unit is `inactive` with
    `Finished NixOS Upgrade` in `journalctl -u nixos-upgrade`, and the thing you deployed is there
    (version, unit, file). Read the end of the journal: if it says a reboot is needed, tell the
    user instead of rebooting. A `just deploy` SSH timeout is not a failure until you checked
