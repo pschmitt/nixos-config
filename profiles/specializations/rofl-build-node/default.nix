@@ -25,6 +25,11 @@
     options = lib.mkForce "--delete-older-than 3d";
   };
 
+  # Keep the shared build directory from accumulating abandoned work trees.
+  systemd.tmpfiles.rules = [
+    "e /home/${config.mainUser.username}/build - - - 3d"
+  ];
+
   # CI can fill the store between scheduled collections. Keep room for the
   # database, build logs, and incoming build inputs.
   nix.settings = {
