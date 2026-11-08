@@ -338,6 +338,21 @@
         "type": "github"
       }
     },
+    "crane_5": {
+      "locked": {
+        "lastModified": 1793836618,
+        "narHash": "sha256-TREenflwEjxOSq292FYwbc3kEm7TDRtXCZRNWEdjBmg=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "79fd63528501446749c09f08cad486a58c7d173e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
     "declaroid": {
       "inputs": {
         "nixpkgs": [
@@ -2679,6 +2694,7 @@
     },
     "stricknani": {
       "inputs": {
+        "crane": "crane_5",
         "flake-utils": [
           "flake-utils"
         ],
@@ -2690,11 +2706,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794138538,
-        "narHash": "sha256-2JjHArRrSe1ukLQ1kbMvoMvimdOTA2s9XJQy/iicSbU=",
+        "lastModified": 1794156104,
+        "narHash": "sha256-uQ9ZsY8LEEsJT0pKdIZ/HJvHykx3xCWKcEXPyvqw7RI=",
         "owner": "pschmitt",
         "repo": "stricknani",
-        "rev": "1e59408dc2e96ba7bec9002f3ffd748fab2e8432",
+        "rev": "b0fba27a9f8f92fd86da7b8a82aec7bc149a7acf",
         "type": "github"
       },
       "original": {
