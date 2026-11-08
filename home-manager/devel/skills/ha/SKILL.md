@@ -37,6 +37,10 @@ dozens of credentials. Claude Code blocks such commands. Instead:
   values.
 - Search `/mnt/ha` with `rg -l` (file names) and `--glob '!.storage/**' --glob
   '!secrets.yaml'`; read the file you found, never the store.
+- For content searches, target one allowed file at a time. A broad `rg -n` across
+  multiple YAML files or directories can be blocked by the secret guard even
+  when `.storage` and `secrets.yaml` are excluded. Find candidate files with
+  `rg -l`, then search the specific file (for example, `automations.yaml`).
 - To change a value in a store, edit it in place with `jq`/`sed -i`, print
   nothing, and reload the domain.
 - Validate with `zsh -lc 'zhj hass::check-config'`, not `ha core check` (which
