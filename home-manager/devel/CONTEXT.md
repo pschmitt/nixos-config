@@ -12,7 +12,7 @@ Use this file as lightweight shared context for AI tooling in this repository.
   - `signal-notify` before any Signal message (the user may be away during long work)
   - `secret-hygiene` before commands that may print credentials; `leaked-credentials` the moment a credential is exposed
   - `browser-daemon` before the first `browser_*` call; `browser-login` for any login, passkey or CAPTCHA in a browser session
-  - `gpg-signing` before signed commits or tags (never retry with interactive pinentry or disable signing)
+  - `git-commit` before every commit: checkouts and their git index are shared between agents, so commit only your own paths; it points to `gpg-signing` for signed commits and tags
   - `tmux-window-names`: as soon as the task is clear and whenever the topic changes, rename only this agent's own window (`$TMUX_PANE`)
   - `deploy` whenever asked to deploy: bump the flake input in nixos-config, push, roll out to the hosts, as fast as possible (never a release); `release` only to cut a version or tag
   - `brkn-infra` for host roles, build/test/deploy targets and Android devices; `extension-dev`, `skill-suggestions`

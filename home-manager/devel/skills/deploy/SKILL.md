@@ -42,7 +42,7 @@ gotchas). This skill is the order of steps.
    private changes only when you really are testing, never for a deploy.
 4. **Commit and push to `main`.** Message: `bump my privates` for the private input, otherwise a
    short description of what the bump brings ("Update teams-live push registration"). Leave
-   unrelated modified files out. Signed commit: `gpg-signing` skill first.
+   unrelated modified files out: commit by path (`git-commit` skill).
 5. **Pick the hosts.** Those that use the changed thing, by role (private `brkn-infra` skill).
    Skip images and throwaway hosts (`iso*`, `test-delete-*`). Decide from roles and what the
    input provides; do not evaluate to find out unless you are truly unsure, because it is slow
