@@ -75,6 +75,7 @@ in
   };
   ha-walker = pkgs.callPackage ./local/ha-walker { };
 
+  bichon-mcp = pkgs.callPackage ./bichon-mcp { };
   browser-daemon = inputs.browser-daemon.packages.${pkgs.stdenv.hostPlatform.system}.default;
   cdpcurl = pkgs.callPackage ./cdpcurl { };
   inherit emoji-fzf;

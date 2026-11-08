@@ -412,6 +412,11 @@ in
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
+        # Bichon (email archive) API access token, read-only lookups.
+        "bichon/mcp/token" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
         "trek/mcp/client-id" = {
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
@@ -456,6 +461,13 @@ in
         home-assistant = mcpHttpProxy {
           url = "https://ha.${domainName}/api/mcp";
           tokenFile = config.sops.secrets."home-assistant/token".path;
+        };
+        bichon = {
+          command = lib.getExe pkgs.bichon-mcp;
+          env = {
+            BICHON_ACCESS_TOKEN.file = config.sops.secrets."bichon/mcp/token".path;
+            BICHON_BASE_URL = "https://bichon.${domainName}";
+          };
         };
         trek = mcpOAuthProxy {
           url = "https://trek.${domainName}/mcp";
