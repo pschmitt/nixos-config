@@ -1,140 +1,88 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, ... }:
 let
   cfg = config.services.teams-live;
-  healthCheck = pkgs.writeShellApplication {
-    name = "teams-live-health";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.jq
-      pkgs.systemd
-    ];
-    text = builtins.readFile ./scripts/teams-live-health.sh;
-  };
-  mkSecret =
+  secrets = config.sops.secrets;
+
+  # Readable by the service and restarting it when the value changes.
+  serviceSecret =
     extra:
-    config.sops.mkHostSecret (
-      {
-        inherit (cfg) group;
-        owner = cfg.user;
-        mode = "0400";
-        restartUnits = [ "teams-live.service" ];
-      }
-      // extra
-    );
-  mkSecrets = names: lib.genAttrs names (_name: mkSecret { });
+    {
+      owner = cfg.user;
+      inherit (cfg) group;
+      mode = "0400";
+      restartUnits = [ "teams-live.service" ];
+    }
+    // extra;
+  hostSecret = config.sops.mkHostSecret (serviceSecret { });
+
+  # A value teams-live reads from the secret file at startup (docs/nix.md).
+  secretValue = name: { _secret = secrets.${name}.path; };
 in
 {
-  sops.secrets =
-    (mkSecrets [
-      "teams-live/credentials"
-      "teams-live/gitlab-token"
-      "teams-live/gitlab-url"
-      "teams-live/gitlab-group"
-      "teams-live/conversation-notes"
-      "teams-live/conversation-team"
-      "teams-live/jira-url"
-      "teams-live/jira-token"
-      "teams-live/jira-board-id"
-      "teams-live/troll-user"
-    ])
-    // {
-      "opsgenie/gksv3-on-call/api-key" = config.sops.mkHostSecret {
-        restartUnits = [ "teams-live.service" ];
-      };
-      "opsgenie/gksv3-support-schedule/api-key" = config.sops.mkHostSecret {
-        restartUnits = [ "teams-live.service" ];
-      };
-      "opsgenie/edge-stack/api-key" = config.sops.mkHostSecret {
-        restartUnits = [ "teams-live.service" ];
-      };
-      "browser-daemon/cluster-secret" = {
-        owner = cfg.user;
-        inherit (cfg) group;
-        mode = "0400";
-        restartUnits = [ "teams-live.service" ];
-      };
-      "home-assistant/token" = {
-        inherit (cfg) group;
-        owner = cfg.user;
-        sopsFile = config.sops.defaultSopsFile;
-        mode = "0400";
-        restartUnits = [ "teams-live.service" ];
-      };
-    };
+  sops.secrets = {
+    "teams-live/credentials" = hostSecret;
+    "teams-live/gitlab-token" = hostSecret;
+    "teams-live/gitlab-url" = hostSecret;
+    "teams-live/gitlab-group" = hostSecret;
+    "teams-live/conversation-notes" = hostSecret;
+    "teams-live/conversation-team" = hostSecret;
+    "teams-live/jira-url" = hostSecret;
+    "teams-live/jira-token" = hostSecret;
+    "teams-live/jira-board-id" = hostSecret;
+    "teams-live/troll-user" = hostSecret;
+    "opsgenie/gksv3-on-call/api-key" = hostSecret;
+    "opsgenie/gksv3-support-schedule/api-key" = hostSecret;
+    "opsgenie/edge-stack/api-key" = hostSecret;
+    "browser-daemon/cluster-secret" = serviceSecret { };
+    "home-assistant/token" = serviceSecret { sopsFile = config.sops.defaultSopsFile; };
+  };
 
-  sops.templates."teams-live/config.json" = {
-    owner = cfg.user;
-    inherit (cfg) group;
-    mode = "0400";
-    # The unit only references the rendered path, so a config change alone
-    # would not restart it.
-    restartUnits = [ "teams-live.service" ];
-    content = builtins.toJSON {
-      gitlab = {
-        host = config.sops.placeholder."teams-live/gitlab-url";
-        token_file = config.sops.secrets."teams-live/gitlab-token".path;
-        group = config.sops.placeholder."teams-live/gitlab-group";
-        poll_interval_seconds = 60;
-        history_limit = 50;
-        history_max_age_minutes = 15;
-        max_watch_duration_seconds = 7200;
-        notify = {
-          ci = {
-            enable = true;
-            on_failure = true;
-            on_success = true;
-          };
-          rebase = true;
-          approval_lost = false;
-          merged = true;
-        };
-      };
-
-      jira = {
-        url = config.sops.placeholder."teams-live/jira-url";
-        token_file = config.sops.secrets."teams-live/jira-token".path;
-        board_id = config.sops.placeholder."teams-live/jira-board-id";
-      };
-
-      opsgenie = {
-        on_call_key = config.sops.placeholder."opsgenie/gksv3-on-call/api-key";
-        support_key = config.sops.placeholder."opsgenie/gksv3-support-schedule/api-key";
-        edge_key = config.sops.placeholder."opsgenie/edge-stack/api-key";
-        on_call_schedule_id = "8aa71a67-9ddd-4571-af97-06d1ddb3c7cb";
-        support_schedule_id = "5a044893-0255-4246-8606-8e76949a861d";
-      };
-
-      home_assistant = {
-        url = "https://ha.brkn.lol";
-        token_file = config.sops.secrets."home-assistant/token".path;
+  services.teams-live = {
+    enable = true;
+    settings = {
+      teams = {
+        credentials_file = secrets."teams-live/credentials".path;
+        troll_user = secretValue "teams-live/troll-user";
       };
 
       browser_daemon = {
         url = "https://browser.fnuc.nb.brkn.lol";
         profile = "ha-msteams";
-        secret_file = config.sops.secrets."browser-daemon/cluster-secret".path;
+        secret_file = secrets."browser-daemon/cluster-secret".path;
       };
 
-      teams = {
-        credentials_file = config.sops.secrets."teams-live/credentials".path;
-        reconnect_interval_seconds = 5;
-        token_refresh_interval_minutes = 60;
-        troll_user = config.sops.placeholder."teams-live/troll-user";
+      gitlab = {
+        host = secretValue "teams-live/gitlab-url";
+        group = secretValue "teams-live/gitlab-group";
+        token_file = secrets."teams-live/gitlab-token".path;
+        history_max_age_minutes = 15;
+      };
+
+      jira = {
+        url = secretValue "teams-live/jira-url";
+        token_file = secrets."teams-live/jira-token".path;
+        board_id = secretValue "teams-live/jira-board-id";
+      };
+
+      opsgenie = {
+        on_call_key = secretValue "opsgenie/gksv3-on-call/api-key";
+        support_key = secretValue "opsgenie/gksv3-support-schedule/api-key";
+        edge_key = secretValue "opsgenie/edge-stack/api-key";
+      };
+
+      home_assistant = {
+        url = "https://ha.brkn.lol";
+        token_file = secrets."home-assistant/token".path;
       };
 
       conversations = [
         {
-          id = config.sops.placeholder."teams-live/conversation-notes";
+          id = secretValue "teams-live/conversation-notes";
           name = "Notes (Self)";
           gitlab = true;
         }
         {
-          id = config.sops.placeholder."teams-live/conversation-team";
+          id = secretValue "teams-live/conversation-team";
           name = "Team";
           gitlab = true;
         }
@@ -142,14 +90,9 @@ in
     };
   };
 
-  services.teams-live = {
-    enable = true;
-    configFile = config.sops.templates."teams-live/config.json".path;
-  };
-
   services.monit.checks.teams-live = {
     type = "program";
-    path = lib.getExe healthCheck;
+    path = cfg.healthCheck;
     group = [
       "services"
       "teams"
