@@ -4,7 +4,7 @@ let
   # wrapper in home-manager/work/ai.nix, so this hits the same work profile.
   claudeWorkWarmupLaunch = pkgs.writeShellScript "claude-work-warmup-launch" ''
     export CLAUDE_CONFIG_DIR="''${CLAUDE_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work}"
-    export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+    export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/anthropic-work}"
 
     # Pre-accept the workspace trust dialog for $HOME so the unattended tmux
     # session doesn't stall on the interactive "trust this folder?" prompt

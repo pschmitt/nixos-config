@@ -16,7 +16,10 @@ let
       : "''${HOME:?HOME must be set}"
 
       export CLAUDE_CONFIG_DIR="''${XDG_CONFIG_HOME:-$HOME/.config}/claude-work"
-      export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-$CLAUDE_CONFIG_DIR}"
+      # The work sign-in, kept apart from the personal one. Never point this at
+      # CLAUDE_CONFIG_DIR: Claude Code refuses its file tools anywhere in the
+      # Anthropic profile store, which would include memory and transcripts.
+      export ANTHROPIC_CONFIG_DIR="''${ANTHROPIC_CONFIG_DIR:-''${XDG_CONFIG_HOME:-$HOME/.config}/anthropic-work}"
       export CLAUDE_CODE_SUBAGENT_MODEL="sonnet"
       export CLAUDE_CODE_SUBAGENT_MODEL_FORCE="1"
 

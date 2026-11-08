@@ -15,7 +15,9 @@ let
   claudeRemoteControlStart = pkgs.writeShellScript "claude-remote-control-start" ''
     ${lib.optionalString (cfg.configDir != null) ''
       export CLAUDE_CONFIG_DIR=${lib.escapeShellArg cfg.configDir}
-      export ANTHROPIC_CONFIG_DIR="$CLAUDE_CONFIG_DIR"
+    ''}
+    ${lib.optionalString (cfg.anthropicConfigDir != null) ''
+      export ANTHROPIC_CONFIG_DIR=${lib.escapeShellArg cfg.anthropicConfigDir}
     ''}
     # Pre-accept the workspace trust dialog for the working directory and the
     # one-time "Enable Remote Control? (y/n)" prompt; with stdin at /dev/null
@@ -48,7 +50,18 @@ in
       type = lib.types.nullOr lib.types.str;
       default = config.programs.claude-code.configDir;
       defaultText = lib.literalExpression "config.programs.claude-code.configDir";
-      description = "Override CLAUDE_CONFIG_DIR (and ANTHROPIC_CONFIG_DIR) for the remote control service.";
+      description = "Override CLAUDE_CONFIG_DIR for the remote control service.";
+    };
+
+    anthropicConfigDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        ANTHROPIC_CONFIG_DIR (the Anthropic sign-in store) for the remote control
+        service; null leaves Claude Code's default, as for interactive sessions.
+        Never the same as {option}`configDir`: Claude Code refuses its file tools
+        anywhere in the profile store, which would include memory.
+      '';
     };
 
     workingDirectory = lib.mkOption {
