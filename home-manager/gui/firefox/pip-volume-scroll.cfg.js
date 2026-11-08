@@ -33,8 +33,8 @@
 // the injected snapshot is a fallback when the extension is unavailable.
 // The step logic and the bar overlay are ported from
 // https://github.com/FredrikWilhelmsen/Volume-Scroll (handlers/Default.tsx and
-// components/overlays/BarOverlay.tsx). Only the "bar" overlay style is
-// implemented, and volume boost is not (PiP's slider tops out at 100%).
+// components/overlays/BarOverlay.tsx and RetroBarOverlay.tsx). The bar and
+// retro styles are supported; volume boost is not (PiP tops out at 100%).
 //
 // The PiP document has a "default-src chrome:" CSP, which blocks inline <style>
 // elements and style attributes, so the overlay is styled through CSSOM
@@ -58,6 +58,7 @@
   ChromeUtils.registerWindowActor("PipVolumeBridge", {
     allFrames: true,
     messageManagerGroups: ["pip-player"],
+    safeForUntrustedWebProcess: true,
     child: { esModuleURI: "resource://pip-volume/pip-volume-bridge.sys.mjs" },
   });
 
@@ -224,23 +225,45 @@
       width: isHorizontal ? "100%" : "40px",
       height: isHorizontal ? "40px" : "100%",
       border: "4px solid " + SETTINGS.overlayColor,
-      padding: "8px",
+      padding: SETTINGS.overlayStyle === "retro" ? "6px" : "8px",
       boxSizing: "border-box",
     });
-    const fillContainer = make(container, {
-      position: "relative",
-      width: "100%",
-      height: "100%",
-      overflow: "hidden",
-    });
-    const fill = make(fillContainer, {
-      position: "absolute",
-      bottom: "0",
-      left: "0",
-      width: "100%",
-      height: "100%",
-      backgroundColor: SETTINGS.overlayColor,
-    });
+    const retro = SETTINGS.overlayStyle === "retro";
+    let fill = null;
+    let blocks = [];
+    const increment = SETTINGS.volumeIncrement > 0 ? SETTINGS.volumeIncrement : 5;
+    if (retro) {
+      const blockContainer = make(container, {
+        display: "flex",
+        flexDirection: isHorizontal ? "row" : "column-reverse",
+        gap: "3px",
+        width: "100%",
+        height: "100%",
+      });
+      const ceiling = 100 - (100 % increment) || 100;
+      blocks = Array.from({ length: Math.ceil(ceiling / increment) }, () => {
+        const block = make(blockContainer, {
+          position: "relative", flex: "1", width: "100%", height: "100%",
+          overflow: "hidden", borderRadius: "1px",
+        });
+        make(block, {
+          position: "absolute", top: "0", left: "0", width: "100%", height: "100%",
+          backgroundColor: SETTINGS.overlayColor, opacity: "0.15",
+        });
+        return make(block, {
+          position: "absolute", bottom: "0", left: "0",
+          backgroundColor: SETTINGS.overlayColor,
+        });
+      });
+    } else {
+      const fillContainer = make(container, {
+        position: "relative", width: "100%", height: "100%", overflow: "hidden",
+      });
+      fill = make(fillContainer, {
+        position: "absolute", bottom: "0", left: "0", width: "100%", height: "100%",
+        backgroundColor: SETTINGS.overlayColor,
+      });
+    }
 
     let number = null;
     if (showNumber) {
@@ -274,7 +297,15 @@
         root.remove();
       },
       show(volume) {
-        fill.style[isHorizontal ? "width" : "height"] = volume + "%";
+        if (retro) {
+          blocks.forEach((block, index) => {
+            const ratio = Math.max(0, Math.min(1, (volume - index * increment) / increment));
+            block.style.width = isHorizontal ? ratio * 100 + "%" : "100%";
+            block.style.height = isHorizontal ? "100%" : ratio * 100 + "%";
+          });
+        } else {
+          fill.style[isHorizontal ? "width" : "height"] = volume + "%";
+        }
         if (number) {
           number.textContent = Math.round(volume);
         }
