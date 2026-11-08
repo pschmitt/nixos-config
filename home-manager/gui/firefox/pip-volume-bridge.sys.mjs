@@ -6,7 +6,10 @@ export class PipVolumeBridgeChild extends JSWindowActorChild {
       return false;
     }
 
-    const win = video.ownerGlobal;
+    const win = video.ownerDocument.defaultView;
+    if (!win) {
+      return null;
+    }
     const rect = video.getBoundingClientRect();
     const x = Math.max(0, Math.min(win.innerWidth - 1, rect.left + rect.width / 2));
     const y = Math.max(0, Math.min(win.innerHeight - 1, rect.top + rect.height / 2));
