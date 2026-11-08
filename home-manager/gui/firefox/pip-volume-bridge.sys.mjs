@@ -17,12 +17,25 @@ export class PipVolumeBridgeChild extends JSWindowActorChild {
     }
 
     // Volume Scroll prevents the event when it handles the step.
-    return !video.dispatchEvent(new win.WheelEvent("wheel", {
+    const handled = !video.dispatchEvent(new win.WheelEvent("wheel", {
       bubbles: true,
       cancelable: true,
       clientX: x,
       clientY: y,
       deltaY: data.direction * -100,
     }));
+    if (!handled) {
+      return null;
+    }
+
+    // The extension updates YouTube's volume panel synchronously, including
+    // when a gain node owns the audio and the media element stays at 100%.
+    const panel = video.closest(".html5-video-player")?.querySelector(".ytp-volume-panel");
+    const panelValue = panel?.getAttribute("aria-valuenow");
+    const lockedValue = video.getAttribute("data-vs-locked-volume");
+    const volume = panelValue === null || panelValue === undefined
+      ? Number(lockedValue) * 100
+      : Number(panelValue);
+    return { volume: Number.isFinite(volume) ? Math.max(0, Math.min(100, volume)) : null };
   }
 }

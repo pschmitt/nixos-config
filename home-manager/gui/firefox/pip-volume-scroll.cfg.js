@@ -459,11 +459,6 @@
       target = Math.round(Number(slider.value) * 100);
     }
     target = nextVolume(target, direction);
-    slider.value = target / 100;
-    if (SETTINGS.useOverlay) {
-      overlay ??= createOverlay(win.document);
-      overlay.show(target);
-    }
 
     const browser = win.document.getElementById("browser");
     const windowGlobal = browser.browsingContext.currentWindowGlobal;
@@ -473,12 +468,25 @@
         new Promise(resolve => win.setTimeout(() => resolve(false), 500)),
       ]);
       if (relayed) {
+        if (relayed.volume !== null) {
+          target = relayed.volume;
+        }
+        slider.value = target / 100;
+        if (SETTINGS.useOverlay) {
+          overlay ??= createOverlay(win.document);
+          overlay.show(target);
+        }
         win.clearTimeout(idleTimer);
         idleTimer = win.setTimeout(() => { target = null; }, IDLE_MS);
         return;
       }
     } catch (error) {
       Cu.reportError(error);
+    }
+    slider.value = target / 100;
+    if (SETTINGS.useOverlay) {
+      overlay ??= createOverlay(win.document);
+      overlay.show(target);
     }
     const actor = windowGlobal.getActor("PictureInPicture");
     if (target === 0) {
