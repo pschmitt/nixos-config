@@ -113,7 +113,7 @@ in
 
       browser_daemon = {
         url = "https://browser.fnuc.nb.brkn.lol";
-        profile = "work";
+        profile = "ha-msteams";
         secret_file = config.sops.secrets."browser-daemon/cluster-secret".path;
       };
 
