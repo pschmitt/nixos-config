@@ -566,10 +566,21 @@ in
         # Google Workspace MCP (Gmail, incl. send).
         google-workspace = mcpWorkspace {
           version = "2.3.0";
-          tools = [ "gmail" ];
+          tools = [
+            "gmail"
+            "calendar"
+          ];
           scopes = [
+            "openid"
+            "https://www.googleapis.com/auth/userinfo.email"
+            "https://www.googleapis.com/auth/userinfo.profile"
             "https://www.googleapis.com/auth/gmail.readonly"
+            "https://www.googleapis.com/auth/gmail.modify"
             "https://www.googleapis.com/auth/gmail.compose"
+            "https://www.googleapis.com/auth/gmail.send"
+            "https://www.googleapis.com/auth/gmail.labels"
+            "https://www.googleapis.com/auth/gmail.settings.basic"
+            "https://www.googleapis.com/auth/calendar"
           ];
           clientIdFile = config.sops.secrets."gmail/mcp/client-id".path;
           clientSecretFile = config.sops.secrets."gmail/mcp/client-secret".path;
