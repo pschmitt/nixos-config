@@ -354,46 +354,6 @@ let
       command = lib.getExe proxy;
     };
 
-  # Google's hosted MCP servers need a user consent, which Claude Code cannot
-  # replay from a file-based secret. The consent was done once for our own
-  # OAuth client (the refresh token is in SOPS); the proxy turns it into a
-  # short-lived access token each time it starts.
-  mcpGoogleOAuthProxy =
-    {
-      url,
-      clientIdFile,
-      clientSecretFile,
-      refreshTokenFile,
-    }:
-    let
-      proxy = pkgs.writeShellApplication {
-        name = "mcp-google-oauth-proxy-${builtins.substring 0 8 (builtins.hashString "sha256" url)}";
-        runtimeInputs = [
-          pkgs.coreutils
-          pkgs.curl
-          pkgs.jq
-        ];
-        text = ''
-          client_id=$(<${lib.escapeShellArg clientIdFile})
-          client_secret=$(<${lib.escapeShellArg clientSecretFile})
-          refresh_token=$(<${lib.escapeShellArg refreshTokenFile})
-          access_token=$(curl --fail-with-body --silent --show-error \
-            --data-urlencode grant_type=refresh_token \
-            --data-urlencode client_id="$client_id" \
-            --data-urlencode client_secret="$client_secret" \
-            --data-urlencode refresh_token="$refresh_token" \
-            https://oauth2.googleapis.com/token | jq --exit-status --raw-output .access_token)
-          API_ACCESS_TOKEN="$access_token" exec ${mcpProxy}/bin/mcp-proxy \
-            --transport streamablehttp \
-            --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}" \
-            ${lib.escapeShellArg url}
-        '';
-      };
-    in
-    {
-      command = lib.getExe proxy;
-    };
-
   # Google Workspace MCP (taylorwilsdon/google_workspace_mcp): Gmail incl.
   # sending. Its fastmcp dependency is broken in nixpkgs, so it runs from PyPI
   # through uv at a pinned version. It normally does its own browser consent;
@@ -528,7 +488,7 @@ in
           sopsFile = config.host.sopsDefaultFile;
         };
         # Own Google Cloud OAuth client (project "Gmail MCP") and the refresh
-        # token from its one-time consent, for the hosted Gmail MCP server.
+        # token from its one-time consent, for the Google Workspace MCP server.
         "gmail/mcp/client-id" = {
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
@@ -603,15 +563,8 @@ in
         # clients handle themselves (Claude Code: /mcp -> sentry -> Authenticate),
         # so it is a plain remote server rather than an mcp-proxy with a token.
         sentry.url = "https://mcp.sentry.dev/mcp";
-        # Official Google Gmail MCP (Developer Preview; read + drafts only).
-        gmail = mcpGoogleOAuthProxy {
-          url = "https://gmailmcp.googleapis.com/mcp/v1";
-          clientIdFile = config.sops.secrets."gmail/mcp/client-id".path;
-          clientSecretFile = config.sops.secrets."gmail/mcp/client-secret".path;
-          refreshTokenFile = config.sops.secrets."gmail/mcp/refresh-token".path;
-        };
-        # Google Workspace MCP: Gmail with send (the official one cannot).
-        gmail-send = mcpWorkspace {
+        # Google Workspace MCP (Gmail, incl. send).
+        google-workspace = mcpWorkspace {
           version = "2.3.0";
           tools = [ "gmail" ];
           scopes = [
