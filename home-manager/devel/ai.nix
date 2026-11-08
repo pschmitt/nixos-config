@@ -394,6 +394,76 @@ let
       command = lib.getExe proxy;
     };
 
+  # Google Workspace MCP (taylorwilsdon/google_workspace_mcp): Gmail incl.
+  # sending. Its fastmcp dependency is broken in nixpkgs, so it runs from PyPI
+  # through uv at a pinned version. It normally does its own browser consent;
+  # the wrapper instead seeds its credential store from the refresh token we
+  # already hold (in SOPS) and starts it in single-user mode.
+  mcpWorkspace =
+    {
+      version,
+      tools,
+      clientIdFile,
+      clientSecretFile,
+      refreshTokenFile,
+      scopes,
+    }:
+    let
+      wrapper = pkgs.writeShellApplication {
+        name = "workspace-mcp-wrapper";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.jq
+          pkgs.uv
+        ];
+        text = ''
+          client_id=$(<${lib.escapeShellArg clientIdFile})
+          client_secret=$(<${lib.escapeShellArg clientSecretFile})
+          refresh_token=$(<${lib.escapeShellArg refreshTokenFile})
+          access_token=$(curl --fail-with-body --silent --show-error \
+            --data-urlencode grant_type=refresh_token \
+            --data-urlencode client_id="$client_id" \
+            --data-urlencode client_secret="$client_secret" \
+            --data-urlencode refresh_token="$refresh_token" \
+            https://oauth2.googleapis.com/token | jq --exit-status --raw-output .access_token)
+          email=$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $access_token" \
+            https://gmail.googleapis.com/gmail/v1/users/me/profile \
+            | jq --exit-status --raw-output .emailAddress)
+
+          creds_dir="''${XDG_RUNTIME_DIR:-/tmp}/workspace-mcp-$(id -u)/credentials"
+          mkdir -p "$creds_dir"
+          chmod 700 "$creds_dir"
+          (
+            umask 077
+            jq --null-input \
+              --arg client_id "$client_id" \
+              --arg client_secret "$client_secret" \
+              --arg refresh_token "$refresh_token" \
+              --argjson scopes ${lib.escapeShellArg (builtins.toJSON scopes)} \
+              '{token: null, refresh_token: $refresh_token,
+                token_uri: "https://oauth2.googleapis.com/token",
+                client_id: $client_id, client_secret: $client_secret,
+                scopes: $scopes, expiry: null}' \
+              > "$creds_dir/$email.json"
+          )
+
+          export WORKSPACE_MCP_CREDENTIALS_DIR="$creds_dir"
+          export USER_GOOGLE_EMAIL="$email"
+          export GOOGLE_OAUTH_CLIENT_ID="$client_id"
+          export GOOGLE_OAUTH_CLIENT_SECRET="$client_secret"
+          export OAUTHLIB_INSECURE_TRANSPORT=1
+          exec uvx --python ${lib.getExe pkgs.python3} \
+            --from ${lib.escapeShellArg "workspace-mcp==${version}"} workspace-mcp \
+            --single-user --tools ${lib.escapeShellArgs tools}
+        '';
+      };
+    in
+    {
+      command = lib.getExe wrapper;
+    };
+
   # The Teams MCP and its `msteams` CLI sign in with the Teams login of the
   # work profile of a browser-daemon node instead of opening a local browser,
   # so they also work without a display.
@@ -536,6 +606,18 @@ in
         # Official Google Gmail MCP (Developer Preview; read + drafts only).
         gmail = mcpGoogleOAuthProxy {
           url = "https://gmailmcp.googleapis.com/mcp/v1";
+          clientIdFile = config.sops.secrets."gmail/mcp/client-id".path;
+          clientSecretFile = config.sops.secrets."gmail/mcp/client-secret".path;
+          refreshTokenFile = config.sops.secrets."gmail/mcp/refresh-token".path;
+        };
+        # Google Workspace MCP: Gmail with send (the official one cannot).
+        gmail-send = mcpWorkspace {
+          version = "2.3.0";
+          tools = [ "gmail" ];
+          scopes = [
+            "https://www.googleapis.com/auth/gmail.readonly"
+            "https://www.googleapis.com/auth/gmail.compose"
+          ];
           clientIdFile = config.sops.secrets."gmail/mcp/client-id".path;
           clientSecretFile = config.sops.secrets."gmail/mcp/client-secret".path;
           refreshTokenFile = config.sops.secrets."gmail/mcp/refresh-token".path;
