@@ -14,6 +14,12 @@
   align-items: center !important;
 }
 
+#seekBackward,
+#seekForward,
+#closed-caption {
+  display: none !important;
+}
+
 /* Place transport, volume, and time together on the left. Keep Firefox's
    smallest-window layout below 300px. */
 @media (min-width: 300px) {
@@ -30,13 +36,10 @@
   }
 
   #playpause { order: 0; }
-  #seekBackward { order: 1; }
-  #seekForward { order: 2; }
   #audio { order: 3; }
   #audio-scrubber { order: 4; }
   #timestamp { order: 5; margin-right: auto !important; width: auto !important; }
   #playbackRate { order: 6; }
-  #closed-caption { order: 7; }
   #fullscreen { order: 8; }
 
   /* The negative margin closes the flex gap so the pointer can move from the
