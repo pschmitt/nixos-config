@@ -22,6 +22,10 @@ buildNpmPackage rec {
 
   doCheck = false;
 
+  preInstall = ''
+    mkdir -p "$out/lib/node_modules/@doist/todoist-mcp"
+  '';
+
   nativeBuildInputs = lib.optionals stdenv.hostPlatform.isAarch64 [ makeWrapper ];
 
   # Under aarch64 QEMU, npm ci needs --jitless to avoid a QEMU JIT crash, but
