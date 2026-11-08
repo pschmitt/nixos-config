@@ -71,7 +71,9 @@ in
       };
 
       home_assistant = {
-        url = "https://ha.brkn.lol";
+        # Straight over NetBird: the public vhost times out slow service calls
+        # (HR WORKS) after 60s and retries them through Nabu Casa.
+        url = "http://ha.${config.domains.netbird}:8123";
         token_file = secrets."home-assistant/token".path;
       };
 
