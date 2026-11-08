@@ -1,7 +1,9 @@
 /* Firefox PiP chrome: keep the video prominent, with readable controls on
    both light and dark footage. Visibility is still managed by Firefox. */
 :root {
-  --controls-bottom-distance: 14px !important;
+  --controls-bottom-distance: 10px !important;
+  --player-control-item-height: 40px !important;
+  --player-control-item-half-width: 20px !important;
   --scrubber-thumb-background-color: #fff !important;
 }
 
@@ -12,6 +14,11 @@
 
 .controls-bottom-lower {
   align-items: center !important;
+}
+
+.controls-bottom-upper {
+  width: calc(100% - 24px) !important;
+  margin: 0 12px !important;
 }
 
 #seekBackward,
@@ -29,6 +36,12 @@
     margin: 0 12px !important;
   }
 
+  .controls-bottom-lower::before {
+    content: "";
+    order: 6;
+    flex: 1 1 auto;
+  }
+
   .start-controls,
   .center-controls,
   .end-controls {
@@ -38,8 +51,8 @@
   #playpause { order: 0; }
   #audio { order: 3; }
   #audio-scrubber { order: 4; }
-  #timestamp { order: 5; margin-right: auto !important; width: auto !important; }
-  #playbackRate { order: 6; }
+  #timestamp { order: 5; width: auto !important; }
+  #playbackRate { order: 7; }
   #fullscreen { order: 8; }
 
   /* The negative margin closes the flex gap so the pointer can move from the
@@ -87,7 +100,10 @@
 #controls-bottom .control-button {
   border-radius: 50% !important;
   background-color: rgba(0, 0, 0, .72) !important;
-  background-size: 58% !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  background-size: 60% !important;
   transition: opacity 160ms linear, fill-opacity 160ms linear, background-color 120ms ease !important;
 }
 
@@ -105,7 +121,7 @@
 
 #timestamp {
   color: #fff !important;
-  font-size: 12px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   letter-spacing: .02em !important;
   text-shadow: 0 1px 4px #000 !important;
