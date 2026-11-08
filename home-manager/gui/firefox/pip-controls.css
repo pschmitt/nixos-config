@@ -14,9 +14,35 @@
   align-items: center !important;
 }
 
+/* Keep the native compact layout on narrow windows. At larger sizes, place
+   transport, volume, and time together on the left, like the YouTube player. */
+@media (min-width: 480px) {
+  .controls-bottom-lower {
+    display: flex !important;
+    gap: 4px !important;
+    margin: 0 12px !important;
+  }
+
+  .start-controls,
+  .center-controls,
+  .end-controls {
+    display: contents !important;
+  }
+
+  #playpause { order: 0; }
+  #seekBackward { order: 1; }
+  #seekForward { order: 2; }
+  #audio { order: 3; }
+  #audio-scrubber { order: 4; }
+  #timestamp { order: 5; margin-right: auto !important; width: auto !important; }
+  #playbackRate { order: 6; }
+  #closed-caption { order: 7; }
+  #fullscreen { order: 8; }
+}
+
 #controls-bottom .control-button {
-  border-radius: 10px !important;
-  background-color: rgba(18, 20, 25, .45) !important;
+  border-radius: 50% !important;
+  background-color: rgba(0, 0, 0, .72) !important;
   background-size: 58% !important;
   transition: opacity 160ms linear, fill-opacity 160ms linear, background-color 120ms ease !important;
 }
@@ -26,7 +52,7 @@
 }
 
 #controls #playpause {
-  background-color: rgba(255, 255, 255, .20) !important;
+  background-color: rgba(0, 0, 0, .72) !important;
 }
 
 #controls #playpause:hover:enabled {
@@ -46,9 +72,12 @@
   background: rgba(255, 255, 255, .30) !important;
 }
 
-#scrubber::-moz-range-progress,
 #audio-scrubber::-moz-range-progress {
   background: #fff !important;
+}
+
+#scrubber::-moz-range-progress {
+  background: #f03 !important;
 }
 
 #scrubber::-moz-range-thumb,
@@ -59,6 +88,12 @@
   box-shadow: 0 1px 5px rgba(0, 0, 0, .65) !important;
   width: 10px !important;
   height: 10px !important;
+}
+
+#scrubber::-moz-range-thumb {
+  background: #f03 !important;
+  width: 12px !important;
+  height: 12px !important;
 }
 
 #audio-scrubber::-moz-range-track,
