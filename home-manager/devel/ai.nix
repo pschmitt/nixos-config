@@ -354,6 +354,46 @@ let
       command = lib.getExe proxy;
     };
 
+  # Google's hosted MCP servers need a user consent, which Claude Code cannot
+  # replay from a file-based secret. The consent was done once for our own
+  # OAuth client (the refresh token is in SOPS); the proxy turns it into a
+  # short-lived access token each time it starts.
+  mcpGoogleOAuthProxy =
+    {
+      url,
+      clientIdFile,
+      clientSecretFile,
+      refreshTokenFile,
+    }:
+    let
+      proxy = pkgs.writeShellApplication {
+        name = "mcp-google-oauth-proxy-${builtins.substring 0 8 (builtins.hashString "sha256" url)}";
+        runtimeInputs = [
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.jq
+        ];
+        text = ''
+          client_id=$(<${lib.escapeShellArg clientIdFile})
+          client_secret=$(<${lib.escapeShellArg clientSecretFile})
+          refresh_token=$(<${lib.escapeShellArg refreshTokenFile})
+          access_token=$(curl --fail-with-body --silent --show-error \
+            --data-urlencode grant_type=refresh_token \
+            --data-urlencode client_id="$client_id" \
+            --data-urlencode client_secret="$client_secret" \
+            --data-urlencode refresh_token="$refresh_token" \
+            https://oauth2.googleapis.com/token | jq --exit-status --raw-output .access_token)
+          API_ACCESS_TOKEN="$access_token" exec ${mcpProxy}/bin/mcp-proxy \
+            --transport streamablehttp \
+            --verify-ssl "''${SSL_CERT_FILE:-${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt}" \
+            ${lib.escapeShellArg url}
+        '';
+      };
+    in
+    {
+      command = lib.getExe proxy;
+    };
+
   # The Teams MCP and its `msteams` CLI sign in with the Teams login of the
   # work profile of a browser-daemon node instead of opening a local browser,
   # so they also work without a display.
@@ -414,6 +454,20 @@ in
         };
         # Bichon (email archive) API access token, read-only lookups.
         "bichon/mcp/token" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
+        # Own Google Cloud OAuth client (project "Gmail MCP") and the refresh
+        # token from its one-time consent, for the hosted Gmail MCP server.
+        "gmail/mcp/client-id" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
+        "gmail/mcp/client-secret" = {
+          mode = "0600";
+          sopsFile = config.host.sopsDefaultFile;
+        };
+        "gmail/mcp/refresh-token" = {
           mode = "0600";
           sopsFile = config.host.sopsDefaultFile;
         };
@@ -480,11 +534,12 @@ in
         # so it is a plain remote server rather than an mcp-proxy with a token.
         sentry.url = "https://mcp.sentry.dev/mcp";
         # Official Google Gmail MCP (Developer Preview; read + drafts only).
-        # It has no dynamic client registration: sign-in needs a pre-created
-        # Google Cloud OAuth client (type "Web application", flagged "for an
-        # AI-powered agent") whose id/secret the client is given on first
-        # authentication (Claude Code: /mcp -> gmail -> Authenticate).
-        gmail.url = "https://gmailmcp.googleapis.com/mcp/v1";
+        gmail = mcpGoogleOAuthProxy {
+          url = "https://gmailmcp.googleapis.com/mcp/v1";
+          clientIdFile = config.sops.secrets."gmail/mcp/client-id".path;
+          clientSecretFile = config.sops.secrets."gmail/mcp/client-secret".path;
+          refreshTokenFile = config.sops.secrets."gmail/mcp/refresh-token".path;
+        };
         obsidian = {
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
           args = [ "${config.xdg.userDirs.documents}/notes" ];
