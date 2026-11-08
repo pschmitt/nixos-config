@@ -467,6 +467,12 @@ in
         # clients handle themselves (Claude Code: /mcp -> sentry -> Authenticate),
         # so it is a plain remote server rather than an mcp-proxy with a token.
         sentry.url = "https://mcp.sentry.dev/mcp";
+        # Official Google Gmail MCP (Developer Preview; read + drafts only).
+        # It has no dynamic client registration: sign-in needs a pre-created
+        # Google Cloud OAuth client (type "Web application", flagged "for an
+        # AI-powered agent") whose id/secret the client is given on first
+        # authentication (Claude Code: /mcp -> gmail -> Authenticate).
+        gmail.url = "https://gmailmcp.googleapis.com/mcp/v1";
         obsidian = {
           command = "${pkgs.mcp-server-filesystem}/bin/mcp-server-filesystem";
           args = [ "${config.xdg.userDirs.documents}/notes" ];
