@@ -16,6 +16,14 @@ python3Packages.buildPythonApplication {
     hash = "sha256-kgNUK/AtIfYMoWlQ8B4oyWtkxHETQdCyS1Z6wJMgQkA=";
   };
 
+  # nixpkgs ships mcp 2.x, which renamed FastMCP to MCPServer.
+  postPatch = ''
+    substituteInPlace bichon_mcp/server.py \
+      --replace-fail "from mcp.server.fastmcp import FastMCP" \
+                     "from mcp.server.mcpserver import MCPServer" \
+      --replace-fail 'FastMCP("bichon-email")' 'MCPServer("bichon-email")'
+  '';
+
   build-system = [ python3Packages.hatchling ];
 
   dependencies = with python3Packages; [
