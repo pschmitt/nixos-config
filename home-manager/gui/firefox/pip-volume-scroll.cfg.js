@@ -514,6 +514,13 @@
           if (win.document.documentURI !== PIP_URL) {
             return;
           }
+          try {
+            win.windowUtils.loadSheetUsingURIString(
+              "resource://pip-volume/pip-controls.css", win.windowUtils.USER_SHEET
+            );
+          } catch (error) {
+            Cu.reportError(error);
+          }
           // Per-window state: a new PiP window starts without an overlay
           overlay = null;
           stateIcon = null;

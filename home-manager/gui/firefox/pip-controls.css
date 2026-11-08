@@ -1,0 +1,79 @@
+/* Firefox PiP chrome: keep the video prominent, with readable controls on
+   both light and dark footage. Visibility is still managed by Firefox. */
+:root {
+  --controls-bottom-distance: 14px !important;
+  --scrubber-thumb-background-color: #fff !important;
+}
+
+#controls-bottom-gradient {
+  background: linear-gradient(to top, rgba(10, 11, 14, .94), rgba(10, 11, 14, .58) 45%, transparent) !important;
+  height: 125px !important;
+}
+
+.controls-bottom-lower {
+  align-items: center !important;
+}
+
+#controls-bottom .control-button {
+  border-radius: 10px !important;
+  background-color: rgba(18, 20, 25, .45) !important;
+  background-size: 58% !important;
+  transition: opacity 160ms linear, fill-opacity 160ms linear, background-color 120ms ease !important;
+}
+
+#controls-bottom .control-button:hover:enabled {
+  background-color: rgba(255, 255, 255, .22) !important;
+}
+
+#controls #playpause {
+  background-color: rgba(255, 255, 255, .20) !important;
+}
+
+#controls #playpause:hover:enabled {
+  background-color: rgba(255, 255, 255, .32) !important;
+}
+
+#timestamp {
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em !important;
+  text-shadow: 0 1px 4px #000 !important;
+}
+
+#scrubber::-moz-range-track,
+#audio-scrubber::-moz-range-track {
+  background: rgba(255, 255, 255, .30) !important;
+}
+
+#scrubber::-moz-range-progress,
+#audio-scrubber::-moz-range-progress {
+  background: #fff !important;
+}
+
+#scrubber::-moz-range-thumb,
+#audio-scrubber::-moz-range-thumb {
+  background: #fff !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, .65) !important;
+  width: 10px !important;
+  height: 10px !important;
+}
+
+#audio-scrubber::-moz-range-track,
+#audio-scrubber::-moz-range-progress {
+  height: 3px !important;
+}
+
+#controls button:focus-visible,
+#controls input:focus-visible {
+  outline: 2px solid #fff !important;
+  outline-offset: 2px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #controls-bottom .control-button {
+    transition: none !important;
+  }
+}
