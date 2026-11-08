@@ -2,6 +2,7 @@
 // - scroll over the video to change the volume, with the same volume bar
 //   overlay and scroll behavior as the Volume Scroll extension
 // - click the video to play/pause
+// - press q to close the PiP window
 // - a play/pause icon flashes in the middle whenever playback starts or stops,
 //   whatever caused it (click, the play/pause button, space, media keys)
 //
@@ -11,13 +12,11 @@
 // scripts into it and never see wheel events over it.
 //
 // How it works: watch for new windows, and when the PiP player opens, listen
-// for "wheel" on it. Each step moves the player's own audio slider and fires
-// the slider's "input" event, exactly like dragging it by hand. PiP then sends
-// PictureInPicture:SetVolume to the originating video; on sites with a PiP
+// for "wheel" on it. Each step updates the audio slider and sends a numeric
+// PictureInPicture:SetVolume message through the PiP actor; on sites with a PiP
 // video wrapper (YouTube, ...) that goes through the site's own player API, so
-// the page's volume control stays in sync as well. Driving the slider (instead
-// of messaging the actor directly) also keeps the PiP widget itself in sync and
-// reuses PiP's mute/unmute handling when reaching 0.
+// the page's volume control stays in sync as well. Mute and unmute use the
+// same actor messages as the PiP slider.
 //
 // Click to play/pause: Firefox's PiP window does nothing on a single click on
 // the video (the click lands on the #controls overlay; only a double click is
@@ -206,7 +205,6 @@
       width: "100%",
       height: "100%",
       backgroundColor: SETTINGS.overlayColor,
-      transition: (isHorizontal ? "width" : "height") + " 0.1s ease-out",
     });
 
     let number = null;
@@ -390,13 +388,19 @@
     }
     target = nextVolume(target, direction);
     slider.value = target / 100;
-    slider.dispatchEvent(new win.Event("input", { bubbles: true }));
-    slider.dispatchEvent(new win.Event("change", { bubbles: true }));
-
     if (SETTINGS.useOverlay) {
       overlay ??= createOverlay(win.document);
       overlay.show(target);
     }
+
+    const browser = win.document.getElementById("browser");
+    const actor = browser.browsingContext.currentWindowGlobal.getActor("PictureInPicture");
+    if (target === 0) {
+      actor.sendAsyncMessage("PictureInPicture:Mute");
+    } else if (win.document.getElementById("controls").classList.contains("muted")) {
+      actor.sendAsyncMessage("PictureInPicture:Unmute");
+    }
+    actor.sendAsyncMessage("PictureInPicture:SetVolume", { volume: target / 100 });
 
     win.clearTimeout(idleTimer);
     idleTimer = win.setTimeout(() => {
@@ -428,6 +432,12 @@
             pressY = e.screenY;
           });
           win.document.addEventListener("click", e => onClick(win, e));
+          win.document.addEventListener("keydown", e => {
+            if (e.key === "q" && !e.ctrlKey && !e.altKey && !e.metaKey && !e.repeat) {
+              e.preventDefault();
+              win.document.getElementById("close").click();
+            }
+          });
           watchPlayState(win);
         },
         { once: true }
