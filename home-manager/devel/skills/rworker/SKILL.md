@@ -90,8 +90,8 @@ rworker down "$w"
 
 MCP: the `rworker` MCP server offers the same as tools (`profiles` lists the
 available configurations; `up` accepts `profile`
-and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`logs` for
-long jobs in tmux, `sync`, `nix_cache`, `builder`). Prefer it when it is
+and has `nix_cache` on by default), `ls`, `extend`, `down`, `prune`, `exec`, `start`/`jobs`/`logs` for
+registered jobs, `register` for existing log files, `sync`, `nix_cache`, `builder`). Prefer it when it is
 loaded; the CLI is the fallback. A running MCP server only gains new tools
 after its client restarts.
 
@@ -125,9 +125,14 @@ after its client restarts.
   loosen the rules for other credentials. If the local profile cannot write
   to the bucket, copy the closure back and push from the agent's host, or
   build on the target; ask before a large upload over the home link.
-- Long jobs: run them in `tmux` on the worker (`ssh "$w" tmux new -d -s b
-  '...'`) so a dropped SSH session does not kill them; check back with
-  `ssh "$w" tmux capture-pane -pt b`.
+- Agents must run long jobs with `rworker start "$w" -- 'command'` or MCP
+  `start`, and short jobs with MCP `exec` when available. These register the
+  job and capture combined output. Use `rworker jobs "$w"`, `rworker logs
+  "$w" [JOB] [--lines N]`, or `rworker logs "$w" JOB --follow` to inspect it.
+  Each unnamed job gets a unique ID. MCP `exec` returns the ID even on timeout;
+  the job continues. If a job must be launched separately, register its existing
+  absolute log file with `rworker register "$w" JOB --log /path/to/log` (or MCP
+  `register`) immediately. Logs and metadata disappear with the worker.
 
 ## Secrets and private inputs
 

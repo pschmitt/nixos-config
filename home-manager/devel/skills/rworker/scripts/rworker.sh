@@ -46,6 +46,13 @@ Usage: $(basename "$0") ACTION [ARGS] [-j|--json]
 but ssh takes it (scripts and the MCP server use it).
 
 Actions:
+  start NAME [--name JOB] [--workdir DIR] -- CMD
+                       start a registered job
+  jobs NAME            list registered jobs
+  logs NAME [JOB] [--lines N] [--follow]
+                       show job logs
+  register NAME JOB --log PATH
+                       register an existing log file
   profiles             list available worker profiles
   up [--ttl 2h] [--flavor s1.xlarge] [--disk 150] [--topic TEXT]
      [--no-nix-cache] [--ssh [-l USER]]
@@ -93,6 +100,10 @@ EOF
 #   global FLAG DESCRIPTION                 (every action except ssh)
 spec() {
   cat <<'SPEC'
+action start start a registered job
+action jobs list registered jobs
+action logs show job logs
+action register register an existing log file
 action up create a worker and wait until it is ready
 action profiles list available worker profiles
 action ls list all workers (ad-hoc and pool)
@@ -107,6 +118,13 @@ action nix-cache let a worker substitute from this host's S3 cache
 action cp copy files from or to a worker (NAME:PATH)
 action inspect show everything known about a worker
 action help show the help of an action
+flag start --name=job name the registered job
+flag start --workdir=path working directory on the worker
+flag logs --lines=count number of lines per job
+flag logs --follow follow one job log
+flag register --log=path absolute path to an existing log file
+values job
+values count 50 200 1000
 flag up --ttl=duration lifetime, e.g. 90m or 2h
 flag up --flavor=flavor OpenStack flavor
 flag up --disk=size volume size in GiB
@@ -152,7 +170,7 @@ values format json wide
 values topic
 values user agent pschmitt nix-remote-builder
 values interval 2 5 10 30
-worker down extend ssh sync builder prune inspect nix-cache
+worker down extend ssh sync builder prune inspect nix-cache start jobs logs register
 global --json force JSON output
 global -j short for --json
 SPEC
@@ -163,6 +181,18 @@ action_help() {
   local me
   me=$(basename "$0")
   case "$1" in
+    start)
+      printf 'Usage: %s start WORKER [--name JOB] [--workdir DIR] -- COMMAND\n' "$me"
+      ;;
+    jobs)
+      printf 'Usage: %s jobs WORKER\n' "$me"
+      ;;
+    logs)
+      printf 'Usage: %s logs WORKER [JOB] [--lines N] [--follow]\n' "$me"
+      ;;
+    register)
+      printf 'Usage: %s register WORKER JOB --log PATH\n' "$me"
+      ;;
     profiles)
       printf 'Usage: %s profiles [--json]\n\nList profiles and their resources.\n' "$me"
       ;;
@@ -1600,6 +1630,134 @@ target_user() {
   fi
 }
 
+# Run the shared job manager on the worker through the pinned SSH connection.
+cmd_jobs_remote() {
+  local action="$1" worker="${2:-}" arg remote="bash -s --"
+  shift 2 || return 2
+  if [[ -z "$worker" ]]
+  then
+    printf 'worker name required\n' >&2
+    return 2
+  fi
+  for arg in "$action" "$@"
+  do
+    printf -v arg '%q' "$arg"
+    remote+=" $arg"
+  done
+  cmd_ssh "$worker" "$remote" <<'REMOTE_JOBS'
+set -eu
+umask 077
+root="$HOME/.local/state/rworker/jobs"
+mkdir -p "$root"
+action=$1
+shift
+valid() { [[ "$1" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; }
+case "$action" in
+  start)
+    label=""
+    workdir="$HOME"
+    while [[ $# -gt 0 ]]
+    do
+      case "$1" in
+        --name) label=$2; shift 2 ;;
+        --workdir) workdir=$2; shift 2 ;;
+        --) shift; break ;;
+        *) printf 'unknown option: %s\n' "$1" >&2; exit 2 ;;
+      esac
+    done
+    [[ $# -eq 1 ]] || { printf 'provide one command after --\n' >&2; exit 2; }
+    if [[ -n "$label" ]]
+    then
+      valid "$label" || { printf 'invalid job name\n' >&2; exit 2; }
+      dir="$root/$label"
+      mkdir "$dir" || exit 1
+    else
+      dir=$(mktemp -d "$root/job-XXXXXXXX")
+    fi
+    printf '%s\n' "$1" > "$dir/command"
+    printf '%s\n' "$workdir" > "$dir/workdir"
+    date -u +%FT%TZ > "$dir/started"
+    cat > "$dir/run" <<'RUN_JOB'
+#!/usr/bin/env bash
+job_dir=$1
+cd "$(cat "$job_dir/workdir")" || { printf '%s\n' 1 > "$job_dir/exit"; exit 1; }
+bash "$job_dir/command"
+status=$?
+rm -f "$job_dir/command"
+printf '%s\n' "$status" > "$job_dir/exit"
+exit "$status"
+RUN_JOB
+    nohup bash "$dir/run" "$dir" </dev/null >"$dir/log" 2>&1 &
+    printf '%s\n' "$!" > "$dir/pid"
+    basename "$dir"
+    ;;
+  register)
+    [[ $# -eq 3 && "$2" == --log ]] || { printf 'usage: register JOB --log PATH\n' >&2; exit 2; }
+    valid "$1" || { printf 'invalid job name\n' >&2; exit 2; }
+    [[ "$3" == /* && -f "$3" ]] || { printf 'log must be an existing absolute file path\n' >&2; exit 2; }
+    mkdir "$root/$1"
+    printf '%s\n' "$3" > "$root/$1/log-path"
+    date -u +%FT%TZ > "$root/$1/started"
+    ;;
+  jobs)
+    for dir in "$root"/*
+    do
+      [[ -d "$dir" ]] || continue
+      state=registered
+      if [[ -f "$dir/exit" ]]
+      then
+        state="exit $(cat "$dir/exit")"
+      elif [[ -f "$dir/pid" ]]
+      then
+        if kill -0 "$(cat "$dir/pid")" 2>/dev/null
+        then
+          state=running
+        else
+          state=unknown
+        fi
+      fi
+      printf '%s\t%s\t%s\n' "${dir##*/}" "$state" "$(cat "$dir/started")"
+    done
+    ;;
+  logs)
+    job=""
+    lines=200
+    follow=""
+    while [[ $# -gt 0 ]]
+    do
+      case "$1" in
+        --lines) lines=$2; shift 2 ;;
+        --follow|-f) follow=1; shift ;;
+        *) [[ -z "$job" ]] || exit 2; job=$1; shift ;;
+      esac
+    done
+    [[ "$lines" =~ ^[0-9]+$ ]] || { printf 'invalid line count\n' >&2; exit 2; }
+    if [[ -n "$job" ]]
+    then
+      valid "$job" || exit 2
+      dirs=("$root/$job")
+    else
+      [[ -z "$follow" ]] || { printf 'follow requires a job name\n' >&2; exit 2; }
+      dirs=("$root"/*)
+    fi
+    for dir in "${dirs[@]}"
+    do
+      [[ -d "$dir" ]] || { [[ -z "$job" ]] && continue; printf 'unknown job\n' >&2; exit 1; }
+      logfile="$dir/log"
+      [[ ! -f "$dir/log-path" ]] || logfile=$(cat "$dir/log-path")
+      printf '==> %s <==\n' "${dir##*/}"
+      if [[ -n "$follow" ]]
+      then
+        tail -n "$lines" -f -- "$logfile"
+      else
+        tail -n "$lines" -- "$logfile"
+      fi
+    done
+    ;;
+esac
+REMOTE_JOBS
+}
+
 cmd_ssh() {
   local name ip user opts login_user=""
   # -l USER (like ssh's), before the name.
@@ -1987,6 +2145,19 @@ main() {
     fi
   done
   case "$action" in
+    start)
+      cmd_jobs_remote "$action" "$@"
+      ;;
+    jobs)
+      cmd_jobs_remote "$action" "$@"
+      ;;
+    logs)
+      cmd_jobs_remote "$action" "$@"
+      ;;
+    register)
+      cmd_jobs_remote "$action" "$@"
+      ;;
+
     up)
       cmd_up "$@"
       ;;

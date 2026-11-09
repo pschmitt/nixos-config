@@ -8,8 +8,8 @@ copy sources over, use it as a Nix builder, and delete it again.
 
 import argparse
 import json
-import shlex
 import subprocess
+import time
 
 from mcp.server.mcpserver import MCPServer
 
@@ -137,55 +137,57 @@ def prune(names: list[str] | None = None, all: bool = False,
 @mcp.tool()
 def exec(name: str, command: str, workdir: str | None = None,
          timeout_seconds: int = 600) -> dict:
-    """Run a shell command on the worker as user agent and wait for it.
-
-    Use start()/logs() instead for anything that may take longer than a few
-    minutes. stdout/stderr are trimmed to their last 20000 characters.
-    """
-    script = command if not workdir else f"cd {shlex.quote(workdir)} && {command}"
-    try:
-        proc = subprocess.run(
-            [args.rworker, "ssh", name, "bash", "-lc", shlex.quote(script)],
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-        )
-    except subprocess.TimeoutExpired:
-        return {"exit_code": None, "error": f"timed out after {timeout_seconds}s; "
-                "use start() for long jobs"}
-    stdout, out_cut = tail(proc.stdout)
-    stderr, err_cut = tail(proc.stderr)
-    return {"exit_code": proc.returncode, "stdout": stdout, "stderr": stderr,
-            "truncated": out_cut or err_cut}
+    """Run a registered job and wait. On timeout the job continues; use logs()."""
+    job = start(name, command, workdir=workdir)
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        listing = run("jobs", name, timeout=60)
+        for row in listing.splitlines():
+            fields = row.split("\t")
+            if len(fields) >= 2 and fields[0] == job and fields[1].startswith("exit "):
+                output, truncated = tail(run("logs", name, job, "--lines", "200", timeout=60))
+                return {"job": job, "exit_code": int(fields[1][5:]),
+                        "stdout": output, "stderr": "", "truncated": truncated}
+        time.sleep(min(2, max(0, deadline - time.monotonic())))
+    return {"job": job, "exit_code": None,
+            "error": "timed out; job continues, use logs()"}
 
 
 @mcp.tool()
-def start(name: str, command: str, session: str = "job",
+def start(name: str, command: str, session: str | None = None,
           workdir: str | None = None) -> str:
-    """Start a long-running command in a detached tmux session on the worker.
+    """Start a registered job. Returns its ID for jobs() and logs().
 
-    The job survives dropped connections; read its output with logs(). A busy
-    worker is not deleted when its TTL runs out.
+    session optionally names the job; omit it to generate a unique ID.
     """
-    script = command if not workdir else f"cd {shlex.quote(workdir)} && {command}"
-    inner = f"{script}; echo; echo \"[exit $?]\"; exec bash"
-    remote = f"tmux new-session -d -s {shlex.quote(session)} {shlex.quote(inner)}"
-    subprocess.run([args.rworker, "ssh", name, remote], check=True,
-                   capture_output=True, text=True, timeout=60)
-    return f"started tmux session {session!r} on {name}; read it with logs()"
+    argv = ["start", name]
+    if session:
+        argv += ["--name", session]
+    if workdir:
+        argv += ["--workdir", workdir]
+    return run(*argv, "--", command, timeout=60).strip()
 
 
 @mcp.tool()
-def logs(name: str, session: str = "job", lines: int = 200) -> str:
-    """Last lines of a tmux session started with start() ("[exit N]" at the end
-    means the command finished with status N)."""
-    remote = (f"tmux capture-pane -p -J -S -{int(lines)} "
-              f"-t {shlex.quote(session)}")
-    proc = subprocess.run([args.rworker, "ssh", name, remote],
-                          capture_output=True, text=True, timeout=60)
-    if proc.returncode != 0:
-        raise RuntimeError(proc.stderr.strip() or "no such session")
-    return tail(proc.stdout)[0]
+def jobs(name: str) -> str:
+    """List registered jobs, their status, and start time."""
+    return run("jobs", name, timeout=60)
+
+
+@mcp.tool()
+def logs(name: str, session: str | None = None, lines: int = 200) -> str:
+    """Show recent logs for all jobs, or for the named job."""
+    argv = ["logs", name]
+    if session:
+        argv.append(session)
+    return tail(run(*argv, "--lines", str(lines), timeout=60))[0]
+
+
+@mcp.tool()
+def register(name: str, job: str, log_path: str) -> str:
+    """Register an existing absolute log-file path on a worker."""
+    run("register", name, job, "--log", log_path, timeout=60)
+    return job
 
 
 @mcp.tool()
