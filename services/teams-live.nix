@@ -29,6 +29,7 @@ in
     "teams-live/jira-url" = hostSecret;
     "teams-live/jira-token" = hostSecret;
     "teams-live/jira-board-id" = hostSecret;
+    "teams-live/confluence-token" = hostSecret;
     "teams-live/troll-user" = hostSecret;
     "opsgenie/gksv3-on-call/api-key" = hostSecret;
     "opsgenie/gksv3-support-schedule/api-key" = hostSecret;
@@ -62,6 +63,11 @@ in
         url = secretValue "teams-live/jira-url";
         token_file = secrets."teams-live/jira-token".path;
         board_id = secretValue "teams-live/jira-board-id";
+      };
+
+      confluence = {
+        url = "https://wiki.wiit.one";
+        token_file = secrets."teams-live/confluence-token".path;
       };
 
       opsgenie = {

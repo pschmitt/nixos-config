@@ -1774,11 +1774,11 @@
         "stash-nixpkgs": "stash-nixpkgs"
       },
       "locked": {
-        "lastModified": 1794172803,
-        "narHash": "sha256-DPYEFkTMigHz/m1QH7LjYaEAYd+75x69ju1K+ysbxow=",
+        "lastModified": 1794213327,
+        "narHash": "sha256-i7TLTBaFAcDhyPF5XtxYcHa5rkcy4PWJ2/hzyhxBPkE=",
         "owner": "pschmitt",
         "repo": "nixos-config-private",
-        "rev": "ad78d6851ee65610b4f336eb9ecec1fc5836bc8b",
+        "rev": "d57bbea37276ee39834b841e3da3ad2697265c60",
         "type": "github"
       },
       "original": {
@@ -2849,11 +2849,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1794162203,
-        "narHash": "sha256-OCaE1snAKwZCESFPR1M2TT1Eau0Xj1G7WiFB+t5XVLI=",
+        "lastModified": 1794213068,
+        "narHash": "sha256-bw9k4qX9o+1sjzXfVJpTRvYQA22Dq+zxdHXKhVz1C1I=",
         "owner": "pschmitt",
         "repo": "teams-live",
-        "rev": "32cee4bba9087778ff7c16202e884153fdd9a857",
+        "rev": "832736031ddb87958f3a9eb34fe0d8be91b638ea",
         "type": "github"
       },
       "original": {
