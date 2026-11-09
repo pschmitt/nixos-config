@@ -3,8 +3,9 @@
 #
 # Reads the `messages` attribute of the "Recent messages" sensor (disabled by
 # default in the integration; enable it first) or, with -u, of the "Unread
-# chats" sensor. HASS_SERVER and HASS_TOKEN come from the environment; the zsh
-# wrapper of the same name sets them with hass::secrets-setup.
+# chats" sensor. HASS_SERVER and HASS_TOKEN come from the environment; when
+# unset they are resolved like the hass::* zsh functions do, with
+# `zhj hass::secrets-gu5a`.
 
 usage() {
   cat <<EOF
@@ -20,7 +21,7 @@ Options:
   -j, --json          Raw JSON instead of a table
   -h, --help          Show this help
 
-Environment:
+Environment (default: whatever hass::secrets-gu5a provides, via zhj):
   HASS_SERVER   Home Assistant base URL
   HASS_TOKEN    Long-lived access token
 EOF
@@ -91,15 +92,25 @@ main() {
     esac
   done
 
-  local server="${HASS_SERVER:-${HASS_URL:-}}"
-  if [[ -z "$server" || -z "${HASS_TOKEN:-}" ]]
+  local server="${HASS_SERVER:-${HASS_URL:-}}" token="${HASS_TOKEN:-}"
+  if [[ -z "$server" || -z "$token" ]]
   then
-    printf 'HASS_SERVER and HASS_TOKEN must be set\n' >&2
-    return 2
+    # Same credentials as the hass::* zsh functions; prints "SERVER TOKEN".
+    if ! command -v zhj > /dev/null
+    then
+      printf 'HASS_SERVER and HASS_TOKEN must be set (zhj not found)\n' >&2
+      return 2
+    fi
+    read -r server token < <(zhj hass::secrets-gu5a) || true
+    if [[ -z "$server" || -z "$token" ]]
+    then
+      printf 'Could not get Home Assistant credentials from hass::secrets-gu5a\n' >&2
+      return 1
+    fi
   fi
 
   local states entity_id
-  states="$(curl -fsS -H "Authorization: Bearer ${HASS_TOKEN}" "${server%/}/api/states")" || return 1
+  states="$(curl -fsS -H "Authorization: Bearer ${token}" "${server%/}/api/states")" || return 1
 
   entity_id="$(jq -r --arg s "_${suffix}" \
     '[.[] | select(.entity_id | test("^sensor\\.microsoft_teams.*" + $s + "$"))][0].entity_id // empty' \

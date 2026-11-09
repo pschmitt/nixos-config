@@ -1,6 +1,4 @@
 {
-  config,
-  lib,
   pkgs,
   ...
 }:
@@ -26,14 +24,4 @@ in
   home.packages = [ pkgs.teams-messages ];
 
   xdg.configFile."zsh/completions/_teams-messages".source = "${completion}/_teams-messages";
-
-  # The CLI reads HASS_SERVER/HASS_TOKEN; hass::secrets-setup provides them.
-  programs.zsh.initContent = lib.mkIf (!(config.termux.enable or false)) (
-    lib.mkOrder 620 ''
-      teams-messages() {
-        hass::secrets-setup || return 1
-        command teams-messages "$@"
-      }
-    ''
-  );
 }
