@@ -90,6 +90,12 @@ in
       nativeRedirectUris = [ "stricknani://oidc-callback" ];
     };
 
+    # Android App Links: the persistent CI signing key of every APK (release and debug), so
+    # a project or yarn link opens the app directly.
+    android.appLinkFingerprints = [
+      "61:50:52:4C:34:01:C2:32:A8:B5:82:E8:73:D6:92:E7:1A:D9:C6:72:63:17:FC:6C:69:88:90:40:F6:0D:A1:1F"
+    ];
+
     extraConfig = {
       SIGNUP_ENABLED = "false";
       OCR_ENABLED = "false";
