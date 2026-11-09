@@ -17,6 +17,7 @@
     ./nbx.nix
     ./netbird.nix
     ./tables.nix
+    ./teams-messages.nix
     ./tesmart.nix
     ./xcp.nix
     ./tmux-slay.nix
