@@ -15,6 +15,7 @@ List recent Microsoft Teams messages: time, sender, channel, text.
 
 Options:
   -n, --count N       Show at most N messages (default: 100)
+  -1, --last          Only the newest message (same as -n 1)
   -u, --unread        Only the newest unread message of each chat
   -c, --channel TEXT  Only channels/chats whose name contains TEXT
   -f, --from TEXT     Only messages from senders containing TEXT
@@ -65,6 +66,10 @@ main() {
         need_value "$@" || return 2
         count="$2"
         shift 2
+        ;;
+      -1|--last)
+        count=1
+        shift
         ;;
       -u|--unread)
         suffix=unread_chats
